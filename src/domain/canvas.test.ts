@@ -4,6 +4,7 @@ import { BEAD_CATALOG } from './beads'
 import { createProject } from './createProject'
 import { paintAt } from '../testUtils/layers'
 import { countingBeads } from '../testUtils/countingBeads'
+import { frameOf } from './layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -90,7 +91,7 @@ describe('changedPositions', () => {
       size: { width: 6, height: 6, unit: 'mm' },
     })
 
-    expect(changedPositions(project.frame!.beads, project.frame!.beads)).toEqual([])
+    expect(changedPositions(frameOf(project)!.beads, frameOf(project)!.beads)).toEqual([])
   })
 
   it('lists exactly the cells whose color differs, and nothing else', () => {
@@ -101,7 +102,7 @@ describe('changedPositions', () => {
     })
     const after = paintAt(paintAt(project, [{ row: 0, column: 0 }], '#e63746'), [{ row: 2, column: 1 }], '#2f6fed')
 
-    expect(changedPositions(project.frame!.beads, after.frame!.beads)).toEqual([
+    expect(changedPositions(frameOf(project)!.beads, frameOf(after)!.beads)).toEqual([
       { row: 0, column: 0 },
       { row: 2, column: 1 },
     ])

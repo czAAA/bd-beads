@@ -11,6 +11,7 @@ import type { Selection } from '../../domain/selection'
 import { en } from '../../i18n/en'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
+import { frameOf } from '../../domain/layerRecord'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
@@ -126,7 +127,7 @@ describe('ContextBar', () => {
     })
 
     await arm()
-    expect(project.frame).toBeDefined()
+    expect(frameOf(project)).toBeDefined()
     expect(wrapper.get('[data-testid="context-bar-frame"]').attributes('aria-label')).toBe('Frame')
     expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()

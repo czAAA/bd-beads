@@ -10,6 +10,8 @@ import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { ratioSentence, ratioText } from '../../i18n/ratioWords'
 import type { Translations } from '../../i18n/translations'
+import { frameOf } from '../../domain/layerRecord'
+import { frameWeave } from '../../domain/layerWeave'
 
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
@@ -141,7 +143,7 @@ const rowProgressIsOn = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && rowProgressOn(project)
 }
-const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
+const hasFrame = (deps: ControlDeps) => frameOf(deps.activeProject()) !== undefined
 const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
@@ -155,8 +157,8 @@ const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlActio
   body: (t) => (direction === 'out' ? t.tooltips.frameEdgeOut : t.tooltips.frameEdgeIn),
   enabled: (deps) => {
     const project = deps.activeProject()
-    if (!project?.frame || frameLocked(deps)) return false
-    return direction === 'out' || frameWithEdgeStep(project, project.frame, edge, -1) !== project.frame
+    if (!project || !frameOf(project) || frameLocked(deps)) return false
+    return direction === 'out' || frameWithEdgeStep(frameWeave(project), frameOf(project)!, edge, -1) !== frameOf(project)
   },
   disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.frameSizeLocked : t.tooltips.frameEdgeInDisabled),
   group: 'canvas',

@@ -24,6 +24,8 @@ const WITH_PROJECT: [DialogId, unknown][] = [
   ['remove-project', fox],
   ['switch-project', fox],
   ['import-switch', [fox]],
+  // The Canvas's Bead under a Frame (tickets 0665, 0670): its longer message.
+  ['replace-bead', { layer: 'canvas', beadId: 'toho/round/11-0' }],
   // Its longest question: a finished row on peyote or brick stitch, whose rows after it shift.
   ['remove-line', { kind: 'finished-row', row: 12, backTo: 24, shifts: true, direction: 'columns' }],
 ]

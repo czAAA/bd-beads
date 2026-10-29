@@ -8,6 +8,8 @@ import type { Project } from '../../domain/project'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { en } from '../../i18n/en'
+import { frameOf } from '../../domain/layerRecord'
+import { layersView } from '../../testUtils/layerFields'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -183,7 +185,7 @@ describe('ConvertImageWizard setup', () => {
     await choosePanelOption(wrapper, 'convert-technique', 'peyote')
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
 
-    expect(created(wrapper)).toMatchObject({ technique: 'peyote', name: 'fox' })
+    expect(layersView(created(wrapper)!)).toMatchObject({ technique: 'peyote', name: 'fox' })
     expect(draft).toEqual(before)
   })
 
@@ -210,7 +212,7 @@ describe('ConvertImageWizard Create Project', () => {
 
     const project = created(wrapper)!
     // 4 px on its long side starts By Pixel to bead ratio at 1:4: 16 × 8 beads.
-    expect(project.frame).toMatchObject({ columns: 16, rows: 8 })
+    expect(frameOf(project)).toMatchObject({ columns: 16, rows: 8 })
     expect(frameGrid(project)[0]![0]!.color).toBe('#d02030')
     expect(project.paletteCodes).toEqual({ '#d02030': 'DB723' })
   })

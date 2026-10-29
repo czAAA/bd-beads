@@ -7,6 +7,8 @@ import type { Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 import { pickColor, pickTool } from './testUtils/pill'
+import { beadsOfLayer, frameOf, orientationOf } from './domain/layerRecord'
+import { type LayersChange, withLayers } from './testUtils/layerFields'
 
 /** The Canvas (ticket 233, ADR 0026) as the app shows it: an endless field to draw on, moved by wheel, Hand tool and
  * Space, read via rulers. */
@@ -24,11 +26,10 @@ afterEach(() => {
 })
 
 /** A Project with no Frame and a few beads in two places. */
-function unframedProject(extra: Partial<Project> = {}): Project {
+function unframedProject(extra: LayersChange = {}): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
-  return {
-    ...base,
-    frame: undefined,
+  return withLayers(base, {
+frame: undefined,
     beads: withColors({}, [
       { row: 0, column: 0, color: RED },
       { row: 0, column: 1, color: RED },
@@ -36,7 +37,7 @@ function unframedProject(extra: Partial<Project> = {}): Project {
       { row: 10, column: 10, color: RED },
     ]),
     ...extra,
-  }
+})
 }
 
 function mountApp() {
@@ -58,7 +59,28 @@ describe('Rotate canvas (ticket 471)', () => {
 
     await wrapper.get('[data-testid="strip-rotate-canvas"]').trigger('click')
     await flushPromises()
-    expect(loadProjects()[0]!.rotation).toBe(90)
+    expect(orientationOf(loadProjects()[0])).toBe(90)
+    expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('turns the picture with a two-finger twist, live, and keeps the angle it settles on with no Undo step (ticket 0672)', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+    const finger = (type: string, pointerId: number, clientX: number, clientY: number) =>
+      surface(wrapper).trigger(type, { pointerId, clientX, clientY, pointerType: 'touch', isPrimary: pointerId === 1, button: 0, buttons: 1 })
+
+    await finger('pointerdown', 1, 100, 100)
+    await finger('pointerdown', 2, 200, 100)
+    // The second finger swings 40° clockwise round the first.
+    await finger('pointermove', 2, 100 + 100 * Math.cos((40 * Math.PI) / 180), 100 + 100 * Math.sin((40 * Math.PI) / 180))
+    expect(surface(wrapper).attributes('data-tilt')).toBe('40')
+    expect(orientationOf(loadProjects()[0])).toBe(0)
+
+    await finger('pointerup', 2, 0, 0)
+    await finger('pointerup', 1, 0, 0)
+    await flushPromises()
+    expect(orientationOf(loadProjects()[0])).toBe(40)
     expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBe('true')
   })
 })
@@ -74,11 +96,11 @@ describe('Undo and Redo in the Canvas strip', () => {
     await pressBead(wrapper, { row: 5, column: 5 })
     await wrapper.trigger('mouseup')
     await wrapper.get('[data-testid="strip-undo"]').trigger('click')
-    expect(loadProjects()[0]!.beads[5]?.[5]).toBeUndefined()
+    expect(beadsOfLayer(loadProjects()[0], 'canvas')[5]?.[5]).toBeUndefined()
     expect(redo().attributes('aria-disabled')).toBeUndefined()
 
     await redo().trigger('click')
-    expect(loadProjects()[0]!.beads[5]![5]).toBe('#1a1a1a') // the Palette's first color, picked at start
+    expect(beadsOfLayer(loadProjects()[0], 'canvas')[5]![5]).toBe('#1a1a1a') // the Palette's first color, picked at start
   })
 })
 
@@ -96,9 +118,9 @@ describe('drawing anywhere', () => {
 
     expect(beadColor(wrapper, { row: 4000, column: 9000 })).toBe(RED)
     const saved = loadProjects()[0]!
-    expect(saved.beads[4000]![9000]).toBe(RED)
-    expect(saved.beads[-30]![-12]).toBe(RED)
-    expect(saved.frame).toBeUndefined()
+    expect(beadsOfLayer(saved, 'canvas')[4000]![9000]).toBe(RED)
+    expect(beadsOfLayer(saved, 'canvas')[-30]![-12]).toBe(RED)
+    expect(frameOf(saved)).toBeUndefined()
 
     wrapper.unmount()
     const reloaded = mountApp()
@@ -116,7 +138,7 @@ describe('drawing anywhere', () => {
 
     await pressBead(wrapper, { row: 0, column: 0 })
 
-    const beads = loadProjects()[0]!.beads
+    const beads = beadsOfLayer(loadProjects()[0], 'canvas')
     expect([beads[0]![0], beads[0]![1], beads[1]![1]]).toEqual([BLUE, BLUE, BLUE])
   })
 })
@@ -132,7 +154,7 @@ describe('the Hand tool', () => {
     expect(wrapper.find('[data-testid="pill-tool-hand"]').classes()).toContain('icon-btn--selected')
     expect(wrapper.findAll('[data-testid^="pill-tool-"]')).toHaveLength(6)
 
-    const before = JSON.stringify(loadProjects()[0]!.beads)
+    const before = JSON.stringify(beadsOfLayer(loadProjects()[0], 'canvas'))
     const root = surface(wrapper)
     const startX = Number(root.attributes('data-scroll-x'))
     await root.trigger('pointerdown', { clientX: 100, clientY: 100, button: 0, buttons: 1 })
@@ -141,7 +163,7 @@ describe('the Hand tool', () => {
     await hoverBead(wrapper, { row: 3, column: 3 })
 
     expect(Number(root.attributes('data-scroll-x'))).toBe(startX + 30)
-    expect(JSON.stringify(loadProjects()[0]!.beads)).toBe(before)
+    expect(JSON.stringify(beadsOfLayer(loadProjects()[0], 'canvas'))).toBe(before)
     expect(previewedBeads(wrapper)).toEqual([])
     expect(wrapper.find('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeDefined()
   })

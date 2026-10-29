@@ -11,13 +11,15 @@ import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
 import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
+import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
+import { withLayers } from '../../testUtils/layerFields'
 
 /** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
  * test per control → flow. What the panels hold is in MenuPanel and ProjectPanel, Back, Escape and focus in AppPanel
  * and useOverlayLayer, the rules in the flows, and a strip button opening its panel in the App tests. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
-const other = () => ({ ...moth(), id: 'other', name: 'Other' })
+const other = () => (withLayers(moth(), { id: 'other', name: 'Other' }))
 
 beforeEach(() => {
   saveProjects([moth()])
@@ -28,10 +30,17 @@ afterEach(() => vi.restoreAllMocks())
 const mountPanels = () => mountShellParts(AppPanels, AppDialogs)
 type Mounted = ReturnType<typeof mountPanels>
 
-const names = () => loadProjects().map((project) => project.name).sort()
+const names = () => loadProjects().map((project) => canvasOf(project).name).sort()
 const text = ({ wrapper }: Mounted, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
 const click = async ({ wrapper }: Mounted, testId: string) => {
   await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+  await flushPromises()
+}
+/** Picks a value in a PanelPicker's menu or a SegmentedControl. */
+const choose = async ({ wrapper }: Mounted, testId: string, value: string) => {
+  const opener = wrapper.find(`[data-testid="${testId}"] button[aria-haspopup]`)
+  if (opener.exists()) await opener.trigger('click')
+  await wrapper.get(`[data-testid="${testId}"] [data-value="${value}"]`).trigger('click')
   await flushPromises()
 }
 
@@ -87,7 +96,7 @@ describe('Menu', () => {
     await click(mounted, 'starter-card-star')
     await click(mounted, 'create-starter-project')
 
-    expect(loadProjects().find((project) => project.name === en.frame.shapes.star)!.frame).toMatchObject({ shape: 'star' })
+    expect(frameOf(loadProjects().find((project) => canvasOf(project).name === en.frame.shapes.star))).toMatchObject({ shape: 'star' })
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
@@ -114,8 +123,8 @@ describe('Menu', () => {
     await click(mounted, `select-project-${picked.id}`)
 
     const modal = text(mounted, 'switch-project-modal')
-    expect(modal).toContain(`“${open.name}”`)
-    expect(modal).toContain(`“${picked.name}”`)
+    expect(modal).toContain(`“${canvasOf(open).name}”`)
+    expect(modal).toContain(`“${canvasOf(picked).name}”`)
     expect(text(mounted, 'confirm-modal-confirm')).toBe(en.switchProject.confirmButton)
     expect(mounted.panels.activeProject.value!.id).toBe(open.id)
 
@@ -147,15 +156,19 @@ describe('Menu', () => {
 })
 
 describe('Project', () => {
-  it('changes the Technique from its picker as one Undo step (tickets 351, 492, 554)', async () => {
+  it('sets the Canvas from its Layer settings: Technique and its settings as Undo steps, the Bead shape with none (ticket 0670)', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
-    await mounted.wrapper.get('[data-testid="project-technique"] button').trigger('click')
-    await mounted.wrapper.get('[data-testid="project-technique"] [data-value="peyote"]').trigger('click')
-    expect(loadProjects()[0]!.frame!.technique).toBe('peyote')
+    await choose(mounted, 'canvas-technique', 'brick')
+    await click(mounted, 'canvas-brick-block-more')
+    await choose(mounted, 'bead-shape', 'real')
+    const saved = () => loadProjects()[0]
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beadShape: 'real' })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric' })
 
     mounted.canvas.onUndo()
-    expect(loadProjects()[0]!.frame!.technique).toBe('loom')
+    mounted.canvas.onUndo()
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'real' })
   })
 
   it('renames from the pencil, and Try again saves what a full storage refused', async () => {
@@ -188,7 +201,7 @@ describe('Project', () => {
     await click(mounted, 'duplicate-confirm')
 
     expect(names()).toEqual(['Moth', 'Moth 2'])
-    expect(mounted.panels.activeProject.value!.name).toBe('Moth 2')
+    expect(canvasOf(mounted.panels.activeProject.value!).name).toBe('Moth 2')
   })
 
   it('deletes after a confirmation naming the Project, leaving none open; Cancel keeps it', async () => {
@@ -209,28 +222,44 @@ describe('Project', () => {
     expect(mounted.panels.activeProject.value).toBeUndefined()
   })
 
-  it('replaces the Bead after a confirmation: Cancel keeps it, confirming switches it (ticket 48)', async () => {
+  it('replaces the Canvas\'s Bead after a confirmation, the Frame keeping its own; Cancel keeps it (tickets 48, 0665, 0670)', async () => {
     const mounted = mountPanels()
     const pickReplacement = async () => {
       await mounted.openPanel('project')
-      await mounted.wrapper.get('[data-testid="bead-type"] button').trigger('click')
-      await mounted.wrapper.get(`[data-testid="bead-type"] [data-value="${findBead('toho/round/11-0')!.formFactor.id}"]`).trigger('click')
+      await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
     }
     await pickReplacement()
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
     await click(mounted, 'confirm-modal-cancel')
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(loadProjects()[0]!.beadId).toBe('toho/cube/1.5mm')
+    expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/cube/1.5mm')
 
     await pickReplacement()
     await click(mounted, 'confirm-modal-confirm')
-    expect(loadProjects()[0]!.beadId).toBe('toho/round/11-0')
+    expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/round/11-0')
+    expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
   })
 })
 
 describe('The Frame panel', () => {
+  it('sets the Frame from its Layer settings: Technique, its settings and Bead as Undo steps, the Bead shape with none (ticket 0670)', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    await choose(mounted, 'frame-technique', 'brick')
+    await click(mounted, 'frame-brick-block-more')
+    await choose(mounted, 'bead-shape', 'real')
+    await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
+    await click(mounted, 'confirm-modal-confirm')
+    const saved = () => loadProjects()[0]
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beadShape: 'real', beadId: 'toho/round/11-0' })
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric', beadId: 'toho/cube/1.5mm' })
+
+    mounted.canvas.onUndo()
+    expect(layerOf(saved(), 'frame')).toMatchObject({ beadShape: 'real', beadId: 'toho/cube/1.5mm' })
+  })
+
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {
-    const { frame: _frame, ...open } = moth()
+    const open = withFrameSheet(moth(), undefined)
     saveProjects([open])
     const mounted = mountPanels()
     await mounted.openPanel('frame')
@@ -239,7 +268,7 @@ describe('The Frame panel', () => {
     await click(mounted, 'starter-card-triangle')
     await click(mounted, 'create-starter-project')
 
-    expect(loadProjects()[0]!.frame).toMatchObject({ shape: 'triangle' })
+    expect(frameOf(loadProjects()[0])).toMatchObject({ shape: 'triangle' })
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
@@ -251,25 +280,54 @@ describe('The Frame panel', () => {
     await mounted.openPanel('frame')
     await click(mounted, 'frame-setting-rounds-less')
     await click(mounted, 'frame-setting-rounds-less')
-    expect(loadProjects()[0]!.frame!.settings).toEqual({ rounds: 4 })
+    expect(frameOf(loadProjects()[0])!.settings).toEqual({ rounds: 4 })
     mounted.panels.openPanel.value = null
     await nextTick()
     mounted.canvas.onUndo()
-    expect(loadProjects()[0]!.frame!.settings).toEqual({ rounds: 6 })
+    expect(frameOf(loadProjects()[0])!.settings).toEqual({ rounds: 6 })
+  })
+})
+
+describe('Backgrounds (ticket 0666)', () => {
+  it('saves the Canvas\'s from the Project panel and the Frame\'s from the Frame panel, each on its own', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await click(mounted, 'background-color-fog')
+    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(4)
+
+    await mounted.openPanel('frame')
+    await click(mounted, 'background-color-pebble')
+    expect(backgroundOf(loadProjects()[0], 'frame')).toBe(5)
+    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(4)
+  })
+
+  it('starts a new Project\'s layers on the last one picked', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    await click(mounted, 'background-color-stone')
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-new-project')
+    await click(mounted, 'pick-starter')
+    await click(mounted, 'starter-category-shapes')
+    await click(mounted, 'starter-card-star')
+    await click(mounted, 'create-starter-project')
+
+    const star = loadProjects().find((project) => canvasOf(project).name === en.frame.shapes.star)!
+    expect([backgroundOf(star, 'canvas'), backgroundOf(star, 'frame')]).toEqual([3, 3])
   })
 })
 
 describe('The Export panel', () => {
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {
-    const { frame: _frame, ...open } = moth()
-    saveProjects([{ ...open, beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) }])
+    const open = withFrameSheet(moth(), undefined)
+    saveProjects([withLayers(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])
     const mounted = mountPanels()
     await mounted.openPanel('export')
     expect(mounted.wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
 
     await click(mounted, 'export-fit')
 
-    expect(loadProjects()[0]!.frame).toBeDefined()
+    expect(frameOf(loadProjects()[0])).toBeDefined()
     expect(mounted.wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
   })
 })

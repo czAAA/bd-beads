@@ -6,11 +6,12 @@ import type { Cell, Project, RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
+import { canvasOf, type Layered, quarterTurnOf } from '../../src/domain/layerRecord'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by
  * writing it directly. */
 const STORAGE_KEY = 'openbeads:patterns'
-const STORED_VERSION = 4
+const STORED_VERSION = 5
 
 export interface FixtureOptions {
   technique: Technique
@@ -45,15 +46,14 @@ export function fixtureProject({
     grid[row]![column] = { color }
   }
 
+  const [canvas, frame] = framedGrid(grid, { technique, beadId: 'toho-cube-1.5mm' }).layers
   return {
     id: `fixture-${technique}`,
-    name: `Fixture ${technique}`,
-    technique,
-    beadId: 'toho-cube-1.5mm',
-    ...framedGrid(grid, { technique }),
-    rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress },
+    layers: [
+      { ...canvas, id: 'fixture-canvas', name: `Fixture ${technique}`, orientation: rotation },
+      { ...frame!, id: 'fixture-frame', rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } },
+    ],
     palette: defaultPaletteIds(),
-    rotation,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   }
@@ -70,12 +70,13 @@ export { STORAGE_KEY }
 // canvas is moved). The surface is the Canvas itself (ADR 0026): a bead sits at its displayed position, turned and
 // zoomed, less the scroll. Worked out from the Technique's geometry (the renderer's).
 export function beadCentre(
-  project: Pick<Project, 'technique' | 'rotation'>,
+  project: Layered | { technique: Technique; rotation: Rotation },
   box: { x: number; y: number; width: number; height: number },
   zoom: number,
   { row, column }: { row: number; column: number },
   scroll: { x: number; y: number } = { x: 0, y: 0 },
 ): { x: number; y: number } {
-  const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom, scroll }).beadToPoint({ row, column })
+  const { technique, rotation } = 'layers' in project ? { technique: canvasOf(project).technique, rotation: quarterTurnOf(project) } : project
+  const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })
   return { x: box.x + at.x, y: box.y + at.y }
 }

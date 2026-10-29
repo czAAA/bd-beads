@@ -3,6 +3,8 @@ import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
 import { type Technique } from '../domain/weave'
 import { createProject } from '../domain/createProject'
+import { findBead } from '../domain/beads'
+import { replaceBead } from '../domain/projectBead'
 import { weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
@@ -11,13 +13,16 @@ import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
+import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
+import { withLayers } from '../testUtils/layerFields'
+import { changeFrame } from '../domain/changeFrame'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
   const cells = Array.from({ length: 12 }, (_, index) => ({ row: Math.floor(index / 3), column: index % 3, color: '#e63746' }))
-  const frame = { ...weaveOf(project), technique, row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
-  return { ...project, technique, rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
+  const frame = { ...weaveOf(canvasOf(project)), technique, row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
+  return withLayers(project, { technique, orientation: rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
 }
 
 const view: Region = { x: 0, y: 0, width: 400, height: 400 }
@@ -36,7 +41,7 @@ const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknow
     .filter((call) => typeof call.fillStyle === 'object')
     .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
-function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme } = {}) {
+function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme } = {}) {
   const beads: BeadShape[] = []
   const { context, calls, named } = recordingContext()
   renderProject(context, {
@@ -46,6 +51,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
     zoom: extra.zoom ?? 1,
     rows: extra.rows,
     theme: extra.theme,
+    frameTheme: extra.frameTheme,
     drawBead: (_c, bead) => beads.push(bead),
   })
   return { beads, calls, named, context }
@@ -128,6 +134,58 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
   })
 })
 
+describe('the Frame on its own background (ticket 0666)', () => {
+  const canvasLook = PROJECT_THEMES.light
+  const frameLook: ProjectTheme = { ...PROJECT_THEMES.dark, canvas: '#3b3e43', background: '#3b3e43', positionMark: '#50545a', emptyBead: '#50545a' }
+  const whole = { x: -1000, y: -1000, width: 2000, height: 2000 }
+
+  it('fills the Frame\'s box in its background on the Canvas and draws its beads and marks in its look', () => {
+    const project = withLayers(framedProject('loom'), { beads: {} })
+    const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+
+    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    expect(fills).toHaveLength(1)
+    const [x, y, width, height] = fills[0]!.args as number[]
+    const corner = positionBoxPx({ technique: 'loom' }, 6, 5)
+    expect([x, y]).toEqual([corner.x - BEAD_GAP_PX / 2, corner.y - BEAD_GAP_PX / 2])
+    expect([width, height]).toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
+    expect(beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead && theme.background === frameLook.canvas)).toBe(true)
+    // Four strips round the margin's box in the Canvas's marks, and a fifth over the Frame in its own.
+    expect(markFills(named)).toHaveLength(5)
+  })
+
+  it('fills nothing more where the Frame is on the Canvas\'s background, and on its own fills its board', () => {
+    const project = framedProject('loom')
+    const alike = render(project, true, { region: whole, theme: canvasLook, frameTheme: { ...canvasLook } })
+    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string')).toHaveLength(0)
+
+    const alone = render(project, false, { theme: canvasLook, frameTheme: frameLook })
+    expect(alone.named('fillRect').some((call) => call.fillStyle === frameLook.background && call.args[2] === view.width)).toBe(true)
+    expect(alone.beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
+  })
+
+  it('fills the box a Frame in another Bead draws, at its own size (ticket 0665)', () => {
+    const project = withLayer(withLayers(framedProject('loom'), { beads: {} }), 'frame', { bead: findBead('miyuki-delica-11-0')! })
+    const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+
+    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    expect(fills).toHaveLength(1)
+    const [, , width, height] = fills[0]!.args as number[]
+    expect([width, height]).not.toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
+    expect(beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
+  })
+
+  it('draws a Custom frame\'s Off-shape in the Frame\'s background', () => {
+    const plain = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
+    const shaped = changeFrame(plain, { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
+    if (shaped.kind !== 'changed') throw new Error('expected a Triangle')
+    const { named } = render(shaped.project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+    expect(named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)).toHaveLength(1)
+    // Its Off-shape holds no position, so the box has no marks of its own.
+    expect(markFills(named)).toHaveLength(4)
+  })
+})
+
 describe('brick stitch inside a Frame', () => {
   it('draws no seam line between two rows, in either space', () => {
     const project = framedProject('brick')
@@ -141,7 +199,7 @@ describe('brick stitch inside a Frame', () => {
 describe('the Frame margin on the Canvas (ticket 276)', () => {
   it('fills no marks in the margin outside the Frame, leaving a flat gap, and runs them right up to the margin', () => {
     const project = framedProject('loom')
-    const { named } = render({ ...project, frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 500, height: 500 } })
+    const { named } = render(withLayers(project, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} } }), true, { region: { x: 0, y: 0, width: 500, height: 500 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
@@ -158,7 +216,7 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
     const frame = { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} }
     const drawn = (open: boolean, zoom = 1, withFrame = true) => {
       const project = framedProject('loom')
-      return render({ ...project, frame: withFrame ? frame : undefined }, open, { region: { x: 0, y: 0, width: 800, height: 800 }, zoom, theme })
+      return render(withLayers(project, { frame: withFrame ? frame : undefined }), open, { region: { x: 0, y: 0, width: 800, height: 800 }, zoom, theme })
     }
     const strokedIn = (calls: ReturnType<typeof drawn>['calls'], color: string) => calls.filter((call) => call.name === 'stroke' && call.strokeStyle === color)
     const roundRects = (calls: ReturnType<typeof drawn>['calls']) => calls.filter((call) => call.name === 'roundRect').map(({ args }) => args)
@@ -191,7 +249,15 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
       // At 40% the band is 32px, folded: the paper keeps its color and its edge, with no inner border.
       expect(strokedIn(drawn(true, 0.4).calls, '#abcdef')).toHaveLength(0)
       expect(strokedIn(drawn(true, 0.4).calls, '#fedcba')).toHaveLength(1)
-      expect(drawn(true, 0.1).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
+    })
+
+    it('is not drawn at all under a 31px band, where only its Move bar is left (ticket 0682)', () => {
+      // At 38% the band is 30.4px: no paper, no edge, no inner border.
+      for (const zoom of [0.38, 0.25, 0.1]) {
+        const { calls } = drawn(true, zoom)
+        expect(calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#fedcba' || call.strokeStyle === '#abcdef'), `${zoom}`).toBe(false)
+      }
+      expect(drawn(true, 0.39).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
     })
 
     it('is never drawn in an export, which draws the Frame on its own, nor with no Frame', () => {
@@ -201,7 +267,7 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
 
     it('is white with a black edge in high contrast', () => {
       const project = framedProject('loom')
-      const { calls } = render({ ...project, frame }, true, { region: { x: 0, y: 0, width: 800, height: 800 }, theme: PROJECT_THEMES.contrast })
+      const { calls } = render(withLayers(project, { frame }), true, { region: { x: 0, y: 0, width: 800, height: 800 }, theme: PROJECT_THEMES.contrast })
       expect(calls.some((call) => call.name === 'fill' && call.fillStyle === '#ffffff')).toBe(true)
       expect(strokedIn(calls, '#000000').length).toBeGreaterThan(0)
     })
@@ -210,7 +276,7 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
 
 describe('Position marks cost one pattern fill, however far out', () => {
   it.each<Technique>(['loom', 'peyote', 'brick'])('is the same number of fills at the Zoom floor and at 100% (%s)', (technique) => {
-    const project = { ...framedProject(technique), frame: undefined }
+    const project = withLayers(framedProject(technique), { frame: undefined })
     const wide: Region = { x: 0, y: 0, width: 1600, height: 1000 }
 
     const floor = render(project, true, { region: wide, zoom: 0.1 })
@@ -222,7 +288,7 @@ describe('Position marks cost one pattern fill, however far out', () => {
   })
 
   it('draws only the Frame\'s cells and the painted beads in view, whatever the zoom', () => {
-    const project: Project = { ...framedProject('loom'), beads: withColors(framedProject('loom').beads, [{ row: 40, column: 40, color: '#00f' }, { row: 5000, column: 5000, color: '#00f' }]) }
+    const project: Project = withLayers(framedProject('loom'), { beads: withColors(beadsOfLayer(framedProject('loom'), 'canvas'), [{ row: 40, column: 40, color: '#00f' }, { row: 5000, column: 5000, color: '#00f' }]) })
     const wide: Region = { x: 0, y: 0, width: 1600, height: 1000 }
 
     const { beads } = render(project, true, { region: wide, zoom: 0.1 })
@@ -235,7 +301,7 @@ describe('Position marks cost one pattern fill, however far out', () => {
     (['loom', 'peyote', 'brick'] as const).flatMap((technique) => ([0, 90, 180, 270] as const).map((rotation) => ({ technique, rotation }))),
   )('draws the Frame\'s cells and the beads outside it once each: $technique at $rotation°', ({ technique, rotation }) => {
     const base = framedProject(technique, rotation)
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 30, column: 30, color: '#00f' }, { row: 20, column: 2, color: '#00f' }]) }
+    const project: Project = withLayers(base, { beads: withColors(beadsOfLayer(base, 'canvas'), [{ row: 30, column: 30, color: '#00f' }, { row: 20, column: 2, color: '#00f' }]) })
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
@@ -249,7 +315,7 @@ describe('Position marks tile', () => {
     const tile = recordingContext()
     // A tile is made on a canvas of its own (one per Technique): hand it the one that records.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
-    const project = { ...framedProject(technique), frame: undefined }
+    const project = withLayers(framedProject(technique), { frame: undefined })
     const { context } = recordingContext()
     renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51 })
     return tile
@@ -284,19 +350,19 @@ describe('Position marks tile', () => {
 
   it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
     const base = framedProject('loom')
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 2, column: 1, color: '#00f' }, { row: 13, column: 11, color: '#00f' }]) }
+    const project: Project = withLayers(base, { beads: withColors(beadsOfLayer(base, 'canvas'), [{ row: 2, column: 1, color: '#00f' }, { row: 13, column: 11, color: '#00f' }]) })
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
     expect(beads).toHaveLength(12)
-    expect(project.beads[2]?.[1]).toBe('#00f')
+    expect(beadsOfLayer(project, 'canvas')[2]?.[1]).toBe('#00f')
   })
 })
 
 /** The Frame woven in `frame` over a Canvas woven in `canvas`: 3 across, 4 down, at row 6, column 5, every position painted. */
 function mixedProject(canvas: Technique, frame: Technique): Project {
   const base = framedProject(canvas)
-  return { ...base, technique: canvas, frame: { ...base.frame!, technique: frame } }
+  return withLayers(base, { technique: canvas, frame: { ...frameOf(base)!, technique: frame } })
 }
 
 describe.each<{ canvas: Technique; frame: Technique }>([
@@ -334,11 +400,37 @@ describe.each<{ canvas: Technique; frame: Technique }>([
 
   it('hides the Canvas bead lying under the Frame, and draws the one beside it', () => {
     const base = mixedProject(canvas, frame)
-    const project = { ...base, beads: withColors({}, [{ row: 6, column: 5, color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) }
+    const project = withLayers(base, { beads: withColors({}, [{ row: 6, column: 5, color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) })
 
     const colors = render(project, true).beads.map(({ color }) => color)
 
     expect(colors).not.toContain('#111111')
     expect(colors).toContain('#222222')
+  })
+})
+
+describe('a Frame in a Bead of its own over the Canvas (ticket 0665)', () => {
+  /** The 3 by 4 loom Frame at row 6, column 5, in TOHO 15/0 over a TOHO 8/0 Canvas: half as wide. */
+  function halfSize(): Project {
+    const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 3, height: 4, unit: 'beads' } })
+    const framed = withLayers(base, { frame: { ...frameOf(framedProject('loom'))!, beadId: base.layers[0].beadId } })
+    return replaceBead(framed, findBead('toho/round/15-0')!)
+  }
+
+  it('draws the Frame from its corner at its own Bead\'s size: its beads at their own place, scaled by it', () => {
+    const { beads, named } = render(halfSize(), true)
+    const origin = positionBoxPx({ technique: 'loom' }, 6, 5)
+    expect(named('translate').map(({ args }) => args)).toContainEqual([origin.x, origin.y])
+    expect(named('scale').map(({ args }) => args)).toEqual([[0.5, 0.5]])
+    expect(beads.filter(({ color }) => color !== null).slice(0, 2).map(({ x, y }) => ({ x, y }))).toEqual([{ x: 0, y: 0 }, { x: CELL_SIZE_PX, y: 0 }])
+  })
+
+  it('makes its bead bitmaps at the size they are on screen', () => {
+    const { beads } = render(halfSize(), true, { zoom: 2 })
+    expect(beads.find(({ color }) => color !== null)!.deviceScale).toBe(1)
+  })
+
+  it('draws it unscaled on its own, as an export does', () => {
+    expect(render(halfSize(), false).named('scale')).toEqual([])
   })
 })

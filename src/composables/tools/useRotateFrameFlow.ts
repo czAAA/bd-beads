@@ -2,6 +2,7 @@ import { rotateFrame } from '../../domain/rotate'
 import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 import type { EditFn } from '../project/useEdit'
+import { frameOf } from '../../domain/layerRecord'
 
 /** What Rotate Frame needs from the app shell: the Edit path, the open Project and the announcer. */
 export interface RotateFrameFlowDeps {
@@ -16,7 +17,7 @@ export interface RotateFrameFlowDeps {
  * Canvas under it is not touched, so there is nothing to say was covered. */
 export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   function onRotateFrame(): void {
-    if (!deps.currentProject()?.frame) {
+    if (!frameOf(deps.currentProject())) {
       return
     }
     deps.edit('exempt', (project) => rotateFrame(project) ?? project)

@@ -3,9 +3,8 @@ import { frameShapeOf } from './frameShape'
 import type { GridDimensions } from './grid'
 import { turnedGridSize } from './layerGeometry'
 import { frameWeave } from './layerWeave'
-import type { Project } from './project'
-import type { ShapedBead } from './projectBead'
 import type { Weave } from './weave'
+import { type Layered, frameOf } from './layerRecord'
 
 // A Frame's orientation (ADR 0079, ticket 0667): Rotate Frame turns the Frame on the Canvas like a sheet of A4 on an A1.
 // Its beads keep their own rows and columns; what turns is the rectangle it covers on the Canvas, which this says.
@@ -31,8 +30,8 @@ export function laidRect(frame: Rect & Oriented): Rect {
 
 /** The rectangle the Project's Frame covers on the Canvas as it lies (see `laidRect`), in its Weave with the Bead
  * shape's cell; none without a Frame. */
-export function laidFrame(project: Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & ShapedBead): Rect | undefined {
-  const frame = project.frame
+export function laidFrame(project: Layered): Rect | undefined {
+  const frame = frameOf(project)
   if (!frame?.quarterTurns) return frame
   return laidRect({ ...frame, ...frameWeave(project) })
 }

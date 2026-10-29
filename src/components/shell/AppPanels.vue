@@ -13,6 +13,7 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { usePanelsContext } from '../../composables/shell/useAppShell'
+import { frameOf } from '../../domain/layerRecord'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
 const {
@@ -33,12 +34,11 @@ const {
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
-  onSetCanvasTechnique,
   onSetWeaveSetting,
   onSetBeadShape,
+  onSetBackground,
   onFitFrame,
   onSelectFrame,
-  replaceBeadCandidates,
   onRequestReplaceBead,
   onImportProjects,
   exporting,
@@ -98,6 +98,11 @@ const chosenStarter = ref<StarterId>()
       @set-letters="onSetLetters"
       @key="onFrameKey"
       @set-settings="onSetFrameSettings"
+      @set-technique="onSetTechnique"
+      @set-weave-setting="onSetWeaveSetting"
+      @set-bead-shape="onSetBeadShape"
+      @set-background="onSetBackground"
+      @replace-bead="onRequestReplaceBead"
     />
     <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
       its Frame on the open Project. -->
@@ -113,7 +118,7 @@ const chosenStarter = ref<StarterId>()
     </template>
     <template #footer="{ depth }">
       <AppButton v-if="depth === 3" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
-        {{ activeProject.frame ? t.frame.replaceFrame : t.frame.addFrameButton }}
+        {{ frameOf(activeProject) ? t.frame.replaceFrame : t.frame.addFrameButton }}
       </AppButton>
     </template>
   </PanelHost>
@@ -160,14 +165,13 @@ const chosenStarter = ref<StarterId>()
     <ProjectPanel
       v-else-if="activeProject"
       :project="activeProject"
-      :replace-candidates="replaceBeadCandidates"
       :save-failed="saveFailed"
       :unsaved="unsaved"
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
-      @set-canvas-technique="onSetCanvasTechnique"
       @set-weave-setting="onSetWeaveSetting"
       @set-bead-shape="onSetBeadShape"
+      @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"
       @export-project-file="onExportProjectFile"

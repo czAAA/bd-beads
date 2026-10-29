@@ -1,9 +1,9 @@
 import { findBead } from '../domain/beads'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
-import { withColors } from '../domain/canvas'
+import { type BeadMap, withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { weaveOf } from '../domain/layerWeave'
+import { MARGIN } from '../domain/margin'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
@@ -11,6 +11,8 @@ import { renderProject as renderInSpace, visibleBeads, type RenderInput } from '
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../domain/layerRecord'
+import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
@@ -28,17 +30,17 @@ function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = f
   return beads
 }
 
-function projectOf(technique: Technique, columns: number, rows: number, extra: Partial<Project> & { grid?: Grid } = {}): Project {
+function projectOf(technique: Technique, columns: number, rows: number, extra: LayersChange & { grid?: Grid } = {}): Project {
   const { grid, ...rest } = extra
   // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
-  const made = { ...createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
+  const made = withLayers(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), rest)
   // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
-  const project = made.frame && !rest.frame ? { ...made, frame: { ...made.frame, ...weaveOf(made) } } : made
+  const project = frameOf(made) && !rest.frame ? withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project
 }
 
 const whole = (project: Project, zoom = 1): Region => {
-  const { width, height } = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, quarterTurnOf(project))
   return { x: 0, y: 0, width, height }
 }
 
@@ -218,7 +220,7 @@ describe('renderProject', () => {
   describe('rotated a quarter clockwise (90°)', () => {
     // 3 columns × 2 rows loom, turned on its side: displayed 40 wide × 60 tall.
     const project = projectOf('loom', 3, 2, {
-      rotation: 90,
+      orientation: 90,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
@@ -248,7 +250,7 @@ describe('renderProject', () => {
     })
 
     it('draws all the same beads as the unrotated Project', () => {
-      const upright = { ...project, rotation: 0 as const }
+      const upright = withLayers(project, { orientation: 0 as const })
 
       expect(beadsDrawn(project, whole(project))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -257,7 +259,7 @@ describe('renderProject', () => {
   describe('upside down (180°, ticket 171)', () => {
     // 3 columns × 2 rows loom, turned upside down: displayed 60 wide × 40 tall, same as unrotated.
     const project = projectOf('loom', 3, 2, {
-      rotation: 180,
+      orientation: 180,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
@@ -280,7 +282,7 @@ describe('renderProject', () => {
     })
 
     it('draws all the same beads as the unrotated Project', () => {
-      const upright = { ...project, rotation: 0 as const }
+      const upright = withLayers(project, { orientation: 0 as const })
 
       expect(beadsDrawn(project, whole(project))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -289,7 +291,7 @@ describe('renderProject', () => {
   describe('rotated a quarter counterclockwise (270°, ticket 171)', () => {
     // 3 columns × 2 rows loom, turned the other way on its side: displayed 40 wide × 60 tall.
     const project = projectOf('loom', 3, 2, {
-      rotation: 270,
+      orientation: 270,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
@@ -312,7 +314,7 @@ describe('renderProject', () => {
     })
 
     it('draws all the same beads as the unrotated Project', () => {
-      const upright = { ...project, rotation: 0 as const }
+      const upright = withLayers(project, { orientation: 0 as const })
 
       expect(beadsDrawn(project, whole(project))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -360,12 +362,12 @@ describe('renderProject', () => {
 
     /** Every cell of a Frame at the origin holds a red bead. */
     const filled = (project: Project): Project => {
-      const frame = project.frame!
-      const beads: Project['beads'] = {}
+      const frame = frameOf(project)!
+      const beads: BeadMap = {}
       for (let row = 0; row < frame.rows; row += 1) {
         beads[row] = Object.fromEntries(Array.from({ length: frame.columns }, (_, column) => [column, '#e63746']))
       }
-      return { ...project, frame: { ...frame, beads } }
+      return withLayers(project, { frame: { ...frame, beads } })
     }
 
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
@@ -480,7 +482,7 @@ describe('drawing only some rows again', () => {
   })
 
   it('turns the band with the Project: rows are columns of the surface when it is rotated', () => {
-    const project = projectOf('loom', 4, 10, { rotation: 90 })
+    const project = projectOf('loom', 4, 10, { orientation: 90 })
     const { context, named } = recordingContext()
 
     renderProject(context, { project, region: whole(project), zoom: 1, rows: { first: 3, last: 4 } })
@@ -804,7 +806,7 @@ describe('the keep-out margin on the Canvas', () => {
   it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
     const frame = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
     // A bead in the row just above the margin (row 15, the margin being rows 16 to 27): its bottom 5px lies inside the margin's outline.
-    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 15: { 22: '#ff0000' } } }
+    const project = withLayers(projectOf('peyote', 4, 4), { frame: { ...frame, beads: {} }, beads: { 15: { 22: '#ff0000' } } })
 
     const cutOut = drawnWithMarginCutOut(project, [16 * 20, 16 * 15, 12 * 20 + 10, 11 * 15 + 20])
 
@@ -816,11 +818,10 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
   /** A 3 x 2 Frame at row 20, column 20 holding red in its first bead, over a Canvas with blue under the Frame and green beyond it. */
   function layered(): Project {
     const base = projectOf('loom', 3, 2)
-    return {
-      ...base,
-      frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
+    return withLayers(base, {
+frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
       beads: { 20: { 21: '#0000ff' }, 40: { 40: '#00ff00' } },
-    }
+})
   }
   const drawnOnCanvas = (project: Project): BeadShape[] => {
     const beads: BeadShape[] = []
@@ -856,18 +857,15 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
 describe('Bead shape (ADR 0068)', () => {
   const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
-  const painted = (project: Project): Project => ({
-    ...project,
-    frame: { ...project.frame!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) },
-  })
+  const painted = (project: Project): Project => (withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) } }))
 
   it('draws the Symmetric cell exactly as the Technique had it', () => {
     const project = painted(projectOf('peyote', 3, 3))
-    expect(drawnBeads({ ...project, beadShape: 'symmetric' })).toEqual(drawnBeads(project))
+    expect(drawnBeads(withLayers(project, { beadShape: 'symmetric' }))).toEqual(drawnBeads(project))
   })
 
   it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
-    const real = { ...painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), beadShape: 'real' as const }
+    const real = withLayers(painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), { beadShape: 'real' })
     const beads = drawnBeads(real)
     expect(beads).toHaveLength(9)
     for (const bead of beads) {
@@ -889,5 +887,104 @@ describe('a round Bead in Real shape is a pill (ADR 0068)', () => {
     const radii = calls.filter((call) => call.name === 'roundRect').map((call) => call.args[4])
     expect(radii.length).toBeGreaterThan(0)
     for (const radius of radii) expect(radius as number).toBeLessThanOrEqual(10)
+  })
+})
+
+describe('the draft look zoomed out (ticket 0676)', () => {
+  /** Scratch canvases standing in for the ones a browser makes: reads the images put on them so far, in order. */
+  function withDraftCanvas(): () => { width: number; height: number; data: Uint8ClampedArray }[] {
+    const scratch = recordingContext()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch.context as unknown as CanvasRenderingContext2D)
+    return () => scratch.named('putImageData').map((call) => call.args[0] as { width: number; height: number; data: Uint8ClampedArray })
+  }
+  afterEach(() => vi.restoreAllMocks())
+
+  /** A 100 × 100 Frame at row 100, column 100 over a 300 × 300 Canvas Piece of green, the Frame's first bead red. */
+  function framedPiece(technique: Technique): Project {
+    const base = projectOf(technique, 100, 100)
+    const green = Object.fromEntries(Array.from({ length: 300 }, (_row, row) => [row, Object.fromEntries(Array.from({ length: 300 }, (_cell, column) => [column, '#00ff00']))]))
+    return withLayers(base, { frame: { ...frameOf(base)!, technique, row: 100, column: 100, beads: { 0: { 0: '#ff0000' } } }, beads: green })
+  }
+  const SCREEN = { x: 0, y: 0, width: 1900, height: 1200 }
+
+  function drawn(project: Project, zoom: number, pixelRatio = 1, draftWhenSmall = true) {
+    const { context, named } = recordingContext()
+    let beads = 0
+    renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom, pixelRatio, rowMarks: false, draftWhenSmall, drawBead: () => (beads += 1) })
+    return { beads, images: named('drawImage') }
+  }
+
+  it('draws each layer as one image below 5 device px a bead, and bead by bead above it', () => {
+    withDraftCanvas()
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const project = framedPiece(technique)
+      // A bead 4 px across on the screen: one image for the Canvas and one for the Frame.
+      expect(drawn(project, 0.2)).toEqual({ beads: 0, images: [expect.anything(), expect.anything()] })
+      // The same zoom on a screen of twice the pixels: 8 px a bead, each its own.
+      expect(drawn(project, 0.2, 2).beads).toBeGreaterThan(10_000)
+      // An export, or anything else that does not ask for it, keeps every bead's look.
+      expect(drawn(project, 0.2, 1, false).beads).toBeGreaterThan(10_000)
+    }
+  })
+
+  it('lays each layer\'s image over its beads\' boxes, peyote\'s and brick\'s shifted rows half a bead across', () => {
+    const imagesSoFar = withDraftCanvas()
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const before = imagesSoFar().length
+      const { images: draws } = drawn(framedPiece(technique), 0.2)
+      const images = imagesSoFar().slice(before)
+      const step = beadStepPx({ technique })
+      const wide = technique === 'loom' ? 1 : 2
+      // The Canvas: its 300 rows from row 0, its columns from 0, a shifted row's room on the right.
+      const canvasImage = images[0]!
+      expect([canvasImage.width, canvasImage.height]).toEqual([300 * wide + (wide - 1), 300])
+      expect(draws[0]!.args.slice(1)).toEqual([0, 0, canvasImage.width, 300, 0, 0, (canvasImage.width * 20) / wide, 300 * step.down])
+      // The Frame: from its own first bead, red, at its place on the Canvas.
+      const frameImage = images[1]!
+      expect([frameImage.width, frameImage.height]).toEqual([100 * wide + (wide - 1), 100])
+      expect(draws[1]!.args.slice(5)).toEqual([100 * 20, 100 * step.down, (frameImage.width * 20) / wide, 100 * step.down])
+      expect([...frameImage.data.slice(0, 4)]).toEqual([255, 0, 0, 255])
+      // Row 1 is shifted on peyote and brick: its first bead starts a pixel in, half a bead.
+      const shifted = frameImage.width * 4 + (wide - 1) * 4
+      expect([...frameImage.data.slice(shifted, shifted + 4)]).toEqual([...frameImage.data.slice(frameImage.width * 4 * 2, frameImage.width * 4 * 2 + 4)])
+      if (wide === 2) expect(frameImage.data[frameImage.width * 4 + 3]).toBe(0)
+    }
+  })
+
+  it('lays each layer\'s kept image down again while only the view moves, and paints it afresh for an edited Project', () => {
+    const images = withDraftCanvas()
+    const project = framedPiece('peyote')
+    const at = (region: Region, drawnProject = project) => {
+      const { context, named } = recordingContext()
+      renderInSpace(context, { project: drawnProject, space: spaceOf(drawnProject, true), region, zoom: 0.2, rowMarks: false, draftWhenSmall: true })
+      return named('drawImage').length
+    }
+
+    expect(at(SCREEN)).toBe(2)
+    expect(at({ ...SCREEN, x: 300, y: -200 })).toBe(2)
+    expect(images()).toHaveLength(2)
+    expect(at({ ...SCREEN, x: 300 }, withLayers(project, { beads: { 0: { 0: '#0000ff' } } }))).toBe(2)
+    expect(images()).toHaveLength(4)
+  })
+
+  it('leaves the Canvas clear under the Frame and its margin, and draws the Frame\'s empty beads and finished rows as their look does', () => {
+    const images = withDraftCanvas()
+    const project = withLayers(framedPiece('loom'), { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+    const { context } = recordingContext()
+
+    renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom: 0.2, rowMarks: true, draftWhenSmall: true })
+
+    const [canvasImage, frameImage] = images()
+    const at = (image: typeof canvasImage, row: number, column: number) => [...image!.data.slice((row * image!.width + column) * 4, (row * image!.width + column) * 4 + 4)]
+    expect(at(canvasImage, 0, 0)).toEqual([0, 255, 0, 255])
+    expect(at(canvasImage, 150, 150)[3]).toBe(0)
+    expect(at(canvasImage, 100 - MARGIN, 150)[3]).toBe(0)
+    expect(at(canvasImage, 100 - MARGIN - 1, 150)).toEqual([0, 255, 0, 255])
+    // Row 0 is finished: its red faded toward the drawing area. Row 1 is the current one: its empty beads as empty beads.
+    const look = { ...DEFAULT_THEME, background: DEFAULT_THEME.canvas }
+    const hex = (color: string) => [1, 3, 5].map((at) => parseInt(color.slice(at, at + 2), 16))
+    const rgb = (color: string) => color.match(/\d+/g)!.map(Number)
+    expect(at(frameImage, 0, 0)).toEqual([...rgb(fadeOver('#ff0000', look.background, look.finished.opacity)), 255])
+    expect(at(frameImage, 1, 0)).toEqual([...hex(DEFAULT_THEME.emptyBead), 255])
   })
 })

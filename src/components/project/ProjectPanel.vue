@@ -1,36 +1,33 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { beadLabel, type Bead } from '../../domain/beads'
-import { layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
-import type { Project } from '../../domain/project'
+import type { Background, Project } from '../../domain/project'
 import type { BeadShape, Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
-import CanvasSection from './CanvasSection.vue'
-import BeadSection from './BeadSection.vue'
+import LayerSettings from './LayerSettings.vue'
 import ProjectHead from './ProjectHead.vue'
+import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
-// The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): everything about the open Project that no tool
-// already does. A head (title with the save state, name, maker, Technique), then four sections that fold shut: bead,
-// canvas, export and this project. It only asks; the app shell does the work (Picture and chart: Frame panel, ticket 555).
+// The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): everything about the open Project that no
+// tool already does. A head (title with the save state, name, maker), then three sections that fold shut: the Canvas's
+// Layer settings, export and this project. It only asks; the app shell does the work (the Frame's: Frame panel).
 const props = defineProps<{
   project: Project
-  /** What the Project could switch to (ticket 48). */
-  replaceCandidates: readonly Bead[]
   saveFailed: boolean
   unsaved: boolean
 }>()
 const emit = defineEmits<{
   rename: [name: string]
-  'set-technique': [technique: Technique]
-  'set-canvas-technique': [technique: Technique]
+  /** The Canvas's Layer settings (ticket 0670), each naming its layer as the Frame panel's do. */
+  'set-technique': [layer: Layer, technique: Technique]
   'set-weave-setting': [layer: Layer, id: string, value: number]
-  'set-bead-shape': [shape: BeadShape]
-  'replace-bead': [beadId: string]
+  'set-bead-shape': [layer: Layer, shape: BeadShape]
+  'set-background': [layer: Layer, background: Background]
+  'replace-bead': [layer: Layer, beadId: string]
   save: []
   'export-project-file': []
   'save-maker-name': [name: string]
@@ -40,26 +37,15 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const canvas = useCanvasBackground()
+const backgrounds = useCanvasBackground(() => props.project)
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const file = controlAction('export-project-file')
 
-/** The Canvas's Bead and Bead shape (ADR 0079), which the Frame shares until ticket 0665. */
-const canvasLayer = computed(() => layerOf(props.project, 'canvas'))
-
-const beadSummary = computed(() => {
-  const { bead, beadShape } = canvasLayer.value
-  const shape = beadShape === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric
-  return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
-})
-
-const canvasName = computed(() => {
-  const background = canvas.background.value
-  if (!background) return undefined
-  return background.id === 'custom' ? t.value.palette.customColorLabel : t.value.canvas.canvasColor.names[background.id]
-})
+const canvas = computed(() => layerSettingsOf(props.project, 'canvas'))
+/** The folded Canvas section's summary: its Technique and Bead. */
+const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
 </script>
 
 <template>
@@ -71,26 +57,19 @@ const canvasName = computed(() => {
       @rename="emit('rename', $event)"
       @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"
-      @set-technique="emit('set-technique', $event)"
-      @set-canvas-technique="emit('set-canvas-technique', $event)"
-      @set-weave-setting="(layer, id, value) => emit('set-weave-setting', layer, id, value)"
     />
 
-    <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
-      <BeadSection
-        :bead="canvasLayer.bead"
-        :bead-shape="canvasLayer.beadShape"
-        :candidates="replaceCandidates"
-        @update:bead-shape="emit('set-bead-shape', $event)"
-        @pick="emit('replace-bead', $event)"
+    <PanelSection id="project:canvas" :label="t.panels.project.canvas" :summary="canvasSummary">
+      <LayerSettings
+        v-bind="canvas"
+        :background="backgrounds.shownOf('canvas').background"
+        testid="canvas"
+        @set-technique="emit('set-technique', 'canvas', $event)"
+        @set-setting="(id, value) => emit('set-weave-setting', 'canvas', id, value)"
+        @pick-bead="emit('replace-bead', 'canvas', $event)"
+        @set-bead-shape="emit('set-bead-shape', 'canvas', $event)"
+        @set-background="emit('set-background', 'canvas', $event)"
       />
-    </PanelSection>
-
-    <PanelSection id="project:canvas" :label="t.panels.project.canvas" :summary="canvasName">
-      <template v-if="canvas.background.value" #summary>
-        <span class="project-panel__chip" :style="{ backgroundColor: canvas.background.value.color }" aria-hidden="true" />{{ canvasName }}
-      </template>
-      <CanvasSection />
     </PanelSection>
 
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
@@ -114,15 +93,5 @@ const canvasName = computed(() => {
 
 .project-panel > :deep(.panel-section:first-of-type) {
   margin-top: var(--space-4);
-}
-
-.project-panel__chip {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: var(--space-6);
-  vertical-align: -1px;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 </style>

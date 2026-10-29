@@ -348,6 +348,7 @@ export const es: Translations = {
     hexLabel: 'Color hexadecimal',
     hexInvalid: 'Escribe un color como #1a2b3c.',
     previewLabel: 'Color nuevo',
+    addToPalette: 'Añadir {hex} a la paleta',
     pickFromCanvasLabel: 'Elegir color del lienzo',
     removed: 'Color quitado de la paleta.',
     removeSwatch: 'Quitar {hex} de la paleta',
@@ -606,6 +607,7 @@ export const es: Translations = {
     lettersLabel: 'Letras',
     lettersLine: 'Imprime la letra de cada color en sus cuentas, para distinguir los colores en papel y en blanco y negro.',
     lettersInfoLabel: 'Para qué sirven las Letras',
+    background: { label: 'Fondo del marco' },
     margin: {
       heading: 'Margen',
       colorLabel: 'Color del margen',
@@ -858,6 +860,8 @@ export const es: Translations = {
     confirmTitle: '¿Reemplazar la cuenta?',
     confirmMessage:
       'Con {bead}, este proyecto medirá unos {new} en lugar de {old}. Tu diseño y su recuento de cuentas se quedan exactamente igual. Puedes deshacerlo.',
+    canvasMessage:
+      'Con {bead}, el lienzo se dibuja al tamaño de esa cuenta. El marco conserva su propia cuenta, así que su tamaño y su recuento de cuentas se quedan exactamente igual. Puedes deshacerlo.',
     confirmButton: 'Reemplazar cuenta',
     outdatedPostfix: '(como se guardó)',
     cancelButton: 'Cancelar',
@@ -935,5 +939,9 @@ export const es: Translations = {
     remapColor: 'Elige el color de cuenta en que se convierte este color de la imagen.',
     emptyColor: 'Quita este color: sus cuentas quedan vacías.',
     list: (names) => `${names.join(', ')}.`,
+  },
+  layerSettings: {
+    frameHeading: 'Ajustes',
+    background: 'Fondo',
   },
 }

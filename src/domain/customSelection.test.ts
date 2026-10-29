@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { beadCount, colorAt, withColors } from './canvas'
+import { beadCount, colorAt, type FrameSheet, withColors } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { cellOfBead } from './customSelection'
 import { customFrameSize, frameLayoutOf, type FrameShapeId } from './frameShape'
@@ -13,12 +13,14 @@ import { paintCells } from './drawing'
 import type { Project } from './project'
 import { rotateFrame, rotateLayerSelection } from './rotate'
 import { copyLayerSelection, paintLayerSelection, pasteLostCount, pasteOnLayer, pastedCellsOnLayer, selectAllSelection, type Selection } from './selection'
+import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
 
 const open = (): Project => {
-  const { frame: _frame, ...project } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+  const project = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
   return project
 }
 
@@ -35,13 +37,13 @@ const paintFrame = (project: Project, positions: { row: number; column: number }
   onLayer(project, 'frame', (view) => paintCells(view, positions, color))
 
 /** Every position of the Frame's layout, by name. */
-const allPositions = (project: Project) => frameLayoutOf(project.frame!)!.positions.map(({ row, column }) => ({ row, column }))
+const allPositions = (project: Project) => frameLayoutOf(frameOf(project)!)!.positions.map(({ row, column }) => ({ row, column }))
 
 /** The Selection Select all makes over the Frame. */
-const everything = (project: Project): Selection => selectAllSelection(project.beads, project.frame)!
+const everything = (project: Project): Selection => selectAllSelection(beadsOfLayer(project, 'canvas'), frameOf(project))!
 
 /** A Selection of the Frame's cells, counted from its first row and column. */
-const ofFrame = (project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top: project.frame!.row + top, left: project.frame!.column + left, rows, columns, layer: 'frame' })
+const ofFrame = (project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top: frameOf(project)!.row + top, left: frameOf(project)!.column + left, rows, columns, layer: 'frame' })
 
 /** The Canvas cell a Paste aims at to land its anchor on a bead of the Frame. */
 const aimedAt = (project: Project, bead: { row: number; column: number }) => ({ ...positionOnCanvas(project, 'frame', cellOfBead(layerSheet(project, 'frame'), bead)), layer: 'frame' as const })
@@ -50,16 +52,16 @@ describe('a Selection over a Custom frame (ticket 0594)', () => {
   it('fills and clears every bead of the shape when it holds the whole Frame, from any panel', () => {
     const project = custom('triangle', 4)
     const filled = paintLayerSelection(project, everything(project), RED)
-    expect(beadCount(filled.frame!.beads)).toBe(allPositions(project).length)
-    expect(beadCount(paintLayerSelection(filled, everything(project), null).frame!.beads)).toBe(0)
+    expect(beadCount(frameOf(filled)!.beads)).toBe(allPositions(project).length)
+    expect(beadCount(frameOf(paintLayerSelection(filled, everything(project), null))!.beads)).toBe(0)
   })
 
   it('holds the beads whose centres lie in the rectangle on screen, and none outside it', () => {
     const project = custom('warpedSquare', 5)
-    const { rows, columns } = project.frame!
+    const { rows, columns } = frameOf(project)!
     const filled = paintLayerSelection(project, ofFrame(project, 0, 0, Math.floor(rows / 2), columns), RED)
-    const layout = frameLayoutOf(project.frame!)!
-    const painted = layout.positions.filter(({ row, column }) => colorAt(filled.frame!.beads, row, column) === RED)
+    const layout = frameLayoutOf(frameOf(project)!)!
+    const painted = layout.positions.filter(({ row, column }) => colorAt(frameOf(filled)!.beads, row, column) === RED)
     expect(painted.length).toBeGreaterThan(0)
     expect(painted.length).toBeLessThan(layout.positions.length)
     // The top half on screen: every painted bead above every bead left empty.
@@ -71,8 +73,8 @@ describe('a Selection over a Custom frame (ticket 0594)', () => {
 
 /** A Copy's anchor: its first painted bead in reading order on screen. */
 function anchorOf(project: Project) {
-  const layout = frameLayoutOf(project.frame!)!
-  return layout.positions.filter(({ row, column }) => colorAt(project.frame!.beads, row, column)).sort((a, b) => a.y - b.y || a.x - b.x)[0]!
+  const layout = frameLayoutOf(frameOf(project)!)!
+  return layout.positions.filter(({ row, column }) => colorAt(frameOf(project)!.beads, row, column)).sort((a, b) => a.y - b.y || a.x - b.x)[0]!
 }
 
 describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
@@ -85,7 +87,7 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
     expect(block.points).toHaveLength(5)
     const cleared = paintLayerSelection(project, everything(project), null)
     const pasted = pasteOnLayer(cleared, block, aimedAt(project, anchorOf(project)))
-    expect(pasted.frame!.beads).toEqual(project.frame!.beads)
+    expect(frameOf(pasted)!.beads).toEqual(frameOf(project)!.beads)
     expect(pasteLostCount(cleared, block, aimedAt(project, anchorOf(project)))).toEqual({ count: 0, loss: 'shape' })
   })
 
@@ -93,12 +95,12 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
     const project = painted()
     const block = copyLayerSelection(project, everything(project))!
     // Aimed at the Frame's top left corner, Off-shape: the block's beads reach past the shape.
-    const corner = { row: project.frame!.row, column: project.frame!.column, layer: 'frame' as const }
+    const corner = { row: frameOf(project)!.row, column: frameOf(project)!.column, layer: 'frame' as const }
     const lost = pasteLostCount(project, block, corner)
     expect(lost.loss).toBe('shape')
     expect(lost.count).toBeGreaterThan(0)
     const pasted = pasteOnLayer(paintLayerSelection(project, everything(project), null), block, corner)
-    expect(beadCount(pasted.frame!.beads)).toBe(5 - lost.count)
+    expect(beadCount(frameOf(pasted)!.beads)).toBe(5 - lost.count)
   })
 
   it('previews the beads a Paste would put down, by the Frame\'s own names', () => {
@@ -114,15 +116,15 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
     const project = painted()
     const block = copyLayerSelection(project, everything(project))!
     const onCanvas = pasteOnLayer(project, block, { row: 100, column: 100 })
-    expect(beadCount(onCanvas.beads)).toBe(5)
+    expect(beadCount(beadsOfLayer(onCanvas, 'canvas'))).toBe(5)
 
     // Two beads side by side on the loom Canvas, pasted on a Warped Square's straight side away from its Seams.
     const square = custom('warpedSquare', 5)
-    const canvasPainted = { ...square, beads: withColors({}, [{ row: 100, column: 100, color: RED }, { row: 100, column: 101, color: BLUE }]) }
+    const canvasPainted = withLayers(square, { beads: withColors({}, [{ row: 100, column: 100, color: RED }, { row: 100, column: 101, color: BLUE }]) })
     const fromCanvas = copyLayerSelection(canvasPainted, { top: 100, left: 100, rows: 1, columns: 2, layer: 'canvas' })!
     const landed = pasteOnLayer(square, fromCanvas, aimedAt(square, { row: 3, column: 1 }))
-    expect(beadCount(landed.frame!.beads)).toBe(2)
-    expect(colorAt(landed.frame!.beads, 3, 1)).toBe(RED)
+    expect(beadCount(frameOf(landed)!.beads)).toBe(2)
+    expect(colorAt(frameOf(landed)!.beads, 3, 1)).toBe(RED)
   })
 })
 
@@ -131,10 +133,10 @@ describe('Rotate on a Custom frame (ticket 0594)', () => {
     const project = paintFrame(custom('warpedSquare', 4), [{ row: 3, column: 0 }, { row: 3, column: 1 }, { row: 1, column: 2 }], RED)
     const turned = rotateLayerSelection(project, everything(project))
     expect(turned.dropped).toBe(0)
-    expect(beadCount(turned.project.frame!.beads)).toBe(3)
-    const rounds = (beads: Project['frame']) => allPositions(project).filter(({ row, column }) => colorAt(beads!.beads, row, column)).map(({ row }) => row).sort()
-    expect(rounds(turned.project.frame)).toEqual([1, 3, 3])
-    expect(turned.project.frame!.beads).not.toEqual(project.frame!.beads)
+    expect(beadCount(frameOf(turned.project)!.beads)).toBe(3)
+    const rounds = (beads: FrameSheet | undefined) => allPositions(project).filter(({ row, column }) => colorAt(beads!.beads, row, column)).map(({ row }) => row).sort()
+    expect(rounds(frameOf(turned.project))).toEqual([1, 3, 3])
+    expect(frameOf(turned.project)!.beads).not.toEqual(frameOf(project)!.beads)
     expect(turned.selection.layer).toBe('frame')
   })
 
@@ -142,7 +144,7 @@ describe('Rotate on a Custom frame (ticket 0594)', () => {
     const project = paintFrame(custom('triangle', 6), allPositions(custom('triangle', 6)).filter(({ row }) => row >= 4), RED)
     const turned = rotateLayerSelection(project, everything(project))
     expect(turned.dropped).toBeGreaterThan(0)
-    expect(beadCount(turned.project.frame!.beads) + turned.dropped).toBe(beadCount(project.frame!.beads))
+    expect(beadCount(frameOf(turned.project)!.beads) + turned.dropped).toBe(beadCount(frameOf(project)!.beads))
   })
 })
 
@@ -150,8 +152,8 @@ describe('Rotate Frame on a Custom frame (ticket 0594)', () => {
   it('turns the layout a quarter with its beads, swapping its sides round the same centre', () => {
     const project = paintFrame(custom('kite', 12), [{ row: 4, column: 0 }], RED)
     const turned = rotateFrame(project)!
-    const before = project.frame!
-    const after = turned.frame!
+    const before = frameOf(project)!
+    const after = frameOf(turned)!
     expect(after).toMatchObject({ shape: 'kite', quarterTurns: 1, beads: before.beads })
     expect({ rows: after.rows, columns: after.columns }).toEqual(customFrameSize('kite', { rows: 12 }, 1))
     const turnedLayout = frameLayoutOf(after)!
@@ -167,8 +169,8 @@ describe('Rotate Frame on a Custom frame (ticket 0594)', () => {
     const once = rotateFrame(project)!
     expect(parseProjectsFile(serializeProject(once)).projects).toEqual([once])
     const four = [1, 2, 3].reduce((turned) => rotateFrame(turned)!, once)
-    expect(four.frame!.quarterTurns).toBeUndefined()
-    expect({ rows: four.frame!.rows, columns: four.frame!.columns }).toEqual({ rows: project.frame!.rows, columns: project.frame!.columns })
+    expect(frameOf(four)!.quarterTurns).toBeUndefined()
+    expect({ rows: frameOf(four)!.rows, columns: frameOf(four)!.columns }).toEqual({ rows: frameOf(project)!.rows, columns: frameOf(project)!.columns })
   })
 })
 
@@ -176,14 +178,14 @@ describe('Row progress on a Custom frame (ticket 0594)', () => {
   it('locks the finished rounds against drawing, and holds the Frame still once a pass is done', () => {
     const project = moveToRow(custom('triangle', 4), 1)
     expect(rowProgressStarted(project)).toBe(true)
-    const frame = project.frame!
+    const frame = frameOf(project)!
     expect(isInFinishedRow(project, { row: frame.row, column: frame.column + 2, layer: 'frame' })).toBe(true)
     expect(isInFinishedRow(project, { row: frame.row + 1, column: frame.column + 2, layer: 'frame' })).toBe(false)
     // A place past the Frame's columns is still a bead of round 3.
     expect(isInFinishedRow(moveToRow(project, 4), { row: frame.row + 3, column: frame.column + 11, layer: 'frame' })).toBe(true)
     const painted = paintFrame(project, [{ row: 0, column: 1 }, { row: 2, column: 1 }], RED)
     const kept = keepFinishedRows(project, painted)
-    expect(colorAt(kept.frame!.beads, 0, 1)).toBeNull()
-    expect(colorAt(kept.frame!.beads, 2, 1)).toBe(RED)
+    expect(colorAt(frameOf(kept)!.beads, 0, 1)).toBeNull()
+    expect(colorAt(frameOf(kept)!.beads, 2, 1)).toBe(RED)
   })
 })

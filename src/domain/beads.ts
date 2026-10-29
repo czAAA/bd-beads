@@ -204,6 +204,12 @@ export function beadCopy(bead: Bead): Bead {
   return { ...copy, brand: { id: bead.brand.id, name: bead.brand.name } }
 }
 
+/** What a layer's Bead could switch to (tickets 48, 534, 0670): everything offered but its own, and the catalog's current
+ * Bead of its id when its copy has gone out of date (ADR 0072). */
+export function replaceCandidates(own: Bead | undefined): Bead[] {
+  return offeredBeads().filter((bead) => bead.id !== own?.id || beadsDiffer(own, bead))
+}
+
 /** Whether two Beads of one id differ in anything that changes how a Project looks or weighs: footprint, correction,
  * Form factor outline and holes, and beads per kg. Names and labels do not count (ADR 0072). */
 export function beadsDiffer(a: Bead, b: Bead): boolean {

@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import { colorsOnPage, planWithKey } from './chartPageKey'
 import { planPrint } from './printPlan'
+import { bareProject } from '../testUtils/layerFields'
 
 // A 3-column, 2-row loom: red across the top row, blue below, with one green bead in the top left corner.
 const beads = { 0: { 0: '#00ff00', 1: '#ff0000', 2: '#ff0000' }, 1: { 0: '#0000ff', 1: '#0000ff', 2: '#0000ff' } }
-const project = (rotation: Rotation = 0) => ({ technique: 'loom' as const, rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 3, rows: 2, beads } })
+const project = (rotation: Rotation = 0) => bareProject({ technique: 'loom' as const, orientation: rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 3, rows: 2, beads } })
 
 describe('colorsOnPage: the color key of a chart page (tickets 579, 0585)', () => {
   it('lists every color of the one part', () => {
@@ -15,7 +16,7 @@ describe('colorsOnPage: the color key of a chart page (tickets 579, 0585)', () =
   })
 
   it('takes in the overlap, which is drawn on the page', () => {
-    const wideOf = (edge: number) => ({ technique: 'loom' as const, rotation: 0 as Rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 100, rows: 1, beads: { 0: Object.fromEntries(Array.from({ length: 100 }, (_, column) => [column, column < edge ? '#ff0000' : '#0000ff'])) } } })
+    const wideOf = (edge: number) => bareProject({ technique: 'loom' as const, orientation: 0 as Rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 100, rows: 1, beads: { 0: Object.fromEntries(Array.from({ length: 100 }, (_, column) => [column, column < edge ? '#ff0000' : '#0000ff'])) } } })
     const edge = planPrint(wideOf(0)).parts[1]!.firstAcross
     const wide = wideOf(edge)
     const [, second] = planPrint(wide).parts
@@ -35,7 +36,7 @@ describe('planWithKey: the key is as tall as the busiest chart page needs (ticke
   const palette = (count: number) => Array.from({ length: count }, (_, index) => `#${(index + 1).toString(16).padStart(2, '0')}0000`)
   const shapeOf = (count: number) => {
     const row = Object.fromEntries(palette(count).map((hex, column) => [column, hex]))
-    return { technique: 'loom' as const, rotation: 0 as Rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 20, rows: 10, beads: { 0: row } } }
+    return bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 20, rows: 10, beads: { 0: row } } })
   }
 
   it('gives one row for up to 6 colors, two up to 12 and three up to 18', () => {

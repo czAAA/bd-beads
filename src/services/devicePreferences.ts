@@ -2,7 +2,8 @@ import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } f
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
 import { type Handedness, type InputMode } from '../domain/inputMode'
-import { CANVAS_BACKGROUND_MAX, migratedChoice, type CanvasChoice, type MarginChoice } from '../rendering/canvasBackgrounds'
+import { BACKGROUND_POSITIONS } from '../domain/background'
+import { migratedChoice, type CanvasChoice, type MarginChoice } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/color'
@@ -51,7 +52,7 @@ export const PREFERENCES = {
     parse: (raw) => {
       if (raw === 'custom') return raw
       const choice = Number(raw)
-      return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
+      return Number.isInteger(choice) && choice >= 1 && choice <= BACKGROUND_POSITIONS ? choice : undefined
     },
     write: String,
     earlier: {
@@ -77,7 +78,7 @@ export const PREFERENCES = {
     parse: (raw) => {
       if (raw === 'auto' || raw === 'custom') return raw
       const choice = Number(raw)
-      return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
+      return Number.isInteger(choice) && choice >= 1 && choice <= BACKGROUND_POSITIONS ? choice : undefined
     },
     write: String,
   }),

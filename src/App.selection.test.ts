@@ -5,6 +5,7 @@ import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
+import { beadsOfLayer, frameOf } from './domain/layerRecord'
 
 beforeEach(() => {
   localStorage.clear()
@@ -169,7 +170,7 @@ describe('App select, copy and paste', () => {
     await pressBar(wrapper, 'frame')
     await flushPromises()
 
-    expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
+    expect(frameOf(loadProjects()[0])).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
   })
 
   it('Fill gives every position in the Selection the current colour (ticket 415)', async () => {
@@ -199,7 +200,7 @@ describe('App select, copy and paste', () => {
     // The new Project is a Canvas (ticket 342): the stamp lands at its first bead, with no Frame to count it in.
     await pressBead(wrapper, { row: 0, column: 0 })
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(newProject().beads[0]?.[0]).toBe('#e63746')
+    expect(beadsOfLayer(newProject(), 'canvas')[0]?.[0]).toBe('#e63746')
 
     // A Selection does not (making one drops the clipboard, so the two are never held at once): its bar goes with it.
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))

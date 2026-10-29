@@ -8,6 +8,8 @@ import type { Project } from '../../domain/project'
 import { changeFrame } from '../../domain/changeFrame'
 import { rotateFrame } from '../../domain/rotate'
 import { ru } from '../../i18n/ru'
+import { frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
@@ -54,7 +56,7 @@ describe('ProgressBar', () => {
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBe('true')
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBeUndefined()
 
-    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows) } })
+    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
   })
@@ -122,7 +124,7 @@ describe('ProgressBar', () => {
 
   it('shows the last row as the current one once every pass is done (ticket 411)', () => {
     const project = makeProject()
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows) } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
 
     expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('20/20')
   })
@@ -187,7 +189,7 @@ describe('ProgressBar', () => {
   })
 
   it('has no Row highlight while there is no Frame (ticket 474)', () => {
-    const wrapper = mount(ProgressBar, { props: { project: { ...makeProject(), frame: undefined } } })
+    const wrapper = mount(ProgressBar, { props: { project: withLayers(makeProject(), { frame: undefined }) } })
     expect(wrapper.find('[data-testid="progress-bar-highlight"]').exists()).toBe(false)
   })
 
@@ -204,7 +206,7 @@ describe('ProgressBar', () => {
 
 describe('ProgressBar with no Frame (ticket 233)', () => {
   function unframedProject(): Project {
-    const { frame: _frame, ...rest } = makeProject()
+    const rest = withFrameSheet(makeProject(), undefined)
     return rest
   }
 
@@ -220,7 +222,7 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     // Fit to drawing needs something drawn; with a bead it asks the app to frame it.
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(wrapper.emitted('fit-frame')).toBeUndefined()
-    await wrapper.setProps({ project: { ...unframedProject(), beads: { 0: { 0: '#e63746' } } } })
+    await wrapper.setProps({ project: withLayers(unframedProject(), { beads: { 0: { 0: '#e63746' } } }) })
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(wrapper.emitted('fit-frame')).toHaveLength(1)
   })

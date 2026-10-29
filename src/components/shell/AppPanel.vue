@@ -7,6 +7,7 @@ import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
+import { wouldRaiseKeyboard } from '../../composables/ui/touchKeyboard'
 
 // The shell Menu, Project and the Frame panel open in (spec 0440, tickets 443, 475; MenuPanel card): a dropdown under the
 // button on every device and screen size. Escape or a press outside closes it; focus returns to the button.
@@ -58,7 +59,7 @@ function goBack() {
   const testId = stack.value.pop()?.returnTestId
   void nextTick(() => {
     const row = testId ? panelEl.value?.querySelector<HTMLElement>(`[data-testid="${testId}"]`) : null
-    ;(row ?? focusables()[0])?.focus({ preventScroll: true })
+    focusUnlessKeyboard(row ?? focusables()[0])
   })
 }
 provide(PANEL_CONTEXT, { itemRole, close: () => emit('close'), openSub })
@@ -114,11 +115,17 @@ function focusables(): HTMLElement[] {
   return [...(panelEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
 }
 
+/** Focuses the control, or the panel itself where that would raise a touch keyboard: the tap that opened the panel lets
+ * the touch focus guard pass (ticket 0688). */
+function focusUnlessKeyboard(control: HTMLElement | null | undefined) {
+  ;(control && !wouldRaiseKeyboard(control) ? control : panelEl.value)?.focus({ preventScroll: true })
+}
+
 /** Focus on opening: the subpanel's first field (not its Back arrow), else the panel's first control. */
 function focusEntry() {
   const first = inSub.value ? subBodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) : focusables()[0]
   if (props.skipsFields) return void panelEl.value?.focus({ preventScroll: true })
-  ;(first ?? focusables()[0] ?? panelEl.value)?.focus({ preventScroll: true })
+  focusUnlessKeyboard(first ?? focusables()[0])
 }
 
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab is

@@ -98,6 +98,10 @@ export interface WeaveGeometry {
   center(position: GridPosition, cellWidth: number, cellHeight: number): CellCenter
   /** The positions that touch a position, for Fill; only those inside `bounds` when given. */
   neighbors(bounds: Rect | undefined, position: GridPosition): GridPosition[]
+  /** Which columns of `toRow`, the row above or below, a bead of `row` touches, as offsets from its own column (the
+   * cross-row part of `neighbors`; along a row a bead touches the next column either side). Fill floods by it a row
+   * span at a time (ticket 0677). */
+  reach(row: number, toRow: number): readonly [number, number]
   /** Whether the first line takes one pass and every later one two (peyote: even positions, then odd). */
   twoPasses: boolean
   /** Row progress's passes (tickets 347, 484, 487), lines counted from the Frame's first in weaving order. */

@@ -1,13 +1,12 @@
 import { beadsInFrame, beadsOver, beadsWithout, frameContains, shiftedBeads, type BeadMap, type Rect } from './canvas'
-import type { FlatWeave, SavedProject } from './flatWeave'
-import type { Project } from './project'
+import type { FlatProject, FlatWeave, SavedProject } from './flatWeave'
 
 // TEMPORARY (ADR 0066, ticket 489; on ticket 391's cleanup list, removed with the public release): a Project as file
 // and library version 3 stored it, when the Frame was a rectangle of the Canvas's own beads and the beads it covered
 // were kept in `coveredBeads`. Read only. `liftVersionThree` makes it the Project of today, looking identical.
 
 /** A Project as version 3 stored it: every bead on the one map, the Frame a bare rectangle. */
-export interface VersionThreeProject extends Omit<Project, 'frame'>, FlatWeave {
+export interface VersionThreeProject extends Omit<FlatProject, 'frame'>, FlatWeave {
   frame?: Rect
   /** Beads hidden under the Frame (ticket 476), now ordinary Canvas beads under it (ADR 0066). */
   coveredBeads?: BeadMap
@@ -15,7 +14,7 @@ export interface VersionThreeProject extends Omit<Project, 'frame'>, FlatWeave {
 
 /** Whether a stored Project is in the version 3 shape: a Frame that holds no beads of its own, or beads covered by one.
  * A Project with no Frame and nothing covered reads the same in both versions. */
-export function isVersionThree(project: Omit<Project, 'frame'> & { frame?: Rect & { beads?: unknown } }): project is VersionThreeProject {
+export function isVersionThree(project: Omit<FlatProject, 'frame'> & { frame?: Rect & { beads?: unknown } }): project is VersionThreeProject {
   return (project.frame !== undefined && project.frame.beads === undefined) || 'coveredBeads' in project
 }
 

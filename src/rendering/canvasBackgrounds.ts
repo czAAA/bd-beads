@@ -1,3 +1,4 @@
+import type { Background } from '../domain/project'
 import { BLACK, BLACK_WHITE_BALANCE, channelsOf, contrastRatio, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
 import type { ResolvedTheme } from '../theme/theme'
 import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
@@ -46,8 +47,24 @@ export function canvasBackgrounds(theme: ResolvedTheme): readonly ListedBackgrou
   return theme === 'dark' ? DARK : []
 }
 
-/** How many backgrounds the highest stored number can mean. */
-export const CANVAS_BACKGROUND_MAX = 5
+/** The choice and the Custom color, if any, a layer's Background is (ticket 0666). */
+export interface BackgroundPick {
+  choice: CanvasChoice
+  customColor?: string
+}
+
+/** A layer's Background as a pick: its position, or Custom with its color. */
+export function pickOf(background: Background): BackgroundPick {
+  return typeof background === 'number' ? { choice: background } : { choice: 'custom', customColor: background }
+}
+
+/** The first position in a theme's list, its default. */
+const FIRST_BACKGROUND = 1
+
+/** A pick as a layer's Background: Custom with no color is the first position. */
+export function backgroundOfPick({ choice, customColor }: BackgroundPick): Background {
+  return choice === 'custom' ? (customColor ?? FIRST_BACKGROUND) : choice
+}
 
 /** The choice that shows in a theme: a stored number out of range, or Custom with no Custom color, shows the first. */
 export function shownChoice(theme: ResolvedTheme, choice: CanvasChoice, customColor?: string): CanvasChoice {

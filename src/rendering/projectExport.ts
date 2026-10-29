@@ -6,6 +6,7 @@ import { coverLayout } from './coverLayout'
 import { planWithKey } from './chartPageKey'
 import { PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
+import { withLetters } from '../domain/layerRecord'
 
 // Project exports (tickets 73, 74, 0583): drawn onto page canvases made here, one page at a time and compressed strip by
 // strip, so memory is bounded by the page, not the Project (ADR 0018, 250 × 250).
@@ -50,7 +51,7 @@ export async function exportProjectPng(project: Project, words: PrintText, dpi =
   const bare = withoutLetters(words)
   const layout = coverLayout(project, bare)
   const scale = dpi / PRINT_DPI
-  const canvas = page === 0 ? drawCoverPage({ ...project, letters: false }, bare, layout, scale) : drawListPage(bare, layout, page - 1, scale)
+  const canvas = page === 0 ? drawCoverPage(withLetters(project, false), bare, layout, scale) : drawListPage(bare, layout, page - 1, scale)
   const blob = await pngOf(canvas)
   canvas.width = 0
   canvas.height = 0

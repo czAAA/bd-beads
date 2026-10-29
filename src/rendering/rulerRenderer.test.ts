@@ -6,9 +6,12 @@ import { moveToRow, toggleRowDirection } from '../domain/rowProgress'
 import { rotateFrame } from '../domain/rotate'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
+import { MARGIN_PX } from './marginSizes'
 import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
+import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */
 function fakeContext() {
@@ -29,7 +32,7 @@ function fakeContext() {
     arc: (...args: number[]) => {
       current = args
     },
-    // A path of points (a hot corner's bracket, the row pointer) is written down as the points it passes.
+    // A path of points (a hot corner's bracket) is written down as the points it passes.
     moveTo: (x: number, y: number) => {
       current = [x, y]
     },
@@ -76,8 +79,8 @@ function drawn(project: RulerDrawInput['project'], { zoom, numbers }: { zoom: nu
 }
 
 describe('drawRulers', () => {
-  const { frame: _frame, ...open } = base
-  const twoPieces = { ...open, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) }
+  const open = withFrameSheet(base, undefined)
+  const twoPieces = withLayers(open, { beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) })
 
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
@@ -109,7 +112,7 @@ describe('drawRulers', () => {
   it('sets the Frame\'s numbers in the greys that read on its margin, and a Piece\'s in the Canvas\'s (ticket 0656)', () => {
     const theme = { ...LIGHT_THEME, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
     const framed = fakeContext()
-    drawRulers(framed.context, { ...drawn({ ...base, frame: { ...base.frame!, rows: 12, columns: 12 } }, { zoom: 1, numbers: true }), theme })
+    drawRulers(framed.context, { ...drawn(withLayers(base, { frame: { ...frameOf(base)!, rows: 12, columns: 12 } }), { zoom: 1, numbers: true }), theme })
     expect(new Set(framed.textStyles)).toEqual(new Set(['#111111', '#222222']))
 
     const pieces = fakeContext()
@@ -127,12 +130,12 @@ describe('drawRulers', () => {
 
 describe('the names under the Frame and the Pieces (ADR 0066)', () => {
   const piece = (row: number, column: number) => [0, 1, 2].map((offset) => ({ row, column: column + offset, color: '#ff0000' }))
-  const named = (framed: Partial<typeof base>) => ({
-    ...base,
-    beads: withColors({}, [...piece(10, 10), ...piece(1, 0)]),
-    pieceNames: [{ name: 'Sketch', row: 10, column: 10 }, { name: 'Hidden', row: 1, column: 0 }],
-    ...framed,
-  })
+  const named = (framed: LayersChange) =>
+    withLayers(base, {
+      beads: withColors({}, [...piece(10, 10), ...piece(1, 0)]),
+      pieceNames: [{ name: 'Sketch', row: 10, column: 10 }, { name: 'Hidden', row: 1, column: 0 }],
+      ...framed,
+    })
 
   it('draws the Frame\'s name under it, and the name of a Canvas Piece beside it', () => {
     const { context, texts } = fakeContext()
@@ -152,7 +155,7 @@ describe('the names under the Frame and the Pieces (ADR 0066)', () => {
 })
 
 describe('the Ruler dots', () => {
-  const framed = { ...base, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 120, beads: {} } }
+  const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 120, beads: {} } })
   const radii = (fills: { rect: number[] }[]) => fills.filter((fill) => fill.rect.length === 5).map((fill) => fill.rect[2])
 
   it('draw a small dot for every bead without a number, in the number colours', () => {
@@ -179,44 +182,107 @@ describe('the Ruler dots', () => {
   })
 })
 
-describe('the row pointer (MarginSheet card, ticket 0657)', () => {
-  const pointers = (fills: { style: unknown; rect: number[] }[]) => fills.filter((fill) => fill.style === LIGHT_THEME.marker && fill.rect.length === 6)
+describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)', () => {
+  const marks = (fills: { style: unknown; rect: number[] }[]) => fills.filter((fill) => fill.style === LIGHT_THEME.marker)
+  const holds = (rect: number[], point: { x: number; y: number }) => point.x > rect[0]! && point.x < rect[0]! + rect[2]! && point.y > rect[1]! && point.y < rect[1]! + rect[3]!
+  const at = (project: RulerDrawInput['project'], sheet: 'full' | 'compact' | 'folded' | 'bare', { zoom = 1, numbers = true, rowMarks = true } = {}) => {
+    const surface = surfaceAt(zoom)
+    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers, sheet }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks }
+  }
+  /** Where the Frame's line is on screen. */
+  const lineOf = (input: ReturnType<typeof at>) => {
+    const box = input.layout.boxes[0]!
+    const shown = input.surface.beadBox(box, 'frame')
+    return { left: shown.x - box.outset, top: shown.y - box.outset, right: shown.x + shown.width + box.outset }
+  }
 
-  it('points at the current row from the left band, 4px outside the row numbers', () => {
-    const project = moveToRow(base, 1)
-    const input = { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true }
+  it('sets the current row\'s numbers, left and right, on a `marker` pill in the canvas\'s ink, and draws no triangle', () => {
+    const input = at(moveToRow(base, 1), 'full')
+    const { context, fills, texts, textStyles } = fakeContext()
+    drawRulers(context, input)
+
+    const numbers = input.layout.labels.filter((label) => label.axis === 'row' && label.index === 1)
+    expect(numbers).toHaveLength(2)
+    expect(marks(fills)).toHaveLength(2)
+    for (const number of numbers) expect(marks(fills).some((fill) => holds(fill.rect, number))).toBe(true)
+    expect(textStyles.filter((_style, index) => texts[index] === '2')).toContain(LIGHT_THEME.canvas)
+  })
+
+  it('sets the current column\'s number in the top band on its pill once the rows run down the columns', () => {
+    const input = at(moveToRow(toggleRowDirection(base), 1), 'full')
     const { context, fills } = fakeContext()
     drawRulers(context, input)
 
-    const [pointer] = pointers(fills)
-    const row = input.surface.beadToPoint({ row: project.frame!.row + 1, column: project.frame!.column }, 'frame')
-    const numbersLeft = Math.min(...input.layout.labels.filter((label) => label.axis === 'row' && label.x < row.x).map((label) => label.x - label.width / 2))
-    expect(pointer!.rect.slice(0, 2)).toEqual([numbersLeft - 4, row.y])
-    expect(pointer!.rect.slice(2)).toEqual([numbersLeft - 13, row.y - 6, numbersLeft - 13, row.y + 6])
+    const [number] = input.layout.labels.filter((label) => label.axis === 'column' && label.index === 1)
+    expect(marks(fills)).toHaveLength(1)
+    expect(holds(marks(fills)[0]!.rect, number!)).toBe(true)
   })
 
-  it('stands in the top band once the rows run down the columns, and goes with the Row progress look', () => {
-    const project = moveToRow(toggleRowDirection(base), 1)
-    const shown = fakeContext()
-    drawRulers(shown.context, { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true })
-    const [pointer] = pointers(shown.fills)
-    // Pointing down: its tip below its base.
-    expect(pointer!.rect[1]).toBeGreaterThan(pointer!.rect[3]!)
+  it('marks nothing with the Row progress look off, nor once every pass is done', () => {
+    const off = fakeContext()
+    drawRulers(off.context, at(moveToRow(base, 1), 'full', { rowMarks: false }))
+    expect(marks(off.fills)).toEqual([])
+    expect(off.textStyles).not.toContain(LIGHT_THEME.canvas)
 
-    const hidden = fakeContext()
-    drawRulers(hidden.context, { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: false })
-    expect(pointers(hidden.fills)).toEqual([])
+    const done = fakeContext()
+    drawRulers(done.context, at(moveToRow(base, 3), 'compact'))
+    expect(marks(done.fills)).toEqual([])
   })
-  it('stands in the top band over a Frame turned a quarter, whose rows then run down (ticket 0667)', () => {
-    const project = rotateFrame(moveToRow(base, 1))!
-    const input = { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true }
+
+  it.each(['compact', 'folded'] as const)('ticks the Frame\'s line at the current row on both sides in the %s form, inside the line', (sheet) => {
+    const input = at(moveToRow(base, 1), sheet, { zoom: 0.5 })
     const { context, fills } = fakeContext()
     drawRulers(context, input)
-    const [pointer] = pointers(fills)
-    const row = input.surface.beadToPoint({ row: project.frame!.row + 1, column: project.frame!.column }, 'frame')
-    // Pointing down at the turned row, from above it.
-    expect(pointer!.rect[0]).toBeCloseTo(row.x)
-    expect(pointer!.rect[1]).toBeGreaterThan(pointer!.rect[3]!)
+
+    const row = input.surface.beadToPoint({ row: frameOf(base)!.row + 1, column: frameOf(base)!.column }, 'frame')
+    const line = lineOf(input)
+    const ticks = marks(fills)
+    expect(ticks).toHaveLength(2)
+    for (const [x, y, width, height] of ticks.map((tick) => tick.rect)) {
+      expect(y! + height! / 2).toBeCloseTo(row.y)
+      expect(height).toBe(MARGIN_PX.pass.tick)
+      expect(x! < line.left + 1 || x! + width! > line.right - 1).toBe(true)
+    }
+    // Between the line and the beads, never out in the band where the tools stand.
+    expect(ticks.map((tick) => tick.rect[0]!).sort((a, b) => a - b)[0]).toBeGreaterThanOrEqual(line.left - 1)
+    expect(Math.max(...ticks.map((tick) => tick.rect[0]! + tick.rect[2]!))).toBeLessThanOrEqual(line.right + 1)
+  })
+
+  it('ticks the top of the Frame\'s line at the current column, inside the line, once the rows run down the columns', () => {
+    const project = moveToRow(toggleRowDirection(base), 2)
+    const input = at(project, 'compact', { zoom: 0.5 })
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+
+    const column = input.surface.beadToPoint({ row: frameOf(base)!.row, column: frameOf(base)!.column + 2 }, 'frame')
+    const [tick, ...more] = marks(fills)
+    expect(more).toEqual([])
+    expect(tick!.rect[0]! + tick!.rect[2]! / 2).toBeCloseTo(column.x)
+    expect(tick!.rect[1]).toBeGreaterThanOrEqual(lineOf(input).top - 1)
+  })
+
+  it('ticks the line where the full form shows no number of the pass: Rulers off, a Frame turned a quarter (ticket 0667), a Ruler step past it', () => {
+    const off = fakeContext()
+    drawRulers(off.context, at(moveToRow(base, 1), 'full', { numbers: false }))
+    expect(marks(off.fills)).toHaveLength(2)
+    expect(off.texts).not.toContain('2')
+
+    const turned = fakeContext()
+    drawRulers(turned.context, at(rotateFrame(moveToRow(base, 1))!, 'full'))
+    expect(marks(turned.fills).map((fill) => fill.rect[2])).toEqual([MARGIN_PX.pass.tick])
+    expect(turned.textStyles).not.toContain(LIGHT_THEME.canvas)
+
+    // Under 50% only the last number is drawn: the second row has none of its own.
+    const skipped = fakeContext()
+    drawRulers(skipped.context, at(moveToRow(base, 1), 'full', { zoom: 0.3 }))
+    expect(skipped.texts).not.toContain('2')
+    expect(marks(skipped.fills)).toHaveLength(2)
+  })
+
+  it('marks nothing where the margin sheet is not, under a 31px band (ticket 0682)', () => {
+    const { context, fills } = fakeContext()
+    drawRulers(context, at(moveToRow(base, 1), 'bare', { zoom: 0.25 }))
+    expect(marks(fills)).toEqual([])
   })
 })
 

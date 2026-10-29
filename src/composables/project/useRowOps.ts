@@ -1,4 +1,4 @@
-import { moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -29,7 +29,7 @@ export function useRowOps(deps: RowOpsDeps) {
       deps.replaceProject(turned)
       // Said once per change, whether the button or its key turned it (ticket 411).
       const t = deps.messages().rowProgress
-      const { direction, reversed } = turned.rowProgress
+      const { direction, reversed } = rowProgressOf(turned)
       const toast = {
         rows: reversed ? t.directionToastRowsReversed : t.directionToastRows,
         columns: reversed ? t.directionToastColumnsReversed : t.directionToastColumns,

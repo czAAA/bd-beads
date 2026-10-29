@@ -4,10 +4,10 @@ import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
-import { canvasDistance, canvasWeave } from './layerWeave'
-import { beadsOfLayer, heldWeave } from './layerRecord'
+import { canvasDistance, laidOnCanvas, layersAlike } from './layerWeave'
+import { beadsOfLayer, frameOf, heldWeave, type Layered, touchFrameSheet } from './layerRecord'
 import type { Project } from './project'
-import { clampPointer, firstPasses } from './rowProgress'
+import { clampPointer, rowProgressOf } from './rowProgress'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
 // drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows so lifted beads keep their stagger;
@@ -89,11 +89,11 @@ export function frameResizedAround(weave: Weave, frame: Rect, columns: number, r
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
-export function fitToDrawing(project: Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame'>): Rect | undefined {
-  const frame = project.frame
+export function fitToDrawing(project: Layered): Rect | undefined {
+  const frame = frameOf(project)
   const covered = footprintOf(project)
   const canvas = beadsOfLayer(project, 'canvas')
-  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), shiftedBeads(beadsOfLayer(project, 'frame')!, frame.row, frame.column)) : canvas
+  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), laidOnCanvas(project, beadsOfLayer(project, 'frame')!, frame)) : canvas
   const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined
@@ -120,13 +120,13 @@ export function withFrame(project: Project, rectangle: Rect | undefined): Projec
  * gives up those it no longer holds and takes in the Canvas beads `offered` where it shows none of its own (ticket
  * 0639); woven unlike it, it folds and takes nothing (ticket 0638). The resize lays and lifts them there. */
 export function withFrameGiving(project: Project, rectangle: Rect | undefined, offered: BeadMap = {}): { project: Project; given: BeadMap; taken: BeadMap } {
-  if (sameFrame(project.frame, rectangle)) {
+  if (sameFrame(frameOf(project), rectangle)) {
     return { project, given: {}, taken: {} }
   }
-  const { frame: current, ...rest } = project
-  // With the Frame gone the passes are gone too (ticket 426).
+  const current = frameOf(project)
+  // With the Frame gone the passes are gone too (ticket 426): Row progress is the Frame's (ADR 0079).
   if (!rectangle) {
-    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {}, taken: {} }
+    return { project: touchFrameSheet(project, undefined), given: {}, taken: {} }
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
@@ -134,7 +134,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
   // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638) and takes what is offered (ticket
   // 0639); one made anew is empty.
   const refit = current
-    ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
+    ? refitSheet(current, !layersAlike(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
     : { beads: {}, given: {}, taken: {} }
   const frame: FrameSheet = {
     row,
@@ -151,7 +151,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
   return {
-    project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() },
+    project: touchFrameSheet(project, { ...frame, rowProgress: clampPointer(rowProgressOf(project), frame) }),
     given: shiftedBeads(refit.given, row, column),
     taken: shiftedBeads(refit.taken, row, column),
   }

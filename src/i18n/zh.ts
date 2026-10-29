@@ -347,6 +347,7 @@ export const zh: Translations = {
     hexLabel: '十六进制颜色',
     hexInvalid: '请输入类似 #1a2b3c 的颜色。',
     previewLabel: '新颜色',
+    addToPalette: '将 {hex} 添加到调色板',
     pickFromCanvasLabel: '从画布取色',
     removed: '颜色已从调色板移除。',
     removeSwatch: '从调色板移除 {hex}',
@@ -596,6 +597,7 @@ export const zh: Translations = {
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
     lettersInfoLabel: '字母的作用',
+    background: { label: '边框背景' },
     margin: {
       heading: '边距',
       colorLabel: '边距颜色',
@@ -838,6 +840,8 @@ export const zh: Translations = {
     selectLabel: '替换珠子',
     confirmTitle: '替换珠子？',
     confirmMessage: '换成 {bead} 后，这个项目的尺寸约为 {new}，而不是 {old}。你的设计和珠子数量完全不变。你可以撤销这一操作。',
+    canvasMessage:
+      '换成 {bead} 后，画布会按这种珠子的尺寸绘制。边框保留自己的珠子，尺寸和珠子数量完全不变。你可以撤销这一操作。',
     confirmButton: '替换珠子',
     outdatedPostfix: '(已保存的)',
     cancelButton: '取消',
@@ -915,5 +919,9 @@ export const zh: Translations = {
     remapColor: '选择这个图片颜色要变成的珠子颜色。',
     emptyColor: '去掉这个颜色，它的珠子留空。',
     list: (names) => `${names.join('、')}。`,
+  },
+  layerSettings: {
+    frameHeading: '设置',
+    background: '背景',
   },
 }

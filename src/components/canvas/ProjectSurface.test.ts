@@ -14,18 +14,21 @@ import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
+import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../../domain/layerRecord'
+import { rowProgressOf } from '../../domain/rowProgress'
+import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
-function projectOf(columns: number, rows: number, extra: Partial<Project> = {}, technique: Technique = 'loom'): Project {
+function projectOf(columns: number, rows: number, extra: LayersChange = {}, technique: Technique = 'loom'): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const { beads, ...rest } = extra
   // Left out the Frame is the usual one; `frame: undefined` is a Canvas with none, and its beads are the Canvas's.
   if ('frame' in extra && extra.frame === undefined) {
-    const { frame: _frame, ...open } = project
-    return { ...open, ...rest, beads: beads ?? {} }
+    const open = withFrameSheet(project, undefined)
+    return withLayers(open, { ...rest, beads: beads ?? {} })
   }
-  return { ...project, ...rest, frame: { ...project.frame!, ...rest.frame, beads: beads ?? {} } }
+  return withLayers(project, { ...rest, frame: { ...frameOf(project)!, ...rest.frame, beads: beads ?? {} } })
 }
 
 /** How big the drawing area is on the screen. jsdom does no layout, so it is said here. */
@@ -86,17 +89,20 @@ describe('ProjectSurface', () => {
     expect(wrapper.attributes('data-zoom')).toBe('0.6')
   })
 
-  it('moves the drawn beads of a very large piece while the canvas is zoomed, and draws them sharp once it settles (ticket 349)', async () => {
+  it.each([
+    { look: 'full', from: 0.6, to: 0.3, ticket: '349' },
+    { look: 'draft', from: 0.2, to: 0.1, ticket: '0689' },
+  ])('moves the drawn beads of a very large piece while the canvas is zoomed in the $look look, and draws them sharp once it settles (ticket $ticket)', async ({ from, to }) => {
     vi.useFakeTimers()
     try {
       vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
       vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id))
-      const { wrapper } = await mountSurface(projectOf(300, 300), 0.2)
+      const { wrapper } = await mountSurface(projectOf(300, 300), from)
       vi.advanceTimersByTime(10)
       const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]')
       context.calls.length = 0
 
-      await wrapper.setProps({ zoom: 0.1, scroll: { x: 10, y: 20 } })
+      await wrapper.setProps({ zoom: to, scroll: { x: 10, y: 20 } })
       vi.advanceTimersByTime(10)
       expect(cells.element.style.transform).toBe('translate(-10px, -20px) scale(0.5)')
       // Only the overlay was drawn.
@@ -223,7 +229,7 @@ describe('ProjectSurface', () => {
       expect(ruled()).toEqual([5])
 
       // The stroke erases the right column: the box it rules is kept as it was until the stroke ends.
-      await wrapper.setProps({ project: { ...project, beads: square(4) } })
+      await wrapper.setProps({ project: withLayers(project, { beads: square(4) }) })
       expect(ruled()).toEqual([5])
 
       await wrapper.setProps({ stroking: false })
@@ -290,12 +296,12 @@ describe('ProjectSurface', () => {
     })
 
     it.each([
-      ['Bead shape', (project: Project): Project => ({ ...project, beadShape: 'real' })],
-      ['piece names', (project: Project): Project => ({ ...project, pieceNames: [{ row: 0, column: 0, name: 'Strap' }] })],
-      ['Technique', (project: Project): Project => ({ ...project, technique: 'peyote' })],
-      ['Bead', (project: Project): Project => ({ ...project, beadId: `${project.beadId}-other`, bead: undefined })],
-      ['brick block', (project: Project): Project => ({ ...project, techniqueSettings: { brickBlock: 3 } })],
-      ['rotation', (project: Project): Project => ({ ...project, rotation: 90 })],
+      ['Bead shape', (project: Project): Project => (withLayers(project, { beadShape: 'real' }))],
+      ['piece names', (project: Project): Project => (withLayers(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
+      ['Technique', (project: Project): Project => (withLayers(project, { technique: 'peyote' }))],
+      ['Bead', (project: Project): Project => (withLayers(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],
+      ['brick block', (project: Project): Project => (withLayers(project, { techniqueSettings: { brickBlock: 3 } }))],
+      ['rotation', (project: Project): Project => (withLayers(project, { orientation: 90 }))],
     ])('draws everything again when the %s changes, though no bead changed color', async (_name, change) => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
@@ -333,7 +339,7 @@ describe('ProjectSurface', () => {
         { attachTo: document.body },
       )
       const surface = wrapper.find('[data-testid="project-surface"]')
-      const view = surfaceView({ space: OPEN_SPACE, technique: project.value.technique, rotation: project.value.rotation, zoom: 1, scroll })
+      const view = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project.value).technique, rotation: quarterTurnOf(project.value), zoom: 1, scroll })
       const pointAt = (row: number, column: number) => {
         const point = view.beadToPoint({ row, column })
         return { clientX: point.x, clientY: point.y }
@@ -388,7 +394,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: { ...project, rowProgress: { ...project.rowProgress } } })
+      await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project) } }) })
 
       expect(context.named('rect')).toHaveLength(0)
     })
@@ -399,7 +405,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: { ...project, frame: { ...project.frame!, rows: 10 } } })
+      await wrapper.setProps({ project: withLayers(project, { frame: { ...frameOf(project)!, rows: 10 } }) })
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
@@ -411,7 +417,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: { ...project, rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } } })
+      await wrapper.setProps({ project: withLayers(project, { rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } }) })
 
       expect(context.named('rect')).toHaveLength(0)
     })
@@ -429,11 +435,28 @@ describe('ProjectSurface', () => {
   })
 
   it('shows the turn of a rotated Project in what it says about itself', async () => {
-    const { wrapper } = await mountSurface(projectOf(20, 10, { rotation: 90 }), 1, { x: -300, y: 0 })
+    const { wrapper } = await mountSurface(projectOf(20, 10, { orientation: 90 }), 1, { x: -300, y: 0 })
 
     const root = wrapper.find('[data-testid="project-surface"]')
     expect(root.attributes('data-rotation')).toBe('90')
     expect(root.attributes('data-scroll-x')).toBe('-300')
+  })
+
+  it('draws a Canvas twisted off a quarter turn at that quarter turn, leaning the rest about its middle (ticket 0672)', async () => {
+    const { wrapper } = await mountSurface(projectOf(20, 10, { orientation: 120 }))
+    const root = wrapper.find('[data-testid="project-surface"]')
+    expect(root.attributes('data-rotation')).toBe('90')
+    expect(root.attributes('data-tilt')).toBe('30')
+    // A square as wide as the 1000 × 800 surface's diagonal covers it at any lean.
+    const { left, top, width, height, transform } = (wrapper.find('.project-surface__drawing').element as HTMLElement).style
+    expect({ left, top, width, height, transform }).toEqual({ left: '-140.5px', top: '-240.5px', width: '1281px', height: '1281px', transform: 'rotate(30deg)' })
+
+    await wrapper.setProps({ orientation: 268 })
+    expect(root.attributes('data-rotation')).toBe('270')
+    expect(root.attributes('data-tilt')).toBe('-2')
+    await wrapper.setProps({ orientation: 180 })
+    expect(root.attributes('data-tilt')).toBeUndefined()
+    expect((wrapper.find('.project-surface__drawing').element as HTMLElement).style.transform).toBe('')
   })
 
   it('draws the Row progress marker on the overlay, and no marker when no bead is in the pass', async () => {
@@ -568,7 +591,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       const surface = wrapper.find('[data-testid="project-surface"]')
 
-      const start = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
+      const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
 
       await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
       await surface.trigger('pointermove', { clientX: start.x - 10, clientY: start.y + 10, buttons: 2 })
@@ -584,7 +607,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       const surface = wrapper.find('[data-testid="project-surface"]')
 
-      const start = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
+      const start = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
 
       await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
       await surface.trigger('pointerup')
@@ -608,7 +631,7 @@ describe('ProjectSurface', () => {
 
   describe('a stroke lasts from press to release (ticket 504)', () => {
     const at = (project: Project, row: number, column: number) =>
-      surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
+      surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
 
     it('paints every bead along a fast swipe, with no gaps', async () => {
       const project = projectOf(20, 10)
@@ -701,7 +724,7 @@ describe('ProjectSurface', () => {
   describe('picking a color (ticket 403)', () => {
     const painted = (): Project => projectOf(20, 10, { beads: { 3: { 4: '#123456' } } })
     const at = (project: Project, row: number, column: number) =>
-      surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
+      surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
 
     it('shows the eyedropper pointer, and the color under it in a chip over a painted bead only', async () => {
       const project = painted()
@@ -733,7 +756,7 @@ describe('ProjectSurface', () => {
   describe('the pointer', () => {
     /** Where on the screen a bead's centre is, for a surface at the screen's corner, at a zoom and a scroll. */
     function centreOf(project: Project, row: number, column: number, zoom = 1, scroll = { x: 0, y: 0 }): { clientX: number; clientY: number } {
-      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom, scroll }).beadToPoint({ row, column })
+      const at = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom, scroll }).beadToPoint({ row, column })
       return { clientX: at.x, clientY: at.y }
     }
 
@@ -742,10 +765,10 @@ describe('ProjectSurface', () => {
       function weaving(): Project {
         const project = projectOf(20, 10)
         const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
-        return { ...painted, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
+        return withLayers(painted, { rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
       }
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
-      const finishedCentre = (project: Project) => centreOf(project, project.frame!.row, project.frame!.column)
+      const finishedCentre = (project: Project) => centreOf(project, frameOf(project)!.row, frameOf(project)!.column)
 
       it('draws them at normal color, and the current row unbrightened, while Row highlight is off, and dims again when it is on (ticket 474)', async () => {
         const { wrapper } = await mountSurface(weaving(), 1, { x: 0, y: 0 }, { rowMarks: false })
@@ -796,10 +819,10 @@ describe('ProjectSurface', () => {
         const project = weaving()
         const { wrapper } = await mountSurface(project)
         const surface = wrapper.find('[data-testid="project-surface"]')
-        const todo = centreOf(project, project.frame!.row + 5, project.frame!.column)
+        const todo = centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column)
 
         context.calls.length = 0
-        await moveTo(surface, centreOf(project, project.frame!.row, project.frame!.column + PAST_THE_FRAME))
+        await moveTo(surface, centreOf(project, frameOf(project)!.row, frameOf(project)!.column + PAST_THE_FRAME))
         await nextTick()
         expect(redShown()).toBe(false)
 
@@ -829,7 +852,7 @@ describe('ProjectSurface', () => {
 
         // Undo to before the first row was finished: the same spot is now a row still to weave.
         context.calls.length = 0
-        await wrapper.setProps({ project: { ...project, rowProgress: { ...project.rowProgress, currentRow: 0 } } })
+        await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 0 } }) })
         await nextTick()
         await nextTick()
         expect(redShown()).toBe(false)
@@ -860,7 +883,7 @@ describe('ProjectSurface', () => {
 
         context.calls.length = 0
         await surface.trigger('pointerdown', { clientX: 900, clientY: 700, pointerType: 'mouse', pointerId: 1, isPrimary: true, button: 1, buttons: 4 })
-        await moveTo(surface, centreOf(project, project.frame!.row + 5, project.frame!.column))
+        await moveTo(surface, centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column))
         await nextTick()
         expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.5))).toBe(false)
       })
@@ -905,7 +928,7 @@ describe('ProjectSurface', () => {
         const surface = wrapper.find('[data-testid="project-surface"]')
 
         context.calls.length = 0
-        await surface.trigger('pointerdown', { ...centreOf(project, project.frame!.row + 5, project.frame!.column), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
+        await surface.trigger('pointerdown', { ...centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
         await nextTick()
 
         expect(redShown()).toBe(false)
@@ -1039,7 +1062,7 @@ describe('ProjectSurface', () => {
       // 48 peyote rows over a loom Canvas cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
       const project = projectOf(11, 48, { frame: { technique: 'peyote', row: 0, column: 0, rows: 48, columns: 11, beads: {} } })
       const { wrapper } = await mountSurface(project)
-      const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: project.frame, rotation: 0, zoom: 1 })
+      const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: frameOf(project), rotation: 0, zoom: 1 })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'frame').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'frame').y }, button: 0, buttons: 1 })
@@ -1150,12 +1173,30 @@ describe('ProjectSurface', () => {
     })
 
     it('works out the bead of a rotated Project', async () => {
-      const project = projectOf(20, 10, { rotation: 90 })
+      const project = projectOf(20, 10, { orientation: 90 })
       const { wrapper } = await mountSurface(project)
 
       await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 15), button: 0, buttons: 1 })
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[2, 15]])
+    })
+
+    it('works out the bead of a Canvas twisted off a quarter turn, the picture turned about the middle of the screen (ticket 0672)', async () => {
+      for (const [rotation, quarter, row, column] of [[30, 0, 2, 15], [125, 90, 7, 3], [320, 0, 9, 19]] as const) {
+        const project = projectOf(20, 10, { orientation: rotation })
+        const { wrapper } = await mountSurface(project, 1, { x: -300, y: -200 })
+        // Where the bead is at the quarter turn, turned the rest about the middle (500, 400) of the 1000 × 800 surface.
+        const upright = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: quarter, zoom: 1, scroll: { x: -300, y: -200 } }).beadToPoint({ row, column })
+        const radians = ((rotation - quarter) * Math.PI) / 180
+        const [dx, dy] = [upright.x - 500, upright.y - 400]
+        const clientX = 500 + dx * Math.cos(radians) - dy * Math.sin(radians)
+        const clientY = 400 + dx * Math.sin(radians) + dy * Math.cos(radians)
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { clientX, clientY, button: 0, buttons: 1 })
+
+        expect(events(wrapper)['cell-primary-down']).toEqual([[row, column]])
+        wrapper.unmount()
+      }
     })
 
     it('does not open the browser\'s menu on a right press', async () => {
@@ -1293,7 +1334,7 @@ describe('ProjectSurface', () => {
 
     it('shows nothing over the Frame\'s margin, in Set Frame, or while Space holds the pointer back', async () => {
       const project = projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
-      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
+      const at = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint', blocksMargin: true }), inputMode: 'pen' })
       await surfaceOf(wrapper).trigger('pointermove', { clientX: at.x, clientY: at.y, buttons: 0, pointerType: 'pen' })
       expect(drawn(wrapper).exists()).toBe(true)
@@ -1414,7 +1455,7 @@ describe('ProjectSurface', () => {
     it('goes when the canvas moves a refused margin under a still pointer', async () => {
       const project = projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', tools: can({ blocksMargin: true }) })
-      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
+      const at = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: quarterTurnOf(project), zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
       const point = { clientX: at.x, clientY: at.y }
       await surfaceOf(wrapper).trigger('pointermove', { ...point, pointerType: 'mouse', buttons: 0 })
       await vi.waitFor(() => expect(marker()).toHaveLength(1))

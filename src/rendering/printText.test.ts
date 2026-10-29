@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../domain/createProject'
-import { withLetters } from '../domain/paletteEdits'
+import { withLetters } from '../domain/layerRecord'
 import { changeFrame } from '../domain/changeFrame'
 import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
 import { headerMaker, printText } from './printText'
+import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 
 const at = new Date(2026, 8, 26, 14, 32)
 
@@ -45,7 +47,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('has no tubes for an unknown Bead', () => {
-    const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had', bead: undefined }, en, 'en', at)
+    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
 
     expect(text.colors[0]!.tubes).toBeUndefined()
     expect(text.totalTubes).toBeUndefined()
@@ -59,7 +61,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('shows no grams and no note for a Bead with no weight', () => {
-    const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had', bead: undefined }, en, 'en', at)
+    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
 
     expect(text.colors[0]!.grams).toBeUndefined()
     expect(text.totalGrams).toBeUndefined()
@@ -131,10 +133,10 @@ describe('printText Word chart (ticket 0574)', () => {
   })
 
   it('names a Custom frame\'s round or join before its runs, and says where it starts (ticket 0594)', () => {
-    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'star', size: 2, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
-    const { row, column } = placed.project.frame!
+    const { row, column } = frameOf(placed.project)!
     const painted = paintAt(placed.project, [{ row, column, layer: 'frame' }], '#e63746')
     const chart = printText(letters(painted), en, 'en', at).wordChart!
 
@@ -144,7 +146,7 @@ describe('printText Word chart (ticket 0574)', () => {
   })
 
   it('starts a Fringe earring\'s Word chart at its top\'s base row and names each strand (ticket 0597)', () => {
-    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const settings = { topWidth: 3, topRows: 2, fringeStyle: 'straight', fringeLength: 2 } as const
     const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')

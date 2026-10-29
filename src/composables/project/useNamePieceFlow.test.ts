@@ -6,16 +6,17 @@ import type { Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { editHarness } from '../../testUtils/editHarness'
 import { useNamePieceFlow } from './useNamePieceFlow'
+import { canvasOf } from '../../domain/layerRecord'
+import { withLayers } from '../../testUtils/layerFields'
 
 const R = '#e63746'
-const base: Project = {
-  ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }),
-  beads: withColors({}, [
+const base: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), {
+beads: withColors({}, [
     { row: 0, column: 0, color: R },
     { row: 0, column: 1, color: R },
     { row: 6, column: 6, color: R },
   ]),
-}
+})
 const onFirstPiece: Selection = { top: 0, left: 0, rows: 1, columns: 2 }
 const onBoth: Selection = { top: 0, left: 0, rows: 8, columns: 8 }
 
@@ -34,7 +35,7 @@ describe('useNamePieceFlow', () => {
   })
 
   it('is not available for a Selection that begins on the Frame: Pieces are the Canvas\'s (ADR 0066)', () => {
-    const framed: Project = { ...base, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: { 0: { 0: R, 1: R } } }, beads: {} }
+    const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: { 0: { 0: R, 1: R } } }, beads: {} })
     const harness = editHarness(framed)
     const flow = useNamePieceFlow({ currentProject: harness.currentProject, edit: harness.edit, selection: () => onFirstPiece })
     expect(flow.canNamePiece.value).toBe(false)
@@ -50,9 +51,9 @@ describe('useNamePieceFlow', () => {
     expect(namedPieces(harness.project)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 2, beads: 2 }])
 
     harness.history.onUndo()
-    expect(harness.project.pieceNames).toBeUndefined()
+    expect(canvasOf(harness.project).pieceNames).toBeUndefined()
     harness.history.onRedo()
-    expect(harness.project.pieceNames).toHaveLength(1)
+    expect(canvasOf(harness.project).pieceNames).toHaveLength(1)
   })
 
   it('offers the current name, and an empty one removes it', () => {
@@ -63,7 +64,7 @@ describe('useNamePieceFlow', () => {
     expect(naming.value?.name).toBe('Fox')
 
     onSavePieceName('')
-    expect(harness.project.pieceNames).toBeUndefined()
+    expect(canvasOf(harness.project).pieceNames).toBeUndefined()
   })
 
   it('does nothing when the dialog is cancelled', () => {

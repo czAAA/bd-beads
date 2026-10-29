@@ -34,6 +34,7 @@
     "components/InteractionStates/README.md",
     "components/KeyboardFocus/README.md",
     "components/Loading/README.md",
+    "components/LayerSettings/README.md",
     "components/LongerText/README.md",
     "components/MarginSheet/README.md",
     "components/Menu/README.md",
@@ -354,7 +355,12 @@
     {
       "name": "ProjectPanel",
       "group": "Overlays",
-      "summary": "The Project panel: name with a pencil, save state, Technique, Bead, Canvas, Save, exports, Name on exports, Duplicate and Delete this Project."
+      "summary": "The Project panel: name with a pencil, save state, the Canvas's Layer settings, the Project file export, Duplicate, Clear and Delete this Project."
+    },
+    {
+      "name": "LayerSettings",
+      "group": "Overlays",
+      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead and Bead shape, Background; in New Project, Project and the Frame panel."
     },
     {
       "name": "QualitySlider",

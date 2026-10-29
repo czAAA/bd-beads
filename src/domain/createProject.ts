@@ -1,11 +1,11 @@
 import { beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, withLayer } from './layerRecord'
+import { beadIdOfLayer, frameOf, newLayerId, withLayer } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import type { Grid, Project } from './project'
+import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
 import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique, type TechniqueSettings } from './weave'
@@ -21,6 +21,8 @@ export interface CreateProjectInput {
   techniqueSettings?: TechniqueSettings
   /** The Bead shape of a new Project; left out is Symmetric. */
   beadShape?: BeadShape
+  /** The Background both layers start on (ticket 0670); left out, they show the device's last pick. */
+  background?: Background
   beadId: string
   /** How big the Frame is, in beads or mm/cm (converted once to a grid, not remembered; ADR 0026). Left out: a Canvas
    * with no Frame. */
@@ -42,19 +44,23 @@ export function createProject(input: CreateProjectInput): Project {
   const makerName = normalizeMakerName(input.makerName ?? '')
 
   const palette = defaultPaletteIds(defaultPalette(bead.id))
-  return {
-    id: crypto.randomUUID(),
-    name,
+  const layer = {
     ...created,
     beadId: bead.id,
     bead: beadCopy(bead),
     ...(input.beadShape && input.beadShape !== DEFAULT_BEAD_SHAPE ? { beadShape: input.beadShape } : {}),
+    ...(input.background !== undefined ? { background: input.background } : {}),
     beads: {},
-    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
-    rowProgress: { ...INITIAL_ROW_PROGRESS },
+  }
+  return {
+    id: crypto.randomUUID(),
+    // Both layers take the form's settings (ADR 0079).
+    layers: [
+      { id: newLayerId(), name, ...layer, orientation: 0 },
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, rowProgress: { ...INITIAL_ROW_PROGRESS } }] : []),
+    ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),
-    rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
     updatedAt: now,
@@ -78,7 +84,7 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
-  const frame = project.frame!
+  const frame = frameOf(project)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>
     Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
@@ -89,7 +95,7 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
     ...(palette
       ? {
           palette: [...palette.ids],
-          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, 'canvas'), undefined),
+          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, 'frame'), undefined),
           ...(Object.keys(palette.codes).length > 0 ? { paletteCodes: { ...palette.codes } } : {}),
         }
       : {}),

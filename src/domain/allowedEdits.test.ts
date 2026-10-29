@@ -6,6 +6,8 @@ import { MARGIN } from './margin'
 import type { Project } from './project'
 import { countingBeads } from '../testUtils/countingBeads'
 import { paintAt } from '../testUtils/layers'
+import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const R = '#e63746'
@@ -20,8 +22,8 @@ const step = (project: Project, row: number, column: number, color: string | nul
 
 describe('what a drawing edit may leave', () => {
   it('does nothing with no Frame', () => {
-    const painted = { ...open, beads: withColors(open.beads, [{ row: 1, column: 1, color: '#ff0000' }]) }
-    expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)
+    const painted = withLayers(open, { beads: withColors(beadsOfLayer(open, 'canvas'), [{ row: 1, column: 1, color: '#ff0000' }]) })
+    expect(beadsOfLayer(keepAllowedEdits(open, painted), 'canvas')).toEqual(beadsOfLayer(painted, 'canvas'))
   })
 })
 
@@ -33,7 +35,7 @@ describe('the work a stroke step does', () => {
     const others3x3 = Array.from({ length: others }, (_, i) => block(0, 400 + i * 10, 3, 3)).flat()
     const counting = countingBeads(withColors({}, [...block(0, 0, 300, 300), ...others3x3]))
     const pieceNames = [{ name: 'Square', row: 0, column: 0 }, ...Array.from({ length: others }, (_, i) => ({ name: `Dot ${i}`, row: 0, column: 400 + i * 10 }))]
-    return { project: { ...open, beads: counting.beads, pieceNames }, ...counting }
+    return { project: withLayers(open, { beads: counting.beads, pieceNames }), ...counting }
   }
 
   it('next to a named 300 × 300 Piece reads only the rows it changed, and keeps the name where it is', () => {
@@ -47,7 +49,7 @@ describe('the work a stroke step does', () => {
     // Row 0 holds the name's own bead, looked up once a step.
     expect([...reads.rows].sort((a, b) => a - b)).toEqual([0, 10, 11, 12])
     expect(reads.beads).toBeLessThan(3 * 300 * 8)
-    expect(painted.pieceNames).toEqual(project.pieceNames)
+    expect(canvasOf(painted).pieceNames).toEqual(canvasOf(project).pieceNames)
   })
 
   it('next to a named 300 × 300 Piece with other named Pieces about reads only the rows it changed once it has begun', () => {
@@ -63,28 +65,28 @@ describe('the work a stroke step does', () => {
     // Row 0 holds the names' own beads; the rest touch the beads the steps changed.
     expect([...reads.rows].sort((a, b) => a - b)).toEqual([0, 19, 20, 21, 22, 23, 24])
     expect(reads.beads).toBeLessThan(6 * 300 * 8)
-    expect(painted.pieceNames).toEqual(project.pieceNames)
+    expect(canvasOf(painted).pieceNames).toEqual(canvasOf(project).pieceNames)
   })
 
   it('still refuses the bead that would join two named Pieces through an unnamed one, step by step', () => {
     const beads = withColors({}, [...block(0, 0, 3, 3), ...block(0, 5, 3, 3), ...block(0, 10, 3, 3)])
-    let project: Project = { ...open, beads, pieceNames: [{ name: 'Left', row: 0, column: 0 }, { name: 'Right', row: 0, column: 10 }] }
+    let project: Project = withLayers(open, { beads, pieceNames: [{ name: 'Left', row: 0, column: 0 }, { name: 'Right', row: 0, column: 10 }] })
 
     for (const column of [3, 4, 8, 9]) project = step(project, 1, column)
 
     // Left takes in the middle Piece; the bead at column 9 would then join Right to it, and it alone is refused.
-    expect(project.beads[1]).toMatchObject({ 3: R, 4: R, 8: R })
-    expect(project.beads[1]?.[9]).toBeUndefined()
-    expect(project.pieceNames).toHaveLength(2)
+    expect(beadsOfLayer(project, 'canvas')[1]).toMatchObject({ 3: R, 4: R, 8: R })
+    expect(beadsOfLayer(project, 'canvas')[1]?.[9]).toBeUndefined()
+    expect(canvasOf(project).pieceNames).toHaveLength(2)
   })
 
   /** A 300 × 300 Frame full of beads and a Canvas of 100 × 100 beads clear of its margin, each behind a counter. */
   function bigFramed() {
     const created = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 300, height: 300, unit: 'beads' } })
-    const frame = created.frame!
+    const frame = frameOf(created)!
     const inFrame = countingBeads(withColors({}, block(0, 0, 300, 300)))
     const onCanvas = countingBeads(withColors({}, block(frame.row, frame.column + 300 + MARGIN + 10, 100, 100)))
-    const project: Project = { ...created, beads: onCanvas.beads, frame: { ...frame, beads: inFrame.beads } }
+    const project: Project = withLayers(created, { beads: onCanvas.beads, frame: { ...frame, beads: inFrame.beads } })
     return { project, frame, inFrame: inFrame.reads, onCanvas: onCanvas.reads }
   }
 
@@ -93,7 +95,7 @@ describe('the work a stroke step does', () => {
 
     const painted = step(project, frame.row + 5, frame.column + 7, '#00ff00')
 
-    expect(painted.frame!.beads[5]?.[7]).toBe('#00ff00')
+    expect(frameOf(painted)!.beads[5]?.[7]).toBe('#00ff00')
     expect([...inFrame.rows]).toEqual([5])
     expect(onCanvas.rows.size).toBe(0)
   })
@@ -106,7 +108,7 @@ describe('the work a stroke step does', () => {
     // In the margin the bead is refused, and still only its own row is read.
     const refused = step(painted, frame.row + 6, right - 1)
 
-    expect(painted.beads[frame.row + 5]?.[right]).toBe(R)
+    expect(beadsOfLayer(painted, 'canvas')[frame.row + 5]?.[right]).toBe(R)
     expect(refused).toBe(painted)
     expect([...onCanvas.rows].sort((a, b) => a - b)).toEqual([frame.row + 5, frame.row + 6])
     expect(inFrame.rows.size).toBe(0)

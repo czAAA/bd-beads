@@ -1,16 +1,16 @@
 import type { GridPosition, Rotation } from '../domain/grid'
 import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import type { VisiblePositions } from '../domain/weaveGeometry'
-import { colorAt, frameContains } from '../domain/canvas'
+import { beadBounds, colorAt, frameContains, type BeadMap, type Rect } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
-import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
-import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
-import type { Project } from '../domain/project'
+import { canvasWeave, frameScale, frameWeave, layersAlike } from '../domain/layerWeave'
+import { rowPassesOf, rowProgressOn } from '../domain/rowProgress'
 import {
   BEAD_GAP_PX,
+  beadFill,
   brighten,
   CURRENT_ROW_BRIGHTNESS,
   DEFAULT_THEME,
@@ -22,6 +22,7 @@ import {
 } from './beadLook'
 import type { MarginLook } from './marginLook'
 import { marginForm } from './marginForm'
+import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -31,13 +32,13 @@ import {
   gridToRegion,
   inGridPx,
   layerExtentPx,
-  positionBoxPx,
   positionsBoxPx,
   regionInGridSpace,
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { blockAround, drawDraftBlock, drawsDraft, keptDraft, layDraft, type DraftImageOf, type DraftPainter } from './draftRenderer'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
@@ -70,16 +71,16 @@ function visibleBeadsOpen(weave: Weave, area: { left: number; right: number; top
 }
 
 /** The beads in view of a space: with no edge on the Canvas, and within the Project otherwise. `origin` is where the
- * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). The overlay culls by it
- * too (ticket 0675). */
-export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
+ * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492), and `scale` how many
+ * grid px one of its own is (its Bead's size, ticket 0665). The overlay culls by it too (ticket 0675). */
+export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }, scale = 1): VisiblePositions {
   const seen = regionInGridSpace(space.extent, region, zoom, rotation)
-  const area = { left: seen.left - origin.x, right: seen.right - origin.x, top: seen.top - origin.y, bottom: seen.bottom - origin.y }
+  const area = { left: (seen.left - origin.x) / scale, right: (seen.right - origin.x) / scale, top: (seen.top - origin.y) / scale, bottom: (seen.bottom - origin.y) / scale }
   return space.open ? visibleBeadsOpen(weave, area) : visibleBeads(weave, space.columns, space.rows, area)
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+export type DrawnProject = Layered
 
 export interface RenderInput {
   // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
@@ -95,6 +96,8 @@ export interface RenderInput {
   /** Device pixels per CSS pixel of the surface, so beads stay crisp on a high-density screen. Defaults to 1. */
   pixelRatio?: number
   theme?: ProjectTheme
+  /** The look the Frame is drawn in, on its own Background (ticket 0666); defaults to `theme`, as an export's does. */
+  frameTheme?: ProjectTheme
   // Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a
   // finished row. Off, they are dimmed.
   showFinished?: boolean
@@ -112,12 +115,16 @@ export interface RenderInput {
   drawBead?: BeadDrawer
   /** The Swatch letter of each color by hex (ticket 0573): given, the Frame's beads carry their letter. Absent, none. */
   letters?: Readonly<Record<string, string>>
+  // Draw each layer as one draft image where its beads are too small to show their look (ticket 0676): the editor's
+  // surface. An export or a picture keeps every bead's look at any size.
+  draftWhenSmall?: boolean
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
- * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
-function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = 0): Region | undefined {
-  const frame = project.frame
+ * take in its drawn extent where it is woven otherwise or in a Bead of another size (ticket 0665) and so draws larger
+ * or smaller than that. */
+function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined {
+  const frame = frameOf(project)
   if (!frame) {
     return undefined
   }
@@ -125,20 +132,21 @@ function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSe
   // With a `margin` the box also takes in the keep-out margin (ticket 501), which the Canvas draws nothing in.
   const grown = withMargin(footprintOf(project)!, margin)
   const own = gridBox(canvas, grown)
-  const held = heldWeave(project, 'frame')!
-  if (sameWeave(canvas, held)) {
+  if (layersAlike(project)) {
     return own
   }
   const origin = frameOriginPx(canvas, frame)
   const laid = laidFrame(project)!
-  const drawn = layerExtentPx(held, laid.columns, laid.rows)
+  const scale = frameScale(project)
+  const extent = layerExtentPx(frameWeave(project), laid.columns, laid.rows)
+  const drawn = { width: extent.width * scale, height: extent.height * scale }
   const left = Math.min(own.x, origin.x)
   const top = Math.min(own.y, origin.y)
   return { x: left, y: top, width: Math.max(own.x + own.width, origin.x + drawn.width) - left, height: Math.max(own.y + own.height, origin.y + drawn.height) - top }
 }
 
 // The Canvas's Position marks (CONTEXT.md): one pattern fill in up to four strips round the margin's box, so no
-// position is tested. The marks also fill the Frame's box (ticket 458).
+// position is tested. The Frame's box has its own (drawFrameGround).
 function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, margin }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
@@ -149,21 +157,16 @@ function drawPositionMarks(
     return
   }
   const cell = cellSizePx(canvas.technique, canvas.cell)
-  const box = project.frame && withMargin(footprintOf(project)!, margin)
+  const box = frameOf(project) && withMargin(footprintOf(project)!, margin)
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
-  const footprint = frameFootprintPx(project)
   const held = frameFootprintPx(project, margin)
-  const alike = project.frame !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
+  const alike = layersAlike(project)
   const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
   const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
   context.fillStyle = pattern
   // The pattern is scaled to the tile's whole pixels, so it is smoothed here; the beads are blitted as they are.
   context.imageSmoothingEnabled = true
-  const strip = (left: number, top: number, right: number, bottom: number) => {
-    if (right > left && bottom > top) {
-      context.fillRect(left, top, right - left, bottom - top)
-    }
-  }
+  const strip = stripIn(context, area)
   if (!hole) {
     strip(area.left, area.top, area.right, area.bottom)
   } else {
@@ -174,18 +177,41 @@ function drawPositionMarks(
     strip(area.left, top, Math.min(hole.left, area.right), bottom)
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
-  // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
-  if (footprint && geometryDrawnAlone(project).grid) {
-    // The marks are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
-    // between its beads.
-    const edge = BEAD_GAP_PX / 2
-    strip(
-      Math.max(footprint.x - edge, area.left),
-      Math.max(footprint.y - edge, area.top),
-      Math.min(footprint.x + footprint.width + edge, area.right),
-      Math.min(footprint.y + footprint.height + edge, area.bottom),
-    )
+  context.imageSmoothingEnabled = false
+}
+
+/** Fills a rectangle cut to the view, in the fill in force; nothing where it is empty. */
+function stripIn(context: DrawingContext, area: { left: number; right: number; top: number; bottom: number }) {
+  return (left: number, top: number, right: number, bottom: number) => {
+    const [x0, y0, x1, y1] = [Math.max(left, area.left), Math.max(top, area.top), Math.min(right, area.right), Math.min(bottom, area.bottom)]
+    if (x1 > x0 && y1 > y0) {
+      context.fillRect(x0, y0, x1 - x0, y1 - y0)
+    }
   }
+}
+
+/** The Frame's box on the Canvas (tickets 458, 0666): filled in the Frame's own Background where it differs from the
+ * Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458), in the Frame's look. */
+function drawFrameGround(
+  context: DrawingContext,
+  { project, area, zoom, pixelRatio, canvasLook, frameLook }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme },
+): void {
+  const footprint = frameFootprintPx(project)!
+  const edge = BEAD_GAP_PX / 2
+  const strip = stripIn(context, area)
+  const box = [footprint.x - edge, footprint.y - edge, footprint.x + footprint.width + edge, footprint.y + footprint.height + edge] as const
+  if (frameLook.canvas !== canvasLook.canvas) {
+    context.fillStyle = frameLook.canvas
+    strip(...box)
+  }
+  // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
+  const pattern = geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, color: frameLook.positionMark })
+  if (!pattern) {
+    return
+  }
+  context.fillStyle = pattern
+  context.imageSmoothingEnabled = true
+  strip(...box)
   context.imageSmoothingEnabled = false
 }
 
@@ -245,6 +271,12 @@ interface LayerDraw {
   rows: { first: number; last: number } | undefined
   margin: number
   letters: Readonly<Record<string, string>> | undefined
+  /** Whether the layers are drawn in the draft look, a pixel a bead. */
+  draft: boolean
+  /** Where a Frame bead is in Row progress, its Row order worked out once for the draw (ticket 0676). */
+  passes: (position: GridPosition) => 'finished' | 'current' | undefined
+  /** A current row's color, lifted once per color for the draw. */
+  lit: (color: string) => string
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -255,14 +287,53 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const geometry = geometryDrawnAlone(project)
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, whose beads nest into it; beads that keep no rows are all drawn.
-  const beads = geometry
-    .positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
-    .map((position) => ({ position, place: geometry.place(position)! }))
+  const inView = () => geometry.positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
+  const placed = () => inView().map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
   const framed = beadsOfLayer(project, 'frame')
   const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))
-  if (geometry.grid) drawUprightBeads(context, draw, space, origin, beads, colorOf)
-  else drawTurnedBeads(context, draw, space, origin, beads, colorOf, geometry)
+  if (geometry.grid && draw.draft) drawDraftFrame(context, draw, space, origin, geometry, inView, colorOf)
+  else if (geometry.grid) drawUprightBeads(context, draw, space, origin, placed(), colorOf)
+  else drawTurnedBeads(context, draw, space, origin, placed(), colorOf, geometry)
+}
+
+/** The Frame's beads in the draft look (ticket 0676): a pixel a bead in its Row progress color, empty ones as an empty
+ * bead, no letters. A whole draw keeps the whole Frame's image, which a pan or zoom then lays down again. */
+function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, geometry: LayerGeometry, inView: () => GridPosition[], colorOf: (position: GridPosition) => string | null): void {
+  const { project, look, rowMarks, showFinished, rows: band } = draw
+  const weave = frameWeave(project)
+  const paintOf = (positions: readonly GridPosition[]): DraftPainter => (put) => {
+    for (const position of positions) {
+      const { shown, dimmed } = progressLook(draw, space, position, colorOf(position))
+      put(position.row, position.column, beadFill(shown, dimmed, look))
+    }
+  }
+  const whole = !band && keptLayerDraft('frame', [project, look, rowMarks, showFinished, space.toAbsolute.row, space.toAbsolute.column], () => {
+    const extent = geometry.extent()
+    const all = extent ? geometry.positionsIn(extent) : []
+    const block = blockAround(all)
+    return block && keptDraft(weave, block, paintOf(all))
+  })
+  if (whole) {
+    layDraft(context, whole, origin)
+    return
+  }
+  const positions = inView()
+  const block = blockAround(positions)
+  if (block) drawDraftBlock(context, weave, block, paintOf(positions), origin)
+}
+
+/** Each layer's last whole draft image and what it was drawn from (ticket 0676): while only the view moves, the same
+ * Project at the same look, it is laid down again instead of every bead being read. Undefined for one too big to keep. */
+const keptDrafts: Partial<Record<'canvas' | 'frame', { from: readonly unknown[]; draft: DraftImageOf | undefined }>> = {}
+
+/** The layer's kept draft image when it was drawn from the same `from`, else the one `make` paints, kept in its place. */
+function keptLayerDraft(layer: 'canvas' | 'frame', from: readonly unknown[], make: () => DraftImageOf | undefined): DraftImageOf | undefined {
+  const last = keptDrafts[layer]
+  if (last && last.from.length === from.length && last.from.every((value, at) => value === from[at])) return last.draft
+  const draft = make()
+  keptDrafts[layer] = { from, draft }
+  return draft
 }
 
 /** A bead of a Layer and where its geometry places it, in bead widths. */
@@ -330,27 +401,31 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
 
 /** How Row progress shows a Frame bead (tickets 352, 434): its color lit in the current row, faded in a finished one
  * unless finished rows are shown. */
-function progressLook({ project, rowMarks, showFinished }: LayerDraw, space: Space, own: GridPosition, painted: string | null): { shown: string | null; dimmed: boolean } {
-  const address = { row: space.toAbsolute.row + own.row, column: space.toAbsolute.column + own.column, layer: 'frame' as const }
-  const dimmed = rowMarks && !showFinished && isInFinishedRow(project, address)
-  return { shown: painted !== null && rowMarks && isInCurrentRow(project, address) ? brighten(painted, CURRENT_ROW_BRIGHTNESS) : painted, dimmed }
+function progressLook({ rowMarks, showFinished, passes, lit }: LayerDraw, space: Space, own: GridPosition, painted: string | null): { shown: string | null; dimmed: boolean } {
+  if (!rowMarks) return { shown: painted, dimmed: false }
+  const pass = passes({ row: space.toAbsolute.row + own.row, column: space.toAbsolute.column + own.column, layer: 'frame' })
+  return { shown: painted !== null && pass === 'current' ? lit(painted) : painted, dimmed: !showFinished && pass === 'finished' }
 }
 
 /** A Seam's width in grid px: a hairline at 100%. */
 const SEAM_WIDTH_PX = 1
 
-/** The Canvas's beads, bead by bead, with the Frame's footprint cut out so none shows over it. */
+/** The Canvas's beads, bead by bead or as one draft image, with the Frame's footprint cut out so none shows over it.
+ * What every bead shares (its Weave's description, cell, corners, the margin) is worked out once (ticket 0676). */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
-  const { rotation } = project
+  const rotation = quarterTurnOf(project)
   const beads = beadsOfLayer(project, 'canvas')
   const covered = footprintOf(project)
+  const keptOut = covered && withMargin(covered, margin)
   const weave = canvasWeave(project)
+  const description = describeWeave(weave)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  const sized = cell.width !== CELL_SIZE_PX || cell.height !== CELL_SIZE_PX ? { width: cell.width, height: cell.height } : {}
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   const visible = visibleBeadsInSpace(weave, space, region, zoom, rotation)
   const firstRow = band ? Math.max(visible.firstRow, band.first - 1) : visible.firstRow
   const lastRow = band ? Math.min(visible.lastRow, band.last + 1) : visible.lastRow
-  const theme = look
 
   // Only the stored rows in view, and only their stored columns: the cost follows the beads, not the canvas.
   const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
@@ -366,25 +441,38 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
     boxPath(context, footprint.x, footprint.y, footprint.width, footprint.height)
     context.clip('evenodd')
   }
-  for (const row of rowsInView) {
-    const { first, last } = visible.columnsOf(row)
+  // The beads of a row in view; a row's beads never overlap, so in any order. The keep-out margin covers any bead that
+  // lies in it (ticket 261): it stays in the Project, undrawn.
+  const eachInView = (row: number, first: number, last: number, take: (column: number, color: string) => void) => {
     const stored = beads[row]!
-    for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
-      // The keep-out margin covers any bead that lies in it (ticket 261): it stays in the Project, undrawn.
-      if (covered && frameContains(withMargin(covered, margin), { row, column })) {
-        continue
-      }
-      const box = positionBoxPx(weave, row, column)
-      drawBead(context, {
-        x: box.x,
-        y: box.y,
-        size: CELL_SIZE_PX,
-        ...(box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}),
-        cornerRadius,
-        color: stored[column]!,
-        dimmed: false,
-        deviceScale: zoom * pixelRatio,
-        theme,
+    for (const key in stored) {
+      const column = Number(key)
+      if (column < first || column > last || (keptOut && frameContains(keptOut, { row, column }))) continue
+      take(column, stored[column]!)
+    }
+  }
+  if (draw.draft && rowsInView.length > 0) {
+    // A whole draw keeps the whole layer's image, which a pan or zoom then lays down again.
+    const whole = !band && keptLayerDraft('canvas', [project, margin], () => {
+      const bounds = beadBounds(beads)
+      return bounds && keptDraft(weave, bounds, (put) => {
+        for (const key in beads) eachInView(Number(key), -Infinity, Infinity, (column, color) => put(Number(key), column, color))
+      })
+    })
+    const block = whole ? undefined : draftBlock(beads, visible, rowsInView)
+    if (whole) layDraft(context, whole)
+    else if (block) {
+      drawDraftBlock(context, weave, block, (put) => {
+        for (const row of rowsInView) eachInView(row, block.column, block.column + block.columns - 1, (column, color) => put(row, column, color))
+      })
+    }
+  } else if (!draw.draft) {
+    const deviceScale = zoom * pixelRatio
+    for (const row of rowsInView) {
+      const { first, last } = visible.columnsOf(row)
+      eachInView(row, first, last, (column, color) => {
+        const { x, y } = description.box({ row, column }, cell.width, cell.height)
+        drawBead(context, { x, y, size: CELL_SIZE_PX, ...sized, cornerRadius, color, dimmed: false, deviceScale, theme: look })
       })
     }
   }
@@ -393,9 +481,26 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
   }
 }
 
+/** The rectangle of Canvas positions a draft image of the rows in view holds: the columns in view on any of them, cut
+ * to the box round the stored beads. Undefined where none is in view. */
+function draftBlock(beads: BeadMap, visible: VisiblePositions, rowsInView: readonly number[]): Rect | undefined {
+  const bounds = beadBounds(beads)
+  if (!bounds || rowsInView.length === 0) return undefined
+  let [first, last] = [Infinity, -Infinity]
+  for (const row of rowsInView) {
+    const columns = visible.columnsOf(row)
+    first = Math.min(first, columns.first)
+    last = Math.max(last, columns.last)
+  }
+  first = Math.max(first, bounds.column)
+  last = Math.min(last, bounds.column + bounds.columns - 1)
+  const top = rowsInView[0]!
+  return last < first ? undefined : { row: top, column: first, rows: rowsInView.at(-1)! - top + 1, columns: last - first + 1 }
+}
+
 /** The margin's sheet in grid px (MarginSheet card, tickets 0656, 0657): its box, the Frame's footprint it holds, and
  * its band, the narrowest of its four sides. What the sheet is drawn from and what its tools on the page are placed by. */
-export function marginSheetPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
+export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
   const sheet = frameFootprintPx(project, margin)
   const footprint = frameFootprintPx(project)
   if (!sheet || !footprint) return undefined
@@ -403,22 +508,17 @@ export function marginSheetPx(project: Pick<DrawnProject, 'technique' | 'techniq
   return { sheet, footprint, band }
 }
 
-// The margin's sheet (MarginSheet card, tickets 0656, 0658), in screen px: its corners (10px compact), its inner
-// border's inset (6px compact) and that border's corners. A folded sheet keeps its color and edge, no inner border.
-const SHEET_RADIUS_PX = { full: 12, compact: 10 }
-const BORDER_INSET_PX = { full: 10, compact: 6 }
-const BORDER_RADIUS_PX = 6
-
-/** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band filled in the margin color
- * over the Canvas, the Frame's footprint left out, with a hairline round its edge and an inner border where it fits.
- * Drawn in grid space, so its px are divided by the zoom to stay screen px. */
+/** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the
+ * Frame's footprint left out, a hairline edge and an inner border where it fits; folded, no inner border; none bare,
+ * which keeps only the Move bar (ticket 0682). In grid space, its `MARGIN_PX` divided by the zoom to stay screen px. */
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
   const form = marginForm(band)
+  if (form === 'bare') return
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(SHEET_RADIUS_PX[drawn], band) / zoom
+  const radius = Math.min(MARGIN_PX.sheetRadius[drawn], band) / zoom
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -433,27 +533,43 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   context.roundRect(sheet.x + half, sheet.y + half, sheet.width - 2 * half, sheet.height - 2 * half, Math.max(0, radius - half))
   context.stroke()
   if (form === 'full' || form === 'compact') {
-    const at = BORDER_INSET_PX[form] / zoom
+    const at = MARGIN_PX.place[form].border / zoom
     context.lineWidth = 1 / zoom
     context.strokeStyle = look.line
     context.beginPath()
-    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, BORDER_RADIUS_PX / zoom)
+    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, MARGIN_PX.borderRadius / zoom)
     context.stroke()
   }
   context.restore()
+}
+
+const canvasLooks = new WeakMap<ProjectTheme, ProjectTheme>()
+
+/** A theme as the Canvas draws in it: a finished row fades toward the drawing area, not a board. One object per theme,
+ * so the colors kept per theme last from draw to draw. */
+function canvasLook(theme: ProjectTheme): ProjectTheme {
+  let look = canvasLooks.get(theme)
+  if (!look) {
+    look = { ...theme, background: theme.canvas }
+    canvasLooks.set(theme, look)
+  }
+  return look
 }
 
 // Draws the part of the Project in the region, clearing it first. Differs by space only in the background (Frame-only
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters } = input
-  const { frame, rotation } = project
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false } = input
+  const frameTheme = input.frameTheme ?? theme
+  const frame = frameOf(project)
+  const rotation = quarterTurnOf(project)
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
-  const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme
-  // A band of rows is the same rows of both layers only where they are woven alike.
-  const alike = !space.open || !frame || sameWeave(canvasWeave(project), heldWeave(project, 'frame')!)
+  const look = space.open ? canvasLook(theme) : theme
+  const frameLook = space.open ? canvasLook(frameTheme) : frameTheme
+  // A band of rows is the same rows of both layers only where they are alike (woven alike, in Beads of one size).
+  const alike = !space.open || !frame || layersAlike(project)
   const band = alike ? rows : undefined
   const bandWeave = space.open ? canvasWeave(project) : frameWeave(project)
 
@@ -472,7 +588,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   context.clearRect(cleared.x, cleared.y, cleared.width, cleared.height)
   if (!space.open) {
-    context.fillStyle = theme.background
+    context.fillStyle = frameTheme.background
     context.fillRect(cleared.x, cleared.y, cleared.width, cleared.height)
   }
 
@@ -481,20 +597,42 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   context.imageSmoothingEnabled = false
 
   const area = regionInGridSpace(extent, region, zoom, rotation)
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters }
+  const lifted = new Map<string, string>()
+  const lit = (color: string) => {
+    let shown = lifted.get(color)
+    if (shown === undefined) {
+      shown = brighten(color, CURRENT_ROW_BRIGHTNESS)
+      lifted.set(color, shown)
+    }
+    return shown
+  }
+  const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit }
 
   if (space.open) {
     drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })
     drawCanvasLayer(context, draw, space)
     if (frame) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
+      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
-      // The band's rows are the Canvas's; the Frame's own are counted from its first (alike weaves only).
-      drawFrameLayer(context, { ...draw, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+      // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's
+      // corner. The band's rows are the Canvas's; the Frame's own are counted from its first (alike layers only).
+      const scale = frameScale(project)
+      if (scale === 1) {
+        drawFrameLayer(context, { ...draw, look: frameLook, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+      } else {
+        const seen = { left: (area.left - origin.x) / scale, right: (area.right - origin.x) / scale, top: (area.top - origin.y) / scale, bottom: (area.bottom - origin.y) / scale }
+        context.save()
+        context.translate(origin.x, origin.y)
+        context.scale(scale, scale)
+        drawFrameLayer(context, { ...draw, look: frameLook, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
+        context.restore()
+      }
     }
   } else if (space.hasFrame) {
-    drawFrameLayer(context, draw, space, { x: 0, y: 0 })
+    drawFrameLayer(context, { ...draw, look: frameLook }, space, { x: 0, y: 0 })
   }
 
   if (band) {
