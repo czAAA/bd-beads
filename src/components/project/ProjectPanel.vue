@@ -5,6 +5,7 @@ import { layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { BeadShape, Technique } from '../../domain/weave'
+import { useBackgroundSwatches } from '../../composables/canvas/useBackgroundSwatches'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -46,20 +47,18 @@ const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const file = controlAction('export-project-file')
 
-/** The Canvas's Bead and Bead shape (ADR 0079), which the Frame shares until ticket 0665. */
-const canvasLayer = computed(() => layerOf(props.project, 'canvas'))
+/** The woven layer's Bead and Bead shape (ADR 0079, ticket 0665): the Frame's when there is one, else the Canvas's.
+ * Replace Bead asks which layer it changes; ticket 0670 gives each its own Layer settings. */
+const wovenLayer = computed(() => layerOf(props.project, 'frame') ?? layerOf(props.project, 'canvas'))
 
 const beadSummary = computed(() => {
-  const { bead, beadShape } = canvasLayer.value
+  const { bead, beadShape } = wovenLayer.value
   const shape = beadShape === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric
   return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
 })
 
-const canvasName = computed(() => {
-  const background = canvas.background.value
-  if (!background) return undefined
-  return background.id === 'custom' ? t.value.palette.customColorLabel : t.value.canvas.canvasColor.names[background.id]
-})
+/** The Canvas color's name, the canvas section's summary: the one its picker shows chosen. */
+const canvasName = useBackgroundSwatches(canvas).summary
 </script>
 
 <template>
@@ -78,8 +77,8 @@ const canvasName = computed(() => {
 
     <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
       <BeadSection
-        :bead="canvasLayer.bead"
-        :bead-shape="canvasLayer.beadShape"
+        :bead="wovenLayer.bead"
+        :bead-shape="wovenLayer.beadShape"
         :candidates="replaceCandidates"
         @update:bead-shape="emit('set-bead-shape', $event)"
         @pick="emit('replace-bead', $event)"

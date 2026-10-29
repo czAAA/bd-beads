@@ -190,10 +190,10 @@ describe('useEdit', () => {
       const other = BEAD_CATALOG.find((bead) => bead.id !== canvasOf(base).beadId)!
       const ctx = editHarness(base)
       ctx.edit('exempt', (project) => replaceBead(project, other))
-      expect(canvasOf(ctx.project).beadId).toBe(other.id)
+      expect(frameOf(ctx.project)!.beadId).toBe(other.id)
 
       ctx.history.onUndo()
-      expect(canvasOf(ctx.project).beadId).toBe(canvasOf(base).beadId)
+      expect(frameOf(ctx.project)!.beadId).toBe(canvasOf(base).beadId)
     })
   })
 

@@ -83,8 +83,10 @@ export function normalizeProject(stored: StoredProject): Project {
   // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
   const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`))
 
-  // The Palette's built-in colors are read with the Bead id as stored, before an alias names it anew (ticket 534).
-  const builtIns = defaultPalette(storedCanvas.beadId)
+  // The Palette's built-in colors are the woven layer's Bead's (ticket 0665), read with its id as stored, before an
+  // alias names it anew (ticket 534).
+  const wovenBeadId = (storedFrames[0] ?? storedCanvas).beadId
+  const builtIns = defaultPalette(wovenBeadId)
   const removedDefaults = readRemovedDefaults(storedRemoved)
   // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
   const palette = normalizePaletteIds(storedPalette, builtIns)
@@ -96,7 +98,7 @@ export function normalizeProject(stored: StoredProject): Project {
     palette,
     ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
     ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),
-    paletteLetters: lettersOfPalette(palette, storedCanvas.beadId, storedLetters),
+    paletteLetters: lettersOfPalette(palette, wovenBeadId, storedLetters),
   }
 }
 

@@ -39,7 +39,7 @@ describe('AppIcon', () => {
   })
 
   it('keeps the bead dots: zero-length round-cap strokes at their own width', () => {
-    const svg = mount(AppIcon, { props: { name: 'fill' } }).get('svg')
+    const svg = mount(AppIcon, { props: { name: 'bead' } }).get('svg')
     expect(svg.html()).toMatch(/h\.01/)
   })
 

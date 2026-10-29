@@ -838,6 +838,11 @@ export const zh: Translations = {
     selectLabel: '替换珠子',
     confirmTitle: '替换珠子？',
     confirmMessage: '换成 {bead} 后，这个项目的尺寸约为 {new}，而不是 {old}。你的设计和珠子数量完全不变。你可以撤销这一操作。',
+    canvasMessage:
+      '换成 {bead} 后，画布会按这种珠子的尺寸绘制。边框保留自己的珠子，尺寸和珠子数量完全不变。你可以撤销这一操作。',
+    layerLabel: '在哪里替换珠子',
+    layerFrame: '边框',
+    layerCanvas: '画布',
     confirmButton: '替换珠子',
     outdatedPostfix: '(已保存的)',
     cancelButton: '取消',

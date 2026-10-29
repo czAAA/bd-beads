@@ -136,6 +136,8 @@
   --frame-edit-chip: 32px;
   --frame-edit-hit: 44px;
   --frame-control-offset: 48px;
+  /* The MarginSheet card's px the canvas and the sheet's script use too: `MARGIN_PX` (src/rendering/marginSizes.ts) holds
+   * them, and marginSizes.test.ts fails if these drift from it (ticket 0683). */
   --margin-border-inset: 10px; /* MarginSheet card: the inner border's inset from the sheet's edge (6px in the compact form). */
   --margin-border-inset-compact: 6px; /* MarginSheet card: the inner border's inset in the compact form. */
   --margin-tool: 28px; /* MarginSheet card: a tool button in the margin's top band (24px compact; 44px hit on a coarse pointer). */
