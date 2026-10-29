@@ -980,6 +980,16 @@ describe('ProjectSurface', () => {
         await vi.waitFor(() => expect(dashed()).toBe(true))
       })
 
+      it('refuses a press whose pasted block would land a bead in the margin, though the press itself is clear of it (ticket 0675)', async () => {
+        const project = framed()
+        const previewStamp = { colors: [['#e63746', '#e63746', '#e63746']], top: 8, left: 6, rows: 1, columns: 3, lands: () => true }
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ blocksMargin: true }), previewStamp })
+        const dashed = () => context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
+        await vi.waitFor(() => expect(dashed()).toBe(true))
+      })
+
       it('keeps its own cursor for Erase, which still works there', async () => {
         const project = framed()
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can() })
