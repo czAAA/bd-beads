@@ -9,7 +9,7 @@ import {
   type History,
   type HistoryStep,
 } from '../../domain/history'
-import { snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
+import { snapshotOf, UNDO_CAP, type UndoEntry } from '../../domain/undoSnapshot'
 import type { Project } from '../../domain/project'
 
 /** What the history needs from the app shell: the open Project and Edit's way of putting a snapshot back. */
@@ -22,8 +22,8 @@ export interface UndoHistoryDeps {
 }
 
 // Undo/redo (tickets 34, 48; ADRs 0020, 0036): stacks of full snapshots (domain/history.ts) pushed by Edit through
-// record(); not saved with the Project, so the shell reset()s on a change. Deps are read lazily, so the shell can pass
-// this and Edit to each other.
+// record(), the oldest dropped past UNDO_CAP (ticket 0677); not saved with the Project, so the shell reset()s on a
+// change. Deps are read lazily, so the shell can pass this and Edit to each other.
 export function useUndoHistory(deps: UndoHistoryDeps) {
   // Shallow (ticket 0616): a step is replaced whole, and what Undo puts back must be the Project's own data, not a proxy.
   const history = shallowRef<History<UndoEntry>>(emptyHistory())
@@ -33,7 +33,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
 
   /** Pushes one undo step: the state an Edit is about to replace. */
   function record(entry: UndoEntry) {
-    history.value = pushHistory(history.value, entry)
+    history.value = pushHistory(history.value, entry, UNDO_CAP)
   }
 
   function reset() {
@@ -59,7 +59,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
   function onRedo() {
     deps.settle()
     const project = deps.currentProject()
-    const step = project && redoStep(history.value, snapshotOf(project))
+    const step = project && redoStep(history.value, snapshotOf(project), UNDO_CAP)
     if (step) {
       applyHistoryStep(step)
     }
