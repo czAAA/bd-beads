@@ -4,6 +4,8 @@ import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { lettersFor } from './swatchLetters'
 import { framedGrid } from './layerBeads'
 import { weaveOf } from './layerWeave'
+import type { FrameSheet } from './canvas'
+import type { FlatProject } from './flatWeave'
 import type { Grid, Project, RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
 import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
@@ -32,6 +34,8 @@ import projectFileV6BrickBlock from './fixtures/project-file-v6-removed-defaults
 import projectFileV8BrickBlock from './fixtures/project-file-v8-swatch-codes-brick-block.json?raw'
 import projectFileV11 from './fixtures/project-file-v11-weave-settings.json?raw'
 import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?raw'
+import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
+import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
@@ -39,7 +43,7 @@ import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
-import { sheetOf } from '../testUtils/flatFields'
+import { flatView, sheetOf } from '../testUtils/flatFields'
 
 // Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn, not how it is
 // kept, so every library and file format the app has written must keep opening as exactly the Projects it held.
@@ -69,13 +73,26 @@ const noProgress: RowProgress = { direction: 'rows', currentRow: 0, currentColum
 /** The Swatch letters a Project saved before letters opens with (ticket 0573): A, B, C… in Palette order. */
 const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => color.hex), undefined)
 
+/** A Project saved before it held its layers as it reads today (ticket 0664, ADR 0079): its Canvas from its own fields
+ * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead, Bead shape and
+ * Letters, each layer named by the Project's id. */
+function layered(flat: Omit<FlatProject, 'frame'> & { frame?: FrameSheet }): Project {
+  const { name, technique, techniqueSettings, beadId, bead, beadShape, beads, frame, rowProgress, letters, pieceNames, rotation, ...rest } = flat
+  const shared = { beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters } : {}) }
+  const canvas = { id: `${flat.id}:canvas`, name, ...weaveOf({ technique, techniqueSettings }), ...shared, beads, ...(pieceNames ? { pieceNames } : {}), orientation: rotation }
+  return { ...rest, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, rowProgress }] : [canvas] }
+}
+
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
-function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pick<Project, 'id' | 'name' | 'technique'> & { grid: Grid }): Project {
+function expectedProject(fields: Partial<Omit<FlatProject, 'beads' | 'frame'>> & Pick<FlatProject, 'id' | 'name' | 'technique'> & { grid: Grid }): Project {
   const { grid: cells, ...rest } = fields
-  return {
+  const [, frame] = framedGrid(cells, weaveOf(fields)).layers
+  const { id: _id, beadId: _beadId, rowProgress: _progress, ...sheet } = frame!
+  return layered({
     beadId: CUBE_COPY.id,
     bead: CUBE_COPY,
-    ...framedGrid(cells, weaveOf(fields)),
+    beads: {},
+    frame: sheet,
     ...weaveOf(fields),
     rowProgress: noProgress,
     palette: defaultPaletteIds(),
@@ -84,7 +101,7 @@ function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pic
     createdAt: 0,
     updatedAt: 0,
     ...rest,
-  }
+  })
 }
 
 /** The bead's label, which a Project saved before names existed takes as its own. */
@@ -180,7 +197,7 @@ const fileProjects = {
 /** What version 3 stored as a Frame over a sketch and what the Frame sheet reads it as (ADR 0066): the beads inside the
  * old Frame are the Frame's own, counted from its first bead; the bead it covered is an ordinary Canvas bead; the name
  * anchored inside the Frame is the Frame's, the one outside stays on the Canvas. */
-const framedOverSketch: Project = {
+const framedOverSketch: Project = layered({
   id: 'v3-framed',
   name: 'Framed over a sketch',
   technique: 'loom',
@@ -203,8 +220,8 @@ const framedOverSketch: Project = {
   pieceNames: [{ name: 'Sketch', row: 20, column: 2 }],
   createdAt: 1740000000000,
   updatedAt: 1740000001000,
-}
-const unframedSketch: Project = {
+})
+const unframedSketch: Project = layered({
   id: 'v3-unframed',
   name: 'Just a sketch',
   technique: 'peyote',
@@ -217,7 +234,7 @@ const unframedSketch: Project = {
   rotation: 0,
   createdAt: 1740000002000,
   updatedAt: 1740000003000,
-}
+})
 
 beforeEach(() => {
   localStorage.clear()
@@ -265,17 +282,29 @@ describe('stored-data compatibility', () => {
       localStorage.setItem(STORAGE_KEY, libraryV4BrickBlock)
 
       const opened = loadProjects()
-      expect(opened[0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#e63746' } } } })
+      expect(flatView(opened[0]!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#e63746' } } } })
       saveProjects(opened)
 
       const [saved] = JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns
-      expect(saved).toMatchObject({ techniqueSettings: { brickBlock: 2 }, frame: { techniqueSettings: { brickBlock: 3 } } })
-      expect(saved).not.toHaveProperty('brickBlock')
+      expect(saved).toMatchObject({ layers: [{ techniqueSettings: { brickBlock: 2 } }, { techniqueSettings: { brickBlock: 3 } }] })
+      expect(saved.layers[0]).not.toHaveProperty('brickBlock')
       expect(loadProjects()).toEqual(opened)
     })
 
+    it('opens a version 5 library as the layers each Project holds, and saves it back byte for byte (ticket 0664)', () => {
+      localStorage.setItem(STORAGE_KEY, libraryV5)
+
+      const [framed, open] = loadProjects()
+      expect(framed!.layers.map((layer) => layer.id)).toEqual(['layer-canvas', 'layer-frame'])
+      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadShape: 'real', letters: true, orientation: 90 })
+      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', beadShape: 'real', rowProgress: { currentRow: 1 } })
+      expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
+      saveProjects(loadProjects())
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(JSON.parse(libraryV5))
+    })
+
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
-      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV3, libraryV4, libraryV4BrickBlock]) {
+      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV3, libraryV4, libraryV4BrickBlock, libraryV5]) {
         localStorage.setItem(STORAGE_KEY, stored)
         loadProjects()
       }
@@ -292,7 +321,7 @@ describe('stored-data compatibility', () => {
 
       saveProjects(loadProjects())
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 4 })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 5 })
       expect(loadProjects()).toEqual(expected)
     })
 
@@ -334,7 +363,7 @@ describe('stored-data compatibility', () => {
 
     it('opens a version 7 file with the Bead copy of a Bead the catalog does not have, and writes it back the same (ticket 534)', () => {
       const [opened] = parseProjectsFile(projectFileV7).projects
-      expect(opened).toMatchObject({ beadId: 'old-maker/cube/2mm', bead: { id: 'old-maker/cube/2mm', widthMm: 2, beadsPerKg: 50000 } })
+      expect(flatView(opened!)).toMatchObject({ beadId: 'old-maker/cube/2mm', bead: { id: 'old-maker/cube/2mm', widthMm: 2, beadsPerKg: 50000 } })
 
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
@@ -356,28 +385,29 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV11Turned).projects
       expect(sheetOf(opened)).toEqual({ row: 8, column: 6, rows: 5, columns: 4, technique: 'peyote', quarterTurns: 3, beads: { 0: { 0: '#e63746' }, 4: { 3: '#e63746' } } })
       expect(rowProgressOf(opened)).toMatchObject({ direction: 'rows', currentRow: 2 })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV11Turned))
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 12, projects: [{ layers: [{}, { orientation: 270 }] }] })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
     it('opens a version 10 file with the Frame\'s Folded beads beyond its edge, and writes it back the same (ticket 0638)', () => {
       const [opened] = parseProjectsFile(projectFileV10Folded).projects
       expect(sheetOf(opened)).toEqual({ row: 7, column: 7, rows: 6, columns: 2, technique: 'peyote', beads: { 0: { 0: '#e63746' } }, folded: { 1: { 3: '#2f6fed' }, 4: { [-2]: '#27ae60', [-1]: '#27ae60' } } })
-      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 11 })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 12 })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('reads a version 4 file and writes it back as version 11 with the built-in Palette (ticket 0525)', () => {
+    it('reads a version 4 file and writes it back as version 12 with the built-in Palette (tickets 0525, 0664)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 11, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 12, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })
 
     it('opens a version 6 file with a removed default and a flat Brick block on both layers, the Brick block in each layer\'s settings (ticket 0636)', () => {
       const [opened] = parseProjectsFile(projectFileV6BrickBlock).projects
-      expect(opened).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, removedDefaults: ['#2fb6ae'], beads: { [-3]: { [-1]: '#e63746' } } })
+      expect(flatView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, removedDefaults: ['#2fb6ae'], beads: { [-3]: { [-1]: '#e63746' } } })
       expect(sheetOf(opened)).toEqual({ row: 0, column: 0, columns: 3, rows: 2, technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#1a1a1a', 1: '#ffffff' }, 1: { 1: '#1a1a1a' } } })
-      expect(opened).not.toHaveProperty('brickBlock')
+      expect(canvasOf(opened!)).not.toHaveProperty('brickBlock')
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
@@ -391,16 +421,29 @@ describe('stored-data compatibility', () => {
 
     it('opens a version 8 file with a swatch code, the Canvas\'s flat Brick block kept off brick stitch and the Frame\'s in its settings (ticket 0636)', () => {
       const [opened] = parseProjectsFile(projectFileV8BrickBlock).projects
-      expect(opened).toMatchObject({ technique: 'loom', techniqueSettings: { brickBlock: 2 }, paletteCodes: { '#123456': 'DB1' } })
+      expect(flatView(opened!)).toMatchObject({ technique: 'loom', techniqueSettings: { brickBlock: 2 }, paletteCodes: { '#123456': 'DB1' } })
       expect(sheetOf(opened)).toEqual({ row: 4, column: 2, columns: 2, rows: 2, technique: 'brick', techniqueSettings: { brickBlock: 4 }, beads: { 1: { 0: '#123456', 1: '#123456' } } })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('opens a version 11 file with each layer\'s settings map as it holds it, and writes it back the same (ticket 0636)', () => {
+    it('opens a version 11 file with each layer\'s settings map as it holds it, and writes it back as layers (tickets 0636, 0664)', () => {
       const [opened] = parseProjectsFile(projectFileV11).projects
-      expect(opened).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#2fb6ae' } } })
-      expect(sheetOf(opened)).toEqual({ row: 7, column: 7, rows: 2, columns: 3, technique: 'peyote', techniqueSettings: { brickBlock: 2 }, beads: { 1: { 2: '#e63746' } } })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV11))
+      expect(flatView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#2fb6ae' } } })
+      expect(sheetOf(opened!)).toEqual({ row: 7, column: 7, rows: 2, columns: 3, technique: 'peyote', techniqueSettings: { brickBlock: 2 }, beads: { 1: { 2: '#e63746' } } })
+      const written = JSON.parse(serializeProject(opened!))
+      expect(written).toMatchObject({ version: 12, projects: [{ layers: [{ techniqueSettings: { brickBlock: 3 } }, { technique: 'peyote', techniqueSettings: { brickBlock: 2 } }] }] })
+      expect(parseProjectsFile(JSON.stringify(written)).projects).toEqual([opened])
+    })
+
+    it('opens a version 12 file as the layer list it holds, the Canvas first, and writes it back the same (ticket 0664)', () => {
+      const [opened] = parseProjectsFile(projectFileV12).projects
+      expect(opened!.id).toBe('v12-layers')
+      expect(opened!.makerName).toBe('Maria')
+      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
+      expect(beadsOfLayer(opened!, 'canvas')).toEqual({ 0: { 0: '#2fb6ae' }, 30: { 30: '#e63746', 31: '#e63746' } })
+      expect(sheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
+      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12))
     })
 
     it('opens a version 5 file written on Delica with the twelve and an added color showing the same swatches (ticket 0528)', () => {
@@ -421,7 +464,7 @@ describe('stored-data compatibility', () => {
 
     it('opens a Project file that holds a Brick block (ticket 477), and one without as 1', async () => {
       const [block] = (await readProjectsFile(new File([await gzipJson(projectFileBrickBlock)], 'c.openbeads'))).projects
-      expect(block).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+      expect(canvasOf(block!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
       expect(canvasOf(plain).techniqueSettings?.brickBlock ?? 1).toBe(1)
     })

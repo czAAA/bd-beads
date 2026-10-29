@@ -4,11 +4,11 @@ import { createProject } from './createProject'
 import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import { rotateCanvas } from './rotate'
-import type { Project } from './project'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, frameOf, orientationOf } from './layerRecord'
-import { sheetOf } from '../testUtils/flatFields'
+import { flatOf, sheetOf } from '../testUtils/flatFields'
+import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -23,7 +23,7 @@ describe('normalizeProject', () => {
   })
 
   it('gives a Project saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
-    const { beads: _beads, frame: _frame, ...base } = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } })
+    const { beads: _beads, frame: _frame, ...base } = flatOf(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }))
     const legacy = {
       ...base,
       columns: 3,
@@ -51,13 +51,15 @@ describe('normalizeProject', () => {
   })
 
   it('backfills row progress and the rotation on a Project saved before they existed', () => {
-    const { rowProgress: _rowProgress, rotation: _rotation, ...legacy } = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    })
+    const { rowProgress: _rowProgress, rotation: _rotation, ...legacy } = flatOf(
+      createProject({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+    )
 
-    const normalized = normalizeProject(legacy as Project)
+    const normalized = normalizeProject(legacy as never)
 
     expect(rowProgressOf(normalized)).toEqual({
       direction: 'rows',
@@ -68,27 +70,31 @@ describe('normalizeProject', () => {
   })
 
   it('reads ticket 28\'s two-position `rotated` boolean as its nearest quarter turn (ticket 171)', () => {
-    const { rotation: _rotation, ...legacy } = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    })
-
-    expect(orientationOf(normalizeProject({ ...legacy, rotated: false } as unknown as Project))).toBe(0)
-    expect(orientationOf(normalizeProject({ ...legacy, rotated: true } as unknown as Project))).toBe(90)
-  })
-
-  it('drops the color-to-bead override field a Project saved before ticket 36 may still carry (ADR 0007)', () => {
-    const legacy = {
-      ...createProject({
+    const { rotation: _rotation, ...legacy } = flatOf(
+      createProject({
         technique: 'loom',
         beadId: cubeBead.id,
         size: { width: 15, height: 15, unit: 'mm' },
       }),
+    )
+
+    expect(orientationOf(normalizeProject({ ...legacy, rotated: false } as never))).toBe(0)
+    expect(orientationOf(normalizeProject({ ...legacy, rotated: true } as never))).toBe(90)
+  })
+
+  it('drops the color-to-bead override field a Project saved before ticket 36 may still carry (ADR 0007)', () => {
+    const legacy = {
+      ...flatOf(
+        createProject({
+          technique: 'loom',
+          beadId: cubeBead.id,
+          size: { width: 15, height: 15, unit: 'mm' },
+        }),
+      ),
       colorBeadOverrides: { red: 'miyuki-delica-11-0' },
     }
 
-    const normalized = normalizeProject(legacy as Project)
+    const normalized = normalizeProject(legacy)
 
     expect((normalized as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
@@ -101,8 +107,8 @@ describe('normalizeProject', () => {
     })
 
     const normalized = normalizeProject({
-      ...base,
-      rowProgress: { currentRow: 5 } as Project['rowProgress'],
+      ...flatOf(base),
+      rowProgress: { currentRow: 5 } as RowProgress,
     })
 
     expect(rowProgressOf(normalized)).toEqual({
@@ -114,9 +120,9 @@ describe('normalizeProject', () => {
 
   it('drops the stored real-world size a Project saved before ADR 0026 still carries, and keeps its grid', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
-    const legacy = { ...base, widthMm: 15, heightMm: 30 }
+    const legacy = { ...flatOf(base), widthMm: 15, heightMm: 30 }
 
-    const normalized = normalizeProject(legacy as Project)
+    const normalized = normalizeProject(legacy)
 
     expect(normalized).not.toHaveProperty('widthMm')
     expect(normalized).not.toHaveProperty('heightMm')

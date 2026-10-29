@@ -21,7 +21,8 @@ import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, withLayer } from './layerRecord'
-import { flatView, withFields } from '../testUtils/flatFields'
+import { sheetOf, withFields } from '../testUtils/flatFields'
+import { legacyFile } from '../testUtils/legacyFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -86,16 +87,15 @@ describe('single-Project roundtrip', () => {
     const canvas = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
     const project = withWeave(canvas, 'frame', { technique: 'brick', techniqueSettings: { brickBlock: 4 } })
     const [stored] = JSON.parse(serializeProject(project)).projects
-    expect(flatView(stored)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 4 } } })
-    expect(stored).not.toHaveProperty('brickBlock')
-    expect(stored.frame).not.toHaveProperty('brickBlock')
+    expect(stored.layers).toMatchObject([{ technique: 'brick', techniqueSettings: { brickBlock: 3 } }, { technique: 'brick', techniqueSettings: { brickBlock: 4 } }])
+    expect(stored.layers[0]).not.toHaveProperty('brickBlock')
+    expect(stored.layers[1]).not.toHaveProperty('brickBlock')
   })
 
   it('reads an unreadable Brick block in an earlier version\'s flat field as the default (ticket 477)', () => {
     for (const bad of [0, 21, 2.5, 'two', null]) {
-      const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
-      file.version = 10
-      file.projects[0].brickBlock = bad
+      const file = legacyFile([withWeave(decoratedProject(), 'canvas', { technique: 'brick' })], 10)
+      file.projects[0]!.brickBlock = bad
       expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
     }
   })
@@ -104,8 +104,8 @@ describe('single-Project roundtrip', () => {
     const brick = withWeave(withWeave(decoratedProject(), 'canvas', { technique: 'brick' }), 'frame', { technique: 'brick' })
     for (const bad of [{ brickBlock: 'two' }, { brickBlock: null }, 'three', null, [3]]) {
       const file = JSON.parse(serializeProject(brick))
-      file.projects[0].techniqueSettings = bad
-      file.projects[0].frame.techniqueSettings = bad
+      file.projects[0].layers[0].techniqueSettings = bad
+      file.projects[0].layers[1].techniqueSettings = bad
       const [read] = parseProjectsFile(JSON.stringify(file)).projects
       expect(canvasOf(read).techniqueSettings).toEqual({ brickBlock: 1 })
       expect(frameOf(read)!.techniqueSettings).toEqual({ brickBlock: 1 })
@@ -113,8 +113,8 @@ describe('single-Project roundtrip', () => {
   })
 
   it('reads a flat Brick block only from a file of version 10 or earlier (ticket 0636)', () => {
-    const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
-    file.projects[0].brickBlock = 3
+    const file = legacyFile([withWeave(decoratedProject(), 'canvas', { technique: 'brick' })], 11)
+    file.projects[0]!.brickBlock = 3
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
     file.version = 10
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 3 })
@@ -138,24 +138,25 @@ describe('single-Project roundtrip', () => {
   it('writes Row progress without its flag, and reads an old file that has one with the Frame deciding (ticket 426)', () => {
     const project = decoratedProject()
     const file = JSON.parse(serializeProject(project))
-    expect(file.projects[0].rowProgress).not.toHaveProperty('enabled')
+    expect(file.projects[0].layers[1].rowProgress).not.toHaveProperty('enabled')
 
-    file.projects[0].rowProgress.enabled = false
-    file.projects[0].rowProgress.decided = true
+    file.projects[0].layers[1].rowProgress.enabled = false
+    file.projects[0].layers[1].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
     expect(rowProgressOf(restored)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 11 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
+  it('writes version 12 with the layer list, each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(11)
+    expect(file.version).toBe(12)
     expect(file.patterns).toBeUndefined()
-    expect(file.projects[0].beads).toBeUndefined()
-    expect(file.projects[0].encodedBeads).toBeDefined()
-    expect(file.projects[0].frame.encodedBeads.rows).toEqual({ 2: '3:1' })
-    expect(file.projects[0].frame.beads).toBeUndefined()
+    expect(Object.keys(file.projects[0]).sort()).toEqual(['createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
+    expect(file.projects[0].layers[0].beads).toBeUndefined()
+    expect(file.projects[0].layers[0]).toMatchObject({ name: 'Fox', technique: 'peyote', orientation: 0, encodedBeads: { colors: [], rows: {} } })
+    expect(file.projects[0].layers[1].encodedBeads.rows).toEqual({ 2: '3:1' })
+    expect(file.projects[0].layers[1].beads).toBeUndefined()
     expect(JSON.parse(serializeLibrary([decoratedProject()])).kind).toBe('openbeads/library')
   })
 
@@ -168,8 +169,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 12
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 12')
+    file.version = 13
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 13')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
@@ -178,9 +179,9 @@ describe('single-Project roundtrip', () => {
     expect(file.projects[0].palette).toEqual(custom.palette)
     expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([custom])
 
-    delete file.projects[0].palette
-    file.version = 4
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.palette).toEqual(defaultPaletteIds())
+    const four = legacyFile([custom], 4)
+    delete four.projects[0]!.palette
+    expect(parseProjectsFile(JSON.stringify(four)).projects[0]!.palette).toEqual(defaultPaletteIds())
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
@@ -189,13 +190,13 @@ describe('single-Project roundtrip', () => {
 
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
 
-    delete file.projects[0].pieceNames
+    delete file.projects[0].layers[0].pieceNames
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toBeUndefined()
   })
 
   it('drops Piece names that are not well formed', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.projects[0].pieceNames = [{ row: 1, column: 1, name: '  ' }, { row: 'x', column: 1, name: 'Bad' }, { row: 0, column: 0, name: 'Ok' }]
+    file.projects[0].layers[0].pieceNames = [{ row: 1, column: 1, name: '  ' }, { row: 'x', column: 1, name: 'Bad' }, { row: 0, column: 0, name: 'Ok' }]
 
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toEqual([{ row: 0, column: 0, name: 'Ok' }])
   })
@@ -230,7 +231,7 @@ describe('a Technique this build does not know in a file (ticket 0644)', () => {
     const fox = makeProject('Fox')
     const owl = makeProject('Owl')
     const file = JSON.parse(serializeLibrary([fox, owl]))
-    file.projects[0].technique = 'herringbone'
+    file.projects[0].layers[0].technique = 'herringbone'
 
     expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([owl])
   })
@@ -238,7 +239,7 @@ describe('a Technique this build does not know in a file (ticket 0644)', () => {
   it('reads a Frame woven in it in the Canvas\'s Weave', () => {
     const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
     const file = JSON.parse(serializeProject(project))
-    file.projects[0].frame.technique = 'herringbone'
+    file.projects[0].layers[1].technique = 'herringbone'
 
     expect(frameOf(parseProjectsFile(JSON.stringify(file)).projects[0])).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
   })
@@ -247,11 +248,14 @@ describe('a Technique this build does not know in a file (ticket 0644)', () => {
 describe('the Frame shape in a file (tickets 0591, 0668)', () => {
   it('opens a Frame with no shape, an older file\'s "rectangular", or a shape this build does not know as a Frame', () => {
     const project = decoratedProject()
-    const stated = serializeProject(project).replace('"frame":{', '"frame":{"kind":"rectangular",')
-    const unknown = serializeProject(project).replace('"frame":{', '"frame":{"kind":"hexagon",')
+    const older = JSON.stringify(legacyFile([project]))
+    const stated = older.replace('"frame":{', '"frame":{"kind":"rectangular",')
+    const unknown = older.replace('"frame":{', '"frame":{"kind":"hexagon",')
+    const unknownNow = JSON.parse(serializeProject(project))
+    unknownNow.projects[0].layers[1].shape = 'hexagon'
 
     expect(stated).toContain('"kind":"rectangular"')
-    for (const file of [serializeProject(project), stated, unknown]) {
+    for (const file of [serializeProject(project), older, stated, unknown, JSON.stringify(unknownNow)]) {
       const [restored] = parseProjectsFile(file).projects
       expect(restored).toEqual(project)
       expect(frameOf(restored)).not.toHaveProperty('shape')
@@ -261,10 +265,11 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
 
   it('carries a Custom frame through a file and the library: its shape, Rounds and beads by layout position (ticket 0592)', () => {
     const triangle = customFramed()
-    // Stored under the name it had before ADR 0079, so a file reads alike in every build (ticket 0668).
-    expect(JSON.parse(serializeProject(triangle)).projects[0].frame).toMatchObject({ kind: 'triangle', settings: { rounds: 5 } })
-    expect(JSON.parse(serializeProject(triangle)).projects[0].frame).not.toHaveProperty('shape')
+    // Stored as its Frame shape since file version 12; an earlier file's `kind` still reads as one (tickets 0668, 0664).
+    expect(JSON.parse(serializeProject(triangle)).projects[0].layers[1]).toMatchObject({ shape: 'triangle', settings: { rounds: 5 } })
+    expect(JSON.parse(serializeProject(triangle)).projects[0].layers[1]).not.toHaveProperty('kind')
     expect(parseProjectsFile(serializeProject(triangle)).projects).toEqual([triangle])
+    expect(sheetOf(parseProjectsFile(JSON.stringify(legacyFile([triangle]))).projects[0]!)).toEqual(sheetOf(triangle))
     const plain = makeProject()
     expect(parseProjectsFile(serializeLibrary([triangle, plain])).projects).toEqual([triangle, plain])
   })
@@ -272,8 +277,9 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
   it('reads a Custom frame\'s Rounds within its range, and a Frame without a shape without settings', () => {
     const wide = serializeProject(customFramed()).replace('"rounds":5', '"rounds":400')
     expect(frameOf(parseProjectsFile(wide).projects[0])!.settings).toEqual({ rounds: 40 })
-    const stray = serializeProject(decoratedProject()).replace('"frame":{', '"frame":{"settings":{"rounds":5},')
-    expect(frameOf(parseProjectsFile(stray).projects[0])).not.toHaveProperty('settings')
+    const stray = JSON.parse(serializeProject(decoratedProject()))
+    stray.projects[0].layers[1].settings = { rounds: 5 }
+    expect(frameOf(parseProjectsFile(JSON.stringify(stray)).projects[0])).not.toHaveProperty('settings')
   })
 })
 
@@ -320,7 +326,7 @@ describe('parseProjectsFile', () => {
 
   it('backfills fields a Project exported by an older version would be missing', () => {
     const file = JSON.parse(serializeProject(makeProject()))
-    delete file.projects[0].rowProgress
+    delete file.projects[0].layers[1].rowProgress
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
@@ -333,9 +339,9 @@ describe('parseProjectsFile', () => {
 
   it('still imports a file exported before ADR 0026, ignoring the millimetre size it stored and keeping the grid', () => {
     const original = makeProject()
-    const file = JSON.parse(serializeProject(original))
-    file.projects[0].widthMm = 15
-    file.projects[0].heightMm = 15
+    const file = legacyFile([original])
+    file.projects[0]!.widthMm = 15
+    file.projects[0]!.heightMm = 15
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
@@ -354,13 +360,12 @@ describe('parseProjectsFile', () => {
   })
 
   it('still imports a file exported before this change, ignoring its color-to-bead defaults and overrides', () => {
-    const file = JSON.parse(serializeProject(makeProject()))
-    file.colorBeadDefaults = { red: 'toho-cube-1.5mm' }
-    file.projects[0].colorBeadOverrides = { red: 'miyuki-delica-11-0' }
+    const file = { ...legacyFile([makeProject()]), colorBeadDefaults: { red: 'toho-cube-1.5mm' } }
+    file.projects[0]!.colorBeadOverrides = { red: 'miyuki-delica-11-0' }
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
-    expect(projects[0]!.id).toBe(file.projects[0].id)
+    expect(projects[0]!.id).toBe(file.projects[0]!.id)
     expect((projects[0] as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
 })
@@ -410,9 +415,8 @@ describe('the Bead copy in a file (ticket 534)', () => {
   })
 
   it('opens a version 6 file, which has no copy, with the catalog’s Bead', () => {
-    const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 6
-    delete file.projects[0].bead
+    const file = legacyFile([decoratedProject()], 6)
+    delete file.projects[0]!.bead
 
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).bead).toEqual(findBead(canvasOf(decoratedProject()).beadId))
   })

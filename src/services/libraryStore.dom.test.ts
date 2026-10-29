@@ -8,6 +8,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf } from '../domain/layerRecord'
+import { flatOf } from '../testUtils/flatFields'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
@@ -115,7 +116,7 @@ describe('projectStorage', () => {
   })
 
   it('backfills a name from the bead label for projects saved before names existed', () => {
-    const { name: _name, ...legacyProject } = makeProject()
+    const { name: _name, ...legacyProject } = flatOf(makeProject())
     localStorage.setItem('openbeads:patterns', JSON.stringify([legacyProject]))
 
     expect(canvasOf(loadProjects()[0]).name).toBe('TOHO Cube 1.5mm')
@@ -123,7 +124,7 @@ describe('projectStorage', () => {
 
   it('loads a Project saved before ADR 0026 that still carries its millimetre size, ignoring it', () => {
     const project = makeProject()
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...project, widthMm: 15, heightMm: 15 }]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...flatOf(project), widthMm: 15, heightMm: 15 }]))
 
     const [loaded] = loadProjects()
 
@@ -222,7 +223,7 @@ describe('projectStorage', () => {
     it('opens a Project whose runs do not add up to its grid, rather than refusing it', () => {
       // A hand-edited or truncated stored value: two cells of runs for a 10x10 grid. The Project's own dimensions
       // decide the shape, so the rest comes back empty instead of the Project being unopenable.
-      const { beads: _beads, frame: _frame, ...base } = makeProject()
+      const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject())
       const rest = { ...base, columns: 10, rows: 10 }
       localStorage.setItem(
         STORAGE_KEY,
@@ -241,7 +242,7 @@ describe('projectStorage', () => {
     })
 
     it('drops runs that overrun the grid instead of growing it', () => {
-      const { beads: _beads, frame: _frame, ...base } = makeProject()
+      const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject())
       const rest = { ...base, columns: 10, rows: 10 }
       localStorage.setItem(
         STORAGE_KEY,

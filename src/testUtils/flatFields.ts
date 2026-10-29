@@ -66,3 +66,10 @@ export function flatView(project: Project): FlatChange {
   const { id: _id, orientation, ...canvas } = canvasOf(project)
   return { ...rest, ...canvas, rotation: orientation, ...(frameOf(project) ? { frame: sheetOf(project) } : {}), rowProgress: rowProgressOf(project) }
 }
+
+/** A Project as stores and files held it before its layers (ticket 0664), for a test that builds such a stored value
+ * from a Project of today: the Canvas's fields the Project's own, the Frame's sheet beside them. */
+export function flatOf(project: Project): FlatProject {
+  const { frame, ...flat } = flatView(project)
+  return { ...(flat as Omit<FlatProject, 'frame'>), ...(frame ? { frame } : {}) }
+}
