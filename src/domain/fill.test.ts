@@ -3,15 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import type { Cell, Project } from './project'
 import { BEAD_CATALOG } from './beads'
-import type { Technique } from './weave'
-import { fillAt } from '../testUtils/layers'
-import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { fillArea } from './fill'
 import type { GridPosition } from './grid'
 import { gridGeometry } from './layerGeometry'
 import type { LayerSheet } from './layers'
-import { BRICK_BLOCK_SETTING, type Weave } from './weave'
+import { BRICK_BLOCK_SETTING, type Technique, type Weave } from './weave'
+import { fillAt } from '../testUtils/layers'
+import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
