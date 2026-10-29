@@ -8,6 +8,7 @@ import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
 import { canvasWeave, frameScale, frameWeave, layersAlike } from '../domain/layerWeave'
 import { rowPassesOf, rowProgressOn } from '../domain/rowProgress'
+import { projectDimensions } from '../domain/projectExtent'
 import {
   BEAD_GAP_PX,
   beadFill,
@@ -273,8 +274,9 @@ interface LayerDraw {
   letters: Readonly<Record<string, string>> | undefined
   /** Whether the layers are drawn in the draft look, a pixel a bead. */
   draft: boolean
-  /** Where a Frame bead is in Row progress, its Row order worked out once for the draw (ticket 0676). */
-  passes: (position: GridPosition) => 'finished' | 'current' | undefined
+  /** Where a Frame bead at a Canvas row and column is in Row progress, its Row order worked out once for the draw
+   * (ticket 0676). */
+  passes: (row: number, column: number) => 'finished' | 'current' | undefined
   /** A current row's color, lifted once per color for the draw. */
   lit: (color: string) => string
 }
@@ -291,28 +293,54 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const placed = () => inView().map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
   const framed = beadsOfLayer(project, 'frame')
-  const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))
-  if (geometry.grid && draw.draft) drawDraftFrame(context, draw, space, origin, geometry, inView, colorOf)
+  const colorAtOwn = (row: number, column: number) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))
+  const colorOf = ({ row, column }: GridPosition) => colorAtOwn(row, column)
+  if (geometry.grid && draw.draft) drawDraftFrame(context, draw, space, origin, geometry, inView, colorAtOwn)
   else if (geometry.grid) drawUprightBeads(context, draw, space, origin, placed(), colorOf)
   else drawTurnedBeads(context, draw, space, origin, placed(), colorOf, geometry)
 }
 
 /** The Frame's beads in the draft look (ticket 0676): a pixel a bead in its Row progress color, empty ones as an empty
  * bead, no letters. A whole draw keeps the whole Frame's image, which a pan or zoom then lays down again. */
-function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, geometry: LayerGeometry, inView: () => GridPosition[], colorOf: (position: GridPosition) => string | null): void {
+function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, geometry: LayerGeometry, inView: () => GridPosition[], colorAtOwn: (row: number, column: number) => string | null): void {
   const { project, look, rowMarks, showFinished, rows: band } = draw
   const weave = frameWeave(project)
-  const paintOf = (positions: readonly GridPosition[]): DraftPainter => (put) => {
-    for (const position of positions) {
-      const { shown, dimmed } = progressLook(draw, space, position, colorOf(position))
-      put(position.row, position.column, beadFill(shown, dimmed, look))
-    }
+  // What progressLook says of a bead, with a color's fill mixed once for the draw, not once a bead: a whole Frame's
+  // draft paints every bead (ticket 0677). `each` visits the positions to paint.
+  const paintOf = (each: (visit: (row: number, column: number) => void) => void): DraftPainter => (put) => {
+    const { passes, lit } = draw
+    const fills = { plain: new Map<string | null, string>(), dimmed: new Map<string | null, string>() }
+    each((row, column) => {
+      const painted = colorAtOwn(row, column)
+      const pass = rowMarks ? passes(space.toAbsolute.row + row, space.toAbsolute.column + column) : undefined
+      const shown = painted !== null && pass === 'current' ? lit(painted) : painted
+      const dimmed = !showFinished && pass === 'finished'
+      const known = dimmed ? fills.dimmed : fills.plain
+      let fill = known.get(shown)
+      if (fill === undefined) {
+        fill = beadFill(shown, dimmed, look)
+        known.set(shown, fill)
+      }
+      put(row, column, fill)
+    })
+  }
+  const listed = (positions: readonly GridPosition[]) => (visit: (row: number, column: number) => void) => {
+    for (const { row, column } of positions) visit(row, column)
   }
   const whole = !band && keptLayerDraft('frame', [project, look, rowMarks, showFinished, space.toAbsolute.row, space.toAbsolute.column], () => {
+    // A Frame without a shape holds every position of its rectangle: painted row by row, with no position listed.
+    const frame = frameOf(project)
+    if (!frame?.shape) {
+      const { rows, columns } = frame ?? projectDimensions(project)
+      const block = { row: 0, column: 0, rows, columns }
+      return keptDraft(weave, block, paintOf((visit) => {
+        for (let row = 0; row < rows; row += 1) for (let column = 0; column < columns; column += 1) visit(row, column)
+      }))
+    }
     const extent = geometry.extent()
     const all = extent ? geometry.positionsIn(extent) : []
     const block = blockAround(all)
-    return block && keptDraft(weave, block, paintOf(all))
+    return block && keptDraft(weave, block, paintOf(listed(all)))
   })
   if (whole) {
     layDraft(context, whole, origin)
@@ -320,7 +348,7 @@ function drawDraftFrame(context: DrawingContext, draw: LayerDraw, space: Space, 
   }
   const positions = inView()
   const block = blockAround(positions)
-  if (block) drawDraftBlock(context, weave, block, paintOf(positions), origin)
+  if (block) drawDraftBlock(context, weave, block, paintOf(listed(positions)), origin)
 }
 
 /** Each layer's last whole draft image and what it was drawn from (ticket 0676): while only the view moves, the same
@@ -403,7 +431,7 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
  * unless finished rows are shown. */
 function progressLook({ rowMarks, showFinished, passes, lit }: LayerDraw, space: Space, own: GridPosition, painted: string | null): { shown: string | null; dimmed: boolean } {
   if (!rowMarks) return { shown: painted, dimmed: false }
-  const pass = passes({ row: space.toAbsolute.row + own.row, column: space.toAbsolute.column + own.column, layer: 'frame' })
+  const pass = passes(space.toAbsolute.row + own.row, space.toAbsolute.column + own.column)
   return { shown: painted !== null && pass === 'current' ? lit(painted) : painted, dimmed: !showFinished && pass === 'finished' }
 }
 

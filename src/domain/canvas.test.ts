@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { beadBounds, beadCount, beadsFromColors, beadsInFrame, changedPositions, colorAt, colorsInFrame, forEachBead, hasBeads, withColors } from './canvas'
+import { anyChangedPosition, beadBounds, beadCount, beadsFromColors, beadsInFrame, changedPositions, changedRows, colorAt, colorsInFrame, forEachBead, hasBeads, withColors, type BeadMap } from './canvas'
 import { BEAD_CATALOG } from './beads'
 import { createProject } from './createProject'
 import { paintAt } from '../testUtils/layers'
@@ -106,5 +106,24 @@ describe('changedPositions', () => {
       { row: 0, column: 0 },
       { row: 2, column: 1 },
     ])
+  })
+})
+
+describe('anyChangedPosition', () => {
+  it('is false for maps that hold the same beads in other row objects, and true for a bead gone or added', () => {
+    const before: BeadMap = { 0: { 0: '#e63746' }, 2: { 1: '#2f6fed' } }
+    expect(anyChangedPosition(before, { 0: { ...before[0] }, 2: { ...before[2] } })).toBe(false)
+    expect(anyChangedPosition(before, { 0: before[0]! })).toBe(true)
+    expect(anyChangedPosition(before, { ...before, 2: { 1: '#2f6fed', 2: '#2f6fed' } })).toBe(true)
+  })
+})
+
+describe('changedRows', () => {
+  it('names the rows an edit replaced, those it emptied included, without listing their beads', () => {
+    const before: BeadMap = { 0: { 0: '#e63746' }, 2: { 1: '#2f6fed' }, 5: { 3: '#2f6fed' } }
+    const after: BeadMap = { 0: before[0]!, 2: { 1: '#e63746', 2: '#e63746' }, 7: { 0: '#2f6fed' } }
+
+    expect(changedRows(before, after).sort((x, y) => x - y)).toEqual([2, 5, 7])
+    expect(changedRows(before, before)).toEqual([])
   })
 })

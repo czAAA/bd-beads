@@ -139,15 +139,24 @@ function draftLayout(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, block
   return { wide, width, height: block.rows, pixelOf: (row, column) => (row - block.row) * width + Math.round(geometry.rowOffset(row, wide)) + (column - block.column) * wide }
 }
 
-/** Puts one bead's color into a draft image's pixels, `wide` of them from pixel `start`, opaque. */
-function putPixels(data: Uint8ClampedArray, start: number, wide: number, color: string): void {
-  const [r, g, b] = channels(color)
-  for (let at = start * 4; at < (start + wide) * 4; at += 4) {
-    data[at] = r
-    data[at + 1] = g
-    data[at + 2] = b
-    data[at + 3] = 255
+const packed = new Map<string, number>()
+
+/** A color as one opaque pixel of an image's data, in the platform's byte order (ticket 0677). */
+function packedPixel(color: string): number {
+  let known = packed.get(color)
+  if (known === undefined) {
+    const [r, g, b] = channels(color)
+    const bytes = new Uint8ClampedArray([r, g, b, 255])
+    known = new Uint32Array(bytes.buffer)[0]!
+    packed.set(color, known)
   }
+  return known
+}
+
+/** Puts one bead's color into a draft image's pixels, `wide` of them from pixel `start`, opaque. */
+function putPixels(pixels: Uint32Array, start: number, wide: number, color: string): void {
+  const pixel = packedPixel(color)
+  for (let at = start; at < start + wide; at += 1) pixels[at] = pixel
 }
 
 /** Beads where they lie as a draft image (ticket 0675): `wide` pixels a bead across as in `draftImage`, its first pixel
@@ -157,7 +166,8 @@ export function draftOfBeads(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'
   const block = blockAround(beads) ?? { row: 0, column: 0, rows: 0, columns: 0 }
   const { wide, width, height, pixelOf } = draftLayout(geometry, block)
   const data = new Uint8ClampedArray(width * height * 4)
-  for (const { row, column, color } of beads) putPixels(data, pixelOf(row, column), wide, color)
+  const words = new Uint32Array(data.buffer)
+  for (const { row, column, color } of beads) putPixels(words, pixelOf(row, column), wide, color)
   return { width, height, data, firstRow: block.row, firstColumn: block.column, wide }
 }
 
@@ -197,7 +207,8 @@ function paintDraft(canvas: HTMLCanvasElement, weave: Weave, block: Rect, paint:
   const own = canvas.getContext('2d')
   if (!own) return undefined
   const pixels = own.createImageData(width, height)
-  paint((row, column, color) => putPixels(pixels.data, pixelOf(row, column), wide, color))
+  const words = new Uint32Array(pixels.data.buffer)
+  paint((row, column, color) => putPixels(words, pixelOf(row, column), wide, color))
   own.putImageData(pixels, 0, 0)
   return { image: canvas, block, weave }
 }
