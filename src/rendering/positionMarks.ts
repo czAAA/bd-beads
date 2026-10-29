@@ -4,7 +4,7 @@ import { cellSizePx, CELL_SIZE_PX } from './cellSize'
 import type { Region } from './surfaceView'
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
-// rows down: two for peyote/brick half-bead shifts, 2N with a Brick block of N) filled over the view, not a shape per position. A screen-size bitmap
+// rows down: 2N for peyote and brick stitch with a Drop of N) filled over the view, not a shape per position. A screen-size bitmap
 // kept like the bead sprites (sprites.ts). Each mark is a square with one shared outline.
 
 const MAX_TILES = 64
@@ -13,7 +13,7 @@ const tiles = new Map<string, CanvasImageSource | null>()
 /** What a tile is made from: the Technique's row pitch, how big the grid is on screen, and the mark's color. */
 export interface MarkTileInput {
   technique: Technique
-  /** Its settings (ticket 0625): the Brick block; one left out is its default. */
+  /** Its settings (ticket 0625): peyote's or brick stitch's Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. */
   cell?: BeadCell

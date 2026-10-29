@@ -175,52 +175,66 @@ describe('NewProjectForm draft (ticket 58)', () => {
     expect(wrapper.emitted('draft')!.at(-1)![0]).toEqual({
       name: '',
       technique: 'brick',
-      techniqueSettings: { brickBlock: 1 },
+      techniqueSettings: { brickDrop: 1 },
       beadId: BEAD_CATALOG[2]!.id,
       makerName: '',
     })
   })
 })
 
-describe('NewProjectForm Brick block (ticket 477)', () => {
-  const field = '[data-testid="new-project-brick-block"]'
+describe('NewProjectForm Drop (tickets 477, 0691)', () => {
+  const field = '[data-testid="new-project-brick-drop"]'
+  const peyoteField = '[data-testid="new-project-peyote-drop"]'
 
-  it('shows the stepper only for Brick stitch, with the hover text on it', async () => {
+  it('shows brick stitch\'s stepper only for brick stitch and peyote\'s only for peyote', async () => {
     const wrapper = mount(NewProjectForm)
     expect(wrapper.find(field).exists()).toBe(false)
+    expect(wrapper.find(peyoteField).exists()).toBe(false)
 
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
     expect(wrapper.find(field).exists()).toBe(true)
-    expect(wrapper.find('[data-testid="new-project-brick-block-value"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="new-project-brick-drop-value"]').text()).toBe('1')
 
     await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
     expect(wrapper.find(field).exists()).toBe(false)
+    expect(wrapper.find(peyoteField).exists()).toBe(true)
+    expect(wrapper.find('[data-testid="new-project-peyote-drop-value"]').text()).toBe('1')
   })
 
   it('steps from 1 to 20, and sends the number with the draft and the submit', async () => {
     const wrapper = mount(NewProjectForm)
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
-    expect(wrapper.find('[data-testid="new-project-brick-block-less"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="new-project-brick-drop-less"]').attributes('disabled')).toBeDefined()
 
-    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerdown')
-    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerup')
-    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
+    await wrapper.find('[data-testid="new-project-brick-drop-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="new-project-brick-drop-more"]').trigger('pointerup')
+    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 } })
 
     await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
+    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 } })
   })
 
-  it('keeps the number while another Technique is chosen, and sends none for it', async () => {
+  it('keeps each Technique\'s own number while another is chosen, and sends only the chosen one\'s', async () => {
     const wrapper = mount(NewProjectForm)
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
-    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerdown')
-    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerup')
+    await wrapper.find('[data-testid="new-project-brick-drop-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="new-project-brick-drop-more"]').trigger('pointerup')
 
     await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
+    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
+    await wrapper.find('[data-testid="new-project-peyote-drop-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="new-project-peyote-drop-more"]').trigger('pointerup')
+    await wrapper.find('[data-testid="new-project-peyote-drop-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="new-project-peyote-drop-more"]').trigger('pointerup')
+    expect((wrapper.emitted('draft')!.at(-1)![0] as { techniqueSettings: unknown }).techniqueSettings).toEqual({ peyoteDrop: 3 })
+
+    await choosePanelOption(wrapper, 'new-project-technique', 'loom')
     expect(wrapper.emitted('draft')!.at(-1)![0]).not.toHaveProperty('techniqueSettings')
 
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
-    expect(wrapper.find('[data-testid="new-project-brick-block-value"]').text()).toBe('2')
+    expect(wrapper.find('[data-testid="new-project-brick-drop-value"]').text()).toBe('2')
+    await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
+    expect(wrapper.find('[data-testid="new-project-peyote-drop-value"]').text()).toBe('3')
   })
 })
 

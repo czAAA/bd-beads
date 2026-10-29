@@ -15,7 +15,7 @@ const cube = findBead('toho-cube-1.5mm')!
 
 /** A brick Canvas holding a red bead, under a peyote Frame named Rose holding a blue one. */
 const framed = (): Project => {
-  const made = createProject({ name: 'Garden', technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadId: delica.id, size: { width: 4, height: 4, unit: 'beads' } })
+  const made = createProject({ name: 'Garden', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: delica.id, size: { width: 4, height: 4, unit: 'beads' } })
   return withLayers(made, { beads: { 9: { 9: RED } }, frame: { ...frameOf(made)!, technique: 'peyote', techniqueSettings: {}, beads: { 1: { 2: BLUE } }, name: 'Rose' } })
 }
 
@@ -27,7 +27,7 @@ const open = (): Project => {
 describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
   it('reads the Canvas from the Project: its Weave, Bead, Bead shape, beads and the Project\'s name', () => {
     expect(layerOf(framed(), 'canvas')).toEqual({
-      weave: { technique: 'brick', techniqueSettings: { brickBlock: 3 } },
+      weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 } },
       beadId: delica.id,
       bead: beadCopy(delica),
       beadShape: 'symmetric',
@@ -38,7 +38,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
   it('reads the Frame from its sheet, with the Project\'s Bead and Bead shape', () => {
     expect(layerOf(withLayers(framed(), { beadShape: 'real' }), 'frame')).toEqual({
-      weave: { technique: 'peyote', cell: beadCell(delica, 'real') },
+      weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica, 'real') },
       beadId: delica.id,
       bead: beadCopy(delica),
       beadShape: 'real',
@@ -81,8 +81,8 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
 
   it('writes the Frame\'s Weave, beads and name into its layer, leaving the Canvas as it was', () => {
     const before = framed()
-    const after = withLayer(before, 'frame', { weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beads: { 0: { 0: RED } }, name: 'Lily' })
-    expect(frameOf(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, beads: { 0: { 0: RED } }, name: 'Lily', row: frameOf(before)!.row })
+    const after = withLayer(before, 'frame', { weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beads: { 0: { 0: RED } }, name: 'Lily' })
+    expect(frameOf(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 }, beads: { 0: { 0: RED } }, name: 'Lily', row: frameOf(before)!.row })
     expect(canvasOf(after)).toBe(canvasOf(before))
   })
 
@@ -139,8 +139,8 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
 
   it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {
     const project = withLayers(framed(), { beadShape: 'real' })
-    expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
-    expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote' })
+    expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
+    expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
     expect(heldWeave(open(), 'frame')).toBeUndefined()
   })
 })

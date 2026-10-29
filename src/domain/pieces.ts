@@ -50,7 +50,7 @@ export function pieceBeadsAt(beads: BeadMap, weave: Weave, start: GridPosition):
   return members
 }
 
-// Keyed by the shift's cycle, not the Technique: peyote and brick stitch with a Brick block of 1 touch alike.
+// Keyed by the shift's cycle, not the Technique: peyote and brick stitch with the same Drop touch alike.
 const cache = new WeakMap<BeadMap, Map<number, Piece[]>>()
 
 /** Every Piece on the canvas, top to bottom, left to right by its rectangle's top-left. The same beads give back the

@@ -124,8 +124,8 @@ describe('piece areas', () => {
   })
 })
 
-describe('pieces with a Brick block (ticket 477)', () => {
-  const block2 = { technique: 'brick' as const, techniqueSettings: { brickBlock: 2 } }
+describe('pieces with a Drop (ticket 477)', () => {
+  const block2 = { technique: 'brick' as const, techniqueSettings: { brickDrop: 2 } }
 
   it('joins straight rows by the bead above only, and shifted rows by the two they overlap', () => {
     expect(piecesOf(place([0, 0], [1, 1]), block2)).toHaveLength(2)
@@ -134,7 +134,7 @@ describe('pieces with a Brick block (ticket 477)', () => {
     expect(piecesOf(place([1, 0], [2, 1]), block2)).toHaveLength(2)
   })
 
-  it('does not hand back a cached answer made for another Brick block', () => {
+  it('does not hand back a cached answer made for another Drop', () => {
     const beads = place([1, 0], [2, 1])
     expect(piecesOf(beads, { technique: 'brick' })).toHaveLength(1)
     expect(piecesOf(beads, block2)).toHaveLength(2)

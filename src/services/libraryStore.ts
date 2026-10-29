@@ -4,6 +4,7 @@ import {
   decodeEarlierProject,
   decodeFlatProject,
   decodeProject,
+  decodeVersionTwelveProject,
   encodeProject,
   type EncodedFlatProject,
   type EncodedGridProject,
@@ -23,9 +24,9 @@ const STORAGE_KEY = 'openbeads:patterns'
 const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 
 // The stored format saveProjects writes (ADR 0009): v1 a bare array of Projects with full hex cells, v2 an envelope
-// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame with its own beads, its layer settings a map
-// (ticket 0636) or a flat Brick block, v5 (ticket 0664, ADR 0079) the layer list.
-const STORED_VERSION = 5
+// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame's own beads, its settings a map (0636) or a
+// flat Brick block, v5 (0664, ADR 0079) the layer list, v6 (0691) brick stitch's Drop under its new id.
+const STORED_VERSION = 6
 
 interface StoredLibrary {
   version: number
@@ -58,7 +59,8 @@ const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
   2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeEarlierProject),
   3: (parsed) => (parsed as StoredVersionThreeLibrary).patterns.map(decodeEarlierProject),
   4: (parsed) => (parsed as StoredFlatLibrary).patterns.map(decodeFlatProject),
-  5: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
+  5: (parsed) => (parsed as StoredLibrary).patterns.map(decodeVersionTwelveProject),
+  6: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned

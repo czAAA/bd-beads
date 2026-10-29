@@ -194,7 +194,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || (layer === 'frame' && !frameOf(project))) return
     const current = layerWeave(project, layer)
     const technique = 'technique' in change ? change.technique : current.technique
-    // The layer's values for the Technique's settings, one kept from before it was woven in another (a Brick block) too.
+    // The layer's values for the Technique's settings, one kept from before it was woven in another (a Drop) too.
     const held = weaveSettings({ ...current, technique })
     const values = 'setting' in change ? weaveSettings({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
     if (sameWeave(current, switchedWeave(current, technique, values))) return
@@ -213,7 +213,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     changeWeave('canvas', { technique })
   }
 
-  /** Sets any setting of a layer's Technique (ticket 0626, ADR 0078), the Brick block today: one Undo step. */
+  /** Sets any setting of a layer's Technique (ticket 0626, ADR 0078), a Drop today: one Undo step. */
   function setWeaveSetting(layer: Layer, id: string, value: number): void {
     changeWeave(layer, { setting: id, value })
   }

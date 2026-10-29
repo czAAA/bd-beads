@@ -10,13 +10,13 @@ import { rowProgressOf } from './rowProgress'
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 
-describe('createProject Brick block (ticket 477)', () => {
+describe('createProject Drop (ticket 477)', () => {
   const input = { technique: 'brick' as const, beadId: 'toho-cube-1.5mm' }
 
-  it('stores the Brick block given, clamped to 20, and 1 where none is given (ticket 0625)', () => {
-    expect(canvasOf(createProject({ ...input, techniqueSettings: { brickBlock: 3 } })).techniqueSettings).toEqual({ brickBlock: 3 })
-    expect(canvasOf(createProject({ ...input, techniqueSettings: { brickBlock: 99 } })).techniqueSettings).toEqual({ brickBlock: 20 })
-    expect(canvasOf(createProject(input)).techniqueSettings).toEqual({ brickBlock: 1 })
+  it('stores the Drop given, clamped to 20, and 1 where none is given (ticket 0625)', () => {
+    expect(canvasOf(createProject({ ...input, techniqueSettings: { brickDrop: 3 } })).techniqueSettings).toEqual({ brickDrop: 3 })
+    expect(canvasOf(createProject({ ...input, techniqueSettings: { brickDrop: 99 } })).techniqueSettings).toEqual({ brickDrop: 20 })
+    expect(canvasOf(createProject(input)).techniqueSettings).toEqual({ brickDrop: 1 })
     expect(createProject({ ...input, technique: 'loom' })).not.toHaveProperty('techniqueSettings')
   })
 })

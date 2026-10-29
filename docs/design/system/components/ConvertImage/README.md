@@ -43,7 +43,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 ## 2 Bead & Technique
 
-- The New Project form's own sections in panel rows (ProjectPanel card): bead (Brand, Type and Size PanelPickers), bead shape (small SegmentedControl, Symmetric | Real), technique (PanelPicker, with the Brick block row for brick stitch). They start from the form's values and are the popup's own copy. No Note: nothing here needs explaining.
+- The New Project form's own sections in panel rows (ProjectPanel card): bead (Brand, Type and Size PanelPickers), bead shape (small SegmentedControl, Symmetric | Real), technique (PanelPicker, with the Drop row for peyote and brick stitch). They start from the form's values and are the popup's own copy. No Note: nothing here needs explaining.
 
 ## 3 Size
 
