@@ -11,7 +11,7 @@ import { BEAD_CATALOG } from './beads'
 import { BUILT_IN_COLORS, addedColorId, addUsedColor, projectPalette } from './palette'
 import { paintAt } from '../testUtils/layers'
 import { beadsOfLayer, canvasOf } from './layerRecord'
-import { flatView } from '../testUtils/flatFields'
+import { layersView } from '../testUtils/layerFields'
 
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 
@@ -163,7 +163,7 @@ describe('Swatch letters (ticket 0573)', () => {
   it('keeps stored letters and the Letters choice through opening and through Undo', () => {
     const start = withLetters(createProject(input), true)
     const changed = setPalette(start, addUsedColor(start.palette, '#123456').ids)
-    expect(flatView(normalizeProject(JSON.parse(JSON.stringify(changed))))).toMatchObject({ letters: true, paletteLetters: changed.paletteLetters })
+    expect(layersView(normalizeProject(JSON.parse(JSON.stringify(changed))))).toMatchObject({ letters: true, paletteLetters: changed.paletteLetters })
     expect(restoreSnapshot(changed, snapshotOf(start)).paletteLetters).toEqual(start.paletteLetters)
   })
 

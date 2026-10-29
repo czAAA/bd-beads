@@ -17,18 +17,18 @@ import { changeFrame } from '../domain/changeFrame'
 import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { rowProgressOf } from '../domain/rowProgress'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 import { frameOf } from '../domain/layerRecord'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
 // (ticket 552).
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 /** A Project with a Row progress pass done, so its Technique and settings are locked with their reasons (ticket 0626). */
-const rowsDone = (locked: Project): Project => (withFields(locked, { rowProgress: { ...rowProgressOf(locked), currentRow: 1 } }))
-const framed = withFields(project, { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom' as const, beads: {} } })
+const rowsDone = (locked: Project): Project => (withLayers(locked, { rowProgress: { ...rowProgressOf(locked), currentRow: 1 } }))
+const framed = withLayers(project, { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom' as const, beads: {} } })
 /** A named Frame with seven colors painted, so Beads needed lists more rows than it shows at first. */
 const colors = createPalette(defaultPaletteIds()).colors.slice(0, 7).map((color) => color.hex)
-const painted = withFields(framed, { frame: { ...frameOf(framed)!, name: 'Moth wing, the long left one', beads: withColors({}, colors.map((hex, at) => ({ row: Math.floor(at / 5), column: at % 5, color: hex }))) } })
+const painted = withLayers(framed, { frame: { ...frameOf(framed)!, name: 'Moth wing, the long left one', beads: withColors({}, colors.map((hex, at) => ({ row: Math.floor(at / 5), column: at % 5, color: hex }))) } })
 // A Fringe earring's four settings in place of Width and Height (ticket 0597).
 const earringPlaced = changeFrame(project, { custom: { shape: 'fringeEarring', size: 7, centre: { row: 6, column: 6 } } })
 const earring = earringPlaced.kind === 'changed' ? earringPlaced.project : project
@@ -56,11 +56,11 @@ const CASES: FitCase[] = [
   ['MenuPanel', inPanel(MenuPanel, { projects: [project], toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true }), {}],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
-  ['ProjectPanel (technique locked)', ProjectPanel, { project: withFields(project, { rowProgress: { ...rowProgressOf(project), currentRow: 1 } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
+  ['ProjectPanel (technique locked)', ProjectPanel, { project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 1 } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePanel', inPanel(FramePanel, { project: painted }), {}],
   ['FramePanel (all colors shown)', inPanel(FramePanel, { project: painted }), {}, showAll],
   ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}],
-  ['FramePanel (rows done)', inPanel(FramePanel, { project: withFields(painted, { rowProgress: { ...rowProgressOf(painted), currentRow: 1 } }) }), {}],
+  ['FramePanel (rows done)', inPanel(FramePanel, { project: withLayers(painted, { rowProgress: { ...rowProgressOf(painted), currentRow: 1 } }) }), {}],
   ['FramePanel (turned)', inPanel(FramePanel, { project: rotateFrame(painted)! }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
   ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],

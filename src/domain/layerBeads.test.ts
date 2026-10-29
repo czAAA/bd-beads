@@ -5,14 +5,14 @@ import { withFrame } from './frame'
 import { beadColorAt, hasProjectBeads, projectColors, sameBeads } from './layerBeads'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 describe('the Frame as its own sheet (ADR 0066)', () => {
   const sheet = () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    return withFields(base, { frame: { ...frameOf(base)!, row: 10, column: 10, beads: { 0: { 0: '#111111' }, 2: { 3: '#222222' } } }, beads: { 10: { 10: '#999999' }, 50: { 50: '#333333' } } })
+    return withLayers(base, { frame: { ...frameOf(base)!, row: 10, column: 10, beads: { 0: { 0: '#111111' }, 2: { 3: '#222222' } } }, beads: { 10: { 10: '#999999' }, 50: { 50: '#333333' } } })
   }
 
   it('shows the Frame\'s bead where it lies over the Canvas, and the Canvas\'s elsewhere', () => {
@@ -38,15 +38,15 @@ describe('the Frame as its own sheet (ADR 0066)', () => {
   it('knows a bead on either layer, and every color of both', () => {
     const project = sheet()
     expect(hasProjectBeads(project)).toBe(true)
-    expect(hasProjectBeads(withFields(project, { beads: {}, frame: { ...frameOf(project)!, beads: {} } }))).toBe(false)
-    expect(hasProjectBeads(withFields(project, { beads: {} }))).toBe(true)
+    expect(hasProjectBeads(withLayers(project, { beads: {}, frame: { ...frameOf(project)!, beads: {} } }))).toBe(false)
+    expect(hasProjectBeads(withLayers(project, { beads: {} }))).toBe(true)
     expect(projectColors(project).sort()).toEqual(['#111111', '#222222', '#333333', '#999999'])
   })
 
   it('tells two states of a Project apart by the beads of either layer, not by which object holds them', () => {
     const project = sheet()
-    expect(sameBeads(project, withFields(project, { beads: { ...beadsOfLayer(project, 'canvas') }, frame: { ...frameOf(project)!, beads: { ...frameOf(project)!.beads } } }))).toBe(true)
-    expect(sameBeads(project, withFields(project, { beads: {} }))).toBe(false)
-    expect(sameBeads(project, withFields(project, { frame: { ...frameOf(project)!, beads: {} } }))).toBe(false)
+    expect(sameBeads(project, withLayers(project, { beads: { ...beadsOfLayer(project, 'canvas') }, frame: { ...frameOf(project)!, beads: { ...frameOf(project)!.beads } } }))).toBe(true)
+    expect(sameBeads(project, withLayers(project, { beads: {} }))).toBe(false)
+    expect(sameBeads(project, withLayers(project, { frame: { ...frameOf(project)!, beads: {} } }))).toBe(false)
   })
 })

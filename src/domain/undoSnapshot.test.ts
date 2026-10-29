@@ -8,7 +8,7 @@ import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, canvasOf, frameOf, withLetters } from './layerRecord'
-import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -24,13 +24,13 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
     expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
     expect(canvasOf(restored).beadId).toBe(canvasOf(before).beadId)
-    expect(sheetOf(restored)).toEqual(sheetOf(before))
+    expect(frameSheetOf(restored)).toEqual(frameSheetOf(before))
   })
 
   it('put back whole layers but keep the views as they are now: the name, the Canvas\'s orientation and Letters (ticket 0664)', () => {
     const before = createProject({ name: 'Fox', technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 4, unit: 'beads' } })
     const snapshot = snapshotOf(before)
-    const viewed = withLetters(withFields(deleteAll(withFields(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', rotation: 90 }), true)
+    const viewed = withLetters(withLayers(deleteAll(withLayers(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', orientation: 90 }), true)
 
     const restored = restoreSnapshot(viewed, snapshot)
 
@@ -41,13 +41,13 @@ describe('snapshotOf and restoreSnapshot', () => {
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
     const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id })
-    const brick = withFields(peyote, { technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } })
+    const brick = withLayers(peyote, { technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } })
 
     const undone = restoreSnapshot(brick, snapshotOf(peyote))
     expect(canvasOf(undone).technique).toBe('peyote')
     expect(canvasOf(undone).techniqueSettings).toBeUndefined()
     const redone = restoreSnapshot(peyote, snapshotOf(brick))
-    expect(flatView(redone)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
+    expect(layersView(redone)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
     expect(canvasOf(redone).techniqueSettings).toEqual({ brickBlock: 4 })
   })
 
@@ -62,8 +62,8 @@ describe('snapshotOf and restoreSnapshot', () => {
 describe('the Frame in an undo entry (ADR 0066)', () => {
   it('is put back with its own beads by Undo, and gone again when the entry had none', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const drawn = withFields(base, { frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } })
-    const none = withFields(base, { frame: undefined })
+    const drawn = withLayers(base, { frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } })
+    const none = withLayers(base, { frame: undefined })
 
     expect(frameOf(restoreSnapshot(base, snapshotOf(drawn)))?.beads).toEqual({ 1: { 1: '#abcdef' } })
     expect(frameOf(restoreSnapshot(drawn, snapshotOf(none)))).toBeUndefined()
@@ -71,7 +71,7 @@ describe('the Frame in an undo entry (ADR 0066)', () => {
 
   it('goes empty with Delete all, the Canvas with it', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const drawn = withFields(base, { beads: { 9: { 9: '#111111' } }, frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } })
+    const drawn = withLayers(base, { beads: { 9: { 9: '#111111' } }, frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } })
 
     const cleared = deleteAll(drawn)
 

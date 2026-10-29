@@ -491,13 +491,14 @@ const SHEET_RADIUS_PX = { full: 12, compact: 10 }
 const BORDER_INSET_PX = { full: 10, compact: 6 }
 const BORDER_RADIUS_PX = 6
 
-/** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band filled in the margin color
- * over the Canvas, the Frame's footprint left out, with a hairline round its edge and an inner border where it fits.
- * Drawn in grid space, so its px are divided by the zoom to stay screen px. */
+/** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the
+ * Frame's footprint left out, a hairline edge and an inner border where it fits; none bare, which keeps only the Move
+ * bar (ticket 0682). In grid space, its px divided by the zoom to stay screen px. */
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
   const form = marginForm(band)
+  if (form === 'bare') return
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
   const radius = Math.min(SHEET_RADIUS_PX[drawn], band) / zoom

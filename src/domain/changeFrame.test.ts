@@ -10,16 +10,16 @@ import { frameWithEdgeStep, withFrame } from './frame'
 import { frameWeave } from './layerWeave'
 import type { Project } from './project'
 import { beadsOfLayer, canvasOf, frameOf, withFrameSheet } from './layerRecord'
-import { type FlatChange, flatView, sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, type LayersChange, layersView, withLayers } from '../testUtils/layerFields'
 
 const frame: Rect = { row: 10, column: 10, rows: 6, columns: 4 }
 
 /** A Frame holding the beads given, counted from its own first row and column. */
 const sheet = (rectangle: Rect, beads: FrameSheet['beads'] = {}): FrameSheet => ({ row: rectangle.row, column: rectangle.column, rows: rectangle.rows, columns: rectangle.columns, beads, technique: 'loom' })
 
-function framed(overrides: FlatChange = {}): Project {
+function framed(overrides: LayersChange = {}): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  return withFields(base, { frame: sheet(frame), ...overrides })
+  return withLayers(base, { frame: sheet(frame), ...overrides })
 }
 
 const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3) => ({ direction, currentRow, currentColumn })
@@ -28,9 +28,9 @@ describe('changeFrame naming the Frame (ticket 555)', () => {
   it('sets the name, keeps the rest of the Frame, and an empty name clears it', () => {
     const named = changeFrame(framed(), { name: 'Moth wing' })
     if (named.kind !== 'changed') throw new Error('expected a change')
-    expect(sheetOf(named.project)).toEqual({ ...sheet(frame), name: 'Moth wing' })
+    expect(frameSheetOf(named.project)).toEqual({ ...sheet(frame), name: 'Moth wing' })
     const cleared = changeFrame(named.project, { name: '' })
-    expect(cleared.kind === 'changed' && sheetOf(cleared.project)).toEqual(sheet(frame))
+    expect(cleared.kind === 'changed' && frameSheetOf(cleared.project)).toEqual(sheet(frame))
   })
 
   it('is no change for the name it already has, and refused with no Frame', () => {
@@ -159,7 +159,7 @@ describe('changeFrame', () => {
         { row: 8, column: 11, color: '#ff0000' },
         { row: 40, column: 40, color: '#0000ff' },
       ])
-      const result = changeFrame(withFields(open, { beads }), { make: frame })
+      const result = changeFrame(withLayers(open, { beads }), { make: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(beads)
     })
@@ -170,7 +170,7 @@ describe('changeFrame', () => {
       const project = framed({ frame: sheet(frame, withColors({}, [{ row: 1, column: 1, color: '#111111' }])), beads: withColors({}, [{ row: 40, column: 1, color: '#222222' }]) })
       const result = changeFrame(project, { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(sheetOf(result.project)).toEqual({ ...sheetOf(project), technique: 'peyote' })
+      expect(frameSheetOf(result.project)).toEqual({ ...frameSheetOf(project), technique: 'peyote' })
       expect(canvasOf(result.project).technique).toBe('loom')
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(beadsOfLayer(project, 'canvas'))
     })
@@ -189,7 +189,7 @@ describe('changeFrame', () => {
     it('leaves a Frame on an odd row where it is: its own row 0 is straight whatever the Canvas does', () => {
       const odd = framed({ frame: sheet({ row: 11, column: 10, rows: 6, columns: 4 }, withColors({}, [{ row: 0, column: 2, color: '#111111' }])) })
       const result = changeFrame(odd, { technique: 'peyote' })
-      expect(result.kind === 'changed' && sheetOf(result.project)).toEqual({ ...sheetOf(odd), technique: 'peyote' })
+      expect(result.kind === 'changed' && frameSheetOf(result.project)).toEqual({ ...frameSheetOf(odd), technique: 'peyote' })
     })
   })
 
@@ -200,19 +200,19 @@ describe('changeFrame', () => {
       const project = framed({ frame: { ...sheet({ row: 12, column: 3, rows: 6, columns: 4 }, withColors({}, [{ row: 1, column: 1, color: '#111111' }])), technique: 'brick' } })
       const result = changeFrame(project, { techniqueSettings: { brickBlock: 3 } })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(sheetOf(result.project)).toEqual({ ...sheetOf(project), techniqueSettings: { brickBlock: 3 } })
+      expect(frameSheetOf(result.project)).toEqual({ ...frameSheetOf(project), techniqueSettings: { brickBlock: 3 } })
       expect(canvasOf(result.project).techniqueSettings).toBeUndefined()
     })
 
     it('is no change to the Brick block it already has, and 1 when none is stored', () => {
       const project = brick()
       expect(changeFrame(project, { techniqueSettings: { brickBlock: 1 } })).toEqual({ kind: 'unchanged', project })
-      const three = withFields(project, { frame: { ...frameOf(project)!, techniqueSettings: { brickBlock: 3 } } })
+      const three = withLayers(project, { frame: { ...frameOf(project)!, techniqueSettings: { brickBlock: 3 } } })
       expect(changeFrame(three, { techniqueSettings: { brickBlock: 3 } })).toEqual({ kind: 'unchanged', project: three })
     })
 
     it('keeps the value when the Technique is switched away and back', () => {
-      const three = withFields(brick(), { frame: { ...frameOf(brick())!, techniqueSettings: { brickBlock: 3 } } })
+      const three = withLayers(brick(), { frame: { ...frameOf(brick())!, techniqueSettings: { brickBlock: 3 } } })
       const peyote = changeFrame(three, { technique: 'peyote' })
       if (peyote.kind !== 'changed') throw new Error('expected a change')
       const back = changeFrame(peyote.project, { technique: 'brick' })
@@ -264,7 +264,7 @@ describe('changeFrame', () => {
     })
 
     it('takes the Brick block given with the switch to brick stitch, and keeps the layer\'s own when none is given (ticket 568)', () => {
-      expect(flatView(changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 3 } }))).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+      expect(layersView(changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 3 } }))).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       const brick = changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 4 } })
       expect(canvasOf(changeCanvasWeave(brick, { technique: 'peyote' })).techniqueSettings).toEqual({ brickBlock: 4 })
       const result = changeFrame(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 2 } })
@@ -327,7 +327,7 @@ describe('changeFrame', () => {
   })
 
   describe('make a Frame around beads (Frame from Selection, Fit to drawing)', () => {
-    const open = (beads: BeadMap, overrides: FlatChange = {}): Project => {
+    const open = (beads: BeadMap, overrides: LayersChange = {}): Project => {
       const project = withFrameSheet(framed({ beads, ...overrides }), undefined)
       return project
     }
@@ -336,7 +336,7 @@ describe('changeFrame', () => {
       const beads = withColors({}, [{ row: 11, column: 12, color: '#111111' }, { row: 40, column: 40, color: '#999999' }])
       const result = changeFrame(open(beads), { make: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(sheetOf(result.project)).toEqual(sheet(frame, withColors({}, [{ row: 1, column: 2, color: '#111111' }])))
+      expect(frameSheetOf(result.project)).toEqual(sheet(frame, withColors({}, [{ row: 1, column: 2, color: '#111111' }])))
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(withColors({}, [{ row: 40, column: 40, color: '#999999' }]))
     })
 
@@ -389,7 +389,7 @@ describe('changeFrame', () => {
       const project = framed({ frame: sheet(frame, frameBeads), beads: canvas })
       const result = changeFrame(project, { move: { rows: 0, columns: 3 } })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(sheetOf(result.project)).toEqual(sheet({ ...frame, column: 13 }, frameBeads))
+      expect(frameSheetOf(result.project)).toEqual(sheet({ ...frame, column: 13 }, frameBeads))
       expect(beadsOfLayer(result.project, 'canvas')).toBe(canvas)
     })
 
@@ -428,7 +428,7 @@ describe('changeFrame', () => {
         const project = framed({ frame: sheet(frame, frameBeads), beads: under })
         const back = movedRight(movedRight(project, 3), -3)
         expect(beadsOfLayer(back, 'canvas')).toBe(under)
-        expect(sheetOf(back)).toEqual(sheetOf(project))
+        expect(frameSheetOf(back)).toEqual(frameSheetOf(project))
       })
 
       it('is replaced by the Frame\'s beads when Remove Frame takes the Frame away', () => {
@@ -531,7 +531,7 @@ describe('changeFrame placing a Frame (ticket 495)', () => {
 
 describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
-  const withStrayBead = withFields(base, { beads: withColors({}, [{ row: 40, column: 3, color: '#e63746' }]), frame: sheet({ row: 0, column: 0, rows: 48, columns: 11 }) })
+  const withStrayBead = withLayers(base, { beads: withColors({}, [{ row: 40, column: 3, color: '#e63746' }]), frame: sheet({ row: 0, column: 0, rows: 48, columns: 11 }) })
 
   it('leaves a Canvas bead in the rows it names but no longer covers, to be drawn on and erased', () => {
     const result = changeFrame(withStrayBead, { technique: 'peyote' })
@@ -540,7 +540,7 @@ describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0066)
   })
 
   it('lays the Frame\'s beads on the Canvas where they stand when it is removed, over what is in those rows', () => {
-    const peyote = changeFrame(withFields(withStrayBead, { frame: { ...frameOf(withStrayBead)!, beads: withColors({}, [{ row: 40, column: 3, color: '#2f6fed' }]) } }), { technique: 'peyote' })
+    const peyote = changeFrame(withLayers(withStrayBead, { frame: { ...frameOf(withStrayBead)!, beads: withColors({}, [{ row: 40, column: 3, color: '#2f6fed' }]) } }), { technique: 'peyote' })
     if (peyote.kind !== 'changed') throw new Error('expected a change')
     const removed = changeFrame(peyote.project, { remove: true })
     if (removed.kind !== 'changed') throw new Error('expected a change')
@@ -555,7 +555,7 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
   const GREEN = '#333333'
   const GREY = '#999999'
   /** A peyote Frame on a loom Canvas: its rows nest closer than the Canvas's, so positions do not match one to one. */
-  const peyote = (beads: FrameSheet['beads'], overrides: FlatChange = {}): Project => framed({ frame: { ...sheet(frame, beads), technique: 'peyote' }, ...overrides })
+  const peyote = (beads: FrameSheet['beads'], overrides: LayersChange = {}): Project => framed({ frame: { ...sheet(frame, beads), technique: 'peyote' }, ...overrides })
   const own = withColors({}, [{ row: 0, column: 0, color: RED }, { row: 1, column: 3, color: BLUE }, { row: 4, column: 2, color: GREEN }])
   const changed = (project: Project, change: FrameChange): Project => {
     const result = changeFrame(project, change)
@@ -580,12 +580,12 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
 
   it('shows its Folded beads again where they were when it grows back, from any edge', () => {
     const start = peyote(own)
-    expect(sheetOf(wider(narrower(start)))).toEqual(sheetOf(start))
+    expect(frameSheetOf(wider(narrower(start)))).toEqual(frameSheetOf(start))
 
     const fromTopLeft = changed(start, { set: { row: 12, column: 11, rows: 4, columns: 3 } })
     expect(frameOf(fromTopLeft)!.beads).toEqual(withColors({}, [{ row: 2, column: 1, color: GREEN }]))
     const back = changed(fromTopLeft, { set: { row: frameOf(fromTopLeft)!.row - 2, column: frameOf(fromTopLeft)!.column - 1, rows: 6, columns: 4 } })
-    expect(sheetOf(back)).toEqual(sheetOf(start))
+    expect(frameSheetOf(back)).toEqual(frameSheetOf(start))
     expect(beadsOfLayer(back, 'canvas')).toBe(beadsOfLayer(start, 'canvas'))
   })
 
@@ -640,7 +640,7 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
   it('goes with a Custom frame when it is removed, leaving the Canvas as it is', () => {
     const canvas = withColors({}, [{ row: 40, column: 40, color: GREY }])
     const custom = changed(framed({ beads: canvas }), { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 30 } } })
-    const withFolded = withFields(custom, { frame: { ...frameOf(custom)!, folded: withColors({}, [{ row: -1, column: 0, color: RED }]) } })
+    const withFolded = withLayers(custom, { frame: { ...frameOf(custom)!, folded: withColors({}, [{ row: -1, column: 0, color: RED }]) } })
     expect(beadsOfLayer(changed(withFolded, { remove: true }), 'canvas')).toEqual(canvas)
   })
 
@@ -691,7 +691,7 @@ describe('a Frame woven like the Canvas trades beads with it on a resize (ticket
     expect(frameOf(shrunk)!.rows).toBeLessThan(8)
     expect(colorAt(beadsOfLayer(shrunk, 'canvas'), 8, 10)).toBe(RED)
     const back = changed(shrunk, { set: frameWithEdgeStep(frameWeave(shrunk), frameOf(shrunk)!, 'top', 1) })
-    expect(sheetOf(back)).toEqual(sheetOf(start))
+    expect(frameSheetOf(back)).toEqual(frameSheetOf(start))
     expect(beadsOfLayer(back, 'canvas')).toEqual(beadsOfLayer(start, 'canvas'))
   })
 
@@ -712,7 +712,7 @@ describe('a Frame woven like the Canvas trades beads with it on a resize (ticket
   describe('a named Piece it grows over, taken whole or not at all', () => {
     // Cherry: two beads in rows 17 and 18, below the Frame's last row (15).
     const cherry = withColors({}, [{ row: 17, column: 11, color: RED }, { row: 18, column: 11, color: RED }])
-    const named = (overrides: FlatChange = {}) => framed({ beads: withColors(cherry, [{ row: 16, column: 13, color: GREY }]), pieceNames: [{ name: 'Cherry', row: 17, column: 11 }], ...overrides })
+    const named = (overrides: LayersChange = {}) => framed({ beads: withColors(cherry, [{ row: 16, column: 13, color: GREY }]), pieceNames: [{ name: 'Cherry', row: 17, column: 11 }], ...overrides })
 
     it('stops the growing edge at the Piece\'s edge, lifting what it covers before it', () => {
       const stopped = changed(named(), { set: { ...frame, rows: 8 } })
@@ -766,7 +766,7 @@ describe('a Frame woven like the Canvas trades beads with it on a resize (ticket
       const under = framed({ beads: withColors({}, [10, 11, 12].map((column) => ({ row: 12, column, color: RED }))), pieceNames: [{ name: 'Cherry', row: 12, column: 10 }] })
       const shrunk = changed(under, { set: { ...frame, column: 11, columns: 3 } })
       const back = changed(shrunk, { set: frame })
-      expect(sheetOf(back)).toEqual(sheetOf(under))
+      expect(frameSheetOf(back)).toEqual(frameSheetOf(under))
       expect(beadsOfLayer(back, 'canvas')).toEqual(beadsOfLayer(under, 'canvas'))
       expect(canvasOf(back).pieceNames).toEqual(canvasOf(under).pieceNames)
     })

@@ -8,7 +8,8 @@ import type { Grid, Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { flatOf, sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
+import { legacyRecordOf } from '../testUtils/legacyFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -85,7 +86,7 @@ describe('the encoded beads', () => {
   })
 
   it('cost one row for a bead far from the others, however far, negative positions included', () => {
-    const project = withFields(makeProject(2, 2), { beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } } })
+    const project = withLayers(makeProject(2, 2), { beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } } })
 
     expect(encodedCells(project).rows).toEqual({ '-40000': '-90000:1', 0: '0:2' })
     expect(roundTrip(project)).toEqual(project)
@@ -176,7 +177,7 @@ describe('encodeProject / decodeProject', () => {
 
   it('keeps the Frame, with its own beads and name, and the Canvas beads beside it, through the round trip', () => {
     const base = paint(makeProject(3, 3), () => '#ff0000')
-    const project = withFields(base, {
+    const project = withLayers(base, {
       beads: { 9: { 9: '#00ff00' } },
       frame: { ...frameOf(base)!, row: 1, column: 1, name: 'Cherry' },
     })
@@ -185,7 +186,7 @@ describe('encodeProject / decodeProject', () => {
   })
 
   it('writes the Frame\'s beads inside the Frame, and the Canvas\'s beside it', () => {
-    const encoded = encodeProject(withFields(paint(makeProject(2, 1), () => '#ff0000'), { beads: { 5: { 5: '#00ff00' } } }))
+    const encoded = encodeProject(withLayers(paint(makeProject(2, 1), () => '#ff0000'), { beads: { 5: { 5: '#00ff00' } } }))
 
     expect(encoded.layers[0]!.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
     expect(encoded.layers[1]).toMatchObject({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
@@ -193,17 +194,17 @@ describe('encodeProject / decodeProject', () => {
   })
 
   it('still reads the grid-shaped cells an earlier build stored, as beads in a Frame the size of the grid', () => {
-    const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject(3, 2))
+    const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(makeProject(3, 2))
     const stored = { ...base, columns: 3, rows: 2, cells: { colors: ['#ff0000', '#00ff00'], runs: '1,0x3,2,0' } }
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(sheetOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(frameSheetOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
     expect(beadsOfLayer(read, 'canvas')).toEqual({})
   })
 
   it('still reads what version 3 stored: the beads inside the Frame move into it, the covered ones become Canvas beads', () => {
-    const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject(2, 2))
+    const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(makeProject(2, 2))
     const stored = {
       ...base,
       frame: { row: 10, column: 10, rows: 2, columns: 2 },
@@ -213,7 +214,7 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(sheetOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
+    expect(frameSheetOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
     expect(beadsOfLayer(read, 'canvas')).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
     expect(read).not.toHaveProperty('coveredBeads')
   })
