@@ -22,7 +22,7 @@ export function rowProgressOf(project: Layered): RowProgress {
 }
 
 /** The Project with its Frame's Row progress set, stamped as a change; the same Project without a Frame. */
-export function withRowProgress(project: Project, rowProgress: RowProgress): Project {
+function withRowProgress(project: Project, rowProgress: RowProgress): Project {
   const frame = frameOf(project)
   return frame ? touch(withFrameSheet(project, { ...frame, rowProgress }), {}) : project
 }
@@ -96,7 +96,7 @@ export function clampPointer(rowProgress: RowProgress, sheet: ShapedSheet): RowP
 }
 
 /** What a Frame's Row order is built from beside its rectangle and Weave: its Frame shape, a Custom frame's settings and turn. */
-export function laidOf(frame: FrameSheet | undefined): Pick<ShapedSheet, 'shape' | 'settings' | 'quarterTurns'> {
+function laidOf(frame: FrameSheet | undefined): Pick<ShapedSheet, 'shape' | 'settings' | 'quarterTurns'> {
   return { shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns }
 }
 

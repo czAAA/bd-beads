@@ -13,8 +13,7 @@ const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5 (0525) the Palette, 6 (0528)
  * removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame, 10 (0638) Folded beads, 11
- * (0636) each layer's settings map, no flat Brick block, 12 (0664, ADR 0079) the layer list; a build knowing only the one
- * before refuses, not misreads. */
+ * (0636) layer settings maps, 12 (0664) the layer list; a build knowing only the one before refuses, not misreads. */
 const FILE_VERSION = 12
 
 interface ProjectFile {

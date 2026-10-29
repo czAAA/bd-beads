@@ -59,10 +59,3 @@ function isBrickBlock(value: unknown): value is number {
 export function isSettingsMap(value: unknown): value is TechniqueSettings {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
-
-/** A stored record without its Weave's settings, mapped or flat (a stray flat Brick block in a v11 file is dropped):
- * what a reader builds a layer over. */
-export function unflattened<T extends FlatWeave>(record: T): Omit<T, keyof FlatWeave> {
-  const { brickBlock: _brickBlock, techniqueSettings: _settings, ...rest } = record
-  return rest
-}

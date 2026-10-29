@@ -73,8 +73,7 @@ function legacyRotation(project: ProjectWithLegacyFields): Rotation {
 
 /** Fills in fields added after a Project was saved, re-clamps the row pointer and drops dead fields (the color-to-bead
  * override, ADR 0007; the millimetre size, ADR 0026), so a Project from storage or a file is safe whatever version
- * wrote it, and never re-saves them. One saved before its layers (ticket 0664) opens looking as it did: both layers
- * take its Technique settings, Bead, Bead shape and Letters, and its rotation becomes the Canvas's orientation. */
+ * wrote it, and never re-saves them. One saved before its layers opens looking as it did (`layeredOf`). */
 export function normalizeProject(stored: StoredProject): Project {
   const layered = isLayered(stored) ? stored : layeredOf(stored)
   const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, ...rest } = layered
@@ -99,10 +98,9 @@ export function normalizeProject(stored: StoredProject): Project {
   }
 }
 
-/** A Project saved before its layers (ticket 0664) as the layers it holds: the Canvas from its own fields, its rotation
- * as its orientation, and its Frame with the Project's Row progress; both with the Project's Bead, Bead shape and
- * Letters. A Project from before the Canvas gets a Frame the size of its old grid, and one from before the Frame was a
- * sheet of its own has its Frame's beads lifted into it (versionThree.ts, temporary). */
+/** A Project saved before its layers (ticket 0664) as its layers: the Canvas from its own fields, its rotation its
+ * orientation, the Frame with its Row progress, both with its Bead, Bead shape and Letters. A grid-shaped one gets a
+ * Frame the size of its grid, a version 3 one its Frame's beads lifted into it (versionThree.ts, temporary). */
 function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): LayeredProject {
   const upright: SavedProject | VersionThreeProject = isGridProject(stored)
     ? {

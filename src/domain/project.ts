@@ -75,7 +75,7 @@ export interface FrameLayer extends LayerFields, FrameSheet {
 }
 
 /** A Project's layers in order (ADR 0079): the Canvas first, then its Frames; the app makes and shows at most one. */
-export type Layers = [CanvasLayer, ...FrameLayer[]]
+type Layers = [CanvasLayer, ...FrameLayer[]]
 
 export interface Project {
   id: string

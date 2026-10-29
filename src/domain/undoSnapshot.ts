@@ -9,10 +9,9 @@ import type { SwatchLetters } from './swatchLetters'
 /** One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change. All immutable,
  * sharing structure. */
 export interface UndoEntry {
-  /** Every layer whole (ADR 0079, ticket 0664): its Weave, Bead, Bead shape, beads and Piece names, and the Frame's
-   * place, Frame shape, turn, name, Folded beads and Row progress, so Undo undoes a change of any of them along with
-   * the beads it moved (tickets 351, 477, 508, 0610, 0624). Its views (the Project's name, the Canvas's orientation,
-   * the Letters switch) are not put back. */
+  /** Every layer whole (ADR 0079, ticket 0664): its Weave, Bead, Bead shape, beads, Piece names, and the Frame's place,
+   * shape, turn, name, Folded beads and Row progress, so Undo undoes any of them with the beads they moved. Its views
+   * (the Project's name, the Canvas's orientation, the Letters switch) are not put back. */
   layers: Project['layers']
   /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
   palette: PaletteIds

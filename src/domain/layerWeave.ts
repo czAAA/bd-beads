@@ -2,7 +2,7 @@ import type { GridPosition, Layer } from './grid'
 import { weaveOfLayer, type Layered } from './layerRecord'
 import { positionStep, weaveSettings, type Weave } from './weave'
 
-export { unwoven, weaveOf } from './layerRecord'
+export { weaveOf } from './layerRecord'
 
 // The Weave each layer is woven in (ticket 492), read through the layer's record (ticket 0661), and how a distance in
 // one reads in the other.

@@ -141,10 +141,9 @@ export function withCanvas(project: Project, change: Partial<CanvasLayer>): Proj
   return { ...project, layers: [{ ...canvasOf(project), ...change }, ...framesOf(project)] }
 }
 
-/** The Project with its Frame laid as a sheet (ADR 0066, 0079), or removed with none. The sheet is the Frame's place,
- * Weave, beads and what its Frame shape adds, whole: a field it leaves out is gone. The Frame keeps its id, Bead,
- * Letters switch and Row progress, a sheet's own winning; one laid anew copies the Canvas's and starts at the first
- * row. Not stamped as a change. */
+/** The Project with its Frame laid as a sheet (ADR 0066, 0079), or removed with none: a field the sheet leaves out is
+ * gone. The Frame keeps its id, Bead, Letters switch and Row progress, the sheet's own winning; one laid anew copies the
+ * Canvas's and starts at the first row. Not stamped as a change. */
 export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined): Project {
   const canvas = canvasOf(project)
   if (!sheet) {
