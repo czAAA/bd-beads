@@ -489,9 +489,11 @@ describe('ProjectSurface', () => {
       vi.advanceTimersByTime(10)
       expect(draws()).toBe(0)
 
-      await wrapper.setProps({ orientation: 30, zoom: 1.2, scroll: { x: 40, y: 10 } })
+      // Past 45° the view is at the next quarter turn; the drawing made upright is still the one shown.
+      await wrapper.setProps({ orientation: 60, zoom: 1.2, scroll: { x: 40, y: 10 } })
       vi.advanceTimersByTime(10)
       expect(draws()).toBe(0)
+      expect(wrapper.attributes('data-rotation')).toBe('90')
       // The screen-sized drawing is not swapped for the leaning square: it is laid where the view shows it.
       expect({ width: cells.width, height: cells.height }).toEqual(bitmap)
       expect(drawing().width).toBe('1000px')
@@ -501,7 +503,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ twist: undefined })
       vi.advanceTimersByTime(10)
       expect(draws()).toBe(1)
-      expect({ width: drawing().width, transform: drawing().transform }).toEqual({ width: '1281px', transform: 'rotate(30deg)' })
+      expect({ width: drawing().width, transform: drawing().transform }).toEqual({ width: '1281px', transform: 'rotate(-30deg)' })
     })
 
     it('draws sharp after the settle pause while the fingers hold still, and goes on turning that drawing', async () => {

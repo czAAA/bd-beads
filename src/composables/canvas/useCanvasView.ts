@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue'
+import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
@@ -222,6 +222,7 @@ export function useCanvasView(
 
   // Two watches, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on
   // every bead drawn.
+  onScopeDispose(() => clearTimeout(snapTimer))
   watch(() => currentProject()?.id, () => {
     clearTimeout(snapTimer)
     twisting.value = undefined
