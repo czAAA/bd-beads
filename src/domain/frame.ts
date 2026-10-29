@@ -146,7 +146,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
     ...heldWeave(project, current ? 'frame' : 'canvas')!,
     ...(current?.name ? { name: current.name } : {}),
-    ...(current?.kind ? { kind: current.kind } : {}),
+    ...(current?.shape ? { shape: current.shape } : {}),
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }

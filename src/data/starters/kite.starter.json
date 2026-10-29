@@ -1,7 +1,7 @@
 {
   "id": "kite",
   "design": "kite.json",
-  "kind": "kite",
+  "shape": "kite",
   "technique": "peyote",
   "measure": "frame",
   "sizes": [

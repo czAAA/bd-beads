@@ -3,7 +3,7 @@ import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, type BeadCell } from '../domain/weave'
-import { rowOrderOf } from '../domain/frameKind'
+import { rowOrderOf } from '../domain/frameShape'
 import type { LayerGeometry } from '../domain/layerGeometry'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave } from '../domain/layerWeave'
@@ -133,7 +133,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   const weave = frameWeave(project)
   const frame = project.frame
   // The Frame's Row order, or one over the Project drawn alone, measured as its space is.
-  const order = rowOrderOf({ ...weave, kind: frame?.kind, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
+  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
     return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
