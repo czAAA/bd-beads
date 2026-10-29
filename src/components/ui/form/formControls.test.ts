@@ -6,6 +6,7 @@ import FormField from './FormField.vue'
 import NumberField from './NumberField.vue'
 import SegmentedControl from './SegmentedControl.vue'
 import AppStepper from './AppStepper.vue'
+import ChipRadioGroup from './ChipRadioGroup.vue'
 import TextField from './TextField.vue'
 import { fakeMatchMedia } from '../../../testUtils/fakeMatchMedia'
 
@@ -179,6 +180,60 @@ describe('SegmentedControl', () => {
     expect(value.value).toBe('loom')
     await wrapper.trigger('keydown', { key: 'ArrowLeft' })
     expect(value.value).toBe('loom')
+  })
+})
+
+describe('ChipRadioGroup', () => {
+  const action = (name: string, body: string) => ({ name: () => name, body: () => body, chords: [] })
+  const options = [
+    { value: 'one', label: '1:1', action: action('1:1, picture pixels : beads', 'Every pixel is one bead.'), testid: 'chip-one' },
+    { value: 'two', label: '2:1', action: action('2:1, picture pixels : beads', 'Every 2 × 2 pixel block is one bead.'), testid: 'chip-two' },
+    { value: 'custom', label: 'Custom', action: action('Custom ratio', 'Set your own number.'), testid: 'chip-custom' },
+  ]
+  const chip = (wrapper: ReturnType<typeof mount>, testid: string) => wrapper.get(`[data-testid="${testid}"]`)
+
+  it('is one radiogroup of chips named by their actions, the chosen one checked and the one Tab stop', () => {
+    const wrapper = mount(ChipRadioGroup, { props: { options, modelValue: 'two', labelledby: 'ratio-label' } })
+
+    expect(wrapper.get('[role="radiogroup"]').attributes('aria-labelledby')).toBe('ratio-label')
+    expect(wrapper.findAll('[role="radio"]').map((radio) => radio.attributes('aria-label'))).toEqual([
+      '1:1, picture pixels : beads',
+      '2:1, picture pixels : beads',
+      'Custom ratio',
+    ])
+    expect(wrapper.findAll('[role="radio"]').map((radio) => radio.text())).toEqual(['1:1', '2:1', 'Custom'])
+    expect(chip(wrapper, 'chip-two').attributes()).toMatchObject({ 'aria-checked': 'true', tabindex: '0' })
+    expect(chip(wrapper, 'chip-one').attributes()).toMatchObject({ 'aria-checked': 'false', tabindex: '-1' })
+  })
+
+  it('makes the first chip the Tab stop while none is chosen', () => {
+    const wrapper = mount(ChipRadioGroup, { props: { options, modelValue: undefined } })
+    expect(wrapper.findAll('[role="radio"]').map((radio) => radio.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
+  })
+
+  it('moves focus along the chips with the arrows, Home and End, and chooses the one pressed', async () => {
+    const wrapper = mount(ChipRadioGroup, { props: { options, modelValue: 'one' }, attachTo: document.body })
+    ;(chip(wrapper, 'chip-one').element as HTMLElement).focus()
+
+    await chip(wrapper, 'chip-one').trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(chip(wrapper, 'chip-two').element)
+    await chip(wrapper, 'chip-two').trigger('keydown', { key: 'End' })
+    expect(document.activeElement).toBe(chip(wrapper, 'chip-custom').element)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+    await chip(wrapper, 'chip-custom').trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([['custom']])
+    wrapper.unmount()
+  })
+
+  it('gives each chip its action’s Tooltip: the name and the body', async () => {
+    const wrapper = mount(ChipRadioGroup, { props: { options, modelValue: 'one' }, attachTo: document.body })
+    const tips = wrapper.findAll('.app-tooltip')
+    expect(tips).toHaveLength(3)
+    await tips[1]!.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(tips[1]!.get('.app-tooltip__name').text()).toBe('2:1, picture pixels : beads')
+    expect(tips[1]!.get('.app-tooltip__body').text()).toBe('Every 2 × 2 pixel block is one bead.')
+    wrapper.unmount()
   })
 })
 
