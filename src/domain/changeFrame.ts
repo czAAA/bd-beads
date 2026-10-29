@@ -15,7 +15,7 @@ import {
 } from './canvas'
 import { movedFrame, snapRow, withFrame, withFrameGiving } from './frame'
 import { frameGeometryOf, layerSheet, shownBeads } from './layers'
-import { droppedFromLayout, liftedOntoLayout } from './customSelection'
+import { droppedFromLayout, droppedFromTurnedGrid, liftedOntoLayout } from './customSelection'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
 import { refoldSheet, withEachBead } from './folding'
@@ -42,6 +42,7 @@ import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
 import { firstPasses, progressWithoutLine, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
+import { beadsOfLayer, heldWeave, withLayer } from './layerRecord'
 import type { Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -271,8 +272,8 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
 /** A Custom frame laid out again from new settings round its own centre: each bead whose position is still in the
  * layout shows, the rest fold, kept by their position's name, until a layout has it again (ticket 0640). */
 function resettled(project: Project, frame: FrameSheet, settings: FrameSettings, quarterTurns: QuarterTurns | undefined): FrameSheet {
-  const centre = canvasDistance(project, frame, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
-  const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns, frame)
+  const centre = canvasDistance(project, heldWeave(project, 'frame')!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
+  const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns, heldWeave(project, 'frame'))
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
   const geometry = frameGeometry(sheet)
   return { ...rest, ...sheet, ...refoldSheet(frame, (position) => geometry.hasPosition(position)) }
@@ -306,7 +307,7 @@ function resizedFrame(project: Project, rectangle: Rect): Project {
   }
   const lifted: BeadChange[] = []
   forEachBead(taken, (row, column) => lifted.push({ row, column, color: null }))
-  const carried = carryNames(project, { ...resized, beads: beadsOver(withColors(project.beads, lifted), given) })
+  const carried = carryNames(project, withLayer(resized, 'canvas', { beads: beadsOver(withColors(beadsOfLayer(project, 'canvas'), lifted), given) }))
   // A named Piece taken whole gives the Frame its name, as Frame from Selection does.
   const name = namedPieceTaken(project, taken) ?? resized.frame!.name
   return name === undefined ? carried : { ...carried, frame: { ...carried.frame!, name } }
@@ -318,20 +319,20 @@ function resizedFrame(project: Project, rectangle: Rect): Project {
 function madeFrame(original: Project, rectangle: Rect): Project {
   const project = withFoldedLaid(original)
   const previous = project.frame
+  const [under, held] = [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, 'frame')]
   // What shows is lifted. Canvas beads hidden under a Frame there before stay on the Canvas; its own beads outside the
   // new rectangle go back on it.
-  const hidden = previous ? beadsInFrame(beadsInFrame(project.beads, rectangle), footprintOf(project)!) : {}
-  const left = previous ? beadsWithout(shiftedBeads(previous.beads, previous.row, previous.column), rectangle) : {}
-  const canvas = beadsOver(beadsOver(beadsWithout(project.beads, rectangle), hidden), left)
+  const hidden = previous ? beadsInFrame(beadsInFrame(under, rectangle), footprintOf(project)!) : {}
+  const left = previous ? beadsWithout(shiftedBeads(held!, previous.row, previous.column), rectangle) : {}
+  const canvas = beadsOver(beadsOver(beadsWithout(under, rectangle), hidden), left)
   const lifted = beadsInFrame(shownBeads(project), rectangle)
   const taken = project.pieceNames?.find((entry) => frameContains(rectangle, entry))?.name
   const named = taken ?? previous?.name
   // A Frame that moves to another named Schema leaves the one it held behind, named and unframed.
-  const first = previous && taken !== undefined && previous.name ? firstBead(previous.beads) : undefined
+  const first = previous && taken !== undefined && previous.name ? firstBead(held!) : undefined
   const { frame: _previous, ...rest } = project
-  const framed = withFrame({ ...rest, beads: canvas }, rectangle)
-  const frame = { ...framed.frame!, beads: shiftedBeads(lifted, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) }
-  const carried = carryNames(project, { ...framed, frame })
+  const framed = withFrame(withLayer(rest, 'canvas', { beads: canvas }), rectangle)
+  const carried = carryNames(project, withLayer(framed, 'frame', { beads: shiftedBeads(lifted, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) }))
   return first && previous?.name ? { ...carried, pieceNames: [...(carried.pieceNames ?? []), { name: previous.name, row: first.row + previous.row, column: first.column + previous.column }] } : carried
 }
 
@@ -341,7 +342,7 @@ function withFoldedLaid(project: Project): Project {
   const frame = project.frame
   if (!frame?.folded) return project
   const { folded, ...shown } = frame
-  return { ...project, beads: beadsOver(project.beads, shiftedBeads(folded, frame.row, frame.column)), frame: shown }
+  return withLayer({ ...project, frame: shown }, 'canvas', { beads: beadsOver(beadsOfLayer(project, 'canvas'), shiftedBeads(folded, frame.row, frame.column)) })
 }
 
 /** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
@@ -362,13 +363,14 @@ function madeCustomFrame(project: Project, rectangle: Rect): Project {
   const settings = sizedSettings(frame, coveringSize(project, frame, rectangle), 'cover')!
   const centre = { row: rectangle.row + Math.floor(rectangle.rows / 2), column: rectangle.column + Math.floor(rectangle.columns / 2) }
   const laid = removedFrame(project)
-  const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, frame)
+  const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, 'frame'))
   const framed: Project = { ...laid, frame: sheet, rowProgress: project.rowProgress }
+  const under = beadsOfLayer(laid, 'canvas')
   const hidden: (GridPosition & { color: string })[] = []
-  forEachBead(beadsInFrame(laid.beads, footprintOf(framed)!), (row, column, color) => hidden.push({ row: row - sheet.row, column: column - sheet.column, color }))
+  forEachBead(beadsInFrame(under, footprintOf(framed)!), (row, column, color) => hidden.push({ row: row - sheet.row, column: column - sheet.column, color }))
   const { landed, lifted } = liftedOntoLayout(layerSheet(framed, 'frame'), hidden)
-  const canvas = withColors(laid.beads, lifted.map(({ row, column }) => ({ row: row + sheet.row, column: column + sheet.column, color: null })))
-  const made = carryNames(laid, { ...framed, beads: canvas, frame: { ...sheet, beads: withColors({}, landed) } })
+  const canvas = withColors(under, lifted.map(({ row, column }) => ({ row: row + sheet.row, column: column + sheet.column, color: null })))
+  const made = carryNames(laid, withLayer(withLayer(framed, 'canvas', { beads: canvas }), 'frame', { beads: withColors({}, landed) }))
   // The name stays with the Frame unless Remove Frame left it on a Piece on the Canvas.
   const keepsName = frame.name !== undefined && !made.pieceNames?.some((entry) => entry.name === frame.name)
   return keepsName ? { ...made, frame: { ...made.frame!, name: frame.name } } : made
@@ -384,20 +386,24 @@ function coveringSize(project: Project, weave: Weave, rectangle: Rect): { rows: 
 }
 
 /** The Frame's beads laid on the Canvas, by Canvas position: those it shows, and its Folded ones (ticket 0638). A
- * grid's keep their row and column; a Custom frame's land each on the Canvas position nearest its centre (ADR 0077),
- * its Folded ones where growing it back would show them (ticket 0669). */
+ * grid's keep their row and column; a Custom frame's or a turned Frame's land each on the Canvas position nearest its
+ * centre (ADR 0077, ticket 0669), a Custom frame's Folded ones where growing it back would show them. */
 function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
   const frame = project.frame!
+  const beads = beadsOfLayer(project, 'frame')!
+  const folded = frame.folded ?? {}
   if (frameGeometryOf(project).grid) {
-    return { shown: shiftedBeads(frame.beads, frame.row, frame.column), folded: shiftedBeads(frame.folded ?? {}, frame.row, frame.column) }
+    return { shown: shiftedBeads(beads, frame.row, frame.column), folded: shiftedBeads(folded, frame.row, frame.column) }
   }
-  const onCanvas = (sheet: FrameSheet, beads: BeadChange[]) => withColors({}, beads.map(({ row, column, color }) => ({ row: row + sheet.row, column: column + sheet.column, color })))
-  const shown = onCanvas(frame, droppedFromLayout(layerSheet(project, 'frame')))
-  if (!frame.folded || !hasBeads(frame.folded)) return { shown, folded: {} }
+  const onCanvas = (sheet: Rect, dropped: BeadChange[]) => withColors({}, dropped.map(({ row, column, color }) => ({ row: row + sheet.row, column: column + sheet.column, color })))
+  const sheet = layerSheet(project, 'frame')
+  const shown = onCanvas(frame, droppedFromLayout(sheet))
+  if (!hasBeads(folded)) return { shown, folded: {} }
+  if (!frameShapeOf(frame)) return { shown, folded: onCanvas(frame, droppedFromTurnedGrid(sheet, folded)) }
   const positions: GridPosition[] = []
-  forEachBead(frame.folded, (row, column) => positions.push({ row, column }))
+  forEachBead(folded, (row, column) => positions.push({ row, column }))
   // The Folded beads as the beads it shows, on the Frame grown to hold them.
-  const grown = resettled(project, { ...frame, beads: frame.folded, folded: undefined }, settingsHolding(frame, positions), frame.quarterTurns)
+  const grown = resettled(project, { ...frame, beads: folded, folded: undefined }, settingsHolding(frame, positions), frame.quarterTurns)
   return { shown, folded: onCanvas(grown, droppedFromLayout(layerSheet({ ...project, frame: grown }, 'frame'))) }
 }
 
@@ -408,15 +414,16 @@ function removedFrame(project: Project): Project {
   const frame = project.frame!
   const { shown: dropped, folded } = droppedBeads(project)
   // Its Folded beads land where they stand too, over the Canvas, under the beads it shows (ticket 0638).
-  const unfolded = beadsOver(beadsWithout(project.beads, footprintOf(project)!), folded)
+  const unfolded = beadsOver(beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!), folded)
   const beads = beadsOver(unfolded, dropped)
-  const canvas = carryNames(project, { ...withFrame(project, undefined), beads })
+  const canvas = carryNames(project, withLayer(withFrame(project, undefined), 'canvas', { beads }))
   const name = frame.name
-  const landed = name ? largestPieceBead(beads, canvas, dropped) : undefined
+  const weave = heldWeave(canvas, 'canvas')
+  const landed = name ? largestPieceBead(beads, weave, dropped) : undefined
   if (!name || !landed) {
     return canvas
   }
-  const piece = new Set(pieceBeadsAt(beads, canvas, landed).map(numericKey))
+  const piece = new Set(pieceBeadsAt(beads, weave, landed).map(numericKey))
   const names = canvas.pieceNames ?? []
   const rival = namedPieces(canvas).find((named) => names.some((entry) => entry.name === named.name && piece.has(numericKey(entry))))
   if (rival && rival.beads >= piece.size) {
@@ -426,7 +433,7 @@ function removedFrame(project: Project): Project {
 }
 
 /** A bead of the largest Piece that `among` forms in `beads` (ties to the first read), or undefined when there is none. */
-function largestPieceBead(beads: BeadMap, weave: Pick<Project, 'technique' | 'techniqueSettings'>, among: BeadMap): GridPosition | undefined {
+function largestPieceBead(beads: BeadMap, weave: Weave, among: BeadMap): GridPosition | undefined {
   const seen = new Set<number>()
   let best: { at: GridPosition; size: number } | undefined
   forEachBead(among, (row, column) => {

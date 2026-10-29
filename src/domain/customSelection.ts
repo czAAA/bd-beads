@@ -1,14 +1,15 @@
-import { colorAt, type BeadChange } from './canvas'
+import { colorAt, forEachBead, type BeadChange, type BeadMap } from './canvas'
 import { frameLayoutOf } from './frameShape'
+import { laidSize } from './frameOrientation'
 import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
-import { layoutPlacement, type LayoutPlacement } from './layerGeometry'
+import { layoutPlacement, turnedGridCentre, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
 import { describeWeave, rowPitch, type Weave } from './weave'
 
-// A Selection over a Custom frame (spec 0590, ADR 0077, ticket 0594): a rectangle of the Frame's cells on screen holding
-// every bead whose centre lies in it. Paste and Rotate put each bead on the nearest free position of the panel under it,
-// dropping one on a Seam or Off-shape. Each function takes the Frame's layer (`layerSheet`), a Custom frame's.
+// A Selection over a Custom frame or a turned Frame (tickets 0594, 0667): a rectangle of the Frame's cells on screen
+// holding every bead whose centre lies in it. Paste and Rotate put each bead on the nearest free position of the panel
+// under it, dropping one on a Seam or Off-shape. Each function takes the Frame's layer (`layerSheet`).
 
 /** A bead copied from a Custom frame (or a block's cell, placed as a bead): where its centre lies from the block's
  * anchor bead, in cell widths on screen, and its color. */
@@ -19,9 +20,11 @@ export interface PlacedColor extends LayoutPoint {
 /** A Selection's rectangle of the Frame's cells, counted from its first row and column. */
 type CellRectangle = { top: number; left: number; rows: number; columns: number }
 
-/** The Custom frame's layout as placed in its rectangle. */
+/** The Custom frame's layout as placed in its rectangle, or a turned Frame's grid in the rectangle it lies in (ticket
+ * 0667). */
 function placementOf(sheet: LayerSheet): LayoutPlacement {
-  return layoutPlacement(frameLayoutOf(sheet.frame!)!, sheet.frame!, sheet.weave)
+  const frame = { ...sheet.frame!, ...sheet.weave }
+  return layoutPlacement(frameLayoutOf(frame)!, laidSize(frame), sheet.weave)
 }
 
 /** A position's centre on screen, in cell widths from the Frame's first position's corner. */
@@ -179,21 +182,34 @@ export function liftedOntoLayout(sheet: LayerSheet, cells: readonly (GridPositio
   return { landed, lifted }
 }
 
-/** A Custom frame's beads laid on a grid (Remove Frame, ticket 0669, ADR 0077): each on the Frame's cell nearest its
- * centre, as a Paste of them lays them, or the nearest free cell next to it where an earlier bead took that one. In
- * the Frame's own rows and columns, a bead read in order on screen. */
+/** A Custom frame's or a turned Frame's beads laid on a grid (Remove Frame, ticket 0669, ADR 0077): each on the Frame's
+ * cell nearest its centre, as a Paste of them lays them. In the Frame's own rows and columns. */
 export function droppedFromLayout(sheet: LayerSheet): BeadChange[] {
   const placement = placementOf(sheet)
-  const { weave } = sheet
-  const taken = new Set<string>()
-  const dropped: BeadChange[] = []
-  const beads = placement.layout.positions
-    .flatMap((position) => {
+  return droppedOnCells(
+    sheet.weave,
+    placement.layout.positions.flatMap((position) => {
       const color = colorAt(sheet.beads, position.row, position.column)
       return color ? [{ centre: centreOf(placement, position), color }] : []
-    })
-    .sort((a, b) => a.centre.y - b.centre.y || a.centre.x - b.centre.x)
-  for (const { centre, color } of beads) {
+    }),
+  )
+}
+
+/** A turned Frame's Folded beads laid on a grid as `droppedFromLayout` lays its others: each where its own row and
+ * column, beyond the Frame's edge, lies as the Frame is turned (ticket 0669). */
+export function droppedFromTurnedGrid(sheet: LayerSheet, folded: BeadMap): BeadChange[] {
+  const frame = { ...sheet.frame!, ...sheet.weave }
+  const beads: { centre: LayoutPoint; color: string }[] = []
+  forEachBead(folded, (row, column, color) => beads.push({ centre: turnedGridCentre(frame, { row, column }), color }))
+  return droppedOnCells(sheet.weave, beads)
+}
+
+/** Beads at points on screen laid on a Weave's cells, read in order on screen: each on the cell holding its centre, or
+ * the nearest free cell next to it where an earlier bead took that one. */
+function droppedOnCells(weave: Weave, beads: readonly { centre: LayoutPoint; color: string }[]): BeadChange[] {
+  const taken = new Set<string>()
+  const dropped: BeadChange[] = []
+  for (const { centre, color } of [...beads].sort((a, b) => a.centre.y - b.centre.y || a.centre.x - b.centre.x)) {
     const holding = cellAt(weave, centre)
     const away = (cell: GridPosition) => {
       const { x, y } = cellCentre(weave, cell)

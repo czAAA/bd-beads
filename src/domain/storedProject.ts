@@ -91,7 +91,7 @@ export function normalizeProject(stored: StoredProject): Project {
   const canvas = readWeave(technique, rest)
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
   const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unflattened(readFrameShape(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
-  const { rows, columns } = projectFrame(placed)
+  const { rows, columns } = placed.frame ?? projectFrame(placed)
   const sheet: ShapedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
 
   return {
@@ -143,15 +143,15 @@ function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weav
   return weaveOf({ technique, ...(isSettingsMap(techniqueSettings) ? { techniqueSettings } : {}) })
 }
 
-/** A stored Frame with its Frame shape kept only where it is one this build knows (ticket 0591): one without, or with
- * one it does not know, reads as a Frame without a shape. A Custom frame keeps its settings, read within its shape's
- * range (ticket 0592); a Frame without a shape has none. */
+/** A stored Frame with its Frame shape kept only where it is one this build knows (ticket 0591), else read as a Frame
+ * without one. A Custom frame keeps its settings, read within its shape's range (ticket 0592), and any Frame its
+ * orientation (tickets 0594, 0667); one turned before 0667 had its beads rewritten, and opens upright. */
 function readFrameShape({ shape, settings: stored, quarterTurns, ...frame }: FrameSheet): FrameSheet {
+  // Rotate Frame's turn: one, two or three quarters; anything else reads as none.
+  const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
   if (!isFrameShape(shape)) {
-    return frame
+    return { ...frame, ...turned }
   }
   const settings = settingsOf({ shape, settings: stored })
-  // Rotate Frame's turn (ticket 0594): one, two or three quarters; anything else reads as none.
-  const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
   return { ...frame, shape, ...(settings ? { settings } : {}), ...turned }
 }

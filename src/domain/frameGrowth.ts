@@ -3,6 +3,7 @@ import { beadsInFrame, beadsWithout, colorAt, frameContains, withColors, type Be
 import { foldsOver } from './folding'
 import type { GridPosition } from './grid'
 import { canvasWeave, frameWeave } from './layerWeave'
+import { beadsOfLayer, heldWeave } from './layerRecord'
 import { pieceBeadsAt } from './pieces'
 import type { Project } from './project'
 import { rowCycle } from './weave'
@@ -13,12 +14,13 @@ import { rowCycle } from './weave'
 /** Whether a resize of the Project's Frame trades beads with the Canvas: a Frame woven like it (Technique and Brick
  * block alike), whose own positions are the Canvas's (ADR 0066). */
 function tradesWithCanvas(project: Project): boolean {
-  return !!project.frame && !foldsOver(canvasWeave(project), project.frame)
+  return !!project.frame && !foldsOver(canvasWeave(project), heldWeave(project, 'frame')!)
 }
 
 /** The beads of each named Piece on the Canvas, with its name. */
 function namedPieceBeads(project: Project): { name: string; beads: GridPosition[] }[] {
-  return (project.pieceNames ?? []).map(({ name, row, column }) => ({ name, beads: pieceBeadsAt(project.beads, project, { row, column }) }))
+  const [beads, weave] = [beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas')]
+  return (project.pieceNames ?? []).map(({ name, row, column }) => ({ name, beads: pieceBeadsAt(beads, weave, { row, column }) }))
 }
 
 /** Whether a Frame at `from` resized to `to` newly covers a Canvas position. */
@@ -58,7 +60,7 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
 export function canvasLift(project: Project, rectangle: Rect): BeadMap {
   const frame = project.frame
   if (!frame || !tradesWithCanvas(project)) return {}
-  const offered = beadsWithout(beadsInFrame(project.beads, rectangle), frame)
+  const offered = beadsWithout(beadsInFrame(beadsOfLayer(project, 'canvas'), rectangle), frame)
   const kept: BeadChange[] = namedPieceBeads(project)
     .filter(({ beads }) => !beads.every((bead) => newlyCovers(frame, rectangle, bead)))
     .flatMap(({ beads }) => beads.map(({ row, column }) => ({ row, column, color: null })))
