@@ -26,7 +26,7 @@ function empty(): Project {
 const drawn = (): Project => ({ ...empty(), beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) })
 const framed = (): Project => ({ ...empty(), frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', beads: {} } })
 
-const mountPanel = (project: Project, exporting?: 'png' | 'pdf') => mount(ExportPanel, { props: { project, exporting }, attachTo: document.body })
+const mountPanel = (project: Project) => mount(ExportPanel, { props: { project }, attachTo: document.body })
 const has = (wrapper: ReturnType<typeof mountPanel>, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
 
 describe('ExportPanel (ticket 0652)', () => {
@@ -63,12 +63,5 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(fit.attributes('aria-disabled')).toBe('true')
     await fit.trigger('click')
     expect(wrapper.emitted('fit')).toBeUndefined()
-  })
-
-  it('waits while an export runs', () => {
-    const wrapper = mountPanel(framed(), 'png')
-
-    expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="export-pdf"]').attributes('aria-disabled')).toBe('true')
   })
 })

@@ -59,13 +59,15 @@ describe('CanvasStrip', () => {
     const exportButton = () => wrapper.get('[data-testid="strip-export"]')
 
     expect(exportButton().attributes('aria-label')).toBe(en.panels.project.exportHeading)
-    expect(exportButton().attributes('aria-pressed')).not.toBe('true')
+    expect(exportButton().attributes('aria-pressed')).toBe('false')
     await exportButton().trigger('click')
     expect(wrapper.emitted('select-panel')).toEqual([['export']])
 
     await wrapper.setProps({ openPanel: 'export' })
     expect(exportButton().attributes('aria-pressed')).toBe('true')
-    expect(mount(CanvasStrip, { props: { zoomPercent: 100 } }).find('[data-testid="strip-export"]').exists()).toBe(false)
+    const noProject = mount(CanvasStrip, { props: { zoomPercent: 100 } })
+    expect(noProject.find('[data-testid="strip-export"]').exists()).toBe(false)
+    noProject.unmount()
   })
 
   it('names nothing: no title, size line, estimate, grid icon or hint', () => {

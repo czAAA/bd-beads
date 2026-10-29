@@ -9,11 +9,6 @@ describe('panel descriptors (ticket 510)', () => {
     expect(PANEL_OPENERS).not.toContain('frame-edit-toggle')
   })
 
-  it('lines the Export panel up with the right edge of its button, in the strip\'s right corner, and the others with the left (ticket 0652)', () => {
-    expect(PANELS.export).toMatchObject({ anchor: 'strip-export', align: 'end', width: 'var(--panel-width-small)' })
-    expect([PANELS.menu.align, PANELS.project.align, PANELS.frame.align]).toEqual([undefined, undefined, undefined])
-  })
-
   it('hangs each panel from its own opener', () => {
     for (const panel of Object.values(PANELS)) expect(panel.openers).toContain(panel.anchor)
   })

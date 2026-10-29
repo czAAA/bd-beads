@@ -522,10 +522,7 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'menu',
     body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading, t.languageSwitcher.ariaLabel, t.theme.groupLabel]),
   }),
-  unkeyed('strip-export', (t) => t.panels.project.exportHeading, 'edit', {
-    icon: 'share',
-    body: (t) => t.tooltips.list([t.frame.exportPicture, t.frame.exportChart, t.frame.exportQuality]),
-  }),
+  unkeyed('strip-export', (t) => t.panels.project.exportHeading, 'edit', { icon: 'share' }),
   unkeyed('strip-coffee', (t) => t.panels.menu.coffee, 'edit', { icon: 'coffee' }),
   unkeyed('pen-mode', (t) => t.inputMode.penLabel, 'canvas', { icon: 'pen-mode', body: (t) => t.inputMode.penHint }),
   unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),
