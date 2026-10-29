@@ -1,4 +1,5 @@
 import { beadCopy, beadLabel, findBead, readBeadCopy, type Bead } from './beads'
+import { readBackground } from './background'
 import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
@@ -168,7 +169,8 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
 }
 
 /** What every stored layer holds, read: its id (or `fallbackId` for one saved without), Weave, Bead copy (its own when
- * readable, else the catalog's of that id through the alias map, ticket 534), Bead shape, beads, Letters, Piece names. */
+ * readable, else the catalog's of that id through the alias map, ticket 534), Bead shape, Background, beads, Letters,
+ * Piece names. */
 function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): LayerFields {
   const bead = readBeadCopy(stored.bead) ?? catalogCopy(stored.beadId)
   const pieceNames = readPieceNames(stored.pieceNames)
@@ -179,10 +181,17 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
     ...(bead ? { bead } : {}),
     // An unreadable or missing Bead shape reads as Symmetric, which is left unsaved.
     ...(stored.beadShape === 'real' ? { beadShape: stored.beadShape } : {}),
+    ...withBackgroundRead(stored.background),
     beads: stored.beads ?? {},
     ...(stored.letters === true ? { letters: true } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
   }
+}
+
+/** A stored layer's Background (ticket 0666), left out where unreadable or missing: such a layer shows the device's. */
+function withBackgroundRead(stored: unknown): Pick<LayerFields, 'background'> {
+  const background = readBackground(stored)
+  return background === undefined ? {} : { background }
 }
 
 /** The Canvas's stored orientation in degrees (ticket 0664): a quarter turn, or upright for anything else. */

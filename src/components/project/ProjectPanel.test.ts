@@ -8,12 +8,12 @@ import { findBead, offeredBeads } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { replaceBead } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
-import { canvasOf, frameOf } from '../../domain/layerRecord'
+import { canvasOf, frameOf, withBackground } from '../../domain/layerRecord'
 import { withFields } from '../../testUtils/flatFields'
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  useCanvasBackground().setChoice(1)
+  useCanvasBackground().remember(1)
 })
 
 beforeEach(() => {
@@ -219,12 +219,17 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(header.text()).toContain('TOHO Cube 1.5mm · symmetric')
   })
 
-  it('names a Custom Canvas color in the canvas section\'s summary (ticket 0653)', async () => {
+  it('names the Canvas\'s Custom Background in the canvas section\'s summary (tickets 0653, 0666)', async () => {
     document.documentElement.dataset.theme = 'light'
-    useCanvasBackground().setCustomColor('#7a2e8c')
-    const wrapper = mountPanel()
+    const wrapper = mountPanel({ project: withBackground(project, 'canvas', '#7a2e8c') })
     const header = wrapper.findAll('.panel-section__header')[1]!
     await header.trigger('click')
     expect(header.text()).toContain('Custom color')
+  })
+
+  it('asks for the Canvas\'s Background picked in the canvas section (ticket 0666)', async () => {
+    const wrapper = mountPanel()
+    await wrapper.get('[data-testid="canvas-section"] [data-testid="background-color-fog"]').trigger('click')
+    expect(wrapper.emitted('set-background')).toEqual([['canvas', 4]])
   })
 })

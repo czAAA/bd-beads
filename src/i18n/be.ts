@@ -610,6 +610,7 @@ export const be: Translations = {
     lettersLabel: 'Літары',
     lettersLine: 'Друкаваць літару колеру на кожнай бісерынцы, каб колеры адрозніваліся на паперы і ў чорна-белым друку.',
     lettersInfoLabel: 'Што робяць Літары',
+    background: { heading: 'Фон', label: 'Фон рамкі' },
     margin: {
       heading: 'Палі',
       colorLabel: 'Колер палёў',

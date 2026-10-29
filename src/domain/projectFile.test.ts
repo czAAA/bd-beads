@@ -20,7 +20,7 @@ import { paintCells } from './drawing'
 import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf, withLayer } from './layerRecord'
+import { backgroundOf, canvasOf, frameOf, withBackground, withLayer } from './layerRecord'
 import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
 import { legacyFile } from '../testUtils/legacyFile'
 
@@ -61,6 +61,27 @@ describe('single-Project roundtrip', () => {
 
     expect(canvasOf(restored).technique).toBe('brick')
     expect(restored).toEqual(project)
+  })
+
+  it('carries each layer\'s own background through the file, a position or a Custom color (ticket 0666)', () => {
+    const project = withBackground(withBackground(decoratedProject(), 'canvas', 3), 'frame', '#336699')
+
+    const [restored] = parseProjectsFile(serializeProject(project)).projects
+
+    expect(backgroundOf(restored, 'canvas')).toBe(3)
+    expect(backgroundOf(restored, 'frame')).toBe('#336699')
+    expect(restored).toEqual(project)
+  })
+
+  it('opens a layer whose background it cannot read without one, as a Project saved before backgrounds (ticket 0666)', () => {
+    const saved = JSON.parse(serializeProject(decoratedProject()))
+    saved.projects[0].layers[0].background = 9
+    saved.projects[0].layers[1].background = 'teal'
+
+    const [restored] = parseProjectsFile(JSON.stringify(saved)).projects
+
+    expect(backgroundOf(restored, 'canvas')).toBeUndefined()
+    expect(backgroundOf(restored, 'frame')).toBeUndefined()
   })
 
   it('carries a square stitch Project through the file (ticket 0635)', () => {

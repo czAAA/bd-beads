@@ -7,7 +7,7 @@ import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
-import { beadsOfLayer, canvasOf, frameOf, withLetters } from './layerRecord'
+import { backgroundOf, beadsOfLayer, canvasOf, frameOf, withBackground, withLetters } from './layerRecord'
 import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -37,6 +37,17 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(canvasOf(restored)).toMatchObject({ name: 'Owl', orientation: 90, letters: true, beads: {} })
     expect(frameOf(restored)).toMatchObject({ id: frameOf(before)!.id, letters: true })
     expect(restoreSnapshot(before, snapshot).layers[1]).toBe(before.layers[1])
+  })
+
+  it('keep each layer\'s Background as it is now, a view and no Undo step (ticket 0666)', () => {
+    const before = withBackground(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 'frame', 2)
+    const snapshot = snapshotOf(before)
+    const changed = withBackground(withBackground(deleteAll(before), 'canvas', 4), 'frame', '#336699')
+
+    const restored = restoreSnapshot(changed, snapshot)
+
+    expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
+    expect([backgroundOf(restored, 'canvas'), backgroundOf(restored, 'frame')]).toEqual([4, '#336699'])
   })
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {

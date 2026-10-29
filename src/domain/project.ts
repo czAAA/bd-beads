@@ -39,6 +39,10 @@ export interface RowProgress {
   currentColumnBack?: number
 }
 
+/** A layer's Background (ADR 0079, ticket 0666): a numbered position in the theme's list, 1 to 5, kept across light
+ * and dark, or a Custom color as `#rrggbb`, one for both themes. */
+export type Background = number | string
+
 /** What every layer holds (ADR 0079, ticket 0664): a sub-canvas, the Canvas or a Frame, with its own id, its Weave (a
  * Technique and its settings), Bead, Bead shape, beads, Letters switch and Piece names. */
 export interface LayerFields extends Weave {
@@ -50,6 +54,9 @@ export interface LayerFields extends Weave {
   bead?: Bead
   /** Its Bead shape (ADR 0068): how each cell is drawn. Absent means Symmetric. */
   beadShape?: BeadShape
+  /** The color it is drawn on (ADR 0079, ticket 0666), a view saved with it. Absent on a layer saved before it had one,
+   * which shows the device's last pick. */
+  background?: Background
   /** What is painted on it, by its own positions (ADR 0026); see BeadMap. */
   beads: BeadMap
   /** Letters (ticket 0573): print each bead's Swatch letter on the Frame, the PNG and the PDF. Absent means off. */

@@ -2,7 +2,7 @@ import { beadCopy, type Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
-import type { CanvasLayer, FrameLayer, LayerFields, Project, RowProgress } from './project'
+import type { Background, CanvasLayer, FrameLayer, LayerFields, Project, RowProgress } from './project'
 import { beadCell, DEFAULT_BEAD_SHAPE, heldSettings, withCell, type BeadShape, type Weave } from './weave'
 
 // The one way to read and write a layer, the Canvas or the Frame (ADR 0079, tickets 0661, 0664): a Project holds its
@@ -154,10 +154,18 @@ export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   return { ...project, layers: [canvas, { ...kept, ...laid }, ...framesOf(project).slice(1)] }
 }
 
-/** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Bead shape, Letters switch and Row
- * progress. A Frame made anew in place of another keeps them. */
-export function frameIdentity({ id, beadId, bead, beadShape, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet> & LayerFields): Omit<FrameLayer, keyof FrameSheet> {
-  return { id, beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters: true } : {}), rowProgress }
+/** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Bead shape, Background, Letters
+ * switch and Row progress. A Frame made anew in place of another keeps them. */
+export function frameIdentity({ id, beadId, bead, beadShape, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet> & LayerFields): Omit<FrameLayer, keyof FrameSheet> {
+  return {
+    id,
+    beadId,
+    ...(bead ? { bead } : {}),
+    ...(beadShape ? { beadShape } : {}),
+    ...(background !== undefined ? { background } : {}),
+    ...(letters ? { letters: true } : {}),
+    rowProgress,
+  }
 }
 
 /** Where a Frame laid anew starts its Row progress: the first row, along its rows. */
@@ -228,4 +236,26 @@ export function heldWeave(project: Layered, layer: Layer): Weave | undefined
 export function heldWeave(project: Layered, layer: Layer): Weave | undefined {
   const held = heldLayer(project, layer)
   return held && weaveOf(held)
+}
+
+/** A layer's Background (ADR 0079, ticket 0666); none for one saved before it had one, which shows the device's last
+ * pick, or for a Frame the Project lacks. */
+export function backgroundOf(project: Layered, layer: Layer): Background | undefined {
+  return heldLayer(project, layer)?.background
+}
+
+/** The Project with a layer's Background replaced (ticket 0666): a view, so not stamped and no Undo step. The same
+ * Project without a Frame. */
+export function withBackground(project: Project, layer: Layer, background: Background): Project {
+  if (!heldLayer(project, layer)) return project
+  const set = <T extends LayerFields>(held: T): T => ({ ...held, background })
+  return { ...project, layers: layer === 'canvas' ? [set(canvasOf(project)), ...framesOf(project)] : [canvasOf(project), set(frameOf(project)!), ...framesOf(project).slice(1)] }
+}
+
+/** The Project with every layer that has no Background given `start` (ticket 0666): a new Project starts on the
+ * device's last pick, and keeps it on every device. The same Project where every layer has one. Not stamped. */
+export function withStartBackground(project: Project, start: Background): Project {
+  if (project.layers.every((layer) => layer.background !== undefined)) return project
+  const fill = <T extends LayerFields>(layer: T): T => (layer.background === undefined ? { ...layer, background: start } : layer)
+  return { ...project, layers: mapLayers(project.layers, fill) }
 }

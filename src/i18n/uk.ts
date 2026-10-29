@@ -609,6 +609,7 @@ export const uk: Translations = {
     lettersLabel: 'Літери',
     lettersLine: 'Друкувати літеру кольору на кожній намистині, щоб кольори розрізнялися на папері й у чорно-білому друці.',
     lettersInfoLabel: 'Що роблять Літери',
+    background: { heading: 'Фон', label: 'Фон рамки' },
     margin: {
       heading: 'Поля',
       colorLabel: 'Колір полів',

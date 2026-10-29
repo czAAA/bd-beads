@@ -78,7 +78,7 @@ const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 /** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
 const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))
 
-const canvas = useCanvasBackground()
+const canvas = useCanvasBackground(() => props.project)
 const fold = useTitleBlockFold()
 /** The sheet's place, and its lines in the tint that reads on the margin color it is drawn in. */
 const sheetStyle = computed(() => {
@@ -323,7 +323,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       </span>
     </div>
 
-    <MarginColorPopover v-if="colorOpen && colorButton" :anchor="colorButton" @close="colorOpen = false" />
+    <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :anchor="colorButton" @close="colorOpen = false" />
   </div>
 </template>
 
