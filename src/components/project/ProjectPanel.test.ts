@@ -8,6 +8,7 @@ import { createProject } from '../../domain/createProject'
 import { withBeadShape } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
 import { frameOf } from '../../domain/layerRecord'
+import { TECHNIQUES } from '../../domain/weave'
 import { withLayers } from '../../testUtils/layerFields'
 
 afterEach(() => {
@@ -77,7 +78,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const picker = wrapper.get('[data-testid="canvas-technique"] button')
     expect(picker.attributes('aria-disabled')).toBeUndefined()
     await picker.trigger('click')
-    expect(wrapper.findAll('[data-testid="canvas-technique"] [role="menuitemradio"]')).toHaveLength(4)
+    expect(wrapper.findAll('[data-testid="canvas-technique"] [role="menuitemradio"]')).toHaveLength(TECHNIQUES.length)
   })
 
   it('says saved, unsaved or failed in a polite live region, failed with the reason and a press to try again', async () => {
