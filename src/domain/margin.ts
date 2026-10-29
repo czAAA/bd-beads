@@ -1,5 +1,5 @@
 import { footprintOf } from './footprint'
-import { changedPositions, frameContains, withColors, type BeadChange, type Rect } from './canvas'
+import { forEachChangedPosition, frameContains, withColors, type BeadChange, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
@@ -92,9 +92,10 @@ export function keepMarginClear(before: Project, after: Project): Project {
     return after
   }
   const [was, now] = [beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas')]
-  const reverts: BeadChange[] = changedPositions(was, now)
-    .filter((position) => now[position.row]?.[position.column] !== undefined && inMargin(frame, position))
-    .map(({ row, column }) => ({ row, column, color: was[row]?.[column] ?? null }))
+  const reverts: BeadChange[] = []
+  forEachChangedPosition(was, now, (row, column) => {
+    if (now[row]?.[column] !== undefined && inMargin(frame, { row, column })) reverts.push({ row, column, color: was[row]?.[column] ?? null })
+  })
   if (reverts.length === 0) {
     return after
   }

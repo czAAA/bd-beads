@@ -1,5 +1,5 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
-import { changedPositions, type BeadMap } from '../../../domain/canvas'
+import { changedRows, type BeadMap } from '../../../domain/canvas'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
 import { layersAlike } from '../../../domain/layerWeave'
 import { draftCost } from '../../../domain/weave'
@@ -115,8 +115,8 @@ function changedBands(before: Project, after: Project): { first: number; last: n
   const frameTop = frameOf(after)?.row ?? 0
   const changed = [
     ...new Set([
-      ...changedPositions(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads).map((position) => position.row),
-      ...changedPositions(framed(before), framed(after)).map((position) => position.row + frameTop),
+      ...changedRows(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads),
+      ...changedRows(framed(before), framed(after)).map((row) => row + frameTop),
     ]),
   ].sort((x, y) => x - y)
   if (changed.length > MOST_ROWS_WORTH_A_BAND) {
