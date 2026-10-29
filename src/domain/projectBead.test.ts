@@ -11,7 +11,7 @@ import { estimatedSizeMm } from './projectSize'
 import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 import { beadsOfLayer, canvasOf, frameOf, orientationOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -28,7 +28,7 @@ describe('resolveProjectBead', () => {
   })
 
   it('returns undefined for a Bead the catalog no longer has (a removed custom Bead, or an unrecognized imported one)', () => {
-    const project = withFields(createProject({
+    const project = withLayers(createProject({
         technique: 'loom',
         beadId: cubeBead.id,
         size: { width: 15, height: 15, unit: 'mm' },
@@ -66,7 +66,7 @@ describe('replaceBead', () => {
   it.each(BEAD_CATALOG.flatMap((from) => BEAD_CATALOG.filter((to) => to !== from).map((to) => [from, to] as const)))(
     'keeps the grid, columns, rows and every painted cell exactly as they were, from %s to %s',
     (from, to) => {
-      const before = withFields(distinctlyPainted(), { beadId: from.id })
+      const before = withLayers(distinctlyPainted(), { beadId: from.id })
 
       const replaced = replaceBead(before, to)
 
@@ -119,7 +119,7 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
   })
 
   it('draws and sizes a Bead the catalog has dropped from the Project’s own copy', () => {
-    const project = withFields(made(), { beadId: retired.id, bead: retired, beadShape: 'real' as const })
+    const project = withLayers(made(), { beadId: retired.id, bead: retired, beadShape: 'real' as const })
     const opened = normalizeProject(project)
 
     expect(resolveProjectBead(opened)).toMatchObject({ id: retired.id, widthMm: 2 })
@@ -128,22 +128,22 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
   })
 
   it('keeps the Project’s numbers when the catalog’s Bead of that id changes, until it is replaced', () => {
-    const older = normalizeProject(withFields(made(), { bead: { ...cubeBead, widthMm: 2, heightMm: 2 } }))
+    const older = normalizeProject(withLayers(made(), { bead: { ...cubeBead, widthMm: 2, heightMm: 2 } }))
 
     expect(estimatedSizeMm(frameOf(older)!, resolveProjectBead(older)!).widthMm).toBe(20)
     expect(estimatedSizeMm(frameOf(replaceBead(older, cubeBead))!, resolveProjectBead(replaceBead(older, cubeBead))!).widthMm).toBe(15)
   })
 
   it('gives a Project with no copy the catalog’s Bead, read through the alias map, and lets an unknown id stay unknown', () => {
-    const without = withFields(made(), { beadId: 'toho-cube-1.5mm', bead: undefined })
+    const without = withLayers(made(), { beadId: 'toho-cube-1.5mm', bead: undefined })
     expect(canvasOf(normalizeProject(without))).toMatchObject({ beadId: 'toho/cube/1.5mm', bead: cubeBead })
 
-    const unknown = withFields(made(), { beadId: 'no-such-bead', bead: undefined })
+    const unknown = withLayers(made(), { beadId: 'no-such-bead', bead: undefined })
     expect(resolveProjectBead(normalizeProject(unknown))).toBeUndefined()
   })
 
   it('falls back to the catalog when the stored copy is not a Bead', () => {
-    expect(canvasOf(normalizeProject(withFields(made(), { bead: { id: 3 } as never }))).bead).toEqual(cubeBead)
+    expect(canvasOf(normalizeProject(withLayers(made(), { bead: { id: 3 } as never }))).bead).toEqual(cubeBead)
   })
 
   it('puts the copy back with Undo of a Replace Bead', () => {

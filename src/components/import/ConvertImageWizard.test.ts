@@ -9,7 +9,7 @@ import { frameGrid } from '../../testUtils/frameGrid'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { en } from '../../i18n/en'
 import { frameOf } from '../../domain/layerRecord'
-import { flatView } from '../../testUtils/flatFields'
+import { layersView } from '../../testUtils/layerFields'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -185,7 +185,7 @@ describe('ConvertImageWizard setup', () => {
     await choosePanelOption(wrapper, 'convert-technique', 'peyote')
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
 
-    expect(flatView(created(wrapper)!)).toMatchObject({ technique: 'peyote', name: 'fox' })
+    expect(layersView(created(wrapper)!)).toMatchObject({ technique: 'peyote', name: 'fox' })
     expect(draft).toEqual(before)
   })
 

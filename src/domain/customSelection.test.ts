@@ -14,7 +14,7 @@ import type { Project } from './project'
 import { rotateFrame, rotateLayerSelection } from './rotate'
 import { copyLayerSelection, paintLayerSelection, pasteLostCount, pasteOnLayer, pastedCellsOnLayer, selectAllSelection, type Selection } from './selection'
 import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
@@ -120,7 +120,7 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
 
     // Two beads side by side on the loom Canvas, pasted on a Warped Square's straight side away from its Seams.
     const square = custom('warpedSquare', 5)
-    const canvasPainted = withFields(square, { beads: withColors({}, [{ row: 100, column: 100, color: RED }, { row: 100, column: 101, color: BLUE }]) })
+    const canvasPainted = withLayers(square, { beads: withColors({}, [{ row: 100, column: 100, color: RED }, { row: 100, column: 101, color: BLUE }]) })
     const fromCanvas = copyLayerSelection(canvasPainted, { top: 100, left: 100, rows: 1, columns: 2, layer: 'canvas' })!
     const landed = pasteOnLayer(square, fromCanvas, aimedAt(square, { row: 3, column: 1 }))
     expect(beadCount(frameOf(landed)!.beads)).toBe(2)

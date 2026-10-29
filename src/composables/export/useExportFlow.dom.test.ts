@@ -14,7 +14,7 @@ vi.mock('../../rendering/projectExport', () => ({
 }))
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 import { canvasOf, withFrameSheet } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -79,7 +79,7 @@ describe('useExportFlow Letters (ticket 0573)', () => {
 
 describe('useExportFlow Word chart (ticket 0586)', () => {
   it('makes only the pattern PNG with Letters on: the Word chart is PDF pages, not a picture', async () => {
-    await setup({ project: withFields(project, { letters: true }) }).onExportPng()
+    await setup({ project: withLayers(project, { letters: true }) }).onExportPng()
 
     expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png')])
   })
@@ -124,7 +124,7 @@ describe('useExportFlow', () => {
 
     it('hands over the list pages Beads needed runs over onto as _2 and _3, in order (ticket 0583)', async () => {
       vi.mocked(projectPageCount).mockReturnValue(3)
-      await setup({ project: withFields(project, { letters: true }) }).onExportPng()
+      await setup({ project: withLayers(project, { letters: true }) }).onExportPng()
 
       expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3)])
       expect(projectListFileName(project, 2)).toBe('openbeads-my-scarf_2.png')

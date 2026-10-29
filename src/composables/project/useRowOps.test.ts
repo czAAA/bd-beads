@@ -4,7 +4,7 @@ import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
 const tracking = base
@@ -72,7 +72,7 @@ describe('useRowOps', () => {
   })
 
   it('asks before Reset progress, and only once a row is done (ticket 455)', () => {
-    const framed = withFields(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
+    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
     const fresh = setup(framed)
     fresh.onResetProgress()
     expect(fresh.resetProgressConfirmOpen.value).toBe(false)

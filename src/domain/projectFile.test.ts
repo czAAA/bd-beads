@@ -21,7 +21,7 @@ import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, withLayer } from './layerRecord'
-import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 import { legacyFile } from '../testUtils/legacyFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -161,7 +161,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('keeps the Canvas beside the Frame through a file, and the Frame\'s name', () => {
-    const painted = withFields(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
+    const painted = withLayers(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
     const both = withLayer(painted, 'frame', { name: 'Cherry' })
 
     expect(parseProjectsFile(serializeProject(both)).projects).toEqual([both])
@@ -185,7 +185,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
-    const named = withFields(decoratedProject(), { pieceNames: [{ row: 2, column: 3, name: 'Fox' }] })
+    const named = withLayers(decoratedProject(), { pieceNames: [{ row: 2, column: 3, name: 'Fox' }] })
     const file = JSON.parse(serializeProject(named))
 
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
@@ -257,7 +257,7 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
     expect(stated).toContain('"kind":"rectangular"')
     for (const file of [serializeProject(project), older, stated, unknown, JSON.stringify(unknownNow)]) {
       const [restored] = parseProjectsFile(file).projects
-      expect(flatView(restored!)).toEqual(flatView(project))
+      expect(layersView(restored!)).toEqual(layersView(project))
       expect(frameOf(restored)).not.toHaveProperty('shape')
       expect(frameOf(restored)).not.toHaveProperty('kind')
     }
@@ -269,7 +269,7 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
     expect(JSON.parse(serializeProject(triangle)).projects[0].layers[1]).toMatchObject({ shape: 'triangle', settings: { rounds: 5 } })
     expect(JSON.parse(serializeProject(triangle)).projects[0].layers[1]).not.toHaveProperty('kind')
     expect(parseProjectsFile(serializeProject(triangle)).projects).toEqual([triangle])
-    expect(sheetOf(parseProjectsFile(JSON.stringify(legacyFile([triangle]))).projects[0]!)).toEqual(sheetOf(triangle))
+    expect(frameSheetOf(parseProjectsFile(JSON.stringify(legacyFile([triangle]))).projects[0]!)).toEqual(frameSheetOf(triangle))
     const plain = makeProject()
     expect(parseProjectsFile(serializeLibrary([triangle, plain])).projects).toEqual([triangle, plain])
   })
@@ -418,7 +418,7 @@ describe('importProjects', () => {
 describe('the Bead copy in a file (ticket 534)', () => {
   it('round-trips the copy of a Bead the catalog does not have', () => {
     const retired = { ...findBead('toho/cube/1.5mm')!, id: 'old-maker/cube/2mm', widthMm: 2 }
-    const project = withFields(decoratedProject(), { beadId: retired.id, bead: retired })
+    const project = withLayers(decoratedProject(), { beadId: retired.id, bead: retired })
     expect(canvasOf(parseProjectsFile(serializeProject(project)).projects[0]).bead).toEqual(retired)
   })
 

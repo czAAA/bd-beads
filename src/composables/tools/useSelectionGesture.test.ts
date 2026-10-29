@@ -15,7 +15,7 @@ import type { Project } from '../../domain/project'
 import { stampCells, type PasteLoss } from '../../domain/selection'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -531,7 +531,7 @@ describe('useSelectionGesture', () => {
     it('Select all selects the rectangle round every bead without a Frame, and does nothing on an empty canvas', () => {
       const { gesture, harness } = twoPieces()
       const framed = harness.currentProject()!
-      harness.replaceProject(withFields(framed, { beads: frameOf(framed)!.beads, frame: undefined }))
+      harness.replaceProject(withLayers(framed, { beads: frameOf(framed)!.beads, frame: undefined }))
       expect(gesture.selectAll()).toBe(true)
       expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 4, columns: 4 })
 
@@ -558,7 +558,7 @@ describe('useSelectionGesture', () => {
     const frame = { row: 10, column: 10, rows: 3, columns: 3 }
     const sketch = () => {
       const project = withFrame(makeProject(), frame)
-      return setup(withFields(project, { beads: { 0: { 0: RED, 1: RED, 2: RED, 3: RED } }, frame: { ...frameOf(project)!, beads: { 0: { 0: RED } } } }))
+      return setup(withLayers(project, { beads: { 0: { 0: RED, 1: RED, 2: RED, 3: RED } }, frame: { ...frameOf(project)!, beads: { 0: { 0: RED } } } }))
     }
 
     it('pastes Canvas beads into the Frame cell by cell, clipped to it, with the count in one Message and one Undo step', () => {
@@ -602,7 +602,7 @@ describe('useSelectionGesture', () => {
     /** A Canvas bead clear of the Frame, one in its margin, one hidden under it, and one Frame bead. */
     const layered = () => {
       const project = withFrame(makeProject(), frame)
-      return setup(withFields(project, { beads: { 2: { 11: RED }, 8: { 11: RED }, 11: { 11: BLUE } }, frame: { ...frameOf(project)!, beads: { 1: { 1: RED } } } }))
+      return setup(withLayers(project, { beads: { 2: { 11: RED }, 8: { 11: RED }, 11: { 11: BLUE } }, frame: { ...frameOf(project)!, beads: { 1: { 1: RED } } } }))
     }
 
     it('a drag that begins in the Frame reaches past its edge and stays the Frame\'s', () => {

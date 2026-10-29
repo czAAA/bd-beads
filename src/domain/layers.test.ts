@@ -8,7 +8,7 @@ import { fillArea } from './fill'
 import { paintCells } from './drawing'
 import type { Project } from './project'
 import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'
@@ -16,7 +16,7 @@ const BLUE = '#2f6fed'
 /** A 4 x 3 Frame at (10, 20) holding blue at its first bead, over a Canvas holding blue under the Frame and one beyond. */
 function layered(): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
-  return withFields(base, {
+  return withLayers(base, {
 beads: withColors({}, [{ row: 11, column: 21, color: BLUE }, { row: 50, column: 50, color: BLUE }]),
     frame: { technique: 'loom' as const, row: 10, column: 20, rows: 3, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: BLUE }]) },
 })
@@ -29,7 +29,7 @@ describe('layerAt', () => {
     expect(layerAt(project, { row: 12, column: 23 })).toBe('frame')
     expect(layerAt(project, { row: 13, column: 20 })).toBe('canvas')
     expect(layerAt(project, { row: 10, column: 24 })).toBe('canvas')
-    expect(layerAt(withFields(project, { frame: undefined }), { row: 10, column: 20 })).toBe('canvas')
+    expect(layerAt(withLayers(project, { frame: undefined }), { row: 10, column: 20 })).toBe('canvas')
   })
 
   it('counts a position in the Frame from its first bead, and back', () => {
@@ -98,7 +98,7 @@ describe('shownBeads', () => {
 describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
   it('hands a command the Frame\'s Weave, not the Canvas\'s', () => {
     const base = layered()
-    const project: Project = withFields(base, { technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
+    const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
     const seen: LayerSheet[] = []
     onLayer(project, 'frame', (sheet) => {
       seen.push(sheet)
@@ -110,7 +110,7 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
 
   it('hands a command the Canvas\'s Weave for the Canvas', () => {
     const base = layered()
-    const project: Project = withFields(base, { technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
+    const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
     const seen: LayerSheet[] = []
     onLayer(project, 'canvas', (sheet) => {
       seen.push(sheet)
@@ -124,7 +124,7 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
 describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   // 48 peyote rows over a loom Canvas: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
-  const project: Project = withFields(base, { frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) } })
+  const project: Project = withLayers(base, { frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) } })
 
   it('says a position under the drawing is the Frame\'s, and one in the strip the Canvas\'s', () => {
     expect(layerAt(project, { row: 20, column: 3 })).toBe('frame')
