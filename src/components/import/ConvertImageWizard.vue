@@ -3,11 +3,13 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ConvertImageStart } from '../../composables/import/useConvertImageFlow'
 import { CONVERT_SHEET_QUERY, provideConvertImageWizard, useConvertImageWizard } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { formFactorName, offeredBeads } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
+import { CONVERT_STEPS, type ConvertStep } from '../../domain/convertSize'
 import { formatImageLimits, type DecodeImage } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -98,10 +100,11 @@ const dropLimits = computed(() => formatImageLimits(words.value.dropLimits))
 
 // --- Sections and the step rail -------------------------------------------------------------------------------------
 
-type Step = 'picture' | 'bead' | 'size' | 'colors' | 'review'
-const STEPS: readonly Step[] = ['picture', 'bead', 'size', 'colors', 'review']
+const closeAction = controlAction('close')
+/** Each step's name, its Tooltip on the compact rail, comes from the registry (ticket 0650). */
+const steps = CONVERT_STEPS.map((step) => ({ step, action: controlAction(`convert-step-${step}`) }))
 
-const summaries = computed<Record<Step, string | undefined>>(() => {
+const summaries = computed<Record<ConvertStep, string | undefined>>(() => {
   const bead = wizard.bead.value
   const grid = wizard.dimensions.value
   const used = wizard.usedColorCount.value
@@ -119,13 +122,13 @@ const summaries = computed<Record<Step, string | undefined>>(() => {
 const scrollEl = ref<HTMLElement>()
 const railEl = ref<HTMLElement>()
 const roving = useRovingFocus(railEl, { selector: '.convert-wizard__step', axis: () => 'horizontal' })
-const current = ref<Step>('picture')
+const current = ref<ConvertStep>('picture')
 const shrunk = ref(false)
 /** All five labels show on the rail when all five fit; otherwise numbers only, each label its Tooltip. */
 const railCompact = ref(false)
 const compact = computed(() => sheet.value || railCompact.value)
 
-function sectionEl(step: Step): HTMLElement | null | undefined {
+function sectionEl(step: ConvertStep): HTMLElement | null | undefined {
   return scrollEl.value?.querySelector<HTMLElement>(`[data-testid="convert-section-${step}"]`)
 }
 
@@ -134,10 +137,10 @@ function onScroll(event: Event) {
   const scroller = event.currentTarget as HTMLElement
   shrunk.value = sheet.value && scroller.scrollTop > 0
   const railBottom = railEl.value?.getBoundingClientRect().bottom ?? 0
-  current.value = [...STEPS].reverse().find((step) => (sectionEl(step)?.getBoundingClientRect().top ?? Infinity) <= railBottom + 1) ?? 'picture'
+  current.value = [...CONVERT_STEPS].reverse().find((step) => (sectionEl(step)?.getBoundingClientRect().top ?? Infinity) <= railBottom + 1) ?? 'picture'
 }
 
-async function goTo(step: Step) {
+async function goTo(step: ConvertStep) {
   current.value = step
   sectionEl(step)?.scrollIntoView?.({ block: 'start' })
   await nextTick()
@@ -190,7 +193,7 @@ function onCreate() {
 <template>
   <AppModal :title="words.title" size="large" data-testid="convert-image-wizard" @cancel="onCancelAsked">
     <template #header>
-      <IconButton variant="plain" icon="close" :icon-size="18" :label="words.close" data-testid="convert-close" @click="onCancelAsked" />
+      <IconButton variant="plain" :icon-size="18" :action="closeAction" data-testid="convert-close" @click="onCancelAsked" />
     </template>
 
     <div
@@ -210,21 +213,21 @@ function onCreate() {
 
       <div class="convert-wizard__sections" @scroll="onScroll">
         <nav ref="railEl" class="convert-wizard__rail" :class="{ 'convert-wizard__rail--compact': compact }" :aria-label="words.railLabel" @keydown="roving.onKeydown">
-          <template v-for="(step, index) in STEPS" :key="step">
+          <template v-for="({ step, action }, index) in steps" :key="step">
             <span v-if="index > 0" class="convert-wizard__hairline" aria-hidden="true" />
-            <component :is="compact ? AppTooltip : 'span'" v-bind="compact ? { name: words.rail[step], announce: false } : {}" class="convert-wizard__step-wrap">
+            <component :is="compact ? AppTooltip : 'span'" v-bind="compact ? { name: action.name(t), announce: false } : {}" class="convert-wizard__step-wrap">
               <button
                 type="button"
                 class="convert-wizard__step"
                 :class="{ 'convert-wizard__step--current': current === step }"
                 :aria-current="current === step ? 'step' : undefined"
-                :aria-label="compact ? words.rail[step] : undefined"
+                :aria-label="compact ? action.name(t) : undefined"
                 :tabindex="roving.tabIndexFor(current === step)"
                 :data-testid="`convert-step-${step}`"
                 @click="goTo(step)"
               >
                 <span class="convert-wizard__disc">{{ index + 1 }}</span>
-                <span v-if="!compact" class="convert-wizard__step-label">{{ words.rail[step] }}</span>
+                <span v-if="!compact" class="convert-wizard__step-label">{{ action.name(t) }}</span>
               </button>
             </component>
           </template>
