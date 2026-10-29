@@ -22,6 +22,9 @@ One component covers every labelled button (ticket 331, ADR 0035), the Link incl
 ## Icon button
 One component covers every icon-only control (ticket 330, ADR 0035): the Tool tab, plain (the canvas strip), in-box, toolbox, box, round and the sheet close. It shows a Tooltip only when given one (a name, an optional body, the key chip), either explicitly or from a control-registry action, which also supplies its enabled state and, when disabled, the reason (`aria-disabled`, still hoverable, the reason in the Tooltip in place of the key chip).
 
+## Info button
+An icon button of its own (InfoButton, ticket 0651): the plain `info` icon at 16px in a 24px hit area, set right after a label, whose Tooltip holds the help the label would otherwise carry as a `meta-small` line under the control. Its accessible name names what it explains ("What Letters does", "What the lowest quality is for", "Estimated size"), never a bare "Info". Use it for help a person reads once (Letters, Export quality's hint and reduced note, Estimated size); keep a line under the control when it says something that changes (a reason a control is off, a state).
+
 ## What the consumer provides
 The label (sentence case), an optional leading icon from the Icons group, and an accessible name for icon-only buttons.
 

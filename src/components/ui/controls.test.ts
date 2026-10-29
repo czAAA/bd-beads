@@ -7,6 +7,7 @@ import AppButton from './AppButton.vue'
 import AppSwitch from './AppSwitch.vue'
 import AppTooltip from './AppTooltip.vue'
 import IconButton from './IconButton.vue'
+import InfoButton from './InfoButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
 import type { TooltipProps } from './tooltipProps'
 
@@ -100,6 +101,18 @@ describe('IconButton', () => {
     expect(mount(IconButton, { props: { icon: 'zoom-in', label: 'Zoom in', variant } }).get('button').classes()).toContain(
       `icon-btn--${variant}`,
     )
+  })
+})
+
+describe('InfoButton (ticket 0651)', () => {
+  it('is a plain info icon named for what it explains, with the explanation as its Tooltip', async () => {
+    const wrapper = mount(InfoButton, { attachTo: document.body, props: { label: 'What Letters does', body: 'Print each letter.' } })
+    const button = wrapper.get('button')
+    expect(button.attributes('aria-label')).toBe('What Letters does')
+    expect(button.classes()).toContain('icon-btn--plain')
+    expect(button.get('svg').attributes('data-icon')).toBe('info')
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Print each letter.')
   })
 })
 
