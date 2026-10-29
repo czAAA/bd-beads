@@ -4,7 +4,8 @@ import { createProject } from './createProject'
 import { deleteAll } from './drawing'
 import { moveToRow, rowProgressOf } from './rowProgress'
 import { replaceBead } from './projectBead'
-import { restoreSnapshot, snapshotOf } from './undoSnapshot'
+import { restoreSnapshot, snapshotOf, UNDO_CAP } from './undoSnapshot'
+import { withColors, type BeadMap } from './canvas'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, canvasOf, frameOf, withLetters } from './layerRecord'
@@ -77,5 +78,47 @@ describe('the Frame in an undo entry (ADR 0066)', () => {
 
     expect(beadsOfLayer(cleared, 'canvas')).toEqual({})
     expect(frameOf(cleared)).toMatchObject({ rows: 3, columns: 4, beads: {} })
+  })
+})
+
+// Ticket 0677: an Undo step's size is the bead rows it holds that the step after it replaced.
+describe('UNDO_CAP', () => {
+  const GREY = '#8a8a8a'
+  const BLACK = '#111111'
+  /** A 300 × 300 Frame with no Canvas beads, every Frame bead `color`. */
+  function sheet(color: string) {
+    const project = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 300, height: 300, unit: 'beads' } }), { row: 0, column: 0, rows: 300, columns: 300 })
+    const changes = Array.from({ length: 300 * 300 }, (_bead, at) => ({ row: Math.floor(at / 300), column: at % 300, color }))
+    return withFields(project, { frame: { ...sheetOf(project)!, beads: withColors({}, changes) } })
+  }
+  const repainted = (project: ReturnType<typeof sheet>, beads: BeadMap) => withFields(project, { frame: { ...sheetOf(project)!, beads } })
+
+  it('sizes a step the next one shares whole at almost nothing', () => {
+    const entry = snapshotOf(sheet(GREY))
+
+    expect(UNDO_CAP.sizeOf(entry, { ...entry, palette: [] })).toBeLessThan(1024)
+  })
+
+  it('sizes a one-bead stroke at about the one row it replaced, and a whole-sheet repaint at every row', () => {
+    const grey = sheet(GREY)
+    const frameBeads = beadsOfLayer(grey, 'frame')!
+    const stroke = UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(repainted(grey, withColors(frameBeads, [{ row: 7, column: 7, color: BLACK }]))))
+    const repaint = UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(sheet(BLACK)))
+
+    expect(stroke).toBeGreaterThan(300 * 4)
+    expect(stroke).toBeLessThan(16 * 1024)
+    expect(repaint).toBeGreaterThan(300 * stroke * 0.9)
+  })
+
+  it('counts the beads of a Frame the next step no longer has', () => {
+    const grey = sheet(GREY)
+
+    expect(UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(withFields(grey, { frame: undefined })))).toBeGreaterThan(300 * 300 * 4)
+  })
+
+  it('holds dozens of whole-sheet repaints of a 300 × 300 Frame before it drops the oldest', () => {
+    const repaint = UNDO_CAP.sizeOf(snapshotOf(sheet(GREY)), snapshotOf(sheet(BLACK)))
+
+    expect(UNDO_CAP.bytes / repaint).toBeGreaterThan(40)
   })
 })
