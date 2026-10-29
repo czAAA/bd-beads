@@ -35,7 +35,7 @@ import { frameWeave } from '../../domain/layerWeave'
 // (AppPanels, PanelHost), opened from the strip's Frame button only; a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
-  /** The Project as summaries see it while a stroke is going on (useSettledProject), for Beads needed. */
+  /** The Project as summaries see it, as it was before the stroke going on (useSettledProject), for Beads needed. */
   settledProject?: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
   exporting?: 'png' | 'pdf'
