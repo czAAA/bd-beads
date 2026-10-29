@@ -624,6 +624,7 @@ export const es: Translations = {
     qualityHint: 'La calidad baja ahorra memoria: archivos más pequeños y una imagen que un móvil siempre puede crear.',
     estimateInfo: 'Es una estimación. Tamaño de la cuenta × cuentas de ancho y de alto. El hilo, la tensión y pequeñas diferencias entre cuentas hacen que la obra terminada salga a menudo algo distinta.',
     sizeLockedLine: 'Hay filas marcadas como hechas. Quita el marco para cambiar el tamaño.',
+    sizeTurnedLine: 'El marco está girado. Ponlo derecho para cambiar el tamaño.',
     editFrame: 'Editar marco',
     moveHandle: 'Mover marco',
     edgeOut: { top: 'Borde superior: añadir una fila', bottom: 'Borde inferior: añadir una fila', left: 'Borde izquierdo: añadir una columna', right: 'Borde derecho: añadir una columna' },
@@ -677,7 +678,6 @@ export const es: Translations = {
       },
     },
     fringeStyle: { label: 'Estilo de fleco', announce: 'Estilo de fleco: {style}' },
-    removeConfirmCustom: 'Sus cuentas se quitan con él. Se puede deshacer.',
     announceCustom: 'Marco «{shape}», {size}',
     snapAddedTop: {
       one: 'Se añadió una fila vacía arriba: un marco debe empezar en una fila sin desplazar.',
@@ -896,6 +896,7 @@ export const es: Translations = {
     moveFrame: 'Arrastra para mover el marco junto con sus cuentas.',
     rowProgressLockedFrame: 'Hay filas hechas. Quita el marco para cambiarlo.',
     frameSizeLocked: 'Hay filas hechas. Reinicia el progreso para cambiar el tamaño del marco.',
+    frameSizeTurned: 'El marco está girado. Ponlo derecho para cambiar el tamaño del marco.',
     fillNeedsColor: 'Elige primero un color para rellenar la selección.',
     rowProgressLockedTechnique: 'Hay filas hechas. Quita el marco para cambiar la técnica.',
     changeTechnique: 'Teje el esquema con otra técnica. Cada cuenta conserva su fila y su columna.',

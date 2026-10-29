@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
 import { moveToRow, toggleRowDirection } from '../domain/rowProgress'
+import { rotateFrame } from '../domain/rotate'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
 import { rulerLayout } from './rulers'
@@ -205,6 +206,17 @@ describe('the row pointer (MarginSheet card, ticket 0657)', () => {
     const hidden = fakeContext()
     drawRulers(hidden.context, { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: false })
     expect(pointers(hidden.fills)).toEqual([])
+  })
+  it('stands in the top band over a Frame turned a quarter, whose rows then run down (ticket 0667)', () => {
+    const project = rotateFrame(moveToRow(base, 1))!
+    const input = { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true }
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+    const [pointer] = pointers(fills)
+    const row = input.surface.beadToPoint({ row: project.frame!.row + 1, column: project.frame!.column }, 'frame')
+    // Pointing down at the turned row, from above it.
+    expect(pointer!.rect[0]).toBeCloseTo(row.x)
+    expect(pointer!.rect[1]).toBeGreaterThan(pointer!.rect[3]!)
   })
 })
 

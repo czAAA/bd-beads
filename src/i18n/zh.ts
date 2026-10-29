@@ -614,6 +614,7 @@ export const zh: Translations = {
     qualityHint: '低质量节省内存：文件更小，手机始终能生成图片。',
     estimateInfo: '这只是估算：珠子大小 × 横向和纵向的珠子数。线、松紧度以及珠子之间的细微差异，常会让成品略有出入。',
     sizeLockedLine: '行已标记为完成。移除边框后才能更改尺寸。',
+    sizeTurnedLine: '边框已旋转。转回正向后才能更改尺寸。',
     editFrame: '编辑边框',
     moveHandle: '移动边框',
     edgeOut: { top: '上边缘：增加一行', bottom: '下边缘：增加一行', left: '左边缘：增加一列', right: '右边缘：增加一列' },
@@ -667,7 +668,6 @@ export const zh: Translations = {
       },
     },
     fringeStyle: { label: '流苏样式', announce: '流苏样式：{style}' },
-    removeConfirmCustom: '其中的珠子会随边框一起移除。此操作可以撤销。',
     announceCustom: '边框「{shape}」，{size}',
     snapAddedTop: {
       other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
@@ -876,6 +876,7 @@ export const zh: Translations = {
     moveFrame: '拖动可连同珠子一起移动边框。',
     rowProgressLockedFrame: '已有标记完成的行。请先移除边框，再修改它。',
     frameSizeLocked: '已有标记完成的行。请先重置进度，再修改边框大小。',
+    frameSizeTurned: '边框已旋转。请先转回正向，再修改边框大小。',
     fillNeedsColor: '请先选择颜色，再填充所选区域。',
     rowProgressLockedTechnique: '已有标记完成的行。请先移除边框，再更改工艺。',
     changeTechnique: '用另一种编织技法编织图样。每颗珠子保持原来的行和列。',

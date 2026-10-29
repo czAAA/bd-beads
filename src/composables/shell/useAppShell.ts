@@ -8,7 +8,7 @@ import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import type { Layer } from '../../domain/layers'
-import { copyLayerSelection, selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
+import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
@@ -183,6 +183,7 @@ function wireAppShell(services: Services) {
     dragAdjust,
     endAdjust,
     pastePreviewCells,
+    pastePreviewStamp,
     clearSelection: resetSelection,
     pasteProjectionActive,
     hasClipboard,
@@ -407,6 +408,7 @@ function wireAppShell(services: Services) {
   const {
     hoveredCell,
     previewCells,
+    previewStamp,
     onCellHover,
     onHoverEnd,
     pasteAtPointer,
@@ -419,6 +421,7 @@ function wireAppShell(services: Services) {
     strokeMode: () => strokeMode.value,
     selectedColorHex,
     pastePreviewCells,
+    pastePreviewStamp,
     beginSelectPress,
     extendSelection,
     tapPiece,
@@ -572,7 +575,7 @@ function wireAppShell(services: Services) {
     activeProject: currentProject,
     activeTool: () => activeTool.value,
     hasSelection: () => !!selection.value,
-    selectionHasBeads: () => !!selection.value && !!currentProject() && copyLayerSelection(currentProject()!, selection.value) !== undefined,
+    selectionHasBeads: () => !!selection.value && !!currentProject() && selectionHasBeads(currentProject()!, selection.value),
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
     hasClipboard,
@@ -700,6 +703,7 @@ function wireAppShell(services: Services) {
       recentsInPill: toolPill.recentsInPill,
       pickRecent: toolPill.pickRecent,
       previewCells,
+      previewStamp,
       onCellPrimaryDown,
       onCellPrimaryMove,
       onCellHover,
@@ -823,7 +827,6 @@ function wireAppShell(services: Services) {
       onCancelDeleteAll: deleteAll.onCancelDeleteAll,
       onConfirmResetProgress: rowOps.onConfirmResetProgress,
       onCancelResetProgress: rowOps.onCancelResetProgress,
-      removeFrameTakesBeads: frameFlow.removeTakesBeads,
       onConfirmRemoveFrame: frameFlow.confirmRemove,
       onCancelRemoveFrame: frameFlow.cancelRemove,
       removeLinePrompt: removeLine.removeLinePrompt,

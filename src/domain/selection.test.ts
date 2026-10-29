@@ -19,6 +19,9 @@ import {
   selectionBetween,
   selectionHasHandles,
   selectionInFinishedRows,
+  selectionHasBeads,
+  pasteStampOnLayer,
+  stampCells,
   type CopiedBlock,
 } from './selection'
 import { withColors } from './canvas'
@@ -314,12 +317,34 @@ describe('Selections on a layer (ADR 0066)', () => {
     ])
   })
 
+  it('aims a paste stamp where the paste would land, clipped to the Frame, without listing its cells (ticket 0675)', () => {
+    const block: CopiedBlock = { rows: 2, columns: 3, colors: [[RED, null, RED], [BLUE, BLUE, BLUE]], anchor: { row: 0, column: 0 } }
+    const inFrame = pasteStampOnLayer(layered(), block, { row: 3, column: 3 })!
+    expect(inFrame).toMatchObject({ top: 3, left: 3, rows: 2, columns: 3 })
+    expect(inFrame.colors).toBe(block.colors)
+    expect(stampCells(inFrame)).toEqual([
+      { row: 3, column: 3, color: RED },
+      { row: 4, column: 3, color: BLUE },
+      { row: 4, column: 4, color: BLUE },
+    ])
+    expect(stampCells(pasteStampOnLayer(layered(), block, { row: 30, column: 9 })!)).toHaveLength(5)
+  })
+
+  it('has beads to copy exactly when Copy would copy some, on either layer (ticket 0675)', () => {
+    expect(selectionHasBeads(layered(), { top: 2, left: 2, rows: 3, columns: 3 })).toBe(true)
+    expect(selectionHasBeads(layered(), { top: 2, left: 2, rows: 1, columns: 3 })).toBe(false)
+    expect(selectionHasBeads(layered(), { top: 15, left: 15, rows: 10, columns: 10 })).toBe(true)
+    expect(selectionHasBeads(layered(), { top: 15, left: 15, rows: 5, columns: 5 })).toBe(false)
+  })
+
   it('copies, for a Canvas Selection across a Frame that draws shorter than the rows it names, only what lies clear of what it draws and its margin (ticket 0659)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
     // A 48-row peyote Frame covers 36 loom rows: rows 36 to 39 are its margin, row 40 is free Canvas.
     const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
     const woven: Project = { ...placed, frame: { ...placed.frame!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) }
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
+    expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 40, columns: 1, layer: 'canvas' })).toBe(false)
+    expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 41, columns: 1, layer: 'canvas' })).toBe(true)
   })
 
   it('taps a Piece of the layer the tap is on', () => {
@@ -428,6 +453,11 @@ describe('a Piece-tool shape (ticket 547)', () => {
       [RED, null, null, null, RED],
       [RED, RED, RED, RED, RED],
     ])
+  })
+
+  it('has beads to copy, and a shape over beads that are gone has none (ticket 0675)', () => {
+    expect(selectionHasBeads(target, L)).toBe(true)
+    expect(selectionHasBeads(paintLayerSelection(target, L, null), L)).toBe(false)
   })
 
   it('clears and fills its own cells only, never the other Piece or the empty cells', () => {
