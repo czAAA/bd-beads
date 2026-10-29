@@ -209,6 +209,17 @@ describe('the row pointer (MarginSheet card, ticket 0657)', () => {
     drawRulers(hidden.context, { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: false })
     expect(pointers(hidden.fills)).toEqual([])
   })
+  it('is not drawn where the margin sheet is not, under a 31px band (ticket 0682)', () => {
+    const project = moveToRow(base, 1)
+    const surface = surfaceAt(0.25)
+    const { context, fills } = fakeContext()
+    drawRulers(context, { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers: true, sheet: 'bare' }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: true })
+    expect(pointers(fills)).toEqual([])
+    const folded = fakeContext()
+    drawRulers(folded.context, { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers: true, sheet: 'folded' }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: true })
+    expect(pointers(folded.fills)).toHaveLength(1)
+  })
+
   it('stands in the top band over a Frame turned a quarter, whose rows then run down (ticket 0667)', () => {
     const project = rotateFrame(moveToRow(base, 1))!
     const input = { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true }

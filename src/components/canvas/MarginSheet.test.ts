@@ -96,9 +96,9 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     await move.trigger('keydown', { key: 'ArrowLeft' })
     expect(wrapper.emitted('move-press')).toHaveLength(1)
     expect(wrapper.emitted('key')).toHaveLength(1)
-    expect(move.classes()).toContain('margin-sheet__move--dragging')
+    expect(move.classes()).toContain('margin-move--dragging')
     await wrapper.setProps({ pressing: false })
-    expect(move.classes()).not.toContain('margin-sheet__move--dragging')
+    expect(move.classes()).not.toContain('margin-move--dragging')
   })
 
   it('asks for each tool: Rotate Frame, Edit Frame (pressed while on), Export and Remove Frame', async () => {
@@ -189,11 +189,27 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(px('margin-title', 'bottom')).toBeCloseTo(1.35, 1)
   })
 
-  it('is the paper alone where even the folded row has no room, under 31px', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.3) })
+  it('keeps only the Move bar where even the folded row has no room, under 31px (ticket 0682)', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.3), editing: true })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--bare')
     expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-title"]').exists()).toBe(false)
+    expect(wrapper.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Move Frame'])
+    // Nothing of the sheet is drawn, so not its Edit Frame outline either.
+    expect(control(wrapper, 'margin-sheet').classes()).not.toContain('margin-sheet--editing')
+    await control(wrapper, 'frame-move-handle').trigger('pointerdown')
+    await control(wrapper, 'frame-move-handle').trigger('keydown', { key: 'ArrowUp' })
+    expect(wrapper.emitted('move-press')).toHaveLength(1)
+    expect(wrapper.emitted('key')).toHaveLength(1)
+  })
+
+  it('lets the bare Move bar give way to a Selection\'s handles and the Tool pill (ticket 0682)', async () => {
+    const at = anchorAt(0.3)
+    const wrapper = mountSheet({ anchor: at })
+    const handle = () => control(wrapper, 'margin-handle')
+    expect(handle().classes()).not.toContain('margin-sheet__yielding')
+    await wrapper.setProps({ pill: { left: at.box.left + at.box.width / 2 - 10, top: at.box.top - 20, width: 20, height: 20 } })
+    expect(handle().classes()).toContain('margin-sheet__yielding')
   })
 
   it('offers the tools the folded band has no room for in its Frame tools menu, each asking as its button does', async () => {
