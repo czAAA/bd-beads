@@ -182,7 +182,6 @@ export const pl: Translations = {
       changed: 'Zmieniono blok cegieł na: {count}',
     },
   },
-  formFactors: { cube: 'Kostka', round: 'Okrągły', delica: 'Delica' },
   projects: {
     heading: 'Biblioteka projektów',
     newProjectButton: 'Nowy projekt',

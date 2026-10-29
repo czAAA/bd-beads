@@ -38,7 +38,7 @@ const types = computed(() =>
   uniqueBy(
     entries.value.filter((bead) => bead.brand.id === own.value?.brand.id),
     (bead) => bead.formFactor.id,
-  ).map((bead) => ({ value: bead.formFactor.id, label: formFactorName(bead.formFactor, t.value.formFactors) })),
+  ).map((bead) => ({ value: bead.formFactor.id, label: formFactorName(bead.formFactor) })),
 )
 const sizes = computed(() => {
   const listed = entries.value

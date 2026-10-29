@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads, replaceCandidates } from './beads'
+import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, findBead, formFactorName, gramsPerBead, offeredBeads, replaceCandidates } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -101,10 +101,13 @@ describe('Bead weights (ticket 155, ADR 0072)', () => {
 })
 
 describe('beadLabel', () => {
-  it('names the Brand, the Form factor in the language given, and the size', () => {
-    const cube = findBead('toho/cube/1.5mm')!
-    expect(beadLabel(cube)).toBe('TOHO Cube 1.5mm')
-    expect(beadLabel(cube, { cube: 'Куб', round: 'Круглый', delica: 'Delica' })).toBe('TOHO Куб 1.5mm')
+  it('names the Brand, the Form factor and the size, the same in every language (ticket 0692)', () => {
+    expect(beadLabel(findBead('toho/cube/1.5mm')!)).toBe('TOHO Cube 1.5mm')
+    expect(beadLabel(findBead('miyuki/round/11-0')!)).toBe('Miyuki Round 11/0')
+  })
+
+  it('names every catalog Form factor (ticket 0692)', () => {
+    expect(BEAD_CATALOG.filter((bead) => formFactorName(bead.formFactor) === bead.formFactor.id).map((bead) => bead.id)).toEqual([])
   })
 })
 

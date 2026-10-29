@@ -182,7 +182,6 @@ export const uk: Translations = {
       changed: 'Блок цегли змінено: {count}',
     },
   },
-  formFactors: { cube: 'Куб', round: 'Круглий', delica: 'Delica' },
   projects: {
     heading: 'Бібліотека проєктів',
     newProjectButton: 'Новий проєкт',
