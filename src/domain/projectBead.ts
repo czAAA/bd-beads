@@ -16,10 +16,11 @@ export function projectCell(project: Layered): BeadCell | undefined {
   return beadCell(bead, beadShape)
 }
 
-/** The Project with another Bead shape (ADR 0068), for both layers until ticket 0670: Symmetric is the default and is
- * left unsaved. */
-export function withBeadShape(project: Project, shape: BeadShape): Project {
-  return withLayer(project, 'canvas', { beadShape: shape })
+/** The Project with another Bead shape (ADR 0068): `layer`'s alone (ticket 0687), set from that layer's panel, or every
+ * layer's with none given (a preview, a new Project). Symmetric is the default and is left unsaved. */
+export function withBeadShape(project: Project, shape: BeadShape, layer?: Layer): Project {
+  const layers: readonly Layer[] = layer ? [layer] : ['canvas', 'frame']
+  return layers.reduce((shaped, each) => withLayer(shaped, each, { beadShape: shape }), project)
 }
 
 /** The Bead a Project is woven from (ticket 37, ADR 0079): the Frame's when there is one, else the Canvas's, its own

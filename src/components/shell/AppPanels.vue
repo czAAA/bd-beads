@@ -103,6 +103,7 @@ const chosenStarter = ref<StarterId>()
       @set-background="onSetBackground('frame', $event)"
       :bead-choice="replaceBeadChoices.frame"
       @replace-bead="onRequestReplaceBead('frame', $event)"
+      @set-bead-shape="onSetBeadShape('frame', $event)"
     />
     <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
       its Frame on the open Project. -->
@@ -172,7 +173,7 @@ const chosenStarter = ref<StarterId>()
       @set-technique="onSetTechnique"
       @set-canvas-technique="onSetCanvasTechnique"
       @set-weave-setting="onSetWeaveSetting"
-      @set-bead-shape="onSetBeadShape"
+      @set-bead-shape="onSetBeadShape('canvas', $event)"
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead('canvas', $event)"
       @save="saveNow"

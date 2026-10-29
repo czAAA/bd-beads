@@ -232,7 +232,7 @@ describe('Project', () => {
 })
 
 describe('The Frame panel', () => {
-  it("replaces the Frame's Bead from its own bead section after a confirmation (ticket 0687)", async () => {
+  it("sets the Frame's Bead, after a confirmation, and its Bead shape from its own bead section (ticket 0687)", async () => {
     const mounted = mountPanels()
     await mounted.openPanel('frame')
     const section = mounted.wrapper.get('[data-testid="frame-bead"]')
@@ -242,6 +242,11 @@ describe('The Frame panel', () => {
     await click(mounted, 'confirm-modal-confirm')
     expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/round/11-0')
     expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/cube/1.5mm')
+
+    await mounted.openPanel('frame')
+    await mounted.wrapper.get('[data-testid="frame-bead"] [data-testid="bead-shape"] [data-value="real"]').trigger('click')
+    expect(mounted.panels.activeProject.value && frameOf(mounted.panels.activeProject.value)!.beadShape).toBe('real')
+    expect(canvasOf(mounted.panels.activeProject.value!).beadShape).toBeUndefined()
   })
 
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {

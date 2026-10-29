@@ -6,19 +6,18 @@ import { useI18n } from '../../i18n/useI18n'
 import PanelPicker from '../shell/PanelPicker.vue'
 import BeadShapeField from './BeadShapeField.vue'
 
-// The bead section (ProjectPanel and Frame cards, tickets 554, 568, 0687): Bead shape when bound, then Brand, Type and
-// Size as three pickers on one row that narrow each other when given candidates. A pick only asks (`pick`): New Project
-// sets its draft, a layer's panel confirms Replace Bead; until then the pickers keep showing the Bead they were given.
+// One layer's bead section (ProjectPanel and Frame cards, tickets 554, 568, 0687): Bead shape, then Brand, Type and Size
+// as three pickers on one row that narrow each other. A pick only asks (`pick`): New Project sets its draft, a layer's
+// panel confirms Replace Bead; until then the pickers keep showing the Bead they were given.
 const props = defineProps<{
   /** The Bead shown, or nothing for one that is no longer offered. */
-  bead?: Bead
-  /** What it could switch to: everything offered but its own, with the catalog's Bead of its id when its copy is out of
-   * date. Without them there are no pickers. */
-  candidates?: readonly Bead[]
+  bead: Bead | undefined
+  /** What it could switch to: everything offered but its own, with the catalog's Bead of its id when its copy is out of date. */
+  candidates: readonly Bead[]
   /** The Bead shown differs from the catalog's of its id (ticket 534): its size shows "(as saved)" beside the catalog's. */
   outdated?: boolean
 }>()
-const shape = defineModel<BeadShape>('beadShape')
+const shape = defineModel<BeadShape>('beadShape', { required: true })
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
 /** The size option standing for the Bead's own copy when it is out of date, as the catalog's Bead holds its id. */
@@ -29,8 +28,7 @@ const shapeLabelId = useId()
 const own = computed(() => props.bead)
 /** The candidates and the Bead shown, in the catalog's order. */
 const entries = computed(() => {
-  const candidates = props.candidates ?? []
-  const all = own.value && !candidates.some((bead) => bead.id === own.value!.id) ? [...candidates, own.value] : [...candidates]
+  const all = own.value && !props.candidates.some((bead) => bead.id === own.value!.id) ? [...props.candidates, own.value] : [...props.candidates]
   const rank = (bead: Bead) => BEAD_CATALOG.findIndex((listed) => listed.id === bead.id) >>> 0
   return all.sort((a, b) => rank(a) - rank(b))
 })
@@ -75,11 +73,11 @@ function pickSize(beadId: string) {
 
 <template>
   <div class="bead-section" data-testid="bead-section">
-    <div v-if="shape" class="bead-section__shape" data-testid="bead-shape-row">
+    <div class="bead-section__shape" data-testid="bead-shape-row">
       <span :id="shapeLabelId">{{ t.form.beadShapeLabel }}</span>
       <BeadShapeField :model-value="shape" :labelledby="shapeLabelId" small testid="bead-shape" @update:model-value="shape = $event" />
     </div>
-    <div v-if="own && candidates" class="bead-section__pickers" role="group" :aria-label="t.panels.project.bead">
+    <div v-if="own" class="bead-section__pickers" role="group" :aria-label="t.panels.project.bead">
       <PanelPicker bare :label="t.panels.project.beadBrand" :model-value="own.brand.id" :options="brands" data-testid="bead-brand" @update:model-value="pickBrand" />
       <PanelPicker bare :label="t.panels.project.beadType" :model-value="own.formFactor.id" :options="types" data-testid="bead-type" @update:model-value="pickType" />
       <PanelPicker bare :label="t.panels.project.beadSize" :model-value="sizeShown" :options="sizes" data-testid="bead-size" @update:model-value="pickSize" />

@@ -34,6 +34,7 @@ import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
+import { DEFAULT_BEAD_SHAPE, type BeadShape } from '../../domain/weave'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
@@ -66,6 +67,8 @@ const emit = defineEmits<{
   'set-background': [background: Background]
   /** A Bead picked for the Frame (ticket 0687), to confirm. */
   'replace-bead': [beadId: string]
+  /** The Frame's Bead shape picked (ticket 0687). */
+  'set-bead-shape': [shape: BeadShape]
 }>()
 
 const { t, locale } = useI18n()
@@ -143,8 +146,9 @@ function onSizeFocusOut(event: FocusEvent): void {
   if (!(event.relatedTarget instanceof Node && (event.currentTarget as HTMLElement).contains(event.relatedTarget))) commitSize()
 }
 
-/** The Frame's own Bead (ticket 0665), which its bead section replaces (ticket 0687). */
-const frameBead = computed(() => layerOf(props.project, 'frame')?.bead)
+/** The Frame's own Bead and Bead shape (ticket 0665), which its bead section sets (ticket 0687). */
+const frameLayer = computed(() => layerOf(props.project, 'frame'))
+const frameBead = computed(() => frameLayer.value?.bead)
 /** The Estimated size as "≈ 38 × 39 mm" (the Bead's size × beads across and down), always in mm as Replace Bead states it
  * (ticket 0687), or nothing for an unknown Bead. */
 const estimate = computed(() => {
@@ -370,9 +374,16 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </PanelSection>
     </template>
 
-    <!-- The Frame's own Bead (ticket 0687): replacing it asks first, naming the Frame's size with the new Bead and the old. -->
+    <!-- The Frame's own Bead and Bead shape (ticket 0687): replacing the Bead asks first, naming the Frame's size with the new Bead and the old. -->
     <PanelSection v-if="frame && beadChoice" id="frame:bead" :label="t.panels.project.bead" :summary="frameBead && beadLabel(frameBead, t.formFactors)" data-testid="frame-bead">
-      <BeadSection :bead="frameBead" :candidates="beadChoice.candidates" :outdated="beadChoice.outdated" @pick="emit('replace-bead', $event)" />
+      <BeadSection
+        :bead="frameBead"
+        :bead-shape="frameLayer?.beadShape ?? DEFAULT_BEAD_SHAPE"
+        :candidates="beadChoice.candidates"
+        :outdated="beadChoice.outdated"
+        @update:bead-shape="emit('set-bead-shape', $event)"
+        @pick="emit('replace-bead', $event)"
+      />
     </PanelSection>
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
     <PanelSection v-if="frame" id="frame:background" :label="t.frame.background.heading" data-testid="frame-background">

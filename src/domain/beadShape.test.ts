@@ -7,7 +7,7 @@ import { normalizeProject } from './storedProject'
 import { projectCell, withBeadShape } from './projectBead'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
-import { canvasOf } from './layerRecord'
+import { canvasOf, frameOf } from './layerRecord'
 import { bareProject, withLayers } from '../testUtils/layerFields'
 
 const delica = findBead('miyuki-delica-11-0')!
@@ -67,6 +67,15 @@ describe('the Bead shape in a Project', () => {
     expect(canvasWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
     expect(frameWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
     expect(frameWeave(withFrame).technique).toBe('loom')
+  })
+
+  it("gives one layer its shape when named, the other's staying (ticket 0687)", () => {
+    const framed = createProject({ technique: 'peyote', beadId: delica.id, size: { width: 3, height: 3, unit: 'beads' } })
+    const frameReal = withBeadShape(framed, 'real', 'frame')
+    expect(frameWeave(frameReal).cell).toEqual(beadCell(delica, 'real'))
+    expect(canvasWeave(frameReal).cell).toBeUndefined()
+    expect(canvasOf(withBeadShape(framed, 'real', 'canvas')).beadShape).toBe('real')
+    expect(frameOf(withBeadShape(framed, 'real', 'canvas'))!.beadShape).toBeUndefined()
   })
 
   it('draws a Bead this device does not know as Symmetric', () => {

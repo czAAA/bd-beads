@@ -101,16 +101,16 @@ export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined
   return { weave: weaveOfLayer(project, layer)!, beadId: held.beadId, ...beadOfLayer(project, layer), beads: held.beads, ...(name ? { name } : {}) }
 }
 
-/** The Project with a layer written (ADR 0079): its Weave, Bead, beads and name into that layer (ticket 0665), and a
- * Bead shape into every layer, which share it until ticket 0670. Not stamped as a change: the caller does that, as a
- * change of view is not. The same Project without a Frame. */
+/** The Project with a layer written (ADR 0079): its Weave, Bead, Bead shape (ticket 0687), beads and name into that
+ * layer alone (ticket 0665). Not stamped as a change: the caller does that, as a change of view is not. The same Project
+ * without a Frame. */
 export function withLayer(project: Project, layer: Layer, change: LayerChange): Project {
   const held = heldLayer(project, layer)
   if (!held) {
     return project
   }
   const { weave, bead, beadShape, beads, name } = change
-  const rewoven = withBead({ ...(weave ? { ...unwoven(held), ...weaveOf(weave) } : held), ...(beads ? { beads } : {}) }, bead, undefined)
+  const rewoven = withBead({ ...(weave ? { ...unwoven(held), ...weaveOf(weave) } : held), ...(beads ? { beads } : {}) }, bead, beadShape)
   let layers: Project['layers']
   if (layer === 'canvas') {
     layers = [{ ...(rewoven as CanvasLayer), ...(name !== undefined ? { name } : {}) }, ...framesOf(project)]
@@ -119,7 +119,7 @@ export function withLayer(project: Project, layer: Layer, change: LayerChange): 
     const kept = name ?? previous
     layers = [canvasOf(project), { ...frame, ...(kept ? { name: kept } : {}) }, ...framesOf(project).slice(1)]
   }
-  return { ...project, layers: beadShape ? mapLayers(layers, (each) => withBead(each, undefined, beadShape)) : layers }
+  return { ...project, layers }
 }
 
 /** Every layer changed alike, the Canvas still first. */

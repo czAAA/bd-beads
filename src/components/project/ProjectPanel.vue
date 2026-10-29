@@ -16,7 +16,7 @@ import BeadSection from './BeadSection.vue'
 import ProjectHead from './ProjectHead.vue'
 
 // The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): what no tool already does. A head (title with the
-// save state, name, maker, Technique), then four sections that fold shut: bead, canvas (its Bead, ticket 0687, and
+// save state, name, maker, Technique), then three sections that fold shut: canvas (its Bead section, ticket 0687, and
 // Background), export and this project. It only asks; the app shell does the work (Picture and chart: Frame panel).
 const props = defineProps<{
   project: Project
@@ -30,6 +30,7 @@ const emit = defineEmits<{
   'set-technique': [technique: Technique]
   'set-canvas-technique': [technique: Technique]
   'set-weave-setting': [layer: Layer, id: string, value: number]
+  /** The Canvas's Bead shape picked (ticket 0687). */
   'set-bead-shape': [shape: BeadShape]
   /** A layer's Background picked (ticket 0666): here the Canvas's. */
   'set-background': [layer: Layer, background: Background]
@@ -50,11 +51,8 @@ const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const file = controlAction('export-project-file')
 
-/** The Canvas's own layer (ticket 0687): its Bead is the Canvas section's, and its Bead shape, which both layers share
- * until ticket 0670, the bead section's. */
+/** The Canvas's own layer (ticket 0687), whose Bead and Bead shape the Canvas section sets; the Frame's are the Frame panel's. */
 const canvasLayer = computed(() => layerOf(props.project, 'canvas'))
-
-const beadSummary = computed(() => (canvasLayer.value.beadShape === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric).toLowerCase())
 
 </script>
 
@@ -72,18 +70,16 @@ const beadSummary = computed(() => (canvasLayer.value.beadShape === 'real' ? t.v
       @set-weave-setting="(layer, id, value) => emit('set-weave-setting', layer, id, value)"
     />
 
-    <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
-      <BeadSection :bead-shape="canvasLayer.beadShape" @update:bead-shape="emit('set-bead-shape', $event!)" />
-    </PanelSection>
-
     <PanelSection id="project:canvas" :label="t.panels.project.canvas" data-testid="project-canvas">
       <template v-if="canvas.background.value" #summary>
         <BackgroundChip :background="canvas.background.value" />
       </template>
       <BeadSection
         :bead="canvasLayer.bead"
+        :bead-shape="canvasLayer.beadShape"
         :candidates="canvasBeadChoice.candidates"
         :outdated="canvasBeadChoice.outdated"
+        @update:bead-shape="emit('set-bead-shape', $event)"
         @pick="emit('replace-bead', $event)"
       />
       <BackgroundSection :project="project" layer="canvas" @pick="emit('set-background', 'canvas', $event)" />
