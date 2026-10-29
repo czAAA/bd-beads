@@ -903,7 +903,7 @@ describe('the draft look zoomed out (ticket 0676)', () => {
   function framedPiece(technique: Technique): Project {
     const base = projectOf(technique, 100, 100)
     const green = Object.fromEntries(Array.from({ length: 300 }, (_row, row) => [row, Object.fromEntries(Array.from({ length: 300 }, (_cell, column) => [column, '#00ff00']))]))
-    return withFields(base, { frame: { ...frameOf(base)!, technique, row: 100, column: 100, beads: { 0: { 0: '#ff0000' } } }, beads: green })
+    return withLayers(base, { frame: { ...frameOf(base)!, technique, row: 100, column: 100, beads: { 0: { 0: '#ff0000' } } }, beads: green })
   }
   const SCREEN = { x: 0, y: 0, width: 1900, height: 1200 }
 
@@ -963,13 +963,13 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     expect(at(SCREEN)).toBe(2)
     expect(at({ ...SCREEN, x: 300, y: -200 })).toBe(2)
     expect(images()).toHaveLength(2)
-    expect(at({ ...SCREEN, x: 300 }, withFields(project, { beads: { 0: { 0: '#0000ff' } } }))).toBe(2)
+    expect(at({ ...SCREEN, x: 300 }, withLayers(project, { beads: { 0: { 0: '#0000ff' } } }))).toBe(2)
     expect(images()).toHaveLength(4)
   })
 
   it('leaves the Canvas clear under the Frame and its margin, and draws the Frame\'s empty beads and finished rows as their look does', () => {
     const images = withDraftCanvas()
-    const project = withFields(framedPiece('loom'), { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+    const project = withLayers(framedPiece('loom'), { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     const { context } = recordingContext()
 
     renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom: 0.2, rowMarks: true, draftWhenSmall: true })

@@ -4,12 +4,14 @@ import { MARGIN } from '../../src/domain/margin'
 import { openApp, projectBox, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { wrongBeads } from '../support/referenceCheck'
-import { withFields } from '../../src/testUtils/flatFields'
+import { withLayers } from '../../src/testUtils/layerFields'
 
 // Zoomed out to 4 px a bead, the editor draws each layer as one draft image, a pixel a bead (ticket 0676): every bead's
 // centre keeps its color, on peyote's and brick stitch's half-shifted rows too, the Frame's Row progress included.
 const STRIPES = ['#d03030', '#2050c0', '#f0c020', '#30a060']
 const ZOOM = 20
+/** How many positions round the margin the Canvas check leaves out. */
+const NEAR = 6
 
 for (const technique of ['loom', 'peyote', 'brick'] as const) {
   test(`${technique} in the draft look at ${ZOOM}%`, async ({ page }) => {
@@ -24,7 +26,7 @@ for (const technique of ['loom', 'peyote', 'brick'] as const) {
     }
     const beads: Record<number, Record<number, string>> = {}
     for (const { row, column, color } of canvas) (beads[row] ??= {})[column] = color
-    const project = withFields(framed, { beads })
+    const project = withLayers(framed, { beads })
     await openApp(page, [project])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, ZOOM)
@@ -34,8 +36,9 @@ for (const technique of ['loom', 'peyote', 'brick'] as const) {
     const shot = await page.screenshot()
     expect(wrongBeads(shot, project, ZOOM / 100, corner, { x: 0, y: 0 })).toEqual([])
     const png = PNG.sync.read(shot)
-    // The beads next to the margin are left out: a shifted row's reaches half a bead under it, its centre on the edge.
-    const clear = ({ row, column }: { row: number; column: number }) => row < -MARGIN - 1 || row > 30 + MARGIN || column < -MARGIN - 1 || column > 40 + MARGIN
+    // The beads near the margin are left out: a shifted row's reaches half a bead under it, and the Move bar stands over
+    // the rows above it zoomed out (ticket 0682).
+    const clear = ({ row, column }: { row: number; column: number }) => row < -MARGIN - NEAR || row > 29 + MARGIN + NEAR || column < -MARGIN - NEAR || column > 39 + MARGIN + NEAR
     const wrong = canvas.filter(clear).filter(({ row, column, color }) => {
       const centre = beadCentre(project, corner, ZOOM / 100, { row, column })
       const at = (Math.floor(centre.y) * png.width + Math.floor(centre.x)) * 4
