@@ -56,7 +56,8 @@ export function weaveOfLayer(project: Woven, layer: Layer): Weave | undefined
 export function weaveOfLayer(project: Woven, layer: Layer): Weave | undefined {
   const held = layer === 'frame' ? project.frame : project
   // `projectCell`'s rule, kept here as projectBead writes through this file.
-  return held && withCell(weaveOf(held), beadCell(project.bead, project.beadShape ?? DEFAULT_BEAD_SHAPE))
+  const { bead, beadShape } = beadOfLayer(project, layer)
+  return held && withCell(weaveOf(held), beadCell(bead, beadShape))
 }
 
 /** A layer as one record (ADR 0079): the Canvas from the Project's own fields, the Frame from its sheet, both with the
@@ -68,15 +69,8 @@ export function layerOf(project: Project, layer: Layer): LayerRecord | undefined
   if (!weave) {
     return undefined
   }
-  const { beads, name } = layer === 'frame' ? project.frame! : project
-  return {
-    weave,
-    beadId: project.beadId,
-    ...(project.bead ? { bead: project.bead } : {}),
-    beadShape: project.beadShape ?? DEFAULT_BEAD_SHAPE,
-    beads,
-    ...(name ? { name } : {}),
-  }
+  const { name } = layer === 'frame' ? project.frame! : project
+  return { weave, beadId: beadIdOfLayer(project, layer), ...beadOfLayer(project, layer), beads: beadsOfLayer(project, layer)!, ...(name ? { name } : {}) }
 }
 
 /** The Project with a layer written (ADR 0079), into the fields that hold it today: the Canvas's into the Project's
