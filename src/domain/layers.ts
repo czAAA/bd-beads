@@ -3,7 +3,7 @@ import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
 import { footprintOf } from './footprint'
-import { frameGeometry, type KindedSheet } from './frameKind'
+import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
 import { canvasWeave, frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
@@ -23,8 +23,8 @@ export interface LayerSheet {
   geometry: LayerGeometry
   /** The Frame's rectangle in its own positions, its first row and column 0, 0; none on the Canvas, which has no edge. */
   edge?: Rect
-  /** The Frame as its kind reads it (its kind, settings, turn, size and Weave); none on the Canvas. */
-  frame?: KindedSheet
+  /** The Frame as its Frame shape reads it (its shape, settings, turn, size and Weave); none on the Canvas. */
+  frame?: ShapedSheet
 }
 
 /** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
@@ -69,10 +69,10 @@ export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, 
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
-/** The Frame as its kind reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
-function kindedFrame(project: Framed): KindedSheet {
-  const { rows, columns, kind, settings, quarterTurns } = project.frame!
-  return { rows, columns, ...(kind ? { kind } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
+/** The Frame as its Frame shape reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
+function shapedFrame(project: Framed): ShapedSheet {
+  const { rows, columns, shape, settings, quarterTurns } = project.frame!
+  return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
 }
 
 // A Frame is never changed in place, so its geometry is built once for each Bead shape's cell it is drawn in.
@@ -90,7 +90,7 @@ export function frameGeometryOf(project: Framed): LayerGeometry {
   }
   let found = known.get(key)
   if (!found) {
-    found = frameGeometry(kindedFrame(project))
+    found = frameGeometry(shapedFrame(project))
     known.set(key, found)
   }
   return found
@@ -105,7 +105,7 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
     return { beads: project.beads, weave, geometry: gridGeometry(weave) }
   }
   const edge = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
-  return { beads: frame.beads, weave: frameWeave(project), geometry: frameGeometryOf(project), edge, frame: kindedFrame(project) }
+  return { beads: frame.beads, weave: frameWeave(project), geometry: frameGeometryOf(project), edge, frame: shapedFrame(project) }
 }
 
 /** `after` with every position under the Frame put back as `before` had it: the Canvas beads a Frame covers are neither

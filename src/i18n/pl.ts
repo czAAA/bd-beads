@@ -646,7 +646,7 @@ export const pl: Translations = {
     announceMoved: 'Ramka przesunięta razem z koralikami',
     announceNothingToFit: 'Nic jeszcze nie narysowano, do czego można dopasować ramkę',
     refusedCutsSchema: 'Ramka nie może przecinać schematu „{name}”. Obejmij go w całości albo wcale.',
-    customKinds: { fringeEarring: 'Kolczyk z frędzlami', triangle: 'Trójkąt', warpedSquare: 'Wygięty kwadrat', star: 'Gwiazda', kaleidocycle: 'Kalejdocykl', kite: 'Latawiec' },
+    shapes: { fringeEarring: 'Kolczyk z frędzlami', triangle: 'Trójkąt', warpedSquare: 'Wygięty kwadrat', star: 'Gwiazda', kaleidocycle: 'Kalejdocykl', kite: 'Latawiec' },
     sizeSettings: {
       topWidth: { label: 'Szerokość góry', less: 'O koralik mniej w dolnym rzędzie', more: 'O koralik więcej w dolnym rzędzie', summary: { one: 'góra {count}', few: 'góra {count}', many: 'góra {count}', other: 'góra {count}' }, announce: 'Szerokość góry: {count}' },
       topRows: { label: 'Rzędy góry', less: 'O jeden rząd mniej', more: 'O jeden rząd więcej', summary: { one: '{count} rząd góry', few: '{count} rzędy góry', many: '{count} rzędów góry', other: '{count} rzędu góry' }, announce: 'Rzędy góry: {count}' },
@@ -675,7 +675,7 @@ export const pl: Translations = {
     },
     fringeStyle: { label: 'Rodzaj frędzli', announce: 'Rodzaj frędzli: {style}' },
     removeConfirmCustom: 'Jej koraliki zostaną usunięte razem z nią. Można to cofnąć.',
-    announceCustom: 'Ramka „{kind}”, {size}',
+    announceCustom: 'Ramka „{shape}”, {size}',
     snapAddedTop: {
       one: 'Dodano pusty wiersz u góry: ramka musi zaczynać się od nieprzesuniętego wiersza.',
       few: 'Dodano {count} puste wiersze u góry: ramka musi zaczynać się od nieprzesuniętego wiersza.',

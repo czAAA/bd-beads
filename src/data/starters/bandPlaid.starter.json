@@ -1,7 +1,6 @@
 {
   "id": "bandPlaid",
   "design": "bandPlaid.json",
-  "kind": "rectangular",
   "technique": "peyote",
   "measure": "band",
   "sizes": [

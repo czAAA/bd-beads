@@ -1,7 +1,6 @@
 {
   "id": "bandChevrons",
   "design": "bandChevrons.json",
-  "kind": "rectangular",
   "technique": "peyote",
   "measure": "band",
   "sizes": [
