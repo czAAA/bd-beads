@@ -94,7 +94,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   for (const label of layout.labels) {
     drawLabel(context, label, fontPx, project, theme, rowMarks)
   }
-  if (rowMarks) drawRowPointer(context, input, theme)
+  if (rowMarks && layout.rowPointer) drawRowPointer(context, input, theme)
   drawPieceNames(context, input)
 }
 

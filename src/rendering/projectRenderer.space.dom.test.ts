@@ -191,7 +191,15 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
       // At 40% the band is 32px, folded: the paper keeps its color and its edge, with no inner border.
       expect(strokedIn(drawn(true, 0.4).calls, '#abcdef')).toHaveLength(0)
       expect(strokedIn(drawn(true, 0.4).calls, '#fedcba')).toHaveLength(1)
-      expect(drawn(true, 0.1).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
+    })
+
+    it('is not drawn at all under a 31px band, where only its Move bar is left (ticket 0682)', () => {
+      // At 38% the band is 30.4px: no paper, no edge, no inner border.
+      for (const zoom of [0.38, 0.25, 0.1]) {
+        const { calls } = drawn(true, zoom)
+        expect(calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#fedcba' || call.strokeStyle === '#abcdef'), `${zoom}`).toBe(false)
+      }
+      expect(drawn(true, 0.39).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
     })
 
     it('is never drawn in an export, which draws the Frame on its own, nor with no Frame', () => {

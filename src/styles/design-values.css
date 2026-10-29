@@ -143,7 +143,7 @@
   --margin-title-row: 23px; /* MarginSheet card: one row of the title block (one 22px row in the compact form). */
   --margin-band-full: 68px; /* MarginSheet card: the band height, in screen pixels, from which the margin shows its full form. */
   --margin-band-compact: 40px; /* MarginSheet card: the band height under which the margin folds. */
-  --margin-band-folded: 31px; /* MarginSheet card: the band height under which even the folded row has no room: the paper alone. */
+  --margin-band-folded: 31px; /* MarginSheet card: the band height under which even the folded row has no room: only the Move bar is left (ticket 0682). */
   --margin-band-inset-compact: 10px; /* MarginSheet card: the compact and folded rows in from the sheet's sides. */
   --margin-band-top-compact: 8px; /* MarginSheet card: the compact row down from the sheet's top, 2px inside its 6px border. */
   --margin-done-compact: 22px; /* MarginSheet card: Row done in the compact and folded forms. */

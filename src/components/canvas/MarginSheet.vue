@@ -20,12 +20,13 @@ import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
+import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import RowProgressControls from './RowProgressControls.vue'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658): Row progress, the Move bar and the tools
 // in its top band, the title block in its bottom-right corner, laid over the sheet the canvas draws. The controls keep
-// their size as the band grows and shrinks with the zoom, so the sheet changes form instead.
+// their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, only the Move bar.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
@@ -63,7 +64,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const actions = {
-  move: controlAction('move-frame'),
   rotate: controlAction('rotate-frame'),
   edit: controlAction('edit-frame'),
   export: controlAction('strip-export'),
@@ -162,6 +162,16 @@ const titleBox = computed<BarBox>(() => {
 })
 const yields = (box: BarBox) => (!!props.selection && overlapsSelectionHandles(box, props.selection)) || (!!props.pill && boxesOverlap(box, props.pill))
 const bandYields = computed(() => yields(bandBox.value))
+
+// Bare, the Move bar stands alone on the middle of the Frame's top edge, above its line, so it takes no press meant for
+// the beads (ticket 0682); the px mirror `--frame-handle-hit-width` and `--margin-tab`.
+const HANDLE_PX = { width: 56, height: 24 }
+const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2, top: props.anchor.box.top - props.anchor.sheet.top }))
+const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
+const handleYields = computed(() => {
+  const { sheet } = props.anchor
+  return yields({ left: sheet.left + handleAt.value.left - HANDLE_PX.width / 2, top: sheet.top + handleAt.value.top - HANDLE_PX.height, ...HANDLE_PX })
+})
 const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.value))
 
 /** Row progress is one Tab stop, ←/→ along its controls, as in the Progress bar (ADR 0075). */
@@ -202,7 +212,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 </script>
 
 <template>
-  <div class="margin-sheet" :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing }]" :style="sheetStyle" data-testid="margin-sheet">
+  <div class="margin-sheet" :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare' }]" :style="sheetStyle" data-testid="margin-sheet">
     <div
       v-if="row"
       ref="bandEl"
@@ -225,19 +235,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           @toggle-row-highlight="emit('toggle-row-highlight')"
         />
       </div>
-      <!-- The Move bar: the Frame card's Move handle on the paper. Its press goes on to the canvas to drag; arrows move
-        the Frame, Shift+arrows resize. -->
-      <IconButton
-        variant="plain"
-        :action="actions.move"
-        class="margin-sheet__move"
-        :class="{ 'margin-sheet__move--dragging': dragging }"
-        data-testid="frame-move-handle"
-        @pointerdown="onMovePress"
-        @keydown="emit('key', $event)"
-      >
-        <span class="margin-sheet__move-line" aria-hidden="true" />
-      </IconButton>
+      <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
       <div ref="toolsEl" class="margin-sheet__tools">
         <template v-if="row === 'full' || row === 'compact'">
           <IconButton v-if="rotatable" variant="plain" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
@@ -283,6 +281,10 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           </AppMenuItem>
         </MenuButton>
       </div>
+    </div>
+
+    <div v-if="form === 'bare'" class="margin-sheet__handle" :class="{ 'margin-sheet__yielding': handleYields }" :style="handleStyle" data-testid="margin-handle">
+      <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
     </div>
 
     <div
@@ -354,7 +356,8 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 }
 
 .margin-sheet__band > *,
-.margin-sheet__title {
+.margin-sheet__title,
+.margin-sheet__handle {
   pointer-events: auto;
 }
 
@@ -409,33 +412,25 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   background: var(--margin-line);
 }
 
-/* The Move bar: a 40 × 6 `ink` pill in a 56 × 28 hit area (24 high compact and folded), `grab`. */
-.margin-sheet__band :deep(.margin-sheet__move) {
-  width: var(--frame-handle-hit-width);
-  height: var(--margin-move-height);
-  background: none;
-  border: 0;
-  cursor: grab;
-  touch-action: none;
-}
-
-.margin-sheet__band :deep(.margin-sheet__move--dragging) {
-  cursor: grabbing;
-}
-
-.margin-sheet__move-line {
-  width: var(--frame-handle-length);
-  height: var(--frame-handle-thickness);
-  background: var(--ink);
-  border-radius: var(--frame-handle-thickness);
-}
-
-.margin-sheet__band :deep(.margin-sheet__move--dragging) .margin-sheet__move-line {
-  background: var(--accent);
-}
-
-.margin-sheet__band:not(.margin-sheet__band--full) :deep(.margin-sheet__move) {
+/* The Move bar is 24 high compact, folded and bare (28 in the full form). */
+.margin-sheet__band:not(.margin-sheet__band--full) :deep(.margin-move),
+.margin-sheet__handle :deep(.margin-move) {
   height: var(--margin-tab);
+}
+
+/* Bare, the Move bar's bottom stands on the Frame's line, its middle on the edge's (ticket 0682). On a coarse pointer
+ * it rises by the part of its 44px hit area below it and 16px more, the reach of a browser's touch adjustment, so a
+ * finger on the first row reaches the bead. */
+.margin-sheet__handle {
+  position: absolute;
+  display: flex;
+  transform: translate(-50%, -100%);
+}
+
+@media (pointer: coarse) {
+  .margin-sheet__handle {
+    transform: translate(-50%, calc(-100% - (var(--touch-target) - var(--margin-tab)) / 2 - var(--space-16)));
+  }
 }
 
 /* The title block, anchored to the inner border's bottom-right corner; folded, the tab in the middle of the band. */
