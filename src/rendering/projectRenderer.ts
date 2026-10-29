@@ -387,6 +387,16 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
   }
 }
 
+/** The margin's sheet in grid px (MarginSheet card, tickets 0656, 0657): its box, the Frame's footprint it holds, and
+ * its band, the narrowest of its four sides. What the sheet is drawn from and what its tools on the page are placed by. */
+export function marginSheetPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
+  const sheet = frameFootprintPx(project, margin)
+  const footprint = frameFootprintPx(project)
+  if (!sheet || !footprint) return undefined
+  const band = Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height)
+  return { sheet, footprint, band }
+}
+
 // The margin's sheet (MarginSheet card, ticket 0656), in screen px: its corners, its inner border's inset (6px once the
 // band is under 64px) and that border's corners.
 const SHEET_RADIUS_PX = 12
@@ -399,9 +409,8 @@ const BORDER_RADIUS_PX = 6
  * over the Canvas, the Frame's footprint left out, with a hairline round its edge and an inner border where it fits.
  * Drawn in grid space, so its px are divided by the zoom to stay screen px. */
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
-  const sheet = frameFootprintPx(project, margin)!
-  const footprint = frameFootprintPx(project)!
-  const band = Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height) * zoom
+  const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
+  const band = gridBand * zoom
   const edge = BEAD_GAP_PX / 2
   const radius = Math.min(SHEET_RADIUS_PX, band) / zoom
   context.save()

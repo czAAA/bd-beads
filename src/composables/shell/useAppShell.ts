@@ -727,7 +727,6 @@ function wireAppShell(services: Services) {
       onFrameFromSelection,
       settingFrame: frameFlow.settingFrame,
       framePanelOpen: frameFlow.barOpen,
-      frameHandlesOn: frameFlow.handlesOn,
       frameDraftProject: frameFlow.draftProject,
       onToggleFramePanel: frameFlow.toggleBar,
       onEditFrame: editFrame,
@@ -741,12 +740,21 @@ function wireAppShell(services: Services) {
       onToggleRowDirection: rowOps.onToggleRowDirection,
       onMoveRow: rowOps.onMoveRow,
       onResetProgress: rowOps.onResetProgress,
+      // The margin sheet's tools and title block (ticket 0657): the flows the Frame and Project panels ask too
+      onRotateFrame: rotateFrameFlow.onRotateFrame,
+      onRenameFrame: frameFlow.rename,
+      onSetFrameTechnique: frameFlow.setTechnique,
+      onSaveMakerName: exportFlow.onSaveMakerName,
+      onSetLetters: exportFlow.onSetLetters,
+      exportOpener: overlays.exportOpener,
+      onOpenExport: overlays.onOpenExport,
     },
     /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
      * Frame panel. Each control only asks; the flows do the work. */
     panels: {
       t,
       openPanel,
+      exportOpener: overlays.exportOpener,
       menuOpensOnForm: overlays.menuOpensOnForm,
       phoneSavedProjectsOpen: overlays.phoneSavedProjectsOpen,
       onSelectProjectFromPhoneDrawer: overlays.onSelectProjectFromPhoneDrawer,

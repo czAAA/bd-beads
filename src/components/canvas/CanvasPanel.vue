@@ -7,7 +7,7 @@ import ContextBar from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ToolPill from '../tools/ToolPill.vue'
-import FrameChrome from './FrameChrome.vue'
+import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
@@ -99,7 +99,6 @@ const {
   locale,
   settingFrame,
   framePanelOpen,
-  frameHandlesOn,
   onToggleFramePanel,
   surfaceInputMode,
   handedness,
@@ -108,6 +107,13 @@ const {
   onFrameKey,
   onRemoveFrame,
   onResetProgress,
+  onRotateFrame,
+  onRenameFrame,
+  onSetFrameTechnique,
+  onSaveMakerName,
+  onSetLetters,
+  exportOpener,
+  onOpenExport,
   frameDraftProject,
   onFramePress,
   onFrameDrag,
@@ -182,7 +188,7 @@ const selectionSummary = computed(() => {
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps
  * aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
-/** Where the Frame is on the canvas box: the Move handle and the edit pencil follow it (ticket 473). */
+/** Where the Frame and its margin sheet are on the canvas box: the sheet's tools follow them (tickets 473, 0657). */
 const frameAnchor = ref<FrameAnchor>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
@@ -233,7 +239,7 @@ const drawingStyle = computed(() => {
         :frame-open="framePanelOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
-        :open-panel="openPanel"
+        :open-panel="openPanel === 'export' && exportOpener !== 'strip-export' ? null : openPanel"
         :zoom-percent="stripZoomPercent"
         @select-panel="onSelectPanel"
         @toggle-frame="onToggleFramePanel"
@@ -345,8 +351,8 @@ const drawingStyle = computed(() => {
 
       <!--
         The Selection bar comes last in the page order (ADR 0075: Tab reaches the Progress bar first), so it sits in a
-        layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The Frame's controls
-        ride in it after the bar: the order of ADR 0075 has no place for them.
+        layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The margin sheet's
+        tools ride in it after the bar: the order of ADR 0075 has no place for them.
       -->
       <div v-if="activeProject" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
@@ -379,20 +385,32 @@ const drawingStyle = computed(() => {
           @name-piece="onNamePiece"
         />
 
-        <!-- The Frame's own controls (tickets 473, 475): the Move handle and edit pencil follow the Frame; the bar hangs
-          from the pencil or the strip's Frame button, whichever opened it. -->
-        <FrameChrome
-          v-if="activeProject && frameAnchor"
+        <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the
+          tools in its top band, the title block in its bottom-right corner, following the Frame. -->
+        <MarginSheet
+          v-if="activeProject?.frame && frameAnchor"
           :project="activeProject"
           :anchor="frameAnchor"
-          :editing="frameHandlesOn"
+          :editing="settingFrame"
           :pressing="surfacePressing"
+          :row-highlight="rowHighlight"
+          :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
           :pill="pillRect"
-          @toggle="onEditFrame"
+          @rotate="onRotateFrame"
+          @toggle-edit="onEditFrame"
+          @export="onOpenExport('margin-export')"
           @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
+          @move-row="onMoveRow"
+          @reset-progress="onResetProgress"
+          @toggle-row-direction="onToggleRowDirection"
+          @toggle-row-highlight="toggleRowHighlight"
+          @rename="onRenameFrame"
+          @set-technique="onSetFrameTechnique"
+          @save-maker-name="onSaveMakerName"
+          @set-letters="onSetLetters"
         />
       </div>
     </div>
@@ -450,9 +468,9 @@ const drawingStyle = computed(() => {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar, the Frame's chrome, and
- * the Tool pill's layer, which float over the beads. */
-.app-shell__drawing > :not(.app-shell__canvas-hint):not(.context-bar):not(.frame-chrome):not(.tool-pill-layer) {
+/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which
+ * float over the beads. */
+.app-shell__drawing > :not(.app-shell__canvas-hint):not(.context-bar):not(.tool-pill-layer) {
   position: relative;
 }
 

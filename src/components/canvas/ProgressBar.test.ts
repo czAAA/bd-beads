@@ -98,24 +98,24 @@ describe('ProgressBar', () => {
     const rows = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
     expect(rows.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.previousButton)
     expect(rows.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
-    expect(rows.find('.progress-bar__steps--right').exists()).toBe(false)
+    expect(rows.find('.row-progress__steps--right').exists()).toBe(false)
 
     const columns = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4)) } })
     expect(columns.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.columnPreviousButton)
     expect(columns.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
-    expect(columns.find('.progress-bar__steps--right').exists()).toBe(true)
+    expect(columns.find('.row-progress__steps--right').exists()).toBe(true)
 
     const up = toggleRowDirection(toggleRowDirection(moveToRow(makeProject(), 4)))
-    expect(mount(ProgressBar, { props: { project: up } }).find('.progress-bar__steps--up').exists()).toBe(true)
+    expect(mount(ProgressBar, { props: { project: up } }).find('.row-progress__steps--up').exists()).toBe(true)
     const left = mount(ProgressBar, { props: { project: toggleRowDirection(up) } })
-    expect(left.find('.progress-bar__steps--left').exists()).toBe(true)
+    expect(left.find('.row-progress__steps--left').exists()).toBe(true)
     expect(left.text()).toContain(ru.rowProgress.rightToLeft)
   })
 
   it('shows the rows running as the Frame lies, turned with it, still counting its own rows (ticket 0667)', () => {
     const turned = rotateFrame(moveToRow(makeProject(), 4))!
     const wrapper = mount(ProgressBar, { props: { project: turned } })
-    expect(wrapper.find('.progress-bar__steps--left').exists()).toBe(true)
+    expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
     expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
   })
