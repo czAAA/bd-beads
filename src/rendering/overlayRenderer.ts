@@ -18,6 +18,7 @@ import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
 // tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see
@@ -137,8 +138,9 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
+    const beads = beadsOfLayer(project, 'frame')!
     return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
-      const color = colorAt(frame.beads, position.row, position.column)
+      const color = colorAt(beads, position.row, position.column)
       const place = geometry.place(position)
       if (color === null || !place) return []
       const { x, y, width, height } = inGridPx(place.box)
@@ -425,7 +427,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
   const showRows = rowMarks ?? rowProgressOn(project)
-  const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
+  const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(beadsOfLayer(project, 'canvas')).length > 0)
   if (!showRows && !preview && !selection && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
