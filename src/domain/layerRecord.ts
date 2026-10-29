@@ -132,9 +132,9 @@ export function beadIdOfLayer(project: Pick<Project, 'beadId'>, _layer: Layer): 
 /** A layer's Weave as held (ticket 0625): its Technique and settings, without the cell its Bead draws it in, for a
  * reader that counts positions as the bare Weave does (ticket 0662). None for a Frame the Project lacks. */
 export function heldWeave(project: Pick<Project, 'technique' | 'techniqueSettings'>, layer: 'canvas'): Weave
-export function heldWeave(project: Partial<Pick<Project, 'frame'>>, layer: 'frame'): Weave | undefined
+export function heldWeave(project: { frame?: Weave }, layer: 'frame'): Weave | undefined
 export function heldWeave(project: Pick<Project, 'technique' | 'techniqueSettings'> & Partial<Pick<Project, 'frame'>>, layer: Layer): Weave | undefined
-export function heldWeave(project: Partial<Pick<Project, 'technique' | 'techniqueSettings' | 'frame'>>, layer: Layer): Weave | undefined {
+export function heldWeave(project: Partial<Weave> & { frame?: Weave }, layer: Layer): Weave | undefined {
   const held = layer === 'frame' ? project.frame : (project as Weave)
   return held && weaveOf(held)
 }
