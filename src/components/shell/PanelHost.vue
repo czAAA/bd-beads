@@ -26,6 +26,7 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
     :menu="panel.menu"
     :skips-fields="panel.skipsFields"
     :width="panel.width"
+    :align="panel.align"
     @close="emit('close')"
   >
     <template v-for="(_, name) in $slots" #[name]="slotProps">
