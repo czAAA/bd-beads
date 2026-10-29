@@ -347,6 +347,7 @@ export const en: Translations = {
     hexLabel: 'Hex color',
     hexInvalid: 'Enter a color like #1a2b3c.',
     previewLabel: 'New color',
+    addToPalette: 'Add {hex} to the Palette',
     pickFromCanvasLabel: 'Pick color from Canvas',
     removed: 'Color removed from the Palette.',
     removeSwatch: 'Remove {hex} from the Palette',

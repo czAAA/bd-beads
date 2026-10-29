@@ -347,6 +347,7 @@ export const zh: Translations = {
     hexLabel: '十六进制颜色',
     hexInvalid: '请输入类似 #1a2b3c 的颜色。',
     previewLabel: '新颜色',
+    addToPalette: '将 {hex} 添加到调色板',
     pickFromCanvasLabel: '从画布取色',
     removed: '颜色已从调色板移除。',
     removeSwatch: '从调色板移除 {hex}',
