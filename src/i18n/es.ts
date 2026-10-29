@@ -173,7 +173,6 @@ export const es: Translations = {
     loom: 'Telar',
     peyote: 'Peyote',
     brick: 'Punto ladrillo',
-    square: 'Punto cuadrado',
   },
   weaveSettings: {
     peyoteDrop: {

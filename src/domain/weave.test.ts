@@ -321,13 +321,8 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
     expect(TECHNIQUES.flatMap((technique) => problems(techniqueGeometry(technique)).map((problem) => `${technique}: ${problem}`))).toEqual([])
   })
 
-  it('offers loom, peyote, brick stitch and square stitch, in that order (tickets 0644, 0635)', () => {
-    expect(TECHNIQUES).toEqual(['loom', 'peyote', 'brick', 'square'])
-  })
-
-  it('lays square stitch out as loom: the rows unshifted, one pass a row, square beads (ticket 0635)', () => {
-    expect(techniqueGeometry('square')).toEqual(techniqueGeometry('loom'))
-    expect(describeWeave({ technique: 'square' })).toMatchObject({ draftCost: 1, settings: [] })
+  it('offers loom, peyote and brick stitch, in that order (ticket 0644)', () => {
+    expect(TECHNIQUES).toEqual(['loom', 'peyote', 'brick'])
   })
 
   it('builds a Weave\'s description once, and another for other settings or another Bead', () => {

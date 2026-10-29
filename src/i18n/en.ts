@@ -171,7 +171,6 @@ export const en: Translations = {
     loom: 'Loom',
     peyote: 'Peyote',
     brick: 'Brick stitch',
-    square: 'Square stitch',
   },
   weaveSettings: {
     peyoteDrop: {

@@ -173,7 +173,6 @@ export const zh: Translations = {
     loom: '织机',
     peyote: '佩奥',
     brick: '砖形',
-    square: '方形针',
   },
   weaveSettings: {
     peyoteDrop: {

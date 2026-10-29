@@ -103,12 +103,12 @@ describe('NewProjectForm', () => {
     expect(events![0]![0]).toMatchObject({ name: 'My Bracelet' })
   })
 
-  it('lists Peyote, Brick stitch and Square stitch alongside Loom, and nothing else (tickets 0644, 0635)', async () => {
+  it('lists Peyote and Brick stitch alongside Loom, and nothing else (ticket 0644)', async () => {
     const wrapper = mount(NewProjectForm)
 
     await wrapper.get('[data-testid="new-project-technique"] button[aria-haspopup]').trigger('click')
     const options = wrapper.findAll('[data-testid="new-project-technique"] [role="menuitemradio"]')
-    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick', 'square'])
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick'])
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
