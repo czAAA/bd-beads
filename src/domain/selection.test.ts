@@ -31,7 +31,7 @@ import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -278,7 +278,7 @@ describe('Piece and Select all selections (ticket 414)', () => {
 
 describe('Selections on a layer (ADR 0066)', () => {
   // A 3 x 3 Frame at (2, 2) holding red in its middle, over a Canvas holding blue beads, one under the Frame.
-  const layered = (): Project => (withFields(project(3, 3), {
+  const layered = (): Project => (withLayers(project(3, 3), {
 beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3, color: BLUE }]),
     frame: { technique: 'loom' as const, row: 2, column: 2, rows: 3, columns: 3, beads: withColors({}, [{ row: 1, column: 1, color: RED }]) },
 }))
@@ -307,7 +307,7 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
     expect(frameOf(inFrame)!.beads[1]).toEqual({ 1: RED, 2: RED })
     const onCanvas = pasteOnLayer(layered(), block, { row: 30, column: 9 })
     expect(beadsOfLayer(onCanvas, 'canvas')[30]).toEqual({ 9: RED, 10: RED, 11: RED })
-    expect(sheetOf(onCanvas)).toEqual(sheetOf(layered()))
+    expect(frameSheetOf(onCanvas)).toEqual(frameSheetOf(layered()))
   })
 
   it('shows the paste preview where the paste would land, in Canvas positions and clipped to the Frame', () => {
@@ -342,7 +342,7 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
     // A 48-row peyote Frame covers 36 loom rows: rows 36 to 39 are its margin, row 40 is free Canvas.
     const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-    const woven: Project = withFields(placed, { frame: { ...frameOf(placed)!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
+    const woven: Project = withLayers(placed, { frame: { ...frameOf(placed)!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 40, columns: 1, layer: 'canvas' })).toBe(false)
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 41, columns: 1, layer: 'canvas' })).toBe(true)
@@ -373,10 +373,10 @@ describe('resizing and moving a Selection (ticket 414)', () => {
 })
 
 describe('selectionHoldsAllBeads (ticket 415)', () => {
-  const open = (beads: BeadMap): Project => (withFields(project(4, 4), { frame: undefined, beads }))
+  const open = (beads: BeadMap): Project => (withLayers(project(4, 4), { frame: undefined, beads }))
   const framed = (beads: BeadMap, frameBeads: BeadMap): Project => {
     const placed = withFrame(project(4, 4), { row: 10, column: 10, rows: 3, columns: 3 })
-    return withFields(placed, { beads, frame: { ...frameOf(placed)!, beads: frameBeads } })
+    return withLayers(placed, { beads, frame: { ...frameOf(placed)!, beads: frameBeads } })
   }
 
   it('is true for the Select all rectangle and anything round it', () => {
@@ -470,7 +470,7 @@ describe('a Piece-tool shape (ticket 547)', () => {
 
 describe('selectionInFinishedRows (ticket 0647, ADR 0052)', () => {
   /** A loom Frame of 6 x 6 at (10, 10) whose first two rows are done. */
-  const woven: Project = withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), {
+  const woven: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), {
 frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} },
     rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 },
 })
@@ -491,7 +491,7 @@ frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} 
   it('reads a shaped Selection by its own cells, and the way the rows run', () => {
     const shape = { top: 11, left: 10, rows: 2, columns: 2, cells: [{ row: 12, column: 11 }] }
     expect(selectionInFinishedRows(woven, shape)).toBe(false)
-    const fromTheLeft = withFields(woven, { rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } })
+    const fromTheLeft = withLayers(woven, { rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } })
     expect(selectionInFinishedRows(fromTheLeft, { top: 14, left: 11, rows: 1, columns: 1 })).toBe(true)
     expect(selectionInFinishedRows(fromTheLeft, { top: 10, left: 12, rows: 1, columns: 1 })).toBe(false)
   })

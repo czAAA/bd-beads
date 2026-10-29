@@ -6,7 +6,7 @@ import { createProject } from './createProject'
 import { beadIdOfLayer, beadOfLayer, beadsOfLayer, canvasOf, frameOf, heldWeave, layerOf, lettersOn, withFrameSheet, withLayer, withLetters, withPieceNames } from './layerRecord'
 import type { Project } from './project'
 import { beadCell } from './weave'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
@@ -16,7 +16,7 @@ const cube = findBead('toho-cube-1.5mm')!
 /** A brick Canvas holding a red bead, under a peyote Frame named Rose holding a blue one. */
 const framed = (): Project => {
   const made = createProject({ name: 'Garden', technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadId: delica.id, size: { width: 4, height: 4, unit: 'beads' } })
-  return withFields(made, { beads: { 9: { 9: RED } }, frame: { ...frameOf(made)!, technique: 'peyote', techniqueSettings: {}, beads: { 1: { 2: BLUE } }, name: 'Rose' } })
+  return withLayers(made, { beads: { 9: { 9: RED } }, frame: { ...frameOf(made)!, technique: 'peyote', techniqueSettings: {}, beads: { 1: { 2: BLUE } }, name: 'Rose' } })
 }
 
 const open = (): Project => {
@@ -37,7 +37,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
   })
 
   it('reads the Frame from its sheet, with the Project\'s Bead and Bead shape', () => {
-    expect(layerOf(withFields(framed(), { beadShape: 'real' }), 'frame')).toEqual({
+    expect(layerOf(withLayers(framed(), { beadShape: 'real' }), 'frame')).toEqual({
       weave: { technique: 'peyote', cell: beadCell(delica, 'real') },
       beadId: delica.id,
       bead: beadCopy(delica),
@@ -49,7 +49,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
   it('reads an unnamed Frame without a name, and no Frame on a Canvas without one', () => {
     const { name: _name, ...unnamed } = frameOf(framed())!
-    expect(layerOf(withFields(framed(), { frame: unnamed }), 'frame')).not.toHaveProperty('name')
+    expect(layerOf(withLayers(framed(), { frame: unnamed }), 'frame')).not.toHaveProperty('name')
     expect(layerOf(open(), 'frame')).toBeUndefined()
     expect(layerOf(open(), 'canvas').beads).toEqual({ 9: { 9: RED } })
   })
@@ -129,7 +129,7 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
   })
 
   it('reads each layer\'s own Bead, its id and Bead shape, Symmetric where none is saved; a Frame the Project lacks reads the Canvas\'s', () => {
-    const project = withLayer(withFields(framed(), { beadShape: 'real' }), 'frame', { bead: cube })
+    const project = withLayer(withLayers(framed(), { beadShape: 'real' }), 'frame', { bead: cube })
     expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(cube), beadShape: 'real' })
     expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)
     expect(beadIdOfLayer(project, 'frame')).toBe(cube.id)
@@ -138,7 +138,7 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
   })
 
   it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {
-    const project = withFields(framed(), { beadShape: 'real' })
+    const project = withLayers(framed(), { beadShape: 'real' })
     expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
     expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote' })
     expect(heldWeave(open(), 'frame')).toBeUndefined()
@@ -154,7 +154,7 @@ describe('the layer list (ADR 0079, ticket 0664)', () => {
   })
 
   it('keeps a Frame\'s id, Bead, Letters and Row progress when its sheet is laid again, and removes it with none', () => {
-    const before = withFields(framed(), { rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
+    const before = withLayers(framed(), { rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
     const moved = withFrameSheet(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} })
     const { id, beadId, rowProgress } = frameOf(before)!
     expect(frameOf(moved)).toMatchObject({ id, beadId, rowProgress, row: 5 })
@@ -166,7 +166,7 @@ describe('the layer list (ADR 0079, ticket 0664)', () => {
     const on = withLetters(framed(), true)
     expect(on.layers.every((layer) => layer.letters === true)).toBe(true)
     expect(lettersOn(on)).toBe(true)
-    expect(lettersOn(withFields(on, { frame: { ...frameOf(on)!, letters: undefined } }))).toBe(false)
+    expect(lettersOn(withLayers(on, { frame: { ...frameOf(on)!, letters: undefined } }))).toBe(false)
     expect(lettersOn(withLetters(open(), true))).toBe(true)
   })
 

@@ -6,7 +6,7 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, withFrameSheet } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
@@ -128,7 +128,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   })
 
   it('hides the weights, not shows zeros, when the Project\'s Bead has no weight', () => {
-    const unknown = withFields(wide('toho-cube-1.5mm', 10), { beadId: 'a-bead-this-device-never-had', bead: undefined })
+    const unknown = withLayers(wide('toho-cube-1.5mm', 10), { beadId: 'a-bead-this-device-never-had', bead: undefined })
     const wrapper = mountQuantities(unknown)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('10')
@@ -185,7 +185,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
 describe('BeadQuantities and the Frame (ticket 233)', () => {
   it('counts the Frame only, leaving out beads that lie outside it', () => {
     const framed = paintAt(project(), [{ row: 0, column: 0 }], '#e63746')
-    const withOutsider = withFields(framed, { beads: { ...beadsOfLayer(framed, 'canvas'), 40: { 40: '#e63746' } } })
+    const withOutsider = withLayers(framed, { beads: { ...beadsOfLayer(framed, 'canvas'), 40: { 40: '#e63746' } } })
     const wrapper = mountQuantities(withOutsider)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')

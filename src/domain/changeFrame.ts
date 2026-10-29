@@ -43,8 +43,8 @@ import { withWovenPalette } from './projectBead'
 import { clampPointer, firstPasses, progressWithoutLine, rowProgressOf, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
-import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
-import { touch, type FrameLayer, type Project } from './project'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, touchFrameSheet, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
+import type { FrameLayer, Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
@@ -181,7 +181,7 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
       return { kind: 'unchanged', project }
     }
     // The Frame carries its beads and the passes; the Canvas under the destination stays as it is, hidden (ADR 0066).
-    return { kind: 'changed', project: touch(withFrameSheet(project, { ...frame, row: moved.row, column: moved.column }), {}) }
+    return { kind: 'changed', project: touchFrameSheet(project, { ...frame, row: moved.row, column: moved.column }) }
   }
 
   if ('name' in change) {
@@ -189,7 +189,7 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     if (change.name === (frameOf(project)!.name ?? '')) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: touch(withFrameSheet(project, { ...frame, ...(change.name ? { name: change.name } : {}) }), {}) }
+    return { kind: 'changed', project: touchFrameSheet(project, { ...frame, ...(change.name ? { name: change.name } : {}) }) }
   }
 
   if ('place' in change) {
@@ -210,7 +210,7 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     if (sameSettings(settings, settingsOf(frame)!)) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: touch(withFrameSheet(project, resettled(project, frame, settings, frame.quarterTurns)), {}) }
+    return { kind: 'changed', project: touchFrameSheet(project, resettled(project, frame, settings, frame.quarterTurns)) }
   }
 
   if ('remove' in change) {
@@ -275,7 +275,7 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   const { shape, centre, beads = {} } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
   const sheet = customSheet(project, shape, settings, centre)
-  return touch(withFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: firstPasses(rowProgressOf(project)) }), {})
+  return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: firstPasses(rowProgressOf(project)) })
 }
 
 /** A Custom frame laid out again from new settings round its own centre: each bead whose position is still in the
@@ -294,7 +294,7 @@ export function turnedCustomFrame(project: Project): Project | undefined {
   const frame = frameOf(project)
   if (!frame || !frameShapeOf(frame)) return undefined
   const turns = ((frame.quarterTurns ?? 0) + 1) % 4
-  return touch(withFrameSheet(project, resettled(project, frame, frame.settings ?? {}, turns === 0 ? undefined : (turns as QuarterTurns))), {})
+  return touchFrameSheet(project, resettled(project, frame, frame.settings ?? {}, turns === 0 ? undefined : (turns as QuarterTurns)))
 }
 
 /** The beads of a map that have a position in a Frame's geometry (a Custom frame's layout, or its rectangle). */
@@ -379,7 +379,7 @@ function placedFrame(project: Project, place: { frame: Rect; weave: Weave; beads
   const { row, column, rows, columns } = place.frame
   const sheet = { row, column, rows, columns, ...weaveOf(place.weave) }
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {} }
-  return touch(withFrameSheet(project, { ...frame, rowProgress: firstPasses(rowProgressOf(project)) }), {})
+  return touchFrameSheet(project, { ...frame, rowProgress: firstPasses(rowProgressOf(project)) })
 }
 
 /** The Project with its Custom frame become its shape round `rectangle` (ADR 0079, ticket 0669), the smallest that

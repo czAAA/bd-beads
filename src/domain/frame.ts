@@ -5,8 +5,8 @@ import type { GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import { canvasDistance, laidOnCanvas, layersAlike } from './layerWeave'
-import { beadsOfLayer, frameOf, heldWeave, type Layered, withFrameSheet } from './layerRecord'
-import { touch, type Project } from './project'
+import { beadsOfLayer, frameOf, heldWeave, type Layered, touchFrameSheet } from './layerRecord'
+import type { Project } from './project'
 import { clampPointer, rowProgressOf } from './rowProgress'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
@@ -126,7 +126,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
   const current = frameOf(project)
   // With the Frame gone the passes are gone too (ticket 426): Row progress is the Frame's (ADR 0079).
   if (!rectangle) {
-    return { project: touch(withFrameSheet(project, undefined), {}), given: {}, taken: {} }
+    return { project: touchFrameSheet(project, undefined), given: {}, taken: {} }
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
@@ -151,7 +151,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
   return {
-    project: touch(withFrameSheet(project, { ...frame, rowProgress: clampPointer(rowProgressOf(project), frame) }), {}),
+    project: touchFrameSheet(project, { ...frame, rowProgress: clampPointer(rowProgressOf(project), frame) }),
     given: shiftedBeads(refit.given, row, column),
     taken: shiftedBeads(refit.taken, row, column),
   }
