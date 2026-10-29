@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { orientationOf } from '../../domain/layerRecord'
 import { rotateCanvas, turnCanvasTo } from '../../domain/rotate'
+import { SNAP_MS } from '../../rendering/gestureView'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
@@ -170,60 +171,94 @@ describe('useCanvasView', () => {
     expect(view.scroll.value).toEqual({ x: 2020 - 500, y: 2020 - 400 })
   })
 
-  describe('a two-finger twist (ticket 0672)', () => {
+  describe('a two-finger twist (tickets 0672, 0709)', () => {
     it('turns the view live about the fingers, keeping the bead under them, and leaves the Project as it is until they lift', () => {
       const { current, view } = setup(projectOf(20, 10))
       view.fit()
       const under = { x: 700, y: 300 }
       const before = view.cellAt(under)
 
-      view.twistBy(25, under)
-      view.twistBy(12, under)
+      view.pinchStep({ turn: 25, anchor: under })
+      view.pinchStep({ turn: 12, anchor: under })
 
       expect(view.orientation.value).toBe(37)
+      expect(view.twistPhase.value).toBe('turning')
       expect(view.cellAt(under)).toEqual(before)
       expect(orientationOf(current.value!)).toBe(0)
     })
 
-    it('snaps to the quarter turn within 10° as the fingers lift, about the middle, and the Project keeps it with no refit', async () => {
-      const { current, kept, view } = setup(projectOf(20, 10))
+    it('is turning from the step the twist engages on, before the fingers have turned it', () => {
+      const { view } = setup(projectOf(20, 10))
       view.fit()
-      const middle = view.visibleCentre()
-      view.twistBy(83, { x: 900, y: 100 })
-      view.panBy(40, 0)
-      const centre = view.visibleCentre()
+      view.pinchStep({ zoom: 1.2, pan: { x: 3, y: 0 }, anchor: { x: 500, y: 400 } })
+      expect(view.twistPhase.value).toBeUndefined()
+      view.pinchStep({ turn: 0, anchor: { x: 500, y: 400 } })
+      expect(view.twistPhase.value).toBe('turning')
+      expect(view.orientation.value).toBe(0)
+    })
 
-      view.endTwist()
-      await nextTick()
+    it('zooms, moves and turns in one step: the bead under the fingers follows their move', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      const under = { x: 500, y: 400 }
+      const before = view.cellAt(under)
+      view.pinchStep({ zoom: 2, pan: { x: 60, y: -20 }, turn: 0, anchor: { x: 560, y: 380 } })
+      expect(view.zoom.value).toBe(2)
+      expect(view.cellAt({ x: 560, y: 380 })).toEqual(before)
+    })
 
-      expect(kept).toEqual([90])
-      expect(orientationOf(current.value!)).toBe(90)
-      expect(view.orientation.value).toBe(90)
-      expect(view.visibleCentre()).toEqual(centre)
-      expect(view.visibleCentre()).not.toEqual(middle)
+    it('eases onto the quarter turn within 10° as the fingers lift, about where they were, and the Project keeps it after the ease with no refit', async () => {
+      vi.useFakeTimers()
+      try {
+        const { current, kept, view } = setup(projectOf(20, 10))
+        view.fit()
+        const middle = view.visibleCentre()
+        view.pinchStep({ turn: 83, anchor: { x: 900, y: 100 } })
+        view.pinchStep({ pan: { x: 40, y: 0 }, anchor: { x: 900, y: 100 } })
+        const fingers = { x: 900, y: 100 }
+        const underFingers = view.cellAt(fingers)
+
+        view.endTwist(fingers)
+
+        // The view is already at the quarter turn, settling; the drawing eases there (ProjectSurface).
+        expect(view.orientation.value).toBe(90)
+        expect(view.twistPhase.value).toBe('settling')
+        expect(view.cellAt(fingers)).toEqual(underFingers)
+        expect(kept).toEqual([])
+        vi.advanceTimersByTime(SNAP_MS)
+        await nextTick()
+        expect(view.twistPhase.value).toBeUndefined()
+        expect(kept).toEqual([90])
+        expect(orientationOf(current.value!)).toBe(90)
+        expect(view.orientation.value).toBe(90)
+        expect(view.visibleCentre()).not.toEqual(middle)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('comes to rest at once at an angle further than 10° off a quarter turn', () => {
+      const { kept, view } = setup(projectOf(20, 10))
+      view.pinchStep({ turn: -30, anchor: { x: 500, y: 400 } })
+      view.endTwist({ x: 500, y: 400 })
+      expect(view.twistPhase.value).toBeUndefined()
+      expect(kept).toEqual([330])
     })
 
     it('zooms about the point under the fingers on screen while the view leans', () => {
       const { view } = setup(projectOf(20, 10))
       view.fit()
-      view.twistBy(30, { x: 500, y: 400 })
+      view.pinchStep({ turn: 30, anchor: { x: 500, y: 400 } })
       const under = { x: 800, y: 200 }
       const before = view.cellAt(under)
       view.setZoom(0.5, under)
       expect(view.cellAt(under)).toEqual(before)
     })
 
-    it('stays at an angle further than 10° off a quarter turn', () => {
-      const { kept, view } = setup(projectOf(20, 10))
-      view.twistBy(-30, { x: 500, y: 400 })
-      view.endTwist()
-      expect(kept).toEqual([330])
-    })
-
     it('moves the canvas with a drag along the screen, not along the leaning drawing', () => {
       const { view } = setup(projectOf(20, 10))
       view.fit()
-      view.twistBy(30, { x: 500, y: 400 })
+      view.pinchStep({ turn: 30, anchor: { x: 500, y: 400 } })
       const before = view.cellAt({ x: 600, y: 400 })
       view.panBy(100, 0)
       expect(view.cellAt({ x: 700, y: 400 })).toEqual(before)
@@ -231,8 +266,8 @@ describe('useCanvasView', () => {
 
     it('still fits again when the Rotate canvas button turns a quarter from the angle', async () => {
       const { current, view } = setup(projectOf(20, 10))
-      view.twistBy(30, { x: 500, y: 400 })
-      view.endTwist()
+      view.pinchStep({ turn: 30, anchor: { x: 500, y: 400 } })
+      view.endTwist({ x: 500, y: 400 })
       view.panBy(300, 300)
       current.value = rotateCanvas(current.value!)
       await nextTick()
