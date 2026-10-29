@@ -22,7 +22,7 @@ import type { PillRect } from '../../domain/toolPill'
 import { hasGuides } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -159,7 +159,7 @@ const frameTooltip = computed(() => {
   const project = shownProject.value
   const frame = project?.frame
   if (!project || !frame) return ''
-  const bead = resolveProjectBead(project)
+  const bead = layerOf(project, 'frame')?.bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { ...seenSize(frame), estimate })
 })
@@ -174,7 +174,7 @@ const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
   if (!project || !current) return undefined
-  const bead = resolveProjectBead(project)
+  const bead = layerOf(project, 'canvas').bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { columns: current.columns, rows: current.rows, estimate })
 })

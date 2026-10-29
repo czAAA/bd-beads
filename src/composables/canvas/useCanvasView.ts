@@ -2,7 +2,7 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
-import { projectCell, type ShapedBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -17,13 +17,13 @@ export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
 /** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every
  * bead, otherwise nothing.
  * @internal Its test checks what a view fits to on its own. */
-export function fitBox(project: Pick<Project, 'frame' | 'beads' | 'technique' | 'techniqueSettings'> & ShapedBead): Rect | undefined {
+export function fitBox(project: Project): Rect | undefined {
   // A turned Frame is fitted as it lies (ticket 0667).
-  return laidFrame(project) ?? beadBounds(project.beads)
+  return laidFrame(project) ?? beadBounds(layerOf(project, 'canvas').beads)
 }
 
 /** The layer a block is measured in: the Frame's own for the Frame itself (ticket 492), the Canvas's for anything else. */
-function layerOfBox(project: Pick<Project, 'frame' | 'technique' | 'techniqueSettings'> & ShapedBead, box: Rect): ViewLayer {
+function layerOfBox(project: Project, box: Rect): ViewLayer {
   const frame = laidFrame(project)
   return frame && sameFrame(box, frame) ? 'frame' : 'canvas'
 }
@@ -40,9 +40,10 @@ export function useCanvasView(
   /** Whether the view still tracks the fit rather than a place the person chose. */
   const isAtFit = ref(true)
 
-  /** The Canvas as the view stands, or at another zoom. */
-  function surfaceOf(project: Pick<Project, 'technique' | 'techniqueSettings' | 'rotation'> & Partial<Pick<Project, 'frame' | 'beadId' | 'beadShape'>>): SurfaceView {
-    return surfaceView({ space: OPEN_SPACE, technique: project.technique, techniqueSettings: project.techniqueSettings, cell: projectCell(project), frame: project.frame, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+  /** The Canvas as the view stands, or at another zoom; with no Project, an empty one in the default Technique. */
+  function surfaceOf(project: Project | undefined): SurfaceView {
+    const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project?.frame, rotation: project?.rotation ?? 0, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
   }
 
   function measured(): boolean {
@@ -109,7 +110,7 @@ export function useCanvasView(
     }
     const at = anchor ?? { x: viewport.value.width / 2, y: viewport.value.height / 2 }
     // Keeping a point still under a zoom does not depend on what is drawn, so a Project is not needed.
-    scroll.value = surfaceOf(currentProject() ?? { technique: DEFAULT_TECHNIQUE, rotation: 0 }).scrollAfterZoom(at, next)
+    scroll.value = surfaceOf(currentProject()).scrollAfterZoom(at, next)
     zoom.value = next
     isAtFit.value = false
   }

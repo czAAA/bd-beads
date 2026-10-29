@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
 import { projectColors } from '../../domain/layerBeads'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import { rowProgressOn, rowProgressPosition } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { shownDimensions } from '../../domain/projectExtent'
@@ -27,7 +27,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
     if (!project) {
       return undefined
     }
-    const bead = resolveProjectBead(project)
+    const bead = layerOf(project, 'canvas').bead
     return bead ? beadLabel(bead, deps.messages().formFactors) : deps.messages().projects.unknownBeadLabel
   })
 

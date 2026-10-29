@@ -4,7 +4,7 @@ import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/p
 import { listedColorName } from '../../i18n/colorName'
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
@@ -34,7 +34,7 @@ const SUMMARY_ROWS = 5
 
 /** Estimated weight (ticket 155, CONTEXT.md): count × average bead weight, never stored; no weight column if the
  * Bead has none. */
-const projectBead = computed(() => (props.project ? resolveProjectBead(props.project) : undefined))
+const projectBead = computed(() => (props.project ? layerOf(props.project, 'canvas').bead : undefined))
 const averageGrams = computed(() => gramsPerBead(projectBead.value))
 
 function weightOf(count: number): string | undefined {

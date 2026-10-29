@@ -6,6 +6,7 @@ import { shownDimensions } from '../../domain/projectExtent'
 import { summarizeProject } from '../../domain/projectLibrary'
 import { namedPieces } from '../../domain/pieceNames'
 import { piecesOf } from '../../domain/pieces'
+import { layerOf } from '../../domain/layerRecord'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -39,7 +40,7 @@ const exportAll = controlAction('export-all')
 const facts = computed(() =>
   new Map(
     props.projects.map((project) => {
-      const total = piecesOf(project.beads, project).length
+      const total = piecesOf(layerOf(project, 'canvas').beads, project).length
       const named = namedPieces(project).map((piece) => piece.name)
       const unnamed = total - named.length
       const lines = [...named, ...(unnamed > 0 && named.length > 0 ? [fillBlanks(t.value.projects.unnamedPieces, { count: unnamed })] : [])]
