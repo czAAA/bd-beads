@@ -13,8 +13,8 @@ import IconButton from '../ui/IconButton.vue'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on the editor and the Homepage (tickets 143, 540, ADR 0046, ADR 0073; CanvasStrip card):
-// three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo and the zoom
-// on the right (ticket 543). Under 1024px the words and the wordmark hide; on an editor phone there is no Brand.
+// three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo, the zoom and Export
+// on the right (tickets 543, 0652). Under 1024px the words and the wordmark hide; on an editor phone there is no Brand.
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page. */
   page?: 'editor' | 'homepage'
@@ -32,7 +32,7 @@ const props = defineProps<{
   zoomMaxPercent?: number
 }>()
 const emit = defineEmits<{
-  'select-panel': [sheet: 'menu' | 'project']
+  'select-panel': [sheet: 'menu' | 'project' | 'export']
   'toggle-frame': []
   'rotate-canvas': []
   'toggle-rulers': []
@@ -51,6 +51,7 @@ const actions = {
   coffee: controlAction('strip-coffee'),
   project: controlAction('strip-project'),
   frame: controlAction('strip-frame'),
+  export: controlAction('strip-export'),
   rotateCanvas: controlAction('rotate-canvas'),
   rulers: controlAction('rulers'),
   undo: controlAction('undo'),
@@ -149,6 +150,16 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
       </div>
+      <!-- Export (ticket 0652): the strip's last button, in its right corner; lit while the Export panel is open. -->
+      <IconButton
+        v-if="project"
+        variant="plain"
+        :icon-size="18"
+        :action="actions.export"
+        :selected="openPanel === 'export'"
+        data-testid="strip-export"
+        @click="emit('select-panel', 'export')"
+      />
     </div>
   </div>
 </template>
