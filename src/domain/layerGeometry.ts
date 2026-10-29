@@ -30,6 +30,10 @@ export interface LayerGeometry {
   hasPosition(position: GridPosition): boolean
   /** The positions whose beads touch this one's, each a position the Layer has: where a Fill spreads. */
   neighbors(position: GridPosition): GridPosition[]
+  /** On a Layer of rows (any Weave's grid, upright or turned): which columns of `toRow`, the row above or below, a bead
+   * of `row` touches, as offsets from its column, edge aside; along a row a bead touches the next column either side.
+   * What lets Fill flood a row span at a time (ticket 0677). None on a Custom frame, whose beads touch by its layout. */
+  readonly rowReach?: (row: number, toRow: number) => readonly [number, number]
   /** Where a position's bead lies, or none where the Layer has no such position. */
   place(position: GridPosition): BeadPlace | undefined
   /** The position whose bead a point is on, or none between beads, on a Seam, Off-shape or off the Layer. */
@@ -70,6 +74,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
     },
     hasPosition: has,
     neighbors: (position) => description.neighbors(bounds, position).filter(has),
+    rowReach: description.reach,
     place: (position) => (has(position) ? { box: box(position), angle: 0 } : undefined),
     positionAt: ({ x, y }) => {
       const found = description.positionAt(x, y, 1, height, within)
@@ -245,6 +250,7 @@ export function turnedGridGeometry(sheet: TurnedGrid): LayerGeometry {
     positions: upright.positions,
     hasPosition: upright.hasPosition,
     neighbors: upright.neighbors,
+    rowReach: upright.rowReach,
     place: (position) => {
       if (!upright.hasPosition(position)) return undefined
       const centre = toRectangle(description.center(position, 1, aspect))
