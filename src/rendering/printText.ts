@@ -16,7 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
-import { beadOfLayer, lettersOn, orientationOf, projectNameOf } from '../domain/layerRecord'
+import { beadOfLayer, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -120,7 +120,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
   const { columns, rows } = shownDimensions(project)
-  const [across, down] = rotationSwapsAxes(orientationOf(project)) ? [rows, columns] : [columns, rows]
+  const [across, down] = rotationSwapsAxes(quarterTurnOf(project)) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead, t.formFactors) : t.projects.unknownBeadLabel

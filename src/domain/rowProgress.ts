@@ -271,8 +271,10 @@ export function keepFinishedRows(before: Project, after: Project): Project {
   if (!frame || !was || !now || now === was) {
     return sameBeads(before, after) ? before : after
   }
+  // The Row order is worked out once for every changed bead, not for each (a Fill changes them all, ticket 0677).
+  const finished = finishedRowsOf(before)
   const reverts: BeadChange[] = changedPositions(was, now)
-    .filter(({ row, column }) => isInFinishedRow(before, { row: row + frame.row, column: column + frame.column, layer: 'frame' }))
+    .filter(({ row, column }) => finished({ row: row + frame.row, column: column + frame.column, layer: 'frame' }))
     .map(({ row, column }) => ({ row, column, color: colorAt(was, row, column) }))
   const kept = reverts.length === 0 ? after : withLayer(after, 'frame', { beads: withColors(now, reverts) })
   return sameBeads(before, kept) ? before : kept

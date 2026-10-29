@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
-import { rotateCanvas } from './rotate'
+import { rotateCanvas, turnCanvasTo } from './rotate'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, frameOf, orientationOf } from './layerRecord'
@@ -49,6 +49,16 @@ describe('normalizeProject', () => {
     const loaded = normalizeProject(JSON.parse(JSON.stringify(turned)))
     expect(orientationOf(loaded)).toBe(90)
     expect(orientationOf(rotateCanvas(rotateCanvas(rotateCanvas(loaded))))).toBe(0)
+  })
+
+  it('keeps a canvas twisted to any angle through a save and load, and reads a broken one as upright (ticket 0672)', () => {
+    const twisted = turnCanvasTo(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), 37.5)
+    expect(orientationOf(normalizeProject(JSON.parse(JSON.stringify(twisted))))).toBe(37.5)
+    const broken = JSON.parse(JSON.stringify(twisted))
+    broken.layers[0].orientation = 'sideways'
+    expect(orientationOf(normalizeProject(broken))).toBe(0)
+    broken.layers[0].orientation = 400
+    expect(orientationOf(normalizeProject(broken))).toBe(40)
   })
 
   it('backfills row progress and the rotation on a Project saved before they existed', () => {

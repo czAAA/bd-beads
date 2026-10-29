@@ -5,7 +5,7 @@ import type { LayoutPoint } from '../domain/frameLayout'
 import { CELL_SIZE_PX } from './cellSize'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion, projectExtentPx, type Region } from './surfaceView'
-import { beadsOfLayer, frameOf, type Layered, orientationOf } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // A Custom frame on a printed chart (ticket 0594): its beads lie at angles, not on rows and columns, so a chart page
 // places each one where its Layer geometry puts it, through the same transform as the rest of the page.
@@ -32,7 +32,7 @@ export function customChart(project: Layered, region: Region, zoom: number): { b
   // The Frame drawn on its own, as a chart is: its first position at 0, 0.
   const { rows, columns } = projectDimensions(project)
   const extent = projectExtentPx(weave.technique, columns, rows, weave.cell)
-  const [a, b, c, d, e, f] = gridToRegion(extent, region, zoom, orientationOf(project))
+  const [a, b, c, d, e, f] = gridToRegion(extent, region, zoom, quarterTurnOf(project))
   const at = ({ x, y }: LayoutPoint): LayoutPoint => ({ x: a * x + c * y + e, y: b * x + d * y + f })
   // A point of the Layer geometry, in bead widths, in grid px.
   const inGrid = ({ x, y }: LayoutPoint): LayoutPoint => ({ x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
