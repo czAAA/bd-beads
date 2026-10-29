@@ -21,7 +21,7 @@ import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -124,7 +124,7 @@ function onSizeFocusOut(event: FocusEvent): void {
 
 /** The Estimated size as "≈ 3.8 × 3.9 cm" (the Bead's size × beads across and down), or nothing for an unknown Bead. */
 const estimate = computed(() => {
-  const bead = resolveProjectBead(props.project)
+  const bead = layerOf(props.project, 'frame')?.bead
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
