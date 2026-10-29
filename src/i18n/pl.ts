@@ -348,6 +348,7 @@ export const pl: Translations = {
     hexLabel: 'Kolor szesnastkowy',
     hexInvalid: 'Wpisz kolor w postaci #1a2b3c.',
     previewLabel: 'Nowy kolor',
+    addToPalette: 'Dodaj {hex} do palety',
     pickFromCanvasLabel: 'Pobierz kolor z płótna',
     removed: 'Kolor usunięty z palety.',
     removeSwatch: 'Usuń {hex} z palety',

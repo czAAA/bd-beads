@@ -417,6 +417,8 @@ export interface Translations {
     hexInvalid: string
     /** The preview swatch's name: the color the picker would take. */
     previewLabel: string
+    /** The + on the Custom color picker's preview (ticket 0690): adds the color and keeps the picker open. */
+    addToPalette: string
     pickFromCanvasLabel: string
     /** The toast after an added swatch is removed (ticket 228); its Undo is `undoButton`. */
     removed: string
