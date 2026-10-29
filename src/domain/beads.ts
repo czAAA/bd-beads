@@ -130,7 +130,7 @@ const DELICA: FormFactor = {
   colorCatalog: 'miyuki-delica',
 }
 
-/** Miyuki's Round Rocailles: drawn like TOHO's Round, but with Miyuki's own Color catalog, empty until one is made. */
+/** Miyuki's Round Rocailles: drawn like TOHO's Round, but with Miyuki's own Color catalog (ticket 0693). */
 const MIYUKI_ROUND: FormFactor = { ...ROUND, colorCatalog: 'miyuki-round' }
 
 type BeadParts = Omit<Bead, 'id'>

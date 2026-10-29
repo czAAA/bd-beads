@@ -69,7 +69,7 @@ describe('the Starter setup', () => {
     await wrapper.get('[data-testid="starter-name-input"]').setValue('  Wings ')
     await wrapper.get('[data-testid="starter-size-increase-rows"]').trigger('click')
     await wrapper.get('form').trigger('submit')
-    const frame = { weave: { technique: 'peyote' }, beadId: 'miyuki/delica/11-0', beadShape: 'symmetric', background: expect.anything() }
+    const frame = { weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } }, beadId: 'miyuki/delica/11-0', beadShape: 'symmetric', background: expect.anything() }
     expect(wrapper.emitted('submit')).toEqual([
       [{ sizes: { rows: 21 }, picks: {}, useDesign: true, name: 'Kite', ...frame }],
       [{ sizes: { rows: 22 }, picks: {}, useDesign: false, name: 'Wings', ...frame }],

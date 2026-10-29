@@ -153,12 +153,12 @@ describe('previewLattice', () => {
     expect(lattice.frameRow).toBe(0)
   })
 
-  it('keeps the frame on a multiple of 2N rows with a Brick block of N (ticket 477)', () => {
+  it('keeps the frame on a multiple of 2N rows with a Drop of N (ticket 477)', () => {
     const tall = { width: 50, height: 400 }
     const brickFrame = frameSizeMm('brick', dimensions, cubeBead)
     const view = framingView(tall, brickFrame, 1, CENTERED_PAN)
 
-    const lattice = previewLattice({ view, frame: brickFrame, dimensions, bead: cubeBead, technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    const lattice = previewLattice({ view, frame: brickFrame, dimensions, bead: cubeBead, technique: 'brick', techniqueSettings: { brickDrop: 3 } })
 
     expect(lattice.frameRow).toBeGreaterThan(0)
     expect(lattice.frameRow % 6).toBe(0)

@@ -27,21 +27,38 @@ interface Flood {
   beads: () => BeadMap
 }
 
-function flood({ beads, geometry, edge }: LayerSheet, start: GridPosition, color: string | null): Flood {
+function flood({ beads, geometry, edge, frame }: LayerSheet, start: GridPosition, color: string | null): Flood {
   const target = colorAt(beads, start.row, start.column)
   const limit = edge ? undefined : openLimit(beads, start)
+  // A Frame without a shape holds its whole edge, asked without making a position (ticket 0677); a shaped or Custom
+  // one, and the open Canvas, answer by their geometry.
+  const holds =
+    edge && !frame?.shape
+      ? (row: number, column: number) => row >= edge.row && row < edge.row + edge.rows && column >= edge.column && column < edge.column + edge.columns
+      : (row: number, column: number) => geometry.hasPosition({ row, column })
   let next: BeadMap | undefined
   const copied = new Set<number>()
+  // The row a span is scanned along, looked up once for the span rather than once a bead.
+  let atRow: number | undefined
+  let rowBeads: Record<number, string> | undefined
+  const beadsOf = (row: number) => {
+    if (row !== atRow) {
+      atRow = row
+      rowBeads = (next ?? beads)[row]
+    }
+    return rowBeads
+  }
   return {
     takes: (row, column) =>
-      ((next ?? beads)[row]?.[column] ?? null) === target &&
+      (beadsOf(row)?.[column] ?? null) === target &&
       (!limit || frameContains(limit, { row, column })) &&
-      geometry.hasPosition({ row, column }),
+      holds(row, column),
     paint: (row, column) => {
       next ??= { ...beads }
       if (!copied.has(row)) {
         next[row] = { ...beads[row] }
         copied.add(row)
+        atRow = undefined
       }
       if (color === null) delete next[row]![column]
       else next[row]![column] = color

@@ -1,6 +1,6 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
 import { isFrameShape, type QuarterTurns } from './frameShape'
-import { liftFlatWeave, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
+import { liftFlatWeave, renamedBrickBlock, renamedBrickBlocks, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import type { FrameLayer, Grid, Project } from './project'
 import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
@@ -27,12 +27,12 @@ type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded' | 'shape'> & FlatWeave &
  * before, its Brick block was flat. Read only. */
 export type EncodedFlatProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
 
-/** A layer as a file (version 12) and the library (version 5) store it (ADR 0079, ticket 0664): everything it holds,
+/** A layer as a file (version 13) and the library (version 6) store it (ADR 0079, ticket 0664): everything it holds,
  * its beads (and a Frame's Folded beads) in the compact form, and its orientation in degrees; a Frame's place, Frame
  * shape and settings, and Row progress beside them. */
 export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
-/** A Project as a file (version 12) and the library (version 5) store it (ticket 0664): what is one per file, and its
+/** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its
  * layers in order, the Canvas first. */
 export type EncodedProject = Omit<Project, 'layers'> & { layers: EncodedLayer[] }
 
@@ -107,6 +107,9 @@ function encodeBeads(beads: BeadMap): EncodedBeads {
     }
   }
 
+  // A run of one color asks the table once (a Fill's rows are mostly one color, ticket 0677).
+  let lastColor: string | undefined
+  let lastSlot = EMPTY_INDEX
   forEachBead(beads, (row, column, color) => {
     if (row !== currentRow) {
       closeRow()
@@ -119,7 +122,11 @@ function encodeBeads(beads: BeadMap): EncodedBeads {
     if (column > nextColumn) {
       push(EMPTY_INDEX, column - nextColumn)
     }
-    push(slotFor(color), 1)
+    if (color !== lastColor) {
+      lastColor = color
+      lastSlot = slotFor(color)
+    }
+    push(lastSlot, 1)
     nextColumn = column + 1
   })
   closeRow()
@@ -201,7 +208,7 @@ function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
   }
 }
 
-/** The Project a file version 12 or library version 5 value holds (ticket 0664); it still goes through normalizeProject.
+/** The Project a file version 13 or library version 6 value holds (ticket 0664); it still goes through normalizeProject.
  * A Frame's orientation is read back as its quarter turns. */
 export function decodeProject(encoded: EncodedProject): LayeredProject {
   const [canvas, ...frames] = encoded.layers.map(decodeLayer)
@@ -213,17 +220,27 @@ function decodeLayer({ encodedBeads, encodedFolded, ...layer }: EncodedLayer): S
   return { ...layer, beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
-/** The Project a file version 11 value holds, flat as before its layers (ticket 0664), each Weave's settings a map; it
- * still goes through normalizeProject. */
+/** The Project a file version 12 or library version 5 value holds: as version 13's, each layer's Brick block read as
+ * brick stitch's Drop (ticket 0691). */
+export function decodeVersionTwelveProject(encoded: EncodedProject): LayeredProject {
+  const project = decodeProject(encoded)
+  return { ...project, layers: project.layers.map(renamedBrickBlock) }
+}
+
+/** The Project a file version 11 value holds, flat as before its layers (ticket 0664), each Weave's settings a map
+ * whose Brick block is read as brick stitch's Drop (ticket 0691); it still goes through normalizeProject. */
 export function decodeVersionElevenProject(encoded: EncodedFlatProject): SavedProject {
-  const { encodedBeads, frame, ...rest } = encoded
-  return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
+  return renamedBrickBlocks(decodedFlat(encoded))
 }
 
 /** The Project a value of file version 4 to 10, or of the library, holds: each layer's flat Brick block read into its
- * settings map (ticket 0636). */
+ * settings map (ticket 0636) as brick stitch's Drop (ticket 0691). */
 export function decodeFlatProject(encoded: EncodedFlatProject): SavedProject {
-  return liftFlatWeave(decodeVersionElevenProject(encoded))
+  return liftFlatWeave(decodedFlat(encoded))
+}
+
+function decodedFlat({ encodedBeads, frame, ...rest }: EncodedFlatProject): SavedProject {
+  return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
 }
 
 /** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts), its

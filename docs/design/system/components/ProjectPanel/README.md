@@ -34,6 +34,6 @@ Not here any more: the size estimate, Frame from starter and Beads needed (all i
 
 ## Copy
 
-English: project:, name:, maker:, Saved in local browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Brick block, Bead shape, Symmetric, Real, Bead, Project file, Duplicate, Clear all beads, Delete project. Russian: `writing.md` (Panels redesign).
+English: project:, name:, maker:, Saved in local browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Drop, Bead shape, Symmetric, Real, Bead, Project file, Duplicate, Clear all beads, Delete project. Russian: `writing.md` (Panels redesign).
 
 Hand-written from spec 0440, the Menu and Project mockups and the ticket 0553 canvas; static rendition.

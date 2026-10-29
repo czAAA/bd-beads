@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import SettingStepper from './SettingStepper.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
-import { BRICK_BLOCK_SETTING } from '../../domain/weave'
+import { BRICK_DROP_SETTING } from '../../domain/weave'
 import type { SettingSpec } from '../../domain/settingSpec'
 
 beforeEach(() => {
@@ -23,17 +23,17 @@ function mountStepper(setting: SettingSpec, start: number, props: Record<string,
 
 describe('SettingStepper (ticket 0624)', () => {
   it('is named and bounded by its description, stepping by its step', async () => {
-    const { wrapper, value } = mountStepper({ ...BRICK_BLOCK_SETTING, step: 2 }, 1)
+    const { wrapper, value } = mountStepper({ ...BRICK_DROP_SETTING, step: 2 }, 1)
 
-    expect(wrapper.get('[data-testid="s"]').text()).toContain('Brick block')
-    expect(wrapper.get('[data-testid="s-less"]').attributes('aria-label')).toBe('Fewer rows in a block')
+    expect(wrapper.get('[data-testid="s"]').text()).toContain('Drop')
+    expect(wrapper.get('[data-testid="s-less"]').attributes('aria-label')).toBe('Fewer beads in each stitch')
     expect(wrapper.get('[data-testid="s-less"]').attributes('disabled')).toBeDefined()
     await wrapper.get('[data-testid="s-more"]').trigger('click')
     expect(value.value).toBe(3)
   })
 
   it('settles a typed value on a step within its range', async () => {
-    const { wrapper, value } = mountStepper({ ...BRICK_BLOCK_SETTING, step: 2 }, 5)
+    const { wrapper, value } = mountStepper({ ...BRICK_DROP_SETTING, step: 2 }, 5)
     await wrapper.get('[data-testid="s-value"] button').trigger('click')
     const input = wrapper.get<HTMLInputElement>('input')
 
@@ -43,13 +43,13 @@ describe('SettingStepper (ticket 0624)', () => {
   })
 
   it('shows its hover text where its words have one, and none where they have none', () => {
-    const block = mountStepper(BRICK_BLOCK_SETTING, 1).wrapper.findComponent(AppTooltip)
-    expect(block.props()).toMatchObject({ name: 'Brick block', body: expect.stringContaining('Rows woven straight') })
-    expect(mountStepper({ ...BRICK_BLOCK_SETTING, labelKey: 'unworded' }, 1).wrapper.findComponent(AppTooltip).exists()).toBe(false)
+    const block = mountStepper(BRICK_DROP_SETTING, 1).wrapper.findComponent(AppTooltip)
+    expect(block.props()).toMatchObject({ name: 'Drop', body: 'Beads picked up in each stitch: they sit straight beside each other before the next ones shift by half a bead. 1 is ordinary brick stitch.' })
+    expect(mountStepper({ ...BRICK_DROP_SETTING, labelKey: 'unworded' }, 1).wrapper.findComponent(AppTooltip).exists()).toBe(false)
   })
 
   it('locks with its reason while disabled', () => {
-    const { wrapper } = mountStepper(BRICK_BLOCK_SETTING, 2, { disabled: true, disabledBody: 'Rows are done.' })
+    const { wrapper } = mountStepper(BRICK_DROP_SETTING, 2, { disabled: true, disabledBody: 'Rows are done.' })
 
     expect(wrapper.get('[data-testid="s-more"]').attributes('aria-disabled')).toBe('true')
     expect(wrapper.findComponent(AppTooltip).props()).toMatchObject({ disabled: true, disabledBody: 'Rows are done.' })

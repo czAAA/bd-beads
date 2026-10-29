@@ -472,7 +472,7 @@ Russian, Ukrainian and Polish here are proposals for review with the build. "Ш�
 
 ## Layer settings copy (ticket 0670)
 
-The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Brick block, Bead shape, Symmetric, Real, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
+The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Drop, Bead shape, Symmetric, Real, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

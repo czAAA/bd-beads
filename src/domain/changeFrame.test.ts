@@ -172,7 +172,7 @@ describe('changeFrame', () => {
       const project = framed({ frame: sheet(frame, withColors({}, [{ row: 1, column: 1, color: '#111111' }])), beads: withColors({}, [{ row: 40, column: 1, color: '#222222' }]) })
       const result = changeFrame(project, { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(frameSheetOf(result.project)).toEqual({ ...frameSheetOf(project), technique: 'peyote' })
+      expect(frameSheetOf(result.project)).toEqual({ ...frameSheetOf(project), technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
       expect(canvasOf(result.project).technique).toBe('loom')
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(beadsOfLayer(project, 'canvas'))
     })
@@ -191,44 +191,44 @@ describe('changeFrame', () => {
     it('leaves a Frame on an odd row where it is: its own row 0 is straight whatever the Canvas does', () => {
       const odd = framed({ frame: sheet({ row: 11, column: 10, rows: 6, columns: 4 }, withColors({}, [{ row: 0, column: 2, color: '#111111' }])) })
       const result = changeFrame(odd, { technique: 'peyote' })
-      expect(result.kind === 'changed' && frameSheetOf(result.project)).toEqual({ ...frameSheetOf(odd), technique: 'peyote' })
+      expect(result.kind === 'changed' && frameSheetOf(result.project)).toEqual({ ...frameSheetOf(odd), technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
     })
   })
 
-  describe('Brick block (ticket 477)', () => {
+  describe('Drop (ticket 477)', () => {
     const brick = () => framed({ frame: { ...sheet(frame), technique: 'brick' } })
 
-    it('changes only the Frame\'s Brick block: its place and beads keep their rows and columns', () => {
+    it('changes only the Frame\'s Drop: its place and beads keep their rows and columns', () => {
       const project = framed({ frame: { ...sheet({ row: 12, column: 3, rows: 6, columns: 4 }, withColors({}, [{ row: 1, column: 1, color: '#111111' }])), technique: 'brick' } })
-      const result = changeFrame(project, { techniqueSettings: { brickBlock: 3 } })
+      const result = changeFrame(project, { techniqueSettings: { brickDrop: 3 } })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(frameSheetOf(result.project)).toEqual({ ...frameSheetOf(project), techniqueSettings: { brickBlock: 3 } })
+      expect(frameSheetOf(result.project)).toEqual({ ...frameSheetOf(project), techniqueSettings: { brickDrop: 3 } })
       expect(canvasOf(result.project).techniqueSettings).toBeUndefined()
     })
 
-    it('is no change to the Brick block it already has, and 1 when none is stored', () => {
+    it('is no change to the Drop it already has, and 1 when none is stored', () => {
       const project = brick()
-      expect(changeFrame(project, { techniqueSettings: { brickBlock: 1 } })).toEqual({ kind: 'unchanged', project })
-      const three = withLayers(project, { frame: { ...frameOf(project)!, techniqueSettings: { brickBlock: 3 } } })
-      expect(changeFrame(three, { techniqueSettings: { brickBlock: 3 } })).toEqual({ kind: 'unchanged', project: three })
+      expect(changeFrame(project, { techniqueSettings: { brickDrop: 1 } })).toEqual({ kind: 'unchanged', project })
+      const three = withLayers(project, { frame: { ...frameOf(project)!, techniqueSettings: { brickDrop: 3 } } })
+      expect(changeFrame(three, { techniqueSettings: { brickDrop: 3 } })).toEqual({ kind: 'unchanged', project: three })
     })
 
     it('keeps the value when the Technique is switched away and back', () => {
-      const three = withLayers(brick(), { frame: { ...frameOf(brick())!, techniqueSettings: { brickBlock: 3 } } })
+      const three = withLayers(brick(), { frame: { ...frameOf(brick())!, techniqueSettings: { brickDrop: 3 } } })
       const peyote = changeFrame(three, { technique: 'peyote' })
       if (peyote.kind !== 'changed') throw new Error('expected a change')
       const back = changeFrame(peyote.project, { technique: 'brick' })
-      expect(back.kind === 'changed' && frameOf(back.project)?.techniqueSettings?.brickBlock).toBe(3)
+      expect(back.kind === 'changed' && frameOf(back.project)?.techniqueSettings?.brickDrop).toBe(3)
     })
 
     it('holds a value from 1 to 20', () => {
-      const high = changeFrame(brick(), { techniqueSettings: { brickBlock: 99 } })
-      expect(high.kind === 'changed' && frameOf(high.project)?.techniqueSettings?.brickBlock).toBe(20)
+      const high = changeFrame(brick(), { techniqueSettings: { brickDrop: 99 } })
+      expect(high.kind === 'changed' && frameOf(high.project)?.techniqueSettings?.brickDrop).toBe(20)
     })
 
     it('is refused once a pass is done (Row progress)', () => {
       const started = framed({ frame: { ...sheet(frame), technique: 'brick' }, rowProgress: woven('rows', 2, 0) })
-      expect(changeFrame(started, { techniqueSettings: { brickBlock: 2 } })).toEqual({ kind: 'refused', reason: 'locked' })
+      expect(changeFrame(started, { techniqueSettings: { brickDrop: 2 } })).toEqual({ kind: 'refused', reason: 'locked' })
     })
   })
 
@@ -262,21 +262,21 @@ describe('changeFrame', () => {
 
     it('leaves behind no setting no Technique describes', () => {
       const stray = changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { beadsPerLoop: 7 } })
-      expect(canvasOf(stray).techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(canvasOf(stray).techniqueSettings).toEqual({ brickDrop: 1 })
     })
 
-    it('takes the Brick block given with the switch to brick stitch, and keeps the layer\'s own when none is given (ticket 568)', () => {
-      expect(layersView(changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 3 } }))).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
-      const brick = changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 4 } })
-      expect(canvasOf(changeCanvasWeave(brick, { technique: 'peyote' })).techniqueSettings).toEqual({ brickBlock: 4 })
-      const result = changeFrame(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 2 } })
-      expect(result.kind === 'changed' && frameOf(result.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
-      expect(changeFrame(framed(), { technique: 'loom', techniqueSettings: { brickBlock: 1 } }).kind).toBe('unchanged')
+    it('takes the Drop given with the switch to brick stitch, and keeps the layer\'s own when none is given (ticket 568)', () => {
+      expect(layersView(changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickDrop: 3 } }))).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
+      const brick = changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { brickDrop: 4 } })
+      expect(canvasOf(changeCanvasWeave(brick, { technique: 'peyote' })).techniqueSettings).toEqual({ brickDrop: 4, peyoteDrop: 1 })
+      const result = changeFrame(framed(), { technique: 'brick', techniqueSettings: { brickDrop: 2 } })
+      expect(result.kind === 'changed' && frameOf(result.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 2 } })
+      expect(changeFrame(framed(), { technique: 'loom', techniqueSettings: { brickDrop: 1 } }).kind).toBe('unchanged')
     })
 
-    it('changes the Brick block of a brick stitch Canvas', () => {
-      const result = changeCanvasWeave(framed({ technique: 'brick' }), { techniqueSettings: { brickBlock: 3 } })
-      expect(canvasOf(result).techniqueSettings).toEqual({ brickBlock: 3 })
+    it('changes the Drop of a brick stitch Canvas', () => {
+      const result = changeCanvasWeave(framed({ technique: 'brick' }), { techniqueSettings: { brickDrop: 3 } })
+      expect(canvasOf(result).techniqueSettings).toEqual({ brickDrop: 3 })
       expect(frameOf(result)?.techniqueSettings).toBeUndefined()
     })
   })
@@ -557,7 +557,7 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
   const GREEN = '#333333'
   const GREY = '#999999'
   /** A peyote Frame on a loom Canvas: its rows nest closer than the Canvas's, so positions do not match one to one. */
-  const peyote = (beads: FrameSheet['beads'], overrides: LayersChange = {}): Project => framed({ frame: { ...sheet(frame, beads), technique: 'peyote' }, ...overrides })
+  const peyote = (beads: FrameSheet['beads'], overrides: LayersChange = {}): Project => framed({ frame: { ...sheet(frame, beads), technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } }, ...overrides })
   const own = withColors({}, [{ row: 0, column: 0, color: RED }, { row: 1, column: 3, color: BLUE }, { row: 4, column: 2, color: GREEN }])
   const changed = (project: Project, change: FrameChange): Project => {
     const result = changeFrame(project, change)
@@ -683,10 +683,11 @@ describe('a Frame woven like the Canvas trades beads with it on a resize (ticket
   })
 
   it.each([
-    ['loom', {}],
-    ['peyote', {}],
-    ['brick', { techniqueSettings: { brickBlock: 2 } }],
-  ] as const)('gives up its top rows to the Canvas and takes them back, leaving both as they were, on %s', (technique, weave) => {
+    ['loom', 'loom', {}],
+    ['peyote', 'peyote', { techniqueSettings: { peyoteDrop: 1 } }],
+    ['2-drop peyote', 'peyote', { techniqueSettings: { peyoteDrop: 2 } }],
+    ['brick', 'brick', { techniqueSettings: { brickDrop: 2 } }],
+  ] as const)('gives up its top rows to the Canvas and takes them back, leaving both as they were, on %s', (_name, technique, weave) => {
     const canvas = withColors({}, [{ row: 30, column: 30, color: GREY }])
     const start = framed({ technique, ...weave, beads: canvas, frame: { ...sheet({ ...frame, row: 8, rows: 8 }, own), technique, ...weave } })
     const shrunk = changed(start, { set: frameWithEdgeStep(frameWeave(start), frameOf(start)!, 'top', -1) })

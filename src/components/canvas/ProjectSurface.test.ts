@@ -11,6 +11,7 @@ import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
+import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
@@ -236,12 +237,10 @@ describe('ProjectSurface', () => {
       expect(ruled()).toEqual([4])
     })
 
-    /** The Project with one bead of one row painted. */
+    /** The Project with one bead of one row painted, as the app paints (ADR 0036): the row touched is copied, the
+     * others and an unchanged bead's row shared. */
     function painted(project: Project, row: number, column: number): Project {
-      return withFrameGrid(
-        project,
-        frameGrid(project).map((cells, index) => (index === row ? cells.map((cell, at) => (at === column ? { color: '#e63746' } : cell)) : cells)),
-      )
+      return paintAt(project, [{ row, column }], '#e63746')
     }
 
     it('draws only the rows it changed, and their neighbours', async () => {
@@ -300,7 +299,7 @@ describe('ProjectSurface', () => {
       ['piece names', (project: Project): Project => (withLayers(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
       ['Technique', (project: Project): Project => (withLayers(project, { technique: 'peyote' }))],
       ['Bead', (project: Project): Project => (withLayers(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],
-      ['brick block', (project: Project): Project => (withLayers(project, { techniqueSettings: { brickBlock: 3 } }))],
+      ['Drop', (project: Project): Project => (withLayers(project, { techniqueSettings: { brickDrop: 3 } }))],
       ['rotation', (project: Project): Project => (withLayers(project, { orientation: 90 }))],
     ])('draws everything again when the %s changes, though no bead changed color', async (_name, change) => {
       viewport = { width: 400, height: 600 }
