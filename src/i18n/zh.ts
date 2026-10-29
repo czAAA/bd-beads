@@ -731,7 +731,6 @@ export const zh: Translations = {
     increaseColorsButton: '增加颜色',
     wizard: {
       title: '转换图片',
-      close: '关闭',
       sections: { picture: '图片', bead: '珠子与技法', size: '尺寸', colors: '颜色', review: '检查' },
       rail: { picture: '图片', bead: '珠子', size: '尺寸', colors: '颜色', review: '检查' },
       railLabel: '步骤',
@@ -897,6 +896,10 @@ export const zh: Translations = {
     importFile: '从 .openbeads 文件打开项目。',
     changeName: '更改印在导出文件上的制作者姓名。',
     convertImage: '把图片变成图样。',
+    treatAsEmpty: '点按预览上的颜色，它的珠子就会留空。',
+    customRatio: '自己设定每颗珠子的像素数，或每个像素的珠子数。',
+    remapColor: '选择这个图片颜色要变成的珠子颜色。',
+    emptyColor: '去掉这个颜色，它的珠子留空。',
     list: (names) => `${names.join('、')}。`,
   },
 }
