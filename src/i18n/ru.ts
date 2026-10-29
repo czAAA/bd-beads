@@ -820,8 +820,6 @@ export const ru: Translations = {
       resultPerPixel: '1 px = {n} × {n} бисерин',
       colorsCount: { other: 'цветов: {count}' },
       noPicture: 'Изображения пока нет',
-      discardQuestion: 'Сбросить конвертацию?',
-      discard: 'Сбросить',
       previewName: 'Превью: {size}, {colors}',
       previewEmpty: 'Превью: изображения пока нет',
       zoomLevel: '{percent} %',
