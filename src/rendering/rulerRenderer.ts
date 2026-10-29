@@ -1,4 +1,5 @@
 import { frameContains, type Rect } from '../domain/canvas'
+import { laidFrame } from '../domain/frameOrientation'
 import { namedPieces } from '../domain/pieceNames'
 import { currentPass, frameRowOrder, rowProgressOn } from '../domain/rowProgress'
 import type { DrawingContext } from './beadLook'
@@ -57,7 +58,8 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
   const currentLine = frameRowOrder(project).lineOf(currentPass(project.rowProgress))
-  const current = rowMarks && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
+  // A turned Frame's rulers count the cells it covers, not its own rows (ticket 0667): no line of them is the current one.
+  const current = rowMarks && frame && !frame.quarterTurns && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
 
   const weight = current || label.fifth ? 700 : 400
   context.font = `${weight} ${fontPx}px ${MONO_FONT}`
@@ -118,7 +120,8 @@ function drawRowPointer(context: DrawingContext, { project, surface, layout }: R
   const columns = project.rowProgress.direction === 'columns'
   const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
   const along = surface.beadStep('frame')[columns ? 'row' : 'column']
-  const across = Math.abs(along.x) >= Math.abs(along.y)
+  // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
+  const across = Math.abs(along.x) >= Math.abs(along.y) !== ((frame.quarterTurns ?? 0) % 2 === 1)
   const shown = surface.beadBox(box, 'frame')
   context.fillStyle = theme.marker
   context.beginPath()
@@ -148,14 +151,15 @@ const NAME_GAP_PX = 4
 // color; read at any zoom.
 function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
   // The Frame's name, when it was made from a named Piece (ticket 489), stands under the Frame as a Piece's does.
-  const frame = project.frame
+  // A turned Frame's name stands under it as it lies (ticket 0667).
+  const frame = laidFrame(project)
   const covered = (piece: Rect) =>
     frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
   const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = namedPieces(project)
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
-  if (project.frame?.name) {
-    pieces.push({ ...project.frame, name: project.frame.name, layer: 'frame' })
+  if (frame && project.frame?.name) {
+    pieces.push({ ...frame, name: project.frame.name, layer: 'frame' })
   }
   if (pieces.length === 0) {
     return

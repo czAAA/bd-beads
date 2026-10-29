@@ -5,6 +5,7 @@ import { colorAt, frameContains } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
+import { laidFrame } from '../domain/frameOrientation'
 import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
 import type { Project } from '../domain/project'
@@ -69,8 +70,9 @@ function visibleBeadsOpen(weave: Weave, area: { left: number; right: number; top
 }
 
 /** The beads in view of a space: with no edge on the Canvas, and within the Project otherwise. `origin` is where the
- * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). */
-function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
+ * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). The overlay culls by it
+ * too (ticket 0675). */
+export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
   const seen = regionInGridSpace(space.extent, region, zoom, rotation)
   const area = { left: seen.left - origin.x, right: seen.right - origin.x, top: seen.top - origin.y, bottom: seen.bottom - origin.y }
   return space.open ? visibleBeadsOpen(weave, area) : visibleBeads(weave, space.columns, space.rows, area)
@@ -128,7 +130,8 @@ function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSe
     return own
   }
   const origin = frameOriginPx(canvas, frame)
-  const drawn = layerExtentPx(held, frame.columns, frame.rows)
+  const laid = laidFrame(project)!
+  const drawn = layerExtentPx(held, laid.columns, laid.rows)
   const left = Math.min(own.x, origin.x)
   const top = Math.min(own.y, origin.y)
   return { x: left, y: top, width: Math.max(own.x + own.width, origin.x + drawn.width) - left, height: Math.max(own.y + own.height, origin.y + drawn.height) - top }

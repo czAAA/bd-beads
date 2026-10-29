@@ -1,11 +1,11 @@
 import { beadPitchMm, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
-import { fringeLayout, kaleidocycleLayout, kiteLayout, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
-import type { GridDimensions } from './grid'
-import { gridGeometry, layoutGeometry, type LayerGeometry } from './layerGeometry'
+import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import type { GridDimensions, GridPosition } from './grid'
+import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
-import { describeWeave, type Technique, type Weave } from './weave'
+import { describeWeave, TECHNIQUES, type Technique, type Weave } from './weave'
 
 /** The Frame shapes (spec 0590, ADR 0077, ADR 0079): what specialises a Frame into a Custom frame. A Triangle and a
  * Warped Square in Rounds (ticket 0592), a Star and a Kaleidocycle of such parts, a Kite in Rows from its point (ticket
@@ -31,7 +31,8 @@ export type FrameSettings = Partial<Record<FrameSettingName, number>> & { fringe
  * earring's top has fewer rows than its base has beads, so it ends on a pair: StarterGallery card). */
 type FrameSetting = SettingSpec<FrameSettingName>
 
-/** How many quarter turns clockwise a Custom frame's layout lies at (Rotate Frame, ticket 0594). */
+/** How many quarter turns clockwise a Frame lies at on the Canvas (Rotate Frame, tickets 0594, 0667, ADR 0079): a Custom
+ * frame's layout, or a Frame's own grid, turned. One setting for both. */
 export type QuarterTurns = 1 | 2 | 3
 
 /** What a Custom frame's layout is built from: its Frame shape, its settings and how far it is turned. */
@@ -54,12 +55,11 @@ interface FrameRules {
   /** Its Estimated size in mm (CONTEXT.md) on a Bead, before the view turns it: a Bead's pitch a column and its height a
    * row, or a Custom frame as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592). */
   sizeMm(frame: Measured, bead: Bead): { widthMm: number; heightMm: number }
-  /** What Remove Frame does with the Frame's beads: drop them onto the Canvas where they stand (ticket 497), or
-   * remove them with the Frame. */
-  removedBeads: 'dropped' | 'removed'
+  /** The Techniques it may be woven in: any, or those its Frame shape supports (ADR 0079). */
+  techniques: readonly Technique[]
   /** How Row progress steps through the Frame, worked one way. */
   rowOrder(sheet: ShapedSheet, way: RowWay): RowOrder
-  /** A Custom frame's shape comes from its settings, so it is turned and selected on but never reshaped as a rectangle. */
+  /** What it offers: everything, or on a Custom frame all but Remove row/column, which needs plain rows (ADR 0079). */
   allows: ReadonlySet<FrameAction>
 }
 
@@ -76,9 +76,13 @@ export interface FrameShape extends FrameRules {
 
 /** A Frame without a Frame shape: its beads in its Weave's rows over its own rectangle, every action open to it. */
 const FRAME: FrameRules = {
-  geometry: (sheet) => gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns }),
-  sizeMm: ({ columns, rows }, bead) => ({ widthMm: columns * beadPitchMm(bead), heightMm: rows * bead.heightMm }),
-  removedBeads: 'dropped',
+  // Turned (ticket 0667), its own grid is drawn turned in the rectangle it covers.
+  geometry: (sheet) => (sheet.quarterTurns ? turnedGridGeometry(sheet) : gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns })),
+  sizeMm: ({ columns, rows, quarterTurns }, bead) => {
+    const upright = { widthMm: columns * beadPitchMm(bead), heightMm: rows * bead.heightMm }
+    return (quarterTurns ?? 0) % 2 === 1 ? { widthMm: upright.heightMm, heightMm: upright.widthMm } : upright
+  },
+  techniques: TECHNIQUES,
   // Chosen by the Frame's Technique, through its Weave's passes.
   rowOrder: rowsOrder,
   allows: new Set(['resize', 'remove-line', 'from-selection', 'rotate', 'technique', 'select']),
@@ -97,8 +101,9 @@ const TOP_WIDTH: FrameSetting = { id: 'topWidth', labelKey: 'topWidth', min: 2, 
 const TOP_ROWS: FrameSetting = { id: 'topRows', labelKey: 'topRows', min: 1, max: 29, step: 1, default: 6, presets: [4, 6, 8], lossOnChange: true, below: 'topWidth' }
 const FRINGE_LENGTH: FrameSetting = { id: 'fringeLength', labelKey: 'fringeLength', min: 2, max: 80, step: 1, default: 12, presets: [8, 12, 16], lossOnChange: true }
 
-/** What a Custom frame offers (ticket 0594): a Selection over it by a rectangle on screen, and Rotate Frame. */
-const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['rotate', 'select'])
+/** What a Custom frame offers (ADR 0079, ticket 0669): every Frame action, each done through its shape, but Remove
+ * row/column, which needs plain rows. */
+const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['resize', 'from-selection', 'rotate', 'technique', 'select'])
 
 /** A Frame shape's own: the Techniques it supports, its settings and styles, and its panel builder. */
 type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'layout'>
@@ -113,7 +118,6 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
       const { width, height } = laidLayout(frame)
       return { widthMm: width * beadPitchMm(bead), heightMm: height * beadPitchMm(bead) }
     },
-    removedBeads: 'removed',
     rowOrder: (sheet) => layoutOrder(laidLayout(sheet), lines),
     allows: CUSTOM_ALLOWS,
     ...own,
@@ -158,14 +162,24 @@ function rulesOf(frame: Pick<FrameSheet, 'shape'>): FrameRules {
   return frameShapeOf(frame) ?? FRAME
 }
 
-/** Whether a Frame lets the weaver do this to it; with no Frame, what a Frame without a shape would. */
-export function frameAllows(frame: Pick<FrameSheet, 'shape'> | undefined, action: FrameAction): boolean {
-  return rulesOf(frame ?? {}).allows.has(action)
+/** What a Frame without a shape lying turned does not offer (ticket 0667): what reshapes it as a rectangle of the
+ * Canvas's positions, which its own rows and columns no longer are. Turned upright again, it offers them again. */
+const UPRIGHT_ONLY: ReadonlySet<FrameAction> = new Set(['resize', 'remove-line', 'from-selection'])
+
+/** Whether a Frame without a shape lies turned (ticket 0667): its own grid, not a layout, drawn a quarter turn or more
+ * round. */
+function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): boolean {
+  return !!frame.quarterTurns && !frameShapeOf(frame)
 }
 
-/** What Remove Frame does with a Frame's beads: drops them onto the Canvas, or removes them with it. */
-export function removedBeadsOf(frame: Pick<FrameSheet, 'shape'>): FrameRules['removedBeads'] {
-  return rulesOf(frame).removedBeads
+/** Whether a Frame lets the weaver do this to it; with no Frame, what a Frame without a shape would. */
+export function frameAllows(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'> | undefined, action: FrameAction): boolean {
+  return rulesOf(frame ?? {}).allows.has(action) && !(frame && turnedGrid(frame) && UPRIGHT_ONLY.has(action))
+}
+
+/** The Techniques a Frame may be woven in (ADR 0079): its Frame shape's, or any; with no Frame, any. */
+export function techniquesOf(frame: Pick<FrameSheet, 'shape'> | undefined): readonly Technique[] {
+  return rulesOf(frame ?? {}).techniques
 }
 
 /** The Frame's Row order worked one way: what Row progress's first row, current row, next row and pass count ask. */
@@ -220,11 +234,17 @@ export function settingsOf(frame: Pick<FrameSheet, 'shape' | 'settings'>): Frame
   return { ...Object.fromEntries(settingValuesOf(frame).map(({ name, value }) => [name, value])), ...(style ? { fringeStyle: style } : {}) }
 }
 
-/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it; none for a Frame without a
- * shape. What a Selection over a Custom frame lands beads by (ticket 0594); finding, drawing or hitting a bead asks the
- * Frame's geometry. */
-export function frameLayoutOf(frame: Laid): FrameLayout | undefined {
+/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it, or a turned Frame's own grid
+ * as one (ticket 0667); none for an upright Frame without a shape. What a Selection over it lands beads by (ticket
+ * 0594); finding, drawing or hitting a bead asks the Frame's geometry. */
+export function frameLayoutOf(frame: Laid & Partial<ShapedSheet>): FrameLayout | undefined {
+  if (turnedGrid(frame) && isSheet(frame)) return turnedGridLayout(frame)
   return frameShapeOf(frame) && laidLayout(frame)
+}
+
+/** Whether a Frame comes with its size and Weave, which a turned grid is laid out from. */
+function isSheet(frame: Laid & Partial<ShapedSheet>): frame is ShapedSheet {
+  return frame.technique !== undefined && frame.rows !== undefined && frame.columns !== undefined
 }
 
 /** The layout a Custom frame's Frame shape lays it out by: called only on a Frame that has one. */
@@ -243,14 +263,67 @@ export function frameSizeMm(frame: Measured, bead: Bead): { widthMm: number; hei
   return rulesOf(frame).sizeMm(frame, bead)
 }
 
-/** The rows and columns of a Custom frame's Technique, the first its shape supports, that cover its layout: the
- * bounding rectangle its footprint is made from (ADR 0077), counted in the Technique's own square cell. */
-export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, quarterTurns?: QuarterTurns): GridDimensions {
+/** The rows and columns of a Custom frame's Technique (the first its shape supports unless given) that cover its
+ * layout: the bounding rectangle its footprint is made from (ADR 0077), counted in the Technique's own square cell. */
+export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, quarterTurns?: QuarterTurns, technique: Technique = FRAME_SHAPES[shape].techniques[0]): GridDimensions {
   const layout = laidLayout({ shape, settings, quarterTurns })
-  const description = describeWeave({ technique: FRAME_SHAPES[shape].techniques[0] })
+  const description = describeWeave({ technique })
   let columns = 1
   while (description.blockExtent(columns, 2, 1, 1).width < layout.width) columns += 1
   let rows = 1
   while (description.blockExtent(columns, rows, 1, 1).height < layout.height) rows += 1
   return { rows, columns }
+}
+
+/** How a Custom frame's size setting meets a rectangle asked of it: a resize handle's, the step whose rectangle comes
+ * nearest on the sides that changed; Frame from Selection's, the smallest that covers it (the largest if none does). */
+export type SizeFit = 'nearest' | 'cover'
+
+/** A Custom frame's settings with its size setting stepped to a rectangle asked of it (ADR 0079, ticket 0669), its
+ * other settings kept; none for a Frame without a shape, whose rectangle is its size. */
+export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' | 'technique'>, asked: GridDimensions, fit: SizeFit): FrameSettings | undefined {
+  const setting = sizeSettingOf(frame)
+  if (!setting) return undefined
+  const settings = settingsOf(frame)!
+  const at = (value: number): FrameSettings => ({ ...settings, [setting.id]: value })
+  const sizeAt = (value: number) => customFrameSize(frame.shape!, at(value), frame.quarterTurns, frame.technique)
+  if (fit === 'cover') {
+    for (let value = setting.min; value < setting.max; value += 1) {
+      const size = sizeAt(value)
+      if (size.rows >= asked.rows && size.columns >= asked.columns) return at(value)
+    }
+    return at(setting.max)
+  }
+  const miss = (value: number) => {
+    const size = sizeAt(value)
+    return (asked.rows === frame.rows ? 0 : Math.abs(size.rows - asked.rows)) + (asked.columns === frame.columns ? 0 : Math.abs(size.columns - asked.columns))
+  }
+  // The rectangle grows with the setting, so walking from where it is finds the nearest step.
+  let value = settings[setting.id]!
+  while (value < setting.max && miss(value + 1) < miss(value)) value += 1
+  while (value > setting.min && miss(value - 1) < miss(value)) value -= 1
+  return at(value)
+}
+
+/** A Custom frame's settings grown until its layout holds every one of these positions, or as far as they go: where
+ * Remove Frame finds its Folded beads (ticket 0669), as growing it back would show them. Its numbered settings step up
+ * together, in its own Fringe style first, then in each other. */
+export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings'>, positions: readonly GridPosition[]): FrameSettings {
+  const shape = frameShapeOf(frame)!
+  const start = settingsOf(frame)!
+  const styles = shape.styles ? [start.fringeStyle, ...shape.styles.filter((style) => style !== start.fringeStyle)] : [start.fringeStyle]
+  let best: { settings: FrameSettings; held: number } | undefined
+  for (const style of styles) {
+    let settings: FrameSettings = { ...start, ...(style ? { fringeStyle: style } : {}) }
+    for (;;) {
+      const layout = shape.layout(settings)
+      const held = positions.filter((position) => layoutPosition(layout, position)).length
+      if (held === positions.length) return settings
+      if (!best || held > best.held) best = { settings, held }
+      const values = settingValuesOf({ shape: frame.shape, settings })
+      if (values.every(({ value, max }) => value >= max)) break
+      settings = settingsOf({ shape: frame.shape, settings: { ...settings, ...Object.fromEntries(values.map(({ name, value }) => [name, value + 1])) } })!
+    }
+  }
+  return best!.settings
 }

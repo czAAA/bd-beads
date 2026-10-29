@@ -5,7 +5,7 @@ import type { Handedness, InputMode } from '../../domain/inputMode'
 import { layerOf } from '../../domain/layerRecord'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
+import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from '../../domain/selection'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import { marginForm } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
@@ -34,6 +34,9 @@ const props = withDefaults(defineProps<{
   /** Beads to show a hover preview on (ticket 23): the hovered bead, or a whole
    * copied block under the cursor (ticket 31). */
   previewCells?: PreviewCell[]
+  /** A copied block under the cursor on a grid, aimed where Paste would land it (ticket 0675): drawn only where it
+   * shows. */
+  previewStamp?: PasteStamp
   /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no
    * Palette color is selected. */
   previewColor?: string | null

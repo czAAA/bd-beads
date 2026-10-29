@@ -172,6 +172,13 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.emitted('set-canvas-technique')).toEqual([['brick']])
   })
 
+  it('offers a Custom frame the Techniques its shape supports alone (ADR 0079, ticket 0669)', async () => {
+    const triangle = { ...project.frame!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
+    const wrapper = mountPanel({ project: { ...project, frame: triangle } })
+    await wrapper.get('[data-testid="project-technique"] button').trigger('click')
+    expect(wrapper.findAll('[data-testid="project-technique"] [role="menuitemradio"]').map((item) => item.attributes('data-value'))).toEqual(['peyote'])
+  })
+
   it('locks the Technique, with the reason, once a Row progress pass is done', async () => {
     const wrapper = mountPanel({ project: { ...project, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } } })
     const picker = wrapper.get('[data-testid="project-technique"] button')

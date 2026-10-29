@@ -655,14 +655,26 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     expect(deps.harness.project.frame).toMatchObject({ settings: { fringeLength: 12 } })
   })
 
-  it('removes an empty one at once, with nothing to ask, and asks first once it holds beads', () => {
-    const empty = setup(custom('triangle', 9))
-    expect(empty.removeTakesBeads.value).toBe(true)
-    empty.remove()
-    expect(empty.deps.harness.project.frame).toBeUndefined()
+  it('steps its size setting by a resize handle drag, one announced Undo step, as for any Frame (ticket 0669)', () => {
+    const triangle = custom('triangle', 4)
+    const { deps, settingFrame, press, drag, release } = setupEditing(triangle)
+    expect(settingFrame.value).toBe(true)
+    const frame = triangle.frame!
+    const right = frame.column + frame.columns - 1
+    press({ kind: 'handle', edges: ['right'] }, { row: frame.row, column: right })
+    drag({ row: frame.row, column: right + custom('triangle', 6).frame!.columns - frame.columns })
+    release()
+    expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 6')
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toEqual(frame)
+  })
+
+  it('asks before removing it, as for any Frame, and removes it on Yes (ticket 0669)', () => {
     const triangle = custom('triangle', 9)
-    const painted = setup({ ...triangle, frame: { ...triangle.frame!, beads: { 0: { 0: '#ff0000' } } } })
-    painted.remove()
-    expect(painted.removeConfirmOpen.value).toBe(true)
+    const { deps, remove, removeConfirmOpen, confirmRemove } = setup({ ...triangle, frame: { ...triangle.frame!, beads: { 0: { 0: '#ff0000' } } } })
+    remove()
+    expect(removeConfirmOpen.value).toBe(true)
+    confirmRemove()
+    expect(deps.harness.project.frame).toBeUndefined()
   })
 })
