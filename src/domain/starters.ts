@@ -1,16 +1,17 @@
-import { beadPitchMm, type Bead } from './beads'
+import { beadPitchMm, findBead, type Bead } from './beads'
 import type { BeadMap } from './canvas'
-import { changeFrame, type FrameChangeResult } from './changeFrame'
+import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { customFrameSize, frameGeometry, frameShapeOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
-import { resolveProjectBead } from './projectBead'
+import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { weaveOf } from './layerWeave'
-import type { Project } from './project'
+import { withBackground, withLayer } from './layerRecord'
+import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
 import type { SettingSpec } from './settingSpec'
-import { describeWeave, type Technique } from './weave'
+import { describeWeave, type BeadShape, type Weave } from './weave'
 import categories from '../data/starters/categories.json'
 
 // The Starters (spec 0590, tickets 0596, 0597, 0633; StarterGallery card): each a design for a Frame at one best
@@ -74,8 +75,8 @@ export interface StarterPick {
  * default and presets), any other every field. */
 type ManifestSize = Partial<StarterSize> & Pick<StarterSize, 'id'>
 
-/** A Starter's manifest (ticket 0633), the file `<id>.starter.json` beside its design: its Frame shape, the Technique it
- * is woven in, its sizes and choices, how it is measured, and whether it is made as a pair (an earring).
+/** A Starter's manifest (ticket 0633), the file `<id>.starter.json` beside its design: its Frame shape, its Frame's
+ * Weave, its sizes and choices, how it is measured, and whether it is made as a pair (an earring).
  * @internal The registry test reads every manifest file as one, to find any no category lists. */
 export interface StarterManifest {
   id: StarterId
@@ -83,7 +84,8 @@ export interface StarterManifest {
   design: string
   /** Its Frame shape: a Shape's or an earring's; none for a Ring or Band, a Frame without one. */
   shape?: FrameShapeId
-  technique: Technique
+  /** Its Frame's Weave (ADR 0079): its only Technique, one its Frame shape supports, and that Technique's settings. */
+  weave: Weave
   measure: StarterMeasureRule
   pair?: true
   sizes: readonly ManifestSize[]
@@ -180,6 +182,24 @@ export interface StarterChoice {
   sizes: StarterSizes
   picks?: StarterPicks
   useDesign: boolean
+  /** The Frame's Weave as the setup sets it (ticket 0671); the Starter's own where none is given. */
+  weave?: Weave
+}
+
+/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead, Bead shape and
+ * Background. Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
+export interface StarterLayerSettings {
+  beadId: string
+  beadShape: BeadShape
+  background: Background
+}
+
+/** What a Starter's setup asks on New Project (ticket 0671): its choice, the Frame's Layer settings and a name. */
+export type StarterProjectChoice = StarterChoice & StarterLayerSettings & { name: string }
+
+/** The Weave a choice weaves a Starter's Frame in: the setup's, or else the Starter's own. */
+function weaveIn(starter: Starter, choice: Pick<StarterChoice, 'weave'>): Weave {
+  return weaveOf(choice.weave ?? starter.weave)
 }
 
 /** A Starter's sizes as its design is made. */
@@ -240,7 +260,7 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
  * or Band lying across takes its Width in rows and its length in columns of the Bead's pitch, as put in place.
  * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
-  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice))
+  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice).technique)
   if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
   return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / beadPitchMm(bead))) }
 }
@@ -248,7 +268,7 @@ export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: 
 /** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
 export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: Bead): number {
   const size = starterFrameSize(starter, choice, bead)
-  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, technique: starter.technique }).positions().length
+  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...weaveIn(starter, choice) }).positions().length
 }
 
 /** What a Starter's setup measures with a Bead (StarterGallery card, Setup): a Shape's or earring's width and height; a
@@ -267,7 +287,7 @@ export function starterMeasure(starter: Starter, choice: StarterChoice, bead: Be
   // Lying across, the strip's length is the Frame's width on screen and its width the Frame's height.
   const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns }, bead)
   // Where every other row shifts, each column zig-zags through two rows as a pattern counts them round (peyote).
-  const round = columns * (describeWeave({ technique: starter.technique }).shifted ? 2 : 1)
+  const round = columns * (describeWeave(weaveIn(starter, choice)).shifted ? 2 : 1)
   if (starter.measure === 'ring') return { shape: 'ring', insideMm: sizeIn(starter, choice.sizes, 'ringSize') / Math.PI, widthMm, rows: round }
   return { shape: 'band', widthMm, lengthMm, rows: round }
 }
@@ -277,21 +297,35 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
   return choice.useDesign && designFits(starter, choice) ? starterDesign(starter) : {}
 }
 
-/** Add Frame from Starter and Replace Frame (tickets 0596, 0597, 0633): the Frame change that puts the Starter's Frame
- * round a Canvas position, in place of any Frame there, in the Starter's Technique, pre-filled with its design or empty.
- * Colours stay as painted, whatever the Project's Bead; an empty Ring's or Band's length is worked out from it. */
-export function placedStarter(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition): FrameChangeResult {
-  const beads = chosenBeads(starter, choice)
-  if (starter.shape) return changeFrame(project, { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads } })
-  const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
-  const frame = { row: centre.row - Math.floor(rows / 2), column: centre.column - Math.floor(columns / 2), rows, columns }
-  return changeFrame(project, { place: { frame, weave: weaveOf({ technique: starter.technique }), beads } })
+/** Add Frame from Starter and Replace Frame (tickets 0596, 0633, 0671): the Starter's Frame round a Canvas position, in
+ * place of any Frame there, in the setup's Layer settings (ADR 0079), with its design or empty; the Canvas as it is.
+ * Colours stay as painted; an empty Ring's or Band's length is worked out in the Frame's Bead. */
+export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition): FrameChangeResult {
+  const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
+  const placement = starterPlacement(starter, choice, centre, bead ?? resolveProjectBead(project)!)
+  const placed = changeFrame(project, placement)
+  if (placed.kind !== 'changed' || (!bead && !choice.beadShape && choice.background === undefined)) return placed
+  // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
+  const dressed = withLayer(placed.project, 'frame', { bead, beadShape: choice.beadShape })
+  const relaid = changeFrame(choice.background === undefined ? dressed : withBackground(dressed, 'frame', choice.background), placement)
+  return relaid.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, relaid.project) } : relaid
 }
 
-/** A new Project from a Starter (New Project's Pick a starter): its Canvas in the Starter's Technique, and its Frame
- * with its first row and column at the origin. Nothing in it records the Starter. */
-export function starterProject(starter: Starter, choice: StarterChoice & { name: string; beadId: string }): Project {
-  const project = createProject({ name: choice.name, technique: starter.technique, beadId: choice.beadId })
+/** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`. */
+function starterPlacement(starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
+  const beads = chosenBeads(starter, choice)
+  const weave = weaveIn(starter, choice)
+  if (starter.shape) return { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads, weave } }
+  const { rows, columns } = starterFrameSize(starter, choice, bead)
+  return { place: { frame: { row: centre.row - Math.floor(rows / 2), column: centre.column - Math.floor(columns / 2), rows, columns }, weave, beads } }
+}
+
+/** A new Project from a Starter (New Project's Pick a starter): its Frame as the setup sets it, with its first row and
+ * column at the origin, and its Canvas a copy of the Frame's Layer settings (ADR 0079). Nothing in it records the
+ * Starter. */
+export function starterProject(starter: Starter, choice: StarterChoice & Pick<StarterProjectChoice, 'name' | 'beadId'> & Partial<StarterLayerSettings>): Project {
+  const { name, beadId, beadShape, background } = choice
+  const project = createProject({ name, ...weaveIn(starter, choice), beadId, ...(beadShape ? { beadShape } : {}), ...(background !== undefined ? { background } : {}) })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project

@@ -2,7 +2,7 @@
   "id": "triangle",
   "design": "triangle.json",
   "shape": "triangle",
-  "technique": "peyote",
+  "weave": {"technique": "peyote"},
   "measure": "frame",
   "sizes": [
     {"id": "rounds", "default": 10, "presets": [6, 8, 10, 12]}

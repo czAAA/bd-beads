@@ -2,7 +2,7 @@
   "id": "vFringe",
   "design": "vFringe.json",
   "shape": "fringeEarring",
-  "technique": "brick",
+  "weave": {"technique": "brick"},
   "measure": "frame",
   "pair": true,
   "sizes": [
