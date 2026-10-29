@@ -74,6 +74,7 @@ const {
   hasPaintColor,
   onNamePiece,
   previewCells,
+  previewStamp,
   onCellPrimaryDown,
   onCellPrimaryMove,
   onCellHover,
@@ -273,6 +274,7 @@ const drawingStyle = computed(() => {
               :input-mode="surfaceInputMode"
               :handedness="handedness"
               :preview-cells="previewCells"
+              :preview-stamp="previewStamp"
               :preview-color="previewColor"
               :selection="selection"
               :selection-refusals="selectionRefusals"

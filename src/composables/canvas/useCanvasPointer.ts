@@ -1,9 +1,9 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
-import { isInFinishedRow } from '../../domain/rowProgress'
+import { finishedRowsOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { pasteAimAtBead } from '../../domain/selection'
+import { pasteAimAtBead, type PasteStamp } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 
 /** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the
@@ -16,6 +16,8 @@ export interface CanvasPointerDeps {
   strokeMode: () => 'paint' | 'erase' | null
   selectedColorHex: () => string | null
   pastePreviewCells: (project: Project, hovered: GridPosition) => PreviewCell[]
+  /** The block Paste would stamp on a grid, aimed at the hovered cell (ticket 0675). */
+  pastePreviewStamp: (project: Project, hovered: GridPosition) => PasteStamp | undefined
   beginSelectPress: (row: number, column: number, layer?: Layer) => void
   extendSelection: (row: number, column: number, layer?: Layer) => void
   /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty
@@ -56,7 +58,18 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (!project || !hoveredCell.value) {
       return []
     }
-    return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !isInFinishedRow(project, cell))
+    const finished = finishedRowsOf(project)
+    return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !finished(cell))
+  })
+
+  // A block pasted on a grid, as its stamp (ticket 0675): it moves with the pointer without listing its beads, and leaves
+  // out those in rows already woven as the cells above do.
+  const previewStamp = computed<PasteStamp | undefined>(() => {
+    const project = deps.currentProject()
+    const stamp = project && hoveredCell.value && deps.activeTool() === 'select' ? deps.pastePreviewStamp(project, hoveredCell.value) : undefined
+    if (!project || !stamp) return undefined
+    const finished = finishedRowsOf(project)
+    return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column }) }
   })
 
   function onCellHover(row: number, column: number, layer?: Layer) {
@@ -153,6 +166,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   return {
     hoveredCell,
     previewCells,
+    previewStamp,
     onCellHover,
     onHoverEnd,
     pasteAtPointer,

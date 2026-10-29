@@ -8,7 +8,7 @@ import { pointerDraws, type Handedness, type InputMode } from '../../../domain/i
 import { beadColorAt } from '../../../domain/layerBeads'
 import { isInFinishedRow } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
-import { selectionFrame, selectionHasHandles, selectionLayer, type Selection } from '../../../domain/selection'
+import { selectionFrame, selectionHasHandles, selectionLayer, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
@@ -56,6 +56,7 @@ export interface SurfacePointerDeps {
     scroll: Scroll
     tools: ToolCapabilities
     previewCells?: PreviewCell[]
+    previewStamp?: PasteStamp
     previewColor?: string | null
     selection?: Selection
     inputMode?: InputMode
@@ -520,7 +521,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       stroke = { from: pointInSurface(event), last: bead }
     }
     // A press also lands where the pasted block under the pointer goes (the preview cells).
-    if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
+    const pasted = [...(props.previewCells ?? []), ...(props.previewStamp ? stampCells(props.previewStamp) : [])]
+    if (event.button === 0 && (refusesMargin(bead) || pasted.some((cell) => refusesMargin(cell)))) {
       refusePress()
       if (refusesSelectionStart(bead)) return
     }

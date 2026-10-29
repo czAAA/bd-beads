@@ -1,7 +1,8 @@
 import { channelsOf } from '../domain/color'
-import { describeWeave, draftCost, type Technique, type TechniqueSettings } from '../domain/weave'
+import { describeWeave, draftCost, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import type { WeaveGeometry } from '../domain/weaveGeometry'
-import type { ProjectTheme } from './beadLook'
+import type { DrawingContext, ProjectTheme } from './beadLook'
+import { cellSizePx } from './cellSize'
 
 // A coarse look for a block of beads being moved (ticket 122, ADR 0018): one flat pixel per bead stretched in a single
 // blit, instead of a blit per rounded bead, which kept the Convert image framing drag under 30 fps (peyote, 250 x 250).
@@ -119,3 +120,62 @@ export function renderDraft(
   context.drawImage(scratch, 0, 0, image.width, image.height, 0, 0, bitmapWidth, bitmapHeight)
 }
 
+
+/** A bead of a draft, where it lies. */
+interface PlacedBead {
+  row: number
+  column: number
+  color: string
+}
+
+/** Beads where they lie as a draft image (ticket 0675): `wide` pixels a bead across as in `draftImage`, its first pixel
+ * at `firstColumn` of `firstRow`, the first any bead reaches, and clear where there is no bead.
+ * @internal Its test reads the pixels on their own. */
+export function draftOfBeads(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, beads: readonly PlacedBead[]): DraftImage & { firstRow: number; firstColumn: number; wide: number } {
+  // Loops, not Math.min(...): a block zoomed out can hold more beads than a call takes arguments.
+  let [firstRow, lastRow, firstColumn, lastColumn] = [Infinity, -Infinity, Infinity, -Infinity]
+  for (const { row, column } of beads) {
+    firstRow = Math.min(firstRow, row)
+    lastRow = Math.max(lastRow, row)
+    firstColumn = Math.min(firstColumn, column)
+    lastColumn = Math.max(lastColumn, column)
+  }
+  const wide = pixelsPerBead(geometry.shift)
+  const width = (lastColumn - firstColumn + 1) * wide + Math.round(geometry.shift * wide)
+  const height = lastRow - firstRow + 1
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (const { row, column, color } of beads) {
+    const [r, g, b] = channels(color)
+    const start = (row - firstRow) * width + Math.round(geometry.rowOffset(row, wide)) + (column - firstColumn) * wide
+    for (let at = start * 4; at < (start + wide) * 4; at += 4) {
+      data[at] = r
+      data[at + 1] = g
+      data[at + 2] = b
+      data[at + 3] = 255
+    }
+  }
+  return { width, height, data, firstRow, firstColumn, wide }
+}
+
+let beadsScratch: HTMLCanvasElement | undefined
+
+/** Draws beads where they lie in the draft look, through the context's grid transform and at its opacity (ticket 0675):
+ * one image for a big paste preview zoomed out, where a fill a bead would cost more than the screen shows. */
+export function drawDraftBeads(context: DrawingContext, weave: Weave, beads: readonly PlacedBead[]): void {
+  if (beads.length === 0) return
+  const description = describeWeave(weave)
+  const image = draftOfBeads(description, beads)
+  beadsScratch ??= document.createElement('canvas')
+  beadsScratch.width = image.width
+  beadsScratch.height = image.height
+  const scratchContext = beadsScratch.getContext('2d')
+  if (!scratchContext) return
+  const pixels = scratchContext.createImageData(image.width, image.height)
+  pixels.data.set(image.data)
+  scratchContext.putImageData(pixels, 0, 0)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  const corner = description.box({ row: image.firstRow, column: image.firstColumn }, cell.width, cell.height)
+  const pitch = description.box({ row: image.firstRow + 1, column: image.firstColumn }, cell.width, cell.height).y - corner.y
+  const x = corner.x - description.rowOffset(image.firstRow, cell.width)
+  context.drawImage(beadsScratch, 0, 0, image.width, image.height, x, corner.y, (image.width * cell.width) / image.wide, image.height * pitch)
+}
