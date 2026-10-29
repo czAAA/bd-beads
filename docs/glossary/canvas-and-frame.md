@@ -124,5 +124,5 @@ Everything the rulers are for one view of the canvas, worked out once from the P
 _Avoid_: ruler view, ruler geometry
 
 **Canvas color**:
-The background of the drawing area, picked by the person in the Project panel (its Canvas section; the Homepage has none): five in light, five in dark, stored as a number so a change of theme keeps the position. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. High contrast has one white canvas, so its Canvas section has no swatches, only a line saying so.
+The background of the drawing area, picked by the person in the Project panel (its Canvas section; the Homepage has none): five in light, five in dark, stored as a number so a change of theme keeps the position. Or the person's own Custom color (ticket 0653), from the Palette's Custom color picker: one color for both themes, remembered while a numbered one shows. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. High contrast has one white canvas, so its Canvas section has no swatches, only a line saying so.
 _Avoid_: board color, background theme

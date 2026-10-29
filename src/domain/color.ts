@@ -11,6 +11,8 @@ export interface Rgb {
 
 /** White as channels: what a tint or a brightened bead moves toward. */
 export const WHITE: Readonly<Rgb> = { r: 255, g: 255, b: 255 }
+/** Black as channels: what a darkened step moves toward. */
+export const BLACK: Readonly<Rgb> = { r: 0, g: 0, b: 0 }
 
 /** A `#rgb` or `#rrggbb` hex as its channels, or undefined for anything else: the one place a hex is read. */
 export function fromHex(hex: string): Rgb | undefined {
@@ -56,6 +58,12 @@ export function relativeLuminance({ r, g, b }: Rgb): number {
     return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
   }
   return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+}
+
+/** WCAG 2's contrast ratio between two colors, 1 to 21: rulers on the Canvas color want 4.5 (ticket 0653). */
+export function contrastRatio(a: Rgb, b: Rgb): number {
+  const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x)
+  return (high + 0.05) / (low + 0.05)
 }
 
 /** The relative luminance where black and white have the same contrast ratio with a color: sqrt(1.05 * 0.05) - 0.05.
