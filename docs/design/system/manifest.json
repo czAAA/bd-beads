@@ -35,6 +35,7 @@
     "components/KeyboardFocus/README.md",
     "components/Loading/README.md",
     "components/LongerText/README.md",
+    "components/MarginSheet/README.md",
     "components/Menu/README.md",
     "components/MenuPanel/README.md",
     "components/Message/README.md",
@@ -359,6 +360,11 @@
       "name": "QualitySlider",
       "group": "Forms",
       "summary": "Export quality: a three-stop slider under the Picture and Printable chart buttons that sets the PNG only; each button shows its size and count (\"PDF ≈ 3.2 MB · 9 pages\")."
+    },
+    {
+      "name": "MarginSheet",
+      "group": "Canvas",
+      "summary": "The Frame's keep-out margin as a drafting sheet: 4 beads in its own color, the Frame's tools and Row progress in its top band, a title block in its corner, and its zoom forms."
     },
     {
       "name": "Rulers",

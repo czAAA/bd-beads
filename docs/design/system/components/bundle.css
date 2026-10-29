@@ -110,6 +110,13 @@
   --frame-handle-hit-height: 44px;
   --frame-edit-chip: 32px;
   --frame-edit-hit: 44px;
+  --margin-border-inset: 10px;
+  --margin-border-inset-compact: 6px;
+  --margin-tool: 28px;
+  --margin-tool-compact: 24px;
+  --margin-title-row: 23px;
+  --margin-band-full: 64px;
+  --margin-band-compact: 34px;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
 [data-theme="contrast"] { --underline-width: 3px; }
@@ -777,6 +784,15 @@ body {
 .bb-frame-clear { position: absolute; box-sizing: border-box; background: var(--box); border-radius: 12px; pointer-events: none; }
 .bb-frame-margin { position: absolute; box-sizing: border-box; border: 1px dashed var(--line-strong); border-radius: 12px; pointer-events: none; opacity: 1; transition: opacity var(--duration-fast, 120ms) var(--ease-standard, ease); }
 .bb-frame-margin[hidden] { display: block; opacity: 0; }
+/* Ticket 0655: the margin as a drafting sheet (MarginSheet card) */
+.bb-margin-sheet { position: absolute; box-sizing: border-box; border-radius: var(--radius-lg, 12px); box-shadow: 0 0 0 1px var(--margin-line); }
+.bb-margin-sheet--editing { outline: 1px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 3px; }
+.bb-margin-border { position: absolute; inset: var(--margin-border-inset); border: 1px solid var(--margin-line); border-radius: var(--radius-sm, 6px); pointer-events: none; }
+.bb-margin-tool { width: var(--margin-tool); height: var(--margin-tool); border: 0; border-radius: var(--radius-md, 8px); background: transparent; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.bb-margin-tool:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.bb-margin-tool[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
+.bb-margin-title { position: absolute; right: var(--margin-border-inset); bottom: var(--margin-border-inset); display: grid; grid-template-rows: repeat(2, var(--margin-title-row)); background: var(--margin-title); border: 1px solid var(--margin-line); border-radius: 0 0 var(--radius-sm, 6px) 0; }
+.bb-margin-title > * { display: flex; align-items: center; gap: 4px; padding: 0 6px 0 8px; border-right: 1px solid var(--margin-line); border-bottom: 1px solid var(--margin-line); white-space: nowrap; min-width: 0; }
 [data-theme="contrast"] .bb-frame-margin { border-width: 2px; }
 .bb-frame-num { min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--elevated); font: 400 12px/20px var(--font-mono); color: var(--ink); cursor: pointer; }
 .bb-disclosure--split { cursor: default; }

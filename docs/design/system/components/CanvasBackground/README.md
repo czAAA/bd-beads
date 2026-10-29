@@ -25,4 +25,6 @@ The one background of the drawing area: the rulers and the beads sit on it, and 
 - On a Custom color the Project is drawn in the light look on a light color and the dark look on a dark one (white or black reading better on it, `--print-letter-balance`), whatever the theme. Its empty bead is the color 12.5% toward black (light) or white (dark), Night's own step; its rulers are the nearest grey to the look's own at 4.5:1 or more, the strong ones at 7:1 (or black or white where none reaches it). The row marker keeps the look's color where it reads at 3:1 or more, and takes the look's ink (`bead-outline`) where it does not.
 - With no radio checked, Tab lands on the first swatch.
 
+**Second use (ticket 0655; MarginSheet card):** the Frame panel's margin section and the margin's Margin color button use the same BackgroundColorPicker with an **Auto** swatch first (drawn split, Canvas color and margin color), then the theme's five Canvas colors and the Custom color tile; the swatch equal to the Canvas color carries a dot. The margin color is remembered on the device, as the Canvas color is.
+
 Hand-written; static rendition of the open picker.
