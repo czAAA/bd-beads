@@ -164,7 +164,16 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </span>
     </div>
 
-    <!-- Export first and always shown (ticket 568): off with no Frame, with the way to get one written under it. -->
+    <!-- With no Frame, the ways to get one come first (ticket 0650), above Export. -->
+    <div v-if="!frame" class="frame-panel__none">
+      <p class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
+      <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.starters.title, { opener: 'frame-from-starter' })">{{ t.frame.fromStarter }}</PanelItem>
+      <PanelItem icon="select" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
+      <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
+      <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
+    </div>
+
+    <!-- Export always shown (ticket 568), off with no Frame. -->
     <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
       <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
         <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
@@ -333,15 +342,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           >{{ t.frame.replaceFrame }}</PanelItem>
         </div>
       </PanelSection>
-    </template>
-
-    <template v-else>
-      <div class="frame-panel__none">
-        <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.starters.title, { opener: 'frame-from-starter' })">{{ t.frame.fromStarter }}</PanelItem>
-        <PanelItem icon="select" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
-        <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
-        <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
-      </div>
     </template>
 
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
