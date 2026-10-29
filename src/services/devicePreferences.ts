@@ -2,7 +2,7 @@ import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } f
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
 import { type Handedness, type InputMode } from '../domain/inputMode'
-import { CANVAS_BACKGROUND_MAX, migratedChoice, type CanvasChoice } from '../rendering/canvasBackgrounds'
+import { CANVAS_BACKGROUND_MAX, migratedChoice, type CanvasChoice, type MarginChoice } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/color'
@@ -65,6 +65,25 @@ export const PREFERENCES = {
   /** The last Custom color taken for the Canvas (ticket 0653), as `#rrggbb`: kept while a numbered one shows. */
   canvasCustomColor: preference<string | undefined>({
     key: 'openbeads:canvas-custom-color',
+    fallback: undefined,
+    parse: normalizeHex,
+    write: (hex) => hex ?? null,
+  }),
+  /** The Frame's margin color (ticket 0656, MarginSheet card): `auto` until one is picked, then a position in the theme's
+   * list, 1 to 5, as the Canvas color is, or `custom`. */
+  marginColor: preference<MarginChoice>({
+    key: 'openbeads:margin-color',
+    fallback: 'auto',
+    parse: (raw) => {
+      if (raw === 'auto' || raw === 'custom') return raw
+      const choice = Number(raw)
+      return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
+    },
+    write: String,
+  }),
+  /** The last Custom color taken for the margin (ticket 0656), as `#rrggbb`, one for both themes. */
+  marginCustomColor: preference<string | undefined>({
+    key: 'openbeads:margin-custom-color',
     fallback: undefined,
     parse: normalizeHex,
     write: (hex) => hex ?? null,

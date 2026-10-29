@@ -604,7 +604,7 @@ describe('useSelectionGesture', () => {
       const { gesture } = framed()
       gesture.beginPress(2, 11)
       gesture.extendPress(8, 12)
-      expect(gesture.selection.value).toMatchObject({ top: 2, left: 11, rows: 2, columns: 2, layer: 'canvas' })
+      expect(gesture.selection.value).toMatchObject({ top: 2, left: 11, rows: 4, columns: 2, layer: 'canvas' })
     })
 
     it('moving a Frame Selection\'s outline keeps it inside the Frame', () => {

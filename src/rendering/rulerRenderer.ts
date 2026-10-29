@@ -78,7 +78,9 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
 
 /** Draws the lines and the Ruler layout's numbers and dots, in the viewport's own px over whatever is drawn. */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
-  const { project, surface, layout, pixelRatio, theme, rowMarks = rowProgressOn(project) } = input
+  const { project, surface, layout, pixelRatio, rowMarks = rowProgressOn(project) } = input
+  // Once there is a Frame its rulers are the only ones, and they sit on its margin sheet (ticket 0656).
+  const theme = project.frame ? { ...input.theme, ruler: input.theme.margin.ruler, rulerStrong: input.theme.margin.rulerStrong } : input.theme
   const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 

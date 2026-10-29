@@ -1,6 +1,7 @@
 import { BLACK, BLACK_WHITE_BALANCE, channelsOf, contrastRatio, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
 import type { ResolvedTheme } from '../theme/theme'
 import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
+import { autoMarginColor, marginLookOn, readableGrey, RULER_CONTRAST, STRONG_RULER_CONTRAST } from './marginLook'
 
 // The drawing area's background, picked by the person (tickets 252, 554; CanvasBackground card): five in light, five in
 // dark. The app stores the choice's number, not its color, so switching theme keeps the position. Colors are tokens
@@ -64,9 +65,6 @@ export function canvasBackgroundOf(theme: ResolvedTheme, choice: CanvasChoice, c
 
 /** How far an empty bead steps from a Custom color toward ink: Night's own step to its `#3c3c3c`. */
 const EMPTY_BEAD_STEP = 0.125
-/** The contrast a ruler keeps on a Custom color (WCAG AA for text), and a strong one (AAA). */
-const RULER_CONTRAST = 4.5
-const STRONG_RULER_CONTRAST = 7
 /** The least a row marker keeps on a Custom color (WCAG for a graphic) before it takes the look's ink instead. */
 const MARKER_CONTRAST = 3
 
@@ -76,30 +74,43 @@ function customBackground(color: string): CanvasBackground {
   const dark = relativeLuminance(background) < BLACK_WHITE_BALANCE
   const base = PROJECT_THEMES[dark ? 'dark' : 'light']
   const ink = dark ? WHITE : BLACK
-  /** The grey nearest `start` that reads at `ratio` on the color, moving toward ink; ink itself when none does. */
-  const readableGrey = (start: string, ratio: number) => {
-    for (let level = channelsOf(start).r; level >= 0 && level <= 255; level += dark ? 1 : -1) {
-      const grey = { r: level, g: level, b: level }
-      if (contrastRatio(grey, background) >= ratio) return toHex(grey)
-    }
-    return toHex(ink)
-  }
   return {
     id: 'custom',
     color,
     base: dark ? 'dark' : 'light',
     look: {
       emptyBead: toHex(mix(background, ink, EMPTY_BEAD_STEP)),
-      ruler: readableGrey(base.ruler, RULER_CONTRAST),
-      rulerStrong: readableGrey(base.rulerStrong, STRONG_RULER_CONTRAST),
+      ruler: readableGrey(base.ruler, RULER_CONTRAST, color),
+      rulerStrong: readableGrey(base.rulerStrong, STRONG_RULER_CONTRAST, color),
       marker: contrastRatio(channelsOf(base.marker), background) >= MARKER_CONTRAST ? base.marker : base.outline,
     },
   }
 }
 
-/** The colors the Project is drawn in on the Canvas: the theme's, on the chosen background. Exports don't use this
- * (they print on PRINT_THEME). */
-export function canvasTheme(theme: ResolvedTheme, choice: CanvasChoice, customColor?: string): ProjectTheme {
+/** The margin color as stored (ticket 0656, MarginSheet card): Auto, a position in the theme's list as for the Canvas
+ * color, or `custom` for the person's own. */
+export type MarginChoice = 'auto' | CanvasChoice
+
+/** The margin color picked, and the last Custom color taken for it. */
+export interface MarginPick {
+  choice: MarginChoice
+  customColor?: string
+}
+
+const AUTO_MARGIN: MarginPick = { choice: 'auto' }
+
+/** The margin color shown with a Canvas color: Auto (the Canvas color one step off, in the look it is drawn in), a
+ * picked one, or white in high contrast. A number out of range, or Custom with no color, is Auto. */
+export function marginColorOf(theme: ResolvedTheme, choice: CanvasChoice, customColor?: string, margin: MarginPick = AUTO_MARGIN): string {
+  const background = canvasBackgroundOf(theme, choice, customColor)
+  if (!background) return PROJECT_THEMES.contrast.margin.fill
+  const picked = margin.choice === 'auto' ? undefined : margin.choice === 'custom' ? margin.customColor : canvasBackgrounds(theme)[margin.choice - 1]?.color
+  return picked ?? autoMarginColor(background.color, background.base ?? (theme === 'dark' ? 'dark' : 'light'))
+}
+
+/** The colors the Project is drawn in on the Canvas: the theme's, on the chosen background, with its margin sheet.
+ * Exports don't use this (they print on PRINT_THEME). */
+export function canvasTheme(theme: ResolvedTheme, choice: CanvasChoice, customColor?: string, margin: MarginPick = AUTO_MARGIN): ProjectTheme {
   const background = canvasBackgroundOf(theme, choice, customColor)
   const base = PROJECT_THEMES[background?.base ?? theme]
   if (!background) return base
@@ -111,6 +122,7 @@ export function canvasTheme(theme: ResolvedTheme, choice: CanvasChoice, customCo
     look.positionMark = background.look.emptyBead
     look.emptyBead = background.look.emptyBead
   }
+  look.margin = marginLookOn(marginColorOf(theme, choice, customColor, margin), look)
   return look
 }
 

@@ -1,4 +1,5 @@
 import { fromHex, luma, mix, toHex, WHITE, type Rgb } from '../domain/color'
+import { autoMarginColor, marginLookOn, type MarginLook } from './marginLook'
 import { cachedSprite, type Sprite } from './sprites'
 
 // How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a
@@ -80,13 +81,20 @@ export interface ProjectTheme {
   /** A bead in a finished row: its own color at `opacity` over the board in every theme (ticket 352), never grey;
    * `grey` is the greyscale option. */
   finished: { grey: boolean; opacity: number }
+  /** The Frame's margin sheet on the Canvas (MarginSheet card, ticket 0656): Auto on `canvas` until one is picked. */
+  margin: MarginLook
+}
+
+/** A theme with its Auto margin sheet on its own canvas. */
+function withAutoMargin(look: 'light' | 'dark', theme: Omit<ProjectTheme, 'margin'>): ProjectTheme {
+  return { ...theme, margin: marginLookOn(autoMarginColor(theme.canvas, look), theme) }
 }
 
 /** How much of a finished bead's own color shows over the board while finished rows are dimmed (ticket 352). */
 const FINISHED_OPACITY = 0.5
 
 /** The light theme (BeadBoard card). */
-export const LIGHT_THEME: ProjectTheme = {
+export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   canvas: '#fafafa',
   positionMark: '#d8d2cc',
   pieceLine: '#c7c7c7',
@@ -100,11 +108,11 @@ export const LIGHT_THEME: ProjectTheme = {
   marker: '#1d4ed8',
   outline: '#1f1f1f',
   finished: { grey: false, opacity: FINISHED_OPACITY },
-}
+})
 
 /** The dark theme: a white rim, so two beads of one color stay apart.
  * @internal Tests draw in the dark theme. */
-export const DARK_THEME: ProjectTheme = {
+export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   canvas: '#202020',
   positionMark: '#3c3c3c',
   pieceLine: '#3a3a3a',
@@ -118,7 +126,7 @@ export const DARK_THEME: ProjectTheme = {
   marker: '#faff69',
   outline: '#ffffff',
   finished: { grey: false, opacity: FINISHED_OPACITY },
-}
+})
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
 const CONTRAST_THEME: ProjectTheme = {
@@ -135,6 +143,8 @@ const CONTRAST_THEME: ProjectTheme = {
   marker: '#000000',
   outline: '#000000',
   finished: { grey: false, opacity: FINISHED_OPACITY },
+  // White paper with a black edge whatever is picked (MarginSheet card); the inner border is `margin-line`.
+  margin: { fill: '#ffffff', line: '#595959', edge: '#000000', edgeWidth: 2, ruler: '#3d3d3d', rulerStrong: '#1f1f1f' },
 }
 
 /** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */
