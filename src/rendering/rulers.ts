@@ -68,7 +68,8 @@ function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   const frame = frameOf(project)
   if (frame) {
     if (frameShapeOf(frame)) return []
-    return [{ ...laidRect({ ...frame, cell: canvasWeave(project).cell }), kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
+    const { row, column, rows, columns } = laidRect({ ...frame, cell: canvasWeave(project).cell })
+    return [{ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
   }
   return pieceAreasOf(beadsOfLayer(project, 'canvas'), canvasWeave(project))
     .filter(hasGuides)

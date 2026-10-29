@@ -205,7 +205,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
         expect(frameOf(turned)!.beads, `${technique} turn ${turn}`).toBe(beads)
         expect(frameOf(turned)).toMatchObject({ rows: 5, columns: 4 })
       }
-      expect(sheetOf(turned)).toEqual(frameOf(project))
+      expect(sheetOf(turned)).toEqual(sheetOf(project))
     }
   })
 

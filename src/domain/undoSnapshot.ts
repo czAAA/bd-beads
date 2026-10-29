@@ -35,7 +35,11 @@ export function snapshotOf(project: Project): UndoEntry {
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
   const { name, orientation } = canvasOf(project)
-  const layered = withLetters(withCanvas({ ...rest, layers: entry.layers }, { name, orientation }), lettersOn(project))
+  const restored = { ...rest, layers: entry.layers }
+  // Each layer put back is the one recorded, the very object, unless a view changed since (ticket 0616).
+  const viewed = name === canvasOf(entry).name && orientation === canvasOf(entry).orientation ? restored : withCanvas(restored, { name, orientation })
+  const on = lettersOn(project)
+  const layered = viewed.layers.every((layer) => (layer.letters === true) === on) ? viewed : withLetters(viewed, on)
   return touch(layered, {
     palette: entry.palette,
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),

@@ -80,7 +80,7 @@ describe('useEdit', () => {
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(1)
 
       ctx.history.onUndo()
-      expect(sheetOf(ctx.project)).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
     })
 
     it('hands back the refusal and records nothing', () => {
@@ -125,7 +125,7 @@ describe('useEdit', () => {
 
       ctx.editing.settle()
       ctx.history.onUndo()
-      expect(sheetOf(ctx.project)).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
@@ -137,13 +137,13 @@ describe('useEdit', () => {
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBeNull()
       expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1 })
       ctx.history.onUndo()
-      expect(sheetOf(ctx.project)).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
 
       ctx.editing.hold(grow(1))
       ctx.editing.beginStroke()
       ctx.editing.endStroke()
       ctx.history.onUndo()
-      expect(sheetOf(ctx.project)).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
 
       ctx.history.onRedo()
       ctx.editing.hold(grow(2))

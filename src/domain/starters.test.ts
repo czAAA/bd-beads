@@ -26,7 +26,7 @@ import {
   type StarterManifest,
 } from './starters'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { sheetOf, withFields } from '../testUtils/flatFields'
+import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
 
 const beadId = 'miyuki/delica/11-0'
 const delica = findBead(beadId)!
@@ -119,7 +119,7 @@ describe('the Starter manifests (ticket 0633)', () => {
 describe('a new Project from a Starter', () => {
   it('puts the design in place in the Frame, named as asked, on the chosen Bead', () => {
     const project = starterProject(starterById('triangle'), { name: 'Sun', beadId, ...asDesigned('triangle') })
-    expect(project).toMatchObject({ name: 'Sun', beadId, frame: { shape: 'triangle', settings: { rounds: 10 } } })
+    expect(flatView(project)).toMatchObject({ name: 'Sun', beadId, frame: { shape: 'triangle', settings: { rounds: 10 } } })
     expect(frameOf(project)!.beads).toEqual(starterDesign(starterById('triangle')))
     expect(beadsOfLayer(project, 'canvas')).toEqual({})
   })
@@ -139,7 +139,7 @@ describe('a new Project from a Starter', () => {
 describe('an Earring Starter (ticket 0597)', () => {
   it('is a brick-stitch Fringe earring of its top and fringe, its Fringe style the design\'s: the V fringe 87 beads', () => {
     const project = starterProject(starterById('vFringe'), { name: 'Drop', beadId, ...asDesigned('vFringe') })
-    expect(project).toMatchObject({ technique: 'brick', frame: { shape: 'fringeEarring', technique: 'brick', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 } } })
+    expect(flatView(project)).toMatchObject({ technique: 'brick', frame: { shape: 'fringeEarring', technique: 'brick', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 } } })
     expect(frameOf(project)!.beads).toEqual(starterDesign(starterById('vFringe')))
     expect(starterBeadCount(starterById('vFringe'), asDesigned('vFringe'), delica)).toBe(87)
     expect(starterBeadCount(starterById('straightFringe'), asDesigned('straightFringe'), delica)).toBe(97)
@@ -167,7 +167,7 @@ describe('a Ring or Band Starter (ticket 0597)', () => {
     expect(starterFrameSize(starterById('ringStripes'), ringAt(54), delica)).toEqual({ rows: 7, columns: 36 })
     expect(starterMeasure(starterById('ringStripes'), ringAt(54), delica)).toEqual({ shape: 'ring', insideMm: 54 / Math.PI, widthMm: 7 * 1.3, rows: 72 })
     expect(starterBeadCount(starterById('ringStripes'), ringAt(54), delica)).toBe(252)
-    expect(starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...asDesigned('ringStripes') })).toMatchObject({ technique: 'peyote', frame: { rows: 7, columns: 36, technique: 'peyote' } })
+    expect(flatView(starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...asDesigned('ringStripes') }))).toMatchObject({ technique: 'peyote', frame: { rows: 7, columns: 36, technique: 'peyote' } })
   })
 
   it('makes a Band of the wrist and its Fit\'s ease, less 1.5 cm for the clasp', () => {

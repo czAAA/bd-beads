@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
-import { beadIdOfLayer, beadOfLayer, beadsOfLayer, frameOf, heldWeave, layerOf, withFrameSheet, withLayer } from './layerRecord'
+import { beadIdOfLayer, beadOfLayer, beadsOfLayer, canvasOf, frameOf, heldWeave, layerOf, withFrameSheet, withLayer } from './layerRecord'
 import type { Project } from './project'
 import { beadCell } from './weave'
-import { flatView, withFields } from '../testUtils/flatFields'
+import { withFields } from '../testUtils/flatFields'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
@@ -71,18 +71,19 @@ function triangle(): Project {
 }
 
 describe('a layer written through the same record (ADR 0079, ticket 0661)', () => {
-  it('writes the Canvas\'s Weave, beads and name into the Project\'s own fields, leaving the Frame as it was', () => {
+  it('writes the Canvas\'s Weave, beads and name into the first layer, leaving the Frame as it was (ticket 0664)', () => {
     const before = framed()
     const after = withLayer(before, 'canvas', { weave: { technique: 'loom' }, beads: { 0: { 0: BLUE } }, name: 'Meadow' })
-    expect(flatView(after)).toMatchObject({ technique: 'loom', beads: { 0: { 0: BLUE } }, name: 'Meadow', frame: frameOf(before) })
-    expect(after).not.toHaveProperty('techniqueSettings')
+    expect(canvasOf(after)).toMatchObject({ technique: 'loom', beads: { 0: { 0: BLUE } }, name: 'Meadow' })
+    expect(canvasOf(after)).not.toHaveProperty('techniqueSettings')
+    expect(frameOf(after)).toBe(frameOf(before))
   })
 
-  it('writes the Frame\'s Weave, beads and name onto its sheet, leaving the Canvas as it was', () => {
+  it('writes the Frame\'s Weave, beads and name into its layer, leaving the Canvas as it was', () => {
     const before = framed()
     const after = withLayer(before, 'frame', { weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beads: { 0: { 0: RED } }, name: 'Lily' })
     expect(frameOf(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, beads: { 0: { 0: RED } }, name: 'Lily', row: frameOf(before)!.row })
-    expect(flatView(after)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: beadsOfLayer(before, 'canvas'), name: 'Garden' })
+    expect(canvasOf(after)).toBe(canvasOf(before))
   })
 
   it('keeps a Weave\'s cell out of what it stores, and clears a Frame\'s name with an empty one', () => {
@@ -91,11 +92,12 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
     expect(frameOf(after)).not.toHaveProperty('name')
   })
 
-  it('writes a layer\'s Bead and Bead shape into the Project\'s, which both layers share for now', () => {
+  it('writes a layer\'s Bead and Bead shape into every layer, which share them until ticket 0665', () => {
     const after = withLayer(framed(), 'frame', { bead: cube, beadShape: 'real' })
-    expect(flatView(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
-    expect(layerOf(after, 'canvas')).toMatchObject({ beadId: cube.id, beadShape: 'real' })
-    expect(withLayer(after, 'canvas', { beadShape: 'symmetric' })).not.toHaveProperty('beadShape')
+    expect(frameOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
+    expect(canvasOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
+    const symmetric = withLayer(after, 'canvas', { beadShape: 'symmetric' })
+    expect(symmetric.layers.some((layer) => 'beadShape' in layer)).toBe(false)
   })
 
   it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and place', () => {

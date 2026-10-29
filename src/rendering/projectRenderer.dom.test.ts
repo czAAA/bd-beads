@@ -864,7 +864,7 @@ describe('Bead shape (ADR 0068)', () => {
   })
 
   it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
-    const real = { ...painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), beadShape: 'real' as const }
+    const real = withFields(painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), { beadShape: 'real' })
     const beads = drawnBeads(real)
     expect(beads).toHaveLength(9)
     for (const bead of beads) {

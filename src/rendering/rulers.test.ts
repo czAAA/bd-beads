@@ -65,7 +65,7 @@ describe('which boxes carry rulers', () => {
 
   it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(10, 10)], { row: 2, column: 3, rows: 4, columns: 5 }))
-    expect(boxes).toEqual([{ technique: 'loom', row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'sheet' }])
+    expect(boxes).toEqual([{ row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'sheet' }])
   })
 
   it('leaves out a box far off screen', () => {

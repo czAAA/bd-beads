@@ -48,7 +48,8 @@ const rect = ({ technique: _technique, ...rectangle }: Rect & { technique: strin
 
 /** The rectangle of the Frame the last change left (its beads and name aside). */
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
-  const frame = frameOf(deps.replaceProject.mock.calls.at(-1)?.[0])
+  const last = deps.replaceProject.mock.calls.at(-1)?.[0]
+  const frame = last && sheetOf(last)
   if (!frame) return undefined
   const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
@@ -316,7 +317,7 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 3, column: 2, rows: 8, columns: 10 })
     expect(deps.announce).toHaveBeenCalledTimes(1)
     deps.harness.history.onUndo()
-    expect(sheetOf(deps.harness.project)).toEqual(frameOf(big))
+    expect(sheetOf(deps.harness.project)).toEqual(sheetOf(big))
 
     const same = setup(big)
     same.resizeTo(6, 6)
@@ -366,7 +367,7 @@ describe('useFrameFlow', () => {
       const { deps, setTechnique } = setup()
       const before = deps.harness.project
       setTechnique('peyote')
-      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'loom', frame: { ...frameOf(before), technique: 'peyote' }, beads: beadsOfLayer(before, 'canvas') })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'loom', frame: { ...sheetOf(before), technique: 'peyote' }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
@@ -448,7 +449,7 @@ describe('useFrameFlow', () => {
       const { deps, setWeaveSetting } = setup(brick)
       const before = deps.harness.project
       setWeaveSetting('frame', 'brickBlock', 3)
-      expect(flatView(deps.harness.project)).toMatchObject({ frame: { ...frameOf(before), techniqueSettings: { brickBlock: 3 } }, beads: beadsOfLayer(before, 'canvas') })
+      expect(flatView(deps.harness.project)).toMatchObject({ frame: { ...sheetOf(before), techniqueSettings: { brickBlock: 3 } }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
       deps.harness.history.onUndo()
       expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock ?? 1).toBe(1)
@@ -524,7 +525,7 @@ describe('useFrameFlow', () => {
       expect(lastFrame(deps)).toMatchObject({ column: 3, columns: 5 })
       expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual(beads)
       stepEdge('left', 1)
-      expect(flatView(deps.harness.project)).toMatchObject({ frame: frameOf(named), beads, pieceNames: canvasOf(named).pieceNames })
+      expect(flatView(deps.harness.project)).toMatchObject({ frame: sheetOf(named), beads, pieceNames: canvasOf(named).pieceNames })
       expect(deps.showToast).not.toHaveBeenCalled()
     })
 
@@ -589,7 +590,7 @@ describe('useFrameFlow', () => {
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
       expect(frameOf(deps.harness.project)!.shape).toBe('star')
       deps.harness.history.onUndo()
-      expect(sheetOf(deps.harness.project)).toEqual(frameOf(drawn))
+      expect(sheetOf(deps.harness.project)).toEqual(sheetOf(drawn))
     })
 
     it('does nothing once a pass is done', () => {
@@ -669,7 +670,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     release()
     expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 6')
     deps.harness.history.onUndo()
-    expect(sheetOf(deps.harness.project)).toEqual(frame)
+    expect(frameOf(deps.harness.project)).toEqual(frame)
   })
 
   it('asks before removing it, as for any Frame, and removes it on Yes (ticket 0669)', () => {

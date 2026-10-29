@@ -30,7 +30,7 @@ describe('changeFrame naming the Frame (ticket 555)', () => {
     if (named.kind !== 'changed') throw new Error('expected a change')
     expect(sheetOf(named.project)).toEqual({ ...sheet(frame), name: 'Moth wing' })
     const cleared = changeFrame(named.project, { name: '' })
-    expect(cleared.kind === 'changed' && frameOf(cleared.project)).toEqual(sheet(frame))
+    expect(cleared.kind === 'changed' && sheetOf(cleared.project)).toEqual(sheet(frame))
   })
 
   it('is no change for the name it already has, and refused with no Frame', () => {
@@ -60,12 +60,12 @@ describe('changeFrame', () => {
       expect(changeFrame(project, change).kind).not.toBe('refused')
     })
 
-    it('lets Remove Frame through with passes done, clearing them with the Frame (ticket 426)', () => {
+    it('lets Remove Frame through with passes done, clearing them with the Frame (tickets 426, 0664)', () => {
       const project = framed({ rowProgress: woven('columns', 5, 3) })
       const result = changeFrame(project, { remove: true })
       if (result.kind !== 'changed') throw new Error('expected a change')
       expect(frameOf(result.project)).toBeUndefined()
-      expect(rowProgressOf(result.project)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOf(result.project)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
     })
 
     it('needs a Frame to remove a line from', () => {
@@ -98,10 +98,10 @@ describe('changeFrame', () => {
       return project
     }
 
-    it('is on at the first Frame set, the pointers at the first pass', () => {
-      const result = changeFrame(withFields(open(), { rowProgress: { ...woven('columns', 3, 2) } }), { set: frame })
+    it('is on at the first Frame set, the pointers at the first pass (ticket 0664: Row progress is the Frame\'s)', () => {
+      const result = changeFrame(open(), { set: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(rowProgressOf(result.project)).toMatchObject({ currentRow: 3, currentColumn: 2 })
+      expect(rowProgressOf(result.project)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
       expect(rowProgressOn(result.project)).toBe(true)
     })
 
@@ -170,7 +170,7 @@ describe('changeFrame', () => {
       const project = framed({ frame: sheet(frame, withColors({}, [{ row: 1, column: 1, color: '#111111' }])), beads: withColors({}, [{ row: 40, column: 1, color: '#222222' }]) })
       const result = changeFrame(project, { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(sheetOf(result.project)).toEqual({ ...frameOf(project), technique: 'peyote' })
+      expect(sheetOf(result.project)).toEqual({ ...sheetOf(project), technique: 'peyote' })
       expect(canvasOf(result.project).technique).toBe('loom')
       expect(beadsOfLayer(result.project, 'canvas')).toEqual(beadsOfLayer(project, 'canvas'))
     })
@@ -189,7 +189,7 @@ describe('changeFrame', () => {
     it('leaves a Frame on an odd row where it is: its own row 0 is straight whatever the Canvas does', () => {
       const odd = framed({ frame: sheet({ row: 11, column: 10, rows: 6, columns: 4 }, withColors({}, [{ row: 0, column: 2, color: '#111111' }])) })
       const result = changeFrame(odd, { technique: 'peyote' })
-      expect(result.kind === 'changed' && sheetOf(result.project)).toEqual({ ...frameOf(odd), technique: 'peyote' })
+      expect(result.kind === 'changed' && sheetOf(result.project)).toEqual({ ...sheetOf(odd), technique: 'peyote' })
     })
   })
 
@@ -200,7 +200,7 @@ describe('changeFrame', () => {
       const project = framed({ frame: { ...sheet({ row: 12, column: 3, rows: 6, columns: 4 }, withColors({}, [{ row: 1, column: 1, color: '#111111' }])), technique: 'brick' } })
       const result = changeFrame(project, { techniqueSettings: { brickBlock: 3 } })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(sheetOf(result.project)).toEqual({ ...frameOf(project), techniqueSettings: { brickBlock: 3 } })
+      expect(sheetOf(result.project)).toEqual({ ...sheetOf(project), techniqueSettings: { brickBlock: 3 } })
       expect(canvasOf(result.project).techniqueSettings).toBeUndefined()
     })
 
