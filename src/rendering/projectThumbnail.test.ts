@@ -6,6 +6,7 @@ import { framedGrid } from '../domain/layerBeads'
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { changeFrame } from '../domain/changeFrame'
+import { rotateFrame } from '../domain/rotate'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 
@@ -118,6 +119,15 @@ describe('thumbnailPixels', () => {
     expect(pixel(image, 0, 1)).toEqual(BLUE)
     expect(pixel(image, 9, 1)).toEqual(NONE)
     expect(pixel(image, 0, 5)).toEqual(NONE)
+  })
+
+  it('draws a Frame turned by Rotate Frame as it lies: its first row down the right side (ticket 0667)', () => {
+    const upright = project([['#ff0000', '#ff0000', '#ff0000', '#ff0000'], ['#0000ff', '#0000ff', '#0000ff', '#0000ff']])
+    const image = thumbnailPixels(rotateFrame(upright)!, 8)
+
+    expect([image.width, image.height]).toEqual([4, 8])
+    expect(pixel(image, 3, 1)).toEqual(RED)
+    expect(pixel(image, 0, 6)).toEqual(BLUE)
   })
 
   /** A small Custom frame Triangle, every bead red, and its Layer geometry. */

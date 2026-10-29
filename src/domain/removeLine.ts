@@ -4,6 +4,7 @@ import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type 
 import { carryNames } from './pieceNames'
 import { finishedOnLine, lineRunsAlong, rowProgressPosition } from './rowProgress'
 import { frameWeave } from './layerWeave'
+import { beadsOfLayer, heldWeave, withLayer } from './layerRecord'
 import { describeWeave } from './weave'
 import type { Project } from './project'
 import type { PassDirection } from './weaveGeometry'
@@ -42,7 +43,7 @@ export function selectedAreaLine(frame: Rect | undefined, selection: Selection |
 
 /** The line the Selection covers, in the Frame or, with no Frame, in whichever Piece area it is a whole line of. */
 function selectedProjectLine(project: Project, selection: Selection | undefined): ProjectLine | undefined {
-  const areas = project.frame ? [project.frame] : pieceAreasOf(project.beads, project)
+  const areas = project.frame ? [project.frame] : pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'))
   for (const area of areas) {
     const line = selectedAreaLine(area, selection)
     if (line) {
@@ -69,7 +70,10 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
   if (!project.frame) {
     return undefined
   }
-  return frameChangeRefusal(project, { removeLine: line }) === 'only-line' ? 'only-line' : undefined
+  const refusal = frameChangeRefusal(project, { removeLine: line })
+  // A Frame that does not offer it (a Custom frame, or one lying turned: ticket 0667) has no line to remove.
+  if (refusal === 'not-offered') return 'no-line'
+  return refusal === 'only-line' ? 'only-line' : undefined
 }
 
 /** What Remove line asks before it goes (ticket 0647, ADR 0055), its rows and columns the way the rows run. */
@@ -113,6 +117,6 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
   if (project.frame) {
     return changeFrame(project, { removeLine: line })
   }
-  const shifted = { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }
+  const shifted = withLayer(project, 'canvas', { beads: beadsWithoutLine(beadsOfLayer(project, 'canvas'), line.area, line) })
   return { kind: 'changed', project: carryNames(project, shifted, (at) => shiftedByLine(line.area, line, at)) }
 }

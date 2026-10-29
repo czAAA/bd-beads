@@ -1,16 +1,17 @@
 import type { GridPosition, Rotation } from './grid'
-import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
-import { withEachBead } from './folding'
+import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
+import type { QuarterTurns } from './frameShape'
+import { laidSize } from './frameOrientation'
 import { snapRow } from './frame'
-import { layerSheet, onLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
+import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave } from './layerWeave'
+import { beadsOfLayer, heldWeave, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
-import { turnedRowProgress } from './rowProgress'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
-import { describeWeave } from './weave'
+import { describeWeave, type Weave } from './weave'
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
 // view-only turn it changes the data (peyote/brick contacts change). Frame, rulers and Row progress are untouched;
@@ -25,7 +26,7 @@ export interface RotatedSelection {
 /** The Selection turned a quarter about its centre: rows and columns swap, and where rows alternate it starts on a
  * multiple of the shift's cycle, `inset` being how far inside it the row that must land on one begins (ticket 477).
  * @internal Its test checks the turned rectangle on its own. */
-export function rotatedSelection(project: Pick<Project, 'technique' | 'techniqueSettings'>, selection: Selection, inset = 0): Selection {
+export function rotatedSelection(weave: Weave, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.
@@ -33,7 +34,7 @@ export function rotatedSelection(project: Pick<Project, 'technique' | 'technique
   const rowShift = difference >= 0 ? Math.floor(difference / 2) : -Math.floor(-difference / 2)
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
   return {
-    top: snapRow(project, frame.row + rowShift + inset) - inset,
+    top: snapRow(weave, frame.row + rowShift + inset) - inset,
     left: frame.column + columnShift,
     rows: frame.columns,
     columns: frame.rows,
@@ -101,18 +102,13 @@ function turnedBeads({ beads, weave }: Pick<LayerSheet, 'beads' | 'weave'>, sele
  * the Piece names go where their beads went.
  * @internal Tests turn a Selection without the App. */
 export function rotateSelection(project: Project, selection: Selection, inset = 0): RotatedSelection {
-  const turned = turnedBeads({ beads: project.beads, weave: project }, selection, inset)
+  const turned = turnedBeads({ beads: beadsOfLayer(project, 'canvas'), weave: heldWeave(project, 'canvas') }, selection, inset)
   return { project: turnedNames(project, turned), selection: turned.selection }
 }
 
 /** The Project with its Canvas beads turned, its Piece names going where their beads went. */
 function turnedNames(project: Project, turn: ReturnType<typeof turnedBeads>): Project {
-  return carryNames(project, { ...project, beads: turn.beads, updatedAt: Date.now() }, turn.moved)
-}
-
-/** The beads of a layer as a Project holds them. */
-function beadsOf(project: Project, layer: Layer): BeadMap {
-  return layer === 'frame' ? project.frame!.beads : project.beads
+  return carryNames(project, { ...withLayer(project, 'canvas', { beads: turn.beads }), updatedAt: Date.now() }, turn.moved)
 }
 
 /** A Selection turned on its layer (ADR 0066): the Canvas's as `rotateSelection` does it; the Frame's within the Frame,
@@ -134,7 +130,7 @@ export function rotateLayerSelection(project: Project, selection: Selection): Ro
   return {
     project: rotated === project || layer === 'frame' ? rotated : withCanvasNames(project, rotated, result),
     selection: { ...turned, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) },
-    covered: rotated === project ? 0 : coveredByRotation(before, { beads: beadsOf(rotated, layer) }, local, turned),
+    covered: rotated === project ? 0 : coveredByRotation(before, { beads: beadsOfLayer(rotated, layer)! }, local, turned),
     dropped: 0,
   }
 }
@@ -176,9 +172,9 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
   return covered
 }
 
-/** Rotate Frame (ticket 471, ADR 0052, 0066): the Frame and its own beads turned a quarter clockwise about their centre,
- * as Rotate does a Selection; Width and Height swap, and Row progress turns with them (ticket 0647; a Custom frame's
- * order turns with its layout, so its pointer stays). The Canvas under it is not touched. No Frame: undefined. */
+/** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame's orientation a quarter clockwise about its centre,
+ * like a sheet of A4 turned on an A1. Its beads keep their own rows and columns, so nothing is rewritten and no row snaps,
+ * and Row progress keeps its pointers; what it covers turns, the Canvas under it untouched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
@@ -187,20 +183,16 @@ export function rotateFrame(project: Project): Project | undefined {
     return undefined
   }
   const own = frameWeave(project)
-  // Turned in the Frame's own rows (its first is 0), then placed on the Canvas by as far as its corner moved.
-  const turned = rotatedSelection(own, { top: 0, left: 0, rows: frame.rows, columns: frame.columns })
-  const weave = describeWeave(own)
-  const block = { columns: frame.columns, rows: frame.rows }
-  // Folded beads beyond the Frame's edge turn with the rest (ticket 0638).
-  const { folded: _folded, ...rest } = frame
-  const carried = withEachBead(frame, (position) => weave.turned(position, block))
-  const moved = canvasDistance(project, own, turned.top, turned.left)
-  return {
-    ...project,
-    frame: { ...rest, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, ...carried },
-    rowProgress: turnedRowProgress(project.rowProgress, { twoPasses: weave.twoPasses, rows: frame.rows }),
-    updatedAt: Date.now(),
+  const turns = ((frame.quarterTurns ?? 0) + 1) % 4
+  const { quarterTurns: _turns, ...upright } = frame
+  const turned: FrameSheet = { ...upright, ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
+  // Its centre stays: the corner moves by half what it covered less half what it covers now, so turns come back to it.
+  const half = (sheet: FrameSheet) => {
+    const { rows, columns } = laidSize({ ...sheet, ...own })
+    return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2))
   }
+  const [was, now] = [half(frame), half(turned)]
+  return { ...project, frame: { ...turned, row: frame.row + was.row - now.row, column: frame.column + was.column - now.column }, updatedAt: Date.now() }
 }
 
 /** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */

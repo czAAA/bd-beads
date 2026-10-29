@@ -28,14 +28,12 @@ function setup(project: Project | null = framed) {
   return { deps, harness, ...useRotateFrameFlow(deps) }
 }
 
-describe('useRotateFrameFlow (ticket 471, ADR 0066)', () => {
-  it('turns the Frame and its own beads as one step, swaps Width and Height, and Undo brings both back', () => {
+describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
+  it('turns the Frame a quarter as one step, its beads where they were, and Undo brings back its orientation', () => {
     const { deps, harness, onRotateFrame } = setup()
     onRotateFrame()
 
-    expect(harness.project.frame).toMatchObject({ row: 19, column: 21, rows: 6, columns: 4 })
-    expect(colorAt(harness.project.frame!.beads, 0, 0)).toBeNull()
-    expect(colorAt(harness.project.frame!.beads, 0, 3)).toBe(RED)
+    expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
@@ -55,22 +53,15 @@ describe('useRotateFrameFlow (ticket 471, ADR 0066)', () => {
     expect(harness.project.beads).toBe(framed.beads)
   })
 
-  it('snaps the turned top row to an even row on peyote, as Rotate does', () => {
-    const peyote: Project = { ...framed, technique: 'peyote', frame: { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 9, beads: {} } }
-    const { harness, onRotateFrame } = setup(peyote)
-    onRotateFrame()
-    expect(harness.project.frame!.row % 2).toBe(0)
-    expect(harness.project.frame).toMatchObject({ rows: 9, columns: 4 })
-  })
-
-  it('turns a Frame whose rows are marked done, its finished beads and pointers with it, and one Undo brings both back (ticket 0647)', () => {
+  it('turns a Frame whose rows are marked done without asking, its pointers kept, and one Undo brings it back (ticket 0647)', () => {
     const woven = moveToRow(framed, 1)
     const { deps, harness, onRotateFrame } = setup(woven)
     onRotateFrame()
 
-    // Row 1 is done from the top: turned, it is column 1 done from the right, the red bead in it kept, not trimmed.
-    expect(harness.project.rowProgress).toMatchObject({ direction: 'columns', reversed: true, currentColumnBack: 1 })
-    expect(colorAt(harness.project.frame!.beads, 0, 3)).toBe(RED)
+    // Row 1 is done: the same beads stay finished, the red bead in it kept, not trimmed.
+    expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
+    expect(harness.project.rowProgress).toEqual(woven.rowProgress)
+    expect(colorAt(harness.project.frame!.beads, 0, 0)).toBe(RED)
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
@@ -92,7 +83,7 @@ describe('useRotateFrameFlow on an empty Frame (ticket 471)', () => {
   it('still turns the Frame when it holds no bead', () => {
     const { harness, onRotateFrame } = setup({ ...framed, frame: { ...framed.frame!, beads: {} } })
     onRotateFrame()
-    expect(harness.project.frame).toMatchObject({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
     expect(harness.history.canUndo.value).toBe(true)
   })
 })
