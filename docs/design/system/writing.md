@@ -415,3 +415,21 @@ The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards).
 | Preview: {size}, {colors} · Preview: no picture yet | Превью: {size}, {colors} · Превью: изображения пока нет | Прев’ю: {size}, {colors} · Прев’ю: зображення ще немає | Podgląd: {size}, {colors} · Podgląd: brak obrazu |
 
 Russian, Ukrainian and Polish here are proposals for review with the build.
+
+## Margin sheet copy (ticket 0655)
+
+The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| margin (the Frame panel's section) · auto (its summary) | поля · авто | поля · авто | margines · auto |
+| Margin color (picker, button and Tooltip) · margin color (popover label) | Цвет полей · цвет полей | Колір полів · колір полів | Kolor marginesu · kolor marginesu |
+| Auto · Auto, one step off the Canvas color (its accessible name) | Авто · Авто, на шаг от цвета холста | Авто · Авто, на крок від кольору полотна | Auto · Auto, o krok od koloru płótna |
+| {color}, the Canvas color (the swatch equal to it) | {color}, цвет холста | {color}, колір полотна | {color}, kolor płótna |
+| Name and size on the margin | Имя и размер на полях | Назва й розмір на полях | Nazwa i rozmiar na marginesie |
+| The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Поля — 4 бусины с каждой стороны. На них ничего нельзя поставить, и в экспорт они не попадают. | Поля — 4 бісеринки з кожного боку. На них нічого не можна поставити, і в експорт вони не потрапляють. | Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu. |
+| Fold the title block · Show the title block | Свернуть штамп · Показать штамп | Згорнути штамп · Показати штамп | Zwiń tabliczkę · Pokaż tabliczkę |
+| Change Technique (the title block's pencil) | Сменить технику | Змінити техніку | Zmień technikę |
+| Frame tools (the folded form's ··· menu) | Инструменты рамки | Інструменти рамки | Narzędzia ramki |
+
+Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.

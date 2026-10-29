@@ -52,6 +52,8 @@
   --bead-empty: #d8d2cc; /* An empty bead position on the board (Derived). */
   --position-mark: #d8d2cc;  /* A Position mark on the open canvas: the outline of the square at an empty position outside the Frame (starts from bead-empty). */
   --bead-outline: #1f1f1f; /* Hover outline when no color is chosen. */
+  --margin-line: rgba(20,20,19,.16); /* The Frame's margin sheet (MarginSheet card): its outer hairline, its inner border and the title block's rules, laid over the margin color. */
+  --margin-title: rgba(255,255,255,.55); /* The Frame's margin sheet (MarginSheet card): the title block's and the fold tab's fill, laid over the margin color. */
   --elevation-1: 0 4px 12px rgba(0,0,0,.04); /* Card: save box, Beads needed, Saved Patterns. Dark uses surface steps instead. */
   --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08); /* The canvas box. */
   --elevation-3: 0 16px 48px -8px rgba(0,0,0,.12); /* Modals, menus, messages (Derived). Dark adds a 1px line-strong border instead. */
@@ -109,6 +111,8 @@
   --bead-empty: #3c3c3c;
   --position-mark: #3c3c3c;
   --bead-outline: #ffffff;
+  --margin-line: rgba(255,255,255,.18);
+  --margin-title: rgba(0,0,0,.14);
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
@@ -166,6 +170,8 @@
   --bead-empty: #b8b0a8;
   --position-mark: #b8b0a8;
   --bead-outline: #000000;
+  --margin-line: #595959;
+  --margin-title: #ffffff;
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;

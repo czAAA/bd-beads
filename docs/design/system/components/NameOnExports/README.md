@@ -7,5 +7,6 @@ Where the Maker's name for a Project's PDF and PNG exports is set: the last row 
 - Up to 40 characters, optional. Saved at once and not part of Undo.
 - It applies to that Project only, so Projects made for others carry their own name. The exports leave the name out when it is empty; when set it is printed as information (made by, the chart page header, "by {maker}" on the PNG), never as a watermark (printed-output.md).
 - **Gone:** the row in the Export ▾ menu, the modal with Cancel and Save, the Dock Menu panel row, and the device-wide name. A name saved on a device before the update is copied into each Project that has none (a temporary migration, removed by ticket 0391), then cleared.
+- **On the margin (ticket 0655):** the Frame's title block shows "by" and the maker's name with a pencil (MarginSheet card); it edits this same name, so a change shows here and on every export. Empty, the cell shows "by" and "Your name" in `muted`.
 
 Rewritten for spec 0440; the earlier card (a device-wide name in the Export menu and a modal) is in git history.
