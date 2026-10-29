@@ -203,6 +203,16 @@ describe('useCanvasView', () => {
       expect(view.visibleCentre()).not.toEqual(middle)
     })
 
+    it('zooms about the point under the fingers on screen while the view leans', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      view.twistBy(30, { x: 500, y: 400 })
+      const under = { x: 800, y: 200 }
+      const before = view.cellAt(under)
+      view.setZoom(0.5, under)
+      expect(view.cellAt(under)).toEqual(before)
+    })
+
     it('stays at an angle further than 10° off a quarter turn', () => {
       const { kept, view } = setup(projectOf(20, 10))
       view.twistBy(-30, { x: 500, y: 400 })

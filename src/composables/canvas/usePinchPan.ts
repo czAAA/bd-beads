@@ -84,11 +84,12 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     const box = scrollEl.value?.getBoundingClientRect()
     // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with
     // them.
-    deps.setZoom(startZoom * (distance(a, b) / startSpread), { x: mid.x - (box?.left ?? 0), y: mid.y - (box?.top ?? 0) })
+    const anchor = { x: mid.x - (box?.left ?? 0), y: mid.y - (box?.top ?? 0) }
+    deps.setZoom(startZoom * (distance(a, b) / startSpread), anchor)
     deps.panBy(mid.x - lastMid.x, mid.y - lastMid.y)
     lastMid = mid
     const turned = angle(a, b)
-    deps.twistBy(shortest(turned - lastAngle), { x: mid.x - (box?.left ?? 0), y: mid.y - (box?.top ?? 0) })
+    deps.twistBy(shortest(turned - lastAngle), anchor)
     lastAngle = turned
   }
 

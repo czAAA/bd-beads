@@ -28,7 +28,7 @@ describe('a view leaning off its quarter turn (ticket 0672)', () => {
   })
 
   it('turns a move on screen back into one across the drawing', () => {
-    const view = tiltedView({ width: 300, height: 400 }, 90 / 3)
+    const view = tiltedView({ width: 300, height: 400 }, 30)
     expect(view.unturned({ x: 10, y: 0 })).toEqual(close({ x: 8.66025403784, y: -5 }))
   })
 

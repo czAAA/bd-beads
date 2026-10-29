@@ -259,7 +259,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       markerAt.value = undefined
       return
     }
-    const { x, y } = pointInSurface(hoverPoint)
+    const { x, y } = pointInDrawing(hoverPoint)
     const offset = hoverPen ? PEN_MARKER_OFFSET_PX : 0
     const side = props.handedness === 'left' ? 1 : -1
     markerAt.value = { x: x + side * offset, y: y - offset, layer: layerAt(props.project, bead) }
@@ -284,7 +284,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     if (!rootEl.value) {
       return undefined
     }
-    const point = pointInSurface(event)
+    const point = pointInDrawing(event)
     // The Select tool marks out a rectangle of a Custom frame's cells on screen, between its beads too (ticket 0594).
     return (props.tools.selectsAnywhere ? surface.value.frameCellAt(point) : undefined) ?? surface.value.pointToHit(point)
   }
@@ -355,7 +355,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   }
 
   /** The point of the drawing a pointer is at: on screen, turned back by the Canvas's lean (ticket 0672). */
-  function pointInSurface(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
+  function pointInDrawing(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
     return leaning.value.toDrawn(pointOnScreen(event))
   }
 
@@ -365,7 +365,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
 
   /** The bead position nearest a pointer, wherever it is: dragging a Frame needs one even between beads. */
   function cellUnder(event: PointerEvent, layer: ViewLayer = gestureLayer): GridPosition {
-    return surface.value.pointToCell(pointInSurface(event), layer)
+    return surface.value.pointToCell(pointInDrawing(event), layer)
   }
 
   /** The layer a Selection acts on, for measuring a press on its handles. */
@@ -376,7 +376,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
    * so the tool gets the press. The Move handle's own press comes through `pressMoveHandle`. */
   function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
-    const point = pointInSurface(event)
+    const point = pointInDrawing(event)
     if (!props.tools.settingFrame) return undefined
     const target = framePressAt(frameOf(props.project), surface.value, quarterTurnOf(props.project), point, touch)
     return target.kind === 'handle' ? target : undefined
@@ -408,7 +408,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       return
     }
     if (!heldPointer) return
-    const point = pointInSurface(heldPointer)
+    const point = pointInDrawing(heldPointer)
     const { dx, dy } = edgeScrollStep(pointOnScreen(heldPointer), size.value)
     if (dx !== 0 || dy !== 0) {
       emit('pan', -dx, -dy)
@@ -423,7 +423,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function dragTo(event: Pick<PointerEvent, 'clientX' | 'clientY'>): void {
     heldPointer = { clientX: event.clientX, clientY: event.clientY }
     if (!edgeScrollFrame && typeof requestAnimationFrame === 'function') edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
-    followHeldDrag(pointInSurface(event))
+    followHeldDrag(pointInDrawing(event))
   }
 
   /** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
@@ -459,7 +459,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       const target = framePress(event)
       if (target) {
         framing.value = true
-        hotHandle.value = frameHandleIdAt(frameOf(props.project), surface.value, pointInSurface(event), touchInput.value)
+        hotHandle.value = frameHandleIdAt(frameOf(props.project), surface.value, pointInDrawing(event), touchInput.value)
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
@@ -472,7 +472,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it. A shape
       // (ticket 547) can't be grabbed at all.
       const box = surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer())
-      const point = pointInSurface(event)
+      const point = pointInDrawing(event)
       const target: FramePress = props.selection.cells
         ? { kind: 'outside' }
         : selectionHasHandles(props.selection)
@@ -503,7 +503,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     // A ruler number is display-only (ticket 447): the press goes to the active tool at that spot.
     const bead = beadUnder(event)
     overBead.value = bead !== undefined
-    const offShape = !bead && surface.value.offShapeAt(pointInSurface(event))
+    const offShape = !bead && surface.value.offShapeAt(pointInDrawing(event))
     overRefusedMargin.value = refusesMargin(bead) || offShape
     // A Custom frame's Seams and Off-shape hold no bead (ticket 0592): a press there is refused, as on the margin.
     if (offShape) {
@@ -524,13 +524,13 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
           }
           emit('cell-primary-down', near.row, near.column)
         } else {
-          stroke = { from: pointInSurface(event), last: undefined }
+          stroke = { from: pointInDrawing(event), last: undefined }
         }
       }
       return
     }
     if (event.button === 0) {
-      stroke = { from: pointInSurface(event), last: bead }
+      stroke = { from: pointInDrawing(event), last: bead }
     }
     // A press also lands where the pasted block under the pointer goes (the preview cells).
     const pasted = [...(props.previewCells ?? []), ...(props.previewStamp ? stampCells(props.previewStamp) : [])]
@@ -568,11 +568,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       return
     }
     if (props.tools.selects && props.selection && event.pointerType !== 'touch' && selectionHasHandles(props.selection)) {
-      const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer()), pointInSurface(event), false)
+      const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer()), pointInDrawing(event), false)
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
       const target = framePress(event)
-      hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(frameOf(props.project), surface.value, pointInSurface(event), false) : undefined
+      hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(frameOf(props.project), surface.value, pointInDrawing(event), false) : undefined
       handleCursor.value = target?.kind === 'move' ? 'grab' : hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
     } else {
       handleCursor.value = undefined
@@ -603,7 +603,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     }
 
     overBead.value = bead !== undefined
-    overRefusedMargin.value = refusesMargin(bead) || (!bead && surface.value.offShapeAt(pointInSurface(event)))
+    overRefusedMargin.value = refusesMargin(bead) || (!bead && surface.value.offShapeAt(pointInDrawing(event)))
     placeMarker()
     placePickChip(event, bead)
     if (selectDrag && event.buttons & 1) {
@@ -631,7 +631,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       stroke = undefined
       return
     }
-    const to = pointInSurface(event)
+    const to = pointInDrawing(event)
     const { x, y } = stroke.from
     const steps = Math.max(1, Math.ceil(Math.hypot(to.x - x, to.y - y) / STROKE_SAMPLE_PX))
     const crossed: GridPosition[] = []
