@@ -10,7 +10,8 @@ import { withFields } from './flatFields'
 const moth = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 
 /** The margin sheet at `zoom` round a 30-column Frame, in a box that scrolls sideways as the drawing area pans: on a
- * phone the sheet is wider than the screen, and the canvas is moved to reach the rest (ticket 0657). */
+ * phone the sheet is wider than the screen, and the canvas is moved to reach the rest (ticket 0657). It stands 32px
+ * down, where the bare sheet's Move bar stands above it (ticket 0682). */
 export const marginSheetHost = (zoom: number) =>
   defineComponent({
     setup() {
@@ -20,8 +21,9 @@ export const marginSheetHost = (zoom: number) =>
       const band = 80 * zoom
       const outset = frameOutsetPx(zoom)
       const beads = { width: 600 * zoom, height: 160 * zoom }
-      const sheet = { left: 0, top: 0, width: beads.width + 2 * band, height: beads.height + 2 * band }
-      const anchor = { box: { left: band - outset, top: band - outset, width: beads.width + 2 * outset, height: beads.height + 2 * outset }, sheet, band, viewport: { width: sheet.width, height: sheet.height } }
-      return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: `${sheet.height + 32}px` } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
+      const top = 32
+      const sheet = { left: 0, top, width: beads.width + 2 * band, height: beads.height + 2 * band }
+      const anchor = { box: { left: band - outset, top: top + band - outset, width: beads.width + 2 * outset, height: beads.height + 2 * outset }, sheet, band, viewport: { width: sheet.width, height: top + sheet.height } }
+      return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: `${top + sheet.height + 32}px` } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
     },
   })
