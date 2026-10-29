@@ -6,6 +6,7 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 
 ## Where it sits
 
+- In the Export panel (`panel-width-small`, 360px; ExportPanel card, ticket 0652) under the same two buttons, as the same component.
 - In the Frame panel (`panel-width`, 520px), in the **export** PanelSection, in this order: the Picture row, the Printable chart row, then the slider, `space-8` under the last button and inside the section's padding. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
 - The slider's head line: "Export quality" (Inter 500 13, `ink`) and, right-aligned, the chosen stop's word in `meta-small` (`muted`).
 - Under the stops, `space-8` below them: one `meta-small` line in `muted`, "For the picture. The printable chart is drawn in lines and stays sharp at any zoom." (writing.md).

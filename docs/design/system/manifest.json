@@ -23,6 +23,7 @@
     "components/Dock/README.md",
     "components/EmptyCanvas/README.md",
     "components/EmptyPanels/README.md",
+    "components/ExportPanel/README.md",
     "components/FoundColorRow/README.md",
     "components/FrameControls/README.md",
     "components/Glossary/README.md",
@@ -233,6 +234,11 @@
       "name": "Menu",
       "group": "Overlays",
       "summary": "A popup list anchored under its button (Export ▾), and the Tooltip."
+    },
+    {
+      "name": "ExportPanel",
+      "group": "Overlays",
+      "summary": "The small panel from the Canvas strip's Export button: Picture, Printable chart and Export quality with a Frame, Select a frame and Fit a frame to the drawing without one."
     },
     {
       "name": "MenuPanel",
