@@ -94,7 +94,7 @@ describe('row progress', () => {
   it('tells finished and current beads for many positions at once as it does for each (ticket 0676)', () => {
     for (const technique of ['loom', 'peyote'] as const) {
       const placed = createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 6, unit: 'beads' } })
-      const woven = moveToRow(withFields(placed, { frame: { ...frameOf(placed)!, row: 2, column: 3 } }), 3)
+      const woven = moveToRow(withLayers(placed, { frame: { ...frameOf(placed)!, row: 2, column: 3 } }), 3)
       const passes = rowPassesOf(woven)
       const positions = Array.from({ length: 10 * 9 }, (_, index) => ({ row: Math.floor(index / 9), column: index % 9 }))
       const expected = positions.map((position) => (isInFinishedRow(woven, position) ? 'finished' : isInCurrentRow(woven, position) ? 'current' : undefined))
