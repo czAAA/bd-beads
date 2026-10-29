@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from './changeFrame'
-import { frameLayoutOf } from './frameKind'
+import { frameLayoutOf } from './frameShape'
 import { kiteWingBeads } from './frameLayout'
 import { onLayer } from './layers'
 import { createProject } from './createProject'
@@ -101,10 +101,10 @@ describe('Word chart (ticket 0574)', () => {
 })
 
 describe('Word chart of a Custom frame (ticket 0594)', () => {
-  /** An open Canvas with a Custom frame of a kind and size, Letters on, its beads painted A where `paint` says. */
-  function shaped(kind: 'triangle' | 'kite' | 'star', size: number, paint: (position: { row: number; column: number }) => boolean): Project {
+  /** An open Canvas with a Custom frame of a Frame shape and size, Letters on, its beads painted A where `paint` says. */
+  function shaped(shape: 'triangle' | 'kite' | 'star', size: number, paint: (position: { row: number; column: number }) => boolean): Project {
     const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-    const placed = changeFrame(open, { custom: { kind, size, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, frameLayoutOf(placed.project.frame!)!.positions.filter(paint), HEX.A))
     return { ...painted, letters: true, paletteLetters: { [HEX.A]: 'A' } }
@@ -131,7 +131,7 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
 
   it('lists a Fringe earring\'s top from its base row up, then each strand from the top down (ticket 0597)', () => {
     const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-    const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings: { topWidth: 3, topRows: 2, fringeStyle: 'v', fringeLength: 3 }, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 3, topRows: 2, fringeStyle: 'v', fringeLength: 3 }, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     // The strands' last beads painted, a drop at each tip.
     const tips = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row, column }) => row === 1000 + (column === 1 ? 2 : 0))

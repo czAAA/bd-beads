@@ -34,7 +34,7 @@ export function sameBeads(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 
   return same(a.beads, b.beads) && same(a.frame?.beads, b.frame?.beads)
 }
 
-/** Whether two states of a Project hold the same Frame and beads: the Frame's place, size, Weave, name, kind, settings
+/** Whether two states of a Project hold the same Frame and beads: the Frame's place, size, Weave, name, shape, settings
  * and turn, its shown and Folded beads, and the Canvas's. How a held Frame change (ticket 0640) knows it came back to
  * where it began, and so is no Undo step. */
 export function sameLayers(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 'beads' | 'frame'>): boolean {
@@ -45,7 +45,7 @@ export function sameLayers(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project,
     sameFrame(x, y) &&
     sameWeave(x, y) &&
     x.name === y.name &&
-    x.kind === y.kind &&
+    x.shape === y.shape &&
     x.quarterTurns === y.quarterTurns &&
     [...names].every((name) => x.settings?.[name] === y.settings?.[name]) &&
     sameBeads(a, b) &&

@@ -631,7 +631,7 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
     expect(untouched.frame!.folded).toEqual(withColors({}, [{ row: 1, column: 2, color: BLUE }, { row: 4, column: 1, color: GREEN }]))
   })
 
-  it('lays them on the Canvas where they stand when a Rectangular Frame is removed, over what is there', () => {
+  it('lays them on the Canvas where they stand when a Frame without a shape is removed, over what is there', () => {
     const canvas = withColors({}, [{ row: 14, column: 12, color: GREY }])
     const removed = changed(narrower(peyote(own, { beads: canvas })), { remove: true })
     expect(removed.frame).toBeUndefined()
@@ -640,7 +640,7 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
 
   it('goes with a Custom frame when it is removed, leaving the Canvas as it is', () => {
     const canvas = withColors({}, [{ row: 40, column: 40, color: GREY }])
-    const custom = changed(framed({ beads: canvas }), { custom: { kind: 'triangle', size: 4, centre: { row: 20, column: 30 } } })
+    const custom = changed(framed({ beads: canvas }), { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 30 } } })
     const withFolded = { ...custom, frame: { ...custom.frame!, folded: withColors({}, [{ row: -1, column: 0, color: RED }]) } }
     expect(changed(withFolded, { remove: true }).beads).toEqual(canvas)
   })

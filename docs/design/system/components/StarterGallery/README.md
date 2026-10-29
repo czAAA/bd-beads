@@ -30,13 +30,13 @@ All three are subpanels (MenuPanel card): the header is the Back icon button and
 
 Each picture is the option's design, a Project file kept with the app, drawn by the Project renderer in Real bead shape with Color catalog colours, fitted to its well with 7% padding and never cropped. Colours stay as painted whatever Bead is chosen. A category card shows its best option: the Star, a pair of V fringe earrings, a Ring and a Band.
 
-How each kind lays its Beads (these are also the Frame kinds' layouts and counts, spec 0590):
+How each kind lays its Beads (these are also the Frame shapes' layouts and counts, spec 0590):
 
 | Kind | Size setting | Layout | Beads |
 | --- | --- | --- | --- |
 | Triangle | Rounds *n* (design 10) | Three wedges, one per side, each Bead pointing straight in from its side. A wedge's row *d*, half a Bead in from the side, holds *n* − *d* Beads on every other column, so rows stagger and every column starts at the side; about 2.3 columns stay empty at each corner, where the rows step in along the seams to the centre. | 3*n*(*n* + 1) / 2, so 165 |
 | Warped Square | Rounds *n* (design 8) | An X of four wings, Beads pointing at the centre; every column starts at a seam diagonal, so the outer edges step and the notches between the wings stay open. Bead *k* in from the seam on column *j* is in round \|*j*\| + 2*k* + 1. | 2*n*(*n* + 1), so 144 |
-| Kite | Rows *n* from the point (design 21) | Two peyote wings meeting at a vertical spine, as the Kite Frame kind lays them (ticket 0593): a row grows a Bead a wing to its widest a fifth of the way down, then loses one every fourth row. | 96 at 21 rows |
+| Kite | Rows *n* from the point (design 21) | Two peyote wings meeting at a vertical spine, as the Kite Frame shape lays them (ticket 0593): a row grows a Bead a wing to its widest a fifth of the way down, then loses one every fourth row. | 96 at 21 rows |
 | Star | Part size *n*, rounds of each arm (design 5) | Five Warped Square arms lying flat as rhombi round the centre, each beaded in *n* rounds from its own centre. | 10*n*(*n* + 1), so 300 |
 | Kaleidocycle | Part size *n*, rounds a triangle (design 9, the least that folds well) | Six Triangles of *n* rounds round a small hexagonal hole, each beaded from its own centre. | 9*n*(*n* + 1), so 810 |
 | Fringe earring | Top width, Top rows, Fringe style, Fringe length | A brick-stitch top worked up from its base row, one Bead shorter a row, and one strand under each base Bead. Fringe length is the longest strand; a V shortens by two Beads a strand out from the middle. | Top plus strands: V 87, Straight 97 |

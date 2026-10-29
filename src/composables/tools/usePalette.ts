@@ -1,6 +1,7 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteIds } from '../../domain/palette'
+import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteColor, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette } from '../../domain/paletteEdits'
+import { layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
@@ -8,6 +9,11 @@ import type { EditFn } from '../project/useEdit'
 function codesOf(project: Project, colorIds: readonly string[]): PaletteCodes {
   const hexes = projectPalette(project).colors.filter((color) => colorIds.includes(color.id)).map((color) => color.hex)
   return Object.fromEntries(hexes.flatMap((hex) => (project.paletteCodes?.[hex] ? [[hex, project.paletteCodes[hex]!]] : [])))
+}
+
+/** The Palette's built-in colors: the Canvas's Bead's (ADR 0079), which the Frame shares until ticket 0665. */
+function builtInsOf(project: Project): readonly PaletteColor[] {
+  return defaultPalette(layerOf(project, 'canvas').beadId)
 }
 
 const paletteKey: InjectionKey<ComputedRef<Palette>> = Symbol('palette')
@@ -37,7 +43,7 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
   function addUsed(hex: string, code?: string): { outcome: AddUsedColorOutcome; colorId?: string } {
     const project = currentProject()
     if (!project) return { outcome: 'known' }
-    const { ids, outcome, colorId } = addUsedColor(project.palette, hex, defaultPalette(project.beadId))
+    const { ids, outcome, colorId } = addUsedColor(project.palette, hex, builtInsOf(project))
     if (outcome === 'added') setPalette(ids, code ? { [hex.toLowerCase()]: code } : undefined)
     return { outcome, colorId }
   }
@@ -46,13 +52,13 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
    * that isn't an added one. */
   function removeAdded(colorId: string): (() => void) | undefined {
     const project = currentProject()
-    const removal = project && removeAddedColor(project.palette, colorId, defaultPalette(project.beadId))
+    const removal = project && removeAddedColor(project.palette, colorId, builtInsOf(project))
     if (!removal) return undefined
     const codes = codesOf(project, [colorId])
     setPalette(removal.ids)
     return () => {
       const now = currentProject()
-      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot, defaultPalette(now.beadId)), codes)
+      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot, builtInsOf(now)), codes)
     }
   }
 
@@ -60,14 +66,14 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
    * slots, or undefined when none is added. */
   function removeAllAdded(): (() => void) | undefined {
     const project = currentProject()
-    const removal = project && removeAllAddedColors(project.palette, defaultPalette(project.beadId))
+    const removal = project && removeAllAddedColors(project.palette, builtInsOf(project))
     if (!removal || removal.removed.length === 0) return undefined
     const codes = codesOf(project, removal.removed.map(({ colorId }) => colorId))
     setPalette(removal.ids)
     return () => {
       const now = currentProject()
       if (!now) return
-      const builtIns = defaultPalette(now.beadId)
+      const builtIns = builtInsOf(now)
       const ids = removal.removed.reduce((acc, { colorId, slot }) => restoreAddedColor(acc, colorId, slot, builtIns), now.palette)
       setPalette(ids, codes)
     }

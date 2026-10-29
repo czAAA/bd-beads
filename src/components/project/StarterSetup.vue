@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
-import { frameKindOf, type FrameSettingName } from '../../domain/frameKind'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { frameShapeOf, type FrameSettingName } from '../../domain/frameShape'
+import { layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {
@@ -139,13 +139,13 @@ const rows = computed<Row[]>(() => {
   return [...ordered, ...chosen.filter((pick) => !pick.before).map((pick) => ({ pick }))]
 })
 
-/** A size's words: a setting of the Starter's kind its words from the Frame panel, a Ring's or Band's its own; its hint
+/** A size's words: a setting of the Starter's Frame shape its words from the Frame panel, a Ring's or Band's its own; its hint
  * beside it. */
 function sizeWords(size: StarterSize): { label: string; less: string; more: string; hint: string } {
-  const custom = frameKindOf(props.starter).custom?.settings.some((setting) => setting.id === size.id) ?? false
+  const custom = frameShapeOf(props.starter)?.settings.some((setting) => setting.id === size.id) ?? false
   const words = custom ? t.value.frame.sizeSettings[size.labelKey as FrameSettingName] : t.value.starters.setupSizes[size.labelKey as 'width' | 'ringSize' | 'wrist']
   const hints = t.value.starters.sizeHints as Partial<Record<StarterSizeName | 'ringSizeUs', string>>
-  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.kind as keyof typeof t.value.starters.hints] : hints[inUs(size) ? 'ringSizeUs' : size.id]
+  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.shape!] : hints[inUs(size) ? 'ringSizeUs' : size.id]
   return { label: words.label, less: words.less, more: words.more, hint: hint ?? '' }
 }
 
@@ -167,7 +167,9 @@ const designChip = (size: StarterSize, preset: number) => (inUs(size) ? preset =
 const pickOptions = (pick: StarterPick) =>
   pick.values.map((value) => ({ value, label: (t.value.starters.picks[pick.id as StarterPickName].options as Record<string, string>)[value] ?? value }))
 
-const bead = computed(() => (props.project ? resolveProjectBead(props.project) : findBead(beadId.value)))
+/** The open Project's Canvas (ADR 0079): its Bead is the one the Starter's Frame is made in. */
+const projectCanvas = computed(() => props.project && layerOf(props.project, 'canvas'))
+const bead = computed(() => (projectCanvas.value ? projectCanvas.value.bead : findBead(beadId.value)))
 
 /** The Estimated size and the lines under it (StarterGallery card, Setup 5): a Shape's or earring's width × height, a
  * Ring's inside and width, a Band's width × length; the bead count, a pair's, and a Ring's or Band's rows. */
@@ -194,7 +196,7 @@ const estimate = computed(() => {
 const pictureName = computed(() => fillBlanks(useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty, { option: optionName.value }))
 
 function onSubmit() {
-  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: props.project?.beadId ?? beadId.value })
+  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: projectCanvas.value?.beadId ?? beadId.value })
 }
 </script>
 

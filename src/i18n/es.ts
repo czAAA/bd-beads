@@ -643,7 +643,7 @@ export const es: Translations = {
     announceMoved: 'Marco movido con sus cuentas',
     announceNothingToFit: 'Aún no hay nada dibujado a lo que ajustar el marco',
     refusedCutsSchema: 'Un marco no puede cortar el esquema «{name}». Enmárcalo entero o déjalo fuera.',
-    customKinds: { fringeEarring: 'Pendiente de flecos', triangle: 'Triángulo', warpedSquare: 'Cuadrado curvado', star: 'Estrella', kaleidocycle: 'Caleidociclo', kite: 'Cometa' },
+    shapes: { fringeEarring: 'Pendiente de flecos', triangle: 'Triángulo', warpedSquare: 'Cuadrado curvado', star: 'Estrella', kaleidocycle: 'Caleidociclo', kite: 'Cometa' },
     sizeSettings: {
       topWidth: { label: 'Ancho superior', less: 'Una cuenta menos en la fila base', more: 'Una cuenta más en la fila base', summary: { one: 'parte superior {count}', many: 'parte superior {count}', other: 'parte superior {count}' }, announce: 'Ancho superior: {count}' },
       topRows: { label: 'Filas superiores', less: 'Una fila menos', more: 'Una fila más', summary: { one: '{count} fila superior', many: '{count} de filas superiores', other: '{count} filas superiores' }, announce: 'Filas superiores: {count}' },
@@ -672,7 +672,7 @@ export const es: Translations = {
     },
     fringeStyle: { label: 'Estilo de fleco', announce: 'Estilo de fleco: {style}' },
     removeConfirmCustom: 'Sus cuentas se quitan con él. Se puede deshacer.',
-    announceCustom: 'Marco «{kind}», {size}',
+    announceCustom: 'Marco «{shape}», {size}',
     snapAddedTop: {
       one: 'Se añadió una fila vacía arriba: un marco debe empezar en una fila sin desplazar.',
       many: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',

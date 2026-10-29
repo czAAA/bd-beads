@@ -1,7 +1,6 @@
 {
   "id": "ringPlaid",
   "design": "ringPlaid.json",
-  "kind": "rectangular",
   "technique": "peyote",
   "measure": "ring",
   "sizes": [
