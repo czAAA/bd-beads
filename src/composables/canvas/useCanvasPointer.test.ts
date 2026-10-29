@@ -3,6 +3,7 @@ import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
+import { stampCells } from '../../domain/selection'
 import { useCanvasPointer } from './useCanvasPointer'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
@@ -23,6 +24,15 @@ function setup(options: Options = {}) {
     strokeMode: () => options.strokeMode ?? null,
     selectedColorHex: () => (options.color === undefined ? '#ff0000' : options.color),
     pastePreviewCells: vi.fn(() => [{ row: 9, column: 9 }]),
+    // A 4 × 4 red block whose top-left lands on the hovered cell.
+    pastePreviewStamp: vi.fn((_project: Project, at: { row: number; column: number }) => ({
+      colors: Array.from({ length: 4 }, () => Array<string | null>(4).fill('#e63746')),
+      top: at.row,
+      left: at.column,
+      rows: 4,
+      columns: 4,
+      lands: () => true,
+    })),
     beginSelectPress: vi.fn(),
     extendSelection: vi.fn(),
     tapPiece: vi.fn(),
@@ -63,6 +73,21 @@ describe('useCanvasPointer', () => {
       const { previewCells, onCellHover } = setup({ project: woven })
       onCellHover(0, 0)
       expect(previewCells.value).toEqual([])
+    })
+
+    it('shows a block pasted on a grid as its stamp, leaving out the beads in rows already woven (ticket 0675)', () => {
+      const { previewStamp, onCellHover, onHoverEnd } = setup({ tool: 'select', project: moveToRow(base, 3) })
+      expect(previewStamp.value).toBeUndefined()
+      onCellHover(0, 0)
+      expect(stampCells(previewStamp.value!).map(({ row }) => row)).toEqual([3, 3, 3, 3])
+      onHoverEnd()
+      expect(previewStamp.value).toBeUndefined()
+    })
+
+    it('has no stamp under a tool that paints', () => {
+      const { previewStamp, onCellHover } = setup({ tool: 'paint' })
+      onCellHover(0, 0)
+      expect(previewStamp.value).toBeUndefined()
     })
   })
 
