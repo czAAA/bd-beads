@@ -413,10 +413,9 @@ function coveringSize(project: Project, weave: Weave, rectangle: Rect): { rows: 
   return { rows, columns }
 }
 
-/** The Frame's beads laid on the Canvas, by Canvas position: those it shows, and its Folded ones (ticket 0638). A
- * grid's keep their row and column, in a Bead of another size each Canvas position takes the one under its middle
- * (ticket 0665); a Custom frame's or a turned Frame's land each on the Canvas position nearest its
- * centre (ADR 0077, ticket 0669), a Custom frame's Folded ones where growing it back would show them. */
+/** The Frame's beads, shown and Folded (ticket 0638), on the Canvas as `laidOnCanvas` lays a grid's (ticket 0665); a
+ * Custom frame's or a turned Frame's first each on its own cell nearest its centre (ADR 0077, ticket 0669), a Custom
+ * frame's Folded ones where growing it back would show them. */
 function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
   const frame = frameOf(project)!
   const beads = beadsOfLayer(project, 'frame')!

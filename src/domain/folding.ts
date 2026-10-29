@@ -22,9 +22,8 @@ export interface RefitSheet extends SheetBeads {
 }
 
 /** A sheet's beads once its corner moves by `shift` and it holds only the positions `holds` names (from its new corner):
- * a Folded bead held again shows, one no longer held folds (where `folds`, as the sheet's positions are not the
- * layer's) or goes to the layer under it, and, not folding, the sheet takes in that layer's beads `offered` where it
- * holds a position with none of its own (ticket 0639). */
+ * a Folded bead held again shows, one no longer held folds (where `folds`) or goes to the layer under it, and, not
+ * folding, the sheet takes in that layer's beads `offered` where it has none of its own (ticket 0639). */
 export function refitSheet(sheet: SheetBeads, folds: boolean, shift: GridPosition, holds: (position: GridPosition) => boolean, offered: BeadMap = {}): RefitSheet {
   return refit(sheet, shift, holds, folds, offered)
 }

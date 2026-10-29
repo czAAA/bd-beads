@@ -7,10 +7,9 @@ import type { Layered } from './layerRecord'
 /** A Weave's cell height over its width: what a Real bead stretches a row by (ADR 0068); 1 where the cell is square. */
 const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
 
-/** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where both layers are alike,
- * else those whose middle lies inside what the Frame draws, which is shorter or taller than `rows` Canvas rows where it
- * is woven otherwise, and smaller or larger every way in a Bead of another size (`scale`, ticket 0665). A turned Frame
- * covers the rectangle it lies in (ticket 0667). */
+/** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where the layers are alike,
+ * else those whose middle lies inside what the Frame draws, woven otherwise or in a Bead `scale` times as wide (ticket
+ * 0665). A turned Frame covers the rectangle it lies in (ticket 0667). */
 export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'quarterTurns'>> & { scale?: number }): Rect {
   const { scale = 1 } = sheet
   const laid = laidRect({ ...sheet, cell: sheet.cell ?? canvas.cell })

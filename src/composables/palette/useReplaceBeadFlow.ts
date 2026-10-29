@@ -105,10 +105,9 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     pendingId.value = undefined
   }
 
-  /** Confirms Replace Bead (ticket 48, ADR 0007): swaps the chosen layer's Bead only, as one undo step. An exempt Edit:
-   * it doesn't draw, so the Row progress lock has nothing to guard. A Project with coded swatches first loads the new
-   * Bead's Color catalog, so the swatches it lists keep their codes in the same step (ticket 0538); one that won't load
-   * drops them. */
+  /** Confirms Replace Bead (ticket 48, ADR 0007): the chosen layer's Bead, one undo step, exempt as it draws nothing.
+   * With coded swatches the new Bead's Color catalog loads first, so those it lists keep their codes in the same step
+   * (ticket 0538); one that won't load drops them. */
   async function onConfirmReplaceBead() {
     const bead = pendingBead.value
     const chosen = layer.value

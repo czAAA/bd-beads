@@ -35,7 +35,7 @@ A Tools-group tool, next to Eraser, that removes the specific row or column the 
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
-Swaps a Project's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007.
+Swaps a layer's Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes; with a Frame it asks whether the Frame's Bead or the Canvas's is replaced (ticket 0665, ADR 0079), and the Palette follows the woven layer's. The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007. Each layer is drawn at its own Bead's real size.
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
