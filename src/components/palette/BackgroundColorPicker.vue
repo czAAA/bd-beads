@@ -17,7 +17,8 @@ interface BackgroundSwatch {
   label: string
   /** Drawn split corner to corner, this color top left and `color` bottom right: Auto shows what it does. */
   split?: string
-  /** Marked with a dot while not chosen: the margin picker's swatch that is the Canvas color. */
+  /** Marked with a dot while not chosen, and its Tooltip named "Canvas color" (ticket 0684): the margin picker's
+   * swatch that is the Canvas color. */
   dot?: boolean
 }
 
@@ -97,6 +98,7 @@ async function cancel() {
             :color="swatch.color"
             :label="swatch.label"
             :selected="index === selectedIndex"
+            :tooltip-name="swatch.dot ? t.canvas.canvasColor.label : undefined"
             role="radio"
             :tabindex="index === tabStop ? 0 : -1"
             :data-testid="`background-color-${swatch.id}`"
