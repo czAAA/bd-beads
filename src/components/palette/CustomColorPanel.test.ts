@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CustomColorPanel from './CustomColorPanel.vue'
 
-function mountPanel(color?: string) {
-  return mount(CustomColorPanel, { props: { color }, attachTo: document.body })
+function mountPanel(color?: string, addable = false) {
+  return mount(CustomColorPanel, { props: { color, addable }, attachTo: document.body })
 }
 
 const hexField = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
@@ -133,5 +133,46 @@ describe('CustomColorPanel, the Custom color picker (ticket 449)', () => {
     await slider(wrapper).trigger('keydown', { key: 'Enter' })
 
     expect(wrapper.emitted('take')).toHaveLength(1)
+  })
+
+  describe('adding several colors in one go (ticket 0690)', () => {
+    const addButton = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get('[data-testid="custom-color-add"]')
+
+    it('adds the color on the + and stays open for the next one', async () => {
+      const wrapper = mountPanel('#123456', true)
+      expect(addButton(wrapper).attributes('aria-label')).toBe('Add #123456 to the Palette')
+
+      await addButton(wrapper).trigger('click')
+      await hexField(wrapper).setValue('#654321')
+      await addButton(wrapper).trigger('click')
+
+      expect(wrapper.emitted('add')).toEqual([['#123456'], ['#654321']])
+      expect(wrapper.emitted()).not.toHaveProperty('take')
+    })
+
+    it('takes nothing more when left untouched after an add', async () => {
+      const wrapper = mountPanel('#123456', true)
+      await hexField(wrapper).setValue('#654321')
+      await addButton(wrapper).trigger('click')
+      pressOutside()
+
+      expect(wrapper.emitted('leave')).toHaveLength(1)
+      expect(wrapper.emitted()).not.toHaveProperty('take')
+    })
+
+    it('takes the next color when changed after an add and left, as today', async () => {
+      const wrapper = mountPanel('#123456', true)
+      await addButton(wrapper).trigger('click')
+      await hexField(wrapper).setValue('#abcdef')
+      pressOutside()
+
+      expect(wrapper.emitted('take')).toEqual([['#abcdef']])
+    })
+
+    it('keeps a plain preview where the host adds nothing to the Palette', () => {
+      const wrapper = mountPanel('#123456')
+      expect(wrapper.find('[data-testid="custom-color-add"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="custom-color-preview"]').exists()).toBe(true)
+    })
   })
 })

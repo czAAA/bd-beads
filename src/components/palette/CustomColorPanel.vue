@@ -4,23 +4,29 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
 import { hexToHsv, hsToWheelPoint, hsvToHex, parseHexInput, wheelPointToHs, wrapHue, type Hsv } from '../../domain/hsv'
 import { useI18n } from '../../i18n/useI18n'
+import { letterInk } from '../../rendering/beadLook'
+import AppIcon from '../ui/AppIcon.vue'
 import AppNote from '../ui/AppNote.vue'
 import TextField from '../ui/form/TextField.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Custom color picker (ticket 449; ColorPickers card): wheel (hue = angle, saturation = distance), brightness
-// slider, hex field and preview swatch; it only previews. A layer of the overlay registry (ADR 0061): a press outside,
-// Escape and Enter take the color; a press on a Palette swatch picks that swatch and takes nothing.
+// The Custom color picker (ticket 449; ColorPickers card): wheel, brightness slider, hex field and preview swatch
+// (an `addable` one's + adds the color at once, ticket 0690). An overlay layer (ADR 0061): a press outside, Escape and
+// Enter take the color; a press on a Palette swatch picks that swatch and takes nothing.
 const props = defineProps<{
   /** The color the picker opens on: the slot's Custom color, else the paint color, else a mid red. */
   color?: string
   /** The host's swatches, whose press picks that swatch and takes nothing (ticket 0653): the Palette's by default. */
   swatchSelector?: string
+  /** The preview is a + button that adds the color at once (ticket 0690): the Palette's picker, not a one-color one. */
+  addable?: boolean
 }>()
 
 const emit = defineEmits<{
   /** The color was taken (a press outside, Escape or Enter): it becomes the paint color and joins the Palette. */
   take: [hex: string]
+  /** The + was pressed: the color joins the Palette now and the picker stays open. */
+  add: [hex: string]
   /** The picker was left with nothing to take (opened and untouched). */
   leave: []
   /** Escape with nothing to take: back to the Custom button. */
@@ -64,6 +70,12 @@ function onHexInput(text: string | number | undefined) {
 function onHexBlur() {
   hexText.value = hex.value
   invalid.value = false
+}
+
+/** What was added is taken already: leaving untouched from here adds nothing more. */
+function add() {
+  emit('add', hex.value)
+  touched = false
 }
 
 function take() {
@@ -161,6 +173,8 @@ const sliderStyle = computed(() => ({
   background: `linear-gradient(to right, ${hsvToHex({ ...hsv.value, v: 0 })}, ${hsvToHex({ ...hsv.value, v: 1 })})`,
 }))
 const sliderThumb = computed(() => ({ left: `${hsv.value.v * 100}%`, background: hex.value }))
+const addLabel = computed(() => fillBlanks(t.value.palette.addToPalette, { hex: hex.value }))
+const plusInk = computed(() => letterInk(hex.value))
 const wheelValue = computed(() =>
   fillBlanks(t.value.palette.wheelValue, { hue: Math.round(hsv.value.h), saturation: Math.round(hsv.value.s * 100) }),
 )
@@ -215,7 +229,18 @@ onMounted(async () => {
       <span class="custom-color-panel__thumb" :style="sliderThumb" />
     </div>
     <div class="custom-color-panel__row">
-      <span class="custom-color-panel__preview" :style="{ background: hex }" role="img" :aria-label="`${t.palette.previewLabel} ${hex}`" data-testid="custom-color-preview" />
+      <button
+        v-if="addable"
+        type="button"
+        class="custom-color-panel__preview custom-color-panel__add"
+        :style="{ background: hex, color: plusInk }"
+        :aria-label="addLabel"
+        data-testid="custom-color-add"
+        @click="add"
+      >
+        <AppIcon name="plus" :size="22" />
+      </button>
+      <span v-else class="custom-color-panel__preview" :style="{ background: hex }" role="img" :aria-label="`${t.palette.previewLabel} ${hex}`" data-testid="custom-color-preview" />
       <TextField
         class="custom-color-panel__hex"
         :model-value="hexText"
@@ -305,6 +330,25 @@ onMounted(async () => {
   height: var(--field-height);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-md);
+}
+
+.custom-color-panel__add {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .custom-color-panel__add:hover {
+    border-color: var(--ink);
+  }
+}
+
+.custom-color-panel__add:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .custom-color-panel__hex {
