@@ -2,7 +2,7 @@
   "id": "kite",
   "design": "kite.json",
   "shape": "kite",
-  "technique": "peyote",
+  "weave": {"technique": "peyote"},
   "measure": "frame",
   "sizes": [
     {"id": "rows", "default": 21, "presets": [15, 21, 30]}

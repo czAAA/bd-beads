@@ -39,7 +39,7 @@ The two steps a Starter is picked in. Step 1 shows the categories (Shapes, Earri
 _Avoid_: template gallery, catalog, wizard
 
 **Starter setup**:
-The setup in step 2 of the Starter gallery, once an option is tapped (ticket 0596): the large live picture, Name (the option's name as its placeholder) on New Project only, the Frame's Layer settings pre-filled from the Starter (Technique and its settings, Bead, Bead shape, background; ticket 0671, until which only Bead, on New Project), Use design or Start empty, the shape's size setting as a stepper with the usual sizes as chips (the design's own dotted), the Estimated size with the bead count, and Create Project in the pinned footer; on an open Project its footer button is Add Frame or Replace Frame.
+The setup in step 2 of the Starter gallery, once an option is tapped (ticket 0596): the large live picture, Name (the option's name as its placeholder) on New Project only, the Frame's Layer settings pre-filled from the Starter (Technique and its settings, Bead, Bead shape, background; ticket 0671), which set the Frame alone, the Canvas copying them on New Project, Use design or Start empty, the shape's size setting as a stepper with the usual sizes as chips (the design's own dotted), the Estimated size with the bead count, and Create Project in the pinned footer; on an open Project its footer button is Add Frame or Replace Frame.
 _Avoid_: Template setup, Starter form, Starter dialog
 
 **Project panel**:

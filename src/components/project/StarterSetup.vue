@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
-import { frameShapeOf, type FrameSettingName } from '../../domain/frameShape'
-import { layerOf } from '../../domain/layerRecord'
-import type { Project } from '../../domain/project'
+import { findBead } from '../../domain/beads'
+import { frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
+import type { Background, Project } from '../../domain/project'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {
   BAND_CLASP_MM,
@@ -14,11 +13,13 @@ import {
   euRingSize,
   starterBeadCount,
   starterMeasure,
+  STARTER_BEAD_ID,
   starterSizeRanges,
   US_RING_PRESETS,
   usRingSize,
   type Starter,
   type StarterChoice,
+  type StarterProjectChoice,
   type StarterPick,
   type StarterPickName,
   type StarterSize,
@@ -27,25 +28,40 @@ import {
 import { plural } from '../../i18n/plural'
 import { designWords, starterCountWords, starterName } from '../../i18n/starterWords'
 import { useI18n } from '../../i18n/useI18n'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import { DEFAULT_BEAD_SHAPE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
-import BeadPicker from './BeadPicker.vue'
+import LayerSettings from './LayerSettings.vue'
 import StarterPicture from './StarterPicture.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// A Starter's setup (tickets 0596, 0597; StarterGallery card, Setup): the live picture, Name and Bead on New Project only,
-// Use design or Start empty, its sizes with chips and its choices, a Ring's Size system, and the Estimated size. The
-// footer submits it. Moving any size or choice off the design turns it off; setting them all back turns it on.
+// A Starter's setup (tickets 0596, 0597, 0671; StarterGallery card, Setup): the live picture, Name on New Project only,
+// the Frame's Layer settings, Use design or Start empty, its sizes and choices, and the Estimated size. Moving any size
+// or choice off the design turns it off; setting them all back turns it on.
 const props = defineProps<{ starter: Starter; project?: Project }>()
-const emit = defineEmits<{ submit: [choice: StarterChoice & { name: string; beadId: string }] }>()
+const emit = defineEmits<{ submit: [choice: StarterProjectChoice] }>()
 
 const { t, locale } = useI18n()
 
 const name = ref('')
-const beadId = ref(DEFAULT_BEAD.id)
+/** The Frame's Layer settings (ADR 0079, ticket 0671), pre-filled from the Starter: its Weave, the Bead its design is
+ * made for, Symmetric, and the device's last Background until one is picked. */
+const technique = ref<Technique>(props.starter.weave.technique)
+const settings = ref<TechniqueSettings>({ ...props.starter.weave.techniqueSettings })
+const beadId = ref(STARTER_BEAD_ID)
+const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
+const picked = ref<Background>()
+const deviceBackground = useCanvasBackground().start
+const background = computed(() => picked.value ?? deviceBackground.value)
+/** The chosen Technique with its settings at their values, each within its range. */
+const weave = computed<Weave>(() => {
+  const techniqueSettings = weaveSettings({ technique: technique.value, techniqueSettings: settings.value })
+  return { technique: technique.value, ...(Object.keys(techniqueSettings).length > 0 ? { techniqueSettings } : {}) }
+})
 const sizes = reactive(designSizes(props.starter))
 const picks = reactive(designPicks(props.starter))
 const useDesign = ref(true)
@@ -55,7 +71,7 @@ const offByChange = ref(false)
 const system = ref<'eu' | 'us'>('eu')
 
 const optionName = computed(() => starterName(t.value, props.starter))
-const choice = computed<StarterChoice>(() => ({ sizes: { ...sizes }, picks: { ...picks }, useDesign: useDesign.value }))
+const choice = computed<StarterChoice>(() => ({ sizes: { ...sizes }, picks: { ...picks }, useDesign: useDesign.value, weave: weave.value }))
 
 /** Turns the design off when the sizes and choices leave it, and back on when they all return to it. */
 function followDesign() {
@@ -167,9 +183,7 @@ const designChip = (size: StarterSize, preset: number) => (inUs(size) ? preset =
 const pickOptions = (pick: StarterPick) =>
   pick.values.map((value) => ({ value, label: (t.value.starters.picks[pick.id as StarterPickName].options as Record<string, string>)[value] ?? value }))
 
-/** The open Project's Canvas (ADR 0079): its Bead is the one the Starter's Frame is made in. */
-const projectCanvas = computed(() => props.project && layerOf(props.project, 'canvas'))
-const bead = computed(() => (projectCanvas.value ? projectCanvas.value.bead : findBead(beadId.value)))
+const bead = computed(() => findBead(beadId.value))
 
 /** The Estimated size and the lines under it (StarterGallery card, Setup 5): a Shape's or earring's width × height, a
  * Ring's inside and width, a Band's width × length; the bead count, a pair's, and a Ring's or Band's rows. */
@@ -196,7 +210,7 @@ const estimate = computed(() => {
 const pictureName = computed(() => fillBlanks(useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty, { option: optionName.value }))
 
 function onSubmit() {
-  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: projectCanvas.value?.beadId ?? beadId.value })
+  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: beadId.value, beadShape: beadShape.value, background: background.value })
 }
 </script>
 
@@ -206,14 +220,25 @@ function onSubmit() {
       <StarterPicture :starter="starter" :choice="choice" :bead-id="bead?.id" :drawn-px="320" />
     </div>
 
-    <div v-if="!project" class="starter-setup__pair">
-      <FormField :label="t.form.nameLabel" label-for="starter-name-input" :aside="t.form.optional">
-        <TextField id="starter-name-input" v-model="name" data-testid="starter-name-input" type="text" :placeholder="optionName" />
-      </FormField>
-      <FormField :label="t.form.beadLabel" label-id="starter-bead-label">
-        <BeadPicker v-model="beadId" :beads="offeredBeads()" testid="starter-bead-picker" />
-      </FormField>
-    </div>
+    <FormField v-if="!project" :label="t.form.nameLabel" label-for="starter-name-input" :aside="t.form.optional">
+      <TextField id="starter-name-input" v-model="name" data-testid="starter-name-input" type="text" :placeholder="optionName" />
+    </FormField>
+
+    <LayerSettings
+      layer="frame"
+      :technique="technique"
+      :technique-settings="settings"
+      :techniques="techniquesOf(starter)"
+      :bead="bead"
+      :bead-shape="beadShape"
+      :background="background"
+      testid="starter"
+      @set-technique="technique = $event"
+      @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
+      @pick-bead="beadId = $event"
+      @set-bead-shape="beadShape = $event"
+      @set-background="picked = $event"
+    />
 
     <FormField :label="t.starters.designLabel" label-id="starter-design-label">
       <SegmentedControl
@@ -301,13 +326,6 @@ function onSubmit() {
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-lg);
-}
-
-/* Side by side where the panel has room (desktop and tablet), one above the other on a phone. */
-.starter-setup__pair {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: var(--space-12);
 }
 
 .starter-setup__size {
