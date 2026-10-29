@@ -26,4 +26,13 @@ describe.each(Object.entries(dialogs))('%s dialog focus (ticket 516)', (_name, o
     const wrapper = open()
     expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
   })
+
+  // The panel that opened the dialog hands focus back to its strip button as it closes (ticket 0688).
+  it('brings focus that strays outside back to the dialog, not the field, on a touch device', () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const outside = document.body.appendChild(document.createElement('button'))
+    const wrapper = open()
+    outside.focus()
+    expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
+  })
 })

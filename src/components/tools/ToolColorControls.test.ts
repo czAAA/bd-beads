@@ -33,4 +33,14 @@ describe('ToolColorControls (pulled out of Toolbox.vue for ticket 384, shared wi
     const withPaletteActive = mountControls({ customColor: '#abcabc', selectedColorId: 'red' })
     expect(withPaletteActive.find('[data-testid="custom-color-button"]').attributes('aria-pressed')).toBe('false')
   })
+
+  it('hands the color up on the + and keeps the picker open (ticket 0690)', async () => {
+    const wrapper = mountControls()
+    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+    await wrapper.get('[data-testid="custom-color-hex"]').setValue('#123456')
+    await wrapper.get('[data-testid="custom-color-add"]').trigger('click')
+
+    expect(wrapper.emitted('select-custom-color')).toEqual([['#123456']])
+    expect(wrapper.find('[data-testid="custom-color-panel"]').exists()).toBe(true)
+  })
 })

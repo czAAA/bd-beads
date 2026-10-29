@@ -4,11 +4,10 @@ import { mount } from '@vue/test-utils'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { findBead, offeredBeads } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
-import { replaceBead } from '../../domain/projectBead'
+import { withBeadShape } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
-import { canvasOf, frameOf, withBackground } from '../../domain/layerRecord'
+import { frameOf } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
 afterEach(() => {
@@ -22,18 +21,16 @@ beforeEach(() => {
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
-const choiceBut = (id: string | undefined) => ({ candidates: offeredBeads().filter((bead) => bead.id !== id), outdated: false })
-const base = { project, canvasBeadChoice: choiceBut(canvasOf(project).bead?.id), saveFailed: false, unsaved: false }
+const base = { project, saveFailed: false, unsaved: false }
 
 function mountPanel(props: Record<string, unknown> = {}) {
   return mount(ProjectPanel, { props: { ...base, ...props }, attachTo: document.body })
 }
 
-describe('ProjectPanel (tickets 443, 554)', () => {
-  it('has the head, then the bead, canvas, export and this project sections, in that order', () => {
+describe('ProjectPanel (tickets 443, 554, 0670)', () => {
+  it('has the head, then the Canvas\'s Layer settings, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
-    // The Canvas section opens on the Canvas's own Bead section (ticket 0687); the Frame's is the Frame panel's.
+    const order = ['project-head', 'canvas-technique', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -46,46 +43,41 @@ describe('ProjectPanel (tickets 443, 554)', () => {
 
   it('has none of what moved to the Frame panel or went away', () => {
     const wrapper = mountPanel()
-    for (const gone of ['canvas-technique-row', 'frame-technique', 'size-estimate-row', 'frame-from-starter', 'project-bead-row', 'project-name-on-exports', 'frame-edit', 'frame-fit', 'frame-remove']) {
+    for (const gone of ['canvas-technique-row', 'project-technique', 'frame-technique', 'size-estimate-row', 'frame-from-starter', 'project-bead-row', 'project-name-on-exports', 'frame-edit', 'frame-fit', 'frame-remove']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists(), gone).toBe(false)
     }
     expect(wrapper.text()).not.toContain('Beads needed')
     expect(wrapper.text()).not.toContain('Estimated size')
   })
 
-  it("shows the Canvas's Bead shape and asks for the other one (tickets 508, 0687)", async () => {
+  it('sets the Canvas in its Layer settings: each ask names the Canvas (ticket 0670)', async () => {
     const wrapper = mountPanel()
-    const shape = wrapper.get('[data-testid="bead-shape"]')
-    expect(shape.get('[aria-checked="true"]').attributes('data-value')).toBe('symmetric')
-
-    await shape.get('[data-value="real"]').trigger('click')
-    expect(wrapper.emitted('set-bead-shape')).toEqual([['real']])
-    await wrapper.setProps({ project: withLayers(project, { beadShape: 'real' }) })
-    expect(wrapper.get('[data-testid="bead-shape"] [aria-checked="true"]').attributes('data-value')).toBe('real')
+    await wrapper.get('[data-testid="canvas-technique"] button').trigger('click')
+    await wrapper.get('[data-testid="canvas-technique"] [data-value="peyote"]').trigger('click')
+    await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
+    await wrapper.get('[data-testid="bead-brand"] button').trigger('click')
+    await wrapper.get('[data-testid="bead-brand"] [data-value="miyuki"]').trigger('click')
+    await wrapper.get('[data-testid="canvas-section"] [data-testid="background-color-fog"]').trigger('click')
+    expect(wrapper.emitted('set-technique')).toEqual([['canvas', 'peyote']])
+    expect(wrapper.emitted('set-bead-shape')).toEqual([['canvas', 'real']])
+    expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe('canvas')
+    expect(wrapper.emitted('set-background')).toEqual([['canvas', 4]])
   })
 
-  it("shows the Canvas's Bead as Brand, Type and Size in its section and asks to replace it, keeping what it can (ticket 0687)", async () => {
-    // The Canvas's Bead, not the Frame's, which the Frame panel replaces.
-    const miyuki = replaceBead(project, findBead('miyuki/delica/11-0')!, undefined, 'canvas')
-    const wrapper = mountPanel({ project: miyuki, canvasBeadChoice: choiceBut('miyuki/delica/11-0') })
-    const section = wrapper.get('[data-testid="project-canvas"]')
-    expect(section.find('[data-testid="bead-brand"]').exists()).toBe(true)
-    expect(wrapper.findAll('[data-testid="bead-brand"]')).toHaveLength(1)
-    const names = ['bead-brand', 'bead-type', 'bead-size'].map((id) => wrapper.get(`[data-testid="${id}"] button`).attributes('aria-label'))
-    expect(names).toEqual(['Brand: Miyuki', 'Type: Delica', 'Size: 11/0'])
-    // Type only lists the Brand's own, Size the Type's own, in an app-drawn menu: a native select's picker swallowed
-    // the pick on an iPad mini (ticket 442).
-    await wrapper.get('[data-testid="bead-size"] button').trigger('click')
-    expect(wrapper.find('select').exists()).toBe(false)
-    expect(wrapper.findAll('[data-testid="bead-size"] [role="menuitemradio"]').map((item) => item.text())).toEqual(['11/0', '15/0', '10/0', '8/0'])
-    await wrapper.get('[data-testid="bead-size"] [data-value="miyuki/delica/15-0"]').trigger('click')
-    expect(wrapper.emitted('replace-bead')).toEqual([['miyuki/delica/15-0']])
-    // The pickers keep showing the Project's Bead until the replacement is confirmed.
-    expect(wrapper.get('[data-testid="bead-size"] button').attributes('aria-label')).toBe('Size: 11/0')
+  it('shows the Canvas\'s own Weave and Bead shape under a Frame woven otherwise (ticket 0670)', () => {
+    const framed = withLayers(project, { frame: { ...frameOf(project)!, technique: 'peyote' as const } })
+    const wrapper = mountPanel({ project: withBeadShape(framed, 'frame', 'real') })
+    expect(wrapper.get('[data-testid="canvas-technique"] button').attributes('aria-label')).toBe('Technique: Loom')
+    expect(wrapper.get('[data-testid="bead-shape"] [aria-checked="true"]').attributes('data-value')).toBe('symmetric')
+  })
 
-    await wrapper.get('[data-testid="bead-brand"] button').trigger('click')
-    await wrapper.get('[data-testid="bead-brand"] [data-value="toho"]').trigger('click')
-    expect(wrapper.emitted('replace-bead')?.at(-1)).toEqual(['toho/round/11-0'])
+  it('changes the Canvas\'s Technique while a Frame exists, every one offered, even once a Row progress pass is done', async () => {
+    const triangle = { ...frameOf(project)!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
+    const wrapper = mountPanel({ project: withLayers(project, { frame: triangle, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }) })
+    const picker = wrapper.get('[data-testid="canvas-technique"] button')
+    expect(picker.attributes('aria-disabled')).toBeUndefined()
+    await picker.trigger('click')
+    expect(wrapper.findAll('[data-testid="canvas-technique"] [role="menuitemradio"]')).toHaveLength(4)
   })
 
   it('says saved, unsaved or failed in a polite live region, failed with the reason and a press to try again', async () => {
@@ -165,36 +157,6 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.get('[data-testid="project-maker-edit"]').attributes('aria-label')).toBe(en.panels.project.changeMaker)
   })
 
-  it('has one Technique control: it sets the Frame, or the Canvas when there is no Frame', async () => {
-    const wrapper = mountPanel()
-    const picker = () => wrapper.get('[data-testid="project-technique"] button')
-    expect(picker().attributes('aria-label')).toBe('Technique: Loom')
-    await picker().trigger('click')
-    await wrapper.get('[data-testid="project-technique"] [data-value="peyote"]').trigger('click')
-    expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
-    expect(wrapper.emitted('set-canvas-technique')).toBeUndefined()
-
-    await wrapper.setProps({ project: withLayers(project, { frame: undefined }) })
-    await picker().trigger('click')
-    await wrapper.get('[data-testid="project-technique"] [data-value="brick"]').trigger('click')
-    expect(wrapper.emitted('set-canvas-technique')).toEqual([['brick']])
-  })
-
-  it('offers a Custom frame the Techniques its shape supports alone (ADR 0079, ticket 0669)', async () => {
-    const triangle = { ...frameOf(project)!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
-    const wrapper = mountPanel({ project: withLayers(project, { frame: triangle }) })
-    await wrapper.get('[data-testid="project-technique"] button').trigger('click')
-    expect(wrapper.findAll('[data-testid="project-technique"] [role="menuitemradio"]').map((item) => item.attributes('data-value'))).toEqual(['peyote'])
-  })
-
-  it('locks the Technique, with the reason, once a Row progress pass is done', async () => {
-    const wrapper = mountPanel({ project: withLayers(project, { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }) })
-    const picker = wrapper.get('[data-testid="project-technique"] button')
-    expect(picker.attributes('aria-disabled')).toBe('true')
-    await picker.trigger('click')
-    expect(wrapper.find('[data-testid="project-technique"] [role="menu"]').exists()).toBe(false)
-  })
-
   it('in high contrast replaces the swatches of the canvas section with a line', async () => {
     document.documentElement.dataset.theme = 'contrast'
     try {
@@ -216,19 +178,12 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
   })
 
-  it('folds the canvas section shut, naming the Canvas\'s Custom Background in its summary (tickets 0653, 0666)', async () => {
+  it('folds a section shut and shows its summary', async () => {
     localStorage.removeItem('openbeads:panel-sections-closed')
-    document.documentElement.dataset.theme = 'light'
-    const wrapper = mountPanel({ project: withBackground(project, 'canvas', '#7a2e8c') })
+    const wrapper = mountPanel()
     const header = wrapper.findAll('.panel-section__header')[0]!
     await header.trigger('click')
     expect(header.attributes('aria-expanded')).toBe('false')
-    expect(header.text()).toContain('Custom color')
-  })
-
-  it('asks for the Canvas\'s Background picked in the canvas section (ticket 0666)', async () => {
-    const wrapper = mountPanel()
-    await wrapper.get('[data-testid="canvas-section"] [data-testid="background-color-fog"]').trigger('click')
-    expect(wrapper.emitted('set-background')).toEqual([['canvas', 4]])
+    expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
   })
 })

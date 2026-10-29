@@ -1,49 +1,40 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
-import { restoreSnapshot, snapshotOf } from '../../domain/undoSnapshot'
+import { beadOfLayer } from '../../domain/layerRecord'
+import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import type { EditFn } from './useEdit'
+import { editHarness } from '../../testUtils/editHarness'
 import { useBeadShapeFlow } from './useBeadShapeFlow'
-import { canvasOf, frameOf } from '../../domain/layerRecord'
 
-function setup(beadShape?: 'real') {
-  let current: Project = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 3, unit: 'beads' }, ...(beadShape ? { beadShape } : {}) })
-  const edit = vi.fn(((_kind, command) => {
-    current = command(current) as Project
-    return { kind: 'applied' }
-  }) as EditFn)
-  return { flow: useBeadShapeFlow({ currentProject: () => current, edit }), edit, project: () => current }
+const framed = (): Project => createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
+
+function setup(project: Project | undefined) {
+  const harness = editHarness(project)
+  return { harness, ...useBeadShapeFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject }) }
 }
 
-describe('useBeadShapeFlow (ticket 508)', () => {
-  it('saves the other Bead shape on the Project as one edit', () => {
-    const { flow, edit, project } = setup()
-    flow.setBeadShape('canvas', 'real')
-    expect(edit).toHaveBeenCalledOnce()
-    expect(canvasOf(project()).beadShape).toBe('real')
-    flow.setBeadShape('canvas', 'symmetric')
-    expect(canvasOf(project()).beadShape).toBeUndefined()
+describe('useBeadShapeFlow (tickets 508, 0670)', () => {
+  it('sets each layer\'s Bead shape on its own, saved with the Project and no Undo step', () => {
+    const { harness, setBeadShape } = setup(framed())
+    setBeadShape('frame', 'real')
+    expect([beadOfLayer(harness.project, 'canvas').beadShape, beadOfLayer(harness.project, 'frame').beadShape]).toEqual(['symmetric', 'real'])
+    setBeadShape('canvas', 'real')
+    expect(beadOfLayer(harness.project, 'canvas').beadShape).toBe('real')
+    expect(harness.replaceProject).toHaveBeenCalledTimes(2)
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it("sets the shape of the layer whose panel asked, the other's staying (ticket 0687)", () => {
-    const { flow, project } = setup()
-    flow.setBeadShape('frame', 'real')
-    expect(frameOf(project())!.beadShape).toBe('real')
-    expect(canvasOf(project()).beadShape).toBeUndefined()
+  it('still sets the Frame\'s once a Row progress pass is done', () => {
+    const { harness, setBeadShape } = setup(moveToRow(framed(), 2))
+    setBeadShape('frame', 'real')
+    expect(beadOfLayer(harness.project, 'frame').beadShape).toBe('real')
   })
 
-  it('does nothing for the shape the layer already has', () => {
-    const { flow, edit } = setup('real')
-    flow.setBeadShape('canvas', 'real')
-    expect(edit).not.toHaveBeenCalled()
-  })
-
-  it('is taken back by Undo and redone by Redo', () => {
-    const { flow, project } = setup()
-    const before = snapshotOf(project())
-    flow.setBeadShape('canvas', 'real')
-    const after = snapshotOf(project())
-    expect(canvasOf(restoreSnapshot(project(), before)).beadShape).toBeUndefined()
-    expect(canvasOf(restoreSnapshot(project(), after)).beadShape).toBe('real')
+  it('writes nothing for the shape a layer already has, for a Frame the Project lacks, or with no Project open', () => {
+    const { harness, setBeadShape } = setup(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0' }))
+    setBeadShape('canvas', 'symmetric')
+    setBeadShape('frame', 'real')
+    expect(harness.replaceProject).not.toHaveBeenCalled()
+    expect(() => setup(undefined).setBeadShape('canvas', 'real')).not.toThrow()
   })
 })

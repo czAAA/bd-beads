@@ -505,7 +505,7 @@ function wireAppShell(services: Services) {
     dialogs,
   })
 
-  /** Replace Bead, each layer's pickers and its confirmation (tickets 48, 113, 205, 0687). */
+  /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
   const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale, dialogs })
 
   /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
@@ -530,7 +530,8 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
-  const beadShapeFlow = useBeadShapeFlow({ currentProject, edit })
+  /** Each layer's Bead shape (ticket 0670): a view, so no Edit. */
+  const beadShapeFlow = useBeadShapeFlow({ currentProject, replaceProject })
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
@@ -804,12 +805,11 @@ function wireAppShell(services: Services) {
       onRequestDuplicate: manageProject.onRequestDuplicate,
       onRequestDelete: manageProject.onRequestDelete,
       onRequestDeleteAll: deleteAll.onRequestDeleteAll,
-      onSetTechnique: frameFlow.setTechnique,
-      onSetCanvasTechnique: frameFlow.setCanvasTechnique,
+      // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
+      onSetTechnique: frameFlow.setLayerTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
       onSetBeadShape: beadShapeFlow.setBeadShape,
       onSetBackground: backgroundFlow.setBackground,
-      replaceBeadChoices: replaceBead.replaceBeadChoices,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,
       onSaveMakerName: exportFlow.onSaveMakerName,

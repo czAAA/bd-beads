@@ -92,11 +92,11 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
     expect(frameOf(after)).not.toHaveProperty('name')
   })
 
-  it('writes a layer\'s Bead and Bead shape into that layer alone (tickets 0665, 0687)', () => {
+  it('writes a layer\'s Bead and Bead shape into that layer alone (tickets 0665, 0670)', () => {
     const after = withLayer(framed(), 'frame', { bead: cube, beadShape: 'real' })
     expect(frameOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
     expect(canvasOf(after)).toMatchObject({ beadId: delica.id, bead: beadCopy(delica) })
-    expect('beadShape' in canvasOf(after)).toBe(false)
+    expect(canvasOf(after)).not.toHaveProperty('beadShape')
     expect(canvasOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: cube.id, bead: beadCopy(cube) })
     expect(frameOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: delica.id })
     const symmetric = withLayer(after, 'frame', { beadShape: 'symmetric' })

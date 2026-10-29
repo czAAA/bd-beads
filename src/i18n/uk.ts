@@ -348,6 +348,7 @@ export const uk: Translations = {
     hexLabel: 'Колір у HEX',
     hexInvalid: 'Введіть колір на кшталт #1a2b3c.',
     previewLabel: 'Новий колір',
+    addToPalette: 'Додати {hex} до палітри',
     pickFromCanvasLabel: 'Взяти колір з полотна',
     removed: 'Колір видалено з палітри.',
     removeSwatch: 'Прибрати {hex} з палітри',
@@ -609,7 +610,7 @@ export const uk: Translations = {
     lettersLabel: 'Літери',
     lettersLine: 'Друкувати літеру кольору на кожній намистині, щоб кольори розрізнялися на папері й у чорно-білому друці.',
     lettersInfoLabel: 'Що роблять Літери',
-    background: { heading: 'Фон', label: 'Фон рамки' },
+    background: { label: 'Фон рамки' },
     margin: {
       heading: 'Поля',
       colorLabel: 'Колір полів',
@@ -944,5 +945,9 @@ export const uk: Translations = {
     remapColor: 'Вибирає колір бісеру, яким стане цей колір картинки.',
     emptyColor: 'Прибирає цей колір: його бісерини лишаються порожніми.',
     list: (names) => `${names.join(', ')}.`,
+  },
+  layerSettings: {
+    frameHeading: 'Налаштування',
+    background: 'Фон',
   },
 }

@@ -7,7 +7,7 @@ import { normalizeProject } from './storedProject'
 import { projectCell, withBeadShape } from './projectBead'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
-import { canvasOf, frameOf } from './layerRecord'
+import { canvasOf } from './layerRecord'
 import { bareProject, withLayers } from '../testUtils/layerFields'
 
 const delica = findBead('miyuki-delica-11-0')!
@@ -61,21 +61,13 @@ describe('the Bead shape in a Project', () => {
     expect(canvasWeave(made()).cell).toBeUndefined()
   })
 
-  it('applies the Bead to both layers when Real', () => {
-    const real = withBeadShape(made(), 'real')
-    const withFrame = withLayers(real, { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
-    expect(canvasWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
-    expect(frameWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
-    expect(frameWeave(withFrame).technique).toBe('loom')
-  })
-
-  it("gives one layer its shape when named, the other's staying (ticket 0687)", () => {
-    const framed = createProject({ technique: 'peyote', beadId: delica.id, size: { width: 3, height: 3, unit: 'beads' } })
-    const frameReal = withBeadShape(framed, 'real', 'frame')
-    expect(frameWeave(frameReal).cell).toEqual(beadCell(delica, 'real'))
-    expect(canvasWeave(frameReal).cell).toBeUndefined()
-    expect(canvasOf(withBeadShape(framed, 'real', 'canvas')).beadShape).toBe('real')
-    expect(frameOf(withBeadShape(framed, 'real', 'canvas'))!.beadShape).toBeUndefined()
+  it('sets one layer\'s Bead shape, the other keeping its own (ticket 0670)', () => {
+    const framed = withLayers(made(), { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
+    const real = withBeadShape(framed, 'frame', 'real')
+    expect(frameWeave(real).cell).toEqual(beadCell(delica, 'real'))
+    expect(frameWeave(real).technique).toBe('loom')
+    expect(canvasWeave(real).cell).toBeUndefined()
+    expect(canvasWeave(withBeadShape(real, 'canvas', 'real')).cell).toEqual(beadCell(delica, 'real'))
   })
 
   it('draws a Bead this device does not know as Symmetric', () => {
@@ -83,7 +75,7 @@ describe('the Bead shape in a Project', () => {
   })
 
   it('goes back to Symmetric without a leftover field', () => {
-    expect('beadShape' in withBeadShape(withBeadShape(made(), 'real'), 'symmetric')).toBe(false)
+    expect('beadShape' in withBeadShape(withBeadShape(made(), 'canvas', 'real'), 'canvas', 'symmetric')).toBe(false)
   })
 
   it('travels with the Project file, and an older file reads as Symmetric', () => {

@@ -417,6 +417,8 @@ export interface Translations {
     hexInvalid: string
     /** The preview swatch's name: the color the picker would take. */
     previewLabel: string
+    /** The + on the Custom color picker's preview (ticket 0690): adds the color and keeps the picker open. */
+    addToPalette: string
     pickFromCanvasLabel: string
     /** The toast after an added swatch is removed (ticket 228); its Undo is `undoButton`. */
     removed: string
@@ -715,8 +717,8 @@ export interface Translations {
     /** The Frame panel's margin section and the margin color picker (ticket 0656, MarginSheet card): its heading, the
      * picker's name, the Auto swatch's name and accessible name, the name of the swatch that is the Canvas color, and the
      * line under the picker. */
-    /** The Frame panel's background section (ticket 0666): its heading and the radio group's name. */
-    background: { heading: string; label: string }
+    /** The Frame's Background picker's radio group name (tickets 0666, 0670). */
+    background: { label: string }
     /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
      * Switch and the title block's Technique pencil. */
     margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
@@ -1081,5 +1083,11 @@ export interface Translations {
     emptyColor: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
+  }
+  /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
+   * in every layer's. */
+  layerSettings: {
+    frameHeading: string
+    background: string
   }
 }

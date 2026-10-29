@@ -1,23 +1,21 @@
 import type { Layer } from '../../domain/grid'
-import { layerOf } from '../../domain/layerRecord'
+import { beadOfLayer, frameOf } from '../../domain/layerRecord'
 import { withBeadShape } from '../../domain/projectBead'
-import type { Project } from '../../domain/project'
+import { touch, type Project } from '../../domain/project'
 import type { BeadShape } from '../../domain/weave'
-import type { EditFn } from './useEdit'
 
 export interface BeadShapeFlowDeps {
   currentProject: () => Project | undefined
-  edit: EditFn
+  replaceProject: (project: Project) => void
 }
 
-/** A layer's Bead shape choice (ADR 0068, tickets 508, 0687), from that layer's panel: the Project panel's Canvas section
- * or the Frame panel. Applied at once to that layer alone, one Undo step. */
+/** A layer's Bead shape (ADR 0068, 0079, ticket 0670), picked in its Layer settings: how that layer is drawn, a view
+ * saved with the Project like its Background, so no Edit, no Undo step and no Row progress lock. */
 export function useBeadShapeFlow(deps: BeadShapeFlowDeps) {
   function setBeadShape(layer: Layer, shape: BeadShape): void {
     const project = deps.currentProject()
-    const held = project && layerOf(project, layer)
-    if (!held || held.beadShape === shape) return
-    deps.edit('exempt', (project) => withBeadShape(project, shape, layer))
+    if (!project || (layer === 'frame' && !frameOf(project)) || beadOfLayer(project, layer).beadShape === shape) return
+    deps.replaceProject(touch(withBeadShape(project, layer, shape), {}))
   }
 
   return { setBeadShape }

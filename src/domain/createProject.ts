@@ -5,7 +5,7 @@ import { beadIdOfLayer, frameOf, newLayerId, withLayer } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import type { Grid, Project } from './project'
+import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
 import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique, type TechniqueSettings } from './weave'
@@ -21,6 +21,8 @@ export interface CreateProjectInput {
   techniqueSettings?: TechniqueSettings
   /** The Bead shape of a new Project; left out is Symmetric. */
   beadShape?: BeadShape
+  /** The Background both layers start on (ticket 0670); left out, they show the device's last pick. */
+  background?: Background
   beadId: string
   /** How big the Frame is, in beads or mm/cm (converted once to a grid, not remembered; ADR 0026). Left out: a Canvas
    * with no Frame. */
@@ -47,6 +49,7 @@ export function createProject(input: CreateProjectInput): Project {
     beadId: bead.id,
     bead: beadCopy(bead),
     ...(input.beadShape && input.beadShape !== DEFAULT_BEAD_SHAPE ? { beadShape: input.beadShape } : {}),
+    ...(input.background !== undefined ? { background: input.background } : {}),
     beads: {},
   }
   return {
