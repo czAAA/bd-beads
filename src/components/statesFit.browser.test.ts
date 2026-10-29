@@ -129,6 +129,7 @@ const CASES: FitCase[] = [
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
+  ['MarginSheet (bare)', marginSheetHost(0.25), {}],
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
   [
     'ContextBar',

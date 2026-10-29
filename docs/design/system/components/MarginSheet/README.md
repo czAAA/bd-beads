@@ -65,11 +65,11 @@ The tools keep their pixel size while the band grows and shrinks with the beads,
 - **Full** (band 68px and up, about 85% and closer): as above.
 - **Compact** (40 to 68px, about 50% to 85%): tools 24px with 14px icons, 2px apart; Row progress shows only the counter, a 40px track and Row done (22px); the title block is one 22px row (name, Technique, size in beads, size in cm, Letters, fold); no ruler numbers, only the Frame line; the inner border inset 6px, the corners 10px; the row 8px down and 10px in.
 - **Folded** (31 to 40px, about 39% to 50%): the Move bar, the counter with Row done, the Margin color button and a **···** button ("Frame tools") whose menu holds Rotate Frame, Edit Frame, Export and Remove Frame; the title block is the name tab. The paper keeps its color and edge, with no inner border; the row and the tab stand in the middle of the room between the sheet's edge and the Frame's line. Folding by hand (the title block's fold button) folds the title block alone; the tools stay.
-- **Bare** (under 31px, under about 39%): the paper alone. Not even the folded row fits between the sheet's edge and the Frame's line, so the sheet holds no tools; the Frame panel, the Progress bar and the Canvas strip still have them.
+- **Bare** (under 31px, under about 39%): only the **Move bar**. Not even the folded row fits between the sheet's edge and the Frame's line, so nothing of the sheet is drawn: no paper, edge or inner border, no title block, tab or legend, no buttons, no ruler numbers and no row pointer. The Move bar (56 × 24) stands alone above the middle of the Frame's top edge, its bottom on the Frame's line, so the Frame can be dragged at any zoom; it may stand outside where the sheet would be, and never over the Frame's line or beads. The 4 positions are still kept clear for drawing and Selection, and a refused press still flashes the dashed outline. The Frame panel, the Progress bar and the Canvas strip still have the other tools.
 
 ## Touch
 
-On a coarse pointer every control on the sheet has a 44px hit area, centred on its drawn size; where neighbours would overlap, the band uses the compact form one step earlier.
+On a coarse pointer every control on the sheet has a 44px hit area, centred on its drawn size; where neighbours would overlap, the band uses the compact form one step earlier. Bare, the Move bar rises by the part of its hit area below it and 16px more, so a finger on the Frame's first row reaches the bead.
 
 ## Copy
 
@@ -96,6 +96,13 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **The Frame tools menu** opens Export hung from the ··· button. Its items are the band's buttons' own actions, names and disabled reasons.
 - **Compact title block:** the name and the Technique are read only there (no pencils); the full form and the Frame panel edit them.
 - **Left out:** the coarse-pointer rule (Touch above: the compact form one step earlier where 44px hit areas would overlap) is not built; a pointer with Turn row direction set to columns can sit under a tool of the top band.
+
+## As built (ticket 0682)
+
+- **Bare** is the fourth form of `src/rendering/marginForm.ts`; the canvas leaves the sheet out, the rulers leave out the row pointer (and, as in the compact and folded forms, the numbers), and the sheet's controls are the Move bar alone (`MarginMoveBar.vue`, the same control as in the band). The Frame's line, its hot corners while Edit Frame is on, and the size Tooltip are the Frame's own and stay; the sheet's Edit Frame outline goes with the sheet.
+- **Touch:** a browser moves a finger's press to a control up to about 16px away from it (touch adjustment), and a canvas is not such a control, so on a coarse pointer the bar stands its 44px hit area and 16px more above the Frame's line: about 29px from the line to its drawn bottom.
+- **Gives way** to a Selection's handles and the Tool pill, as the band's row does.
+- **Checked** in the browser (`MarginSheet.browser.test.ts`: at 10%, 25% and 38% on Frames 40 and 3 beads wide, the bar takes its press and a press on the first row lands on the canvas) and in the app (`e2e/visual/frameControls.spec.ts`: at 10%, 20% and 30%, by mouse and by touch, the bar drags the Frame and the first row paints).
 
 ## Acceptance
 
