@@ -1,4 +1,4 @@
-import { beadsDiffer, type Bead } from './beads'
+import { beadsDiffer, colorCatalogOf, type Bead } from './beads'
 import type { ColorCatalog } from './colorCatalog'
 import type { Layer } from './grid'
 import { beadIdOfLayer, beadOfLayer, frameOf, type Layered, withLayer } from './layerRecord'
@@ -52,7 +52,7 @@ export function withWovenPalette(before: Project, after: Project, catalog?: Colo
     return after
   }
   const palette = paletteForBead(after.palette, after.removedDefaults ?? [], defaultPalette(fromId), defaultPalette(toId))
-  const kept = !catalog && from?.formFactor.colorCatalog === to?.formFactor.colorCatalog && from?.size === to?.size
+  const kept = !catalog && colorCatalogOf(fromId) === colorCatalogOf(toId) && from?.size === to?.size
   const codes = kept ? (after.paletteCodes ?? {}) : codesForBead(after.paletteCodes ?? {}, catalog, to?.size)
   const { paletteCodes: _codes, ...rest } = after
   const paletteLetters = lettersOfPalette(palette, toId, after.paletteLetters)

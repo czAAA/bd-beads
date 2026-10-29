@@ -18,7 +18,7 @@ describe('loadColorCatalog', () => {
   })
 
   it('rejects an id with no file', async () => {
-    await expect(loadColorCatalog('toho')).rejects.toThrow('No color catalog toho')
+    await expect(loadColorCatalog('nobody')).rejects.toThrow('No color catalog nobody')
   })
 
   it('loads every file in the catalogs folder by its name, with no list to edit (ADR 0078)', async () => {

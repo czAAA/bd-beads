@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, findBead } from '../../domain/beads'
+import { BEAD_CATALOG, beadCopy, findBead } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { setPalette } from '../../domain/paletteEdits'
@@ -103,7 +103,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
 
     onConfirmReplaceBead()
 
-    expect(resolveProjectBead(harness.currentProject()!)).toEqual(current)
+    expect(resolveProjectBead(harness.currentProject()!)).toEqual(beadCopy(current))
     expect(harness.history.canUndo.value).toBe(true)
     harness.history.onUndo()
     expect(resolveProjectBead(harness.currentProject()!)).toEqual(canvasOf(older).bead)

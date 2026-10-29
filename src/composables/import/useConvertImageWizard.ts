@@ -1,6 +1,6 @@
 import { computed, inject, onBeforeUnmount, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
-import { DEFAULT_BEAD, findBead } from '../../domain/beads'
+import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import {
   beadColorTargets,
@@ -125,7 +125,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const sizeDimensions = shallowRef<GridDimensions>({ columns: 1, rows: 1 })
 
   // Colors.
-  const catalogId = computed(() => bead.value.formFactor.colorCatalog)
+  const catalogId = computed(() => colorCatalogOf(bead.value.id))
   const catalog = shallowRef<ColorCatalog>()
   const catalogState = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
   const chosenSource = ref<ColorSource>()

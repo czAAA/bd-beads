@@ -89,6 +89,10 @@ export const zh: Translations = {
     silver: '银色',
     crystal: '透明',
     iridescent: '虹彩',
+    lime: '黄绿色',
+    aqua: '浅蓝色',
+    navy: '藏青色',
+    copper: '铜色',
   },
   panels: {
     back: '返回',

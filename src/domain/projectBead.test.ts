@@ -24,7 +24,7 @@ describe('resolveProjectBead', () => {
       size: { width: 15, height: 15, unit: 'mm' },
     })
 
-    expect(resolveProjectBead(project)).toEqual(cubeBead)
+    expect(resolveProjectBead(project)).toEqual(beadCopy(cubeBead))
   })
 
   it('returns undefined for a Bead the catalog no longer has (a removed custom Bead, or an unrecognized imported one)', () => {
@@ -115,7 +115,7 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
   const retired = { ...cubeBead, id: 'old-maker/cube/2mm', widthMm: 2, heightMm: 2, retired: true }
 
   it('saves the copy without the retired flag', () => {
-    expect(canvasOf(made()).bead).toEqual(cubeBead)
+    expect(canvasOf(made()).bead).toEqual(beadCopy(cubeBead))
     expect(frameOf(replaceBead(made(), retired))!.bead).not.toHaveProperty('retired')
   })
 
@@ -137,20 +137,20 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
 
   it('gives a Project with no copy the catalog’s Bead, read through the alias map, and lets an unknown id stay unknown', () => {
     const without = withLayers(made(), { beadId: 'toho-cube-1.5mm', bead: undefined })
-    expect(canvasOf(normalizeProject(without))).toMatchObject({ beadId: 'toho/cube/1.5mm', bead: cubeBead })
+    expect(canvasOf(normalizeProject(without))).toMatchObject({ beadId: 'toho/cube/1.5mm', bead: beadCopy(cubeBead) })
 
     const unknown = withLayers(made(), { beadId: 'no-such-bead', bead: undefined })
     expect(resolveProjectBead(normalizeProject(unknown))).toBeUndefined()
   })
 
   it('falls back to the catalog when the stored copy is not a Bead', () => {
-    expect(canvasOf(normalizeProject(withLayers(made(), { bead: { id: 3 } as never }))).bead).toEqual(cubeBead)
+    expect(canvasOf(normalizeProject(withLayers(made(), { bead: { id: 3 } as never }))).bead).toEqual(beadCopy(cubeBead))
   })
 
   it('puts the copy back with Undo of a Replace Bead', () => {
     const before = made()
     const replaced = replaceBead(before, retired)
-    expect(frameOf(restoreSnapshot(replaced, snapshotOf(before)))!.bead).toEqual(cubeBead)
+    expect(frameOf(restoreSnapshot(replaced, snapshotOf(before)))!.bead).toEqual(beadCopy(cubeBead))
   })
 })
 
@@ -164,7 +164,7 @@ describe('each layer has its own Bead (ticket 0665, ADR 0079)', () => {
     expect(canvasOf(replaced).beadId).toBe(delica.id)
     expect(frameOf(replaced)!.beadId).toBe(roundBead.id)
     expect(replaced.palette).toBe(before.palette)
-    expect(resolveProjectBead(replaced)).toEqual(roundBead)
+    expect(resolveProjectBead(replaced)).toEqual(beadCopy(roundBead))
   })
 
   it("replaces the Canvas's Bead on a Project with no Frame, whichever layer is asked, and the Palette follows it", () => {
