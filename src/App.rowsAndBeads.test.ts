@@ -76,7 +76,7 @@ describe('App bead quantities', () => {
   it('counts the painted beads of each color in the Frame panel', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, 'red')
-    // Each press is released: the counts follow a stroke a few times a second (ticket 106) and settle when it ends.
+    // Each press is released: the counts wait for a stroke to end (ticket 0680).
     await click(wrapper, 0)
     await click(wrapper, 1)
     await pickColor(wrapper, 'blue')

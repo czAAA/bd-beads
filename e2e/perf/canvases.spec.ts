@@ -24,7 +24,7 @@ const RUN_MS = 2000
 /** Budgets ("Canvas performance for large patterns", after RAIL): script per pointer move, and one edit's response. */
 const MOVE_BUDGET_MS = 8
 const EDIT_BUDGET_MS = 100
-/** How long an edit is given after its frame to finish what it set going later (a save, a summary's 250 ms catch-up). */
+/** How long an edit is given after its frame to finish what it set going later (a save, the summaries catching up). */
 const AFTERMATH_MS = 300
 /** How many beads along the target a hover's next move skips, so a sweep crosses the block, not one corner of it. */
 const SWEEP_STRIDE = 7
