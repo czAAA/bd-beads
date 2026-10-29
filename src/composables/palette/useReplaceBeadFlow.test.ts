@@ -39,19 +39,27 @@ describe('useReplaceBeadFlow', () => {
     expect(none.replaceBeadPendingBead.value).toBeUndefined()
   })
 
-  it('describes the swap with the new Bead and its Estimated size before the current one, as the screen shows the Project', () => {
+  it("tells the Frame's Bead sizes and the Frame's Estimated size with the new Bead and the old, in mm however large (ticket 0687)", () => {
     const tall = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } }) // 10x20
     const { replaceBeadConfirmMessage, onRequestReplaceBead } = setup(tall)
     expect(replaceBeadConfirmMessage.value).toBe('')
 
     onRequestReplaceBead('frame', 'toho/round/11-0')
 
-    // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
-    expect(replaceBeadConfirmMessage.value).toContain('With TOHO Round 11/0, this Project will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
+    // The same 10x20 Frame at Round (1.65 x 2.2mm): 16.5 x 44mm.
+    expect(replaceBeadConfirmMessage.value).toBe(
+      "The Frame's Bead changes from 1.5 × 1.5 mm to 1.7 × 2.2 mm, so the Frame will be about 16.5 × 44 mm instead of 15 × 30 mm. It will look different in proportion, but your design and its bead count stay exactly the same. You can undo this.",
+    )
+  })
 
-    const turned = setup(withLayers(tall, { orientation: 90 }))
-    turned.onRequestReplaceBead('frame', 'toho/round/11-0')
-    expect(turned.replaceBeadConfirmMessage.value).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
+  it("tells only the Canvas's Bead sizes for the Canvas, with or without a Frame (ticket 0687)", () => {
+    const tall = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
+    const expected = "The Canvas's Bead changes from 1.5 × 1.5 mm to 1.7 × 2.2 mm. The Canvas will look different in proportion, but your design and its bead count stay exactly the same. You can undo this."
+    for (const project of [tall, withLayers(tall, { frame: undefined })]) {
+      const { replaceBeadConfirmMessage, onRequestReplaceBead } = setup(project)
+      onRequestReplaceBead('canvas', 'toho/round/11-0')
+      expect(replaceBeadConfirmMessage.value).toBe(expected)
+    }
   })
 
   it('cancelling closes the modal and changes nothing', () => {
@@ -120,9 +128,8 @@ describe('Replace Bead with coded swatches (ticket 0538)', () => {
 
 describe('Replace Bead on the layer whose Layer settings asked (tickets 0665, 0670, ADR 0079)', () => {
   it("replaces the Canvas's Bead under a Frame, the Frame's and the Palette staying, in one Undo step", async () => {
-    const { harness, replaceBeadConfirmMessage, onRequestReplaceBead, onConfirmReplaceBead } = setup()
+    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup()
     onRequestReplaceBead('canvas', other.id)
-    expect(replaceBeadConfirmMessage.value).toContain('the Canvas is drawn at that bead')
     await onConfirmReplaceBead()
     expect(canvasOf(harness.project).beadId).toBe(other.id)
     expect(frameOf(harness.project)!.beadId).toBe(canvasOf(base).beadId)
@@ -131,10 +138,9 @@ describe('Replace Bead on the layer whose Layer settings asked (tickets 0665, 06
     expect(canvasOf(harness.project).beadId).toBe(canvasOf(base).beadId)
   })
 
-  it("replaces the Canvas's Bead on a Project with no Frame, with its Estimated size", async () => {
-    const { harness, replaceBeadConfirmMessage, onRequestReplaceBead, onConfirmReplaceBead } = setup(withLayers(base, { frame: undefined }))
+  it("replaces the Canvas's Bead on a Project with no Frame", async () => {
+    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(withLayers(base, { frame: undefined }))
     onRequestReplaceBead('canvas', other.id)
-    expect(replaceBeadConfirmMessage.value).not.toContain('the Canvas is drawn at that bead')
     await onConfirmReplaceBead()
     expect(canvasOf(harness.project).beadId).toBe(other.id)
   })
