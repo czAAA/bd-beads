@@ -14,6 +14,7 @@ import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, type MarginForm } from '../../rendering/marginForm'
+import { MARGIN_PX } from '../../rendering/marginSizes'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
@@ -101,25 +102,18 @@ const ROW_FORMS: Record<MarginForm, readonly RowForm[]> = {
 type TitleForm = 'full' | 'compact' | 'tab'
 const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'tab'], compact: ['compact', 'tab'], folded: ['tab'], bare: [] }
 
-// The px mirror `--margin-band-inset`, `--margin-band-inset-compact`, `--margin-band-top-compact`, `--margin-tool`,
-// `--margin-tab`, `--frame-handle-hit-width`, `--margin-border-inset`, `--margin-border-inset-compact` and `--space-4`.
-const PLACES = { full: { top: 14, side: 14, border: 10 }, compact: { top: 8, side: 10, border: 6 } }
-const TOOL_PX = 28
-const TAB_PX = 24
-const MOVE_WIDTH_PX = 56
-const GAP_PX = 4
-const place = computed(() => (form.value === 'full' ? PLACES.full : PLACES.compact))
+const place = computed(() => (form.value === 'full' ? MARGIN_PX.place.full : MARGIN_PX.place.compact))
 /** The room between the sheet's top or bottom edge and the Frame's line: the folded row and tab sit in its middle. */
 const roomAbove = computed(() => props.anchor.box.top - props.anchor.sheet.top)
 const roomBelow = computed(() => props.anchor.sheet.top + props.anchor.sheet.height - props.anchor.box.top - props.anchor.box.height)
-const middle = (room: number) => Math.max(0, (room - TAB_PX) / 2)
+const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab) / 2)
 
 const bandEl = ref<HTMLElement>()
 const bandParts = () => [...(bandEl.value?.children ?? [])]
 /** The band row's width: the Move bar centred, with room on each side for the wider of Row progress and the tools. */
 function bandWidth(): number {
   const [start = 0, move = 0, end = 0] = bandParts().map((part) => part.getBoundingClientRect().width)
-  return move ? move + 2 * Math.max(start, end) + 2 * GAP_PX : 0
+  return move ? move + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap : 0
 }
 const row = useFittingForm({
   forms: () => ROW_FORMS[form.value],
@@ -128,15 +122,15 @@ const row = useFittingForm({
   observed: bandParts,
 })
 const rowTop = computed(() => (form.value === 'folded' ? middle(roomAbove.value) : place.value.top))
-const rowHeight = computed(() => (row.value === 'full' ? TOOL_PX : TAB_PX))
+const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
 const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${place.value.side}px`, right: `${place.value.side}px`, height: `${rowHeight.value}px` }))
 const small = computed(() => row.value !== 'full')
-const iconSize = computed(() => (small.value ? 14 : 16))
+const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
 const progressForm = computed(() => (row.value === 'full' ? 'margin' : row.value === 'compact' ? 'compact' : 'folded'))
 
 const titleEl = ref<HTMLElement>()
 /** The title block's room: the sheet's width inside its border. */
-const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? PLACES.compact.side : place.value.border))
+const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? MARGIN_PX.place.compact.side : place.value.border))
 const title = useFittingForm({
   forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? TITLE_FORMS[form.value].filter((shown) => shown === 'tab') : TITLE_FORMS[form.value]) : []),
   room: () => titleRoom.value,
@@ -146,7 +140,7 @@ const title = useFittingForm({
 /** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
 const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
 /** The title block's inset from the sheet's bottom-right corner: the inner border's, or folded, the tab's. */
-const titleInset = computed(() => (form.value === 'folded' ? { right: PLACES.compact.side, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border }))
+const titleInset = computed(() => (form.value === 'folded' ? { right: MARGIN_PX.place.compact.side, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border }))
 const titleStyle = computed(() => ({ right: `${titleInset.value.right}px`, bottom: `${titleInset.value.bottom}px`, maxWidth: `${titleRoom.value}px` }))
 
 // The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498)
@@ -171,7 +165,7 @@ const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sh
 const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
 const handleYields = computed(() => {
   const { sheet } = props.anchor
-  return yields({ left: sheet.left + handleAt.value.left - MOVE_WIDTH_PX / 2, top: sheet.top + handleAt.value.top - TAB_PX, width: MOVE_WIDTH_PX, height: TAB_PX })
+  return yields({ left: sheet.left + handleAt.value.left - MARGIN_PX.moveWidth / 2, top: sheet.top + handleAt.value.top - MARGIN_PX.tab, width: MARGIN_PX.moveWidth, height: MARGIN_PX.tab })
 })
 const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.value))
 

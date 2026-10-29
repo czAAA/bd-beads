@@ -5,6 +5,7 @@ import { layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { BeadShape, Technique } from '../../domain/weave'
+import { useBackgroundSwatches } from '../../composables/canvas/useBackgroundSwatches'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -55,11 +56,8 @@ const beadSummary = computed(() => {
   return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
 })
 
-const canvasName = computed(() => {
-  const background = canvas.background.value
-  if (!background) return undefined
-  return background.id === 'custom' ? t.value.palette.customColorLabel : t.value.canvas.canvasColor.names[background.id]
-})
+/** The Canvas color's name, the canvas section's summary: the one its picker shows chosen. */
+const canvasName = useBackgroundSwatches(canvas).summary
 </script>
 
 <template>
