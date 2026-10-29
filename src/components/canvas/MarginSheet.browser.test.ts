@@ -10,7 +10,7 @@ import { FIT_LOCALES, mountAt } from '../../testUtils/browserFit'
 import { paintAt } from '../../testUtils/layers'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import MarginSheet from './MarginSheet.vue'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 // The margin sheet keeps its controls' size as the zoom grows and shrinks its band, so it changes form (ticket 0658):
 // at each zoom, and on a narrow Frame, nothing of the Frame stands outside its sheet, over its beads, or over another
@@ -34,7 +34,7 @@ function anchorAt(at: number, across: number): FrameAnchor {
 }
 
 function projectOf(across: number): Project {
-  const bare: Project = withFields(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), {
+  const bare: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), {
 makerName: 'Ada',
     frame: { row: 0, column: 0, rows: 11, columns: across, technique: 'loom', beads: {}, name: 'Sun band' },
 })

@@ -8,14 +8,14 @@ import { removeLineQuestion, removeLineRefusal, removeSelectedLine as removeLine
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
-import { flatView, withFields } from '../testUtils/flatFields'
+import { layersView, withLayers } from '../testUtils/layerFields'
 import { type RowProgress } from './project'
 
 /** A Project whose Frame sits at (10, 20) and whose own beads are numbered #00 0N0 by position, so a shift shows. */
 function numbered(columns: number, rows: number, technique: Technique = 'loom'): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const colors = Array.from({ length: rows }, (_row, r) => Array.from({ length: columns }, (_cell, c) => `#0${r}0${c}00`))
-  return withFields(base, { frame: { technique: 'loom' as const, row: 10, column: 20, columns, rows, beads: beadsFromColors(colors) } })
+  return withLayers(base, { frame: { technique: 'loom' as const, row: 10, column: 20, columns, rows, beads: beadsFromColors(colors) } })
 }
 
 const rowOf = (project: Project, index: number): Selection => ({ top: frameOf(project)!.row + index, left: frameOf(project)!.column, rows: 1, columns: frameOf(project)!.columns })
@@ -70,7 +70,7 @@ describe('removeSelectedLine', () => {
       { row: 30, column: 21, color: '#222222' },
       { row: 3, column: 3, color: '#333333' },
     ])
-    const removed = removeSelectedLine(withFields(before, { beads: outside }), rowOf(before, 0))
+    const removed = removeSelectedLine(withLayers(before, { beads: outside }), rowOf(before, 0))
 
     expect(colorAt(beadsOfLayer(removed, 'canvas'), 12, 40)).toBe('#111111')
     expect(colorAt(beadsOfLayer(removed, 'canvas'), 30, 21)).toBe('#222222')
@@ -85,9 +85,9 @@ describe('removeSelectedLine', () => {
   })
 
   it('keeps the rest of the Project as it was, and bumps updatedAt', () => {
-    const before = withFields(numbered(3, 4), { name: 'Keep me', updatedAt: 0 })
+    const before = withLayers(numbered(3, 4), { name: 'Keep me', updatedAt: 0 })
     const removed = removeSelectedLine(before, rowOf(before, 1))
-    expect(flatView(removed)).toMatchObject({ id: before.id, name: 'Keep me', technique: 'loom' })
+    expect(layersView(removed)).toMatchObject({ id: before.id, name: 'Keep me', technique: 'loom' })
     expect(removed.updatedAt).toBeGreaterThan(0)
   })
 
@@ -105,7 +105,7 @@ describe('removeSelectedLine', () => {
 
   it('is not offered on a Custom frame, which has no plain rows (ADR 0079, ticket 0669)', () => {
     const plain = numbered(3, 4)
-    const custom = withFields(plain, { frame: { ...frameOf(plain)!, shape: 'triangle' as const, settings: { rounds: 2 } } })
+    const custom = withLayers(plain, { frame: { ...frameOf(plain)!, shape: 'triangle' as const, settings: { rounds: 2 } } })
     expect(removeLineRefusal(custom, rowOf(custom, 0))).toBe('no-line')
     expect(removeLineQuestion(custom, rowOf(custom, 0))).toBeUndefined()
   })
@@ -118,7 +118,7 @@ describe('removeSelectedLine with no Frame (ticket 313)', () => {
     const colors = Array.from({ length: 3 }, (_row, r) => Array.from({ length: 3 }, (_cell, c) => `#0${r}0${c}00`))
     const block = beadsFromColors(colors, { row: 0, column: 0 })
     const beads = { ...block, 20: { 20: '#ffffff' } }
-    return withFields(base, { frame: undefined, beads })
+    return withLayers(base, { frame: undefined, beads })
   }
 
   it('cuts the Piece area\'s line, closes the gap and leaves other areas alone', () => {
@@ -151,7 +151,7 @@ describe('Remove row/column once rows are marked done (ticket 0647, ADR 0055)', 
   /** A Frame of 3 columns and 6 rows in a Technique, its rows running `rowProgress`'s way with its pointers. */
   const woven = (rowProgress: RowProgress, technique: Technique = 'loom'): Project => {
     const project = numbered(3, 6)
-    return withFields(project, { technique, frame: { ...frameOf(project)!, technique }, rowProgress })
+    return withLayers(project, { technique, frame: { ...frameOf(project)!, technique }, rowProgress })
   }
   const down = (currentRow: number) => ({ direction: 'rows' as const, currentRow, currentColumn: 0 })
 

@@ -9,7 +9,7 @@ import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 function setup(tool: Tool = 'paint', initial?: Project) {
   const harness = editHarness(
@@ -152,7 +152,7 @@ describe('usePaintStroke', () => {
     /** A 3 x 3 Frame at (20, 20), far from the margin of a Canvas sketch at the origin. */
     const over = () => {
       const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-      return withFields(base, { frame: { ...frameOf(base)!, row: 20, column: 20 } })
+      return withLayers(base, { frame: { ...frameOf(base)!, row: 20, column: 20 } })
     }
 
     it('paints the Frame for a press inside it, and a stroke that began there leaves nothing where it goes outside', () => {

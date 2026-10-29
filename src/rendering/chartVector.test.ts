@@ -10,14 +10,14 @@ import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, letterColor, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
-import { type FlatChange, withFields } from '../testUtils/flatFields'
+import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 // The PrintChartPage card's Acceptance list, on a 100 × 100 loom Schema with an empty background, White beads and dark
 // beads, Letters off.
 const DARK = '#1f2a44'
 const LETTERS = { '#ffffff': 'A', [DARK]: 'B', '#f2c94c': 'AA' }
 
-function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra: FlatChange = {}): Project {
+function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra: LayersChange = {}): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   // Dark in the top left 10 × 10, White in the next 5 columns of its first 10 rows, a pale yellow beyond them; the rest empty.
   const beads: Record<number, Record<number, string>> = {}
@@ -27,7 +27,7 @@ function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra:
     for (let column = 10; column < 15; column += 1) beads[row]![column] = '#ffffff'
     beads[row]![15] = '#f2c94c'
   }
-  return withFields(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: LETTERS, letters: false, ...extra })
+  return withLayers(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: LETTERS, letters: false, ...extra })
 }
 
 const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) Tf ([\d.]+) Tz ([\d.-]+) ([\d.-]+) Td \(([^)]*)\) Tj ET/g)].map((match) => ({ font: match[1]!, size: Number(match[2]), scale: Number(match[3]), x: Number(match[4]), y: Number(match[5]), value: match[6]! }))
@@ -65,7 +65,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(part.firstAcross).toBe(0)
     expect(letters).toHaveLength(painted)
     expect(new Set(letters.map((text) => text.value))).toEqual(new Set(['A', 'B', 'AA']))
-    expect(texts(drawChartParts(withFields(project, { letters: true }), planPrint(project, undefined, 0, 2), [part], 1754, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
+    expect(texts(drawChartParts(withLayers(project, { letters: true }), planPrint(project, undefined, 0, 2), [part], 1754, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
   })
 
   it('sets a letter in 6.5 pt, centred across its bead, with its baseline 2.32 mm below the top of the cell', () => {
@@ -148,7 +148,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     const project = schema('loom', 100, 100, { frame: undefined })
     const painted = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 100, height: 100, unit: 'beads' } })
     const full: Record<number, Record<number, string>> = { 0: Object.fromEntries(Array.from({ length: 100 }, (_, column) => [column, DARK])) }
-    const wide: Project = withFields(project, { frame: { ...frameOf(painted)!, beads: full } })
+    const wide: Project = withLayers(project, { frame: { ...frameOf(painted)!, beads: full } })
     const { content } = chartOf(wide, 1)
     const pdf = content.toString()
 
@@ -176,7 +176,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
   })
 
   it('places the beads of a turned Schema from the Project renderer', () => {
-    const project = schema('loom', 40, 20, { rotation: 90 })
+    const project = schema('loom', 40, 20, { orientation: 90 })
     const plan = planPrint(project, undefined, 0, 2)
     const placed = placeBeads(project, plan, plan.parts[0]!)
 
@@ -199,7 +199,7 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
     const positions = frameLayoutOf(frameOf(placed.project)!)!.positions
     const dark = onLayer(placed.project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))
     const white = onLayer(dark, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row === 3), '#ffffff'))
-    return withFields(white, { paletteLetters: LETTERS, letters: false })
+    return withLayers(white, { paletteLetters: LETTERS, letters: false })
   }
 
   it('tiles the bounding rectangle and letters every painted bead once, across the parts', () => {

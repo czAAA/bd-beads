@@ -8,12 +8,12 @@ import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storage
 import { useProjectLibrary } from './useProjectLibrary'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { frameOf } from '../../domain/layerRecord'
-import { type FlatChange, withFields } from '../../testUtils/flatFields'
+import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
-function makeProject(overrides: FlatChange = {}): Project {
-  return withFields(
+function makeProject(overrides: LayersChange = {}): Project {
+  return withLayers(
     createProject({
       technique: 'loom',
       beadId: cubeBead.id,

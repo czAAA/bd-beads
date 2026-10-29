@@ -9,14 +9,14 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateSelectionFlow } from './useRotateSelectionFlow'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
-import { sheetOf, withFields } from '../../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
 const GREEN = '#00aa00'
 const RED = '#e63746'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 /** A 1 x 3 strip of red beads at row 10, in a Frame all round it: the Frame\'s own beads, since it lies over the Canvas. */
 const strip: Selection = { top: 10, left: 10, rows: 1, columns: 3 }
-const framed: Project = withFields(base, {
+const framed: Project = withLayers(base, {
 frame: { technique: 'loom' as const, row: 0, column: 0, rows: 40, columns: 40, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) },
   beads: {},
 })
@@ -49,7 +49,7 @@ describe('useRotateSelectionFlow', () => {
     expect(beadsOfLayer(harness.project, 'canvas')).toBe(beadsOfLayer(framed, 'canvas'))
 
     harness.history.onUndo()
-    expect(sheetOf(harness.project)).toEqual(sheetOf(framed))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -61,7 +61,7 @@ describe('useRotateSelectionFlow', () => {
   })
 
   it('says so once when it covered beads, with an Undo that undoes the one step', () => {
-    const covering: Project = withFields(framed, { frame: { ...frameOf(framed)!, beads: withColors(frameOf(framed)!.beads, [{ row: 9, column: 11, color: GREEN }, { row: 11, column: 11, color: GREEN }]) } })
+    const covering: Project = withLayers(framed, { frame: { ...frameOf(framed)!, beads: withColors(frameOf(framed)!.beads, [{ row: 9, column: 11, color: GREEN }, { row: 11, column: 11, color: GREEN }]) } })
     const { deps, harness, onRotate } = setup(covering)
     onRotate()
 
@@ -74,12 +74,12 @@ describe('useRotateSelectionFlow', () => {
     expect(deps.onUndo).toHaveBeenCalledTimes(1)
 
     harness.history.onUndo()
-    expect(sheetOf(harness.project)).toEqual(sheetOf(covering))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(covering))
   })
 
   it('drops what the turn would put outside the Frame, and says nothing for it', () => {
     // The Frame\'s top edge is row 10: the turn\'s top bead would stand on row 9, which the Frame does not hold.
-    const edge: Project = withFields(framed, { frame: { technique: 'loom' as const, row: 10, column: 0, rows: 30, columns: 40, beads: withColors({}, [0, 1, 2].map((column) => ({ row: 0, column: 10 + column, color: RED }))) } })
+    const edge: Project = withLayers(framed, { frame: { technique: 'loom' as const, row: 10, column: 0, rows: 30, columns: 40, beads: withColors({}, [0, 1, 2].map((column) => ({ row: 0, column: 10 + column, color: RED }))) } })
     const { deps, harness, onRotate } = setup(edge)
     onRotate()
     expect(Object.values(frameOf(harness.project)!.beads).flatMap((row) => Object.keys(row))).toHaveLength(2)
@@ -87,7 +87,7 @@ describe('useRotateSelectionFlow', () => {
   })
 
   it('turns the Canvas\'s beads for a Selection that begins on the Canvas, and leaves the Frame', () => {
-    const sketch: Project = withFields(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) })
+    const sketch: Project = withLayers(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) })
     const { harness, onRotate } = setup(sketch)
     onRotate()
     expect(colorAt(beadsOfLayer(harness.project, 'canvas'), 9, 11)).toBe(RED)
@@ -99,7 +99,7 @@ describe('useRotateSelectionFlow', () => {
     onRotate()
     expect(colorAt(frameOf(harness.project)!.beads, 9, 11)).toBe(RED)
 
-    const sketch: Project = moveToRow(withFields(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }), 4)
+    const sketch: Project = moveToRow(withLayers(framed, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }), 4)
     const onCanvas = setup(sketch)
     onCanvas.onRotate()
     expect(colorAt(beadsOfLayer(onCanvas.harness.project, 'canvas'), 9, 11)).toBe(RED)

@@ -5,7 +5,7 @@ import { createPalette, defaultPaletteIds } from '../domain/palette'
 import type { Project } from '../domain/project'
 import { frameOutsetPx } from '../rendering/rulerScale'
 import { paintAt } from './layers'
-import { withFields } from './flatFields'
+import { withLayers } from './layerFields'
 
 const moth = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 
@@ -14,7 +14,7 @@ const moth = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', name:
 export const marginSheetHost = (zoom: number) =>
   defineComponent({
     setup() {
-      const bare: Project = withFields(moth, { makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } })
+      const bare: Project = withLayers(moth, { makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } })
       const project = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
       // Beads of 20px at 100%, the line out from them, the sheet 4 beads round them (ticket 0658's forms by zoom).
       const band = 80 * zoom
