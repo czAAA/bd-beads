@@ -116,6 +116,17 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(document.querySelector('[data-testid="margin-color-popover"]')).toBeNull()
   })
 
+  it('keeps its row and its title block off the Frame\'s beads on a band too thin to hold them', () => {
+    const thin = { ...anchor, box: { left: 23, top: 23, width: 734, height: 212 }, sheet: { left: 0, top: 0, width: 780, height: 258 }, band: 30 }
+    const wrapper = mountSheet({ anchor: thin })
+    // 7px clear of the line: the 28px row from 23 - 7 - 28 = -12px, the 48px title block from 258 - 235 - 7 - 48 = -32px.
+    expect(control(wrapper, 'margin-band').attributes('style')).toContain('top: -12px')
+    expect(control(wrapper, 'margin-title').attributes('style')).toContain('bottom: -32px')
+    const roomy = mountSheet()
+    expect(control(roomy, 'margin-band').attributes('style')).toContain('top: 14px')
+    expect(control(roomy, 'margin-title').attributes('style')).toContain('bottom: 10px')
+  })
+
   it('shows the title block until the Frame panel\'s Switch hides it', async () => {
     const wrapper = mountSheet()
     expect(wrapper.find('[data-testid="margin-title-block"]').exists()).toBe(true)

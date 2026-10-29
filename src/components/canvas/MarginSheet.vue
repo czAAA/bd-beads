@@ -78,17 +78,28 @@ const sheetStyle = computed(() => {
 const INSET_PX = 14
 const TOOL_PX = 28
 const BORDER_INSET_PX = 10
+/** The room kept between the Frame's line and the band's row or the title block (MarginSheet card, Width). */
+const CLEAR_PX = 7
+/** The title block's height before it is measured: two 23px rows and its edge. */
+const TITLE_PX = 48
 const titleEl = ref<HTMLElement>()
 const titleSize = useElementSize(titleEl)
+// On a band too thin to hold them (zoomed out, until the compact and folded forms of ticket 0658) the row and the
+// title block stand past the sheet's edge rather than over the Frame's beads, so a press on a bead is never theirs.
+const bandTop = computed(() => Math.min(INSET_PX, props.anchor.box.top - props.anchor.sheet.top - CLEAR_PX - TOOL_PX))
+const titleBottom = computed(() => {
+  const { box, sheet } = props.anchor
+  return Math.min(BORDER_INSET_PX, sheet.top + sheet.height - (box.top + box.height) - CLEAR_PX - (titleSize.height.value || TITLE_PX))
+})
 const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
-  return { left: sheet.left + INSET_PX, top: sheet.top + INSET_PX, width: Math.max(0, sheet.width - 2 * INSET_PX), height: TOOL_PX }
+  return { left: sheet.left + INSET_PX, top: sheet.top + bandTop.value, width: Math.max(0, sheet.width - 2 * INSET_PX), height: TOOL_PX }
 })
 const titleBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
   const width = titleSize.width.value
   const height = titleSize.height.value
-  return { left: sheet.left + sheet.width - BORDER_INSET_PX - width, top: sheet.top + sheet.height - BORDER_INSET_PX - height, width, height }
+  return { left: sheet.left + sheet.width - BORDER_INSET_PX - width, top: sheet.top + sheet.height - titleBottom.value - height, width, height }
 })
 const yields = (box: BarBox) => (!!props.selection && overlapsSelectionHandles(box, props.selection)) || (!!props.pill && boxesOverlap(box, props.pill))
 const bandYields = computed(() => yields(bandBox.value))
@@ -119,7 +130,7 @@ const colorButton = computed(() => (colorOpen.value ? (toolsEl.value?.querySelec
 
 <template>
   <div class="margin-sheet" :class="{ 'margin-sheet--editing': editing }" :style="sheetStyle" data-testid="margin-sheet">
-    <div class="margin-sheet__band" :class="{ 'margin-sheet__yielding': bandYields }" data-testid="margin-band">
+    <div class="margin-sheet__band" :class="{ 'margin-sheet__yielding': bandYields }" :style="{ top: `${bandTop}px` }" data-testid="margin-band">
       <div ref="progressEl" class="margin-sheet__progress" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
         <RowProgressControls
           :project="project"
@@ -173,7 +184,14 @@ const colorButton = computed(() => (colorOpen.value ? (toolsEl.value?.querySelec
       </div>
     </div>
 
-    <div v-if="titleBlockShown && frame" ref="titleEl" class="margin-sheet__title" :class="{ 'margin-sheet__yielding': titleYields }">
+    <div
+      v-if="titleBlockShown && frame"
+      ref="titleEl"
+      class="margin-sheet__title"
+      :class="{ 'margin-sheet__yielding': titleYields }"
+      :style="{ bottom: `${titleBottom}px` }"
+      data-testid="margin-title"
+    >
       <MarginTitleBlock
         :project="project"
         @rename="emit('rename', $event)"
