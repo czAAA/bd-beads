@@ -20,6 +20,8 @@ describe('makerCodeOf for Miyuki Delica', () => {
     expect(makerCodeOf('dbs-0022l', delica15)).toBe('DBS22L')
     expect(makerCodeOf('0433', delica11)).toBe('DB433')
     expect(makerCodeOf('22', delica15)).toBe('DBS22')
+    expect(makerCodeOf('dbm-0010', findBead('miyuki/delica/10-0')!)).toBe('DBM10')
+    expect(makerCodeOf('DBL 10', findBead('miyuki/delica/8-0')!)).toBe('DBL10')
   })
 
   it('does not read a prefix of another Delica size or of another Brand', () => {
@@ -60,6 +62,7 @@ describe('makerCodeOf for TOHO', () => {
     }
     expect(makerCodeOf('TO11R23BDA', toho11)).toBe('23BDA')
     expect(makerCodeOf('11-PF21', toho11)).toBe('PF21')
+    expect(makerCodeOf('TO11RPF21', toho11)).toBe('PF21')
     expect(makerCodeOf('pf0021', toho11)).toBe('PF21')
   })
 
