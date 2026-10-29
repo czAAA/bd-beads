@@ -170,13 +170,12 @@ const CASES: FitCase[] = [
     },
   ],
   [
-    'ConvertImageWizard (by size, discarding)',
+    'ConvertImageWizard (by size)',
     ConvertImageWizard,
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
       root.querySelector<HTMLElement>('[data-testid="convert-size-mode"] [data-value="size"]')?.click()
-      press(root, 'convert-image-cancel')
     },
   ],
 ]

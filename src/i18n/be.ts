@@ -817,8 +817,6 @@ export const be: Translations = {
       resultPerPixel: '1 px = {n} × {n} бісерын',
       colorsCount: { other: 'колераў: {count}' },
       noPicture: 'Выявы пакуль няма',
-      discardQuestion: 'Скінуць канвертацыю?',
-      discard: 'Скінуць',
       previewName: 'Прэв’ю: {size}, {colors}',
       previewEmpty: 'Прэв’ю: выявы пакуль няма',
       zoomLevel: '{percent} %',

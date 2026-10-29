@@ -810,8 +810,6 @@ export const es: Translations = {
       resultPerPixel: '1 px = {n} × {n} cuentas',
       colorsCount: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },
       noPicture: 'Aún no hay imagen',
-      discardQuestion: '¿Descartar la conversión?',
-      discard: 'Descartar',
       previewName: 'Vista previa: {size}, {colors}',
       previewEmpty: 'Vista previa: aún no hay imagen',
       zoomLevel: '{percent} %',
