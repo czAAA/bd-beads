@@ -89,8 +89,14 @@ describe('rotateSelection', () => {
   })
 
   it('snaps the turned top row to a multiple of 2N on brick stitch (ticket 477)', () => {
-    const turned = rotatedSelection({ technique: 'brick', techniqueSettings: { brickBlock: 3 } }, { top: 10, left: 10, rows: 2, columns: 5 })
+    const turned = rotatedSelection({ technique: 'brick', techniqueSettings: { brickDrop: 3 } }, { top: 10, left: 10, rows: 2, columns: 5 })
     expect(turned.top % 6).toBe(0)
+    expect(turned).toMatchObject({ rows: 5, columns: 2 })
+  })
+
+  it('snaps the turned top row to a multiple of 2N on peyote with a Drop of N (ticket 0691)', () => {
+    const turned = rotatedSelection({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } }, { top: 10, left: 10, rows: 2, columns: 5 })
+    expect(turned.top % 4).toBe(0)
     expect(turned).toMatchObject({ rows: 5, columns: 2 })
   })
 
@@ -197,7 +203,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
 
   it('rewrites nothing on peyote and brick stitch, so no row snaps (ADR 0079)', () => {
     const beads = withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 1, column: 3, color: '#bb0000' }])
-    for (const [technique, techniqueSettings] of [['peyote', undefined], ['brick', { brickBlock: 3 }]] as const) {
+    for (const [technique, techniqueSettings] of [['peyote', undefined], ['brick', { brickDrop: 3 }]] as const) {
       const project = withLayers(base, { technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } })
       let turned: Project = project
       for (let turn = 1; turn <= 4; turn++) {

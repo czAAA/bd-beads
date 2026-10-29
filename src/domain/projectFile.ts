@@ -1,6 +1,6 @@
 import { inKnownTechniques, normalizeProject, type GridProject, type StoredProject } from './storedProject'
 import type { Project } from './project'
-import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeVersionElevenProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
+import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeVersionElevenProject, decodeVersionTwelveProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
 import type { VersionThreeProject } from './versionThree'
 import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
@@ -13,8 +13,8 @@ const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5 (0525) the Palette, 6 (0528)
  * removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame, 10 (0638) Folded beads, 11
- * (0636) layer settings maps, 12 (0664) the layer list; a build knowing only the one before refuses, not misreads. */
-const FILE_VERSION = 12
+ * (0636) layer settings maps, 12 (0664) the layer list, 13 (0691) brick stitch's Drop under its new id; a build knowing only the one before refuses, not misreads. */
+const FILE_VERSION = 13
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
@@ -32,6 +32,7 @@ const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   3: (projects) => (projects as EncodedVersionThreeProject[]).map(decodeEarlierProject) as (VersionThreeProject | GridProject)[],
   ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedFlatProject[]).map(decodeFlatProject)])),
   11: (projects) => (projects as EncodedFlatProject[]).map(decodeVersionElevenProject),
+  12: (projects) => (projects as EncodedProject[]).map(decodeVersionTwelveProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 

@@ -172,14 +172,23 @@ export const pl: Translations = {
     square: 'Ścieg kwadratowy',
   },
   weaveSettings: {
-    brickBlock: {
-      label: 'Blok cegieł',
-      less: 'Mniej rzędów w bloku',
-      more: 'Więcej rzędów w bloku',
-      value: 'Rzędów w bloku',
-      body: 'Tyle rzędów plecie się prosto jeden nad drugim, zanim kolejne przesuną się o pół koralika. Przy 1 przesuwa się każdy rząd.',
-      locked: 'Są rzędy oznaczone jako gotowe. Usuń ramkę, aby zmienić blok cegieł.',
-      changed: 'Zmieniono blok cegieł na: {count}',
+    peyoteDrop: {
+      label: 'Drop',
+      less: 'Mniej koralików na ścieg',
+      more: 'Więcej koralików na ścieg',
+      value: 'Koralików na ścieg',
+      body: 'Tyle koralików nabiera się na jeden ścieg: leżą prosto obok siebie, zanim kolejne przesuną się o pół koralika. 1 to zwykły peyote.',
+      locked: 'Są rzędy oznaczone jako gotowe. Usuń ramkę, aby zmienić drop.',
+      changed: 'Zmieniono drop na: {count}',
+    },
+    brickDrop: {
+      label: 'Drop',
+      less: 'Mniej koralików na ścieg',
+      more: 'Więcej koralików na ścieg',
+      value: 'Koralików na ścieg',
+      body: 'Tyle koralików nabiera się na jeden ścieg: leżą prosto obok siebie, zanim kolejne przesuną się o pół koralika. 1 to zwykły ścieg ceglasty.',
+      locked: 'Są rzędy oznaczone jako gotowe. Usuń ramkę, aby zmienić drop.',
+      changed: 'Zmieniono drop na: {count}',
     },
   },
   projects: {

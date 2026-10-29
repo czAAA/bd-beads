@@ -160,10 +160,10 @@ describe('Project', () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await choose(mounted, 'canvas-technique', 'brick')
-    await click(mounted, 'canvas-brick-block-more')
+    await click(mounted, 'canvas-brick-drop-more')
     await choose(mounted, 'bead-shape', 'real')
     const saved = () => loadProjects()[0]
-    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beadShape: 'real' })
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadShape: 'real' })
     expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric' })
 
     mounted.canvas.onUndo()
@@ -246,12 +246,12 @@ describe('The Frame panel', () => {
     const mounted = mountPanels()
     await mounted.openPanel('frame')
     await choose(mounted, 'frame-technique', 'brick')
-    await click(mounted, 'frame-brick-block-more')
+    await click(mounted, 'frame-brick-drop-more')
     await choose(mounted, 'bead-shape', 'real')
     await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
     await click(mounted, 'confirm-modal-confirm')
     const saved = () => loadProjects()[0]
-    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beadShape: 'real', beadId: 'toho/round/11-0' })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadShape: 'real', beadId: 'toho/round/11-0' })
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric', beadId: 'toho/cube/1.5mm' })
 
     mounted.canvas.onUndo()

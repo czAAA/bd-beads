@@ -141,7 +141,7 @@ export interface PreviewLatticeInput {
   dimensions: GridDimensions
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
   technique: Technique
-  /** Its settings (ticket 0625): the Brick block; one left out is its default. */
+  /** Its settings (ticket 0625): the Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
 }
 

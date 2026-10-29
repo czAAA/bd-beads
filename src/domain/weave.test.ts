@@ -67,30 +67,40 @@ describe('rowOffset', () => {
     expect(rowOffset({ technique: 'brick' }, 1, 20)).toBe(10)
   })
 
-  it('shifts brick stitch in blocks of the Brick block: N straight rows, then N shifted (ticket 477)', () => {
-    const rows = (brickBlock: number) => Array.from({ length: 8 }, (_row, row) => rowOffset({ technique: 'brick', techniqueSettings: { brickBlock } }, row, 20))
+  it('shifts brick stitch in blocks of its Drop: N straight rows, then N shifted (tickets 477, 0691)', () => {
+    const rows = (brickDrop: number) => Array.from({ length: 8 }, (_row, row) => rowOffset({ technique: 'brick', techniqueSettings: { brickDrop } }, row, 20))
     expect(rows(1)).toEqual([0, 10, 0, 10, 0, 10, 0, 10])
     expect(rows(2)).toEqual([0, 0, 10, 10, 0, 0, 10, 10])
     expect(rows(3)).toEqual([0, 0, 0, 10, 10, 10, 0, 0])
   })
 
   it('keeps the rhythm unbroken on rows above row 0', () => {
-    const rows = Array.from({ length: 6 }, (_row, index) => rowOffset({ technique: 'brick', techniqueSettings: { brickBlock: 2 } }, index - 4, 20))
+    const rows = Array.from({ length: 6 }, (_row, index) => rowOffset({ technique: 'brick', techniqueSettings: { brickDrop: 2 } }, index - 4, 20))
     expect(rows).toEqual([0, 0, 10, 10, 0, 0])
   })
 
-  it('ignores the Brick block on loom and peyote', () => {
-    expect(rowOffset({ technique: 'peyote', techniqueSettings: { brickBlock: 3 } }, 1, 20)).toBe(10)
-    expect(rowOffset({ technique: 'loom', techniqueSettings: { brickBlock: 3 } }, 3, 20)).toBe(0)
+  it('shifts peyote in blocks of its Drop: N lines level, then N shifted, at the same spacing (ticket 0691)', () => {
+    const lines = (peyoteDrop: number) => Array.from({ length: 8 }, (_row, row) => rowOffset({ technique: 'peyote', techniqueSettings: { peyoteDrop } }, row, 20))
+    expect(lines(1)).toEqual([0, 10, 0, 10, 0, 10, 0, 10])
+    expect(lines(2)).toEqual([0, 0, 10, 10, 0, 0, 10, 10])
+    expect(lines(3)).toEqual([0, 0, 0, 10, 10, 10, 0, 0])
+    expect(cellCenter({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } }, { row: 2, column: 0 }, 2, 2).y).toBe(cellCenter({ technique: 'peyote' }, { row: 2, column: 0 }, 2, 2).y)
+  })
+
+  it('reads each Technique\'s own Drop: brick stitch\'s on peyote and peyote\'s on brick stitch are ignored, as both are on loom', () => {
+    expect(rowOffset({ technique: 'peyote', techniqueSettings: { brickDrop: 3 } }, 1, 20)).toBe(10)
+    expect(rowOffset({ technique: 'brick', techniqueSettings: { peyoteDrop: 3 } }, 1, 20)).toBe(10)
+    expect(rowOffset({ technique: 'loom', techniqueSettings: { brickDrop: 3, peyoteDrop: 3 } }, 3, 20)).toBe(0)
   })
 })
 
 describe('rowCycle', () => {
-  it('is 1 for loom, 2 for peyote and 2N for brick stitch with a Brick block of N', () => {
+  it('is 1 for loom, and 2N for peyote and brick stitch with a Drop of N', () => {
     expect(rowCycle({ technique: 'loom' })).toBe(1)
-    expect(rowCycle({ technique: 'peyote', techniqueSettings: { brickBlock: 4 } })).toBe(2)
+    expect(rowCycle({ technique: 'peyote', techniqueSettings: { brickDrop: 4 } })).toBe(2)
+    expect(rowCycle({ technique: 'peyote', techniqueSettings: { peyoteDrop: 4 } })).toBe(8)
     expect(rowCycle({ technique: 'brick' })).toBe(2)
-    expect(rowCycle({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })).toBe(6)
+    expect(rowCycle({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })).toBe(6)
   })
 })
 
@@ -244,9 +254,9 @@ describe('cellCenter', () => {
   })
 })
 
-describe('neighborsOf with a Brick block (ticket 477)', () => {
+describe('neighborsOf with a Drop (ticket 477)', () => {
   it('has only the bead above and below inside a block of straight rows', () => {
-    const weave = { technique: 'brick' as const, techniqueSettings: { brickBlock: 2 } }
+    const weave = { technique: 'brick' as const, techniqueSettings: { brickDrop: 2 } }
     expect(neighborsOf(weave, undefined, { row: 0, column: 3 }).filter((p) => p.row === 1)).toEqual([{ row: 1, column: 3 }])
     expect(neighborsOf(weave, undefined, { row: 1, column: 3 }).filter((p) => p.row === 2)).toEqual([{ row: 2, column: 2 }, { row: 2, column: 3 }])
   })
@@ -260,7 +270,7 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, twoPasses: false }],
     ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, twoPasses: true }],
     ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, twoPasses: false }],
-    ['brick stitch, Brick block 3', { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, twoPasses: false }],
+    ['brick stitch, Drop 3', { technique: 'brick' as const, techniqueSettings: { brickDrop: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
     const description = describeWeave(weave)
     expect(description).toMatchObject(expected)
@@ -324,19 +334,21 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
     for (const technique of TECHNIQUES) {
       expect(describeWeave({ technique })).toBe(describeWeave({ technique }))
     }
-    expect(describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })).not.toBe(describeWeave({ technique: 'brick' }))
+    expect(describeWeave({ technique: 'brick', techniqueSettings: { brickDrop: 2 } })).not.toBe(describeWeave({ technique: 'brick' }))
     expect(describeWeave({ technique: 'loom', cell: { aspect: 0.8, roundness: 0.3 } }).cellAspect).toBe(0.8)
     expect(describeWeave({ technique: 'loom' }).cellAspect).toBe(1)
   })
 
   it('reads a Weave\'s settings from its map alone, each its Technique describes within its range (ticket 0625)', () => {
-    expect(weaveSettings({ technique: 'brick', techniqueSettings: { brickBlock: 99 } })).toEqual({ brickBlock: 20 })
-    expect(weaveSettings({ technique: 'loom', techniqueSettings: { brickBlock: 3 } })).toEqual({})
+    expect(weaveSettings({ technique: 'brick', techniqueSettings: { brickDrop: 99 } })).toEqual({ brickDrop: 20 })
+    expect(weaveSettings({ technique: 'loom', techniqueSettings: { brickDrop: 3 } })).toEqual({})
   })
 
-  it('holds every setting a Technique describes, a Brick block kept off brick stitch, and no setting no Technique describes (ticket 0625)', () => {
-    expect(heldSettings('brick')).toEqual({ brickBlock: 1 })
-    expect(heldSettings('loom', { brickBlock: 3, beadsPerLoop: 5 })).toEqual({ brickBlock: 3 })
-    expect(heldSettings('peyote')).toEqual({})
+  it('holds every setting a Technique describes, another Technique\'s Drop kept off it, and no setting no Technique describes (tickets 0625, 0691)', () => {
+    expect(heldSettings('brick')).toEqual({ brickDrop: 1 })
+    expect(heldSettings('peyote')).toEqual({ peyoteDrop: 1 })
+    expect(heldSettings('loom', { brickDrop: 3, beadsPerLoop: 5 })).toEqual({ brickDrop: 3 })
+    expect(heldSettings('peyote', { brickDrop: 3, peyoteDrop: 2 })).toEqual({ brickDrop: 3, peyoteDrop: 2 })
+    expect(heldSettings('brick', { brickDrop: 2, peyoteDrop: 1 })).toEqual({ brickDrop: 2 })
   })
 })

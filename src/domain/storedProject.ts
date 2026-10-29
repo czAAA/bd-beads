@@ -228,7 +228,7 @@ function readRemovedDefaults(stored: unknown): string[] {
 }
 
 /** A layer's Weave from the settings map a file stores (ticket 0636), each its Technique holds; an earlier version's
- * reader has already lifted its flat Brick block into the map (flatWeave.ts). */
+ * reader has already lifted its Brick block into the map as brick stitch's Drop (flatWeave.ts). */
 function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weave {
   return weaveOf({ technique, ...(isSettingsMap(techniqueSettings) ? { techniqueSettings } : {}) })
 }

@@ -137,7 +137,7 @@ export function regionInGridSpace(extent: Extent, region: Region, zoom: number, 
 export interface SurfaceViewInput {
   space: Space
   technique: Technique
-  /** The Canvas's Technique settings (ticket 0625): its Brick block; one left out is its default. */
+  /** The Canvas's Technique settings (ticket 0625): its Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
   /** How the Canvas's Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. A Frame given without
    * a cell of its own is drawn in it too. */

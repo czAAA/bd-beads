@@ -64,14 +64,14 @@ describe('snapshotOf and restoreSnapshot', () => {
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
     const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id })
-    const brick = withLayers(peyote, { technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } })
+    const brick = withLayers(peyote, { technique: 'brick' as const, techniqueSettings: { brickDrop: 4 } })
 
     const undone = restoreSnapshot(brick, snapshotOf(peyote))
     expect(canvasOf(undone).technique).toBe('peyote')
-    expect(canvasOf(undone).techniqueSettings).toBeUndefined()
+    expect(canvasOf(undone).techniqueSettings).toEqual({ peyoteDrop: 1 })
     const redone = restoreSnapshot(peyote, snapshotOf(brick))
-    expect(layersView(redone)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
-    expect(canvasOf(redone).techniqueSettings).toEqual({ brickBlock: 4 })
+    expect(layersView(redone)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 4 } })
+    expect(canvasOf(redone).techniqueSettings).toEqual({ brickDrop: 4 })
   })
 
   it('restore a Project that had no Frame', () => {
