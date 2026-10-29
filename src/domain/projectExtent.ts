@@ -1,6 +1,7 @@
 import { beadBounds, frameDimensions, type Rect } from './canvas'
 import { laidRect, seenSize } from './frameOrientation'
 import type { GridDimensions } from './grid'
+import { beadsOfLayer } from './layerRecord'
 import type { Project } from './project'
 import { projectCell, type ShapedBead } from './projectBead'
 
@@ -11,7 +12,7 @@ import { projectCell, type ShapedBead } from './projectBead'
 export function projectFrame(project: Pick<Project, 'frame' | 'beads'> & ShapedBead): Rect {
   const frame = project.frame
   if (frame) return laidRect({ ...frame, ...(frame.quarterTurns ? { cell: projectCell(project) } : {}) })
-  return beadBounds(project.beads) ?? { row: 0, column: 0, columns: 0, rows: 0 }
+  return beadBounds(beadsOfLayer(project, 'canvas')) ?? { row: 0, column: 0, columns: 0, rows: 0 }
 }
 
 /** What the open Project's Frame measures in beads as it lies: what the person is told the size is, and what the

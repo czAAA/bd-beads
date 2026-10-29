@@ -4,7 +4,8 @@ import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
-import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
+import { canvasDistance, canvasWeave } from './layerWeave'
+import { beadsOfLayer, heldWeave } from './layerRecord'
 import type { Project } from './project'
 import { clampPointer, firstPasses } from './rowProgress'
 
@@ -91,19 +92,20 @@ export function frameResizedAround(weave: Weave, frame: Rect, columns: number, r
 export function fitToDrawing(project: Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame'>): Rect | undefined {
   const frame = project.frame
   const covered = footprintOf(project)
-  const shown = frame && covered ? beadsOver(beadsWithout(project.beads, withMargin(covered)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
+  const canvas = beadsOfLayer(project, 'canvas')
+  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), shiftedBeads(beadsOfLayer(project, 'frame')!, frame.row, frame.column)) : canvas
   const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined
   }
-  const top = snapRow(project, bounds.row)
+  const top = snapRow(heldWeave(project, 'canvas'), bounds.row)
   return { row: top, column: bounds.column, rows: bounds.row + bounds.rows - top, columns: bounds.columns }
 }
 
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
  * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas. */
 function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
-  const moved = canvasDistance(project, current, rectangle.row - current.row, rectangle.column - current.column)
+  const moved = canvasDistance(project, heldWeave(project, 'frame')!, rectangle.row - current.row, rectangle.column - current.column)
   return { row: current.row + moved.row, column: current.column + moved.column }
 }
 
@@ -142,7 +144,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
     beads: refit.beads,
     ...(refit.folded ? { folded: refit.folded } : {}),
     // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
-    ...weaveOf(current ?? project),
+    ...heldWeave(project, current ? 'frame' : 'canvas')!,
     ...(current?.name ? { name: current.name } : {}),
     ...(current?.shape ? { shape: current.shape } : {}),
     ...(current?.settings ? { settings: current.settings } : {}),

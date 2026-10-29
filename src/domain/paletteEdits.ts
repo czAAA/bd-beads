@@ -1,6 +1,7 @@
 import { codesInPalette, defaultPalette, paletteColors, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
 import { touch, type Project } from './project'
 import { lettersFor, type SwatchLetters } from './swatchLetters'
+import { beadIdOfLayer } from './layerRecord'
 
 // The Project's Palette (ADR 0002, ticket 0525): its swatches, the defaults removed, catalog codes and Swatch letters,
 // which change together.
@@ -14,9 +15,10 @@ export function lettersOfPalette(palette: PaletteIds, beadId: string, kept: unkn
  * remembered as removed (ticket 0528). `codes` join it by hex and a swatch's code leaves with it (ticket 0538). */
 export function setPalette(project: Project, palette: PaletteIds, codes: PaletteCodes = {}): Project {
   const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
-  const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(project.beadId))
+  const beadId = beadIdOfLayer(project, 'canvas')
+  const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(beadId))
   const { removedDefaults: _removed, paletteCodes: _codes, ...rest } = project
-  const paletteLetters = lettersOfPalette(palette, project.beadId, project.paletteLetters)
+  const paletteLetters = lettersOfPalette(palette, beadId, project.paletteLetters)
   return touch(rest, { palette, paletteLetters, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
 }
 
