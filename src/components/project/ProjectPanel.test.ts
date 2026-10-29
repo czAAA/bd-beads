@@ -8,6 +8,8 @@ import { findBead, offeredBeads } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { replaceBead } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
+import { canvasOf, frameOf } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -20,7 +22,7 @@ beforeEach(() => {
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
-const base = { project, replaceCandidates: offeredBeads().filter((bead) => bead.id !== project.bead?.id), saveFailed: false, unsaved: false }
+const base = { project, replaceCandidates: offeredBeads().filter((bead) => bead.id !== canvasOf(project).bead?.id), saveFailed: false, unsaved: false }
 
 function mountPanel(props: Record<string, unknown> = {}) {
   return mount(ProjectPanel, { props: { ...base, ...props }, attachTo: document.body })
@@ -56,7 +58,7 @@ describe('ProjectPanel (tickets 443, 554)', () => {
 
     await shape.get('[data-value="real"]').trigger('click')
     expect(wrapper.emitted('set-bead-shape')).toEqual([['real']])
-    await wrapper.setProps({ project: { ...project, beadShape: 'real' } })
+    await wrapper.setProps({ project: withFields(project, { beadShape: 'real' }) })
     expect(wrapper.get('[data-testid="bead-shape"] [aria-checked="true"]').attributes('data-value')).toBe('real')
   })
 
@@ -166,21 +168,21 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
     expect(wrapper.emitted('set-canvas-technique')).toBeUndefined()
 
-    await wrapper.setProps({ project: { ...project, frame: undefined } })
+    await wrapper.setProps({ project: withFields(project, { frame: undefined }) })
     await picker().trigger('click')
     await wrapper.get('[data-testid="project-technique"] [data-value="brick"]').trigger('click')
     expect(wrapper.emitted('set-canvas-technique')).toEqual([['brick']])
   })
 
   it('offers a Custom frame the Techniques its shape supports alone (ADR 0079, ticket 0669)', async () => {
-    const triangle = { ...project.frame!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
-    const wrapper = mountPanel({ project: { ...project, frame: triangle } })
+    const triangle = { ...frameOf(project)!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
+    const wrapper = mountPanel({ project: withFields(project, { frame: triangle }) })
     await wrapper.get('[data-testid="project-technique"] button').trigger('click')
     expect(wrapper.findAll('[data-testid="project-technique"] [role="menuitemradio"]').map((item) => item.attributes('data-value'))).toEqual(['peyote'])
   })
 
   it('locks the Technique, with the reason, once a Row progress pass is done', async () => {
-    const wrapper = mountPanel({ project: { ...project, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } } })
+    const wrapper = mountPanel({ project: withFields(project, { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }) })
     const picker = wrapper.get('[data-testid="project-technique"] button')
     expect(picker.attributes('aria-disabled')).toBe('true')
     await picker.trigger('click')

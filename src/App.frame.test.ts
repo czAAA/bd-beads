@@ -9,6 +9,9 @@ import { designSizes, STARTER_BEAD_ID, starterById, starterProject } from './dom
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { hoverBead, pressBead } from './testUtils/beads'
 import { pickColor, pressBar, selectAll } from './testUtils/pill'
+import { frameOf } from './domain/layerRecord'
+import { rowProgressOf } from './domain/rowProgress'
+import { sheetOf, withFields } from './testUtils/flatFields'
 
 /** Edit Frame's wiring (tickets 233, 417, ADRs 0026, 0046, 0054): each control reaches the flow once. Its rules live in
  * `useFrameFlow`, `FramePanel` and `changeFrame`'s tests, one level each (ticket 0599, docs/testing.md). */
@@ -26,15 +29,14 @@ afterEach(() => {
 
 function unframedProject(): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
-  return {
-    ...base,
-    frame: undefined,
+  return withFields(base, {
+frame: undefined,
     beads: withColors({}, [
       { row: 2, column: 3, color: RED },
       { row: 3, column: 3, color: RED },
       { row: 3, column: 5, color: RED },
     ]),
-  }
+})
 }
 
 async function mountOpen(project = unframedProject()) {
@@ -64,7 +66,8 @@ async function toggleBar(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
 /** The rectangle of the saved Frame, its beads aside. */
 const savedFrame = () => {
-  const frame = loadProjects()[0]!.frame
+  const [project] = loadProjects()
+  const frame = project && sheetOf(project)
   if (!frame) return undefined
   const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
@@ -119,14 +122,14 @@ describe('Edit Frame', () => {
     await wrapper.get('[data-testid="frame-name-input"]').setValue('Moth wing')
     await wrapper.get('[data-testid="frame-name-save"]').trigger('click')
     await flushPromises()
-    expect(loadProjects()[0]!.frame!.name).toBe('Moth wing')
+    expect(frameOf(loadProjects()[0])!.name).toBe('Moth wing')
     await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toMatchObject({ rows: 7, columns: 9, quarterTurns: 1 })
 
     for (let step = 0; step < 4; step++) await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 5 })
-    expect(loadProjects()[0]!.frame!.name).toBeUndefined()
+    expect(frameOf(loadProjects()[0])!.name).toBeUndefined()
   })
 
   it('does not open the bar when a Frame is set from a Selection (ticket 473)', async () => {
@@ -219,7 +222,7 @@ describe('Painting a Custom frame', () => {
     const triangle = starterById('triangle')
     const wrapper = await mountOpen(starterProject(triangle, { name: 'Triangle', beadId: STARTER_BEAD_ID, sizes: designSizes(triangle), useDesign: false }))
     await pickColor(wrapper, 'red')
-    const { row, column, columns } = loadProjects()[0]!.frame!
+    const { row, column, columns } = frameOf(loadProjects()[0])!
     // Round 7 of a 10-round Triangle runs one place past the Frame's last column.
     const own = { row: 7, column: columns }
 
@@ -227,12 +230,12 @@ describe('Painting a Custom frame', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
     await flushPromises()
 
-    expect(loadProjects()[0]!.frame!.beads[own.row]?.[own.column]).toBe(RED)
+    expect(frameOf(loadProjects()[0])!.beads[own.row]?.[own.column]).toBe(RED)
   })
 })
 
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
-  const savedProgress = () => loadProjects()[0]!.rowProgress
+  const savedProgress = () => rowProgressOf(loadProjects()[0])
 
   it('turns on with the first Frame, fitted from the Progress bar, and one Undo takes both back', async () => {
     const wrapper = await mountOpen()
@@ -251,7 +254,7 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   })
 
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+    const wrapper = await mountOpen(withFields(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
@@ -270,7 +273,7 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
 })
 
 describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
-  const sheetProject = () => ({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+  const sheetProject = () => (withFields(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
 
   it('moves the one pointer from its Row done, which the Progress bar then shows', async () => {
     const wrapper = await mountOpen(sheetProject())

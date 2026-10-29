@@ -22,6 +22,7 @@ import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
+import { withFields } from '../testUtils/flatFields'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
 // notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
@@ -102,7 +103,7 @@ function wizardProps(withPicture: boolean) {
 
 const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
 
-const framed = { ...empty, frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } }
+const framed = withFields(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
 
 /** The Margin color popover, hung from a button at the screen's right edge as the sheet's tools are. */
 const MarginColorPopoverHost = defineComponent({
@@ -122,7 +123,7 @@ const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
-  ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }],
+  ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withFields(empty, { id: 'b', name: 'Fox' }), withFields(empty, { id: 'c', name: 'Owl' }), withFields(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
   ['MarginSheet', marginSheetHost(1), {}],

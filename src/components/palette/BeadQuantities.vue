@@ -4,7 +4,7 @@ import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/p
 import { listedColorName } from '../../i18n/colorName'
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
@@ -66,7 +66,7 @@ const total = computed(() => {
       <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
         {{ t.quantities.noProjectMessage }}
       </p>
-      <p v-else-if="!project.frame" class="bead-quantities__empty" data-testid="quantities-needs-frame">
+      <p v-else-if="!frameOf(project)" class="bead-quantities__empty" data-testid="quantities-needs-frame">
         {{ t.frame.countNeedsFrame }}
       </p>
       <p v-else-if="quantities.length === 0" class="bead-quantities__empty" data-testid="quantities-empty">

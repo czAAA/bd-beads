@@ -11,6 +11,7 @@ import { LIGHT_THEME } from '../../src/rendering/beadLook'
 import { differingBlocks } from './imageDiff'
 import { beadCentre } from './projects'
 import { type Region } from '../../src/rendering/surfaceView'
+import { canvasOf, frameOf, orientationOf } from '../../src/domain/layerRecord'
 
 // Holds the drawing to the reference screenshots in e2e/visual/__screenshots__ (one element per bead; ticket 103,
 // ADR 0018). A canvas never matches DOM pixels exactly, so two comparisons: the look (block-averaged colors, a share
@@ -68,8 +69,8 @@ export function wrongBeads(
 ): string[] {
   const png = PNG.sync.read(image)
   const wrong: string[] = []
-  for (let row = 0; row < project.frame!.rows; row += 1) {
-    for (let column = 0; column < project.frame!.columns; column += 1) {
+  for (let row = 0; row < frameOf(project)!.rows; row += 1) {
+    for (let column = 0; column < frameOf(project)!.columns; column += 1) {
       if (ignore.has(`(${row}, ${column})`)) {
         continue
       }
@@ -116,7 +117,7 @@ export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
 /** The pixels the Project's Frame covers on screen, from the Project's corner: turned and zoomed, to whole pixels. */
 export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
-  const shown = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom }).beadBox(projectFrame(project))
+  const shown = surfaceView({ space: OPEN_SPACE, technique: canvasOf(project).technique, rotation: orientationOf(project), zoom }).beadBox(projectFrame(project))
   return { x: Math.floor(corner.x + shown.x), y: Math.floor(corner.y + shown.y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
 }
 

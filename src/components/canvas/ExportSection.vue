@@ -13,6 +13,7 @@ import { plural } from '../../i18n/plural'
 import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { frameOf, projectNameOf } from '../../domain/layerRecord'
 
 // The export rows (tickets 568, 576, 0588, 0652; ExportPanel and QualitySlider cards): Picture and Printable chart with
 // their File size estimates, then Export quality. One component for the Frame panel's Export section and the Export panel;
@@ -30,7 +31,7 @@ const emit = defineEmits<{
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
 const { t, locale } = useI18n()
-const frame = computed(() => props.project.frame)
+const frame = computed(() => frameOf(props.project))
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
 /** What an export is made of, for its File size estimate (ticket 0588): read once for the buttons and every stop. */
@@ -69,7 +70,7 @@ const highPngDpi = computed(() => {
 })
 const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
 const exportBusy = computed(() => !!props.exporting)
-const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: props.project.name }))
+const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: projectNameOf(props.project) }))
 </script>
 
 <template>

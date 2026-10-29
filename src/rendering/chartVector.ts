@@ -13,6 +13,7 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
 import { customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
+import { type Layered, orientationOf } from '../domain/layerRecord'
 
 // A chart page as PDF operators (ticket 0585, ADR 0043; PrintChartPage card): sharp at any zoom. The Layer geometry places
 // every bead of every Technique (ticket 0630) and this draws what it is told. Layout is in the plan's px (150 dpi); the
@@ -50,7 +51,7 @@ export function letterColor(hex: string): string {
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */
-export function beadsAreRound(project: Pick<Project, 'technique' | 'frame' | 'beadId' | 'beadShape' | 'techniqueSettings'>): boolean {
+export function beadsAreRound(project: Layered): boolean {
   const weave = frameWeave(project)
   return beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX >= CELL_SIZE_PX * 0.4
 }
@@ -83,7 +84,7 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   const description = describeWeave(weave)
   const size = cellSizePx(weave.technique, weave.cell)
   const space = spaceOf(project, false)
-  const matrix = gridToRegion(space.extent, part.region, plan.zoom, project.rotation)
+  const matrix = gridToRegion(space.extent, part.region, plan.zoom, orientationOf(project))
   const [a, b, c, d, e, f] = matrix
   const at = (x: number, y: number): [number, number] => [a * x + c * y + e, b * x + d * y + f]
   const rectOf = (x: number, y: number, width: number, height: number): Box => {
@@ -94,7 +95,7 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
   const geometry = geometryDrawnAlone(project)
-  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, project.rotation)
+  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, orientationOf(project))
   const inView = { x: seen.left / CELL_SIZE_PX, y: seen.top / CELL_SIZE_PX, width: (seen.right - seen.left) / CELL_SIZE_PX, height: (seen.bottom - seen.top) / CELL_SIZE_PX }
   const placed: PlacedBead[] = []
   for (const position of geometry.positionsIn(inView)) {

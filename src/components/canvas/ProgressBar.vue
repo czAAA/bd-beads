@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import RowProgressControls from './RowProgressControls.vue'
+import { frameOf } from '../../domain/layerRecord'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
 // canvas box's bottom. On whenever there is a Frame (ADR 0055); without one it offers Fit to drawing. With a Frame its
@@ -37,7 +38,7 @@ const fitFrame = controlAction('fit-to-drawing')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
-const hasFrame = computed(() => props.project.frame !== undefined)
+const hasFrame = computed(() => frameOf(props.project) !== undefined)
 </script>
 
 <template>

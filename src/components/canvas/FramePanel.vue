@@ -22,12 +22,13 @@ import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '..
 import { seenSize } from '../../domain/frameOrientation'
 import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, lettersOn } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
+import { frameWeave } from '../../domain/layerWeave'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
 // name, size, Beads needed and the margin (ticket 0656); with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
@@ -61,7 +62,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
-const frame = computed(() => props.project.frame)
+const frame = computed(() => frameOf(props.project))
 /** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
 const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
 /** Whether the size fields are off, and why: finished rows, or a turned Frame. */
@@ -83,7 +84,7 @@ const lastEdge = ref<FrameEdge>()
 const cells = FRAME_EDGES.map((edge) => {
   const hold = useHoldRepeat((direction) => {
     const current = frame.value
-    if (!current || sizeHeld.value || frameWithEdgeStep(props.project, current, edge, direction) === current) return false
+    if (!current || sizeHeld.value || frameWithEdgeStep(frameWeave(props.project), current, edge, direction) === current) return false
     lastEdge.value = edge
     emit('step', edge, direction)
     return true
@@ -189,7 +190,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               {{ t.frame.lettersLabel }}
               <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
             </span>
-            <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
+            <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
           </div>
         </template>
       </ExportSection>

@@ -16,6 +16,7 @@ import type { Size } from '../../../rendering/cellSize'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
+import { frameOf, orientationOf } from '../../../domain/layerRecord'
 
 /** What a press, a drag, the hover and the wheel on the Drawing surface tell the canvas panel. */
 export interface SurfacePointerEvents {
@@ -316,7 +317,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   function refusesSelectionStart(bead: GridPosition): boolean {
     if (!props.tools.selects) return false
     // A Frame whose kind offers no Selection refuses one as the margin does (a Custom frame, ticket 0592).
-    return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && !frameAllows(props.project.frame, 'select'))
+    return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && !frameAllows(frameOf(props.project), 'select'))
   }
 
   function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -369,7 +370,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
     const point = pointInSurface(event)
     if (!props.tools.settingFrame) return undefined
-    const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touch)
+    const target = framePressAt(frameOf(props.project), surface.value, orientationOf(props.project), point, touch)
     return target.kind === 'handle' ? target : undefined
   }
 
@@ -419,7 +420,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
 
   /** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
   function pressMoveHandle(event: PointerEvent): void {
-    if (!props.project.frame || event.button !== 0) return
+    if (!frameOf(props.project) || event.button !== 0) return
     touchInput.value = event.pointerType === 'touch'
     onPress(event)
     framing.value = true
@@ -438,7 +439,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     touchInput.value = event.pointerType === 'touch'
     // A pinch moves the view itself: the edge scroll stops following the first finger.
     if (event.pointerType === 'touch' && !event.isPrimary) heldPointer = undefined
-    if (props.project.frame && event.pointerType === 'touch' && !event.isPrimary) {
+    if (frameOf(props.project) && event.pointerType === 'touch' && !event.isPrimary) {
       // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
       if (framing.value) {
         framing.value = false
@@ -446,11 +447,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       }
       return
     }
-    if (props.project.frame && !startsDrag(event) && event.button === 0) {
+    if (frameOf(props.project) && !startsDrag(event) && event.button === 0) {
       const target = framePress(event)
       if (target) {
         framing.value = true
-        hotHandle.value = frameHandleIdAt(props.project.frame, surface.value, pointInSurface(event), touchInput.value)
+        hotHandle.value = frameHandleIdAt(frameOf(props.project), surface.value, pointInSurface(event), touchInput.value)
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
@@ -467,7 +468,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       const target: FramePress = props.selection.cells
         ? { kind: 'outside' }
         : selectionHasHandles(props.selection)
-          ? boxPressAt(box, props.project.rotation, point, touchInput.value)
+          ? boxPressAt(box, orientationOf(props.project), point, touchInput.value)
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
       if (target.kind !== 'outside') {
         adjusting.value = true
@@ -561,9 +562,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     if (props.tools.selects && props.selection && event.pointerType !== 'touch' && selectionHasHandles(props.selection)) {
       const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer()), pointInSurface(event), false)
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
-    } else if (props.project.frame && event.pointerType !== 'touch' && !framing.value) {
+    } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
       const target = framePress(event)
-      hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(props.project.frame, surface.value, pointInSurface(event), false) : undefined
+      hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(frameOf(props.project), surface.value, pointInSurface(event), false) : undefined
       handleCursor.value = target?.kind === 'move' ? 'grab' : hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
     } else {
       handleCursor.value = undefined

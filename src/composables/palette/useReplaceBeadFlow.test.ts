@@ -7,9 +7,11 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
+import { canvasOf } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-const other = BEAD_CATALOG.find((bead) => bead.id !== base.beadId)!
+const other = BEAD_CATALOG.find((bead) => bead.id !== canvasOf(base).beadId)!
 
 function setup(project: Project | null = base) {
   const harness = editHarness(project ?? undefined)
@@ -25,7 +27,7 @@ function setup(project: Project | null = base) {
 describe('useReplaceBeadFlow', () => {
   it('offers every catalog Bead but the Project’s own', () => {
     const { replaceBeadCandidates } = setup()
-    expect(replaceBeadCandidates.value.map((bead) => bead.id)).not.toContain(base.beadId)
+    expect(replaceBeadCandidates.value.map((bead) => bead.id)).not.toContain(canvasOf(base).beadId)
     expect(replaceBeadCandidates.value).toHaveLength(BEAD_CATALOG.length - 1)
     expect(setup(null).replaceBeadCandidates.value).toEqual([])
   })
@@ -54,7 +56,7 @@ describe('useReplaceBeadFlow', () => {
     // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
     expect(replaceBeadConfirmMessage.value).toContain('With TOHO Round 11/0, this Project will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
 
-    const turned = setup({ ...tall, rotation: 90 })
+    const turned = setup(withFields(tall, { rotation: 90 }))
     turned.onRequestReplaceBead('toho/round/11-0')
     expect(turned.replaceBeadConfirmMessage.value).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
@@ -74,10 +76,10 @@ describe('useReplaceBeadFlow', () => {
     onConfirmReplaceBead()
 
     expect(replaceBeadPendingBead.value).toBeUndefined()
-    expect(harness.project.beadId).toBe(other.id)
+    expect(canvasOf(harness.project).beadId).toBe(other.id)
 
     harness.history.onUndo()
-    expect(harness.project.beadId).toBe(base.beadId)
+    expect(canvasOf(harness.project).beadId).toBe(canvasOf(base).beadId)
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -90,23 +92,23 @@ describe('useReplaceBeadFlow', () => {
 })
 
 describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', () => {
-  const current = findBead(base.beadId)!
-  const older = { ...base, bead: { ...current, widthMm: current.widthMm + 0.2 } }
+  const current = findBead(canvasOf(base).beadId)!
+  const older = withFields(base, { bead: { ...current, widthMm: current.widthMm + 0.2 } })
 
   it('shows no postfix entry when its copy equals the catalog’s, even if only a name differs', () => {
-    const renamed = { ...base, bead: { ...current, brand: { ...current.brand, name: 'Other name' } } }
+    const renamed = withFields(base, { bead: { ...current, brand: { ...current.brand, name: 'Other name' } } })
     expect(setup(base).replaceBeadOutdated.value).toBeUndefined()
     expect(setup(renamed).replaceBeadOutdated.value).toBeUndefined()
   })
 
   it('shows the copy beside the catalog’s current Bead of the same id when they differ', () => {
     const { replaceBeadOutdated, replaceBeadCandidates } = setup(older)
-    expect(replaceBeadOutdated.value).toEqual(older.bead)
+    expect(replaceBeadOutdated.value).toEqual(canvasOf(older).bead)
     expect(replaceBeadCandidates.value.map((bead) => bead.id)).toContain(current.id)
   })
 
   it('shows no copy for a Bead the catalog does not offer', () => {
-    const gone = { ...base, beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } }
+    const gone = withFields(base, { beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } })
     const { replaceBeadOutdated, replaceBeadCandidates } = setup(gone)
     expect(replaceBeadOutdated.value).toBeUndefined()
     expect(replaceBeadCandidates.value).toHaveLength(BEAD_CATALOG.length)
@@ -122,7 +124,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
     expect(resolveProjectBead(harness.currentProject()!)).toEqual(current)
     expect(harness.history.canUndo.value).toBe(true)
     harness.history.onUndo()
-    expect(resolveProjectBead(harness.currentProject()!)).toEqual(older.bead)
+    expect(resolveProjectBead(harness.currentProject()!)).toEqual(canvasOf(older).bead)
     expect(harness.history.canUndo.value).toBe(false)
   })
 })
@@ -138,6 +140,6 @@ describe('Replace Bead with coded swatches (ticket 0538)', () => {
     expect(harness.project.paletteCodes).toBeUndefined()
     harness.history.onUndo()
     expect(harness.project.paletteCodes).toEqual({ '#123456': 'DB1' })
-    expect(harness.project.beadId).toBe(delica.id)
+    expect(canvasOf(harness.project).beadId).toBe(delica.id)
   })
 })

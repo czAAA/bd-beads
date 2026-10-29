@@ -1,20 +1,18 @@
-import type { Bead } from './beads'
-import type { BeadMap, FrameSheet } from './canvas'
-import { unwoven, weaveOf } from './layerWeave'
+import { canvasOf, lettersOn, withCanvas, withLetters } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import type { PieceName } from './pieceNames'
-import { touch, type Project, type RowProgress } from './project'
+import { touch, type Project } from './project'
 import type { SwatchLetters } from './swatchLetters'
-import type { BeadShape, Weave } from './weave'
 
 // The Undo snapshot (ADR 0036): everything an Edit can change, taken before it and put back by Undo and Redo.
 
-/** One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change (beads, Row
- * progress, Bead, Frame, the Canvas's Weave). All immutable, sharing structure. */
+/** One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change. All immutable,
+ * sharing structure. */
 export interface UndoEntry {
-  beads: BeadMap
-  rowProgress: RowProgress
+  /** Every layer whole (ADR 0079, ticket 0664): its Weave, Bead, Bead shape, beads, Piece names, and the Frame's place,
+   * shape, turn, name, Folded beads and Row progress, so Undo undoes any of them with the beads they moved. Its views
+   * (the Project's name, the Canvas's orientation, the Letters switch) are not put back. */
+  layers: Project['layers']
   /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
   palette: PaletteIds
   /** The removed default colors as they were (ticket 0528), restored with the Palette they belong to. */
@@ -23,40 +21,28 @@ export interface UndoEntry {
   paletteCodes?: PaletteCodes
   /** The Swatch letters as they were (ticket 0573), restored with the Palette they belong to. */
   paletteLetters?: SwatchLetters
-  beadId: string
-  /** The Bead copy as it was, restored with its id (ticket 534). */
-  bead?: Bead
-  /** The Frame with its own beads, as they were (ADR 0066). */
-  frame: FrameSheet | undefined
-  /** The Piece names as they were, so Undo and Redo of a naming or of a merge or split restore them (ticket 406). */
-  pieceNames?: PieceName[]
-  /** The Canvas's Weave as it was, whole (ticket 0624): its Technique and every setting, so Undo undoes a change of any
-   * of them along with the beads it moved (tickets 351, 477, 0610). The Frame's is in `frame`. */
-  weave: Weave
-  /** The Bead shape the entry was taken with, so Undo undoes a change of it (ticket 508). */
-  beadShape?: BeadShape
 }
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, paletteCodes: project.paletteCodes, paletteLetters: project.paletteLetters, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, weave: weaveOf(project), beadShape: project.beadShape }
+  const { layers, palette, removedDefaults, paletteCodes, paletteLetters } = project
+  return { layers, palette, removedDefaults, paletteCodes, paletteLetters }
 }
 
-/** The Project with everything an undo entry holds put back (see UndoEntry). */
+/** The Project with everything an undo entry holds put back (see UndoEntry), keeping its name, the Canvas's
+ * orientation and the Letters switch as they are now. */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, bead: _bead, ...rest } = unwoven(project)
-  return touch(rest, {
-    beads: entry.beads,
-    rowProgress: entry.rowProgress,
+  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
+  const { name, orientation } = canvasOf(project)
+  const restored = { ...rest, layers: entry.layers }
+  // Each layer put back is the one recorded, the very object, unless a view changed since (ticket 0616).
+  const viewed = name === canvasOf(entry).name && orientation === canvasOf(entry).orientation ? restored : withCanvas(restored, { name, orientation })
+  const on = lettersOn(project)
+  const layered = viewed.layers.every((layer) => (layer.letters === true) === on) ? viewed : withLetters(viewed, on)
+  return touch(layered, {
     palette: entry.palette,
-    beadId: entry.beadId,
-    ...(entry.bead ? { bead: entry.bead } : {}),
-    frame: entry.frame,
-    ...weaveOf(entry.weave),
-    ...(entry.beadShape ? { beadShape: entry.beadShape } : {}),
-    ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
     ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),
-    paletteLetters: lettersOfPalette(entry.palette, entry.beadId, entry.paletteLetters),
+    paletteLetters: lettersOfPalette(entry.palette, canvasOf(entry).beadId, entry.paletteLetters),
   })
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
-import { moveToRow } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { useDeleteAllFlow } from './useDeleteAllFlow'
@@ -56,10 +56,10 @@ describe('useDeleteAllFlow', () => {
     const { harness, onConfirmDeleteAll } = setup(inProgress)
     onConfirmDeleteAll()
     expect(isEmpty(harness.project)).toBe(true)
-    expect(harness.project.rowProgress).not.toEqual(inProgress.rowProgress)
+    expect(rowProgressOf(harness.project)).not.toEqual(rowProgressOf(inProgress))
 
     harness.history.onUndo()
-    expect(harness.project.rowProgress).toEqual(inProgress.rowProgress)
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(inProgress))
   })
 
   it('is not an undo step when there is nothing to clear', () => {

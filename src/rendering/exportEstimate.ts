@@ -1,10 +1,10 @@
-import { forEachBead, type BeadMap } from '../domain/canvas'
+import { forEachBead, type BeadMap, type Rect } from '../domain/canvas'
 import type { Project } from '../domain/project'
 import { coverLayout } from './coverLayout'
 import { planWithKey } from './chartPageKey'
 import type { PrintText } from './printText'
 import { wordChartPageCount } from './wordChartPages'
-import { beadsOfLayer } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 
 // The File size estimate (ticket 0588, ADR 0076): each page by its kind and content, every figure lifted to sit at or above
 // 65 real Projects measured on 2026-10-27 (8 to 237 beads a side, 1 to 300 colors, three Techniques), so never below the
@@ -39,7 +39,7 @@ export interface SizeEstimate {
 
 /** How many beads there are, and where a bead's color differs from its right-hand or lower neighbor (an empty position
  * counts as a color). The cost of a page of beads follows these, not the Frame's size. */
-function beadsOf(frame: NonNullable<Project['frame']>, beads: BeadMap): { filled: number; edges: number } {
+function beadsOf(frame: Rect, beads: BeadMap): { filled: number; edges: number } {
   const at = new Map<number, string>()
   forEachBead(beads, (row, column, hex) => at.set(row * frame.columns + column, hex))
   let edges = 0
@@ -53,7 +53,7 @@ function beadsOf(frame: NonNullable<Project['frame']>, beads: BeadMap): { filled
 
 /** The facts of an export of this Project in these words, or nothing without a Frame. */
 export function exportFacts(project: Project, words: PrintText): ExportFacts | undefined {
-  const { frame } = project
+  const frame = frameOf(project)
   if (!frame) return undefined
   const layout = coverLayout(project, words)
   const plan = planWithKey(project, layout.lists.length)

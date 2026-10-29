@@ -1,6 +1,6 @@
 import type { Bead } from './beads'
 import type { ColorCatalog } from './colorCatalog'
-import { beadIdOfLayer, beadOfLayer, withLayer } from './layerRecord'
+import { beadIdOfLayer, beadOfLayer, type Layered, withLayer } from './layerRecord'
 import { codesForBead, defaultPalette, paletteForBead } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
@@ -8,11 +8,9 @@ import { beadCell, type BeadCell, type BeadShape } from './weave'
 
 // The Project's Bead (ticket 534, ADR 0072): its saved copy, its Bead shape (ADR 0068) and swapping it for another.
 
-/** What decides a Project's cell: its Bead and Bead shape (both optional, so a bare layout reads as Symmetric). */
-export type ShapedBead = Partial<Pick<Project, 'bead' | 'beadShape'>>
 
 /** How the Project's Bead is drawn, from its own copy: none in Symmetric, or for a Bead nobody knows. */
-export function projectCell(project: ShapedBead): BeadCell | undefined {
+export function projectCell(project: Layered): BeadCell | undefined {
   const { bead, beadShape } = beadOfLayer(project, 'canvas')
   return beadCell(bead, beadShape)
 }
@@ -25,7 +23,7 @@ export function withBeadShape(project: Project, shape: BeadShape): Project {
 
 /** The Bead a Project was woven from (ticket 37): its own copy (ticket 534), so a catalog change or a retired Bead
  * leaves it alone. Undefined for an id nobody knows; callers show a placeholder, not a raw id. */
-export function resolveProjectBead(project: Pick<Project, 'bead'>): Bead | undefined {
+export function resolveProjectBead(project: Layered): Bead | undefined {
   return beadOfLayer(project, 'canvas').bead
 }
 

@@ -24,12 +24,14 @@ import {
   stampCells,
   type CopiedBlock,
 } from './selection'
-import { withColors } from './canvas'
+import { type BeadMap, withColors } from './canvas'
 import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
+import { beadsOfLayer, frameOf } from './layerRecord'
+import { sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -239,24 +241,24 @@ describe('Piece and Select all selections (ticket 414)', () => {
   const picture = painted(['rr....', '.r..b.', '......', 'b...b.'])
 
   it('a tap selects the tapped bead’s Piece, a non-rectangular shape, and nothing on an empty position', () => {
-    expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({
+    expect(pieceSelectionAt(frameOf(picture)!.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({
       top: 0,
       left: 0,
       rows: 2,
       columns: 2,
       cells: expect.arrayContaining([{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 1 }]),
     })
-    expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toBeUndefined()
+    expect(pieceSelectionAt(frameOf(picture)!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toBeUndefined()
   })
 
   it('a Piece’s shape leaves out the beads of other Pieces inside its rectangle and the holes (ticket 547)', () => {
     const ring = painted(['rrrrr', 'r...r', 'r.b.r', 'r...r', 'rrrrr'])
-    const outer = pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 0, column: 0 })
+    const outer = pieceSelectionAt(frameOf(ring)!.beads, { technique: 'loom' }, { row: 0, column: 0 })
     expect(outer).toMatchObject({ top: 0, left: 0, rows: 5, columns: 5 })
     expect(outer?.cells).toHaveLength(16)
     expect(outer?.cells).not.toContainEqual({ row: 2, column: 2 })
     expect(outer?.cells).not.toContainEqual({ row: 1, column: 1 })
-    expect(pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({
+    expect(pieceSelectionAt(frameOf(ring)!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({
       top: 2,
       left: 2,
       rows: 1,
@@ -266,21 +268,20 @@ describe('Piece and Select all selections (ticket 414)', () => {
   })
 
   it('Select all is the rectangle round every placed bead, and nothing on an empty canvas', () => {
-    expect(allBeadsSelection(picture.frame!.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
-    expect(allBeadsSelection(project(3, 3).frame!.beads)).toBeUndefined()
+    expect(allBeadsSelection(frameOf(picture)!.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(allBeadsSelection(frameOf(project(3, 3))!.beads)).toBeUndefined()
     // ticket 428: with a Frame, Select all is the Frame's inside, whatever the beads
-    expect(selectAllSelection(picture.frame!.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12, layer: 'frame' })
-    expect(selectAllSelection(picture.frame!.beads, undefined)).toMatchObject({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(selectAllSelection(frameOf(picture)!.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12, layer: 'frame' })
+    expect(selectAllSelection(frameOf(picture)!.beads, undefined)).toMatchObject({ top: 0, left: 0, rows: 4, columns: 5 })
   })
 })
 
 describe('Selections on a layer (ADR 0066)', () => {
   // A 3 x 3 Frame at (2, 2) holding red in its middle, over a Canvas holding blue beads, one under the Frame.
-  const layered = (): Project => ({
-    ...project(3, 3),
-    beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3, color: BLUE }]),
+  const layered = (): Project => (withFields(project(3, 3), {
+beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3, color: BLUE }]),
     frame: { technique: 'loom' as const, row: 2, column: 2, rows: 3, columns: 3, beads: withColors({}, [{ row: 1, column: 1, color: RED }]) },
-  })
+}))
 
   it('belongs to the layer its top-left bead is on', () => {
     expect(selectionLayer(layered(), { top: 2, left: 2, rows: 2, columns: 2 })).toBe('frame')
@@ -295,18 +296,18 @@ describe('Selections on a layer (ADR 0066)', () => {
 
   it('fills the Frame\'s cells only, in the Frame, whatever the Selection reaches', () => {
     const filled = paintLayerSelection(layered(), { top: 3, left: 3, rows: 5, columns: 5 }, RED)
-    expect(filled.frame!.beads[2]).toEqual({ 1: RED, 2: RED })
-    expect(filled.beads).toEqual(layered().beads)
+    expect(frameOf(filled)!.beads[2]).toEqual({ 1: RED, 2: RED })
+    expect(beadsOfLayer(filled, 'canvas')).toEqual(beadsOfLayer(layered(), 'canvas'))
   })
 
   it('pastes on the layer the pointer is at, and clips to the Frame there', () => {
     const block: CopiedBlock = { rows: 1, columns: 3, colors: [[RED, RED, RED]], anchor: { row: 0, column: 0 } }
     const inFrame = pasteOnLayer(layered(), block, { row: 3, column: 3 })
-    expect(inFrame.beads).toEqual(layered().beads)
-    expect(inFrame.frame!.beads[1]).toEqual({ 1: RED, 2: RED })
+    expect(beadsOfLayer(inFrame, 'canvas')).toEqual(beadsOfLayer(layered(), 'canvas'))
+    expect(frameOf(inFrame)!.beads[1]).toEqual({ 1: RED, 2: RED })
     const onCanvas = pasteOnLayer(layered(), block, { row: 30, column: 9 })
-    expect(onCanvas.beads[30]).toEqual({ 9: RED, 10: RED, 11: RED })
-    expect(onCanvas.frame).toEqual(layered().frame)
+    expect(beadsOfLayer(onCanvas, 'canvas')[30]).toEqual({ 9: RED, 10: RED, 11: RED })
+    expect(sheetOf(onCanvas)).toEqual(sheetOf(layered()))
   })
 
   it('shows the paste preview where the paste would land, in Canvas positions and clipped to the Frame', () => {
@@ -341,7 +342,7 @@ describe('Selections on a layer (ADR 0066)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
     // A 48-row peyote Frame covers 36 loom rows: rows 36 to 39 are its margin, row 40 is free Canvas.
     const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-    const woven: Project = { ...placed, frame: { ...placed.frame!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) }
+    const woven: Project = withFields(placed, { frame: { ...frameOf(placed)!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 40, columns: 1, layer: 'canvas' })).toBe(false)
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 41, columns: 1, layer: 'canvas' })).toBe(true)
@@ -372,10 +373,10 @@ describe('resizing and moving a Selection (ticket 414)', () => {
 })
 
 describe('selectionHoldsAllBeads (ticket 415)', () => {
-  const open = (beads: Project['beads']): Project => ({ ...project(4, 4), frame: undefined, beads })
-  const framed = (beads: Project['beads'], frameBeads: Project['beads']): Project => {
+  const open = (beads: BeadMap): Project => (withFields(project(4, 4), { frame: undefined, beads }))
+  const framed = (beads: BeadMap, frameBeads: BeadMap): Project => {
     const placed = withFrame(project(4, 4), { row: 10, column: 10, rows: 3, columns: 3 })
-    return { ...placed, beads, frame: { ...placed.frame!, beads: frameBeads } }
+    return withFields(placed, { beads, frame: { ...frameOf(placed)!, beads: frameBeads } })
   }
 
   it('is true for the Select all rectangle and anything round it', () => {
@@ -469,11 +470,10 @@ describe('a Piece-tool shape (ticket 547)', () => {
 
 describe('selectionInFinishedRows (ticket 0647, ADR 0052)', () => {
   /** A loom Frame of 6 x 6 at (10, 10) whose first two rows are done. */
-  const woven: Project = {
-    ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }),
-    frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} },
+  const woven: Project = withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), {
+frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} },
     rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 },
-  }
+})
 
   it('is true for a Frame Selection that holds a position of a finished pass', () => {
     expect(selectionInFinishedRows(woven, { top: 11, left: 12, rows: 2, columns: 2 })).toBe(true)
@@ -491,7 +491,7 @@ describe('selectionInFinishedRows (ticket 0647, ADR 0052)', () => {
   it('reads a shaped Selection by its own cells, and the way the rows run', () => {
     const shape = { top: 11, left: 10, rows: 2, columns: 2, cells: [{ row: 12, column: 11 }] }
     expect(selectionInFinishedRows(woven, shape)).toBe(false)
-    const fromTheLeft = { ...woven, rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
+    const fromTheLeft = withFields(woven, { rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } })
     expect(selectionInFinishedRows(fromTheLeft, { top: 14, left: 11, rows: 1, columns: 1 })).toBe(true)
     expect(selectionInFinishedRows(fromTheLeft, { top: 10, left: 12, rows: 1, columns: 1 })).toBe(false)
   })

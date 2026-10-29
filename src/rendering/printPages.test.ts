@@ -6,11 +6,11 @@ import type { Technique } from '../domain/weave'
 import { COVER_BEAD_MAX } from './coverLayout'
 import { loadPrintFonts, lineBetween, partLabel, rulerLevel } from './printPages'
 import { en } from '../i18n/en'
-import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
 import { mm, planPrint, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
+import { flatProject } from '../testUtils/flatFields'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => flatProject({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
 const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
   color: { tokens: { name: string; value: { light: string } }[] }
@@ -35,7 +35,7 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
 
 describe('partLabel: the label above each pad (ticket 578)', () => {
   const label = (columns: number, rows: number, rotation: Rotation, letter: number) => {
-    const project = shape('loom', columns, rows, rotation) as unknown as Project
+    const project = shape('loom', columns, rows, rotation)
     const part = planPrint(project).parts[letter]!
     return partLabel(project, en.print, part)
   }

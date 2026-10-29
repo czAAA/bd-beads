@@ -1,8 +1,8 @@
 import type { FrameSheet, Rect } from './canvas'
 import { laidRect } from './frameOrientation'
 import { canvasWeave, frameWeave, sameWeave } from './layerWeave'
-import type { Project } from './project'
 import { describeWeave, positionStep, type Weave } from './weave'
+import { type Layered, frameOf } from './layerRecord'
 
 /** A Weave's cell height over its width: what a Real bead stretches a row by (ADR 0068); 1 where the cell is square. */
 const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
@@ -23,6 +23,6 @@ export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick
 }
 
 /** The Canvas positions the Project's Frame hides (ADR 0066), or nothing without a Frame. */
-export function footprintOf(project: Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): Rect | undefined {
-  return project.frame && frameFootprint(canvasWeave(project), { ...project.frame, ...frameWeave(project) })
+export function footprintOf(project: Layered): Rect | undefined {
+  return frameOf(project) && frameFootprint(canvasWeave(project), { ...frameOf(project)!, ...frameWeave(project) })
 }

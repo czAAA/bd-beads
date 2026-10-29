@@ -2,11 +2,13 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { moveToRow } from './rowProgress'
+import { moveToRow, rowProgressOf } from './rowProgress'
 import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
+import { beadsOfLayer, canvasOf, frameOf, withLetters } from './layerRecord'
+import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -19,49 +21,61 @@ describe('snapshotOf and restoreSnapshot', () => {
 
     const restored = restoreSnapshot(changed, snapshot)
 
-    expect(restored.beads).toBe(before.beads)
-    expect(restored.rowProgress).toEqual(before.rowProgress)
-    expect(restored.beadId).toBe(before.beadId)
-    expect(restored.frame).toEqual(before.frame)
+    expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
+    expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
+    expect(canvasOf(restored).beadId).toBe(canvasOf(before).beadId)
+    expect(sheetOf(restored)).toEqual(sheetOf(before))
+  })
+
+  it('put back whole layers but keep the views as they are now: the name, the Canvas\'s orientation and Letters (ticket 0664)', () => {
+    const before = createProject({ name: 'Fox', technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 4, unit: 'beads' } })
+    const snapshot = snapshotOf(before)
+    const viewed = withLetters(withFields(deleteAll(withFields(before, { beads: { 9: { 9: '#e63746' } } })), { name: 'Owl', rotation: 90 }), true)
+
+    const restored = restoreSnapshot(viewed, snapshot)
+
+    expect(canvasOf(restored)).toMatchObject({ name: 'Owl', orientation: 90, letters: true, beads: {} })
+    expect(frameOf(restored)).toMatchObject({ id: frameOf(before)!.id, letters: true })
+    expect(restoreSnapshot(before, snapshot).layers[1]).toBe(before.layers[1])
   })
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
     const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id })
-    const brick = { ...peyote, technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } }
+    const brick = withFields(peyote, { technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } })
 
     const undone = restoreSnapshot(brick, snapshotOf(peyote))
-    expect(undone.technique).toBe('peyote')
-    expect(undone.techniqueSettings).toBeUndefined()
+    expect(canvasOf(undone).technique).toBe('peyote')
+    expect(canvasOf(undone).techniqueSettings).toBeUndefined()
     const redone = restoreSnapshot(peyote, snapshotOf(brick))
-    expect(redone).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
-    expect(redone.techniqueSettings).toEqual({ brickBlock: 4 })
+    expect(flatView(redone)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
+    expect(canvasOf(redone).techniqueSettings).toEqual({ brickBlock: 4 })
   })
 
   it('restore a Project that had no Frame', () => {
     const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined)
     const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
 
-    expect(restoreSnapshot(framed, snapshotOf(before)).frame).toBeUndefined()
+    expect(frameOf(restoreSnapshot(framed, snapshotOf(before)))).toBeUndefined()
   })
 })
 
 describe('the Frame in an undo entry (ADR 0066)', () => {
   it('is put back with its own beads by Undo, and gone again when the entry had none', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const drawn = { ...base, frame: { ...base.frame!, beads: { 1: { 1: '#abcdef' } } } }
-    const none = { ...base, frame: undefined }
+    const drawn = withFields(base, { frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } })
+    const none = withFields(base, { frame: undefined })
 
-    expect(restoreSnapshot(base, snapshotOf(drawn)).frame?.beads).toEqual({ 1: { 1: '#abcdef' } })
-    expect(restoreSnapshot(drawn, snapshotOf(none)).frame).toBeUndefined()
+    expect(frameOf(restoreSnapshot(base, snapshotOf(drawn)))?.beads).toEqual({ 1: { 1: '#abcdef' } })
+    expect(frameOf(restoreSnapshot(drawn, snapshotOf(none)))).toBeUndefined()
   })
 
   it('goes empty with Delete all, the Canvas with it', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const drawn = { ...base, beads: { 9: { 9: '#111111' } }, frame: { ...base.frame!, beads: { 1: { 1: '#abcdef' } } } }
+    const drawn = withFields(base, { beads: { 9: { 9: '#111111' } }, frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } })
 
     const cleared = deleteAll(drawn)
 
-    expect(cleared.beads).toEqual({})
-    expect(cleared.frame).toMatchObject({ rows: 3, columns: 4, beads: {} })
+    expect(beadsOfLayer(cleared, 'canvas')).toEqual({})
+    expect(frameOf(cleared)).toMatchObject({ rows: 3, columns: 4, beads: {} })
   })
 })

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { miniMapRects } from './chartPage'
 import { mm, planPrint } from './printPlan'
+import { flatProject } from '../testUtils/flatFields'
 
-const shape = (columns: number, rows: number) => ({ technique: 'loom' as const, rotation: 0 as const, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns, rows, beads: {} } })
+const shape = (columns: number, rows: number) => flatProject({ technique: 'loom' as const, rotation: 0 as const, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns, rows, beads: {} } })
 
 describe('miniMapRects: the header’s mini map (ticket 0585)', () => {
   it('shows the parts to scale inside a 9.4 mm square, 0.4 mm apart, the current one marked', () => {

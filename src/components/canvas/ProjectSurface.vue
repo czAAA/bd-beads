@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from '../../domain/selection'
@@ -106,7 +106,7 @@ const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: frameOf(props.project), rotation: orientationOf(props.project), zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
@@ -146,7 +146,7 @@ watch(
 /** Where the Frame and its margin sheet are on screen, none once the sheet is out of view (tickets 417, 473, 0657):
  * told to the sheet's tools and title block. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
-  const frame = props.project.frame
+  const frame = frameOf(props.project)
   const grid = marginSheetPx(props.project)
   if (!frame || !grid || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
     data-testid="project-surface"
     :data-technique="canvasWeave.technique"
     :data-technique-settings="JSON.stringify(canvasWeave.techniqueSettings ?? {})"
-    :data-rotation="project.rotation"
+    :data-rotation="orientationOf(project)"
     :data-zoom="zoom"
     :data-scroll-x="scroll.x"
     :data-scroll-y="scroll.y"

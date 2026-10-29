@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, resetRowProgress, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
+import { withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
 const tracking = base
@@ -60,7 +61,7 @@ describe('useRowOps', () => {
   it('moves the Row progress pointer by the given step', () => {
     const { deps, onMoveRow } = setup(tracking)
     onMoveRow(1)
-    expect(replaced(deps).rowProgress.currentRow).toBe(tracking.rowProgress.currentRow + 1)
+    expect(rowProgressOf(replaced(deps)).currentRow).toBe(rowProgressOf(tracking).currentRow + 1)
   })
 
   it('does nothing with no Project open', () => {
@@ -71,7 +72,7 @@ describe('useRowOps', () => {
   })
 
   it('asks before Reset progress, and only once a row is done (ticket 455)', () => {
-    const framed = { ...base, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } }
+    const framed = withFields(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
     const fresh = setup(framed)
     fresh.onResetProgress()
     expect(fresh.resetProgressConfirmOpen.value).toBe(false)
