@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { isProxy } from 'vue'
 import { editHarness } from '../../testUtils/editHarness'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
@@ -11,7 +12,7 @@ import { frameLayoutOf } from '../../domain/frameShape'
 import { onLayer } from '../../domain/layers'
 import { paintCells } from '../../domain/drawing'
 import type { Project } from '../../domain/project'
-import type { PasteLoss } from '../../domain/selection'
+import { stampCells, type PasteLoss } from '../../domain/selection'
 import { frameGrid } from '../../testUtils/frameGrid'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
@@ -117,7 +118,8 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeUndefined()
       expect(gesture.hasClipboard()).toBe(true)
       expect(gesture.pasteProjectionActive.value).toBe(true)
-      expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([{ row: 2, column: 2, color: RED }])
+      expect(stampCells(gesture.pastePreviewStamp(project, { row: 2, column: 2 })!)).toEqual([{ row: 2, column: 2, color: RED }])
+      expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([])
     })
 
     it('Copy of a Selection with no drawn bead copies nothing and keeps the Selection', () => {
@@ -296,6 +298,18 @@ describe('useSelectionGesture', () => {
       const { gesture } = setup(project)
 
       expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewStamp(project, { row: 0, column: 0 })).toBeUndefined()
+    })
+
+    it('holds the Selection and the copied block as they are, outside Vue\'s proxy, so a big one is quick to read (ticket 0675)', () => {
+      const project = paintedProject()
+      const { gesture } = setup(project)
+      gesture.tapPiece(0, 0)
+      expect(isProxy(gesture.selection.value)).toBe(false)
+
+      gesture.copy()
+
+      expect(isProxy(gesture.pastePreviewStamp(project, { row: 1, column: 1 })!.colors)).toBe(false)
     })
   })
 
@@ -616,7 +630,7 @@ describe('useSelectionGesture', () => {
       gesture.extendPress(30, 30)
       gesture.endPress()
       expect(gesture.copy()).toBe(true)
-      expect(gesture.pastePreviewCells(harness.currentProject()!, { row: 40, column: 40 })).toEqual([{ row: 40, column: 40, color: RED }])
+      expect(stampCells(gesture.pastePreviewStamp(harness.currentProject()!, { row: 40, column: 40 })!)).toEqual([{ row: 40, column: 40, color: RED }])
     })
 
     it('Cut of a Canvas Selection across the Frame leaves the margin, what the Frame hides and the Frame alone', () => {

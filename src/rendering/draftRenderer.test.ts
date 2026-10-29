@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { rowsGeometry } from '../domain/rowsGeometry'
 import { describeWeave } from '../domain/weave'
 import { DEFAULT_THEME } from './beadLook'
-import { draftImage, usesDraftLook } from './draftRenderer'
+import { draftImage, draftOfBeads, usesDraftLook } from './draftRenderer'
 
 /** The color of one pixel of a draft image, as [r, g, b]. */
 function pixel(image: ReturnType<typeof draftImage>, x: number, y: number): number[] {
@@ -41,6 +41,27 @@ describe('draftImage', () => {
     expect([image.width, image.height]).toEqual([7, 2])
     const [background, blue, yellow] = [[232, 227, 223], [0, 0, 255], [255, 255, 0]]
     expect([0, 1, 2, 3, 4, 5, 6].map((x) => pixel(image, x, 1))).toEqual([background, blue, blue, blue, yellow, yellow, yellow])
+  })
+})
+
+describe('draftOfBeads (ticket 0675)', () => {
+  /** The color and opacity of one pixel, as [r, g, b, a]. */
+  const rgba = (image: ReturnType<typeof draftOfBeads>, x: number, y: number) => [...image.data.slice((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)]
+
+  it('puts each bead where it lies from the first row and column any bead reaches, clear where there is none', () => {
+    const image = draftOfBeads(describeWeave({ technique: 'loom' }), [{ row: 5, column: 7, color: '#ff0000' }, { row: 6, column: 9, color: '#0000ff' }])
+
+    expect(image).toMatchObject({ width: 3, height: 2, firstRow: 5, firstColumn: 7, wide: 1 })
+    expect(rgba(image, 0, 0)).toEqual([255, 0, 0, 255])
+    expect(rgba(image, 2, 1)).toEqual([0, 0, 255, 255])
+    expect(rgba(image, 1, 0)).toEqual([0, 0, 0, 0])
+  })
+
+  it('makes a peyote bead two pixels wide, a shifted row one pixel in', () => {
+    const image = draftOfBeads(describeWeave({ technique: 'peyote' }), [{ row: 0, column: 0, color: '#ff0000' }, { row: 1, column: 0, color: '#0000ff' }])
+
+    expect(image).toMatchObject({ width: 3, height: 2, wide: 2 })
+    expect([0, 1, 2].map((x) => rgba(image, x, 1)[3])).toEqual([0, 255, 255])
   })
 })
 

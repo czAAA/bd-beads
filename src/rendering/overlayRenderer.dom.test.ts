@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
@@ -520,5 +520,120 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
     const onCanvas = draw('canvas', 9)
     expect(onCanvas.findIndex((call) => call.name === 'fillRect')).toBeLessThan(onCanvas.findIndex((call) => call.name === 'translate'))
     expect(onCanvas.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([60, 180, 20, 2])
+  })
+})
+
+describe('a big paste preview and Piece-shaped Selection draw only what is on screen (ticket 0675)', () => {
+  afterEach(() => vi.restoreAllMocks())
+  const RED = '#e63746'
+  /** An open Canvas with no Frame, Row progress off. */
+  const canvas = (): Project => ({ ...projectOf('loom', 4, 4, { marks: false }), frame: undefined })
+  /** A 100 × 60 px window at zoom 1 into the middle of the Canvas, half a bead off the grid: it shows parts of 6 × 4
+   * beads of 20 px. */
+  const window = { x: 2010, y: 2010, width: 100, height: 60 }
+  const ON_SCREEN = 24
+  const block = (rows: number, columns: number, color: string | null = RED) => Array.from({ length: rows }, () => Array<string | null>(columns).fill(color))
+  const stampOf = (colors: (string | null)[][], top = 0, left = 0, lands: (row: number, column: number) => boolean = () => true) => ({ colors, top, left, rows: colors.length, columns: colors[0]!.length, lands })
+  const calls = (made: { args: unknown[] }[]) => made.map((call) => call.args)
+  const cellsOf = (stamp: ReturnType<typeof stampOf>) =>
+    stamp.colors.flatMap((row, r) => row.flatMap((color, c) => (color && stamp.lands(stamp.top + r, stamp.left + c) ? [{ row: stamp.top + r, column: stamp.left + c, color }] : [])))
+
+  it('draws no more of a 300 × 300 paste preview than the beads on screen', () => {
+    const project = canvas()
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300)), color: null } })
+
+    expect(named('fillRect').length).toBeGreaterThan(0)
+    expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
+  })
+
+  it('draws no more of a 300 × 300 paste preview on a Frame than the Frame\'s beads on screen', () => {
+    const base = projectOf('loom', 300, 300, { marks: false })
+    const project: Project = { ...base, frame: { ...base.frame!, row: 2, column: 3 } }
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 2, 3), color: null } })
+
+    expect(calls(named('translate'))).toEqual([[60, 40]])
+    expect(named('fillRect').length).toBeGreaterThan(0)
+    expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
+  })
+
+  it('draws a 300 × 300 paste preview zoomed out as one draft image, a pixel a bead at the preview\'s opacity', () => {
+    const putImageData = vi.fn()
+    const scratch = { createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }), putImageData }
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch as unknown as CanvasRenderingContext2D)
+    const project = canvas()
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 1900, height: 1200 }, zoom: 0.2, preview: { cells: [], stamp: stampOf(block(300, 300), 0, 0), color: null } })
+
+    expect(named('fillRect')).toHaveLength(0)
+    expect(named('drawImage').map((call) => [call.globalAlpha, ...call.args.slice(1)])).toEqual([[0.6, 0, 0, 300, 300, 0, 0, 6000, 6000]])
+    expect(putImageData).toHaveBeenCalledTimes(1)
+  })
+
+  it('draws a stamp as the same preview its cells listed one by one make, on the Canvas and on a Frame in its own Weave', () => {
+    const base = projectOf('loom', 3, 3, { marks: false })
+    const framed: Project = { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+    const colors = [[RED, null, '#2f6fed', RED], [RED, RED, null, RED], ['#2f6fed', RED, RED, RED]]
+    // The stamp runs off the Frame's right edge and down onto the Canvas below it; the Frame clips what it lands.
+    const stamp = stampOf(colors, 3, 4, (row, column) => !(row === 3 && column === 6))
+    for (const project of [canvas(), framed]) {
+      const region = { x: 0, y: 0, width: 300, height: 300 }
+      const stamped = recordingContext()
+      const listed = recordingContext()
+
+      renderOverlay(stamped.context, { project, space: spaceOf(project, true), region, zoom: 1, preview: { cells: [], stamp, color: null } })
+      renderOverlay(listed.context, { project, space: spaceOf(project, true), region, zoom: 1, preview: { cells: cellsOf(stamp), color: null } })
+
+      expect(stamped.calls.length).toBeGreaterThan(2)
+      expect(stamped.calls).toEqual(listed.calls)
+    }
+  })
+
+  it('leaves out what the next peyote row lies over with one clip a row, not one a bead, and one fill a color', () => {
+    const project: Project = { ...canvas(), technique: 'peyote' }
+    const { context, named } = recordingContext()
+    const colors = [[RED, RED, '#2f6fed', RED], [RED, RED, RED, RED], [RED, RED, RED, RED]]
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, preview: { cells: [], stamp: stampOf(colors), color: null } })
+
+    expect(named('clip')).toHaveLength(3)
+    expect(named('fill').map((call) => call.fillStyle)).toEqual([RED, '#2f6fed', RED, RED])
+  })
+
+  it('draws no more of a 300 × 300 Piece-shaped Selection\'s outline than the beads on screen', () => {
+    const project = canvas()
+    const cells = Array.from({ length: 300 * 300 }, (_, index) => ({ row: Math.floor(index / 300), column: index % 300 }))
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { ...window, x: 10, y: 10 }, zoom: 1, selection: { top: 0, left: 0, rows: 300, columns: 300, cells } })
+
+    expect(named('fillRect').length).toBeGreaterThan(0)
+    expect(named('fillRect').length).toBeLessThanOrEqual(ON_SCREEN)
+  })
+
+  it('outlines a shape round its outside: each side of a bead that no bead of the shape lies across', () => {
+    const project = canvas()
+    const { context, named } = recordingContext()
+    const cells = [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 0 }]
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells } })
+
+    const sides = named('fillRect').map((call) => (call.args as number[]).join(' ')).sort()
+    expect(sides).toEqual(['0 0 2 20', '0 0 20 2', '0 20 2 20', '0 38 20 2', '18 20 2 20', '20 0 20 2', '20 18 20 2', '38 0 2 20'].sort())
+  })
+
+  it('outlines a shape on the Frame inside the Frame\'s layer, in its own Weave', () => {
+    const base = projectOf('loom', 3, 3, { marks: false })
+    const project: Project = { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+    const { context, calls } = recordingContext()
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] } })
+
+    expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
+    expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([10, 15, 20, 2])
   })
 })
