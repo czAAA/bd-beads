@@ -58,7 +58,8 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
   const currentLine = frameRowOrder(project).lineOf(currentPass(project.rowProgress))
-  const current = rowMarks && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
+  // A turned Frame's rulers count the cells it covers, not its own rows (ticket 0667): no line of them is the current one.
+  const current = rowMarks && frame && !frame.quarterTurns && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
 
   const weight = current || label.fifth ? 700 : 400
   context.font = `${weight} ${fontPx}px ${MONO_FONT}`

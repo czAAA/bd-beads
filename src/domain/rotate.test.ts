@@ -6,7 +6,7 @@ import { createProject } from './createProject'
 import { isInFinishedRow } from './rowProgress'
 import type { Project } from './project'
 import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, rotatedSelection } from './rotate'
-import { laidFrame, seenSize } from './frameOrientation'
+import { laidFrame } from './frameOrientation'
 import type { Selection } from './selection'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
@@ -205,12 +205,6 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
       }
       expect(turned.frame).toEqual(project.frame)
     }
-  })
-
-  it('swaps Width and Height as seen', () => {
-    const turned = rotateFrame(framed({}))!
-    expect(seenSize(turned.frame!)).toEqual({ columns: 4, rows: 6 })
-    expect(seenSize(rotateFrame(turned)!.frame!)).toEqual({ columns: 6, rows: 4 })
   })
 
   it('does nothing without a Frame', () => {

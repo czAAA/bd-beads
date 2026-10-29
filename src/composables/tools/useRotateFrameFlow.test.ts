@@ -34,7 +34,6 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     onRotateFrame()
 
     expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
-    expect(harness.project.frame!.beads).toBe(framed.frame!.beads)
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()

@@ -355,3 +355,14 @@ describe('a Custom frame (ticket 0592)', () => {
     expect(laid.labels).toEqual([])
   })
 })
+
+describe('a Frame lying turned (ticket 0667)', () => {
+  it('carries its line and rulers round what it covers as it lies, Width and Height swapped', () => {
+    const turned = { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
+    const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: turned, rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
+    const laid = rulerLayout({ technique: 'loom', frame: turned, beads: {} }, surface, { fontPx: 11, numbers: true })
+    expect(laid.boxes).toEqual([expect.objectContaining({ row: 0, column: 0, rows: 6, columns: 4, kind: 'frame' })])
+    expect(Math.max(...laid.labels.filter((label) => label.axis === 'column').map((label) => Number(label.text)))).toBe(4)
+    expect(Math.max(...laid.labels.filter((label) => label.axis === 'row').map((label) => Number(label.text)))).toBe(6)
+  })
+})

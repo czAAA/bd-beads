@@ -1,5 +1,6 @@
 import type { Rect, FrameSheet } from '../domain/canvas'
-import { frameGeometry } from '../domain/frameShape'
+import { frameShapeOf } from '../domain/frameShape'
+import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, withCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
@@ -57,14 +58,16 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'shape' | 'settings'>; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; techniqueSettings?: TechniqueSettings }
+export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'shape' | 'settings' | 'quarterTurns'>; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; techniqueSettings?: TechniqueSettings }
 
-// The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
-// near the viewport are chosen by the caller). A Custom frame has none: its beads lie in rounds, not its rectangle's
-// rows and columns (ticket 0592).
+// The boxes that carry rulers: the Frame alone once it is set, as it lies (turned, the cells it covers: ticket 0667),
+// otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller). A Custom frame
+// has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
-  if (project.frame) {
-    return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
+  const frame = project.frame
+  if (frame) {
+    if (frameShapeOf(frame)) return []
+    return [{ ...laidRect({ ...frame, cell: canvasWeave(project).cell }), kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
   }
   return pieceAreasOf(project.beads, canvasWeave(project))
     .filter(hasGuides)

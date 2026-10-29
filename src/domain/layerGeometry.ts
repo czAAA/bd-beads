@@ -210,7 +210,8 @@ export function turnedGridLayout(sheet: TurnedGrid): FrameLayout {
         positions.push({ row, column, panel: 0, angle: 0, ...description.center({ row, column }, 1, aspect) })
       }
     }
-    base = { positions, panels: [{ part: 0, order: 0 }], joins: [], width: own.width, height: own.height, centre: { x: own.width / 2, y: own.height / 2 }, seams: [], beadDepth: aspect }
+    const centre = { x: own.width / 2, y: own.height / 2 }
+    base = { positions, panels: [{ part: 0, order: 0 }], joins: [], width: own.width, height: own.height, centre, seams: [], beadDepth: aspect }
     gridLayouts.set(key, base)
     if (gridLayouts.size > GRID_LAYOUTS_KEPT) gridLayouts.delete(gridLayouts.keys().next().value!)
   }
