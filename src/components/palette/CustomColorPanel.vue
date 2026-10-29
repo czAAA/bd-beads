@@ -14,6 +14,8 @@ import { fillBlanks } from '../../domain/fillBlanks'
 const props = defineProps<{
   /** The color the picker opens on: the slot's Custom color, else the paint color, else a mid red. */
   color?: string
+  /** The host's swatches, whose press picks that swatch and takes nothing (ticket 0653): the Palette's by default. */
+  swatchSelector?: string
 }>()
 
 const emit = defineEmits<{
@@ -26,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const MID_RED = '#e03c3c'
+const PALETTE_SWATCH = '[data-testid="palette-swatch"]'
 const HUE_STOPS = [0, 60, 120, 180, 240, 300, 360].map((h) => `${hsvToHex({ h, s: 1, v: 1 })} ${h}deg`).join(', ')
 const WHITE = hsvToHex({ h: 0, s: 0, v: 1 })
 
@@ -73,8 +76,8 @@ useOverlayLayer({
   root: () => rootEl.value,
   close: () => (touched ? take() : emit('cancel')),
   onOutsidePress: take,
-  // A Palette swatch is picked as usual (the host closes the picker); the custom color is not added.
-  keepsPress: (event) => event.target instanceof Element && event.target.closest('[data-testid="palette-swatch"]') !== null,
+  // A host's swatch is picked as usual (the host closes the picker); the custom color is not added.
+  keepsPress: (event) => event.target instanceof Element && event.target.closest(props.swatchSelector ?? PALETTE_SWATCH) !== null,
   // The Custom button toggles the picker itself (a press on it while open takes the color, like leaving it).
   isOpener: (target) => target.closest('[data-testid="custom-color-button"]') !== null,
 })
