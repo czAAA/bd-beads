@@ -26,6 +26,10 @@ describe('beadsToDraw', () => {
     expect(beadsToDraw(1_000_000, 0, { width: 200, height: 100 }, 1)).toBe(10 * 5)
   })
 
+  it('counts a rounded bead as the square beads it costs (ticket 0676)', () => {
+    expect(beadsToDraw(1_000_000, 0, { width: 200, height: 100 }, 1, 3)).toBe(10 * 5 * 3)
+  })
+
   it('is capped by what is there to draw', () => {
     expect(beadsToDraw(10, 90, { width: 2000, height: 2000 }, 1)).toBe(100)
   })

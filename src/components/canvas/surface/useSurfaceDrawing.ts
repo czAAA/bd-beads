@@ -2,10 +2,12 @@ import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions, type BeadMap } from '../../../domain/canvas'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
 import { layersAlike } from '../../../domain/layerWeave'
+import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
+import { drawsDraft } from '../../../rendering/draftRenderer'
 import { renderProject } from '../../../rendering/projectRenderer'
 import type { Space } from '../../../rendering/space'
 import type { Scroll } from '../../../rendering/surfaceView'
@@ -148,6 +150,12 @@ function storedBeads(project: Project): number {
   return counted(layerOf(project, 'canvas').beads) + (frame ? counted(frame.beads) : 0)
 }
 
+/** What one bead of the Project costs to draw, in square beads: its costlier layer's (a rounded bead is three). */
+function beadCost(project: Project): number {
+  const frame = layerOf(project, 'frame')
+  return Math.max(draftCost(layerOf(project, 'canvas').weave.technique), frame ? draftCost(frame.weave.technique) : 0)
+}
+
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
 export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, showFinished, marksShown, oncePerFrame }: BeadLayerDeps): void {
@@ -191,11 +199,11 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
         : undefined
 
     if (bands === undefined) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
       return
     }
     for (const rows of bands) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
     }
   }
 
@@ -228,9 +236,11 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
       before.rowMarks === marksShown.value &&
       props.zoom > 0 &&
       before.zoom > 0
+    // In the draft look a redraw is one image a layer, whatever the beads (ticket 0676): it keeps up live.
     const heavy =
       onlyViewMoved &&
-      beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom) > GESTURE_BEAD_LIMIT
+      !drawsDraft(props.zoom * pixelRatio) &&
+      beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom, beadCost(project)) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
       drawCells()

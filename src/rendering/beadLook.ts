@@ -232,8 +232,9 @@ export function brighten(color: string, amount: number): string {
   return rgb ? rgbText(mix(rgb, WHITE, amount)) : color
 }
 
-/** Reads #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale makes. */
-function parseColor(color: string): Rgb | undefined {
+/** Reads #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale, a fade and
+ * a lit row make: what the draft look's pixels are read from too (ticket 0676). */
+export function parseColor(color: string): Rgb | undefined {
   const rgb = /^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/.exec(color.trim())
   return rgb ? { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) } : fromHex(color.trim())
 }
@@ -314,40 +315,85 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
   return fadeOver(theme.finished.grey ? greyscale(color) : color, backdrop, theme.finished.opacity)
 }
 
+/** A bead's two colors, its rim and its fill, and the last bitmap made of it: worked out once per color and theme, not
+ * for each of the thousands of beads a draw lays down (ticket 0676). */
+interface BeadInk {
+  rim: string
+  fill: string
+  sprite?: { pixels: number; size: number; radius: number; image: Sprite | undefined }
+}
+
+const inks = new WeakMap<ProjectTheme, { plain: Map<string, BeadInk>; dimmed: Map<string, BeadInk> }>()
+
+/** A bead's colors, kept per theme; one faded over a backdrop of its own (the overlay's) is worked out afresh. */
+function inkOf({ color, dimmed, backdrop, theme }: Pick<BeadShape, 'color' | 'dimmed' | 'backdrop' | 'theme'>): BeadInk {
+  if (backdrop !== undefined) return mixInk(color, dimmed, backdrop, theme)
+  let known = inks.get(theme)
+  if (!known) {
+    known = { plain: new Map(), dimmed: new Map() }
+    inks.set(theme, known)
+  }
+  const byColor = dimmed ? known.dimmed : known.plain
+  let ink = byColor.get(color ?? '')
+  if (!ink) {
+    ink = mixInk(color, dimmed, backdrop, theme)
+    byColor.set(color ?? '', ink)
+  }
+  return ink
+}
+
+function mixInk(color: string | null, dimmed: boolean, backdrop: string | undefined, theme: ProjectTheme): BeadInk {
+  const own = color ?? theme.emptyBead
+  const fill = dimmed ? finishedColor(own, theme, backdrop) : own
+  return { fill, rim: blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill) }
+}
+
 // The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell and a faint rim
 // just inside its edge. A finished bead is the same shapes in its faded colors, so it covers whatever is under it (the
 // bead on the cells layer, when drawn on the overlay).
-function drawBeadShapes(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
-  const own = color ?? theme.emptyBead
-  const fill = dimmed ? finishedColor(own, theme, backdrop) : own
+function drawBeadShapes(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius }: BeadShape, { rim, fill }: BeadInk): void {
   const outerWidth = width - GAP_PX * 2
   const outerHeight = height - GAP_PX * 2
   // A corner is at most half the shorter side: a round bead drawn longer than wide is a pill.
   const outerRadius = Math.min(Math.max(0, cornerRadius - GAP_PX), outerWidth / 2, outerHeight / 2)
 
-  context.fillStyle = blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill)
+  context.fillStyle = rim
   fillShape(context, x + GAP_PX, y + GAP_PX, outerWidth, outerHeight, outerRadius)
   context.fillStyle = fill
   fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerWidth - RIM_PX * 2, outerHeight - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX))
 }
 
-function spriteFor(bead: BeadShape): Sprite | undefined {
+/** The bitmap of a bead at its size on the screen: the ink's own last one while the size holds, as it does through a
+ * draw. */
+function spriteFor(bead: BeadShape, ink: BeadInk): Sprite | undefined {
   const pixels = Math.max(1, Math.round(bead.size * bead.deviceScale))
-  const { theme } = bead
-  const key = ['bead', pixels, bead.cornerRadius, bead.dimmed ? 'd' : 'p', bead.backdrop ?? '', bead.color ?? '', theme.background, theme.rim, theme.emptyBead].join('|')
-  return cachedSprite(key, pixels, bead.size, (context) => drawBeadShapes(context, { ...bead, x: 0, y: 0 }))
+  const made = ink.sprite
+  if (made && made.pixels === pixels && made.size === bead.size && made.radius === bead.cornerRadius) {
+    return made.image
+  }
+  const key = `bead|${pixels}|${bead.size}|${bead.cornerRadius}|${ink.rim}|${ink.fill}`
+  const image = cachedSprite(key, pixels, bead.size, (context) => drawBeadShapes(context, { ...bead, x: 0, y: 0 }, ink))
+  ink.sprite = { pixels, size: bead.size, radius: bead.cornerRadius, image }
+  return image
+}
+
+/** The one color a bead is drawn in where it is too small to show its rim (the draft look, ticket 0676): its own, or
+ * the empty bead's, faded in a finished row. Kept per theme with the full look's. */
+export function beadFill(color: string | null, dimmed: boolean, theme: ProjectTheme): string {
+  return inkOf({ color, dimmed, theme }).fill
 }
 
 // The design system's bead (BeadBoard card): a square (rounded for peyote) bead with a faint rim; finished rows faded.
 // Redrawn thousands of times per drag/scroll, so a square is two rectangles and rounded or faded is a cached bitmap;
 // batching a row into one path was slower (many subpaths cost more than their sum).
 export const drawFlatBead: BeadDrawer = (context, bead) => {
-  const sprite = (bead.cornerRadius > 0 || bead.dimmed) && bead.width === undefined ? spriteFor(bead) : undefined
+  const ink = inkOf(bead)
+  const sprite = (bead.cornerRadius > 0 || bead.dimmed) && bead.width === undefined ? spriteFor(bead, ink) : undefined
   if (sprite) {
     context.drawImage(sprite, bead.x, bead.y, bead.size, bead.size)
     return
   }
-  drawBeadShapes(context, bead)
+  drawBeadShapes(context, bead, ink)
 }
 
 /** A letter on a dark bead (ticket 0573; printed-output.md, Color + letters).

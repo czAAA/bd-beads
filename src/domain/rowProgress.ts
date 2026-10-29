@@ -242,8 +242,21 @@ export function finishedRowsOf(project: Layered): (position: GridPosition) => bo
   }
 }
 
+/** Whether each bead of a draw sits in a finished pass or the current one (ticket 0676): `isInFinishedRow` and
+ * `isInCurrentRow` with the Frame's Row order worked out once, not for each of the thousands of beads drawn. */
+export function rowPassesOf(project: Layered): (position: GridPosition) => 'finished' | 'current' | undefined {
+  const current = currentPass(rowProgressOf(project))
+  if (!frameOf(project)) return () => undefined
+  let order: RowOrder | undefined
+  return (position) => {
+    const pass = framePassAt(project, position, () => (order ??= frameRowOrder(project)))
+    return pass === undefined ? undefined : pass < current ? 'finished' : pass === current ? 'current' : undefined
+  }
+}
+
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
- * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
+ * current row is drawn brighter. Only while the overlay is on and a Frame is set.
+ * @internal The renderer asks `rowPassesOf` (ticket 0676); tests and the visual check ask of one bead. */
 export function isInCurrentRow(project: Layered, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
   return pass !== undefined && pass === currentPass(rowProgressOf(project))
