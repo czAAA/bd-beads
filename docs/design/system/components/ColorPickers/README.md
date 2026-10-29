@@ -6,5 +6,6 @@ The Custom colour button. It sits at the foot of the colour popover (ToolPill ca
 - The picker previews only: the paint colour, the pill and the Palette change when it is left. A press outside it (ADR 0061) takes the colour once and closes it with the colour popover; Enter does the same; Escape leaves without taking it and returns focus to the button. Opened and left untouched, it takes nothing. It opens on the slot's Custom colour, else the paint colour, else a mid red. The button always shows the hatched square (the chosen colour is the paint colour, shown in the Palette). Selected: the `ring`, like a Palette swatch.
 
 - **Elsewhere (tickets 0537, 0653).** The same button and picker serve the Convert image wizard's Remap (FoundColorRow card) and the Canvas color's background color picker (CanvasBackground card), where a press on that picker's swatches picks the swatch and takes nothing, as a Palette swatch does here. The selected ring's gap is the surface the button sits on (`--swatch-gap`, as for AppSwatch).
+- **The margin (ticket 0655).** The Frame's margin color uses the same Custom color tile and picker, inside the BackgroundColorPicker of the Frame panel's margin section and of the margin's Margin color popover (MarginSheet card).
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.
