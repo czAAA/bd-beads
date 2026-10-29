@@ -15,7 +15,7 @@ The open area a Project is drawn on: an endless field of bead positions with no 
 _Avoid_: open canvas, board, infinite grid, sheet
 
 **Grid**:
-The endless arrangement of positions on the Canvas set by the Technique: loom and square stitch rows stack, peyote rows nest, brick stitch rows are offset by half a bead, a bead apart, in blocks of one or more rows (Brick block). It has no edge and no size; the Frame, not the Grid, gives a Schema its size.
+The endless arrangement of positions on the Canvas set by the Technique: loom and square stitch rows stack, peyote rows nest and brick stitch rows are offset by half a bead, a bead apart, both in blocks of one or more rows (Drop). It has no edge and no size; the Frame, not the Grid, gives a Schema its size.
 _Avoid_: board, for the beads themselves or for the Schema
 
 **Position marks**:
