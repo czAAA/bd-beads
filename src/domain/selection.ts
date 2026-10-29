@@ -4,6 +4,7 @@ import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet, type Placed } from './layers'
 import { footprintOf } from './footprint'
+import { beadsOfLayer, heldWeave } from './layerRecord'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
@@ -139,7 +140,7 @@ export function allBeadsSelection(beads: BeadMap): Selection | undefined {
 /** Whether the Selection holds every bead you see (ticket 415): the Select all case, where Clear selection means Delete
  * all. Only what its layer shows counts (ticket 0659), so a rectangle round a bead of the other layer does not. */
 export function selectionHoldsAllBeads(project: Project, selection: Selection): boolean {
-  const beadsLeft = (target: Project) => beadCount(shownBeads(target)) + beadCount(target.frame?.beads ?? {})
+  const beadsLeft = (target: Project) => beadCount(shownBeads(target)) + beadCount(beadsOfLayer(target, 'frame') ?? {})
   return beadsLeft(project) > 0 && beadsLeft(paintLayerSelection(project, selection, null)) === 0
 }
 
@@ -345,7 +346,7 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
 export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
   const layer = layerAt(project, at)
   if (layer === 'canvas') {
-    const picked = pieceSelectionAt(project.beads, project, at, footprintOf(project))
+    const picked = pieceSelectionAt(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'), at, footprintOf(project))
     return picked && { ...picked, layer }
   }
   const sheet = layerSheet(project, 'frame')

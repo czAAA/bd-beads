@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { frameRowOrder, rowProgressPosition } from '../../domain/rowProgress'
+import { frameRowOrder, rowProgressPosition, shownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { orderStepLabel } from '../../i18n/orderStep'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -73,17 +73,14 @@ const customPosition = computed(() => {
   return { label: orderStepLabel(words, step), of }
 })
 
-const directionLabel = computed(() => {
-  const { direction, reversed } = props.project.rowProgress
-  const words = t.value.rowProgress
-  if (direction === 'rows') return reversed ? words.bottomToTop : words.topToBottom
-  return reversed ? words.rightToLeft : words.leftToRight
-})
+/** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). A turned
+ * Frame's rows run turned with it (ticket 0667). */
+const arrowTurn = computed(() => shownWay(props.project.rowProgress, props.project.frame?.quarterTurns))
 
-/** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). */
-const arrowTurn = computed(() => {
-  const { direction, reversed } = props.project.rowProgress
-  return direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
+const directionLabel = computed(() => {
+  const words = t.value.rowProgress
+  const labels = { down: words.topToBottom, up: words.bottomToTop, right: words.leftToRight, left: words.rightToLeft }
+  return labels[arrowTurn.value]
 })
 
 type Item = 'direction' | 'highlight' | 'reset' | 'position' | 'counter' | 'track' | 'divider' | 'steps'

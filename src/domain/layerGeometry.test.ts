@@ -4,6 +4,7 @@ import { layerExtentPx, positionBoxPx, positionsBoxPx, type Region } from '../re
 import type { Rect } from './canvas'
 import { customFrameSize, frameGeometry, frameShapeOf, frameLayoutOf, type FrameShapeId, type FrameSettings, type ShapedSheet, type QuarterTurns } from './frameShape'
 import { layoutNeighbors, layoutPosition, layoutPositionAt } from './frameLayout'
+import { laidSize } from './frameOrientation'
 import type { GridPosition } from './grid'
 import { gridGeometry, layoutPlacement, type LayerGeometry } from './layerGeometry'
 import { describeWeave, neighborsOf, TECHNIQUES, type BeadCell, type Weave } from './weave'
@@ -230,6 +231,52 @@ describe('a point off a Frame', () => {
       const { width, height } = frameGeometry(frame).extent()!
       for (const point of [{ x: -0.1, y: 0.5 }, { x: 0.5, y: -0.1 }, { x: width + 0.1, y: 0.5 }, { x: 0.5, y: height + 0.1 }]) {
         expect(frameGeometry(frame).positionAt(point)).toBeUndefined()
+      }
+    }
+  })
+})
+
+describe('a Frame without a shape lying turned (ticket 0667, ADR 0079)', () => {
+  const TURNS: QuarterTurns[] = [1, 2, 3]
+  const sheetOf = (weave: Weave, quarterTurns: QuarterTurns): ShapedSheet => ({ ...weave, rows: 5, columns: 7, quarterTurns })
+  const centreOf = ({ box }: { box: Box }) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
+
+  it('keeps its own positions, and finds each bead where it places it, turned a quarter at a time', () => {
+    for (const weave of WEAVES) {
+      for (const turns of TURNS) {
+        const geometry = frameGeometry(sheetOf(weave, turns))
+        const upright = frameGeometry({ ...weave, rows: 5, columns: 7 })
+        expect(geometry.grid).toBe(false)
+        expect(geometry.positions()).toEqual(upright.positions())
+        expect(geometry.neighbors({ row: 2, column: 3 })).toEqual(upright.neighbors({ row: 2, column: 3 }))
+        for (const position of geometry.positions()) {
+          const place = geometry.place(position)!
+          expect(place.angle).toBeCloseTo((turns * Math.PI) / 2)
+          expect(geometry.positionAt(centreOf(place)), `${named(weave)} turned ${turns} at ${position.row},${position.column}`).toEqual(position)
+        }
+        expect(geometry.positionsIn(geometry.extent()!)).toHaveLength(35)
+      }
+    }
+  })
+
+  it('lies across the rectangle it covers: the first bead goes to the top right on a quarter turn', () => {
+    const geometry = frameGeometry(sheetOf({ technique: 'loom' }, 1))
+    expect(geometry.extent()).toEqual({ x: 0, y: 0, width: 5, height: 7 })
+    expect(centreOf(geometry.place({ row: 0, column: 0 })!)).toEqual({ x: 4.5, y: 0.5 })
+    expect(centreOf(geometry.place({ row: 4, column: 6 })!)).toEqual({ x: 0.5, y: 6.5 })
+  })
+
+  it('is a layout whose positions lie where its geometry places them, for a Selection and a Paste over it', () => {
+    for (const weave of WEAVES) {
+      for (const turns of TURNS) {
+        const sheet = sheetOf(weave, turns)
+        const geometry = frameGeometry(sheet)
+        const placement = layoutPlacement(frameLayoutOf(sheet)!, laidSize(sheet), weave)
+        for (const position of frameLayoutOf(sheet)!.positions) {
+          const at = centreOf(geometry.place(position)!)
+          expect(placement.x + position.x * placement.scale).toBeCloseTo(at.x)
+          expect(placement.y + position.y * placement.scale).toBeCloseTo(at.y)
+        }
       }
     }
   })

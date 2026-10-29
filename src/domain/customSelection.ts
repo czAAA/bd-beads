@@ -1,14 +1,15 @@
 import { colorAt, type BeadChange } from './canvas'
 import { frameLayoutOf } from './frameShape'
+import { laidSize } from './frameOrientation'
 import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { layoutPlacement, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
 import { describeWeave, rowPitch, type Weave } from './weave'
 
-// A Selection over a Custom frame (spec 0590, ADR 0077, ticket 0594): a rectangle of the Frame's cells on screen holding
-// every bead whose centre lies in it. Paste and Rotate put each bead on the nearest free position of the panel under it,
-// dropping one on a Seam or Off-shape. Each function takes the Frame's layer (`layerSheet`), a Custom frame's.
+// A Selection over a Custom frame or a turned Frame (tickets 0594, 0667): a rectangle of the Frame's cells on screen
+// holding every bead whose centre lies in it. Paste and Rotate put each bead on the nearest free position of the panel
+// under it, dropping one on a Seam or Off-shape. Each function takes the Frame's layer (`layerSheet`).
 
 /** A bead copied from a Custom frame (or a block's cell, placed as a bead): where its centre lies from the block's
  * anchor bead, in cell widths on screen, and its color. */
@@ -19,9 +20,11 @@ export interface PlacedColor extends LayoutPoint {
 /** A Selection's rectangle of the Frame's cells, counted from its first row and column. */
 type CellRectangle = { top: number; left: number; rows: number; columns: number }
 
-/** The Custom frame's layout as placed in its rectangle. */
+/** The Custom frame's layout as placed in its rectangle, or a turned Frame's grid in the rectangle it lies in (ticket
+ * 0667). */
 function placementOf(sheet: LayerSheet): LayoutPlacement {
-  return layoutPlacement(frameLayoutOf(sheet.frame!)!, sheet.frame!, sheet.weave)
+  const frame = { ...sheet.frame!, ...sheet.weave }
+  return layoutPlacement(frameLayoutOf(frame)!, laidSize(frame), sheet.weave)
 }
 
 /** A position's centre on screen, in cell widths from the Frame's first position's corner. */

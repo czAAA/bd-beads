@@ -1,7 +1,7 @@
 import type { Rect } from './canvas'
 import type { ShapedSheet } from './frameShape'
-import { layoutNeighbors, layoutPosition, layoutPositionAt, type FrameLayout, type LayoutPoint } from './frameLayout'
-import type { GridPosition } from './grid'
+import { layoutNeighbors, layoutPosition, layoutPositionAt, turnedLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import type { GridDimensions, GridPosition } from './grid'
 import { describeWeave, type Weave } from './weave'
 import { insideBounds, type Box } from './weaveGeometry'
 
@@ -138,5 +138,119 @@ export function layoutGeometry(layout: FrameLayout, frame: ShapedSheet): LayerGe
     // A Custom frame is small: every bead is drawn.
     positionsIn: all,
     seams: () => layout.seams.map(([from, to]) => [at(from), at(to)] as const),
+  }
+}
+
+/** What a Frame's turned grid is built from: its own rows and columns, its Weave with the Bead shape's cell, and
+ * how many quarter turns clockwise it lies at. */
+type TurnedGrid = Pick<ShapedSheet, 'rows' | 'columns' | 'quarterTurns'> & Weave
+
+/** A point of a block `width` by `height` turned `turns` quarters clockwise with y down, as `turnedLayout` turns one. */
+function turnPoint({ x, y }: LayoutPoint, width: number, height: number, turns: number): LayoutPoint {
+  if (turns === 1) return { x: height - y, y: x }
+  if (turns === 2) return { x: width - x, y: height - y }
+  if (turns === 3) return { x: y, y: width - x }
+  return { x, y }
+}
+
+/** `turnPoint` undone: a point of the turned block back in the block as it was. */
+function unturnPoint({ x, y }: LayoutPoint, width: number, height: number, turns: number): LayoutPoint {
+  if (turns === 1) return { x: y, y: height - x }
+  if (turns === 2) return { x: width - x, y: height - y }
+  if (turns === 3) return { x: width - y, y: x }
+  return { x, y }
+}
+
+/** The fewest rows and columns of a Weave's cells whose block covers a box `width` by `height` in cell widths. */
+function coveringSize(description: ReturnType<typeof describeWeave>, width: number, height: number): GridDimensions {
+  const aspect = description.cellAspect
+  const extra = description.blockExtent(1, 1, 1, aspect).width - 1
+  const columns = Math.max(1, Math.ceil(width - extra - 1e-9))
+  const pitch = description.rowPitch * aspect
+  const rows = Math.max(1, Math.ceil((height - aspect) / pitch - 1e-9) + 1)
+  return { rows, columns }
+}
+
+/** A Frame's own grid turned (Rotate Frame, ADR 0079, ticket 0667): its size as it lies, its rectangle on the
+ * Canvas in its own Weave's cells, and where the turned grid sits in that rectangle, centred as a Custom frame's layout
+ * is (`layoutPlacement`). */
+function turnedGridPlacement(sheet: TurnedGrid) {
+  const description = describeWeave(sheet)
+  const aspect = description.cellAspect
+  const turns = (sheet.quarterTurns ?? 0) % 4
+  const own = description.blockExtent(sheet.columns, sheet.rows, 1, aspect)
+  const lying = turns % 2 === 1 ? { width: own.height, height: own.width } : own
+  const laid = coveringSize(description, lying.width, lying.height)
+  const extent = description.blockExtent(laid.columns, laid.rows, 1, aspect)
+  const scale = Math.min(1, extent.width / lying.width, extent.height / lying.height)
+  return { description, aspect, turns, own, laid, scale, x: (extent.width - lying.width * scale) / 2, y: (extent.height - lying.height * scale) / 2 }
+}
+
+/** The rows and columns of its own Weave's cells a Frame without a shape covers on the Canvas as it lies (ticket 0667): its own
+ * where it is upright, else those of its turned grid. Width and Height swap as seen. */
+export function turnedGridSize(sheet: TurnedGrid): GridDimensions {
+  return sheet.quarterTurns ? turnedGridPlacement(sheet).laid : { rows: sheet.rows, columns: sheet.columns }
+}
+
+// A turned grid's layout is built once per Weave, size and turn; a Frame being resized makes a new size at each step,
+// so only the last few are kept.
+const gridLayouts = new Map<string, FrameLayout>()
+const GRID_LAYOUTS_KEPT = 4
+
+/** A Frame's own grid as a layout (ticket 0667): each of its positions upright at its centre, one panel, turned as
+ * the Frame lies. What a Selection, Paste and Rotate over a turned Frame land beads by, as on a Custom frame. */
+export function turnedGridLayout(sheet: TurnedGrid): FrameLayout {
+  const { description, aspect, turns, own } = turnedGridPlacement(sheet)
+  const key = `${sheet.technique} ${JSON.stringify(sheet.techniqueSettings ?? {})} ${aspect} ${sheet.rows} ${sheet.columns}`
+  let base = gridLayouts.get(key)
+  if (!base) {
+    const positions: LayoutPosition[] = []
+    for (let row = 0; row < sheet.rows; row += 1) {
+      for (let column = 0; column < sheet.columns; column += 1) {
+        positions.push({ row, column, panel: 0, angle: 0, ...description.center({ row, column }, 1, aspect) })
+      }
+    }
+    const centre = { x: own.width / 2, y: own.height / 2 }
+    base = { positions, panels: [{ part: 0, order: 0 }], joins: [], width: own.width, height: own.height, centre, seams: [], beadDepth: aspect }
+    gridLayouts.set(key, base)
+    if (gridLayouts.size > GRID_LAYOUTS_KEPT) gridLayouts.delete(gridLayouts.keys().next().value!)
+  }
+  return turnedLayout(base, turns)
+}
+
+/** A Frame's Layer geometry once Rotate Frame has turned it (ADR 0079, ticket 0667): its positions and a Fill's
+ * neighbours are its own grid's, drawn turned in its rectangle, so they are no longer the Canvas's (not `grid`); where a
+ * bead lies and which bead a point is on are the grid's turned. */
+export function turnedGridGeometry(sheet: TurnedGrid): LayerGeometry {
+  const upright = gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns })
+  const { description, aspect, turns, own, laid, scale, x, y } = turnedGridPlacement(sheet)
+  const rectangle = description.blockBox({ row: 0, column: 0, rows: laid.rows, columns: laid.columns }, 1, aspect)
+  const toRectangle = (point: LayoutPoint): LayoutPoint => {
+    const turned = turnPoint(point, own.width, own.height, turns)
+    return { x: x + turned.x * scale, y: y + turned.y * scale }
+  }
+  const toOwn = (point: LayoutPoint): LayoutPoint => unturnPoint({ x: (point.x - x) / scale, y: (point.y - y) / scale }, own.width, own.height, turns)
+  return {
+    grid: false,
+    positions: upright.positions,
+    hasPosition: upright.hasPosition,
+    neighbors: upright.neighbors,
+    place: (position) => {
+      if (!upright.hasPosition(position)) return undefined
+      const centre = toRectangle(description.center(position, 1, aspect))
+      return { box: { x: centre.x - scale / 2, y: centre.y - (scale * aspect) / 2, width: scale, height: scale * aspect }, angle: (turns * Math.PI) / 2 }
+    },
+    positionAt: (point) => {
+      const off = point.x < 0 || point.y < 0 || point.x >= rectangle.width || point.y >= rectangle.height
+      return off ? undefined : upright.positionAt(toOwn(point))
+    },
+    extent: () => rectangle,
+    positionsIn: (box) => {
+      const corners = [toOwn({ x: box.x, y: box.y }), toOwn({ x: box.x + box.width, y: box.y + box.height })]
+      const left = Math.min(corners[0]!.x, corners[1]!.x)
+      const top = Math.min(corners[0]!.y, corners[1]!.y)
+      return upright.positionsIn({ x: left, y: top, width: Math.abs(corners[0]!.x - corners[1]!.x), height: Math.abs(corners[0]!.y - corners[1]!.y) })
+    },
+    seams: () => [],
   }
 }
