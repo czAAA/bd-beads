@@ -565,7 +565,10 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
   /** The Frame two columns narrower from its right edge. */
   const narrower = (project: Project) => changed(project, { set: { ...rectOf(project), columns: 2 } })
   const wider = (project: Project) => changed(project, { set: { ...rectOf(project), columns: 4 } })
-  const rectOf = (project: Project): Rect => { const frame = frameOf(project)!; return { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns } }
+  const rectOf = (project: Project): Rect => {
+    const { row, column, rows, columns } = frameOf(project)!
+    return { row, column, rows, columns }
+  }
 
   it('folds what a smaller Frame gives up and leaves the Canvas as it is', () => {
     const canvas = withColors({}, [{ row: 11, column: 13, color: GREY }])
@@ -657,7 +660,10 @@ describe('a Frame woven like the Canvas trades beads with it on a resize (ticket
     if (result.kind !== 'changed') throw new Error(`expected a change, got ${result.kind}`)
     return result.project
   }
-  const rectOf = (project: Project): Rect => { const frame = frameOf(project)!; return { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns } }
+  const rectOf = (project: Project): Rect => {
+    const { row, column, rows, columns } = frameOf(project)!
+    return { row, column, rows, columns }
+  }
   const own = withColors({}, [{ row: 0, column: 0, color: RED }, { row: 1, column: 3, color: BLUE }, { row: 5, column: 2, color: RED }])
 
   it('lifts the Canvas beads it grows over, counted from its own first row and column, and leaves the rest', () => {

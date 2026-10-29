@@ -8,7 +8,7 @@ function nextRotation(rotation: Rotation): Rotation {
   return ((rotation + 90) % 360) as Rotation
 }
 
-/** The Project turned one quarter clockwise (see Project.rotation), for tests that need a rotated one to start from. */
+/** The Project turned one quarter clockwise (the Canvas's orientation), for tests that need a rotated one to start from. */
 export function turnedClockwise(project: Project): Project {
   return withFields(project, { rotation: nextRotation(orientationOf(project)) })
 }

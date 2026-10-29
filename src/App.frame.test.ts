@@ -11,7 +11,7 @@ import { hoverBead, pressBead } from './testUtils/beads'
 import { pickColor, pressBar, selectAll } from './testUtils/pill'
 import { frameOf } from './domain/layerRecord'
 import { rowProgressOf } from './domain/rowProgress'
-import { withFields } from './testUtils/flatFields'
+import { sheetOf, withFields } from './testUtils/flatFields'
 
 /** Edit Frame's wiring (tickets 233, 417, ADRs 0026, 0046, 0054): each control reaches the flow once. Its rules live in
  * `useFrameFlow`, `FramePanel` and `changeFrame`'s tests, one level each (ticket 0599, docs/testing.md). */
@@ -66,7 +66,8 @@ async function toggleBar(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
 /** The rectangle of the saved Frame, its beads aside. */
 const savedFrame = () => {
-  const frame = frameOf(loadProjects()[0])
+  const [project] = loadProjects()
+  const frame = project && sheetOf(project)
   if (!frame) return undefined
   const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
