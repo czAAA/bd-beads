@@ -5,7 +5,8 @@ import type { BeadMap, Rect } from '../../src/domain/canvas'
 import type { Grid, Project } from '../../src/domain/project'
 import type { Technique } from '../../src/domain/weave'
 import { fixtureProject } from '../support/projects'
-import { type Layered } from '../../src/domain/layerRecord'
+import { withFrameSheet } from '../../src/domain/layerRecord'
+import { sheetOf, withFields, type FlatChange } from '../../src/testUtils/flatFields'
 
 // The shapes the big-Canvas performance check opens (ticket 0673, "Canvas performance for large patterns"): many
 // Pieces, one very large one, a Frame over a full Canvas, a big library, and the overlay's two whole-block cases.
@@ -39,15 +40,15 @@ function paint(beads: BeadMap, { row: top, column: left, rows, columns }: Rect, 
 }
 
 /** A Project with these beads and nothing else: no Frame unless `frame` gives one. */
-function projectWith(technique: Technique, id: string, changes: Partial<Project>, updatedAt: number): Project {
-  const { frame: _none, ...base } = fixtureProject({ technique, columns: 1, rows: 1, blank: true })
-  return { ...base, id, name: `Perf ${id}`, beads: {}, ...changes, updatedAt, createdAt: updatedAt }
+function projectWith(technique: Technique, id: string, changes: FlatChange, updatedAt: number): Project {
+  const base = withFrameSheet(fixtureProject({ technique, columns: 1, rows: 1, blank: true }), undefined)
+  return withFields(base, { id, name: `Perf ${id}`, beads: {}, ...changes, updatedAt, createdAt: updatedAt })
 }
 
 /** A columns × rows patterned Frame at the Canvas's origin. */
-function patternedFrame(technique: Technique, columns: number, rows: number): Layered {
+function patternedFrame(technique: Technique, columns: number, rows: number): FlatChange {
   const grid: Grid = Array.from({ length: rows }, (_row, row) => Array.from({ length: columns }, (_cell, column) => ({ color: patternColor(row, column) })))
-  return { frame: framedGrid(grid, { technique }).frame }
+  return { frame: sheetOf(framedGrid(grid, { technique })) }
 }
 
 /** What a fixture is measured on (ticket 0673): a Paint stroke, panning, one Fill, Paste and Undo, hovering a Paste,
@@ -77,7 +78,7 @@ export function canvasFixtures(technique: Technique): CanvasFixture[] {
     paint(scattered, { row: Math.floor(index / 10) * 50, column: (index % 10) * 50, rows: 40, columns: 40 })
   }
   const piece = projectWith(technique, 'piece', { beads: paint({}, BIG) }, NOW)
-  const named = { ...piece, id: 'named-piece', pieceNames: [{ row: 0, column: 0, name: 'Big piece' }] }
+  const named = withFields(piece, { id: 'named-piece', pieceNames: [{ row: 0, column: 0, name: 'Big piece' }] })
   // The Canvas round the Frame, clear of it and its margin with two beads to spare: 420² less 312², about 79,000 beads.
   const clear = MARGIN + 2
   const ring: BeadMap = paint({}, { row: -60, column: -60, rows: SIDE + 120, columns: SIDE + 120 }, (row, column) => row >= -clear && row < SIDE + clear && column >= -clear && column < SIDE + clear)
@@ -87,7 +88,7 @@ export function canvasFixtures(technique: Technique): CanvasFixture[] {
     { name: 'scattered', library: [projectWith(technique, 'scattered', { beads: scattered }, NOW)], target: { row: 100, column: 250, rows: 40, columns: 40 }, scenarios: ['stroke', 'pan', 'edits'] },
     { name: 'piece', library: [piece], target: INSIDE_BIG, scenarios: ['stroke', 'pan', 'edits'] },
     { name: 'named piece', library: [named], target: INSIDE_BIG, scenarios: ['stroke', 'edits'] },
-    { name: 'frame over canvas', library: [{ ...framed('frame', NOW), beads: ring }], target: INSIDE_BIG, scenarios: ['stroke', 'pan', 'edits'] },
+    { name: 'frame over canvas', library: [withFields(framed('frame', NOW), { beads: ring })], target: INSIDE_BIG, scenarios: ['stroke', 'pan', 'edits'] },
     { name: 'library', library: Array.from({ length: 10 }, (_project, index) => framed(`library-${index}`, NOW - index * 1000)), target: INSIDE_BIG, scenarios: ['stroke', 'edits'] },
     { name: 'shaped selection', library: [piece], target: INSIDE_BIG, scenarios: ['shaped drag'] },
     { name: 'paste block', library: [piece], target: INSIDE_BIG, scenarios: ['paste hover'] },

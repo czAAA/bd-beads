@@ -4,6 +4,7 @@ import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, 
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 import { frameOf } from '../../src/domain/layerRecord'
+import { withFields } from '../../src/testUtils/flatFields'
 
 // The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`, not in CI (noisy runner timings).
 // Env: PERF_SLOWDOWNS (default 4,6), PERF_SIZES (default 60x90,70x250,250x250), PERF_ONLY (framing, crop, …), PERF_TECHNIQUES.
@@ -69,7 +70,7 @@ function label({ columns, rows }: { columns: number; rows: number }): string {
 function libraryFor(columns: number, rows: number) {
   return [
     { ...fixtureProject({ technique: 'loom', columns: 4, rows: 4 }), id: 'small', updatedAt: 1_700_000_000_000 },
-    { ...fixtureProject({ technique: 'loom', columns, rows }), id: 'big', name: 'Big', updatedAt: 1_600_000_000_000 },
+    withFields(fixtureProject({ technique: 'loom', columns, rows }), { id: 'big', name: 'Big', updatedAt: 1_600_000_000_000 }),
   ]
 }
 
