@@ -28,6 +28,8 @@ Standing orders for every implementation (incl. `bd-implement` skill); don't ask
 5. Serving the branch on the tailnet is opt-in: don't start it unless the user asks. When asked, from the worktree run `npm run tailnet:start [port]` (vite plus `tailscale serve`, tailnet only, never `funnel`) and give the user the printed `https://<mac-name>.<tailnet>.ts.net:<port>` URL. Leave it running for them to verify; `npm run tailnet:stop` once they confirm or the PR merges (`tailnet:status` shows the URL).
 6. explicitly say whats left for a human
 
+`/bd-implement -bulk <tickets>` (skill `bd-implement-bulk`) runs several tickets this way at once, one sub-agent and worktree each, and merges their PRs one by one.
+
 ### Coding standards
 
 Before writing or reviewing code, read `CODING_STANDARDS.md`: where code goes, the rules every change keeps, and what lint and tests already enforce. Writing tests: `docs/testing.md`.
