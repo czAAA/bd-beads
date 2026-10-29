@@ -40,4 +40,25 @@ describe('BeadSection (ticket 568)', () => {
 
     expect(wrapper.emitted('update:beadShape')).toEqual([['real']])
   })
+
+  it('shows only the part it is given: the Bead shape alone, or the pickers alone (ticket 0687)', () => {
+    const shapeOnly = mount(BeadSection, { props: { beadShape: 'symmetric', 'onUpdate:beadShape': () => {} } })
+    expect(shapeOnly.find('[data-testid="bead-shape"]').exists()).toBe(true)
+    expect(shapeOnly.find('[data-testid="bead-brand"]').exists()).toBe(false)
+
+    const pickersOnly = mount(BeadSection, { props: { bead, candidates: offeredBeads() } })
+    expect(pickersOnly.find('[data-testid="bead-shape"]').exists()).toBe(false)
+    expect(pickersOnly.find('[data-testid="bead-brand"]').exists()).toBe(true)
+  })
+
+  it('shows an out-of-date copy "(as saved)" beside the catalog’s Bead of its id, and asks for that one (ticket 534)', async () => {
+    const current = offeredBeads()[0]!
+    const copy = { ...current, widthMm: current.widthMm + 0.2 }
+    const wrapper = mountSection({ bead: copy, candidates: offeredBeads(), outdated: true })
+
+    expect(panelOptionShown(wrapper, 'bead-size')).toBe(`${copy.size} (as saved)`)
+    await choosePanelOption(wrapper, 'bead-size', current.id)
+
+    expect(wrapper.emitted('pick')).toEqual([[current.id]])
+  })
 })

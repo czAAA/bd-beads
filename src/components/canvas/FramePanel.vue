@@ -3,6 +3,7 @@ import { computed, inject, ref } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BackgroundChip from '../project/BackgroundChip.vue'
 import BackgroundSection from '../project/BackgroundSection.vue'
+import BeadSection from '../project/BeadSection.vue'
 import EditableLine from '../project/EditableLine.vue'
 import ExportSection from './ExportSection.vue'
 import MarginSection from './MarginSection.vue'
@@ -19,6 +20,8 @@ import TextField from '../ui/form/TextField.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import type { LayerBeadChoice } from '../../composables/palette/useReplaceBeadFlow'
+import { beadLabel } from '../../domain/beads'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { seenSize } from '../../domain/frameOrientation'
@@ -27,14 +30,14 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameOf, layerOf, lettersOn } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Background, Project } from '../../domain/project'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
-// name, size, Beads needed and the margin (ticket 0656); with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
+// name, size, its Bead (ticket 0687), Beads needed and the margin (ticket 0656); with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
 // (AppPanels, PanelHost), opened from the strip's Frame button only; a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
@@ -42,6 +45,8 @@ const props = defineProps<{
   settledProject?: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
   exporting?: 'png' | 'pdf'
+  /** What the Frame's Bead could switch to (ticket 0687); no bead section without it. */
+  beadChoice?: LayerBeadChoice
 }>()
 
 const emit = defineEmits<{
@@ -59,6 +64,8 @@ const emit = defineEmits<{
   'set-settings': [change: FrameSettings]
   /** The Frame's Background picked (ticket 0666). */
   'set-background': [background: Background]
+  /** A Bead picked for the Frame (ticket 0687), to confirm. */
+  'replace-bead': [beadId: string]
 }>()
 
 const { t, locale } = useI18n()
@@ -136,10 +143,13 @@ function onSizeFocusOut(event: FocusEvent): void {
   if (!(event.relatedTarget instanceof Node && (event.currentTarget as HTMLElement).contains(event.relatedTarget))) commitSize()
 }
 
-/** The Estimated size as "≈ 3.8 × 3.9 cm" (the Bead's size × beads across and down), or nothing for an unknown Bead. */
+/** The Frame's own Bead (ticket 0665), which its bead section replaces (ticket 0687). */
+const frameBead = computed(() => layerOf(props.project, 'frame')?.bead)
+/** The Estimated size as "≈ 38 × 39 mm" (the Bead's size × beads across and down), always in mm as Replace Bead states it
+ * (ticket 0687), or nothing for an unknown Bead. */
 const estimate = computed(() => {
-  const bead = layerOf(props.project, 'frame')?.bead
-  return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
+  const bead = frameBead.value
+  return bead && frame.value ? `≈ ${formatSizeInMm(estimatedSizeMm(frame.value, bead), t.value.form.unitMm, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
   [settings.value[0] ? plural(locale.value, settings.value[0].value, settings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
@@ -360,6 +370,10 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </PanelSection>
     </template>
 
+    <!-- The Frame's own Bead (ticket 0687): replacing it asks first, naming the Frame's size with the new Bead and the old. -->
+    <PanelSection v-if="frame && beadChoice" id="frame:bead" :label="t.panels.project.bead" :summary="frameBead && beadLabel(frameBead, t.formFactors)" data-testid="frame-bead">
+      <BeadSection :bead="frameBead" :candidates="beadChoice.candidates" :outdated="beadChoice.outdated" @pick="emit('replace-bead', $event)" />
+    </PanelSection>
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
     <PanelSection v-if="frame" id="frame:background" :label="t.frame.background.heading" data-testid="frame-background">
       <template v-if="backgroundShown" #summary>

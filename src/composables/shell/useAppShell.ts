@@ -505,7 +505,7 @@ function wireAppShell(services: Services) {
     dialogs,
   })
 
-  /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
+  /** Replace Bead, each layer's pickers and its confirmation (tickets 48, 113, 205, 0687). */
   const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale, dialogs })
 
   /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
@@ -809,7 +809,7 @@ function wireAppShell(services: Services) {
       onSetWeaveSetting: frameFlow.setWeaveSetting,
       onSetBeadShape: beadShapeFlow.setBeadShape,
       onSetBackground: backgroundFlow.setBackground,
-      replaceBeadCandidates: replaceBead.replaceBeadCandidates,
+      replaceBeadChoices: replaceBead.replaceBeadChoices,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,
       onSaveMakerName: exportFlow.onSaveMakerName,
@@ -857,8 +857,6 @@ function wireAppShell(services: Services) {
       onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
       replaceBeadPendingBead: replaceBead.replaceBeadPendingBead,
       replaceBeadConfirmMessage: replaceBead.replaceBeadConfirmMessage,
-      replaceBeadAsksLayer: replaceBead.replaceBeadAsksLayer,
-      replaceBeadLayer: replaceBead.replaceBeadLayer,
       onConfirmReplaceBead: replaceBead.onConfirmReplaceBead,
       onCancelReplaceBead: replaceBead.onCancelReplaceBead,
       pendingImport: importSwitch.pendingImport,

@@ -863,13 +863,10 @@ export const pl: Translations = {
   replaceBead: {
     selectLabel: 'Zamień koralik',
     confirmTitle: 'Zamienić koralik?',
-    confirmMessage:
-      'Z koralikiem {bead} ten projekt będzie miał około {new} zamiast {old}. Twój schemat i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
     canvasMessage:
-      'Z koralikiem {bead} płótno będzie rysowane w jego rozmiarze. Ramka zachowuje własny koralik, więc jej rozmiar i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
-    layerLabel: 'Gdzie zamienić koralik',
-    layerFrame: 'Ramka',
-    layerCanvas: 'Płótno',
+      'Koralik płótna zmienia się z {old} na {new}. Proporcje płótna będą wyglądać inaczej, ale twój schemat i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
+    frameMessage:
+      'Koralik ramki zmienia się z {old} na {new}, więc ramka będzie miała około {newSize} zamiast {oldSize}. Jej proporcje będą wyglądać inaczej, ale twój schemat i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
     confirmButton: 'Zamień koralik',
     outdatedPostfix: '(jak zapisano)',
     cancelButton: 'Anuluj',

@@ -211,7 +211,7 @@ describe('Project', () => {
     expect(mounted.panels.activeProject.value).toBeUndefined()
   })
 
-  it('replaces the Bead after a confirmation: Cancel keeps it, confirming switches the layer chosen in it (tickets 48, 0665)', async () => {
+  it("replaces the Canvas's Bead from the Project panel after a confirmation: Cancel keeps it (tickets 48, 0687)", async () => {
     const mounted = mountPanels()
     const pickReplacement = async () => {
       await mounted.openPanel('project')
@@ -222,10 +222,9 @@ describe('Project', () => {
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
     await click(mounted, 'confirm-modal-cancel')
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
+    expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/cube/1.5mm')
 
     await pickReplacement()
-    await mounted.wrapper.get('[data-testid="replace-bead-layer"] [data-value="canvas"]').trigger('click')
     await click(mounted, 'confirm-modal-confirm')
     expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/round/11-0')
     expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
@@ -233,6 +232,18 @@ describe('Project', () => {
 })
 
 describe('The Frame panel', () => {
+  it("replaces the Frame's Bead from its own bead section after a confirmation (ticket 0687)", async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    const section = mounted.wrapper.get('[data-testid="frame-bead"]')
+    await section.get('[data-testid="bead-type"] button').trigger('click')
+    await section.get(`[data-testid="bead-type"] [data-value="${findBead('toho/round/11-0')!.formFactor.id}"]`).trigger('click')
+    expect(text(mounted, 'replace-bead-modal')).toContain("The Frame's Bead")
+    await click(mounted, 'confirm-modal-confirm')
+    expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/round/11-0')
+    expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/cube/1.5mm')
+  })
+
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {
     const open = withFrameSheet(moth(), undefined)
     saveProjects([open])
