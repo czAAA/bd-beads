@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { FRAME_KIND_IDS, frameKindOf } from './frameKind'
+import { FRAME_SHAPE_IDS, frameShapeOf } from './frameShape'
 import { settingValue, type SettingSpec } from './settingSpec'
 import { describeWeave, TECHNIQUES } from './weave'
 
@@ -41,7 +41,7 @@ describe('every registry\'s settings (ADR 0078, ticket 0624)', () => {
     expect(TECHNIQUES.flatMap((technique) => problems(technique, describeWeave({ technique }).settings))).toEqual([])
   })
 
-  it('gives every Frame kind\'s setting a default and presets inside its bounds', () => {
-    expect(FRAME_KIND_IDS.flatMap((kind) => problems(kind, frameKindOf({ kind }).custom?.settings ?? []))).toEqual([])
+  it('gives every Frame shape\'s setting a default and presets inside its bounds', () => {
+    expect(FRAME_SHAPE_IDS.flatMap((shape) => problems(shape, frameShapeOf({ shape })!.settings))).toEqual([])
   })
 })

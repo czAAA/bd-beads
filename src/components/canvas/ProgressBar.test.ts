@@ -237,7 +237,7 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
   const spoken = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="progress-bar-position"]').text().replace(/\s+/g, ' ')
 
   it('counts a Triangle\'s rounds, with no Turn row direction', () => {
-    const placed = changeFrame(makeProject(), { custom: { kind: 'triangle', size: 4, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { shape: 'triangle', size: 4, centre: { row: 10, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
     const project = moveToRow(placed.project, 2)
     const wrapper = mount(ProgressBar, { props: { project } })
@@ -248,7 +248,7 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
   })
 
   it('names a Star\'s part and its joins', () => {
-    const placed = changeFrame(makeProject(), { custom: { kind: 'star', size: 3, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { shape: 'star', size: 3, centre: { row: 10, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const inPart = mount(ProgressBar, { props: { project: moveToRow(placed.project, 4) } })
     expect(spoken(inPart)).toBe('Часть 2, круг 2 · 5 из 20')
@@ -258,7 +258,7 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
 
   it('goes through a Fringe earring\'s top and then its strands, each counted of all its passes (ticket 0597)', () => {
     const settings = { topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 6 } as const
-    const placed = changeFrame(makeProject(), { custom: { kind: 'fringeEarring', settings, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { shape: 'fringeEarring', settings, centre: { row: 10, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 1) } }))).toBe('Ряд 2 · 2 из 9')
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6) } }))).toBe('Нить 3 · 7 из 9')

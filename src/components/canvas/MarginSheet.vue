@@ -4,7 +4,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { boxesOverlap, overlapsSelectionHandles, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { frameAllows } from '../../domain/frameKind'
+import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'

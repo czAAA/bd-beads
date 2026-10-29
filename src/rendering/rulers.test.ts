@@ -359,7 +359,7 @@ describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => 
 
 describe('a Custom frame (ticket 0592)', () => {
   it('carries no rulers: its beads lie in rounds, not its rectangle\'s rows and columns', () => {
-    const triangle = { row: 0, column: 0, rows: 12, columns: 10, technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 4 } }
+    const triangle = { row: 0, column: 0, rows: 12, columns: 10, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'peyote', rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
     const laid = rulerLayout({ technique: 'peyote', frame: triangle, beads: {} }, surface, { fontPx: 11, numbers: true })
     expect(laid.boxes).toEqual([])

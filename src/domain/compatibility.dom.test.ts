@@ -335,16 +335,16 @@ describe('stored-data compatibility', () => {
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('opens a version 9 file with a Custom frame as its kind, Rounds and beads by layout position, and writes it back the same (ticket 0592)', () => {
+    it('opens a version 9 file with a Custom frame as its Frame shape, Rounds and beads by layout position, and writes it back the same (ticket 0592)', () => {
       const [opened] = parseProjectsFile(projectFileV9Custom).projects
-      expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 12, columns: 10, technique: 'peyote', kind: 'triangle', settings: { rounds: 4 }, beads: { 0: { 1: '#e63746' }, 3: { 11: '#e63746' } } })
+      expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 12, columns: 10, technique: 'peyote', shape: 'triangle', settings: { rounds: 4 }, beads: { 0: { 1: '#e63746' }, 3: { 11: '#e63746' } } })
       expect(opened!.beads).toEqual({ 0: { 0: '#2fb6ae' } })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
     it('opens a version 9 Custom frame turned by Rotate Frame with its turn, and writes it back the same (ticket 0594)', () => {
       const [opened] = parseProjectsFile(projectFileV9Turned).projects
-      expect(opened!.frame).toMatchObject({ rows: 10, columns: 12, kind: 'triangle', settings: { rounds: 4 }, quarterTurns: 1 })
+      expect(opened!.frame).toMatchObject({ rows: 10, columns: 12, shape: 'triangle', settings: { rounds: 4 }, quarterTurns: 1 })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 

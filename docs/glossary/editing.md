@@ -27,7 +27,7 @@ A Schema's width and height in mm/cm, worked out from its Schema size and Bead a
 _Avoid_: real size, actual size, physical size
 
 **Estimated weight**:
-The grams of beads a Schema needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Project's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are provisional until a dealer confirms them (ticket 155).
+The grams of beads a Schema needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Frame's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are provisional until a dealer confirms them (ticket 155).
 _Avoid_: real weight, exact weight
 
 **Remove row/column**:

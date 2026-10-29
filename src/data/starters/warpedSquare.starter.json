@@ -1,7 +1,7 @@
 {
   "id": "warpedSquare",
   "design": "warpedSquare.json",
-  "kind": "warpedSquare",
+  "shape": "warpedSquare",
   "technique": "peyote",
   "measure": "frame",
   "sizes": [

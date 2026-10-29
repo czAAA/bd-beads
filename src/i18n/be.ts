@@ -649,7 +649,7 @@ export const be: Translations = {
     announceMoved: 'Рамку перасунута разам з бісерынамі',
     announceNothingToFit: 'Пакуль нечага абводзіць рамкай: нічога не намалявана',
     refusedCutsSchema: 'Рамка не можа рэзаць схему «{name}». Абвядзіце яе цалкам або не крануйце.',
-    customKinds: { fringeEarring: 'Завушніца з махрамі', triangle: 'Трохвугольнік', warpedSquare: 'Выгнуты квадрат', star: 'Зорка', kaleidocycle: 'Калейдацыкл', kite: 'Паветраны змей' },
+    shapes: { fringeEarring: 'Завушніца з махрамі', triangle: 'Трохвугольнік', warpedSquare: 'Выгнуты квадрат', star: 'Зорка', kaleidocycle: 'Калейдацыкл', kite: 'Паветраны змей' },
     sizeSettings: {
       topWidth: { label: 'Шырыня верху', less: 'На бісерынку менш у ніжнім радзе', more: 'На бісерынку больш у ніжнім радзе', summary: { one: 'верх {count}', few: 'верх {count}', many: 'верх {count}', other: 'верх {count}' }, announce: 'Шырыня верху: {count}' },
       topRows: { label: 'Рады верху', less: 'На адзін рад менш', more: 'На адзін рад больш', summary: { one: '{count} рад верху', few: '{count} рады верху', many: '{count} радоў верху', other: '{count} рада верху' }, announce: 'Радоў верху: {count}' },
@@ -678,7 +678,7 @@ export const be: Translations = {
     },
     fringeStyle: { label: 'Від махраў', announce: 'Від махраў: {style}' },
     removeConfirmCustom: 'Яе бісерыны знікнуць разам з ёй. Гэта дзеянне можна адмяніць.',
-    announceCustom: 'Рамка «{kind}», {size}',
+    announceCustom: 'Рамка «{shape}», {size}',
     snapAddedTop: {
       one: 'Дададзены пусты радок зверху: рамка павінна пачынацца з незрушанага радка.',
       few: 'Дададзена {count} пустыя радкі зверху: рамка павінна пачынацца з незрушанага радка.',

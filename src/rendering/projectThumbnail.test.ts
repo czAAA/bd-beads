@@ -123,7 +123,7 @@ describe('thumbnailPixels', () => {
   /** A small Custom frame Triangle, every bead red, and its Layer geometry. */
   function redTriangle(rotation: Rotation = 0) {
     const { frame: _frame, ...open } = project([[null]], rotation)
-    const placed = changeFrame(open, { custom: { kind: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const geometry = frameGeometryOf(placed.project)
     return { geometry, triangle: onLayer(placed.project, 'frame', (view) => paintCells(view, [...geometry.positions()], '#ff0000')) }

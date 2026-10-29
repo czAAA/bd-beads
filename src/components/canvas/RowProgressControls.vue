@@ -59,7 +59,7 @@ const shownRow = computed(() => Math.min(position.value.current + 1, position.va
 
 /** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): "Round 3 of 9", or where
  * its passes are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3 · 8 of 20". None for a
- * Rectangular Frame. */
+ * Frame without a Frame shape. */
 const customPosition = computed(() => {
   const order = frameRowOrder(props.project)
   const step = order.stepOf?.(shownRow.value - 1)

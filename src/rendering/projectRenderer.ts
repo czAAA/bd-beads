@@ -285,7 +285,7 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
 
 /** Beads that lie at their panels' angles (ADR 0077, ticket 0592): each at its centre, turned, and the Layer's Seams as
  * thin lines; round the shape the Canvas's colour, no position marks. Finished rounds fade and the current one is lit as
- * a Rectangular Frame's rows are (ticket 0594). */
+ * a Frame's rows are (ticket 0594). */
 function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, geometry: LayerGeometry): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project)
