@@ -85,10 +85,7 @@ describe('the encoded beads', () => {
   })
 
   it('cost one row for a bead far from the others, however far, negative positions included', () => {
-    const project = {
-      ...makeProject(2, 2),
-      beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } },
-    }
+    const project = withFields(makeProject(2, 2), { beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } } })
 
     expect(encodedCells(project).rows).toEqual({ '-40000': '-90000:1', 0: '0:2' })
     expect(roundTrip(project)).toEqual(project)

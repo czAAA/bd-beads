@@ -100,10 +100,11 @@ export function looksLikeProject(value: unknown): value is StoredProject {
   )
 }
 
-/** Whether a stored layer has what every layer needs (ticket 0664): a Technique, a Bead id and its encoded beads. */
+/** Whether a stored layer has what every layer needs (ticket 0664): a Bead id and its encoded beads. Its Technique is
+ * the Canvas's to have (`inKnownTechniques`); a Frame woven in one this build does not know takes the Canvas's. */
 function looksLikeEncodedLayer(value: unknown): boolean {
   const layer = value as Partial<EncodedLayer> | null
-  return typeof layer === 'object' && layer !== null && isTechnique(layer.technique) && typeof layer.beadId === 'string' && typeof layer.encodedBeads === 'object' && layer.encodedBeads !== null
+  return typeof layer === 'object' && layer !== null && typeof layer.beadId === 'string' && typeof layer.encodedBeads === 'object' && layer.encodedBeads !== null
 }
 
 function looksLikeEncodedProject(value: unknown): boolean {

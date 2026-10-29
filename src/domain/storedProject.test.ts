@@ -7,7 +7,7 @@ import { rotateCanvas } from './rotate'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, frameOf, orientationOf } from './layerRecord'
-import { flatOf, sheetOf } from '../testUtils/flatFields'
+import { flatOf, sheetOf, withFields } from '../testUtils/flatFields'
 import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -106,10 +106,7 @@ describe('normalizeProject', () => {
       size: { width: 15, height: 30, unit: 'mm' },
     })
 
-    const normalized = normalizeProject({
-      ...flatOf(base),
-      rowProgress: { currentRow: 5 } as RowProgress,
-    })
+    const normalized = normalizeProject({ ...flatOf(base), rowProgress: { currentRow: 5 } as RowProgress })
 
     expect(rowProgressOf(normalized)).toEqual({
       direction: 'rows',
@@ -138,10 +135,7 @@ describe('normalizeProject', () => {
       size: { width: 15, height: 30, unit: 'mm' }, // 10 columns x 20 rows
     })
 
-    const normalized = normalizeProject({
-      ...base,
-      rowProgress: { direction: 'columns', currentRow: 999, currentColumn: 999 },
-    })
+    const normalized = normalizeProject(withFields(base, { rowProgress: { direction: 'columns', currentRow: 999, currentColumn: 999 } }))
 
     expect(rowProgressOf(normalized).currentRow).toBe(20)
     expect(rowProgressOf(normalized).currentColumn).toBe(10)

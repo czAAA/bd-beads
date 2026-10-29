@@ -8,7 +8,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf } from '../domain/layerRecord'
-import { flatOf } from '../testUtils/flatFields'
+import { flatOf, flatView } from '../testUtils/flatFields'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
@@ -68,7 +68,7 @@ describe('projectStorage', () => {
     const second = makeProject()
     saveProjects([first, second])
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-    stored.patterns[0].technique = 'herringbone'
+    stored.patterns[0].layers[0].technique = 'herringbone'
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
 
     expect(loadProjects()).toEqual([second])
@@ -135,7 +135,7 @@ describe('projectStorage', () => {
   })
 
   it('does not write the millimetre size back when such a Project is saved again', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...makeProject(), widthMm: 15, heightMm: 15 }]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...flatOf(makeProject()), widthMm: 15, heightMm: 15 }]))
 
     saveProjects(loadProjects())
 
@@ -155,29 +155,29 @@ describe('projectStorage', () => {
       saveProjects([makeProject()])
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-      expect(stored.version).toBe(4)
+      expect(stored.version).toBe(5)
       expect(stored.patterns[0].grid).toBeUndefined()
-      expect(stored.patterns[0].encodedBeads).toEqual({ colors: [], rows: {} })
-      expect(stored.patterns[0].frame.encodedBeads).toEqual({ colors: [], rows: {} })
+      expect(stored.patterns[0].layers[0].encodedBeads).toEqual({ colors: [], rows: {} })
+      expect(stored.patterns[0].layers[1].encodedBeads).toEqual({ colors: [], rows: {} })
     })
 
     it('reads a library saved in the old unversioned format back unchanged', () => {
       const project = makeProject()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([project]))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([flatOf(project)]))
 
-      expect(loadProjects()).toEqual([project])
+      expect(loadProjects().map(flatView)).toEqual([flatView(project)])
     })
 
     it('rewrites a library saved in the old format compactly on the next save', () => {
       const legacy = paintedOrdinaryProject()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([legacy]))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([flatOf(legacy)]))
       const legacyBytes = storedBytes()
 
       const loaded = loadProjects()
       saveProjects(loaded)
 
-      expect(loaded).toEqual([legacy])
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(4)
+      expect(loaded.map(flatView)).toEqual([flatView(legacy)])
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(5)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
 
@@ -261,7 +261,7 @@ describe('projectStorage', () => {
 
       const exported = serializeLibrary(loadProjects())
 
-      expect(JSON.parse(exported).projects[0].encodedBeads).toBeDefined()
+      expect(JSON.parse(exported).projects[0].layers[0].encodedBeads).toBeDefined()
       expect(parseProjectsFile(exported).projects).toEqual([project])
     })
 

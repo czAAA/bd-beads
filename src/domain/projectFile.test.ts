@@ -21,7 +21,7 @@ import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, withLayer } from './layerRecord'
-import { sheetOf, withFields } from '../testUtils/flatFields'
+import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
 import { legacyFile } from '../testUtils/legacyFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -257,7 +257,7 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
     expect(stated).toContain('"kind":"rectangular"')
     for (const file of [serializeProject(project), older, stated, unknown, JSON.stringify(unknownNow)]) {
       const [restored] = parseProjectsFile(file).projects
-      expect(restored).toEqual(project)
+      expect(flatView(restored!)).toEqual(flatView(project))
       expect(frameOf(restored)).not.toHaveProperty('shape')
       expect(frameOf(restored)).not.toHaveProperty('kind')
     }

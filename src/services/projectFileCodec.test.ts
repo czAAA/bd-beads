@@ -9,7 +9,7 @@ import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
 import { canvasOf, frameOf } from '../domain/layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { flatOf, flatView, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -108,10 +108,10 @@ describe('refusing a file', () => {
 describe('a plain .json file from before ADR 0048 (deprecated)', () => {
   it('still imports', async () => {
     const project = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746')
-    const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [project] }, null, 2)
-    expect((await readProjectsFile(asFile(file))).projects).toEqual([project])
-    const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [project] })
-    expect((await readProjectsFile(asFile(library))).projects).toEqual([project])
+    const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [flatOf(project)] }, null, 2)
+    expect((await readProjectsFile(asFile(file))).projects.map(flatView)).toEqual([flatView(project)])
+    const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [flatOf(project)] })
+    expect((await readProjectsFile(asFile(library))).projects.map(flatView)).toEqual([flatView(project)])
   })
 
   it('refuses an unknown kind or version', async () => {
