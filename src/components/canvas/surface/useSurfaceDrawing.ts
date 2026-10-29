@@ -7,7 +7,6 @@ import { shownLetters } from '../../../domain/paletteEdits'
 import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
-import { drawsDraft } from '../../../rendering/draftRenderer'
 import { renderProject } from '../../../rendering/projectRenderer'
 import type { Space } from '../../../rendering/space'
 import type { Scroll } from '../../../rendering/surfaceView'
@@ -240,10 +239,9 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
       before.rowMarks === marksShown.value &&
       props.zoom > 0 &&
       before.zoom > 0
-    // In the draft look a redraw is one image a layer, whatever the beads (ticket 0676): it keeps up live.
+    // The draft look moves its image too (ticket 0689): a live redraw is sharp but held about 40 fps, a move keeps 60.
     const heavy =
       onlyViewMoved &&
-      !drawsDraft(props.zoom * pixelRatio) &&
       beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom, beadCost(project)) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
