@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { frameGeometryOf, layerAt, type Layer } from '../../domain/layers'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { beadColorAt } from '../../domain/layerBeads'
@@ -11,11 +11,13 @@ import {
   pasteLostCount,
   pasteOnLayer,
   pastedCellsOnLayer,
+  pasteStampOnLayer,
   pieceSelectionOnLayer,
   selectionBetween,
   selectionWithEdges,
   type CopiedBlock,
   type PasteLoss,
+  type PasteStamp,
   type Selection,
 } from '../../domain/selection'
 import { frameAllows } from '../../domain/frameShape'
@@ -36,16 +38,16 @@ export function useSelectionGesture(
   onClipped: (count: number, loss: PasteLoss) => void,
 ) {
   /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces
-   * it. */
-  const selection = ref<Selection | undefined>()
+   * it. Held shallowly (ticket 0675): it is only ever replaced, and a Piece's shape is read cell by cell. */
+  const selection = shallowRef<Selection | undefined>()
   /** How many times a Selection has been refused where the pointer cannot show it (a key or a tap, ticket 433): the
    * canvas shows the not-allowed cue each time it grows. */
   const refusals = ref(0)
 
   // What Copy last snapshotted, ready to stamp (ticket 92, ADR 0016): cleared only by a new Copy or a new Selection
   // (see copy/extendPress), not by a tool or Project switch or cancelling. An editing-session aid like the undo stack,
-  // but it survives a Project switch (see clearSelection()).
-  const copiedBlock = ref<CopiedBlock | undefined>()
+  // but it survives a Project switch (see clearSelection()). Held shallowly, as the Selection is (ticket 0675).
+  const copiedBlock = shallowRef<CopiedBlock | undefined>()
   // Leaves paste mode (live preview plus stamp, Select-only) without touching copiedBlock (ticket 92, ADR 0016): on
   // leaving Select, on Escape (see leaveSelectTool/cancel) and on touch by Undo or a second tap on Select.
   // A new Copy or Ctrl/Cmd+V re-arms it (ticket 437, ADR 0016); switching back to Select alone does not.
@@ -332,12 +334,17 @@ export function useSelectionGesture(
     edit('drawing', (current) => paintLayerSelection(current, sel, null))
   }
 
-  // The block Paste would stamp under the cursor (ticket 31): the shell's hover preview under
-  // Select; empty with no active (undismissed) projection, since a click would then put nothing down.
+  // The block Paste would stamp under the cursor (ticket 31): the shell's hover preview under Select, listed bead by bead
+  // on a Custom frame only (see pastePreviewStamp); empty with no active (undismissed) projection, since a click would
+  // then put nothing down.
   function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
-    return pasteProjectionActive.value
-      ? pastedCellsOnLayer(project, copiedBlock.value!, hovered)
-      : []
+    return pasteProjectionActive.value && !pastePreviewStamp(project, hovered) ? pastedCellsOnLayer(project, copiedBlock.value!, hovered) : []
+  }
+
+  /** The same preview on a layer laid on a grid, as the block aimed where it lands (ticket 0675): built in a step
+   * however big the block, and read by the overlay only where it shows. */
+  function pastePreviewStamp(project: Project, hovered: GridPosition): PasteStamp | undefined {
+    return pasteProjectionActive.value ? pasteStampOnLayer(project, copiedBlock.value!, hovered) : undefined
   }
 
   // Clears just the Selection, not the clipboard (ADR 0016): a copied block is colors, not a place. Called on a Project
@@ -370,6 +377,7 @@ export function useSelectionGesture(
     dragAdjust,
     endAdjust,
     pastePreviewCells,
+    pastePreviewStamp,
     clearSelection,
     /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the
      * Selection's own controls once this is true). */
