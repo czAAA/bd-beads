@@ -126,8 +126,9 @@ const SCENARIOS: Record<Scenario, (page: Page, cdp: CDPSession, fixture: CanvasF
   async pan(page, cdp, _fixture, record) {
     const surface = (await page.getByTestId('project-surface').boundingBox())!
     const middle = { x: surface.x + surface.width / 2, y: surface.y + surface.height / 2 }
-    for (const zoom of ['fit', 100] as const) {
-      if (zoom === 100) await setZoom(page, 100)
+    // Fit, 60% (just under the live-redraw limit of ticket 0349 before ticket 0676 retuned it) and 100%.
+    for (const zoom of ['fit', 60, 100] as const) {
+      if (zoom !== 'fit') await setZoom(page, zoom)
       await selectTool(page, 'hand')
       await page.mouse.move(middle.x, middle.y)
       await page.mouse.down()
@@ -137,7 +138,7 @@ const SCENARIOS: Record<Scenario, (page: Page, cdp: CDPSession, fixture: CanvasF
         return page.mouse.move(middle.x + 10 * (phase < 30 ? phase - 15 : 45 - phase), middle.y)
       })
       await page.mouse.up()
-      record(`pan ${zoom === 'fit' ? 'at fit' : 'at 100%'}`, { ...pan, note: `at ${await page.getByTestId('project-surface').getAttribute('data-zoom')} zoom` })
+      record(`pan ${zoom === 'fit' ? 'at fit' : `at ${zoom}%`}`, { ...pan, note: `at ${await page.getByTestId('project-surface').getAttribute('data-zoom')} zoom` })
     }
     await selectTool(page, 'paint')
     await page.getByTestId('zoom-reset').click()
