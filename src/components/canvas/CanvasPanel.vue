@@ -43,6 +43,7 @@ const {
   zoom,
   scroll,
   canvasOrientation,
+  twistPhase,
   selectionRefusals,
   activeTool,
   showRulers,
@@ -274,6 +275,7 @@ const drawingStyle = computed(() => {
               :zoom="zoom"
               :scroll="scroll"
               :orientation="canvasOrientation"
+              :twist="twistPhase"
               :show-rulers="showRulers"
               :stroking="stroking"
               :row-marks="rowHighlight"

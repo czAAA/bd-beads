@@ -133,7 +133,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, stripZoomPercent, orientation: canvasOrientation, twistBy, endTwist } =
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
@@ -408,7 +408,7 @@ function wireAppShell(services: Services) {
 
   /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress is
    * taken back when the second lands. */
-  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, panBy, cancelStroke: () => cancelStroke(), twistBy, endTwist })
+  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, pinch: pinchStep, cancelStroke: () => cancelStroke(), endTwist })
 
   /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206). */
   const {
@@ -681,6 +681,8 @@ function wireAppShell(services: Services) {
       scroll,
       /** The Canvas's orientation as shown: live while two fingers twist it (ticket 0672). */
       canvasOrientation,
+      /** Whether two fingers twist the Canvas, or it eases onto a quarter turn after them (ticket 0709). */
+      twistPhase,
       showRulers,
       /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
       stroking: computed(() => strokeMode.value !== null),
