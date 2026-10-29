@@ -1,9 +1,8 @@
-import { beadCopy, beadLabel, findBead, type Bead } from './beads'
+import { beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
-import type { GridDimensions } from './grid'
 import { weaveOf } from './layerWeave'
 import { normalizeMakerName } from './makerName'
-import { defaultPalette, defaultPaletteIds } from './palette'
+import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import type { Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
@@ -27,23 +26,6 @@ export interface CreateProjectInput {
   size?: StatedSize
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
   makerName?: string
-}
-
-/** What a new Project's stated size and Bead work out to: the Bead, and the grid that implies. */
-export interface ProjectGeometry extends GridDimensions {
-  bead: Bead
-}
-
-/** The grid a New Project form state implies, or undefined when the Bead isn't in the catalog. Shared with Convert
- * image (ticket 58) so its frame is exactly the grid the Project will be created at. */
-export function projectGeometry(input: CreateProjectInput & { size: StatedSize }): ProjectGeometry | undefined {
-  // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
-  const bead = findBead(input.beadId)
-  if (!bead) {
-    return undefined
-  }
-
-  return { bead, ...gridFromSize(input.size, bead) }
 }
 
 export function createProject(input: CreateProjectInput): Project {
@@ -85,6 +67,9 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
   size: StatedSize
   /** The converted cells, sampled at the Project's own Frame size (see domain/imageConversion.ts). */
   grid: Grid
+  /** The Palette the conversion made (spec 0645, convertColors.ts): the built-in colors and every color the beads use,
+   * with the Bead colors' codes. Left out, the built-in colors. */
+  palette?: { ids: PaletteIds; codes: PaletteCodes }
 }
 
 /** Creates a Project from a picture (ticket 58): an ordinary new Project with its cells painted. Conversion only
@@ -93,9 +78,17 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
   const frame = project.frame!
+  const palette = input.palette
 
   return {
     ...project,
+    ...(palette
+      ? {
+          palette: [...palette.ids],
+          paletteLetters: lettersOfPalette(palette.ids, project.beadId, undefined),
+          ...(Object.keys(palette.codes).length > 0 ? { paletteCodes: { ...palette.codes } } : {}),
+        }
+      : {}),
     frame: {
       ...frame,
       beads: beadsFromColors(

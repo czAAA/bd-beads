@@ -27,7 +27,7 @@ const props = defineProps<{
   canUndo?: boolean
   canRedo?: boolean
   zoomPercent?: number
-  /** The zoom range the buttons stop at, when it isn't the Project canvas's (the framing step has its own). */
+  /** The zoom range the buttons stop at, when it isn't the Project canvas's (the Homepage has its own). */
   zoomMinPercent?: number
   zoomMaxPercent?: number
 }>()
@@ -60,9 +60,9 @@ const actions = {
   zoomFit: controlAction('zoom-fit'),
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
+const onHomepage = computed(() => props.page === 'homepage')
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
-const onHomepage = computed(() => props.page === 'homepage')
 const homepageHref = homepageUrl(import.meta.env.BASE_URL)
 
 // One Tab stop per section (ADR 0075): the panels, the Brand with the coffee link and the right-hand tools. ←/→ step inside

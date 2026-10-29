@@ -28,7 +28,7 @@ const {
   onCreateFromStarter,
   onPlaceFrameFromStarter,
   onSetFrameSettings,
-  startConvertImage,
+  onOpenConvertImage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
@@ -40,7 +40,6 @@ const {
   replaceBeadCandidates,
   onRequestReplaceBead,
   onImportProjects,
-  decodeImage,
   exporting,
   onExportPng,
   onExportPdf,
@@ -58,7 +57,6 @@ const {
   handedness,
   setHandedness,
   openPanel,
-  framing,
   framePanelShown,
   onStepFrameEdge,
   onResizeFrame,
@@ -81,7 +79,7 @@ const chosenStarter = ref<StarterId>()
 
 <template>
   <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
-  <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" :sub-title="t.frame.fromStarter" @close="onCloseFramePanel">
+  <PanelHost v-if="activeProject && framePanelShown" open="frame" :only="['frame']" :sub-title="t.frame.fromStarter" @close="onCloseFramePanel">
     <FramePanel
       :project="activeProject"
       :settled-project="settledProject"
@@ -179,10 +177,9 @@ const chosenStarter = ref<StarterId>()
         then a Starter's setup (ticket 0596). -->
       <template v-else-if="depth === 1">
         <NewProjectForm
-          :decode-image="decodeImage"
           @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
-          @convert-image="(draft) => { startConvertImage(draft); openPanel = null }"
+          @convert-image="(draft) => { onOpenConvertImage(draft); openPanel = null }"
         />
       </template>
       <StarterGallery v-else-if="depth === 2" @choose-category="chosenCategory = $event" />

@@ -5,7 +5,6 @@ import { customFrameSize } from './frameKind'
 import {
   estimatedSizeMm,
   formatMm,
-  formatOtherUnit,
   isSizeStated,
   formatSizeMm,
   gridFromSize,
@@ -128,15 +127,6 @@ describe('isSizeStated (ticket 342)', () => {
     expect(isSizeStated(0, 20, 'beads')).toBe(false)
     expect(isSizeStated(2.5, 20, 'beads')).toBe(false)
     expect(isSizeStated(2.5, 20, 'mm')).toBe(true)
-  })
-})
-
-describe('formatOtherUnit (ticket 342)', () => {
-  const labels = { ...units, beadsTemplate: '≈ {columns}×{rows} beads' }
-
-  it('gives mm while the unit is beads, and the bead count while it is mm', () => {
-    expect(formatOtherUnit({ columns: 10, rows: 20 }, cube, 'beads', labels)).toBe('≈ 1.5 × 3.0 cm')
-    expect(formatOtherUnit({ columns: 10, rows: 20 }, cube, 'mm', labels)).toBe('≈ 10×20 beads')
   })
 })
 

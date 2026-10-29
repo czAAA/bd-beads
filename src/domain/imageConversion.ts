@@ -3,14 +3,12 @@ import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
 import { describeWeave, type Technique, type TechniqueSettings } from './weave'
-import { resolveImageColors } from './imageColors'
-import type { Palette } from './palette'
+import { pixelsPerBead, type PixelCrop, type PixelToBeadRatio } from './convertSize'
 import {
   type FramingView,
   type ImageSize,
   type PreviewLattice,
 } from './imageFraming'
-import type { Cell, Grid } from './project'
 
 /** Convert image's conversion (ticket 58, ADR 0010): pixels to cells, and what a picture may be. Pure functions over
  * a decoded picture; file reading and decoding live in imageDecode.ts so tests can use hand-built pixel data. */
@@ -46,8 +44,7 @@ export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   )
 }
 
-/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores.
- * @internal Tests write an expected color the way the preview reads it. */
+/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores. */
 export function packedToHex(packed: number): string {
   return toHex(unpacked(packed))
 }
@@ -172,38 +169,57 @@ export function clampMaxImageColors(value: number): number {
   return Math.min(MAX_IMAGE_COLORS, Math.max(MIN_IMAGE_COLORS, Math.floor(value)))
 }
 
-/** What the picture, the frame and the Technique's geometry are, for one pass of sampling. */
-interface SamplingInput {
-  image: PixelData
+/** Where the picture sits under the Frame By size (ticket 58): its view in the Frame's millimetres, through the Bead. */
+interface SizePlacement {
   view: FramingView
+  bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
+}
+
+/** Where the picture sits under the Frame By Pixel to bead ratio (spec 0645): the crop, each bead one block of it. */
+interface RatioPlacement {
+  crop: PixelCrop
+  ratio: PixelToBeadRatio
+}
+
+/** What the picture, its placement and the Technique's geometry are, for one pass of sampling. */
+type SamplingInput = {
+  image: PixelData
   technique: Technique
   /** The settings of the Project being made (ticket 0625): its Brick block; one left out is its default. */
   techniqueSettings?: TechniqueSettings
-  bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
+} & (SizePlacement | RatioPlacement)
+
+/** A bead one unit each way, so a Weave's step comes out in bead units: rows nest by their pitch alone. */
+const UNIT_BEAD = { widthMm: 1, widthCorrectionMm: 0, heightMm: 1 }
+
+/** A placement as cell sizes and the step from a bead centre to a picture pixel: pixel = (centre − corner − offset) /
+ * scale. By ratio the cells are in pixels, a bead step one block; by size in millimetres. */
+function samplingGrid(input: SamplingInput) {
+  if ('view' in input) {
+    return { cellWidth: beadPitchMm(input.bead), cellHeight: input.bead.heightMm, offsetX: input.view.offsetXMm, offsetY: input.view.offsetYMm, scale: input.view.scaleMm, slack: 0 }
+  }
+  const per = pixelsPerBead(input.ratio)
+  const step = describeWeave(input).stepMm(UNIT_BEAD)
+  // A staggered row's last bead reaches half a bead past the crop: one block of slack keeps it on the picture.
+  return { cellWidth: per / step.across, cellHeight: per / step.down, offsetX: -input.crop.x, offsetY: -input.crop.y, scale: 1, slack: Math.max(1, per) }
 }
 
 /** The picture's raw colors at the centre of each bead of a framing preview's lattice (see previewLattice), row by row,
  * packed (see pixelPackedAt); NO_COLOR off the picture or on a too-transparent pixel. The Weave's description places
- * each bead (ticket 0622). */
-export function sampleLatticePacked({
-  image,
-  view,
-  technique,
-  techniqueSettings,
-  bead,
-  lattice,
-}: SamplingInput & { lattice: PreviewLattice }): Int32Array {
-  const cellWidth = beadPitchMm(bead)
-  const cellHeight = bead.heightMm
-  const description = describeWeave({ technique, techniqueSettings })
+ * each bead (ticket 0622), By size or By Pixel to bead ratio (spec 0645). */
+export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice }): Int32Array {
+  const { image, lattice } = input
+  const { cellWidth, cellHeight, offsetX, offsetY, scale, slack } = samplingGrid(input)
+  const description = describeWeave(input)
   // The frame's corner: its first row is never shifted.
   const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, cellWidth, cellHeight)
   const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)
+  const onPicture = (at: number, length: number) => (at >= length && at < length + slack ? length - 1 : at)
   for (let row = 0; row < lattice.rows; row += 1) {
     for (let column = 0; column < lattice.columns; column += 1) {
       const { x, y } = description.center({ row, column }, cellWidth, cellHeight)
-      const sourceX = Math.floor((x - originX - view.offsetXMm) / view.scaleMm)
-      const sourceY = Math.floor((y - originY - view.offsetYMm) / view.scaleMm)
+      const sourceX = onPicture(Math.floor((x - originX - offsetX) / scale), image.width)
+      const sourceY = onPicture(Math.floor((y - originY - offsetY) / scale), image.height)
       if (sourceX >= 0 && sourceX < image.width && sourceY >= 0 && sourceY < image.height) {
         packed[row * lattice.columns + column] = pixelPackedAt(image, sourceX, sourceY)
       }
@@ -212,65 +228,31 @@ export function sampleLatticePacked({
   return packed
 }
 
-/** The Project a conversion produced: its grid, and the colors it found, shown while framing (ADR 0010). */
-export interface ConvertedImage {
-  grid: Grid
-  imageColors: string[]
-}
-
-/** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the
- * Palette; see convertPackedFrame. */
-function reduceFrame(
-  palette: Palette,
-  raw: readonly (readonly (string | undefined)[])[],
-  maxColors: number,
-): ConvertedImage {
-  const counts = new Map<string, number>()
-  for (const row of raw) {
-    for (const hex of row) {
-      if (hex !== undefined) {
-        counts.set(hex, (counts.get(hex) ?? 0) + 1)
-      }
-    }
-  }
-
-  const { mapping, colors } = resolveImageColors(palette, counts, maxColors)
-  const grid: Grid = raw.map((row) =>
-    row.map<Cell>((hex) => ({ color: hex === undefined ? null : mapping.get(hex) ?? hex })),
-  )
-
-  return { grid, imageColors: colors }
-}
-
-/** The Project's grid and Image colors from an already-sampled lattice (see sampleLatticePacked): only the frame's
- * cells take part, so panning the picture never changes the colors inside the frame. */
-export function convertPackedFrame(
-  palette: Palette,
+/** The Frame's own sampled colors from a lattice (see sampleLatticePacked), as `#rrggbb` (undefined for no bead), and
+ * how many beads each covers: only the frame's cells take part, so panning never changes the colors found in it. */
+export function frameColors(
   sampled: Int32Array,
   lattice: PreviewLattice,
   dimensions: GridDimensions,
-  maxColors: number,
-): ConvertedImage {
+): { raw: (string | undefined)[][]; counts: Map<string, number> } {
   const hexes = new Map<number, string>()
-
-  return reduceFrame(
-    palette,
-    Array.from({ length: dimensions.rows }, (_row, row) =>
-      Array.from({ length: dimensions.columns }, (_cell, column) => {
-        const color = sampled[(row + lattice.frameRow) * lattice.columns + column + lattice.frameColumn]!
-        if (color === NO_COLOR) {
-          return undefined
-        }
-        let hex = hexes.get(color)
-        if (hex === undefined) {
-          hex = packedToHex(color)
-          hexes.set(color, hex)
-        }
-        return hex
-      }),
-    ),
-    maxColors,
+  const counts = new Map<string, number>()
+  const raw = Array.from({ length: dimensions.rows }, (_row, row) =>
+    Array.from({ length: dimensions.columns }, (_cell, column) => {
+      const color = sampled[(row + lattice.frameRow) * lattice.columns + column + lattice.frameColumn]!
+      if (color === NO_COLOR) {
+        return undefined
+      }
+      let hex = hexes.get(color)
+      if (hex === undefined) {
+        hex = packedToHex(color)
+        hexes.set(color, hex)
+      }
+      counts.set(hex, (counts.get(hex) ?? 0) + 1)
+      return hex
+    }),
   )
+  return { raw, counts }
 }
 
 /** How a picture is turned into pixels. The real one is services/imageDecode's decodeImageFile; a test supplies its

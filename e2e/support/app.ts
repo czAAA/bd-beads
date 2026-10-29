@@ -109,7 +109,7 @@ export async function chooseNewProjectTechnique(page: Page, technique: string): 
   await page.getByTestId('new-project-technique').locator(`[role="menuitemradio"][data-value="${technique}"]`).click()
 }
 
-/** The zoom buttons in the Canvas strip's cluster (the framing step shows its own there too). */
+/** The zoom buttons in the Canvas strip's cluster. */
 function zoomControl(page: Page, part: 'in' | 'out'): Locator {
   return page.getByTestId(`zoom-${part}`)
 }
@@ -154,14 +154,20 @@ export async function gridBox(page: Page): Promise<Box> {
   return projectBox(page, box)
 }
 
-/** States the Schema size in the size step Convert image opens after a picture is chosen (ticket 342), in beads, and
- * continues to framing. */
-export async function stateConvertSize(page: Page, columns: number, rows: number): Promise<void> {
-  const unit = page.getByTestId('convert-size-unit').locator('[data-value="beads"]')
-  await unit.click()
-  await page.getByTestId('width-input').fill(String(columns))
-  await page.getByTestId('height-input').fill(String(rows))
-  await page.getByTestId('convert-size-continue').click()
+/** Opens the Convert image wizard from the New Project form with a picture (spec 0645) and, given a size, states it By
+ * size in beads, Keep picture proportions off. */
+export async function convertPicture(page: Page, buffer: Buffer, size?: { columns: number; rows: number }): Promise<void> {
+  await page.getByTestId('convert-image').click()
+  await page.getByTestId('convert-choose-file').setInputFiles({ name: 'fixture.png', mimeType: 'image/png', buffer })
+  await page.getByTestId('found-color').first().waitFor()
+  if (!size) return
+  await page.getByTestId('convert-size-mode').locator('[data-value="size"]').click()
+  await page.getByTestId('convert-size-unit').locator('[data-value="beads"]').click()
+  const keep = page.getByTestId('convert-keep-proportions')
+  if ((await keep.getAttribute('aria-checked')) === 'true') await keep.click()
+  await page.getByTestId('convert-width').fill(String(size.columns))
+  await page.getByTestId('convert-height').fill(String(size.rows))
+  await page.getByTestId('convert-height').blur()
 }
 
 /** The Project the app has saved, read back the way it is stored. Edits reach the device on their own (ticket 523). */

@@ -1,6 +1,7 @@
 import type { DecodeImage } from '../domain/imageConversion'
 import { downloadFile, type DownloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
+import { readClipboardImage } from './clipboardImage'
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
@@ -12,6 +13,8 @@ export interface Services {
   libraryStore: LibraryStore
   downloadFile: DownloadFile
   decodeImage: DecodeImage
+  /** The picture on the clipboard, for Convert image's Paste (spec 0645). */
+  readClipboardImage: () => Promise<File | undefined>
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
   persistentStorage: PersistentStorage
@@ -21,6 +24,7 @@ export const browserServices: Services = {
   libraryStore: browserLibraryStore,
   downloadFile,
   decodeImage: decodeImageFile,
+  readClipboardImage,
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,
