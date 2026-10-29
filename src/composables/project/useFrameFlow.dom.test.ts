@@ -386,8 +386,8 @@ describe('useFrameFlow', () => {
 
   describe('the Canvas\'s Technique (ticket 492)', () => {
     it('is changed as one announced Undo step, the Frame keeping its own', () => {
-      const { deps, setCanvasTechnique } = setup()
-      setCanvasTechnique('peyote')
+      const { deps, setLayerTechnique } = setup()
+      setLayerTechnique('canvas', 'peyote')
       expect(layersView(deps.harness.project)).toMatchObject({ technique: 'peyote', frame: { technique: 'loom' } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
@@ -395,8 +395,8 @@ describe('useFrameFlow', () => {
     })
 
     it('is allowed once Row progress has a pass done', () => {
-      const { deps, setCanvasTechnique } = setup(moveToRow(sized, 1))
-      setCanvasTechnique('brick')
+      const { deps, setLayerTechnique } = setup(moveToRow(sized, 1))
+      setLayerTechnique('canvas', 'brick')
       expect(canvasOf(deps.harness.project).technique).toBe('brick')
     })
 
@@ -412,8 +412,8 @@ describe('useFrameFlow', () => {
     const drawnCanvas = withLayers(sized, { beads: { 0: { 0: '#111111', 1: '#222222' } } })
 
     it('switches a layer with drawn beads at once, every bead keeping its place, as one Undo step', () => {
-      const { deps, setCanvasTechnique } = setup(drawnCanvas)
-      setCanvasTechnique('peyote')
+      const { deps, setLayerTechnique } = setup(drawnCanvas)
+      setLayerTechnique('canvas', 'peyote')
       expect(layersView(deps.harness.project)).toMatchObject({ technique: 'peyote', beads: beadsOfLayer(drawnCanvas, 'canvas') })
       deps.harness.history.onUndo()
       expect(canvasOf(deps.harness.project).technique).toBe('loom')
@@ -427,10 +427,10 @@ describe('useFrameFlow', () => {
     })
 
     it('takes a Brick block kept from before back to brick stitch (ticket 477)', () => {
-      const { deps, setCanvasTechnique, setWeaveSetting } = setup(withLayers(drawnCanvas, { technique: 'brick' }))
+      const { deps, setLayerTechnique, setWeaveSetting } = setup(withLayers(drawnCanvas, { technique: 'brick' }))
       setWeaveSetting('canvas', 'brickBlock', 3)
-      setCanvasTechnique('loom')
-      setCanvasTechnique('brick')
+      setLayerTechnique('canvas', 'loom')
+      setLayerTechnique('canvas', 'brick')
       expect(layersView(deps.harness.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
     })

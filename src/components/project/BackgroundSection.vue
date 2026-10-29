@@ -2,16 +2,17 @@
 import { computed } from 'vue'
 import { useBackgroundSwatches } from '../../composables/canvas/useBackgroundSwatches'
 import type { Layer } from '../../domain/grid'
-import type { Background, Project } from '../../domain/project'
+import type { Background } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import BackgroundColorPicker from '../palette/BackgroundColorPicker.vue'
 
-// A layer's Background picker (ADR 0079, ticket 0666; CanvasBackground and ProjectPanel cards): the Project panel's
-// Canvas section and the Frame panel's background section. Five swatches in each theme and a Custom color, on the
-// layer's own Background; high contrast has one white canvas, so only a line saying so remains. It only asks.
+// A layer's Background picker (ADR 0079, tickets 0666, 0670; CanvasBackground and LayerSettings cards), in its Layer
+// settings. Five swatches in each theme and a Custom color, on the Background given; high contrast has one white canvas,
+// so only a line saying so remains. It only asks.
 const props = defineProps<{
-  project: Project
+  /** The layer's Background as it shows: its own, or the device's last pick where it has none. */
+  background: Background
   layer: Layer
 }>()
 
@@ -20,8 +21,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const backgrounds = useCanvasBackground(() => props.project)
-const background = computed(() => backgrounds.shownOf(props.layer).background)
+const backgrounds = useCanvasBackground()
+const background = computed(() => props.background)
 /** The layer's Background as the picker's model stores it (ticket 0683); a pick is asked for, not stored here. The tile
  * keeps the layer's own Custom color, else the last one taken on the device. */
 const picker = useBackgroundSwatches({

@@ -34,13 +34,11 @@ const {
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
-  onSetCanvasTechnique,
   onSetWeaveSetting,
   onSetBeadShape,
   onSetBackground,
   onFitFrame,
   onSelectFrame,
-  replaceBeadCandidates,
   onRequestReplaceBead,
   onImportProjects,
   exporting,
@@ -100,7 +98,11 @@ const chosenStarter = ref<StarterId>()
       @set-letters="onSetLetters"
       @key="onFrameKey"
       @set-settings="onSetFrameSettings"
-      @set-background="onSetBackground('frame', $event)"
+      @set-technique="onSetTechnique"
+      @set-weave-setting="onSetWeaveSetting"
+      @set-bead-shape="onSetBeadShape"
+      @set-background="onSetBackground"
+      @replace-bead="onRequestReplaceBead"
     />
     <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
       its Frame on the open Project. -->
@@ -163,12 +165,10 @@ const chosenStarter = ref<StarterId>()
     <ProjectPanel
       v-else-if="activeProject"
       :project="activeProject"
-      :replace-candidates="replaceBeadCandidates"
       :save-failed="saveFailed"
       :unsaved="unsaved"
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
-      @set-canvas-technique="onSetCanvasTechnique"
       @set-weave-setting="onSetWeaveSetting"
       @set-bead-shape="onSetBeadShape"
       @set-background="onSetBackground"

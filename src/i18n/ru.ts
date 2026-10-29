@@ -610,7 +610,7 @@ export const ru: Translations = {
     lettersLabel: 'Буквы',
     lettersLine: 'Печатать букву цвета на каждой бисеринке, чтобы цвета различались на бумаге и в чёрно-белой печати.',
     lettersInfoLabel: 'Что делают Буквы',
-    background: { heading: 'Фон', label: 'Фон рамки' },
+    background: { label: 'Фон рамки' },
     margin: {
       heading: 'Поля',
       colorLabel: 'Цвет полей',
@@ -868,9 +868,6 @@ export const ru: Translations = {
       'С бисеринкой {bead} этот проект будет примерно {new} вместо {old}. Рисунок и число бисерин останутся точно такими же. Это действие можно отменить.',
     canvasMessage:
       'С бисеринкой {bead} холст будет нарисован в её размере. У рамки остаётся свой бисер, поэтому её размер и число бисерин не изменятся. Это действие можно отменить.',
-    layerLabel: 'Где заменить бисер',
-    layerFrame: 'Рамка',
-    layerCanvas: 'Холст',
     confirmButton: 'Заменить бисер',
     outdatedPostfix: '(как сохранено)',
     cancelButton: 'Отмена',
@@ -949,5 +946,8 @@ export const ru: Translations = {
     emptyColor: 'Убирает этот цвет: его бисерины остаются пустыми.',
     list: (names) => `${names.join(', ')}.`,
   },
-
+  layerSettings: {
+    frameHeading: 'Настройки',
+    background: 'Фон',
+  },
 }
