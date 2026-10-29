@@ -3,6 +3,8 @@ import type { Rotation } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
 import { createProject } from '../domain/createProject'
+import { findBead } from '../domain/beads'
+import { replaceBead } from '../domain/projectBead'
 import { moveToRow, rowProgressOf } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameShape'
@@ -638,5 +640,21 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([10, 15, 20, 2])
+  })
+})
+
+describe('the overlay of a Frame in a Bead of its own (ticket 0665)', () => {
+  it('draws the Frame\'s layer from its corner at its Bead\'s size over the Canvas\'s, and unscaled on its own', () => {
+    const base = projectOf('loom', 3, 3, { currentRow: 1 })
+    const project = replaceBead(withFields(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } }), findBead('toho/round/15-0')!)
+    const draw = (open: boolean) => {
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, open), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
+      return named
+    }
+    const scale = 1 / findBead('toho/cube/1.5mm')!.widthMm
+    expect(draw(true)('translate').map(({ args }) => args)).toEqual([[60, 40]])
+    expect(draw(true)('scale').map(({ args }) => args)).toEqual([[scale, scale]])
+    expect(draw(false)('scale')).toEqual([])
   })
 })

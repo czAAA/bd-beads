@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
+import { placedFrame } from '../../domain/layerWeave'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from '../../domain/selection'
@@ -106,7 +107,7 @@ const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: frameOf(props.project), rotation: orientationOf(props.project), zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: placedFrame(props.project), rotation: orientationOf(props.project), zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,

@@ -209,6 +209,31 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
   })
 })
 
+describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s (ticket 0665)', () => {
+  // A 4 × 4 loom Frame at row 2, column 3 of a loom Canvas: its corner at (60, 40), each of its beads 10 px across.
+  const frame = { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 4, scale: 0.5 }
+  const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
+
+  it('draws the Frame\'s beads at half the size from its corner, and finds each under its centre', () => {
+    expect(view.beadToPoint({ row: 2, column: 3 })).toEqual({ x: 65, y: 45 })
+    expect(view.beadToPoint({ row: 5, column: 6 }, 'frame')).toEqual({ x: 95, y: 75 })
+    expect(view.pointToHit({ x: 95, y: 75 })).toEqual({ row: 5, column: 6, layer: 'frame' })
+  })
+
+  it('leaves the Canvas positions it does not reach to the Canvas, and covers only those it draws over', () => {
+    expect(view.pointToHit({ x: 110, y: 50 })).toEqual({ row: 2, column: 5, layer: 'canvas' })
+    expect(view.beadBox(frame, 'frame')).toMatchObject({ x: 60, y: 40, width: 40, height: 40 })
+    const line = view.frameBox(frame)
+    expect([line.x + line.width / 2, line.y + line.height / 2]).toEqual([80, 60])
+  })
+
+  it('steps the Frame by its own beads, and finds the cell nearest a point in them', () => {
+    expect(view.beadStep('frame').column.x).toBe(10)
+    expect(view.beadStep('canvas').column.x).toBe(20)
+    expect(view.pointToCell({ x: 96, y: 76 }, 'frame')).toEqual({ row: 5, column: 6 })
+  })
+})
+
 describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
   const cell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const TECHS: Technique[] = ['loom', 'peyote', 'brick']

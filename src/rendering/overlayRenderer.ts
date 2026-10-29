@@ -6,7 +6,7 @@ import { beadRoundness, type BeadCell } from '../domain/weave'
 import { rowOrderOf } from '../domain/frameShape'
 import type { LayerGeometry } from '../domain/layerGeometry'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
-import { canvasWeave, frameWeave } from '../domain/layerWeave'
+import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
 import { currentPass, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type PastedCell, type PasteStamp, type Selection } from '../domain/selection'
 import type { VisiblePositions } from '../domain/weaveGeometry'
@@ -598,22 +598,25 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   if (sheetSpace && (frame || !space.open)) {
     const sheetWeave = frameWeave(project)
     const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
+    // The Frame's own px are its Bead's size over the Canvas's (ticket 0665); drawn alone, they are the space's.
+    const scale = frame ? frameScale(project) : 1
     const local = <T extends GridPosition>(cell: T): T => (frame ? inFrameTerms(frame, cell) : cell)
     const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, covered, cell)).map(local) : [...cells])
     // A shape keeps its Canvas positions, counted from the layer's first, so its outline is worked out only once.
     const layerOrigin = frame ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }
     const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
     const sheetView = (): VisiblePositions => {
-      if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, orientationOf(project), origin)
+      if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, orientationOf(project), origin, scale)
       // A Custom frame's cells are named by round and place: only those its rectangle holds can be on it.
       return covered ? { firstRow: covered.row - layerOrigin.row, lastRow: covered.row + covered.rows - 1 - layerOrigin.row, columnsOf: () => ({ first: covered.column - layerOrigin.column, last: covered.column + covered.columns - 1 - layerOrigin.column }) } : EVERYWHERE
     }
     const onSheetStamp = (stamp: PasteStamp) => stampInView(stamp, sheetView(), layerOrigin, frame && ((cell) => onFrame(frame, geometry, covered, cell)))
     context.save()
     context.translate(origin.x, origin.y)
+    if (scale !== 1) context.scale(scale, scale)
     const inPass = showRows ? beadsInPass(project, sheetSpace, geometry!) : []
     if (showRows) {
-      drawLiftedBeads(context, inPass, sheetWeave, zoom, pixelRatio, theme, letters)
+      drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme, sheetView, layerOrigin)
     const sheetCells = preview ? onSheet(preview.cells) : []
@@ -622,7 +625,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme)
       else {
         if (sheetCells.length) drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme)
-        if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * pixelRatio)
+        if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * scale * pixelRatio)
       }
     }
     if (inPass.length > 0) {
@@ -659,6 +662,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (pointer) {
     const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf
-    drawPointer(context, pointerWeave.technique, pointerWeave.cell, zoom, pixelRatio, pointer, theme)
+    // On the Canvas, a Frame's bead is its Bead's size (ticket 0665).
+    const scaled = pointer.layer === 'frame' && space.open ? frameScale(project) : 1
+    drawPointer(context, pointerWeave.technique, pointerWeave.cell, zoom * scaled, pixelRatio, pointer, theme)
   }
 }

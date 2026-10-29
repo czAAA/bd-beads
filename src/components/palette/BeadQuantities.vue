@@ -4,7 +4,8 @@ import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/p
 import { listedColorName } from '../../i18n/colorName'
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
-import { frameOf, layerOf } from '../../domain/layerRecord'
+import { frameOf } from '../../domain/layerRecord'
+import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
@@ -32,9 +33,9 @@ const quantities = computed(() => (props.project ? computeColorQuantities(props.
 /** How many colors show before "Show all". */
 const SUMMARY_ROWS = 5
 
-/** Estimated weight (ticket 155, CONTEXT.md): count × average bead weight, never stored; no weight column if the
- * Bead has none. */
-const projectBead = computed(() => (props.project ? layerOf(props.project, 'canvas').bead : undefined))
+/** Estimated weight (ticket 155, CONTEXT.md): count × average weight of the woven layer's Bead, the Frame's (ticket
+ * 0665), never stored; no weight column if the Bead has none. */
+const projectBead = computed(() => (props.project ? resolveProjectBead(props.project) : undefined))
 const averageGrams = computed(() => gramsPerBead(projectBead.value))
 
 function weightOf(count: number): string | undefined {

@@ -6,7 +6,7 @@ import { footprintOf } from '../domain/footprint'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
-import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
+import { canvasWeave, frameScale, frameWeave, layersAlike } from '../domain/layerWeave'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
 import {
   BEAD_GAP_PX,
@@ -36,7 +36,7 @@ import {
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, frameOf, heldWeave, type Layered, orientationOf } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, type Layered, orientationOf } from '../domain/layerRecord'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
@@ -69,11 +69,11 @@ function visibleBeadsOpen(weave: Weave, area: { left: number; right: number; top
 }
 
 /** The beads in view of a space: with no edge on the Canvas, and within the Project otherwise. `origin` is where the
- * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). The overlay culls by it
- * too (ticket 0675). */
-export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
+ * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492), and `scale` how many
+ * grid px one of its own is (its Bead's size, ticket 0665). The overlay culls by it too (ticket 0675). */
+export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }, scale = 1): VisiblePositions {
   const seen = regionInGridSpace(space.extent, region, zoom, rotation)
-  const area = { left: seen.left - origin.x, right: seen.right - origin.x, top: seen.top - origin.y, bottom: seen.bottom - origin.y }
+  const area = { left: (seen.left - origin.x) / scale, right: (seen.right - origin.x) / scale, top: (seen.top - origin.y) / scale, bottom: (seen.bottom - origin.y) / scale }
   return space.open ? visibleBeadsOpen(weave, area) : visibleBeads(weave, space.columns, space.rows, area)
 }
 
@@ -114,7 +114,8 @@ export interface RenderInput {
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
- * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
+ * take in its drawn extent where it is woven otherwise or in a Bead of another size (ticket 0665) and so draws larger
+ * or smaller than that. */
 function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined {
   const frame = frameOf(project)
   if (!frame) {
@@ -124,13 +125,14 @@ function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined
   // With a `margin` the box also takes in the keep-out margin (ticket 501), which the Canvas draws nothing in.
   const grown = withMargin(footprintOf(project)!, margin)
   const own = gridBox(canvas, grown)
-  const held = heldWeave(project, 'frame')!
-  if (sameWeave(canvas, held)) {
+  if (layersAlike(project)) {
     return own
   }
   const origin = frameOriginPx(canvas, frame)
   const laid = laidFrame(project)!
-  const drawn = layerExtentPx(held, laid.columns, laid.rows)
+  const scale = frameScale(project)
+  const extent = layerExtentPx(frameWeave(project), laid.columns, laid.rows)
+  const drawn = { width: extent.width * scale, height: extent.height * scale }
   const left = Math.min(own.x, origin.x)
   const top = Math.min(own.y, origin.y)
   return { x: left, y: top, width: Math.max(own.x + own.width, origin.x + drawn.width) - left, height: Math.max(own.y + own.height, origin.y + drawn.height) - top }
@@ -152,7 +154,7 @@ function drawPositionMarks(
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
   const footprint = frameFootprintPx(project)
   const held = frameFootprintPx(project, margin)
-  const alike = frameOf(project) !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
+  const alike = layersAlike(project)
   const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
   const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
   context.fillStyle = pattern
@@ -452,8 +454,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme
-  // A band of rows is the same rows of both layers only where they are woven alike.
-  const alike = !space.open || !frame || sameWeave(canvasWeave(project), heldWeave(project, 'frame')!)
+  // A band of rows is the same rows of both layers only where they are alike (woven alike, in Beads of one size).
+  const alike = !space.open || !frame || layersAlike(project)
   const band = alike ? rows : undefined
   const bandWeave = space.open ? canvasWeave(project) : frameWeave(project)
 
@@ -490,8 +492,19 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       drawMarginSheet(context, project, margin, zoom, theme.margin)
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
-      // The band's rows are the Canvas's; the Frame's own are counted from its first (alike weaves only).
-      drawFrameLayer(context, { ...draw, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+      // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's
+      // corner. The band's rows are the Canvas's; the Frame's own are counted from its first (alike layers only).
+      const scale = frameScale(project)
+      if (scale === 1) {
+        drawFrameLayer(context, { ...draw, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+      } else {
+        const seen = { left: (area.left - origin.x) / scale, right: (area.right - origin.x) / scale, top: (area.top - origin.y) / scale, bottom: (area.bottom - origin.y) / scale }
+        context.save()
+        context.translate(origin.x, origin.y)
+        context.scale(scale, scale)
+        drawFrameLayer(context, { ...draw, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
+        context.restore()
+      }
     }
   } else if (space.hasFrame) {
     drawFrameLayer(context, draw, space, { x: 0, y: 0 })

@@ -4,7 +4,7 @@ import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
-import { canvasDistance, canvasWeave } from './layerWeave'
+import { canvasDistance, laidOnCanvas, layersAlike } from './layerWeave'
 import { beadsOfLayer, frameOf, heldWeave, type Layered, withFrameSheet } from './layerRecord'
 import { touch, type Project } from './project'
 import { clampPointer, rowProgressOf } from './rowProgress'
@@ -93,7 +93,7 @@ export function fitToDrawing(project: Layered): Rect | undefined {
   const frame = frameOf(project)
   const covered = footprintOf(project)
   const canvas = beadsOfLayer(project, 'canvas')
-  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), shiftedBeads(beadsOfLayer(project, 'frame')!, frame.row, frame.column)) : canvas
+  const shown = frame && covered ? beadsOver(beadsWithout(canvas, withMargin(covered)), laidOnCanvas(project, beadsOfLayer(project, 'frame')!, frame)) : canvas
   const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined
@@ -134,7 +134,7 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined, o
   // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638) and takes what is offered (ticket
   // 0639); one made anew is empty.
   const refit = current
-    ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
+    ? refitSheet(current, !layersAlike(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
     : { beads: {}, given: {}, taken: {} }
   const frame: FrameSheet = {
     row,

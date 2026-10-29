@@ -92,7 +92,7 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
     ...(palette
       ? {
           palette: [...palette.ids],
-          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, 'canvas'), undefined),
+          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, 'frame'), undefined),
           ...(Object.keys(palette.codes).length > 0 ? { paletteCodes: { ...palette.codes } } : {}),
         }
       : {}),
