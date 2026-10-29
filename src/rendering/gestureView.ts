@@ -18,9 +18,9 @@ export interface Affine {
   f: number
 }
 
-// The transform (origin the drawing's top-left) laying the drawing made for one view, held while two fingers twist,
-// where another view shows the same beads (ticket 0709): the three grid points (0, 0), (1, 0), (0, 1) fix it, since
-// both views map the grid by a quarter turn, a zoom and a scroll, and the screen turns the second by its lean.
+/** The transform (origin the drawing's top-left) laying the drawing made for one view, held while two fingers twist,
+ * where another view shows the same beads (ticket 0709). The grid points (0, 0), (1, 0) and (0, 1) fix it: both views
+ * map the grid by a quarter turn, a zoom and a scroll, and the screen turns the second by its lean. */
 export function twistTransform(from: DrawnView, to: DrawnView): Affine {
   const drawn = (x: number, y: number): Scroll => from.surface.gridToPoint(x, y)
   const shown = (x: number, y: number): Scroll => to.leaning.toScreen(to.surface.gridToPoint(x, y))
@@ -56,7 +56,8 @@ export const GESTURE_BEAD_LIMIT = 8_000
 export const SETTLE_MS = 120
 
 /** How long a twist takes to ease onto the quarter turn it snaps to as the fingers lift, in ms (ticket 0709): the
- * design system's base duration, which the drawing's transition uses too. */
+ * design system's base duration, which the drawing's transition uses too (shorter under reduced motion, where the
+ * sharp redraw waits the rest). */
 export const SNAP_MS = 200
 
 /** How many beads a redraw has to draw: those in and outside the Frame, at most what fits the surface, each counted as

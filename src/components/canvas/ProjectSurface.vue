@@ -201,19 +201,20 @@ const layerRulers = computed(() => held.value?.rulers ?? rulers.value)
 /** The larger square the canvases fill while the Canvas leans, turned about the surface's middle; a held drawing's box
  * as it was made, laid where the view shows it, eased there as the twist settles. */
 const drawingStyle = computed(() => {
+  /** The box a drawing was made on, placed where it lies before it is turned. */
+  const box = ({ drawn, offset }: TiltedView) => ({ left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px` })
   const holding = held.value
   if (holding) {
-    const { drawn, offset } = holding.leaning
     const { a, b, c, d, e, f } = twistTransform(holding, { surface: surface.value, leaning: leaning.value })
     return {
-      left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px`,
+      ...box(holding.leaning),
       transformOrigin: '0 0', transform: `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`, willChange: 'transform',
       ...(props.twist === 'settling' ? { transition: 'transform var(--duration-base) var(--ease-out)' } : {}),
     }
   }
-  const { degrees, drawn, offset } = leaning.value
+  const { degrees } = leaning.value
   if (degrees === 0) return undefined
-  return { left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px`, transform: `rotate(${degrees}deg)` }
+  return { ...box(leaning.value), transform: `rotate(${degrees}deg)` }
 })
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
