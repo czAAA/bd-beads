@@ -114,7 +114,7 @@ export function beadCount(beads: BeadMap): number {
 }
 
 /** The box of each set of beads asked about, and the last one worked out: an edit's next set shares every row it did
- * not touch, so its box is grown from that one's by the changed rows alone (ticket 0674). */
+ * not touch, so its box is grown from that one's by the changed rows alone (ADR 0080). */
 const boundsCache = new WeakMap<BeadMap, { box: Rect | undefined }>()
 let lastBounds: { beads: BeadMap; box: Rect | undefined } | undefined
 
