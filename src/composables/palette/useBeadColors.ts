@@ -48,8 +48,14 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
     }
   }
 
-  const swatches = computed(() => {
+  // A code sold only in Japan is hidden by default (ticket 0695): the picker offers what a buyer outside Japan can order.
+  const offered = computed(() => {
     const own = catalog.value
+    return own && { ...own, codes: own.codes.filter((code) => !code.japanOnly) }
+  })
+
+  const swatches = computed(() => {
+    const own = offered.value
     return own && own.id === catalogId.value && size.value
       ? catalogSwatches(own, size.value, palette.value.colors.map((color) => color.hex), brandColors(bead.value?.brand.id))
       : []
