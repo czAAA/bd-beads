@@ -1,3 +1,4 @@
+import { frameShapeOf } from './frameShape'
 import { beadsInFrame, beadsWithout, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { foldsOver } from './folding'
 import type { GridPosition } from './grid'
@@ -27,10 +28,10 @@ const newlyCovers = (from: Rect, to: Rect, position: GridPosition) => frameConta
 
 /** The Frame a resize to `rectangle` leaves (ticket 0639): an edge growing into a named Piece stops at its edge until it
  * would cover it whole, and `stoppedAt` names it. A Piece the Frame already hides part of stays on the Canvas, so stops
- * nothing; nor does any Piece for a Frame woven unlike the Canvas, which lifts nothing. */
+ * nothing; nor does any Piece for a Frame woven unlike the Canvas or a Custom frame (ticket 0669), which lift nothing. */
 export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect; stoppedAt?: string } {
   const frame = project.frame
-  const pieces = frame && tradesWithCanvas(project) ? namedPieceBeads(project) : []
+  const pieces = frame && !frameShapeOf(frame) && tradesWithCanvas(project) ? namedPieceBeads(project) : []
   if (!frame || pieces.length === 0) return { rectangle }
   const cycle = rowCycle(frameWeave(project))
   let at = rectangle

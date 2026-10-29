@@ -674,7 +674,6 @@ export const es: Translations = {
       },
     },
     fringeStyle: { label: 'Estilo de fleco', announce: 'Estilo de fleco: {style}' },
-    removeConfirmCustom: 'Sus cuentas se quitan con él. Se puede deshacer.',
     announceCustom: 'Marco «{shape}», {size}',
     snapAddedTop: {
       one: 'Se añadió una fila vacía arriba: un marco debe empezar en una fila sin desplazar.',

@@ -18,7 +18,6 @@ const {
   onConfirmDeleteAll,
   onCancelResetProgress,
   onConfirmResetProgress,
-  removeFrameTakesBeads,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
   removeLinePrompt,
@@ -109,7 +108,7 @@ const {
     v-if="open === 'remove-frame'"
     data-testid="remove-frame-modal"
     :title="t.frame.removeConfirmTitle"
-    :message="removeFrameTakesBeads ? t.frame.removeConfirmCustom : t.frame.removeConfirmMessage"
+    :message="t.frame.removeConfirmMessage"
     :confirm-label="t.frame.removeConfirmButton"
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
