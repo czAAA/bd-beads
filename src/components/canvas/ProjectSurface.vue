@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
@@ -9,14 +9,17 @@ import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from '../../domain/selection'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
+import type { Size } from '../../rendering/cellSize'
+import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
 import { marginForm, marginScale } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
-import { rulerLayout } from '../../rendering/rulers'
+import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
-import { surfaceView, type Scroll } from '../../rendering/surfaceView'
-import { tiltedView } from '../../rendering/tiltedView'
+import { surfaceView, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
+import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
+import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
@@ -35,6 +38,9 @@ const props = withDefaults(defineProps<{
   /** The Canvas's orientation as shown, in degrees: live while two fingers twist it (ticket 0672); the Project's when
    * left out. */
   orientation?: number
+  /** Whether two fingers twist the Canvas, or it eases onto a quarter turn after them (ticket 0709): the drawing is
+   * held as it is and turned whole until it is over. */
+  twist?: TwistPhase
   /** What the tool in hand and the modes on let a press, the pointer and the overlay do (ticket 0619,
    * `toolCapabilities`); absent, no tool is in hand and the bead-shaped marker shows over the beads. */
   tools?: ToolCapabilities
@@ -117,16 +123,13 @@ const drawnScroll = computed(() => {
   return offset.x === 0 && offset.y === 0 ? props.scroll : { x: props.scroll.x - offset.x, y: props.scroll.y - offset.y }
 })
 const drawnSize = computed(() => leaning.value.drawn)
-/** The props as the drawing sees them: the Project at its quarter turn and the drawing's scroll. */
-const drawnProps = new Proxy(props, {
-  get: (target, key) => (key === 'project' ? drawnProject.value : key === 'scroll' ? drawnScroll.value : Reflect.get(target, key)),
-})
-/** The larger square the canvases fill while the Canvas leans, turned about the surface's middle. */
-const drawingStyle = computed(() => {
-  const { degrees, drawn, offset } = leaning.value
-  if (degrees === 0) return undefined
-  return { left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px`, transform: `rotate(${degrees}deg)` }
-})
+/** The props as a view of the drawing sees them: the Project at its quarter turn and the drawing's scroll. */
+function viewProps(view: { project: Project; zoom: number; scroll: Scroll }): typeof props {
+  return new Proxy(props, {
+    get: (target, key) => (key === 'project' ? view.project : key === 'scroll' ? view.scroll : key === 'zoom' ? view.zoom : Reflect.get(target, key)),
+  })
+}
+const drawnProps = viewProps({ get project() { return drawnProject.value }, get zoom() { return props.zoom }, get scroll() { return drawnScroll.value } })
 
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
  * position is. */
@@ -159,6 +162,60 @@ const sheetLook = computed(() => {
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
 const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, pieces: pieces.value }))
+
+/** A drawing as the layers made it: the view it was drawn for, and how it maps to the screen. */
+interface HeldDrawing {
+  project: Project
+  zoom: number
+  scroll: Scroll
+  size: Size
+  leaning: TiltedView
+  surface: SurfaceView
+  rulers: RulerLayout
+}
+// While two fingers twist the Canvas (ticket 0709) the layers are given the view they last drew and draw nothing more;
+// the drawing is laid where the live view shows its beads by one transform. It is drawn afresh when the fingers lift
+// (easing onto a quarter turn first) and, so a long hold is sharp, after a pause with them still.
+const held = shallowRef<HeldDrawing>()
+let holdTimer: ReturnType<typeof setTimeout> | undefined
+function hold(): void {
+  held.value = { project: drawnProject.value, zoom: props.zoom, scroll: drawnScroll.value, size: drawnSize.value, leaning: leaning.value, surface: surface.value, rulers: rulers.value }
+}
+watch(() => props.twist, (phase) => {
+  clearTimeout(holdTimer)
+  if (!phase) held.value = undefined
+  else if (!held.value) hold()
+})
+watch([() => props.orientation, () => props.zoom, () => props.scroll], () => {
+  if (props.twist !== 'turning') return
+  clearTimeout(holdTimer)
+  holdTimer = setTimeout(hold, SETTLE_MS)
+})
+onBeforeUnmount(() => clearTimeout(holdTimer))
+/** The props as the layers draw from them: the held drawing's while the Canvas is twisted, else the view's. */
+const layerProps = viewProps({ get project() { return held.value?.project ?? drawnProject.value }, get zoom() { return held.value?.zoom ?? props.zoom }, get scroll() { return held.value?.scroll ?? drawnScroll.value } })
+const layerSize = computed(() => held.value?.size ?? drawnSize.value)
+const layerSurface = computed(() => held.value?.surface ?? surface.value)
+const layerRulers = computed(() => held.value?.rulers ?? rulers.value)
+
+/** The larger square the canvases fill while the Canvas leans, turned about the surface's middle; a held drawing's box
+ * as it was made, laid where the view shows it, eased there as the twist settles. */
+const drawingStyle = computed(() => {
+  /** The box a drawing was made on, placed where it lies before it is turned. */
+  const box = ({ drawn, offset }: TiltedView) => ({ left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px` })
+  const holding = held.value
+  if (holding) {
+    const { a, b, c, d, e, f } = twistTransform(holding, { surface: surface.value, leaning: leaning.value })
+    return {
+      ...box(holding.leaning),
+      transformOrigin: '0 0', transform: `matrix(${a}, ${b}, ${c}, ${d}, ${e}, ${f})`, willChange: 'transform',
+      ...(props.twist === 'settling' ? { transition: 'transform var(--duration-base) var(--ease-out)' } : {}),
+    }
+  }
+  const { degrees } = leaning.value
+  if (degrees === 0) return undefined
+  return { ...box(leaning.value), transform: `rotate(${degrees}deg)` }
+})
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
 watch(
@@ -214,9 +271,9 @@ const marginCue = useMarginCue(props)
 const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
-useBeadLayer({ props: drawnProps, canvas: baseEl, size: drawnSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
+useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
-  props: drawnProps, canvas: overlayEl, size: drawnSize, space, surface, rulers, theme, marksShown, oncePerFrame,
+  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
 

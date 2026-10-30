@@ -7,6 +7,7 @@ import type { Project, RowProgress } from '../../domain/project'
 import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
+import { SETTLE_MS } from '../../rendering/gestureView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
@@ -456,6 +457,79 @@ describe('ProjectSurface', () => {
     await wrapper.setProps({ orientation: 180 })
     expect(root.attributes('data-tilt')).toBeUndefined()
     expect((wrapper.find('.project-surface__drawing').element as HTMLElement).style.transform).toBe('')
+  })
+
+  describe('a two-finger twist (ticket 0709)', () => {
+    /** Mounts an upright Canvas with frames and timers under control, drawn once and the calls cleared. */
+    async function mountTwisting() {
+      vi.useFakeTimers()
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id))
+      const { wrapper } = await mountSurface(projectOf(20, 10))
+      vi.advanceTimersByTime(10)
+      context.calls.length = 0
+      const drawing = () => (wrapper.find('.project-surface__drawing').element as HTMLElement).style
+      const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element
+      mounted = wrapper
+      return { wrapper, drawing, cells }
+    }
+
+    let mounted: { unmount(): void } | undefined
+    afterEach(() => {
+      mounted?.unmount()
+      mounted = undefined
+      vi.useRealTimers()
+    })
+
+    it('holds its drawing while the fingers twist, turning it whole about them without a redraw, and draws it sharp once they lift', async () => {
+      const { wrapper, drawing, cells } = await mountTwisting()
+      const bitmap = { width: cells.width, height: cells.height }
+
+      await wrapper.setProps({ twist: 'turning' })
+      vi.advanceTimersByTime(10)
+      expect(draws()).toBe(0)
+
+      // Past 45° the view is at the next quarter turn; the drawing made upright is still the one shown.
+      await wrapper.setProps({ orientation: 60, zoom: 1.2, scroll: { x: 40, y: 10 } })
+      vi.advanceTimersByTime(10)
+      expect(draws()).toBe(0)
+      expect(wrapper.attributes('data-rotation')).toBe('90')
+      // The screen-sized drawing is not swapped for the leaning square: it is laid where the view shows it.
+      expect({ width: cells.width, height: cells.height }).toEqual(bitmap)
+      expect(drawing().width).toBe('1000px')
+      expect(drawing().transform).toMatch(/^matrix\(/)
+      expect(drawing().transition).toBe('')
+
+      await wrapper.setProps({ twist: undefined })
+      vi.advanceTimersByTime(10)
+      expect(draws()).toBe(1)
+      expect({ width: drawing().width, transform: drawing().transform }).toEqual({ width: '1281px', transform: 'rotate(-30deg)' })
+    })
+
+    it('draws sharp after the settle pause while the fingers hold still, and goes on turning that drawing', async () => {
+      const { wrapper, drawing } = await mountTwisting()
+      await wrapper.setProps({ twist: 'turning' })
+      await wrapper.setProps({ orientation: 30 })
+      vi.advanceTimersByTime(SETTLE_MS + 10)
+      // The pause hands the layers the view as it stands; their frame comes after.
+      await nextTick()
+      vi.advanceTimersByTime(10)
+      expect(draws()).toBe(1)
+      expect(drawing().width).toBe('1281px')
+
+      await wrapper.setProps({ orientation: 40 })
+      vi.advanceTimersByTime(10)
+      expect(draws()).toBe(1)
+      expect(drawing().transform).toMatch(/^matrix\(/)
+    })
+
+    it('eases onto the quarter turn as the twist settles', async () => {
+      const { wrapper, drawing } = await mountTwisting()
+      await wrapper.setProps({ twist: 'turning', orientation: 84 })
+      await wrapper.setProps({ twist: 'settling', orientation: 90 })
+      expect(drawing().transition).toContain('transform')
+      expect(draws()).toBe(0)
+    })
   })
 
   it('draws the Row progress marker on the overlay, and no marker when no bead is in the pass', async () => {

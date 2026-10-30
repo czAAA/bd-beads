@@ -6,14 +6,12 @@ function setup(zoom = 1) {
   const el = document.createElement('div')
   document.body.append(el)
   const state = { zoom }
-  const setZoom = vi.fn((v: number) => {
-    state.zoom = v
+  const pinch = vi.fn(({ zoom: v }: { zoom?: number }) => {
+    state.zoom = v ?? state.zoom
   })
-  const panBy = vi.fn()
   const cancelStroke = vi.fn()
-  const twistBy = vi.fn()
   const endTwist = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, panBy, cancelStroke, twistBy, endTwist }))
+  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, pinch, cancelStroke, endTwist }))
 
   const heard: string[] = []
   const child = document.createElement('div')
@@ -25,7 +23,9 @@ function setup(zoom = 1) {
     Object.assign(e, { pointerId: id, clientX: x, clientY: y, pointerType })
     child.dispatchEvent(e)
   }
-  return { state, setZoom, panBy, cancelStroke, twistBy, endTwist, heard, fire }
+  /** The turns the steps so far asked for: none until the twist engages. */
+  const turns = () => pinch.mock.calls.map(([step]) => (step as { turn?: number }).turn)
+  return { state, pinch, cancelStroke, endTwist, heard, fire, turns }
 }
 
 describe('usePinchPan', () => {
@@ -59,45 +59,63 @@ describe('usePinchPan', () => {
     expect(t.state.zoom).toBeCloseTo(2)
   })
 
-  it('zooms about the point between the fingers and moves the canvas with them', () => {
+  it('asks for one step per move: the zoom and the move of the fingers, about the point between them (ticket 0709)', () => {
     const t = setup(1)
     t.fire('pointerdown', 1, 0, 0)
     t.fire('pointerdown', 2, 100, 0)
     t.fire('pointermove', 2, 200, 20)
-    expect(t.setZoom).toHaveBeenLastCalledWith(expect.closeTo(2, 1), { x: 100, y: 10 })
-    expect(t.panBy).toHaveBeenLastCalledWith(50, 10)
+    expect(t.pinch).toHaveBeenCalledOnce()
+    expect(t.pinch).toHaveBeenLastCalledWith({ zoom: expect.closeTo(2, 1), pan: { x: 50, y: 10 }, turn: undefined, anchor: { x: 100, y: 10 } })
   })
 
-  it('twists the Canvas by the angle the fingers turn through, about the point between them (ticket 0672)', () => {
+  it('does not twist for the small turn a pinch or pan carries (ticket 0709)', () => {
+    const t = setup()
+    t.fire('pointerdown', 1, 0, 0)
+    t.fire('pointerdown', 2, 100, 0)
+    // About 6° and then 8°: a wobble, not a twist.
+    t.fire('pointermove', 2, 100, 10)
+    t.fire('pointermove', 2, 100, 14)
+    expect(t.turns()).toEqual([undefined, undefined])
+  })
+
+  it('twists once the fingers have turned about 10°, following them from there with no jump (tickets 0672, 0709)', () => {
     const t = setup()
     t.fire('pointerdown', 1, 0, 0)
     t.fire('pointerdown', 2, 100, 0)
     t.fire('pointermove', 2, 100, 100)
-    expect(t.twistBy).toHaveBeenLastCalledWith(expect.closeTo(45, 6), { x: 50, y: 50 })
+    // 45° since the fingers landed engages the twist; the Canvas has not turned yet.
+    expect(t.turns()).toEqual([0])
     t.fire('pointermove', 1, 100, 0)
-    expect(t.twistBy).toHaveBeenLastCalledWith(expect.closeTo(45, 6), { x: 100, y: 50 })
+    expect(t.pinch).toHaveBeenLastCalledWith(expect.objectContaining({ turn: expect.closeTo(45, 6), anchor: { x: 100, y: 50 } }))
+    // Engaged, it follows back under the threshold too.
+    t.fire('pointermove', 1, 0, 0)
+    expect(t.turns().at(-1)).toBeCloseTo(-45, 6)
   })
 
   it('turns the short way across the line where the angle wraps round', () => {
     const t = setup()
     t.fire('pointerdown', 1, 0, 0)
-    t.fire('pointerdown', 2, -100, 1)
-    t.fire('pointermove', 2, -100, -1)
-    expect(t.twistBy).toHaveBeenLastCalledWith(expect.closeTo(1.1458, 3), expect.anything())
+    t.fire('pointerdown', 2, -100, 30)
+    t.fire('pointermove', 2, -100, 0)
+    t.fire('pointermove', 2, -100, -2)
+    expect(t.turns().at(-1)).toBeCloseTo(1.1458, 3)
   })
 
-  it('lets the twist settle once every finger is up, and starts afresh from a finger put down again', () => {
+  it('lets the twist settle about where the fingers last were once every one is up, and starts afresh from a finger put down again', () => {
     const t = setup()
     t.fire('pointerdown', 1, 0, 0)
     t.fire('pointerdown', 2, 100, 0)
-    t.fire('pointerup', 2, 100, 0)
+    t.fire('pointermove', 2, 100, 100)
+    t.fire('pointerup', 2, 100, 100)
     t.fire('pointerdown', 3, 0, 100)
     t.fire('pointermove', 3, 0, 100)
-    expect(t.twistBy).toHaveBeenLastCalledWith(0, expect.anything())
+    expect(t.turns().at(-1)).toBe(0)
     expect(t.endTwist).not.toHaveBeenCalled()
-    t.fire('pointerup', 3, 0, 100)
+    t.fire('pointermove', 3, -100, 0)
+    expect(t.turns().at(-1)).toBeCloseTo(90, 6)
+    t.fire('pointerup', 3, -100, 0)
     t.fire('pointerup', 1, 0, 0)
-    expect(t.endTwist).toHaveBeenCalledOnce()
+    expect(t.endTwist).toHaveBeenCalledExactlyOnceWith({ x: -50, y: 0 })
   })
 
   it('ignores a mouse and a pen', () => {
