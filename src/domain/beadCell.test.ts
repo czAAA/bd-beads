@@ -14,7 +14,7 @@ const delica = findBead('miyuki-delica-11-0')!
 const round = findBead('toho-round-11-0')!
 const cube = findBead('toho-cube-1.5mm')!
 
-describe('the Bead cell geometry (ADR 0083)', () => {
+describe('the Bead cell geometry (ticket 0724)', () => {
   it('gives each catalog Bead its proportions: height over its pitch along the thread', () => {
     expect(beadCell(delica)!.aspect).toBeCloseTo(1.3 / 1.6)
     expect(beadCell(round)!.aspect).toBeCloseTo(2.2 / beadPitchMm(round))

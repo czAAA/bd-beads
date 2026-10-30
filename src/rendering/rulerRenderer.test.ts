@@ -128,7 +128,7 @@ describe('drawRulers', () => {
   })
 })
 
-describe('the names under the Frame and the Pieces (ADR 0066)', () => {
+describe('the names under the Pieces (ADR 0066)', () => {
   const piece = (row: number, column: number) => [0, 1, 2].map((offset) => ({ row, column: column + offset, color: '#ff0000' }))
   const named = (framed: LayersChange) =>
     withLayers(base, {
@@ -137,11 +137,11 @@ describe('the names under the Frame and the Pieces (ADR 0066)', () => {
       ...framed,
     })
 
-  it('draws the Frame\'s name under it, and the name of a Canvas Piece beside it', () => {
+  it('draws a Canvas Piece\'s name, and none under a named Frame (ticket 0719)', () => {
     const { context, texts } = fakeContext()
     drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, name: 'Cherry', beads: {} } }), { zoom: 1, numbers: false }))
 
-    expect(texts).toContain('Cherry')
+    expect(texts).not.toContain('Cherry')
     expect(texts).toContain('Sketch')
   })
 

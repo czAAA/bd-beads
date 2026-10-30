@@ -78,7 +78,7 @@ function heldLayer(project: Layered, layer: Layer): LayerFields | undefined {
   return layer === 'frame' ? frameOf(project) : canvasOf(project)
 }
 
-/** A layer's Weave, with the cell its Bead draws it in (ADR 0068, 0083); none for a Frame the Project lacks.
+/** A layer's Weave, with the cell its Bead draws it in (ADR 0068, ticket 0724); none for a Frame the Project lacks.
  * The Weave of `layerOf`. */
 export function weaveOfLayer(project: Layered, layer: 'canvas'): Weave
 export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined

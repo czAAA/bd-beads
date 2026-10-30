@@ -243,7 +243,7 @@ describe('FramePanel (ticket 473)', () => {
     // The PNG line follows the chosen stop; the PDF's does not.
     const lines = () => [wrapper.get('[data-testid="export-png"]').text(), wrapper.get('[data-testid="export-pdf"]').text()]
     const [medium, pdf] = lines()
-    await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
+    await wrapper.get('[data-testid="quality-stop-low"]').trigger('click')
     expect(lines()[0]).not.toBe(medium)
     expect(lines()[1]).toBe(pdf)
 

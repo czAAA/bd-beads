@@ -137,6 +137,11 @@ export interface Translations {
     /** The Note while the mode is on and no Axis is. */
     turnAxisOn: string
     close: string
+    /** The Selection bar's Mirror (ticket 0707): its Tooltip body, what it announces, and the Message counting the
+     * counterparts that had nowhere to land (off the layer, on a Seam or Off-shape, in a finished row). */
+    copyToCounterparts: string
+    announceSelectionMirrored: string
+    droppedMessage: PluralForms
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
@@ -457,8 +462,9 @@ export interface Translations {
     removeAllConfirmTitle: string
     removeAllConfirmMessage: PluralForms
     removeAllConfirmButton: string
-    /** The Bead's Color catalog, to add a maker's color to the Palette (ticket 0537): `{code}` in a label is the maker's
-     * code, `{count}` in `showingFirst` the number of rows shown. */
+    /** The Bead's Color catalog, to add a maker's color to the Palette (ticket 0537): `{code}` is the maker's code,
+     * `{count}` a count of rows or of a filter value `{name}`. Its filters and empty state (ticket 0713): `{query}` the
+     * search text, `{filters}` the on values' names (Finishes, then families), `{sizes}` a code's sizes, `{size}` the Bead's. */
     beadColors: {
       open: string
       label: string
@@ -471,6 +477,13 @@ export interface Translations {
       takenLabel: string
       showingFirst: string
       noMatch: string
+      noMatchFiltered: string
+      noneFiltered: string
+      otherSizes: string
+      colorFilter: string
+      finishFilter: string
+      clearFilters: string
+      valueCount: string
       loading: string
       failed: string
       /** The Finish list shared by every Brand (ADR 0072). */
@@ -503,6 +516,9 @@ export interface Translations {
     removeLineShort: string
     /** The selection bar's Name button (ticket 406): gives the selected Piece a name, which makes it a Schema. */
     namePieceButton: string
+    /** A Fill tool press refused by Fill reach (ticket 0715): open space nothing encloses, or more than the Fill cap. */
+    fillOpenMessage: string
+    fillTooBigMessage: string
   }
   /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
   inputMode: {

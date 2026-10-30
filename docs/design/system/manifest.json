@@ -67,6 +67,7 @@
     "components/SaveStates/README.md",
     "components/SavedPatterns/README.md",
     "components/SavedPatternsExpanded/README.md",
+    "components/SchemaTag/README.md",
     "components/ScreenReaders/README.md",
     "components/ScreenSizes/README.md",
     "components/SegmentedControl/README.md",
@@ -396,6 +397,11 @@
       "name": "SavedPatternsExpanded",
       "group": "Screens",
       "summary": "Saved Patterns expanded to every Pattern, with its export footer."
+    },
+    {
+      "name": "SchemaTag",
+      "group": "Canvas",
+      "summary": "An unframed Schema's name as a hang tag on a thread from the Piece's corner: a short name on it, dots for a longer one, opening into a paper tag with its size, colors, Rename and Frame."
     },
     {
       "name": "ScreenReaders",

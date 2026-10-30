@@ -4,7 +4,7 @@ import { canvasWeave, placedFrame, sameWeave } from './layerWeave'
 import { describeWeave, positionStep, type Weave } from './weave'
 import type { Layered } from './layerRecord'
 
-/** A Weave's cell height over its width: what a Bead's cell stretches a row by (ADR 0068, 0083); 1 where the cell is square. */
+/** A Weave's cell height over its width: what a Bead's cell stretches a row by (ADR 0068, ticket 0724); 1 where the cell is square. */
 const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
 
 /** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where the layers are alike,

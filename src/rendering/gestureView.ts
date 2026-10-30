@@ -1,5 +1,5 @@
-import { CELL_SIZE_PX } from './cellSize'
-import type { Scroll, SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX, type Size } from './cellSize'
+import type { Region, Scroll, SurfaceView } from './surfaceView'
 import type { TiltedView } from './tiltedView'
 
 /** A drawing of the Canvas (ticket 0709): how the grid maps onto it, and how it leans on the screen. */
@@ -68,8 +68,29 @@ export function beadsToDraw(stored: number, frameBeads: number, surface: { width
 }
 
 // The CSS transform (origin top-left) turning the bitmap drawn for one view into what another view shows: a point drawn
-// at p was at p + scroll; scale it at the new zoom, then take the new scroll off. Same for every rotation.
-export function gestureTransform(from: View, to: View): { scale: number; x: number; y: number } {
+// at p was at p + scroll; scale it at the new zoom, then take the new scroll off. Same for every rotation. `box` is where
+// the bitmap lies on the drawing area (bitmapBox), which the translation is measured from.
+export function gestureTransform(from: View, to: View, box: { x: number; y: number } = { x: 0, y: 0 }): { scale: number; x: number; y: number } {
   const scale = to.zoom / from.zoom
-  return { scale, x: from.scroll.x * scale - to.scroll.x, y: from.scroll.y * scale - to.scroll.y }
+  return { scale, x: (from.scroll.x + box.x) * scale - to.scroll.x - box.x, y: (from.scroll.y + box.y) * scale - to.scroll.y - box.y }
+}
+
+/** How far past the drawing area the beads' bitmap reaches on every side in the draft look, in drawing areas (ticket
+ * 0717): there a bead is a pixel of one image, so drawing wider is cheap, and a pan of half a screen or a zoom out to
+ * about 60% uncovers nothing before the sharp redraw. */
+const DRAFT_OVERSCAN = 0.5
+
+/** The most device pixels the beads' bitmap holds: Safari on iOS leaves a canvas larger than 4096 × 4096 blank. */
+const MOST_BITMAP_PIXELS = 4096 * 4096
+
+/** Where the beads' bitmap lies on the drawing area, in its px (ticket 0717): the drawing area itself in the full look,
+ * where a bead costs real work; in the draft look DRAFT_OVERSCAN more on every side, less where the bitmap would pass
+ * MOST_BITMAP_PIXELS. Whole px, so the bitmap stays on the screen's pixels. */
+export function bitmapBox(size: Size, draft: boolean, pixelRatio: number): Region {
+  if (!draft) return { x: 0, y: 0, width: size.width, height: size.height }
+  const widest = Math.sqrt(MOST_BITMAP_PIXELS / Math.max(1, size.width * size.height * pixelRatio * pixelRatio))
+  const reach = Math.max(0, Math.min(DRAFT_OVERSCAN, (widest - 1) / 2))
+  const x = Math.floor(size.width * reach)
+  const y = Math.floor(size.height * reach)
+  return { x: -x, y: -y, width: size.width + 2 * x, height: size.height + 2 * y }
 }

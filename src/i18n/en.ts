@@ -79,6 +79,12 @@ export const en: Translations = {
     moreAxes: 'More axes',
     turnAxisOn: 'Turn an Axis on.',
     close: 'Close',
+    copyToCounterparts: 'Copy the fragment\'s beads to their counterparts.',
+    announceSelectionMirrored: 'Fragment mirrored',
+    droppedMessage: {
+      one: '{count} counterpart had nowhere to land and was left out.',
+      other: '{count} counterparts had nowhere to land and were left out.',
+    },
   },
   colorNames: {
     black: 'Black',
@@ -400,7 +406,14 @@ export const en: Translations = {
       add: 'Add {code} to the Palette',
       takenLabel: '{code} is already in the Palette as the same color',
       showingFirst: 'Showing the first {count}. Search to narrow the list.',
-      noMatch: 'No code matches.',
+      noMatch: 'No code matches {query}.',
+      noMatchFiltered: 'No {filters} codes match {query}.',
+      noneFiltered: 'No {filters} codes.',
+      otherSizes: '{code} exists in {sizes}, not in {size}.',
+      colorFilter: 'Color',
+      finishFilter: 'Finish',
+      clearFilters: 'Clear filters',
+      valueCount: '{name}, {count}',
       loading: 'Loading the colors…',
       failed: 'The colors could not be loaded.',
       finishes: {
@@ -438,6 +451,8 @@ export const en: Translations = {
     removeLineButton: 'Remove selected row/column',
     removeLineShort: 'Remove line',
     namePieceButton: 'Name Piece',
+    fillOpenMessage: 'Nothing encloses this spot. Select an area to fill it.',
+    fillTooBigMessage: 'Too big to fill. Zoom in, or select an area.',
   },
   inputMode: {
     penLabel: 'Pen mode',

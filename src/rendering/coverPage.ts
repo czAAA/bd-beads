@@ -27,8 +27,8 @@ function drawFooter(context: CanvasRenderingContext2D, page: PageSize, words: Pr
   text(context, words.exportedAt, page.width - PRINT_MARGIN, baseline, font('400', 7.5, MONO), PRINT_COLORS.muted, 'right')
 }
 
-/** The Project's name as the title, "by {maker}" under it and one line of technique, bead, grid and size; the title and
- * the maker are left out when empty. */
+/** The Frame's name (else the Project's) as the title, "by {maker}" under it and one line of technique, bead, grid and
+ * size; the title and the maker are left out when empty. */
 function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words: PrintText): void {
   const width = page.width - PRINT_MARGIN * 2
   const rows = titleRows(words)
