@@ -10,6 +10,10 @@ describe('where a Schema\'s tag sits (SchemaTag card)', () => {
     expect(tagPlacement(piece, viewport)).toEqual({ left: 200, top: 68 })
   })
 
+  it('rises over the Rulers\' numbers by the lift', () => {
+    expect(tagPlacement(piece, viewport, 18)).toEqual({ left: 200, top: 50 })
+  })
+
   it('stays on the top-left corner at the canvas box\'s edge, never flipping to another corner', () => {
     expect(tagPlacement({ ...piece, left: 760 }, viewport)).toEqual({ left: 760, top: 68 })
     expect(tagPlacement({ ...piece, top: 10 }, viewport)).toEqual({ left: 200, top: -22 })
