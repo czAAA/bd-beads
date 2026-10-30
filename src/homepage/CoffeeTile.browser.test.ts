@@ -20,8 +20,8 @@ describe('CoffeeTile, clicked anywhere', () => {
         middle(root.querySelector('[data-testid="coffee-cup"]')!),
         middle(root.querySelector('h3')!),
         middle(root.querySelector('p')!),
-        [tile.left + 4, tile.top + 4] as const,
-        [tile.right - 4, tile.bottom - 4] as const,
+        [tile.left + 24, tile.top + 24] as const,
+        [tile.right - 24, tile.bottom - 24] as const,
       ]
       for (const [x, y] of points) expect(document.elementFromPoint(x, y)?.closest('a'), `the point ${x}, ${y}`).toBe(link)
     })

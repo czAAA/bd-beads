@@ -56,6 +56,8 @@ const steam = [
 
 <style scoped>
 .coffee {
+  --coffee-radius: 1.25rem;
+
   position: relative;
   display: flex;
   flex-direction: column;
@@ -68,7 +70,7 @@ const steam = [
   text-align: center;
   background: var(--panel);
   border: 1px solid var(--panel-line);
-  border-radius: 1.25rem;
+  border-radius: var(--coffee-radius);
 }
 
 /* The link's box is the tile, not its own (a coarse pointer makes every control `relative`, and a press scales it, which
@@ -83,6 +85,7 @@ const steam = [
   content: '';
   position: absolute;
   inset: 0;
+  border-radius: var(--coffee-radius);
 }
 
 .coffee-cup {
