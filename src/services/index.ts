@@ -6,6 +6,7 @@ import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
 import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
+import { browserFeedback, type FeedbackService } from './feedback'
 import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
 import { takeOpeningAddress } from './openingAddress'
 import type { OpeningAddress } from '../domain/openingAddress'
@@ -21,6 +22,8 @@ export interface Services {
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
   persistentStorage: PersistentStorage
+  /** Sending a Report from the Feedback sheet, and Copy report (ADR 0081). */
+  feedback: FeedbackService
   /** The safe start's "opening Project X" note (ticket 0716). */
   openingNote: OpeningNoteStore
   /** What the address the editor opened at asks for, read once (ticket 0716). */
@@ -35,6 +38,7 @@ export const browserServices: Services = {
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,
+  feedback: browserFeedback,
   openingNote: browserOpeningNote,
   openingAddress: takeOpeningAddress,
 }
