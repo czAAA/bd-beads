@@ -188,6 +188,9 @@
   --schema-card-width: 236px; /* SchemaTag card: the opened paper tag. */
   --schema-card-cut: 20px; /* SchemaTag card: the paper tag's cut top-right corner. */
   --schema-card-hole: 8px; /* SchemaTag card: the paper tag's hole, 18px in from its top and right. */
+  --schema-card-min-height: 160px; /* SchemaTag card: the paper tag's least height, its actions pushed to the bottom. */
+  --schema-card-name: 600 0.875rem/1.25rem var(--font-sans); /* SchemaTag card: the paper tag's name (Inter 600 14/20). */
+  --schema-card-name-inset: 46px; /* SchemaTag card: where the paper tag's name stops short of its right edge, clear of the hole. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;

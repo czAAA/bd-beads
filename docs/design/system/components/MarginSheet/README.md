@@ -51,7 +51,7 @@ Anchored to the inner border's bottom-right corner, two rows of `--margin-title-
 - The pencils are 18px buttons with 12px icons: the name edits in place as in the Frame panel (Save, Cancel, "n/40"); the Technique opens the Project's Technique PanelPicker as a popover, locked with its reason once a row is done; the maker's name is the Project's Name on exports (NameOnExports card), so a change shows in Project and on every export.
 - The legend shows at most 8 discs, then "+n". Letters is the Frame panel's Letters setting (saved with the Project): on, the Frame's beads carry their letters, as the PNG and PDF do.
 - **Name and size on the margin**, a Switch in the Frame panel's margin section (on by default, remembered on the device), hides the title block; the fold tab then is not shown either.
-- The title block is the only place the canvas shows the Frame's name: it is not drawn under the Frame (ticket 0719), while an unframed named Piece's name still is.
+- The title block is the only place the canvas shows the Frame's name: it is not drawn under the Frame (ticket 0719); an unframed named Piece's name hangs on its own tag (SchemaTag card, ticket 0721).
 - **Fold** (`chevron-down`) folds the title block to a tab in the same corner: the name (Inter 600 11) and `chevron-up`, 24px tall, `margin-title` fill. The tab unfolds it. Kept for the session.
 
 ## Rulers and the current pass

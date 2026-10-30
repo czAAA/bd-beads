@@ -997,6 +997,15 @@ export const pl: Translations = {
     frameHeading: 'Ustawienia',
     background: 'Tło',
   },
+  schemaTag: {
+    group: 'Nazwy schematów',
+    label: '{name}, pokaż szczegóły',
+    tooltipBody: 'Kliknij, aby zobaczyć rozmiar i kolory.',
+    heading: 'schemat',
+    sizeBeads: '{columns} × {rows} koralików',
+    beads: { one: '{count} koralik', few: '{count} koraliki', many: '{count} koralików', other: '{count} koralika' },
+    colors: { one: '{count} kolor', few: '{count} kolory', many: '{count} kolorów', other: '{count} koloru' },
+  },
   feedback: {
     titleGeneral: 'Wyślij opinię',
     titleTranslation: 'Zgłoś błąd tłumaczenia',

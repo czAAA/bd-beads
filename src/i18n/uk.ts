@@ -997,6 +997,15 @@ export const uk: Translations = {
     frameHeading: 'Налаштування',
     background: 'Фон',
   },
+  schemaTag: {
+    group: 'Назви схем',
+    label: '{name}, показати подробиці',
+    tooltipBody: 'Натисніть, щоб побачити розмір і кольори.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бісерин',
+    beads: { one: '{count} бісерина', few: '{count} бісерини', many: '{count} бісерин', other: '{count} бісерини' },
+    colors: { one: '{count} колір', few: '{count} кольори', many: '{count} кольорів', other: '{count} кольору' },
+  },
   feedback: {
     titleGeneral: 'Надіслати відгук',
     titleTranslation: 'Повідомити про помилку перекладу',

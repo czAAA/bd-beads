@@ -11,7 +11,7 @@ import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
-import { type LayersChange, withLayers } from '../testUtils/layerFields'
+import { withLayers } from '../testUtils/layerFields'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */
 function fakeContext() {
@@ -128,29 +128,16 @@ describe('drawRulers', () => {
   })
 })
 
-describe('the names under the Pieces (ADR 0066)', () => {
-  const piece = (row: number, column: number) => [0, 1, 2].map((offset) => ({ row, column: column + offset, color: '#ff0000' }))
-  const named = (framed: LayersChange) =>
-    withLayers(base, {
-      beads: withColors({}, [...piece(10, 10), ...piece(1, 0)]),
-      pieceNames: [{ name: 'Sketch', row: 10, column: 10 }, { name: 'Hidden', row: 1, column: 0 }],
-      ...framed,
+describe('the names of the Schemas', () => {
+  it('are not drawn on the canvas: an unframed Schema\'s name is its hang tag, page markup over it (ticket 0721)', () => {
+    const named = withLayers(base, {
+      beads: withColors({}, [0, 1, 2].map((offset) => ({ row: 10, column: 10 + offset, color: '#ff0000' }))),
+      pieceNames: [{ name: 'Sketch', row: 10, column: 10 }],
     })
-
-  it('draws a Canvas Piece\'s name, and none under a named Frame (ticket 0719)', () => {
     const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, name: 'Cherry', beads: {} } }), { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(named, { zoom: 1, numbers: false }))
 
-    expect(texts).not.toContain('Cherry')
-    expect(texts).toContain('Sketch')
-  })
-
-  it('leaves out the name of a Piece the Frame wholly covers', () => {
-    const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } }), { zoom: 1, numbers: false }))
-
-    expect(texts).toContain('Sketch')
-    expect(texts).not.toContain('Hidden')
+    expect(texts).not.toContain('Sketch')
   })
 })
 

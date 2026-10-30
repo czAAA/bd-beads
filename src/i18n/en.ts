@@ -981,6 +981,15 @@ export const en: Translations = {
     frameHeading: 'Settings',
     background: 'Background',
   },
+  schemaTag: {
+    group: 'Schema names',
+    label: '{name}, show details',
+    tooltipBody: 'Click for the size and colors.',
+    heading: 'schema',
+    sizeBeads: '{columns} × {rows} beads',
+    beads: { one: '{count} bead', other: '{count} beads' },
+    colors: { one: '{count} color', other: '{count} colors' },
+  },
   feedback: {
     titleGeneral: 'Send feedback',
     titleTranslation: 'Report a translation problem',
