@@ -22,6 +22,15 @@ describe('exportFacts', () => {
     expect(factsOf('loom', 20, 30, true)).toMatchObject({ lists: [], sheets: 1, wordPages: 1 })
   })
 
+  it('crosses the empty positions of the PDF Cover only when its beads carry no letters (ticket 0719)', () => {
+    const project = withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { letters: true, paletteLetters: { '#ff0000': 'R' } })
+    const facts = (letters: boolean) => {
+      const shown = withLayers(project, { letters })
+      return exportFacts(shown, printText(shown, en, 'en', new Date()))!.pdfCrosses
+    }
+    expect([facts(false), facts(true)]).toEqual([true, false])
+  })
+
   it('counts a chart page for every sheet a big Schema takes', () => {
     // 100 × 100 takes three sheets where 20 × 20 takes one (ticket 0585).
     expect(factsOf('loom', 100, 100).sheets).toBe(3)
