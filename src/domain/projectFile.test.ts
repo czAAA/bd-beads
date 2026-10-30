@@ -262,7 +262,7 @@ describe('single-Project roundtrip', () => {
   })
 })
 
-describe('the export file names (tickets 73, 74, 0708, 0719)', () => {
+describe('the export file names (tickets 73, 74, 0708, 0720)', () => {
   const rose = { ...withLayer(makeProject('Summer'), 'frame', { name: 'Rose' }), makerName: 'Ada Lovelace' }
 
   it('names the PNG, its further pages and the PDF {project}-{frame}-{maker}', () => {

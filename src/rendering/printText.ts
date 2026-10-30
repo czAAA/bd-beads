@@ -55,7 +55,7 @@ interface PrintedWordChart {
 // empty.
 export interface PrintText {
   locale: Locale
-  /** The title: the Frame's name, else the Project's (ticket 0719). */
+  /** The title: the Frame's name, else the Project's (ticket 0720). */
   name: string
   techniqueWord: string
   maker: string
