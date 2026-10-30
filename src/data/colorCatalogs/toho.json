@@ -1,6 +1,5 @@
 {
  "id": "toho",
- "uncheckedCards": ["110","111","13","PF"],
  "codes": [
   {"code":"1","family":["Crystal"],"finish":"transparent","wording":"Transparent","sizes":["15/0","11/0","9/0","8/0","6/0","3/0","1.5mm","2mm","3mm","4mm"]},
   {"code":"1F","family":["Crystal"],"finish":"matte","wording":"Transparent · Matte","sizes":["15/0","11/0","8/0","6/0","3/0","1.5mm","2mm","3mm","4mm"]},
