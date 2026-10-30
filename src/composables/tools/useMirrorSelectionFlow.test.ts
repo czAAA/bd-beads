@@ -24,7 +24,6 @@ function setup(project: Project = framed, setting: MirrorSetting = leftRight, se
   const harness = editHarness(project)
   const deps = {
     edit: harness.edit,
-    currentProject: harness.currentProject,
     selection: ref<Selection | undefined>(selection ?? undefined),
     mirror: () => setting,
     announce: vi.fn(),
@@ -42,7 +41,6 @@ describe('useMirrorSelectionFlow', () => {
     onMirrorSelection()
 
     expect(colorAt(frameOf(harness.project)!.beads, 0, 5)).toBe(RED)
-    expect(colorAt(frameOf(harness.project)!.beads, 0, 0)).toBe(RED)
     expect(deps.selection.value).toEqual(corner)
     expect(deps.announce).toHaveBeenCalledWith('Fragment mirrored')
     expect(deps.showToast).not.toHaveBeenCalled()

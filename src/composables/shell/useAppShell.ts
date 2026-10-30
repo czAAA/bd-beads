@@ -491,7 +491,6 @@ function wireAppShell(services: Services) {
   /** Mirror (Selection bar): the fragment copied to its counterparts, one Undo step (ticket 0707, spec 0702). */
   const mirrorSelectionFlow = useMirrorSelectionFlow({
     edit,
-    currentProject,
     selection,
     mirror: () => mirror.setting.value,
     announce,

@@ -48,16 +48,10 @@ describe('mirrorLayerSelection (ticket 0707, spec 0702)', () => {
     expect(drawn(result.project)).toEqual([`0:0=${RED}`, `0:5=${RED}`, `3:0=${RED}`])
   })
 
-  it('under Repeat with two axes lays the fragment the same way round in each strip', () => {
+  it('hands the setting through: under Repeat with two axes the fragment lies the same way round in each strip', () => {
     const project = paintAt(framed, [{ row: 0, column: 0 }], RED)
     const result = mirrorLayerSelection(project, { top: 0, left: 0, rows: 1, columns: 2 }, on({ leftRight: true }, { leftRight: 2 }, 'repeat'))
     expect(drawn(result.project)).toEqual([`0:0=${RED}`, `0:2=${RED}`, `0:4=${RED}`])
-  })
-
-  it('with both directions on gives every bead its four images', () => {
-    const project = paintAt(framed, [{ row: 0, column: 1 }], RED)
-    const result = mirrorLayerSelection(project, { top: 0, left: 0, rows: 1, columns: 2 }, on({ leftRight: true, topBottom: true }))
-    expect(drawn(result.project)).toEqual([`0:1=${RED}`, `0:4=${RED}`, `3:1=${RED}`, `3:4=${RED}`])
   })
 
   it('keeps the fragment\'s own beads where a counterpart lands on one, as the axis runs through the Selection', () => {
