@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import type { Project, RowProgress } from '../../domain/project'
+import { rotateFrame } from '../../domain/rotate'
 import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
@@ -16,7 +17,7 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../../domain/layerRecord'
+import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameSheet } from '../../domain/layerRecord'
 import { rowProgressOf } from '../../domain/rowProgress'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
@@ -92,9 +93,10 @@ describe('ProjectSurface', () => {
   })
 
   it.each([
-    { look: 'full', from: 0.6, to: 0.3, ticket: '349' },
-    { look: 'draft', from: 0.2, to: 0.1, ticket: '0689' },
-  ])('moves the drawn beads of a very large piece while the canvas is zoomed in the $look look, and draws them sharp once it settles (ticket $ticket)', async ({ from, to }) => {
+    { look: 'full', from: 0.6, to: 0.3, ticket: '349', moved: 'translate(-10px, -20px) scale(0.5)' },
+    // The draft look's canvas lies half a drawing area out on every side (ticket 0717), which the move is measured from.
+    { look: 'draft', from: 0.2, to: 0.1, ticket: '0689', moved: 'translate(240px, 180px) scale(0.5)' },
+  ])('moves the drawn beads of a very large piece while the canvas is zoomed in the $look look, and draws them sharp once it settles (ticket $ticket)', async ({ from, to, moved }) => {
     vi.useFakeTimers()
     try {
       vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
@@ -106,13 +108,49 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ zoom: to, scroll: { x: 10, y: 20 } })
       vi.advanceTimersByTime(10)
-      expect(cells.element.style.transform).toBe('translate(-10px, -20px) scale(0.5)')
+      expect(cells.element.style.transform).toBe(moved)
       // Only the overlay was drawn.
       expect(context.named('clearRect')).toHaveLength(1)
 
       vi.advanceTimersByTime(200)
       expect(cells.element.style.transform).toBe('')
       expect(context.named('clearRect')).toHaveLength(2)
+      wrapper.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  /** The rectangle of the drawing area the beads' canvas covers as it is laid now: its box, moved by its transform. */
+  function coveredBy(canvas: HTMLCanvasElement): { left: number; top: number; right: number; bottom: number } {
+    const { left, top, width, height, transform } = canvas.style
+    const px = (value: string, otherwise: number) => (value ? Number.parseFloat(value) : otherwise)
+    const box = { x: px(left, 0), y: px(top, 0), width: px(width, viewport.width), height: px(height, viewport.height) }
+    const [, x = '0', y = '0', scale = '1'] = /translate\((\S+)px, (\S+)px\) scale\((\S+)\)/.exec(transform) ?? []
+    const [dx, dy, s] = [Number(x), Number(y), Number(scale)]
+    return { left: box.x + dx, top: box.y + dy, right: box.x + dx + box.width * s, bottom: box.y + dy + box.height * s }
+  }
+
+  it.each([
+    { gesture: 'a pan of half a screen', zoom: 0.2, scroll: { x: 500, y: -400 } },
+    { gesture: 'a zoom out to 60% about the middle', zoom: 0.12, scroll: { x: 500 * 0.6 - 500, y: 400 * 0.6 - 400 } },
+  ])('in the draft look, uncovers no part of the beads\' layer during $gesture, before it settles (ticket 0717)', async ({ zoom, scroll }) => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id))
+      const { wrapper } = await mountSurface(projectOf(300, 300), 0.2)
+      vi.advanceTimersByTime(10)
+      const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element
+
+      await wrapper.setProps({ zoom, scroll })
+      vi.advanceTimersByTime(10)
+      expect(cells.style.transform).not.toBe('')
+      const covered = coveredBy(cells)
+      expect(covered.left).toBeLessThanOrEqual(0)
+      expect(covered.top).toBeLessThanOrEqual(0)
+      expect(covered.right).toBeGreaterThanOrEqual(viewport.width)
+      expect(covered.bottom).toBeGreaterThanOrEqual(viewport.height)
       wrapper.unmount()
     } finally {
       vi.useRealTimers()
@@ -296,7 +334,6 @@ describe('ProjectSurface', () => {
     })
 
     it.each([
-      ['Bead shape', (project: Project): Project => (withLayers(project, { beadShape: 'real' }))],
       ['piece names', (project: Project): Project => (withLayers(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
       ['Technique', (project: Project): Project => (withLayers(project, { technique: 'peyote' }))],
       ['Bead', (project: Project): Project => (withLayers(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],
@@ -1121,6 +1158,23 @@ describe('ProjectSurface', () => {
       })
     })
 
+    it('shows the not-allowed pointer for a moment after Fill reach refused a press, in place of the tool\'s (ticket 0715)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: toolCapabilities('fill'), fillRefusals: 0 })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      vi.useFakeTimers()
+      try {
+        await wrapper.setProps({ fillRefusals: 1 })
+        expect(surface.classes()).toContain('project-surface--refused')
+
+        vi.advanceTimersByTime(1000)
+        await nextTick()
+        expect(surface.classes()).not.toContain('project-surface--refused')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('says which bead a press landed on, hovering it first as its own pointerenter did', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)
@@ -1682,6 +1736,15 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.band).toBe(80)
     expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
+  })
+
+  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0728)', async () => {
+    const corner = async (project: Project) => {
+      const { wrapper } = await mountSurface(project, 1)
+      return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner
+    }
+    expect(await corner(withCanvas(framed(), { orientation: 180 }))).toEqual({ top: true, left: true })
+    expect(await corner(rotateFrame(framed())!)).toEqual({ top: false, left: false })
   })
 
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {

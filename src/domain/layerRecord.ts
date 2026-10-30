@@ -4,19 +4,18 @@ import type { BeadMap, FrameSheet } from './canvas'
 import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
 import { touch, type Background, type CanvasLayer, type FrameLayer, type LayerFields, type Project, type RowProgress } from './project'
-import { beadCell, DEFAULT_BEAD_SHAPE, heldSettings, withCell, type BeadShape, type Weave } from './weave'
+import { beadCell, heldSettings, withCell, type Weave } from './weave'
 
 // The one way to read and write a layer, the Canvas or the Frame (ADR 0079, tickets 0661, 0664): a Project holds its
 // layers in order, the Canvas first, then its Frame; only this file knows where in that list each one is.
 
 /** A layer, the Canvas or the Frame, as one record (ADR 0079): what a canvas has, wherever the Project keeps it. */
 export interface LayerRecord {
-  /** Its Technique and settings as held, with the cell its Bead and Bead shape draw it in. */
+  /** Its Technique and settings as held, with the cell its Bead draws it in. */
   weave: Weave
   beadId: string
   /** Its Bead's saved copy (ADR 0072); absent only for an id the catalog never had. */
   bead?: Bead
-  beadShape: BeadShape
   /** Its own beads, by its own positions: a Frame's counted from its first row and column. */
   beads: BeadMap
   /** The Canvas's is the Project's name; a Frame's is its own, absent when unnamed. */
@@ -25,10 +24,9 @@ export interface LayerRecord {
 
 /** What a layer's record is written with: each field given replaces the layer's, the rest stay. */
 export interface LayerChange {
-  /** Its Technique and settings; a cell given is not stored, the Bead and Bead shape decide it. */
+  /** Its Technique and settings; a cell given is not stored, the Bead decides it. */
   weave?: Weave
   bead?: Bead
-  beadShape?: BeadShape
   beads?: BeadMap
   /** The Canvas's renames the Project; an empty one clears a Frame's. */
   name?: string
@@ -80,16 +78,16 @@ function heldLayer(project: Layered, layer: Layer): LayerFields | undefined {
   return layer === 'frame' ? frameOf(project) : canvasOf(project)
 }
 
-/** A layer's Weave, with the cell its Bead and Bead shape draw it in (ADR 0068); none for a Frame the Project lacks.
+/** A layer's Weave, with the cell its Bead draws it in (ADR 0068); none for a Frame the Project lacks.
  * The Weave of `layerOf`. */
 export function weaveOfLayer(project: Layered, layer: 'canvas'): Weave
 export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined
 export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined {
   const held = heldLayer(project, layer)
-  return held && withCell(weaveOf(held), beadCell(held.bead, held.beadShape ?? DEFAULT_BEAD_SHAPE))
+  return held && withCell(weaveOf(held), beadCell(held.bead))
 }
 
-/** A layer as one record (ADR 0079): its Weave, Bead, Bead shape, beads and name. None for a Frame the Project lacks. */
+/** A layer as one record (ADR 0079): its Weave, Bead, beads and name. None for a Frame the Project lacks. */
 export function layerOf(project: Layered, layer: 'canvas'): LayerRecord
 export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined
 export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined {
@@ -101,15 +99,15 @@ export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined
   return { weave: weaveOfLayer(project, layer)!, beadId: held.beadId, ...beadOfLayer(project, layer), beads: held.beads, ...(name ? { name } : {}) }
 }
 
-/** The Project with a layer written (ADR 0079, tickets 0665, 0670): its Weave, Bead, Bead shape, beads and name. Not
+/** The Project with a layer written (ADR 0079, tickets 0665, 0670): its Weave, Bead, beads and name. Not
  * stamped as a change: the caller does that, as a change of view is not. The same Project without a Frame. */
 export function withLayer(project: Project, layer: Layer, change: LayerChange): Project {
   const held = heldLayer(project, layer)
   if (!held) {
     return project
   }
-  const { weave, bead, beadShape, beads, name } = change
-  const rewoven = withBead({ ...(weave ? { ...unwoven(held), ...weaveOf(weave) } : held), ...(beads ? { beads } : {}) }, bead, beadShape)
+  const { weave, bead, beads, name } = change
+  const rewoven = withBead({ ...(weave ? { ...unwoven(held), ...weaveOf(weave) } : held), ...(beads ? { beads } : {}) }, bead)
   let layers: Project['layers']
   if (layer === 'canvas') {
     layers = [{ ...(rewoven as CanvasLayer), ...(name !== undefined ? { name } : {}) }, ...framesOf(project)]
@@ -126,14 +124,9 @@ function mapLayers(layers: Project['layers'], change: <T extends LayerFields>(la
   return [change(layers[0]), ...framesOf({ layers }).map(change)]
 }
 
-/** A layer with its Bead and Bead shape replaced where given: Symmetric is the default and is left unsaved. */
-function withBead<T extends LayerFields>(layer: T, bead: Bead | undefined, beadShape: BeadShape | undefined): T {
-  let next: T = bead ? { ...layer, beadId: bead.id, bead: beadCopy(bead) } : layer
-  if (beadShape) {
-    const { beadShape: _old, ...rest } = next
-    next = (beadShape === DEFAULT_BEAD_SHAPE ? rest : { ...rest, beadShape }) as T
-  }
-  return next
+/** A layer with its Bead replaced where given. */
+function withBead<T extends LayerFields>(layer: T, bead: Bead | undefined): T {
+  return bead ? { ...layer, beadId: bead.id, bead: beadCopy(bead) } : layer
 }
 
 /** The Project with its Canvas's own fields changed where given (its orientation, Piece names). Not stamped. */
@@ -160,14 +153,13 @@ export function touchFrameSheet(project: Project, sheet: (FrameSheet & Partial<F
   return touch(withFrameSheet(project, sheet), {})
 }
 
-/** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Bead shape, Background, Letters
+/** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Background, Letters
  * switch and Row progress. A Frame made anew in place of another keeps them. */
-export function frameIdentity({ id, beadId, bead, beadShape, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet> & LayerFields): Omit<FrameLayer, keyof FrameSheet> {
+export function frameIdentity({ id, beadId, bead, background, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet> & LayerFields): Omit<FrameLayer, keyof FrameSheet> {
   return {
     id,
     beadId,
     ...(bead ? { bead } : {}),
-    ...(beadShape ? { beadShape } : {}),
     ...(background !== undefined ? { background } : {}),
     ...(letters ? { letters: true } : {}),
     rowProgress,
@@ -229,11 +221,11 @@ export function beadsOfLayer(project: Layered, layer: Layer): BeadMap | undefine
   return heldLayer(project, layer)?.beads
 }
 
-/** A layer's Bead copy and Bead shape (ADR 0068, 0072, 0079); a Frame the Project lacks reads the Canvas's, so the
- * Frame's is the woven layer's. Those of `layerOf`. */
-export function beadOfLayer(project: Layered, layer: Layer): Pick<LayerRecord, 'bead' | 'beadShape'> {
+/** A layer's Bead copy (ADR 0072, 0079); a Frame the Project lacks reads the Canvas's, so the Frame's is the woven
+ * layer's. That of `layerOf`. */
+export function beadOfLayer(project: Layered, layer: Layer): Pick<LayerRecord, 'bead'> {
   const held = heldLayer(project, layer) ?? canvasOf(project)
-  return { ...(held.bead ? { bead: held.bead } : {}), beadShape: held.beadShape ?? DEFAULT_BEAD_SHAPE }
+  return held.bead ? { bead: held.bead } : {}
 }
 
 /** The id of a layer's Bead (ADR 0072, 0079). A Frame the Project lacks reads the Canvas's, so the Frame's is the woven

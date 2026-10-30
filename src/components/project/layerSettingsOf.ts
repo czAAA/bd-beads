@@ -8,10 +8,10 @@ import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 
 /** What a layer's Layer settings show of an open Project (ADR 0079, ticket 0670): its Weave, the Techniques it may take,
- * its Bead and Bead shape, a Custom frame's shape and whether a Row progress pass holds the Frame's Weave. The
+ * its Bead, a Custom frame's shape and whether a Row progress pass holds the Frame's Weave. The
  * Background comes from the theme (`useCanvasBackground`). The Project must have the layer. */
 export function layerSettingsOf(project: Project, layer: Layer) {
-  const { weave, bead, beadShape } = layerOf(project, layer)!
+  const { weave, bead } = layerOf(project, layer)!
   const frame = layer === 'frame' ? frameOf(project) : undefined
   return {
     layer,
@@ -19,7 +19,6 @@ export function layerSettingsOf(project: Project, layer: Layer) {
     techniqueSettings: weave.techniqueSettings ?? {},
     ...(frame ? { techniques: techniquesOf(frame) } : {}),
     bead,
-    beadShape,
     ...(frame?.shape ? { frame } : {}),
     locked: !!frame && rowProgressStarted(project),
   }

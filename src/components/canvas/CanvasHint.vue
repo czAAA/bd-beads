@@ -17,7 +17,7 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
 </script>
 
 <template>
-  <p v-if="shown" class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
+  <p v-if="shown" class="canvas-hint" data-testid="canvas-hint" data-hint-obstacle aria-hidden="true">
     <span>{{ t.canvas.hint.scrollOr }}</span>
     <KeyChip class="hint-chip canvas-hint__key">{{ t.canvas.hint.spaceKey }}</KeyChip>
     <span>{{ t.canvas.hint.dragToMove }}</span>

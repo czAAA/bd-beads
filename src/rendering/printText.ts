@@ -16,7 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
-import { beadOfLayer, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
+import { frameOf, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -55,6 +55,7 @@ interface PrintedWordChart {
 // empty.
 export interface PrintText {
   locale: Locale
+  /** The title: the Frame's name, else the Project's (ticket 0720). */
   name: string
   techniqueWord: string
   maker: string
@@ -62,8 +63,6 @@ export interface PrintText {
   exportedAt: string
   metaLine: string
   bead: string
-  /** The Bead shape setting in words (Symmetric, Real), for page 1's facts. */
-  shape: string
   size: string
   estimatedSize: string
   colors: PrintedColor[]
@@ -147,7 +146,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
 
   return {
     locale,
-    name: projectNameOf(project),
+    name: frameOf(project)?.name?.trim() || projectNameOf(project),
     techniqueWord: technique,
     maker,
     exportedAt: `${date} · ${time}`,
@@ -155,7 +154,6 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
       : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
     bead: beadName,
-    shape: beadOfLayer(project, 'frame').beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
     size,
     estimatedSize: estimate ? `≈ ${estimate}` : '',
     colors: quantities.map((quantity, index) => ({

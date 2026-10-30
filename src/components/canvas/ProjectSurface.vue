@@ -11,19 +11,23 @@ import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from 
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { Size } from '../../rendering/cellSize'
 import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
-import { marginForm, marginScale } from '../../rendering/marginForm'
+import { marginForm, marginScale, titleBlockCorner } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
+import { unframedSchemas } from '../../domain/schemaTags'
 import { surfaceView, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
 import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
+import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
-import type { MirrorSetting } from '../../domain/mirror'
+import type { MirrorDirection, MirrorSetting } from '../../domain/mirror'
+import { axisHandles as axisHandlesOf } from '../../rendering/mirrorAxes'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -76,6 +80,12 @@ const props = withDefaults(defineProps<{
   selectionRefusals?: number
   /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
   mirror?: MirrorSetting
+  /** The open Canvas's Axes that act (ticket 0704): a line across the whole view each, with a handle chip the press
+   * grabs before the tool; `heldAxis` is the one being dragged. */
+  mirrorAxes?: Partial<Record<MirrorDirection, number>>
+  heldAxis?: MirrorDirection
+  /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
+  fillRefusals?: number
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -85,6 +95,9 @@ const emit = defineEmits<SurfacePointerEvents & {
   /** The Frame's and its margin sheet's rectangles in the surface's pixels (tickets 417, 473, 0657), or none once the
    * sheet is out of view: where the sheet's tools and title block sit. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
+  /** The unframed Schemas' boxes in the surface's pixels (ticket 0721), the Piece outset included: where their hang
+   * tags hang from. Follows pan and zoom. */
+  'schema-anchors': [anchors: SchemaAnchors | undefined]
 }>()
 
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
@@ -138,7 +151,7 @@ const drawnProps = viewProps({ get project() { return drawnProject.value }, get 
  * position is. */
 const space = computed(() => spaceOf(props.project, true))
 
-/** The Canvas's Weave (ADR 0079), with the cell its Bead and Bead shape draw it in. */
+/** The Canvas's Weave (ADR 0079), with the cell its Bead draws it in. */
 const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
@@ -262,23 +275,44 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
     band: grid.band * props.zoom,
     viewport: { ...size.value },
     origin: unleaned(surface.value.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')),
+    titleCorner: titleBlockCorner(surface.value),
     ...(degrees === 0 ? {} : { tilt: degrees }),
   }
 })
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
 
+/** Where each unframed Schema is on screen (ticket 0721), from the named Pieces the rulers hold through a stroke: told
+ * to their hang tags. */
+const schemaAnchors = computed<SchemaAnchors | undefined>(() => {
+  if (size.value.width === 0) return undefined
+  const outset = rulers.value.scale.pieceOutset
+  const schemas = unframedSchemas(props.project, pieces.value.named).map(({ name, anchor, row, column, rows, columns }) => {
+    const piece = { row, column, rows, columns }
+    const shown = leaning.value.screenBox(surface.value.beadBox(piece, 'canvas'))
+    return { name, anchor, piece, box: { left: shown.x - outset, top: shown.y - outset, width: shown.width + 2 * outset, height: shown.height + 2 * outset } }
+  })
+  return { schemas, viewport: { ...size.value } }
+})
+watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: true, flush: 'post' })
+
 /** Row marks are drawn unless the Row highlight toggle is off; the project's own Row progress decides the rest. */
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 
 const marginCue = useMarginCue(props)
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
+/** Mirror's Axis handles on the open Canvas (ticket 0704), laid out once per view: the overlay draws them and the
+ * pointer asks them which one a press grabbed, so the two cannot disagree. */
+const axisHandles = computed(() => (props.mirrorAxes ? axisHandlesOf(props.mirrorAxes, canvasWeave.value, surface.value) : []))
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse, axisHandles })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
 useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
-  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
+  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
+
+/** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
+const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
 
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers, pressMoveHandle })
@@ -324,7 +358,7 @@ onBeforeUnmount(() => {
     @wheel="handlers.onWheel"
     @contextmenu.prevent
   >
-    <div class="project-surface__drawing" :style="drawingStyle">
+    <div class="project-surface__drawing" :style="[drawingStyle, emptyCanvasStyle]">
       <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
     </div>
@@ -428,6 +462,16 @@ onBeforeUnmount(() => {
 .project-surface__drawing {
   position: absolute;
   inset: 0;
+}
+
+/* The empty Canvas under the drawing (ticket 0717): the Position marks' tile repeated at the view's zoom, scroll and
+ * quarter turn, reaching past the box so a twist that moves it still covers the surface. The drawing hides it. */
+.project-surface__drawing::before {
+  position: absolute;
+  inset: calc(-1 * var(--empty-reach, 0px));
+  background: var(--empty-marks, none) var(--empty-marks-at, 0 0) / var(--empty-marks-size, auto) repeat;
+  content: '';
+  pointer-events: none;
 }
 
 .project-surface__canvas {

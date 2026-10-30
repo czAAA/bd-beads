@@ -11,7 +11,7 @@ import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
 import type { SettingSpec } from './settingSpec'
-import { describeWeave, type BeadShape, type Weave } from './weave'
+import { describeWeave, type Weave } from './weave'
 import categories from '../data/starters/categories.json'
 
 // The Starters (spec 0590, tickets 0596, 0597, 0633; StarterGallery card): each a design for a Frame at one best
@@ -186,11 +186,10 @@ export interface StarterChoice {
   weave?: Weave
 }
 
-/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead, Bead shape and
- * Background. Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
+/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead and Background.
+ * Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
 export interface StarterLayerSettings {
   beadId: string
-  beadShape: BeadShape
   background: Background
 }
 
@@ -304,9 +303,9 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
   const placement = starterPlacement(starter, choice, centre, bead ?? resolveProjectBead(project)!)
   const placed = changeFrame(project, placement)
-  if (placed.kind !== 'changed' || (!bead && !choice.beadShape && choice.background === undefined)) return placed
+  if (placed.kind !== 'changed' || (!bead && choice.background === undefined)) return placed
   // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
-  const dressed = withLayer(placed.project, 'frame', { bead, beadShape: choice.beadShape })
+  const dressed = withLayer(placed.project, 'frame', { bead })
   const relaid = changeFrame(choice.background === undefined ? dressed : withBackground(dressed, 'frame', choice.background), placement)
   return relaid.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, relaid.project) } : relaid
 }
@@ -324,8 +323,8 @@ function starterPlacement(starter: Starter, choice: StarterChoice, centre: GridP
  * column at the origin, and its Canvas a copy of the Frame's Layer settings (ADR 0079). Nothing in it records the
  * Starter. */
 export function starterProject(starter: Starter, choice: StarterChoice & Pick<StarterProjectChoice, 'name' | 'beadId'> & Partial<StarterLayerSettings>): Project {
-  const { name, beadId, beadShape, background } = choice
-  const project = createProject({ name, ...weaveIn(starter, choice), beadId, ...(beadShape ? { beadShape } : {}), ...(background !== undefined ? { background } : {}) })
+  const { name, beadId, background } = choice
+  const project = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project

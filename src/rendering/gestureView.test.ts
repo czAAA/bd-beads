@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { nearestQuarterTurn, tiltOf } from '../domain/canvasOrientation'
-import { beadsToDraw, gestureTransform, twistTransform } from './gestureView'
+import { beadsToDraw, bitmapBox, gestureTransform, twistTransform, type View } from './gestureView'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { scrollAfterTurn, tiltedView } from './tiltedView'
@@ -22,6 +22,49 @@ describe('gestureTransform', () => {
     const { scale, x, y } = gestureTransform(from, to)
     expect(scale).toBe(0.5)
     expect([200 * scale + x, 100 * scale + y]).toEqual([200, 100])
+  })
+})
+
+describe('bitmapBox', () => {
+  const screen = { width: 1000, height: 800 }
+
+  it('is the drawing area itself in the full look', () => {
+    expect(bitmapBox(screen, false, 2)).toEqual({ x: 0, y: 0, width: 1000, height: 800 })
+  })
+
+  it('reaches half the drawing area past it on every side in the draft look (ticket 0717)', () => {
+    expect(bitmapBox(screen, true, 1)).toEqual({ x: -500, y: -400, width: 2000, height: 1600 })
+  })
+
+  it('reaches less where its bitmap would pass the 4096 × 4096 pixels Safari on iOS still draws', () => {
+    const box = bitmapBox({ width: 1366, height: 1024 }, true, 2)
+    expect(box.width * 2 * box.height * 2).toBeLessThanOrEqual(4096 * 4096)
+    expect(box.x).toBeLessThan(0)
+    expect(box.x).toBeGreaterThan(-683)
+  })
+
+  /** Whether the bitmap drawn over `box` for the view `from`, moved to show `to`, still covers the whole screen. */
+  function covers(box: ReturnType<typeof bitmapBox>, from: View, to: View): boolean {
+    const { scale, x, y } = gestureTransform(from, to, box)
+    const [left, top] = [box.x + x, box.y + y]
+    return left <= 0 && top <= 0 && left + box.width * scale >= screen.width && top + box.height * scale >= screen.height
+  }
+
+  it.each([
+    { pan: 'left', scroll: { x: -500, y: 0 } },
+    { pan: 'down and right', scroll: { x: 500, y: 400 } },
+  ])('in the draft look, still covers the screen after a pan of half a screen $pan', ({ scroll }) => {
+    expect(covers(bitmapBox(screen, true, 1), { zoom: 0.2, scroll: { x: 0, y: 0 } }, { zoom: 0.2, scroll })).toBe(true)
+  })
+
+  it('in the draft look, still covers the screen zoomed out to 60% about its middle', () => {
+    const from = { zoom: 0.2, scroll: { x: 100, y: 60 } }
+    const to = { zoom: 0.12, scroll: { x: (100 + 500) * 0.6 - 500, y: (60 + 400) * 0.6 - 400 } }
+    expect(covers(bitmapBox(screen, true, 1), from, to)).toBe(true)
+  })
+
+  it('in the full look, uncovers a strip on a pan, as before', () => {
+    expect(covers(bitmapBox(screen, false, 1), { zoom: 0.6, scroll: { x: 0, y: 0 } }, { zoom: 0.6, scroll: { x: 100, y: 0 } })).toBe(false)
   })
 })
 

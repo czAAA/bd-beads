@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
-import { type Technique } from '../domain/weave'
+import type { Technique } from '../domain/weave'
 import { createProject } from '../domain/createProject'
 import { findBead } from '../domain/beads'
 import { replaceBead } from '../domain/projectBead'
-import { weaveOf } from '../domain/layerWeave'
+import { canvasWeave, weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
@@ -41,7 +41,7 @@ const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknow
     .filter((call) => typeof call.fillStyle === 'object')
     .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
-function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme } = {}) {
+function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme; opaque?: boolean } = {}) {
   const beads: BeadShape[] = []
   const { context, calls, named } = recordingContext()
   renderProject(context, {
@@ -52,6 +52,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
     rows: extra.rows,
     theme: extra.theme,
     frameTheme: extra.frameTheme,
+    opaque: extra.opaque,
     drawBead: (_c, bead) => beads.push(bead),
   })
   return { beads, calls, named, context }
@@ -83,6 +84,13 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
 
       expect(named('setTransform').at(-1)!.args).toEqual(gridToRegion(spaceOf(project, open).extent, { x: 10, y: 20, width: 300, height: 300 }, 2, 90))
     })
+  })
+
+  it('fills an open Canvas in its Background first when asked, so it hides the empty-canvas look under it (ticket 0717)', () => {
+    const dark = PROJECT_THEMES.dark
+    const { named } = render(framedProject(technique), true, { theme: dark, opaque: true })
+    const [first] = named('fillRect')
+    expect({ fill: first?.fillStyle, area: first?.args }).toEqual({ fill: dark.canvas, area: [0, 0, view.width, view.height] })
   })
 
   it('fills the background only on its own; the Canvas stays transparent and is marked outside the Frame', () => {
@@ -321,7 +329,8 @@ describe('Position marks tile', () => {
     const tile = recordingContext()
     // A tile is made on a canvas of its own (one per Technique): hand it the one that records.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
-    const project = withLayers(framedProject(technique), { frame: undefined })
+    // A Bead this device does not know draws the Technique's own cell, the one these marks are about.
+    const project = withLayers(framedProject(technique), { frame: undefined, bead: undefined })
     const { context } = recordingContext()
     renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51 })
     return tile
@@ -425,7 +434,7 @@ describe('a Frame in a Bead of its own over the Canvas (ticket 0665)', () => {
 
   it('draws the Frame from its corner at its own Bead\'s size: its beads at their own place, scaled by it', () => {
     const { beads, named } = render(halfSize(), true)
-    const origin = positionBoxPx({ technique: 'loom' }, 6, 5)
+    const origin = positionBoxPx(canvasWeave(halfSize()), 6, 5)
     expect(named('translate').map(({ args }) => args)).toContainEqual([origin.x, origin.y])
     expect(named('scale').map(({ args }) => args)).toEqual([[0.5, 0.5]])
     expect(beads.filter(({ color }) => color !== null).slice(0, 2).map(({ x, y }) => ({ x, y }))).toEqual([{ x: 0, y: 0 }, { x: CELL_SIZE_PX, y: 0 }])
