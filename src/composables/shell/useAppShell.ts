@@ -30,7 +30,6 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
-import { useBeadShapeFlow } from '../project/useBeadShapeFlow'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { withStartBackground } from '../../domain/layerRecord'
@@ -559,8 +558,6 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
-  /** Each layer's Bead shape (ticket 0670): a view, so no Edit. */
-  const beadShapeFlow = useBeadShapeFlow({ currentProject, replaceProject })
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
@@ -858,7 +855,6 @@ function wireAppShell(services: Services) {
       // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
       onSetTechnique: frameFlow.setLayerTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
-      onSetBeadShape: beadShapeFlow.setBeadShape,
       onSetBackground: backgroundFlow.setBackground,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,

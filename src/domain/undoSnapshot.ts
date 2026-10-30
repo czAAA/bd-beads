@@ -1,6 +1,6 @@
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
-import { backgroundOf, beadIdOfLayer, beadOfLayer, canvasOf, frameOf, lettersOn, withBackground, withCanvas, withLayer, withLetters } from './layerRecord'
+import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
@@ -11,9 +11,9 @@ import type { SwatchLetters } from './swatchLetters'
 /** One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change. All immutable,
  * sharing structure. */
 export interface UndoEntry {
-  /** Every layer whole (ADR 0079, ticket 0664): its Weave, Bead, Bead shape, beads, Piece names, and the Frame's place,
+  /** Every layer whole (ADR 0079, ticket 0664): its Weave, Bead, beads, Piece names, and the Frame's place,
    * shape, turn, name, Folded beads and Row progress, so Undo undoes any of them with the beads they moved. Its views
-   * (the Project's name, the Canvas's orientation, the Letters switch, each layer's Background and Bead shape) are not put back. */
+   * (the Project's name, the Canvas's orientation, the Letters switch, each layer's Background) are not put back. */
   layers: Project['layers']
   /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
   palette: PaletteIds
@@ -43,10 +43,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const lettered = viewed.layers.every((layer) => (layer.letters === true) === on) ? viewed : withLetters(viewed, on)
   const layered = (['canvas', 'frame'] as const).reduce((kept, layer) => {
     const now = backgroundOf(project, layer)
-    const backed = now === undefined || now === backgroundOf(kept, layer) ? kept : withBackground(kept, layer, now)
-    // The Bead shape is a view too (ticket 0670); a Frame the step adds or removes keeps the one it had.
-    const shape = (layer === 'canvas' || frameOf(project)) && beadOfLayer(project, layer).beadShape
-    return !shape || shape === beadOfLayer(backed, layer).beadShape ? backed : withLayer(backed, layer, { beadShape: shape })
+    return now === undefined || now === backgroundOf(kept, layer) ? kept : withBackground(kept, layer, now)
   }, lettered)
   return touch(layered, {
     palette: entry.palette,

@@ -181,7 +181,7 @@ export interface BeadShape {
   x: number
   y: number
   size: number
-  /** The bead's own width and height where it isn't `size` square (a Real cell, ADR 0068). */
+  /** The bead's own width and height where it isn't `size` square (a Bead's cell, ADR 0068, ticket 0724). */
   width?: number
   height?: number
   /** 0 for a square bead. */

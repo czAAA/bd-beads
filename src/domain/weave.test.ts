@@ -292,7 +292,7 @@ describe('positionStep (ticket 492)', () => {
     expect(positionStep({ technique: 'brick' })).toEqual({ across: 1, down: 1 })
   })
 
-  it('stretches a step down by a Real bead\'s cell', () => {
+  it('stretches a step down by a Bead\'s cell', () => {
     expect(positionStep({ technique: 'peyote', cell: { aspect: 1.2, roundness: 0 } })).toEqual({ across: 1, down: 1.2 * 0.75 })
   })
 })
