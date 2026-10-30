@@ -51,16 +51,27 @@ describe('Cover page', () => {
     expect(pixel(canvas, layout.board.x + (2 + 0.5) * grid.stepAcross * layout.zoom, layout.board.y + (3 + 0.5) * grid.stepDown * layout.zoom)).toBe(painted)
   })
 
-  it('leaves an empty position as bare board, and a White bead drawn as a bead', () => {
+  it('marks an empty position with a faint cross where no letters are drawn, and draws a White bead as a bead', () => {
     const project = fixtureProject({ technique: 'loom', columns: 20, rows: 20, blank: true, override: [{ row: 3, column: 2, color: '#ffffff' }] })
     const words = wordsOf(project)
     const layout = coverLayout(project, words)
     const canvas = drawCoverPage(project, words, layout, 1)
     const grid = displayedGrid(project)
-    const at = (row: number, column: number) => [layout.board.x + (column + 0.5) * grid.stepAcross * layout.zoom, layout.board.y + (row + 0.5) * grid.stepDown * layout.zoom] as const
+    const at = (row: number, column: number, across = 0.5) => [layout.board.x + (column + across) * grid.stepAcross * layout.zoom, layout.board.y + (row + 0.5) * grid.stepDown * layout.zoom] as const
 
-    expect(pixel(canvas, ...at(5, 5))).toBe(PRINT_THEME.background)
+    expect(pixel(canvas, ...at(5, 5))).not.toBe(PRINT_THEME.background)
+    expect(pixel(canvas, ...at(5, 5, 0.25))).toBe(PRINT_THEME.background)
     expect(pixel(canvas, ...at(3, 2))).toBe('#ffffff')
+  })
+
+  it('leaves an empty position as bare board when every bead carries its letter', () => {
+    const project = withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20, blank: true, override: [{ row: 3, column: 2, color: '#ff0000' }] }), { letters: true, paletteLetters: { '#ff0000': 'R' } })
+    const words = wordsOf(project)
+    const layout = coverLayout(project, words)
+    const canvas = drawCoverPage(project, words, layout, 1)
+    const grid = displayedGrid(project)
+
+    expect(pixel(canvas, layout.board.x + 5.5 * grid.stepAcross * layout.zoom, layout.board.y + 5.5 * grid.stepDown * layout.zoom)).toBe(PRINT_THEME.background)
   })
 
   it('exports the PNG without Swatch letters, whatever the Letters toggle says', async () => {

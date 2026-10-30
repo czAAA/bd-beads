@@ -155,7 +155,8 @@ describe('the Hand tool', () => {
 
     await key({ key: '5' })
     expect(wrapper.find('[data-testid="pill-tool-hand"]').classes()).toContain('icon-btn--selected')
-    expect(wrapper.findAll('[data-testid^="pill-tool-"]')).toHaveLength(6)
+    // Six tools and the Mirror tile (ticket 0703).
+    expect(wrapper.findAll('[data-testid^="pill-tool-"]')).toHaveLength(7)
 
     const before = JSON.stringify(beadsOfLayer(loadProjects()[0], 'canvas'))
     const root = surface(wrapper)

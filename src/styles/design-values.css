@@ -175,6 +175,16 @@
   --margin-edit-width: 260px; /* MarginSheet card: the title block's name editor, floated over the sheet (ticket 0657). */
   --margin-title-name: 600 0.75rem/1rem var(--font-sans); /* MarginSheet card: the Frame's name in the title block (Inter 600 12). */
   --margin-legend-letter: 600 0.5rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a legend disc (Inter 600 8). */
+  /* SchemaTag card (ticket 0721): an unframed Schema's name as a hang tag, in screen px at every zoom. */
+  --schema-tag-height: 22px; /* SchemaTag card: the tag's height. */
+  --schema-tag-end: 8px; /* SchemaTag card: the tag's cut left end that holds the hole. */
+  --schema-tag-hole: 3.2px; /* SchemaTag card: the tag's hole, the canvas showing through. */
+  --schema-tag-tilt: 10deg; /* SchemaTag card: the hanging tag's turn (none on hover, anticlockwise when it hangs left). */
+  --schema-tag-drop: 24px; /* SchemaTag card: the tag's hole below the Piece's corner (9px across). */
+  --schema-tag-name: 600 0.6875rem/1.375rem var(--font-sans); /* SchemaTag card: a short name on the tag (Inter 600 11/22). */
+  --schema-card-width: 236px; /* SchemaTag card: the opened paper tag. */
+  --schema-card-cut: 20px; /* SchemaTag card: the paper tag's cut top-right corner. */
+  --schema-card-hole: 8px; /* SchemaTag card: the paper tag's hole, 18px in from its top and right. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;
