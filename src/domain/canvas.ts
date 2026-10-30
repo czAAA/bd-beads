@@ -123,9 +123,10 @@ const boundsCache = new WeakMap<BeadMap, { box: Rect | undefined }>()
 let lastBounds: { beads: BeadMap; box: Rect | undefined } | undefined
 
 /** Records the box of a set of beads worked out elsewhere: decoding knows it from the stored runs, so a huge layer is
- * never walked for it on open (ticket 0716). */
+ * never walked for it on open (ticket 0716), nor on the first edit after (ticket 0731). */
 export function knownBounds(beads: BeadMap, box: Rect | undefined): void {
   boundsCache.set(beads, { box })
+  lastBounds = { beads, box }
 }
 
 /** Past this many changed rows a set of beads is measured afresh rather than grown from the last. */
@@ -136,6 +137,7 @@ const MOST_ROWS_TO_GROW_BOUNDS = 64
 export function beadBounds(beads: BeadMap): Rect | undefined {
   const known = boundsCache.get(beads)
   if (known) {
+    lastBounds = { beads, box: known.box }
     return known.box
   }
   const grown = lastBounds && grownBounds(lastBounds.beads, lastBounds.box, beads)
