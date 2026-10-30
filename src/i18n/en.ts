@@ -84,6 +84,12 @@ export const en: Translations = {
     moreAxes: 'More axes',
     turnAxisOn: 'Turn an Axis on.',
     close: 'Close',
+    copyToCounterparts: 'Copy the fragment\'s beads to their counterparts.',
+    announceSelectionMirrored: 'Fragment mirrored',
+    droppedMessage: {
+      one: '{count} counterpart had nowhere to land and was left out.',
+      other: '{count} counterparts had nowhere to land and were left out.',
+    },
   },
   colorNames: {
     black: 'Black',

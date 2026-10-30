@@ -60,6 +60,7 @@ import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRem
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
+import { useMirrorSelectionFlow } from '../tools/useMirrorSelectionFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
 import { useDialogs } from './useDialogs'
 
@@ -490,6 +491,18 @@ function wireAppShell(services: Services) {
     locale: () => locale.value,
   })
 
+  /** Mirror (Selection bar): the fragment copied to its counterparts, one Undo step (ticket 0707, spec 0702). */
+  const mirrorSelectionFlow = useMirrorSelectionFlow({
+    edit,
+    selection,
+    mirror: () => mirror.setting.value,
+    announce,
+    showToast,
+    onUndo,
+    messages,
+    locale: () => locale.value,
+  })
+
   /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0052, 0066). */
   const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages })
 
@@ -757,6 +770,9 @@ function wireAppShell(services: Services) {
       hasPaintColor,
       onSelectAll,
       onRotate: rotateFlow.onRotate,
+      // The Selection bar's Mirror, offered while Mirror is on (ticket 0707)
+      mirrorOn: mirror.on,
+      onMirrorSelection: mirrorSelectionFlow.onMirrorSelection,
       canNamePiece: namePiece.canNamePiece,
       onNamePiece: namePiece.onNamePiece,
       onRenameSchema: namePiece.onRenameSchema,

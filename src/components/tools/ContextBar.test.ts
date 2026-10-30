@@ -193,6 +193,18 @@ describe('ContextBar', () => {
     expect(mount(ContextBar, { props: { pasteArmed: false, canRemoveLine: false, project } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
   })
 
+  it('offers Mirror after Rotate while Mirror is on, and not while it is off (ticket 0707)', async () => {
+    const props = { selection, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false, project: drawn }
+    const wrapper = mount(ContextBar, { props: { ...props, mirrorOn: true } })
+    const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
+    expect(ids.indexOf('context-bar-mirror-selection')).toBe(ids.indexOf('context-bar-rotate') + 1)
+    await arm()
+    await wrapper.get('[data-testid="context-bar-mirror-selection"]').trigger('click')
+    expect(wrapper.emitted('mirror-selection')).toHaveLength(1)
+
+    expect(mount(ContextBar, { props }).find('[data-testid="context-bar-mirror-selection"]').exists()).toBe(false)
+  })
+
   it('offers Rotate once a pass is done on the Canvas and clear of finished rows, and disables it saying why where the Selection reaches into them (ticket 0647)', async () => {
     const woven = moveToRow(project, 1)
     const rotateOver = async (over: Selection) => {

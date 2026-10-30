@@ -19,7 +19,7 @@ The endless arrangement of positions on the Canvas set by the Technique: loom ro
 _Avoid_: board, for the beads themselves or for the Schema
 
 **Position marks**:
-How the Grid's positions are drawn on the Canvas: as squares (one shared 1px line in the gap between neighbouring positions, shaped like the Technique's bead, and round every position of the Canvas, a drawn one and one inside the Frame included, ticket 0458). The Dots style and the choice between styles were removed (ticket 0545). Inside the Frame an empty position is an empty bead instead, over whatever the Canvas holds there; the keep-out margin has none. Never in exports.
+How the Grid's positions are drawn on the Canvas: as squares (one shared 1px line in the gap between neighbouring positions, shaped like the Technique's bead, and round every position of the Canvas, a drawn one and one inside the Frame included, ticket 0458). The Dots style and the choice between styles were removed (ticket 0545). Inside the Frame an empty position is an empty bead instead, over whatever the Canvas holds there; the keep-out margin has none. Never in exports. The editor also lays them, with the Background, under the drawing (ticket 0717), so while the canvas is panned or zoomed whatever the moving drawing uncovers shows empty Canvas, never a bare patch.
 _Avoid_: grid dots, background dots
 
 **Piece**:
@@ -108,7 +108,7 @@ The button (and R, and the Canvas strip's Rulers button) that shows or hides eve
 _Avoid_: ruler switch, numbers toggle
 
 **Canvas zoom**:
-The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the Dock and every sheet keep their size (ADR 0034).
+The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the Dock and every sheet keep their size (ADR 0034). While a big pattern is zoomed or panned its drawing is moved and scaled and drawn sharp once the gesture settles (tickets 349, 0689); the empty Canvas look lies under it the whole time, and in the draft look the drawing reaches half a screen past the view, so nothing bare shows (ticket 0717).
 _Avoid_: scale, magnify, page zoom (a different thing)
 
 **Page zoom**:
