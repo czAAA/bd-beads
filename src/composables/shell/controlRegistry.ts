@@ -402,6 +402,11 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 'r', shift: true, label: 'R' }],
     run: (deps) => deps.onRotate(),
   },
+  // The Selection bar's Mirror (ticket 0707): no key, the bar's own surface runs it, while Mirror is on.
+  unkeyed('mirror-selection', (t) => t.mirror.title, 'edit', {
+    icon: 'mirror',
+    body: (t) => t.mirror.copyToCounterparts,
+  }),
   {
     id: 'remove-line',
     icon: 'remove-line',

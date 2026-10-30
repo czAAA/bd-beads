@@ -86,6 +86,14 @@ export const pl: Translations = {
     moreAxes: 'Więcej osi',
     turnAxisOn: 'Włącz oś.',
     close: 'Zamknij',
+    copyToCounterparts: 'Skopiuj koraliki fragmentu na ich odbicia.',
+    announceSelectionMirrored: 'Fragment odbity',
+    droppedMessage: {
+      one: '{count} odbicie nie miało gdzie się położyć i zostało pominięte.',
+      few: '{count} odbicia nie miały gdzie się położyć i zostały pominięte.',
+      many: '{count} odbić nie miało gdzie się położyć i zostało pominiętych.',
+      other: '{count} odbicia nie miało gdzie się położyć i zostało pominiętych.',
+    },
   },
   colorNames: {
     black: 'Czarny',
