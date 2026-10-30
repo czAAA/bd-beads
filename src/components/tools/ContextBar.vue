@@ -46,6 +46,8 @@ const props = withDefaults(defineProps<{
   selectActive?: boolean
   /** The Tool pill's rectangle in the same pixels: the bar keeps clear of it (ticket 439). */
   obstacle?: BarBox
+  /** Whether Mirror is on (useMirrorFlow): the bar then offers Mirror after Rotate (ticket 0707). */
+  mirrorOn?: boolean
 }>(), { hasPaintColor: true })
 
 const emit = defineEmits<{
@@ -56,6 +58,7 @@ const emit = defineEmits<{
   frame: []
   'clear-selection': []
   rotate: []
+  'mirror-selection': []
   'select-all': []
   'remove-line': []
   'name-piece': []
@@ -71,6 +74,7 @@ const actions = {
   fill: controlAction('fill-selection'),
   frame: controlAction('frame-from-selection'),
   rotate: controlAction('rotate'),
+  mirrorSelection: controlAction('mirror-selection'),
   removeLine: controlAction('remove-line'),
   namePiece: controlAction('name-piece'),
   clear: controlAction('empty-selection'),
@@ -133,6 +137,8 @@ const items = computed<BarItem[]>(() => {
   if (frameAllows(frameOf(props.project), 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  // Mirror copies the fragment to its counterparts, so only while Mirror is on (ticket 0707, spec 0702).
+  if (props.mirrorOn) list.push({ id: 'mirror-selection', action: actions.mirrorSelection, group: 2, run: () => emit('mirror-selection') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })

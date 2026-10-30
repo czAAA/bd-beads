@@ -176,6 +176,18 @@ describe('drawing anywhere', () => {
     const beads = beadsOfLayer(loadProjects()[0], 'canvas')
     expect([beads[0]![0], beads[0]![1], beads[1]![1]]).toEqual([BLUE, BLUE, BLUE])
   })
+
+  it('refuses a Fill on open space and says why, with the not-allowed pointer (Fill reach, ticket 0715)', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mountApp()
+    await flushPromises()
+    await pickTool(wrapper, 'fill')
+
+    await pressBead(wrapper, { row: 40, column: 40 })
+
+    expect(wrapper.get('[data-testid="fill-refused"]').text()).toContain('Nothing encloses this spot.')
+    expect(wrapper.get('[data-testid="project-surface"]').classes()).toContain('project-surface--refused')
+  })
 })
 
 describe('the Hand tool', () => {

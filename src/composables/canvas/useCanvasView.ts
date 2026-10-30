@@ -8,6 +8,7 @@ import { placedFrame } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { SNAP_MS } from '../../rendering/gestureView'
+import { visibleBeadsInSpace } from '../../rendering/projectRenderer'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 import type { Size } from '../../rendering/cellSize'
@@ -155,6 +156,23 @@ export function useCanvasView(
     return surfaceOf(project).pointToGrid(leaning.value.toView({ x: viewport.value.width / 2, y: viewport.value.height / 2 }))
   }
 
+  /** The Canvas positions on screen (Fill reach, ticket 0715): the block the renderer counts as in view of the drawing
+   * as it stands, its larger square while the Canvas leans; nothing until the area is measured. */
+  function canvasOnScreen(): Rect | undefined {
+    const project = currentProject()
+    if (!project || !measured()) {
+      return undefined
+    }
+    const { offset, drawn } = leaning.value
+    const region = { x: scroll.value.x - offset.x, y: scroll.value.y - offset.y, width: drawn.width, height: drawn.height }
+    const seen = visibleBeadsInSpace(layerOf(project, 'canvas').weave, OPEN_SPACE, region, zoom.value, nearestQuarterTurn(orientation.value))
+    // Offset rows reach half a bead further one way than the next: the block takes both in.
+    const spans = [seen.columnsOf(seen.firstRow), seen.columnsOf(seen.firstRow + 1)]
+    const first = Math.min(...spans.map((span) => span.first))
+    const last = Math.max(...spans.map((span) => span.last))
+    return { row: seen.firstRow, column: first, rows: seen.lastRow - seen.firstRow + 1, columns: last - first + 1 }
+  }
+
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
   function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
@@ -272,6 +290,7 @@ export function useCanvasView(
     centreOn,
     visibleCentre,
     visibleCentrePx,
+    canvasOnScreen,
     cellAt,
     isAtFit,
     orientation,

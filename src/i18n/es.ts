@@ -88,6 +88,13 @@ export const es: Translations = {
     close: 'Cerrar',
     dragHandle: 'Arrastra el tirador del eje para moverlo.',
     repeatNeedsArea: 'Repetir en el lienzo necesita un área.',
+    copyToCounterparts: 'Copia las cuentas del fragmento a sus reflejos.',
+    announceSelectionMirrored: 'Fragmento reflejado',
+    droppedMessage: {
+      one: '{count} reflejo no tenía dónde caer y no se colocó.',
+      many: '{count} de reflejos no tenían dónde caer y no se colocaron.',
+      other: '{count} reflejos no tenían dónde caer y no se colocaron.',
+    },
   },
   colorNames: {
     black: 'Negro',
@@ -410,7 +417,14 @@ export const es: Translations = {
       add: 'Añadir {code} a la paleta',
       takenLabel: '{code} ya está en la paleta con el mismo color',
       showingFirst: 'Se muestran los primeros {count}. Busca para acotar la lista.',
-      noMatch: 'Ningún código coincide.',
+      noMatch: 'Ningún código coincide con {query}.',
+      noMatchFiltered: 'Ningún código coincide con {query} con los filtros: {filters}.',
+      noneFiltered: 'Ningún código con los filtros: {filters}.',
+      otherSizes: '{code} existe en {sizes}, no en {size}.',
+      colorFilter: 'Color',
+      finishFilter: 'Acabado',
+      clearFilters: 'Quitar filtros',
+      valueCount: '{name}, {count}',
       loading: 'Cargando los colores…',
       failed: 'No se pudieron cargar los colores.',
       finishes: {
@@ -450,6 +464,8 @@ export const es: Translations = {
     removeLineButton: 'Quitar fila/columna seleccionada',
     removeLineShort: 'Quitar línea',
     namePieceButton: 'Nombrar trozo',
+    fillOpenMessage: 'Nada rodea este punto. Selecciona un área para rellenarla.',
+    fillTooBigMessage: 'Demasiado grande para rellenar. Acerca la vista o selecciona un área.',
   },
   inputMode: {
     penLabel: 'Modo lápiz',

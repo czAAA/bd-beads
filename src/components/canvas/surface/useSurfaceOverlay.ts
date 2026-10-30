@@ -19,7 +19,8 @@ import type { AxisHandle } from '../../../rendering/mirrorAxes'
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
 // redrawn frame by frame; with reduced motion at once. At rest the sheet's own edge marks the margin (ticket 0656).
 const MARGIN_FADE_MS = 120
-const REFUSED_PRESS_MS = 1000
+/** How long a refused press shows its cue: the margin's outline, or the not-allowed pointer after a Fill. */
+export const REFUSED_PRESS_MS = 1000
 const SIZE_FLASH_MS = 1200
 
 function reducedMotion(): boolean {

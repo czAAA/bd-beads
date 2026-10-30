@@ -60,6 +60,7 @@ import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRem
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
+import { useMirrorSelectionFlow } from '../tools/useMirrorSelectionFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
 import { useDialogs } from './useDialogs'
 
@@ -134,7 +135,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, visibleCentrePx, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, visibleCentrePx, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
@@ -389,12 +390,15 @@ function wireAppShell(services: Services) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, fillRefusals, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
     endSelectPress: endSelectPressFraming,
     mirror: () => mirror.setting.value,
+    onScreen: canvasOnScreen,
+    showToast,
+    messages,
   })
 
   /** The open Project for what only summarises it, Beads needed and the accessible name: it waits for a stroke's end
@@ -481,6 +485,18 @@ function wireAppShell(services: Services) {
     edit,
     currentProject,
     selection,
+    announce,
+    showToast,
+    onUndo,
+    messages,
+    locale: () => locale.value,
+  })
+
+  /** Mirror (Selection bar): the fragment copied to its counterparts, one Undo step (ticket 0707, spec 0702). */
+  const mirrorSelectionFlow = useMirrorSelectionFlow({
+    edit,
+    selection,
+    mirror: () => mirror.setting.value,
     announce,
     showToast,
     onUndo,
@@ -748,6 +764,7 @@ function wireAppShell(services: Services) {
       onHoverEnd,
       selection,
       selectionRefusals,
+      fillRefusals,
       onSelectionPress,
       onSelectionDrag: dragAdjust,
       onSelectionRelease: endAdjust,
@@ -761,6 +778,9 @@ function wireAppShell(services: Services) {
       hasPaintColor,
       onSelectAll,
       onRotate: rotateFlow.onRotate,
+      // The Selection bar's Mirror, offered while Mirror is on (ticket 0707)
+      mirrorOn: mirror.on,
+      onMirrorSelection: mirrorSelectionFlow.onMirrorSelection,
       canNamePiece: namePiece.canNamePiece,
       onNamePiece: namePiece.onNamePiece,
       canRemoveSelectedLine: removeLine.canRemoveSelectedLine,
