@@ -591,8 +591,8 @@ const MIRROR_AXIS_SOFT = 0.45
 
 /** Draws Radial about its centre (ticket 0705, MirrorPopover card), clipped to a box (the Frame's, or the view): in
  * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first full and the others soft;
- * in Repeat mode the Fold's rays, 360° apart; the first straight up or `from` radians clockwise of it (0706); the ring. */
-function drawRadial(context: DrawingContext, centre: { x: number; y: number }, setting: MirrorSetting, box: Region, zoom: number, theme: ProjectTheme, from = 0): void {
+ * in Repeat mode the Fold's rays, 360° apart; the first straight up or `startAngle` clockwise of it (0706); the ring. */
+function drawRadial(context: DrawingContext, centre: { x: number; y: number }, setting: MirrorSetting, box: Region, zoom: number, theme: ProjectTheme, startAngle = 0): void {
   const mirror = setting.mode === 'mirror'
   const step = (mirror ? Math.PI : 2 * Math.PI) / setting.fold
   // From the centre inside the box, no line to its edge is longer than its diagonal.
@@ -605,8 +605,8 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
   context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
   context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
   for (let turn = 0; turn < setting.fold; turn++) {
-    const dx = Math.sin(from + turn * step) * reach
-    const dy = -Math.cos(from + turn * step) * reach
+    const dx = Math.sin(startAngle + turn * step) * reach
+    const dy = -Math.cos(startAngle + turn * step) * reach
     context.globalAlpha = mirror && turn > 0 ? MIRROR_AXIS_SOFT : 1
     context.beginPath()
     // A mirror line runs through the centre from its upward end; a ray runs out from the centre.
