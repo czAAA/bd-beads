@@ -4,6 +4,7 @@ import { normalizeProject } from '../../src/domain/storedProject'
 import type { Project } from '../../src/domain/project'
 import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
 import type { Tool } from '../../src/domain/tool'
+import { SETTLE_MS } from '../../src/rendering/gestureView'
 
 /** Opens the app with these Projects in the library (the most recent opens), or none; at the preview's address or
  * `url`. */
@@ -176,4 +177,26 @@ export async function savedProject(page: Page): Promise<Project> {
   const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
   const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
   return normalizeProject(decodeProject(library.patterns[0]!))
+}
+
+/** Keeps the sharp redraw a settled view asks for, to run when the test says: the pan stays in flight till then. */
+export async function holdSettle(page: Page): Promise<void> {
+  await page.evaluate((settleMs) => {
+    const held: (() => void)[] = []
+    const real = window.setTimeout.bind(window)
+    ;(window as unknown as { heldSettles: (() => void)[] }).heldSettles = held
+    window.setTimeout = ((callback: () => void, ms?: number, ...rest: unknown[]) => {
+      if (ms === settleMs) {
+        held.push(callback)
+        return 0
+      }
+      return real(callback, ms, ...rest)
+    }) as typeof window.setTimeout
+  }, SETTLE_MS)
+}
+
+/** Runs the last held sharp redraw, as the settle would have. */
+export async function letSettle(page: Page): Promise<void> {
+  await page.evaluate(() => (window as unknown as { heldSettles: (() => void)[] }).heldSettles.at(-1)?.())
+  await settle(page)
 }

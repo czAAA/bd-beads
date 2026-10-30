@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { nearestQuarterTurn, tiltOf } from '../domain/canvasOrientation'
-import { beadsToDraw, bitmapBox, gestureTransform, twistTransform, type View } from './gestureView'
+import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, twistTransform, type View } from './gestureView'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { scrollAfterTurn, tiltedView } from './tiltedView'
@@ -45,9 +45,7 @@ describe('bitmapBox', () => {
 
   /** Whether the bitmap drawn over `box` for the view `from`, moved to show `to`, still covers the whole screen. */
   function covers(box: ReturnType<typeof bitmapBox>, from: View, to: View): boolean {
-    const { scale, x, y } = gestureTransform(from, to, box)
-    const [left, top] = [box.x + x, box.y + y]
-    return left <= 0 && top <= 0 && left + box.width * scale >= screen.width && top + box.height * scale >= screen.height
+    return coversArea(box, gestureTransform(from, to, box), screen)
   }
 
   it.each([
@@ -65,6 +63,34 @@ describe('bitmapBox', () => {
 
   it('in the full look, uncovers a strip on a pan, as before', () => {
     expect(covers(bitmapBox(screen, false, 1), { zoom: 0.6, scroll: { x: 0, y: 0 } }, { zoom: 0.6, scroll: { x: 100, y: 0 } })).toBe(false)
+  })
+})
+
+describe('coversArea', () => {
+  const screen = { width: 1000, height: 800 }
+
+  it('holds for an unmoved bitmap over the drawing area, and one reaching past it', () => {
+    expect(coversArea({ x: 0, y: 0, width: 1000, height: 800 }, { scale: 1, x: 0, y: 0 }, screen)).toBe(true)
+    expect(coversArea({ x: -500, y: -400, width: 2000, height: 1600 }, { scale: 1, x: 300, y: -200 }, screen)).toBe(true)
+  })
+
+  it.each([
+    { side: 'left', move: { scale: 1, x: 1, y: 0 } },
+    { side: 'bottom', move: { scale: 1, x: 0, y: -1 } },
+    { side: 'right and bottom, zoomed out', move: { scale: 0.9, x: 0, y: 0 } },
+  ])('fails where a move uncovers the $side edge', ({ move }) => {
+    expect(coversArea({ x: 0, y: 0, width: 1000, height: 800 }, move, screen)).toBe(false)
+  })
+})
+
+describe('mayRedrawMidGesture (ticket 0732)', () => {
+  it('waits three times as long as the last draw took after it', () => {
+    expect(mayRedrawMidGesture(1059, { at: 1000, ms: 20 })).toBe(false)
+    expect(mayRedrawMidGesture(1060, { at: 1000, ms: 20 })).toBe(true)
+  })
+
+  it('draws at once before anything was drawn', () => {
+    expect(mayRedrawMidGesture(0, { at: Number.NEGATIVE_INFINITY, ms: 0 })).toBe(true)
   })
 })
 
