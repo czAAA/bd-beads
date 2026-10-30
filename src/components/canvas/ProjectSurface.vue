@@ -138,7 +138,7 @@ const drawnProps = viewProps({ get project() { return drawnProject.value }, get 
  * position is. */
 const space = computed(() => spaceOf(props.project, true))
 
-/** The Canvas's Weave (ADR 0079), with the cell its Bead and Bead shape draw it in. */
+/** The Canvas's Weave (ADR 0079), with the cell its Bead draws it in. */
 const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles

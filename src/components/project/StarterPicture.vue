@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { designSizes, STARTER_BEAD_ID, starterProject, type Starter, type StarterChoice } from '../../domain/starters'
-import { withBeadShape } from '../../domain/projectBead'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
 // A Starter's picture (tickets 0596, 0597; StarterGallery card, Pictures): its design, or its shape empty with its Seams,
-// drawn by the Project renderer in Real Bead shape and fitted to its well, never cropped. On a card a Band stands
+// drawn by the Project renderer in its Bead's own cell and fitted to its well, never cropped. On a card a Band stands
 // upright and the Earrings' category shows a pair. Decorative: the card or the setup names it.
 const props = withDefaults(
   defineProps<{
@@ -30,9 +29,7 @@ const props = withDefaults(
 const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()
 
-const project = computed(() =>
-  withBeadShape(starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }), 'frame', 'real'),
-)
+const project = computed(() => starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }))
 
 /** The gap between a pair, as a share of one picture's width. */
 const PAIR_GAP = 0.25

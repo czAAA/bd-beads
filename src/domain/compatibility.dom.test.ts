@@ -82,7 +82,7 @@ const defaultIds = defaultPaletteIds(defaultPalette(CUBE_COPY.id))
 const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => color.hex), undefined)
 
 /** A Project saved before it held its layers as it reads today (ticket 0664, ADR 0079): its Canvas from its own fields
- * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead, Bead shape and
+ * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead and
  * Letters, each layer named by the Project's id. */
 /** A stored value of file version 12 or library version 5 as this build writes it back (ticket 0691): the next version,
  * with brick stitch's Drop under its new id where the value held its Brick block. */
@@ -91,8 +91,8 @@ function withDrops(stored: string, version: number): unknown {
 }
 
 function layered(flat: Omit<FlatProject, 'frame'> & { frame?: FrameSheet }): Project {
-  const { name, technique, techniqueSettings, beadId, bead, beadShape, beads, frame, rowProgress, letters, pieceNames, rotation, ...rest } = flat
-  const shared = { beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters } : {}) }
+  const { name, technique, techniqueSettings, beadId, bead, beads, frame, rowProgress, letters, pieceNames, rotation, ...rest } = flat
+  const shared = { beadId, ...(bead ? { bead } : {}), ...(letters ? { letters } : {}) }
   const canvas = { id: `${flat.id}:canvas`, name, ...weaveOf({ technique, techniqueSettings }), ...shared, beads, ...(pieceNames ? { pieceNames } : {}), orientation: rotation }
   return { ...rest, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, rowProgress }] : [canvas] }
 }
@@ -310,8 +310,8 @@ describe('stored-data compatibility', () => {
 
       const [framed, open] = loadProjects()
       expect(framed!.layers.map((layer) => layer.id)).toEqual(['layer-canvas', 'layer-frame'])
-      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadShape: 'real', letters: true, orientation: 90 })
-      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', beadShape: 'real', rowProgress: { currentRow: 1 } })
+      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, letters: true, orientation: 90 })
+      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', rowProgress: { currentRow: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
       expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 6))
@@ -453,10 +453,10 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV12).projects
       expect(opened!.id).toBe('v12-layers')
       expect(opened!.makerName).toBe('Maria')
-      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
+      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'miyuki/delica/11-0', letters: true, orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
       expect(beadsOfLayer(opened!, 'canvas')).toEqual({ 0: { 0: '#2fb6ae' }, 30: { 30: '#e63746', 31: '#e63746' } })
       expect(frameSheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
-      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
       expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, 13))
     })
 

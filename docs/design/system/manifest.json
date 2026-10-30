@@ -360,7 +360,7 @@
     {
       "name": "LayerSettings",
       "group": "Overlays",
-      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead and Bead shape, Background; in New Project, Project and the Frame panel."
+      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead, Background; in New Project, Project and the Frame panel."
     },
     {
       "name": "QualitySlider",

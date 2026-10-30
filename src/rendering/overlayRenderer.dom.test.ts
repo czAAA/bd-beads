@@ -124,7 +124,7 @@ describe('renderOverlay', () => {
 
     it('rings each peyote bead with its own corner radius, less the half stroke', () => {
       const R = beadRoundness('peyote') * CELL_SIZE_PX - 1
-      const project = projectOf('peyote', 5, 3, { currentRow: 0 })
+      const project = withLayers(projectOf('peyote', 5, 3, { currentRow: 0 }), { bead: undefined })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -252,7 +252,7 @@ describe('renderOverlay', () => {
     })
 
     it('follows a shifted row and the Technique\'s packing, and rounds a peyote outline', () => {
-      const project = projectOf('peyote', 4, 3, noProgress)
+      const project = withLayers(projectOf('peyote', 4, 3, noProgress), { bead: undefined })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: null } })

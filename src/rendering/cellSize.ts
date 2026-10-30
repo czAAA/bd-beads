@@ -13,7 +13,7 @@ export interface Size {
 export const CELL_SIZE_PX = 20
 
 /** A bead's cell in grid px: square, except where the Technique draws beads longer than they are wide (ticket 482) or
- * the Bead shape is Real, which draws the Bead's own proportions (ADR 0068). */
+ * a Bead is given, which draws the Bead's own proportions (ADR 0068, 0083). */
 export function cellSizePx(technique: Technique, cell?: BeadCell): Size {
   return { width: CELL_SIZE_PX, height: CELL_SIZE_PX * describeWeave({ technique, cell }).cellAspect }
 }

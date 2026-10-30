@@ -88,8 +88,8 @@ describe('renderProject', () => {
     expect(beads.every(({ size, cornerRadius }) => size === 20 && cornerRadius === 0)).toBe(true)
   })
 
-  it('places peyote beads with the half-bead stagger, the tighter row packing and rounded corners', () => {
-    const project = projectOf('peyote', 2, 3)
+  it('places peyote beads with the half-bead stagger, the tighter row packing and rounded corners, in the Technique\'s own cell where no Bead is known', () => {
+    const project = projectOf('peyote', 2, 3, { bead: undefined })
 
     const beads = beadsDrawn(project, whole(project))
 
@@ -876,18 +876,13 @@ frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, b
   })
 })
 
-describe('Bead shape (ADR 0068)', () => {
+describe('the Bead\'s cell (ADR 0068, 0083)', () => {
   const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
   const painted = (project: Project): Project => (withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) } }))
 
-  it('draws the Symmetric cell exactly as the Technique had it', () => {
-    const project = painted(projectOf('peyote', 3, 3))
-    expect(drawnBeads(withLayers(project, { beadShape: 'symmetric' }))).toEqual(drawnBeads(project))
-  })
-
-  it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
-    const real = withLayers(painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), { beadShape: 'real' })
+  it('draws each cell with the Bead height and its outline, and rows at its pitch', () => {
+    const real = painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') }))
     const beads = drawnBeads(real)
     expect(beads).toHaveLength(9)
     for (const bead of beads) {
@@ -901,7 +896,7 @@ describe('Bead shape (ADR 0068)', () => {
   })
 })
 
-describe('a round Bead in Real shape is a pill (ADR 0068)', () => {
+describe('a round Bead is a pill (ADR 0068)', () => {
   it('never rounds a corner past half the shorter side', () => {
     const { context, calls } = recordingContext()
     const drawn = { x: 0, y: 0, size: 20, width: 20, height: 26, cornerRadius: 10, color: '#111111', dimmed: false, deviceScale: 1, theme: DEFAULT_THEME }
