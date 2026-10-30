@@ -219,7 +219,7 @@ test('the Tool pill and its color popover are drawn over the margin sheet, whose
 })
 
 // An iPad held sideways with the pill on the right: the color popover reaches down past the Progress bar, and the Custom
-// color picker opened in it was drawn under the bar, out of reach (ticket 0725). It sits over the canvas box's bars, and
+// color picker opened in it was drawn under the bar, out of reach (ticket 0726). It sits over the canvas box's bars, and
 // on a screen too short for it, it scrolls to its last field.
 test('the Custom color picker beside a right-hand pill is drawn over the Progress bar, and scrolls on a short screen', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1024, height: 768 }, reducedMotion: 'reduce', hasTouch: true })
