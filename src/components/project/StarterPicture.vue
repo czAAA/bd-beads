@@ -7,7 +7,7 @@ import { spaceOf } from '../../rendering/space'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
 // A Starter's picture (tickets 0596, 0597; StarterGallery card, Pictures): its design, or its shape empty with its Seams,
-// drawn by the Project renderer in its Bead's own cell and fitted to its well, never cropped. On a card a Band stands
+// drawn by the Project renderer in its Bead's real cell and fitted to its well, never cropped. On a card a Band stands
 // upright and the Earrings' category shows a pair. Decorative: the card or the setup names it.
 const props = withDefaults(
   defineProps<{
@@ -29,7 +29,9 @@ const props = withDefaults(
 const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()
 
-const project = computed(() => starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }))
+const project = computed(() =>
+  starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }),
+)
 
 /** The gap between a pair, as a share of one picture's width. */
 const PAIR_GAP = 0.25

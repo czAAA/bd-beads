@@ -43,7 +43,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
 
   it('has none of what moved to the Frame panel or went away', () => {
     const wrapper = mountPanel()
-    for (const gone of ['canvas-technique-row', 'project-technique', 'frame-technique', 'size-estimate-row', 'frame-from-starter', 'project-bead-row', 'project-name-on-exports', 'frame-edit', 'frame-fit', 'frame-remove']) {
+    for (const gone of ['canvas-technique-row', 'project-technique', 'frame-technique', 'size-estimate-row', 'frame-from-starter', 'project-bead-row', 'bead-shape', 'project-name-on-exports', 'frame-edit', 'frame-fit', 'frame-remove']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists(), gone).toBe(false)
     }
     expect(wrapper.text()).not.toContain('Beads needed')

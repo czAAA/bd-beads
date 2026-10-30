@@ -5,8 +5,8 @@ import type { CanvasLayer, FrameLayer, LayerFields, Project } from '../domain/pr
 import { DEFAULT_BEAD } from '../domain/beads'
 import { DEFAULT_TECHNIQUE } from '../domain/weave'
 
-/** What a test sets on a Project in one go (ticket 0664): the Canvas layer's own fields, the Bead and
- * Letters of every layer, the Frame layer as a sheet (none removes it) and its Row progress, and the Project's own. */
+/** What a test sets on a Project in one go (ticket 0664): the Canvas layer's own fields, the Bead and Letters of
+ * every layer, the Frame layer as a sheet (none removes it) and its Row progress, and the Project's own. */
 export type LayersChange = Partial<Pick<CanvasLayer, 'name' | 'technique' | 'techniqueSettings' | 'beads' | 'pieceNames' | 'orientation'>> &
   Partial<Pick<LayerFields, 'beadId' | 'bead' | 'letters'>> &
   Partial<Pick<FrameLayer, 'rowProgress'>> & { frame?: (FrameSheet & Partial<FrameLayer>) | undefined } & Partial<Omit<Project, 'layers'>>
