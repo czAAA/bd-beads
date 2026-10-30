@@ -34,6 +34,11 @@ export interface Env {
   GOOGLE_CLIENT_ID?: string
   TURNSTILE_SITE_KEY?: string
 
+  /** The repo a Report becomes an issue in, `owner/name` (ADR 0081): the private docs repo, for both Workers. */
+  FEEDBACK_REPO?: string
+  /** Reports per IP, 2 per 60 seconds (spec 0698); declared under `ratelimits`. */
+  FEEDBACK_RATE?: RateLimit
+
   UPLOAD_CAP_D1_BYTES: number | string
   UPLOAD_CAP_R2_MB: number | string
   BLOBS_STORAGE_LIMIT_MB: number | string
@@ -51,6 +56,8 @@ export interface Env {
   CF_ANALYTICS_TOKEN?: string
   /** Secret: this Worker's Healthchecks.io ping URL (`watchdog-dev` or `watchdog-production`). */
   HEALTHCHECK_URL?: string
+  /** Secret: a fine-grained GitHub token, Issues read and write on `FEEDBACK_REPO` only, renewed yearly (ADR 0081). */
+  GITHUB_TOKEN?: string
 }
 
 /** The variables that hold a number: every limit and warn level. */

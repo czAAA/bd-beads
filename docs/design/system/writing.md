@@ -488,6 +488,20 @@ The one section that sets a layer (LayerSettings card). Its controls keep their 
 
 "Bead" over the Bead shape and pickers is the Project panel's existing section word.
 
+## Bead colors filters (ticket 0713)
+
+The two filter rows of the Bead colors list (BeadColors card) and its empty state. A value's name is "{name}, {count}" in every language (Chinese with its own comma). `{filters}` is the on values as the language lists them (`Intl.ListFormat`, "matte or luster"), Finishes in lowercase first, then families; `{sizes}` is a list with "and". The word is "filter", never "facet".
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Color (the row) | Цвет | Колір | Колер | 颜色 | Color | Kolor |
+| Finish (the row) | Покрытие | Покриття | Пакрыццё | 表面处理 | Acabado | Wykończenie |
+| Clear filters | Сбросить фильтры | Скинути фільтри | Скінуць фільтры | 清除筛选 | Quitar filtros | Wyczyść filtry |
+| No code matches {query}. | Нет кодов по запросу {query}. | Немає кодів за запитом {query}. | Няма кодаў па запыце {query}. | 没有编号匹配 {query}。 | Ningún código coincide con {query}. | Żaden kod nie pasuje do {query}. |
+| No {filters} codes match {query}. | Нет кодов по запросу {query} с фильтрами: {filters}. | Немає кодів за запитом {query} з фільтрами: {filters}. | Няма кодаў па запыце {query} з фільтрамі: {filters}. | 在{filters}中没有编号匹配 {query}。 | Ningún código coincide con {query} con los filtros: {filters}. | Żaden kod nie pasuje do {query} przy filtrach: {filters}. |
+| No {filters} codes. | Нет кодов с фильтрами: {filters}. | Немає кодів з фільтрами: {filters}. | Няма кодаў з фільтрамі: {filters}. | {filters}中没有编号。 | Ningún código con los filtros: {filters}. | Żaden kod nie pasuje do filtrów: {filters}. |
+| {code} exists in {sizes}, not in {size}. | {code} есть в {sizes}, но не в {size}. | {code} є в {sizes}, але не в {size}. | {code} ёсць у {sizes}, але не ў {size}. | {code} 有 {sizes}，没有 {size}。 | {code} existe en {sizes}, no en {size}. | {code} istnieje w {sizes}, nie w {size}. |
+
 ## Schema tag copy (ticket 0721)
 
 An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».
@@ -502,3 +516,12 @@ An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag car
 | Schema names (the tags' Tab stop) | Названия схем | Назви схем | Назвы схем | 图样名称 | Nombres de esquemas | Nazwy schematów |
 
 The size line's "beads" stays in the many form whatever the numbers, as a measure («11 × 11 бисерин»). Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for review with the build.
+
+## Fill reach copy (ticket 0715)
+
+The two toasts (Message card, info tone) after a Fill tool press on the Canvas that Fill reach refuses: what happened, then what to do, as the Error pattern. The Selection bar's Fill is the way to fill a chosen area, so both name selecting.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Nothing encloses this spot. Select an area to fill it. | Это место ничем не окружено. Выделите область, чтобы залить её. | Це місце нічим не оточене. Виділіть область, щоб залити її. | Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе. | 这里没有被围住。选择一个区域即可填充。 | Nada rodea este punto. Selecciona un área para rellenarla. | Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić. |
+| Too big to fill. Zoom in, or select an area. | Слишком большая область для заливки. Увеличьте масштаб или выделите область. | Завелика область для заливки. Збільште масштаб або виділіть область. | Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць. | 区域太大，无法填充。放大画布，或选择一个区域。 | Demasiado grande para rellenar. Acerca la vista o selecciona un área. | Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar. |
