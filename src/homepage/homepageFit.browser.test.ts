@@ -3,6 +3,7 @@ import { FIT_LOCALES, misfitsNow, mountAt } from '../testUtils/browserFit'
 import { unexplainedFit } from '../testUtils/fitPending'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
+import { fakeFeedback } from '../testUtils/fakeFeedback'
 
 // The Homepage has its own tiers, so it is tried at more widths than the rest (ticket 552).
 const WIDTHS = [1900, 1280, 1024, 844, 820, 768, 390, 360, 320]
@@ -12,7 +13,7 @@ describe('HomePage text fit', () => {
     // Mounted fresh at each width: the carousel is tabs or arrows by width, and its position would carry over a resize.
     for (const locale of FIT_LOCALES) {
       it(`${locale} at ${width}px, the page and every feature of the carousel`, async () => {
-        const mounted = await mountAt(HomePage, { projectCount: 0 }, { locale, width })
+        const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale, width })
         const found = await misfitsNow()
         // From 1024 the features are tabs; below, the arrows page through them, and the count says how many there are.
         const tabs = [...mounted.root.querySelectorAll<HTMLElement>('[role="tab"]')].filter((tab) => tab.offsetParent !== null)

@@ -19,6 +19,8 @@ import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
 import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
 import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
+import type { MirrorDirection } from '../../../domain/mirror'
+import { axisHandleAt, type AxisHandle } from '../../../rendering/mirrorAxes'
 
 /** What a press, a drag, the hover and the wheel on the Drawing surface tell the canvas panel. */
 export interface SurfacePointerEvents {
@@ -49,6 +51,12 @@ export interface SurfacePointerEvents {
   'selection-release': []
   /** Edit Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
+  /** A Mirror Axis handle was grabbed (ticket 0704). */
+  'axis-press': [direction: MirrorDirection]
+  /** The held Axis handle was dragged to this grid px along its direction. */
+  'axis-drag': [direction: MirrorDirection, px: number]
+  /** The Axis handle was let go. */
+  'axis-release': []
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
    * meanwhile. */
   pressing: [pressing: boolean]
@@ -82,6 +90,9 @@ export interface SurfacePointerDeps {
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
   refuse: () => void
+  /** Mirror's Axis handles on the open Canvas (ticket 0704), as the overlay draws them: a press on one wins over the
+   * tool, as the Move handle's does. */
+  axisHandles: Ref<readonly AxisHandle[]>
 }
 
 /** How long after the last wheel event a wheel or trackpad scroll or zoom counts as over, so the bar comes back
@@ -113,7 +124,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, size, surface, leaning, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, size, surface, leaning, marksShown, refuse: refusePress, axisHandles }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -454,9 +465,37 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
   let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined
 
+  /** The Mirror Axis handle a press holds (ticket 0704), dragged along its direction until the release. */
+  let heldAxis: MirrorDirection | undefined
+
+  /** The grid px of the Canvas a point of the drawing is at along a direction: the x for a Left–right Axis, the y for
+   * a Top–bottom one. */
+  function axisPxAt(point: { x: number; y: number }, direction: MirrorDirection): number {
+    const grid = surface.value.pointToGrid(point)
+    return direction === 'leftRight' ? grid.x : grid.y
+  }
+
+  /** The Axis handle under a point of the drawing, if one is drawn there. */
+  function axisHandleUnder(point: { x: number; y: number }, touch: boolean): AxisHandle | undefined {
+    return axisHandleAt(axisHandles.value, point, touch)
+  }
+
   function onPointerDown(event: PointerEvent): void {
     penAt.value = undefined
     touchInput.value = event.pointerType === 'touch'
+    // An Axis handle wins the press over the tool and the Frame's chrome, as the Move handle does (ticket 0704).
+    if (event.button === 0 && !startsDrag(event) && !(event.pointerType === 'touch' && !event.isPrimary)) {
+      const handle = axisHandleUnder(pointInDrawing(event), touchInput.value)
+      if (handle) {
+        heldAxis = handle.direction
+        hideMarker()
+        rootEl.value?.setPointerCapture?.(event.pointerId)
+        handleCursor.value = 'grabbing'
+        emit('axis-press', handle.direction)
+        event.preventDefault()
+        return
+      }
+    }
     // A pinch moves the view itself: the edge scroll stops following the first finger.
     if (event.pointerType === 'touch' && !event.isPrimary) heldPointer = undefined
     if (frameOf(props.project) && event.pointerType === 'touch' && !event.isPrimary) {
@@ -575,11 +614,17 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   // stroke (ticket 24). `buttons` is 1 for touch/pen in contact, so one branch covers all three input kinds.
   function onPointerMove(event: PointerEvent): void {
     placePen(event)
+    if (heldAxis) {
+      emit('axis-drag', heldAxis, axisPxAt(pointInDrawing(event), heldAxis))
+      return
+    }
     if (adjusting.value) {
       dragTo(event)
       return
     }
-    if (props.tools.selects && props.selection && event.pointerType !== 'touch' && selectionHasHandles(props.selection)) {
+    if (event.pointerType !== 'touch' && !framing.value && !dragging.value && axisHandleUnder(pointInDrawing(event), false)) {
+      handleCursor.value = 'grab'
+    } else if (props.tools.selects && props.selection && event.pointerType !== 'touch' && selectionHasHandles(props.selection)) {
       const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer()), pointInDrawing(event), false)
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
@@ -667,6 +712,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     selectDrag = false
     releasePointer(event)
     dragging.value = false
+    if (heldAxis) {
+      heldAxis = undefined
+      handleCursor.value = undefined
+      emit('axis-release')
+    }
     if (adjusting.value) {
       adjusting.value = false
       emit('selection-release')

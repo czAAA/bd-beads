@@ -137,6 +137,9 @@ export interface Translations {
     /** The Note while the mode is on and no Axis is. */
     turnAxisOn: string
     close: string
+    /** The open Canvas's details (ticket 0704): the handle on the canvas is the setting; Repeat needs an Area. */
+    dragHandle: string
+    repeatNeedsArea: string
     /** The Selection bar's Mirror (ticket 0707): its Tooltip body, what it announces, and the Message counting the
      * counterparts that had nowhere to land (off the layer, on a Seam or Off-shape, in a finished row). */
     copyToCounterparts: string
@@ -169,6 +172,9 @@ export interface Translations {
       deleteAllTitle: string
       deleteAllMessage: string
       deleteAllConfirm: string
+      /** The Help row and the Language row's link that open the Feedback sheet (ticket 0700). */
+      sendFeedback: string
+      reportTranslation: string
     }
     project: {
       rename: string
@@ -483,6 +489,8 @@ export interface Translations {
       colorFilter: string
       finishFilter: string
       clearFilters: string
+      /** The foot row that opens a bead-color Report (ticket 0700). */
+      reportColor: string
       valueCount: string
       loading: string
       failed: string
@@ -1121,5 +1129,56 @@ export interface Translations {
   layerSettings: {
     frameHeading: string
     background: string
+  }
+  /** The Feedback sheet (ADR 0081, spec 0698, ticket 0700): its three Report kinds' titles and fields, the Also sent
+   * block's rows, and why a Report was not sent. */
+  feedback: {
+    titleGeneral: string
+    titleTranslation: string
+    titleBeadColor: string
+    introGeneral: string
+    introTranslation: string
+    introBeadColor: string
+    message: string
+    language: string
+    shown: string
+    shouldSay: string
+    note: string
+    problem: string
+    wrongColor: string
+    missingColor: string
+    brandCatalog: string
+    code: string
+    looksLike: string
+    looksLikeHint: string
+    email: string
+    emailHint: string
+    messageRequired: string
+    shownRequired: string
+    emailInvalid: string
+    alsoSent: string
+    alsoSentNote: string
+    ctxAppVersion: string
+    ctxUiLanguage: string
+    ctxBrowser: string
+    ctxOs: string
+    ctxViewport: string
+    ctxLanguage: string
+    ctxBrand: string
+    ctxCatalog: string
+    ctxCode: string
+    ctxHex: string
+    ctxSwatchLetter: string
+    send: string
+    sending: string
+    cancel: string
+    copyReport: string
+    copied: string
+    copyFailed: string
+    off: string
+    offline: string
+    rateLimited: string
+    failed: string
+    sent: string
   }
 }
