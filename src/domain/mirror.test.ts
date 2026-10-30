@@ -575,8 +575,14 @@ describe('Mirror on a Custom frame through its layout (ticket 0706, spec 0702)',
     for (const position of layout.positions) expect(counterparts(sheet, on({ leftRight: true }), [at(position.row, position.column)]).dropped).toBe(0)
   })
 
-  it('a turned Kite lies with its spine across, so Top–bottom is the Axis offered and Left–right is not; a turned Star likewise, a Warped Square either way', () => {
-    expect(shapeAxesOf(custom('kite', 15, 1).project)).toEqual({ offered: { leftRight: false, topBottom: true, radial: false } })
+  it('a turned Kite lies with its spine across, so Top–bottom is the Axis offered and pairs the wings, Left–right is not; a turned Star likewise, a Warped Square either way', () => {
+    const turnedKite = custom('kite', 15, 1)
+    expect(shapeAxesOf(turnedKite.project)).toEqual({ offered: { leftRight: false, topBottom: true, radial: false } })
+    expect(cells(counterparts(turnedKite.sheet, on({ topBottom: true }), [at(3, 2)]))).toEqual([[3, 2], [3, 3]])
+    expect(cells(counterparts(turnedKite.sheet, on({ leftRight: true }), [at(3, 2)]))).toEqual([[3, 2]])
+    const square = custom('warpedSquare', 4)
+    expect(cells(counterparts(square.sheet, on({ topBottom: true }), [at(1, 0)]))).toEqual([[1, 0], [1, 5]])
+    expect(cells(counterparts(square.sheet, on({ leftRight: true, topBottom: true }), [at(1, 0)]))).toEqual([[1, 0], [1, 1], [1, 5], [1, 4]])
     expect(shapeAxesOf(custom('warpedSquare', 4, 1).project)).toEqual({ offered: { leftRight: true, topBottom: true, radial: true }, sides: 4 })
     expect(shapeAxesOf(custom('kaleidocycle', 3).project)).toEqual({ offered: { leftRight: true, topBottom: true, radial: true }, sides: 6 })
     expect(shapeAxesOf(custom('star', 3, 1).project)?.offered).toEqual({ leftRight: false, topBottom: true, radial: true })

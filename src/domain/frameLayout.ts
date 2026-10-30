@@ -41,7 +41,7 @@ export interface LayoutSymmetry {
 }
 
 /** The angle of a ray from the origin to a point, clockwise from straight up on screen (y down). */
-function lineTo({ x, y }: LayoutPoint): number {
+function angleTo({ x, y }: LayoutPoint): number {
   return Math.atan2(x, -y)
 }
 
@@ -221,7 +221,7 @@ export function roundsLayout(corners: number, rounds: number, depth: number): Fr
   return remembered(`rounds:${corners}:${rounds}:${depth}`, () => {
     const part = roundsPart(Array.from({ length: corners }, () => Math.PI - (2 * Math.PI) / corners), rounds, depth)
     // A Seam to a corner is a mirror line of a regular polygon.
-    const symmetry = { fold: corners, line: lineTo(part.corners[0]!) }
+    const symmetry = { fold: corners, line: angleTo(part.corners[0]!) }
     return boxed({ ...joinedParts([part]), seams: partSeams(part, { x: 0, y: 0 }), beadDepth: part.beadDepth, symmetry })
   })
 }
@@ -283,7 +283,7 @@ export function starLayout(partSize: number, depth: number): FrameLayout {
       { step: 'close', parts: [4, 0] },
     ]
     // The Seam between two arms is a mirror line of the Star, through the arm across from it.
-    const symmetry = { fold: 5, line: STAR_ARM / 2 }
+    const symmetry = { fold: arms.length, line: STAR_ARM / 2 }
     return boxed({ ...joinedParts(arms), joins, seams, beadDepth: square.beadDepth, symmetry }, centre)
   })
 }
@@ -321,7 +321,7 @@ export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout
       { step: 'close', parts: [5, 0] },
     ]
     // The gap between two triangles is a mirror line of the ring, through the gap across from it.
-    const symmetry = { fold: 6, line: Math.PI / 6 }
+    const symmetry = { fold: parts.length, line: Math.PI / 6 }
     return boxed({ ...joinedParts(parts), joins, seams: [...parts.flatMap((part) => partSeams(part, middleOf(part))), ...gaps], beadDepth: triangle.beadDepth, symmetry }, centre)
   })
 }

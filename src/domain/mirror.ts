@@ -484,10 +484,13 @@ function hasLine({ fold, line }: LayoutSymmetry, angle: number): boolean {
   return Math.abs(steps - Math.round(steps)) < 1e-6
 }
 
+/** The least fold of a round shape (a Triangle's three sides): what Radial needs; a Kite or Fringe earring has one. */
+const ROUND_FOLD = 3
+
 /** The Axes a layout's symmetry offers (ticket 0706): a straight one where the shape has that mirror line (Left–right
- * a vertical one, Top–bottom a horizontal one), Radial on a round shape, three sides or more. */
+ * a vertical one, Top–bottom a horizontal one), Radial on a round shape. */
 export function offeredAxes(symmetry: LayoutSymmetry): Record<MirrorAxis, boolean> {
-  return { leftRight: hasLine(symmetry, 0), topBottom: hasLine(symmetry, Math.PI / 2), radial: symmetry.fold >= 3 }
+  return { leftRight: hasLine(symmetry, 0), topBottom: hasLine(symmetry, Math.PI / 2), radial: symmetry.fold >= ROUND_FOLD }
 }
 
 /** How a Custom frame's shape bounds the Mirror popover (ticket 0706, MirrorPopover card): the Axes its symmetry
@@ -502,7 +505,7 @@ export function shapeAxesOf(project: Layered): ShapeAxes | undefined {
   const frame = frameOf(project)
   const symmetry = frame?.shape ? frameLayoutOf(frame)?.symmetry : undefined
   if (!symmetry) return undefined
-  return { offered: offeredAxes(symmetry), ...(symmetry.fold >= 3 ? { sides: symmetry.fold } : {}) }
+  return { offered: offeredAxes(symmetry), ...(symmetry.fold >= ROUND_FOLD ? { sides: symmetry.fold } : {}) }
 }
 
 /** A point turned about a centre by an angle, clockwise on screen. */

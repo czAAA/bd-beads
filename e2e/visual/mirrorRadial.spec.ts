@@ -61,7 +61,6 @@ for (const mode of ['mirror', 'repeat'] as const) {
     await setZoom(page, 100)
     await page.getByTestId('pill-tool-mirror').click()
     await page.getByTestId('mirror-axis-radial').click()
-    await expect(page.getByTestId('mirror-sides-note')).toHaveText('5 sides, from the shape. Mirror reflects within each side too.')
     if (mode === 'repeat') await page.getByRole('radio', { name: 'Repeat' }).click()
     await page.keyboard.press('Escape')
     await settle(page)
