@@ -1,10 +1,16 @@
 import { computed, ref } from 'vue'
+import type { Rect } from '../../domain/canvas'
+import { fillBlanks } from '../../domain/fillBlanks'
+import type { GridPosition } from '../../domain/grid'
 import {
+  areaBetween,
   axisLimitsOf,
   canvasAxesOf,
   isMirrorOn,
   MIRROR_DIRECTIONS,
   MIRROR_OFF,
+  mirrorAreaOf,
+  mirrorLayerOf,
   mirrorSettingOf,
   snapAxis,
   snapCentre,
@@ -12,6 +18,7 @@ import {
   withAxesPlaced,
   withCanvasAxes,
   withMirror,
+  withMirrorArea,
   type CanvasAxes,
   type MirrorAxis,
   type MirrorDirection,
@@ -21,8 +28,10 @@ import {
 } from '../../domain/mirror'
 import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
+import type { Translations } from '../../i18n/translations'
 import { axisAtGridPx } from '../../rendering/mirrorAxes'
 import type { EditFn } from '../project/useEdit'
+import type { MessageTone } from '../ui/useToasts'
 
 /** What Mirror needs from the app shell: the open Project and its write paths, and where the view's middle is. A
  * setting is not an Undo step, so it goes to `replaceProject` as Letters does (ADR 0036's "outside Edit"); a dragged
@@ -33,11 +42,15 @@ export interface MirrorFlowDeps {
   edit: EditFn
   /** The point of the Canvas, in its grid px, under the middle of the view; nothing until the view is measured. */
   viewCentre: () => { x: number; y: number } | undefined
+  /** A set Area is said in a toast (ticket 0710, MirrorPopover card). */
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
 }
 
 /** The Mirror mode's state (ADR 0082, spec 0702, ticket 0703): the open Project's setting, whether the tile is lit, the
- * popover, the Frame's count limits, key `8`'s toggle (which remembers the mode it last had on) and the open Canvas's
- * Axis handles (ticket 0704) and Radial centre (0705), placed through the view's centre when turned on, dragged as one Undo step. */
+ * popover, the Frame's count limits, key `8`'s toggle (which remembers the mode it last had on), the open Canvas's
+ * Axis handles (ticket 0704) and Radial centre (0705), placed through the view's centre when turned on, dragged as one
+ * Undo step, and the Area (ticket 0710): picked by a drag over the beads or the whole Frame, set as one Undo step. */
 export function useMirrorFlow(deps: MirrorFlowDeps) {
   const setting = computed<MirrorSetting>(() => {
     const project = deps.currentProject()
@@ -57,6 +70,25 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   /** The mode key `8` turns back on: Mirror until Repeat has been chosen. */
   let lastMode: Exclude<MirrorMode, 'off'> = 'mirror'
 
+  /** The layer the popover's Area row is for (ticket 0710): the Frame on a grid, or the open Canvas; none on a Custom
+   * frame, whose Axes are the shape's (ticket 0706). */
+  const areaRow = computed<'frame' | 'canvas' | undefined>(() => {
+    const project = deps.currentProject()
+    if (!project) return undefined
+    const frame = frameOf(project)
+    return frame ? (frame.shape ? undefined : 'frame') : 'canvas'
+  })
+  /** That layer's Area, where one is set. */
+  const area = computed(() => {
+    const project = deps.currentProject()
+    return project && mirrorAreaOf(project, mirrorLayerOf(project))
+  })
+  /** Whether Select area is picking on the canvas: the popover is closed meanwhile and the pointer draws the band. */
+  const picking = ref(false)
+  /** The rubber band a pick drags, from its press to the pointer, in the layer's positions; none until the press. */
+  const band = ref<Rect>()
+  let pickPress: GridPosition | undefined
+
   /** The handle being dragged and where its Axis or the centre is as it goes, snapped, before the release saves it. */
   const held = ref<{ axis: MirrorDirection; at: number } | { axis: 'radial'; at: RadialCentre }>()
   const heldAxis = computed(() => held.value?.axis)
@@ -66,7 +98,8 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
    * ticket 0705); the one being dragged where the drag has it. The overlay draws these. */
   const canvasAxes = computed<CanvasAxes>(() => {
     const project = deps.currentProject()
-    if (!project || !on.value) return {}
+    // With an Area on the Canvas the Axes run inside it and the handles give way (ticket 0710).
+    if (!project || !on.value || mirrorAreaOf(project, 'canvas')) return {}
     const placed = canvasAxesOf(project)
     const drag = held.value
     if (setting.value.axes.radial) {
@@ -104,8 +137,90 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     update(toggledMirror(setting.value, lastMode))
   }
 
+  /** The tile pressed: the popover opens or closes; while an Area is being picked it cancels the pick instead. */
   function togglePopover() {
+    if (cancelPick()) return
     popoverOpen.value = !popoverOpen.value
+  }
+
+  /** Select area pressed: the popover closes so the drawing shows, and the next drag over the beads sets the Area. */
+  function startPick() {
+    popoverOpen.value = false
+    band.value = undefined
+    pickPress = undefined
+    picking.value = true
+  }
+
+  /** Escape or the tile while picking: nothing is set and the popover comes back. Whether there was a pick to cancel. */
+  function cancelPick(): boolean {
+    if (!picking.value) return false
+    endPick()
+    return true
+  }
+
+  function endPick() {
+    picking.value = false
+    band.value = undefined
+    pickPress = undefined
+    popoverOpen.value = true
+  }
+
+  /** The Frame's rectangle in its own positions, the pick's bounds, or none on the open Canvas. */
+  function frameEdge(project: Project): Rect | undefined {
+    const frame = frameOf(project)
+    return frame && { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+  }
+
+  /** The pick's press, on a cell of the layer the Area is for: the band starts there. */
+  function pressArea(cell: GridPosition) {
+    const project = deps.currentProject()
+    if (!picking.value || !project) return
+    pickPress = cell
+    band.value = areaBetween(cell, cell, frameEdge(project))
+  }
+
+  /** The pick's drag over another cell: the band spans the press and the pointer, kept inside the Frame. */
+  function dragArea(cell: GridPosition) {
+    const project = deps.currentProject()
+    if (!pickPress || !project) return
+    band.value = areaBetween(pickPress, cell, frameEdge(project))
+  }
+
+  /** The pick released: the band is the Area (MirrorPopover card: the popover back and a toast). Nothing with no press. */
+  function releaseArea() {
+    const rect = band.value
+    if (!picking.value) return
+    endPick()
+    if (!rect) return
+    setArea(rect, fillBlanks(deps.messages().mirror.areaSetMessage, { columns: rect.columns, rows: rect.rows }))
+  }
+
+  /** The whole Frame as the Area: the margin's press while picking, or the Whole Frame button. */
+  function pickWholeFrame() {
+    const project = deps.currentProject()
+    const edge = project && frameEdge(project)
+    if (picking.value) endPick()
+    if (!edge) return
+    setArea(edge, deps.messages().mirror.wholeFrameMessage)
+  }
+
+  /** The Area set on the layer, one Undo step; if the mode was Off it becomes Mirror, with Left–right on if no Axis
+   * was (as key `8` turns it on). */
+  function setArea(rect: Rect, message: string) {
+    const project = deps.currentProject()
+    if (!project) return
+    const layer = mirrorLayerOf(project)
+    deps.edit('exempt', (current) => withMirrorArea(current, layer, rect))
+    if (!isMirrorOn(setting.value)) update(toggledMirror(setting.value, 'mirror'))
+    deps.showToast('mirror-area', message, 'info')
+  }
+
+  /** Clear the area: the Axes run through the whole layer again, one Undo step. */
+  function clearArea() {
+    const project = deps.currentProject()
+    if (!project) return
+    const layer = mirrorLayerOf(project)
+    deps.edit('exempt', (current) => withMirrorArea(current, layer, undefined))
   }
 
   /** A handle grabbed: its Axis, or the centre, is held where it is until the drag moves it. */
@@ -150,5 +265,30 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     deps.edit('exempt', (current) => withCanvasAxes(current, { ...canvasAxesOf(current), [drag.axis]: drag.at }))
   }
 
-  return { setting, on, limits, onCanvas, popoverOpen, canvasAxes, heldAxis, update, toggle, togglePopover, pressAxis, dragAxis, releaseAxis }
+  return {
+    setting,
+    on,
+    limits,
+    onCanvas,
+    popoverOpen,
+    canvasAxes,
+    heldAxis,
+    update,
+    toggle,
+    togglePopover,
+    pressAxis,
+    dragAxis,
+    releaseAxis,
+    areaRow,
+    area,
+    picking,
+    band,
+    startPick,
+    cancelPick,
+    pressArea,
+    dragArea,
+    releaseArea,
+    pickWholeFrame,
+    clearArea,
+  }
 }

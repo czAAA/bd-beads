@@ -119,3 +119,49 @@ describe('MirrorPopover (ticket 0703, MirrorPopover card)', () => {
     expect(mountPopover(radial).find('[data-testid="mirror-fold"]').exists()).toBe(false)
   })
 })
+
+describe('the Area row (ticket 0710, MirrorPopover card)', () => {
+  const area = { row: 1, column: 2, rows: 5, columns: 10 }
+  const mountArea = (props: Record<string, unknown>) => mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: on({ leftRight: true }), ...props } })
+
+  it('with a Frame and no Area offers Select area and Whole Frame under the Note, no Clear, and emits the pick and the whole Frame', async () => {
+    const wrapper = mountArea({ areaRow: 'frame' })
+    const row = wrapper.get('[data-testid="mirror-area-row"]')
+    expect(row.text()).toContain('Area')
+    const select = row.get('[data-testid="mirror-select-area"]')
+    expect(select.text()).toBe('Select area')
+    expect(select.attributes('aria-pressed')).toBe('false')
+    expect(row.get('[data-testid="mirror-whole-frame"]').text()).toBe('Whole Frame')
+    expect(row.find('[data-testid="mirror-clear-area"]').exists()).toBe(false)
+    expect(row.get('[data-testid="mirror-area-note"]').text()).toBe('The Axes run through the whole Frame. Select an area to mirror inside part of it; a click on the keep-out margin takes the whole Frame.')
+    await select.trigger('click')
+    expect(wrapper.emitted('pick')).toHaveLength(1)
+    await row.get('[data-testid="mirror-whole-frame"]').trigger('click')
+    expect(wrapper.emitted('whole-frame')).toHaveLength(1)
+  })
+
+  it('on the open Canvas has no Whole Frame and the Canvas Note; on a Custom frame the row is not shown', () => {
+    const canvas = mountArea({ areaRow: 'canvas', onCanvas: true })
+    expect(canvas.find('[data-testid="mirror-whole-frame"]').exists()).toBe(false)
+    expect(canvas.get('[data-testid="mirror-area-note"]').text()).toBe('The Axes run across the whole Canvas. Select an area to mirror inside it, as in a Frame.')
+    expect(mountArea({}).find('[data-testid="mirror-area-row"]').exists()).toBe(false)
+  })
+
+  it('while picking the button is pressed and says to drag', () => {
+    const select = mountArea({ areaRow: 'frame', picking: true }).get('[data-testid="mirror-select-area"]')
+    expect(select.attributes('aria-pressed')).toBe('true')
+    expect(select.text()).toBe('Drag on the canvas…')
+  })
+
+  it('with an Area set reads its size in the Selection colour, offers Clear the area, notes that the Axes run inside it, and on the Canvas shows the count Steppers in place of the handle Note', async () => {
+    const wrapper = mountArea({ areaRow: 'canvas', onCanvas: true, area, limits: { leftRight: 9, topBottom: 4 } })
+    const select = wrapper.get('[data-testid="mirror-select-area"]')
+    expect(select.text()).toBe('10 × 5 beads')
+    expect(select.classes()).toContain('mirror-popover__area--set')
+    expect(wrapper.get('[data-testid="mirror-area-note"]').text()).toBe('The Axes run inside the area. Drawing outside it is not mirrored.')
+    expect(wrapper.get('[data-testid="mirror-count-leftRight-value"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="mirror-canvas-note"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="mirror-clear-area"]').trigger('click')
+    expect(wrapper.emitted('clear-area')).toHaveLength(1)
+  })
+})
