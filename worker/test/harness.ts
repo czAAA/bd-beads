@@ -1,6 +1,7 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import type { Readable } from 'node:stream'
 import { build } from 'esbuild'
 import { Miniflare, type Request as MiniflareRequest } from 'miniflare'
 import { unstable_readConfig, unstable_splitSqlQuery } from 'wrangler'
@@ -27,7 +28,7 @@ export interface StartOptions {
   vars?: Record<string, string | number>
   /** Answers the Worker's outbound calls; each is recorded in `outbound` first. Default: `{}`. */
   reply?: (call: Outbound) => Response | Promise<Response>
-  /** Rate Limiting bindings, as a feature ticket would declare them under `ratelimits`. */
+  /** Rate Limiting bindings besides the environment's own `ratelimits`, which they replace by name. */
   ratelimits?: Record<string, { limit: number; period: 10 | 60 }>
   /** Binds this database to something that isn't one, so every query on it throws. */
   brokenDatabase?: 'CORE' | 'BLOBS_DB'
@@ -44,6 +45,8 @@ export interface RunningWorker {
   blobsDb: D1
   r2: R2
   outbound: Outbound[]
+  /** What the Worker wrote to its console, line by line, as the dashboard's logs would show it. */
+  logs: string[]
   dispose(): Promise<void>
 }
 
@@ -60,6 +63,7 @@ interface WranglerEnvironment {
   r2_buckets: Array<{ binding: string; bucket_name?: string }>
   assets?: { binding?: string; run_worker_first?: boolean | string[] }
   triggers: { crons?: string[] }
+  ratelimits?: Array<{ name: string; simple: { limit: number; period: 10 | 60 } }>
 }
 
 const bundles = new Map<string, Promise<string>>()
@@ -98,6 +102,7 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
   const assetsDir = mkdtempSync(join(tmpdir(), 'bd-beads-assets-'))
   writeFileSync(join(assetsDir, 'index.html'), '<!doctype html><title>app</title>')
   const outbound: Outbound[] = []
+  const logs: string[] = []
   const miniflare = new Miniflare({
     modules: true,
     script: await bundle(options.entry ?? 'worker'),
@@ -111,7 +116,10 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     d1Databases: Object.fromEntries(databases.map((db) => [db.binding, db.database_name ?? db.binding])),
     r2Buckets: Object.fromEntries(config.r2_buckets.map((bucket) => [bucket.binding, bucket.bucket_name ?? bucket.binding])),
     ratelimits: Object.fromEntries(
-      Object.entries(options.ratelimits ?? {}).map(([name, simple], index) => [
+      Object.entries({
+        ...Object.fromEntries((config.ratelimits ?? []).map((rule) => [rule.name, rule.simple])),
+        ...options.ratelimits,
+      }).map(([name, simple], index) => [
         name,
         { namespace_id: String(index + 1), simple },
       ]),
@@ -124,6 +132,11 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
         invoke_user_worker_ahead_of_assets: false,
         static_routing: { user_worker: Array.isArray(config.assets?.run_worker_first) ? config.assets.run_worker_first : [] },
       },
+    },
+    handleRuntimeStdio(stdout: Readable, stderr: Readable) {
+      for (const stream of [stdout, stderr]) {
+        stream.on('data', (chunk: Buffer) => logs.push(...String(chunk).split('\n').filter(Boolean)))
+      }
     },
     outboundService: async (request: MiniflareRequest) => {
       const call = {
@@ -148,6 +161,7 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     blobsDb: options.brokenDatabase === 'BLOBS_DB' ? (null as never) : await miniflare.getD1Database('BLOBS_DB'),
     r2: await miniflare.getR2Bucket('BLOBS'),
     outbound,
+    logs,
     async dispose() {
       await miniflare.dispose()
       rmSync(assetsDir, { recursive: true, force: true })

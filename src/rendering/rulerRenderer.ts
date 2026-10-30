@@ -163,20 +163,12 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
 const NAME_GAP_PX = 4
 
 // The name of each unframed Schema (a named Piece, ADR 0050), under its beads at the left edge, in the Frame's line
-// color; read at any zoom.
+// color; read at any zoom. The Frame's own name is only in the margin's title block (ticket 0719).
 function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
-  // The Frame's name, when it was made from a named Piece (ticket 489), stands under the Frame as a Piece's does.
-  // A turned Frame's name stands under it as it lies (ticket 0667).
   const frame = laidFrame(project)
   const covered = (piece: Rect) =>
     frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
-  const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = layout.named
-    .filter((piece) => !covered(piece))
-    .map((piece) => ({ ...piece, layer: 'canvas' as const }))
-  const name = frameOf(project)?.name
-  if (frame && name) {
-    pieces.push({ ...frame, name, layer: 'frame' })
-  }
+  const pieces = layout.named.filter((piece) => !covered(piece))
   if (pieces.length === 0) {
     return
   }
@@ -186,7 +178,7 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   context.textAlign = 'left'
   context.textBaseline = 'top'
   for (const piece of pieces) {
-    const shown = surface.beadBox(piece, piece.layer)
+    const shown = surface.beadBox(piece, 'canvas')
     if (shown.x > surface.viewport.width || shown.y > surface.viewport.height || shown.x + shown.width < 0 || shown.y + shown.height < 0) {
       continue
     }

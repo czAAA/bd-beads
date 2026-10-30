@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mountWithProject } from './testUtils/seedProject'
-import { drawnProject, pressBead } from './testUtils/beads'
+import { beadColors, drawnProject, pressBead } from './testUtils/beads'
+import { flushPromises } from '@vue/test-utils'
+import { loadProjects } from './services/libraryStore'
 import { choosePanelOption } from './testUtils/choosePanelOption'
 import { openPanel, pickColor } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
@@ -56,6 +58,25 @@ describe('the Tool pill', () => {
 
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false)
     expect(frameGrid(drawnProject(wrapper)).flat().every((cell) => !cell.color)).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('Mirror (ticket 0703): key 8 turns it on, a stroke lands on both sides of the Frame, the tile opens the popover and an Axis chip is saved with the Project', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    await pickColor(wrapper, 'red')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }))
+    await flushPromises()
+
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+    const row = beadColors(wrapper)[0]!
+    expect(row[0]).toBe('#e63746')
+    expect(row[row.length - 1]).toBe('#e63746')
+    expect(row.filter(Boolean)).toHaveLength(2)
+
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-axis-topBottom"]').trigger('click')
+    expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'mirror', axes: { leftRight: true, topBottom: true } })
     wrapper.unmount()
   })
 

@@ -1,4 +1,5 @@
 import type { BeadMap } from './canvas'
+import { FILL_CAP } from './fill'
 
 // How big a Project or a layer may be before the editor stops treating it as ordinary (ticket 0716): a whole-map walk
 // (the Piece count, the named-Piece index) or decoding the whole Project on open would freeze the page.
@@ -7,9 +8,9 @@ import type { BeadMap } from './canvas'
  * its stored form until it is picked; measured so an open stays under one second at 4× slowdown (ticket 0716). */
 export const SIZE_GATE_BEADS = 2_000_000
 
-/** Past this many beads a layer's Pieces are not walked on open or in a press, only in idle time. The same number as
- * the Fill cap of ticket 0715 (250,000 positions per press); whichever lands second may point one at the other. */
-export const PIECE_WALK_LIMIT = 250_000
+/** Past this many beads a layer's Pieces are not walked on open or in a press, only in idle time: the Fill cap (ticket
+ * 0715), the most one press may paint, so what a press costs and what a walk would stay of one size. */
+export const PIECE_WALK_LIMIT = FILL_CAP
 
 /** Whether a Project of this many beads is over the size gate. */
 export function overSizeGate(beads: number): boolean {

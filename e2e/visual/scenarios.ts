@@ -107,6 +107,22 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),
   })),
+  // Mirror's Axis lines across a peyote Frame (ticket 0703): two Left–right axes and one Top–bottom, dashed in the
+  // Selection colour, drawn with the Paint tool and the pointer away.
+  {
+    technique: 'peyote',
+    name: 'peyote-mirror-axes',
+    prepare: async (page) => {
+      await page.getByTestId('pill-tool-mirror').click()
+      await page.getByTestId('mirror-axis-leftRight').click()
+      await page.getByTestId('mirror-axis-topBottom').click()
+      await page.getByTestId('mirror-count-leftRight-more').click()
+      await page.keyboard.press('Escape')
+      await settle(page)
+    },
+    place: pointerAway,
+  },
+
   // The Erase tool has no color to preview: a neutral outline on the hovered bead.
   {
     technique: 'peyote',

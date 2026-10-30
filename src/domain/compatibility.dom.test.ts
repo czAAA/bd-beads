@@ -39,6 +39,8 @@ import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
 import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
+import projectFileV13Mirror from './fixtures/project-file-v13-mirror.json?raw'
+import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
@@ -464,6 +466,16 @@ describe('stored-data compatibility', () => {
       expect(frameOf(opened!)).toMatchObject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } })
       expect(rowCycle(frameWeave(opened!))).toBe(4)
       expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13Drops))
+    })
+
+    it('opens a version 13 file with its Mirror setting and writes it back the same, and one from before Mirror opens with it off (ticket 0703)', () => {
+      const [opened] = parseProjectsFile(projectFileV13Mirror).projects
+      expect(mirrorSettingOf(opened!)).toEqual({ mode: 'repeat', axes: { leftRight: true, topBottom: false, radial: false }, fold: 2, counts: { leftRight: 2, topBottom: 1 } })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13Mirror))
+
+      const [older] = parseProjectsFile(projectFileV13Drops).projects
+      expect(older!.mirror).toBeUndefined()
+      expect(mirrorSettingOf(older!)).toEqual(MIRROR_OFF)
     })
 
     it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {

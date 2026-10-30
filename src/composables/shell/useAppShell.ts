@@ -60,6 +60,7 @@ import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
+import { useMirrorFlow } from '../tools/useMirrorFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
 import { useDialogs } from './useDialogs'
 
@@ -145,7 +146,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
@@ -175,6 +176,9 @@ function wireAppShell(services: Services) {
     flushPendingSave,
   })
   const { edit } = editing
+
+  /** Mirror (ADR 0082, ticket 0703): the Project's setting, the tile's light, the popover and key `8`. */
+  const mirror = useMirrorFlow({ currentProject, replaceProject })
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
@@ -208,6 +212,7 @@ function wireAppShell(services: Services) {
     currentProject,
     edit,
     (count, loss) => showToast('paste-clipped', plural(locale.value, count, loss === 'shape' ? t.value.tools.droppedOnShapeMessage : t.value.tools.pasteClippedMessage), 'info'),
+    () => mirror.setting.value,
   )
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
@@ -395,11 +400,15 @@ function wireAppShell(services: Services) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, fillRefusals, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
     endSelectPress: endSelectPressFraming,
+    mirror: () => mirror.setting.value,
+    onScreen: canvasOnScreen,
+    showToast,
+    messages,
   })
 
   /** The open Project for what only summarises it, Beads needed and the accessible name: it waits for a stroke's end
@@ -450,6 +459,7 @@ function wireAppShell(services: Services) {
       beginOrCommitPress(mode, color, row, column, layer)
     },
     paintStrokeCells,
+    mirror: () => mirror.setting.value,
     pasteAt: pasteAtCell,
     pickColorAt,
   })
@@ -623,6 +633,7 @@ function wireAppShell(services: Services) {
     onClearSelection,
     onCut,
     onPasteMode,
+    onToggleMirror: mirror.toggle,
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
@@ -742,6 +753,11 @@ function wireAppShell(services: Services) {
       toolPillPopoverOpen: toolPill.toolPillPopoverOpen,
       recentsInPill: toolPill.recentsInPill,
       pickRecent: toolPill.pickRecent,
+      // Mirror (ticket 0703): the Project's setting, the popover and the Frame's count limits
+      mirrorSetting: mirror.setting,
+      mirrorLimits: mirror.limits,
+      mirrorPopoverOpen: mirror.popoverOpen,
+      onMirrorChange: mirror.update,
       previewCells,
       previewStamp,
       onCellPrimaryDown,
@@ -751,6 +767,7 @@ function wireAppShell(services: Services) {
       onHoverEnd,
       selection,
       selectionRefusals,
+      fillRefusals,
       onSelectionPress,
       onSelectionDrag: dragAdjust,
       onSelectionRelease: endAdjust,

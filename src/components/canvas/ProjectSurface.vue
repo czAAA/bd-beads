@@ -23,7 +23,9 @@ import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
+import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
+import type { MirrorSetting } from '../../domain/mirror'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -74,6 +76,10 @@ const props = withDefaults(defineProps<{
   /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
    * 433): each one shows the not-allowed cue, the margin outline for 1s. */
   selectionRefusals?: number
+  /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
+  mirror?: MirrorSetting
+  /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
+  fillRefusals?: number
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -282,6 +288,9 @@ useSurfaceOverlay({
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
 
+/** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
+const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
+
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers, pressMoveHandle })
 
@@ -326,7 +335,7 @@ onBeforeUnmount(() => {
     @wheel="handlers.onWheel"
     @contextmenu.prevent
   >
-    <div class="project-surface__drawing" :style="drawingStyle">
+    <div class="project-surface__drawing" :style="[drawingStyle, emptyCanvasStyle]">
       <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
     </div>
@@ -430,6 +439,16 @@ onBeforeUnmount(() => {
 .project-surface__drawing {
   position: absolute;
   inset: 0;
+}
+
+/* The empty Canvas under the drawing (ticket 0717): the Position marks' tile repeated at the view's zoom, scroll and
+ * quarter turn, reaching past the box so a twist that moves it still covers the surface. The drawing hides it. */
+.project-surface__drawing::before {
+  position: absolute;
+  inset: calc(-1 * var(--empty-reach, 0px));
+  background: var(--empty-marks, none) var(--empty-marks-at, 0 0) / var(--empty-marks-size, auto) repeat;
+  content: '';
+  pointer-events: none;
 }
 
 .project-surface__canvas {

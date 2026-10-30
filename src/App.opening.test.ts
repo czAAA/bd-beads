@@ -46,7 +46,7 @@ describe('opening the editor (ticket 0716)', () => {
     await wrapper.get('[data-testid="missed-project-export"]').trigger('click')
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalled())
     const [fileName, bytes] = vi.mocked(downloadFile).mock.calls[0]!
-    expect(fileName).toBe('scarf_pr.openbeads')
+    expect(fileName).toBe('scarf.openbeads')
     expect((await readProjectsFile(new Blob([bytes as Uint8Array<ArrayBuffer>]))).projects.map((each) => each.id)).toEqual([scarf.id])
 
     await wrapper.get('[data-testid="missed-project-remove"]').trigger('click')

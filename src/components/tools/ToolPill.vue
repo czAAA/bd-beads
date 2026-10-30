@@ -13,18 +13,25 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
-import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
+import MirrorPopover from './MirrorPopover.vue'
+import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
+import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
-// grip, six tool tiles, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
+// grip, six tool tiles, the Mirror tile (ticket 0703), the Paste tile, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
 // This layer takes no pointer events itself and sits outside the canvas's zoom transform (ADR 0034).
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   activeTool: Tool
   /** Whether the clipboard holds something: the Paste tile follows Hand then (ticket 447). */
   hasClipboard?: boolean
   /** Whether paste mode is on: the Paste tile then shows as the active tool. */
   pasteArmed?: boolean
+  /** Mirror (ticket 0703): the Project's setting (the tile is lit while its mode is not Off), its popover, and the
+   * Frame's Axis count limits (none without a Frame on a grid). */
+  mirror?: MirrorSetting
+  mirrorPopoverOpen?: boolean
+  mirrorLimits?: Record<MirrorDirection, number>
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -35,7 +42,7 @@ const props = defineProps<{
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
-}>()
+}>(), { mirror: () => MIRROR_OFF, mirrorPopoverOpen: false, mirrorLimits: undefined })
 
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
@@ -43,6 +50,9 @@ const emit = defineEmits<{
   'paste-mode': []
   'update:position': [position: PillPosition]
   'update:popoverOpen': [open: boolean]
+  'update:mirrorPopoverOpen': [open: boolean]
+  /** The Mirror popover changed the setting (ticket 0703). */
+  'update:mirror': [setting: MirrorSetting]
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
@@ -56,10 +66,13 @@ const { t } = useI18n()
 const layerEl = ref<HTMLElement>()
 const pillEl = ref<HTMLElement>()
 const colorTileEl = ref<HTMLElement>()
+const mirrorTileEl = ref<HTMLElement>()
 
 const vertical = computed(() => isVerticalPill(props.position))
 const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
 const pasteAction = controlAction('tool-paste')
+const mirrorAction = controlAction('mirror')
+const mirrorOn = computed(() => isMirrorOn(props.mirror))
 /** Paste mode runs under Select, but the Paste tile is the one lit then (ticket 447). */
 const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && props.pasteArmed && props.hasClipboard)
 const colorAction = controlAction('pill-colors')
@@ -69,8 +82,14 @@ const colorLabel = computed(() => fillBlanks(t.value.toolPill.color, { name: pro
  * along them, the other axis does nothing (ADR 0075). */
 const roving = useRovingFocus(pillEl, { selector: '.tool-pill__grip, .tool-pill__stop', axis: () => (vertical.value ? 'vertical' : 'horizontal') })
 
+/** The button of an IconButton, for a popover to be placed against. */
+const buttonOf = (component: unknown) => (component as { $el?: HTMLElement } | null)?.$el?.querySelector('button') ?? undefined
+
 const drag = useToolPillDrag(pillEl, layerEl, {
-  onStart: () => emit('update:popoverOpen', false),
+  onStart: () => {
+    emit('update:popoverOpen', false)
+    emit('update:mirrorPopoverOpen', false)
+  },
   onDrop: (position) => emit('update:position', position),
 })
 
@@ -85,8 +104,15 @@ function onGripKeydown(event: KeyboardEvent) {
   emit('update:position', next)
 }
 
+/** One popover at a time: opening the colour popover or the Mirror popover closes the other. */
 function toggleColor() {
+  if (!props.popoverOpen) emit('update:mirrorPopoverOpen', false)
   emit('update:popoverOpen', !props.popoverOpen)
+}
+
+function toggleMirror() {
+  if (!props.mirrorPopoverOpen) emit('update:popoverOpen', false)
+  emit('update:mirrorPopoverOpen', !props.mirrorPopoverOpen)
 }
 
 /** The pill's rectangle in the layer's own pixels (the drawing area's), for the Selection bar to keep clear of. */
@@ -190,6 +216,24 @@ watch(
       />
 
       <IconButton
+        :ref="(component) => (mirrorTileEl = buttonOf(component))"
+        class="tool-pill__stop"
+        variant="pill"
+        :action="mirrorAction"
+        :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
+        :hotkey="MIRROR_TILE_HOTKEY"
+        show-hotkey
+        :selected="mirrorOn"
+        :accent="mirrorOn"
+        :aria-pressed="undefined"
+        aria-haspopup="dialog"
+        :aria-expanded="mirrorPopoverOpen"
+        :tabindex="-1"
+        data-testid="pill-tool-mirror"
+        @click="toggleMirror"
+      />
+
+      <IconButton
         v-if="hasClipboard"
         class="tool-pill__stop"
         variant="pill"
@@ -207,7 +251,7 @@ watch(
       <span class="tool-pill__divider" role="presentation" />
 
       <IconButton
-        :ref="(component) => (colorTileEl = (component as { $el?: HTMLElement } | null)?.$el?.querySelector('button') ?? undefined)"
+        :ref="(component) => (colorTileEl = buttonOf(component))"
         class="tool-pill__stop"
         variant="pill"
         :action="colorAction"
@@ -252,6 +296,17 @@ watch(
       </template>
 
     </div>
+
+    <MirrorPopover
+      v-if="mirrorPopoverOpen"
+      :tile="mirrorTileEl"
+      :pill="pillEl"
+      :position="position"
+      :setting="mirror"
+      :limits="mirrorLimits"
+      @close="emit('update:mirrorPopoverOpen', false)"
+      @update:setting="emit('update:mirror', $event)"
+    />
 
     <ColorPopover
       v-if="popoverOpen"
