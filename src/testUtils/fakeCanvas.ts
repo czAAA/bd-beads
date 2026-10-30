@@ -30,6 +30,8 @@ export function installFakeCanvas(): {
     translate: () => undefined,
     scale: () => undefined,
     rotate: () => undefined,
+    transform: () => undefined,
+    getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }) as DOMMatrix,
     font: '',
     textAlign: 'start',
     textBaseline: 'alphabetic',
@@ -48,6 +50,9 @@ export function installFakeCanvas(): {
     lineCap: 'butt',
     lineJoin: 'miter',
     setLineDash: () => undefined,
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetY: 0,
   }
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D)
 

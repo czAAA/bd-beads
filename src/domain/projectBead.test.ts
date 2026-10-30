@@ -120,7 +120,7 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
   })
 
   it('draws and sizes a Bead the catalog has dropped from the Project’s own copy', () => {
-    const project = withLayers(made(), { beadId: retired.id, bead: retired, beadShape: 'real' as const })
+    const project = withLayers(made(), { beadId: retired.id, bead: retired })
     const opened = normalizeProject(project)
 
     expect(resolveProjectBead(opened)).toMatchObject({ id: retired.id, widthMm: 2 })
@@ -184,7 +184,7 @@ describe('each layer has its own Bead (ticket 0665, ADR 0079)', () => {
   })
 
   it('reads the Project\'s Bead and how it is drawn from the woven layer, the Frame', () => {
-    const project = withLayers(replaceBead(made(), delica), { beadShape: 'real' })
+    const project = replaceBead(made(), delica)
     expect(resolveProjectBead(project)).toEqual(beadCopy(delica))
     expect(projectCell(project)!.aspect).toBeCloseTo(delica.heightMm / delica.widthMm)
   })

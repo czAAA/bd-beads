@@ -69,7 +69,7 @@ describe('the Starter setup', () => {
     await wrapper.get('[data-testid="starter-name-input"]').setValue('  Wings ')
     await wrapper.get('[data-testid="starter-size-increase-rows"]').trigger('click')
     await wrapper.get('form').trigger('submit')
-    const frame = { weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } }, beadId: 'miyuki/delica/11-0', beadShape: 'symmetric', background: expect.anything() }
+    const frame = { weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } }, beadId: 'miyuki/delica/11-0', background: expect.anything() }
     expect(wrapper.emitted('submit')).toEqual([
       [{ sizes: { rows: 21 }, picks: {}, useDesign: true, name: 'Kite', ...frame }],
       [{ sizes: { rows: 22 }, picks: {}, useDesign: false, name: 'Wings', ...frame }],
@@ -91,10 +91,9 @@ describe('the Starter setup', () => {
     expect(text(wrapper, 'starter-count')).toBe('≈ 252 beads · 36 rows round')
     await chooseBeadInSection(wrapper, 'toho/cube/1.5mm')
     expect(text(wrapper, 'starter-estimate')).toBe('ø 17.2 mm inside · 10.5 mm wide')
-    await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
     await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
     await wrapper.get('form').trigger('submit')
-    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm', beadShape: 'real', background: 2 })
+    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm', background: 2 })
   })
 
   it('on an open Project asks no Name, its Frame\'s Layer settings still the Starter\'s, not the Canvas\'s', () => {

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import CanvasHint from './CanvasHint.vue'
+import FirstRunHints from './FirstRunHints.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
@@ -11,12 +12,14 @@ import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
+import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import { useCanvasContext } from '../../composables/shell/useAppShell'
 import { useColorPick, usePalette } from '../../composables/tools/usePalette'
 import { colorName } from '../../i18n/colorName'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { PillRect } from '../../domain/toolPill'
 import { hasGuides, selectionLayer } from '../../domain/selection'
@@ -53,6 +56,7 @@ const {
   toggleRulers,
   rowHighlight,
   toggleRowHighlight,
+  rowPress,
   canUndo,
   canRedo,
   onUndo,
@@ -76,9 +80,11 @@ const {
   onClearSelection,
   onFillSelection,
   onFrameFromSelection,
+  onFrameSchema,
   canNamePiece,
   hasPaintColor,
   onNamePiece,
+  onRenameSchema,
   previewCells,
   previewStamp,
   onCellPrimaryDown,
@@ -97,8 +103,14 @@ const {
   pickRecent,
   mirrorSetting,
   mirrorLimits,
+  mirrorOnCanvas,
   mirrorPopoverOpen,
   onMirrorChange,
+  mirrorCanvasAxes,
+  mirrorHeldAxis,
+  onAxisPress,
+  onAxisDrag,
+  onAxisRelease,
   selectedColorHex,
   selectedColorId,
   customColor,
@@ -204,6 +216,8 @@ const selectionSummary = computed(() => {
 const selectionAnchor = ref<SelectionAnchor>()
 /** Where the Frame and its margin sheet are on the canvas box: the sheet's tools follow them (tickets 473, 0657). */
 const frameAnchor = ref<FrameAnchor>()
+/** Where the unframed Schemas are on the canvas box: their hang tags follow them (ticket 0721). */
+const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
@@ -223,6 +237,10 @@ const selectionLayerStyle = computed(() => {
   if (!el) return undefined
   return { left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${drawingSize.width.value}px`, height: `${drawingSize.height.value}px` }
 })
+/** The canvas box, where the first-run hints find the controls they point at. */
+const canvasEl = ref<HTMLElement>()
+/** The open Project has no beads: the CanvasHint line and the first-run hints show (FirstRunHints card, ticket 0725). */
+const emptyProject = computed(() => !!activeProject.value && !hasProjectBeads(activeProject.value))
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
@@ -237,8 +255,9 @@ const drawingStyle = computed(() => {
   -->
   <main class="app-shell__canvas-column">
     <div
+      ref="canvasEl"
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning}"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--first-run': emptyProject }"
       data-testid="app-canvas"
     >
       <!--
@@ -270,7 +289,19 @@ const drawingStyle = computed(() => {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="activeProject && !hasProjectBeads(activeProject)" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="emptyProject" class="app-shell__canvas-hint" />
+
+        <!-- The hand-drawn way to a first Pattern (ticket 0725, FirstRunHints card): over an empty Project, gone with
+          the first bead, under the Tool pill. -->
+        <Transition name="first-run-hints">
+          <FirstRunHints
+            v-if="emptyProject"
+            :scope="canvasEl"
+            :pill-position="toolPillPosition"
+            :pill-rect="pillRect"
+            :background="canvasBackground.background.value?.color"
+          />
+        </Transition>
 
         <div class="app-shell__canvas-row">
           <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
@@ -287,12 +318,15 @@ const drawingStyle = computed(() => {
               :show-rulers="showRulers"
               :stroking="stroking"
               :row-marks="rowHighlight"
+              :row-press="rowPress"
               :input-mode="surfaceInputMode"
               :handedness="handedness"
               :preview-cells="previewCells"
               :preview-stamp="previewStamp"
               :preview-color="previewColor"
               :mirror="mirrorSetting"
+              :mirror-axes="mirrorCanvasAxes"
+              :held-axis="mirrorHeldAxis"
               :selection="selection"
               :selection-refusals="selectionRefusals"
               :fill-refusals="fillRefusals"
@@ -309,11 +343,15 @@ const drawingStyle = computed(() => {
               @frame-drag="onFrameDrag"
               @frame-release="onFrameRelease"
               @frame-cancel="onFrameCancel"
+              @axis-press="onAxisPress"
+              @axis-drag="onAxisDrag"
+              @axis-release="onAxisRelease"
               @selection-press="onSelectionPress"
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
               @selection-anchor="selectionAnchor = $event"
               @frame-anchor="frameAnchor = $event"
+              @schema-anchors="schemaAnchors = $event"
               @pressing="surfacePressing = $event"
               @drawn="onSurfaceDrawn"
             />
@@ -325,6 +363,15 @@ const drawingStyle = computed(() => {
             </EmptyCanvas>
           </div>
 
+          <!-- The unframed Schemas' names as hang tags (ticket 0721, SchemaTag card): over the beads, one Tab stop after
+            the canvas, under the Tool pill and the Selection bar. -->
+          <SchemaTags
+            v-if="activeProject && schemaAnchors?.schemas.length"
+            :project="activeProject"
+            :anchors="schemaAnchors"
+            @rename="onRenameSchema"
+            @frame="onFrameSchema"
+          />
         </div>
 
         <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
@@ -335,6 +382,7 @@ const drawingStyle = computed(() => {
           v-model:mirror-popover-open="mirrorPopoverOpen"
           :mirror="mirrorSetting"
           :mirror-limits="mirrorLimits"
+          :mirror-on-canvas="mirrorOnCanvas"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"
@@ -367,6 +415,7 @@ const drawingStyle = computed(() => {
         v-if="activeProject"
         :project="activeProject"
         :row-highlight="rowHighlight"
+        :row-press="rowPress"
         @move-row="onMoveRow"
         @reset-progress="onResetProgress"
         @toggle-row-direction="onToggleRowDirection"
@@ -421,6 +470,7 @@ const drawingStyle = computed(() => {
           :editing="settingFrame"
           :pressing="surfacePressing"
           :row-highlight="rowHighlight"
+          :row-press="rowPress"
           :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
           @rotate="onRotateFrame"
@@ -495,10 +545,24 @@ const drawingStyle = computed(() => {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which
- * float over the beads. */
-.app-shell__drawing > :not(.app-shell__canvas-hint):not(.context-bar):not(.tool-pill-layer) {
+/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run hints, the context bar and the Tool
+ * pill's layer, which float over the beads. */
+.app-shell__drawing > :not(.app-shell__canvas-hint):not(.first-run-hints):not(.context-bar):not(.tool-pill-layer) {
   position: relative;
+}
+
+/* The first-run steps' controls ringed in accent over what is behind them (FirstRunHints card); a strip button is lifted
+ * over the drawing area so the ring's foot shows. */
+.app-shell__canvas--first-run :deep(:is([data-hint='paint'], [data-hint='select'], [data-hint='frame'], [data-hint='export'])) {
+  position: relative;
+  z-index: var(--z-canvas-overlay);
+  box-shadow:
+    0 0 0 var(--hint-ring-gap) var(--hint-ring-behind, var(--box)),
+    0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent);
+}
+
+.app-shell__canvas--first-run :deep(:is([data-hint='paint'], [data-hint='select'])) {
+  --hint-ring-behind: var(--elevated);
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing

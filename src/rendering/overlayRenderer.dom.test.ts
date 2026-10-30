@@ -12,6 +12,7 @@ import { onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import type { Project, RowProgress } from '../domain/project'
 import { DEFAULT_THEME } from './beadLook'
+import { GLINT_COLOR, ROW_MOTION } from './rowMotion'
 import { beadRoundness, type Technique } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay as renderOverlayWith } from './overlayRenderer'
@@ -38,6 +39,9 @@ function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: 
 }
 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
+/** The Project in a Bead this device does not know, drawn in its Technique's own cell (rounded in peyote), not a cube's. */
+const ownCell = (project: Project): Project => withLayers(project, { bead: undefined })
+
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const beads: BeadMap = {}
@@ -124,7 +128,7 @@ describe('renderOverlay', () => {
 
     it('rings each peyote bead with its own corner radius, less the half stroke', () => {
       const R = beadRoundness('peyote') * CELL_SIZE_PX - 1
-      const project = projectOf('peyote', 5, 3, { currentRow: 0 })
+      const project = ownCell(projectOf('peyote', 5, 3, { currentRow: 0 }))
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -160,6 +164,38 @@ describe('renderOverlay', () => {
 
       expect(named('fillRect')).toHaveLength(0)
       expect(named('fill')).toHaveLength(0)
+    })
+  })
+
+  describe('the glint of a pass just finished (BeadBoard card, ticket 0730)', () => {
+    const glinted = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fill' && call.fillStyle === GLINT_COLOR && call.globalAlpha > 0)
+    const plainRed = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.fillStyle === '#e63746')
+
+    it('washes each bead of the pass in white and shows it at full color until the dim delay', () => {
+      const project = projectOf('loom', 4, 3, { currentRow: 2 })
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
+      expect(glinted(calls)).toHaveLength(4)
+      expect(plainRed(calls).length).toBeGreaterThan(0)
+    })
+
+    it('washes only the beads that pass adds on peyote', () => {
+      const project = projectOf('peyote', 5, 3, { currentRow: 3 })
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 2, elapsed: 0.35 * ROW_MOTION.glint }] } })
+      expect(glinted(calls)).toHaveLength(2)
+    })
+
+    it('leaves the pass to its finished look after the dim delay, and draws nothing of it with Row highlight off', () => {
+      const project = projectOf('loom', 4, 3, { currentRow: 2 })
+      const later = recordingContext()
+      renderOverlay(later.context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 1, elapsed: ROW_MOTION.dimDelay }] } })
+      expect(glinted(later.calls)).toEqual([])
+      expect(plainRed(later.calls)).toEqual([])
+
+      const off = recordingContext()
+      renderOverlay(off.context, { project, region: whole(project), zoom: 1, rowMarks: false, rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
+      expect(glinted(off.calls)).toEqual([])
     })
   })
 
@@ -199,6 +235,23 @@ describe('renderOverlay', () => {
       expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
       // Each of the four beads is lifted and ringed, both turned: eight turns, no more.
       expect(named('rotate')).toHaveLength(8)
+    })
+
+    it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+      const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
+      const project = moveToRow(onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746')), 2)
+      const washed = (elapsed: number) => {
+        const { context, calls } = recordingContext()
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), rowMotion: { glints: [{ pass: 1, elapsed }] } })
+        return calls.filter((call) => call.name === 'fill' && call.fillStyle === GLINT_COLOR && call.globalAlpha > 0)
+      }
+
+      // The first bead has started and the next not yet; a little later all four are washing.
+      expect(washed(ROW_MOTION.glintStep / 2)).toHaveLength(1)
+      expect(washed(4 * ROW_MOTION.glintStep)).toHaveLength(4)
     })
   })
 
@@ -252,7 +305,7 @@ describe('renderOverlay', () => {
     })
 
     it('follows a shifted row and the Technique\'s packing, and rounds a peyote outline', () => {
-      const project = projectOf('peyote', 4, 3, noProgress)
+      const project = ownCell(projectOf('peyote', 4, 3, noProgress))
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: null } })
@@ -487,6 +540,48 @@ describe('renderOverlay', () => {
       const noAxis = recordingContext()
       renderOverlay(noAxis.context, { project, region: whole(project), zoom: 1, mirror: on({}) })
       expect(noAxis.named('stroke')).toHaveLength(0)
+    })
+  })
+
+  describe('Mirror\'s Axes on the open Canvas (ticket 0704)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+    const open = () => withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
+    const handle = { direction: 'leftRight' as const, x: 70, y: 56, size: 32 }
+
+    it('draws each Axis as a dashed marker line across the whole view in screen px, and its chip at a fixed size over everything', () => {
+      const { context, calls, named } = recordingContext()
+      renderOverlayWith(context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 2, pixelRatio: 2, mirror: on({ leftRight: true, topBottom: true }), canvasAxes: { axes: { leftRight: 3, topBottom: 1 }, handles: [handle] } })
+
+      expect(lines(calls)).toEqual([
+        [[70, 0], [70, 150]],
+        [[0, 30], [200, 30]],
+      ])
+      expect(named('setLineDash')[0]!.args[0]).toEqual([2.5, 2])
+      expect(calls.find((call) => call.name === 'stroke')!.strokeStyle).toBe(DEFAULT_THEME.marker)
+      const chip = named('arc').find((call) => call.args[2] === 16)!
+      expect(chip.args.slice(0, 3)).toEqual([70, 56, 16])
+      expect(chip.fillStyle).toBe(DEFAULT_THEME.chip.fill)
+      expect(chip.strokeStyle).toBe(DEFAULT_THEME.marker)
+      // The chips are drawn in the viewport's px: the transform set just before them is the pixel ratio alone.
+      const transforms = named('setTransform').map((call) => call.args)
+      expect(transforms[transforms.length - 1]).toEqual([2, 0, 0, 2, 0, 0])
+    })
+
+    it('draws a held chip in the accent, and nothing while the mode is Off or no Axis is given', () => {
+      const held = recordingContext()
+      renderOverlayWith(held.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: { leftRight: 3 }, handles: [handle], held: 'leftRight' } })
+      expect(held.named('arc').find((call) => call.args[2] === 16)!.strokeStyle).toBe(DEFAULT_THEME.accent)
+
+      const off = recordingContext()
+      renderOverlayWith(off.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, canvasAxes: { axes: { leftRight: 3 }, handles: [handle] } })
+      expect(off.named('stroke')).toHaveLength(0)
+      const none = recordingContext()
+      renderOverlayWith(none.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: {}, handles: [] } })
+      expect(none.named('stroke')).toHaveLength(0)
     })
   })
 

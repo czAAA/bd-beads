@@ -44,12 +44,12 @@ export interface Weave {
   technique: Technique
   /** Its settings by id (tickets 0624, 0625, 0627); a setting left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** How the Bead is drawn when the Project's Bead shape is Real (ADR 0068); absent is Symmetric. Never stored with a
-   * layer: the Project's Bead and Bead shape decide it (`beadCell`). */
+  /** How the layer's Bead is drawn (ADR 0068, ticket 0724); absent is the Technique's own cell. Never stored with a
+   * layer: the layer's Bead decides it (`beadCell`). */
   cell?: BeadCell
 }
 
-/** A Real cell: the Bead's height over its pitch along the thread, and how much of the cell's width its corners are
+/** A Bead's cell: its height over its pitch along the thread, and how much of the cell's width its corners are
  * rounded by, from the Bead's Form factor. */
 export interface BeadCell {
   aspect: number
@@ -113,25 +113,16 @@ const TECHNIQUE_RULES = {
 
 const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
 
-/** The Bead shape setting (ADR 0068): Symmetric draws a Technique's own cell, Real the Bead's. */
-export type BeadShape = 'symmetric' | 'real'
-
-/** The shape a Project, an old file or a Starter without the setting has. */
-export const DEFAULT_BEAD_SHAPE: BeadShape = 'symmetric'
-
-/** Every Bead shape, in the order the choice lists them. */
-export const BEAD_SHAPES: readonly BeadShape[] = ['symmetric', 'real']
-
-/** The one geometry function for a Bead's cell (ADR 0068): Symmetric is the Technique's own cell (undefined, so every
- * rule below reads as before), Real the Bead's height over its pitch along the thread and its outline. */
-export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'> & { formFactor: Pick<Bead['formFactor'], 'roundness'> } | undefined, shape: BeadShape): BeadCell | undefined {
-  if (shape !== 'real' || !bead) {
+/** The one geometry function for a Bead's cell (ADR 0068, ticket 0724): the Bead's height over its pitch along the
+ * thread and its outline. No Bead (a bare Weave) leaves the Technique's own cell, so every rule below reads as before. */
+export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'> & { formFactor: Pick<Bead['formFactor'], 'roundness'> } | undefined): BeadCell | undefined {
+  if (!bead) {
     return undefined
   }
   return { aspect: bead.heightMm / beadPitchMm(bead), roundness: bead.formFactor.roundness }
 }
 
-/** The Weave with the Bead's cell added (none, in Symmetric, leaves it as it is). */
+/** The Weave with the Bead's cell added (none, without a Bead, leaves it as it is). */
 export function withCell(weave: Weave, cell: BeadCell | undefined): Weave {
   return cell ? { ...weave, cell } : weave
 }
@@ -207,7 +198,7 @@ const MAX_DESCRIPTIONS = 256
 export function describeWeave(weave: Weave): WeaveDescription {
   const rules = RULES[weave.technique]
   const values = weaveSettings(weave)
-  // Everything a geometry reads from the Weave: a Real cell's roundness decides where a press misses a bead's corner.
+  // Everything a geometry reads from the Weave: a Bead's cell roundness decides where a press misses a bead's corner.
   const key = `${weave.technique} ${Object.values(values).join(' ')} ${weave.cell?.aspect ?? ''} ${weave.cell?.roundness ?? ''}`
   const known = descriptions.get(key)
   if (known) {

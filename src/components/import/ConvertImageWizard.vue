@@ -229,7 +229,7 @@ function onCreate() {
           testid="convert-section-bead"
         >
           <FormField :label="t.form.beadLabel">
-            <BeadSection v-model:bead-shape="wizard.beadShape.value" :bead="wizard.bead.value" :candidates="offeredBeads()" @pick="wizard.beadId.value = $event" />
+            <BeadSection :bead="wizard.bead.value" :candidates="offeredBeads()" @pick="wizard.beadId.value = $event" />
           </FormField>
           <TechniqueSection v-model:technique="wizard.technique.value" :settings="wizard.settings.value" testid="convert" @set-setting="wizard.setSetting" />
         </ConvertSection>

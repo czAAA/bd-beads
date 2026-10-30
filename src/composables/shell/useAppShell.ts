@@ -30,7 +30,6 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
-import { useBeadShapeFlow } from '../project/useBeadShapeFlow'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { projectNameOf, withStartBackground } from '../../domain/layerRecord'
@@ -148,7 +147,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, visibleCentrePx, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
@@ -162,7 +161,11 @@ function wireAppShell(services: Services) {
     onRedo,
   } = useUndoHistory({
     currentProject,
-    restore: (snapshot) => editing.restore(snapshot),
+    // Undo and Redo stop Row done's motion on the Pattern (ticket 0730).
+    restore: (snapshot) => {
+      rowOps.stopRowMotion()
+      editing.restore(snapshot)
+    },
     settle: () => editing.settle(),
   })
 
@@ -179,8 +182,9 @@ function wireAppShell(services: Services) {
   })
   const { edit } = editing
 
-  /** Mirror (ADR 0082, ticket 0703): the Project's setting, the tile's light, the popover and key `8`. */
-  const mirror = useMirrorFlow({ currentProject, replaceProject })
+  /** Mirror (ADR 0082, ticket 0703): the Project's setting, the tile's light, the popover and key `8`; on the open
+   * Canvas its Axes' handles, placed at the view's middle and dragged as one Undo step (ticket 0704). */
+  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, viewCentre: visibleCentrePx })
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
@@ -571,8 +575,6 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
-  /** Each layer's Bead shape (ticket 0670): a view, so no Edit. */
-  const beadShapeFlow = useBeadShapeFlow({ currentProject, replaceProject })
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
@@ -744,6 +746,8 @@ function wireAppShell(services: Services) {
       toggleRulers,
       rowHighlight,
       toggleRowHighlight,
+      /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
+      rowPress: rowOps.rowPress,
       panBy,
       scrollBy,
       setZoom,
@@ -773,11 +777,18 @@ function wireAppShell(services: Services) {
       toolPillPopoverOpen: toolPill.toolPillPopoverOpen,
       recentsInPill: toolPill.recentsInPill,
       pickRecent: toolPill.pickRecent,
-      // Mirror (ticket 0703): the Project's setting, the popover and the Frame's count limits
+      // Mirror (ticket 0703): the Project's setting, the popover and the Frame's count limits; the open Canvas's Axes
+      // and their handles (ticket 0704)
       mirrorSetting: mirror.setting,
       mirrorLimits: mirror.limits,
+      mirrorOnCanvas: mirror.onCanvas,
       mirrorPopoverOpen: mirror.popoverOpen,
       onMirrorChange: mirror.update,
+      mirrorCanvasAxes: mirror.canvasAxes,
+      mirrorHeldAxis: mirror.heldAxis,
+      onAxisPress: mirror.pressAxis,
+      onAxisDrag: mirror.dragAxis,
+      onAxisRelease: mirror.releaseAxis,
       previewCells,
       previewStamp,
       onCellPrimaryDown,
@@ -806,10 +817,12 @@ function wireAppShell(services: Services) {
       onMirrorSelection: mirrorSelectionFlow.onMirrorSelection,
       canNamePiece: namePiece.canNamePiece,
       onNamePiece: namePiece.onNamePiece,
+      onRenameSchema: namePiece.onRenameSchema,
       canRemoveSelectedLine: removeLine.canRemoveSelectedLine,
       onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
       // The Frame and Row progress
       onFrameFromSelection,
+      onFrameSchema: frameFlow.setTo,
       settingFrame: frameFlow.settingFrame,
       framePanelOpen: frameFlow.barOpen,
       frameDraftProject: frameFlow.draftProject,
@@ -877,7 +890,6 @@ function wireAppShell(services: Services) {
       // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
       onSetTechnique: frameFlow.setLayerTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
-      onSetBeadShape: beadShapeFlow.setBeadShape,
       onSetBackground: backgroundFlow.setBackground,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,

@@ -18,11 +18,6 @@ export const pl: Translations = {
       size: 'Rozmiar koralika',
       choose: 'Wybierz',
     },
-    beadShapeLabel: 'Kształt koralika',
-    beadShapeSymmetric: 'Symetryczny',
-    beadShapeReal: 'Rzeczywisty',
-    beadShapeSymmetricTip: 'Rysuje każdy koralik jako równą komórkę; zmienia tylko wygląd płótna.',
-    beadShapeRealTip: 'Rysuje każdy koralik w prawdziwych proporcjach; zmienia tylko wygląd płótna.',
     techniqueLabel: 'Technika',
     widthLabel: 'Szerokość',
     heightLabel: 'Wysokość',
@@ -86,6 +81,8 @@ export const pl: Translations = {
     moreAxes: 'Więcej osi',
     turnAxisOn: 'Włącz oś.',
     close: 'Zamknij',
+    dragHandle: 'Przeciągnij uchwyt na osi, aby ją przesunąć.',
+    repeatNeedsArea: 'Powtórz na płótnie wymaga obszaru.',
     copyToCounterparts: 'Skopiuj koraliki fragmentu na ich odbicia.',
     announceSelectionMirrored: 'Fragment odbity',
     droppedMessage: {
@@ -293,6 +290,24 @@ export const pl: Translations = {
       hand: 'Ręka',
       rulers: 'Linijki',
     },
+    firstRun: {
+      paint: '1 · wybierz Maluj i rysuj, gdzie chcesz',
+      select: '2 · wybierz Zaznacz i przeciągnij prostokąt wokół rysunku',
+      frame: '3 · otocz rysunek ramką,\na tu ustaw jej nazwę, rozmiar i koralik',
+      export: '4 · wyeksportuj obrazek\nlub schemat do druku',
+      menu: 'otwórz, zapisz,\nustawienia,\njęzyk…',
+      project: 'twój projekt: nazwa, autor,\ntechnika, koralik i tło',
+      mirror: 'Odbicie: maluj po obu stronach osi naraz',
+      color: 'kolory i twoja paleta',
+      welcome: 'twój pierwszy schemat w czterech krokach:',
+      steps: 'rysunek → zaznaczenie → ramka → eksport',
+      phone: {
+        paint: '1 · wybierz Maluj i rysuj',
+        select: '2 · Zaznacz: obrysuj rysunek',
+        frame: '3 · otocz ramką,\nustaw ją tutaj',
+        export: '4 · eksport: na końcu\ntego paska',
+      },
+    },
   },
   shell: {
     canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz zapisany projekt albo zaimportuj plik. Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
@@ -327,7 +342,7 @@ export const pl: Translations = {
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
     notes: { onUs: 'na nasz koszt' },
-    coffee: { title: 'Jedna rodzina', text: 'openbeads robi jedna rodzina, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci wieczór liczenia, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
+    coffee: { title: 'Robi to jedna rodzina', text: 'openbeads robi jedna rodzina, koralik po koraliku, i jest darmowe. Jeśli zaoszczędziło ci czas, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
       label: 'plany',
       heading: 'Trzy sposoby użycia',
@@ -549,7 +564,6 @@ export const pl: Translations = {
     wherePartsAre: 'Gdzie jest każda część',
     partsNote: 'Część ma do {beads} koralików na bok. Części na jednym arkuszu mają wspólny numer strony; każda powtarza {overlap} koralików sąsiedniej, zacieniowane.',
     rowByRowOn: 'Rząd po rzędzie na stronie {page} →',
-    shape: 'Kształt',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'część {part} · str. {page}',
     partPageShort: '{part} · s. {page}',
@@ -1003,6 +1017,15 @@ export const pl: Translations = {
   layerSettings: {
     frameHeading: 'Ustawienia',
     background: 'Tło',
+  },
+  schemaTag: {
+    group: 'Nazwy schematów',
+    label: '{name}, pokaż szczegóły',
+    tooltipBody: 'Kliknij, aby zobaczyć rozmiar i kolory.',
+    heading: 'schemat',
+    sizeBeads: '{columns} × {rows} koralików',
+    beads: { one: '{count} koralik', few: '{count} koraliki', many: '{count} koralików', other: '{count} koralika' },
+    colors: { one: '{count} kolor', few: '{count} kolory', many: '{count} kolorów', other: '{count} koloru' },
   },
   feedback: {
     titleGeneral: 'Wyślij opinię',

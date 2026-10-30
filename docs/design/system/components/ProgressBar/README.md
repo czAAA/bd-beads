@@ -14,6 +14,8 @@ Left to right, padding 0 12 0 16, gap 12, top divider `box-muted` at 22%:
 
 Row done and Row not done show text and follow Row direction: top to bottom they read "Row not done ↑" and "Row done ↓"; left to right the arrows turn to point left and right and the words become "Column not done" and "Column done" (in every shipped language). Tooltips and screen-reader names are the visible labels.
 
+**Motion (ticket 0729):** the track fill grows over `duration-base` (`ease-standard`, `transform` only) with a **spark** riding its leading edge: a 10px `--spark-core` dot with a `--spark-glow` halo and a 70px tail fading back along the fill (`.bb-spark` in `bundle.css`). It flares to 2.2 times and back over 520ms on each Row done and moves back with no flare on Row not done. It is hidden before the first pass and stays at the end once every pass is done, with no glow round the track. The press that marks the last pass plays Pattern done over the Frame (Motion section, Row progress). Under reduced motion the fill steps and the spark neither flares nor trails.
+
 **Phone widths (30rem and under).** Row not done and Row done do not fit one row with Turn row direction, Reset progress and the track in every language at 360px, so they take a second row of their own, half the bar each (`type-small`), and the buttons sit 4px apart with 6px side padding and 2px between icon and label, so that the longest labels fit at 320px (ticket 556), and the bar is its two rows plus 4px between and 1px above and below, 78px (`--progress-height`), instead of 40px; everything above it follows that height.
 
 **No Frame (v16).** Row progress works on the Frame: its rows are the Frame's rows. Until a Frame is set the bar shows the hint "[Select icon] Select to set a [Frame icon] Frame" (`meta`, `muted`; each icon, 14px, in a 20px hint chip like the CanvasHint's Kbd chips: `elevated`, 1px `line-strong` edge with a 2px bottom, `radius-xs`) and, right-aligned, a Fit to drawing button (secondary in a box, `frame` icon); Fit to drawing is shown only while there is no Frame (ticket 426). Row done and Row not done are not offered, and the bar keeps its height so the canvas does not jump.
@@ -23,3 +25,8 @@ Row done and Row not done show text and follow Row direction: top to bottom they
 **In the margin too (ticket 0655; MarginSheet card):** the Frame's margin sheet carries the same Row progress component in its top band, compact: Turn row direction, Reset progress, Row highlight, the counter and a 64px track, Row not done (icon only) and Row done. It is one component in two places tracking the same progress: a press in either moves the one pointer, and both show it. The bar stays.
 
 Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.
+
+## As built (ticket 0730)
+
+- **Track:** a groove inside the track's box holds the fill and the spark's tail, clipped to its rounded ends; the spark's dot sits in a copy outside it, so its halo and flare are not cut. The fill is the track's width moved left by the share still to weave (`translateX`), so it grows by `transform`; the spark moves the same way.
+- **Flare:** two names for one animation are swapped on each Row done so the next press restarts it; a track shown afresh (the margin changing form) does not flare until the next press.

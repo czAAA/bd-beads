@@ -2,11 +2,13 @@
 import { describe, expect, it } from 'vitest'
 import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt, type FrameSheet } from './canvas'
-import { changeFrame, type FrameChange } from './changeFrame'
-import { frameLayoutOf, type FrameSettings } from './frameShape'
+import { changeFrame, relaidInBead, type FrameChange } from './changeFrame'
+import { findBead } from './beads'
+import { customFrameSize, frameLayoutOf, type FrameSettings } from './frameShape'
+import { replaceBead } from './projectBead'
 import { frameGeometryOf, onLayer } from './layers'
-import { gridGeometry } from './layerGeometry'
-import { frameWeave } from './layerWeave'
+import { beadCell, describeWeave } from './weave'
+import { canvasDistance, frameWeave } from './layerWeave'
 import { projectPalette } from './palette'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { createProject } from './createProject'
@@ -135,20 +137,55 @@ describe('changing a Custom frame\'s Rounds', () => {
   })
 })
 
+describe('a Custom frame in another Bead (ticket 0723)', () => {
+  /** Where the Frame's middle lies on the Canvas, in Canvas positions. */
+  const middle = (project: Project) => {
+    const frame = frameOf(project)!
+    const half = canvasDistance(project, frameWeave(project), Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
+    return { row: frame.row + half.row, column: frame.column + half.column }
+  }
+
+  it('is laid out again in the Frame\'s new Bead round its own middle, every bead keeping its name and colour', () => {
+    const project = paintFrame(changed(openPeyote(), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 30 } } }), [{ row: 5, column: 0 }, { row: 2, column: 4 }], RED)
+    const round = findBead('toho/round/11-0')!
+    const relaid = relaidInBead(project, replaceBead(project, round))
+    expect(frameOf(relaid)).toMatchObject(customFrameSize('warpedSquare', { rounds: 6 }, undefined, 'peyote', beadCell(round)))
+    expect(frameOf(relaid)!.rows).not.toBe(frameOf(project)!.rows)
+    expect(frameOf(relaid)!.beads).toEqual(frameOf(project)!.beads)
+    expect(frameLayoutOf({ ...frameOf(relaid)!, cell: frameWeave(relaid).cell })!.beadDepth).toBeCloseTo(2.2 / 1.65, 9)
+    const [before, after] = [middle(project), middle(relaid)]
+    expect(Math.abs(after.row - before.row)).toBeLessThanOrEqual(1)
+    expect(Math.abs(after.column - before.column)).toBeLessThanOrEqual(1)
+  })
+
+  it('leaves a Frame without a Frame shape, and a Bead as deep as it had, as Replace Bead left it', () => {
+    const round = findBead('toho/round/11-0')!
+    const plain = changed(openPeyote(), { place: { frame: { row: 0, column: 0, rows: 6, columns: 6 }, weave: { technique: 'peyote' } } })
+    const rebeaded = replaceBead(plain, round)
+    expect(relaidInBead(plain, rebeaded)).toBe(rebeaded)
+    const square = changed(openPeyote(), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 30 } } })
+    // A Toho Cube 1.5mm, as the Frame has: its layout and rectangle are as they were.
+    const same = replaceBead(square, findBead('toho/cube/1.5mm')!)
+    expect(relaidInBead(square, same)).toBe(same)
+  })
+})
+
 describe('every Frame action on a Custom frame, each done through its shape (ADR 0079, ticket 0669)', () => {
-  /** The Canvas position nearest a Frame bead's centre: the cell of the Frame's own Weave under it, on the Canvas. */
+  /** The Canvas position nearest a Frame bead's centre: the cell of the Frame's own Weave nearest it, on the Canvas (a
+   * real cell's rows overlap, so the one drawn over it may be another). */
   const nearestCanvasPosition = (project: Project, position: { row: number; column: number }) => {
     const { box } = frameGeometryOf(project).place(position)!
-    const cell = gridGeometry(frameWeave(project)).positionAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 })!
+    const weave = describeWeave(frameWeave(project))
+    const cell = weave.nearestPosition(box.x + box.width / 2, box.y + box.height / 2, 1, weave.cellAspect)
     return { row: cell.row + frameOf(project)!.row, column: cell.column + frameOf(project)!.column }
   }
 
   it('drops its beads onto the Canvas on Remove Frame, each on the Canvas position nearest its centre, clearing its footprint', () => {
     const covered = withLayers(triangle(4), { beads: { 20: { 30: BLUE } } })
-    const project = paintFrame(covered, [{ row: 3, column: 5 }], RED)
+    const project = paintFrame(covered, [{ row: 3, column: 4 }], RED)
     const removed = changed(project, { remove: true })
     expect(frameOf(removed)).toBeUndefined()
-    const at = nearestCanvasPosition(project, { row: 3, column: 5 })
+    const at = nearestCanvasPosition(project, { row: 3, column: 4 })
     expect(beadsOfLayer(removed, 'canvas')).toEqual({ [at.row]: { [at.column]: RED } })
   })
 
@@ -186,7 +223,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
     // On a Canvas woven like it, the rectangle a 4-round Triangle round row 20, column 30 has, and Canvas beads over four
     // of its beads.
     const selection = { row: 16, column: 26, rows: 11, columns: 9 }
-    const drawn = withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 28: BLUE }, 24: { 29: BLUE } } })
+    const drawn = withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 31: BLUE }, 24: { 29: BLUE } } })
     const made = changed(drawn, { make: selection })
     expect(frameOf(made)).toMatchObject({ ...selection, shape: 'triangle', settings: { rounds: 4 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual({})

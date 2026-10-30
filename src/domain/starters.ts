@@ -11,7 +11,7 @@ import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
 import type { SettingSpec } from './settingSpec'
-import { describeWeave, type BeadShape, type Weave } from './weave'
+import { beadCell, describeWeave, withCell, type Weave } from './weave'
 import categories from '../data/starters/categories.json'
 
 // The Starters (spec 0590, tickets 0596, 0597, 0633; StarterGallery card): each a design for a Frame at one best
@@ -186,11 +186,10 @@ export interface StarterChoice {
   weave?: Weave
 }
 
-/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead, Bead shape and
- * Background. Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
+/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead and Background.
+ * Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
 export interface StarterLayerSettings {
   beadId: string
-  beadShape: BeadShape
   background: Background
 }
 
@@ -260,7 +259,7 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
  * or Band lying across takes its Width in rows and its length in columns of the Bead's pitch, as put in place.
  * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
-  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice).technique)
+  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice).technique, beadCell(bead))
   if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
   return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / beadPitchMm(bead))) }
 }
@@ -268,7 +267,7 @@ export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: 
 /** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
 export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: Bead): number {
   const size = starterFrameSize(starter, choice, bead)
-  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...weaveIn(starter, choice) }).positions().length
+  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...withCell(weaveIn(starter, choice), beadCell(bead)) }).positions().length
 }
 
 /** What a Starter's setup measures with a Bead (StarterGallery card, Setup): a Shape's or earring's width and height; a
@@ -304,9 +303,9 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
   const placement = starterPlacement(starter, choice, centre, bead ?? resolveProjectBead(project)!)
   const placed = changeFrame(project, placement)
-  if (placed.kind !== 'changed' || (!bead && !choice.beadShape && choice.background === undefined)) return placed
+  if (placed.kind !== 'changed' || (!bead && choice.background === undefined)) return placed
   // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
-  const dressed = withLayer(placed.project, 'frame', { bead, beadShape: choice.beadShape })
+  const dressed = withLayer(placed.project, 'frame', { bead })
   const relaid = changeFrame(choice.background === undefined ? dressed : withBackground(dressed, 'frame', choice.background), placement)
   return relaid.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, relaid.project) } : relaid
 }
@@ -324,8 +323,8 @@ function starterPlacement(starter: Starter, choice: StarterChoice, centre: GridP
  * column at the origin, and its Canvas a copy of the Frame's Layer settings (ADR 0079). Nothing in it records the
  * Starter. */
 export function starterProject(starter: Starter, choice: StarterChoice & Pick<StarterProjectChoice, 'name' | 'beadId'> & Partial<StarterLayerSettings>): Project {
-  const { name, beadId, beadShape, background } = choice
-  const project = createProject({ name, ...weaveIn(starter, choice), beadId, ...(beadShape ? { beadShape } : {}), ...(background !== undefined ? { background } : {}) })
+  const { name, beadId, background } = choice
+  const project = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project

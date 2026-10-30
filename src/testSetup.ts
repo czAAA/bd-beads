@@ -3,7 +3,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 // Page tests share one jsdom and module cache per worker (ticket 420): empty the cache first, then import what setup
 // shares with tests.
 vi.resetModules()
-const { disableAutoUnmount, enableAutoUnmount } = await import('@vue/test-utils')
+const { config, disableAutoUnmount, enableAutoUnmount } = await import('@vue/test-utils')
 const { browserDevicePreferences } = await import('./services/devicePreferences')
 const { installSurfaceLayout } = await import('./testUtils/surfaceLayout')
 const { installStrictClock, resetSharedPage } = await import('./testUtils/sharedPage')
@@ -36,6 +36,10 @@ afterEach(() => {
 // arming.
 disableAutoUnmount()
 enableAutoUnmount(afterEach)
+
+// What a component sends to the page with <Teleport> (the Tool pill's popovers) renders where it is written, so a
+// wrapper finds it like the rest; a test about where it lands turns the stub off.
+config.global.stubs.teleport = true
 
 // What the file before left on the shared page, its language and its device among it, and a clock fast enough that a
 // click made right after mounting is not dropped (ticket 0608).

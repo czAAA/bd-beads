@@ -15,7 +15,7 @@ export interface ThumbnailImage {
   data: Uint8ClampedArray
 }
 
-/** What a thumbnail reads of a Project: its beads, Frame, Weaves, Bead shape and rotation. */
+/** What a thumbnail reads of a Project: its beads, Frame, Weaves, Beads and rotation. */
 type Thumbnailed = DrawnProject
 
 /** A pixel is sampled at its centre. */

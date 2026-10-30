@@ -18,11 +18,6 @@ export const es: Translations = {
       size: 'Tamaño de la cuenta',
       choose: 'Elegir',
     },
-    beadShapeLabel: 'Forma de la cuenta',
-    beadShapeSymmetric: 'Simétrica',
-    beadShapeReal: 'Real',
-    beadShapeSymmetricTip: 'Dibuja cada cuenta como una celda uniforme; solo cambia el aspecto del lienzo.',
-    beadShapeRealTip: 'Dibuja cada cuenta con sus proporciones reales; solo cambia el aspecto del lienzo.',
     techniqueLabel: 'Técnica',
     widthLabel: 'Ancho',
     heightLabel: 'Alto',
@@ -86,6 +81,8 @@ export const es: Translations = {
     moreAxes: 'Más ejes',
     turnAxisOn: 'Activa un eje.',
     close: 'Cerrar',
+    dragHandle: 'Arrastra el tirador del eje para moverlo.',
+    repeatNeedsArea: 'Repetir en el lienzo necesita un área.',
     copyToCounterparts: 'Copia las cuentas del fragmento a sus reflejos.',
     announceSelectionMirrored: 'Fragmento reflejado',
     droppedMessage: {
@@ -292,6 +289,24 @@ export const es: Translations = {
       hand: 'Mano',
       rulers: 'Reglas',
     },
+    firstRun: {
+      paint: '1 · elige Pintar y dibuja donde quieras',
+      select: '2 · elige Seleccionar y arrastra un recuadro alrededor del dibujo',
+      frame: '3 · pon un marco alrededor del dibujo\ny aquí elige su nombre, tamaño y cuenta',
+      export: '4 · exporta una imagen\no un esquema para imprimir',
+      menu: 'abrir, guardar,\npreferencias,\nidioma…',
+      project: 'tu proyecto: nombre, autor,\ntécnica, cuenta y fondo',
+      mirror: 'Espejo: pinta a los dos lados de un eje a la vez',
+      color: 'colores y tu paleta',
+      welcome: 'tu primer esquema en cuatro pasos:',
+      steps: 'dibujar → seleccionar → marco → exportar',
+      phone: {
+        paint: '1 · elige Pintar y dibuja',
+        select: '2 · Seleccionar: arrastra un recuadro',
+        frame: '3 · ponle un marco\ny ajústalo aquí',
+        export: '4 · exportar: al final\nde esta barra',
+      },
+    },
   },
   shell: {
     canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre un proyecto guardado o importa un archivo. Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
@@ -326,7 +341,7 @@ export const es: Translations = {
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
     notes: { onUs: 'va por nosotros' },
-    coffee: { title: 'Una sola familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró una tarde de contar, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
+    coffee: { title: 'Hecho por una familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró tiempo, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {
       label: 'planes',
       heading: 'Tres formas de usarlo',
@@ -545,7 +560,6 @@ export const es: Translations = {
     wherePartsAre: 'Dónde está cada parte',
     partsNote: 'Cada parte tiene hasta {beads} cuentas por lado. Las partes de una hoja comparten su número de página; cada una repite {overlap} cuentas de la vecina, sombreadas.',
     rowByRowOn: 'Fila por fila en la página {page} →',
-    shape: 'Forma',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'parte {part} · pág. {page}',
     partPageShort: '{part} · p. {page}',
@@ -996,6 +1010,15 @@ export const es: Translations = {
   layerSettings: {
     frameHeading: 'Ajustes',
     background: 'Fondo',
+  },
+  schemaTag: {
+    group: 'Nombres de esquemas',
+    label: '{name}, ver detalles',
+    tooltipBody: 'Pulsa para ver el tamaño y los colores.',
+    heading: 'esquema',
+    sizeBeads: '{columns} × {rows} cuentas',
+    beads: { one: '{count} cuenta', many: '{count} de cuentas', other: '{count} cuentas' },
+    colors: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },
   },
   feedback: {
     titleGeneral: 'Enviar comentarios',

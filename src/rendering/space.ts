@@ -40,7 +40,7 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
   }
 }
 
-/** The Layer geometry of the Project drawn on its own (ADR 0078, ticket 0630): the Frame's, as its Bead shape draws it,
+/** The Layer geometry of the Project drawn on its own (ADR 0078, ticket 0630): the Frame's, as its Bead draws it,
  * or for a Canvas without one its Weave's over the box round its beads, from the box's first position. */
 export function geometryDrawnAlone(project: DrawnProject): LayerGeometry {
   if (frameOf(project)) return frameGeometryOf(project)
