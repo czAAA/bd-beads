@@ -1,6 +1,6 @@
 # MarginSheet
 
-The Frame's keep-out margin drawn as a sheet of drafting paper: its own background and inner border, the Frame's tools and Row progress in its top band, a title block in its bottom-right corner, and the rulers on three sides (ticket 0655; design canvas "Keep-out margin variants", variant A "Drafting sheet", https://claude.ai/artifact/Aj9Tmr8xpdTfaaKBzLYzeh). It replaces the flat margin and the gutter controls of the Frame card. Built by tickets 0656 (width and color), 0657 (tools, title block, Row progress) and 0658 (zoom forms and folding).
+The Frame's keep-out margin drawn as a sheet of drafting paper: its own background and inner border, the Frame's tools and Row progress in its top band, a title block in the Frame's own bottom-right corner, and the rulers on three sides (ticket 0655; design canvas "Keep-out margin variants", variant A "Drafting sheet", https://claude.ai/artifact/Aj9Tmr8xpdTfaaKBzLYzeh). It replaces the flat margin and the gutter controls of the Frame card. Built by tickets 0656 (width and color), 0657 (tools, title block, Row progress) and 0658 (zoom forms and folding).
 
 ## Width
 
@@ -27,7 +27,7 @@ The Frame's keep-out margin drawn as a sheet of drafting paper: its own backgrou
 
 Left to right, 14px in from the sheet's top-left corner (10px compact), 4px apart:
 
-1. **Row progress:** the Progress bar's controls, the same component in a compact form, tracking the same progress (ProgressBar card): Turn row direction, Reset progress, the Row highlight Switch, a 1px divider, the counter ("5/11", `control`), a 64px track, a divider, Row not done (icon only, `arrow-up`, its name and Tooltip the label it has in the bar) and **Row done** (the bar's primary button at 26px, label and trailing arrow). Pressing either moves the one pointer, in the margin and in the Progress bar alike. With no Frame there is no sheet.
+1. **Row progress:** the Progress bar's controls, the same component in a compact form, tracking the same progress (ProgressBar card): Turn row direction, Reset progress, the Row highlight Switch, a 1px divider, the counter ("5/11", `control`), a 64px track, a divider, Row not done (icon only, `arrow-up`, its name and Tooltip the label it has in the bar) and **Row done** (the bar's primary button at 26px, label and trailing arrow). Pressing either moves the one pointer, in the margin and in the Progress bar alike. With no Frame there is no sheet. Its 64px track carries the Progress bar's spark at the compact size, an 8px dot with a 24px tail (ticket 0729).
 2. **Move bar**, centred on the top band: the Frame card's Move handle (40 × 6 `ink` pill in a 56 × 28 hit area, `grab`), now on the paper instead of in the gutter. Same name, Tooltip, keys and Tab stop.
 3. **Tools**, at the right, 28px icon buttons (`radius-md`, no fill, hover `ink` at 10%): **Rotate Frame** (`rotate`), **Edit Frame** (`pencil`; on: `ink` fill, `canvas` icon), **Export** (`share`, the Canvas strip's Export: opens the Export panel under this button, ExportPanel card), **Margin color** (`palette`), a divider, **Remove Frame** (`delete`, `ink` on the paper, `danger` on hover and in its confirmation). Each keeps the name, Tooltip, confirmation and disabled reasons it has in the Frame card.
 
@@ -49,15 +49,17 @@ Anchored to the inner border's bottom-right corner, two rows of `--margin-title-
 | 2 | The size in beads ("40 × 11", `meta-small`) · the estimated size ("≈ 6.4 × 1.4 cm") · the **legend**: one 14px disc per Palette color in the Frame, holding its Swatch letter (white on dark beads, `ink` on light, Inter 600 8), under the settings and the maker's first cell · **Letters** and its Switch |
 
 - The pencils are 18px buttons with 12px icons: the name edits in place as in the Frame panel (Save, Cancel, "n/40"); the Technique opens the Project's Technique PanelPicker as a popover, locked with its reason once a row is done; the maker's name is the Project's Name on exports (NameOnExports card), so a change shows in Project and on every export.
-- The legend shows at most 8 discs, then "+n". Letters is the Frame panel's Letters setting (saved with the Project): on, the Frame's beads carry their letters, as the PNG and PDF do.
+- The legend shows at most 8 discs, then "+n". Letters is the Frame panel's Letters setting (saved with the Project): on, the Frame's beads carry their letters, as the PNG and PDF do, each upright on screen however the Canvas, the Frame or the bead is turned (ticket 0728).
 - **Name and size on the margin**, a Switch in the Frame panel's margin section (on by default, remembered on the device), hides the title block; the fold tab then is not shown either.
 - The title block is the only place the canvas shows the Frame's name: it is not drawn under the Frame (ticket 0719); an unframed named Piece's name hangs on its own tag (SchemaTag card, ticket 0721).
 - **Fold** (`chevron-down`) folds the title block to a tab in the same corner: the name (Inter 600 11) and `chevron-up`, 24px tall, `margin-title` fill. The tab unfolds it. Kept for the session.
+- **On a turned Canvas** (ticket 0728) the title block stays on the Frame's own bottom-right corner, the one that is bottom-right when the Canvas is upright: bottom-left on screen after Rotate canvas to 90°, top-left at 180°, top-right at 270°. It is drawn upright on screen inside the inner border there, and its forms, the tab and giving way to a Selection's handles work there as at the bottom-right. At a top corner it shares the top edge with the band's row: the block takes the corner and the row is laid out in the width left beside it, stepping down as on a narrow sheet; the block leaves the narrowest row (the Move bar and the Frame tools button) its room, so the Frame can always be moved. During a two-finger twist it stays on that corner, its contents leaning with the Canvas by less than 45° and snapping upright on the next quarter turn past 45°. The top band itself stays along the screen's top edge. A Frame turned with Rotate Frame does not move it: the corner is taken from the Frame as it lies on the upright Canvas.
 
 ## Rulers and the current pass
 
-- With a Frame, its rulers are drawn top, left and right, none below (the title block's band). Placement, sizes and the 5th-number rule are the Rulers card's; their color follows Margin color above.
+- With a Frame, its rulers are drawn on three sides, none along the screen edge the title block is on: the bottom, or the top on a Canvas turned 180° or 270° (ticket 0728). Placement, sizes and the 5th-number rule are the Rulers card's; their color follows Margin color above.
 - The **current pass** is marked on its own ruler number: a `marker` pill behind it, 2px round the number and fully rounded, the number weight 700 in `canvas` (Rulers card), in both bands that number it (left and right for a row; the top for a column once Turn row direction sets columns). The numbers sit below the tool row in every form, so the mark never meets a tool. The pass itself keeps its ring and the finished passes their dimming (BeadBoard card).
+- **Row done (ticket 0729):** the pill glides from the pass's number to the next one's over `duration-base` with `ease-standard`, in every band that numbers it, the two numbers crossfading their color; the tick glides along the Frame's line the same way. When the last pass is done the pill and the tick fade out over 150ms (`ease-in`) and Pattern done plays over the Frame, inside the sheet (Motion section, Row progress). Under reduced motion they jump.
 - Where the pass has no number drawn (the compact and folded forms, Rulers off, a Frame turned a quarter, whose numbers count the cells it covers, or a Ruler step that skips it), the mark is a **tick**: 3px thick in `marker`, rounded, from the middle of the Frame's line in to the beads, at the pass; on the left and right sides for a pass across the screen, on the top for one down it. Inside the line, it never stands under a tool.
 - None for a Custom frame, whose passes are no line, nor once every pass is done, nor in the bare form (ticket 0685; it replaced a 9 × 12 `marker` triangle 4px outside the numbers, which with columns could sit under a tool).
 
@@ -129,3 +131,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - [ ] No gutter controls remain; exports never show the sheet.
 
 Hand-written from the ticket 0655 design canvas; static rendition.
+
+## As built (ticket 0730)
+
+- The spark is at the compact size on the margin's track in every form that keeps a track (full, compact, folded); where the row gives the track up it has none. The tick glides along the Frame's line between two passes that both have a tick on the same side, and jumps otherwise.

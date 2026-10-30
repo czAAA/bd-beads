@@ -205,3 +205,40 @@ describe('which Piece a Selection holds', () => {
     expect(counting.reads.rows.size).toBe(5)
   })
 })
+
+// A layer over the walk limit (ticket 0716): no edit walks a named Piece whole, the names stay on their beads.
+describe('piece names on a layer too big to walk', () => {
+  function huge() {
+    const counting = countingBeads(withColors({}, Array.from({ length: 260 }, (_, r) => row(r, 0, 999)).flat()))
+    const project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), {
+      beads: counting.beads,
+      pieceNames: [{ name: 'Fill', row: 3, column: 3 }, { name: 'Dot', row: 300, column: 0 }],
+    })
+    return { project, ...counting }
+  }
+
+  it('lets a bead that joins two named Pieces through, unwalked, and keeps both names on their beads', () => {
+    const { project, reads, reset } = huge()
+    const withDot = draw(project, [{ row: 300, column: 0, color: R }])
+    reset()
+
+    const joined = draw(withDot, row(260, 0, 0).concat(row(261, 0, 0), row(262, 0, 0), row(263, 0, 0), row(264, 0, 0), row(265, 0, 0)).concat(Array.from({ length: 34 }, (_, i) => ({ row: 266 + i, column: 0, color: R }))))
+
+    expect(canvasOf(joined).pieceNames?.map((entry) => entry.name)).toEqual(['Fill', 'Dot'])
+    expect(reads.beads).toBeLessThan(100_000)
+  })
+
+  it('moves each name with its bead when an edit moves the beads', () => {
+    const { project } = huge()
+    const shifted = withLayers(project, { beads: Object.fromEntries(Object.entries(beadsOfLayer(project, 'canvas')).map(([r, cells]) => [Number(r) + 1, cells])) })
+
+    const carried = carryNames(project, shifted, ({ row: r, column }) => ({ row: r + 1, column }))
+
+    expect(canvasOf(carried).pieceNames).toEqual([{ name: 'Fill', row: 4, column: 3 }])
+  })
+
+  it('names no Piece of it from a Selection, as that would flood it in the press', () => {
+    const { project } = huge()
+    expect(pieceInSelection(project, { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
+  })
+})

@@ -9,7 +9,7 @@ import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } fr
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import { readCanvasAxes, readMirrorSetting } from './mirror'
+import { readCanvasAxes, readMirrorArea, readMirrorSetting } from './mirror'
 import { readPieceNames } from './pieceNames'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress } from './rowProgress'
@@ -31,8 +31,9 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
     id?: string
     name?: string
     orientation?: number
-    /** The Canvas's Mirror Axes (ticket 0704), as a file may have left them. */
+    /** The Canvas's Mirror Axes (ticket 0704) and a layer's Area (ticket 0710), as a file may have left them. */
     mirrorAxes?: unknown
+    mirrorArea?: unknown
     rowProgress?: Partial<RowProgress> & { currentRow: number }
   }
 
@@ -54,8 +55,10 @@ function isLayered(project: StoredProject): project is LayeredProject {
 }
 
 /** A Project as an older app may have saved it: with the color-to-bead override (ADR 0007/ticket 36), the stored
- * `widthMm`/`heightMm` (ADR 0026) and ticket 28's `rotated` boolean instead of ticket 171's `rotation`. */
+ * `widthMm`/`heightMm` (ADR 0026), ticket 28's `rotated` boolean instead of ticket 171's `rotation`, and the Bead shape
+ * every layer is now drawn without (ADR 0068, ticket 0724). */
 type ProjectWithLegacyFields = SavedProject & {
+  beadShape?: unknown
   columns?: unknown
   rows?: unknown
   grid?: unknown
@@ -131,6 +134,7 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
     grid: _legacyGrid,
     brickBlock: _brickBlock,
     rotation: _rotation,
+    beadShape: _legacyBeadShape,
     name,
     technique,
     techniqueSettings,
@@ -184,6 +188,8 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
 function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): LayerFields {
   const bead = readBeadCopy(stored.bead) ?? catalogCopy(stored.beadId)
   const pieceNames = readPieceNames(stored.pieceNames)
+  // Mirror's Area (ticket 0710): a file from before it, or an unreadable record, opens with none.
+  const mirrorArea = readMirrorArea(stored.mirrorArea)
   return {
     id: typeof stored.id === 'string' && stored.id ? stored.id : fallbackId,
     ...weave,
@@ -193,6 +199,7 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
     beads: stored.beads ?? {},
     ...(stored.letters === true ? { letters: true } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
+    ...(mirrorArea ? { mirrorArea } : {}),
   }
 }
 

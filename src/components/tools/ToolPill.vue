@@ -15,7 +15,9 @@ import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import MirrorPopover from './MirrorPopover.vue'
 import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
-import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
+import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting, type ShapeAxes } from '../../domain/mirror'
+import type { Rect } from '../../domain/canvas'
+import type { Layer } from '../../domain/grid'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
@@ -34,6 +36,13 @@ const props = withDefaults(defineProps<{
   mirrorLimits?: Record<MirrorDirection, number>
   /** Whether the open Canvas is the only layer (ticket 0704): the popover's details are then the Canvas's. */
   mirrorOnCanvas?: boolean
+  /** The Area row (ticket 0710): the layer it is for (none on a Custom frame), that layer's Area, and whether one is
+   * being picked. */
+  mirrorAreaRow?: Layer
+  mirrorArea?: Rect
+  mirrorPicking?: boolean
+  /** A Custom frame's shape (ticket 0706): the Axes it offers and its side count. */
+  mirrorShape?: ShapeAxes
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -55,6 +64,10 @@ const emit = defineEmits<{
   'update:mirrorPopoverOpen': [open: boolean]
   /** The Mirror popover changed the setting (ticket 0703). */
   'update:mirror': [setting: MirrorSetting]
+  /** The Area row (ticket 0710): Select area, Whole Frame, Clear the area. */
+  'mirror-pick': []
+  'mirror-whole-frame': []
+  'mirror-clear-area': []
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
@@ -186,6 +199,7 @@ watch(
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       data-tool-pill
       data-testid="tool-pill"
+      data-hint-obstacle
       :data-position="position"
       @pointerdown="drag.onPointerDown"
       @keydown="roving.onKeydown"
@@ -214,6 +228,7 @@ watch(
         :accent="isActive(tile.tool)"
         :tabindex="roving.tabIndexFor(isActive(tile.tool))"
         :data-testid="`pill-tool-${tile.tool}`"
+        :data-hint="tile.tool === 'paint' || tile.tool === 'select' ? tile.tool : undefined"
         @click="emit('select-tool', tile.tool)"
       />
 
@@ -232,6 +247,7 @@ watch(
         :aria-expanded="mirrorPopoverOpen"
         :tabindex="-1"
         data-testid="pill-tool-mirror"
+        data-hint="mirror"
         @click="toggleMirror"
       />
 
@@ -265,6 +281,7 @@ watch(
         :aria-expanded="popoverOpen"
         :tabindex="-1"
         data-testid="pill-color"
+        data-hint="color"
         @click="toggleColor"
       >
         <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }">
@@ -299,31 +316,43 @@ watch(
 
     </div>
 
-    <MirrorPopover
-      v-if="mirrorPopoverOpen"
-      :tile="mirrorTileEl"
-      :pill="pillEl"
-      :position="position"
-      :setting="mirror"
-      :limits="mirrorLimits"
-      :on-canvas="mirrorOnCanvas"
-      @close="emit('update:mirrorPopoverOpen', false)"
-      @update:setting="emit('update:mirror', $event)"
-    />
+    <!-- The popovers sit in the app shell, not in the canvas box (ToolPill card): the box clips what it holds and stacks
+      it under its bars, so an iPad held sideways hid the Custom color picker under the Progress bar (ticket 0726). In
+      the shell they stack by StackingOrder: over the bars, under a dialog opened from them. -->
+    <Teleport defer to=".app-shell">
+      <MirrorPopover
+        v-if="mirrorPopoverOpen"
+        :tile="mirrorTileEl"
+        :pill="pillEl"
+        :position="position"
+        :setting="mirror"
+        :limits="mirrorLimits"
+        :on-canvas="mirrorOnCanvas"
+        :area-row="mirrorAreaRow"
+        :area="mirrorArea"
+        :picking="mirrorPicking"
+        :shape="mirrorShape"
+        @close="emit('update:mirrorPopoverOpen', false)"
+        @update:setting="emit('update:mirror', $event)"
+        @pick="emit('mirror-pick')"
+        @whole-frame="emit('mirror-whole-frame')"
+        @clear-area="emit('mirror-clear-area')"
+      />
 
-    <ColorPopover
-      v-if="popoverOpen"
-      :tile="colorTileEl"
-      :pill="pillEl"
-      :position="position"
-      :color-hex="colorHex"
-      :color-name="colorName"
-      :selected-color-id="selectedColorId"
-      :custom-color="customColor"
-      @close="emit('update:popoverOpen', false)"
-      @select-color="emit('select-color', $event)"
-      @select-custom-color="emit('select-custom-color', $event)"
-    />
+      <ColorPopover
+        v-if="popoverOpen"
+        :tile="colorTileEl"
+        :pill="pillEl"
+        :position="position"
+        :color-hex="colorHex"
+        :color-name="colorName"
+        :selected-color-id="selectedColorId"
+        :custom-color="customColor"
+        @close="emit('update:popoverOpen', false)"
+        @select-color="emit('select-color', $event)"
+        @select-custom-color="emit('select-custom-color', $event)"
+      />
+    </Teleport>
   </div>
 </template>
 

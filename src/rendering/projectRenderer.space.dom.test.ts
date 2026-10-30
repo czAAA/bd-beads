@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
-import { beadCell, type Technique } from '../domain/weave'
+import type { Technique } from '../domain/weave'
 import { createProject } from '../domain/createProject'
 import { findBead } from '../domain/beads'
 import { replaceBead } from '../domain/projectBead'
-import { weaveOf } from '../domain/layerWeave'
+import { canvasWeave, weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
@@ -329,7 +329,7 @@ describe('Position marks tile', () => {
     const tile = recordingContext()
     // A tile is made on a canvas of its own (one per Technique): hand it the one that records.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
-    // No Bead known, so the Technique's own cell is drawn.
+    // A Bead this device does not know draws the Technique's own cell, the one these marks are about.
     const project = withLayers(framedProject(technique), { frame: undefined, bead: undefined })
     const { context } = recordingContext()
     renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51 })
@@ -434,7 +434,7 @@ describe('a Frame in a Bead of its own over the Canvas (ticket 0665)', () => {
 
   it('draws the Frame from its corner at its own Bead\'s size: its beads at their own place, scaled by it', () => {
     const { beads, named } = render(halfSize(), true)
-    const origin = positionBoxPx({ technique: 'loom', cell: beadCell(findBead('toho/round/8-0')) }, 6, 5)
+    const origin = positionBoxPx(canvasWeave(halfSize()), 6, 5)
     expect(named('translate').map(({ args }) => args)).toContainEqual([origin.x, origin.y])
     expect(named('scale').map(({ args }) => args)).toEqual([[0.5, 0.5]])
     expect(beads.filter(({ color }) => color !== null).slice(0, 2).map(({ x, y }) => ({ x, y }))).toEqual([{ x: 0, y: 0 }, { x: CELL_SIZE_PX, y: 0 }])

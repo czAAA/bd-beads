@@ -2,11 +2,19 @@ import { ref } from 'vue'
 import type { Project } from '../../domain/project'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
+/** A Project of the library as the confirmations name it: decoded or sealed (ticket 0716). */
+export interface LibraryEntry {
+  id: string
+  name: string
+  /** Its bead count, when it is over the size gate: picking it warns first (ticket 0716). */
+  gatedBeads?: number
+}
+
 /** What the Saved Projects confirmations need from the app shell: the library's lookup, open, remove and manual
  * save. */
 export interface SavedProjectConfirmsDeps {
   currentProject: () => Project | undefined
-  findProject: (id: string) => Project | undefined
+  findProject: (id: string) => LibraryEntry | undefined
   openProject: (id: string) => void
   removeProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
@@ -20,10 +28,13 @@ export interface SavedProjectConfirmsDeps {
 export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
   /** The Project whose × was pressed, until the person answers. */
   const dialogs = deps.dialogs ?? useDialogs()
-  const pendingRemove = dialogs.question<Project>('remove-project')
+  const pendingRemove = dialogs.question<LibraryEntry>('remove-project')
 
   /** The Project a thumbnail pick would open, until the person answers. */
-  const pendingSwitch = dialogs.question<Project>('switch-project')
+  const pendingSwitch = dialogs.question<LibraryEntry>('switch-project')
+
+  /** A Project over the size gate that was picked, until the person opens it anyway or not (ticket 0716). */
+  const pendingLargeOpen = dialogs.question<LibraryEntry>('open-large-project')
 
   /** What to do once a confirmed switch has opened its Project (the phone drawer puts its sheets away). */
   let afterSwitch: (() => void) | undefined
@@ -47,12 +58,19 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
     }
   }
 
-  /** A thumbnail pick: the open Project does nothing, no open Project opens at once, anything else asks. `opened`
-   * runs once the Project is showing (or already was). */
+  /** A thumbnail pick: the open Project does nothing, no open Project opens at once, anything else asks; a Project
+   * over the size gate asks whether to open it anyway in place of the switch question (ticket 0716). `opened` runs
+   * once the Project is showing (or already was). */
   function onRequestSwitch(id: string, opened?: () => void) {
     const current = deps.currentProject()
     if (current?.id === id) {
       opened?.()
+      return
+    }
+    const entry = deps.findProject(id)
+    if (entry?.gatedBeads !== undefined) {
+      afterSwitch = opened
+      pendingLargeOpen.value = entry
       return
     }
     if (!current) {
@@ -60,10 +78,10 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
       opened?.()
       return
     }
-    const picked = deps.findProject(id)
-    if (!picked) {
+    if (!entry) {
       return
     }
+    const picked = entry
     switchSaveRefused.value = false
     afterSwitch = opened
     pendingSwitch.value = picked
@@ -85,6 +103,23 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
     }
   }
 
+  function onCancelLargeOpen() {
+    pendingLargeOpen.value = undefined
+    afterSwitch = undefined
+  }
+
+  /** Open anyway: the gated Project is decoded and opened now. */
+  function onConfirmLargeOpen() {
+    const picked = pendingLargeOpen.value
+    const opened = afterSwitch
+    pendingLargeOpen.value = undefined
+    afterSwitch = undefined
+    if (picked) {
+      deps.openProject(picked.id)
+      opened?.()
+    }
+  }
+
   /** Save first, offered when the last save failed: the modal turns to the plain question once it gets through, or
    * says so if it didn't. */
   function onSaveBeforeSwitch() {
@@ -94,6 +129,7 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
   return {
     pendingRemove,
     pendingSwitch,
+    pendingLargeOpen,
     switchSaveRefused,
     onRequestRemove,
     onCancelRemove,
@@ -102,5 +138,7 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
     onCancelSwitch,
     onConfirmSwitch,
     onSaveBeforeSwitch,
+    onCancelLargeOpen,
+    onConfirmLargeOpen,
   }
 }

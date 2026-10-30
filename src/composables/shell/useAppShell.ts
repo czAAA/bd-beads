@@ -32,7 +32,7 @@ import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { withStartBackground } from '../../domain/layerRecord'
+import { projectNameOf, withStartBackground } from '../../domain/layerRecord'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -46,6 +46,7 @@ import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
 import { useStorageAskFlow } from '../project/useStorageAskFlow'
 import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
+import { useSafeStart } from '../project/useSafeStart'
 import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
@@ -89,8 +90,13 @@ function wireAppShell(services: Services) {
   // The Project library and persistence (ticket 55, ADR 0012): replaceProject is the single commit point for the open
   // Project and saves as it lands; a dragged stroke defers its save per cell and writes once at the end (see
   // usePaintStroke).
+  /** Safe start (ticket 0716): a Project whose last open never drew a frame is held back sealed, and none opens. */
+  const safeStart = useSafeStart({ note: services.openingNote })
   const {
     projects,
+    sealed,
+    entryOf,
+    openProject,
     activeProjectId,
     activeProject,
     saveFailed,
@@ -102,7 +108,13 @@ function wireAppShell(services: Services) {
     removeAllProjects,
     flushPendingSave,
     saveNow,
-  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved)
+  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved, { held: safeStart.held })
+  const openingAddress = services.openingAddress()
+  // `?open=saved-projects` lands with no Project open; `?project=<id>` is opened below, through the Saved Projects pick.
+  if (openingAddress.savedProjects || openingAddress.project) activeProjectId.value = undefined
+  safeStart.follow(() => activeProject.value && { id: activeProject.value.id, name: projectNameOf(activeProject.value) })
+  /** The Project that didn't open last time, while it is still sealed in the library: the notice row names it. */
+  const missedProject = computed(() => sealed.value.find((project) => project.id === safeStart.missed.value?.id))
 
   const currentProject = () => activeProject.value
   const messages = () => t.value
@@ -149,7 +161,11 @@ function wireAppShell(services: Services) {
     onRedo,
   } = useUndoHistory({
     currentProject,
-    restore: (snapshot) => editing.restore(snapshot),
+    // Undo and Redo stop Row done's motion on the Pattern (ticket 0730).
+    restore: (snapshot) => {
+      rowOps.stopRowMotion()
+      editing.restore(snapshot)
+    },
     settle: () => editing.settle(),
   })
 
@@ -168,7 +184,7 @@ function wireAppShell(services: Services) {
 
   /** Mirror (ADR 0082, ticket 0703): the Project's setting, the tile's light, the popover and key `8`; on the open
    * Canvas its Axes' handles, placed at the view's middle and dragged as one Undo step (ticket 0704). */
-  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, viewCentre: visibleCentrePx })
+  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, viewCentre: visibleCentrePx, showToast, messages })
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
@@ -204,6 +220,9 @@ function wireAppShell(services: Services) {
     (count, loss) => showToast('paste-clipped', plural(locale.value, count, loss === 'shape' ? t.value.tools.droppedOnShapeMessage : t.value.tools.pasteClippedMessage), 'info'),
     () => mirror.setting.value,
   )
+
+  /** The hover preview is off while Mirror's Area is being picked (ticket 0710): the pointer draws the band, not beads. */
+  const shownPreviewCells = computed(() => (mirror.picking.value ? [] : previewCells.value))
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
    * 0016). */
@@ -551,6 +570,7 @@ function wireAppShell(services: Services) {
   const exportFlow = useExportFlow({
     currentProject,
     projects: () => projects.value,
+    sealed: () => sealed.value,
     messages,
     locale: currentLocale,
     downloadFile: services.downloadFile,
@@ -568,7 +588,7 @@ function wireAppShell(services: Services) {
   useSaveOnPageHide(flushPendingSave)
 
   function onSelectProject(id: string) {
-    activeProjectId.value = id
+    openProject(id)
   }
 
   function onNewProject() {
@@ -578,7 +598,7 @@ function wireAppShell(services: Services) {
   /** Saved Projects asks before removing a thumbnail's Project or switching to it (ticket 232). */
   const savedProjectConfirms = useSavedProjectConfirms({
     currentProject,
-    findProject: (id) => projects.value.find((project) => project.id === id),
+    findProject: entryOf,
     openProject: onSelectProject,
     removeProject,
     saveNow,
@@ -599,6 +619,10 @@ function wireAppShell(services: Services) {
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
   const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch, openPanel })
+  // A Project the address names opens as a pick from Saved Projects does (a gated one asks first); a load that opened
+  // none of a library that has some lands on Saved Projects (ticket 0716).
+  if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
+  if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
   const shortcutsHelpOpen = dialogs.flag('shortcuts')
@@ -621,6 +645,7 @@ function wireAppShell(services: Services) {
       pickingColor.value = false
       return was
     },
+    cancelAreaPick: mirror.cancelPick,
     hasOpenLayer,
     anyDialogOpen: () => dialogs.open.value !== undefined,
     backOutOfSelect: backOutOfSelectOrFraming,
@@ -682,6 +707,13 @@ function wireAppShell(services: Services) {
       announcement,
       endStroke,
       onExportProjectFile: exportFlow.onExportProjectFile,
+      /** The notice of a Project that didn't open last time (ticket 0716), with its Remove and Export. */
+      missedProject,
+      onRemoveMissed: () => missedProject.value && savedProjectConfirms.onRequestRemove(missedProject.value.id),
+      onExportMissed: () => missedProject.value && exportFlow.onExportSealed(missedProject.value),
+      onDismissMissed: () => {
+        safeStart.missed.value = undefined
+      },
       /** A picture dropped or pasted on the app opens Convert image with it set (spec 0645). */
       onPictureForConvert: convertImage.onPicture,
       dialogOpen: dialogs.open,
@@ -701,6 +733,8 @@ function wireAppShell(services: Services) {
       onImportProjects: importSwitch.onImportProjects,
       toasts,
       dismissToast,
+      /** The surface drew every bead in view: the safe start's first drawn frame (ticket 0716). */
+      onSurfaceDrawn: safeStart.onDrawn,
       // The view
       bindCanvasArea,
       bindCanvasScroll,
@@ -716,6 +750,8 @@ function wireAppShell(services: Services) {
       toggleRulers,
       rowHighlight,
       toggleRowHighlight,
+      /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
+      rowPress: rowOps.rowPress,
       panBy,
       scrollBy,
       setZoom,
@@ -757,7 +793,19 @@ function wireAppShell(services: Services) {
       onAxisPress: mirror.pressAxis,
       onAxisDrag: mirror.dragAxis,
       onAxisRelease: mirror.releaseAxis,
-      previewCells,
+      // The Area (ticket 0710): the row's layer, the Area, the pick and its band
+      mirrorAreaRow: mirror.areaRow,
+      mirrorArea: mirror.area,
+      mirrorShape: mirror.shape,
+      mirrorPicking: mirror.picking,
+      mirrorBand: mirror.band,
+      onAreaPick: mirror.startPick,
+      onAreaWholeFrame: mirror.pickWholeFrame,
+      onAreaClear: mirror.clearArea,
+      onAreaPress: mirror.pressArea,
+      onAreaDrag: mirror.dragArea,
+      onAreaRelease: mirror.releaseArea,
+      previewCells: shownPreviewCells,
       previewStamp,
       onCellPrimaryDown,
       onCellPrimaryMove,
@@ -835,6 +883,7 @@ function wireAppShell(services: Services) {
       handedness,
       setHandedness,
       projects,
+      sealed,
       activeProjectId,
       onRequestRemove: savedProjectConfirms.onRequestRemove,
       onImportProjects: importSwitch.onImportProjects,
@@ -921,6 +970,9 @@ function wireAppShell(services: Services) {
       onConfirmSwitch: savedProjectConfirms.onConfirmSwitch,
       onCancelSwitch: savedProjectConfirms.onCancelSwitch,
       onSaveBeforeSwitch: savedProjectConfirms.onSaveBeforeSwitch,
+      pendingLargeOpen: savedProjectConfirms.pendingLargeOpen,
+      onConfirmLargeOpen: savedProjectConfirms.onConfirmLargeOpen,
+      onCancelLargeOpen: savedProjectConfirms.onCancelLargeOpen,
       onConfirmStorageNote: storageAsk.onConfirmStorageNote,
       onCancelStorageNote: storageAsk.onCancelStorageNote,
       onCloseShortcutsHelp,

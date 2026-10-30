@@ -5,6 +5,9 @@ import MirrorPopover from './tools/MirrorPopover.vue'
 import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
+import AppButton from './ui/AppButton.vue'
+import { useI18n } from '../i18n/useI18n'
+import { fillBlanks } from '../domain/fillBlanks'
 import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import StarterGallery from './project/StarterGallery.vue'
@@ -13,6 +16,7 @@ import ConvertImageWizard from './import/ConvertImageWizard.vue'
 import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
+import FirstRunHints from './canvas/FirstRunHints.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ContextBar from './tools/ContextBar.vue'
 import SchemaTags from './canvas/SchemaTags.vue'
@@ -49,7 +53,7 @@ const ColorPopoverHost = defineComponent({
 })
 
 /** The Mirror popover placed against its tile on the pill (ticket 0703): with a Frame, both Axes on, so the count
- * Steppers and every row show. */
+ * Steppers and every row show; the Area row with an Area set (ticket 0710), so its size, Whole Frame and Clear show. */
 const MirrorPopoverHost = defineComponent({
   setup() {
     const tile = ref<HTMLElement>()
@@ -58,13 +62,13 @@ const MirrorPopoverHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
         h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 } }),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 }, areaRow: 'frame', area: { row: 1, column: 2, rows: 10, columns: 12 } }),
       ])
   },
 })
 
 /** The same popover on the open Canvas (ticket 0704): a straight Axis on in Repeat and no Frame, so the Canvas's
- * Note shows in place of the Steppers. */
+ * Note shows in place of the Steppers, and the Area row with none set, its Canvas Note (ticket 0710). */
 const MirrorPopoverOnCanvasHost = defineComponent({
   setup() {
     const tile = ref<HTMLElement>()
@@ -73,7 +77,21 @@ const MirrorPopoverOnCanvasHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
         h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true }),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true, areaRow: 'canvas' }),
+      ])
+  },
+})
+
+/** The popover with a Frame and no Area yet: the Frame's Note under Select area and Whole Frame, while picking. */
+const MirrorPopoverPickingHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 }, areaRow: 'frame', picking: true }),
       ])
   },
 })
@@ -105,6 +123,25 @@ const Toasts = defineComponent({
 const SaveFailedNotice = defineComponent({
   setup: () => () => h(AppMessage, { tone: 'danger', placement: 'notice' }, () => 'This device could not save your Project. Download it to keep it.'),
 })
+
+/** The notice of a Project that didn't open last time, with its Remove and Export (ticket 0716). */
+const MissedProjectNotice = defineComponent({
+  setup() {
+    const { t } = useI18n()
+    return () =>
+      h(AppMessage, { tone: 'warning', placement: 'notice' }, () => [
+        h('span', fillBlanks(t.value.opening.didNotOpen, { name: 'Panel with a logo' })),
+        h('span', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' } }, [
+          h(AppButton, { variant: 'in-box', size: 'sm', icon: 'delete' }, () => t.value.opening.removeButton),
+          h(AppButton, { variant: 'in-box', size: 'sm', icon: 'export' }, () => t.value.opening.exportButton),
+        ]),
+      ])
+  },
+})
+
+/** A sealed Project's row and one whose Pieces are still being counted, among the rest (ticket 0716). */
+const hugeRows = Object.fromEntries(Array.from({ length: 251 }, (_r, row) => [row, Object.fromEntries(Array.from({ length: 1000 }, (_c, column) => [column, '#1a1a1a']))]))
+const sealedProject = { id: 'sealed', name: 'Black fill', createdAt: Date.UTC(2026, 9, 1), updatedAt: Date.UTC(2026, 9, 30), savedAt: Date.UTC(2026, 9, 30), layerBeads: [31_771_024, 440], beads: 31_771_464, stored: '{}' }
 
 /** The Bead's Color catalog as its list reads it (a stand-in for `useBeadColors`). */
 function beadColors(state: 'ready' | 'failed') {
@@ -174,15 +211,43 @@ const schemaTagsHost = defineComponent({
 })
 const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[aria-label^="Butterfly"]')?.click()
 
+/** The first-run hints (ticket 0725) in a canvas box like the app's: the strip's four buttons above the drawing area,
+ * the Tool pill docked at its foot with the tiles the notes point at. */
+const firstRunHintsHost = defineComponent({
+  setup() {
+    const box = ref<HTMLElement>()
+    const button = (hint: string, width: number) => h('button', { type: 'button', 'data-hint': hint, style: { width: `${width}px`, height: '30px' } })
+    const tile = (hint?: string) => h('button', { type: 'button', 'data-hint': hint, style: { width: '40px', height: '40px', flex: 'none' } })
+    return () =>
+      h('div', { ref: box, style: { display: 'flex', flexDirection: 'column', width: '100%', height: '640px' } }, [
+        h('div', { style: { display: 'flex', gap: '4px', height: '32px', alignItems: 'center' } }, [
+          button('menu', 60), button('project', 70), button('frame', 60), h('span', { style: { flex: 1 } }), button('export', 30),
+        ]),
+        h('div', { style: { position: 'relative', flex: 1 } }, [
+          box.value ? h(FirstRunHints, { scope: box.value, pillPosition: 'bottom', pillRect: undefined, background: undefined }) : null,
+          h('div', { 'data-hint-obstacle': '', style: { position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '2px', padding: '4px' } }, [
+            tile('paint'), tile(), tile('select'), tile(), tile(), tile(), tile('mirror'), tile('color'),
+          ]),
+        ]),
+      ])
+  },
+})
+
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
   ['MirrorPopover on the Canvas', MirrorPopoverOnCanvasHost as Component, {}],
+  ['MirrorPopover picking an Area', MirrorPopoverPickingHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
+  ['Missed Project notice', MissedProjectNotice, {}],
+  ['ProjectsLibrary (sealed and counting)', ProjectsLibrary, { projects: [withLayers(empty, { id: 'h', name: 'Counting', beads: hugeRows, updatedAt: 1, savedAt: 1 })], sealed: [sealedProject] }],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
+  ['CanvasHint picking an Area on a Frame', CanvasHint, { picking: 'frame' }],
+  ['CanvasHint picking an Area on the Canvas', CanvasHint, { picking: 'canvas' }],
+  ['FirstRunHints', firstRunHintsHost as Component, {}],
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],

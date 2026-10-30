@@ -145,6 +145,38 @@ export interface Translations {
     copyToCounterparts: string
     announceSelectionMirrored: string
     droppedMessage: PluralForms
+    /** Radial and its Fold (ticket 0705): the chip, the Stepper's label and buttons, and the Note saying the rule in
+     * force: by index at Fold 2 and 4, else geometric, the turn between images in `{angle}` degrees. */
+    radial: string
+    fold: string
+    fewerFolds: string
+    moreFolds: string
+    foldExact: string
+    foldNearest: string
+    /** The Area row (ticket 0710): its label, the Select area button in its states, Whole Frame, Clear the area, the
+     * Notes, the Canvas hint's parts while picking, and the toasts. */
+    area: string
+    selectArea: string
+    pickingArea: string
+    wholeFrame: string
+    clearArea: string
+    areaSize: string
+    areaNoneFrame: string
+    areaNoneCanvas: string
+    areaSet: string
+    pickDrag: string
+    pickMargin: string
+    pickDragCanvas: string
+    pickCancel: string
+    areaSetMessage: string
+    wholeFrameMessage: string
+    /** A Custom frame (ticket 0706): the Note with the side count in place of the Fold Stepper on a round shape, the
+     * Note while Repeat has a straight Axis on a shape, and why a chip the shape's symmetry does not offer is off. */
+    sidesFromShape: PluralForms
+    repeatNeedsRadial: string
+    noLeftRight: string
+    noTopBottom: string
+    noRadial: string
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
@@ -249,6 +281,14 @@ export interface Translations {
     unnamedPieces: string
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
+    /** A row's Piece count over the size gate, never counted (ticket 0716). */
+    tooBigToCount: string
+    /** The Tooltip of a row's count still being worked out in idle time (ticket 0716). */
+    countingPieces: string
+    /** "31 771 024 beads": a sealed Project's bead count, in its row (ticket 0716). */
+    beads: PluralForms
+    /** A sealed Project's row: "made {created} · saved {saved}", dates in the app's language (ticket 0716). */
+    sealedDates: string
   }
   /** The Starter gallery and its setup (tickets 0596, 0597; StarterGallery card). */
   starters: {
@@ -330,6 +370,21 @@ export interface Translations {
       hand: string
       rulers: string
     }
+    /** The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): the four steps, the quiet notes,
+     * the welcome and its steps line, and the phone's shorter steps. A line break is `\n`. */
+    firstRun: {
+      paint: string
+      select: string
+      frame: string
+      export: string
+      menu: string
+      project: string
+      mirror: string
+      color: string
+      welcome: string
+      steps: string
+      phone: Record<'paint' | 'select' | 'frame' | 'export', string>
+    }
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
@@ -362,7 +417,6 @@ export interface Translations {
     tagline: string
     makeFirstProject: string
     openEditor: string
-    projectsSaved: string
     whatsInside: string
     /** The carousel's ‹ › buttons. */
     previousFeature: string
@@ -1196,5 +1250,19 @@ export interface Translations {
     rateLimited: string
     failed: string
     sent: string
+  }
+  /** Safe start and the size gate (ticket 0716): the notice of a Project that didn't open last time, and the question
+   * before a Project over the gate opens. */
+  opening: {
+    /** The notice row, with {name}. */
+    didNotOpen: string
+    removeButton: string
+    exportButton: string
+    /** "Open “Scarf”?", with {name}. */
+    largeTitle: string
+    /** "31 million beads. Opening may be slow or fail.", {count} in millions. */
+    largeMessage: string
+    openAnyway: string
+    cancelButton: string
   }
 }

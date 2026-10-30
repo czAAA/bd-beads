@@ -107,15 +107,14 @@ const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: p
  * sections (ToolPill card). */
 .color-popover {
   position: fixed;
+  /* In the app shell, not the canvas box (ToolPill), so nothing there clips it or is drawn over it. */
   z-index: var(--z-popover);
-  /* It lives in the pill's layer, which takes no pointer events so the canvas under it stays usable; the popover
-   * takes its own. */
-  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
   box-sizing: border-box;
   width: var(--popover-width);
+  /* Never taller than the screen: what opens inside it (the Custom color picker) scrolls when there is no room. */
   max-height: calc(100dvh - 2 * var(--float-edge));
   padding: var(--space-12) var(--space-14) var(--space-14);
   overflow-y: auto;

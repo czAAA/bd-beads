@@ -1,6 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
+import { frameContains } from '../../../domain/canvas'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
@@ -19,7 +20,7 @@ import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
 import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
 import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
-import type { MirrorDirection } from '../../../domain/mirror'
+import type { MirrorAxis } from '../../../domain/mirror'
 import { axisHandleAt, type AxisHandle } from '../../../rendering/mirrorAxes'
 
 /** What a press, a drag, the hover and the wheel on the Drawing surface tell the canvas panel. */
@@ -51,12 +52,21 @@ export interface SurfacePointerEvents {
   'selection-release': []
   /** Edit Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
-  /** A Mirror Axis handle was grabbed (ticket 0704). */
-  'axis-press': [direction: MirrorDirection]
-  /** The held Axis handle was dragged to this grid px along its direction. */
-  'axis-drag': [direction: MirrorDirection, px: number]
-  /** The Axis handle was let go. */
+  /** A Mirror Axis handle, or Radial's centre chip (ticket 0705), was grabbed (ticket 0704). */
+  'axis-press': [axis: MirrorAxis]
+  /** The held handle was dragged to this point of the Canvas, in its grid px. */
+  'axis-drag': [axis: MirrorAxis, point: { x: number; y: number }]
+  /** The handle was let go. */
   'axis-release': []
+  /** Mirror's Select area (ticket 0710): a press over the beads began the band at this cell of the layer the Area is
+   * for, the drag moved it to this cell, the release set it. */
+  'area-press': [cell: GridPosition]
+  'area-drag': [cell: GridPosition]
+  'area-release': []
+  /** Whether the pointer is over the keep-out margin while picking: the Margin sheet is lit as the whole Frame's target. */
+  'area-target': [over: boolean]
+  /** A press on the margin released there while picking: the whole Frame is the Area. */
+  'area-whole': []
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
    * meanwhile. */
   pressing: [pressing: boolean]
@@ -77,6 +87,10 @@ export interface SurfacePointerDeps {
     handedness?: Handedness
     /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for a moment. */
     fillRefusals?: number
+    /** Whether Mirror's Area is being picked (ticket 0710): a press and drag over the beads go to the band, not the
+     * tool, on `areaLayer` (the Frame when there is one), and the margin is the whole Frame's target. */
+    pickingArea?: boolean
+    areaLayer?: Layer
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
@@ -163,6 +177,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
    * it pans. */
   const toolCursor = computed(() => {
     const { tool, picking, markerHidden } = props.tools
+    // Picking an Area (ticket 0710): the pointer over the beads is the Select tool's.
+    if (props.pickingArea) return toolPointer('select', { color: null, dragging: false })
     if (!tool || picking || markerHidden || overRefusedMargin.value || fillRefused.value) return undefined
     if (dragging.value && !handMoves.value) return undefined
     return toolPointer(tool, { color: props.previewColor, dragging: dragging.value })
@@ -277,7 +293,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** Puts the marker where the hovering pointer is, if it is over a bead it may place; asked again when the canvas
    * moves under a still pointer. */
   function placeMarker(): void {
-    const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value ? beadUnder(hoverPoint) : undefined
+    const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value && !props.pickingArea ? beadUnder(hoverPoint) : undefined
     if (!hoverPoint || !bead || refusesMargin(bead)) {
       markerAt.value = undefined
       return
@@ -465,33 +481,64 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
   let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined
 
-  /** The Mirror Axis handle a press holds (ticket 0704), dragged along its direction until the release. */
-  let heldAxis: MirrorDirection | undefined
-
-  /** The grid px of the Canvas a point of the drawing is at along a direction: the x for a Left–right Axis, the y for
-   * a Top–bottom one. */
-  function axisPxAt(point: { x: number; y: number }, direction: MirrorDirection): number {
-    const grid = surface.value.pointToGrid(point)
-    return direction === 'leftRight' ? grid.x : grid.y
-  }
+  /** The Mirror Axis handle, or the Radial centre's chip, a press holds (tickets 0704, 0705), dragged until the release. */
+  let heldAxis: MirrorAxis | undefined
 
   /** The Axis handle under a point of the drawing, if one is drawn there. */
   function axisHandleUnder(point: { x: number; y: number }, touch: boolean): AxisHandle | undefined {
     return axisHandleAt(axisHandles.value, point, touch)
   }
 
+  // Picking an Area (ticket 0710, MirrorPopover card): the band from the press to the pointer, or a press on the
+  // keep-out margin, taken on release, for the whole Frame.
+  let areaDrag = false
+  let marginPress = false
+  let overMargin = false
+
+  /** Whether a point of the drawing lies on the Frame's keep-out margin, where the sheet is the whole Frame's target. */
+  function onMarginAt(point: { x: number; y: number }): boolean {
+    return inMargin(footprintOf(props.project), surface.value.pointToCell(point, 'canvas'))
+  }
+
+  function targetMargin(over: boolean): void {
+    if (over === overMargin) return
+    overMargin = over
+    emit('area-target', over)
+  }
+
+  /** A press while picking: on the margin it waits for its release, over the beads it starts the band; with a Frame,
+   * one off the Frame and its margin sets nothing. */
+  function pressArea(event: PointerEvent): void {
+    const point = pointInDrawing(event)
+    const covered = footprintOf(props.project)
+    hideMarker()
+    if (onMarginAt(point)) {
+      marginPress = true
+    } else if (!covered || frameContains(covered, surface.value.pointToCell(point, 'canvas'))) {
+      areaDrag = true
+      emit('area-press', surface.value.pointToCell(point, props.areaLayer ?? 'canvas'))
+    } else return
+    rootEl.value?.setPointerCapture?.(event.pointerId)
+    event.preventDefault()
+  }
+
   function onPointerDown(event: PointerEvent): void {
     penAt.value = undefined
     touchInput.value = event.pointerType === 'touch'
-    // An Axis handle wins the press over the tool and the Frame's chrome, as the Move handle does (ticket 0704).
     if (event.button === 0 && !startsDrag(event) && !(event.pointerType === 'touch' && !event.isPrimary)) {
+      // Picking an Area takes the press before the tool and every handle (ticket 0710).
+      if (props.pickingArea) {
+        pressArea(event)
+        return
+      }
+      // An Axis handle wins the press over the tool and the Frame's chrome, as the Move handle does (ticket 0704).
       const handle = axisHandleUnder(pointInDrawing(event), touchInput.value)
       if (handle) {
-        heldAxis = handle.direction
+        heldAxis = handle.axis
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         handleCursor.value = 'grabbing'
-        emit('axis-press', handle.direction)
+        emit('axis-press', handle.axis)
         event.preventDefault()
         return
       }
@@ -614,8 +661,16 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   // stroke (ticket 24). `buttons` is 1 for touch/pen in contact, so one branch covers all three input kinds.
   function onPointerMove(event: PointerEvent): void {
     placePen(event)
+    if (areaDrag) {
+      emit('area-drag', surface.value.pointToCell(pointInDrawing(event), props.areaLayer ?? 'canvas'))
+      return
+    }
+    if (props.pickingArea && !dragging.value) {
+      targetMargin(onMarginAt(pointInDrawing(event)))
+      if (marginPress) return
+    }
     if (heldAxis) {
-      emit('axis-drag', heldAxis, axisPxAt(pointInDrawing(event), heldAxis))
+      emit('axis-drag', heldAxis, surface.value.pointToGrid(pointInDrawing(event)))
       return
     }
     if (adjusting.value) {
@@ -712,6 +767,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     selectDrag = false
     releasePointer(event)
     dragging.value = false
+    if (areaDrag) {
+      areaDrag = false
+      emit('area-release')
+    }
+    if (marginPress) {
+      marginPress = false
+      // Taken on release, where the pointer still is: a press dragged off the margin sets nothing.
+      if (event && onMarginAt(pointInDrawing(event))) emit('area-whole')
+    }
     if (heldAxis) {
       heldAxis = undefined
       handleCursor.value = undefined
@@ -738,6 +802,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
 
   function onPointerLeave(): void {
     penAt.value = undefined
+    targetMargin(false)
     if (!framing.value) hotHandle.value = undefined
     hovered.value = false
     hoverPoint = undefined

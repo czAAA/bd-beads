@@ -1,4 +1,4 @@
-import { parseProjectsFile, serializeLibrary, serializeProject, type ProjectFileContents } from '../domain/projectFile'
+import { parseProjectsFile, serializeLibrary, serializeProject, serializeStoredProject, type ProjectFileContents } from '../domain/projectFile'
 import type { Project } from '../domain/project'
 import { parseLegacyProjectsFile } from './legacyProjectFile'
 
@@ -19,9 +19,14 @@ export function packProjectFile(project: Project): Promise<Uint8Array<ArrayBuffe
   return gzip(serializeProject(project))
 }
 
-/** Every saved Project as the bytes of a `.openbeads` file (ticket 15). */
-export function packLibraryFile(projects: Project[]): Promise<Uint8Array<ArrayBuffer>> {
-  return gzip(serializeLibrary(projects))
+/** Every saved Project as the bytes of a `.openbeads` file (ticket 15), sealed ones from their stored form (ticket 0716). */
+export function packLibraryFile(projects: Project[], stored: readonly string[] = []): Promise<Uint8Array<ArrayBuffer>> {
+  return gzip(serializeLibrary(projects, stored))
+}
+
+/** A Project in its stored form as the bytes of a `.openbeads` file, without decoding it (ticket 0716). */
+export function packStoredProjectFile(stored: string): Promise<Uint8Array<ArrayBuffer>> {
+  return gzip(serializeStoredProject(stored))
 }
 
 // Limits on a picked file (ticket 469), against a crafted "gzip bomb" (real files are tiny, ADR 0048): over 25 MB is

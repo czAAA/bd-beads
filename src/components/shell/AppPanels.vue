@@ -19,6 +19,7 @@ import { frameOf } from '../../domain/layerRecord'
 const {
   t,
   projects,
+  sealed,
   activeProjectId,
   onRequestRemove,
   activeProject,
@@ -144,14 +145,14 @@ const chosenStarter = ref<StarterId>()
     :open="openPanel"
     :only="['menu', 'project']"
     :sub-title="phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
-    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen ? String(projects.length) : undefined"
-    :start-in-sub="menuOpensOnForm || projects.length === 0"
+    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen ? String(projects.length + sealed.length) : undefined"
+    :start-in-sub="menuOpensOnForm || projects.length + sealed.length === 0"
     @close="openPanel = null"
   >
     <MenuPanel
       v-if="openPanel === 'menu'"
       v-model:tools-position="toolPillPosition"
-      :projects="projects"
+      :project-count="projects.length + sealed.length"
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
@@ -184,6 +185,7 @@ const chosenStarter = ref<StarterId>()
       <ProjectsLibrary
         v-if="phoneSavedProjectsOpen && depth === 1"
         :projects="projects"
+        :sealed="sealed"
         :active-project-id="activeProjectId"
         @select="onSelectProjectFromPhoneDrawer"
         @remove="onRequestRemove"
@@ -212,7 +214,7 @@ const chosenStarter = ref<StarterId>()
         v-if="depth === 1 && phoneSavedProjectsOpen && openPanel === 'menu'"
         icon="delete"
         danger
-        :disabled="projects.length === 0"
+        :disabled="projects.length + sealed.length === 0"
         :name="t.panels.menu.deleteAll"
         :disabled-body="t.projects.emptyTitle"
         data-testid="menu-delete-all"

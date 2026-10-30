@@ -10,6 +10,7 @@ import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf } from '../../domain/layerRecord'
+import { MARGIN_PX } from '../../rendering/marginSizes'
 import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
@@ -294,5 +295,48 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
     compact.unmount()
     mounted.splice(0)
     expect(control(mountSheet(), 'margin-title').attributes('data-form')).toBe('tab')
+  })
+})
+
+describe('the title block on a turned Canvas (ticket 0728)', () => {
+  const at = (titleCorner: { top: boolean; left: boolean }, zoom = 0.9) => styleOf(mountSheet({ anchor: { ...anchorAt(zoom), titleCorner } }), 'margin-title')
+
+  it('sits inside the border at the Frame\'s own bottom-right corner, wherever the turn puts it, drawn from that corner', () => {
+    expect(at({ top: false, left: false })).toMatch(/right: 10px; bottom: 10px;.*transform-origin: 100% 100%/)
+    expect(at({ top: false, left: true })).toMatch(/left: 10px; bottom: 10px;.*transform-origin: 0 100%/)
+    expect(at({ top: true, left: true })).toMatch(/left: 10px; top: 10px;.*transform-origin: 0 0/)
+    expect(at({ top: true, left: false })).toMatch(/right: 10px; top: 10px;.*transform-origin: 100% 0/)
+  })
+
+  it('leaves the narrowest band row, the Move bar and the Frame tools button, its room beside it at a top corner', () => {
+    const room = (style: string) => Number.parseFloat(style.split('max-width: ')[1]!)
+    const { moveWidth, tab, gap, place } = MARGIN_PX
+    const narrowestRow = moveWidth + 2 * tab + 2 * gap
+    // In drafting px: at the top the row's inset stands on the far side in place of the border, and the row beside it.
+    expect(room(at({ top: false, left: true }, 1)) - room(at({ top: true, left: true }, 1))).toBeCloseTo(place.full.side - place.full.border + narrowestRow + gap, 4)
+  })
+
+  it('stands the folded tab beside the folded row at a top corner, in the middle of the room above the Frame\'s line', () => {
+    const wrapper = mountSheet({ anchor: { ...anchorAt(0.25), titleCorner: { top: true, left: false } } })
+    const top = (testid: string) => Number.parseFloat(styleOf(wrapper, testid).split('top: ')[1]!)
+    expect(top('margin-title')).toBeCloseTo(top('margin-band'), 4)
+  })
+})
+
+describe('the whole-Frame target while Mirror\'s Area is being picked (ticket 0710, MirrorPopover card)', () => {
+  it('while picking, the controls take no press and the tint and the Frame preview stand ready; under the pointer the sheet is the target', async () => {
+    const wrapper = mountSheet({ picking: true })
+    const sheet = control(wrapper, 'margin-sheet')
+    expect(sheet.classes()).toContain('margin-sheet--picking')
+    expect(sheet.classes()).not.toContain('margin-sheet--target')
+    expect(control(wrapper, 'margin-area-tint').attributes('style')).toContain(`border-width: ${anchor.box.top}px`)
+    const preview = control(wrapper, 'margin-area-preview')
+    expect(preview.attributes('style')).toContain(`left: ${anchor.box.left}px`)
+    expect(preview.attributes('style')).toContain(`width: ${anchor.box.width}px`)
+    await wrapper.setProps({ targeted: true })
+    expect(sheet.classes()).toContain('margin-sheet--target')
+    await wrapper.setProps({ picking: false, targeted: true })
+    expect(sheet.classes()).not.toContain('margin-sheet--target')
+    expect(wrapper.find('[data-testid="margin-area-tint"]').exists()).toBe(false)
   })
 })
