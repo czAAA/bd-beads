@@ -49,7 +49,7 @@ export interface Weave {
   cell?: BeadCell
 }
 
-/** A Real cell: the Bead's height over its pitch along the thread, and how much of the cell's width its corners are
+/** A Bead's cell: its height over its pitch along the thread, and how much of the cell's width its corners are
  * rounded by, from the Bead's Form factor. */
 export interface BeadCell {
   aspect: number
@@ -198,7 +198,7 @@ const MAX_DESCRIPTIONS = 256
 export function describeWeave(weave: Weave): WeaveDescription {
   const rules = RULES[weave.technique]
   const values = weaveSettings(weave)
-  // Everything a geometry reads from the Weave: a Real cell's roundness decides where a press misses a bead's corner.
+  // Everything a geometry reads from the Weave: a Bead's cell roundness decides where a press misses a bead's corner.
   const key = `${weave.technique} ${Object.values(values).join(' ')} ${weave.cell?.aspect ?? ''} ${weave.cell?.roundness ?? ''}`
   const known = descriptions.get(key)
   if (known) {
