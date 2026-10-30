@@ -13,7 +13,7 @@ import type { Size } from '../../../rendering/cellSize'
 import type { HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
 import { frameOf } from '../../../domain/layerRecord'
-import { isMirrorOn, type MirrorDirection, type MirrorSetting } from '../../../domain/mirror'
+import { isMirrorOn, type CanvasAxes, type MirrorAxis, type MirrorSetting } from '../../../domain/mirror'
 import type { AxisHandle } from '../../../rendering/mirrorAxes'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
@@ -92,8 +92,8 @@ export interface SurfaceOverlayDeps {
     /** The Mirror setting (ticket 0703): its Axis lines are drawn across the Frame while the mode is not Off. */
     mirror?: MirrorSetting
     /** The open Canvas's Axes that act (ticket 0704), drawn across the whole view, and the one being dragged. */
-    mirrorAxes?: Partial<Record<MirrorDirection, number>>
-    heldAxis?: MirrorDirection
+    mirrorAxes?: CanvasAxes
+    heldAxis?: MirrorAxis
   }
   canvas: Ref<HTMLCanvasElement | undefined>
   /** The Axis handles' chips (ticket 0704), the same list the pointer hit-tests. */

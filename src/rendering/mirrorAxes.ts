@@ -1,13 +1,14 @@
+import axisCentreSvg from '../../docs/design/system/assets/Icons/axis-centre.svg?raw'
 import axisLeftRightSvg from '../../docs/design/system/assets/Icons/axis-left-right.svg?raw'
 import axisTopBottomSvg from '../../docs/design/system/assets/Icons/axis-top-bottom.svg?raw'
-import { MIRROR_DIRECTIONS, type MirrorDirection } from '../domain/mirror'
+import { MIRROR_DIRECTIONS, type CanvasAxes, type MirrorAxis, type MirrorDirection, type RadialCentre } from '../domain/mirror'
 import { describeWeave, type Weave } from '../domain/weave'
 import { cellSizePx } from './cellSize'
 import { beadStepPx, type SurfaceView } from './surfaceView'
 
 // Mirror's Axes on the open Canvas (ticket 0704, spec 0702; MirrorPopover card): where an Axis's line lies in the
-// Canvas's grid px, and the handle chip on it, a fixed size on screen like the Move handle. The surface draws the chips
-// and asks them which one a press grabbed, from the same list, so the two never disagree.
+// Canvas's grid px, and the handle chip on it, a fixed size on screen like the Move handle; Radial's centre (ticket
+// 0705) has a chip the same way. The surface draws the chips and asks them which one a press grabbed, from one list.
 
 /** The chip's side on screen (`--mirror-handle`), at any zoom.
  * @internal Tests find a chip by its size. */
@@ -22,16 +23,31 @@ const HANDLE_GAP_PX = 8
 /** A finger's reach past the chip (the Frame handles' touch reach, frameHandles.ts). */
 const TOUCH_HIT_RADIUS_PX = 24
 
-/** The chip's icon, the set's own `axis-left-right` and `axis-top-bottom` (never redrawn, DESIGN.md): the one path
- * each SVG holds, on its 24px box, for the overlay to stroke scaled to `MIRROR_HANDLE_ICON_PX`. */
-export const AXIS_ICON_PATHS: Record<MirrorDirection, string> = {
-  leftRight: / d="([^"]+)"/.exec(axisLeftRightSvg)![1]!,
-  topBottom: / d="([^"]+)"/.exec(axisTopBottomSvg)![1]!,
+/** A stroke of a chip's icon: one SVG path and the width it is stroked at, the icon's own unless the path sets one. */
+export interface IconStroke {
+  d: string
+  width: number
 }
+
+/** The paths an icon's SVG holds, each with its stroke width (`axis-centre`'s dot is a short path stroked wider). */
+function iconStrokes(svg: string): IconStroke[] {
+  return [...svg.matchAll(/<path\b([^>]*)>/g)].map(([, attributes]) => ({
+    d: / d="([^"]+)"/.exec(attributes)![1]!,
+    width: Number(/stroke-width="([^"]+)"/.exec(attributes)?.[1] ?? AXIS_ICON_STROKE_PX),
+  }))
+}
+
 /** The icons' own box and stroke, as the SVG files draw them. */
 export const AXIS_ICON_BOX_PX = 24
 export const AXIS_ICON_STROKE_PX = 1.75
 
+/** The chips' icons, the set's own `axis-left-right`, `axis-top-bottom` and `axis-centre` (never redrawn, DESIGN.md):
+ * the paths each SVG holds, on its 24px box, for the overlay to stroke scaled to `MIRROR_HANDLE_ICON_PX`. */
+export const AXIS_ICON_PATHS: Record<MirrorAxis, readonly IconStroke[]> = {
+  leftRight: iconStrokes(axisLeftRightSvg),
+  topBottom: iconStrokes(axisTopBottomSvg),
+  radial: iconStrokes(axisCentreSvg),
+}
 /** How each direction's Axis lies in grid space: a Left–right Axis is a vertical line, so its place is an x and it
  * runs along y, a position apart being a bead's step across; Top–bottom the other way round. */
 const LIE: Record<MirrorDirection, { place: 'x' | 'y'; along: { x: number; y: number }; step: 'across' | 'down' }> = {
@@ -60,12 +76,17 @@ export function axisAtGridPx(weave: Weave, direction: MirrorDirection, px: numbe
   return (px - origin) / step
 }
 
-/** A handle chip on screen: its Axis, its centre in the viewport and its side. */
+/** A handle chip on screen: its Axis (`radial` is the centre's chip), its centre in the viewport and its side. */
 export interface AxisHandle {
-  direction: MirrorDirection
+  axis: MirrorAxis
   x: number
   y: number
   size: number
+}
+
+/** The grid px point Radial's centre is at: on the lattice the straight Axes lie on, both ways. */
+export function centreGridPx(weave: Weave, centre: RadialCentre): { x: number; y: number } {
+  return { x: axisGridPx(weave, 'leftRight', centre.column), y: axisGridPx(weave, 'topBottom', centre.row) }
 }
 
 /** The stretch of a line `point + t × direction` inside a box from the origin, as its two parameters, or none when it
@@ -91,11 +112,19 @@ function sharesSpot(a: { x: number; y: number }, b: { x: number; y: number }): b
   return Math.abs(a.x - b.x) < apart && Math.abs(a.y - b.y) < apart
 }
 
-/** The chips of the Canvas Axes in view: each on its line, `MIRROR_HANDLE_INSET_PX` along it from the edge of the
- * viewport the line enters at (the grid's top or left), or at the line's middle when it is shorter than twice that; the
- * Top–bottom chip steps along its line, a chip and a gap at a time, off the Left–right one. A line out of view: none. */
-export function axisHandles(axes: Partial<Record<MirrorDirection, number>>, weave: Weave, surface: Pick<SurfaceView, 'gridToPoint' | 'gridDirection' | 'viewport'>): AxisHandle[] {
+/** The chips of the Canvas Axes in view: the centre's on the centre itself (ticket 0705); a straight Axis's on its
+ * line, `MIRROR_HANDLE_INSET_PX` along it from the edge of the viewport the line enters at (the grid's top or left),
+ * or at the line's middle when it is shorter than twice that; the Top–bottom chip steps along its line, a chip and a
+ * gap at a time, off the Left–right one. A line or centre out of view: none. */
+export function axisHandles(axes: CanvasAxes, weave: Weave, surface: Pick<SurfaceView, 'gridToPoint' | 'gridDirection' | 'viewport'>): AxisHandle[] {
   const handles: AxisHandle[] = []
+  if (axes.centre) {
+    const { x, y } = centreGridPx(weave, axes.centre)
+    const point = surface.gridToPoint(x, y)
+    if (point.x >= 0 && point.x <= surface.viewport.width && point.y >= 0 && point.y <= surface.viewport.height) {
+      handles.push({ axis: 'radial', x: point.x, y: point.y, size: MIRROR_HANDLE_PX })
+    }
+  }
   for (const direction of MIRROR_DIRECTIONS) {
     const at = axes[direction]
     if (at === undefined) continue
@@ -109,7 +138,7 @@ export function axisHandles(axes: Partial<Record<MirrorDirection, number>>, weav
     if (!stretch) continue
     const [from, to] = stretch
     let t = to - from < 2 * MIRROR_HANDLE_INSET_PX ? (from + to) / 2 : from + MIRROR_HANDLE_INSET_PX
-    const chip = () => ({ direction, x: point.x + t * unit.x, y: point.y + t * unit.y, size: MIRROR_HANDLE_PX })
+    const chip = (): AxisHandle => ({ axis: direction, x: point.x + t * unit.x, y: point.y + t * unit.y, size: MIRROR_HANDLE_PX })
     let placed = chip()
     while (handles.some((other) => sharesSpot(other, placed)) && t + MIRROR_HANDLE_PX + HANDLE_GAP_PX <= to) {
       t += MIRROR_HANDLE_PX + HANDLE_GAP_PX

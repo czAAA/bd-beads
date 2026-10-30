@@ -497,7 +497,7 @@ describe('renderOverlay', () => {
       return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
     }
     const open = () => withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
-    const handle = { direction: 'leftRight' as const, x: 70, y: 56, size: 32 }
+    const handle = { axis: 'leftRight' as const, x: 70, y: 56, size: 32 }
 
     it('draws each Axis as a dashed marker line across the whole view in screen px, and its chip at a fixed size over everything', () => {
       const { context, calls, named } = recordingContext()
@@ -529,6 +529,63 @@ describe('renderOverlay', () => {
       const none = recordingContext()
       renderOverlayWith(none.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: {}, handles: [] } })
       expect(none.named('stroke')).toHaveLength(0)
+    })
+  })
+
+  describe('Radial on a Frame and on the open Canvas (ticket 0705, MirrorPopover card)', () => {
+    const radial = (fold: number, mode: MirrorSetting['mode']): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+    const strokes = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'stroke')
+
+    it('in Mirror mode draws the ring at the Frame\'s centre and the Fold\'s mirror lines through it, the first vertical and full, the others soft, clipped to the Frame', () => {
+      const project = projectOf('loom', 6, 4, { marks: false })
+      const { context, calls, named } = recordingContext()
+      renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: radial(4, 'mirror') })
+
+      const ring = named('arc')[0]!
+      expect(ring.args.slice(0, 3)).toEqual([60, 40, 3.5])
+      expect(ring.strokeStyle).toBe(DEFAULT_THEME.marker)
+      expect(named('rect').map((call) => call.args)).toContainEqual([0, 0, 120, 80])
+      expect(named('clip')).toHaveLength(1)
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(4)
+      const [[from, to]] = drawn as [number[], number[]][]
+      expect([from![0], to![0]]).toEqual([60, 60])
+      expect(from![1]).toBeLessThan(40)
+      expect(to![1]).toBeGreaterThan(40)
+      // The second line leans 45°: as far across as down.
+      const [[from2, to2]] = drawn.slice(1) as [number[], number[]][]
+      expect(Math.abs((to2![0] - from2![0]) / (to2![1] - from2![1]))).toBeCloseTo(1, 6)
+      expect(strokes(calls).map((call) => call.globalAlpha)).toEqual([1, 0.45, 0.45, 0.45, 1])
+    })
+
+    it('in Repeat mode draws the Fold\'s sector rays from the centre, the first straight up, all full, and no straight Axis line', () => {
+      const project = projectOf('loom', 6, 4, { marks: false })
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: { ...radial(3, 'repeat'), axes: { leftRight: true, topBottom: false, radial: true } } })
+
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(3)
+      expect(drawn.every(([from]) => from![0] === 60 && from![1] === 40)).toBe(true)
+      expect(drawn[0]![1]![0]).toBe(60)
+      expect(drawn[0]![1]![1]).toBeLessThan(40)
+      expect(strokes(calls).every((call) => call.globalAlpha === 1)).toBe(true)
+    })
+
+    it('on the open Canvas draws the ring and lines at the centre handle\'s place, in Repeat mode too, with the centre chip', () => {
+      const open = withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
+      const chip = { axis: 'radial' as const, x: 70, y: 30, size: 32 }
+      const { context, calls, named } = recordingContext()
+      renderOverlayWith(context, { project: open, space: spaceOf(open, true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: radial(2, 'repeat'), canvasAxes: { axes: { centre: { row: 1, column: 3 } }, handles: [chip] } })
+
+      expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 7])
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(2)
+      expect(drawn.every(([from]) => from![0] === 70 && from![1] === 30)).toBe(true)
+      expect(named('arc').find((call) => call.args[2] === 16)!.args.slice(0, 2)).toEqual([70, 30])
     })
   })
 

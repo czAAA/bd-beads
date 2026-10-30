@@ -7,13 +7,17 @@ import {
   MIRROR_OFF,
   mirrorSettingOf,
   snapAxis,
+  snapCentre,
   toggledMirror,
   withAxesPlaced,
   withCanvasAxes,
   withMirror,
+  type CanvasAxes,
+  type MirrorAxis,
   type MirrorDirection,
   type MirrorMode,
   type MirrorSetting,
+  type RadialCentre,
 } from '../../domain/mirror'
 import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
@@ -33,7 +37,8 @@ export interface MirrorFlowDeps {
 
 /** The Mirror mode's state (ADR 0082, spec 0702, ticket 0703): the open Project's setting, whether the tile is lit, the
  * popover, the Frame's count limits, key `8`'s toggle (which remembers the mode it last had on) and the open Canvas's
- * Axis handles (ticket 0704): placed through the view's centre when a direction goes on, dragged as one Undo step. */
+ * Axis handles (ticket 0704) and Radial centre (0705): placed through the view's centre when turned on, dragged as one
+ * Undo step. */
 export function useMirrorFlow(deps: MirrorFlowDeps) {
   const setting = computed<MirrorSetting>(() => {
     const project = deps.currentProject()
@@ -53,19 +58,26 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   /** The mode key `8` turns back on: Mirror until Repeat has been chosen. */
   let lastMode: Exclude<MirrorMode, 'off'> = 'mirror'
 
-  /** The handle being dragged and where its Axis is as it goes, snapped, before the release saves it. */
-  const held = ref<{ direction: MirrorDirection; at: number }>()
-  const heldAxis = computed(() => held.value?.direction)
+  /** The handle being dragged and where its Axis or the centre is as it goes, snapped, before the release saves it. */
+  const held = ref<{ axis: MirrorDirection; at: number } | { axis: 'radial'; at: RadialCentre }>()
+  const heldAxis = computed(() => held.value?.axis)
 
-  /** The Canvas Axes that act, by direction: on in the setting, placed, in Mirror mode (Repeat has no strip to repeat
-   * on an open Canvas, spec 0702); the one being dragged where the drag has it. The overlay draws these. */
-  const canvasAxes = computed<Partial<Record<MirrorDirection, number>>>(() => {
+  /** The Canvas Axes that act: a straight one on in the setting, placed, in Mirror mode (Repeat has no strip to repeat
+   * on an open Canvas, spec 0702); Radial's centre when Radial is on and placed, in either mode (a turn needs no edge,
+   * ticket 0705); the one being dragged where the drag has it. The overlay draws these. */
+  const canvasAxes = computed<CanvasAxes>(() => {
     const project = deps.currentProject()
-    if (!project || setting.value.mode !== 'mirror') return {}
+    if (!project || !on.value) return {}
     const placed = canvasAxesOf(project)
-    const acting: Partial<Record<MirrorDirection, number>> = {}
+    const drag = held.value
+    if (setting.value.axes.radial) {
+      const centre = drag?.axis === 'radial' ? drag.at : placed.centre
+      return centre ? { centre } : {}
+    }
+    if (setting.value.mode !== 'mirror') return {}
+    const acting: CanvasAxes = {}
     for (const direction of MIRROR_DIRECTIONS) {
-      const at = held.value?.direction === direction ? held.value.at : placed[direction]
+      const at = drag?.axis === direction ? drag.at : placed[direction]
       if (setting.value.axes[direction] && at !== undefined) acting[direction] = at
     }
     return acting
@@ -97,29 +109,46 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     popoverOpen.value = !popoverOpen.value
   }
 
-  /** A handle grabbed: its Axis is held where it is until the drag moves it. */
-  function pressAxis(direction: MirrorDirection) {
+  /** A handle grabbed: its Axis, or the centre, is held where it is until the drag moves it. */
+  function pressAxis(axis: MirrorAxis) {
     const project = deps.currentProject()
-    const at = project && canvasAxesOf(project)[direction]
-    if (at === undefined) return
-    held.value = { direction, at }
+    if (!project) return
+    const placed = canvasAxesOf(project)
+    if (axis === 'radial') {
+      if (placed.centre) held.value = { axis, at: placed.centre }
+      return
+    }
+    const at = placed[axis]
+    if (at !== undefined) held.value = { axis, at }
   }
 
-  /** The held handle dragged to a point of the Canvas, in grid px along its direction: the Axis snaps to the nearest
-   * position centre or boundary there. */
-  function dragAxis(direction: MirrorDirection, px: number) {
+  /** The held handle dragged to a point of the Canvas, in its grid px: a straight Axis snaps to the nearest position
+   * centre or boundary along its direction, the centre to the nearest position or corner between four. */
+  function dragAxis(axis: MirrorAxis, point: { x: number; y: number }) {
     const project = deps.currentProject()
-    if (!project || held.value?.direction !== direction) return
-    held.value = { direction, at: snapAxis(axisAtGridPx(layerOf(project, 'canvas').weave, direction, px)) }
+    if (!project || held.value?.axis !== axis) return
+    const { weave } = layerOf(project, 'canvas')
+    if (axis === 'radial') {
+      held.value = { axis, at: snapCentre({ row: axisAtGridPx(weave, 'topBottom', point.y), column: axisAtGridPx(weave, 'leftRight', point.x) }) }
+      return
+    }
+    held.value = { axis, at: snapAxis(axisAtGridPx(weave, axis, point[axis === 'leftRight' ? 'x' : 'y'])) }
   }
 
-  /** The handle let go: the Axis is saved where the drag left it, one Undo step; none when it did not move. */
+  /** The handle let go: the Axis or centre is saved where the drag left it, one Undo step; none when it did not move. */
   function releaseAxis() {
     const drag = held.value
     held.value = undefined
     const project = deps.currentProject()
-    if (!drag || !project || canvasAxesOf(project)[drag.direction] === drag.at) return
-    deps.edit('exempt', (current) => withCanvasAxes(current, { ...canvasAxesOf(current), [drag.direction]: drag.at }))
+    if (!drag || !project) return
+    const placed = canvasAxesOf(project)
+    if (drag.axis === 'radial') {
+      if (placed.centre?.row === drag.at.row && placed.centre?.column === drag.at.column) return
+      deps.edit('exempt', (current) => withCanvasAxes(current, { ...canvasAxesOf(current), centre: drag.at }))
+      return
+    }
+    if (placed[drag.axis] === drag.at) return
+    deps.edit('exempt', (current) => withCanvasAxes(current, { ...canvasAxesOf(current), [drag.axis]: drag.at }))
   }
 
   return { setting, on, limits, onCanvas, popoverOpen, canvasAxes, heldAxis, update, toggle, togglePopover, pressAxis, dragAxis, releaseAxis }
