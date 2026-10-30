@@ -78,9 +78,15 @@ export function cardPlacement(tag: TagPlacement, box: BarBox, viewport: { width:
   return { above, left, top, hole: { x: left + CARD_WIDTH - CARD_HOLE_INSET, y: top + CARD_HOLE_INSET } }
 }
 
+/** How far the thread's curve reaches out of the corner and into the hole, in px: its two control points. */
+const THREAD_LEAVES = { out: 8, along: 8 }
+const THREAD_ARRIVES = { out: 6, along: 10 }
+
 /** The thread from the corner's dot to a hole, curving out to the side the tag hangs on: an SVG path. */
 export function threadPath(from: Point, to: Point, side: TagPlacement['side']): string {
   const out = side === 'right' ? 1 : -1
-  const bend = Math.sign(to.y - from.y) || 1
-  return `M ${from.x} ${from.y} C ${from.x + out * 8} ${from.y + bend * 8}, ${to.x + out * 6} ${to.y - bend * 10}, ${to.x} ${to.y}`
+  const along = Math.sign(to.y - from.y) || 1
+  const leaves = { x: from.x + out * THREAD_LEAVES.out, y: from.y + along * THREAD_LEAVES.along }
+  const arrives = { x: to.x + out * THREAD_ARRIVES.out, y: to.y - along * THREAD_ARRIVES.along }
+  return `M ${from.x} ${from.y} C ${leaves.x} ${leaves.y}, ${arrives.x} ${arrives.y}, ${to.x} ${to.y}`
 }

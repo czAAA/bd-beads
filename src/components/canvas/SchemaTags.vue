@@ -71,19 +71,20 @@ const tags = computed(() =>
 
 /** The Schema whose paper tag is open, followed by the bead its name is kept on or, should that bead go, its name. */
 const opened = ref<{ anchor: GridPosition; name: string }>()
-const openSchema = computed(() => {
-  const open = opened.value
-  if (!open) return undefined
-  const { schemas } = props.anchors
-  const byName = schemas.filter((schema) => schema.name === open.name)
-  return schemas.find((schema) => keyOf(schema) === keyOf(open)) ?? (byName.length === 1 ? byName[0] : undefined)
-})
-// It closes once its Schema is framed, erased or unnamed, and follows a rename or a move of its name's bead.
-watch(openSchema, (schema) => {
-  if (!opened.value) return
-  if (!schema) opened.value = undefined
-  else if (keyOf(schema) !== keyOf(opened.value) || schema.name !== opened.value.name) opened.value = { anchor: schema.anchor, name: schema.name }
-})
+const openSchema = computed(() => props.anchors.schemas.find((schema) => opened.value && keyOf(schema) === keyOf(opened.value)))
+// It follows a rename, and its name to a bead no Schema stood on before (an erased name bead moves the name within the
+// Piece); it closes once its Schema is framed, erased or unnamed.
+watch(
+  () => props.anchors.schemas,
+  (schemas, before) => {
+    const open = opened.value
+    if (!open) return
+    const same = schemas.find((schema) => keyOf(schema) === keyOf(open))
+    const moved = schemas.filter((schema) => schema.name === open.name && !before.some((was) => keyOf(was) === keyOf(schema)))
+    const followed = same ?? (moved.length === 1 ? moved[0] : undefined)
+    opened.value = followed && { anchor: followed.anchor, name: followed.name }
+  },
+)
 
 const openTag = computed(() => tags.value.find((tag) => tag.key === (openSchema.value && keyOf(openSchema.value))))
 const card = computed(() => {

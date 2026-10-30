@@ -46,7 +46,6 @@ describe('SchemaTags', () => {
     expect(tagOf(wrapper, 'Butterfly').text()).toBe('')
     expect(tagOf(wrapper, 'Butterfly').findAll('i')).toHaveLength(3)
     expect(wrapper.findAllComponents(AppTooltip).map((tip) => tip.props())).toEqual([expect.objectContaining({ name: 'Butterfly', body: 'Click for the size and colors.' })])
-    wrapper.unmount()
   })
 
   it('names each tag a button that shows details, one Tab stop in reading order, the arrows moving between them', async () => {
@@ -59,7 +58,6 @@ describe('SchemaTags', () => {
     ;(tags[0].element as HTMLElement).focus()
     await tags[0].trigger('keydown', { key: 'ArrowDown' })
     expect(document.activeElement).toBe(tags[1].element)
-    wrapper.unmount()
   })
 
   it('opens the paper tag with the Schema\'s name, size and counts, focus in it, and the tag hidden and expanded', async () => {
@@ -77,7 +75,6 @@ describe('SchemaTags', () => {
     expect(card.findAll('.schema-card__swatches i')).toHaveLength(2)
     expect(tagOf(wrapper, 'Owl').attributes('aria-expanded')).toBe('true')
     expect(document.activeElement).toBe(card.element)
-    wrapper.unmount()
   })
 
   it('keeps one paper tag open at a time', async () => {
@@ -87,7 +84,6 @@ describe('SchemaTags', () => {
 
     expect(wrapper.findAll('[data-testid="schema-card"]')).toHaveLength(1)
     expect(wrapper.get('[data-testid="schema-card"]').attributes('aria-label')).toBe('Butterfly')
-    wrapper.unmount()
   })
 
   it('closes on its close button and on Escape, focus going back to the tag', async () => {
@@ -105,7 +101,6 @@ describe('SchemaTags', () => {
     await nextTick()
     expect(wrapper.find('[data-testid="schema-card"]').exists()).toBe(false)
     expect(document.activeElement).toBe(tagOf(wrapper, 'Owl').element)
-    wrapper.unmount()
   })
 
   it('closes on a press outside, which still goes on to what is under it', async () => {
@@ -121,7 +116,6 @@ describe('SchemaTags', () => {
 
     expect(wrapper.find('[data-testid="schema-card"]').exists()).toBe(false)
     expect(pressed).toBe(true)
-    wrapper.unmount()
     canvas.remove()
   })
 
@@ -132,7 +126,19 @@ describe('SchemaTags', () => {
     await wrapper.setProps({ anchors: { schemas: [butterfly], viewport } })
 
     expect(wrapper.find('[data-testid="schema-card"]').exists()).toBe(false)
-    wrapper.unmount()
+  })
+
+  it('follows its Schema when the bead its name is kept on goes, but not onto another Schema of the same name', async () => {
+    const otherOwl = { ...butterfly, name: 'Owl' }
+    const wrapper = mountTags([owl, otherOwl])
+    await tagOf(wrapper, 'Owl').trigger('click')
+
+    const moved = { ...owl, anchor: { row: 1, column: 0 } }
+    await wrapper.setProps({ anchors: { schemas: [moved, otherOwl], viewport } })
+    expect(wrapper.find('[data-testid="schema-card"]').exists()).toBe(true)
+
+    await wrapper.setProps({ anchors: { schemas: [otherOwl], viewport } })
+    expect(wrapper.find('[data-testid="schema-card"]').exists()).toBe(false)
   })
 
   it('asks for Rename and Frame on its Schema', async () => {
@@ -143,13 +149,11 @@ describe('SchemaTags', () => {
 
     expect(wrapper.emitted('rename')).toEqual([[{ row: 0, column: 0 }]])
     expect(wrapper.emitted('frame')).toEqual([[{ row: 0, column: 0, rows: 2, columns: 3 }]])
-    wrapper.unmount()
   })
 
   it('shows no tag for a Schema whose corner is out of view', () => {
     const wrapper = mountTags([{ ...owl, box: { ...owl.box, top: 700 } }])
 
     expect(wrapper.findAll('[data-testid="schema-tag"]')).toHaveLength(0)
-    wrapper.unmount()
   })
 })
