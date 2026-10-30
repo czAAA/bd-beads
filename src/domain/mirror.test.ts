@@ -46,6 +46,11 @@ const on = (axes: Partial<MirrorSetting['axes']>, counts: Partial<MirrorSetting[
 
 const columnsOf = (result: { positions: { column: number }[] }) => result.positions.map(({ column }) => column)
 
+/** Radial on at a Fold (ticket 0705), a position, and a result's positions as [row, column] pairs. */
+const radial = (fold: number, mode: MirrorSetting['mode'] = 'repeat'): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
+const at = (row: number, column: number) => ({ row, column })
+const cells = (result: { positions: { row: number; column: number }[] }) => result.positions.map(({ row, column }) => [row, column])
+
 describe('counterparts on a Frame by index (ticket 0703, spec 0702)', () => {
   it('reflects the column about one Left–right axis: 0 and 3 are a pair on 4 beads across, and the middle bead of 5 is its own', () => {
     const four = layerSheet(framed('loom', 4, 2), 'frame')
@@ -274,9 +279,6 @@ describe('the Mirror setting on the Project', () => {
 })
 
 describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
-  const radial = (fold: number, mode: MirrorSetting['mode'] = 'repeat'): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
-  const at = (row: number, column: number) => ({ row, column })
-  const cells = (result: { positions: { row: number; column: number }[] }) => result.positions.map(({ row, column }) => [row, column])
 
   it('at Fold 4 turns the position a quarter at a time about the Frame\'s centre by index, as Rotate turns a fragment (ADR 0052), on a Frame of odd and of even size', () => {
     const odd = layerSheet(framed('loom', 5, 5), 'frame')
@@ -315,17 +317,17 @@ describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
     expect(cells(counterparts(layerSheet(framed('brick', 4, 4), 'frame'), radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
   })
 
-  it('on a Frame whose rows and columns differ in parity a quarter turn can land off the Frame, which is dropped', () => {
+  it('on a Frame whose rows and columns differ in parity a quarter turn can land off the Frame, which is dropped, while the half turn stays exact', () => {
     const sheet = layerSheet(framed('loom', 4, 5), 'frame')
     expect(cells(counterparts(sheet, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
     expect(counterparts(sheet, radial(4), [at(4, 0)])).toEqual({ positions: [at(4, 0)], dropped: 3 })
+    expect(cells(counterparts(sheet, radial(2), [at(0, 0)]))).toEqual([[0, 0], [4, 3]])
+    expect(cells(counterparts(sheet, radial(2, 'mirror'), [at(0, 0)]))).toEqual([[0, 0], [4, 3], [0, 3], [4, 0]])
+    expect(cells(counterparts(sheet, radial(2), [at(4, 3)]))).toEqual([[4, 3], [0, 0]])
   })
 })
 
 describe('Radial counterparts by geometry, Fold 3 and 5 to 8 (ticket 0705, spec 0702)', () => {
-  const radial = (fold: number, mode: MirrorSetting['mode'] = 'repeat'): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
-  const at = (row: number, column: number) => ({ row, column })
-  const cells = (result: { positions: { row: number; column: number }[] }) => result.positions.map(({ row, column }) => [row, column])
 
   it('at Fold 3 turns the bead\'s centre about the Frame\'s centre by 120° and the nearest bead takes each image; Mirror turns its reflection too, 2n images', () => {
     const sheet = layerSheet(framed('loom', 7, 7), 'frame')
@@ -363,8 +365,6 @@ describe('Radial counterparts by geometry, Fold 3 and 5 to 8 (ticket 0705, spec 
 })
 
 describe('Radial on the open Canvas about its centre handle (ticket 0705)', () => {
-  const radial = (fold: number, mode: MirrorSetting['mode'] = 'repeat'): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
-  const cells = (result: { positions: { row: number; column: number }[] }) => result.positions.map(({ row, column }) => [row, column])
   function open(technique: Technique, axes: CanvasAxes): Project {
     const project = (changeFrame(framed(technique, 4, 4), { remove: true }) as { project: Project }).project
     return withCanvasAxes(project, axes)
