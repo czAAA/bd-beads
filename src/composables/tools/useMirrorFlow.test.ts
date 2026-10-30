@@ -6,10 +6,13 @@ import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { useMirrorFlow } from './useMirrorFlow'
 
+/** No Edit and no measured view: the setting tests need neither. */
+const NO_VIEW = { edit: () => ({ kind: 'unchanged' as const }), viewCentre: () => undefined }
+
 function setup(initial?: Project) {
   const project = shallowRef<Project | undefined>(initial ?? createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }))
   const replaceProject = vi.fn((next: Project) => void (project.value = next))
-  const flow = useMirrorFlow({ currentProject: () => project.value, replaceProject, edit: () => ({ kind: 'unchanged' }), viewCentre: () => undefined })
+  const flow = useMirrorFlow({ currentProject: () => project.value, replaceProject, ...NO_VIEW })
   return { flow, project, replaceProject }
 }
 
@@ -50,7 +53,7 @@ describe('useMirrorFlow (ticket 0703)', () => {
     const { flow: none, replaceProject } = setup()
     none.toggle()
     expect(replaceProject).toHaveBeenCalledTimes(1)
-    const empty = useMirrorFlow({ currentProject: () => undefined, replaceProject, edit: () => ({ kind: 'unchanged' }), viewCentre: () => undefined })
+    const empty = useMirrorFlow({ currentProject: () => undefined, replaceProject, ...NO_VIEW })
     empty.toggle()
     expect(replaceProject).toHaveBeenCalledTimes(1)
     expect(empty.setting.value).toEqual(MIRROR_OFF)
@@ -71,7 +74,7 @@ describe('the Canvas\'s Axes and their handles (ticket 0704)', () => {
     return { flow, harness, axes: () => canvasAxesOf(harness.project!) }
   }
 
-  it('places an Axis through the view\'s centre, snapped, when its direction goes on, and keeps it when it goes off and on', () => {
+  it('places an Axis through the view\'s centre, snapped, each time its direction goes on, with no Undo step; Off keeps it', () => {
     const { flow, axes, harness } = withView()
     expect(flow.canvasAxes.value).toEqual({})
     flow.update(withAxisToggled(MIRROR_OFF, 'leftRight'))
@@ -82,6 +85,8 @@ describe('the Canvas\'s Axes and their handles (ticket 0704)', () => {
     flow.update(withAxisToggled(flow.setting.value, 'leftRight'))
     expect(axes()).toEqual({ leftRight: 3 })
     expect(flow.canvasAxes.value).toEqual({})
+    flow.toggle()
+    expect(axes()).toEqual({ leftRight: 3 })
     flow.update({ ...flow.setting.value, axes: { ...flow.setting.value.axes, leftRight: true, topBottom: true } })
     expect(axes()).toEqual({ leftRight: 3, topBottom: 0 })
   })

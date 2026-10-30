@@ -598,7 +598,8 @@ function drawCanvasAxes(context: DrawingContext, weave: Weave, axes: Partial<Rec
   context.restore()
 }
 
-/** A chip's border (MirrorPopover card: 1.5px `marker`), and its `elevation-2` shadow where the theme casts one. */
+/** A chip's border (MirrorPopover card: 1.5px `marker`), and its shadow: `elevation-2`'s `0 12px 24px` (tokens.css;
+ * the colour is the theme's), where the theme casts one. */
 const MIRROR_HANDLE_LINE_PX = 1.5
 const CHIP_SHADOW_BLUR_PX = 24
 const CHIP_SHADOW_OFFSET_PX = 12

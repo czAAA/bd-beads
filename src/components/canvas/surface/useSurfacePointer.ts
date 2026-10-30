@@ -17,7 +17,7 @@ import type { TiltedView } from '../../../rendering/tiltedView'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
-import { frameOf, layerOf, quarterTurnOf } from '../../../domain/layerRecord'
+import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
 import type { MirrorDirection } from '../../../domain/mirror'
 import { axisHandleAt, type AxisHandle } from '../../../rendering/mirrorAxes'
 
@@ -465,7 +465,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
 
   /** The Axis handle under a point of the drawing, if one is drawn there. */
   function axisHandleUnder(point: { x: number; y: number }, touch: boolean): AxisHandle | undefined {
-    return axisHandles.value.length > 0 && layerOf(props.project, 'canvas') ? axisHandleAt(axisHandles.value, point, touch) : undefined
+    return axisHandleAt(axisHandles.value, point, touch)
   }
 
   function onPointerDown(event: PointerEvent): void {

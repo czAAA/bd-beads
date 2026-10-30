@@ -63,12 +63,10 @@ describe('normalizeProject', () => {
     expect(orientationOf(rotateCanvas(rotateCanvas(rotateCanvas(loaded))))).toBe(0)
   })
 
-  it('keeps the Canvas\'s Mirror Axes through a save and load, snapped, and opens a file without them, or with broken ones, with none (ticket 0704)', () => {
+  it('keeps the Canvas\'s Mirror Axes through a save and load, and opens a file without them with none (ticket 0704; a broken record is readCanvasAxes\'s own test)', () => {
     const placed = withCanvasAxes(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), { leftRight: 4.5, topBottom: -2 })
     expect(canvasAxesOf(normalizeProject(JSON.parse(JSON.stringify(placed))))).toEqual({ leftRight: 4.5, topBottom: -2 })
     const stored = JSON.parse(JSON.stringify(placed))
-    stored.layers[0].mirrorAxes = { leftRight: 'far', topBottom: 1.2 }
-    expect(canvasAxesOf(normalizeProject(stored))).toEqual({ topBottom: 1 })
     delete stored.layers[0].mirrorAxes
     expect(canvasOf(normalizeProject(stored)).mirrorAxes).toBeUndefined()
   })
