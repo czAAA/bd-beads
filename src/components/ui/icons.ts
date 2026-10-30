@@ -5,6 +5,9 @@
 export const ICON_NAMES = [
   'arrow-down',
   'arrow-up',
+  'axis-centre',
+  'axis-left-right',
+  'axis-top-bottom',
   'bead',
   'check',
   'chevron-down',
@@ -37,6 +40,7 @@ export const ICON_NAMES = [
   'keyboard',
   'library',
   'menu',
+  'mirror',
   'moon',
   'more',
   'move-frame',
