@@ -27,6 +27,12 @@ export function drawsDraft(deviceScale: number): boolean {
   return CELL_SIZE_PX * deviceScale < DRAFT_BEAD_PX
 }
 
+/** The pixel density a bitmap of beads at `zoom` takes to fall just into the draft look, a bead a pixel short of
+ * DRAFT_BEAD_PX: the stand-in a pan in the full look shows where it uncovers beads (ticket 0732). */
+export function draftPixelRatio(zoom: number): number {
+  return (DRAFT_BEAD_PX - 1) / (CELL_SIZE_PX * zoom)
+}
+
 interface DraftImage {
   width: number
   height: number

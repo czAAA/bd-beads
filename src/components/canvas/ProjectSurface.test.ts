@@ -108,10 +108,11 @@ describe('ProjectSurface', () => {
   })
 
   it.each([
-    { look: 'full', from: 0.6, to: 0.3, ticket: '349', moved: 'translate(-10px, -20px) scale(0.5)' },
+    // The move uncovers a strip in the full look, which the stand-in shows in the draft look (ticket 0732).
+    { look: 'full', from: 0.6, to: 0.3, ticket: '349', moved: 'translate(-10px, -20px) scale(0.5)', standIn: 'visible' },
     // The draft look's canvas lies half a drawing area out on every side (ticket 0717), which the move is measured from.
-    { look: 'draft', from: 0.2, to: 0.1, ticket: '0689', moved: 'translate(240px, 180px) scale(0.5)' },
-  ])('moves the drawn beads of a very large piece while the canvas is zoomed in the $look look, and draws them sharp once it settles (ticket $ticket)', async ({ from, to, moved }) => {
+    { look: 'draft', from: 0.1, to: 0.2, ticket: '0689', moved: 'translate(-510px, -420px) scale(2)', standIn: 'hidden' },
+  ])('moves the drawn beads of a very large piece while the canvas is zoomed in the $look look, and draws them sharp once it settles (ticket $ticket)', async ({ from, to, moved, standIn }) => {
     vi.useFakeTimers()
     try {
       vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
@@ -119,16 +120,42 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(projectOf(300, 300), from)
       vi.advanceTimersByTime(10)
       const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]')
+      const standInCanvas = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-stand-in"]').element
       context.calls.length = 0
 
       await wrapper.setProps({ zoom: to, scroll: { x: 10, y: 20 } })
       vi.advanceTimersByTime(10)
       expect(cells.element.style.transform).toBe(moved)
-      // Only the overlay was drawn.
-      expect(context.named('clearRect')).toHaveLength(1)
+      expect(standInCanvas.style.visibility).toBe(standIn)
+      // Only the overlay was drawn, and the stand-in where it shows.
+      const whileMoving = standIn === 'visible' ? 2 : 1
+      expect(context.named('clearRect')).toHaveLength(whileMoving)
 
       vi.advanceTimersByTime(200)
       expect(cells.element.style.transform).toBe('')
+      expect(standInCanvas.style.visibility).toBe('hidden')
+      expect(context.named('clearRect')).toHaveLength(whileMoving + 1)
+      wrapper.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('in the draft look, draws the beads of a very large piece again at once where a zoom out uncovers them (ticket 0732)', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id))
+      const { wrapper } = await mountSurface(projectOf(300, 300), 0.2)
+      vi.advanceTimersByTime(10)
+      const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]')
+      context.calls.length = 0
+
+      // Out to a quarter: past the half drawing area the bitmap reaches.
+      await wrapper.setProps({ zoom: 0.05, scroll: { x: 10, y: 20 } })
+      vi.advanceTimersByTime(10)
+      expect(cells.element.style.transform).toBe('')
+      // The overlay and the beads.
       expect(context.named('clearRect')).toHaveLength(2)
       wrapper.unmount()
     } finally {

@@ -7,8 +7,8 @@ import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
-import { beadsToDraw, bitmapBox, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
-import { drawsDraft } from '../../../rendering/draftRenderer'
+import { beadsToDraw, bitmapBox, coversArea, gestureTransform, mayRedrawMidGesture, SETTLE_MS, GESTURE_BEAD_LIMIT, type View } from '../../../rendering/gestureView'
+import { draftPixelRatio, drawsDraft } from '../../../rendering/draftRenderer'
 import { renderProject } from '../../../rendering/projectRenderer'
 import type { Space } from '../../../rendering/space'
 import type { Region, Scroll } from '../../../rendering/surfaceView'
@@ -68,6 +68,8 @@ function placeCanvas(canvas: HTMLCanvasElement, box: Region): void {
 export interface BeadLayerDeps {
   props: { project: Project; zoom: number; scroll: Scroll }
   canvas: Ref<HTMLCanvasElement | undefined>
+  /** The canvas under it a pan in the full look draws what it uncovers on, in the draft look (ticket 0732). */
+  standIn: Ref<HTMLCanvasElement | undefined>
   size: Ref<Size>
   space: Ref<Space>
   theme: Ref<ProjectTheme>
@@ -163,7 +165,7 @@ function beadCost(project: Project): number {
 
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn }: BeadLayerDeps): void {
+export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn }: BeadLayerDeps): void {
   /** What the cells were last drawn from, to draw only what an edit changed. */
   let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
 
@@ -218,17 +220,62 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
   }
 
   let settleTimer: ReturnType<typeof setTimeout> | undefined
+  /** When each canvas was last drawn and how long it took, in ms: what a moving view may spend drawing (ticket 0732). */
+  const lastDraw = { cells: { at: Number.NEGATIVE_INFINITY, ms: 0 }, standIn: { at: Number.NEGATIVE_INFINITY, ms: 0 } }
+  /** The view the stand-in was drawn for, while it shows. */
+  let standInView: { zoom: number; scroll: Scroll; box: Region } | undefined
 
-  /** Puts the beads' canvas back to showing exactly what was drawn on it. */
+  function timed(which: keyof typeof lastDraw, draw: () => void): void {
+    const start = performance.now()
+    draw()
+    const end = performance.now()
+    lastDraw[which] = { at: end, ms: end - start }
+  }
+
+  /** Draws the beads in view and half a drawing area past it in the draft look, on the stand-in under the beads'
+   * canvas, at a density low enough that the draft look is cheap at any zoom: what a pan shows where it uncovers beads
+   * the full look has not drawn yet (ticket 0732). */
+  function drawStandIn(): void {
+    const canvas = standInEl.value
+    const context = canvas?.getContext('2d')
+    if (!canvas || !context) {
+      return
+    }
+    const pixelRatio = draftPixelRatio(props.zoom)
+    const box = bitmapBox(size.value, true, pixelRatio)
+    placeCanvas(canvas, box)
+    const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
+    sizeCanvas(canvas, region.width, region.height, pixelRatio)
+    renderProject(context, { project: props.project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, draftWhenSmall: true, positionMarks: false })
+    canvas.style.transform = ''
+    canvas.style.visibility = 'visible'
+    standInView = { zoom: props.zoom, scroll: { ...props.scroll }, box }
+  }
+
+  /** How a bitmap drawn for one view lies in the view now, and whether it still covers the drawing area. */
+  function placed(drawnFor: View & { box: Region }): { move: { scale: number; x: number; y: number }; covers: boolean } {
+    const move = gestureTransform(drawnFor, { zoom: props.zoom, scroll: props.scroll }, drawnFor.box)
+    return { move, covers: coversArea(drawnFor.box, move, size.value) }
+  }
+
+  /** Lays a canvas drawn for one view where the view now shows it. */
+  function move(canvas: HTMLCanvasElement, { scale, x, y }: { scale: number; x: number; y: number }): void {
+    canvas.style.transformOrigin = '0 0'
+    canvas.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+  }
+
+  /** Puts the beads' canvas back to showing exactly what was drawn on it, and hides the stand-in. */
   function clearMove(): void {
     clearTimeout(settleTimer)
     settleTimer = undefined
     if (canvasEl.value) canvasEl.value.style.transform = ''
+    if (standInView && standInEl.value) standInEl.value.style.visibility = 'hidden'
+    standInView = undefined
   }
 
-  // Draws the beads, except while a very large piece is panned or zoomed (ticket 349): then the drawn bitmap is moved
-  // and scaled to follow, and drawn sharp after SETTLE_MS still, since a redraw per step would freeze the app. Other
-  // changes (edit, theme, rotation, resize) draw at once.
+  // Draws the beads, except while a very large piece is panned or zoomed (ticket 349): then the bitmap is moved and drawn
+  // sharp after SETTLE_MS still. What a move uncovers is drawn as often as its cost allows (ticket 0732): the draft look
+  // draws its bitmap again, the full look the stand-in under it. Other changes (edit, theme, resize) draw at once.
   function drawCellsOrMove(): void {
     const before = drawn
     const canvas = canvasEl.value
@@ -253,17 +300,26 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
       beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom, beadCost(project)) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
-      drawCells()
+      timed('cells', drawCells)
       return
     }
 
-    const { scale, x, y } = gestureTransform(before, { zoom: props.zoom, scroll: props.scroll }, before.box)
-    canvas!.style.transformOrigin = '0 0'
-    canvas!.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+    const cells = placed(before)
+    const draft = drawsDraft(props.zoom * pixelRatio)
+    if (!cells.covers && draft && mayRedrawMidGesture(performance.now(), lastDraw.cells)) {
+      clearMove()
+      timed('cells', drawCells)
+      return
+    }
+    if (!cells.covers && !draft && !(standInView && placed(standInView).covers) && mayRedrawMidGesture(performance.now(), lastDraw.standIn)) {
+      timed('standIn', drawStandIn)
+    }
+    move(canvas!, cells.move)
+    if (standInView && standInEl.value) move(standInEl.value, placed(standInView).move)
     clearTimeout(settleTimer)
     settleTimer = setTimeout(() => {
       clearMove()
-      drawCells()
+      timed('cells', drawCells)
     }, SETTLE_MS)
   }
 
