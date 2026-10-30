@@ -19,7 +19,7 @@ import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
 import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
 import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
-import type { MirrorDirection } from '../../../domain/mirror'
+import type { MirrorAxis } from '../../../domain/mirror'
 import { axisHandleAt, type AxisHandle } from '../../../rendering/mirrorAxes'
 
 /** What a press, a drag, the hover and the wheel on the Drawing surface tell the canvas panel. */
@@ -51,11 +51,11 @@ export interface SurfacePointerEvents {
   'selection-release': []
   /** Edit Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
-  /** A Mirror Axis handle was grabbed (ticket 0704). */
-  'axis-press': [direction: MirrorDirection]
-  /** The held Axis handle was dragged to this grid px along its direction. */
-  'axis-drag': [direction: MirrorDirection, px: number]
-  /** The Axis handle was let go. */
+  /** A Mirror Axis handle, or Radial's centre chip (ticket 0705), was grabbed (ticket 0704). */
+  'axis-press': [axis: MirrorAxis]
+  /** The held handle was dragged to this point of the Canvas, in its grid px. */
+  'axis-drag': [axis: MirrorAxis, point: { x: number; y: number }]
+  /** The handle was let go. */
   'axis-release': []
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
    * meanwhile. */
@@ -465,15 +465,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
   let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined
 
-  /** The Mirror Axis handle a press holds (ticket 0704), dragged along its direction until the release. */
-  let heldAxis: MirrorDirection | undefined
-
-  /** The grid px of the Canvas a point of the drawing is at along a direction: the x for a Left–right Axis, the y for
-   * a Top–bottom one. */
-  function axisPxAt(point: { x: number; y: number }, direction: MirrorDirection): number {
-    const grid = surface.value.pointToGrid(point)
-    return direction === 'leftRight' ? grid.x : grid.y
-  }
+  /** The Mirror Axis handle, or the Radial centre's chip, a press holds (tickets 0704, 0705), dragged until the release. */
+  let heldAxis: MirrorAxis | undefined
 
   /** The Axis handle under a point of the drawing, if one is drawn there. */
   function axisHandleUnder(point: { x: number; y: number }, touch: boolean): AxisHandle | undefined {
@@ -487,11 +480,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     if (event.button === 0 && !startsDrag(event) && !(event.pointerType === 'touch' && !event.isPrimary)) {
       const handle = axisHandleUnder(pointInDrawing(event), touchInput.value)
       if (handle) {
-        heldAxis = handle.direction
+        heldAxis = handle.axis
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         handleCursor.value = 'grabbing'
-        emit('axis-press', handle.direction)
+        emit('axis-press', handle.axis)
         event.preventDefault()
         return
       }
@@ -615,7 +608,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function onPointerMove(event: PointerEvent): void {
     placePen(event)
     if (heldAxis) {
-      emit('axis-drag', heldAxis, axisPxAt(pointInDrawing(event), heldAxis))
+      emit('axis-drag', heldAxis, surface.value.pointToGrid(pointInDrawing(event)))
       return
     }
     if (adjusting.value) {

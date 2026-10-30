@@ -80,6 +80,25 @@ describe('the Tool pill', () => {
     wrapper.unmount()
   })
 
+  it('Radial (ticket 0705): the chip turns Radial on, and a stroke on a loom Frame lands at every corner in Mirror mode at Fold 2', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    await pickColor(wrapper, 'red')
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-axis-radial"]').trigger('click')
+    expect(wrapper.get('[data-testid="mirror-fold-value"]').text()).toBe('2')
+    await wrapper.get('[data-testid="mirror-popover-close"]').trigger('click')
+    await flushPromises()
+
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+    const grid = beadColors(wrapper)
+    const corners = [grid[0]![0], grid[0]!.at(-1), grid.at(-1)![0], grid.at(-1)!.at(-1)]
+    expect(corners).toEqual(['#e63746', '#e63746', '#e63746', '#e63746'])
+    expect(grid.flat().filter(Boolean)).toHaveLength(4)
+    expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'mirror', axes: { leftRight: false, topBottom: false, radial: true }, fold: 2 })
+    wrapper.unmount()
+  })
+
   it('shows a recent color as a chip, left out of the popover Palette, and the chip picks it', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, 'blue')

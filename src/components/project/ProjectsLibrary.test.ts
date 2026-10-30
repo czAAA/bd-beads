@@ -76,9 +76,15 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
   // The idle walks share one queue across tests: each test runs on fake timers and leaves none waiting.
   beforeEach(() => void vi.useFakeTimers())
   afterEach(async () => {
-    await vi.runAllTimersAsync()
+    await walkDrained()
     vi.useRealTimers()
   })
+
+  /** Runs the walk's chained idle moments (three, for the huge layer) to the end: round by round, so a timer loop
+   * another file left running on the shared page cannot make `runAllTimersAsync` spin and abort (ticket 0705's CI). */
+  async function walkDrained() {
+    for (let round = 0; round < 50 && vi.getTimerCount() > 0; round++) await vi.runOnlyPendingTimersAsync()
+  }
 
   /** Mounted from a host, so the mount itself reads nothing of the Projects it is handed. */
   function mountHosted(props: Record<string, unknown>) {
@@ -107,7 +113,7 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
   it('shows the count once the idle walk is in', async () => {
     const { project } = huge(260)
     const wrapper = mountHosted({ projects: [project] })
-    await vi.runAllTimersAsync()
+    await walkDrained()
     await nextTick()
     expect(wrapper.get('[data-testid="project-pieces"]').text()).toBe('1')
   })

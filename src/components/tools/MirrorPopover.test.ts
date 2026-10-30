@@ -19,7 +19,7 @@ describe('MirrorPopover (ticket 0703, MirrorPopover card)', () => {
     localStorage.setItem('openbeads:locale', 'en')
   })
 
-  it('is a dialog named Mirror with the Mode as a radiogroup and the two straight Axes as pressed chips', () => {
+  it('is a dialog named Mirror with the Mode as a radiogroup and the three Axes as pressed chips', () => {
     const wrapper = mountPopover(on({ leftRight: true }))
     expect(wrapper.get('[data-testid="mirror-popover"]').attributes('role')).toBe('dialog')
     expect(wrapper.get('[data-testid="mirror-popover"]').attributes('aria-label')).toBe('Mirror')
@@ -32,7 +32,8 @@ describe('MirrorPopover (ticket 0703, MirrorPopover card)', () => {
     expect(wrapper.get('[data-testid="mirror-axis-leftRight"]').text()).toBe('Left–right')
     expect(wrapper.get('[data-testid="mirror-axis-leftRight"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="mirror-axis-topBottom"]').attributes('aria-pressed')).toBe('false')
-    expect(wrapper.find('[data-testid="mirror-axis-radial"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="mirror-axis-radial"]').text()).toBe('Radial')
+    expect(wrapper.get('[data-testid="mirror-axis-radial"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('emits the setting changed: a mode picked, an Axis pressed (which turns the mode on from Off), and Off keeps the Axes', async () => {
@@ -81,5 +82,40 @@ describe('MirrorPopover (ticket 0703, MirrorPopover card)', () => {
 
     expect(mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: on({}), onCanvas: true } }).find('[data-testid="mirror-canvas-note"]').exists()).toBe(false)
     expect(mountPopover(on({ leftRight: true }), { leftRight: 3, topBottom: 3 }).find('[data-testid="mirror-canvas-note"]').exists()).toBe(false)
+  })
+
+  it('shows the Radial chip, exclusive with the straight Axes, and with Radial on a grid the Fold Stepper 2 to 8 with a Note saying the rule in force (ticket 0705)', async () => {
+    const wrapper = mountPopover(on({ leftRight: true }), { leftRight: 5, topBottom: 2 })
+    expect(wrapper.find('[data-testid="mirror-fold"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="mirror-axis-radial"]').trigger('click')
+    const radial = wrapper.emitted('update:setting')!.at(-1)![0] as MirrorSetting
+    expect(radial.axes).toEqual({ leftRight: false, topBottom: false, radial: true })
+
+    await wrapper.setProps({ setting: radial })
+    expect(wrapper.get('[data-testid="mirror-axis-radial"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="mirror-axis-leftRight"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-testid="mirror-count-leftRight"]').exists()).toBe(false)
+    const fold = wrapper.get('[data-testid="mirror-fold"]')
+    expect(fold.text()).toContain('Fold')
+    expect(fold.get('[data-testid="mirror-fold-value"]').text()).toBe('2')
+    expect(fold.get('[data-testid="mirror-fold-fewer"]').attributes('disabled')).toBeDefined()
+    expect(fold.get('[data-testid="mirror-fold-fewer"]').attributes('aria-label')).toBe('Fewer folds')
+    expect(fold.get('[data-testid="mirror-fold-more"]').attributes('aria-label')).toBe('More folds')
+    expect(wrapper.get('[data-testid="mirror-fold-note"]').text()).toBe('An exact turn of the grid, by row and column.')
+    await fold.get('[data-testid="mirror-fold-more"]').trigger('click')
+    expect((wrapper.emitted('update:setting')!.at(-1)![0] as MirrorSetting).fold).toBe(3)
+
+    await wrapper.setProps({ setting: { ...radial, fold: 6 } })
+    expect(wrapper.get('[data-testid="mirror-fold-note"]').text()).toBe('A turn of 60°: each bead\'s centre turns and the nearest bead takes it, so near the centre images merge.')
+    await wrapper.setProps({ setting: { ...radial, fold: 8 } })
+    expect(wrapper.get('[data-testid="mirror-fold-more"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('shows the Fold Stepper on the open Canvas too, with no handle Note, and not on a Custom frame (ticket 0706 gives it a Note)', () => {
+    const radial = on({ radial: true })
+    const canvas = mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: radial, onCanvas: true } })
+    expect(canvas.find('[data-testid="mirror-fold"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="mirror-canvas-note"]').exists()).toBe(false)
+    expect(mountPopover(radial).find('[data-testid="mirror-fold"]').exists()).toBe(false)
   })
 })

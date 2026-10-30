@@ -27,7 +27,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
-import type { MirrorDirection, MirrorSetting } from '../../domain/mirror'
+import type { CanvasAxes, MirrorAxis, MirrorSetting } from '../../domain/mirror'
 import { axisHandles as axisHandlesOf } from '../../rendering/mirrorAxes'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 import { useRowMotion } from './surface/useRowMotion'
@@ -86,9 +86,9 @@ const props = withDefaults(defineProps<{
   /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
   mirror?: MirrorSetting
   /** The open Canvas's Axes that act (ticket 0704): a line across the whole view each, with a handle chip the press
-   * grabs before the tool; `heldAxis` is the one being dragged. */
-  mirrorAxes?: Partial<Record<MirrorDirection, number>>
-  heldAxis?: MirrorDirection
+   * grabs before the tool, and Radial's centre (ticket 0705) with its chip; `heldAxis` is the one being dragged. */
+  mirrorAxes?: CanvasAxes
+  heldAxis?: MirrorAxis
   /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
   fillRefusals?: number
   /** The last press of Row done or Row not done (ticket 0730): the Pattern's motion plays from it, never from the
