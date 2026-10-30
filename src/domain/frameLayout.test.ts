@@ -125,7 +125,7 @@ describe('a Warped Square charted as a bead artist charts it (ticket 0723)', () 
     expect(square.beadDepth).toBe(chart.beadDepth)
   })
 
-  it('touches no empty cell inside a triangle: every bead but those at the edge has a bead on either side of it', () => {
+  it('leaves no empty cell inside a triangle: every bead but those at its edge touches a bead on either side', () => {
     for (const position of square.positions.filter(({ row }) => row < 8)) {
       const column = columnOf(square, position)
       const beside = layoutNeighbors(square, position).map((name) => square.positions.find(({ row, column: place }) => row === name.row && place === name.column)!)
