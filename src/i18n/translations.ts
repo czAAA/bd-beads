@@ -330,6 +330,21 @@ export interface Translations {
       hand: string
       rulers: string
     }
+    /** The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): the four steps, the quiet notes,
+     * the welcome and its steps line, and the phone's shorter steps. A line break is `\n`. */
+    firstRun: {
+      paint: string
+      select: string
+      frame: string
+      export: string
+      menu: string
+      project: string
+      mirror: string
+      color: string
+      welcome: string
+      steps: string
+      phone: Record<'paint' | 'select' | 'frame' | 'export', string>
+    }
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */

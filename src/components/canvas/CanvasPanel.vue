@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import CanvasHint from './CanvasHint.vue'
+import FirstRunHints from './FirstRunHints.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
@@ -234,6 +235,10 @@ const selectionLayerStyle = computed(() => {
   if (!el) return undefined
   return { left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${drawingSize.width.value}px`, height: `${drawingSize.height.value}px` }
 })
+/** The canvas box, where the first-run hints find the controls they point at. */
+const canvasEl = ref<HTMLElement>()
+/** The open Project has no beads: the CanvasHint line and the first-run hints show (FirstRunHints card, ticket 0725). */
+const emptyProject = computed(() => !!activeProject.value && !hasProjectBeads(activeProject.value))
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
@@ -248,8 +253,9 @@ const drawingStyle = computed(() => {
   -->
   <main class="app-shell__canvas-column">
     <div
+      ref="canvasEl"
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning}"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--first-run': emptyProject }"
       data-testid="app-canvas"
     >
       <!--
@@ -281,7 +287,19 @@ const drawingStyle = computed(() => {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="activeProject && !hasProjectBeads(activeProject)" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="emptyProject" class="app-shell__canvas-hint" />
+
+        <!-- The hand-drawn way to a first Pattern (ticket 0725, FirstRunHints card): over an empty Project, gone with
+          the first bead, under the Tool pill. -->
+        <Transition name="first-run-hints">
+          <FirstRunHints
+            v-if="emptyProject"
+            :scope="canvasEl"
+            :pill-position="toolPillPosition"
+            :pill-rect="pillRect"
+            :background="canvasBackground.background.value?.color"
+          />
+        </Transition>
 
         <div class="app-shell__canvas-row">
           <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
@@ -521,10 +539,24 @@ const drawingStyle = computed(() => {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which
- * float over the beads. */
-.app-shell__drawing > :not(.app-shell__canvas-hint):not(.context-bar):not(.tool-pill-layer) {
+/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run hints, the context bar and the Tool
+ * pill's layer, which float over the beads. */
+.app-shell__drawing > :not(.app-shell__canvas-hint):not(.first-run-hints):not(.context-bar):not(.tool-pill-layer) {
   position: relative;
+}
+
+/* The first-run steps' controls ringed in accent over what is behind them (FirstRunHints card); a strip button is lifted
+ * over the drawing area so the ring's foot shows. */
+.app-shell__canvas--first-run :deep(:is([data-hint='paint'], [data-hint='select'], [data-hint='frame'], [data-hint='export'])) {
+  position: relative;
+  z-index: var(--z-canvas-overlay);
+  box-shadow:
+    0 0 0 var(--hint-ring-gap) var(--hint-ring-behind, var(--box)),
+    0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent);
+}
+
+.app-shell__canvas--first-run :deep(:is([data-hint='paint'], [data-hint='select'])) {
+  --hint-ring-behind: var(--elevated);
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing
