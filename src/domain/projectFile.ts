@@ -65,19 +65,24 @@ function fileNameSlug(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-/** `my-scarf_pr.openbeads`, or `openbeads_pr.openbeads` when the name leaves nothing to write (ticket 392). */
+/** The names, each made filename-safe and joined by `-`; a name that leaves nothing to write is left out, and
+ * `openbeads` stands in when none does (ticket 0720). */
+function fileStem(names: (string | undefined)[]): string {
+  return names.map((name) => fileNameSlug(name ?? '')).filter(Boolean).join('-') || 'openbeads'
+}
+
+/** The project file's name, e.g. `summer-ada.openbeads`: it holds the whole Project, so no Frame's name (tickets 392,
+ * 0720). */
 export function projectFileName(project: Project): string {
-  return `${fileNameSlug(projectNameOf(project)) || 'openbeads'}_pr.openbeads`
+  return `${fileStem([projectNameOf(project), project.makerName])}.openbeads`
 }
 
-/** The name a picture or document of the Project is saved under (tickets 73, 74), e.g. `openbeads-my-scarf.png`: the
- * name of the Frame they hold, else the Project's (ticket 0708). */
+/** The name a picture or document of the Project is saved under (tickets 73, 74, 0720), e.g. `summer-rose-ada.png`. */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
-  const slug = fileNameSlug(frameOf(project)?.name ?? '') || fileNameSlug(projectNameOf(project))
-  return `openbeads-${slug || 'project'}.${extension}`
+  return `${fileStem([projectNameOf(project), frameOf(project)?.name, project.makerName])}.${extension}`
 }
 
-/** A further page of the cover PNG (Beads needed running over, ticket 0583), e.g. `openbeads-my-scarf_2.png` for the second. */
+/** A further page of the cover PNG (Beads needed running over, ticket 0583), e.g. `summer-rose-ada_2.png` for the second. */
 export function projectListFileName(project: Project, page: number): string {
   return projectExportFileName(project, 'png').replace(/\.png$/, `_${page}.png`)
 }

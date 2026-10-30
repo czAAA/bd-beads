@@ -8,10 +8,11 @@ import { paintAt } from '../../testUtils/layers'
 import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
+import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
-function setup(tool: Tool = 'paint', initial?: Project) {
+function setup(tool: Tool = 'paint', initial?: Project, mirror: MirrorSetting = MIRROR_OFF) {
   const harness = editHarness(
     initial ?? createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }),
   )
@@ -21,6 +22,7 @@ function setup(tool: Tool = 'paint', initial?: Project) {
     edit: harness.editing,
     activeTool: () => tool,
     endSelectPress,
+    mirror: () => mirror,
   })
   const at = (row: number, column: number) => beadColorAt(harness.project, frameOf(harness.project)!.row + row, frameOf(harness.project)!.column + column)
   return { stroke, harness, endSelectPress, at, frame: frameOf(harness.project)! }
@@ -102,6 +104,55 @@ describe('usePaintStroke', () => {
 
     expect(at(0, 0)).toBeNull()
     expect(at(1, 0)).toBe('#ff0000')
+  })
+
+  describe('under Mirror (ticket 0703, spec 0702)', () => {
+    const fourWide = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
+    const leftRight: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    const topBottom: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, topBottom: true } }
+
+    it('lands a stroke on the Frame at its counterparts, and Undo takes the whole stroke back in one step', () => {
+      const { stroke, harness, at, frame } = setup('paint', fourWide(), leftRight)
+      stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)
+      stroke.paintStrokeCell(frame.row + 1, frame.column + 1, '#ff0000')
+      stroke.endStroke()
+
+      expect(at(0, 0)).toBe('#ff0000')
+      expect(at(0, 3)).toBe('#ff0000')
+      expect(at(1, 1)).toBe('#ff0000')
+      expect(at(1, 2)).toBe('#ff0000')
+      harness.history.onUndo()
+      expect(Object.keys(frameOf(harness.project)!.beads)).toHaveLength(0)
+      expect(harness.history.canUndo.value).toBe(false)
+    })
+
+    it('drops a counterpart in a finished row silently', () => {
+      const { stroke, at, frame } = setup('paint', moveToRow(fourWide(), 1), topBottom)
+      stroke.beginOrCommitPress('paint', '#ff0000', frame.row + 2, frame.column)
+      stroke.endStroke()
+
+      expect(at(2, 0)).toBe('#ff0000')
+      expect(at(0, 0)).toBeNull()
+    })
+
+    it('fills the counterparts of the flooded region too, as one undo step', () => {
+      const { stroke, harness, at, frame } = setup('fill', fourWide(), leftRight)
+      harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#0000ff'))
+      stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+
+      expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#00ff00', '#00ff00', '#00ff00', '#00ff00'])
+      expect(at(1, 0)).toBeNull()
+      harness.history.onUndo()
+      expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#0000ff', '#0000ff', null, null])
+    })
+
+    it('paints only where aimed on the open Canvas (ticket 0704 adds its Axes)', () => {
+      const { stroke, harness, frame } = setup('paint', fourWide(), leftRight)
+      stroke.beginOrCommitPress('paint', '#ff0000', frame.row - 6, frame.column)
+      stroke.endStroke()
+
+      expect(beadsOfLayer(harness.project, 'canvas')).toEqual({ [frame.row - 6]: { [frame.column]: '#ff0000' } })
+    })
   })
 
   it('ends a Select press and flushes even when no stroke was running', () => {

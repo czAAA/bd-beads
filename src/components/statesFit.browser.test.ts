@@ -1,6 +1,8 @@
 import { defineComponent, h, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
+import MirrorPopover from './tools/MirrorPopover.vue'
+import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
 import BeadColorList from './palette/BeadColorList.vue'
@@ -40,6 +42,21 @@ const ColorPopoverHost = defineComponent({
       h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
         h('button', { ref: tile, type: 'button' }, 'Color'),
         h(ColorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', colorHex: '#e63746', colorName: 'Red', selectedColorId: 'red' }),
+      ])
+  },
+})
+
+/** The Mirror popover placed against its tile on the pill (ticket 0703): with a Frame, both Axes on, so the count
+ * Steppers and every row show. */
+const MirrorPopoverHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 } }),
       ])
   },
 })
@@ -122,6 +139,7 @@ const MarginColorPopoverHost = defineComponent({
 
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
+  ['MirrorPopover', MirrorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
