@@ -5,6 +5,7 @@ import ConfirmModal from '../ui/ConfirmModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
+import FeedbackSheet from './FeedbackSheet.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
 import { projectNameOf } from '../../domain/layerRecord'
 import { inMillions } from '../../domain/formatNumber'
@@ -66,6 +67,11 @@ const {
   onSavePieceName,
   onCancelPieceName,
   onCloseShortcutsHelp,
+  feedbackRequest,
+  onCloseFeedback,
+  sendReport,
+  verifyFeedback,
+  copyReport,
   onConfirmStorageNote,
   onCancelStorageNote,
   convertImageStart,
@@ -263,6 +269,16 @@ const { locale } = useI18n()
   />
 
   <ShortcutsHelp v-if="open === 'shortcuts'" @close="onCloseShortcutsHelp" />
+
+  <!-- A Report to the maintainer (ADR 0081, ticket 0700): from the Menu or the Bead colors list, which have closed. -->
+  <FeedbackSheet
+    v-if="open === 'feedback' && feedbackRequest"
+    :request="feedbackRequest"
+    :verify="verifyFeedback"
+    :send="sendReport"
+    :copy="copyReport"
+    @cancel="onCloseFeedback"
+  />
 
   <!-- Duplicate and Delete this Project (ProjectPanel and ConfirmDialogs cards, ticket 443): opened from the Project panel, which has closed. -->
   <DuplicateProjectModal v-if="open === 'duplicate-project' && duplicating !== undefined" :suggested="duplicating" @confirm="onConfirmDuplicate" @cancel="onCancelDuplicate" />

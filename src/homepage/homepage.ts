@@ -19,6 +19,7 @@ import { libraryFileName } from '../domain/projectFile'
 import { projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
+import { browserFeedback } from '../services/feedback'
 import { markEditorChosen } from './homepageRoute'
 import HomePage from './HomePage.vue'
 
@@ -45,6 +46,7 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
     render: () =>
       h(HomePage, {
         projectCount: storedProjectCount(),
+        feedback: browserFeedback,
         // Decoded only when the Menu shows Saved Projects; a gated Project, or one that didn't open, stays stored.
         openLibrary: () => useProjectLibrary(browserLibraryStore, undefined, { held: browserOpeningNote.read()?.id }),
         onMakeFirstProject: () => goToEditor(),

@@ -115,7 +115,8 @@ const sealedProject = { id: 'sealed', name: 'Black fill', createdAt: Date.UTC(20
 function beadColors(state: 'ready' | 'failed') {
   const finishes = ['metallic', 'matte', 'opaque'] as const
   const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: finishes[i]!, hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
-  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const }
+  // With `report`, so the foot row that opens a color Report (ticket 0700) is measured too.
+  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const, report: () => {} }
 }
 
 /** A Delica catalog of a few codes, so Bead colors is offered and matched to. */

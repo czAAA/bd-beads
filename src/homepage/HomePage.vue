@@ -22,6 +22,12 @@ import RollingSlogan from './RollingSlogan.vue'
 import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
+import FeedbackSheet from '../components/shell/FeedbackSheet.vue'
+import ToastRegion from '../components/ui/ToastRegion.vue'
+import { useDialogs } from '../composables/shell/useDialogs'
+import { useFeedbackFlow } from '../composables/shell/useFeedbackFlow'
+import { useToasts } from '../composables/ui/useToasts'
+import type { FeedbackService } from '../services/feedback'
 
 // The Homepage (ticket 77; Homepage card): the page outside the editor that introduces openbeads, a canvas box like the
 // editor's (ticket 540, ADR 0073): the Canvas strip on top, the content scrolling between, an empty Canvas footer below.
@@ -29,6 +35,8 @@ import { fillBlanks } from '../domain/fillBlanks'
 const props = defineProps<{
   /** How many Projects this device has saved, read without decoding any; none means a new visitor. */
   projectCount: number
+  /** Sending a Report: the Menu's Send feedback works here too (spec 0698), so a beader can say the app won't start. */
+  feedback: FeedbackService
   /** The library, opened only once its Saved Projects are shown in the Menu (ticket 0716). */
   openLibrary?: () => HomepageLibrary
 }>()
@@ -45,12 +53,16 @@ const emit = defineEmits<{
 /** What the Homepage's Saved Projects needs of the library (ticket 0716). */
 type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'addProjects' | 'entryOf'>
 
-const { t } = provideI18n()
+const { t, locale } = provideI18n()
 watchEffect(() => {
   document.title = `${t.value.homepage.pageTitle} · ${t.value.app.title}`
 })
 
 const menuOpen = ref(false)
+// The Homepage has no app shell: its one dialog, the Feedback sheet, has a registry and toasts of its own.
+const dialogs = useDialogs()
+const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
+const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
 const zoom = useHomepageZoom()
 /** The content's own width once zoomed: the width its layout is made for (the CSS asks the container the same). */
 /** The width from which the carousel is a tablist, as in the CSS (1024px). */
@@ -112,7 +124,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
       @reset="zoom.reset"
     />
     <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
-      <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" />
+      <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
       <template #sub="{ depth }">
         <ProjectsLibrary
           v-if="depth === 1 && library"
@@ -135,6 +147,15 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
       @confirm="confirmRemove"
       @cancel="pendingRemove = undefined"
     />
+    <FeedbackSheet
+      v-if="dialogs.open.value === 'feedback' && feedback.feedbackRequest.value"
+      :request="feedback.feedbackRequest.value"
+      :verify="feedback.verifyFeedback"
+      :send="feedback.sendReport"
+      :copy="feedback.copyReport"
+      @cancel="feedback.onCloseFeedback"
+    />
+    <ToastRegion :toasts="toasts" @dismiss="dismissToast" />
 
     <div ref="scrollEl" class="homepage__scroll" data-testid="homepage-scroll">
       <div class="homepage__page" :style="{ zoom: zoom.percent.value / 100 }">

@@ -168,4 +168,20 @@ describe('the Bead colors filters (ticket 0713)', () => {
     expect(wrapper.findAll('[data-testid="bead-colors-family"]').map((button) => button.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
     expect(wrapper.findAll('[data-testid="bead-colors-finish"]').map((button) => button.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
   })
+
+  it('offers a color Report at its foot only when the list has one, from the row last focused', async () => {
+    expect(setup([entry({})]).wrapper.find('[data-testid="bead-colors-report"]').exists()).toBe(false)
+    const report = vi.fn()
+    const bead = ref(findBead('miyuki/delica/11-0'))
+    const colors = { available: ref(true), state: ref('ready'), swatches: ref(four), bead, catalog: ref(), load: vi.fn(), add: vi.fn(), report } as unknown as BeadColors
+    const wrapper = mount(BeadColorList, { props: { colors }, attachTo: document.body })
+    const foot = wrapper.get('[data-testid="bead-colors-report"]')
+    expect(foot.text()).toBe(en.palette.beadColors.reportColor)
+    await foot.trigger('click')
+    expect(report).toHaveBeenLastCalledWith(undefined)
+    await wrapper.get('[data-testid="bead-color"][data-code="DB3"]').trigger('focus')
+    await foot.trigger('click')
+    expect(report).toHaveBeenLastCalledWith({ code: 'DB3', hex: '#123456' })
+    wrapper.unmount()
+  })
 })
