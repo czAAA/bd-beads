@@ -39,7 +39,8 @@ const refused = ref(false)
 const field = ref<InstanceType<typeof TextField>>()
 const form = ref<HTMLFormElement>()
 const rootEl = ref<HTMLElement>()
-// Bare, the field floats above its cell in the top layer, so the margin sheet's scale (ticket 0698) never shrinks it.
+// Bare, the field floats above its cell in the top layer, so the margin sheet's scale (ticket 0698) never shrinks it, and
+// sits in the app shell: inside the scale, Safari keeps it where it first showed (the top-left corner) and drops keys.
 const anchored = useAnchoredPosition(rootEl, form, () => 'start', () => 'above')
 const fieldId = useId()
 const errorId = useId()
@@ -90,38 +91,39 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
         {{ emptyText }}
       </button>
     </div>
-    <form
-      v-else
-      ref="form"
-      class="editable-line__form"
-      :class="{ 'anchored-popup': bare }"
-      :popover="bare ? 'manual' : undefined"
-      :style="bare ? anchored.style.value : undefined"
-      :data-testid="`${testid}-form`"
-      data-handles-escape
-      @submit.prevent="commit"
-      @panel-escape="cancel"
-    >
-      <div class="editable-line__field">
-        <TextField
-          :id="fieldId"
-          ref="field"
-          v-model="draft"
-          type="text"
-          :maxlength="maxlength"
-          :placeholder="placeholder"
-          :invalid="refused"
-          :aria-label="editLabel"
-          :aria-describedby="refused ? errorId : undefined"
-          :data-testid="`${testid}-input`"
-          @input="refused = false"
-        />
-        <IconButton variant="plain" icon="check" :label="t.panels.project.save" tooltip :disabled="!canSave" :data-testid="`${testid}-save`" @click="commit" />
-        <IconButton variant="plain" icon="close" :label="t.panels.project.cancel" tooltip :data-testid="`${testid}-cancel`" @click="cancel" />
-      </div>
-      <span class="editable-line__counter">{{ draft.length }}/{{ maxlength }}</span>
-      <p v-if="refused" :id="errorId" class="editable-line__error" role="alert" :data-testid="`${testid}-error`">{{ requiredMessage }}</p>
-    </form>
+    <Teleport v-else to=".app-shell" :disabled="!bare">
+      <form
+        ref="form"
+        class="editable-line__form"
+        :class="{ 'editable-line__form--bare anchored-popup': bare }"
+        :popover="bare ? 'manual' : undefined"
+        :style="bare ? anchored.style.value : undefined"
+        :data-testid="`${testid}-form`"
+        data-handles-escape
+        @submit.prevent="commit"
+        @panel-escape="cancel"
+      >
+        <div class="editable-line__field">
+          <TextField
+            :id="fieldId"
+            ref="field"
+            v-model="draft"
+            type="text"
+            :maxlength="maxlength"
+            :placeholder="placeholder"
+            :invalid="refused"
+            :aria-label="editLabel"
+            :aria-describedby="refused ? errorId : undefined"
+            :data-testid="`${testid}-input`"
+            @input="refused = false"
+          />
+          <IconButton variant="plain" icon="check" :label="t.panels.project.save" tooltip :disabled="!canSave" :data-testid="`${testid}-save`" @click="commit" />
+          <IconButton variant="plain" icon="close" :label="t.panels.project.cancel" tooltip :data-testid="`${testid}-cancel`" @click="cancel" />
+        </div>
+        <span class="editable-line__counter">{{ draft.length }}/{{ maxlength }}</span>
+        <p v-if="refused" :id="errorId" class="editable-line__error" role="alert" :data-testid="`${testid}-error`">{{ requiredMessage }}</p>
+      </form>
+    </Teleport>
   </div>
 </template>
 
@@ -234,13 +236,14 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
   color: inherit;
 }
 
-.editable-line--bare :deep(.icon-btn) {
+.editable-line--bare :deep(.icon-btn),
+.editable-line__form--bare :deep(.icon-btn) {
   width: var(--margin-pencil);
   height: var(--margin-pencil);
   color: var(--body);
 }
 
-.editable-line--bare .editable-line__form {
+.editable-line__form--bare {
   z-index: var(--z-popover);
   box-sizing: border-box;
   width: var(--margin-edit-width);
