@@ -86,6 +86,14 @@ export const uk: Translations = {
     moreAxes: 'Більше осей',
     turnAxisOn: 'Увімкніть вісь.',
     close: 'Закрити',
+    copyToCounterparts: 'Скопіювати намистини фрагмента на їхні відображення.',
+    announceSelectionMirrored: 'Фрагмент відображено',
+    droppedMessage: {
+      one: '{count} відображенню не було куди лягти, його не поставлено.',
+      few: '{count} відображенням не було куди лягти, їх не поставлено.',
+      many: '{count} відображенням не було куди лягти, їх не поставлено.',
+      other: '{count} відображенням не було куди лягти, їх не поставлено.',
+    },
   },
   colorNames: {
     black: 'Чорний',
@@ -461,6 +469,8 @@ export const uk: Translations = {
     removeLineButton: 'Видалити виділений ряд/стовпець',
     removeLineShort: 'Видалити лінію',
     namePieceButton: 'Назвати шматочок',
+    fillOpenMessage: 'Це місце нічим не оточене. Виділіть область, щоб залити її.',
+    fillTooBigMessage: 'Завелика область для заливки. Збільште масштаб або виділіть область.',
   },
   inputMode: {
     penLabel: 'Режим пера',

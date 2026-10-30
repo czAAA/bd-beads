@@ -572,3 +572,12 @@ The FeedbackSheet card's words, with the Menu's Send feedback and Report a trans
 | Too many reports at once. Try again in {seconds} s. | Слишком много отчётов сразу. Попробуйте через {seconds} с. | Забагато звітів одразу. Спробуйте за {seconds} с. | Занадта шмат справаздач адразу. Паспрабуйце праз {seconds} с. | 报告太多。{seconds} 秒后再试。 | Demasiados informes a la vez. Vuelve a intentarlo en {seconds} s. | Za dużo zgłoszeń naraz. Spróbuj za {seconds} s. |
 | The report could not be sent. Try again later, or copy it. | Отчёт не отправился. Попробуйте позже или скопируйте его. | Звіт не надіслано. Спробуйте пізніше або скопіюйте його. | Справаздачу не адпраўлена. Паспрабуйце пазней або скапіруйце яе. | 报告未能发送。稍后再试，或复制下来。 | No se pudo enviar el informe. Inténtalo más tarde o cópialo. | Nie udało się wysłać zgłoszenia. Spróbuj później albo je skopiuj. |
 | Thanks, your report was sent | Спасибо, отчёт отправлен | Дякуємо, звіт надіслано | Дзякуй, справаздачу адпраўлена | 谢谢，报告已发送 | Gracias, tu informe se ha enviado | Dziękujemy, zgłoszenie wysłane |
+
+## Fill reach copy (ticket 0715)
+
+The two toasts (Message card, info tone) after a Fill tool press on the Canvas that Fill reach refuses: what happened, then what to do, as the Error pattern. The Selection bar's Fill is the way to fill a chosen area, so both name selecting.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Nothing encloses this spot. Select an area to fill it. | Это место ничем не окружено. Выделите область, чтобы залить её. | Це місце нічим не оточене. Виділіть область, щоб залити її. | Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе. | 这里没有被围住。选择一个区域即可填充。 | Nada rodea este punto. Selecciona un área para rellenarla. | Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić. |
+| Too big to fill. Zoom in, or select an area. | Слишком большая область для заливки. Увеличьте масштаб или выделите область. | Завелика область для заливки. Збільште масштаб або виділіть область. | Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць. | 区域太大，无法填充。放大画布，或选择一个区域。 | Demasiado grande para rellenar. Acerca la vista o selecciona un área. | Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar. |

@@ -84,6 +84,12 @@ export const en: Translations = {
     moreAxes: 'More axes',
     turnAxisOn: 'Turn an Axis on.',
     close: 'Close',
+    copyToCounterparts: 'Copy the fragment\'s beads to their counterparts.',
+    announceSelectionMirrored: 'Fragment mirrored',
+    droppedMessage: {
+      one: '{count} counterpart had nowhere to land and was left out.',
+      other: '{count} counterparts had nowhere to land and were left out.',
+    },
   },
   colorNames: {
     black: 'Black',
@@ -453,6 +459,8 @@ export const en: Translations = {
     removeLineButton: 'Remove selected row/column',
     removeLineShort: 'Remove line',
     namePieceButton: 'Name Piece',
+    fillOpenMessage: 'Nothing encloses this spot. Select an area to fill it.',
+    fillTooBigMessage: 'Too big to fill. Zoom in, or select an area.',
   },
   inputMode: {
     penLabel: 'Pen mode',

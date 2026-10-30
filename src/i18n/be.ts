@@ -87,6 +87,14 @@ export const be: Translations = {
     moreAxes: 'Больш восей',
     turnAxisOn: 'Уключыце вось.',
     close: 'Закрыць',
+    copyToCounterparts: 'Скапіяваць пацеркі фрагмента на іх адлюстраванні.',
+    announceSelectionMirrored: 'Фрагмент адлюстраваны',
+    droppedMessage: {
+      one: '{count} адлюстраванню не было куды легчы, яно не пастаўлена.',
+      few: '{count} адлюстраванням не было куды легчы, яны не пастаўлены.',
+      many: '{count} адлюстраванням не было куды легчы, яны не пастаўлены.',
+      other: '{count} адлюстраванням не было куды легчы, яны не пастаўлены.',
+    },
   },
   colorNames: {
     black: 'Чорны',
@@ -462,6 +470,8 @@ export const be: Translations = {
     removeLineButton: 'Выдаліць вылучаны рад/слупок',
     removeLineShort: 'Выдаліць лінію',
     namePieceButton: 'Назваць кавалачак',
+    fillOpenMessage: 'Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе.',
+    fillTooBigMessage: 'Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць.',
   },
   inputMode: {
     penLabel: 'Рэжым пяра',

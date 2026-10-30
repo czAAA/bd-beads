@@ -86,6 +86,13 @@ export const es: Translations = {
     moreAxes: 'Más ejes',
     turnAxisOn: 'Activa un eje.',
     close: 'Cerrar',
+    copyToCounterparts: 'Copia las cuentas del fragmento a sus reflejos.',
+    announceSelectionMirrored: 'Fragmento reflejado',
+    droppedMessage: {
+      one: '{count} reflejo no tenía dónde caer y no se colocó.',
+      many: '{count} de reflejos no tenían dónde caer y no se colocaron.',
+      other: '{count} reflejos no tenían dónde caer y no se colocaron.',
+    },
   },
   colorNames: {
     black: 'Negro',
@@ -458,6 +465,8 @@ export const es: Translations = {
     removeLineButton: 'Quitar fila/columna seleccionada',
     removeLineShort: 'Quitar línea',
     namePieceButton: 'Nombrar trozo',
+    fillOpenMessage: 'Nada rodea este punto. Selecciona un área para rellenarla.',
+    fillTooBigMessage: 'Demasiado grande para rellenar. Acerca la vista o selecciona un área.',
   },
   inputMode: {
     penLabel: 'Modo lápiz',
