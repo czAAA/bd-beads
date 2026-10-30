@@ -11,8 +11,9 @@ export interface OverlayLayerOptions {
   root: () => Element | null | undefined
   /** Escape, and by default a press outside. */
   close: () => void
-  /** A press outside swallows and, with `'swallow'`, does not close (a modal that demands an answer). */
-  outside?: 'close' | 'swallow'
+  /** A press outside swallows and, with `'swallow'`, does not close (a modal that demands an answer); with `'through'`
+   * it closes and the press goes on (the paper tag over the canvas, ticket 0721). */
+  outside?: 'close' | 'swallow' | 'through'
   /** What a press outside does instead of `close` (a sheet notes it was closed by a press, ticket 424). */
   onOutsidePress?: () => void
   /** Whether a target is the overlay's own opener, which toggles the overlay itself. */
@@ -49,6 +50,7 @@ function onPointerDown(event: PointerEvent) {
   if (!top || (event.pointerType === 'touch' && !event.isPrimary) || !(target instanceof Element)) return
   const root = top.root()
   if (!root || root.contains(target) || isExempt(top, target) || top.keepsPress?.(event)) return
+  if (top.outside === 'through') return (top.onOutsidePress ?? top.close)()
   event.stopPropagation()
   event.preventDefault()
   swallowNextClick()

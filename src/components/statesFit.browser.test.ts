@@ -15,6 +15,8 @@ import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ContextBar from './tools/ContextBar.vue'
+import SchemaTags from './canvas/SchemaTags.vue'
+import { withPieceName } from '../domain/pieceNames'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { paintAt } from '../testUtils/layers'
@@ -136,6 +138,25 @@ const MarginColorPopoverHost = defineComponent({
   },
 })
 
+/** Two unframed Schemas hanging their tags in a phone-sized canvas box (ticket 0721): "Owl" written out, "Butterfly"
+ * folded to dots, which opens into the paper tag. */
+const schemaTagsHost = defineComponent({
+  setup() {
+    const colors = createPalette(defaultPaletteIds()).colors.map((color) => color.hex)
+    const drawn = paintAt(paintAt(withLayers(empty, { frame: undefined }), [0, 1, 2].map((column) => ({ row: 0, column })), colors[0]!), [{ row: 6, column: 0 }, { row: 6, column: 1 }], colors[1]!)
+    const project = withPieceName(withPieceName(drawn, { row: 0, column: 0 }, 'Owl'), { row: 6, column: 0 }, 'Butterfly')
+    const anchors = {
+      schemas: [
+        { name: 'Owl', anchor: { row: 0, column: 0 }, piece: { row: 0, column: 0, rows: 1, columns: 3 }, box: { left: 24, top: 24, width: 64, height: 24 } },
+        { name: 'Butterfly', anchor: { row: 6, column: 0 }, piece: { row: 6, column: 0, rows: 1, columns: 2 }, box: { left: 200, top: 120, width: 44, height: 24 } },
+      ],
+      viewport: { width: 300, height: 420 },
+    }
+    return () => h('div', { style: { position: 'relative', width: '300px', height: '420px' } }, [h(SchemaTags, { project, anchors })])
+  },
+})
+const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[aria-label^="Butterfly"]')?.click()
+
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
@@ -155,6 +176,8 @@ const CASES: FitCase[] = [
     { project: painted, selection: { top: 0, left: 0, rows: 2, columns: 2 }, selectionSummary: '2×2 ≈ 3 × 3 mm', pasteArmed: false, canRemoveLine: true, canNamePiece: true, hasClipboard: true, anchor: { box: { left: 40, top: 160, width: 100, height: 60 }, viewport: { width: 360, height: 640 } } },
     async () => void (await armSelectionBar()),
   ],
+  ['SchemaTags', schemaTagsHost, {}],
+  ['SchemaTags (open)', schemaTagsHost, {}, openSchemaTag],
   ['StarterGallery', StarterGallery, {}],
   ['StarterGallery (Shapes)', StarterGallery, { category: 'shapes' }],
   ['StarterSetup', StarterSetup, { starter: starterById('kaleidocycle') }],

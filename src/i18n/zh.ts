@@ -956,4 +956,13 @@ export const zh: Translations = {
     frameHeading: '设置',
     background: '背景',
   },
+  schemaTag: {
+    group: '图样名称',
+    label: '{name}，显示详情',
+    tooltipBody: '点击查看尺寸和颜色。',
+    heading: '图样',
+    sizeBeads: '{columns} × {rows} 颗珠子',
+    beads: { other: '{count} 颗珠子' },
+    colors: { other: '{count} 种颜色' },
+  },
 }

@@ -755,10 +755,12 @@ function wireAppShell(services: Services) {
       onRotate: rotateFlow.onRotate,
       canNamePiece: namePiece.canNamePiece,
       onNamePiece: namePiece.onNamePiece,
+      onRenameSchema: namePiece.onRenameSchema,
       canRemoveSelectedLine: removeLine.canRemoveSelectedLine,
       onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
       // The Frame and Row progress
       onFrameFromSelection,
+      onFrameSchema: frameFlow.setTo,
       settingFrame: frameFlow.settingFrame,
       framePanelOpen: frameFlow.barOpen,
       frameDraftProject: frameFlow.draftProject,

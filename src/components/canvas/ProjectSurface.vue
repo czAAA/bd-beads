@@ -17,6 +17,8 @@ import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
+import { unframedSchemas } from '../../domain/schemaTags'
 import { surfaceView, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
 import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
@@ -85,6 +87,9 @@ const emit = defineEmits<SurfacePointerEvents & {
   /** The Frame's and its margin sheet's rectangles in the surface's pixels (tickets 417, 473, 0657), or none once the
    * sheet is out of view: where the sheet's tools and title block sit. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
+  /** The unframed Schemas' boxes in the surface's pixels (ticket 0721), the Piece outset included: where their hang
+   * tags hang from. Follows pan and zoom. */
+  'schema-anchors': [anchors: SchemaAnchors | undefined]
 }>()
 
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
@@ -266,6 +271,20 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
   }
 })
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
+
+/** Where each unframed Schema is on screen (ticket 0721), from the named Pieces the rulers hold through a stroke: told
+ * to their hang tags. */
+const schemaAnchors = computed<SchemaAnchors | undefined>(() => {
+  if (size.value.width === 0) return undefined
+  const outset = rulers.value.scale.pieceOutset
+  const schemas = unframedSchemas(props.project, pieces.value.named).map(({ name, anchor, row, column, rows, columns }) => {
+    const piece = { row, column, rows, columns }
+    const shown = leaning.value.screenBox(surface.value.beadBox(piece, 'canvas'))
+    return { name, anchor, piece, box: { left: shown.x - outset, top: shown.y - outset, width: shown.width + 2 * outset, height: shown.height + 2 * outset } }
+  })
+  return { schemas, viewport: { ...size.value } }
+})
+watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: true, flush: 'post' })
 
 /** Row marks are drawn unless the Row highlight toggle is off; the project's own Row progress decides the rest. */
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
