@@ -62,7 +62,7 @@ export interface WeaveGeometry {
   shift: number
   /** Distance from one row's top to the next, in bead heights. */
   rowPitch: number
-  /** A drawn bead's height over its width in px: the Bead's own in a Real cell. */
+  /** A drawn bead's height over its width in px: the Bead's own cell's. */
   cellAspect: number
   /** How much of a bead's width its corners are rounded by, in the Technique's own cell. */
   roundness: number

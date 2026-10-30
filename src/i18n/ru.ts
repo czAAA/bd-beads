@@ -321,7 +321,7 @@ export const ru: Translations = {
     previousFeature: 'Предыдущая возможность',
     nextFeature: 'Следующая возможность',
     notes: { onUs: 'это мы' },
-    coffee: { title: 'Одна семья', text: 'openbeads делает одна семья, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
+    coffee: { title: 'Делает одна семья', text: 'openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
     plans: {
       label: 'тарифы',
       heading: 'Три способа работать',
@@ -996,6 +996,15 @@ export const ru: Translations = {
   layerSettings: {
     frameHeading: 'Настройки',
     background: 'Фон',
+  },
+  schemaTag: {
+    group: 'Названия схем',
+    label: '{name}, показать подробности',
+    tooltipBody: 'Нажмите, чтобы увидеть размер и цвета.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бисерин',
+    beads: { one: '{count} бисеринка', few: '{count} бисеринки', many: '{count} бисеринок', other: '{count} бисеринки' },
+    colors: { one: '{count} цвет', few: '{count} цвета', many: '{count} цветов', other: '{count} цвета' },
   },
   feedback: {
     titleGeneral: 'Отправить отзыв',

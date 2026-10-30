@@ -14,7 +14,7 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
   const { shifted, shift, rowPitch, passes, block } = geometry
   const frameStep = shifted ? 2 * block : 1
   const twoPasses = passes === 'twoAfterFirst'
-  // A Real cell's own rounding, which a press in a bead's corner misses.
+  // A Bead's cell's own rounding, which a press in a bead's corner misses.
   const roundness = cell?.roundness ?? geometry.roundness
   // The second half of each cycle is shifted, whichever side of row 0 it is on.
   const isShiftedRow = (row: number): boolean => frameStep > 1 && Math.abs(Math.floor((row * 2) / frameStep)) % 2 === 1

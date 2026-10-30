@@ -34,7 +34,7 @@ describe('piece names', () => {
 
     expect(pieceNameAt(named, { row: 0, column: 0 })).toBe('Fox')
     expect(pieceNameAt(named, { row: 5, column: 0 })).toBeUndefined()
-    expect(namedPieces(named)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
+    expect(namedPieces(named)).toEqual([{ name: 'Fox', anchor: { row: 0, column: 2 }, row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
     expect(canvasOf(withPieceName(named, { row: 0, column: 0 }, '')).pieceNames).toBeUndefined()
   })
 
@@ -52,14 +52,14 @@ describe('piece names', () => {
 
     // The anchor bead itself is erased, and the name stays with the Piece.
     const erased = draw(named, [{ row: 0, column: 0, color: null }])
-    expect(namedPieces(erased)).toEqual([{ name: 'Fox', row: 0, column: 1, rows: 1, columns: 3, beads: 3 }])
+    expect(namedPieces(erased)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 1, rows: 1, columns: 3, beads: 3 })])
   })
 
   it('lets a named Piece absorb an unnamed one', () => {
     const named = withPieceName(projectWith(row(0, 0, 1), row(0, 4, 5)), { row: 0, column: 0 }, 'Fox')
     const joined = draw(named, row(0, 2, 3))
 
-    expect(namedPieces(joined)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 6, beads: 6 }])
+    expect(namedPieces(joined)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 1, columns: 6, beads: 6 })])
   })
 
   it('refuses a bead that would join two named Pieces, and paints the rest', () => {
@@ -84,7 +84,7 @@ describe('piece names', () => {
     const named = withPieceName(projectWith(row(0, 0, 1), row(0, 2, 2), row(0, 3, 8)), { row: 0, column: 0 }, 'Fox')
     const split = draw(named, [{ row: 0, column: 2, color: null }])
 
-    expect(namedPieces(split)).toEqual([{ name: 'Fox', row: 0, column: 3, rows: 1, columns: 6, beads: 6 }])
+    expect(namedPieces(split)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 3, rows: 1, columns: 6, beads: 6 })])
     expect(pieceNameAt(split, { row: 0, column: 0 })).toBeUndefined()
   })
 

@@ -317,7 +317,7 @@ export const en: Translations = {
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
     notes: { onUs: 'on us' },
-    coffee: { title: 'Made by one family', text: "openbeads is made by one family, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
+    coffee: { title: 'Made by one family', text: "openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
       label: 'plans',
       heading: 'Three ways to use it',
@@ -980,6 +980,15 @@ export const en: Translations = {
   layerSettings: {
     frameHeading: 'Settings',
     background: 'Background',
+  },
+  schemaTag: {
+    group: 'Schema names',
+    label: '{name}, show details',
+    tooltipBody: 'Click for the size and colors.',
+    heading: 'schema',
+    sizeBeads: '{columns} × {rows} beads',
+    beads: { one: '{count} bead', other: '{count} beads' },
+    colors: { one: '{count} color', other: '{count} colors' },
   },
   feedback: {
     titleGeneral: 'Send feedback',

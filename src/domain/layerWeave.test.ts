@@ -5,6 +5,7 @@ import { createProject } from './createProject'
 import { frameOf, withLayer } from './layerRecord'
 import { canvasDistance, frameScale, laidOnCanvas, layersAlike, placedFrame } from './layerWeave'
 import { withLayers } from '../testUtils/layerFields'
+import { squareBead } from '../testUtils/squareBead'
 
 const round8 = findBead('toho/round/8-0')!
 const round15 = findBead('toho/round/15-0')!
@@ -13,8 +14,8 @@ const BLUE = '#2f6fed'
 
 /** A loom Canvas in 8/0 with a 4 by 4 loom Frame at row 2, column 3, in 8/0 or in a Bead of its own. */
 function framed(frameBead = round8) {
-  const made = createProject({ name: 'Two Beads', technique: 'loom', beadId: round8.id, size: { width: 4, height: 4, unit: 'beads' } })
-  return withLayer(withLayers(made, { frame: { ...frameOf(made)!, row: 2, column: 3 } }), 'frame', { bead: frameBead })
+  const made = withLayers(createProject({ name: 'Two Beads', technique: 'loom', beadId: round8.id, size: { width: 4, height: 4, unit: 'beads' } }), { bead: squareBead(round8) })
+  return withLayer(withLayers(made, { frame: { ...frameOf(made)!, row: 2, column: 3 } }), 'frame', { bead: squareBead(frameBead) })
 }
 
 describe('a distance in the Frame read on the Canvas through millimetres (ADR 0079, ticket 0665)', () => {

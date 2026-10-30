@@ -34,7 +34,7 @@ The tag is drawn by the page (HTML over the canvas), not by the canvas renderer,
 
 ## Values
 
-`--schema-tag-height` (22px), `--schema-tag-end` (8px), `--schema-tag-hole` (3.2px), `--schema-tag-tilt` (10deg), `--schema-tag-drop` (24px), `--schema-tag-name` (Inter 600 11/22), `--schema-card-width` (236px), `--schema-card-cut` (20px), `--schema-card-hole` (8px), in `bundle.css` and `src/styles/design-values.css`. The 5-character rule is a constant in the code, not a CSS value.
+`--schema-tag-height` (22px), `--schema-tag-end` (8px), `--schema-tag-hole` (3.2px), `--schema-tag-tilt` (10deg), `--schema-tag-drop` (24px), `--schema-tag-name` (Inter 600 11/22), `--schema-card-width` (236px), `--schema-card-cut` (20px), `--schema-card-hole` (8px), `--schema-card-min-height` (160px), `--schema-card-name` (Inter 600 14/20), `--schema-card-name-inset` (46px), in `bundle.css` and `src/styles/design-values.css`. The 5-character rule is a constant in the code, not a CSS value.
 
 ## Copy
 
@@ -42,4 +42,11 @@ The tag is drawn by the page (HTML over the canvas), not by the canvas renderer,
 
 ## As built
 
-Not built yet: until ticket 0721 the app draws the name as DM Mono 600 text in the Frame's line color under the Piece's left edge (the canvas renderer).
+Built by ticket 0721 as `SchemaTags.vue` (`src/components/canvas/`), HTML laid over the canvas box after the canvas, before the Tool pill; the canvas renderer no longer draws an unframed Schema's name. The surface reports each unframed Schema's box on screen (its rectangle, the Piece outset included) as it pans and zooms, and the tags are placed from it (`schemaTagPlacement.ts`); the rules (the 5 characters, which Schemas carry a tag, the paper tag's counts) are `domain/schemaTags.ts`. Where it differs from the card above, and why:
+
+- **The press target is a button round the cut shape:** the tag's cut corners and hole are a `clip-path` and a mask, which would also cut a focus ring and a finger's larger hit area, so the button holding the shape carries both and turns with it. The 44px hit area is the button's `::before` on a coarse pointer.
+- **The paper tag's place:** its hole is where the tag's was (9px across and 24px down from the corner), so the paper hangs to the left of the thread under the Piece; above the Piece its bottom edge stands 6px over the Piece's box. It is kept 8px inside the canvas box, the hole moving with it, and is hidden, as the tag is, while the Piece's corner is out of view.
+- **Focus:** opening moves focus into the paper tag (the dialog itself), so Tab reaches Rename, Frame and Close; while it is open it is a layer of the overlay registry, so the app's keyboard shortcuts wait until Escape or a press closes it. A press outside closes it and still goes on (on the canvas, the tool works there): the registry's `outside: 'through'`.
+- **The actions:** the Buttons are 28px with 8px sides and a 4px icon gap, so Rename, Frame and Close share one row in English; a longer language wraps Close onto a row of its own. Frame is left out on a Custom frame, as the Selection bar leaves it out.
+- **The swatches** carry the 1px `swatch-edge` ring, so a light color reads on the paper.
+- **Following its Schema:** an open paper tag follows the bead its name is kept on, or the name should that bead be erased, and closes once the Schema is framed, erased or unnamed.

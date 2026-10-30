@@ -188,6 +188,18 @@
   --schema-card-width: 236px; /* SchemaTag card: the opened paper tag. */
   --schema-card-cut: 20px; /* SchemaTag card: the paper tag's cut top-right corner. */
   --schema-card-hole: 8px; /* SchemaTag card: the paper tag's hole, 18px in from its top and right. */
+  --schema-card-min-height: 160px; /* SchemaTag card: the paper tag's least height, its actions pushed to the bottom. */
+  --schema-card-name: 600 0.875rem/1.25rem var(--font-sans); /* SchemaTag card: the paper tag's name (Inter 600 14/20). */
+  --schema-card-name-inset: 46px; /* SchemaTag card: where the paper tag's name stops short of its right edge, clear of the hole. */
+  /* FirstRunHints card (ticket 0725): hand-drawn notes over an empty Project, in muted, the note face. */
+  --hint-note: italic 400 1.1875rem/1.15 var(--font-serif); /* FirstRunHints card: a quiet note (Menu, Project, Mirror, colour), 19px. */
+  --hint-step: italic 400 1.375rem/1.15 var(--font-serif); /* FirstRunHints card: a step note (1 to 4), 22px; 20px on a phone. */
+  --hint-welcome: italic 400 1.5rem/1.2 var(--font-serif); /* FirstRunHints card: the welcome's two lines, 24px; 20px on a phone. */
+  --hint-wordmark: italic 400 4rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark, 64px, -0.6px tracking; 44px on a phone. */
+  --hint-arrow: 1.4px; /* FirstRunHints card: a quiet note's hand-drawn arrow. */
+  --hint-step-arrow: 1.5px; /* FirstRunHints card: a step note's hand-drawn arrow. */
+  --hint-ring-gap: 2px; /* FirstRunHints card: the gap between a step's control and its accent ring. */
+  --hint-ring-width: 2px; /* FirstRunHints card: the accent ring round a step's control. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;

@@ -321,7 +321,7 @@ export const uk: Translations = {
     previousFeature: 'Попередня можливість',
     nextFeature: 'Наступна можливість',
     notes: { onUs: 'це ми' },
-    coffee: { title: 'Одна родина', text: 'openbeads робить одна родина, бісеринка за бісеринкою, і він безкоштовний. Якщо він заощадив вам вечір підрахунків, кава буде найкращою подякою.', button: 'Пригостити кавою' },
+    coffee: { title: 'Робить одна родина', text: 'openbeads робить одна родина, бісеринка за бісеринкою, і застосунок безкоштовний. Якщо застосунок заощадив вам час, кава буде найкращою подякою.', button: 'Пригостити кавою' },
     plans: {
       label: 'тарифи',
       heading: 'Три варіанти',
@@ -996,6 +996,15 @@ export const uk: Translations = {
   layerSettings: {
     frameHeading: 'Налаштування',
     background: 'Фон',
+  },
+  schemaTag: {
+    group: 'Назви схем',
+    label: '{name}, показати подробиці',
+    tooltipBody: 'Натисніть, щоб побачити розмір і кольори.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бісерин',
+    beads: { one: '{count} бісерина', few: '{count} бісерини', many: '{count} бісерин', other: '{count} бісерини' },
+    colors: { one: '{count} колір', few: '{count} кольори', many: '{count} кольорів', other: '{count} кольору' },
   },
   feedback: {
     titleGeneral: 'Надіслати відгук',

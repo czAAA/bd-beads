@@ -1,6 +1,6 @@
 # LayerSettings
 
-The one section that sets a layer (ADR 0079, ticket 0670): the Canvas or a Frame, each a sub-canvas with everything a canvas has. Given a layer it sets its Technique and that Technique's settings, a Custom frame's shape settings, its Bead, and its Background. The same section wherever a layer is set, so a new layer property is added here once and shows up everywhere:
+The one section that sets a layer (ADR 0079, ticket 0670): the Canvas or a Frame, each a sub-canvas with everything a canvas has. Given a layer it sets its Technique and that Technique's settings, a Custom frame's shape settings, its Bead and its Background. The same section wherever a layer is set, so a new layer property is added here once and shows up everywhere:
 
 - **New Project form** (NewPatternForm card): both layers of the new Project start from it. Nothing is asked; each pick is kept in the form.
 - **Project panel, canvas section** (ProjectPanel card): the Canvas's. It changes any time, with a Frame and once Row progress has started, as Row progress belongs to the Frame.
@@ -19,7 +19,7 @@ The groups are 8px apart. The Bead and Background groups are named groups for sc
 ## Undo and Row progress
 
 - **What is woven is undone:** a Technique, its settings, a Bead and a shape's settings are each one Undo step.
-- **How it looks is not:** a Background is a view, saved with the Project and never Undo steps; Undo and Redo leave them as they are.
+- **How it looks is not:** a Background is a view, saved with the Project and never an Undo step; Undo and Redo leave it as it is.
 - **On a Frame, only what moves positions waits** while a Row progress pass is done: the Technique picker, its steppers and the shape settings are off (`faint`), each with its reason in its Tooltip ("Rows are marked done. Remove the Frame to change the Technique.") and under the shape settings the `meta-small` line "Rows are marked done. Remove the frame to change the size.". The Bead and the Background never wait. The Canvas's never waits.
 
 ## Folded summary

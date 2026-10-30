@@ -8,7 +8,7 @@ import { rowCycle } from '../domain/weave'
 import type { RuledProject } from './rulers'
 
 /** The Pieces the rulers hang from (ticket 0674): the Piece areas that carry rulers, none while the rulers are hidden
- * or a Frame carries them, and the named Pieces whose names are drawn, with the beads they were worked out from. */
+ * or a Frame carries them, and the named Pieces that hang a tag (ticket 0721), with the beads they were counted from. */
 export interface RuledPieces {
   beads: BeadMap
   cycle: number
