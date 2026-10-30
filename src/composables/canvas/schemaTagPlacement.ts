@@ -2,15 +2,13 @@ import type { Rect } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import type { BarBox } from '../tools/selectionBarPlacement'
 
-// Where an unframed Schema's hang tag and its paper tag sit on the canvas box (SchemaTag card, ticket 0721), in screen
-// px at every zoom. The numbers are the card's: `--schema-tag-drop` and the 9px across, the tag's hole in its cut end,
-// the paper tag's width and its hole 18px in from its top-right corner.
-const DROP_X = 9
-const DROP_Y = 24
-const TAG_HOLE_INSET = 4.5
-const TAG_HALF_HEIGHT = 11
+// Where an unframed Schema's tag and its paper tag sit on the canvas box (SchemaTag card, tickets 0721 and 0733), in
+// screen px at every zoom. The numbers are the card's: `--schema-tag-height`, `--schema-tag-gap`,
+// `--schema-tag-max-width` and the paper tag's width.
+const TAG_HEIGHT = 28
+const TAG_GAP = 4
+const TAG_MAX_WIDTH = 184
 const CARD_WIDTH = 236
-const CARD_HOLE_INSET = 18
 /** The room kept between the paper tag and the canvas box's edge. */
 const EDGE_GAP = 8
 
@@ -29,68 +27,35 @@ export interface SchemaAnchors {
   viewport: { width: number; height: number }
 }
 
-export interface Point {
-  x: number
-  y: number
-}
-
-/** A tag's place: the Piece corner its thread starts from (the dot), the tag's hole and which side it hangs on. */
+/** A tag's top-left corner on the canvas box. */
 export interface TagPlacement {
-  side: 'right' | 'left'
-  corner: Point
-  hole: Point
+  left: number
+  top: number
 }
 
-/** Where the tag hangs from `box` (the Piece's rectangle on screen, outset included): from its bottom-right corner, or
- * its bottom-left one, mirrored, where a tag `width` px wide would cross the box's right edge and the left side has
- * more room. None while that corner is out of view. */
-export function tagPlacement(box: BarBox, viewport: { width: number; height: number }, width: number): TagPlacement | undefined {
+/** Where the tag stands for `box` (the Piece's rectangle on screen, outset included): always above its top-left
+ * corner, moving with the Piece and clipped by the canvas box as the Piece is. None while neither the Piece nor its
+ * tag is in view. */
+export function tagPlacement(box: BarBox, viewport: { width: number; height: number }): TagPlacement | undefined {
+  const top = box.top - TAG_GAP - TAG_HEIGHT
+  const right = box.left + Math.max(box.width, TAG_MAX_WIDTH)
   const bottom = box.top + box.height
-  const right = box.left + box.width
-  const roomRight = viewport.width - (right + DROP_X - TAG_HOLE_INSET)
-  const roomLeft = box.left - DROP_X + TAG_HOLE_INSET
-  const side = roomRight < width && roomLeft > roomRight ? 'left' : 'right'
-  const corner = { x: side === 'right' ? right : box.left, y: bottom }
-  if (corner.x < 0 || corner.y < 0 || corner.x > viewport.width || corner.y > viewport.height) return undefined
-  return { side, corner, hole: { x: corner.x + (side === 'right' ? DROP_X : -DROP_X), y: corner.y + DROP_Y } }
+  if (box.left >= viewport.width || right <= 0 || top >= viewport.height || bottom <= 0) return undefined
+  return { left: box.left, top }
 }
 
-/** Where a tag `width` px wide goes for its hole to be at the placement's: the box's top-left corner. A tag hanging
- * left is mirrored, its holed end at the right, so it reaches out from the Piece as one hanging right does. */
-export function tagOrigin({ side, hole }: TagPlacement, width: number): { left: number; top: number } {
-  const left = side === 'right' ? hole.x - TAG_HOLE_INSET : hole.x + TAG_HOLE_INSET - width
-  return { left, top: hole.y - TAG_HALF_HEIGHT }
-}
-
-/** The paper tag's place: its top-left corner and its hole, and whether it opened above the Piece. */
+/** The paper tag's place: its top-left corner, and whether it opened upwards. */
 export interface CardPlacement {
   above: boolean
   left: number
   top: number
-  hole: Point
 }
 
-/** Where the paper tag `height` px tall opens: in the tag's place below the Piece, hanging by its hole, or above the
- * Piece where there is no room below; kept inside the canvas box, the hole moving with it. */
-export function cardPlacement(tag: TagPlacement, box: BarBox, viewport: { width: number; height: number }, height: number): CardPlacement {
+/** Where the paper tag `height` px tall opens: in the tag's place, down over the Piece, or up from the tag's foot where
+ * there is no room below; kept inside the canvas box. */
+export function cardPlacement(tag: TagPlacement, viewport: { width: number; height: number }, height: number): CardPlacement {
   const clamp = (value: number, size: number, room: number) => Math.max(EDGE_GAP, Math.min(value, room - EDGE_GAP - size))
-  const gap = DROP_Y - CARD_HOLE_INSET
-  const below = tag.hole.y - CARD_HOLE_INSET
-  const above = below + height > viewport.height - EDGE_GAP
-  const left = clamp(tag.hole.x + CARD_HOLE_INSET - CARD_WIDTH, CARD_WIDTH, viewport.width)
-  const top = clamp(above ? box.top - gap - height : below, height, viewport.height)
-  return { above, left, top, hole: { x: left + CARD_WIDTH - CARD_HOLE_INSET, y: top + CARD_HOLE_INSET } }
-}
-
-/** How far the thread's curve reaches out of the corner and into the hole, in px: its two control points. */
-const THREAD_LEAVES = { out: 8, along: 8 }
-const THREAD_ARRIVES = { out: 6, along: 10 }
-
-/** The thread from the corner's dot to a hole, curving out to the side the tag hangs on: an SVG path. */
-export function threadPath(from: Point, to: Point, side: TagPlacement['side']): string {
-  const out = side === 'right' ? 1 : -1
-  const along = Math.sign(to.y - from.y) || 1
-  const leaves = { x: from.x + out * THREAD_LEAVES.out, y: from.y + along * THREAD_LEAVES.along }
-  const arrives = { x: to.x + out * THREAD_ARRIVES.out, y: to.y - along * THREAD_ARRIVES.along }
-  return `M ${from.x} ${from.y} C ${leaves.x} ${leaves.y}, ${arrives.x} ${arrives.y}, ${to.x} ${to.y}`
+  const above = tag.top + height > viewport.height - EDGE_GAP
+  const top = above ? tag.top + TAG_HEIGHT - height : tag.top
+  return { above, left: clamp(tag.left, CARD_WIDTH, viewport.width), top: clamp(top, height, viewport.height) }
 }

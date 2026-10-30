@@ -8,26 +8,12 @@ import { pieceBeadsAt } from './pieces'
 import type { Project } from './project'
 import { estimatedSizeMm, type EstimatedSizeMm } from './projectSize'
 
-/** The longest name a Schema's hang tag writes out (SchemaTag card, ticket 0721); a longer one shows three dots. */
-const TAG_NAME_MAX = 5
-
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-
-/** Whether `name` is written on the tag: 5 characters or fewer, counted as a reader sees them (grapheme clusters). */
-export function nameFitsTag(name: string): boolean {
-  let count = 0
-  for (const _ of graphemes.segment(name)) {
-    if (++count > TAG_NAME_MAX) return false
-  }
-  return true
-}
-
 /** Whether the laid Frame hides the whole of `piece`'s rectangle. */
 function hiddenBy(frame: Rect | undefined, piece: Rect): boolean {
   return frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
 }
 
-/** The unframed Schemas that carry a hang tag (ticket 0721): the named Pieces of the Canvas, less any the Frame wholly
+/** The unframed Schemas that carry a tag (tickets 0721, 0733): the named Pieces of the Canvas, less any the Frame wholly
  * hides. `named` is passed by a caller that holds its Pieces through a stroke (`ruledPieces`, ticket 0674). */
 export function unframedSchemas(project: Layered, named: readonly NamedPiece[] = namedPieces(project)): NamedPiece[] {
   const frame = laidFrame(project)

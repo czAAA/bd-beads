@@ -4,7 +4,7 @@ import { createProject } from './createProject'
 import { projectPalette } from './palette'
 import { withPieceName } from './pieceNames'
 import type { Project } from './project'
-import { nameFitsTag, schemaDetails, unframedSchemas } from './schemaTags'
+import { schemaDetails, unframedSchemas } from './schemaTags'
 import { withLayers } from '../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
@@ -13,20 +13,6 @@ const OUTSIDE = '#123456'
 const row = (r: number, from: number, to: number, color = first): BeadChange[] =>
   Array.from({ length: to - from + 1 }, (_, i) => ({ row: r, column: from + i, color }))
 const projectWith = (...rows: BeadChange[][]): Project => withLayers(base, { beads: withColors({}, rows.flat()) })
-
-describe('the 5-character rule (SchemaTag card)', () => {
-  it.each([
-    ['Owl', true],
-    ['Fox 2', true],
-    ['Owlet6', false],
-    ['猫头鹰', true],
-    ['👩‍👩‍👧‍👦 ab', true],
-    ['ééééé', true],
-    ['ééééée', false],
-  ])('writes %s on the tag: %s', (name, fits) => {
-    expect(nameFitsTag(name)).toBe(fits)
-  })
-})
 
 describe('the unframed Schemas', () => {
   it('lists each named Piece with the bead its name is kept on, and no plain Piece', () => {

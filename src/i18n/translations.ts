@@ -1184,14 +1184,14 @@ export interface Translations {
     frameHeading: string
     background: string
   }
-  /** An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
+  /** An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
    * Schema tag copy). */
   schemaTag: {
     /** The tags' one Tab stop. */
     group: string
     /** A tag's accessible name. */
     label: string
-    /** The Tooltip's body on a tag whose name shows as three dots. */
+    /** The Tooltip's body on a tag whose name is cut short by an ellipsis. */
     tooltipBody: string
     /** The paper tag's label over the name, lowercased by style. */
     heading: string
