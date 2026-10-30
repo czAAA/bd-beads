@@ -1,8 +1,9 @@
 import { handleApi, healthRoute, type Route } from './api'
 import type { Env } from './env'
+import { feedbackRoute } from './feedback'
 import { runWatchdog, watchdogDeps, type DailyHook } from './watchdog/run'
 
-/** What a Worker is built from: its routes besides health, and the work its watchdog does once a day. */
+/** What a Worker is built from: its routes besides health and feedback, and the work its watchdog does once a day. */
 interface WorkerParts {
   routes?: Route[]
   daily?: DailyHook[]
@@ -11,7 +12,7 @@ interface WorkerParts {
 /** The Worker (spec 385). Called only for /api/* (`run_worker_first`) and the Cron Trigger's watchdog; the app is
  * static assets. Built by a function so the tests can add parts of their own. */
 export function createWorker({ routes = [], daily = [] }: WorkerParts = {}): ExportedHandler<Env> {
-  const all = [healthRoute, ...routes]
+  const all = [healthRoute, feedbackRoute, ...routes]
   return {
     fetch(request, env) {
       if (new URL(request.url).pathname.startsWith('/api/')) return handleApi(request, env, all)

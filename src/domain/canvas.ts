@@ -28,7 +28,7 @@ export interface FrameSheet extends Rect, Weave {
   /** Its Folded beads (ticket 0638): those it gave up when made smaller over a Canvas woven unlike it, beyond its edge
    * in the same own rows and columns, out of sight until it grows back over them. Absent when there are none. */
   folded?: BeadMap
-  /** The name of the Piece the Frame was made from (ticket 489), drawn under the Frame. Absent: unnamed. */
+  /** The name of the Piece the Frame was made from (ticket 489), shown in the margin's title block (ticket 0719). Absent: unnamed. */
   name?: string
   /** Its Frame shape (ticket 0591, ADR 0077, ADR 0079), which makes it a Custom frame. Absent on a Frame without one. */
   shape?: FrameShapeId

@@ -57,7 +57,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 ## 4 Colors
 
 - **match to:** one SegmentedControl, Bead colors | Default Palette | Exact. A Bead without a Color catalog shows Default Palette | Exact; with one, Bead colors is the default.
-- **Under Bead colors only:** one line in `meta-small` counting the codes the match uses, "codes in 11/0: 1 211": the codes made in the Bead's size, discontinued ones left out. No filter for now (spec 0645's Finish chips and Include discontinued are left out of this design).
+- **Under Bead colors only:** one line in `meta-small` counting the codes the match uses, "codes in 11/0: 1 211": the codes made in the Bead's size, discontinued ones left out. The match itself has no filter (spec 0645's Include discontinued is left out of this design); the Bead colors list in a row's remap picker has the BeadColors card's Color and Finish filter rows (ticket 0713).
 - **A Note** says what the source does: Bead colors repeats the BeadColors approximate note; Default Palette "Matches each color to the nearest of the Bead’s 16 default colors." (12 for a Brand without its own set); Exact "Keeps the picture’s own colors. Each joins the Palette as a Custom color."
 - **Colors at most:** a small Stepper, 1 to 14, default 12.
 - **colors found**, the count at the right: one FoundColorRow per found color, most beads first (FoundColorRow card).

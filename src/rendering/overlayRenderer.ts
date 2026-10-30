@@ -170,7 +170,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
 // brick stitch, where the next row nests into the gaps, their corners aren't covered.
-/** A bead's width and height, where they aren't a square of the drawn size (a Bead's cell, ADR 0068, 0083). */
+/** A bead's width and height, where they aren't a square of the drawn size (a Bead's cell, ADR 0068, ticket 0724). */
 function sizedLike(box: { width: number; height: number }): { width?: number; height?: number } {
   return box.width === CELL_SIZE_PX && box.height === CELL_SIZE_PX ? {} : { width: box.width, height: box.height }
 }
