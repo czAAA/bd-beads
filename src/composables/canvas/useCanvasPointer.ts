@@ -4,6 +4,7 @@ import type { Layer } from '../../domain/layers'
 import { finishedRowsOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { pasteAimAtBead, type PasteStamp } from '../../domain/selection'
+import { mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
 import type { Tool } from '../../domain/tool'
 
 /** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the
@@ -30,6 +31,8 @@ export interface CanvasPointerDeps {
   pasteAt: (cell: GridPosition | undefined) => boolean
   /** Pick color from canvas (ticket 398): true when it is on and took this press. */
   pickColorAt: (row: number, column: number, layer?: Layer) => boolean
+  /** The Mirror setting (ticket 0703): the hover preview shows every counterpart of the hovered bead. */
+  mirror: () => MirrorSetting
 }
 
 /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0020): hover preview and
@@ -47,10 +50,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (tool === 'piece') {
       return []
     }
+    // Paste's preview lists its counterparts itself (useSelectionGesture).
     if (tool === 'select') {
       return deps.pastePreviewCells(project, hovered)
     }
-    return [hovered]
+    return mirroredOnCanvas(project, deps.mirror(), [hovered])
   }
 
   // The hover preview: the block Paste would stamp (ticket 31), or the cell Paint/Fill would touch (tickets 22/23). Beads in rows already woven are left out (ticket 33).

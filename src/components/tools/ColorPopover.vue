@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePalette, useRemoveAllAddedColors } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { usePillPopoverPlacement } from '../../composables/tools/usePillPopoverPlacement'
 import { isAddedColorId } from '../../domain/palette'
-import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
+import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 import { PICK_CLOSE } from '../shell/pickContext'
@@ -32,7 +33,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
-const style = ref<Record<string, string>>({ visibility: 'hidden' })
 const closeAction = controlAction('close')
 const editAction = controlAction('edit-palette')
 const removeAllAction = controlAction('remove-all-colors')
@@ -55,41 +55,7 @@ useOverlayLayer({
   isOpener: (target) => props.tile?.contains(target) ?? false,
 })
 
-/** The place beside the pill, in screen pixels: measured once the popover has its real size, and again when the
- * window changes. */
-function place() {
-  const root = rootEl.value
-  const tile = props.tile?.getBoundingClientRect()
-  const pill = props.pill?.getBoundingClientRect()
-  if (!root || !tile || !pill) return
-  const css = getComputedStyle(document.documentElement)
-  const px = (name: string) => parseFloat(css.getPropertyValue(name)) * (css.getPropertyValue(name).endsWith('rem') ? parseFloat(css.fontSize) : 1)
-  const { left, top } = popoverPlacement(
-    tile,
-    pill,
-    { width: root.offsetWidth, height: root.offsetHeight },
-    props.position,
-    { width: window.innerWidth, height: window.innerHeight },
-    px('--pill-gap'),
-    px('--float-edge'),
-  )
-  style.value = { left: `${left}px`, top: `${top}px` }
-}
-
-let resizeObserver: ResizeObserver | undefined
-
-onMounted(async () => {
-  await nextTick()
-  place()
-  window.addEventListener('resize', place)
-  // The Custom color picker opens inside the popover and grows it: place it again so it stays whole on screen.
-  resizeObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(place)
-  if (rootEl.value) resizeObserver?.observe(rootEl.value)
-})
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect()
-  window.removeEventListener('resize', place)
-})
+const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: props.pill, position: props.position }))
 </script>
 
 <template>

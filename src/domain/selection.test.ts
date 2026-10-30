@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { MIRROR_OFF, type MirrorSetting } from './mirror'
 import {
   allBeadsSelection,
   selectAllSelection,
@@ -219,6 +220,16 @@ describe('stampedCells and pasteOnLayer', () => {
     const result = pasteOnLayer(target, motif, { row: 0, column: 0 })
 
     expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbbbb'])
+  })
+
+  it('lands the block at its counterparts too under Mirror, a source bead winning over a counterpart (ticket 0703)', () => {
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, BLUE]], anchor: { row: 0, column: 0 } }
+    const target = painted(['......'])
+    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+
+    expect(picture(pasteOnLayer(target, motif, { row: 0, column: 0 }, mirror))).toEqual(['rb..br'])
+    expect(picture(pasteOnLayer(target, motif, { row: 0, column: 1 }, mirror))).toEqual(['.rbbr.'])
+    expect(picture(pasteOnLayer(target, motif, { row: 0, column: 2 }, mirror))).toEqual(['..rb..'])
   })
 
   it('clips what runs past the grid’s edge', () => {
