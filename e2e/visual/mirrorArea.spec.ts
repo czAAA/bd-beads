@@ -2,10 +2,9 @@ import { expect, test } from '@playwright/test'
 import { gridBox, openApp, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 
-/** Mirror's Area on a peyote Frame (ticket 0710, MirrorPopover card): Select area, a drag over the beads, and the Area
- * drawn as the Selection (the marker rectangle round the cells, the peyote half-bead included, the eight handles) with
- * the Left–right Axis inside it; and, while picking, the keep-out margin as the whole Frame's target under the pointer
- * (the sheet tinted, its edge solid, the dashed preview round the Frame, MarginSheet card). */
+/** Mirror's Area on a peyote Frame (ticket 0710, MirrorPopover card): a drag over the beads, then the Area drawn as the
+ * Selection (the marker rectangle, the eight handles) with the Left–right Axis inside it; and, while picking, the margin
+ * as the whole Frame's target under the pointer (tinted, its edge solid, the dashed preview, MarginSheet card). */
 test.describe('Mirror\'s Area', () => {
   test.use({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
 
