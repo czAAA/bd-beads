@@ -26,7 +26,7 @@ About half the air of v18: every row is `panel-row` (28px; `panel-row-touch`, 36
 3. **Help:** Keyboard shortcuts (the key `?` as its value; only when a keyboard is attached), Homepage.
 4. **About:** Source code (`external`; opens the repository in a new tab; the AGPL-3.0 network clause needs a hosted copy to link to its source, ticket 269), **Buy me a coffee** (the `coffee` icon in `accent-strong`, `external`; a deliberate second accent mark in the panel; the row is absent while the app has no link for it), and Version (a non-interactive row, indented to the label column, the number in `meta`).
 
-On the Homepage (ticket 540) the panel leaves out Projects and the editor-only pickers, and shows its Homepage item as the current page.
+On the Homepage (ticket 540) the panel leaves out New Project and the editor-only pickers, and shows its Homepage item as the current page; while the library is not empty its Projects section holds the Projects library row alone, pushing the same subpanel (ticket 0716).
 
 ## Projects library (subpanel)
 
@@ -37,6 +37,7 @@ Pushed by the Projects library row, under the header "Projects library" (Back ic
 - **Delete all projects** (`danger`) in the pinned footer (1px `panel-rule` above). Its confirmation is unchanged ("Delete all Projects?" …).
 - Empty: Export all projects and Delete all projects are disabled with their Tooltips, and the list's place says "No projects yet" over "Projects you make are kept on this device. Import a .openbeads file to bring one in."
 - × Remove asks the existing single-project confirmation.
+- A **sealed** Project (over the size gate, or the one that didn't open last time, ticket 0716) is never decoded for its row: its thumbnail slot is a plain `board` square with the `library` icon in `muted`, the second line its bead count ("31 771 464 beads"), and at the right its last save short ("Oct 30"), its Tooltip both dates ("made Oct 1, 2026 · saved Oct 30, 2026"). A project whose Canvas has more than 250,000 beads shows "…" for its Pieces count (Tooltip "Counting pieces") until idle time has counted them, and "too big to count" over the size gate.
 
 ## Subpanel (spec 0478)
 
