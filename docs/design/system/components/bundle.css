@@ -146,6 +146,15 @@
   --margin-edit-width: 260px;
   --margin-title-name: 600 0.75rem/1rem var(--font-sans);
   --margin-legend-letter: 600 0.5rem/1 var(--font-sans);
+  --schema-tag-height: 22px;
+  --schema-tag-end: 8px;
+  --schema-tag-hole: 3.2px;
+  --schema-tag-tilt: 10deg;
+  --schema-tag-drop: 24px;
+  --schema-tag-name: 600 0.6875rem/1.375rem var(--font-sans);
+  --schema-card-width: 236px;
+  --schema-card-cut: 20px;
+  --schema-card-hole: 8px;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
 [data-theme="contrast"] { --underline-width: 3px; }
@@ -905,3 +914,26 @@ body {
 .qs-stop:disabled b, .qs-stop.is-disabled b, .qs-stop:disabled small, .qs-stop.is-disabled small { color: var(--faint); }
 .qs-note { margin: 0; font: 400 12px/16px var(--font-sans); color: var(--muted); }
 [data-theme="contrast"] .qs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
+
+/* Ticket 0721: an unframed Schema's name as a hang tag (SchemaTag card) */
+.bb-schema-thread { position: absolute; overflow: visible; pointer-events: none; fill: none; stroke: var(--muted); stroke-width: 1px; }
+.bb-schema-thread circle { fill: var(--ink); stroke: none; }
+.bb-schema-tag { position: absolute; display: inline-flex; align-items: center; height: var(--schema-tag-height); box-sizing: border-box; padding: 0 8px 0 calc(var(--schema-tag-end) + 3px); border: 0; border-radius: 0 var(--radius-xs) var(--radius-xs) 0; background: var(--ink); color: var(--canvas); font: var(--schema-tag-name); white-space: nowrap; cursor: pointer; transform: rotate(var(--schema-tag-tilt)); transform-origin: calc(var(--schema-tag-end) / 2 + 0.5px) 50%; transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out); clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 16px, 0 6px); -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%); }
+.bb-schema-tag--left { transform: rotate(calc(var(--schema-tag-tilt) * -1)); }
+.bb-schema-tag:hover { transform: none; background: var(--body); }
+.bb-schema-tag:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.bb-schema-tag--dots { gap: 2px; padding-right: 7px; }
+.bb-schema-tag--dots > i { width: 3px; height: 3px; border-radius: var(--radius-full); background: currentColor; }
+@media (prefers-reduced-motion: reduce) { .bb-schema-tag { transition: none; } }
+/* The paper tag: the outer layer is the 1px edge, the inner one the paper, both cut at the top-right and holed. */
+.bb-schema-card { position: absolute; width: var(--schema-card-width); box-sizing: border-box; padding: 1px; background: var(--line-strong); border-radius: var(--radius-lg); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut)) 0, 100% var(--schema-card-cut), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2) at calc(100% - 18px) 18px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2) at calc(100% - 18px) 18px, transparent 98%, #000 100%); }
+[data-theme="contrast"] .bb-schema-card { padding: var(--border-emphasis); }
+.bb-schema-card-paper { display: flex; flex-direction: column; gap: 8px; min-height: 160px; box-sizing: border-box; padding: 11px 13px 13px; background: var(--elevated); border-radius: calc(var(--radius-lg) - 1px); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut) + 0.4px) 0, 100% calc(var(--schema-card-cut) - 0.4px), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); }
+.bb-schema-card-label { font: var(--type-meta-tiny); color: var(--muted); text-transform: lowercase; }
+.bb-schema-card-name { margin: 0; padding-right: 46px; font: 600 14px/20px var(--font-sans); color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.bb-schema-card-meta { display: flex; flex-direction: column; gap: 2px; font: var(--type-meta-small); color: var(--muted); text-transform: lowercase; }
+.bb-schema-card-swatches { display: inline-flex; margin-right: 6px; vertical-align: -1px; }
+.bb-schema-card-swatches > i { width: 10px; height: 10px; border-radius: var(--radius-xs); }
+.bb-schema-card-swatches > i + i { margin-left: -4px; }
+.bb-schema-card-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.bb-schema-card-actions .bb-schema-card-close { margin-left: auto; }
