@@ -47,11 +47,6 @@ export interface Translations {
       size: string
       choose: string
     }
-    beadShapeLabel: string
-    beadShapeSymmetric: string
-    beadShapeReal: string
-    beadShapeSymmetricTip: string
-    beadShapeRealTip: string
     techniqueLabel: string
     widthLabel: string
     heightLabel: string
@@ -597,7 +592,6 @@ export interface Translations {
     wherePartsAre: string
     partsNote: string
     rowByRowOn: string
-    shape: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string

@@ -35,7 +35,6 @@ const {
   onRequestDeleteAllProjects,
   onSetTechnique,
   onSetWeaveSetting,
-  onSetBeadShape,
   onSetBackground,
   onFitFrame,
   onSelectFrame,
@@ -100,7 +99,6 @@ const chosenStarter = ref<StarterId>()
       @set-settings="onSetFrameSettings"
       @set-technique="onSetTechnique"
       @set-weave-setting="onSetWeaveSetting"
-      @set-bead-shape="onSetBeadShape"
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
     />
@@ -170,7 +168,6 @@ const chosenStarter = ref<StarterId>()
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
       @set-weave-setting="onSetWeaveSetting"
-      @set-bead-shape="onSetBeadShape"
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"

@@ -11,7 +11,7 @@ beforeEach(() => {
 
 const bead = BEAD_CATALOG[0]!
 const mountSection = (props: Record<string, unknown> = {}) =>
-  mount(BeadSection, { props: { bead, beadShape: 'symmetric', candidates: offeredBeads(), 'onUpdate:beadShape': () => {}, ...props } })
+  mount(BeadSection, { props: { bead, candidates: offeredBeads(), ...props } })
 
 describe('BeadSection (ticket 568)', () => {
   it('shows the Bead it is given as Brand, Type and Size', () => {
@@ -31,14 +31,6 @@ describe('BeadSection (ticket 568)', () => {
     expect(panelOptionShown(wrapper, 'bead-brand')).toBe(bead.brand.name)
     await wrapper.setProps({ bead: other })
     expect(panelOptionShown(wrapper, 'bead-brand')).toBe(other.brand.name)
-  })
-
-  it('offers Symmetric and Real and reports the shape chosen', async () => {
-    const wrapper = mountSection()
-
-    await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
-
-    expect(wrapper.emitted('update:beadShape')).toEqual([['real']])
   })
 
   it('shows an out-of-date copy "(as saved)" beside the catalog’s Bead of its id, and asks for that one (ticket 534)', async () => {

@@ -9,7 +9,7 @@ import { type Layered, frameOf } from './layerRecord'
 // A Frame's orientation (ADR 0079, ticket 0667): Rotate Frame turns the Frame on the Canvas like a sheet of A4 on an A1.
 // Its beads keep their own rows and columns; what turns is the rectangle it covers on the Canvas, which this says.
 
-/** A Frame as what it covers is worked out from: its own size, its Frame shape and turn, and its Weave with the Bead shape's
+/** A Frame as what it covers is worked out from: its own size, its Frame shape and turn, and its Weave with the Bead's
  * cell. */
 type Oriented = Pick<FrameSheet, 'rows' | 'columns' | 'shape' | 'quarterTurns'> & Weave
 

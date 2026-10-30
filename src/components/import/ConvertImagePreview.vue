@@ -56,7 +56,7 @@ const viewZoom = ref(1)
 const project = computed(() => wizard.drawnProject.value)
 const lattice = computed(() => wizard.lattice.value)
 const grid = computed(() => wizard.previewGrid.value)
-const cell = computed(() => beadCell(wizard.bead.value, wizard.beadShape.value))
+const cell = computed(() => beadCell(wizard.bead.value))
 const space = computed(() => project.value && spaceOf(project.value, false))
 
 /** The scale at which the whole lattice fits the pane: only the drawing scales. */

@@ -264,7 +264,7 @@ const { positionMarkBackground } = vi.hoisted(() => ({
 vi.mock('../rendering/positionMarks', () => ({ positionMarkBackground }))
 
 describe('HomePage background', () => {
-  it("draws the Canvas's empty positions of a Delica 11/0 Symmetric peyote Project, not the loom's square grid", () => {
+  it("draws the Canvas's empty positions of a Delica 11/0 peyote Project, not the loom's square grid", () => {
     page()
     expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote' }))
   })

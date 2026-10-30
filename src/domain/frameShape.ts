@@ -253,7 +253,7 @@ function laidLayout(frame: Laid): FrameLayout {
 }
 
 /** A Frame's Layer geometry (ADR 0078): what it lays its beads out by, its own rows or its shape's layout. `frame`
- * carries the Bead shape's cell, as the Frame is drawn. */
+ * carries the Bead's cell, as the Frame is drawn. */
 export function frameGeometry(frame: ShapedSheet): LayerGeometry {
   return rulesOf(frame).geometry(frame)
 }
