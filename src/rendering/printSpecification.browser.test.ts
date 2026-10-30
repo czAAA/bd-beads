@@ -37,7 +37,7 @@ describe('Specification page', () => {
     context.font = font('400', 6.5, MONO)
     const width = (value: string) => context.measureText(value.toLowerCase()).width
     const { print } = messages
-    for (const label of [print.madeBy, print.technique, print.bead, print.shape, print.size, print.estimatedSize, print.factBeads, print.chartStyleFact, print.pagesFact]) {
+    for (const label of [print.madeBy, print.technique, print.bead, print.size, print.estimatedSize, print.factBeads, print.chartStyleFact, print.pagesFact]) {
       expect(width(label), label).toBeLessThanOrEqual(SPEC_LABEL_ROOM)
     }
     for (const head of [print.columnLetter, print.columnColor, print.columnCode, print.columnBeads, print.columnGrams, print.columnToBuy]) {

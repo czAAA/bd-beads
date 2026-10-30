@@ -51,8 +51,8 @@ const scrollEl = ref<HTMLElement>()
 const scrollSize = useElementSize(scrollEl)
 const pageWidth = computed(() => (scrollSize.width.value || window.innerWidth) / (zoom.percent.value / 100))
 const canvasBackground = useCanvasBackground()
-// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project in the Symmetric bead
-// shape worked in peyote (each row shifted half a bead), outlined in the theme's Position mark color, sized by the zoom.
+// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project
+// worked in peyote (each row shifted half a bead), outlined in the theme's Position mark color, sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   const zoomScale = zoom.percent.value / 100

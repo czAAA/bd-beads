@@ -147,7 +147,6 @@ function drawFacts(context: CanvasRenderingContext2D, words: PrintText, plan: Pr
     ...(words.maker ? ([[labels.madeBy, headerMaker(words.maker)]] as [string, string][]) : []),
     [labels.technique, words.techniqueWord],
     [labels.bead, words.bead],
-    [labels.shape, words.shape],
     [labels.size, words.size],
     ...(words.estimatedSize ? ([[labels.estimatedSize, words.estimatedSize]] as [string, string][]) : []),
     [labels.factBeads, beads],

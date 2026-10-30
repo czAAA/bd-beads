@@ -5,7 +5,6 @@ import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { createProject } from '../../domain/createProject'
-import { withBeadShape } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
 import { frameOf } from '../../domain/layerRecord'
 import { TECHNIQUES } from '../../domain/weave'
@@ -31,7 +30,7 @@ function mountPanel(props: Record<string, unknown> = {}) {
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   it('has the head, then the Canvas\'s Layer settings, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -55,21 +54,18 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const wrapper = mountPanel()
     await wrapper.get('[data-testid="canvas-technique"] button').trigger('click')
     await wrapper.get('[data-testid="canvas-technique"] [data-value="peyote"]').trigger('click')
-    await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
     await wrapper.get('[data-testid="bead-brand"] button').trigger('click')
     await wrapper.get('[data-testid="bead-brand"] [data-value="miyuki"]').trigger('click')
     await wrapper.get('[data-testid="canvas-section"] [data-testid="background-color-fog"]').trigger('click')
     expect(wrapper.emitted('set-technique')).toEqual([['canvas', 'peyote']])
-    expect(wrapper.emitted('set-bead-shape')).toEqual([['canvas', 'real']])
     expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe('canvas')
     expect(wrapper.emitted('set-background')).toEqual([['canvas', 4]])
   })
 
-  it('shows the Canvas\'s own Weave and Bead shape under a Frame woven otherwise (ticket 0670)', () => {
+  it('shows the Canvas\'s own Weave under a Frame woven otherwise (ticket 0670)', () => {
     const framed = withLayers(project, { frame: { ...frameOf(project)!, technique: 'peyote' as const } })
-    const wrapper = mountPanel({ project: withBeadShape(framed, 'frame', 'real') })
+    const wrapper = mountPanel({ project: framed })
     expect(wrapper.get('[data-testid="canvas-technique"] button').attributes('aria-label')).toBe('Technique: Loom')
-    expect(wrapper.get('[data-testid="bead-shape"] [aria-checked="true"]').attributes('data-value')).toBe('symmetric')
   })
 
   it('changes the Canvas\'s Technique while a Frame exists, every one offered, even once a Row progress pass is done', async () => {
