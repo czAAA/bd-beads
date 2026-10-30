@@ -33,7 +33,10 @@ const MOST_ROWS_TO_CARRY = 64
 
 function counted(beads: BeadMap, limit: number): Count {
   const known = counts.get(beads)
-  if (known && (known.exact || known.beads > limit)) return known
+  if (known && (known.exact || known.beads > limit)) {
+    lastCounted = { beads, count: known }
+    return known
+  }
   const carried = lastCounted && carriedCount(lastCounted.beads, lastCounted.count, beads)
   const count = carried && (carried.exact || carried.beads > limit) ? carried : countUpTo(beads, limit)
   counts.set(beads, count)
@@ -79,9 +82,12 @@ export function beadTotal(beads: BeadMap): number {
   return counted(beads, Infinity).beads
 }
 
-/** Records a count worked out elsewhere: decoding knows it from the stored runs (ticket 0716). */
+/** Records a count worked out elsewhere: decoding knows it from the stored runs (ticket 0716), so the first edit after
+ * is counted from it too (ticket 0731). */
 export function knownBeadCount(beads: BeadMap, count: number): void {
-  counts.set(beads, { beads: count, exact: true })
+  const known = { beads: count, exact: true }
+  counts.set(beads, known)
+  lastCounted = { beads, count: known }
 }
 
 /** Whether a layer's beads are too many to walk whole (more than PIECE_WALK_LIMIT). */

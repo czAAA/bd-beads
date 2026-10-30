@@ -3,7 +3,8 @@ import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
 import { beadsOfLayer, frameOf, pieceNamesOf } from '../domain/layerRecord'
 import { namedPieces, namedPiecesFrom, type NamedPiece } from '../domain/pieceNames'
-import { pieceAreasOf, type WalkedPieces } from '../domain/pieces'
+import { type WalkedPieces } from '../domain/pieces'
+import { pieceAreasOf } from '../domain/pieceAreas'
 import { beadsOver, SIZE_GATE_BEADS, tooManyToWalk } from '../domain/openingLimits'
 import { rowCycle, type Weave } from '../domain/weave'
 import type { RuledProject } from './rulers'
@@ -31,7 +32,7 @@ const NAMED_REACH = 1
 
 /** The Pieces to rule for `project`. Counted from its beads, except while a stroke is going on (ticket 0674): then
  * the last count is kept and the area or named Piece each changed bead touches grows to hold it (a bead touching none
- * starts an area of its own), so a stroke step costs its changed rows. The stroke's end counts again. */
+ * starts an area of its own), so a stroke step costs its changed rows. Its end counts again (carried, ticket 0731). */
 export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking, idleWalk }: { numbers: boolean; stroking: boolean; idleWalk?: IdleWalk }): RuledPieces {
   const weave = canvasWeave(project)
   const beads = beadsOfLayer(project, 'canvas')
