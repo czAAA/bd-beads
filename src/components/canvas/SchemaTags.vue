@@ -65,7 +65,7 @@ const tags = computed(() =>
   props.anchors.schemas
     .flatMap((schema) => {
       const key = keyOf(schema)
-      const placed = tagPlacement(schema.box, props.anchors.viewport)
+      const placed = tagPlacement(schema.box, props.anchors.viewport, props.anchors.lift)
       return placed ? [{ ...schema, key, placed, fits: !cut[key] }] : []
     })
     .sort((a, b) => a.placed.top - b.placed.top || a.placed.left - b.placed.left),
