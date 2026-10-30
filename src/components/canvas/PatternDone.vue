@@ -82,6 +82,8 @@ const px = (value: number) => `${value}px`
 </template>
 
 <style scoped>
+/* The sizes, durations and distances below are bundle.css's own `.bb-pattern-done-*` values (Motion section); only
+ * what varies by theme or is shared with the canvas is a named value. */
 .pattern-done {
   position: absolute;
   overflow: hidden;
