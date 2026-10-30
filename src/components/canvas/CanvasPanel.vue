@@ -47,6 +47,7 @@ const {
   canvasOrientation,
   twistPhase,
   selectionRefusals,
+  fillRefusals,
   activeTool,
   showRulers,
   stroking,
@@ -297,6 +298,7 @@ const drawingStyle = computed(() => {
               :mirror="mirrorSetting"
               :selection="selection"
               :selection-refusals="selectionRefusals"
+              :fill-refusals="fillRefusals"
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"

@@ -197,6 +197,18 @@ describe('ConvertImageWizard setup', () => {
     expect(options(withCatalog.wrapper)).toEqual(['bead-colors', 'default', 'exact'])
     expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
   })
+
+  it('remaps a found color through the Bead colors list with its filter rows (ticket 0713)', async () => {
+    const { wrapper } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    const row = wrapper.get('[data-picture-hex="#e63746"]')
+
+    await row.get('[data-testid="found-color-remap"]').trigger('click')
+    await row.get('[data-testid="found-color-bead-colors"]').trigger('click')
+
+    expect(row.findAll('[data-testid="bead-colors-family"]').map((button) => button.attributes('aria-label'))).toEqual(['Red, 1'])
+    expect(row.findAll('[data-testid="bead-colors-finish"]').map((button) => button.attributes('aria-label'))).toEqual(['Opaque, 1'])
+  })
 })
 
 describe('ConvertImageWizard Create Project', () => {
