@@ -32,7 +32,7 @@ export interface TitleCorner {
   left: boolean
 }
 
-/** The margin sheet's corner on screen that holds its title block (ticket 0726): the Frame's own bottom-right as it lies
+/** The margin sheet's corner on screen that holds its title block (ticket 0728): the Frame's own bottom-right as it lies
  * on the upright Canvas, wherever the Canvas's quarter turn brings it. Read from the drawn view's turn of the grid. */
 export function titleBlockCorner(surface: Pick<SurfaceView, 'gridDirection'>): TitleCorner {
   const toward = surface.gridDirection(1, 1)

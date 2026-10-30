@@ -20,7 +20,7 @@ describe('the margin sheet\'s form by its band (MarginSheet card, Zoom forms, ti
   })
 })
 
-describe('the title block\'s corner as the Canvas turns (ticket 0726)', () => {
+describe('the title block\'s corner as the Canvas turns (ticket 0728)', () => {
   it('is the Frame\'s own bottom-right at each quarter turn: bottom-right, bottom-left, top-left, top-right on screen', () => {
     const at = (rotation: 0 | 90 | 180 | 270) => titleBlockCorner(surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation, zoom: 1, viewport: { width: 400, height: 400 } }))
     expect([0, 90, 180, 270].map((rotation) => at(rotation as 0 | 90 | 180 | 270))).toEqual([

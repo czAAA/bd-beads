@@ -298,7 +298,7 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
   })
 })
 
-describe('the title block on a turned Canvas (ticket 0726)', () => {
+describe('the title block on a turned Canvas (ticket 0728)', () => {
   const at = (titleCorner: { top: boolean; left: boolean }, zoom = 0.9) => styleOf(mountSheet({ anchor: { ...anchorAt(zoom), titleCorner } }), 'margin-title')
 
   it('sits inside the border at the Frame\'s own bottom-right corner, wherever the turn puts it, drawn from that corner', () => {

@@ -450,7 +450,7 @@ export function letterInk(color: string): string {
 
 /** The Swatch letter centred on a bead (ticket 0573): white on a dark bead, `ink` on a light one, judged on the color
  * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. It reads
- * upright on screen however the Canvas, the Frame or the bead is turned (ticket 0726). */
+ * upright on screen however the Canvas, the Frame or the bead is turned (ticket 0728). */
 export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
   const shown = dimmed ? finishedColor(color, theme) : color
   const side = Math.min(width, height)
