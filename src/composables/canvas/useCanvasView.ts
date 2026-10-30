@@ -146,6 +146,16 @@ export function useCanvasView(
     return cellAt({ x: viewport.value.width / 2, y: viewport.value.height / 2 })
   }
 
+  /** The point of the Canvas, in its grid px, under the middle of the view (ticket 0704: where a Mirror Axis goes
+   * when it is turned on), or nothing until the area is measured. */
+  function visibleCentrePx(): Scroll | undefined {
+    const project = currentProject()
+    if (!project || !measured()) {
+      return undefined
+    }
+    return surfaceOf(project).pointToGrid(leaning.value.toView({ x: viewport.value.width / 2, y: viewport.value.height / 2 }))
+  }
+
   /** The Canvas positions on screen (Fill reach, ticket 0715): the block the renderer counts as in view of the drawing
    * as it stands, its larger square while the Canvas leans; nothing until the area is measured. */
   function canvasOnScreen(): Rect | undefined {
@@ -279,6 +289,7 @@ export function useCanvasView(
     scrollBy,
     centreOn,
     visibleCentre,
+    visibleCentrePx,
     canvasOnScreen,
     cellAt,
     isAtFit,

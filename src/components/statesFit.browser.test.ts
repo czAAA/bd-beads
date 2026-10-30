@@ -61,6 +61,21 @@ const MirrorPopoverHost = defineComponent({
   },
 })
 
+/** The same popover on the open Canvas (ticket 0704): a straight Axis on in Repeat and no Frame, so the Canvas's
+ * Note shows in place of the Steppers. */
+const MirrorPopoverOnCanvasHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true }),
+      ])
+  },
+})
+
 /** The app's drop look, a picture being dragged over it. */
 const PictureDragged = defineComponent({
   setup() {
@@ -141,6 +156,7 @@ const MarginColorPopoverHost = defineComponent({
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
+  ['MirrorPopover on the Canvas', MirrorPopoverOnCanvasHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],

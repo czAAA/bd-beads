@@ -86,6 +86,8 @@ export const ru: Translations = {
     moreAxes: 'Больше осей',
     turnAxisOn: 'Включите ось.',
     close: 'Закрыть',
+    dragHandle: 'Перетащите ручку на оси, чтобы сдвинуть её.',
+    repeatNeedsArea: 'Повтор на холсте работает только внутри области.',
     copyToCounterparts: 'Скопировать бусины фрагмента на их отражения.',
     announceSelectionMirrored: 'Фрагмент отражён',
     droppedMessage: {

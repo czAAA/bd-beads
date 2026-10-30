@@ -87,6 +87,8 @@ export const be: Translations = {
     moreAxes: 'Больш восей',
     turnAxisOn: 'Уключыце вось.',
     close: 'Закрыць',
+    dragHandle: 'Перацягніце ручку на восі, каб зрушыць яе.',
+    repeatNeedsArea: 'Паўтор на палатне працуе толькі ўнутры вобласці.',
     copyToCounterparts: 'Скапіяваць пацеркі фрагмента на іх адлюстраванні.',
     announceSelectionMirrored: 'Фрагмент адлюстраваны',
     droppedMessage: {

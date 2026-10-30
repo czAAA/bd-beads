@@ -1,8 +1,8 @@
 import { ref } from 'vue'
-import { layerAt, onLayer, type Layer } from '../../domain/layers'
+import { layerAt, onLayer, type Layer, type OnLayerOptions } from '../../domain/layers'
 import { fillArea, isFillRefusal, type FillRefusal } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
-import { counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
+import { canvasMirrors, counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
 import { changedPositions } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
@@ -80,11 +80,19 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       return
     }
     deps.edit.strokeStep(
-      ...landing.map((cell) => (project: Project) =>
+      ...landing.map((cell) => (project: Project) => {
+        const sources = [{ row: cell.row, column: cell.column }]
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), [local({ row: cell.row, column: cell.column })]).positions, color)),
-      ),
+        return onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), sources.map(local)).positions, color), counterpartsThrough(project, () => sources))
+      }),
     )
+  }
+
+  /** How a Canvas command treats the Frame's footprint while the Canvas mirrors (ticket 0704, spec 0702's Edges): a
+   * counterpart lands there, hidden; the command's own sources, and everything otherwise, the Frame keeps untouched. */
+  function counterpartsThrough(project: Project, sources: () => readonly GridPosition[]): OnLayerOptions {
+    if (!canvasMirrors(project, deps.mirror())) return {}
+    return { underFrame: (position) => !sources().some((source) => source.row === position.row && source.column === position.column) }
   }
 
   /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke. */
@@ -97,18 +105,23 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
       let refused: FillRefusal | undefined
-      deps.edit.edit('drawing', (current) => onLayer(current, layer, (sheet, local) => {
-        const at = local({ row, column })
-        const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen() })
-        if (isFillRefusal(filled)) {
-          // Refused, it lands nowhere, counterparts included: the beads as they were leave no Undo step, nothing saved.
-          refused = filled
-          return sheet.beads
-        }
-        // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
-        if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
-        return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), changedPositions(sheet.beads, filled)).positions, color)
-      }))
+      deps.edit.edit('drawing', (current) => {
+        /** What the flood itself changed: the sources, which stay clear of the Frame. */
+        let flooded: GridPosition[] = []
+        return onLayer(current, layer, (sheet, local) => {
+          const at = local({ row, column })
+          const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen() })
+          if (isFillRefusal(filled)) {
+            // Refused, it lands nowhere, counterparts included: the beads as they were leave no Undo step, nothing saved.
+            refused = filled
+            return sheet.beads
+          }
+          // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
+          if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
+          flooded = changedPositions(sheet.beads, filled)
+          return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), flooded).positions, color)
+        }, counterpartsThrough(current, () => flooded))
+      })
       if (refused) {
         fillRefusals.value += 1
         const t = deps.messages().tools

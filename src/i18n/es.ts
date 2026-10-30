@@ -86,6 +86,8 @@ export const es: Translations = {
     moreAxes: 'Más ejes',
     turnAxisOn: 'Activa un eje.',
     close: 'Cerrar',
+    dragHandle: 'Arrastra el tirador del eje para moverlo.',
+    repeatNeedsArea: 'Repetir en el lienzo necesita un área.',
     copyToCounterparts: 'Copia las cuentas del fragmento a sus reflejos.',
     announceSelectionMirrored: 'Fragmento reflejado',
     droppedMessage: {
