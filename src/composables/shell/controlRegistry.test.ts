@@ -94,11 +94,13 @@ describe('the control registry', () => {
     expect(controlAction('crop-topLeft').name(en)).toBe('Crop: top-left corner')
   })
 
-  it('gives Clear no key, and Del, Shift+Del and Shift+R each their own action', () => {
+  it('gives Clear no key, and Del, Shift+Del and Shift+R each their own action, Backspace standing in for Del', () => {
     const idsFor = (key: string, shift: boolean) =>
-      CONTROLS.filter((c) => c.chords.some((chord) => chord.key === key && !!chord.shift === shift && !chord.mod)).map((c) => c.id)
+      CONTROLS.filter((c) => c.chords.some((chord) => [chord.key].flat().includes(key) && !!chord.shift === shift && !chord.mod)).map((c) => c.id)
     expect(idsFor('Delete', false)).toEqual(['empty-selection'])
+    expect(idsFor('Backspace', false)).toEqual(['empty-selection'])
     expect(idsFor('Delete', true)).toEqual(['remove-line'])
+    expect(idsFor('Backspace', true)).toEqual(['remove-line'])
     expect(idsFor('r', true)).toEqual(['rotate'])
     expect(CONTROLS.find((control) => control.id === 'clear')?.chords).toEqual([])
   })

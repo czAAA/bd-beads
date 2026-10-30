@@ -132,27 +132,27 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('Delete empties the Selection and does nothing without one, never picking the eraser', () => {
+  it.each(['Delete', 'Backspace'])('%s empties the Selection and does nothing without one, never picking the eraser', (key) => {
     const { deps, wrapper } = mountTable({ activeTool: () => 'select', hasSelection: () => true })
-    press({ key: 'Delete' })
+    press({ key })
     expect(deps.onClearSelection).toHaveBeenCalledTimes(1)
     expect(deps.onRemoveSelectedLine).not.toHaveBeenCalled()
     wrapper.unmount()
     const other = mountTable()
-    press({ key: 'Delete' })
+    press({ key })
     expect(other.deps.onClearSelection).not.toHaveBeenCalled()
     expect(other.deps.onSelectTool).not.toHaveBeenCalled()
     other.wrapper.unmount()
   })
 
-  it('Shift+Delete removes the selected row or column, and only when that applies', () => {
+  it.each(['Delete', 'Backspace'])('Shift+%s removes the selected row or column, and only when that applies', (key) => {
     const { deps, wrapper } = mountTable({ hasSelection: () => true })
-    press({ key: 'Delete', shiftKey: true })
+    press({ key, shiftKey: true })
     expect(deps.onRemoveSelectedLine).toHaveBeenCalledTimes(1)
     expect(deps.onClearSelection).not.toHaveBeenCalled()
     wrapper.unmount()
     const refused = mountTable({ canRemoveSelectedLine: () => false })
-    press({ key: 'Delete', shiftKey: true })
+    press({ key, shiftKey: true })
     expect(refused.deps.onRemoveSelectedLine).not.toHaveBeenCalled()
     refused.wrapper.unmount()
   })
@@ -289,13 +289,13 @@ describe('useAppShortcutTable', () => {
     const field = document.createElement('input')
     document.body.appendChild(field)
     for (const init of [
-      { key: '1' }, { key: 'r' }, { key: 'p' }, { key: 'd' }, { key: 'Delete' }, { key: 'Enter' }, { key: ' ' }, { key: '?' },
+      { key: '1' }, { key: 'r' }, { key: 'p' }, { key: 'd' }, { key: 'Delete' }, { key: 'Backspace' }, { key: 'Backspace', shiftKey: true }, { key: 'Enter' }, { key: ' ' }, { key: '?' },
       { key: 'c', ctrlKey: true }, { code: 'Digit2', shiftKey: true },
     ]) {
       field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
     }
     field.remove()
-    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowDirection, deps.onClearSelection, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
+    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowDirection, deps.onClearSelection, deps.onRemoveSelectedLine, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
     }
     wrapper.unmount()

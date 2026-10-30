@@ -193,7 +193,8 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'delete',
     name: (t) => t.contextBar.clearButton,
     group: 'tools',
-    chords: [{ key: 'Delete', label: 'Del' }],
+    // Backspace too: it is the key a Mac keyboard labels delete.
+    chords: [{ key: ['Delete', 'Backspace'], label: 'Del' }],
     run: (deps) => {
       if (deps.hasSelection()) deps.onClearSelection()
     },
@@ -397,7 +398,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps) => deps.canRemoveSelectedLine(),
     disabledBody: (t) => t.tooltips.removeLineDisabled,
     group: 'edit',
-    chords: [{ key: 'Delete', shift: true, label: 'Del' }],
+    chords: [{ key: ['Delete', 'Backspace'], shift: true, label: 'Del' }],
     run: (deps) => {
       if (deps.canRemoveSelectedLine()) deps.onRemoveSelectedLine()
     },
