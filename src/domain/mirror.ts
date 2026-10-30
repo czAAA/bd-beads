@@ -138,8 +138,8 @@ export interface CanvasAxes {
 }
 
 /** Where Radial turns about (ticket 0705): a row and column of the layer, both whole (on a position's centre) or both
- * halves (a corner between four positions). The index rule turns about it by row and column; the geometric rule about
- * its point. A Frame's is its own centre, the Canvas's its handle; an Area (ticket 0710) and a layout (0706) pass theirs. */
+ * halves (a corner between four). The index rule turns about it, the geometric rule about its point; a Frame's is its
+ * own centre, the Canvas's its handle, and an Area (ticket 0710) or a layout (0706) passes its own. */
 export interface RadialCentre {
   row: number
   column: number
@@ -159,7 +159,7 @@ export function snapCentre({ row, column }: RadialCentre): RadialCentre {
 }
 
 /** The Frame's own centre (spec 0702): on its middle position for an odd size, between four for an even one. */
-export function frameCentre(edge: Rect): RadialCentre {
+function frameCentre(edge: Rect): RadialCentre {
   return { row: edge.row + (edge.rows - 1) / 2, column: edge.column + (edge.columns - 1) / 2 }
 }
 
@@ -311,10 +311,9 @@ function straightImages(by: Record<MirrorDirection, IndexImages>): PositionImage
 // turns a fragment (ADR 0052), so peyote and brick keep their index and take the grid's shift; at 3 and 5 to 8
 // geometric, each image taken in one shot from the source bead's centre and the nearest bead taking it.
 
-/** The position a quarter turn clockwise about the centre sends a position to, by index. Rows and columns swap about
- * the centre; where the centre sits on a position one way and between two the other (a Frame whose rows and columns
- * differ in parity) the turn lands between positions and rounds as Rotate rounds a fragment, the same way for every
- * position, so four turns come back to the start. */
+/** The position a quarter turn clockwise about the centre sends a position to, by index: rows and columns swap about
+ * the centre. Where it sits on a position one way and between two the other (rows and columns of different parity)
+ * the turn lands between positions and rounds as Rotate rounds a fragment, so four turns still come back. */
 function quarterTurned({ row, column }: GridPosition, centre: RadialCentre): GridPosition {
   const skew = centre.row - centre.column
   const turned = { row: column + skew, column: centre.row + centre.column - row }

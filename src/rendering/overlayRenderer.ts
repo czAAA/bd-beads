@@ -554,9 +554,8 @@ const MIRROR_RING_WIDTH_PX = 2
 const MIRROR_AXIS_SOFT = 0.45
 
 /** Draws Radial about its centre (ticket 0705, MirrorPopover card), clipped to a box (the Frame's, or the view): in
- * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first vertical and full and the
- * others soft; in Repeat mode the Fold's sector rays from it, 360° over the Fold apart, the first straight up; then the
- * ring. In grid space, so the widths are divided by the zoom to stay screen px. */
+ * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first vertical and full, the
+ * others soft; in Repeat mode the Fold's rays from it, 360° over the Fold apart, the first straight up; then the ring. */
 function drawRadial(context: DrawingContext, centre: { x: number; y: number }, setting: MirrorSetting, box: Region, zoom: number, theme: ProjectTheme): void {
   const mirror = setting.mode === 'mirror'
   const step = (mirror ? Math.PI : 2 * Math.PI) / setting.fold
@@ -594,9 +593,8 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
 }
 
 /** Draws Mirror's Axis lines across a Frame on a grid (spec 0702): N axes cut it into N + 1 equal strips, the lines at
- * the strip boundaries of the box round its beads, in the Frame's own px, so they move with it; with Radial on, its
- * ring and lines about the Frame's centre instead (ticket 0705). Drawn in grid space, so the widths are divided by the
- * zoom to stay screen px. */
+ * the strip boundaries of the box round its beads, in the Frame's own px, so they move with it; with Radial on, its ring
+ * and lines about the Frame's centre instead (ticket 0705). In grid space: the widths are divided by the zoom. */
 function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, setting: MirrorSetting, zoom: number, theme: ProjectTheme): void {
   if (!isMirrorOn(setting)) return
   const box = gridBox(weave, frame)
