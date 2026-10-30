@@ -90,7 +90,8 @@ export function laidOnCanvas(project: Layered, beads: BeadMap, corner: GridPosit
   const scale = frameScale(project)
   const canvas = describeWeave(canvasWeave(project))
   // Its cells read square-cornered, so a middle on a round bead's corner still finds the bead whose cell holds it.
-  const frame = describeWeave(withCell(frameWeave(project), { aspect: describeWeave(frameWeave(project)).cellAspect, roundness: 0 }))
+  const held = frameWeave(project)
+  const frame = describeWeave(withCell(held, { aspect: describeWeave(held).cellAspect, roundness: 0 }))
   // Everything in Canvas bead widths, from the Canvas's top-left; the Frame's from its corner, `scale` times as wide.
   const origin = canvas.origin(corner, 1, canvas.cellAspect)
   const box = frame.blockBox(bounds, scale, scale * frame.cellAspect)

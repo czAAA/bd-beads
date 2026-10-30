@@ -20,7 +20,7 @@ The groups are 8px apart. The Bead and Background groups are named groups for sc
 
 - **What is woven is undone:** a Technique, its settings, a Bead and a shape's settings are each one Undo step.
 - **How it looks is not:** a Background is a view, saved with the Project and never Undo steps; Undo and Redo leave them as they are.
-- **On a Frame, only what moves positions waits** while a Row progress pass is done: the Technique picker, its steppers and the shape settings are off (`faint`), each with its reason in its Tooltip ("Rows are marked done. Remove the Frame to change the Technique.") and under the shape settings the `meta-small` line "Rows are marked done. Remove the frame to change the size.". The Bead, the Bead shape and the Background never wait. The Canvas's never waits.
+- **On a Frame, only what moves positions waits** while a Row progress pass is done: the Technique picker, its steppers and the shape settings are off (`faint`), each with its reason in its Tooltip ("Rows are marked done. Remove the Frame to change the Technique.") and under the shape settings the `meta-small` line "Rows are marked done. Remove the frame to change the size.". The Bead and the Background never wait. The Canvas's never waits.
 
 ## Folded summary
 
