@@ -142,7 +142,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
   for (const box of layout.boxes) {
-    strokeBoxLine(context, box, surface, theme)
+    if (box.outlined !== false) strokeBoxLine(context, box, surface, theme)
   }
   for (const dot of layout.dots) {
     drawDot(context, dot, layout.scale, theme)

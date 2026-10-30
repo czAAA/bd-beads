@@ -206,6 +206,10 @@ export const ru: Translations = {
     pieces: { one: '{count} часть', few: '{count} части', many: '{count} частей', other: '{count} части' },
     unnamedPieces: 'без названия: {count}',
     frameSize: 'Рамка {width} × {height} бусин',
+    tooBigToCount: 'слишком много, чтобы посчитать',
+    countingPieces: 'Считаем части',
+    beads: { one: '{count} бисеринка', few: '{count} бисеринки', many: '{count} бисеринок', other: '{count} бисеринки' },
+    sealedDates: 'создан {created} · сохранён {saved}',
   },
   starters: {
     title: 'Стартер',
@@ -293,7 +297,6 @@ export const ru: Translations = {
     tagline: 'сохраним. посчитаем. экспортируем',
     makeFirstProject: 'Сделать первый проект',
     openEditor: 'Открыть редактор',
-    projectsSaved: 'Проектов сохранено: {count}',
     whatsInside: 'Что внутри',
     previousFeature: 'Предыдущая возможность',
     nextFeature: 'Следующая возможность',
@@ -963,5 +966,14 @@ export const ru: Translations = {
   layerSettings: {
     frameHeading: 'Настройки',
     background: 'Фон',
+  },
+  opening: {
+    didNotOpen: 'Проект «{name}» не открылся в прошлый раз.',
+    removeButton: 'Удалить',
+    exportButton: 'Экспортировать',
+    largeTitle: 'Открыть «{name}»?',
+    largeMessage: '{count} млн бисеринок. Открытие может быть медленным или не удаться.',
+    openAnyway: 'Всё равно открыть',
+    cancelButton: 'Отмена',
   },
 }

@@ -206,6 +206,10 @@ export const pl: Translations = {
     pieces: { one: '{count} kawałek', few: '{count} kawałki', many: '{count} kawałków', other: '{count} kawałka' },
     unnamedPieces: 'bez nazwy: {count}',
     frameSize: 'Ramka {width} × {height} koralików',
+    tooBigToCount: 'za dużo, by policzyć',
+    countingPieces: 'Liczenie kawałków',
+    beads: { one: '{count} koralik', few: '{count} koraliki', many: '{count} koralików', other: '{count} koralika' },
+    sealedDates: 'utworzono {created} · zapisano {saved}',
   },
   starters: {
     title: 'Starter',
@@ -293,7 +297,6 @@ export const pl: Translations = {
     tagline: 'zapisz. policz. wyeksportuj',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
-    projectsSaved: 'Zapisane projekty: {count}',
     whatsInside: 'Co jest w środku',
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
@@ -963,5 +966,14 @@ export const pl: Translations = {
   layerSettings: {
     frameHeading: 'Ustawienia',
     background: 'Tło',
+  },
+  opening: {
+    didNotOpen: 'Projekt „{name}” nie otworzył się ostatnim razem.',
+    removeButton: 'Usuń',
+    exportButton: 'Eksportuj',
+    largeTitle: 'Otworzyć „{name}”?',
+    largeMessage: '{count} mln koralików. Otwieranie może być wolne lub się nie udać.',
+    openAnyway: 'Otwórz mimo to',
+    cancelButton: 'Anuluj',
   },
 }

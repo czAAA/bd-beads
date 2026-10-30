@@ -6,6 +6,9 @@ import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
 import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
+import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
+import { takeOpeningAddress } from './openingAddress'
+import type { OpeningAddress } from '../domain/openingAddress'
 
 // Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
 // cares about.
@@ -18,6 +21,10 @@ export interface Services {
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
   persistentStorage: PersistentStorage
+  /** The safe start's "opening Project X" note (ticket 0716). */
+  openingNote: OpeningNoteStore
+  /** What the address the editor opened at asks for, read once (ticket 0716). */
+  openingAddress: () => OpeningAddress
 }
 
 export const browserServices: Services = {
@@ -28,4 +35,6 @@ export const browserServices: Services = {
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,
+  openingNote: browserOpeningNote,
+  openingAddress: takeOpeningAddress,
 }

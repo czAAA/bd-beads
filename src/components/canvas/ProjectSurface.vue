@@ -15,6 +15,7 @@ import { marginForm, marginScale } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
+import { piecesWhenIdle } from '../../composables/canvas/idlePieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { surfaceView, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
@@ -82,6 +83,8 @@ const emit = defineEmits<SurfacePointerEvents & {
   /** The Frame's and its margin sheet's rectangles in the surface's pixels (tickets 417, 473, 0657), or none once the
    * sheet is out of view: where the sheet's tools and title block sit. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
+  /** Every bead in view was drawn (ticket 0716's safe start). */
+  drawn: []
 }>()
 
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
@@ -146,7 +149,9 @@ const surface = computed(() =>
 
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
  * until it ends (ticket 0674). */
-const pieces = computed<RuledPieces>((previous) => ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false }))
+const pieces = computed<RuledPieces>((previous) =>
+  ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false, idleWalk: (beads, weave, anchors) => piecesWhenIdle('rulers', beads, weave, anchors) }),
+)
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
 function rulerFontPx(): number {
@@ -271,7 +276,7 @@ const marginCue = useMarginCue(props)
 const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
-useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
+useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn') })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,

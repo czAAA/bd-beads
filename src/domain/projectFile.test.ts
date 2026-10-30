@@ -12,8 +12,11 @@ import {
   projectListFileName,
   serializeLibrary,
   serializeProject,
+  serializeStoredProject,
+  projectFileNameOf,
 } from './projectFile'
 import { createProject } from './createProject'
+import { encodeProject } from './projectEncoding'
 import { moveToRow, rowProgressOf } from './rowProgress'
 import { setPalette } from './paletteEdits'
 import { withWeave } from './weaveSwitch'
@@ -492,5 +495,19 @@ describe('the Bead copy in a file (ticket 534)', () => {
     delete file.projects[0]!.bead
 
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).bead).toEqual(beadCopy(findBead(canvasOf(decoratedProject()).beadId)!))
+  })
+})
+
+describe('a Project file made from the stored form (ticket 0716)', () => {
+  it('reads back as the Project the library stored, never decoded to write it', () => {
+    const project = decoratedProject()
+    const stored = JSON.stringify(encodeProject(project))
+
+    expect(parseProjectsFile(serializeStoredProject(stored)).projects).toEqual(parseProjectsFile(serializeProject(project)).projects)
+    expect(parseProjectsFile(serializeLibrary([makeProject('Kite')], [stored])).projects.map((each) => canvasOf(each).name)).toEqual(['Kite', 'Fox'])
+  })
+
+  it('is named from the Project\'s name alone', () => {
+    expect(projectFileNameOf('My scarf')).toBe('my-scarf_pr.openbeads')
   })
 })

@@ -41,9 +41,11 @@ export interface ProjectFileContents {
   projects: Project[]
 }
 
-function serialize(kind: ProjectFile['kind'], projects: Project[]): string {
-  const file: ProjectFile = { kind, version: FILE_VERSION, projects: projects.map(encodeProject) }
-  return JSON.stringify(file)
+/** A file's JSON from Projects and Projects already in their stored form (the library's version 6 encodes a Project as
+ * file version 13 does, ticket 0716), joined as strings so a sealed Project is never decoded. */
+function serialize(kind: ProjectFile['kind'], projects: Project[], stored: readonly string[] = []): string {
+  const encoded = [...projects.map((project) => JSON.stringify(encodeProject(project))), ...stored]
+  return `{"kind":${JSON.stringify(kind)},"version":${FILE_VERSION},"projects":[${encoded.join(',')}]}`
 }
 
 /** The open Project on its own, for sharing or backing it up (ticket 12), as the JSON a file wraps. */
@@ -53,8 +55,14 @@ export function serializeProject(project: Project): string {
 
 /** Every saved Project in one file, for moving a whole library to another device (ticket 15), as the JSON a file
  * wraps. */
-export function serializeLibrary(projects: Project[]): string {
-  return serialize(LIBRARY_FILE_KIND, projects)
+export function serializeLibrary(projects: Project[], stored: readonly string[] = []): string {
+  return serialize(LIBRARY_FILE_KIND, projects, stored)
+}
+
+/** A Project file made from a Project as the library stores it, without decoding it: the Export of a Project that
+ * didn't open, or a sealed one (ticket 0716). */
+export function serializeStoredProject(stored: string): string {
+  return serialize(PROJECT_FILE_KIND, [], [stored])
 }
 
 /** Project names are free text (and may be Russian), so keep the letters that survive a filename and drop the rest. */
@@ -67,7 +75,12 @@ function fileNameSlug(name: string): string {
 
 /** `my-scarf_pr.openbeads`, or `openbeads_pr.openbeads` when the name leaves nothing to write (ticket 392). */
 export function projectFileName(project: Project): string {
-  return `${fileNameSlug(projectNameOf(project)) || 'openbeads'}_pr.openbeads`
+  return projectFileNameOf(projectNameOf(project))
+}
+
+/** The same from a Project's name alone, for one that is not decoded (ticket 0716). */
+export function projectFileNameOf(name: string): string {
+  return `${fileNameSlug(name) || 'openbeads'}_pr.openbeads`
 }
 
 /** The name a picture or document of the Project is saved under (tickets 73, 74), e.g. `openbeads-my-scarf.png`: the
@@ -156,7 +169,7 @@ export function parseProjectsFile(text: string): ProjectFileContents {
  * 15). */
 export function importProjects(
   incoming: Project[],
-  existing: Project[],
+  existing: readonly Pick<Project, 'id'>[],
   newId: () => string = () => crypto.randomUUID(),
 ): Project[] {
   const taken = new Set(existing.map((project) => project.id))

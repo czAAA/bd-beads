@@ -1,4 +1,4 @@
-import { forEachBead, frameContains, type BeadMap, type Rect } from './canvas'
+import { frameContains, type BeadMap, type Rect } from './canvas'
 import { type GridPosition } from './grid'
 import { neighborsOf, rowCycle, type Weave } from './weave'
 
@@ -53,6 +53,84 @@ export function pieceBeadsAt(beads: BeadMap, weave: Weave, start: GridPosition):
 // Keyed by the shift's cycle, not the Technique: peyote and brick stitch with the same Drop touch alike.
 const cache = new WeakMap<BeadMap, Map<number, Piece[]>>()
 
+/** How many beads `piecesInSteps` visits between two yields: a few milliseconds of work (ticket 0716). */
+const BEADS_PER_STEP = 20_000
+
+/** What a walk over every bead finds: the Pieces, and the Piece each anchor asked about lies on. */
+export interface WalkedPieces {
+  pieces: Piece[]
+  /** By the anchor's numeric key; an anchor on no bead is not in it. */
+  anchored: Map<number, Piece>
+}
+
+function sortedNumbers(record: Record<number, unknown>): number[] {
+  const keys = Object.keys(record).map(Number)
+  for (let at = 1; at < keys.length; at += 1) {
+    if (keys[at]! < keys[at - 1]!) return keys.sort((a, b) => a - b)
+  }
+  return keys
+}
+
+/** Every Piece on the canvas worked out a step at a time (ticket 0716): it yields after each BEADS_PER_STEP beads, so
+ * a layer too big to walk at once is walked in idle time, and returns what `piecesOf` would, with the Piece each of
+ * `anchors` (the Piece names' beads) is on. The Pieces go into `piecesOf`'s cache. */
+export function* piecesInSteps(beads: BeadMap, weave: Weave, anchors: readonly GridPosition[] = []): Generator<undefined, WalkedPieces> {
+  const anchorKeys = new Set(anchors.map(numericKey))
+  const unvisited = new Set<number>()
+  let since = 0
+  const rows = sortedNumbers(beads)
+  for (const row of rows) {
+    for (const column of sortedNumbers(beads[row]!)) {
+      unvisited.add(numericKey({ row, column }))
+      if (++since >= BEADS_PER_STEP) {
+        since = 0
+        yield
+      }
+    }
+  }
+
+  const pieces: Piece[] = []
+  const anchoredAt = new Map<number, number>()
+  for (const row of rows) {
+    for (const column of sortedNumbers(beads[row]!)) {
+      if (!unvisited.has(numericKey({ row, column }))) continue
+      let top = row
+      let bottom = row
+      let left = column
+      let right = column
+      let count = 0
+      const stack: GridPosition[] = [{ row, column }]
+      unvisited.delete(numericKey({ row, column }))
+      while (stack.length > 0) {
+        const at = stack.pop()!
+        count += 1
+        if (anchorKeys.size > 0 && anchorKeys.has(numericKey(at))) anchoredAt.set(numericKey(at), pieces.length)
+        top = Math.min(top, at.row)
+        bottom = Math.max(bottom, at.row)
+        left = Math.min(left, at.column)
+        right = Math.max(right, at.column)
+        for (const next of touching(weave, at)) {
+          if (unvisited.delete(numericKey(next))) {
+            stack.push(next)
+          }
+        }
+        if (++since >= BEADS_PER_STEP) {
+          since = 0
+          yield
+        }
+      }
+      pieces.push({ row: top, column: left, rows: bottom - top + 1, columns: right - left + 1, beads: count })
+    }
+  }
+
+  const anchored = new Map([...anchoredAt].map(([key, index]) => [key, pieces[index]!]))
+  pieces.sort((a, b) => a.row - b.row || a.column - b.column)
+  const byCycle = cache.get(beads) ?? new Map<number, Piece[]>()
+  byCycle.set(rowCycle(weave), pieces)
+  cache.set(beads, byCycle)
+  return { pieces, anchored }
+}
+
 /** Every Piece on the canvas, top to bottom, left to right by its rectangle's top-left. The same beads give back the
  * same array, so a repaint that changes nothing costs nothing. */
 export function piecesOf(beads: BeadMap, weave: Weave): Piece[] {
@@ -60,45 +138,12 @@ export function piecesOf(beads: BeadMap, weave: Weave): Piece[] {
   if (known) {
     return known
   }
-
-  const unvisited = new Set<number>()
-  forEachBead(beads, (row, column) => unvisited.add(numericKey({ row, column })))
-
-  const pieces: Piece[] = []
-  forEachBead(beads, (row, column) => {
-    if (!unvisited.has(numericKey({ row, column }))) {
-      return
-    }
-    let top = row
-    let bottom = row
-    let left = column
-    let right = column
-    let count = 0
-    const stack: GridPosition[] = [{ row, column }]
-    unvisited.delete(numericKey({ row, column }))
-    while (stack.length > 0) {
-      const at = stack.pop()!
-      count += 1
-      top = Math.min(top, at.row)
-      bottom = Math.max(bottom, at.row)
-      left = Math.min(left, at.column)
-      right = Math.max(right, at.column)
-      for (const next of touching(weave, at)) {
-        if (unvisited.delete(numericKey(next))) {
-          stack.push(next)
-        }
-      }
-    }
-    pieces.push({ row: top, column: left, rows: bottom - top + 1, columns: right - left + 1, beads: count })
-  })
-
-  pieces.sort((a, b) => a.row - b.row || a.column - b.column)
-  const byCycle = cache.get(beads) ?? new Map<number, Piece[]>()
-  byCycle.set(rowCycle(weave), pieces)
-  cache.set(beads, byCycle)
-  return pieces
+  const walk = piecesInSteps(beads, weave)
+  for (;;) {
+    const step = walk.next()
+    if (step.done) return step.value.pieces
+  }
 }
-
 
 /** Whether two rectangles overlap, one lies inside the other, or they touch: a cell of one is in the other's cell
  * ring (side or corner, by the Technique's own neighbour geometry). */

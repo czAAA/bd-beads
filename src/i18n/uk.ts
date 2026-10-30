@@ -206,6 +206,10 @@ export const uk: Translations = {
     pieces: { one: '{count} частина', few: '{count} частини', many: '{count} частин', other: '{count} частини' },
     unnamedPieces: 'без назви: {count}',
     frameSize: 'Рамка {width} × {height} намистин',
+    tooBigToCount: 'забагато, щоб порахувати',
+    countingPieces: 'Рахуємо частини',
+    beads: { one: '{count} бісеринка', few: '{count} бісеринки', many: '{count} бісеринок', other: '{count} бісеринки' },
+    sealedDates: 'створено {created} · збережено {saved}',
   },
   starters: {
     title: 'Стартер',
@@ -293,7 +297,6 @@ export const uk: Translations = {
     tagline: 'збережемо. порахуємо. експортуємо',
     makeFirstProject: 'Створити перший проєкт',
     openEditor: 'Відкрити редактор',
-    projectsSaved: 'Проєктів збережено: {count}',
     whatsInside: 'Що всередині',
     previousFeature: 'Попередня можливість',
     nextFeature: 'Наступна можливість',
@@ -963,5 +966,14 @@ export const uk: Translations = {
   layerSettings: {
     frameHeading: 'Налаштування',
     background: 'Фон',
+  },
+  opening: {
+    didNotOpen: 'Проєкт «{name}» не відкрився минулого разу.',
+    removeButton: 'Видалити',
+    exportButton: 'Експортувати',
+    largeTitle: 'Відкрити «{name}»?',
+    largeMessage: '{count} млн бісеринок. Відкриття може бути повільним або не вдатися.',
+    openAnyway: 'Однаково відкрити',
+    cancelButton: 'Скасувати',
   },
 }

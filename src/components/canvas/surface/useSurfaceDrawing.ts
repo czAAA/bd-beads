@@ -67,6 +67,8 @@ export interface BeadLayerDeps {
   /** Whether the Row progress look is drawn (ticket 474). */
   marksShown: Ref<boolean>
   oncePerFrame: (draw: () => void) => () => void
+  /** Called after each draw of every bead in view: the safe start's first drawn frame (ticket 0716). */
+  onDrawn?: () => void
 }
 
 /** Whether two Projects differ only in the colors of their beads (`updatedAt` and `savedAt`, which every stroke step
@@ -159,7 +161,7 @@ function beadCost(project: Project): number {
 
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame }: BeadLayerDeps): void {
+export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn }: BeadLayerDeps): void {
   /** What the cells were last drawn from, to draw only what an edit changed. */
   let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
 
@@ -202,6 +204,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
 
     if (bands === undefined) {
       renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
+      onDrawn?.()
       return
     }
     for (const rows of bands) {
