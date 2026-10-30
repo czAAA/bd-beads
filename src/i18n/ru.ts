@@ -86,6 +86,14 @@ export const ru: Translations = {
     moreAxes: 'Больше осей',
     turnAxisOn: 'Включите ось.',
     close: 'Закрыть',
+    copyToCounterparts: 'Скопировать бусины фрагмента на их отражения.',
+    announceSelectionMirrored: 'Фрагмент отражён',
+    droppedMessage: {
+      one: '{count} отражению некуда было лечь, оно не поставлено.',
+      few: '{count} отражениям некуда было лечь, они не поставлены.',
+      many: '{count} отражениям некуда было лечь, они не поставлены.',
+      other: '{count} отражениям некуда было лечь, они не поставлены.',
+    },
   },
   colorNames: {
     black: 'Чёрный',

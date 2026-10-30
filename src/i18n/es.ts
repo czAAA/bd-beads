@@ -86,6 +86,13 @@ export const es: Translations = {
     moreAxes: 'Más ejes',
     turnAxisOn: 'Activa un eje.',
     close: 'Cerrar',
+    copyToCounterparts: 'Copia las cuentas del fragmento a sus reflejos.',
+    announceSelectionMirrored: 'Fragmento reflejado',
+    droppedMessage: {
+      one: '{count} reflejo no tenía dónde caer y no se colocó.',
+      many: '{count} de reflejos no tenían dónde caer y no se colocaron.',
+      other: '{count} reflejos no tenían dónde caer y no se colocaron.',
+    },
   },
   colorNames: {
     black: 'Negro',
