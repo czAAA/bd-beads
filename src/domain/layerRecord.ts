@@ -78,7 +78,7 @@ function heldLayer(project: Layered, layer: Layer): LayerFields | undefined {
   return layer === 'frame' ? frameOf(project) : canvasOf(project)
 }
 
-/** A layer's Weave, with the cell its Bead draws it in (ADR 0068, ticket 0724); none for a Frame the Project lacks.
+/** A layer's Weave, with the cell its Bead draws it in (ADR 0068); none for a Frame the Project lacks.
  * The Weave of `layerOf`. */
 export function weaveOfLayer(project: Layered, layer: 'canvas'): Weave
 export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined
@@ -221,8 +221,8 @@ export function beadsOfLayer(project: Layered, layer: Layer): BeadMap | undefine
   return heldLayer(project, layer)?.beads
 }
 
-/** A layer's Bead copy (ADR 0072, 0079); a Frame the Project lacks reads the Canvas's, so the
- * Frame's is the woven layer's. Those of `layerOf`. */
+/** A layer's Bead copy (ADR 0072, 0079); a Frame the Project lacks reads the Canvas's, so the Frame's is the woven
+ * layer's. That of `layerOf`. */
 export function beadOfLayer(project: Layered, layer: Layer): Pick<LayerRecord, 'bead'> {
   const held = heldLayer(project, layer) ?? canvasOf(project)
   return held.bead ? { bead: held.bead } : {}

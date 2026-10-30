@@ -139,7 +139,7 @@ export interface SurfaceViewInput {
   technique: Technique
   /** The Canvas's Technique settings (ticket 0625): its Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** How the Canvas's Bead is drawn (ADR 0068, ticket 0724); nothing for a Bead nobody knows. A Frame given without
+  /** How the Canvas's Bead is drawn (ADR 0068): its real cell; nothing is the Technique's own cell. A Frame given without
    * a cell of its own is drawn in it too. */
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from

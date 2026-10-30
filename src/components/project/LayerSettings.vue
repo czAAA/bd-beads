@@ -15,7 +15,7 @@ import TechniqueSection from './TechniqueSection.vue'
 
 // Layer settings (ADR 0079, ticket 0670; LayerSettings card): the one section that sets a layer, wherever a layer is
 // set (the New Project form, the Project panel's Canvas section, the Frame panel). Its Technique and that Technique's
-// settings, a Custom frame's shape settings, its Bead and its Background. It only asks; the caller works.
+// settings, a Custom frame's shape settings, its Bead, and its Background. It only asks; the caller works.
 const props = defineProps<{
   layer: Layer
   technique: Technique
@@ -107,12 +107,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
 
     <div class="layer-settings__group" role="group" :aria-labelledby="beadLabelId">
       <span :id="beadLabelId" class="layer-settings__label layer-settings__heading">{{ t.panels.project.bead }}</span>
-      <BeadSection
-        :bead="bead"
-        :candidates="candidates"
-        :outdated="outdated"
-        @pick="emit('pick-bead', $event)"
-      />
+      <BeadSection :bead="bead" :candidates="candidates" :outdated="outdated" @pick="emit('pick-bead', $event)" />
     </div>
 
     <div class="layer-settings__group" role="group" :aria-labelledby="backgroundLabelId">

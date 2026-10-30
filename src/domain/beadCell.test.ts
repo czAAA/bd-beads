@@ -1,20 +1,20 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadPitchMm, findBead } from './beads'
-import { canvasWeave } from './layerWeave'
+import { canvasWeave, frameWeave } from './layerWeave'
 import { createProject } from './createProject'
 import { normalizeProject } from './storedProject'
 import { projectCell } from './projectBead'
 import { parseProjectsFile, serializeProject } from './projectFile'
-import { beadCell, positionStep } from './weave'
-import { canvasOf } from './layerRecord'
-import { bareProject } from '../testUtils/layerFields'
+import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
+import { canvasOf, withLayer } from './layerRecord'
+import { bareProject, withLayers } from '../testUtils/layerFields'
 
 const delica = findBead('miyuki-delica-11-0')!
 const round = findBead('toho-round-11-0')!
 const cube = findBead('toho-cube-1.5mm')!
 
-describe('the Bead cell geometry (ticket 0724)', () => {
+describe('a Bead\'s cell (ADR 0068, ticket 0724)', () => {
   it('gives each catalog Bead its proportions: height over its pitch along the thread', () => {
     expect(beadCell(delica)!.aspect).toBeCloseTo(1.3 / 1.6)
     expect(beadCell(round)!.aspect).toBeCloseTo(2.2 / beadPitchMm(round))
@@ -29,32 +29,49 @@ describe('the Bead cell geometry (ticket 0724)', () => {
     expect(sharpCorner).toBeLessThan(pillCorner)
   })
 
+  it('leaves every Technique its own cell without a Bead', () => {
+    for (const technique of TECHNIQUES) {
+      const shaped = describeWeave({ technique, cell: beadCell(undefined) })
+      const plain = describeWeave({ technique })
+      const { cellAspect, rowPitch, roundness } = plain
+      expect({ cellAspect: shaped.cellAspect, rowPitch: shaped.rowPitch, roundness: shaped.roundness }).toEqual({ cellAspect, rowPitch, roundness })
+      expect(shaped.box({ row: 3, column: 2 }, 20, 20 * cellAspect)).toEqual(plain.box({ row: 3, column: 2 }, 20, 20 * cellAspect))
+    }
+  })
+
   it('steps a row pitch of the Bead height down and a bead across', () => {
     const cell = beadCell(delica)!
     expect(positionStep({ technique: 'peyote', cell }).down).toBeCloseTo(0.75 * cell.aspect)
     expect(positionStep({ technique: 'loom', cell }).across).toBe(1)
   })
+})
 
-  it('leaves the Technique\'s own cell for a Bead nobody knows', () => {
+describe('a Bead\'s cell in a Project', () => {
+  const made = () => createProject({ technique: 'peyote', beadId: delica.id })
+
+  it('draws every layer in its own Bead\'s real cell from the start, saving no Bead shape', () => {
+    const framed = withLayers(made(), { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
+    const cubed = withLayer(framed, 'frame', { bead: cube })
+    expect(canvasWeave(cubed).cell).toEqual(beadCell(delica))
+    expect(frameWeave(cubed).cell).toEqual(beadCell(cube))
+    expect(frameWeave(cubed).technique).toBe('loom')
+    expect(cubed.layers.some((layer) => 'beadShape' in layer)).toBe(false)
+  })
+
+  it('draws a Bead this device does not know in the Technique\'s own cell', () => {
     expect(beadCell(undefined)).toBeUndefined()
     expect(projectCell(bareProject({}))).toBeUndefined()
   })
-})
 
-describe('the Bead cell in a Project', () => {
-  const made = () => createProject({ technique: 'peyote', beadId: delica.id })
-
-  it('draws a new Project in its Bead\'s cell', () => {
-    expect(canvasWeave(made()).cell).toEqual(beadCell(delica))
-  })
-
-  it('reads an older file that still carries a Bead shape as the Bead\'s cell, saving it without the key', () => {
+  it('reads a saved Bead shape of either value, or none, as the real cell, and writes none (ticket 0724)', () => {
     const project = made()
-    const older = { ...project, layers: project.layers.map((layer) => ({ ...layer, beadShape: 'symmetric' })) }
-    const read = normalizeProject(older as never)
-    expect('beadShape' in canvasOf(read)).toBe(false)
-    expect(canvasWeave(read).cell).toEqual(beadCell(delica))
-    const [saved] = parseProjectsFile(serializeProject(read)).projects
-    expect(JSON.stringify(saved)).not.toContain('beadShape')
+    for (const beadShape of ['symmetric', 'real', 'sideways', undefined]) {
+      const stored = { ...project, layers: project.layers.map((layer) => ({ ...layer, ...(beadShape ? { beadShape } : {}) })) }
+      const read = normalizeProject(stored as never)
+      expect(canvasWeave(read).cell).toEqual(beadCell(delica))
+      expect('beadShape' in canvasOf(read)).toBe(false)
+      const [saved] = parseProjectsFile(serializeProject(read)).projects
+      expect(JSON.stringify(saved)).not.toContain('beadShape')
+    }
   })
 })

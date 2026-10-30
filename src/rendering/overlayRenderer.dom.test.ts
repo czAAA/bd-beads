@@ -38,6 +38,9 @@ function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: 
 }
 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
+/** The Project in a Bead this device does not know, drawn in its Technique's own cell (rounded in peyote), not a cube's. */
+const ownCell = (project: Project): Project => withLayers(project, { bead: undefined })
+
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const beads: BeadMap = {}
@@ -124,7 +127,7 @@ describe('renderOverlay', () => {
 
     it('rings each peyote bead with its own corner radius, less the half stroke', () => {
       const R = beadRoundness('peyote') * CELL_SIZE_PX - 1
-      const project = withLayers(projectOf('peyote', 5, 3, { currentRow: 0 }), { bead: undefined })
+      const project = ownCell(projectOf('peyote', 5, 3, { currentRow: 0 }))
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -252,7 +255,7 @@ describe('renderOverlay', () => {
     })
 
     it('follows a shifted row and the Technique\'s packing, and rounds a peyote outline', () => {
-      const project = withLayers(projectOf('peyote', 4, 3, noProgress), { bead: undefined })
+      const project = ownCell(projectOf('peyote', 4, 3, noProgress))
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: null } })

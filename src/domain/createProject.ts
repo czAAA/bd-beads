@@ -8,7 +8,7 @@ import { lettersOfPalette } from './paletteEdits'
 import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
-import { type Technique, type TechniqueSettings } from './weave'
+import type { Technique, TechniqueSettings } from './weave'
 
 // Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture.
 

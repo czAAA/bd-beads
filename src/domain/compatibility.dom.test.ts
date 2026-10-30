@@ -3,8 +3,8 @@ import { beadCopy, findBead } from './beads'
 import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { lettersFor } from './swatchLetters'
 import { framedGrid } from './layerBeads'
-import { frameWeave, weaveOf } from './layerWeave'
-import { rowCycle } from './weave'
+import { canvasWeave, frameWeave, weaveOf } from './layerWeave'
+import { beadCell, rowCycle } from './weave'
 import type { FrameSheet } from './canvas'
 import type { FlatProject } from './flatWeave'
 import type { Grid, Project, RowProgress } from './project'
@@ -85,10 +85,15 @@ const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => co
 /** A Project saved before it held its layers as it reads today (ticket 0664, ADR 0079): its Canvas from its own fields
  * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead and
  * Letters, each layer named by the Project's id. */
-/** A stored value of file version 12 or library version 5 as this build writes it back (ticket 0691): the next version,
- * with brick stitch's Drop under its new id where the value held its Brick block. */
+/** A stored value as this build writes it back: without the Bead shape every layer is now drawn without (ticket 0724). */
+function writtenBack(stored: string): unknown {
+  return JSON.parse(stored, (key, value) => (key === 'beadShape' ? undefined : value))
+}
+
+/** A stored value of file version 12 or library version 5 as this build writes it back (tickets 0691, 0724): the next
+ * version, with brick stitch's Drop under its new id where the value held its Brick block, and no Bead shape. */
 function withDrops(stored: string, version: number): unknown {
-  return { ...JSON.parse(stored.replaceAll('"brickBlock"', '"brickDrop"')), version }
+  return { ...(writtenBack(stored.replaceAll('"brickBlock"', '"brickDrop"')) as object), version }
 }
 
 function layered(flat: Omit<FlatProject, 'frame'> & { frame?: FrameSheet }): Project {
@@ -461,18 +466,30 @@ describe('stored-data compatibility', () => {
       expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, 13))
     })
 
+    it('opens a file whose layers saved a Bead shape, Real, Symmetric or none, drawn in each Bead\'s real cell, and writes no Bead shape back (ticket 0724)', () => {
+      const delica = beadCell(findBead('miyuki/delica/11-0'))
+      const asSaved = JSON.parse(projectFileV12)
+      for (const beadShape of ['real', 'symmetric', undefined]) {
+        const layers = asSaved.projects[0].layers.map(({ beadShape: _saved, ...layer }: Record<string, unknown>) => ({ ...layer, ...(beadShape ? { beadShape } : {}) }))
+        const [opened] = parseProjectsFile(JSON.stringify({ ...asSaved, projects: [{ ...asSaved.projects[0], layers }] })).projects
+        expect([canvasWeave(opened!).cell, frameWeave(opened!).cell]).toEqual([delica, delica])
+        expect(opened!.layers.some((layer) => 'beadShape' in layer)).toBe(false)
+        expect(serializeProject(opened!)).not.toContain('beadShape')
+      }
+    })
+
     it('opens a version 13 file with peyote\'s Drop and brick stitch\'s each under its own id, and writes it back the same (ticket 0691)', () => {
       const [opened] = parseProjectsFile(projectFileV13Drops).projects
       expect(canvasOf(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3, peyoteDrop: 4 } })
       expect(frameOf(opened!)).toMatchObject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } })
       expect(rowCycle(frameWeave(opened!))).toBe(4)
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13Drops))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Drops))
     })
 
     it('opens a version 13 file with its Mirror setting and writes it back the same, and one from before Mirror opens with it off (ticket 0703)', () => {
       const [opened] = parseProjectsFile(projectFileV13Mirror).projects
       expect(mirrorSettingOf(opened!)).toEqual({ mode: 'repeat', axes: { leftRight: true, topBottom: false, radial: false }, fold: 2, counts: { leftRight: 2, topBottom: 1 } })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13Mirror))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Mirror))
 
       const [older] = parseProjectsFile(projectFileV13Drops).projects
       expect(older!.mirror).toBeUndefined()
@@ -482,7 +499,7 @@ describe('stored-data compatibility', () => {
     it('opens a version 13 file with the Canvas\'s Mirror Axes on its Canvas layer and writes it back the same; one from before them opens with none (ticket 0704)', () => {
       const [opened] = parseProjectsFile(projectFileV13MirrorAxes).projects
       expect(canvasAxesOf(opened!)).toEqual({ leftRight: 4.5, topBottom: -2 })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13MirrorAxes))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorAxes))
       expect(canvasOf(parseProjectsFile(projectFileV13Mirror).projects[0]!).mirrorAxes).toBeUndefined()
     })
 
