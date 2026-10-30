@@ -122,6 +122,27 @@ export interface Translations {
     /** A recent colour's name. */
     useColor: string
   }
+  /** Mirror (ADR 0082, spec 0702, ticket 0703; MirrorPopover card): the tile's name, the popover's rows and their
+   * controls. Radial, the Fold and the Area come with tickets 0705 and 0710. */
+  mirror: {
+    /** The tile's and the popover's name. */
+    title: string
+    mode: string
+    off: string
+    mirror: string
+    repeat: string
+    axes: string
+    leftRight: string
+    topBottom: string
+    /** The Axis count Steppers' labels and buttons. */
+    leftRightAxes: string
+    topBottomAxes: string
+    fewerAxes: string
+    moreAxes: string
+    /** The Note while the mode is on and no Axis is. */
+    turnAxisOn: string
+    close: string
+  }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
   /** The Menu and Project panels (spec 0440, ticket 443). */
@@ -1063,6 +1084,8 @@ export interface Translations {
     frameFromSelection: string
     pasteDisabled: string
     pasteTool: string
+    /** The Mirror tile's line (ticket 0703). */
+    mirror: string
     rotate: string
     rotateCanvas: string
     rotateFrame: string
