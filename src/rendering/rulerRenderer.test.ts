@@ -137,7 +137,7 @@ describe('the names under the Pieces (ADR 0066)', () => {
       ...framed,
     })
 
-  it('draws the name of a Canvas Piece beside the Frame, and none under the Frame: its name is in the title block (ticket 0719)', () => {
+  it('draws a Canvas Piece\'s name, and none under a named Frame (ticket 0719)', () => {
     const { context, texts } = fakeContext()
     drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, name: 'Cherry', beads: {} } }), { zoom: 1, numbers: false }))
 
