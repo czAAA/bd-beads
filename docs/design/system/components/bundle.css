@@ -590,6 +590,65 @@ body {
 [data-theme="dark"]{--hover-fill:var(--elevated);--press-fill:var(--line-strong)}
 @media (prefers-reduced-motion:reduce){:root{--duration-slow:120ms;--duration-base:120ms}}
 .rm{--duration-slow:120ms;--duration-base:120ms}
+
+/* Row progress motion (ticket 0728; interaction-and-motion.md, Row progress): the glint, the track spark and the Pattern's finish. */
+:root{
+  --row-glint-duration:380ms;--row-glint-step:24ms;--row-glint-span:480ms;--row-glint-peak:.55;--row-dim-delay:520ms;
+  --spark-size:10px;--spark-size-compact:8px;--spark-tail:70px;--spark-tail-compact:24px;--spark-flare:2.2;--spark-flare-duration:520ms;
+  --finish-delay:450ms;--finish-burst-2:420ms;--finish-burst-3:760ms;
+  --finish-shimmer-delay:250ms;--finish-shimmer:1000ms;--finish-restore:500ms;
+  --finish-stars-delay:1100ms;--finish-star-step:90ms;--finish-star:900ms;
+}
+:root,[data-theme="light"]{
+  --row-glint:#ffffff;--spark-core:#ffffff;--spark-glow:rgba(250,82,15,.6);
+  --finish-spark-1:#5f6670;--finish-spark-2:#7d858f;--finish-spark-3:#9aa1aa;--finish-spark-4:#c3c8ce;
+  --finish-glow:rgba(95,102,112,.35);--finish-shimmer-fill:rgba(255,255,255,.6);
+}
+[data-theme="dark"]{
+  --row-glint:#ffffff;--spark-core:#ffffff;--spark-glow:rgba(250,255,105,.7);
+  --finish-spark-1:#ffffff;--finish-spark-2:#e9ecef;--finish-spark-3:#c0c5cc;--finish-spark-4:#a3a9b1;
+  --finish-glow:rgba(225,230,236,.55);--finish-shimmer-fill:rgba(255,255,255,.45);
+}
+[data-theme="contrast"]{
+  --row-glint:#ffffff;--spark-core:var(--ink);--spark-glow:transparent;
+  --finish-spark-1:var(--ink);--finish-spark-2:var(--ink);--finish-spark-3:var(--ink);--finish-spark-4:var(--ink);
+  --finish-glow:transparent;--finish-shimmer-fill:transparent;
+}
+/* The spark: inside the track's box (position:relative), translateX((done / total - 1) * 100%). The tail sits in a copy clipped to the track; the dot in one that is not. Restart the flare on each Row done by swapping is-flaring and is-flaring-alt. */
+.bb-spark{position:absolute;inset:0;pointer-events:none;transition:transform var(--duration-base) var(--ease-standard)}
+.bb-spark[hidden]{display:block;opacity:0}
+.bb-spark>b{position:absolute;right:0;top:0;width:var(--spark-tail);height:100%;border-radius:var(--radius-full);background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--spark-core) 85%,transparent));transform-origin:right center}
+.bb-spark>i{position:absolute;right:calc(var(--spark-size)/-2);top:50%;width:var(--spark-size);height:var(--spark-size);margin-top:calc(var(--spark-size)/-2);border-radius:50%;background:var(--spark-core);box-shadow:0 0 8px 3px var(--spark-glow)}
+.bb-spark--compact{--spark-size:var(--spark-size-compact);--spark-tail:var(--spark-tail-compact)}
+.bb-spark.is-flaring>i{animation:bb-spark-flare var(--spark-flare-duration) var(--ease-out) both}
+.bb-spark.is-flaring-alt>i{animation:bb-spark-flare-alt var(--spark-flare-duration) var(--ease-out) both}
+.bb-spark.is-flaring>b{animation:bb-spark-tail var(--spark-flare-duration) var(--ease-out) both}
+.bb-spark.is-flaring-alt>b{animation:bb-spark-tail-alt var(--spark-flare-duration) var(--ease-out) both}
+@keyframes bb-spark-flare{30%{transform:scale(var(--spark-flare))}}
+@keyframes bb-spark-flare-alt{30%{transform:scale(var(--spark-flare))}}
+@keyframes bb-spark-tail{0%{transform:scaleX(1.8)}100%{transform:none;opacity:.7}}
+@keyframes bb-spark-tail-alt{0%{transform:scaleX(1.8)}100%{transform:none;opacity:.7}}
+/* The finish: one layer over the Frame, mounted --finish-delay after the press that marks the last pass and removed after about 2.6s. */
+.bb-finish{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.bb-finish-burst{position:absolute;width:0;height:0}
+.bb-finish-flash{position:absolute;left:-40px;top:-40px;width:80px;height:80px;border-radius:50%;opacity:0;background:radial-gradient(circle,var(--finish-spark-1),color-mix(in srgb,var(--finish-spark-3) 40%,transparent) 40%,transparent 70%);animation:bb-finish-bloom 600ms var(--ease-out) both}
+.bb-finish-ray{position:absolute;left:0;top:0;width:0;height:0} /* turned: rotate(angle) */
+.bb-finish-ray>i{position:absolute;left:0;top:-1.5px;width:20px;height:3px;border-radius:3px;opacity:0;background:var(--finish-spark-1);box-shadow:0 0 6px var(--finish-glow);transform-origin:left center;animation:bb-finish-ray 900ms var(--ease-out) both}
+.bb-finish-ray>i::after{content:"";position:absolute;right:-2px;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:inherit}
+.bb-finish-ray--short>i{width:12px;height:2px;top:-1px;animation-name:bb-finish-ray-short;animation-duration:760ms}
+.bb-finish-ray--shorter>i{width:8px;height:2px;top:-1px;animation-name:bb-finish-ray-shorter;animation-duration:620ms}
+.bb-finish-shimmer{position:absolute;inset:0;overflow:hidden;container-type:inline-size}
+.bb-finish-shimmer>i{position:absolute;top:-60px;bottom:-60px;left:0;width:160px;background:linear-gradient(90deg,transparent,var(--finish-shimmer-fill),transparent);transform:translateX(-220px) skewX(-24deg);animation:bb-finish-shimmer var(--finish-shimmer) var(--ease-standard) var(--finish-shimmer-delay) both}
+.bb-finish-star{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;opacity:0;color:var(--finish-spark-2);filter:drop-shadow(0 0 4px var(--finish-glow));animation:bb-finish-star var(--finish-star) var(--ease-out) both}
+.bb-finish-star--large{width:30px;height:30px;margin:-15px 0 0 -15px}
+@keyframes bb-finish-bloom{0%{opacity:0;transform:scale(.2)}25%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
+@keyframes bb-finish-ray{0%{opacity:0;transform:translateX(6px) scaleX(.3)}15%{opacity:1;transform:translateX(30px) scaleX(1.2)}100%{opacity:0;transform:translateX(150px) scaleX(.2)}}
+@keyframes bb-finish-ray-short{0%{opacity:0;transform:translateX(4px) scaleX(.3)}15%{opacity:1;transform:translateX(20px) scaleX(1.2)}100%{opacity:0;transform:translateX(96px) scaleX(.2)}}
+@keyframes bb-finish-ray-shorter{0%{opacity:0;transform:translateX(2px) scaleX(.3)}15%{opacity:1;transform:translateX(12px) scaleX(1.2)}100%{opacity:0;transform:translateX(56px) scaleX(.2)}}
+@keyframes bb-finish-shimmer{0%{transform:translateX(-220px) skewX(-24deg)}100%{transform:translateX(calc(100cqw + 220px)) skewX(-24deg)}}
+@keyframes bb-finish-star{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1) rotate(45deg)}100%{opacity:0;transform:scale(.4) rotate(90deg)}}
+[data-theme="contrast"] .bb-finish-shimmer{display:none}
+@media (prefers-reduced-motion:reduce){.bb-spark{transition:none}.bb-spark>b,.bb-spark>i{animation:none!important}.bb-spark>b{display:none}.bb-finish{display:none}}
 /* live interactive samples */
 .ix{white-space:nowrap;font:500 14px/20px var(--font-sans);display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;border:1px solid transparent;cursor:pointer;color:var(--ink);background:none;
   transition:background-color var(--duration-fast) var(--ease-standard),border-color var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard),box-shadow var(--duration-fast) var(--ease-standard),transform var(--duration-instant) var(--ease-standard)}
