@@ -4,6 +4,7 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { type BeadMap, withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
 import { MARGIN } from '../domain/margin'
+import { MIRROR_OFF, withMirror } from '../domain/mirror'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
@@ -94,6 +95,19 @@ describe('renderProject', () => {
 
     expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 15], [30, 15], [0, 30], [20, 30]])
     expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
+  })
+
+  it('draws a Project the same with Mirror on: its Axis lines are the overlay\'s, never an export\'s (ticket 0703)', () => {
+    const project = projectOf('loom', 4, 3)
+    const mirrored = withMirror(project, { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } })
+    const plain = recordingContext()
+    const withAxes = recordingContext()
+
+    renderProject(plain.context, { project, region: whole(project), zoom: 1 })
+    renderProject(withAxes.context, { project: mirrored, region: whole(mirrored), zoom: 1 })
+
+    expect(withAxes.calls).toEqual(plain.calls)
+    expect(withAxes.named('setLineDash')).toHaveLength(0)
   })
 
   it('places brick stitch beads with the stagger and no seam between rows, square', () => {

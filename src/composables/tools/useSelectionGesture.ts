@@ -25,6 +25,7 @@ import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
+import { isMirrorOn, MIRROR_OFF, mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
 import type { FramePress } from '../../rendering/frameHandles'
 
 // The Select tool's whole gesture (ticket 63): the Selection, in-session clipboard, the in-progress press (click vs
@@ -36,6 +37,8 @@ export function useSelectionGesture(
   /** Told how many beads a Paste lost: clipped to the Frame (ticket 491), or on a Custom frame's Seams and Off-shape
    * (ticket 0594). */
   onClipped: (count: number, loss: PasteLoss) => void,
+  /** The Mirror setting (ticket 0703): a Paste lands at its counterparts too, and its preview shows them. */
+  mirror: () => MirrorSetting = () => MIRROR_OFF,
 ) {
   /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces
    * it. Held shallowly (ticket 0675): it is only ever replaced, and a Piece's shape is read cell by cell. */
@@ -135,7 +138,7 @@ export function useSelectionGesture(
    * Seams and Off-shape dropped (ticket 0594). */
   function stamp(block: CopiedBlock, at: GridPosition) {
     const lost = pasteLostCount(currentProject()!, block, at)
-    const outcome = edit('drawing', (current) => pasteOnLayer(current, block, at))
+    const outcome = edit('drawing', (current) => pasteOnLayer(current, block, at, mirror()))
     if (lost.count > 0 && outcome.kind === 'applied') onClipped(lost.count, lost.loss)
   }
 
@@ -338,13 +341,21 @@ export function useSelectionGesture(
   // on a Custom frame only (see pastePreviewStamp); empty with no active (undismissed) projection, since a click would
   // then put nothing down.
   function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
-    return pasteProjectionActive.value && !pastePreviewStamp(project, hovered) ? pastedCellsOnLayer(project, copiedBlock.value!, hovered) : []
+    if (!pasteProjectionActive.value || pastePreviewStamp(project, hovered)) return []
+    const cells = pastedCellsOnLayer(project, copiedBlock.value!, hovered)
+    return mirroredOnFrame(project, hovered) ? mirroredOnCanvas(project, mirror(), cells) : cells
+  }
+
+  /** Whether a Paste aimed at `hovered` lands on the Frame under Mirror (ticket 0703): its preview then lists every
+   * counterpart, as a stamp cannot. */
+  function mirroredOnFrame(project: Project, hovered: GridPosition): boolean {
+    return isMirrorOn(mirror()) && layerAt(project, hovered) === 'frame'
   }
 
   /** The same preview on a layer laid on a grid, as the block aimed where it lands (ticket 0675): built in a step
    * however big the block, and read by the overlay only where it shows. */
   function pastePreviewStamp(project: Project, hovered: GridPosition): PasteStamp | undefined {
-    return pasteProjectionActive.value ? pasteStampOnLayer(project, copiedBlock.value!, hovered) : undefined
+    return pasteProjectionActive.value && !mirroredOnFrame(project, hovered) ? pasteStampOnLayer(project, copiedBlock.value!, hovered) : undefined
   }
 
   // Clears just the Selection, not the clipboard (ADR 0016): a copied block is colors, not a place. Called on a Project
