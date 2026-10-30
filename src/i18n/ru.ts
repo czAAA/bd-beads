@@ -997,6 +997,15 @@ export const ru: Translations = {
     frameHeading: 'Настройки',
     background: 'Фон',
   },
+  schemaTag: {
+    group: 'Названия схем',
+    label: '{name}, показать подробности',
+    tooltipBody: 'Нажмите, чтобы увидеть размер и цвета.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бисерин',
+    beads: { one: '{count} бисеринка', few: '{count} бисеринки', many: '{count} бисеринок', other: '{count} бисеринки' },
+    colors: { one: '{count} цвет', few: '{count} цвета', many: '{count} цветов', other: '{count} цвета' },
+  },
   feedback: {
     titleGeneral: 'Отправить отзыв',
     titleTranslation: 'Сообщить об ошибке перевода',

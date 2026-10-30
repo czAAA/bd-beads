@@ -48,7 +48,7 @@ describe('useNamePieceFlow', () => {
 
     onSavePieceName('Fox')
     expect(naming.value).toBeUndefined()
-    expect(namedPieces(harness.project)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 2, beads: 2 }])
+    expect(namedPieces(harness.project)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 1, columns: 2, beads: 2 })])
 
     harness.history.onUndo()
     expect(canvasOf(harness.project).pieceNames).toBeUndefined()
@@ -74,5 +74,17 @@ describe('useNamePieceFlow', () => {
 
     expect(naming.value).toBeUndefined()
     expect(harness.history.canUndo.value).toBe(false)
+  })
+
+  it('renames a Schema from its paper tag, whatever is selected (ticket 0721)', () => {
+    const { harness, onNamePiece, onSavePieceName, onRenameSchema, naming } = setup(onFirstPiece)
+    onNamePiece()
+    onSavePieceName('Fox')
+
+    onRenameSchema({ row: 0, column: 1 })
+    expect(naming.value).toEqual({ at: { row: 0, column: 1 }, name: 'Fox' })
+    onSavePieceName('Vixen')
+
+    expect(namedPieces(harness.project).map((piece) => piece.name)).toEqual(['Vixen'])
   })
 })
