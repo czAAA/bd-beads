@@ -488,7 +488,7 @@ The one section that sets a layer (LayerSettings card). Its controls keep their 
 
 "Bead" over the Bead shape and pickers is the Project panel's existing section word.
 
-## Schema tag copy (ticket 0719)
+## Schema tag copy (ticket 0721)
 
 An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».
 

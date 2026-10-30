@@ -1,6 +1,6 @@
 # SchemaTag
 
-The name of an unframed Schema (a named Piece on the Canvas, ADR 0050) as a small hang tag on a thread from the Piece's bottom-right corner, like the tag on a finished piece of jewelry. A short name is written on the tag; a longer one folds to a tag with three dots, and a click or tap opens it into a paper tag with the Schema's details. It replaces the name drawn as DM Mono text under the beads. Approved on the claude.ai canvas "Schema name tag" (variant B, Hang tag), 2026-10-30; built by ticket 0719.
+The name of an unframed Schema (a named Piece on the Canvas, ADR 0050) as a small hang tag on a thread from the Piece's bottom-right corner, like the tag on a finished piece of jewelry. A short name is written on the tag; a longer one folds to a tag with three dots, and a click or tap opens it into a paper tag with the Schema's details. It replaces the name drawn as DM Mono text under the beads. Approved on the claude.ai canvas "Schema name tag" (variant B, Hang tag), 2026-10-30; built by ticket 0721.
 
 - **What carries one:** every unframed Schema on the Canvas, one tag each. A framed Schema has none: its name is the Frame's, in the margin sheet's title block (MarginSheet card). A Frame that is removed leaves its Schema on the Canvas, and its tag comes back. A plain Piece (no name) has none.
 - **The rule:** a name of **5 characters or fewer** is written on the tag ("Owl", "Fox 2"). A longer one shows **three dots** in its place. Characters are counted as a reader sees them (grapheme clusters), so a two-character Chinese name is written in full. Spaces count.
@@ -38,8 +38,8 @@ The tag is drawn by the page (HTML over the canvas), not by the canvas renderer,
 
 ## Copy
 
-"{name}, show details", "Click for the size and colors.", `schema`, "{w} × {h} beads · ≈ {x} × {y} mm", "{n} beads · {n} colors", Rename, Frame, Close, and the Tab stop's name "Schema names": `writing.md`, Schema tag copy (ticket 0719).
+"{name}, show details", "Click for the size and colors.", `schema`, "{w} × {h} beads · ≈ {x} × {y} mm", "{n} beads · {n} colors", Rename, Frame, Close, and the Tab stop's name "Schema names": `writing.md`, Schema tag copy (ticket 0721).
 
 ## As built
 
-Not built yet: until ticket 0719 the app draws the name as DM Mono 600 text in the Frame's line color under the Piece's left edge (the canvas renderer).
+Not built yet: until ticket 0721 the app draws the name as DM Mono 600 text in the Frame's line color under the Piece's left edge (the canvas renderer).

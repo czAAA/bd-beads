@@ -173,7 +173,7 @@
   --margin-edit-width: 260px; /* MarginSheet card: the title block's name editor, floated over the sheet (ticket 0657). */
   --margin-title-name: 600 0.75rem/1rem var(--font-sans); /* MarginSheet card: the Frame's name in the title block (Inter 600 12). */
   --margin-legend-letter: 600 0.5rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a legend disc (Inter 600 8). */
-  /* SchemaTag card (ticket 0719): an unframed Schema's name as a hang tag, in screen px at every zoom. */
+  /* SchemaTag card (ticket 0721): an unframed Schema's name as a hang tag, in screen px at every zoom. */
   --schema-tag-height: 22px; /* SchemaTag card: the tag's height. */
   --schema-tag-end: 8px; /* SchemaTag card: the tag's cut left end that holds the hole. */
   --schema-tag-hole: 3.2px; /* SchemaTag card: the tag's hole, the canvas showing through. */
