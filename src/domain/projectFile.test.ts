@@ -265,11 +265,14 @@ describe('single-Project roundtrip', () => {
 describe('the export file names (tickets 73, 74, 0708, 0719)', () => {
   const rose = { ...withLayer(makeProject('Summer'), 'frame', { name: 'Rose' }), makerName: 'Ada Lovelace' }
 
-  it('names the PNG, its further pages, the PDF and the project file {project}-{frame}-{maker}', () => {
+  it('names the PNG, its further pages and the PDF {project}-{frame}-{maker}', () => {
     expect(projectExportFileName(rose, 'png')).toBe('summer-rose-ada-lovelace.png')
     expect(projectListFileName(rose, 2)).toBe('summer-rose-ada-lovelace_2.png')
     expect(projectExportFileName(rose, 'pdf')).toBe('summer-rose-ada-lovelace.pdf')
-    expect(projectFileName(rose)).toBe('summer-rose-ada-lovelace.openbeads')
+  })
+
+  it('names the project file {project}-{maker}, without the Frame’s name', () => {
+    expect(projectFileName(rose)).toBe('summer-ada-lovelace.openbeads')
   })
 
   it('leaves out an unnamed Frame, a missing maker and a name that leaves nothing to write', () => {
