@@ -123,8 +123,8 @@ useOverlayLayer({ isOpen: () => !!card.value, root: () => cardEl.value, close: (
 
 const roving = useRovingFocus(groupEl, { selector: '.schema-tag', managesTabIndex: true })
 
-function tagStyle({ placed }: (typeof tags.value)[number]) {
-  const { left, top } = tagOrigin(placed.hole)
+function tagStyle({ key, placed }: (typeof tags.value)[number]) {
+  const { left, top } = tagOrigin(placed, widths[key] ?? 0)
   return { left: `${left}px`, top: `${top}px` }
 }
 const threads = computed(() =>
@@ -163,7 +163,7 @@ const threads = computed(() =>
           data-testid="schema-tag"
           @click="open(tag)"
         >
-          <span class="schema-tag__shape" :class="{ 'schema-tag__shape--dots': !tag.fits }">
+          <span class="schema-tag__shape" :class="{ 'schema-tag__shape--dots': !tag.fits, 'schema-tag__shape--left': tag.placed.side === 'left' }">
             <template v-if="tag.fits">{{ tag.name }}</template>
             <template v-else><i /><i /><i /></template>
           </span>
@@ -248,8 +248,11 @@ const threads = computed(() =>
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
+/* Hanging left, the tag is mirrored, turned about its hole at the right end: it reaches out from the Piece and droops
+ * as one hanging right does. */
 .schema-tag--left {
   transform: rotate(calc(var(--schema-tag-tilt) * -1));
+  transform-origin: calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%;
 }
 
 .schema-tag:focus-visible {
@@ -275,9 +278,21 @@ const threads = computed(() =>
   mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%);
 }
 
+.schema-tag__shape--left {
+  padding: 0 calc(var(--schema-tag-end) + 3px) 0 var(--space-8);
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 16px, calc(100% - 6px) 100%, 0 100%);
+  -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%, transparent 98%, #000 100%);
+  mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%, transparent 98%, #000 100%);
+}
+
 .schema-tag__shape--dots {
   gap: var(--space-2);
   padding-right: 7px;
+}
+
+.schema-tag__shape--dots.schema-tag__shape--left {
+  padding: 0 calc(var(--schema-tag-end) + 3px) 0 7px;
 }
 
 .schema-tag__shape--dots > i {
