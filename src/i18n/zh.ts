@@ -86,6 +86,8 @@ export const zh: Translations = {
     moreAxes: '增加轴',
     turnAxisOn: '请打开一条轴。',
     close: '关闭',
+    dragHandle: '拖动轴上的手柄即可移动它。',
+    repeatNeedsArea: '画布上的重复需要先选定区域。',
     copyToCounterparts: '把片段的珠子复制到对应位置。',
     announceSelectionMirrored: '片段已镜像',
     droppedMessage: { other: '{count} 个镜像无处落下，未放入。' },

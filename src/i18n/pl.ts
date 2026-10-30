@@ -86,6 +86,8 @@ export const pl: Translations = {
     moreAxes: 'Więcej osi',
     turnAxisOn: 'Włącz oś.',
     close: 'Zamknij',
+    dragHandle: 'Przeciągnij uchwyt na osi, aby ją przesunąć.',
+    repeatNeedsArea: 'Powtórz na płótnie wymaga obszaru.',
     copyToCounterparts: 'Skopiuj koraliki fragmentu na ich odbicia.',
     announceSelectionMirrored: 'Fragment odbity',
     droppedMessage: {

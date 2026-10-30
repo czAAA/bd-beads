@@ -1,8 +1,9 @@
 import { frameContains } from './canvas'
 import type { GridPosition } from './grid'
 import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet } from './layers'
-import { frameOf, type Layered } from './layerRecord'
-import type { Project } from './project'
+import { canvasOf, frameOf, type Layered } from './layerRecord'
+import { mayPlace } from './margin'
+import { touch, type Project } from './project'
 
 // Mirror (ADR 0082, spec 0702; ticket 0703): the live mode that lands a drawing gesture at its counterparts. This
 // module owns the setting and the counterpart maths, positions in and positions out, per layer; the callers of
@@ -95,6 +96,54 @@ export function toggledMirror(setting: MirrorSetting, lastMode: Exclude<MirrorMo
   return { ...setting, mode: lastMode, axes: anyAxis ? setting.axes : { ...setting.axes, leftRight: true } }
 }
 
+/** Where the open Canvas's straight Axes lie (ticket 0704, spec 0702): a Left–right Axis as a column, a Top–bottom one
+ * as a row, in the Canvas's own positions, a whole number through a position's centre and a half through its boundary
+ * with the next; a direction with none has no Axis yet. On the Canvas layer's record; Radial's centre (0705) joins. */
+export interface CanvasAxes {
+  leftRight?: number
+  topBottom?: number
+}
+
+/** A Canvas Axis snapped where a position's centre or a boundary is, the nearer. */
+export function snapAxis(at: number): number {
+  return Math.round(at * 2) / 2
+}
+
+/** The open Project's Canvas Axes; none placed for a Project saved without. */
+export function canvasAxesOf(project: Layered): CanvasAxes {
+  return canvasOf(project).mirrorAxes ?? {}
+}
+
+/** The Project with its Canvas Axes replaced, on the Canvas layer's record. */
+export function withCanvasAxes(project: Project, mirrorAxes: CanvasAxes): Project {
+  const [canvas, ...frames] = project.layers
+  return touch(project, { layers: [{ ...canvas, mirrorAxes }, ...frames] })
+}
+
+/** The Canvas Axes as the setting goes from `before` to `next` (spec 0702): a direction that goes on is placed through
+ * the view's centre, snapped, as is one that is on with no Axis placed yet (an older file), at its last place, or the
+ * origin, until the view is measured; the rest stay, on or off. The same record when nothing moved. */
+export function withAxesPlaced(axes: CanvasAxes, before: MirrorSetting, next: MirrorSetting, centre: Record<MirrorDirection, number> | undefined): CanvasAxes {
+  const placing = MIRROR_DIRECTIONS.filter((direction) => next.axes[direction] && (!before.axes[direction] || axes[direction] === undefined))
+  const placed = placing.map((direction): [MirrorDirection, number] => [direction, snapAxis(centre?.[direction] ?? axes[direction] ?? 0)])
+  return placed.every(([direction, at]) => axes[direction] === at) ? axes : { ...axes, ...Object.fromEntries(placed) }
+}
+
+/** Whether the open Canvas mirrors a gesture (ticket 0704): Mirror mode with a straight Axis on and placed. */
+export function canvasMirrors(project: Layered, setting: MirrorSetting): boolean {
+  const axes = canvasAxesOf(project)
+  return setting.mode === 'mirror' && MIRROR_DIRECTIONS.some((direction) => setting.axes[direction] && axes[direction] !== undefined)
+}
+
+/** Stored Canvas Axes read back: each direction's number snapped as the handle snaps, one that is no finite number left
+ * out; none for a value that is no record. */
+export function readCanvasAxes(stored: unknown): CanvasAxes | undefined {
+  const value = stored as Partial<Record<MirrorDirection, unknown>> | null
+  if (typeof value !== 'object' || value === null) return undefined
+  const read = MIRROR_DIRECTIONS.filter((direction) => Number.isFinite(value[direction])).map((direction) => [direction, snapAxis(value[direction] as number)])
+  return read.length > 0 ? Object.fromEntries(read) : undefined
+}
+
 /** The most axes a direction with this many beads across can take (ticket 0044): every axis has a bead on each side;
  * one for a direction of one bead. */
 function maxAxisCount(cellsAcross: number): number {
@@ -156,23 +205,54 @@ function stripCounterparts(index: number, dimension: number, count: number, repe
   return images
 }
 
+/** Every index `index` maps to across one Axis at `at` in Mirror mode, itself included: its reflection, which is itself
+ * when the Axis runs through its centre. */
+function reflected(index: number, at: number): number[] {
+  const image = 2 * at - index
+  return image === index ? [index] : [index, image]
+}
+
+type IndexImages = (index: number) => number[]
+const same: IndexImages = (index) => [index]
+
+/** How a layer maps each direction's index under the setting, or nothing where the layer has no Axis to map by: the
+ * Frame's strips from its edge and the counts (ticket 0703); the open Canvas's single Axes from its own record, in
+ * Mirror mode only (ticket 0704: with no edge there is no strip to repeat, spec 0702's decision). */
+function imagesBy(sheet: LayerSheet, setting: MirrorSetting): Record<MirrorDirection, IndexImages> | undefined {
+  const { edge, geometry, axes } = sheet
+  if (!isMirrorOn(setting) || !geometry.grid || !(setting.axes.leftRight || setting.axes.topBottom)) return undefined
+  if (edge) {
+    const repeat = setting.mode === 'repeat'
+    return {
+      leftRight: setting.axes.leftRight ? (column) => stripCounterparts(column, edge.columns, setting.counts.leftRight, repeat) : same,
+      topBottom: setting.axes.topBottom ? (row) => stripCounterparts(row, edge.rows, setting.counts.topBottom, repeat) : same,
+    }
+  }
+  if (setting.mode !== 'mirror' || !axes) return undefined
+  const across = (direction: MirrorDirection): IndexImages => {
+    const at = axes[direction]
+    return setting.axes[direction] && at !== undefined ? (index) => reflected(index, at) : same
+  }
+  return { leftRight: across('leftRight'), topBottom: across('topBottom') }
+}
+
 /** The positions a gesture changes under Mirror, on one layer (spec 0702): the sources as given, then their counterparts
- * by index on the Frame's grid, each once, a source keeping what rides on it (a Paste's color); `dropped` counts those
- * the layer has no position for. The open Canvas (ticket 0704) and a Custom frame (0706) give the sources alone, as yet. */
+ * by index on the layer's grid (`imagesBy`), each once, a source keeping what rides on it (a Paste's color); `dropped`
+ * counts those the layer has no position for. A Custom frame (ticket 0706) gives the sources alone, as yet. */
 export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting: MirrorSetting, positions: readonly T[]): { positions: T[]; dropped: number } {
   const { edge, geometry } = sheet
-  if (!isMirrorOn(setting) || !edge || !geometry.grid || !(setting.axes.leftRight || setting.axes.topBottom)) {
+  const images = imagesBy(sheet, setting)
+  if (!images) {
     return { positions: [...positions], dropped: 0 }
   }
-  const repeat = setting.mode === 'repeat'
-  const columnsOf = setting.axes.leftRight ? (column: number) => stripCounterparts(column, edge.columns, setting.counts.leftRight, repeat) : (column: number) => [column]
-  const rowsOf = setting.axes.topBottom ? (row: number) => stripCounterparts(row, edge.rows, setting.counts.topBottom, repeat) : (row: number) => [row]
+  const columnsOf = images.leftRight
+  const rowsOf = images.topBottom
 
   const taken = new Set(positions.map(({ row, column }) => `${row}:${column}`))
   const result = [...positions]
   let dropped = 0
   for (const source of positions) {
-    if (!frameContains(edge, source)) continue
+    if (edge && !frameContains(edge, source)) continue
     for (const row of rowsOf(source.row)) {
       for (const column of columnsOf(source.column)) {
         const key = `${row}:${column}`
@@ -190,13 +270,18 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
 }
 
 /** `counterparts` for Canvas positions (the hover preview, ticket 0703): those on the Frame are mapped through the
- * Frame's own positions and come back as Canvas positions naming their layer; the Canvas's own are left alone. */
+ * Frame's own positions and come back as Canvas positions naming their layer; the Canvas's own across the Canvas's
+ * Axes (ticket 0704), a counterpart the keep-out margin or a finished row refuses left out, as the Edit drops it. */
 export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[]): T[] {
-  if (!isMirrorOn(setting) || !frameOf(project)) return [...cells]
-  const onFrame = cells.filter((cell) => layerAt(project, cell) === 'frame')
-  if (onFrame.length === 0) return [...cells]
+  if (!isMirrorOn(setting)) return [...cells]
+  const framed = frameOf(project) !== undefined
+  const onFrame = cells.filter((cell) => framed && layerAt(project, cell) === 'frame')
+  const onCanvas = new Set(cells.filter((cell) => !framed || layerAt(project, cell) !== 'frame'))
+  const placeable = (cell: T) => onCanvas.has(cell) || mayPlace(project, cell)
+  const mirroredCanvas = onCanvas.size > 0 ? counterparts(layerSheet(project, 'canvas'), setting, [...onCanvas]).positions.filter(placeable) : []
+  if (onFrame.length === 0) return mirroredCanvas
   const sheet = layerSheet(project, 'frame')
   const local = onFrame.map((cell) => ({ ...cell, ...positionInLayer(project, 'frame', cell) }))
   const mirrored = counterparts(sheet, setting, local).positions.map((cell) => ({ ...cell, ...positionOnCanvas(project, 'frame', cell), layer: 'frame' as const }))
-  return [...cells.filter((cell) => layerAt(project, cell) !== 'frame'), ...mirrored]
+  return [...mirroredCanvas, ...mirrored]
 }
