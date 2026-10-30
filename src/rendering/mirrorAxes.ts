@@ -39,7 +39,7 @@ function iconStrokes(svg: string): IconStroke[] {
 
 /** The icons' own box and stroke, as the SVG files draw them. */
 export const AXIS_ICON_BOX_PX = 24
-export const AXIS_ICON_STROKE_PX = 1.75
+const AXIS_ICON_STROKE_PX = 1.75
 
 /** The chips' icons, the set's own `axis-left-right`, `axis-top-bottom` and `axis-centre` (never redrawn, DESIGN.md):
  * the paths each SVG holds, on its 24px box, for the overlay to stroke scaled to `MIRROR_HANDLE_ICON_PX`. */
@@ -113,9 +113,8 @@ function sharesSpot(a: { x: number; y: number }, b: { x: number; y: number }): b
 }
 
 /** The chips of the Canvas Axes in view: the centre's on the centre itself (ticket 0705); a straight Axis's on its
- * line, `MIRROR_HANDLE_INSET_PX` along it from the edge of the viewport the line enters at (the grid's top or left),
- * or at the line's middle when it is shorter than twice that; the Top–bottom chip steps along its line, a chip and a
- * gap at a time, off the Left–right one. A line or centre out of view: none. */
+ * line, `MIRROR_HANDLE_INSET_PX` along it from the edge of the viewport the line enters at (the grid's top or left), or
+ * at its middle when it is shorter than twice that, the Top–bottom chip stepping off the Left–right one. Out of view: none. */
 export function axisHandles(axes: CanvasAxes, weave: Weave, surface: Pick<SurfaceView, 'gridToPoint' | 'gridDirection' | 'viewport'>): AxisHandle[] {
   const handles: AxisHandle[] = []
   if (axes.centre) {

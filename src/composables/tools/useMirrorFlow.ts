@@ -37,8 +37,7 @@ export interface MirrorFlowDeps {
 
 /** The Mirror mode's state (ADR 0082, spec 0702, ticket 0703): the open Project's setting, whether the tile is lit, the
  * popover, the Frame's count limits, key `8`'s toggle (which remembers the mode it last had on) and the open Canvas's
- * Axis handles (ticket 0704) and Radial centre (0705): placed through the view's centre when turned on, dragged as one
- * Undo step. */
+ * Axis handles (ticket 0704) and Radial centre (0705), placed through the view's centre when turned on, dragged as one Undo step. */
 export function useMirrorFlow(deps: MirrorFlowDeps) {
   const setting = computed<MirrorSetting>(() => {
     const project = deps.currentProject()
