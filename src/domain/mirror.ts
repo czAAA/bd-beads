@@ -326,17 +326,19 @@ function reflectedAbout({ row, column }: GridPosition, centre: RadialCentre): Gr
   return { row, column: 2 * centre.column - column }
 }
 
-/** Fold 2 and 4 by index: the source, its turns (a half turn is two quarters), and in Mirror mode the turns of its
- * reflection too (Fold 4 on a loom grid: the eightfold kaleidoscope, the diagonals as index swaps). */
+/** The position a half turn about the centre sends a position to, by index: exact on any Frame. */
+function halfTurned({ row, column }: GridPosition, centre: RadialCentre): GridPosition {
+  return { row: 2 * centre.row - row, column: 2 * centre.column - column }
+}
+
+/** Fold 2 and 4 by index: the source and its turns (Fold 2 the exact half turn; Fold 4 three quarter turns, each from
+ * the last, so a Frame of mixed parity keeps one closed orbit), and in Mirror mode the turns of its reflection too
+ * (Fold 4 on a loom grid: the eightfold kaleidoscope, the diagonals as index swaps). */
 function indexTurns(setting: MirrorSetting, centre: RadialCentre): PositionImages {
-  const quarters = 4 / setting.fold
+  const turn = setting.fold === 2 ? halfTurned : quarterTurned
   const turns = (from: GridPosition): GridPosition[] => {
     const images = [from]
-    for (let turn = 1; turn < setting.fold; turn++) {
-      let next = images[images.length - 1]!
-      for (let quarter = 0; quarter < quarters; quarter++) next = quarterTurned(next, centre)
-      images.push(next)
-    }
+    for (let image = 1; image < setting.fold; image++) images.push(turn(images[images.length - 1]!, centre))
     return images
   }
   return (position) => [...turns(position), ...(setting.mode === 'mirror' ? turns(reflectedAbout(position, centre)) : [])]
