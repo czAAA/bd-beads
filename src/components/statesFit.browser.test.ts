@@ -13,6 +13,7 @@ import ConvertImageWizard from './import/ConvertImageWizard.vue'
 import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
+import FirstRunHints from './canvas/FirstRunHints.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ContextBar from './tools/ContextBar.vue'
 import SchemaTags from './canvas/SchemaTags.vue'
@@ -174,6 +175,28 @@ const schemaTagsHost = defineComponent({
 })
 const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[aria-label^="Butterfly"]')?.click()
 
+/** The first-run hints (ticket 0725) in a canvas box like the app's: the strip's four buttons above the drawing area,
+ * the Tool pill docked at its foot with the tiles the notes point at. */
+const firstRunHintsHost = defineComponent({
+  setup() {
+    const box = ref<HTMLElement>()
+    const button = (hint: string, width: number) => h('button', { type: 'button', 'data-hint': hint, style: { width: `${width}px`, height: '30px' } })
+    const tile = (hint?: string) => h('button', { type: 'button', 'data-hint': hint, style: { width: '40px', height: '40px', flex: 'none' } })
+    return () =>
+      h('div', { ref: box, style: { display: 'flex', flexDirection: 'column', width: '100%', height: '640px' } }, [
+        h('div', { style: { display: 'flex', gap: '4px', height: '32px', alignItems: 'center' } }, [
+          button('menu', 60), button('project', 70), button('frame', 60), h('span', { style: { flex: 1 } }), button('export', 30),
+        ]),
+        h('div', { style: { position: 'relative', flex: 1 } }, [
+          box.value ? h(FirstRunHints, { scope: box.value, pillPosition: 'bottom', pillRect: undefined, background: undefined }) : null,
+          h('div', { 'data-hint-obstacle': '', style: { position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '2px', padding: '4px' } }, [
+            tile('paint'), tile(), tile('select'), tile(), tile(), tile(), tile('mirror'), tile('color'),
+          ]),
+        ]),
+      ])
+  },
+})
+
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
@@ -183,6 +206,7 @@ const CASES: FitCase[] = [
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
+  ['FirstRunHints', firstRunHintsHost as Component, {}],
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
