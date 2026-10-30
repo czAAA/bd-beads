@@ -120,12 +120,13 @@ export function withCanvasAxes(project: Project, mirrorAxes: CanvasAxes): Projec
   return touch(project, { layers: [{ ...canvas, mirrorAxes }, ...frames] })
 }
 
-/** The Canvas Axes once the setting is `setting`: a direction on with no Axis placed gets one through the view's centre
- * (the origin until the view is measured), snapped; one placed stays, on or off. The same record when nothing moved. */
-export function withAxesPlaced(axes: CanvasAxes, setting: MirrorSetting, centre: Record<MirrorDirection, number> | undefined): CanvasAxes {
-  const missing = MIRROR_DIRECTIONS.filter((direction) => setting.axes[direction] && axes[direction] === undefined)
-  if (missing.length === 0) return axes
-  return { ...axes, ...Object.fromEntries(missing.map((direction) => [direction, snapAxis(centre?.[direction] ?? 0)])) }
+/** The Canvas Axes as the setting goes from `before` to `next` (spec 0702): a direction that goes on is placed through
+ * the view's centre, snapped, as is one that is on with no Axis placed yet (an older file), at its last place, or the
+ * origin, until the view is measured; the rest stay, on or off. The same record when nothing moved. */
+export function withAxesPlaced(axes: CanvasAxes, before: MirrorSetting, next: MirrorSetting, centre: Record<MirrorDirection, number> | undefined): CanvasAxes {
+  const placing = MIRROR_DIRECTIONS.filter((direction) => next.axes[direction] && (!before.axes[direction] || axes[direction] === undefined))
+  const placed = placing.map((direction): [MirrorDirection, number] => [direction, snapAxis(centre?.[direction] ?? axes[direction] ?? 0)])
+  return placed.every(([direction, at]) => axes[direction] === at) ? axes : { ...axes, ...Object.fromEntries(placed) }
 }
 
 /** Whether the open Canvas mirrors a gesture (ticket 0704): Mirror mode with a straight Axis on and placed. */
@@ -273,10 +274,11 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
  * Axes (ticket 0704), a counterpart the keep-out margin or a finished row refuses left out, as the Edit drops it. */
 export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[]): T[] {
   if (!isMirrorOn(setting)) return [...cells]
-  const onFrame = frameOf(project) ? cells.filter((cell) => layerAt(project, cell) === 'frame') : []
-  const onCanvas = cells.filter((cell) => !onFrame.includes(cell))
-  const placeable = (cell: T) => onCanvas.includes(cell) || mayPlace(project, cell)
-  const mirroredCanvas = onCanvas.length > 0 ? counterparts(layerSheet(project, 'canvas'), setting, onCanvas).positions.filter(placeable) : []
+  const framed = frameOf(project) !== undefined
+  const onFrame = cells.filter((cell) => framed && layerAt(project, cell) === 'frame')
+  const onCanvas = new Set(cells.filter((cell) => !framed || layerAt(project, cell) !== 'frame'))
+  const placeable = (cell: T) => onCanvas.has(cell) || mayPlace(project, cell)
+  const mirroredCanvas = onCanvas.size > 0 ? counterparts(layerSheet(project, 'canvas'), setting, [...onCanvas]).positions.filter(placeable) : []
   if (onFrame.length === 0) return mirroredCanvas
   const sheet = layerSheet(project, 'frame')
   const local = onFrame.map((cell) => ({ ...cell, ...positionInLayer(project, 'frame', cell) }))

@@ -84,7 +84,7 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     if (!project) return
     if (next.mode !== 'off') lastMode = next.mode
     const axes = canvasAxesOf(project)
-    const placed = withAxesPlaced(axes, next, centreAxes(project))
+    const placed = withAxesPlaced(axes, setting.value, next, centreAxes(project))
     const changed = withMirror(project, next)
     deps.replaceProject(placed === axes ? changed : withCanvasAxes(changed, placed))
   }

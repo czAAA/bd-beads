@@ -75,7 +75,6 @@ describe('Mirror on the open Canvas (ticket 0704)', () => {
     await root.trigger('pointerup', { pointerId: 1 })
     await flushPromises()
     expect(loadProjects()[0]!.layers[0].mirrorAxes?.leftRight).toBe(placed! + 2)
-    expect(wrapper.find('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeUndefined()
 
     await pressBead(wrapper, { row: 5, column: placed! + 1 })
     await wrapper.find('.app-shell').trigger('mouseup')

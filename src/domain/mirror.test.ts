@@ -184,14 +184,18 @@ describe('the Canvas\'s Axes on the Canvas layer\'s record (ticket 0704)', () =>
     expect(snapAxis(-0.74)).toBe(-0.5)
   })
 
-  it('places an Axis through the view\'s centre, snapped, when its direction goes on, and leaves one already placed where it is', () => {
-    const setting = on({ leftRight: true, topBottom: true })
-    expect(withAxesPlaced({}, setting, { leftRight: 4.3, topBottom: -1.1 })).toEqual({ leftRight: 4.5, topBottom: -1 })
-    expect(withAxesPlaced({ leftRight: 2 }, setting, { leftRight: 4.3, topBottom: -1.1 })).toEqual({ leftRight: 2, topBottom: -1 })
-    expect(withAxesPlaced({}, on({ leftRight: true }), { leftRight: 4.3, topBottom: -1.1 })).toEqual({ leftRight: 4.5 })
-    expect(withAxesPlaced({}, setting, undefined)).toEqual({ leftRight: 0, topBottom: 0 })
+  it('places an Axis through the view\'s centre, snapped, when its direction goes on, or is on with none placed; one on already stays', () => {
+    const both = on({ leftRight: true, topBottom: true })
+    const centre = { leftRight: 4.3, topBottom: -1.1 }
+    expect(withAxesPlaced({}, MIRROR_OFF, both, centre)).toEqual({ leftRight: 4.5, topBottom: -1 })
+    expect(withAxesPlaced({ leftRight: 2 }, on({ leftRight: true }), both, centre)).toEqual({ leftRight: 2, topBottom: -1 })
+    expect(withAxesPlaced({ leftRight: 2 }, MIRROR_OFF, both, centre)).toEqual({ leftRight: 4.5, topBottom: -1 })
+    expect(withAxesPlaced({}, MIRROR_OFF, on({ leftRight: true }), centre)).toEqual({ leftRight: 4.5 })
+    expect(withAxesPlaced({}, MIRROR_OFF, both, undefined)).toEqual({ leftRight: 0, topBottom: 0 })
+    expect(withAxesPlaced({ leftRight: 2 }, MIRROR_OFF, both, undefined)).toEqual({ leftRight: 2, topBottom: 0 })
     const placed = { leftRight: 2, topBottom: 3 }
-    expect(withAxesPlaced(placed, setting, { leftRight: 9, topBottom: 9 })).toBe(placed)
+    expect(withAxesPlaced(placed, both, both, { leftRight: 9, topBottom: 9 })).toBe(placed)
+    expect(withAxesPlaced(placed, both, { ...both, mode: 'off' }, { leftRight: 9, topBottom: 9 })).toBe(placed)
   })
 
   it('is read back from a Project, empty without one, and from a file\'s raw value with anything unreadable left out', () => {

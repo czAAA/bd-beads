@@ -240,6 +240,11 @@ describe('stampedCells and pasteOnLayer', () => {
     const pasted = pasteOnLayer(target, motif, { row: 10, column: 6 }, mirror)
     expect(beadsOfLayer(pasted, 'canvas')).toEqual({ 10: { 6: RED, 10: RED } })
     expect(frameOf(pasted)!.beads).toEqual({})
+
+    // The block's own cells keep clear of the Frame as ever: a 2-wide block from column 9 puts its second cell under it.
+    const wide: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, BLUE]], anchor: { row: 0, column: 0 } }
+    expect(beadsOfLayer(pasteOnLayer(target, wide, { row: 10, column: 5 }, mirror), 'canvas')).toEqual({ 10: { 5: RED, 6: BLUE, 10: BLUE, 11: RED } })
+    expect(beadsOfLayer(pasteOnLayer(withCanvasAxes(target, { leftRight: 6 }), wide, { row: 10, column: 9 }, mirror), 'canvas')).toEqual({ 10: { 9: RED, 3: RED, 2: BLUE } })
   })
 
   it('clips what runs past the grid’s edge', () => {

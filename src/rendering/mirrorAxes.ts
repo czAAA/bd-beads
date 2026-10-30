@@ -1,6 +1,6 @@
 import axisLeftRightSvg from '../../docs/design/system/assets/Icons/axis-left-right.svg?raw'
 import axisTopBottomSvg from '../../docs/design/system/assets/Icons/axis-top-bottom.svg?raw'
-import type { MirrorDirection } from '../domain/mirror'
+import { MIRROR_DIRECTIONS, type MirrorDirection } from '../domain/mirror'
 import { describeWeave, type Weave } from '../domain/weave'
 import { cellSizePx } from './cellSize'
 import { beadStepPx, type SurfaceView } from './surfaceView'
@@ -32,15 +32,19 @@ export const AXIS_ICON_PATHS: Record<MirrorDirection, string> = {
 export const AXIS_ICON_BOX_PX = 24
 export const AXIS_ICON_STROKE_PX = 1.75
 
-/** The axis that a direction's Axis runs along in grid px: a Left–right Axis is a vertical line, so it is an x. */
-const COORDINATE: Record<MirrorDirection, 'x' | 'y'> = { leftRight: 'x', topBottom: 'y' }
+/** How each direction's Axis lies in grid space: a Left–right Axis is a vertical line, so its place is an x and it
+ * runs along y, a position apart being a bead's step across; Top–bottom the other way round. */
+const LIE: Record<MirrorDirection, { place: 'x' | 'y'; along: { x: number; y: number }; step: 'across' | 'down' }> = {
+  leftRight: { place: 'x', along: { x: 0, y: 1 }, step: 'across' },
+  topBottom: { place: 'y', along: { x: 1, y: 0 }, step: 'down' },
+}
 
 /** Where position 0, 0's centre is and how far one position steps along a direction, in grid px. */
 function lattice(weave: Weave, direction: MirrorDirection): { origin: number; step: number } {
   const cell = cellSizePx(weave.technique, weave.cell)
   const centre = describeWeave(weave).center({ row: 0, column: 0 }, cell.width, cell.height)
-  const steps = beadStepPx(weave)
-  return direction === 'leftRight' ? { origin: centre.x, step: steps.across } : { origin: centre.y, step: steps.down }
+  const { place, step } = LIE[direction]
+  return { origin: centre[place], step: beadStepPx(weave)[step] }
 }
 
 /** The grid px coordinate an Axis's line lies on: through position `at`'s centre at a whole number, its boundary with
@@ -92,12 +96,13 @@ function sharesSpot(a: { x: number; y: number }, b: { x: number; y: number }): b
  * Top–bottom chip steps along its line, a chip and a gap at a time, off the Left–right one. A line out of view: none. */
 export function axisHandles(axes: Partial<Record<MirrorDirection, number>>, weave: Weave, surface: Pick<SurfaceView, 'gridToPoint' | 'gridDirection' | 'viewport'>): AxisHandle[] {
   const handles: AxisHandle[] = []
-  for (const direction of ['leftRight', 'topBottom'] as const) {
+  for (const direction of MIRROR_DIRECTIONS) {
     const at = axes[direction]
     if (at === undefined) continue
     const px = axisGridPx(weave, direction, at)
-    const point = COORDINATE[direction] === 'x' ? surface.gridToPoint(px, 0) : surface.gridToPoint(0, px)
-    const along = COORDINATE[direction] === 'x' ? surface.gridDirection(0, 1) : surface.gridDirection(1, 0)
+    const lie = LIE[direction]
+    const point = lie.place === 'x' ? surface.gridToPoint(px, 0) : surface.gridToPoint(0, px)
+    const along = surface.gridDirection(lie.along.x, lie.along.y)
     const length = Math.hypot(along.x, along.y)
     const unit = { x: along.x / length, y: along.y / length }
     const stretch = stretchInBox(point, unit, surface.viewport)

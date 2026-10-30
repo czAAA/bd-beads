@@ -112,20 +112,20 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
   return { beads, weave, geometry: frameGeometryOf(project), edge, frame: shapedFrame(project) }
 }
 
-/** `after` with every position under the Frame put back as `before` had it: the Canvas beads a Frame covers are neither
- * changed nor drawn. The same map back when nothing was under it. */
-function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
+/** `after` with every position under the Frame put back as `before` had it, but for those `through` lets by: the Canvas
+ * beads a Frame covers are neither changed nor drawn. The same map back when nothing was under it. */
+function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect, through: (position: GridPosition) => boolean = () => false): BeadMap {
   const reverts: BeadChange[] = []
   forEachChangedPosition(before, after, (row, column) => {
-    if (frameContains(frame, { row, column })) reverts.push({ row, column, color: colorAt(before, row, column) })
+    if (frameContains(frame, { row, column }) && !through({ row, column })) reverts.push({ row, column, color: colorAt(before, row, column) })
   })
   return reverts.length === 0 ? after : withColors(after, reverts)
 }
 
-/** What a Canvas command may do under the Frame: nothing, the Frame hiding what lies there untouched (the default),
- * or paint there, hidden, as a Mirror counterpart does (ticket 0704, spec 0702's Edges). */
+/** What a Canvas command may change under the Frame: nothing by default, the Frame hiding what lies there untouched;
+ * `underFrame` names the positions it may paint there, hidden: a Mirror counterpart's (ticket 0704, spec 0702's Edges). */
 export interface OnLayerOptions {
-  underFrame?: 'keep' | 'paint'
+  underFrame?: (position: GridPosition) => boolean
 }
 
 /** Runs a command on one layer. The command gets the layer (see `layerSheet`) and `local`, which turns a Canvas position
@@ -145,8 +145,8 @@ export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSh
   if (made === before) {
     return project
   }
-  const covered = options.underFrame === 'paint' ? undefined : footprintOf(project)
-  const beads = covered ? keepUnderFrame(before, made, covered) : made
+  const covered = footprintOf(project)
+  const beads = covered ? keepUnderFrame(before, made, covered, options.underFrame) : made
   // Everything the command did was under the Frame, so nothing is left of it.
   if (beads !== made && !anyChangedPosition(before, beads)) {
     return project
