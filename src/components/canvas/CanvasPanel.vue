@@ -85,6 +85,8 @@ const {
   onCellHover,
   onHoverEnd,
   onRotate,
+  mirrorOn,
+  onMirrorSelection,
   onRotateCanvas,
   onSelectAll,
   toolPillPosition,
@@ -392,6 +394,7 @@ const drawingStyle = computed(() => {
           :has-paint-color="hasPaintColor()"
           :select-active="activeTool === 'select'"
           :obstacle="pillRect"
+          :mirror-on="mirrorOn"
           @copy="onCopy"
           @cut="onCut"
           @paste="onPasteMode"
@@ -399,6 +402,7 @@ const drawingStyle = computed(() => {
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
           @rotate="onRotate"
+          @mirror-selection="onMirrorSelection"
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"

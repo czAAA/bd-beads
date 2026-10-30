@@ -94,7 +94,7 @@ The rectangle of cells Mirror's Axes run inside, in place of the whole Frame or 
 _Avoid_: selection (for it), region, zone, mirror box, Apply to what's drawn (dropped)
 
 **Mirror (Selection bar)**:
-The Selection bar's command, shown while Mirror is on: the fragment's beads are copied to their counterparts under the current Axes and Mirror mode, the fragment itself untouched and still selected, as one Undo step. Not a flip in place, which the app does not offer.
+The Selection bar's command, shown after Rotate while Mirror is on (ticket 0707, ContextBar card): the fragment's beads (its layer's, a shape's own cells only) are copied to their counterparts under the current Axes and Mirror mode, the fragment itself untouched and still selected, as one Undo step; a counterpart that lands on one of the fragment's own beads leaves it as it is, and one that has nowhere to land (off the layer, on a Seam or Off-shape, in a finished row) is dropped, one Message saying how many. Not a flip in place, which the app does not offer. In code `mirrorLayerSelection` (`domain/mirrorSelection.ts`), the counterpart rule's `counterparts` over the Selection's positions.
 _Avoid_: Flip, mirror selection, reflect
 
 **Undo**:
