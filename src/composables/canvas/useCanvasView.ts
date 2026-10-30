@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue'
+import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
@@ -7,10 +7,25 @@ import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } fro
 import { placedFrame } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
+import { SNAP_MS } from '../../rendering/gestureView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 import type { Size } from '../../rendering/cellSize'
 import { scrollAfterTurn, tiltedView } from '../../rendering/tiltedView'
+
+/** One step of a two-finger gesture (ticket 0709), about `anchor`, a point of the viewport the fingers are at: the
+ * zoom their spread asks for, how far their middle moved on screen, and how far they turned since the last step. `turn`
+ * is left out until the twist engages (the fingers have turned past the threshold); it is 0 on the step it does. */
+export interface PinchStep {
+  zoom?: number
+  pan?: Scroll
+  turn?: number
+  anchor: Scroll
+}
+
+/** Where a two-finger twist stands (ticket 0709): under the fingers, or easing onto the quarter turn it snaps to after
+ * they lifted. The surface holds its drawing and turns it whole while either is set. */
+export type TwistPhase = 'turning' | 'settling'
 
 /** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and
  * BeadBoard cards).
@@ -51,6 +66,8 @@ export function useCanvasView(
   const isAtFit = ref(true)
   /** The Canvas's orientation while two fingers twist it, before the Project keeps where it settles. */
   const twisting = ref<number>()
+  const twistPhase = ref<TwistPhase>()
+  let snapTimer: ReturnType<typeof setTimeout> | undefined
   /** The orientation this view just handed the Project, which it already shows: no refit for it. */
   let settledAt: number | undefined
 
@@ -59,10 +76,10 @@ export function useCanvasView(
   /** The screen as the drawing leans off its quarter turn. */
   const leaning = computed(() => tiltedView(viewport.value, tiltOf(orientation.value)))
 
-  /** The Canvas as the view stands, or at another zoom; with no Project, an empty one in the default Technique. */
-  function surfaceOf(project: Project | undefined): SurfaceView {
+  /** The Canvas as the view stands, or from another scroll; with no Project, an empty one in the default Technique. */
+  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value): SurfaceView {
     const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
-    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: zoom.value, scroll: at, viewport: viewport.value })
   }
 
   function measured(): boolean {
@@ -128,26 +145,54 @@ export function useCanvasView(
     return cellAt({ x: viewport.value.width / 2, y: viewport.value.height / 2 })
   }
 
-  /** Two fingers twisted the Canvas `by` degrees clockwise about a point of the screen (ticket 0672): the view turns
-   * live, keeping the bead under that point there. */
-  function twistBy(by: number, anchor: Scroll): void {
-    const from = orientation.value
-    const to = turnedOrientation(from, by)
-    scroll.value = scrollAfterTurn(scroll.value, viewport.value, { from, to, anchor })
-    twisting.value = to
+  /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
+   * the twist has engaged, the Canvas turns about it, in one move of the view. */
+  function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
+    let at = scroll.value
+    const next = toZoom === undefined ? zoom.value : clampZoom(toZoom)
+    if (next !== zoom.value) {
+      // The spread zooms about where the fingers were before this step's move, which the move then carries along.
+      const was = pan ? { x: anchor.x - pan.x, y: anchor.y - pan.y } : anchor
+      at = surfaceOf(currentProject(), at).scrollAfterZoom(leaning.value.toView(was), next)
+      zoom.value = next
+    }
+    if (pan) {
+      const across = leaning.value.unturned(pan)
+      at = { x: at.x - across.x, y: at.y - across.y }
+    }
+    if (turn !== undefined) {
+      const from = orientation.value
+      const to = turnedOrientation(from, turn)
+      at = scrollAfterTurn(at, viewport.value, { from, to, anchor })
+      clearTimeout(snapTimer)
+      twisting.value = to
+      twistPhase.value = 'turning'
+    }
+    scroll.value = at
     isAtFit.value = false
   }
 
-  /** The fingers lifted: the twist comes to rest, on a quarter turn within about 10° of it, turning about the middle,
-   * and the Project keeps the angle. */
-  function endTwist(): void {
+  /** The fingers lifted (a point of the viewport): the twist comes to rest about them, easing onto a quarter turn
+   * within about 10° of it, and the Project keeps the angle once it has. */
+  function endTwist(anchor?: Scroll): void {
     const from = twisting.value
     if (from === undefined) {
       return
     }
     const to = settledOrientation(from)
-    scroll.value = scrollAfterTurn(scroll.value, viewport.value, { from, to })
+    scroll.value = scrollAfterTurn(scroll.value, viewport.value, { from, to, anchor })
+    if (to === from) {
+      settleTwist(to)
+      return
+    }
+    twisting.value = to
+    twistPhase.value = 'settling'
+    snapTimer = setTimeout(() => settleTwist(to), SNAP_MS)
+  }
+
+  function settleTwist(to: number): void {
     twisting.value = undefined
+    twistPhase.value = undefined
     if (to !== orientationOf(currentProject())) {
       settledAt = to
       options.keepTwist?.(to)
@@ -177,8 +222,11 @@ export function useCanvasView(
 
   // Two watches, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on
   // every bead drawn.
+  onScopeDispose(() => clearTimeout(snapTimer))
   watch(() => currentProject()?.id, () => {
+    clearTimeout(snapTimer)
     twisting.value = undefined
+    twistPhase.value = undefined
     refit()
   })
   watch(() => orientationOf(currentProject()), (turned) => {
@@ -216,7 +264,8 @@ export function useCanvasView(
     cellAt,
     isAtFit,
     orientation,
-    twistBy,
+    twistPhase,
+    pinchStep,
     endTwist,
   }
 }

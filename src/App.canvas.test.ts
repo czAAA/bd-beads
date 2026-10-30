@@ -72,8 +72,11 @@ describe('Rotate canvas (ticket 471)', () => {
 
     await finger('pointerdown', 1, 100, 100)
     await finger('pointerdown', 2, 200, 100)
-    // The second finger swings 40° clockwise round the first.
-    await finger('pointermove', 2, 100 + 100 * Math.cos((40 * Math.PI) / 180), 100 + 100 * Math.sin((40 * Math.PI) / 180))
+    // The second finger swings 20° clockwise round the first, which engages the twist (ticket 0709), then 40° more.
+    const swing = (degrees: number) => finger('pointermove', 2, 100 + 100 * Math.cos((degrees * Math.PI) / 180), 100 + 100 * Math.sin((degrees * Math.PI) / 180))
+    await swing(20)
+    expect(surface(wrapper).attributes('data-tilt')).toBeUndefined()
+    await swing(60)
     expect(surface(wrapper).attributes('data-tilt')).toBe('40')
     expect(orientationOf(loadProjects()[0])).toBe(0)
 
