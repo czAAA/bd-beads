@@ -2,13 +2,14 @@ import { computed, ref } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import { lettersOn, withLetters } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf, projectListFileName } from '../../domain/projectFile'
+import type { SealedProject } from '../../domain/sealedProject'
 import type { Locale, Translations } from '../../i18n/translations'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
-import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
+import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
@@ -17,6 +18,8 @@ import { frameOf } from '../../domain/layerRecord'
 export interface ExportFlowDeps {
   currentProject: () => Project | undefined
   projects: () => Project[]
+  /** The Projects the library keeps sealed (ticket 0716): exported from their stored form. */
+  sealed?: () => SealedProject[]
   messages: () => Translations
   locale: () => Locale
   /** Saves the open Project with its new maker's name; the name is not an undo step (ADR 0060). */
@@ -113,10 +116,17 @@ export function useExportFlow(deps: ExportFlowDeps) {
     return onExportLibraryFile()
   }
 
-  /** Export library: every saved Project in one file. */
+  /** Export library: every saved Project in one file, a sealed one from its stored form (ticket 0716). */
   function onExportLibraryFile() {
     const projects = deps.projects()
-    return handOverFile(libraryFileName(), () => packLibraryFile(projects))
+    const stored = (deps.sealed?.() ?? []).map((project) => project.stored)
+    return handOverFile(libraryFileName(), () => packLibraryFile(projects, stored))
+  }
+
+  /** Export of a sealed Project (the notice's, for the one that didn't open): the file written from its stored form,
+   * never decoded (ticket 0716). */
+  function onExportSealed(project: SealedProject) {
+    return handOverFile(projectFileNameOf(project.name), () => packStoredProjectFile(project.stored))
   }
 
   function onExportPng() {
@@ -148,5 +158,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { makerName, onSaveMakerName, onSetLetters, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
+  return { makerName, onSaveMakerName, onSetLetters, exporting, onExportProjectFile, onExportLibraryFile, onExportSealed, onExportPng, onExportPdf }
 }

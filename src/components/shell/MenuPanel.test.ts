@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils'
 import { provide, defineComponent, h, ref } from 'vue'
 import MenuPanel from './MenuPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
-import { createProject } from '../../domain/createProject'
 import { en } from '../../i18n/en'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
@@ -14,8 +13,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
-const base = { projects: [project], toolsPosition: 'bottom' as const, inputMode: 'pen' as const, handedness: 'right' as const, penSeen: false }
+const base = { projectCount: 1, toolsPosition: 'bottom' as const, inputMode: 'pen' as const, handedness: 'right' as const, penSeen: false }
 
 /** The panel inside a shell's context. */
 function mountIn(props: Record<string, unknown> = {}, openSub = () => {}) {
@@ -113,7 +111,7 @@ describe('MenuPanel (ticket 443)', () => {
 
 describe('MenuPanel on the Homepage (ticket 540)', () => {
   it('shows Homepage as the current page and leaves out what belongs to the editor', () => {
-    const wrapper = mountIn({ page: 'homepage', projects: undefined, toolsPosition: undefined, inputMode: undefined })
+    const wrapper = mountIn({ page: 'homepage', projectCount: undefined, toolsPosition: undefined, inputMode: undefined })
     const groups = wrapper.findAll('[role="group"]').filter((group) => group.find('h3').exists())
     expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
 
@@ -128,5 +126,19 @@ describe('MenuPanel on the Homepage (ticket 540)', () => {
     expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBeUndefined()
     expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('href')).toMatch(/homepage\/$/)
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
+  })
+
+  it('holds Saved Projects alone in its Projects section while the library is not empty, and opens its subpanel (ticket 0716)', () => {
+    const openSub = vi.fn()
+    const wrapper = mountIn({ page: 'homepage', projectCount: 3 }, openSub)
+
+    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
+    const row = wrapper.get('[data-testid="menu-saved-projects"]')
+    expect(row.text()).toContain('3')
+    row.trigger('click')
+    expect(wrapper.getComponent(MenuPanel).emitted('saved-projects')).toHaveLength(1)
+    expect(openSub).toHaveBeenCalledOnce()
+
+    expect(mountIn({ page: 'homepage', projectCount: 0 }).find('[data-testid="menu-saved-projects"]').exists()).toBe(false)
   })
 })

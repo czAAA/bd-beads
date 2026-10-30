@@ -2,9 +2,10 @@ import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, 
 import { type GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
-import { numericKey, pieceBeadsAt } from './pieces'
+import { numericKey, pieceBeadsAt, type WalkedPieces } from './pieces'
 import { carryPieceIndex, joinsNamedPieces, pieceLabelAt, piecesStayWhole, presenceChanges, type BeadPresence } from './pieceIndex'
 import type { Project } from './project'
+import { tooManyToWalk } from './openingLimits'
 import type { Selection } from './selection'
 import { beadsOfLayer, heldWeave, type Layered, pieceNamesOf, withLayer, withPieceNames } from './layerRecord'
 
@@ -75,6 +76,15 @@ export function namedPieces(project: Layered): NamedPiece[] {
   }
   namedCache.set(beads, { names, cycle: rowCycle(weave), found })
   return found
+}
+
+/** The named Pieces from a walk that found the Piece each name's bead is on (ticket 0716): what `namedPieces` gives,
+ * for a layer too big to flood a Piece at a time. */
+export function namedPiecesFrom(project: Layered, walked: WalkedPieces): NamedPiece[] {
+  return (pieceNamesOf(project) ?? []).flatMap(({ name, row, column }) => {
+    const piece = walked.anchored.get(numericKey({ row, column }))
+    return piece ? [{ name, row: piece.row, column: piece.column, rows: piece.rows, columns: piece.columns, beads: piece.beads }] : []
+  })
 }
 
 /** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
@@ -213,7 +223,8 @@ function namesStay(before: Project, after: Project): BeadPresence | undefined {
     const anchors = new Set(pieceNamesOf(before)!.map(numericKey))
     return removed.some((at) => anchors.has(numericKey(at))) || !piecesStayWhole(now, weave, removed) ? undefined : change
   }
-  return added.length > 0 && pieceNamesOf(before)!.length > 1 && joinsNamedPieces(was, weave, pieceNamesOf(before)!, added) ? undefined : change
+  // On a layer too big to walk (ticket 0716) whether new beads join two named Pieces is not looked into.
+  return added.length > 0 && pieceNamesOf(before)!.length > 1 && !tooManyToWalk(was) && joinsNamedPieces(was, weave, pieceNamesOf(before)!, added) ? undefined : change
 }
 
 /** The Project `after` with Piece names carried over from `before`; `moved` says where a `before` bead went
@@ -224,10 +235,12 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
     return after
   }
   const change = moved ? undefined : namesStay(before, after)
+  const huge = tooManyToWalk(beadsOfLayer(before, 'canvas')) || tooManyToWalk(beadsOfLayer(after, 'canvas'))
   if (change) {
-    carryPieceIndex(beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas'), heldWeave(after, 'canvas'), change)
+    if (!huge) carryPieceIndex(beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas'), heldWeave(after, 'canvas'), change)
     return pieceNamesOf(after) === pieceNamesOf(before) ? after : withPieceNames(after, pieceNamesOf(before))
   }
+  if (huge) return withPieceNames(after, namesOnTheirBeads(before, after, moved))
   const kept: Landing[] = []
   const { beads, weave } = canvasPieces(after)
   for (const landing of landNames(before, after, pieceLabeller(beads, weave), moved)) {
@@ -245,10 +258,21 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
   return withPieceNames(after, next)
 }
 
+/** The names of `before` whose bead is still a bead of `after`, where `moved` puts it: what a layer too big to walk
+ * (ticket 0716) keeps through an edit, as following each named Piece would walk it whole. */
+function namesOnTheirBeads(before: Project, after: Project, moved?: (position: GridPosition) => GridPosition | undefined): PieceName[] {
+  const beads = beadsOfLayer(after, 'canvas')
+  return (pieceNamesOf(before) ?? []).flatMap((entry) => {
+    const at = moved ? moved(entry) : entry
+    return at && beads[at.row]?.[at.column] !== undefined ? [{ name: entry.name, row: at.row, column: at.column }] : []
+  })
+}
+
 /** What a drawing edit did, with every bead that would join two named Pieces taken back (so a name is never dropped). `after` itself when it joins none. */
 export function keepNamesApart(before: Project, after: Project): Project {
   const [beads, was] = [beadsOfLayer(after, 'canvas'), beadsOfLayer(before, 'canvas')]
-  if ((pieceNamesOf(before)?.length ?? 0) < 2 || beads === was) {
+  // A layer too big to walk (ticket 0716) is not walked to find a join in the press.
+  if ((pieceNamesOf(before)?.length ?? 0) < 2 || beads === was || tooManyToWalk(was)) {
     return after
   }
   // Only a new bead joins Pieces; whether it joins named ones is read from the beads the edit changed (ticket 0674).
@@ -282,6 +306,8 @@ export function pieceInSelection(
   selection: Selection,
 ): GridPosition | undefined {
   const { beads, weave } = canvasPieces(project)
+  // Naming a Piece of a layer too big to walk would flood it in the press (ticket 0716).
+  if (tooManyToWalk(beads)) return undefined
   const shape = selection.cells && new Set(selection.cells.map((cell) => `${cell.row},${cell.column}`))
   let found: { id: number; at: GridPosition } | undefined
   for (const [rowKey, columns] of Object.entries(beads)) {

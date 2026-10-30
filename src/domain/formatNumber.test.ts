@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decimalSign, groupThousands } from './formatNumber'
+import { decimalSign, groupThousands, inMillions } from './formatNumber'
 
 describe('groupThousands', () => {
   it.each([
@@ -35,5 +35,13 @@ describe('decimalSign', () => {
     ['be', ','],
   ] as const)('is %s\'s own sign: %s', (locale, sign) => {
     expect(decimalSign(locale)).toBe(sign)
+  })
+})
+
+describe('inMillions (ticket 0716)', () => {
+  it('cuts a count down to whole millions from ten million, and to one decimal under it', () => {
+    expect(inMillions(31_771_024)).toBe('31')
+    expect(inMillions(2_512_000, 'ru')).toBe('2,5')
+    expect(inMillions(2_000_900)).toBe('2')
   })
 })

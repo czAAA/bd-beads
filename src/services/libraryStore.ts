@@ -15,6 +15,7 @@ import { paletteFromDevice } from '../domain/palette'
 import { liftFlatWeave, type SavedProject } from '../domain/flatWeave'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
+import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
@@ -86,7 +87,7 @@ function keepUnreadable(raw: string): void {
 // TEMPORARY (ticket 0525): removed at the public release (ticket 0391). A Project stored before the Palette belonged to
 // it is given the added colors and slot order this device kept, once: they are written into the library, and only then
 // are the device keys removed.
-function withDevicePalette(stored: StoredProject[]): StoredProject[] {
+function withDevicePalette(stored: StoredProject[], sealed: readonly SealedProject[]): StoredProject[] {
   const withoutPalette = stored.filter((project) => (project as Partial<Project>).palette === undefined)
   const added = readDeviceAddedColors(localStorage)
   const order = readDevicePaletteOrder(localStorage)
@@ -94,7 +95,7 @@ function withDevicePalette(stored: StoredProject[]): StoredProject[] {
   const palette = paletteFromDevice(added, order)
   const migrated = stored.map((project) => (withoutPalette.includes(project) ? { ...project, palette } : project))
   try {
-    saveProjects(migrated.map(normalizeProject))
+    saveProjects(migrated.map(normalizeProject), sealed)
     localStorage.removeItem(ADDED_COLORS_KEY)
     localStorage.removeItem(PALETTE_ORDER_KEY)
   } catch {
@@ -103,28 +104,63 @@ function withDevicePalette(stored: StoredProject[]): StoredProject[] {
   return migrated
 }
 
-// Reads the whole library in any stored format (see READERS); the next save rewrites it in the current one. For an
-// unreadable value (bad JSON, wrong shape, newer version) returns no Projects, after keeping the bytes aside (see
-// UNREADABLE_KEY) so they survive.
-export function loadProjects(): Project[] {
+/** The library as the editor opens it (ticket 0716): Projects decoded, and those kept sealed in their stored form. */
+export interface OpenedLibrary {
+  projects: Project[]
+  sealed: SealedProject[]
+}
+
+// Reads the whole library in any stored format (see READERS); the next save rewrites it in the current one. A Project
+// of the current format that `keepSealed` picks from its summary stays in its stored form, undecoded (ticket 0716). For
+// an unreadable value (bad JSON, wrong shape, newer version) returns no Projects, after keeping the bytes aside.
+function openStored(keepSealed: (summary: ProjectSummary) => boolean): OpenedLibrary {
   const raw = readKey(localStorage, STORAGE_KEY)
   if (raw === null) {
-    return []
+    return { projects: [], sealed: [] }
   }
 
   try {
     const parsed: unknown = JSON.parse(raw)
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
+    if (read && version === STORED_VERSION) {
+      const sealed: SealedProject[] = []
+      const decoded: EncodedProject[] = []
+      for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns)) {
+        const summary = projectSummaryOf(encoded)
+        if (summary && keepSealed(summary)) sealed.push({ ...summary, stored: JSON.stringify(encoded) })
+        else decoded.push(encoded)
+      }
+      return { projects: withDevicePalette(decoded.map(decodeProject), sealed).map(normalizeProject), sealed }
+    }
     if (read) {
-      return withDevicePalette(inKnownTechniques(read(parsed))).map(normalizeProject)
+      return { projects: withDevicePalette(inKnownTechniques(read(parsed)), []).map(normalizeProject), sealed: [] }
     }
   } catch {
     // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.
   }
 
   keepUnreadable(raw)
-  return []
+  return { projects: [], sealed: [] }
+}
+
+/** Every stored Project, decoded (see openStored). */
+export function loadProjects(): Project[] {
+  return openStored(() => false).projects
+}
+
+/** How many Projects are stored, read without decoding any (ticket 0716): the main address decides between the
+ * Homepage and the editor on it, and the Homepage names it. An unreadable value counts none. */
+export function storedProjectCount(): number {
+  try {
+    const raw = readKey(localStorage, STORAGE_KEY)
+    if (raw === null) return 0
+    const parsed: unknown = JSON.parse(raw)
+    const patterns = Array.isArray(parsed) ? parsed : (parsed as StoredLibrary | null)?.patterns
+    return Array.isArray(patterns) ? inKnownTechniques(patterns).length : 0
+  } catch {
+    return 0
+  }
 }
 
 /** Each Project's stored JSON, kept for that Project object (ticket 0677, as ADR 0080 keeps answers per bead map): a
@@ -140,20 +176,34 @@ function storedJsonOf(project: Project): string {
   return json
 }
 
-/** Writes the whole library over what was there, compactly (ADR 0009), from each Project's kept encoding: the in-memory
- * library is the truth (ticket 55). Throws what the browser throws when the write doesn't fit (QuotaExceededError); the
- * caller must surface it. @internal Tests seed a library with it before mounting the App. */
-export function saveProjects(projects: Project[]): void {
-  localStorage.setItem(STORAGE_KEY, `{"version":${STORED_VERSION},"patterns":[${projects.map(storedJsonOf).join(',')}]}`)
+/** Writes the whole library over what was there, compactly (ADR 0009), from each Project's kept encoding and each
+ * sealed Project's stored JSON as it was read (ticket 0716): the in-memory library is the truth (ticket 55). Throws what
+ * the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
+ * @internal Tests seed a library with it before mounting the App. */
+export function saveProjects(projects: Project[], sealed: readonly SealedProject[] = []): void {
+  const patterns = [...projects.map(storedJsonOf), ...sealed.map((project) => project.stored)]
+  localStorage.setItem(STORAGE_KEY, `{"version":${STORED_VERSION},"patterns":[${patterns.join(',')}]}`)
+}
+
+/** A sealed Project decoded, as a whole load would give it, its stored JSON kept as its encoding so the next save
+ * doesn't encode it again (ticket 0716). */
+function unsealProject(sealed: SealedProject): Project {
+  const project = normalizeProject(decodeProject(JSON.parse(sealed.stored) as EncodedProject))
+  storedJson.set(project, sealed.stored)
+  return project
 }
 
 // Where the Project library is kept (ADR 0020); useProjectLibrary persists through it, so tests fake it and a backend
 // can add a store.
 export interface LibraryStore {
-  /** Every stored Project; see loadProjects for what an unreadable value gives. */
+  /** Every stored Project, decoded; see openStored for what an unreadable value gives. */
   load: () => Project[]
+  /** The library with the Projects `keepSealed` picks left in their stored form (ticket 0716). */
+  open: (keepSealed: (summary: ProjectSummary) => boolean) => OpenedLibrary
+  /** A sealed Project decoded, when it is picked. */
+  unseal: (sealed: SealedProject) => Project
   /** Replaces the stored library; throws when the device refuses the write (see saveProjects). */
-  save: (projects: Project[]) => void
+  save: (projects: Project[], sealed?: readonly SealedProject[]) => void
 }
 
 /** How long to wait for a quiet moment where the browser has no idle callback (Safari). */
@@ -184,5 +234,11 @@ export const browserLibraryStore: LibraryStore = {
     encodeWhenIdle(projects)
     return projects
   },
+  open: (keepSealed) => {
+    const opened = openStored(keepSealed)
+    encodeWhenIdle(opened.projects)
+    return opened
+  },
+  unseal: unsealProject,
   save: saveProjects,
 }

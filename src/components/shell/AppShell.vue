@@ -6,6 +6,7 @@ import PictureDropOverlay from '../import/PictureDropOverlay.vue'
 import CanvasPanel from '../canvas/CanvasPanel.vue'
 import AppPanels from './AppPanels.vue'
 import { useShellFrame } from '../../composables/shell/useAppShell'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 const {
   t,
@@ -13,6 +14,10 @@ const {
   announcement,
   endStroke,
   onExportProjectFile,
+  missedProject,
+  onRemoveMissed,
+  onExportMissed,
+  onDismissMissed,
   onPictureForConvert,
   dialogOpen,
 } = useShellFrame()
@@ -25,13 +30,21 @@ const {
 
     <!--
       The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
-      space while there is nothing to say. A failed write to this device's storage (ticket 55, ADR 0012) is one: it's
+      space while there is nothing to say; a Project that didn't open last time is one too (ticket 0716). A failed write to this device's storage (ticket 55, ADR 0012) is one: it's
       about the whole Project library, not the open Project, and has to be visible whether or not one is open.
       It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
       (see useProjectLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
     -->
-    <div v-if="saveFailed" class="app-shell__notices" data-testid="app-notices">
-      <AppMessage tone="danger" placement="notice" :closable="false">
+    <div v-if="saveFailed || missedProject" class="app-shell__notices" data-testid="app-notices">
+      <!-- Safe start (ticket 0716): the Project that didn't open last time stays shut, named here with a way out. -->
+      <AppMessage v-if="missedProject" tone="warning" placement="notice" data-testid="missed-project" @close="onDismissMissed">
+        <span data-testid="missed-project-message">{{ fillBlanks(t.opening.didNotOpen, { name: missedProject.name }) }}</span>
+        <template #actions>
+          <AppButton variant="in-box" size="sm" icon="delete" data-testid="missed-project-remove" @click="onRemoveMissed">{{ t.opening.removeButton }}</AppButton>
+          <AppButton variant="in-box" size="sm" icon="export" data-testid="missed-project-export" @click="onExportMissed">{{ t.opening.exportButton }}</AppButton>
+        </template>
+      </AppMessage>
+      <AppMessage v-if="saveFailed" tone="danger" placement="notice" :closable="false">
         <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
         <template #actions>
           <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportProjectFile">

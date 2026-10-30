@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../domain/createProject'
 import type { Grid, Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
-import { browserLibraryStore, loadProjects, saveProjects } from './libraryStore'
+import { browserLibraryStore, loadProjects, saveProjects, storedProjectCount } from './libraryStore'
 import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
@@ -363,5 +363,56 @@ describe('projectStorage', () => {
       expect(loadProjects()[0]!.palette).toHaveLength(21)
       expect(localStorage.getItem('openbeads:added-colors')).not.toBeNull()
     })
+  })
+})
+
+describe('a library opened with some Projects kept sealed (ticket 0716)', () => {
+  /** A stored Project whose Canvas is one solid run per row, never decoded here: rows × columns beads. */
+  function storedSolid(id: string, rows: number, columns: number, savedAt: number) {
+    const stored = encodeProject({ ...makeProject(), id, savedAt, updatedAt: savedAt }) as unknown as { layers: { encodedBeads: unknown }[] }
+    stored.layers[0]!.encodedBeads = { colors: ['#1a1a1a'], rows: Object.fromEntries(Array.from({ length: rows }, (_row, row) => [String(row), `0:1x${columns}`])) }
+    return stored
+  }
+
+  function store(...patterns: unknown[]) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 6, patterns }))
+  }
+
+  it('keeps a Project the caller picks in its stored form, with what the list shows of it, and decodes the rest', () => {
+    const small = makeProject()
+    store(storedSolid('huge', 3000, 1000, 5), encodeProject(small))
+
+    const opened = browserLibraryStore.open((summary) => summary.beads > 1_000_000)
+
+    expect(opened.projects.map((project) => project.id)).toEqual([small.id])
+    expect(opened.sealed).toMatchObject([{ id: 'huge', beads: 3_000_000, layerBeads: [3_000_000, 0], savedAt: 5 }])
+  })
+
+  it('writes a sealed Project back exactly as it was stored', () => {
+    const huge = storedSolid('huge', 3000, 1000, 5)
+    store(huge)
+    const { projects, sealed } = browserLibraryStore.open(() => true)
+
+    browserLibraryStore.save([...projects, makeProject()], sealed)
+
+    const patterns = (JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: unknown[] }).patterns
+    expect(patterns).toContainEqual(huge)
+    expect(patterns).toHaveLength(2)
+  })
+
+  it('opens a sealed Project as the same Project a whole load gives', () => {
+    const painted = paintedOrdinaryProject()
+    saveProjects([painted])
+    const { sealed } = browserLibraryStore.open(() => true)
+
+    expect(browserLibraryStore.unseal(sealed[0]!)).toEqual(loadProjects()[0])
+  })
+
+  it('counts the stored Projects without decoding any, for the main address and the Homepage', () => {
+    store(storedSolid('huge', 3000, 1000, 5), encodeProject(makeProject()))
+
+    expect(storedProjectCount()).toBe(2)
+    localStorage.setItem(STORAGE_KEY, 'not json')
+    expect(storedProjectCount()).toBe(0)
   })
 })

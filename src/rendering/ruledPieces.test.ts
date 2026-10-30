@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { pieceAreasOf } from '../domain/pieces'
+import { numericKey, pieceAreasOf } from '../domain/pieces'
 import type { Project } from '../domain/project'
 import { countingBeads } from '../testUtils/countingBeads'
 import { ruledPieces } from './ruledPieces'
@@ -62,5 +62,43 @@ describe('the Pieces the rulers hang from', () => {
     expect(hidden.areas).toBeUndefined()
     expect(framed.areas).toBeUndefined()
     expect(ruledPieces(undefined, project, { numbers: false, stroking: false }).named).toHaveLength(1)
+  })
+})
+
+// A layer over the walk limit (ticket 0716): its Pieces are walked in idle time, never on open.
+describe('the Pieces the rulers hang from on a layer too big to walk', () => {
+  const SIZE = 260_000
+  function huge() {
+    const counting = countingBeads(withColors({}, Array.from({ length: SIZE }, (_, i) => ({ row: Math.floor(i / 1000), column: i % 1000, color: R }))))
+    const project: Project = withLayers(open, { beads: counting.beads, pieceNames: [{ name: 'Fill', row: 3, column: 3 }] })
+    counting.reset()
+    return { project, ...counting }
+  }
+
+  it('hold the box round every bead, numbered and drawn without a line, and no name, until the walk is in', () => {
+    const { project, reads } = huge()
+    const asked: unknown[] = []
+
+    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false, idleWalk: (beads) => void asked.push(beads) })
+
+    expect(pieces).toMatchObject({ areas: [{ row: 0, column: 0, rows: 260, columns: 1000 }], named: [], uncounted: true })
+    expect(asked).toEqual([beadsOfLayer(project, 'canvas')])
+    // The checks against the limits and the box read each bead a few times over; flooding the named Piece alone reads
+    // each bead and its eight neighbours.
+    expect(reads.beads).toBeLessThan(5 * SIZE)
+  })
+
+  it('take the Piece areas and the names from the walk once it is in', () => {
+    const { project } = huge()
+    const beads = beadsOfLayer(project, 'canvas')
+    const weave = heldWeave(project, 'canvas')
+    const piece = { row: 0, column: 0, rows: 260, columns: 1000, beads: SIZE }
+    pieceAreasOf(beads, weave)
+
+    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false, idleWalk: () => ({ pieces: [piece], anchored: new Map([[numericKey({ row: 3, column: 3 }), piece]]) }) })
+
+    expect(pieces.uncounted).toBeUndefined()
+    expect(pieces.areas).toEqual([{ row: 0, column: 0, rows: 260, columns: 1000 }])
+    expect(pieces.named).toEqual([{ name: 'Fill', ...piece }])
   })
 })

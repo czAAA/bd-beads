@@ -38,6 +38,7 @@ const {
   projectLabel,
   toasts,
   dismissToast,
+  onSurfaceDrawn,
   bindCanvasArea,
   bindCanvasScroll,
   zoom,
@@ -305,6 +306,7 @@ const drawingStyle = computed(() => {
               @selection-anchor="selectionAnchor = $event"
               @frame-anchor="frameAnchor = $event"
               @pressing="surfacePressing = $event"
+              @drawn="onSurfaceDrawn"
             />
             <EmptyCanvas v-else>
               <div class="app-shell__empty-actions" data-testid="phone-project-bar">

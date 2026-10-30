@@ -10,7 +10,7 @@ import { currentThemePick } from './theme/useThemePick'
 import App from './App.vue'
 import { loadLocale } from './i18n/useI18n'
 import { browserDevicePreferences } from './services/devicePreferences'
-import { loadProjects } from './services/libraryStore'
+import { storedProjectCount } from './services/libraryStore'
 import { startOfflineShell } from './services/offlineShell'
 import { installTouchFocusGuard } from './services/touchFocusGuard'
 import { isEditorChosen, homepageUrl, shouldOpenHomepage } from './homepage/homepageRoute'
@@ -18,8 +18,9 @@ import { isEditorChosen, homepageUrl, shouldOpenHomepage } from './homepage/home
 installTouchFocusGuard()
 followDeviceTheme(window, document.documentElement, currentThemePick)
 
-// A new visitor (an empty Project library) is sent to the Homepage first (ticket 77).
-if (shouldOpenHomepage(loadProjects().length === 0, isEditorChosen())) {
+// A new visitor (an empty Project library) is sent to the Homepage first (ticket 77), told without decoding any Project
+// (ticket 0716).
+if (shouldOpenHomepage(storedProjectCount() === 0, isEditorChosen())) {
   location.replace(homepageUrl(import.meta.env.BASE_URL))
 } else {
   // Only the language in use is fetched before the app starts (ticket 0616); the splash shows meanwhile.
