@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
 import { fillArea } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
+import { counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
+import { changedPositions } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -14,6 +16,8 @@ export interface PaintStrokeDeps {
   activeTool: () => Tool
   /** A Select press ends on the same mouseup as a stroke does. */
   endSelectPress: () => void
+  /** The Mirror setting (ticket 0703): a stroke and a Fill land at their counterparts too. */
+  mirror: () => MirrorSetting
 }
 
 // The Paint-tool drag (tickets 24, 55; ADR 0020, 0036): begin a stroke, paint cells as the pointer moves, end it as one
@@ -69,7 +73,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     deps.edit.strokeStep(
       ...landing.map((cell) => (project: Project) =>
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, [local({ row: cell.row, column: cell.column })], color)),
+        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), [local({ row: cell.row, column: cell.column })]).positions, color)),
       ),
     )
   }
@@ -85,7 +89,10 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     if (deps.activeTool() === 'fill') {
       deps.edit.edit('drawing', (current) => onLayer(current, layer, (sheet, local) => {
         const at = local({ row, column })
-        return fillArea(sheet, at.row, at.column, color)
+        const filled = fillArea(sheet, at.row, at.column, color)
+        // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
+        if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
+        return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), changedPositions(sheet.beads, filled)).positions, color)
       }))
       return
     }

@@ -5,6 +5,8 @@ import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { stampCells } from '../../domain/selection'
 import { useCanvasPointer } from './useCanvasPointer'
+import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
+import { frameOf } from '../../domain/layerRecord'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 
@@ -14,6 +16,7 @@ interface Options {
   spaceHeld?: boolean
   strokeMode?: 'paint' | 'erase' | null
   color?: string | null
+  mirror?: MirrorSetting
 }
 
 function setup(options: Options = {}) {
@@ -40,6 +43,7 @@ function setup(options: Options = {}) {
     paintStrokeCells: vi.fn(),
     pasteAt: vi.fn(() => true),
     pickColorAt: vi.fn(() => false),
+    mirror: () => options.mirror ?? MIRROR_OFF,
   }
   return { deps, ...useCanvasPointer(deps) }
 }
@@ -53,6 +57,17 @@ describe('useCanvasPointer', () => {
       expect(previewCells.value).toEqual([{ row: 1, column: 2 }])
       onHoverEnd()
       expect(previewCells.value).toEqual([])
+    })
+
+    it('shows every counterpart of the hovered Frame bead under Mirror, those in finished rows left out (ticket 0703)', () => {
+      const { row, column } = frameOf(base)!
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }
+      const { previewCells, onCellHover } = setup({ project: moveToRow(base, 1), mirror })
+      onCellHover(row + 3, column, 'frame')
+      expect(previewCells.value).toEqual([
+        { row: row + 3, column, layer: 'frame' },
+        { row: row + 3, column: column + 3, layer: 'frame' },
+      ])
     })
 
     it('shows the pasted block under Select', () => {
