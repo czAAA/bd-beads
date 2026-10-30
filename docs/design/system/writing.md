@@ -504,7 +504,7 @@ The two filter rows of the Bead colors list (BeadColors card) and its empty stat
 
 ## Schema tag copy (ticket 0721)
 
-An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».
+An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

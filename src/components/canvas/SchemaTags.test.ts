@@ -39,13 +39,28 @@ function mountTags(schemas: SchemaAnchor[] = [butterfly, owl]) {
 const tagOf = (wrapper: ReturnType<typeof mountTags>, name: string) => wrapper.findAll('[data-testid="schema-tag"]').find((tag) => tag.attributes('aria-label')!.startsWith(name))!
 
 describe('SchemaTags', () => {
-  it('writes a short name on its tag and folds a longer one to three dots, which alone has a Tooltip', () => {
-    const wrapper = mountTags()
+  it('writes the name on its tag; a name the tag cuts short has the Tooltip with the full name', async () => {
+    const scrollWidth = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollWidth')!
+    Object.defineProperty(Element.prototype, 'scrollWidth', { configurable: true, get(this: Element) { return this.textContent === 'Butterfly' ? 200 : 0 } })
+    try {
+      const wrapper = mountTags()
+      await nextTick()
 
-    expect(tagOf(wrapper, 'Owl').text()).toBe('Owl')
-    expect(tagOf(wrapper, 'Butterfly').text()).toBe('')
-    expect(tagOf(wrapper, 'Butterfly').findAll('i')).toHaveLength(3)
-    expect(wrapper.findAllComponents(AppTooltip).map((tip) => tip.props())).toEqual([expect.objectContaining({ name: 'Butterfly', body: 'Click for the size and colors.' })])
+      expect(tagOf(wrapper, 'Owl').text()).toBe('Owl')
+      expect(tagOf(wrapper, 'Butterfly').text()).toBe('Butterfly')
+      expect(wrapper.findAllComponents(AppTooltip).map((tip) => tip.props())).toEqual([expect.objectContaining({ name: 'Butterfly', body: 'Click for the size and colors.' })])
+    } finally {
+      Object.defineProperty(Element.prototype, 'scrollWidth', scrollWidth)
+    }
+  })
+
+  it('stands each tag above its Piece\'s top-left corner and outlines the Piece\'s box', () => {
+    const wrapper = mountTags([owl])
+    const hang = wrapper.get('.schema-tags__hang').element as HTMLElement
+    const border = wrapper.get('[data-testid="schema-border"]').element as HTMLElement
+
+    expect([hang.style.left, hang.style.top]).toEqual(['100px', '68px'])
+    expect([border.style.left, border.style.top, border.style.width, border.style.height]).toEqual(['100px', '100px', '60px', '40px'])
   })
 
   it('names each tag a button that shows details, one Tab stop in reading order, the arrows moving between them', async () => {
@@ -151,9 +166,10 @@ describe('SchemaTags', () => {
     expect(wrapper.emitted('frame')).toEqual([[{ row: 0, column: 0, rows: 2, columns: 3 }]])
   })
 
-  it('shows no tag for a Schema whose corner is out of view', () => {
+  it('shows no tag and no border for a Schema out of view', () => {
     const wrapper = mountTags([{ ...owl, box: { ...owl.box, top: 700 } }])
 
     expect(wrapper.findAll('[data-testid="schema-tag"]')).toHaveLength(0)
+    expect(wrapper.findAll('[data-testid="schema-border"]')).toHaveLength(0)
   })
 })

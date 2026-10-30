@@ -192,8 +192,8 @@ const MarginColorPopoverHost = defineComponent({
   },
 })
 
-/** Two unframed Schemas hanging their tags in a phone-sized canvas box (ticket 0721): "Owl" written out, "Butterfly"
- * folded to dots, which opens into the paper tag. */
+/** Two unframed Schemas with their tags in a phone-sized canvas box (tickets 0721, 0733): "Owl" and "Butterfly", which
+ * opens into the paper tag. */
 const schemaTagsHost = defineComponent({
   setup() {
     const colors = createPalette(defaultPaletteIds()).colors.map((color) => color.hex)
@@ -201,7 +201,7 @@ const schemaTagsHost = defineComponent({
     const project = withPieceName(withPieceName(drawn, { row: 0, column: 0 }, 'Owl'), { row: 6, column: 0 }, 'Butterfly')
     const anchors = {
       schemas: [
-        { name: 'Owl', anchor: { row: 0, column: 0 }, piece: { row: 0, column: 0, rows: 1, columns: 3 }, box: { left: 24, top: 24, width: 64, height: 24 } },
+        { name: 'Owl', anchor: { row: 0, column: 0 }, piece: { row: 0, column: 0, rows: 1, columns: 3 }, box: { left: 24, top: 48, width: 64, height: 24 } },
         { name: 'Butterfly', anchor: { row: 6, column: 0 }, piece: { row: 6, column: 0, rows: 1, columns: 2 }, box: { left: 200, top: 120, width: 44, height: 24 } },
       ],
       viewport: { width: 300, height: 420 },

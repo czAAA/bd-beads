@@ -309,7 +309,7 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
 
 /** Where each unframed Schema is on screen (ticket 0721), from the named Pieces the rulers hold through a stroke: told
- * to their hang tags. */
+ * to their tags. */
 const schemaAnchors = computed<SchemaAnchors | undefined>(() => {
   if (size.value.width === 0) return undefined
   const outset = rulers.value.scale.pieceOutset
