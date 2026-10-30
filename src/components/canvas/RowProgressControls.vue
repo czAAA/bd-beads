@@ -327,8 +327,8 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   transition: transform var(--duration-base) var(--ease-standard);
 }
 
-/* The spark (ProgressBar card, ticket 0730; `.bb-spark` in bundle.css): a dot with a halo and a tail fading back along
- * the fill, riding its edge; hidden, not removed, before the first pass so it glides in. */
+/* The spark (ProgressBar card, ticket 0730; `.bb-spark` in bundle.css, whose halo and tail stretch it copies): a dot
+ * with a halo and a tail fading back along the fill, riding its edge; hidden, not removed, before the first pass. */
 .row-progress__spark {
   position: absolute;
   inset: 0;

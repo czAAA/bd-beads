@@ -236,6 +236,23 @@ describe('renderOverlay', () => {
       // Each of the four beads is lifted and ringed, both turned: eight turns, no more.
       expect(named('rotate')).toHaveLength(8)
     })
+
+    it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+      const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
+      const project = moveToRow(onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746')), 2)
+      const washed = (elapsed: number) => {
+        const { context, calls } = recordingContext()
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), rowMotion: { glints: [{ pass: 1, elapsed }] } })
+        return calls.filter((call) => call.name === 'fill' && call.fillStyle === GLINT_COLOR && call.globalAlpha > 0)
+      }
+
+      // The first bead has started and the next not yet; a little later all four are washing.
+      expect(washed(ROW_MOTION.glintStep / 2)).toHaveLength(1)
+      expect(washed(4 * ROW_MOTION.glintStep)).toHaveLength(4)
+    })
   })
 
   it('draws through the same transform as the cells: zoom and a quarter turn', () => {

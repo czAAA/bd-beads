@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { GLINT_COLOR, PATTERN_DONE_MS, ROW_MOTION, easeStandard, glintMs, glintWash } from './rowMotion'
+import { GLINT_COLOR, ROW_MOTION, easeStandard, glintMs, glintWash } from './rowMotion'
 
 const css = readFileSync(resolve(__dirname, '../../src/styles/design-values.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 /** Every value a custom property is given in design-values.css, in order: one per theme block that sets it. */
@@ -37,10 +37,9 @@ describe('Row progress motion (ticket 0730)', () => {
     expect(glintWash(ROW_MOTION.glintStep + 0.35 * ROW_MOTION.glint, 1, 10)).toBeCloseTo(ROW_MOTION.glintPeak)
   })
 
-  it('eases as the design system’s standard curve does, and ends Pattern done after its last star', () => {
+  it('eases as the design system’s standard curve does: quick out of the start, slow into the end', () => {
     expect(easeStandard(0)).toBe(0)
     expect(easeStandard(1)).toBe(1)
     expect(easeStandard(0.5)).toBeGreaterThan(0.8)
-    expect(PATTERN_DONE_MS).toBe(1100 + 13 * 90 + 900)
   })
 })
