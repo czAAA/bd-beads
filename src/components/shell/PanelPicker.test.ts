@@ -8,8 +8,13 @@ const options = [
   { value: 'right', label: 'Right' },
 ]
 
+// The real Teleport, off here: the stub sets the list's ref a tick late, so it would open unshown and take no focus.
 function mountPicker(value = 'top') {
-  return mount(PanelPicker, { props: { label: 'Tools position', options, modelValue: value, 'onUpdate:modelValue': (next: string) => void wrapper.setProps({ modelValue: next }) }, attachTo: document.body })
+  return mount(PanelPicker, {
+    props: { label: 'Tools position', options, modelValue: value, 'onUpdate:modelValue': (next: string) => void wrapper.setProps({ modelValue: next }) },
+    attachTo: document.body,
+    global: { stubs: { teleport: false } },
+  })
 }
 let wrapper: ReturnType<typeof mountPicker>
 const button = () => wrapper.get('button[aria-haspopup]')

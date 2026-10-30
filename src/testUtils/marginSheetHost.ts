@@ -24,6 +24,7 @@ export const marginSheetHost = (zoom: number) =>
       const top = 32
       const sheet = { left: 0, top, width: beads.width + 2 * band, height: beads.height + 2 * band }
       const anchor = { box: { left: band - outset, top: top + band - outset, width: beads.width + 2 * outset, height: beads.height + 2 * outset }, sheet, band, viewport: { width: sheet.width, height: top + sheet.height } }
-      return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: `${top + sheet.height + 32}px` } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
+      // The app shell, where the sheet's popups sit, outside its scale.
+      return () => h('div', { class: 'app-shell', style: { position: 'relative', overflowX: 'auto', width: '100%', height: `${top + sheet.height + 32}px` } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
     },
   })
