@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ToolPill from './ToolPill.vue'
 import type { PillPosition } from '../../domain/toolPill'
 import { MIRROR_OFF } from '../../domain/mirror'
@@ -117,6 +118,24 @@ describe('ToolPill (ticket 439)', () => {
     await wrapper.setProps({ popoverOpen: true })
     expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-expanded')).toBe('true')
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(true)
+  })
+
+  // The canvas box clips what it holds and stacks it under its own bars: on an iPad held sideways, with the pill on the
+  // right, the Custom color picker opened under the Progress bar and could not be reached (ticket 0725). The popovers sit
+  // in the app shell, where StackingOrder puts them over the bars and under a dialog.
+  it.each([
+    ['colour', { popoverOpen: true }, 'color-popover'],
+    ['Mirror', { mirrorPopoverOpen: true, mirror: MIRROR_OFF }, 'mirror-popover'],
+  ] as const)('opens its %s popover in the app shell, outside the canvas box', async (_, open, testid) => {
+    const shell = document.body.appendChild(document.createElement('div'))
+    shell.className = 'app-shell'
+    const wrapper = mount(ToolPill, { props: { ...base, ...open }, attachTo: shell, global: { stubs: { teleport: false } } })
+    await nextTick()
+    const popover = document.querySelector(`[data-testid="${testid}"]`)
+    expect(popover?.parentElement).toBe(shell)
+    expect(wrapper.element.contains(popover)).toBe(false)
+    wrapper.unmount()
+    shell.remove()
   })
 
   it('shows three recents beside the swatch, and a recent picks its colour at once', async () => {
