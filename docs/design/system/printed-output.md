@@ -72,6 +72,6 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 ## PNG image
 
 - **The Cover page, alone**: the same A4 portrait page as the PDF's first (above), drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. The lines and pills that point at chart pages are left out, the PNG having no pages.
-- Beads needed that does not fit continues in further files, `_2`, `_3` after the file name, handed over in order after the cover. Drawn in the app's language. No watermark. Every export file, PNG, PDF and project file, is named `{project}-{frame}-{maker}.{png|pdf|openbeads}`, each part made filename-safe and left out when it leaves nothing to write (ticket 0719).
+- Beads needed that does not fit continues in further files, `_2`, `_3` after the file name, handed over in order after the cover. Drawn in the app's language. No watermark. The PNG and PDF are named `{project}-{frame}-{maker}.png|pdf` and the project file `{project}-{maker}.openbeads`, each part made filename-safe and left out when it leaves nothing to write (ticket 0719).
 
 The sizes are the `print-*` tokens; the board color is `print-board`. The PrintPage1 (the Cover page), PrintChartPage, PrintSpecification, PrintWordChart and PngExport cards show the pages. The signed-off canvas is in the claude.ai design project "Export sheets — PDF & PNG".
