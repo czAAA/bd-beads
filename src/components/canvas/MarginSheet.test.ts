@@ -322,3 +322,21 @@ describe('the title block on a turned Canvas (ticket 0728)', () => {
     expect(top('margin-title')).toBeCloseTo(top('margin-band'), 4)
   })
 })
+
+describe('the whole-Frame target while Mirror\'s Area is being picked (ticket 0710, MirrorPopover card)', () => {
+  it('while picking, the controls take no press and the tint and the Frame preview stand ready; under the pointer the sheet is the target', async () => {
+    const wrapper = mountSheet({ picking: true })
+    const sheet = control(wrapper, 'margin-sheet')
+    expect(sheet.classes()).toContain('margin-sheet--picking')
+    expect(sheet.classes()).not.toContain('margin-sheet--target')
+    expect(control(wrapper, 'margin-area-tint').attributes('style')).toContain(`border-width: ${anchor.box.top}px`)
+    const preview = control(wrapper, 'margin-area-preview')
+    expect(preview.attributes('style')).toContain(`left: ${anchor.box.left}px`)
+    expect(preview.attributes('style')).toContain(`width: ${anchor.box.width}px`)
+    await wrapper.setProps({ targeted: true })
+    expect(sheet.classes()).toContain('margin-sheet--target')
+    await wrapper.setProps({ picking: false, targeted: true })
+    expect(sheet.classes()).not.toContain('margin-sheet--target')
+    expect(wrapper.find('[data-testid="margin-area-tint"]').exists()).toBe(false)
+  })
+})

@@ -313,11 +313,12 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
   outline-offset: var(--focus-offset);
 }
 
-/* The Area row (MirrorPopover card): Select area fills the row, 34px with `radius-md` corners, Whole Frame beside it
- * while a Frame is the layer and Clear the area (an icon button) while an Area is set; set, the button's border, text
- * and icon take the Selection colour. */
+/* The Area row (MirrorPopover card): Select area fills the row, 34px with `radius-md` corners; after it, on a line of
+ * their own, Whole Frame while a Frame is the layer and Clear the area (an icon button) while an Area is set; set, the
+ * button's border, text and icon take the Selection colour. */
 .mirror-popover__area {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-6);
 }
 
@@ -327,12 +328,12 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
 }
 
 .mirror-popover__area-button {
-  flex: 1 1 auto;
+  flex: 1 1 100%;
   min-width: 0;
 }
 
 .mirror-popover__whole-frame {
-  flex: none;
+  flex: 1 1 auto;
 }
 
 .mirror-popover__area :deep(.icon-btn) {

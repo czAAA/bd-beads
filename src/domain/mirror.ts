@@ -349,8 +349,7 @@ const same: IndexImages = (index) => [index]
 
 /** How a region maps each direction's index under the setting, or nothing where it has no Axis to map by: a
  * rectangle's (the Frame's, ticket 0703, or the Area's, 0710) strips from its edges and the counts; the open Canvas's
- * single Axes from its own record, in Mirror mode only (ticket 0704: with no edge there is no strip to repeat, spec
- * 0702's decision). */
+ * single Axes from its record, in Mirror mode only (0704: with no edge there is no strip to repeat, spec 0702). */
 function imagesBy(region: MirrorRegion, setting: MirrorSetting): Record<MirrorDirection, IndexImages> | undefined {
   if (!(setting.axes.leftRight || setting.axes.topBottom)) return undefined
   if (region.kind !== 'canvas') {
