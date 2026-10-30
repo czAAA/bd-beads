@@ -8,4 +8,6 @@ A single-line text input with its label, hint and error.
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.
 
+Multiline variant (ticket 0700): a textarea for free text (the FeedbackSheet's Message and Note), the same frame grown to its content with 8 12 padding, its starting height set by the form that holds it, pulled taller by its corner.
+
 Compact variant (ticket 517, the app only): the Frame panel's width and height boxes are 2rem high (not 40px), `surface` fill, 1px `line-strong`, 6px padding and 15px `title` text, because they sit in a toolbar. Off, they ignore presses so the group's Tooltip answers.

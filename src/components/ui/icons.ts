@@ -40,6 +40,7 @@ export const ICON_NAMES = [
   'keyboard',
   'library',
   'menu',
+  'message',
   'mirror',
   'moon',
   'more',
