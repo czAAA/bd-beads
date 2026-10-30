@@ -6,6 +6,8 @@ import type { Dialogs } from '../../composables/shell/useDialogs'
 import { createProject } from '../../domain/createProject'
 import { saveProjects } from '../../services/libraryStore'
 import AppDialogs from './AppDialogs.vue'
+import { browserServices } from '../../services/index'
+import { fakeFeedback } from '../../testUtils/fakeFeedback'
 
 type DialogId = Parameters<Dialogs['flag']>[0]
 
@@ -29,12 +31,21 @@ const WITH_PROJECT: [DialogId, unknown][] = [
   ['replace-bead', { layer: 'frame', beadId: 'toho/round/11-0' }],
   // Its longest question: a finished row on peyote or brick stitch, whose rows after it shift.
   ['remove-line', { kind: 'finished-row', row: 12, backTo: 24, shifts: true, direction: 'columns' }],
+  // The Feedback sheet in each Report kind (ticket 0700), the color one with every prefill.
+  ...(['general', 'translation', 'bead-color'] as const).map((kind): [DialogId, unknown] => ['feedback', feedbackAsked(kind)]),
 ]
+
+function feedbackAsked(kind: 'general' | 'translation' | 'bead-color') {
+  const color = { brand: 'Miyuki', catalog: 'miyuki-delica', code: 'DB-2100', hex: '#3a6b8c', swatchLetter: 'AB' }
+  const context = { appVersion: '1.4.0', uiLanguage: 'en', browser: 'Samsung Internet', os: 'Android', viewport: '412 × 915' }
+  return kind === 'bead-color' ? { kind, prefill: color, context: { ...context, ...color }, email: '' } : { kind, prefill: {}, context, email: '' }
+}
 
 let dialogs: Dialogs
 const Host = defineComponent({
   setup() {
-    dialogs = provideAppShell().dialogRegistry
+    // Turnstile is not loaded: the sheet's fit has nothing to do with it.
+    dialogs = provideAppShell({ ...browserServices, feedback: fakeFeedback() }).dialogRegistry
     return () => h(AppDialogs)
   },
 })
@@ -57,6 +68,9 @@ describe.each(WITH_PROJECT)('the dialog behind %s text fit', (flag, question) =>
       saveProjects([moth, fox])
       await mountAt(Host, {}, { locale, width: FIT_WIDTHS[0], text: false })
       dialogs.question(flag).value = question
+      await nextTick()
+      // The Feedback sheet's Also sent block is measured open.
+      document.querySelector<HTMLElement>('[data-testid="feedback-also-sent-toggle"]')?.click()
       await nextTick()
       expect(document.querySelector('.app-modal'), 'the dialog opened').not.toBeNull()
       expect(await problemsAcrossWidths(FIT_WIDTHS, (width) => fitProblems(`dialog ${flag}`, locale, width))).toEqual({})

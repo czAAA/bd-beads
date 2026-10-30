@@ -72,6 +72,7 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   onOpenShortcutsHelp,
+  onOpenFeedback,
 } = usePanelsContext()
 
 /** The Starter gallery's category and Starter open (ticket 0596): a card sets its own as it pushes the next level. */
@@ -161,6 +162,7 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
+      @feedback="onOpenFeedback"
     />
     <ProjectPanel
       v-else-if="activeProject"
