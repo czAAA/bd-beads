@@ -23,7 +23,8 @@ import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads } from './draftRenderer'
 import { beadsOfLayer, canvasOf, frameOf, quarterTurnOf } from '../domain/layerRecord'
 import type { Layer } from '../domain/grid'
-import { axisOffsets, isMirrorOn, type CanvasAxes, type MirrorAxis, type MirrorSetting } from '../domain/mirror'
+import { axisOffsets, isMirrorOn, offeredAxes, type CanvasAxes, type MirrorAxis, type MirrorSetting } from '../domain/mirror'
+import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
 import { AXIS_ICON_BOX_PX, AXIS_ICON_PATHS, axisGridPx, centreGridPx, MIRROR_HANDLE_ICON_PX, type AxisHandle } from './mirrorAxes'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -589,9 +590,9 @@ const MIRROR_RING_WIDTH_PX = 2
 const MIRROR_AXIS_SOFT = 0.45
 
 /** Draws Radial about its centre (ticket 0705, MirrorPopover card), clipped to a box (the Frame's, or the view): in
- * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first vertical and full, the
- * others soft; in Repeat mode the Fold's rays from it, 360° over the Fold apart, the first straight up; then the ring. */
-function drawRadial(context: DrawingContext, centre: { x: number; y: number }, setting: MirrorSetting, box: Region, zoom: number, theme: ProjectTheme): void {
+ * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first full and the others soft;
+ * in Repeat mode the Fold's rays, 360° apart; the first straight up or `startAngle` clockwise of it (0706); the ring. */
+function drawRadial(context: DrawingContext, centre: { x: number; y: number }, setting: MirrorSetting, box: Region, zoom: number, theme: ProjectTheme, startAngle = 0): void {
   const mirror = setting.mode === 'mirror'
   const step = (mirror ? Math.PI : 2 * Math.PI) / setting.fold
   // From the centre inside the box, no line to its edge is longer than its diagonal.
@@ -604,8 +605,8 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
   context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
   context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
   for (let turn = 0; turn < setting.fold; turn++) {
-    const dx = Math.sin(turn * step) * reach
-    const dy = -Math.cos(turn * step) * reach
+    const dx = Math.sin(startAngle + turn * step) * reach
+    const dy = -Math.cos(startAngle + turn * step) * reach
     context.globalAlpha = mirror && turn > 0 ? MIRROR_AXIS_SOFT : 1
     context.beginPath()
     // A mirror line runs through the centre from its upward end; a ray runs out from the centre.
@@ -662,6 +663,37 @@ function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, sett
       context.moveTo(x, at)
       context.lineTo(x + width, at)
     }
+  }
+  context.stroke()
+  context.restore()
+}
+
+/** Draws Mirror's lines on a Custom frame (ticket 0706, MirrorPopover card) in the Frame's own px: Radial's ring and
+ * lines about the layout's centre, the side count as the Fold, the first along the first Seam; else, in Mirror mode, a
+ * straight Axis through the layout's centre across the rectangle. An Axis the shape does not offer is not drawn. */
+function drawLayoutAxes(context: DrawingContext, symmetry: LayoutSymmetry & { centre: LayoutPoint }, box: Region, setting: MirrorSetting, zoom: number, theme: ProjectTheme): void {
+  if (!isMirrorOn(setting)) return
+  const offered = offeredAxes(symmetry)
+  const centre = { x: box.x + symmetry.centre.x * CELL_SIZE_PX, y: box.y + symmetry.centre.y * CELL_SIZE_PX }
+  if (setting.axes.radial) {
+    if (offered.radial) drawRadial(context, centre, { ...setting, fold: symmetry.fold }, box, zoom, theme, symmetry.line)
+    return
+  }
+  const leftRight = setting.axes.leftRight && offered.leftRight
+  const topBottom = setting.axes.topBottom && offered.topBottom
+  if (setting.mode !== 'mirror' || !(leftRight || topBottom)) return
+  context.save()
+  context.strokeStyle = theme.marker
+  context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
+  context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
+  context.beginPath()
+  if (leftRight) {
+    context.moveTo(centre.x, box.y)
+    context.lineTo(centre.x, box.y + box.height)
+  }
+  if (topBottom) {
+    context.moveTo(box.x, centre.y)
+    context.lineTo(box.x + box.width, centre.y)
   }
   context.stroke()
   context.restore()
@@ -842,12 +874,14 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme, sheetView, layerOrigin)
-    // A Frame on a grid (a Custom frame's Axes are ticket 0706's), in its own positions from its first, drawn alone too:
-    // the Axes across its Area where one is set (ticket 0710), else across the whole Frame.
+    // A Frame on a grid, in its own positions from its first, drawn alone too: the Axes across its Area where one is
+    // set (ticket 0710), else across the whole Frame; a Custom frame's through its layout's centre (ticket 0706).
     const mirrored = mirror && geometry!.grid ? frameOf(project) : undefined
     const sheetArea = mirrored?.mirrorArea
     if (sheetArea) drawAreaRect(context, sheetWeave, sheetSpace, sheetArea, theme, sheetView, layerOrigin)
     if (mirrored) drawMirrorAxes(context, sheetWeave, sheetArea ?? { row: 0, column: 0, rows: mirrored.rows, columns: mirrored.columns }, mirror!, zoom * scale, theme)
+    const symmetry = mirror && !geometry!.grid ? geometry!.symmetry?.() : undefined
+    if (symmetry) drawLayoutAxes(context, symmetry, gridBox(sheetWeave, { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns }), mirror!, zoom * scale, theme)
     if (band && band.layer === 'frame' && geometry!.grid) drawAreaRect(context, sheetWeave, sheetSpace, band, theme, sheetView, layerOrigin)
     const sheetCells = preview ? onSheet(preview.cells) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []

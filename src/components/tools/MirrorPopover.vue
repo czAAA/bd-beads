@@ -23,11 +23,14 @@ import {
   type MirrorDirection,
   type MirrorMode,
   type MirrorSetting,
+  type ShapeAxes,
 } from '../../domain/mirror'
 import type { PillPosition } from '../../domain/toolPill'
+import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -54,6 +57,9 @@ const props = defineProps<{
   area?: Rect
   /** Whether an Area is being picked on the canvas: the button is pressed and says to drag. */
   picking?: boolean
+  /** A Custom frame's shape (ticket 0706): the Axes its symmetry offers (the other chips are off, saying why) and on a
+   * round shape its side count, Radial's Fold, noted in place of the Fold Stepper. */
+  shape?: ShapeAxes
 }>()
 
 const emit = defineEmits<{
@@ -66,7 +72,7 @@ const emit = defineEmits<{
   'clear-area': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const rootEl = ref<HTMLElement>()
 const closeAction = controlAction('close')
 const modeId = useId()
@@ -88,6 +94,9 @@ const directionWords: Record<MirrorDirection, { chip: () => string; count: () =>
   topBottom: { chip: () => t.value.mirror.topBottom, count: () => t.value.mirror.topBottomAxes },
 }
 const chipWord = (axis: MirrorAxis) => (axis === 'radial' ? t.value.mirror.radial : directionWords[axis].chip())
+const offReasons: Record<MirrorAxis, () => string> = { leftRight: () => t.value.mirror.noLeftRight, topBottom: () => t.value.mirror.noTopBottom, radial: () => t.value.mirror.noRadial }
+/** Why an Axis chip is off (ticket 0706): the shape's symmetry does not offer it; none where every Axis is offered. */
+const offReason = (axis: MirrorAxis) => (props.shape && !props.shape.offered[axis] ? offReasons[axis]() : undefined)
 const anyAxis = computed(() => MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction]) || props.setting.axes.radial)
 /** The directions whose Axis count Stepper shows: a Frame on a grid, and that Axis on. */
 const counted = computed(() => (props.limits ? MIRROR_DIRECTIONS.filter((direction) => props.setting.axes[direction]) : []))
@@ -96,6 +105,10 @@ const countOf = (direction: MirrorDirection) => Math.min(props.setting.counts[di
 /** Whether the Fold Stepper shows (ticket 0705): Radial on, on a grid (a Frame with limits, or the open Canvas); a
  * Custom frame's Fold is its shape's (ticket 0706). Its own section, so 0706 can put a Note in its place. */
 const folded = computed(() => props.setting.axes.radial && (props.limits !== undefined || props.onCanvas === true))
+/** The Note in the Fold's place on a round Custom frame (ticket 0706): the side count, from the shape. */
+const sidesNote = computed(() => (props.setting.axes.radial && props.shape?.sides ? plural(locale.value, props.shape.sides, t.value.mirror.sidesFromShape) : undefined))
+/** The Note on a Custom frame in Repeat mode with a straight Axis on (ticket 0706): a shape has no strip to repeat. */
+const repeatShapeNote = computed(() => (props.shape && props.setting.mode === 'repeat' && !props.setting.axes.radial && MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction]) ? t.value.mirror.repeatNeedsRadial : undefined))
 /** The rule the Fold is under (MirrorPopover card): exact by index at 2 and 4, else the nearest bead to a turn. */
 const foldNote = computed(() => (foldByIndex(props.setting.fold) ? t.value.mirror.foldExact : fillBlanks(t.value.mirror.foldNearest, { angle: foldAngle(props.setting.fold) })))
 /** The open Canvas's own detail (ticket 0704), with a straight Axis on and no Area (an Area has the count Steppers
@@ -117,7 +130,9 @@ const areaNote = computed(() => {
 })
 
 const setMode = (mode: MirrorMode) => emit('update:setting', withMirrorMode(props.setting, mode))
-const toggleAxis = (axis: MirrorAxis) => emit('update:setting', withAxisToggled(props.setting, axis))
+const toggleAxis = (axis: MirrorAxis) => {
+  if (!offReason(axis)) emit('update:setting', withAxisToggled(props.setting, axis))
+}
 const setCount = (direction: MirrorDirection, count: number) => emit('update:setting', withMirrorCount(props.setting, direction, count))
 const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.setting, fold))
 </script>
@@ -137,17 +152,16 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
     <section class="mirror-popover__row" data-testid="mirror-axes-row">
       <span :id="axesId" class="mirror-popover__label">{{ t.mirror.axes }}</span>
       <div class="mirror-popover__chips" role="group" :aria-labelledby="axesId">
-        <button
-          v-for="axis in MIRROR_AXES"
-          :key="axis"
-          type="button"
-          class="ui-control mirror-popover__chip"
-          :aria-pressed="setting.axes[axis]"
-          :data-testid="`mirror-axis-${axis}`"
-          @click="toggleAxis(axis)"
-        >
-          {{ chipWord(axis) }}
-        </button>
+        <template v-for="axis in MIRROR_AXES" :key="axis">
+          <AppTooltip v-if="offReason(axis)" :name="chipWord(axis)" disabled :disabled-body="offReason(axis)!" :announce="false">
+            <button type="button" class="ui-control mirror-popover__chip" aria-disabled="true" :aria-pressed="setting.axes[axis]" :data-testid="`mirror-axis-${axis}`" @click="toggleAxis(axis)">
+              {{ chipWord(axis) }}
+            </button>
+          </AppTooltip>
+          <button v-else type="button" class="ui-control mirror-popover__chip" :aria-pressed="setting.axes[axis]" :data-testid="`mirror-axis-${axis}`" @click="toggleAxis(axis)">
+            {{ chipWord(axis) }}
+          </button>
+        </template>
       </div>
     </section>
 
@@ -171,6 +185,11 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
         <IconButton v-if="area" variant="secondary" icon="close" :label="t.mirror.clearArea" tooltip data-testid="mirror-clear-area" @click="emit('clear-area')" />
       </div>
       <AppNote data-testid="mirror-area-note">{{ areaNote }}</AppNote>
+    </section>
+
+    <section v-if="sidesNote" class="mirror-popover__row" data-testid="mirror-sides">
+      <span class="mirror-popover__label">{{ t.mirror.fold }}</span>
+      <AppNote data-testid="mirror-sides-note">{{ sidesNote }}</AppNote>
     </section>
 
     <section v-if="folded" class="mirror-popover__row" data-testid="mirror-fold">
@@ -209,6 +228,7 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
     </section>
 
     <AppNote v-if="canvasNote" data-testid="mirror-canvas-note">{{ canvasNote }}</AppNote>
+    <AppNote v-if="repeatShapeNote" data-testid="mirror-repeat-shape-note">{{ repeatShapeNote }}</AppNote>
     <AppNote v-if="isMirrorOn(setting) && !anyAxis" data-testid="mirror-no-axis-note">{{ t.mirror.turnAxisOn }}</AppNote>
   </div>
 </template>
@@ -297,7 +317,7 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
 }
 
 @media (hover: hover) {
-  .mirror-popover__chip:hover {
+  .mirror-popover__chip:hover:not([aria-disabled='true']) {
     background: var(--hover-fill);
   }
 }
@@ -307,6 +327,14 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
   color: var(--accent-strong);
   background: var(--panel);
   border-color: var(--accent-strong);
+}
+
+/* A chip the shape does not offer (ticket 0706): the disabled control look, still focusable for its Tooltip. */
+.mirror-popover__chip[aria-disabled='true'] {
+  color: var(--faint);
+  background: var(--surface);
+  border-color: var(--line);
+  cursor: not-allowed;
 }
 
 .mirror-popover__chip:focus-visible {

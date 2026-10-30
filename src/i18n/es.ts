@@ -111,6 +111,15 @@ export const es: Translations = {
     pickCancel: 'cancela',
     areaSetMessage: 'Área {columns} × {rows}: los ejes recorren su interior',
     wholeFrameMessage: 'Todo el marco es el área',
+    sidesFromShape: {
+      one: '{count} lado, según la forma. Espejo refleja también dentro de cada lado.',
+      many: '{count} de lados, según la forma. Espejo refleja también dentro de cada lado.',
+      other: '{count} lados, según la forma. Espejo refleja también dentro de cada lado.',
+    },
+    repeatNeedsRadial: 'Repetir en una forma gira en torno a su centro: necesita Radial.',
+    noLeftRight: 'La forma no es igual a izquierda y derecha.',
+    noTopBottom: 'La forma no es igual arriba y abajo.',
+    noRadial: 'Radial necesita una forma redonda: un triángulo, un cuadrado curvado, una estrella o un caleidociclo.',
   },
   colorNames: {
     black: 'Negro',

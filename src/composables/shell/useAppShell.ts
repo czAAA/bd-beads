@@ -796,6 +796,7 @@ function wireAppShell(services: Services) {
       // The Area (ticket 0710): the row's layer, the Area, the pick and its band
       mirrorAreaRow: mirror.areaRow,
       mirrorArea: mirror.area,
+      mirrorShape: mirror.shape,
       mirrorPicking: mirror.picking,
       mirrorBand: mirror.band,
       onAreaPick: mirror.startPick,

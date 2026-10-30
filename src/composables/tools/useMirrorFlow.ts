@@ -11,6 +11,7 @@ import {
   MIRROR_OFF,
   mirrorAreaOf,
   mirrorLayerOf,
+  shapeAxesOf,
   mirrorSettingOf,
   snapAxis,
   snapCentre,
@@ -74,6 +75,11 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
   const areaRow = computed<Layer | undefined>(() => {
     const project = deps.currentProject()
     return project && !frameOf(project)?.shape ? mirrorLayerOf(project) : undefined
+  })
+  /** A Custom frame's shape (ticket 0706): the Axes it offers and its side count, for the popover's chips and Note. */
+  const shape = computed(() => {
+    const project = deps.currentProject()
+    return project && shapeAxesOf(project)
   })
   /** That layer's Area, where one is set. */
   const area = computed(() => {
@@ -278,6 +284,7 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     releaseAxis,
     areaRow,
     area,
+    shape,
     picking,
     band,
     startPick,
