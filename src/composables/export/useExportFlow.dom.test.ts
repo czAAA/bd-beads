@@ -104,7 +104,7 @@ describe('useExportFlow', () => {
   })
 
   describe('PNG and PDF', () => {
-    it('draws the open Project as a PNG, printing the maker’s name, and hands it over named for the Project', async () => {
+    it('draws the open Project as a PNG, printing the maker’s name, and hands it over named for the Project and its maker', async () => {
       const flow = setup({ project: { ...project, makerName: 'Ada' } })
       await flow.onExportPng()
 
@@ -113,7 +113,7 @@ describe('useExportFlow', () => {
         expect.objectContaining({ name: 'My scarf', labels: en.print, maker: 'Ada' }),
         300,
       )
-      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName({ ...project, makerName: 'Ada' }, 'png'), expect.any(Blob), 'image/png')
     })
 
     it('draws the PNG page at the dpi of the Export quality on the device, like a PDF page (ticket 0583)', async () => {
@@ -127,7 +127,7 @@ describe('useExportFlow', () => {
       await setup({ project: withLayers(project, { letters: true }) }).onExportPng()
 
       expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3)])
-      expect(projectListFileName(project, 2)).toBe('openbeads-my-scarf_2.png')
+      expect(projectListFileName(project, 2)).toBe('my-scarf_2.png')
       expect(vi.mocked(exportProjectPng).mock.calls.map((call) => call[3])).toEqual([undefined, 1, 2])
     })
 

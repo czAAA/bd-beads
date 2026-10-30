@@ -63,7 +63,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
       expect.any(Number),
     )
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
-    expect(projectExportFileName(project, 'png')).toBe('openbeads-my-scarf.png')
+    expect(projectExportFileName(project, 'png')).toBe('my-scarf.png')
   })
 
   it("hands over the open Project as a PDF, with the labels in the app's language", async () => {
@@ -78,7 +78,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
       expect.any(Number),
     )
-    expect(downloadFile).toHaveBeenCalledWith('openbeads-my-scarf.pdf', expect.any(Blob), 'application/pdf')
+    expect(downloadFile).toHaveBeenCalledWith('my-scarf.pdf', expect.any(Blob), 'application/pdf')
   })
 
 })

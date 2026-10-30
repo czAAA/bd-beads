@@ -1,7 +1,7 @@
 import { normalizeHex } from './color'
 
 /** The Finishes every Brand's wording is mapped onto (ADR 0072, ticket 536), in the order they are listed. */
-const FINISHES = [
+export const FINISHES = [
   'transparent',
   'opaque',
   'ceylon',
@@ -13,7 +13,7 @@ const FINISHES = [
   'plated',
 ] as const
 
-type Finish = (typeof FINISHES)[number]
+export type Finish = (typeof FINISHES)[number]
 
 /** One maker code: facts only, no photo or durability (ADR 0072); a hex only once a human has measured one. */
 interface ColorCode {

@@ -5,9 +5,9 @@ The PNG export: the **Cover page** (PrintPage1 card) as one A4 portrait picture,
 - Title block, the framed Schema with its rulers (a number every 5, or 10 when the beads are small, a hairline every 10), Beads needed and the footer, in the order and at the sizes of the PrintPage1 card, inside the 10 mm margin (`print-margin`).
 - Drawn at 150, 300 or 450 dpi by the Export quality (QualitySlider card), like a PDF page: 1240 × 1754, 2480 × 3508 or 3720 × 5262 px. A device that cannot hold a 450 dpi page draws High at 300.
 - The PNG has no pages to point at, so the lines where the chart parts meet and their page pills are not drawn; the PDF's chart pages carry the detail.
-- Beads needed that does not fit continues on list pages: further PNG files, `bd-beads-{pattern}_2.png`, `_3.png`, handed over in order after the cover. One page still gives one file.
+- Beads needed that does not fit continues on list pages: further PNG files, `{project}-{frame}-{maker}_2.png`, `_3.png`, handed over in order after the cover. One page still gives one file.
 - The PNG is the picture a maker shares, so it never carries Swatch letters (neither on the board nor on the Beads needed swatches), whatever the Letters toggle says; the PDF keeps them.
-- An empty position draws nothing, so the board shows through as a missing bead does in a real piece (PDF Cover page too); a White bead keeps its drawn bead (outline and shading), so it never reads as empty.
-- No wide layout, no watermark. Drawn in the app's language. File name `bd-beads-{pattern}.png`.
+- An empty position shows the board, as a missing bead does in a real piece, with a small cross in `faint` over its middle (ticket 0719): two diagonals across 40% of the bead, `print-line-cell` thick and never under one device pixel, barely seen but printed, so a pale bead is never taken for empty. Where Swatch letters are drawn (the PDF Cover page with Letters on) the cross is left out: the missing letter already tells it. A White bead keeps its drawn bead (outline and shading), so it never reads as empty.
+- No wide layout, no watermark. Drawn in the app's language. File name `{project}-{frame}-{maker}.png` (ticket 0720, printed-output.md).
 
 Rewritten in ticket 0583 (one Cover page for the PNG and the PDF); the earlier card (one tall picture, the story under the chart, a bead 45, 60 or 90 px across, the 400 megapixel ceiling) is in git history.
