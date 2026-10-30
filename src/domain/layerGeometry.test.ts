@@ -217,6 +217,8 @@ describe('a Custom frame answers as its layout does', () => {
     expect(geometry.positionsIn({ x: 0, y: 0, width: 0.5, height: 0.5 })).toEqual(geometry.positions())
     expect(geometry.grid).toBe(false)
     expect(geometry.seams()).toEqual(layout.seams.map((seam) => seam.map(({ x, y }) => ({ x: placement.x + x * placement.scale, y: placement.y + y * placement.scale }))))
+    // Its symmetry (ticket 0706) is the layout's, about the centre as placed.
+    expect(geometry.symmetry!()).toEqual({ ...layout.symmetry, centre: { x: placement.x + layout.centre.x * placement.scale, y: placement.y + layout.centre.y * placement.scale } })
   })
 })
 

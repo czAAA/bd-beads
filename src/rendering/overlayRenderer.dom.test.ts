@@ -8,7 +8,7 @@ import { replaceBead } from '../domain/projectBead'
 import { moveToRow, rowProgressOf } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameShape'
-import { onLayer } from '../domain/layers'
+import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import type { Project, RowProgress } from '../domain/project'
 import { DEFAULT_THEME } from './beadLook'
@@ -667,6 +667,54 @@ describe('renderOverlay', () => {
       expect(drawn[0]![1]![0]).toBe(60)
       expect(drawn[0]![1]![1]).toBeLessThan(40)
       expect(strokes(calls).every((call) => call.globalAlpha === 1)).toBe(true)
+    })
+
+    /** A Star Frame of three rounds an arm, drawn alone; where its layout's centre is, in the Frame's px at zoom 1. */
+    const star = () => {
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+      const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Star')
+      const { centre } = frameGeometryOf(placed.project).symmetry!()
+      return { project: placed.project, centre: { x: centre.x * CELL_SIZE_PX, y: centre.y * CELL_SIZE_PX } }
+    }
+    const leans = ([from, to]: [number[], number[]]) => Math.abs((to[0]! - from[0]!) / (to[1]! - from[1]!))
+
+    it('on a Star Frame turns about the layout\'s centre with the shape\'s five sides as the Fold: in Mirror mode five mirror lines from the Seam between two arms, 36° apart, through the ring (ticket 0706)', () => {
+      const { project, centre } = star()
+      const { context, calls, named } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror') })
+
+      const ring = named('arc')[0]!
+      expect(ring.args[0]).toBeCloseTo(centre.x, 6)
+      expect(ring.args[1]).toBeCloseTo(centre.y, 6)
+      const drawn = lines(calls) as [number[], number[]][]
+      expect(drawn).toHaveLength(5)
+      // The first line leans 36° off the vertical, the Seam between the first two arms, and runs through the centre.
+      expect(leans(drawn[0]!)).toBeCloseTo(Math.tan(Math.PI / 5), 6)
+      const [from, to] = drawn[0]!
+      expect((from[0]! + to[0]!) / 2).toBeCloseTo(centre.x, 6)
+      expect((from[1]! + to[1]!) / 2).toBeCloseTo(centre.y, 6)
+      expect(strokes(calls).map((call) => call.globalAlpha)).toEqual([1, 0.45, 0.45, 0.45, 0.45, 1])
+    })
+
+    it('on a Star Frame in Repeat mode draws five rays along the Seams between the arms, 72° apart, and a Left–right Axis a vertical line through the centre; Top–bottom, no symmetry of a Star, draws nothing', () => {
+      const { project, centre } = star()
+      const repeat = recordingContext()
+      renderOverlay(repeat.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'repeat') })
+      const rays = lines(repeat.calls) as [number[], number[]][]
+      expect(rays).toHaveLength(5)
+      expect(rays.every(([from]) => Math.abs(from[0]! - centre.x) < 1e-6 && Math.abs(from[1]! - centre.y) < 1e-6)).toBe(true)
+      expect(leans(rays[0]!)).toBeCloseTo(Math.tan(Math.PI / 5), 6)
+      expect(rays[0]![1][0]).toBeGreaterThan(centre.x)
+      expect(rays[0]![1][1]).toBeLessThan(centre.y)
+
+      const straight = recordingContext()
+      renderOverlay(straight.context, { project, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false } } })
+      const axes = lines(straight.calls) as [number[], number[]][]
+      expect(axes).toHaveLength(1)
+      expect(axes[0]![0][0]).toBeCloseTo(centre.x, 6)
+      expect(axes[0]![1][0]).toBeCloseTo(centre.x, 6)
+      expect(straight.named('arc')).toHaveLength(0)
     })
 
     it('on the open Canvas draws the ring and lines at the centre handle\'s place, in Repeat mode too, with the centre chip', () => {
