@@ -112,6 +112,16 @@ export const pl: Translations = {
     pickCancel: 'anuluje',
     areaSetMessage: 'Obszar {columns} × {rows}: osie biegną wewnątrz niego',
     wholeFrameMessage: 'Cała ramka jest obszarem',
+    sidesFromShape: {
+      one: '{count} bok, z kształtu. Odbicie odbija też w obrębie każdego boku.',
+      few: '{count} boki, z kształtu. Odbicie odbija też w obrębie każdego boku.',
+      many: '{count} boków, z kształtu. Odbicie odbija też w obrębie każdego boku.',
+      other: '{count} boku, z kształtu. Odbicie odbija też w obrębie każdego boku.',
+    },
+    repeatNeedsRadial: 'Powtórz na kształcie obraca wokół jego środka: potrzebuje osi Wokół środka.',
+    noLeftRight: 'Kształt nie jest taki sam z lewej i z prawej.',
+    noTopBottom: 'Kształt nie jest taki sam u góry i u dołu.',
+    noRadial: 'Oś Wokół środka potrzebuje okrągłego kształtu: trójkąta, wygiętego kwadratu, gwiazdy lub kalejdocyklu.',
   },
   colorNames: {
     black: 'Czarny',

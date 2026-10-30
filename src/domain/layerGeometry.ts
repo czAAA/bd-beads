@@ -1,6 +1,6 @@
 import type { Rect } from './canvas'
 import type { ShapedSheet } from './frameShape'
-import { layoutNeighbors, layoutPosition, layoutPositionAt, turnedLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import { layoutNeighbors, layoutPosition, layoutPositionAt, turnedLayout, type FrameLayout, type LayoutPoint, type LayoutPosition, type LayoutSymmetry } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { describeWeave, type Weave } from './weave'
 import { insideBounds, type Box } from './weaveGeometry'
@@ -46,6 +46,9 @@ export interface LayerGeometry {
   positionsIn(box: Box, rows?: { first: number; last: number }): GridPosition[]
   /** The lines where its parts are joined (a Custom frame's Seams), from point to point; none on a grid. */
   seams(): readonly (readonly [LayoutPoint, LayoutPoint])[]
+  /** A Custom frame's symmetry about its layout's centre, as placed (ticket 0706): what Mirror's overlay draws its
+   * lines by. Only a layout with one has it. */
+  symmetry?: () => LayoutSymmetry & { centre: LayoutPoint }
 }
 
 /** A Layer laid out by its Weave: the Canvas (open, with no `bounds`), a Frame without a shape (its own rows and columns from
@@ -145,6 +148,7 @@ export function layoutGeometry(layout: FrameLayout, frame: ShapedSheet): LayerGe
     // A Custom frame is small: every bead is drawn.
     positionsIn: all,
     seams: () => layout.seams.map(([from, to]) => [at(from), at(to)] as const),
+    ...(layout.symmetry ? { symmetry: () => ({ ...layout.symmetry!, centre: at(layout.centre) }) } : {}),
   }
 }
 

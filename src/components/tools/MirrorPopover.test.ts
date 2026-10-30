@@ -120,6 +120,39 @@ describe('MirrorPopover (ticket 0703, MirrorPopover card)', () => {
   })
 })
 
+describe('on a Custom frame (ticket 0706, MirrorPopover card)', () => {
+  const kite = { offered: { leftRight: true, topBottom: false, radial: false } }
+  const star = { offered: { leftRight: true, topBottom: false, radial: true }, sides: 5 }
+  const mountOn = (setting: MirrorSetting, shape: typeof kite) => mount(MirrorPopover, { attachTo: document.body, props: { tile: undefined, pill: undefined, position: 'bottom', setting, shape } })
+
+  it('disables the Axes the shape does not offer, each saying why in its Tooltip, and a press on one changes nothing', async () => {
+    const wrapper = mountOn(on({ leftRight: true }), kite)
+    expect(wrapper.get('[data-testid="mirror-axis-leftRight"]').attributes('aria-disabled')).toBeUndefined()
+    const topBottom = wrapper.get('[data-testid="mirror-axis-topBottom"]')
+    expect(topBottom.attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="mirror-axis-radial"]').attributes('aria-disabled')).toBe('true')
+    await topBottom.trigger('click')
+    expect(wrapper.emitted('update:setting')).toBeUndefined()
+    await topBottom.element.closest('.app-tooltip')!.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('The shape is not the same top and bottom.')
+    expect(wrapper.find('[data-testid="mirror-count-leftRight"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('with Radial on a round shape notes the side count from the shape in place of the Fold Stepper, and in Repeat mode with a straight Axis that Radial is what Repeat turns by', () => {
+    const radial = mountOn(on({ radial: true }), star)
+    expect(radial.get('[data-testid="mirror-sides-note"]').text()).toBe('5 sides, from the shape. Mirror reflects within each side too.')
+    expect(radial.find('[data-testid="mirror-fold-value"]').exists()).toBe(false)
+    expect(radial.find('[data-testid="mirror-repeat-shape-note"]').exists()).toBe(false)
+    radial.unmount()
+    const repeat = mountOn(on({ leftRight: true }, {}, 'repeat'), kite)
+    expect(repeat.find('[data-testid="mirror-sides-note"]').exists()).toBe(false)
+    expect(repeat.get('[data-testid="mirror-repeat-shape-note"]').text()).toBe('Repeat on a shape turns about its centre: it needs Radial.')
+    repeat.unmount()
+  })
+})
+
 describe('the Area row (ticket 0710, MirrorPopover card)', () => {
   const area = { row: 1, column: 2, rows: 5, columns: 10 }
   const mountArea = (props: Record<string, unknown>) => mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: on({ leftRight: true }), ...props } })

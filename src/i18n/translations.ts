@@ -170,6 +170,13 @@ export interface Translations {
     pickCancel: string
     areaSetMessage: string
     wholeFrameMessage: string
+    /** A Custom frame (ticket 0706): the Note with the side count in place of the Fold Stepper on a round shape, the
+     * Note while Repeat has a straight Axis on a shape, and why a chip the shape's symmetry does not offer is off. */
+    sidesFromShape: PluralForms
+    repeatNeedsRadial: string
+    noLeftRight: string
+    noTopBottom: string
+    noRadial: string
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>

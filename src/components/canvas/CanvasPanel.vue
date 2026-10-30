@@ -113,6 +113,7 @@ const {
   onAxisRelease,
   mirrorAreaRow,
   mirrorArea,
+  mirrorShape,
   mirrorPicking,
   mirrorBand,
   onAreaPick,
@@ -405,6 +406,7 @@ const drawingStyle = computed(() => {
           :mirror-on-canvas="mirrorOnCanvas"
           :mirror-area-row="mirrorAreaRow"
           :mirror-area="mirrorArea"
+          :mirror-shape="mirrorShape"
           :mirror-picking="mirrorPicking"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
