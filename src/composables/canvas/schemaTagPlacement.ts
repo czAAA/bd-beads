@@ -42,20 +42,24 @@ export interface TagPlacement {
 }
 
 /** Where the tag hangs from `box` (the Piece's rectangle on screen, outset included): from its bottom-right corner, or
- * its bottom-left one where a tag `width` px wide would cross the box's right edge. None while that corner is out of
- * view. */
+ * its bottom-left one, mirrored, where a tag `width` px wide would cross the box's right edge and the left side has
+ * more room. None while that corner is out of view. */
 export function tagPlacement(box: BarBox, viewport: { width: number; height: number }, width: number): TagPlacement | undefined {
   const bottom = box.top + box.height
   const right = box.left + box.width
-  const side = right + DROP_X - TAG_HOLE_INSET + width > viewport.width ? 'left' : 'right'
+  const roomRight = viewport.width - (right + DROP_X - TAG_HOLE_INSET)
+  const roomLeft = box.left - DROP_X + TAG_HOLE_INSET
+  const side = roomRight < width && roomLeft > roomRight ? 'left' : 'right'
   const corner = { x: side === 'right' ? right : box.left, y: bottom }
   if (corner.x < 0 || corner.y < 0 || corner.x > viewport.width || corner.y > viewport.height) return undefined
   return { side, corner, hole: { x: corner.x + (side === 'right' ? DROP_X : -DROP_X), y: corner.y + DROP_Y } }
 }
 
-/** Where a tag's box goes for its hole to be at `hole`: the box's top-left corner. */
-export function tagOrigin(hole: Point): { left: number; top: number } {
-  return { left: hole.x - TAG_HOLE_INSET, top: hole.y - TAG_HALF_HEIGHT }
+/** Where a tag `width` px wide goes for its hole to be at the placement's: the box's top-left corner. A tag hanging
+ * left is mirrored, its holed end at the right, so it reaches out from the Piece as one hanging right does. */
+export function tagOrigin({ side, hole }: TagPlacement, width: number): { left: number; top: number } {
+  const left = side === 'right' ? hole.x - TAG_HOLE_INSET : hole.x + TAG_HOLE_INSET - width
+  return { left, top: hole.y - TAG_HALF_HEIGHT }
 }
 
 /** The paper tag's place: its top-left corner and its hole, and whether it opened above the Piece. */
