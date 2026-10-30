@@ -590,9 +590,8 @@ const MIRROR_RING_WIDTH_PX = 2
 const MIRROR_AXIS_SOFT = 0.45
 
 /** Draws Radial about its centre (ticket 0705, MirrorPopover card), clipped to a box (the Frame's, or the view): in
- * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first full and the others
- * soft; in Repeat mode the Fold's rays from it, 360° over the Fold apart; the first straight up, or `from` radians
- * clockwise of it (a Custom frame's first Seam, ticket 0706); then the ring. */
+ * Mirror mode the Fold's mirror lines through the centre, 180° over the Fold apart, the first full and the others soft;
+ * in Repeat mode the Fold's rays, 360° apart; the first straight up or `from` radians clockwise of it (0706); the ring. */
 function drawRadial(context: DrawingContext, centre: { x: number; y: number }, setting: MirrorSetting, box: Region, zoom: number, theme: ProjectTheme, from = 0): void {
   const mirror = setting.mode === 'mirror'
   const step = (mirror ? Math.PI : 2 * Math.PI) / setting.fold
@@ -669,11 +668,9 @@ function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, sett
   context.restore()
 }
 
-/** Draws Mirror's lines on a Custom frame (ticket 0706, MirrorPopover card), in the Frame's own px: with Radial on
- * a round shape, its ring and lines about the layout's centre with the shape's side count as the Fold, the first
- * along its first Seam (Repeat's rays run along the Seams, Mirror's lines down the middle of each part and along the
- * Seams); else, in Mirror mode, a straight Axis the shape offers as a line through the layout's centre across the
- * Frame's rectangle. An Axis the shape's symmetry does not offer is not drawn, as it maps nothing. */
+/** Draws Mirror's lines on a Custom frame (ticket 0706, MirrorPopover card) in the Frame's own px: Radial's ring and
+ * lines about the layout's centre, the side count as the Fold, the first along the first Seam; else, in Mirror mode, a
+ * straight Axis through the layout's centre across the rectangle. An Axis the shape does not offer is not drawn. */
 function drawLayoutAxes(context: DrawingContext, symmetry: LayoutSymmetry & { centre: LayoutPoint }, box: Region, setting: MirrorSetting, zoom: number, theme: ProjectTheme): void {
   if (!isMirrorOn(setting)) return
   const offered = offeredAxes(symmetry)

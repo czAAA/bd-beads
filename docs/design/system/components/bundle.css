@@ -935,6 +935,7 @@ body {
 .bb-mirror-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .bb-mirror-chip { height: var(--mirror-chip-height); padding: 0 12px; border: 1px solid var(--button-line); border-radius: var(--radius-full); background: var(--button); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
 .bb-mirror-chip[aria-pressed="true"] { background: var(--panel); border-color: var(--accent-strong); color: var(--accent-strong); font-weight: 600; }
+.bb-mirror-chip[aria-disabled="true"] { background: var(--surface); border-color: var(--line); color: var(--faint); cursor: not-allowed; }
 .bb-mirror-area { display: flex; gap: 6px; align-items: center; }
 .bb-mirror-area-btn { flex: 1; height: 34px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--button-line); border-radius: var(--radius-md); background: var(--button); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
 .bb-mirror-area-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }

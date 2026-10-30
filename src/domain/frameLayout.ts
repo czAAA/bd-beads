@@ -32,10 +32,9 @@ export interface LayoutJoin {
   parts: readonly number[]
 }
 
-/** A layout's own symmetry (ticket 0706, spec 0702), what Mirror finds a Custom frame's counterparts by: how many turns
- * about its centre map it onto itself (a round shape's side count; one for a Kite or Fringe earring, which only
- * reflect), and the angle of its first mirror line through the centre, a Seam's or the spine's, in radians clockwise
- * from straight up on screen. Its mirror lines lie 180° over the fold apart from there, its Seam rays 360° over it. */
+/** A layout's own symmetry (ticket 0706), what Mirror finds a Custom frame's counterparts by: how many turns about its
+ * centre map it onto itself (a round shape's side count; one for a Kite or Fringe earring, which only reflect), and its
+ * first mirror line through the centre (a Seam's or the spine's) in radians clockwise from straight up on screen. */
 export interface LayoutSymmetry {
   fold: number
   line: number

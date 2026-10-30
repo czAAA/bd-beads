@@ -212,10 +212,9 @@ export function areaBetween(from: GridPosition, to: GridPosition, within?: Rect)
   return { row, column, rows: Math.max(...rows) - row + 1, columns: Math.max(...columns) - column + 1 }
 }
 
-/** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): a Custom frame's layout (ticket 0706),
- * else the Area where one is set, else the Frame's rectangle, else the open Canvas with its placed Axes. Strips come
- * from a rectangle's edges and Radial's centre from its middle; a layout's counterparts are geometric, about its own
- * centre. */
+/** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): a Custom frame's layout (ticket 0706,
+ * geometric about its own centre), else the Area where one is set, else the Frame's rectangle (strips from its edges,
+ * Radial's centre at its middle), else the open Canvas with its placed Axes. */
 type MirrorRegion = { kind: 'layout'; layout: FrameLayout } | { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
 
 function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
@@ -519,11 +518,9 @@ function reflectedAcross({ x, y }: LayoutPoint, centre: LayoutPoint, angle: numb
   return { x: centre.x + 2 * along * Math.sin(angle) - dx, y: centre.y - 2 * along * Math.cos(angle) - dy }
 }
 
-/** A Custom frame's images (ticket 0706): the bead's centre reflected across a straight Axis through the layout's
- * centre, or turned about it by the shape's fold (in Mirror mode its reflection across the shape's first mirror line
- * turned too, the kaleidoscope), and the bead under each point taking it, as Paste lands a bead, none on a Seam or
- * Off-shape. An Axis the symmetry does not offer maps nothing, nor does a straight Axis in Repeat mode: a shape has no
- * strip to repeat. */
+/** A Custom frame's images (ticket 0706): the bead's centre reflected across a straight Axis through the layout's centre
+ * or turned about it by the fold (in Mirror mode its reflection across the first mirror line turned too), the bead under
+ * each point taking it as Paste lands one, none on a Seam. An unoffered Axis, or a straight one in Repeat, maps nothing. */
 function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImages | undefined {
   const { symmetry, centre } = layout
   if (!symmetry) return undefined
@@ -567,9 +564,8 @@ function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSettin
 }
 
 /** The positions a gesture changes under Mirror, on one layer (spec 0702): the sources as given, then their counterparts
- * inside the layer's region (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a source
- * outside the region is not mirrored, `dropped` counts counterparts off the grid or outside it, or on a Custom frame's
- * Seam or Off-shape (ticket 0706). */
+ * inside the layer's region (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a source outside
+ * the region is not mirrored, `dropped` counts counterparts off the grid or outside it, or on a Seam or Off-shape (0706). */
 export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting: MirrorSetting, positions: readonly T[]): { positions: T[]; dropped: number } {
   const { geometry } = sheet
   const region = mirrorRegionOf(sheet)
