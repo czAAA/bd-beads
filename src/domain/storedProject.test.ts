@@ -11,6 +11,7 @@ import { replaceBead } from './projectBead'
 import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { type RowProgress } from './project'
+import { canvasAxesOf, withCanvasAxes } from './mirror'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -60,6 +61,14 @@ describe('normalizeProject', () => {
     const loaded = normalizeProject(JSON.parse(JSON.stringify(turned)))
     expect(orientationOf(loaded)).toBe(90)
     expect(orientationOf(rotateCanvas(rotateCanvas(rotateCanvas(loaded))))).toBe(0)
+  })
+
+  it('keeps the Canvas\'s Mirror Axes through a save and load, and opens a file without them with none (ticket 0704; a broken record is readCanvasAxes\'s own test)', () => {
+    const placed = withCanvasAxes(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), { leftRight: 4.5, topBottom: -2 })
+    expect(canvasAxesOf(normalizeProject(JSON.parse(JSON.stringify(placed))))).toEqual({ leftRight: 4.5, topBottom: -2 })
+    const stored = JSON.parse(JSON.stringify(placed))
+    delete stored.layers[0].mirrorAxes
+    expect(canvasOf(normalizeProject(stored)).mirrorAxes).toBeUndefined()
   })
 
   it('keeps a canvas twisted to any angle through a save and load, and reads a broken one as upright (ticket 0672)', () => {

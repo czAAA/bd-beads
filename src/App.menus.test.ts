@@ -48,3 +48,20 @@ describe('Menu', () => {
     expect(loadProjects()).toHaveLength(1)
   })
 })
+
+describe('Feedback (ticket 0700)', () => {
+  it('opens the Feedback sheet from the Menu’s Send feedback and from the link under Language', async () => {
+    const wrapper = mountApp()
+    await flushPromises()
+    const fromMenu = async (testid: string) => {
+      await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+      await wrapper.get(`[data-testid="${testid}"]`).trigger('click')
+      return wrapper.get('[data-testid="feedback-sheet"]').attributes('data-kind')
+    }
+    expect(await fromMenu('menu-item-feedback')).toBe('general')
+    await wrapper.get('[data-testid="feedback-cancel"]').trigger('click')
+    expect(await fromMenu('menu-report-translation')).toBe('translation')
+    expect(wrapper.get('[data-testid="feedback-language"] [aria-checked="true"]').text()).toBe('English')
+    wrapper.unmount()
+  })
+})

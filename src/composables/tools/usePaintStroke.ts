@@ -1,13 +1,16 @@
 import { ref } from 'vue'
-import { layerAt, onLayer, type Layer } from '../../domain/layers'
-import { fillArea } from '../../domain/fill'
+import { layerAt, onLayer, type Layer, type OnLayerOptions } from '../../domain/layers'
+import { fillArea, isFillRefusal, type FillRefusal } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
-import { counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
+import { canvasMirrors, counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
 import { changedPositions } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
+import type { Rect } from '../../domain/canvas'
+import type { Translations } from '../../i18n/translations'
+import type { MessageTone } from '../ui/useToasts'
 
 /** What a stroke needs from the app shell: the open Project, Edit and its stroke calls and the active Tool. */
 export interface PaintStrokeDeps {
@@ -18,6 +21,10 @@ export interface PaintStrokeDeps {
   endSelectPress: () => void
   /** The Mirror setting (ticket 0703): a stroke and a Fill land at their counterparts too. */
   mirror: () => MirrorSetting
+  /** The Canvas positions on screen at a Fill press (Fill reach, ticket 0715); nothing until the view is measured. */
+  onScreen: () => Rect | undefined
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
 }
 
 // The Paint-tool drag (tickets 24, 55; ADR 0020, 0036): begin a stroke, paint cells as the pointer moves, end it as one
@@ -28,6 +35,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   const strokeMode = ref<'paint' | 'erase' | null>(null)
   /** The layer the stroke began on, which it stays on however far the pointer goes (ADR 0066). */
   let strokeLayer: Layer = 'canvas'
+  /** How many Fill presses Fill reach has refused (ticket 0715): the canvas shows the not-allowed cue each time it grows. */
+  const fillRefusals = ref(0)
 
   function beginStroke(mode: 'paint' | 'erase', layer: Layer) {
     strokeMode.value = mode
@@ -71,11 +80,19 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       return
     }
     deps.edit.strokeStep(
-      ...landing.map((cell) => (project: Project) =>
+      ...landing.map((cell) => (project: Project) => {
+        const sources = [{ row: cell.row, column: cell.column }]
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), [local({ row: cell.row, column: cell.column })]).positions, color)),
-      ),
+        return onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), sources.map(local)).positions, color), counterpartsThrough(project, () => sources))
+      }),
     )
+  }
+
+  /** How a Canvas command treats the Frame's footprint while the Canvas mirrors (ticket 0704, spec 0702's Edges): a
+   * counterpart lands there, hidden; the command's own sources, and everything otherwise, the Frame keeps untouched. */
+  function counterpartsThrough(project: Project, sources: () => readonly GridPosition[]): OnLayerOptions {
+    if (!canvasMirrors(project, deps.mirror())) return {}
+    return { underFrame: (position) => !sources().some((source) => source.row === position.row && source.column === position.column) }
   }
 
   /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke. */
@@ -87,13 +104,29 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
     const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
-      deps.edit.edit('drawing', (current) => onLayer(current, layer, (sheet, local) => {
-        const at = local({ row, column })
-        const filled = fillArea(sheet, at.row, at.column, color)
-        // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
-        if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
-        return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), changedPositions(sheet.beads, filled)).positions, color)
-      }))
+      let refused: FillRefusal | undefined
+      deps.edit.edit('drawing', (current) => {
+        /** What the flood itself changed: the sources, which stay clear of the Frame. */
+        let flooded: GridPosition[] = []
+        return onLayer(current, layer, (sheet, local) => {
+          const at = local({ row, column })
+          const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen() })
+          if (isFillRefusal(filled)) {
+            // Refused, it lands nowhere, counterparts included: the beads as they were leave no Undo step, nothing saved.
+            refused = filled
+            return sheet.beads
+          }
+          // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
+          if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
+          flooded = changedPositions(sheet.beads, filled)
+          return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), flooded).positions, color)
+        }, counterpartsThrough(current, () => flooded))
+      })
+      if (refused) {
+        fillRefusals.value += 1
+        const t = deps.messages().tools
+        deps.showToast('fill-refused', refused === 'open' ? t.fillOpenMessage : t.fillTooBigMessage, 'info')
+      }
       return
     }
 
@@ -101,5 +134,5 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     paintStrokeCell(row, column, color)
   }
 
-  return { strokeMode, beginStroke, endStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
+  return { strokeMode, fillRefusals, beginStroke, endStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
 }

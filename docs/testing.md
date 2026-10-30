@@ -96,7 +96,7 @@ One layout is the only layout (ADR 0046, ticket 412), so no unit test mocks a la
 
 Two things differ from a layout that keeps its controls on screen. Picking a Tool, a color or a Project closes the sheet it was picked in, so a test that reads the Palette again opens the sheet again. And a sheet that is open withholds the keyboard shortcuts and swallows the first press outside it, so a test that presses a key or the canvas closes the sheet first (`sheet-close`).
 
-The visual check's helpers (`e2e/support/app.ts`, `e2e/visual/scenarios.ts`) and the perf specs (`e2e/perf/perf.spec.ts`, `e2e/perf/memory.spec.ts`, `e2e/perf/canvases.spec.ts`) drive the same pill and sheets: opening a sheet before a control that sits in one (`openStripPanel`, for the strip's Menu and Project), picking a Tool with its pill tile (`selectTool`), opening the colour popover (`openColorPopover`), Copy by its chord (`copySelection`), and reading or stepping the zoom in the Canvas strip's cluster (`currentZoomPercent`, `setZoom`). The perf specs are not part of CI; run them by hand with `npm run perf`.
+The visual check's helpers (`e2e/support/app.ts`, `e2e/visual/scenarios.ts`) and the perf specs (`e2e/perf/perf.spec.ts`, `e2e/perf/memory.spec.ts`, `e2e/perf/canvases.spec.ts`, `e2e/perf/fillReach.spec.ts`) drive the same pill and sheets: opening a sheet before a control that sits in one (`openStripPanel`, for the strip's Menu and Project), picking a Tool with its pill tile (`selectTool`), opening the colour popover (`openColorPopover`), Copy by its chord (`copySelection`), and reading or stepping the zoom in the Canvas strip's cluster (`currentZoomPercent`, `setZoom`). The perf specs are not part of CI; run them by hand with `npm run perf`.
 
 ## The offline shell
 

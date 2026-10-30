@@ -6,10 +6,11 @@ import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
-import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
+import { beadsToDraw, bitmapBox, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
+import { drawsDraft } from '../../../rendering/draftRenderer'
 import { renderProject } from '../../../rendering/projectRenderer'
 import type { Space } from '../../../rendering/space'
-import type { Scroll } from '../../../rendering/surfaceView'
+import type { Region, Scroll } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 
 /** The Drawing surface's draw scheduler (ticket 0619): a draw asked for any number of times waits for the next
@@ -51,6 +52,15 @@ export function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: num
   canvas.width = bitmapWidth
   canvas.height = bitmapHeight
   return true
+}
+
+/** Lays the beads' canvas over `box` of the drawing area (ticket 0717): its whole box, or past it in the draft look. */
+function placeCanvas(canvas: HTMLCanvasElement, box: Region): void {
+  const whole = box.x === 0 && box.y === 0
+  canvas.style.left = whole ? '' : `${box.x}px`
+  canvas.style.top = whole ? '' : `${box.y}px`
+  canvas.style.width = whole ? '' : `${box.width}px`
+  canvas.style.height = whole ? '' : `${box.height}px`
 }
 
 /** What the beads' layer draws from: the surface's props and the view state the component and its pointer hold. */
@@ -161,7 +171,7 @@ function beadCost(project: Project): number {
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
 export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame }: BeadLayerDeps): void {
   /** What the cells were last drawn from, to draw only what an edit changed. */
-  let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
+  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
 
   /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just
    * those. */
@@ -172,7 +182,10 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
     }
 
     const pixelRatio = globalThis.devicePixelRatio || 1
-    const region = { x: props.scroll.x, y: props.scroll.y, width: size.value.width, height: size.value.height }
+    // In the draft look the bitmap reaches past the drawing area, so a pan or pinch uncovers none of it (ticket 0717).
+    const box = bitmapBox(size.value, drawsDraft(props.zoom * pixelRatio), pixelRatio)
+    placeCanvas(canvas, box)
+    const region = { x: props.scroll.x + box.x, y: props.scroll.y + box.y, width: box.width, height: box.height }
     const project = props.project
     const letters = shownLetters(project)
     const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
@@ -182,15 +195,15 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
     }
 
     const before = drawn
-    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value }
+    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value }
     const bands =
       !resized &&
       before &&
       before.zoom === props.zoom &&
       before.scroll.x === props.scroll.x &&
       before.scroll.y === props.scroll.y &&
-      before.width === region.width &&
-      before.height === region.height &&
+      before.width === size.value.width &&
+      before.height === size.value.height &&
       before.pixelRatio === pixelRatio &&
       before.theme === theme.value &&
       before.frameTheme === frameTheme.value &&
@@ -201,11 +214,11 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
         : undefined
 
     if (bands === undefined) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true })
       return
     }
     for (const rows of bands) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true })
     }
   }
 
@@ -249,7 +262,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
       return
     }
 
-    const { scale, x, y } = gestureTransform(before, { zoom: props.zoom, scroll: props.scroll })
+    const { scale, x, y } = gestureTransform(before, { zoom: props.zoom, scroll: props.scroll }, before.box)
     canvas!.style.transformOrigin = '0 0'
     canvas!.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
     clearTimeout(settleTimer)
