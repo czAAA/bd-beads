@@ -9,7 +9,7 @@ import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } fr
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import { readCanvasAxes, readMirrorSetting } from './mirror'
+import { readCanvasAxes, readMirrorArea, readMirrorSetting } from './mirror'
 import { readPieceNames } from './pieceNames'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress } from './rowProgress'
@@ -31,8 +31,9 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
     id?: string
     name?: string
     orientation?: number
-    /** The Canvas's Mirror Axes (ticket 0704), as a file may have left them. */
+    /** The Canvas's Mirror Axes (ticket 0704) and a layer's Area (ticket 0710), as a file may have left them. */
     mirrorAxes?: unknown
+    mirrorArea?: unknown
     rowProgress?: Partial<RowProgress> & { currentRow: number }
   }
 
@@ -187,6 +188,8 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
 function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): LayerFields {
   const bead = readBeadCopy(stored.bead) ?? catalogCopy(stored.beadId)
   const pieceNames = readPieceNames(stored.pieceNames)
+  // Mirror's Area (ticket 0710): a file from before it, or an unreadable record, opens with none.
+  const mirrorArea = readMirrorArea(stored.mirrorArea)
   return {
     id: typeof stored.id === 'string' && stored.id ? stored.id : fallbackId,
     ...weave,
@@ -196,6 +199,7 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
     beads: stored.beads ?? {},
     ...(stored.letters === true ? { letters: true } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
+    ...(mirrorArea ? { mirrorArea } : {}),
   }
 }
 

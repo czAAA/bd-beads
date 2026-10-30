@@ -1,5 +1,5 @@
 import type { Bead } from './beads'
-import type { BeadMap, FrameSheet } from './canvas'
+import type { BeadMap, FrameSheet, Rect } from './canvas'
 import type { Weave } from './weave'
 import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
@@ -62,6 +62,9 @@ export interface LayerFields extends Weave {
   /** The names of its Pieces (ticket 406, ADR 0050): a named Piece is an unframed Schema, named by one bead's position
    * (the anchor) since Pieces aren't stored; see domain/pieceNames.ts. Absent when no Piece has a name. */
   pieceNames?: PieceName[]
+  /** Mirror's Area (ticket 0710, spec 0702): the rectangle of this layer's cells its Axes run inside, in the layer's
+   * own positions, in place of the whole Frame or Canvas. One per layer; absent means none (domain/mirror.ts). */
+  mirrorArea?: Rect
 }
 
 /** The Canvas (layer0, ADR 0079): its name is the Project's, and its orientation is the view's turn. */
