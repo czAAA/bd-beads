@@ -20,7 +20,7 @@ import type { Weave } from './weave'
  * woven in (ticket 492), and the Layer geometry that says where its beads are. */
 export interface LayerSheet {
   beads: BeadMap
-  /** Its Weave, with the Bead's cell the Project draws it in. */
+  /** Its Weave, with the cell its Bead draws it in. */
   weave: Weave
   geometry: LayerGeometry
   /** The Frame's rectangle in its own positions, its first row and column 0, 0; none on the Canvas, which has no edge. */
@@ -30,8 +30,10 @@ export interface LayerSheet {
   /** Where Mirror's straight Axes cross the open Canvas (ticket 0704), its own geometry; none on the Frame, whose Axes
    * come from its edge and the setting's counts. */
   axes?: CanvasAxes
+  /** Mirror's Area on this layer (ticket 0710), in its own positions: the rectangle the Axes run inside in place of
+   * the whole Frame or Canvas; none where the Axes run through the whole layer. */
+  area?: Rect
 }
-
 
 
 /** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
@@ -71,7 +73,7 @@ export function positionOnCanvas(project: Layered, layer: Layer, position: GridP
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
-/** The Frame as its Frame shape reads it, in its own Weave with the Bead's cell. The Project must have a Frame. */
+/** The Frame as its Frame shape reads it, in its own Weave with its Bead's cell. The Project must have a Frame. */
 function shapedFrame(project: Layered): ShapedSheet {
   const { rows, columns, shape, settings, quarterTurns } = frameOf(project)!
   return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
@@ -104,12 +106,13 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
   const frame = layer === 'frame' ? frameOf(project) : undefined
   if (!frame) {
     const { beads, weave } = layerOf(project, 'canvas')
-    const axes = canvasOf(project).mirrorAxes
-    return { beads, weave, geometry: gridGeometry(weave), ...(axes ? { axes } : {}) }
+    const { mirrorAxes: axes, mirrorArea: area } = canvasOf(project)
+    return { beads, weave, geometry: gridGeometry(weave), ...(axes ? { axes } : {}), ...(area ? { area } : {}) }
   }
   const { beads, weave } = layerOf(project, 'frame')!
+  const { mirrorArea: area } = frame
   const edge = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
-  return { beads, weave, geometry: frameGeometryOf(project), edge, frame: shapedFrame(project) }
+  return { beads, weave, geometry: frameGeometryOf(project), edge, frame: shapedFrame(project), ...(area ? { area } : {}) }
 }
 
 /** `after` with every position under the Frame put back as `before` had it, but for those `through` lets by: the Canvas

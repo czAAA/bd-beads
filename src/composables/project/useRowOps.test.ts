@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
 import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
 import { withLayers } from '../../testUtils/layerFields'
+import { frameOf } from '../../domain/layerRecord'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
 const tracking = base
@@ -92,5 +94,84 @@ describe('useRowOps', () => {
     onConfirmResetProgress()
     expect(resetProgressConfirmOpen.value).toBe(false)
     expect(replaced(deps)).toEqual(resetRowProgress(started))
+  })
+
+  describe('the press the Pattern\'s motion plays from (ticket 0730)', () => {
+    /** A Frame of three rows, worked from the row given, open in a flow whose writes become the open Project. */
+    function working(row = 0) {
+      const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
+      const open = shallowRef<Project | undefined>(moveToRow(framed, row))
+      const ops = useRowOps({ currentProject: () => open.value, replaceProject: (next) => (open.value = next), showToast: vi.fn(), messages: () => en })
+      return { open, ...ops }
+    }
+
+    it('records each Row done and Row not done that moves the pointer: the pass it left and the one it reached', () => {
+      const { rowPress, onMoveRow } = working()
+      expect(rowPress.value).toBeUndefined()
+      onMoveRow(1)
+      expect(rowPress.value).toMatchObject({ done: true, from: 0, to: 1, patternDone: false })
+      const first = rowPress.value!.id
+      onMoveRow(-1)
+      expect(rowPress.value).toMatchObject({ done: false, from: 1, to: 0, patternDone: false })
+      expect(rowPress.value!.id).not.toBe(first)
+    })
+
+    it('marks Pattern done on the press that finishes the last pass, and on no other', () => {
+      const { rowPress, onMoveRow } = working(2)
+      onMoveRow(1)
+      expect(rowPress.value).toMatchObject({ done: true, from: 2, to: 3, patternDone: true })
+      // Every pass is done: a press that moves nothing is no press, and Row not done leaves Pattern done.
+      const finished = rowPress.value
+      onMoveRow(1)
+      expect(rowPress.value).toBe(finished)
+      onMoveRow(-1)
+      expect(rowPress.value).toMatchObject({ done: false, patternDone: false })
+    })
+
+    it('records nothing when the pointer changes without a press: a Project opened finished, or Undo', async () => {
+      const { open, rowPress } = working()
+      open.value = moveToRow(open.value!, 3)
+      await nextTick()
+      expect(rowPress.value).toBeUndefined()
+    })
+
+    it('stops on Reset progress, a turn of the row direction, Remove Frame, leaving the Project, and when asked (Undo, Redo)', async () => {
+      const reset = working(2)
+      reset.onMoveRow(1)
+      reset.onResetProgress()
+      reset.onConfirmResetProgress()
+      expect(reset.rowPress.value).toBeUndefined()
+
+      const turned = working(2)
+      turned.onMoveRow(1)
+      turned.onToggleRowDirection()
+      expect(turned.rowPress.value).toBeUndefined()
+
+      const removed = working(2)
+      removed.onMoveRow(1)
+      removed.open.value = withLayers(removed.open.value!, { frame: undefined })
+      await nextTick()
+      expect(removed.rowPress.value).toBeUndefined()
+
+      const left = working(2)
+      left.onMoveRow(1)
+      left.open.value = { ...left.open.value!, id: 'another' }
+      await nextTick()
+      expect(left.rowPress.value).toBeUndefined()
+
+      const undone = working(2)
+      undone.onMoveRow(1)
+      undone.stopRowMotion()
+      expect(undone.rowPress.value).toBeUndefined()
+    })
+
+    it('keeps playing through an edit that leaves the Project and its Frame in place', async () => {
+      const { open, rowPress, onMoveRow } = working(2)
+      onMoveRow(1)
+      open.value = withLayers(open.value!, { name: 'Renamed' })
+      await nextTick()
+      expect(frameOf(open.value)).toBeDefined()
+      expect(rowPress.value?.patternDone).toBe(true)
+    })
   })
 })

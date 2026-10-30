@@ -1,5 +1,5 @@
 import type { Rect } from './canvas'
-import { pieceAreasOf } from './pieces'
+import { pieceAreasOf } from './pieceAreas'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
 import { finishedOnLine, lineRunsAlong, rowProgressOf, rowProgressPosition } from './rowProgress'

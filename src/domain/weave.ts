@@ -44,7 +44,7 @@ export interface Weave {
   technique: Technique
   /** Its settings by id (tickets 0624, 0625, 0627); a setting left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** How the Bead is drawn (ADR 0068, ticket 0724); absent leaves the Technique's own cell. Never stored with a
+  /** How the layer's Bead is drawn (ADR 0068, ticket 0724); absent is the Technique's own cell. Never stored with a
    * layer: the layer's Bead decides it (`beadCell`). */
   cell?: BeadCell
 }
@@ -113,8 +113,8 @@ const TECHNIQUE_RULES = {
 
 const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
 
-/** The one geometry function for a Bead's cell (ADR 0068, ticket 0724): the Bead's height over its pitch along the thread and its
- * outline; none for a Bead nobody knows, which leaves the Technique's own cell (undefined, so every rule below reads as before). */
+/** The one geometry function for a Bead's cell (ADR 0068, ticket 0724): the Bead's height over its pitch along the
+ * thread and its outline. No Bead (a bare Weave) leaves the Technique's own cell, so every rule below reads as before. */
 export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'> & { formFactor: Pick<Bead['formFactor'], 'roundness'> } | undefined): BeadCell | undefined {
   if (!bead) {
     return undefined
@@ -122,7 +122,7 @@ export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'hei
   return { aspect: bead.heightMm / beadPitchMm(bead), roundness: bead.formFactor.roundness }
 }
 
-/** The Weave with the Bead's cell added (none leaves it as it is). */
+/** The Weave with the Bead's cell added (none, without a Bead, leaves it as it is). */
 export function withCell(weave: Weave, cell: BeadCell | undefined): Weave {
   return cell ? { ...weave, cell } : weave
 }

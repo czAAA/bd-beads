@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, withColors } from './canvas'
-import { pieceAreasOf, piecesOf } from './pieces'
+import { numericKey, piecesInSteps, piecesOf } from './pieces'
 
 const R = '#e63746'
 const place = (...at: [number, number][]) => withColors({}, at.map(([row, column]) => ({ row, column, color: R })))
@@ -36,9 +36,9 @@ describe('pieces', () => {
   it('merges two pieces when a bead is painted between them, and splits them when it is erased', () => {
     const apart = place([0, 0], [0, 5])
     const joined = withColors(apart, [1, 2, 3, 4].map((column) => ({ row: 0, column, color: R })))
-    expect(pieceAreasOf(apart, { technique: 'loom' })).toHaveLength(2)
-    expect(pieceAreasOf(joined, { technique: 'loom' })).toHaveLength(1)
-    expect(pieceAreasOf(withColors(joined, [2, 3].map((column) => ({ row: 0, column, color: null }))), { technique: 'loom' })).toHaveLength(2)
+    expect(piecesOf(apart, { technique: 'loom' })).toHaveLength(2)
+    expect(piecesOf(joined, { technique: 'loom' })).toHaveLength(1)
+    expect(piecesOf(withColors(joined, [2, 3].map((column) => ({ row: 0, column, color: null }))), { technique: 'loom' })).toHaveLength(2)
   })
 
   it('works at negative positions', () => {
@@ -48,79 +48,6 @@ describe('pieces', () => {
   it('gives the same array back for the same beads, so a repaint that changes nothing costs nothing', () => {
     const beads = beadsFromColors([[R, R], [null, R]])
     expect(piecesOf(beads, { technique: 'loom' })).toBe(piecesOf(beads, { technique: 'loom' }))
-  })
-})
-
-describe('piece areas', () => {
-  const ring = (top: number, left: number, size: number): [number, number][] => {
-    const at: [number, number][] = []
-    for (let i = 0; i < size; i += 1) {
-      at.push([top, left + i], [top + size - 1, left + i], [top + i, left], [top + i, left + size - 1])
-    }
-    return at
-  }
-
-  it('is empty for an empty canvas', () => {
-    expect(pieceAreasOf({}, { technique: 'loom' })).toEqual([])
-  })
-
-  it('draws one area for a big Piece with smaller Pieces inside its rectangle', () => {
-    // A hollow 7x7 ring with a plus shape inside that touches nothing.
-    const beads = place(...ring(0, 0, 7), [2, 3], [3, 2], [3, 3], [3, 4], [4, 3])
-    expect(piecesOf(beads, { technique: 'loom' })).toHaveLength(2)
-    expect(pieceAreasOf(beads, { technique: 'loom' })).toEqual([{ row: 0, column: 0, rows: 7, columns: 7 }])
-  })
-
-  it('merges transitively when a joined area grows to reach another', () => {
-    // An L Piece with two beads inside its rectangle; (3, 5) touches that rectangle by a corner and grows it, then (4, 0) touches the grown one only.
-    const beads = place([0, 4], [1, 4], [2, 4], [2, 3], [2, 2], [2, 1], [2, 0], [0, 0], [0, 2], [3, 5], [4, 0])
-    expect(pieceAreasOf(beads, { technique: 'loom' })).toEqual([{ row: 0, column: 0, rows: 5, columns: 6 }])
-  })
-
-  it('keeps Pieces with two empty beads between them apart', () => {
-    const l: [number, number][] = [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]
-    expect(pieceAreasOf(place(...l, [0, 5]), { technique: 'loom' })).toHaveLength(2)
-    expect(pieceAreasOf(place(...l, [-3, 3]), { technique: 'loom' })).toHaveLength(2)
-  })
-
-  it('joins Pieces with one empty bead between them, by a side or diagonally', () => {
-    const l: [number, number][] = [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]
-    expect(pieceAreasOf(place(...l, [0, 4]), { technique: 'loom' })).toEqual([{ row: 0, column: 0, rows: 3, columns: 5 }])
-    expect(pieceAreasOf(place(...l, [-2, 4]), { technique: 'loom' })).toEqual([{ row: -2, column: 0, rows: 5, columns: 5 }])
-  })
-
-  it('makes one area of beads in a triangle, each one bead from the next', () => {
-    const beads = place([0, 0], [0, 2], [2, 1])
-    expect(piecesOf(beads, { technique: 'loom' })).toHaveLength(3)
-    expect(pieceAreasOf(beads, { technique: 'loom' })).toEqual([{ row: 0, column: 0, rows: 3, columns: 3 }])
-  })
-
-  it('joins a Piece whose rectangle touches another by a side or a corner, though no beads touch', () => {
-    const l: [number, number][] = [[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]
-    expect(pieceAreasOf(place(...l, [0, 3]), { technique: 'loom' })).toEqual([{ row: 0, column: 0, rows: 3, columns: 4 }])
-    expect(pieceAreasOf(place(...l, [-1, 3]), { technique: 'loom' })).toEqual([{ row: -1, column: 0, rows: 4, columns: 4 }])
-  })
-
-  it('uses the same margin on peyote and brick stitch, the half-bead shift not keeping nearby Pieces apart', () => {
-    for (const technique of ['peyote', 'brick'] as const) {
-      expect(pieceAreasOf(place([0, -1], [1, 0]), { technique })).toHaveLength(1)
-      expect(pieceAreasOf(place([0, 0], [0, 2]), { technique })).toHaveLength(1)
-      expect(pieceAreasOf(place([0, 0], [0, 3]), { technique })).toHaveLength(2)
-      expect(pieceAreasOf(place([0, 0], [3, 0]), { technique })).toHaveLength(2)
-    }
-  })
-
-  it('re-forms as beads are painted and erased', () => {
-    const apart = place([0, 0], [0, 5])
-    const joined = withColors(apart, [1, 2, 3, 4].map((column) => ({ row: 0, column, color: R })))
-    expect(pieceAreasOf(apart, { technique: 'loom' })).toHaveLength(2)
-    expect(pieceAreasOf(joined, { technique: 'loom' })).toHaveLength(1)
-    expect(pieceAreasOf(withColors(joined, [2, 3].map((column) => ({ row: 0, column, color: null }))), { technique: 'loom' })).toHaveLength(2)
-  })
-
-  it('gives the same array for the same beads', () => {
-    const beads = place([0, 0])
-    expect(pieceAreasOf(beads, { technique: 'loom' })).toBe(pieceAreasOf(beads, { technique: 'loom' }))
   })
 })
 
@@ -138,5 +65,38 @@ describe('pieces with a Drop (ticket 477)', () => {
     const beads = place([1, 0], [2, 1])
     expect(piecesOf(beads, { technique: 'brick' })).toHaveLength(1)
     expect(piecesOf(beads, block2)).toHaveLength(2)
+  })
+})
+
+describe('the Pieces walked a step at a time (ticket 0716)', () => {
+  /** Two solid blocks 60,000 beads in all, apart, and a name on the second. */
+  function twoBlocks() {
+    const beads: Record<number, Record<number, string>> = {}
+    for (let row = 0; row < 200; row += 1) {
+      beads[row] = {}
+      for (let column = 0; column < 150; column += 1) beads[row]![column] = R
+      for (let column = 200; column < 350; column += 1) beads[row]![column] = R
+    }
+    return beads
+  }
+
+  it('stops more than once on a big layer and ends with what a walk at once finds, and the Piece each anchor is on', () => {
+    const beads = twoBlocks()
+    const walk = piecesInSteps(beads, { technique: 'loom' }, [{ row: 5, column: 210 }, { row: 5, column: 160 }])
+    let stops = 0
+    let step = walk.next()
+    while (!step.done) {
+      stops += 1
+      step = walk.next()
+    }
+
+    expect(stops).toBeGreaterThan(2)
+    expect(step.value.pieces).toEqual([
+      { row: 0, column: 0, rows: 200, columns: 150, beads: 30_000 },
+      { row: 0, column: 200, rows: 200, columns: 150, beads: 30_000 },
+    ])
+    expect(step.value.anchored.get(numericKey({ row: 5, column: 210 }))).toBe(step.value.pieces[1])
+    expect(step.value.anchored.has(numericKey({ row: 5, column: 160 }))).toBe(false)
+    expect(piecesOf(beads, { technique: 'loom' })).toBe(step.value.pieces)
   })
 })

@@ -9,6 +9,7 @@ import { useProjectLibrary } from './useProjectLibrary'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { frameOf } from '../../domain/layerRecord'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
+import { storedHugeProject, storeLibrary } from '../../testUtils/hugeProject'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -395,5 +396,71 @@ describe('useProjectLibrary', () => {
       expect(ids(library)).toEqual([first.id, third.id])
       expect(ids(useProjectLibrary())).toEqual([first.id, third.id])
     })
+  })
+})
+
+describe('Projects kept sealed when the library opens (ticket 0716)', () => {
+  it('never opens a Project over the size gate at load: the next most recent one opens, and the gated one stays stored', () => {
+    const small = makeProject({ updatedAt: 500, savedAt: 500 })
+    storeLibrary([small], [storedHugeProject({ id: 'huge', savedAt: 2000 })])
+
+    const library = useProjectLibrary()
+
+    expect(library.activeProjectId.value).toBe(small.id)
+    expect(library.projects.value.map((project) => project.id)).toEqual([small.id])
+    expect(library.sealed.value.map((project) => project.id)).toEqual(['huge'])
+  })
+
+  it('opens none when every Project is over the gate', () => {
+    storeLibrary([], [storedHugeProject()])
+
+    expect(useProjectLibrary().activeProjectId.value).toBeUndefined()
+  })
+
+  it('keeps the Project that did not open last time sealed and opens none, however small it is', () => {
+    const small = makeProject({ updatedAt: 500 })
+    const other = makeProject({ updatedAt: 400 })
+    storeLibrary([small, other])
+
+    const library = useProjectLibrary(undefined, undefined, { held: small.id })
+
+    expect(library.activeProjectId.value).toBeUndefined()
+    expect(library.sealed.value.map((project) => project.id)).toEqual([small.id])
+    expect(library.projects.value.map((project) => project.id)).toEqual([other.id])
+  })
+
+  it('opens a sealed Project when it is picked, decoded only then', () => {
+    const small = makeProject({ name: 'Held' })
+    storeLibrary([small])
+    const library = useProjectLibrary(undefined, undefined, { held: small.id })
+
+    library.openSealed(small.id)
+
+    expect(library.activeProject.value).toEqual(loadProjects()[0])
+    expect(library.sealed.value).toEqual([])
+  })
+
+  it('removes a sealed Project from the library and from storage, the rest saved as they were', () => {
+    const small = makeProject()
+    storeLibrary([small], [storedHugeProject()])
+    const library = useProjectLibrary()
+
+    library.removeProject('huge')
+
+    expect(library.sealed.value).toEqual([])
+    const stored = JSON.parse(localStorage.getItem('openbeads:patterns')!) as { patterns: { id: string }[] }
+    expect(stored.patterns.map((project) => project.id)).toEqual([small.id])
+  })
+
+  it('writes a sealed Project back with every save of the others', () => {
+    const small = makeProject()
+    const huge = storedHugeProject()
+    storeLibrary([small], [huge])
+    const library = useProjectLibrary()
+
+    library.replaceProject(withPaintedCell(small, 0, 0))
+
+    const stored = JSON.parse(localStorage.getItem('openbeads:patterns')!) as { patterns: unknown[] }
+    expect(stored.patterns).toContainEqual(huge)
   })
 })

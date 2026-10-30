@@ -581,3 +581,51 @@ The two toasts (Message card, info tone) after a Fill tool press on the Canvas t
 |---|---|---|---|---|---|---|
 | Nothing encloses this spot. Select an area to fill it. | Это место ничем не окружено. Выделите область, чтобы залить её. | Це місце нічим не оточене. Виділіть область, щоб залити її. | Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе. | 这里没有被围住。选择一个区域即可填充。 | Nada rodea este punto. Selecciona un área para rellenarla. | Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić. |
 | Too big to fill. Zoom in, or select an area. | Слишком большая область для заливки. Увеличьте масштаб или выделите область. | Завелика область для заливки. Збільште масштаб або виділіть область. | Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць. | 区域太大，无法填充。放大画布，或选择一个区域。 | Demasiado grande para rellenar. Acerca la vista o selecciona un área. | Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar. |
+
+## First-run hints copy (ticket 0725)
+
+The hand-drawn notes over an empty Project (FirstRunHints card). "/" marks a line break; in a language where a line runs longer, the note wraps rather than overflows. A tool quoted in a sentence takes the language's quotes («», “”), as Russian does for buttons. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings.
+
+**Desktop and tablet**
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| 1 · pick Paint and draw anywhere | 1 · возьмите «Кисть» / и рисуйте где угодно | 1 · візьміть «Пензель» / і малюйте будь-де | 1 · вазьміце «Пэндзаль» / і малюйце дзе заўгодна | 1 · 选择“涂色”，在任意位置绘制 | 1 · elige Pintar y dibuja donde quieras | 1 · wybierz Maluj i rysuj, gdzie chcesz |
+| 2 · pick Select and drag a box round your drawing | 2 · возьмите «Выделение» и обведите рисунок | 2 · візьміть «Виділення» й обведіть малюнок | 2 · вазьміце «Вылучэнне» і абвядзіце малюнак | 2 · 用“选择”框住你的图案 | 2 · elige Seleccionar y arrastra un recuadro alrededor del dibujo | 2 · wybierz Zaznacz i przeciągnij prostokąt wokół rysunku |
+| 3 · make a Frame round your drawing, / then set its name, size and Bead here | 3 · обведите рисунок рамкой, / а здесь задайте её название, размер и бисер | 3 · обведіть малюнок рамкою, / а тут задайте її назву, розмір і бісер | 3 · абвядзіце малюнак рамкай, / а тут задайце яе назву, памер і бісер | 3 · 给图案加上边框，/ 再在这里设置名称、尺寸和珠子 | 3 · pon un marco alrededor del dibujo / y aquí elige su nombre, tamaño y cuenta | 3 · otocz rysunek ramką, / a tu ustaw jej nazwę, rozmiar i koralik |
+| 4 · export a picture / or a printable chart | 4 · экспортируйте картинку / или схему для печати | 4 · експортуйте картинку / або схему для друку | 4 · экспартуйце выяву / або схему для друку | 4 · 导出图片 / 或可打印的图样 | 4 · exporta una imagen / o un esquema para imprimir | 4 · wyeksportuj obrazek / lub schemat do druku |
+| open, save, / preferences, / language… (Menu) | открыть, сохранить, / настройки, / язык… | відкрити, зберегти, / налаштування, / мова… | адкрыць, захаваць, / налады, / мова… | 打开、保存、/ 偏好设置、/ 语言… | abrir, guardar, / preferencias, / idioma… | otwórz, zapisz, / ustawienia, / język… |
+| your Project: its name, maker, / Technique, Bead and background (Project) | ваш проект: название, автор, / техника, бисер и фон | ваш проєкт: назва, автор, / техніка, бісер і тло | ваш праект: назва, аўтар, / тэхніка, бісер і фон | 你的项目：名称、作者、/ 技法、珠子和背景 | tu proyecto: nombre, autor, / técnica, cuenta y fondo | twój projekt: nazwa, autor, / technika, koralik i tło |
+| Mirror: paint both sides of an axis at once | «Отражение»: рисуйте по обе стороны оси | «Відображення»: малюйте з обох боків осі | «Адлюстраванне»: малюйце з абодвух бакоў восі | 镜像：同时在轴的两侧绘制 | Espejo: pinta a los dos lados de un eje a la vez | Odbicie: maluj po obu stronach osi naraz |
+| colors and your Palette | цвета и ваша палитра | кольори і ваша палітра | колеры і ваша палітра | 颜色和你的调色板 | colores y tu paleta | kolory i twoja paleta |
+| your first Pattern in four steps: (welcome) | ваша первая схема в четыре шага: | ваша перша схема в чотири кроки: | ваша першая схема ў чатыры крокі: | 四步完成你的第一个图样： | tu primer esquema en cuatro pasos: | twój pierwszy schemat w czterech krokach: |
+| draw → select → frame → export | рисунок → выделение → рамка → экспорт | малюнок → виділення → рамка → експорт | малюнак → вылучэнне → рамка → экспарт | 绘制 → 选择 → 边框 → 导出 | dibujar → seleccionar → marco → exportar | rysunek → zaznaczenie → ramka → eksport |
+
+**Phone (30rem and under)**
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| 1 · pick Paint and draw | 1 · «Кисть»: рисуйте | 1 · «Пензель»: малюйте | 1 · «Пэндзаль»: малюйце | 1 · 选“涂色”来画 | 1 · elige Pintar y dibuja | 1 · wybierz Maluj i rysuj |
+| 2 · pick Select, drag a box | 2 · «Выделение»: обведите | 2 · «Виділення»: обведіть | 2 · «Вылучэнне»: абвядзіце | 2 · 用“选择”框选 | 2 · Seleccionar: arrastra un recuadro | 2 · Zaznacz: obrysuj rysunek |
+| 3 · make a Frame round it, / then set it up here | 3 · рамка вокруг рисунка, / настройте её здесь | 3 · рамка навколо малюнка, / налаштуйте її тут | 3 · рамка вакол малюнка, / наладзьце яе тут | 3 · 加上边框，/ 在这里设置 | 3 · ponle un marco / y ajústalo aquí | 3 · otocz ramką, / ustaw ją tutaj |
+| 4 · export, at the end / of this strip | 4 · экспорт: в конце / этой полосы | 4 · експорт: у кінці / цієї смуги | 4 · экспарт: у канцы / гэтай паласы | 4 · 导出：在这条栏的 / 末尾 | 4 · exportar: al final / de esta barra | 4 · eksport: na końcu / tego paska |
+
+English and Russian were approved on the canvas; Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.
+
+## A Project that won't open copy (ticket 0716)
+
+The notice row after a load that found the safe start's note still set (Message card, warning tone), the question before a Project over the size gate opens (ConfirmDialogs card), the Projects library's rows for a sealed Project and a count not yet in (MenuPanel card), and the Homepage's second button, which is the Menu row's own name and the count ("Projects library · 3"), so it needs no string of its own. The size warning gives the count in millions: Russian, Ukrainian, Belarusian and Polish write «млн» / "mln", which takes no plural form after a number.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| “{name}” didn't open last time. | Проект «{name}» не открылся в прошлый раз. | Проєкт «{name}» не відкрився минулого разу. | Праект «{name}» не адкрыўся ў мінулы раз. | “{name}”上次没有打开。 | «{name}» no se abrió la última vez. | Projekt „{name}” nie otworzył się ostatnim razem. |
+| Remove · Export | Удалить · Экспортировать | Видалити · Експортувати | Выдаліць · Экспартаваць | 移除 · 导出 | Quitar · Exportar | Usuń · Eksportuj |
+| Open “{name}”? | Открыть «{name}»? | Відкрити «{name}»? | Адкрыць «{name}»? | 打开“{name}”？ | ¿Abrir «{name}»? | Otworzyć „{name}”? |
+| {count} million beads. Opening may be slow or fail. | {count} млн бисеринок. Открытие может быть медленным или не удаться. | {count} млн бісеринок. Відкриття може бути повільним або не вдатися. | {count} млн бісерынак. Адкрыццё можа быць павольным або не атрымацца. | {count} 百万颗珠子。打开可能很慢或失败。 | {count} millones de cuentas. Abrirlo puede ser lento o fallar. | {count} mln koralików. Otwieranie może być wolne lub się nie udać. |
+| Open anyway · Cancel | Всё равно открыть · Отмена | Однаково відкрити · Скасувати | Усё адно адкрыць · Скасаваць | 仍然打开 · 取消 | Abrir igualmente · Cancelar | Otwórz mimo to · Anuluj |
+| too big to count | слишком много, чтобы посчитать | забагато, щоб порахувати | зашмат, каб палічыць | 太多，无法计数 | demasiado para contar | za dużo, by policzyć |
+| Counting pieces | Считаем части | Рахуємо частини | Лічым часткі | 正在计数小块 | Contando trozos | Liczenie kawałków |
+| {count} beads | {count} бисеринка / бисеринки / бисеринок | {count} бісеринка / бісеринки / бісеринок | {count} бісерынка / бісерынкі / бісерынак | {count} 颗珠子 | {count} cuenta / cuentas | {count} koralik / koraliki / koralików |
+| made {created} · saved {saved} | создан {created} · сохранён {saved} | створено {created} · збережено {saved} | створаны {created} · захаваны {saved} | 创建于 {created} · 保存于 {saved} | creado {created} · guardado {saved} | utworzono {created} · zapisano {saved} |
+
+Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for review with the build.

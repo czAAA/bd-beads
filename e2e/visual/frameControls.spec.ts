@@ -174,6 +174,11 @@ for (const zoom of [60, 80, 100]) {
   }
 }
 
+/** Whether a press that landed on `testid` is inside the element marked `owner`, or is that element. */
+async function inside(page: Page, owner: string, testid: string): Promise<boolean> {
+  return testid === owner || (await page.getByTestId(owner).getByTestId(testid).count()) > 0
+}
+
 /** What a press at the middle of each of a box's 12px squares lands on, past its rounded corners: the testid of the
  * nearest marked element. */
 async function landsOn(page: Page, area: Box, inset: number): Promise<string[]> {
@@ -203,13 +208,44 @@ test('the Tool pill and its color popover are drawn over the margin sheet, whose
   const popover = await box(page, 'color-popover')
   expect(overlaps(title, pill) && overlaps(title, popover), 'the title block lies under the pill and the popover').toBe(true)
 
-  const pillLayer = (testid: string) => page.getByTestId('tool-pill-layer').getByTestId(testid).count().then((n) => n > 0)
-  for (const [area, inset] of [[pill, pill.height / 2], [popover, 16]] as const) {
-    for (const hit of new Set(await landsOn(page, area, inset))) expect(await pillLayer(hit), `a press there lands on ${hit}`).toBe(true)
+  for (const [owner, area, inset] of [['tool-pill-layer', pill, pill.height / 2], ['color-popover', popover, 16]] as const) {
+    for (const hit of new Set(await landsOn(page, area, inset))) expect(await inside(page, owner, hit), `a press there lands on ${hit}`).toBe(true)
   }
   // The fold button stands clear of the pill: it takes its press.
   const fold = await box(page, 'margin-title-fold')
   expect(overlaps(fold, pill) || overlaps(fold, popover)).toBe(false)
   expect(await landsOn(page, { x: fold.x + fold.width / 2 - 1, y: fold.y + fold.height / 2 - 1, width: 2, height: 2 }, 0)).toEqual(['margin-title-fold'])
+  await context.close()
+})
+
+// An iPad held sideways with the pill on the right: the color popover reaches down past the Progress bar, and the Custom
+// color picker opened in it was drawn under the bar, out of reach (ticket 0726). It sits over the canvas box's bars, and
+// on a screen too short for it, it scrolls to its last field.
+test('the Custom color picker beside a right-hand pill is drawn over the Progress bar, and scrolls on a short screen', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1024, height: 768 }, reducedMotion: 'reduce', hasTouch: true })
+  const page = await context.newPage()
+  await page.addInitScript(() => localStorage.setItem('openbeads:tool-pill-position', 'right'))
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 30, rows: 30 })])
+  await settle(page)
+  await openColorPopover(page)
+  await page.getByTestId('custom-color-button').click()
+  await settle(page)
+
+  const popover = await box(page, 'color-popover')
+  expect(overlaps(popover, await box(page, 'progress-bar')), 'the popover reaches over the Progress bar').toBe(true)
+  for (const hit of new Set(await landsOn(page, popover, 16))) expect(await inside(page, 'color-popover', hit), `a press there lands on ${hit}`).toBe(true)
+
+  const short = 420
+  await page.setViewportSize({ width: 1024, height: short })
+  await settle(page)
+  const scroller = page.getByTestId('color-popover')
+  expect(await scroller.evaluate((el) => el.scrollHeight > el.clientHeight), 'the popover scrolls').toBe(true)
+  const shown = await box(page, 'color-popover')
+  expect(shown.y + shown.height).toBeLessThanOrEqual(short)
+  await scroller.evaluate((el) => (el.scrollTop = el.scrollHeight))
+  await settle(page)
+  const hex = await box(page, 'custom-color-hex')
+  expect(hex.y, 'the hex field is scrolled into view').toBeGreaterThanOrEqual(shown.y)
+  expect(hex.y + hex.height).toBeLessThanOrEqual(shown.y + shown.height)
   await context.close()
 })

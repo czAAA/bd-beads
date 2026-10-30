@@ -49,7 +49,7 @@ const { t, locale } = useI18n()
 
 const name = ref('')
 /** The Frame's Layer settings (ADR 0079, ticket 0671), pre-filled from the Starter: its Weave, the Bead its design is
- * made for, and the device's last Background until one is picked. */
+ * made for and the device's last Background until one is picked. */
 const technique = ref<Technique>(props.starter.weave.technique)
 const settings = ref<TechniqueSettings>({ ...props.starter.weave.techniqueSettings })
 const beadId = ref(STARTER_BEAD_ID)

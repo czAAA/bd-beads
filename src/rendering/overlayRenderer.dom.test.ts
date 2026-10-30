@@ -8,10 +8,11 @@ import { replaceBead } from '../domain/projectBead'
 import { moveToRow, rowProgressOf } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameShape'
-import { onLayer } from '../domain/layers'
+import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import type { Project, RowProgress } from '../domain/project'
 import { DEFAULT_THEME } from './beadLook'
+import { GLINT_COLOR, ROW_MOTION } from './rowMotion'
 import { beadRoundness, type Technique } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay as renderOverlayWith } from './overlayRenderer'
@@ -21,7 +22,7 @@ import { displayedExtentPx, surfaceView } from './surfaceView'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
-import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
+import { MIRROR_OFF, withMirrorArea, type MirrorSetting } from '../domain/mirror'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -38,6 +39,9 @@ function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: 
 }
 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
+/** The Project in a Bead this device does not know, drawn in its Technique's own cell (rounded in peyote), not a cube's. */
+const ownCell = (project: Project): Project => withLayers(project, { bead: undefined })
+
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const beads: BeadMap = {}
@@ -124,7 +128,7 @@ describe('renderOverlay', () => {
 
     it('rings each peyote bead with its own corner radius, less the half stroke', () => {
       const R = beadRoundness('peyote') * CELL_SIZE_PX - 1
-      const project = withLayers(projectOf('peyote', 5, 3, { currentRow: 0 }), { bead: undefined })
+      const project = ownCell(projectOf('peyote', 5, 3, { currentRow: 0 }))
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -160,6 +164,38 @@ describe('renderOverlay', () => {
 
       expect(named('fillRect')).toHaveLength(0)
       expect(named('fill')).toHaveLength(0)
+    })
+  })
+
+  describe('the glint of a pass just finished (BeadBoard card, ticket 0730)', () => {
+    const glinted = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fill' && call.fillStyle === GLINT_COLOR && call.globalAlpha > 0)
+    const plainRed = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.fillStyle === '#e63746')
+
+    it('washes each bead of the pass in white and shows it at full color until the dim delay', () => {
+      const project = projectOf('loom', 4, 3, { currentRow: 2 })
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
+      expect(glinted(calls)).toHaveLength(4)
+      expect(plainRed(calls).length).toBeGreaterThan(0)
+    })
+
+    it('washes only the beads that pass adds on peyote', () => {
+      const project = projectOf('peyote', 5, 3, { currentRow: 3 })
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 2, elapsed: 0.35 * ROW_MOTION.glint }] } })
+      expect(glinted(calls)).toHaveLength(2)
+    })
+
+    it('leaves the pass to its finished look after the dim delay, and draws nothing of it with Row highlight off', () => {
+      const project = projectOf('loom', 4, 3, { currentRow: 2 })
+      const later = recordingContext()
+      renderOverlay(later.context, { project, region: whole(project), zoom: 1, rowMotion: { glints: [{ pass: 1, elapsed: ROW_MOTION.dimDelay }] } })
+      expect(glinted(later.calls)).toEqual([])
+      expect(plainRed(later.calls)).toEqual([])
+
+      const off = recordingContext()
+      renderOverlay(off.context, { project, region: whole(project), zoom: 1, rowMarks: false, rowMotion: { glints: [{ pass: 1, elapsed: 0.35 * ROW_MOTION.glint }] } })
+      expect(glinted(off.calls)).toEqual([])
     })
   })
 
@@ -199,6 +235,23 @@ describe('renderOverlay', () => {
       expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
       // Each of the four beads is lifted and ringed, both turned: eight turns, no more.
       expect(named('rotate')).toHaveLength(8)
+    })
+
+    it('glints the round just finished one bead at a time in its Row order, each turned to its panel (ticket 0730)', () => {
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+      const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
+      const project = moveToRow(onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746')), 2)
+      const washed = (elapsed: number) => {
+        const { context, calls } = recordingContext()
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), rowMotion: { glints: [{ pass: 1, elapsed }] } })
+        return calls.filter((call) => call.name === 'fill' && call.fillStyle === GLINT_COLOR && call.globalAlpha > 0)
+      }
+
+      // The first bead has started and the next not yet; a little later all four are washing.
+      expect(washed(ROW_MOTION.glintStep / 2)).toHaveLength(1)
+      expect(washed(4 * ROW_MOTION.glintStep)).toHaveLength(4)
     })
   })
 
@@ -252,7 +305,7 @@ describe('renderOverlay', () => {
     })
 
     it('follows a shifted row and the Technique\'s packing, and rounds a peyote outline', () => {
-      const project = withLayers(projectOf('peyote', 4, 3, noProgress), { bead: undefined })
+      const project = ownCell(projectOf('peyote', 4, 3, noProgress))
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: null } })
@@ -490,6 +543,47 @@ describe('renderOverlay', () => {
     })
   })
 
+  describe('the Area the Axes run inside (ticket 0710, MirrorPopover card)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+    const fills = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fillRect').map((call) => call.args)
+
+    it('on a Frame draws the Area as the Selection\'s rectangle round its cells and the Axis lines inside it, not across the Frame', () => {
+      const project = withMirrorArea(projectOf('loom', 6, 4, { marks: false }), 'frame', { row: 1, column: 1, rows: 2, columns: 4 })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: on({ leftRight: true }) })
+
+      expect(lines(calls)).toEqual([[[60, 20], [60, 60]]])
+      expect(fills(calls)).toEqual([[20, 20, 80, 2], [20, 58, 80, 2], [20, 20, 2, 40], [98, 20, 2, 40]])
+      expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.marker)
+    })
+
+    it('on the open Canvas draws the Area and its Axes in place of the view-wide Axes, with the Selection\'s eight handles when the view is known, and the band a pick drags with none', () => {
+      const framed = projectOf('loom', 6, 5, { marks: false })
+      const open = withMirrorArea((changeFrame(framed, { remove: true }) as { project: Project }).project, 'canvas', { row: 2, column: 3, rows: 2, columns: 2 })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(open, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project: open, space: spaceOf(open, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: { leftRight: 1 }, handles: [] }, mirrorArea: { surface, touch: false, band: { row: 0, column: 0, rows: 1, columns: 3, layer: 'canvas' } } })
+
+      expect(lines(calls)).toEqual([[[80, 40], [80, 80]]])
+      expect(fills(calls).slice(0, 4)).toEqual([[60, 40, 40, 2], [60, 78, 40, 2], [60, 40, 2, 40], [98, 40, 2, 40]])
+      expect(fills(calls).slice(4)).toEqual([[0, 0, 60, 2], [0, 18, 60, 2], [0, 0, 2, 20], [58, 0, 2, 20]])
+      expect(named('roundRect')).toHaveLength(8)
+    })
+
+    it('draws no Area while the mode is Off', () => {
+      const project = withMirrorArea(projectOf('loom', 6, 4, { marks: false }), 'frame', { row: 1, column: 1, rows: 2, columns: 4 })
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+      expect(named('fillRect')).toHaveLength(0)
+    })
+  })
+
   describe('Mirror\'s Axes on the open Canvas (ticket 0704)', () => {
     const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
     const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
@@ -497,7 +591,7 @@ describe('renderOverlay', () => {
       return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
     }
     const open = () => withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
-    const handle = { direction: 'leftRight' as const, x: 70, y: 56, size: 32 }
+    const handle = { axis: 'leftRight' as const, x: 70, y: 56, size: 32 }
 
     it('draws each Axis as a dashed marker line across the whole view in screen px, and its chip at a fixed size over everything', () => {
       const { context, calls, named } = recordingContext()
@@ -529,6 +623,111 @@ describe('renderOverlay', () => {
       const none = recordingContext()
       renderOverlayWith(none.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: {}, handles: [] } })
       expect(none.named('stroke')).toHaveLength(0)
+    })
+  })
+
+  describe('Radial on a Frame and on the open Canvas (ticket 0705, MirrorPopover card)', () => {
+    const radial = (fold: number, mode: MirrorSetting['mode']): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+    const strokes = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'stroke')
+
+    it('in Mirror mode draws the ring at the Frame\'s centre and the Fold\'s mirror lines through it, the first vertical and full, the others soft, clipped to the Frame', () => {
+      const project = projectOf('loom', 6, 4, { marks: false })
+      const { context, calls, named } = recordingContext()
+      renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: radial(4, 'mirror') })
+
+      const ring = named('arc')[0]!
+      expect(ring.args.slice(0, 3)).toEqual([60, 40, 3.5])
+      expect(ring.strokeStyle).toBe(DEFAULT_THEME.marker)
+      expect(named('rect').map((call) => call.args)).toContainEqual([0, 0, 120, 80])
+      expect(named('clip')).toHaveLength(1)
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(4)
+      const [[from, to]] = drawn as [number[], number[]][]
+      expect([from![0], to![0]]).toEqual([60, 60])
+      expect(from![1]).toBeLessThan(40)
+      expect(to![1]).toBeGreaterThan(40)
+      // The second line leans 45°: as far across as down.
+      const [[from2, to2]] = drawn.slice(1) as [number[], number[]][]
+      expect(Math.abs((to2![0] - from2![0]) / (to2![1] - from2![1]))).toBeCloseTo(1, 6)
+      expect(strokes(calls).map((call) => call.globalAlpha)).toEqual([1, 0.45, 0.45, 0.45, 1])
+    })
+
+    it('in Repeat mode draws the Fold\'s sector rays from the centre, the first straight up, all full, and no straight Axis line', () => {
+      const project = projectOf('loom', 6, 4, { marks: false })
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: { ...radial(3, 'repeat'), axes: { leftRight: true, topBottom: false, radial: true } } })
+
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(3)
+      expect(drawn.every(([from]) => from![0] === 60 && from![1] === 40)).toBe(true)
+      expect(drawn[0]![1]![0]).toBe(60)
+      expect(drawn[0]![1]![1]).toBeLessThan(40)
+      expect(strokes(calls).every((call) => call.globalAlpha === 1)).toBe(true)
+    })
+
+    /** A Star Frame of three rounds an arm, drawn alone; where its layout's centre is, in the Frame's px at zoom 1. */
+    const star = () => {
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+      const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Star')
+      const { centre } = frameGeometryOf(placed.project).symmetry!()
+      return { project: placed.project, centre: { x: centre.x * CELL_SIZE_PX, y: centre.y * CELL_SIZE_PX } }
+    }
+    const leans = ([from, to]: [number[], number[]]) => Math.abs((to[0]! - from[0]!) / (to[1]! - from[1]!))
+
+    it('on a Star Frame turns about the layout\'s centre with the shape\'s five sides as the Fold: in Mirror mode five mirror lines from the Seam between two arms, 36° apart, through the ring (ticket 0706)', () => {
+      const { project, centre } = star()
+      const { context, calls, named } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror') })
+
+      const ring = named('arc')[0]!
+      expect(ring.args[0]).toBeCloseTo(centre.x, 6)
+      expect(ring.args[1]).toBeCloseTo(centre.y, 6)
+      const drawn = lines(calls) as [number[], number[]][]
+      expect(drawn).toHaveLength(5)
+      // The first line leans 36° off the vertical, the Seam between the first two arms, and runs through the centre.
+      expect(leans(drawn[0]!)).toBeCloseTo(Math.tan(Math.PI / 5), 6)
+      const [from, to] = drawn[0]!
+      expect((from[0]! + to[0]!) / 2).toBeCloseTo(centre.x, 6)
+      expect((from[1]! + to[1]!) / 2).toBeCloseTo(centre.y, 6)
+      expect(strokes(calls).map((call) => call.globalAlpha)).toEqual([1, 0.45, 0.45, 0.45, 0.45, 1])
+    })
+
+    it('on a Star Frame in Repeat mode draws five rays along the Seams between the arms, 72° apart, and a Left–right Axis a vertical line through the centre; Top–bottom, no symmetry of a Star, draws nothing', () => {
+      const { project, centre } = star()
+      const repeat = recordingContext()
+      renderOverlay(repeat.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'repeat') })
+      const rays = lines(repeat.calls) as [number[], number[]][]
+      expect(rays).toHaveLength(5)
+      expect(rays.every(([from]) => Math.abs(from[0]! - centre.x) < 1e-6 && Math.abs(from[1]! - centre.y) < 1e-6)).toBe(true)
+      expect(leans(rays[0]!)).toBeCloseTo(Math.tan(Math.PI / 5), 6)
+      expect(rays[0]![1][0]).toBeGreaterThan(centre.x)
+      expect(rays[0]![1][1]).toBeLessThan(centre.y)
+
+      const straight = recordingContext()
+      renderOverlay(straight.context, { project, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false } } })
+      const axes = lines(straight.calls) as [number[], number[]][]
+      expect(axes).toHaveLength(1)
+      expect(axes[0]![0][0]).toBeCloseTo(centre.x, 6)
+      expect(axes[0]![1][0]).toBeCloseTo(centre.x, 6)
+      expect(straight.named('arc')).toHaveLength(0)
+    })
+
+    it('on the open Canvas draws the ring and lines at the centre handle\'s place, in Repeat mode too, with the centre chip', () => {
+      const open = withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
+      const chip = { axis: 'radial' as const, x: 70, y: 30, size: 32 }
+      const { context, calls, named } = recordingContext()
+      renderOverlayWith(context, { project: open, space: spaceOf(open, true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: radial(2, 'repeat'), canvasAxes: { axes: { centre: { row: 1, column: 3 } }, handles: [chip] } })
+
+      expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 7])
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(2)
+      expect(drawn.every(([from]) => from![0] === 70 && from![1] === 30)).toBe(true)
+      expect(named('arc').find((call) => call.args[2] === 16)!.args.slice(0, 2)).toEqual([70, 30])
     })
   })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { anyChangedPosition, beadBounds, beadCount, beadsFromColors, beadsInFrame, changedPositions, changedRows, colorAt, colorsInFrame, forEachBead, hasBeads, withColors, type BeadMap } from './canvas'
+import { anyChangedPosition, beadBounds, knownBounds, beadCount, beadsFromColors, beadsInFrame, changedPositions, changedRows, colorAt, colorsInFrame, forEachBead, hasBeads, withColors, type BeadMap } from './canvas'
 import { BEAD_CATALOG } from './beads'
 import { createProject } from './createProject'
 import { paintAt } from '../testUtils/layers'
@@ -53,6 +53,20 @@ describe('beads by position', () => {
     // The edge column emptied: the bounds shrink.
     const column0 = Array.from({ length: 300 }, (_, row) => ({ row, column: 0, color: null }))
     expect(beadBounds(withColors(nicked, column0))).toEqual({ row: -2, column: 1, rows: 302, columns: 310 })
+  })
+
+  it('grows an edit’s box from a box known on decoding, and from a set measured before another (ticket 0731)', () => {
+    const square = Array.from({ length: 300 * 300 }, (_, i) => ({ row: Math.floor(i / 300), column: i % 300, color: '#f00' }))
+    const counting = countingBeads(withColors({}, square))
+    knownBounds(counting.beads, { row: 0, column: 0, rows: 300, columns: 300 })
+    expect(beadBounds(withColors(counting.beads, [{ row: 150, column: 310, color: '#0f0' }]))).toEqual({ row: 0, column: 0, rows: 300, columns: 311 })
+    expect(counting.reads.beads).toBeLessThan(2 * 300 * 4)
+
+    expect(beadBounds(beadsFromColors([['#f00']]))).toEqual({ row: 0, column: 0, rows: 1, columns: 1 })
+    expect(beadBounds(counting.beads)).toEqual({ row: 0, column: 0, rows: 300, columns: 300 })
+    counting.reset()
+    expect(beadBounds(withColors(counting.beads, [{ row: -1, column: 5, color: '#0f0' }]))).toEqual({ row: -1, column: 0, rows: 301, columns: 300 })
+    expect(counting.reads.beads).toBeLessThan(2 * 300 * 4)
   })
 
   it('visits beads in reading order and counts them', () => {

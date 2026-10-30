@@ -1,7 +1,7 @@
 import { colorAt, forEachBead, type BeadChange, type BeadMap } from './canvas'
 import { frameLayoutOf } from './frameShape'
 import { laidSize } from './frameOrientation'
-import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import { beadUnder, keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { layoutPlacement, turnedGridCentre, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
@@ -94,7 +94,7 @@ export function cellOfBead(sheet: LayerSheet, position: GridPosition): GridPosit
   const near = cellsAround(holding)
   const onBead = (cell: GridPosition) => {
     const { x, y } = cellCentre(weave, cell)
-    return landingAt(placement.layout, (x - placement.x) / placement.scale, (y - placement.y) / placement.scale) === found
+    return beadUnder(placement.layout, (x - placement.x) / placement.scale, (y - placement.y) / placement.scale) === found
   }
   // The cell holding the centre first, if its own centre is on the bead; else a neighbour whose centre is.
   return (onBead(holding) ? holding : near.find(onBead)) ?? holding
@@ -224,12 +224,12 @@ function droppedOnCells(weave: Weave, beads: readonly { centre: LayoutPoint; col
 }
 
 /** Where a Paste aimed at a Custom frame's cell puts the anchor bead, on screen in cell widths: on the centre of the bead
- * under the cell's centre, so a copy laid on the same shape lands bead for bead; the cell's centre on a Seam or
- * Off-shape. */
+ * under the cell's centre (`aimedBead`), so a copy laid on the same shape lands bead for bead; the cell's centre on a
+ * Seam or Off-shape. */
 export function aimOf(sheet: LayerSheet, cell: GridPosition): LayoutPoint {
   const placement = placementOf(sheet)
   const aim = cellCentre(sheet.weave, cell)
-  const under = landingAt(placement.layout, (aim.x - placement.x) / placement.scale, (aim.y - placement.y) / placement.scale)
+  const under = beadUnder(placement.layout, (aim.x - placement.x) / placement.scale, (aim.y - placement.y) / placement.scale)
   return under ? centreOf(placement, under) : aim
 }
 

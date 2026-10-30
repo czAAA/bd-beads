@@ -5,7 +5,10 @@ import { BUILT_IN_COLORS } from './palette'
 import { createProject } from './createProject'
 import { normalizeProject } from './storedProject'
 import type { Grid, Project } from './project'
-import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
+import { decodeBeads, decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
+import { beadBounds, beadCount, type BeadMap } from './canvas'
+import { beadTotal } from './openingLimits'
+import { projectColors } from './layerBeads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { frameSheetOf, withLayers } from '../testUtils/layerFields'
@@ -217,5 +220,22 @@ describe('encodeProject / decodeProject', () => {
     expect(frameSheetOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
     expect(beadsOfLayer(read, 'canvas')).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
     expect(read).not.toHaveProperty('coveredBeads')
+  })
+})
+
+describe('what decoding keeps of a layer (ticket 0716)', () => {
+  // Gaps, negative columns, a color past the table, a run of no length and two runs of one color in a row.
+  const stored = { colors: ['#111111', '#222222'], rows: { '-3': '-4:1x2,0,2,1', 0: '-2:2,1x0,1,0x3,1x2', 5: '3:0,9,0', 7: '0:' } }
+
+  it('is what working it out from the beads gives: the box, the count, each row\'s colors and its stored runs', () => {
+    const decoded = decodeBeads(stored)
+    const copy: BeadMap = JSON.parse(JSON.stringify(decoded))
+
+    expect(decoded).toEqual(copy)
+    expect(beadBounds(decoded)).toEqual(beadBounds(copy))
+    expect(beadTotal(decoded)).toBe(beadCount(copy))
+    const asProject = (beads: BeadMap) => withLayers(makeProject(4, 4), { beads, frame: undefined })
+    expect(projectColors(asProject(decoded))).toEqual(projectColors(asProject(copy)))
+    expect(encodeProject(asProject(decoded)).layers[0]!.encodedBeads).toEqual(encodeProject(asProject(copy)).layers[0]!.encodedBeads)
   })
 })

@@ -1,4 +1,4 @@
-import { changedPositions, type BeadMap } from './canvas'
+import { changedRows, type BeadMap } from './canvas'
 import type { GridPosition } from './grid'
 import { numericKey, touching } from './pieces'
 import { rowCycle, type Weave } from './weave'
@@ -14,15 +14,21 @@ export interface BeadPresence {
   removed: GridPosition[]
 }
 
-/** The positions an edit filled and emptied, read from the rows it changed alone. */
+/** The positions an edit filled and emptied, read from the rows it changed alone, in no order: a Fill's new colors
+ * cost one lookup each (ticket 0731). */
 export function presenceChanges(before: BeadMap, after: BeadMap): BeadPresence {
   const added: GridPosition[] = []
   const removed: GridPosition[] = []
-  for (const position of changedPositions(before, after)) {
-    const was = before[position.row]?.[position.column] !== undefined
-    const now = after[position.row]?.[position.column] !== undefined
-    if (now && !was) added.push(position)
-    else if (was && !now) removed.push(position)
+  for (const row of changedRows(before, after)) {
+    const [was, now] = [before[row] ?? {}, after[row] ?? {}]
+    let kept = 0
+    for (const key of Object.keys(now)) {
+      if (was[Number(key)] === undefined) added.push({ row, column: Number(key) })
+      else kept += 1
+    }
+    // Every bead of the row before still there is one of `kept`, so a row that lost none is not read again.
+    if (kept === Object.keys(was).length) continue
+    for (const key of Object.keys(was)) if (now[Number(key)] === undefined) removed.push({ row, column: Number(key) })
   }
   return { added, removed }
 }

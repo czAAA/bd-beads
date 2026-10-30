@@ -380,7 +380,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   })
 
   /** The lattice as a block of beads for the Project renderer: shaped like a Project, upright, with no Row progress,
-   * in the Bead chosen. */
+   * in its Bead's real cell. */
   const drawnProject = computed(() => {
     const shown = live.value
     if (!shown) return undefined

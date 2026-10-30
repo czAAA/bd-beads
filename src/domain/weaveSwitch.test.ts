@@ -13,6 +13,7 @@ import { canvasOf, frameOf, withFrameSheet } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 
 describe('a Frame woven in its own Technique (ticket 492)', () => {
+  /** The cube's real cell, which every layer of these Projects draws (ticket 0724). */
   const cell = beadCell(findBead('toho-cube-1.5mm'))
   const canvasLoom = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
   /** A loom Canvas with a peyote Frame of 4 × 6 at (10, 10). */
