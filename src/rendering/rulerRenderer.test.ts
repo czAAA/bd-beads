@@ -143,7 +143,7 @@ describe('drawRulers', () => {
 })
 
 describe('the names of the Schemas', () => {
-  it('are not drawn on the canvas: an unframed Schema\'s name is its hang tag, page markup over it (ticket 0721)', () => {
+  it('are not drawn on the canvas: an unframed Schema\'s name is its tag, page markup over it (ticket 0721)', () => {
     const named = withLayers(base, {
       beads: withColors({}, [0, 1, 2].map((offset) => ({ row: 10, column: 10 + offset, color: '#ff0000' }))),
       pieceNames: [{ name: 'Sketch', row: 10, column: 10 }],
