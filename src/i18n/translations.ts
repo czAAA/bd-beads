@@ -142,6 +142,11 @@ export interface Translations {
     /** The Note while the mode is on and no Axis is. */
     turnAxisOn: string
     close: string
+    /** The Selection bar's Mirror (ticket 0707): its Tooltip body, what it announces, and the Message counting the
+     * counterparts that had nowhere to land (off the layer, on a Seam or Off-shape, in a finished row). */
+    copyToCounterparts: string
+    announceSelectionMirrored: string
+    droppedMessage: PluralForms
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
