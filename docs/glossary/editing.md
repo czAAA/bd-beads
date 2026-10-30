@@ -62,6 +62,14 @@ _Avoid_: duplicate, clone
 Copy, then empty the Selection's beads, as one undo step (Ctrl/Cmd+X, the Selection bar's scissors; tickets 415, 447). Then, as Copy does, the Selection is cleared, the tool becomes Select and paste mode is on, so hovering previews the cut piece and a click stamps it. Acts on the Selection's layer and honours the Row progress lock and the keep-out margin like Clear selection.
 _Avoid_: remove, move
 
+**Fill tool**:
+The Tools-group tool that floods a region with the current color in one press (ticket 25; key `2`), as one Undo step: the pressed bead and every bead of its color joined to it, or the empty positions joined to an empty one, as the layer's Weave joins them. Inside the Frame it stops at the Frame's edge; on the Canvas it keeps to **Fill reach**. Not the Selection bar's Fill, which fills a chosen rectangle.
+_Avoid_: bucket, flood fill
+
+**Fill reach**:
+How far a Fill tool press on the Canvas may go (ticket 0715, ADR 0026; decided in the grilling session of 2026-10-30). Through beads: the same-colored beads joined to the pressed one as far as they go, on screen or off. Into empty space: only an enclosed hole, the empty region joined to the press as long as it stays on screen (the positions the renderer counts as in view at the press); a region that reaches the screen's edge is open space, and the press is refused with the toast "Nothing encloses this spot. Select an area to fill it." Under the **Fill cap**: a press that would paint more than 250,000 positions (about a 500 × 500 patch) is refused with "Too big to fill. Zoom in, or select an area." A refused press changes nothing, shows the not-allowed pointer for a moment, and has no Undo step and no Mirror counterparts. Inside the Frame none of this applies: its edge bounds the Fill, with no cap. To fill open space, select an area and use the Selection bar's Fill.
+_Avoid_: fill limit, fill bound
+
 **Fill (Selection)**:
 The Selection bar's Fill: every position in the Selection, empty ones too, takes the current color on the Selection's layer (inside the Frame, only its own cells), as one undo step; the keep-out margin and finished rows trim it silently, as Paste (ticket 415). Not the Fill tool, which floods a region.
 _Avoid_: paint selection
@@ -82,7 +90,7 @@ The live drawing aid that lands every drawing gesture (a Paint or Eraser stroke,
 _Avoid_: mirror tool, symmetry, symmetry tool, kaleidoscope (Kaleidocycle is a Frame shape), copy mode, Mirror current (retired names)
 
 **Mirror mode**:
-How Mirror lays a counterpart: **Mirror**, a reflection (A | A′), or **Repeat**, the same way round (A | A). One switch for every Axis, Radial included: Mirror with Radial is a kaleidoscope, Repeat with Radial a plain turn. Off is the popover's third position and keeps every other setting for next time.
+How Mirror lays a counterpart: **Mirror**, a reflection (A | A′), or **Repeat**, the same way round (A | A). One switch for every Axis, Radial included: Mirror with Radial is a kaleidoscope, Repeat with Radial a plain turn. Off is the segmented control's first position (Off | Mirror | Repeat) and keeps every other setting for next time; key `8` brings the mode back as it last was.
 _Avoid_: copy mode, flip mode, symmetry kind
 
 **Axis**:

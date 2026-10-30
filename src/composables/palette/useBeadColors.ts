@@ -55,8 +55,9 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
       : []
   })
 
-  // `bead` is handed out so the list reads a typed shop code as the Bead's own (ticket 0696).
-  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead }
+  // `bead` is handed out so the list reads a typed shop code as the Bead's own (ticket 0696); `catalog` so its empty
+  // state can say which sizes a code exists in (ticket 0713).
+  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog }
 }
 
 export type BeadColors = ReturnType<typeof useBeadColors>

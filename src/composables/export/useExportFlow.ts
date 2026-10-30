@@ -126,7 +126,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   /** Export of a sealed Project (the notice's, for the one that didn't open): the file written from its stored form,
    * never decoded (ticket 0716). */
   function onExportSealed(project: SealedProject) {
-    return handOverFile(projectFileNameOf(project.name), () => packStoredProjectFile(project.stored))
+    return handOverFile(projectFileNameOf(project.name, project.makerName), () => packStoredProjectFile(project.stored))
   }
 
   function onExportPng() {

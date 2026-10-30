@@ -46,6 +46,7 @@ const {
   canvasOrientation,
   twistPhase,
   selectionRefusals,
+  fillRefusals,
   activeTool,
   showRulers,
   stroking,
@@ -92,6 +93,10 @@ const {
   toolPillPopoverOpen,
   recentsInPill,
   pickRecent,
+  mirrorSetting,
+  mirrorLimits,
+  mirrorPopoverOpen,
+  onMirrorChange,
   selectedColorHex,
   selectedColorId,
   customColor,
@@ -285,8 +290,10 @@ const drawingStyle = computed(() => {
               :preview-cells="previewCells"
               :preview-stamp="previewStamp"
               :preview-color="previewColor"
+              :mirror="mirrorSetting"
               :selection="selection"
               :selection-refusals="selectionRefusals"
+              :fill-refusals="fillRefusals"
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
@@ -323,6 +330,9 @@ const drawingStyle = computed(() => {
           v-if="activeProject"
           v-model:position="toolPillPosition"
           v-model:popover-open="toolPillPopoverOpen"
+          v-model:mirror-popover-open="mirrorPopoverOpen"
+          :mirror="mirrorSetting"
+          :mirror-limits="mirrorLimits"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"
@@ -333,6 +343,7 @@ const drawingStyle = computed(() => {
           :custom-color="customColor"
           @select-tool="onSelectTool"
           @paste-mode="onPasteMode"
+          @update:mirror="onMirrorChange"
           @pick-recent="pickRecent"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"

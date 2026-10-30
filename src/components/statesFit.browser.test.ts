@@ -1,6 +1,8 @@
 import { defineComponent, h, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
+import MirrorPopover from './tools/MirrorPopover.vue'
+import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
 import AppButton from './ui/AppButton.vue'
@@ -43,6 +45,21 @@ const ColorPopoverHost = defineComponent({
       h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
         h('button', { ref: tile, type: 'button' }, 'Color'),
         h(ColorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', colorHex: '#e63746', colorName: 'Red', selectedColorId: 'red' }),
+      ])
+  },
+})
+
+/** The Mirror popover placed against its tile on the pill (ticket 0703): with a Frame, both Axes on, so the count
+ * Steppers and every row show. */
+const MirrorPopoverHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 } }),
       ])
   },
 })
@@ -96,8 +113,9 @@ const sealedProject = { id: 'sealed', name: 'Black fill', createdAt: Date.UTC(20
 
 /** The Bead's Color catalog as its list reads it (a stand-in for `useBeadColors`). */
 function beadColors(state: 'ready' | 'failed') {
-  const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: 'metallic', hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
-  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), load: () => {}, add: () => 'added' as const }
+  const finishes = ['metallic', 'matte', 'opaque'] as const
+  const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: finishes[i]!, hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
+  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const }
 }
 
 /** A Delica catalog of a few codes, so Bead colors is offered and matched to. */
@@ -143,6 +161,7 @@ const MarginColorPopoverHost = defineComponent({
 
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
+  ['MirrorPopover', MirrorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['Missed Project notice', MissedProjectNotice, {}],
