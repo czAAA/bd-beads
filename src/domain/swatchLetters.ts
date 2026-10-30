@@ -44,3 +44,9 @@ export function lettersFor(hexes: readonly string[], kept: unknown): SwatchLette
   }
   return letters
 }
+
+/** Whether a board drawn with these letters carries any: where it does not, its empty positions get a cross instead
+ * (ticket 0719). */
+export function lettersDrawn(letters: SwatchLetters | undefined): boolean {
+  return !!letters && Object.values(letters).some(Boolean)
+}
