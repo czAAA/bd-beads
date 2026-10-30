@@ -11,7 +11,7 @@ import { ROW_MOTION } from './rowMotion'
 import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
-import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */
@@ -88,6 +88,19 @@ describe('drawRulers', () => {
     drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLine, LIGHT_THEME.pieceLine])
+  })
+
+  it('numbers the box round every bead of a layer whose Pieces are not counted yet, without its line (ticket 0716)', () => {
+    const surface = surfaceAt(1)
+    const pieces = { beads: beadsOfLayer(twoPieces, 'canvas'), cycle: 1, areas: [{ row: 0, column: 0, rows: 13, columns: 13 }], named: [], uncounted: true as const }
+    const layout = rulerLayout(twoPieces, surface, { fontPx: 11, numbers: true, pieces })
+    const { context, strokes, texts } = fakeContext()
+
+    drawRulers(context, { project: twoPieces, surface, layout, pixelRatio: 1, theme: LIGHT_THEME, rowMarks: false })
+
+    expect(layout.boxes).toMatchObject([{ row: 0, column: 0, rows: 13, columns: 13, outlined: false }])
+    expect(strokes).toHaveLength(0)
+    expect(texts.length).toBeGreaterThan(0)
   })
 
   it('draws no Piece rectangle with Rulers off, and both rectangles and numbers with Rulers on', () => {

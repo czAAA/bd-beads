@@ -10,8 +10,8 @@ import AppTooltip from '../ui/AppTooltip.vue'
 
 const props = withDefaults(
   defineProps<{
-    /** Every Project saved on this device, for spotting import collisions. */
-    projects: Project[]
+    /** Every Project saved on this device, sealed ones too (ticket 0716): their ids, for spotting import collisions. */
+    projects: readonly Pick<Project, 'id'>[]
     // Icons only, each name kept as tooltip and accessible name: the Menu's look and the empty canvas's (ticket 142;
     // `writing.md`, Fitting longer text).
     compact?: boolean

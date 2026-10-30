@@ -1,5 +1,6 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
-import { changedRows, type BeadMap } from '../../../domain/canvas'
+import { changedRows } from '../../../domain/canvas'
+import { beadTotal } from '../../../domain/openingLimits'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
 import { layersAlike } from '../../../domain/layerWeave'
 import { draftCost } from '../../../domain/weave'
@@ -77,6 +78,8 @@ export interface BeadLayerDeps {
   /** Whether the Row progress look is drawn (ticket 474). */
   marksShown: Ref<boolean>
   oncePerFrame: (draw: () => void) => () => void
+  /** Called after each draw of every bead in view: the safe start's first drawn frame (ticket 0716). */
+  onDrawn?: () => void
 }
 
 /** Whether two Projects differ only in the colors of their beads (`updatedAt` and `savedAt`, which every stroke step
@@ -145,20 +148,11 @@ function changedBands(before: Project, after: Project): { first: number; last: n
   return bands
 }
 
-/** How many beads a Project stores: counted once per set of beads, since an edit replaces it. */
-const storedCounts = new WeakMap<object, number>()
-
+/** How many beads a Project stores: counted once per set of beads, an edit's from the last by the rows it changed, and
+ * known from decoding for a layer just opened (ticket 0716). */
 function storedBeads(project: Project): number {
-  const counted = (beads: BeadMap) => {
-    let count = storedCounts.get(beads)
-    if (count === undefined) {
-      count = Object.values(beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
-      storedCounts.set(beads, count)
-    }
-    return count
-  }
   const frame = layerOf(project, 'frame')
-  return counted(layerOf(project, 'canvas').beads) + (frame ? counted(frame.beads) : 0)
+  return beadTotal(layerOf(project, 'canvas').beads) + (frame ? beadTotal(frame.beads) : 0)
 }
 
 /** What one bead of the Project costs to draw, in square beads: its costlier layer's (a rounded bead is three). */
@@ -169,7 +163,7 @@ function beadCost(project: Project): number {
 
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame }: BeadLayerDeps): void {
+export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn }: BeadLayerDeps): void {
   /** What the cells were last drawn from, to draw only what an edit changed. */
   let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
 
@@ -215,6 +209,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, fram
 
     if (bands === undefined) {
       renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true })
+      onDrawn?.()
       return
     }
     for (const rows of bands) {

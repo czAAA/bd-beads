@@ -35,3 +35,13 @@ export function groupThousands(value: number, locale: Locale = 'en'): string {
 export function decimalSign(locale: Locale): string {
   return numberFormat(locale, 1).formatToParts(1.5).find((part) => part.type === 'decimal')?.value ?? '.'
 }
+
+/** A count of beads in millions for the size gate's warning (ticket 0716): "31" for 31 771 024, "2,5" for 2 512 000 in
+ * Russian; cut down, never rounded up, with one decimal under ten million and a trailing zero left out. */
+export function inMillions(value: number, locale: Locale = 'en'): string {
+  const TENTH_OF_A_MILLION = 100_000
+  const WHOLE_FROM_TENTHS = 100
+  const tenths = Math.floor(value / TENTH_OF_A_MILLION)
+  const shown = tenths >= WHOLE_FROM_TENTHS ? Math.floor(tenths / 10) : tenths / 10
+  return Number.isInteger(shown) ? groupThousands(shown, locale) : numberFormat(locale, 1).format(shown)
+}

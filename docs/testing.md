@@ -58,6 +58,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
 - `countingBeads.ts`: a set of beads behind a counter of the rows and beads read, so a test counts the work an edit does instead of timing it (ticket 0674).
+- `hugeProject.ts`: `storedHugeProject` builds a Project over the size gate straight in its stored form, so no test holds millions of beads, and `storeLibrary` stores it with ordinary Projects as a reload would find them (ticket 0716).
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
 - `storageWrites.ts`: count localStorage writes, or make one fail.
 - `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.

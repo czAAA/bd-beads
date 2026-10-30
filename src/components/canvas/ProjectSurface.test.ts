@@ -95,6 +95,18 @@ describe('ProjectSurface', () => {
     expect(wrapper.attributes('data-zoom')).toBe('0.6')
   })
 
+  it('says when every bead in view is drawn, for the safe start (ticket 0716)', async () => {
+    const frames: (() => void)[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1)
+    expect(wrapper.emitted('drawn')).toBeUndefined()
+
+    frames.splice(0).forEach((frame) => frame())
+
+    expect(wrapper.emitted('drawn')).toHaveLength(1)
+  })
+
   it.each([
     { look: 'full', from: 0.6, to: 0.3, ticket: '349', moved: 'translate(-10px, -20px) scale(0.5)' },
     // The draft look's canvas lies half a drawing area out on every side (ticket 0717), which the move is measured from.

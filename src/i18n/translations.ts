@@ -249,6 +249,14 @@ export interface Translations {
     unnamedPieces: string
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
+    /** A row's Piece count over the size gate, never counted (ticket 0716). */
+    tooBigToCount: string
+    /** The Tooltip of a row's count still being worked out in idle time (ticket 0716). */
+    countingPieces: string
+    /** "31 771 024 beads": a sealed Project's bead count, in its row (ticket 0716). */
+    beads: PluralForms
+    /** A sealed Project's row: "made {created} · saved {saved}", dates in the app's language (ticket 0716). */
+    sealedDates: string
   }
   /** The Starter gallery and its setup (tickets 0596, 0597; StarterGallery card). */
   starters: {
@@ -377,7 +385,6 @@ export interface Translations {
     tagline: string
     makeFirstProject: string
     openEditor: string
-    projectsSaved: string
     whatsInside: string
     /** The carousel's ‹ › buttons. */
     previousFeature: string
@@ -1211,5 +1218,19 @@ export interface Translations {
     rateLimited: string
     failed: string
     sent: string
+  }
+  /** Safe start and the size gate (ticket 0716): the notice of a Project that didn't open last time, and the question
+   * before a Project over the gate opens. */
+  opening: {
+    /** The notice row, with {name}. */
+    didNotOpen: string
+    removeButton: string
+    exportButton: string
+    /** "Open “Scarf”?", with {name}. */
+    largeTitle: string
+    /** "31 million beads. Opening may be slow or fail.", {count} in millions. */
+    largeMessage: string
+    openAnyway: string
+    cancelButton: string
   }
 }
