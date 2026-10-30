@@ -181,9 +181,9 @@ function fieldSections(report: Report): string[] {
   return sections.filter(([, value]) => value.trim() !== '').map(([heading, value]) => `### ${heading}\n\n${value}`)
 }
 
-/** A value made safe for one table cell: no pipe to end it, no line break to end the row. */
+/** A value made safe for one table cell: no pipe to end it, no line break to end the row, a backslash kept as one. */
 function cell(value: string): string {
-  return value.replace(/\|/g, '\\|').replace(/\s*[\r\n]+\s*/g, ' ')
+  return value.replace(/[\\|]/g, '\\$&').replace(/\s*[\r\n]+\s*/g, ' ')
 }
 
 /** The issue a Report becomes (glossary: Report): titled and labelled by kind, the person's fields as headings, the
