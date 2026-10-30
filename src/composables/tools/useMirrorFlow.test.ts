@@ -1,13 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import { shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
-import { canvasAxesOf, MIRROR_OFF, mirrorSettingOf, withAxisToggled, withMirror } from '../../domain/mirror'
+import { changeFrame } from '../../domain/changeFrame'
+import { canvasAxesOf, MIRROR_OFF, mirrorAreaOf, mirrorSettingOf, withAxisToggled, withMirror } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
+import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useMirrorFlow } from './useMirrorFlow'
 
-/** No Edit and no measured view: the setting tests need neither. */
-const NO_VIEW = { edit: () => ({ kind: 'unchanged' as const }), viewCentre: () => undefined }
+/** No Edit and no measured view: the setting tests need neither; the toasts are counted. */
+const showToast = vi.fn()
+const NO_VIEW = { edit: () => ({ kind: 'unchanged' as const }), viewCentre: () => undefined, showToast, messages: () => en }
 
 function setup(initial?: Project) {
   const project = shallowRef<Project | undefined>(initial ?? createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }))
@@ -70,7 +73,7 @@ describe('the Canvas\'s Axes and their handles (ticket 0704)', () => {
   /** The flow over a real Edit and Undo, the view's middle over a loom position's centre or a point between two. */
   function withView(centre: { x: number; y: number } | null = { x: 73, y: 10 }) {
     const harness = editHarness(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }))
-    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, viewCentre: () => centre ?? undefined })
+    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, viewCentre: () => centre ?? undefined, showToast, messages: () => en })
     return { flow, harness, axes: () => canvasAxesOf(harness.project!) }
   }
 
@@ -148,5 +151,91 @@ describe('the Canvas\'s Axes and their handles (ticket 0704)', () => {
     flow.update(withAxisToggled(flow.setting.value, 'radial'))
     expect(flow.canvasAxes.value).toEqual({})
     expect(axes()).toEqual({ centre: { row: 0, column: 3 } })
+  })
+})
+
+describe('the Area (ticket 0710, spec 0702)', () => {
+  /** The flow over a real Edit on a 5 × 3 loom Frame, or on the open Canvas with the Frame removed. */
+  function framed(open = false) {
+    let project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } })
+    if (open) project = (changeFrame(project, { remove: true }) as { project: Project }).project
+    const harness = editHarness(project)
+    showToast.mockClear()
+    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, viewCentre: () => ({ x: 73, y: 10 }), showToast, messages: () => en })
+    return { flow, harness }
+  }
+
+  it('Select area closes the popover and picks; a drag over the beads draws the band and the release sets the Area as one Undo step, the popover back, a toast saying so, and Mirror on with Left–right if it was Off', () => {
+    const { flow, harness } = framed()
+    expect(flow.areaRow.value).toBe('frame')
+    expect(flow.area.value).toBeUndefined()
+    flow.togglePopover()
+    flow.startPick()
+    expect(flow.popoverOpen.value).toBe(false)
+    expect(flow.picking.value).toBe(true)
+    flow.pressArea({ row: 2, column: 4 })
+    flow.dragArea({ row: 0, column: 9 })
+    expect(flow.band.value).toEqual({ row: 0, column: 4, rows: 3, columns: 1 })
+    flow.releaseArea()
+    expect(flow.picking.value).toBe(false)
+    expect(flow.band.value).toBeUndefined()
+    expect(flow.popoverOpen.value).toBe(true)
+    expect(flow.area.value).toEqual({ row: 0, column: 4, rows: 3, columns: 1 })
+    expect(mirrorAreaOf(harness.project!, 'frame')).toEqual({ row: 0, column: 4, rows: 3, columns: 1 })
+    expect(flow.setting.value).toEqual({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } })
+    expect(showToast).toHaveBeenCalledWith('mirror-area', 'Area 1 × 3: the Axes run inside it', 'info')
+    expect(flow.limits.value).toEqual({ leftRight: 1, topBottom: 2 })
+    harness.history.onUndo()
+    expect(flow.area.value).toBeUndefined()
+  })
+
+  it('Whole Frame makes the Frame the Area, picking or not, with its toast; Clear the area removes it; a pick keeps the Axes as they were', () => {
+    const { flow, harness } = framed()
+    flow.update(withAxisToggled({ ...MIRROR_OFF, mode: 'repeat' }, 'topBottom'))
+    flow.startPick()
+    flow.pickWholeFrame()
+    expect(flow.picking.value).toBe(false)
+    expect(flow.area.value).toEqual({ row: 0, column: 0, rows: 3, columns: 5 })
+    expect(flow.setting.value.mode).toBe('repeat')
+    expect(flow.setting.value.axes).toEqual({ ...MIRROR_OFF.axes, topBottom: true })
+    expect(showToast).toHaveBeenLastCalledWith('mirror-area', 'The whole Frame is the area', 'info')
+    flow.clearArea()
+    expect(flow.area.value).toBeUndefined()
+    expect(mirrorAreaOf(harness.project!, 'frame')).toBeUndefined()
+    expect(harness.history.canUndo.value).toBe(true)
+  })
+
+  it('Escape or the tile cancels a pick, reopening the popover with nothing set; a release with no press sets nothing', () => {
+    const { flow } = framed()
+    flow.startPick()
+    flow.pressArea({ row: 0, column: 0 })
+    expect(flow.cancelPick()).toBe(true)
+    expect(flow.picking.value).toBe(false)
+    expect(flow.band.value).toBeUndefined()
+    expect(flow.popoverOpen.value).toBe(true)
+    expect(flow.area.value).toBeUndefined()
+    expect(flow.cancelPick()).toBe(false)
+    flow.startPick()
+    flow.togglePopover()
+    expect(flow.picking.value).toBe(false)
+    expect(flow.popoverOpen.value).toBe(true)
+    flow.releaseArea()
+    expect(flow.area.value).toBeUndefined()
+  })
+
+  it('on the open Canvas the Area is the Canvas layer\'s, the handles give way to it, and the count limits are its beads minus 1', () => {
+    const { flow, harness } = framed(true)
+    expect(flow.areaRow.value).toBe('canvas')
+    flow.update(withAxisToggled(MIRROR_OFF, 'leftRight'))
+    expect(flow.canvasAxes.value).toEqual({ leftRight: 3 })
+    flow.startPick()
+    flow.pressArea({ row: -1, column: 2 })
+    flow.dragArea({ row: 1, column: 7 })
+    flow.releaseArea()
+    expect(mirrorAreaOf(harness.project!, 'canvas')).toEqual({ row: -1, column: 2, rows: 3, columns: 6 })
+    expect(flow.canvasAxes.value).toEqual({})
+    expect(flow.limits.value).toEqual({ leftRight: 5, topBottom: 2 })
+    flow.clearArea()
+    expect(flow.canvasAxes.value).toEqual({ leftRight: 3 })
   })
 })

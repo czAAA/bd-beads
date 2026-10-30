@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
-import type { PreviewCell } from '../../../domain/grid'
+import type { Layer, PreviewCell } from '../../../domain/grid'
+import type { Rect } from '../../../domain/canvas'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
 import type { PasteStamp, Selection } from '../../../domain/selection'
@@ -95,6 +96,9 @@ export interface SurfaceOverlayDeps {
     /** The open Canvas's Axes that act (ticket 0704), drawn across the whole view, and the one being dragged. */
     mirrorAxes?: CanvasAxes
     heldAxis?: MirrorAxis
+    /** The band a pick of Mirror's Area is dragging (ticket 0710), in the positions of the layer it is for. */
+    areaBand?: Rect
+    areaLayer?: Layer
   }
   canvas: Ref<HTMLCanvasElement | undefined>
   /** The Axis handles' chips (ticket 0704), the same list the pointer hit-tests. */
@@ -173,6 +177,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         rulers: { layout: rulers.value, surface: surface.value },
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
         canvasAxes: props.mirrorAxes ? { axes: props.mirrorAxes, handles: axisHandles.value, held: props.heldAxis } : undefined,
+        mirrorArea: { surface: surface.value, touch: touchInput.value, band: props.areaBand ? { ...props.areaBand, layer: props.areaLayer ?? 'canvas' } : undefined },
         rowMotion: rowMotion.value,
       })
     }
@@ -201,6 +206,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.mirror,
       () => props.mirrorAxes,
       () => props.heldAxis,
+      () => props.areaBand,
       axisHandles,
       marginOpacity,
       rowMotion,

@@ -16,6 +16,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     cancelColorPick: () => false,
+    cancelAreaPick: () => false,
     onPickColorKey: vi.fn(),
     backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),
@@ -199,6 +200,14 @@ describe('useAppShortcutTable', () => {
     press({ key: 'Escape' })
     expect(picking.deps.cancelColorPick).toHaveBeenCalled()
     expect(picking.deps.onSelectTool).not.toHaveBeenCalled()
+    picking.wrapper.unmount()
+  })
+
+  it('Escape cancels a pick of Mirror\'s Area before the Selection (ticket 0710)', () => {
+    const picking = mountTable({ activeTool: () => 'select', cancelAreaPick: vi.fn(() => true), backOutOfSelect: vi.fn(() => true) })
+    press({ key: 'Escape' })
+    expect(picking.deps.cancelAreaPick).toHaveBeenCalled()
+    expect(picking.deps.backOutOfSelect).not.toHaveBeenCalled()
     picking.wrapper.unmount()
   })
 

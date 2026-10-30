@@ -153,6 +153,23 @@ export interface Translations {
     moreFolds: string
     foldExact: string
     foldNearest: string
+    /** The Area row (ticket 0710): its label, the Select area button in its states, Whole Frame, Clear the area, the
+     * Notes, the Canvas hint's parts while picking, and the toasts. */
+    area: string
+    selectArea: string
+    pickingArea: string
+    wholeFrame: string
+    clearArea: string
+    areaSize: string
+    areaNoneFrame: string
+    areaNoneCanvas: string
+    areaSet: string
+    pickDrag: string
+    pickMargin: string
+    pickDragCanvas: string
+    pickCancel: string
+    areaSetMessage: string
+    wholeFrameMessage: string
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
