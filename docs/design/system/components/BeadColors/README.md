@@ -15,6 +15,7 @@ The Color catalog of the Project's Bead, to add a maker's color to the Palette (
 - **Taken**: a row whose hex the Palette already holds is `muted`, `aria-disabled`, and says "In the Palette" on the right.
 - **Empty state** (ticket 0713): one `Note` sentence and, while any filter is on, one small `in-box` button **Clear filters** under it, which turns every value off and keeps the search text. The sentence names what is on: "No matte Blue codes match DB4." (several values of a row read "matte or luster"), "No matte Blue codes." with nothing typed, "No code matches DB4." with no filter. When the typed code is in the catalog but not in this Bead's size, it says which sizes have it instead: "4 exists in 15/0, 11/0, and 8/0, not in 6/0." There is no hint across catalogs: a DB code on a Miyuki Round Bead is simply not found.
 - A press adds the color as an added swatch; the list stays open.
+- **Foot row** (ticket 0700): under the list, in every state, the link **Wrong or missing color?** (Button card `link`, the `message` icon) opens the FeedbackSheet's bead-color Report, Brand and catalog filled in and its Code from the row last focused in the list, else the active Palette color's code. The Convert image wizard's remap picker has no foot row.
 - The same list, filters included, is the body of the Convert image wizard's remap picker (FoundColorRow card).
 
 Hand-written from ticket 537; the Vue component `BeadColorList.vue` is the real thing.

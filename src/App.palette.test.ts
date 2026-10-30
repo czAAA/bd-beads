@@ -104,4 +104,15 @@ describe('the Palette reaches its flows', () => {
     expect(wrapper.get(`[data-color-id="${A}"]`).attributes('aria-pressed')).toBe('true')
     wrapper.unmount()
   })
+
+  it('the Bead colors list’s foot row opens a color Report on the Project’s Bead (ticket 0700)', async () => {
+    const wrapper = await openApp()
+    await wrapper.get('[data-testid="bead-colors-toggle"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="bead-colors-report"]').trigger('click')
+    expect(wrapper.get('[data-testid="feedback-sheet"]').attributes('data-kind')).toBe('bead-color')
+    expect(wrapper.get('[data-testid="feedback-brand"]').text()).toContain(cubeBead.brand.name)
+    wrapper.unmount()
+  })
 })
+
