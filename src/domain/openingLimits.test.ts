@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PIECE_WALK_LIMIT, tooManyToWalk } from './openingLimits'
+import { knownBeadCount, PIECE_WALK_LIMIT, tooManyToWalk } from './openingLimits'
 import { countingBeads } from '../testUtils/countingBeads'
 
 /** `rows` rows of `columns` beads. */
@@ -39,5 +39,18 @@ describe('a layer counted again after an edit (ticket 0716)', () => {
     expect(tooManyToWalk(over)).toBe(true)
     const { 250: _gone, ...again } = over
     expect(tooManyToWalk(again)).toBe(false)
+  })
+
+  it('is counted from a count known on decoding, and from a set counted before another (ticket 0731)', () => {
+    const { beads: decoded, reads, reset } = countingBeads(block(250, 1000))
+    knownBeadCount(decoded, 250_000)
+    expect(tooManyToWalk({ ...decoded, 0: { ...decoded[0], 1000: '#000' } })).toBe(true)
+    expect([...reads.rows]).toEqual([0])
+
+    expect(tooManyToWalk(block(10, 10))).toBe(false)
+    expect(tooManyToWalk(decoded)).toBe(false)
+    reset()
+    expect(tooManyToWalk({ ...decoded, 1: { ...decoded[1], 1000: '#000' } })).toBe(true)
+    expect([...reads.rows]).toEqual([1])
   })
 })
