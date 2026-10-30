@@ -28,6 +28,9 @@
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter row. */
   --filter-chip-height: 28px; /* BeadColors card: a Finish chip in the Finish filter row. */
+  --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
+  --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
+  --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
   --convert-thumb-width: 64px; /* ConvertImage card: the Picture section's thumbnail. */
   --convert-thumb-height: 48px; /* ConvertImage card: the thumbnail's height. */
   --ratio-bead-width: 22px; /* PixelToBeadRatio card: the explainer's one bead. */

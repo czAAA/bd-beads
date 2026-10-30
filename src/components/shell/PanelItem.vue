@@ -5,9 +5,9 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 import { PANEL_CONTEXT } from './panelContext'
 
-// One row of a panel (MenuPanel card): `panel-row` tall, icon, label, value and a trailing mark (› `sub`, ↗ `external`).
-// `accent` colors it as the main action, `accentIcon` only its icon, `danger` as Delete. A button, or a link with
-// `href` (`external` opens a new tab). A disabled item is `aria-disabled` so it keeps its Tooltip saying why.
+// One row of a panel (MenuPanel card): icon, label, value, a trailing mark (› `sub`, ↗ `external`); `accent`, `accentIcon`,
+// `danger` color it, `secondary` makes it a small link under the row before (ticket 0700). A button, or a link with `href`;
+// a disabled item is `aria-disabled` so it keeps its Tooltip saying why.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
@@ -26,8 +26,9 @@ const props = withDefaults(
     external?: boolean
     /** Leave the panel open (Import: its file picker belongs to the open panel). */
     stays?: boolean
+    secondary?: boolean
   }>(),
-  { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false },
+  { icon: undefined, value: undefined, danger: false, accent: false, accentIcon: false, sub: false, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false, secondary: false },
 )
 const emit = defineEmits<{ select: [] }>()
 const context = inject(PANEL_CONTEXT)
@@ -57,7 +58,7 @@ function onClick(event: Event) {
     v-else
     v-bind="$attrs"
     class="ui-control panel-item"
-    :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent }"
+    :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent, 'panel-item--secondary': secondary }"
     :type="href ? undefined : 'button'"
     :href="href"
     :target="external ? '_blank' : undefined"
@@ -96,6 +97,29 @@ function onClick(event: Event) {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+/* A link under its row (MenuPanel card): `small`, `muted`, from the label column, underlined on hover. */
+.panel-item--secondary {
+  min-height: var(--panel-item-secondary-height);
+  padding-left: calc(var(--space-10) + 16px + var(--space-8));
+  font: var(--type-small);
+  color: var(--muted);
+  text-underline-offset: var(--link-underline-offset);
+}
+
+/* On touch it keeps the full row's height, to be pressed. */
+@media (pointer: coarse) {
+  .panel-item--secondary {
+    min-height: var(--panel-item-height);
+  }
+}
+
+@media (hover: hover) {
+  .panel-item--secondary:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
 }
 
 .panel-item__label {
