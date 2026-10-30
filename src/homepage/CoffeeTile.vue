@@ -3,10 +3,9 @@ import AppButton from '../components/ui/AppButton.vue'
 import { COFFEE_URL } from '../data/coffeeLink'
 import { useI18n } from '../i18n/useI18n'
 
-// The coffee tile (ticket 219; Homepage card): a beaded cup with steam, who made the app, one line and a secondary
-// button that opens the Coffee link in a new tab (ticket 560), inert while it is empty. No donation-service name, logo or colours.
-// The cup and steam are decorative. The whole tile is the link (ticket 0718): the button's `::after` covers the tile, so a
-// click anywhere opens it while keyboards and screen readers still meet one link, named by the button.
+// The coffee tile (ticket 219; Homepage card): a decorative beaded cup, who made the app, one line and a button opening the
+// Coffee link in a new tab (ticket 560), inert while it is empty. The whole tile is the link (ticket 0718): the button's
+// `::after` covers it, so keyboards and screen readers still meet one link. No donation-service name, logo or colours.
 const { t } = useI18n()
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */
