@@ -459,6 +459,8 @@ export const be: Translations = {
     removeLineButton: 'Выдаліць вылучаны рад/слупок',
     removeLineShort: 'Выдаліць лінію',
     namePieceButton: 'Назваць кавалачак',
+    fillOpenMessage: 'Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе.',
+    fillTooBigMessage: 'Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць.',
   },
   inputMode: {
     penLabel: 'Рэжым пяра',

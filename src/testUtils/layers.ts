@@ -1,6 +1,6 @@
 import { layerAt, onLayer } from '../domain/layers'
 import type { GridPosition } from '../domain/grid'
-import { fillArea } from '../domain/fill'
+import { fillArea, isFillRefusal, type FillReach } from '../domain/fill'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 
@@ -11,10 +11,12 @@ export function paintAt(project: Project, positions: GridPosition[], color: stri
   return onLayer(project, layer, (view, local) => paintCells(view, positions.map(local), color))
 }
 
-/** Bucket-fills from a Canvas position the way a press does: on the layer it is on. */
-export function fillAt(project: Project, row: number, column: number, color: string | null): Project {
+/** Bucket-fills from a Canvas position the way a press does: on the layer it is on, within Fill reach. A refused Fill
+ * leaves the Project as it was. */
+export function fillAt(project: Project, row: number, column: number, color: string | null, reach?: FillReach): Project {
   return onLayer(project, layerAt(project, { row, column }), (view, local) => {
     const at = local({ row, column })
-    return fillArea(view, at.row, at.column, color)
+    const filled = fillArea(view, at.row, at.column, color, reach)
+    return isFillRefusal(filled) ? view.beads : filled
   })
 }
