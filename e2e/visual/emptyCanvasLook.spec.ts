@@ -1,10 +1,9 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Background, Project } from '../../src/domain/project'
 import type { Technique } from '../../src/domain/weave'
-import { SETTLE_MS } from '../../src/rendering/gestureView'
 import { withLayers } from '../../src/testUtils/layerFields'
-import { openApp, settle, setZoom } from '../support/app'
+import { holdSettle, letSettle, openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
 // Panning a big pattern moves the drawn bitmap until the view settles (tickets 349, 0689). What it uncovers is the empty
@@ -30,28 +29,6 @@ function bigProject(technique: Technique, rotation: Rotation, background?: Backg
   return withLayers(framed, { beads })
 }
 
-/** Keeps the sharp redraw a settled view asks for, to run when the test says: the pan stays in flight till then. */
-async function holdSettle(page: Page): Promise<void> {
-  await page.evaluate((settleMs) => {
-    const held: (() => void)[] = []
-    const real = window.setTimeout.bind(window)
-    ;(window as unknown as { heldSettles: (() => void)[] }).heldSettles = held
-    window.setTimeout = ((callback: () => void, ms?: number, ...rest: unknown[]) => {
-      if (ms === settleMs) {
-        held.push(callback)
-        return 0
-      }
-      return real(callback, ms, ...rest)
-    }) as typeof window.setTimeout
-  }, SETTLE_MS)
-}
-
-/** Runs the last held sharp redraw, as the settle would have. */
-async function letSettle(page: Page): Promise<void> {
-  await page.evaluate(() => (window as unknown as { heldSettles: (() => void)[] }).heldSettles.at(-1)?.())
-  await settle(page)
-}
-
 /** The share of pixels two screenshots of the same box disagree on. */
 function differing(a: Buffer, b: Buffer, tolerance: number): number {
   const [first, second] = [PNG.sync.read(a), PNG.sync.read(b)]
@@ -61,6 +38,11 @@ function differing(a: Buffer, b: Buffer, tolerance: number): number {
   }
   return count / (first.width * first.height)
 }
+
+/** How far across the screen the pan goes: past the drawing area in the full look, short of the half drawing area the
+ * draft look's bitmap reaches past it (ticket 0717). */
+const FULL_PAN_ACROSS = 0.7
+const DRAFT_PAN_ACROSS = 0.4
 
 type Rotation = 0 | 90 | 180 | 270
 
@@ -87,8 +69,10 @@ for (const { technique, rotation, scheme, background } of CASES) {
       await page.mouse.move(surface.x + surface.width / 2, surface.y + surface.height / 2)
 
       await holdSettle(page)
-      // Far enough to uncover a strip in either look: the draft look's bitmap reaches half a screen past it.
-      await page.mouse.wheel(Math.round(surface.width * 0.7), Math.round(surface.height * 0.3))
+      // Far enough to uncover a strip in the full look. The draft look's bitmap reaches half a screen past it, and a pan
+      // further than that draws it again at once (ticket 0732), so there it stays inside.
+      const across = zoom === 10 ? DRAFT_PAN_ACROSS : FULL_PAN_ACROSS
+      await page.mouse.wheel(Math.round(surface.width * across), Math.round(surface.height * 0.3))
       await settle(page)
       await expect(page.getByTestId('project-surface-cells')).not.toHaveCSS('transform', 'none')
       const box = page.getByTestId('app-canvas')

@@ -126,6 +126,7 @@ const rootEl = ref<HTMLElement>()
 const baseEl = ref<HTMLCanvasElement>()
 const overlayEl = ref<HTMLCanvasElement>()
 const fadeEl = ref<HTMLCanvasElement>()
+const standInEl = ref<HTMLCanvasElement>()
 
 /** How big the surface is on screen, measured: the canvases are exactly this big. */
 const size = ref({ width: 0, height: 0 })
@@ -334,7 +335,7 @@ const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
-useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn') })
+useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn') })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
@@ -403,6 +404,8 @@ onBeforeUnmount(() => {
     @contextmenu.prevent
   >
     <div class="project-surface__drawing" :style="[drawingStyle, emptyCanvasStyle]">
+      <!-- What a long pan uncovers, in the draft look, till the beads are drawn sharp (ticket 0732). -->
+      <canvas ref="standInEl" class="project-surface__canvas" style="visibility: hidden" data-testid="project-surface-stand-in" aria-hidden="true" />
       <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
       <!-- The finished passes as they were dimmed, fading out as Pattern done brings them back (ticket 0730). -->
       <canvas v-show="rowMotion.fadeOpacity.value > 0" ref="fadeEl" class="project-surface__canvas" :style="{ opacity: rowMotion.fadeOpacity.value }" aria-hidden="true" />

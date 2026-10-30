@@ -122,6 +122,9 @@ export interface RenderInput {
   /** Fill an open Canvas in its Background before drawing, so the drawing hides the empty-canvas look the editor's
    * surface lays under it (ticket 0717). Elsewhere the Canvas stays clear. */
   opaque?: boolean
+  /** Draw the empty Canvas's Position marks (the default). The stand-in a pan shows leaves them to the empty-canvas
+   * look under it, which draws them sharp (ticket 0732). */
+  positionMarks?: boolean
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -592,7 +595,7 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false, opaque = false } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false, opaque = false, positionMarks = true } = input
   const frameTheme = input.frameTheme ?? theme
   const frame = frameOf(project)
   const rotation = quarterTurnOf(project)
@@ -642,7 +645,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit }
 
   if (space.open) {
-    drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })
+    if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })
     drawCanvasLayer(context, draw, space)
     if (frame) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)

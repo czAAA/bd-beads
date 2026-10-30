@@ -75,6 +75,22 @@ export function gestureTransform(from: View, to: View, box: { x: number; y: numb
   return { scale, x: (from.scroll.x + box.x) * scale - to.scroll.x - box.x, y: (from.scroll.y + box.y) * scale - to.scroll.y - box.y }
 }
 
+/** Whether the bitmap laid over `box` of the drawing area, moved by `move` (gestureTransform), still covers all of a
+ * drawing area of `size`: where it doesn't, a pan or pinch has uncovered beads it never drew. */
+export function coversArea(box: Region, move: { scale: number; x: number; y: number }, size: Size): boolean {
+  const [left, top] = [box.x + move.x, box.y + move.y]
+  return left <= 0 && top <= 0 && left + box.width * move.scale >= size.width && top + box.height * move.scale >= size.height
+}
+
+/** How many times as long as the last redraw took a moving view waits after it before it draws what it uncovered
+ * (ticket 0732): redraws then take at most a quarter of a long pan, which still moves its bitmap the frames between. */
+const REDRAW_SPACING = 3
+
+/** Whether a pan or pinch that uncovered beads may draw them now, the last draw having ended `at` after taking `ms`. */
+export function mayRedrawMidGesture(now: number, last: { at: number; ms: number }): boolean {
+  return now - last.at >= last.ms * REDRAW_SPACING
+}
+
 /** How far past the drawing area the beads' bitmap reaches on every side in the draft look, in drawing areas (ticket
  * 0717): there a bead is a pixel of one image, so drawing wider is cheap, and a pan of half a screen or a zoom out to
  * about 60% uncovers nothing before the sharp redraw. */

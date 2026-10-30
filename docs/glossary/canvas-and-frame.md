@@ -108,7 +108,7 @@ The button (and R, and the Canvas strip's Rulers button) that shows or hides eve
 _Avoid_: ruler switch, numbers toggle
 
 **Canvas zoom**:
-The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the Dock and every sheet keep their size (ADR 0034). While a big pattern is zoomed or panned its drawing is moved and scaled and drawn sharp once the gesture settles (tickets 349, 0689); the empty Canvas look lies under it the whole time, and in the draft look the drawing reaches half a screen past the view, so nothing bare shows (ticket 0717).
+The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the Dock and every sheet keep their size (ADR 0034). While a big pattern is zoomed or panned its drawing is moved and scaled and drawn sharp once the gesture settles (tickets 349, 0689); the empty Canvas look lies under it the whole time, and in the draft look the drawing reaches half a screen past the view, so nothing bare shows (ticket 0717). Beads a long pan reaches are drawn mid-gesture, in the full look on a draft-look stand-in under the drawing, so they show before it stops (ticket 0732).
 _Avoid_: scale, magnify, page zoom (a different thing)
 
 **Page zoom**:
