@@ -975,4 +975,13 @@ export const es: Translations = {
     frameHeading: 'Ajustes',
     background: 'Fondo',
   },
+  schemaTag: {
+    group: 'Nombres de esquemas',
+    label: '{name}, ver detalles',
+    tooltipBody: 'Pulsa para ver el tamaño y los colores.',
+    heading: 'esquema',
+    sizeBeads: '{columns} × {rows} cuentas',
+    beads: { one: '{count} cuenta', many: '{count} de cuentas', other: '{count} cuentas' },
+    colors: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },
+  },
 }

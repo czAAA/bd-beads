@@ -11,12 +11,14 @@ import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
+import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import { useCanvasContext } from '../../composables/shell/useAppShell'
 import { useColorPick, usePalette } from '../../composables/tools/usePalette'
 import { colorName } from '../../i18n/colorName'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { PillRect } from '../../domain/toolPill'
 import { hasGuides, selectionLayer } from '../../domain/selection'
@@ -74,9 +76,11 @@ const {
   onClearSelection,
   onFillSelection,
   onFrameFromSelection,
+  onFrameSchema,
   canNamePiece,
   hasPaintColor,
   onNamePiece,
+  onRenameSchema,
   previewCells,
   previewStamp,
   onCellPrimaryDown,
@@ -200,6 +204,8 @@ const selectionSummary = computed(() => {
 const selectionAnchor = ref<SelectionAnchor>()
 /** Where the Frame and its margin sheet are on the canvas box: the sheet's tools follow them (tickets 473, 0657). */
 const frameAnchor = ref<FrameAnchor>()
+/** Where the unframed Schemas are on the canvas box: their hang tags follow them (ticket 0721). */
+const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
@@ -309,6 +315,7 @@ const drawingStyle = computed(() => {
               @selection-release="onSelectionRelease"
               @selection-anchor="selectionAnchor = $event"
               @frame-anchor="frameAnchor = $event"
+              @schema-anchors="schemaAnchors = $event"
               @pressing="surfacePressing = $event"
             />
             <EmptyCanvas v-else>
@@ -319,6 +326,15 @@ const drawingStyle = computed(() => {
             </EmptyCanvas>
           </div>
 
+          <!-- The unframed Schemas' names as hang tags (ticket 0721, SchemaTag card): over the beads, one Tab stop after
+            the canvas, under the Tool pill and the Selection bar. -->
+          <SchemaTags
+            v-if="activeProject && schemaAnchors?.schemas.length"
+            :project="activeProject"
+            :anchors="schemaAnchors"
+            @rename="onRenameSchema"
+            @frame="onFrameSchema"
+          />
         </div>
 
         <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
