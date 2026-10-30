@@ -15,7 +15,7 @@ import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import MirrorPopover from './MirrorPopover.vue'
 import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
-import { MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
+import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
@@ -27,10 +27,9 @@ const props = withDefaults(defineProps<{
   hasClipboard?: boolean
   /** Whether paste mode is on: the Paste tile then shows as the active tool. */
   pasteArmed?: boolean
-  /** Mirror (ticket 0703): the Project's setting, whether its tile is lit (the mode is not Off), its popover, and the
+  /** Mirror (ticket 0703): the Project's setting (the tile is lit while its mode is not Off), its popover, and the
    * Frame's Axis count limits (none without a Frame on a grid). */
   mirror?: MirrorSetting
-  mirrorOn?: boolean
   mirrorPopoverOpen?: boolean
   mirrorLimits?: Record<MirrorDirection, number>
   position: PillPosition
@@ -43,7 +42,7 @@ const props = withDefaults(defineProps<{
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
-}>(), { mirror: () => MIRROR_OFF, mirrorOn: false, mirrorPopoverOpen: false, mirrorLimits: undefined, hasClipboard: false, pasteArmed: false, colorHex: undefined, colorName: undefined, selectedColorId: undefined, customColor: undefined })
+}>(), { mirror: () => MIRROR_OFF, mirrorPopoverOpen: false, mirrorLimits: undefined })
 
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
@@ -73,6 +72,7 @@ const vertical = computed(() => isVerticalPill(props.position))
 const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
 const pasteAction = controlAction('tool-paste')
 const mirrorAction = controlAction('mirror')
+const mirrorOn = computed(() => isMirrorOn(props.mirror))
 /** Paste mode runs under Select, but the Paste tile is the one lit then (ticket 447). */
 const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && props.pasteArmed && props.hasClipboard)
 const colorAction = controlAction('pill-colors')

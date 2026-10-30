@@ -478,7 +478,7 @@ describe('renderOverlay', () => {
       expect(lines(calls)).toEqual([[[45, 0], [45, 65]]])
     })
 
-    it('draws nothing while the mode is Off or no Axis is on, and nothing on a Custom frame (ticket 0706)', () => {
+    it('draws nothing while the mode is Off or no Axis is on', () => {
       const project = projectOf('loom', 4, 4, { marks: false })
       const off = recordingContext()
       renderOverlay(off.context, { project, region: whole(project), zoom: 1, mirror: MIRROR_OFF })

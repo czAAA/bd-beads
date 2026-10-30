@@ -726,9 +726,8 @@ function wireAppShell(services: Services) {
       toolPillPopoverOpen: toolPill.toolPillPopoverOpen,
       recentsInPill: toolPill.recentsInPill,
       pickRecent: toolPill.pickRecent,
-      // Mirror (ticket 0703): the Project's setting, the tile's light, the popover and the Frame's count limits
+      // Mirror (ticket 0703): the Project's setting, the popover and the Frame's count limits
       mirrorSetting: mirror.setting,
-      mirrorOn: mirror.on,
       mirrorLimits: mirror.limits,
       mirrorPopoverOpen: mirror.popoverOpen,
       onMirrorChange: mirror.update,

@@ -92,7 +92,6 @@ const {
   recentsInPill,
   pickRecent,
   mirrorSetting,
-  mirrorOn,
   mirrorLimits,
   mirrorPopoverOpen,
   onMirrorChange,
@@ -329,7 +328,6 @@ const drawingStyle = computed(() => {
           v-model:popover-open="toolPillPopoverOpen"
           v-model:mirror-popover-open="mirrorPopoverOpen"
           :mirror="mirrorSetting"
-          :mirror-on="mirrorOn"
           :mirror-limits="mirrorLimits"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"

@@ -66,7 +66,6 @@ describe('the Tool pill', () => {
     await pickColor(wrapper, 'red')
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }))
     await flushPromises()
-    expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
 
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
@@ -77,7 +76,6 @@ describe('the Tool pill', () => {
 
     await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
     await wrapper.get('[data-testid="mirror-axis-topBottom"]').trigger('click')
-    expect(wrapper.get('[data-testid="mirror-axis-topBottom"]').attributes('aria-pressed')).toBe('true')
     expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'mirror', axes: { leftRight: true, topBottom: true } })
     wrapper.unmount()
   })

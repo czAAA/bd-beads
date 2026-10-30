@@ -46,7 +46,7 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.emitted('update:mirrorPopoverOpen')).toEqual([[true]])
     expect(wrapper.emitted('select-tool')).toBeUndefined()
 
-    await wrapper.setProps({ mirrorOn: true, mirrorPopoverOpen: true, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } } })
+    await wrapper.setProps({ mirrorPopoverOpen: true, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } } })
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-expanded')).toBe('true')
     expect(wrapper.get('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--accent')

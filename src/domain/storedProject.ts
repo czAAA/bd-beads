@@ -94,6 +94,7 @@ export function normalizeProject(stored: StoredProject): Project {
   const palette = normalizePaletteIds(storedPalette, builtIns)
   const paletteCodes = codesInPalette(normalizePaletteCodes(storedCodes), palette, builtIns)
 
+  const mirror = readMirrorSetting(storedMirror)
   return {
     ...rest,
     layers: [canvas, ...frames],
@@ -102,7 +103,7 @@ export function normalizeProject(stored: StoredProject): Project {
     ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),
     paletteLetters: lettersOfPalette(palette, wovenBeadId, storedLetters),
     // Mirror (ticket 0703): a file from before it, or an unreadable setting, opens with Mirror off.
-    ...(readMirrorSetting(storedMirror) ? { mirror: readMirrorSetting(storedMirror) } : {}),
+    ...(mirror ? { mirror } : {}),
   }
 }
 
