@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import type { Rect } from '../../domain/canvas'
+import type { Layer } from '../../domain/grid'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePillPopoverPlacement } from '../../composables/tools/usePillPopoverPlacement'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
@@ -48,7 +49,7 @@ const props = defineProps<{
   onCanvas?: boolean
   /** The layer the Area row is for (ticket 0710): the Frame (with Whole Frame beside Select area) or the Canvas; none
    * on a Custom frame, whose Axes are the shape's, where the row is not shown. */
-  areaRow?: 'frame' | 'canvas'
+  areaRow?: Layer
   /** That layer's Area, where one is set: the button reads its size and Clear the area is offered. */
   area?: Rect
   /** Whether an Area is being picked on the canvas: the button is pressed and says to drag. */

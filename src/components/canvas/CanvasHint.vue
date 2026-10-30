@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { Layer } from '../../domain/grid'
 import { useI18n } from '../../i18n/useI18n'
 import KeyChip from '../ui/KeyChip.vue'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
@@ -10,7 +11,7 @@ import { TOOL_HOTKEYS } from '../tools/toolIcons'
 // Mirror's Area is being picked (ticket 0710) it says how instead, in the Selection colour.
 const props = defineProps<{
   /** The layer an Area is being picked on, while one is; none for the usual line. */
-  picking?: 'frame' | 'canvas'
+  picking?: Layer
 }>()
 const { t } = useI18n()
 /** The line is made of key chips, so it goes when they do (ticket 438). */

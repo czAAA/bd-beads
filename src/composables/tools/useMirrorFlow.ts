@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import { fillBlanks } from '../../domain/fillBlanks'
-import type { GridPosition } from '../../domain/grid'
+import type { GridPosition, Layer } from '../../domain/grid'
 import {
   areaBetween,
   axisLimitsOf,
@@ -71,11 +71,9 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
 
   /** The layer the popover's Area row is for (ticket 0710): the Frame on a grid, or the open Canvas; none on a Custom
    * frame, whose Axes are the shape's (ticket 0706). */
-  const areaRow = computed<'frame' | 'canvas' | undefined>(() => {
+  const areaRow = computed<Layer | undefined>(() => {
     const project = deps.currentProject()
-    if (!project) return undefined
-    const frame = frameOf(project)
-    return frame ? (frame.shape ? undefined : 'frame') : 'canvas'
+    return project && !frameOf(project)?.shape ? mirrorLayerOf(project) : undefined
   })
   /** That layer's Area, where one is set. */
   const area = computed(() => {
