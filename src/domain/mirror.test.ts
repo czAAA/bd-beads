@@ -27,6 +27,11 @@ import {
   withMirrorCount,
   withMirrorFold,
   withMirrorMode,
+  withMirrorArea,
+  mirrorAreaOf,
+  mirrorLayerOf,
+  readMirrorArea,
+  areaBetween,
   type CanvasAxes,
   type MirrorSetting,
 } from './mirror'
@@ -429,5 +434,83 @@ describe('the Radial chip and the Fold on the setting (ticket 0705)', () => {
     expect(withMirrorFold(MIRROR_OFF, 9).fold).toBe(8)
     expect([2, 3, 4, 5, 6, 7, 8].filter(foldByIndex)).toEqual([2, 4])
     expect([3, 6, 7].map(foldAngle)).toEqual([120, 60, 51])
+  })
+})
+
+describe('the Area the Axes run inside (ticket 0710, spec 0702)', () => {
+  const area = (row: number, column: number, rows: number, columns: number) => ({ row, column, rows, columns })
+  /** A Project with no Frame and an Area on its Canvas. */
+  function openWithArea(technique: Technique, rect: ReturnType<typeof area>, axes: CanvasAxes = {}): Project {
+    const project = (changeFrame(framed(technique, 4, 4), { remove: true }) as { project: Project }).project
+    return withMirrorArea(withCanvasAxes(project, axes), 'canvas', rect)
+  }
+
+  it('on a loom Frame a straight Axis runs through the Area\'s centre, N axes cut it into equal strips, and a count over its beads minus 1 is clamped', () => {
+    const sheet = layerSheet(withMirrorArea(framed('loom', 8, 4), 'frame', area(1, 2, 2, 4)), 'frame')
+    expect(sheet.area).toEqual(area(1, 2, 2, 4))
+    expect(columnsOf(counterparts(sheet, on({ leftRight: true }), [at(1, 2)]))).toEqual([2, 5])
+    expect(columnsOf(counterparts(sheet, on({ leftRight: true }), [at(2, 3)]))).toEqual([3, 4])
+    expect(columnsOf(counterparts(sheet, on({ leftRight: true }, { leftRight: 9 }), [at(1, 2)]))).toEqual([2, 3, 4, 5])
+    expect(cells(counterparts(sheet, on({ topBottom: true }), [at(1, 3)]))).toEqual([[1, 3], [2, 3]])
+  })
+
+  it('on a peyote Frame the Area maps by index too, and a gesture outside the Area is not mirrored at all', () => {
+    const sheet = layerSheet(withMirrorArea(framed('peyote', 6, 6), 'frame', area(1, 1, 4, 4)), 'frame')
+    expect(cells(counterparts(sheet, on({ topBottom: true }), [at(1, 2)]))).toEqual([[1, 2], [4, 2]])
+    expect(cells(counterparts(sheet, on({ topBottom: true }), [at(2, 2)]))).toEqual([[2, 2], [3, 2]])
+    expect(counterparts(sheet, on({ leftRight: true, topBottom: true }), [at(0, 0)])).toEqual({ positions: [at(0, 0)], dropped: 0 })
+    expect(counterparts(sheet, radial(4, 'mirror'), [at(5, 5)])).toEqual({ positions: [at(5, 5)], dropped: 0 })
+  })
+
+  it('Radial turns about the Area\'s centre, and a counterpart that would land outside the Area is dropped though the Frame has the position', () => {
+    const sheet = layerSheet(withMirrorArea(framed('loom', 8, 6), 'frame', area(2, 2, 2, 4)), 'frame')
+    expect(cells(counterparts(sheet, radial(2), [at(2, 2)]))).toEqual([[2, 2], [3, 5]])
+    expect(counterparts(sheet, radial(4), [at(2, 2)])).toEqual({ positions: [at(2, 2), at(3, 5)], dropped: 2 })
+  })
+
+  it('on the open Canvas an Area makes a bounded region: strips in both modes with counts, Radial about its centre, the handles not acting, a stroke outside it alone', () => {
+    const sheet = layerSheet(openWithArea('loom', area(0, 0, 3, 6), { leftRight: 10, topBottom: 10 }), 'canvas')
+    expect(columnsOf(counterparts(sheet, on({ leftRight: true }, { leftRight: 2 }, 'repeat'), [at(0, 0)]))).toEqual([0, 2, 4])
+    expect(columnsOf(counterparts(sheet, on({ leftRight: true }, { leftRight: 2 }), [at(0, 0)]))).toEqual([0, 3, 4])
+    expect(cells(counterparts(sheet, on({ topBottom: true }), [at(0, 1)]))).toEqual([[0, 1], [2, 1]])
+    expect(cells(counterparts(sheet, radial(2), [at(0, 0)]))).toEqual([[0, 0], [2, 5]])
+    expect(counterparts(sheet, on({ leftRight: true }), [at(5, 1)])).toEqual({ positions: [at(5, 1)], dropped: 0 })
+    expect(counterparts(sheet, on({ leftRight: true }), [at(0, 20)])).toEqual({ positions: [at(0, 20)], dropped: 0 })
+  })
+
+  it('the Canvas mirrors with an Area and an Axis on in either mode, and the count limits are the Area\'s beads minus 1 on the Frame and on the Canvas', () => {
+    const open = openWithArea('loom', area(0, 0, 3, 6))
+    expect(canvasMirrors(open, on({ leftRight: true }, {}, 'repeat'))).toBe(true)
+    expect(canvasMirrors(open, on({ radial: true }))).toBe(true)
+    expect(canvasMirrors(open, on({}))).toBe(false)
+    expect(canvasMirrors(withMirrorArea(open, 'canvas', undefined), on({ leftRight: true }, {}, 'repeat'))).toBe(false)
+    expect(axisLimitsOf(open)).toEqual({ leftRight: 5, topBottom: 2 })
+    expect(axisLimitsOf(withMirrorArea(open, 'canvas', undefined))).toBeUndefined()
+    const framedArea = withMirrorArea(framed('loom', 8, 4), 'frame', area(1, 2, 2, 4))
+    expect(axisLimitsOf(framedArea)).toEqual({ leftRight: 3, topBottom: 1 })
+    expect(mirrorLayerOf(framedArea)).toBe('frame')
+    expect(mirrorLayerOf(open)).toBe('canvas')
+  })
+
+  it('is kept per layer on the Project, cleared with none, and read back from a file only as a whole rectangle of beads', () => {
+    const project = framed('loom', 8, 4)
+    expect(mirrorAreaOf(project, 'frame')).toBeUndefined()
+    const set = withMirrorArea(project, 'frame', area(1, 2, 2, 4))
+    expect(mirrorAreaOf(set, 'frame')).toEqual(area(1, 2, 2, 4))
+    expect(mirrorAreaOf(set, 'canvas')).toBeUndefined()
+    expect(set.layers[1]!.mirrorArea).toEqual(area(1, 2, 2, 4))
+    expect(mirrorAreaOf(withMirrorArea(set, 'frame', undefined), 'frame')).toBeUndefined()
+    expect(withMirrorArea(set, 'frame', undefined).layers[1]).not.toHaveProperty('mirrorArea')
+    expect(readMirrorArea({ row: 1, column: 2, rows: 2, columns: 4 })).toEqual(area(1, 2, 2, 4))
+    expect(readMirrorArea({ row: 1, column: 2, rows: 0, columns: 4 })).toBeUndefined()
+    expect(readMirrorArea({ row: 1.5, column: 2, rows: 2, columns: 4 })).toBeUndefined()
+    expect(readMirrorArea('area')).toBeUndefined()
+    expect(readMirrorArea(undefined)).toBeUndefined()
+  })
+
+  it('a pick between two cells is the rectangle they span, either way round, kept inside the Frame', () => {
+    expect(areaBetween(at(3, 5), at(1, 2))).toEqual(area(1, 2, 3, 4))
+    expect(areaBetween(at(0, 0), at(0, 0))).toEqual(area(0, 0, 1, 1))
+    expect(areaBetween(at(-2, 1), at(9, 9), area(0, 0, 4, 6))).toEqual(area(0, 1, 4, 5))
   })
 })
