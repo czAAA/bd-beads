@@ -76,6 +76,10 @@ _Avoid_: footer bar, bottom bar
 The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers") at the top-centre of the drawing area, under the strip (the Tool pill may cover it when docked at the top). Shown only while the Project has no beads and at every size except a phone; it goes with the first bead (ticket 429).
 _Avoid_: tip, tutorial
 
+**First-run hints**:
+The hand-drawn notes over an empty Project that teach the way to a first Pattern: draw (Paint), select (Select), frame (the Frame button) and export (the Export button), each of the four controls ringed in accent, plus quieter notes on Menu, Project, Mirror and the colour control and a welcome in the middle. Shown, with the Canvas hint, whenever the Project has no beads, on every empty Project; they go with the first bead (ticket 0725, FirstRunHints card). A phone shows only the four steps.
+_Avoid_: onboarding, tour, coach marks, tutorial
+
 **Message**:
 A notice or toast. A toast (a short-lived result) shows at the top-right of the canvas box under the strip, stacking downward, on the toast layer: above sheets, below modals and Tooltips (ticket 429). The Tool pill may cover a toast when docked at the right or top.
 _Avoid_: snackbar, alert
