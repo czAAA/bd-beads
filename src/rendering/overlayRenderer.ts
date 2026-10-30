@@ -21,6 +21,7 @@ import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGri
 import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads } from './draftRenderer'
 import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
+import { axisOffsets, isMirrorOn, type MirrorSetting } from '../domain/mirror'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
 // tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see
@@ -105,6 +106,9 @@ export interface OverlayInput {
   /** The Swatch letters by hex when Letters is on (ticket 0573): the current row's lifted beads carry theirs, as the
    * base layer's do. */
   letters?: Readonly<Record<string, string>>
+  /** The Mirror setting while the mode is not Off (ticket 0703, MirrorPopover card): its Axis lines are drawn across the
+   * Frame, with every tool, whatever the Rulers toggle says. Never given by an export. */
+  mirror?: MirrorSetting
 }
 
 /** A bead the current pass weaves: its cell, top left, and its color; on a Custom frame (ticket 0594) its box is centred
@@ -533,6 +537,40 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, z
   context.restore()
 }
 
+/** An Axis line (MirrorPopover card, `--mirror-axis-width` and `--mirror-axis-dash`): 1.25px `marker`, dash 5 4, in
+ * screen px at any zoom. */
+const MIRROR_AXIS_WIDTH_PX = 1.25
+const MIRROR_AXIS_DASH_PX = [5, 4]
+
+/** Draws Mirror's Axis lines across a Frame on a grid (spec 0702): N axes cut it into N + 1 equal strips, the lines at
+ * the strip boundaries of the box round its beads, in the Frame's own px, so they move with it. Drawn in grid space, so
+ * the widths are divided by the zoom to stay screen px. */
+function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, setting: MirrorSetting, zoom: number, theme: ProjectTheme): void {
+  if (!isMirrorOn(setting) || !(setting.axes.leftRight || setting.axes.topBottom)) return
+  const { x, y, width, height } = gridBox(weave, frame)
+  context.save()
+  context.strokeStyle = theme.marker
+  context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
+  context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
+  context.beginPath()
+  if (setting.axes.leftRight) {
+    for (const offset of axisOffsets(frame.columns, setting.counts.leftRight)) {
+      const at = x + (width * offset) / frame.columns
+      context.moveTo(at, y)
+      context.lineTo(at, y + height)
+    }
+  }
+  if (setting.axes.topBottom) {
+    for (const offset of axisOffsets(frame.rows, setting.counts.topBottom)) {
+      const at = y + (height * offset) / frame.rows
+      context.moveTo(x, at)
+      context.lineTo(x + width, at)
+    }
+  }
+  context.stroke()
+  context.restore()
+}
+
 /** Whether a position of the Canvas is on the Frame (ticket 492): the layer it names, or else whether it lies under what
  * the Frame draws (ADR 0066). */
 function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, covered: Rect | undefined, position: GridPosition): boolean {
@@ -551,14 +589,14 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
   const showRows = rowMarks ?? rowProgressOn(project)
   const ruled = space.open && rulers !== undefined && (frameOf(project) !== undefined || Object.keys(beadsOfLayer(project, 'canvas')).length > 0)
-  if (!showRows && !preview && !selection && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
+  if (!showRows && !preview && !selection && !ruled && !frameEditing && !pointer && !(marginOutline > 0) && !mirror) {
     return
   }
 
@@ -619,6 +657,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme, sheetView, layerOrigin)
+    // A Frame on a grid (a Custom frame's Axes are ticket 0706's), in its own positions from its first.
+    if (mirror && frameOf(project) && geometry!.grid) drawMirrorAxes(context, sheetWeave, { row: 0, column: 0, rows: frameOf(project)!.rows, columns: frameOf(project)!.columns }, mirror, zoom * scale, theme)
     const sheetCells = preview ? onSheet(preview.cells) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
     if (preview && sheetCells.length + sheetStamp.length > 0) {

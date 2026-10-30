@@ -16,6 +16,7 @@ import { stampCells, type PasteLoss } from '../../domain/selection'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -30,7 +31,7 @@ function paintedProject(): Project {
   return paintAt(makeProject(), [{ row: 0, column: 0 }], RED)
 }
 
-function setup(project: Project | null = makeProject()) {
+function setup(project: Project | null = makeProject(), mirror: MirrorSetting = MIRROR_OFF) {
   const clipped: number[] = []
   const losses: PasteLoss[] = []
   const harness = editHarness(project ?? undefined)
@@ -41,6 +42,7 @@ function setup(project: Project | null = makeProject()) {
       clipped.push(count)
       losses.push(loss)
     },
+    () => mirror,
   )
   /** Counts the Edits that landed on the Project. */
   return { gesture, commitGridChange: harness.replaceProject, harness, clipped, losses }
@@ -369,6 +371,21 @@ describe('useSelectionGesture', () => {
       expect(gesture.pasteAt({ row: 3, column: 3 })).toBe(true)
 
       expect(frameGrid(harness.project)[3]![3]!.color).toBe(RED)
+    })
+
+    it('stamps at the counterparts too under Mirror, as one Undo step, and the preview shows them (ticket 0703)', () => {
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+      const { gesture, harness } = setup(paintedProject(), mirror)
+      copyTopLeft(gesture)
+
+      expect(gesture.pastePreviewCells(harness.project, { row: 3, column: 0 }).map(({ row, column }) => [row, column])).toEqual([
+        [3, 0],
+        [3, 3],
+      ])
+      expect(gesture.pasteAt({ row: 3, column: 0 })).toBe(true)
+      expect(frameGrid(harness.project)[3]!.map((cell) => cell.color)).toEqual([RED, null, null, RED])
+      harness.history.onUndo()
+      expect(frameGrid(harness.project)[3]!.map((cell) => cell.color)).toEqual([null, null, null, null])
     })
 
     it('is a no-op with nothing copied', () => {

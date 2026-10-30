@@ -21,6 +21,7 @@ import { displayedExtentPx, surfaceView } from './surfaceView'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
+import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -438,6 +439,54 @@ describe('renderOverlay', () => {
 
         expect(named('roundRect')).toHaveLength(count)
       }
+    })
+  })
+
+  describe('Mirror\'s Axis lines on the Frame (ticket 0703)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>, counts: Partial<MirrorSetting['counts']> = {}): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes }, counts: { ...MIRROR_OFF.counts, ...counts } })
+    /** The lines stroked, as [from, to] in the Frame's px. */
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+
+    it('draws N dashed marker lines cutting the Frame into N + 1 equal strips, in screen px at any zoom, with the Frame alone', () => {
+      const project = projectOf('loom', 6, 4, { marks: false })
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: on({ leftRight: true, topBottom: true }, { leftRight: 2 }) })
+
+      expect(lines(calls)).toEqual([
+        [[40, 0], [40, 80]],
+        [[80, 0], [80, 80]],
+        [[0, 40], [120, 40]],
+      ])
+      expect(named('setLineDash')[0]!.args[0]).toEqual([2.5, 2])
+      const stroke = calls.find((call) => call.name === 'stroke')!
+      expect(stroke.strokeStyle).toBe(DEFAULT_THEME.marker)
+    })
+
+    it('moves with the Frame on the open Canvas, across the box round a peyote Frame\'s beads', () => {
+      const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } })
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true }) })
+
+      // Column 5 of a peyote Canvas is 100px in, plus the odd row's half-bead shift; row 5 sits at 5 × 15px.
+      expect(named('translate').map((call) => call.args)).toContainEqual([110, 75])
+      // The box round 4 peyote columns is 4 × 20 + 10px wide (the shifted rows), 20 + 3 × 15px tall.
+      expect(lines(calls)).toEqual([[[45, 0], [45, 65]]])
+    })
+
+    it('draws nothing while the mode is Off or no Axis is on, and nothing on a Custom frame (ticket 0706)', () => {
+      const project = projectOf('loom', 4, 4, { marks: false })
+      const off = recordingContext()
+      renderOverlay(off.context, { project, region: whole(project), zoom: 1, mirror: MIRROR_OFF })
+      expect(off.named('stroke')).toHaveLength(0)
+      expect(off.named('moveTo')).toHaveLength(0)
+      const noAxis = recordingContext()
+      renderOverlay(noAxis.context, { project, region: whole(project), zoom: 1, mirror: on({}) })
+      expect(noAxis.named('stroke')).toHaveLength(0)
     })
   })
 

@@ -47,6 +47,8 @@ export interface ControlDeps {
   /** The Paste tool and the Selection bar's Paste button (ticket 447): enter paste mode under Select, stamping
    * nothing. */
   onPasteMode: () => void
+  /** Key `8` (ticket 0703): Mirror on with its last settings, or off. */
+  onToggleMirror: () => void
   onFillSelection: () => void
   onFrameFromSelection: () => void
   onToggleRulers: () => void
@@ -215,6 +217,16 @@ export const CONTROLS: readonly ControlAction[] = [
     },
   },
   selectTool('hand', '5', 'hand', (t) => t.tools.handLabel, 'canvas', (t) => t.tooltips.hand),
+  {
+    id: 'mirror',
+    icon: 'mirror',
+    name: (t) => t.mirror.title,
+    body: (t) => t.tooltips.mirror,
+    group: 'tools',
+    chords: [{ key: '8', label: '8' }],
+    needsProject: true,
+    run: (deps) => deps.onToggleMirror(),
+  },
   {
     id: 'tool-paste',
     icon: 'paste',
