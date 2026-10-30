@@ -224,8 +224,8 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Exports: PDF for printing, PNG image and the Pattern file. | Экспорт: PDF для печати, PNG и файл схемы. |
 | Saved Patterns: Kept on this device. No account needed. | Сохранённые схемы: Хранятся на этом устройстве. Аккаунт не нужен. |
 | Previous feature · Next feature (arrow labels) | Предыдущая возможность · Следующая возможность |
-| Made by one family | Одна семья |
-| bd-beads is made by one family, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks. | bd-beads делает одна семья, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо. |
+| Made by one family | Делает одна семья |
+| openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks. | openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо. |
 | Buy me a coffee | Угостить кофе |
 | plans · Three ways to use it | тарифы · Три способа работать |
 | Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
@@ -367,7 +367,7 @@ Russian here is a proposal for review, like the section below.
 | Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
 | project: · name: · maker: · Add your name for exports · Change the maker's name | проект: · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
 | Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
-| Bead shape · Symmetric · Real · Brand · Type · Size | Форма бусины · Симметричная · Реальная · Бренд · Тип · Размер |
+| Brand · Type · Size | Бренд · Тип · Размер |
 | Project file · Picture · Printable chart · Clear all beads · Delete project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
 | frame: · Name this frame · Rename the frame · Frame from template · Fit a frame to the drawing · A frame sets the size, the exports and the bead count. | рамка: · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
 | Estimated size · An estimate. · Rows are marked done. Remove the frame to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Уберите рамку, чтобы изменить размер. · Показать все цвета ({n}) |
@@ -479,11 +479,135 @@ Russian, Ukrainian and Polish here are proposals for review with the build. "Ш�
 
 ## Layer settings copy (ticket 0670)
 
-The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Drop, Bead shape, Symmetric, Real, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
+The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Drop, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
 | Settings (the Frame panel's section) | Настройки | Налаштування | Налады | 设置 | Ajustes | Ustawienia |
 | Background (the heading over the picker) | Фон | Фон | Фон | 背景 | Fondo | Tło |
 
-"Bead" over the Bead shape and pickers is the Project panel's existing section word.
+"Bead" over the pickers is the Project panel's existing section word.
+
+## Bead colors filters (ticket 0713)
+
+The two filter rows of the Bead colors list (BeadColors card) and its empty state. A value's name is "{name}, {count}" in every language (Chinese with its own comma). `{filters}` is the on values as the language lists them (`Intl.ListFormat`, "matte or luster"), Finishes in lowercase first, then families; `{sizes}` is a list with "and". The word is "filter", never "facet".
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Color (the row) | Цвет | Колір | Колер | 颜色 | Color | Kolor |
+| Finish (the row) | Покрытие | Покриття | Пакрыццё | 表面处理 | Acabado | Wykończenie |
+| Clear filters | Сбросить фильтры | Скинути фільтри | Скінуць фільтры | 清除筛选 | Quitar filtros | Wyczyść filtry |
+| No code matches {query}. | Нет кодов по запросу {query}. | Немає кодів за запитом {query}. | Няма кодаў па запыце {query}. | 没有编号匹配 {query}。 | Ningún código coincide con {query}. | Żaden kod nie pasuje do {query}. |
+| No {filters} codes match {query}. | Нет кодов по запросу {query} с фильтрами: {filters}. | Немає кодів за запитом {query} з фільтрами: {filters}. | Няма кодаў па запыце {query} з фільтрамі: {filters}. | 在{filters}中没有编号匹配 {query}。 | Ningún código coincide con {query} con los filtros: {filters}. | Żaden kod nie pasuje do {query} przy filtrach: {filters}. |
+| No {filters} codes. | Нет кодов с фильтрами: {filters}. | Немає кодів з фільтрами: {filters}. | Няма кодаў з фільтрамі: {filters}. | {filters}中没有编号。 | Ningún código con los filtros: {filters}. | Żaden kod nie pasuje do filtrów: {filters}. |
+| {code} exists in {sizes}, not in {size}. | {code} есть в {sizes}, но не в {size}. | {code} є в {sizes}, але не в {size}. | {code} ёсць у {sizes}, але не ў {size}. | {code} 有 {sizes}，没有 {size}。 | {code} existe en {sizes}, no en {size}. | {code} istnieje w {sizes}, nie w {size}. |
+
+## Schema tag copy (ticket 0721)
+
+An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| {name}, show details (a tag's accessible name) | {name}, показать подробности | {name}, показати подробиці | {name}, паказаць падрабязнасці | {name}，显示详情 | {name}, ver detalles | {name}, pokaż szczegóły |
+| Click for the size and colors. (the Tooltip's body, a tag with dots) | Нажмите, чтобы увидеть размер и цвета. | Натисніть, щоб побачити розмір і кольори. | Націсніце, каб убачыць памер і колеры. | 点击查看尺寸和颜色。 | Pulsa para ver el tamaño y los colores. | Kliknij, aby zobaczyć rozmiar i kolory. |
+| schema (the paper tag's label) | схема | схема | схема | 图样 | esquema | schemat |
+| {w} × {h} beads · ≈ {x} × {y} mm | {w} × {h} бисерин · ≈ {x} × {y} мм | {w} × {h} бісерин · ≈ {x} × {y} мм | {w} × {h} бісерын · ≈ {x} × {y} мм | {w} × {h} 颗珠子 · ≈ {x} × {y} 毫米 | {w} × {h} cuentas · ≈ {x} × {y} mm | {w} × {h} koralików · ≈ {x} × {y} mm |
+| {n} beads · {n} colors | {n} бисеринок · {n} цветов | {n} бісерин · {n} кольорів | {n} бісерын · {n} колераў | {n} 颗珠子 · {n} 种颜色 | {n} cuentas · {n} colores | {n} koralików · {n} kolorów |
+| Schema names (the tags' Tab stop) | Названия схем | Назви схем | Назвы схем | 图样名称 | Nombres de esquemas | Nazwy schematów |
+
+The size line's "beads" stays in the many form whatever the numbers, as a measure («11 × 11 бисерин»). Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for review with the build.
+
+## Feedback sheet copy (ticket 0700)
+
+The FeedbackSheet card's words, with the Menu's Send feedback and Report a translation problem and the Bead colors list's Wrong or missing color?. The Report is "отчёт" in Russian (not «репорт»), "звіт", "справаздача", 报告, "informe", "zgłoszenie"; a general Report is "feedback" / «отзыв». `{minutes}` and `{seconds}` are the Worker's wait with a unit abbreviation, so no plural is needed. Cancel and optional keep their existing words. Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Send feedback | Отправить отзыв | Надіслати відгук | Адправіць водгук | 发送反馈 | Enviar comentarios | Wyślij opinię |
+| Report a translation problem | Сообщить об ошибке перевода | Повідомити про помилку перекладу | Паведаміць пра памылку перакладу | 报告翻译问题 | Informar de un problema de traducción | Zgłoś błąd tłumaczenia |
+| Wrong or missing color? | Не тот цвет или его нет? | Не той колір або його немає? | Не той колер або яго няма? | 颜色不对或缺少颜色？ | ¿Color equivocado o que falta? | Zły kolor albo go brak? |
+| Send feedback | Отправить отзыв | Надіслати відгук | Адправіць водгук | 发送反馈 | Enviar comentarios | Wyślij opinię |
+| Report a translation problem | Сообщить об ошибке перевода | Повідомити про помилку перекладу | Паведаміць пра памылку перакладу | 报告翻译问题 | Informar de un problema de traducción | Zgłoś błąd tłumaczenia |
+| Report a bead color | Сообщить о цвете бисера | Повідомити про колір бісеру | Паведаміць пра колер бісеру | 报告珠子颜色 | Informar de un color de cuenta | Zgłoś kolor koralików |
+| Say what works, what doesn't, or what you miss. It goes to the person who makes openbeads. | Расскажите, что работает, что нет и чего не хватает. Это прочитает тот, кто делает openbeads. | Розкажіть, що працює, що ні і чого бракує. Це прочитає той, хто робить openbeads. | Раскажыце, што працуе, што не і чаго не хапае. Гэта прачытае той, хто робіць openbeads. | 说说哪里好用、哪里不好用、还缺什么。制作 openbeads 的人会读到。 | Cuenta qué funciona, qué no y qué echas en falta. Lo lee quien hace openbeads. | Napisz, co działa, co nie i czego brakuje. Przeczyta to osoba, która tworzy openbeads. |
+| Copy the words as the app shows them, and say what they should be. | Скопируйте слова так, как их показывает приложение, и напишите, как должно быть. | Скопіюйте слова так, як їх показує застосунок, і напишіть, як має бути. | Скапіруйце словы так, як іх паказвае праграма, і напішыце, як павінна быць. | 按应用显示的样子复制文字，并写出应该是什么。 | Copia las palabras tal como las muestra la app y escribe cómo deberían ser. | Skopiuj słowa tak, jak pokazuje je aplikacja, i napisz, jak powinny brzmieć. |
+| Say which code is drawn in the wrong color, or which code is missing. | Укажите, какой код нарисован не тем цветом или какого кода не хватает. | Вкажіть, який код намальовано не тим кольором або якого коду бракує. | Пазначце, які код намаляваны не тым колерам або якога кода не хапае. | 说明哪个编号的颜色画错了，或者缺少哪个编号。 | Di qué código se dibuja con un color equivocado o qué código falta. | Napisz, który kod ma zły kolor albo którego kodu brakuje. |
+| Message | Сообщение | Повідомлення | Паведамленне | 留言 | Mensaje | Wiadomość |
+| Language | Язык | Мова | Мова | 语言 | Idioma | Język |
+| Text as shown | Текст в приложении | Текст у застосунку | Тэкст у праграме | 显示的文字 | Texto tal como aparece | Tekst w aplikacji |
+| Should say | Должно быть | Має бути | Павінна быць | 应为 | Debería decir | Powinno być |
+| Note | Примечание | Примітка | Заўвага | 备注 | Nota | Uwaga |
+| Problem | Проблема | Проблема | Праблема | 问题 | Problema | Problem |
+| Wrong color | Не тот цвет | Не той колір | Не той колер | 颜色不对 | Color equivocado | Zły kolor |
+| Missing color | Нет цвета | Немає кольору | Няма колеру | 缺少颜色 | Falta el color | Brak koloru |
+| Brand and catalog | Бренд и каталог | Бренд і каталог | Брэнд і каталог | 品牌和色卡 | Marca y catálogo | Marka i katalog |
+| Code | Код | Код | Код | 编号 | Código | Kod |
+| Looks like | Как выглядит | Як виглядає | Як выглядае | 看起来像 | Se ve como | Wygląda jak |
+| In words or as a hex, such as dark teal or #1d5c63. | Словами или в hex, например тёмно-бирюзовый или #1d5c63. | Словами або в hex, наприклад темно-бірюзовий або #1d5c63. | Словамі або ў hex, напрыклад цёмна-бірузовы або #1d5c63. | 用文字或 hex 描述，例如深青色或 #1d5c63。 | Con palabras o en hex, como verde azulado oscuro o #1d5c63. | Słowami lub w hex, np. ciemny morski albo #1d5c63. |
+| Email | Эл. почта | Ел. пошта | Эл. пошта | 电子邮件 | Correo | E-mail |
+| Only to ask you about this report. | Только чтобы задать вопрос об этом отчёте. | Лише щоб поставити запитання про цей звіт. | Толькі каб задаць пытанне пра гэтую справаздачу. | 仅用于就此报告向你提问。 | Solo para preguntarte sobre este informe. | Tylko po to, by zapytać cię o to zgłoszenie. |
+| Write a message. | Напишите сообщение. | Напишіть повідомлення. | Напішыце паведамленне. | 写下留言。 | Escribe un mensaje. | Napisz wiadomość. |
+| Enter the text as it shows. | Укажите текст так, как он показан. | Вкажіть текст так, як його показано. | Пазначце тэкст так, як ён паказаны. | 按显示的样子填写文字。 | Escribe el texto tal como aparece. | Wpisz tekst tak, jak jest pokazany. |
+| Enter an email such as name@example.com. | Укажите почту, например name@example.com. | Вкажіть пошту, наприклад name@example.com. | Пазначце пошту, напрыклад name@example.com. | 填写电子邮件，例如 name@example.com。 | Escribe un correo como name@example.com. | Wpisz e-mail, np. name@example.com. |
+| Also sent | Также отправляется | Також надсилається | Таксама адпраўляецца | 一并发送 | También se envía | Wysyłane też |
+| Nothing from your Projects, and nothing that identifies this device. | Ничего из ваших проектов и ничего, что указывает на это устройство. | Нічого з ваших проєктів і нічого, що вказує на цей пристрій. | Нічога з вашых праектаў і нічога, што паказвае на гэтую прыладу. | 不含你的项目，也不含可识别此设备的信息。 | Nada de tus proyectos ni nada que identifique este dispositivo. | Nic z twoich projektów i nic, co wskazuje na to urządzenie. |
+| Version | Версия | Версія | Версія | 版本 | Versión | Wersja |
+| App language | Язык приложения | Мова застосунку | Мова праграмы | 应用语言 | Idioma de la app | Język aplikacji |
+| Browser | Браузер | Браузер | Браўзер | 浏览器 | Navegador | Przeglądarka |
+| System | Система | Система | Сістэма | 系统 | Sistema | System |
+| Window size | Размер окна | Розмір вікна | Памер акна | 窗口大小 | Tamaño de ventana | Rozmiar okna |
+| Language | Язык | Мова | Мова | 语言 | Idioma | Język |
+| Brand | Бренд | Бренд | Брэнд | 品牌 | Marca | Marka |
+| Catalog | Каталог | Каталог | Каталог | 色卡 | Catálogo | Katalog |
+| Code | Код | Код | Код | 编号 | Código | Kod |
+| Stored hex | Сохранённый hex | Збережений hex | Захаваны hex | 存储的 hex | Hex guardado | Zapisany hex |
+| Swatch letter | Буква цвета | Літера кольору | Літара колеру | 颜色字母 | Letra del color | Litera koloru |
+| Send | Отправить | Надіслати | Адправіць | 发送 | Enviar | Wyślij |
+| Sending… | Отправляем… | Надсилаємо… | Адпраўляем… | 正在发送… | Enviando… | Wysyłanie… |
+| Copy report | Скопировать отчёт | Скопіювати звіт | Скапіраваць справаздачу | 复制报告 | Copiar informe | Kopiuj zgłoszenie |
+| Report copied. | Отчёт скопирован. | Звіт скопійовано. | Справаздачу скапіравана. | 报告已复制。 | Informe copiado. | Zgłoszenie skopiowane. |
+| The browser refused to copy. Select the text and copy it yourself. | Браузер не дал скопировать. Выделите текст и скопируйте его сами. | Браузер не дав скопіювати. Виділіть текст і скопіюйте його самі. | Браўзер не даў скапіраваць. Вылучыце тэкст і скапіруйце яго самі. | 浏览器拒绝复制。选中文字后自行复制。 | El navegador no dejó copiar. Selecciona el texto y cópialo tú. | Przeglądarka nie pozwoliła skopiować. Zaznacz tekst i skopiuj go sam. |
+| Sending reports is switched off for now. Try again in {minutes} min. | Отправка отчётов пока выключена. Попробуйте через {minutes} мин. | Надсилання звітів поки вимкнено. Спробуйте за {minutes} хв. | Адпраўка справаздач пакуль выключана. Паспрабуйце праз {minutes} хв. | 报告发送暂时关闭。{minutes} 分钟后再试。 | El envío de informes está desactivado por ahora. Vuelve a intentarlo en {minutes} min. | Wysyłanie zgłoszeń jest na razie wyłączone. Spróbuj za {minutes} min. |
+| You are offline. Your report stays here: send it once you are back online, or copy it. | Нет сети. Отчёт останется здесь: отправьте его, когда сеть появится, или скопируйте. | Немає мережі. Звіт залишиться тут: надішліть його, коли мережа з’явиться, або скопіюйте. | Няма сеткі. Справаздача застанецца тут: адпраўце яе, калі сетка з’явіцца, або скапіруйце. | 你已离线。报告会留在这里：联网后发送，或复制下来。 | Estás sin conexión. Tu informe se queda aquí: envíalo cuando vuelvas a tener conexión o cópialo. | Jesteś offline. Zgłoszenie zostaje tutaj: wyślij je, gdy wrócisz do sieci, albo je skopiuj. |
+| Too many reports at once. Try again in {seconds} s. | Слишком много отчётов сразу. Попробуйте через {seconds} с. | Забагато звітів одразу. Спробуйте за {seconds} с. | Занадта шмат справаздач адразу. Паспрабуйце праз {seconds} с. | 报告太多。{seconds} 秒后再试。 | Demasiados informes a la vez. Vuelve a intentarlo en {seconds} s. | Za dużo zgłoszeń naraz. Spróbuj za {seconds} s. |
+| The report could not be sent. Try again later, or copy it. | Отчёт не отправился. Попробуйте позже или скопируйте его. | Звіт не надіслано. Спробуйте пізніше або скопіюйте його. | Справаздачу не адпраўлена. Паспрабуйце пазней або скапіруйце яе. | 报告未能发送。稍后再试，或复制下来。 | No se pudo enviar el informe. Inténtalo más tarde o cópialo. | Nie udało się wysłać zgłoszenia. Spróbuj później albo je skopiuj. |
+| Thanks, your report was sent | Спасибо, отчёт отправлен | Дякуємо, звіт надіслано | Дзякуй, справаздачу адпраўлена | 谢谢，报告已发送 | Gracias, tu informe se ha enviado | Dziękujemy, zgłoszenie wysłane |
+
+## Fill reach copy (ticket 0715)
+
+The two toasts (Message card, info tone) after a Fill tool press on the Canvas that Fill reach refuses: what happened, then what to do, as the Error pattern. The Selection bar's Fill is the way to fill a chosen area, so both name selecting.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Nothing encloses this spot. Select an area to fill it. | Это место ничем не окружено. Выделите область, чтобы залить её. | Це місце нічим не оточене. Виділіть область, щоб залити її. | Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе. | 这里没有被围住。选择一个区域即可填充。 | Nada rodea este punto. Selecciona un área para rellenarla. | Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić. |
+| Too big to fill. Zoom in, or select an area. | Слишком большая область для заливки. Увеличьте масштаб или выделите область. | Завелика область для заливки. Збільште масштаб або виділіть область. | Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць. | 区域太大，无法填充。放大画布，或选择一个区域。 | Demasiado grande para rellenar. Acerca la vista o selecciona un área. | Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar. |
+
+## First-run hints copy (ticket 0725)
+
+The hand-drawn notes over an empty Project (FirstRunHints card). "/" marks a line break; in a language where a line runs longer, the note wraps rather than overflows. A tool quoted in a sentence takes the language's quotes («», “”), as Russian does for buttons. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings.
+
+**Desktop and tablet**
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| 1 · pick Paint and draw anywhere | 1 · возьмите «Кисть» / и рисуйте где угодно | 1 · візьміть «Пензель» / і малюйте будь-де | 1 · вазьміце «Пэндзаль» / і малюйце дзе заўгодна | 1 · 选择“涂色”，在任意位置绘制 | 1 · elige Pintar y dibuja donde quieras | 1 · wybierz Maluj i rysuj, gdzie chcesz |
+| 2 · pick Select and drag a box round your drawing | 2 · возьмите «Выделение» и обведите рисунок | 2 · візьміть «Виділення» й обведіть малюнок | 2 · вазьміце «Вылучэнне» і абвядзіце малюнак | 2 · 用“选择”框住你的图案 | 2 · elige Seleccionar y arrastra un recuadro alrededor del dibujo | 2 · wybierz Zaznacz i przeciągnij prostokąt wokół rysunku |
+| 3 · make a Frame round your drawing, / then set its name, size and Bead here | 3 · обведите рисунок рамкой, / а здесь задайте её название, размер и бисер | 3 · обведіть малюнок рамкою, / а тут задайте її назву, розмір і бісер | 3 · абвядзіце малюнак рамкай, / а тут задайце яе назву, памер і бісер | 3 · 给图案加上边框，/ 再在这里设置名称、尺寸和珠子 | 3 · pon un marco alrededor del dibujo / y aquí elige su nombre, tamaño y cuenta | 3 · otocz rysunek ramką, / a tu ustaw jej nazwę, rozmiar i koralik |
+| 4 · export a picture / or a printable chart | 4 · экспортируйте картинку / или схему для печати | 4 · експортуйте картинку / або схему для друку | 4 · экспартуйце выяву / або схему для друку | 4 · 导出图片 / 或可打印的图样 | 4 · exporta una imagen / o un esquema para imprimir | 4 · wyeksportuj obrazek / lub schemat do druku |
+| open, save, / preferences, / language… (Menu) | открыть, сохранить, / настройки, / язык… | відкрити, зберегти, / налаштування, / мова… | адкрыць, захаваць, / налады, / мова… | 打开、保存、/ 偏好设置、/ 语言… | abrir, guardar, / preferencias, / idioma… | otwórz, zapisz, / ustawienia, / język… |
+| your Project: its name, maker, / Technique, Bead and background (Project) | ваш проект: название, автор, / техника, бисер и фон | ваш проєкт: назва, автор, / техніка, бісер і тло | ваш праект: назва, аўтар, / тэхніка, бісер і фон | 你的项目：名称、作者、/ 技法、珠子和背景 | tu proyecto: nombre, autor, / técnica, cuenta y fondo | twój projekt: nazwa, autor, / technika, koralik i tło |
+| Mirror: paint both sides of an axis at once | «Отражение»: рисуйте по обе стороны оси | «Відображення»: малюйте з обох боків осі | «Адлюстраванне»: малюйце з абодвух бакоў восі | 镜像：同时在轴的两侧绘制 | Espejo: pinta a los dos lados de un eje a la vez | Odbicie: maluj po obu stronach osi naraz |
+| colors and your Palette | цвета и ваша палитра | кольори і ваша палітра | колеры і ваша палітра | 颜色和你的调色板 | colores y tu paleta | kolory i twoja paleta |
+| your first Pattern in four steps: (welcome) | ваша первая схема в четыре шага: | ваша перша схема в чотири кроки: | ваша першая схема ў чатыры крокі: | 四步完成你的第一个图样： | tu primer esquema en cuatro pasos: | twój pierwszy schemat w czterech krokach: |
+| draw → select → frame → export | рисунок → выделение → рамка → экспорт | малюнок → виділення → рамка → експорт | малюнак → вылучэнне → рамка → экспарт | 绘制 → 选择 → 边框 → 导出 | dibujar → seleccionar → marco → exportar | rysunek → zaznaczenie → ramka → eksport |
+
+**Phone (30rem and under)**
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| 1 · pick Paint and draw | 1 · «Кисть»: рисуйте | 1 · «Пензель»: малюйте | 1 · «Пэндзаль»: малюйце | 1 · 选“涂色”来画 | 1 · elige Pintar y dibuja | 1 · wybierz Maluj i rysuj |
+| 2 · pick Select, drag a box | 2 · «Выделение»: обведите | 2 · «Виділення»: обведіть | 2 · «Вылучэнне»: абвядзіце | 2 · 用“选择”框选 | 2 · Seleccionar: arrastra un recuadro | 2 · Zaznacz: obrysuj rysunek |
+| 3 · make a Frame round it, / then set it up here | 3 · рамка вокруг рисунка, / настройте её здесь | 3 · рамка навколо малюнка, / налаштуйте її тут | 3 · рамка вакол малюнка, / наладзьце яе тут | 3 · 加上边框，/ 在这里设置 | 3 · ponle un marco / y ajústalo aquí | 3 · otocz ramką, / ustaw ją tutaj |
+| 4 · export, at the end / of this strip | 4 · экспорт: в конце / этой полосы | 4 · експорт: у кінці / цієї смуги | 4 · экспарт: у канцы / гэтай паласы | 4 · 导出：在这条栏的 / 末尾 | 4 · exportar: al final / de esta barra | 4 · eksport: na końcu / tego paska |
+
+English and Russian were approved on the canvas; Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.

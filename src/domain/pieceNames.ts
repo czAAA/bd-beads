@@ -35,9 +35,11 @@ export function readPieceNames(stored: unknown): PieceName[] {
   })
 }
 
-/** A named Piece as drawn and listed: its name, its rectangle and how many beads it holds. */
+/** A named Piece as drawn and listed: its name, the bead the name is kept on, its rectangle and how many beads it
+ * holds. */
 export interface NamedPiece extends Rect {
   name: string
+  anchor: GridPosition
   beads: number
 }
 
@@ -71,7 +73,7 @@ export function namedPieces(project: Layered): NamedPiece[] {
     const columns = members.map((at) => at.column)
     const top = Math.min(...rows)
     const left = Math.min(...columns)
-    found.push({ name, row: top, column: left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1, beads: members.length })
+    found.push({ name, anchor: { row, column }, row: top, column: left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1, beads: members.length })
   }
   namedCache.set(beads, { names, cycle: rowCycle(weave), found })
   return found

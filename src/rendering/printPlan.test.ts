@@ -220,9 +220,9 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
   })
 })
 
-describe('planPrint: Bead shape (ticket 509)', () => {
-  it('draws Real cells at the same bead size as Symmetric ones: the chart is counted, not fitted', () => {
-    const real = withLayers(shape('brick', 90, 100), { bead: findBead('miyuki-delica-11-0'), beadShape: 'real' as const })
+describe('planPrint: real cells (tickets 509, 0724)', () => {
+  it('draws a Bead\'s real cells at the same bead size as a bare Technique\'s: the chart is counted, not fitted', () => {
+    const real = withLayers(shape('brick', 90, 100), { bead: findBead('miyuki-delica-11-0') })
 
     expect(planPrint(real).zoom).toBe(planPrint(shape('brick', 90, 100)).zoom)
   })

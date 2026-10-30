@@ -83,7 +83,7 @@ describe('a press outside', () => {
     return event
   }
 
-  function panel(options: { close: () => void; outside?: 'close' | 'swallow'; isOpener?: (target: Element) => boolean }) {
+  function panel(options: { close: () => void; outside?: 'close' | 'swallow' | 'through'; isOpener?: (target: Element) => boolean }) {
     return defineComponent({
       setup() {
         const el = ref<HTMLElement>()
@@ -144,6 +144,20 @@ describe('a press outside', () => {
 
     expect(press.defaultPrevented).toBe(true)
     expect(close).not.toHaveBeenCalled()
+  })
+
+  it('closes and lets the press go on when the layer stands aside for it (the paper tag over the canvas)', () => {
+    const outside = page()
+    const behind = vi.fn()
+    outside.addEventListener('pointerdown', behind)
+    const close = vi.fn()
+    mount(panel({ close, outside: 'through' }), { attachTo: document.body })
+
+    const press = pressOn(outside)
+
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(press.defaultPrevented).toBe(false)
+    expect(behind).toHaveBeenCalledTimes(1)
   })
 
   it("ignores a pinch's second finger", () => {

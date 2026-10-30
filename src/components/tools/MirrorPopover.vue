@@ -23,6 +23,9 @@ const props = defineProps<{
   /** Each direction's Axis count limit, the Frame's beads minus one; none without a Frame on a grid, where the count
    * Steppers are not shown. */
   limits?: Record<MirrorDirection, number>
+  /** Whether the open Canvas is the only layer (ticket 0704): with a straight Axis on, the details say the handle on
+   * the canvas is the setting, or in Repeat that an Area is needed (spec 0702's decision). */
+  onCanvas?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,6 +58,11 @@ const anyAxis = computed(() => MIRROR_DIRECTIONS.some((direction) => props.setti
 const counted = computed(() => (props.limits ? MIRROR_DIRECTIONS.filter((direction) => props.setting.axes[direction]) : []))
 /** A count above the Frame's limit is shown clamped, as it acts (spec 0702). */
 const countOf = (direction: MirrorDirection) => Math.min(props.setting.counts[direction], props.limits?.[direction] ?? Infinity)
+/** The open Canvas's own detail (ticket 0704), with a straight Axis on: the handle, or in Repeat the Area it needs. */
+const canvasNote = computed(() => {
+  if (!props.onCanvas || !isMirrorOn(props.setting) || !MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction])) return undefined
+  return props.setting.mode === 'repeat' ? t.value.mirror.repeatNeedsArea : t.value.mirror.dragHandle
+})
 
 const setMode = (mode: MirrorMode) => emit('update:setting', withMirrorMode(props.setting, mode))
 const toggleAxis = (direction: MirrorDirection) => emit('update:setting', withAxisToggled(props.setting, direction))
@@ -107,6 +115,7 @@ const setCount = (direction: MirrorDirection, count: number) => emit('update:set
       />
     </section>
 
+    <AppNote v-if="canvasNote" data-testid="mirror-canvas-note">{{ canvasNote }}</AppNote>
     <AppNote v-if="isMirrorOn(setting) && !anyAxis" data-testid="mirror-no-axis-note">{{ t.mirror.turnAxisOn }}</AppNote>
   </div>
 </template>
@@ -116,9 +125,8 @@ const setCount = (direction: MirrorDirection, count: number) => emit('update:set
  * line, elevation-3, padding 12px 14px 14px, 12px between rows. */
 .mirror-popover {
   position: fixed;
+  /* In the app shell, not the canvas box (ToolPill), so nothing there clips it or is drawn over it. */
   z-index: var(--z-popover);
-  /* It lives in the pill's layer, which takes no pointer events; the popover takes its own. */
-  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-12);

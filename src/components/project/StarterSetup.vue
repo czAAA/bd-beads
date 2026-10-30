@@ -29,7 +29,7 @@ import { plural } from '../../i18n/plural'
 import { designWords, starterCountWords, starterName } from '../../i18n/starterWords'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { DEFAULT_BEAD_SHAPE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
+import { weaveSettings, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import FormField from '../ui/form/FormField.vue'
@@ -49,11 +49,10 @@ const { t, locale } = useI18n()
 
 const name = ref('')
 /** The Frame's Layer settings (ADR 0079, ticket 0671), pre-filled from the Starter: its Weave, the Bead its design is
- * made for, Symmetric, and the device's last Background until one is picked. */
+ * made for and the device's last Background until one is picked. */
 const technique = ref<Technique>(props.starter.weave.technique)
 const settings = ref<TechniqueSettings>({ ...props.starter.weave.techniqueSettings })
 const beadId = ref(STARTER_BEAD_ID)
-const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
 const picked = ref<Background>()
 const deviceBackground = useCanvasBackground().start
 const background = computed(() => picked.value ?? deviceBackground.value)
@@ -210,7 +209,7 @@ const estimate = computed(() => {
 const pictureName = computed(() => fillBlanks(useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty, { option: optionName.value }))
 
 function onSubmit() {
-  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: beadId.value, beadShape: beadShape.value, background: background.value })
+  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: beadId.value, background: background.value })
 }
 </script>
 
@@ -230,13 +229,11 @@ function onSubmit() {
       :technique-settings="settings"
       :techniques="techniquesOf(starter)"
       :bead="bead"
-      :bead-shape="beadShape"
       :background="background"
       testid="starter"
       @set-technique="technique = $event"
       @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
       @pick-bead="beadId = $event"
-      @set-bead-shape="beadShape = $event"
       @set-background="picked = $event"
     />
 

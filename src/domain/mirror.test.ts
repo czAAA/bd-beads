@@ -8,15 +8,21 @@ import type { Project } from './project'
 import {
   MIRROR_OFF,
   axisLimitsOf,
+  canvasAxesOf,
   counterparts,
   mirrorSettingOf,
   mirroredOnCanvas,
+  readCanvasAxes,
   readMirrorSetting,
+  snapAxis,
   toggledMirror,
+  withAxesPlaced,
   withAxisToggled,
+  withCanvasAxes,
   withMirror,
   withMirrorCount,
   withMirrorMode,
+  type CanvasAxes,
   type MirrorSetting,
 } from './mirror'
 import type { Technique } from './weave'
@@ -119,7 +125,103 @@ describe('counterparts on a Frame by index (ticket 0703, spec 0702)', () => {
   })
 })
 
+describe('counterparts on the open Canvas by index (ticket 0704, spec 0702)', () => {
+  /** A Project with no Frame, its Canvas's Axes where given. */
+  function open(technique: Technique, axes: CanvasAxes): Project {
+    const project = (changeFrame(framed(technique, 4, 4), { remove: true }) as { project: Project }).project
+    return withCanvasAxes(project, axes)
+  }
+
+  it('reflects the column about a Left–right Axis through a position\'s centre, which mirrors that position onto itself', () => {
+    const sheet = layerSheet(open('loom', { leftRight: 3 }), 'canvas')
+    expect(sheet.axes).toEqual({ leftRight: 3 })
+    expect(counterparts(sheet, on({ leftRight: true }), [{ row: 2, column: 1 }]).positions).toEqual([
+      { row: 2, column: 1 },
+      { row: 2, column: 5 },
+    ])
+    expect(counterparts(sheet, on({ leftRight: true }), [{ row: 2, column: 3 }]).positions).toEqual([{ row: 2, column: 3 }])
+    expect(counterparts(sheet, on({ leftRight: true }), [{ row: -4, column: -2 }]).positions).toEqual([
+      { row: -4, column: -2 },
+      { row: -4, column: 8 },
+    ])
+  })
+
+  it('reflects about a boundary (a half position) and the row about a Top–bottom Axis, both directions giving four images, on brick too', () => {
+    const sheet = layerSheet(open('brick', { leftRight: 2.5, topBottom: -0.5 }), 'canvas')
+    expect(counterparts(sheet, on({ leftRight: true, topBottom: true }), [{ row: 1, column: 0 }]).positions).toEqual([
+      { row: 1, column: 0 },
+      { row: 1, column: 5 },
+      { row: -2, column: 0 },
+      { row: -2, column: 5 },
+    ])
+    expect(counterparts(sheet, on({ topBottom: true }), [{ row: 1, column: 0 }]).positions).toEqual([
+      { row: 1, column: 0 },
+      { row: -2, column: 0 },
+    ])
+  })
+
+  it('mirrors nothing in Repeat mode, with the direction off, or with no Axis placed yet: no edge gives no strip to repeat (spec 0702)', () => {
+    const sheet = layerSheet(open('loom', { leftRight: 3 }), 'canvas')
+    expect(counterparts(sheet, on({ leftRight: true }, {}, 'repeat'), [{ row: 0, column: 0 }]).positions).toEqual([{ row: 0, column: 0 }])
+    expect(counterparts(sheet, on({ topBottom: true }), [{ row: 0, column: 0 }]).positions).toEqual([{ row: 0, column: 0 }])
+    expect(counterparts(layerSheet(open('loom', {}), 'canvas'), on({ leftRight: true }), [{ row: 0, column: 0 }]).positions).toEqual([{ row: 0, column: 0 }])
+    expect(counterparts(sheet, on({ leftRight: true }), [{ row: 0, column: 0 }]).dropped).toBe(0)
+  })
+
+  it('carries a Paste\'s color onto a counterpart, the source keeping its own where the two meet', () => {
+    const sheet = layerSheet(open('loom', { leftRight: 0.5 }), 'canvas')
+    expect(counterparts(sheet, on({ leftRight: true }), [{ row: 0, column: 0, color: '#ff0000' }, { row: 0, column: 1, color: '#0000ff' }]).positions).toEqual([
+      { row: 0, column: 0, color: '#ff0000' },
+      { row: 0, column: 1, color: '#0000ff' },
+    ])
+  })
+})
+
+describe('the Canvas\'s Axes on the Canvas layer\'s record (ticket 0704)', () => {
+  it('snaps a position to a centre or a boundary, the nearer', () => {
+    expect(snapAxis(2.2)).toBe(2)
+    expect(snapAxis(2.3)).toBe(2.5)
+    expect(snapAxis(-0.74)).toBe(-0.5)
+  })
+
+  it('places an Axis through the view\'s centre, snapped, when its direction goes on, or is on with none placed; one on already stays', () => {
+    const both = on({ leftRight: true, topBottom: true })
+    const centre = { leftRight: 4.3, topBottom: -1.1 }
+    expect(withAxesPlaced({}, MIRROR_OFF, both, centre)).toEqual({ leftRight: 4.5, topBottom: -1 })
+    expect(withAxesPlaced({ leftRight: 2 }, on({ leftRight: true }), both, centre)).toEqual({ leftRight: 2, topBottom: -1 })
+    expect(withAxesPlaced({ leftRight: 2 }, MIRROR_OFF, both, centre)).toEqual({ leftRight: 4.5, topBottom: -1 })
+    expect(withAxesPlaced({}, MIRROR_OFF, on({ leftRight: true }), centre)).toEqual({ leftRight: 4.5 })
+    expect(withAxesPlaced({}, MIRROR_OFF, both, undefined)).toEqual({ leftRight: 0, topBottom: 0 })
+    expect(withAxesPlaced({ leftRight: 2 }, MIRROR_OFF, both, undefined)).toEqual({ leftRight: 2, topBottom: 0 })
+    const placed = { leftRight: 2, topBottom: 3 }
+    expect(withAxesPlaced(placed, both, both, { leftRight: 9, topBottom: 9 })).toBe(placed)
+    expect(withAxesPlaced(placed, both, { ...both, mode: 'off' }, { leftRight: 9, topBottom: 9 })).toBe(placed)
+  })
+
+  it('is read back from a Project, empty without one, and from a file\'s raw value with anything unreadable left out', () => {
+    const project = framed('loom', 4, 4)
+    expect(canvasAxesOf(project)).toEqual({})
+    expect(canvasAxesOf(withCanvasAxes(project, { topBottom: 1.5 }))).toEqual({ topBottom: 1.5 })
+    expect(readCanvasAxes({ leftRight: 2, topBottom: 'x' })).toEqual({ leftRight: 2 })
+    expect(readCanvasAxes({ leftRight: 2.3 })).toEqual({ leftRight: 2.5 })
+    expect(readCanvasAxes(null)).toBeUndefined()
+    expect(readCanvasAxes({ leftRight: Infinity })).toBeUndefined()
+  })
+})
+
 describe('mirroredOnCanvas', () => {
+  it('expands the Canvas\'s own positions across its Axes in Mirror mode, leaving out a counterpart in the keep-out margin (ticket 0704)', () => {
+    const framedAt = withLayers(framed('loom', 4, 2), { frame: { ...frameOf(framed('loom', 4, 2))!, row: 10, column: 10 } })
+    const project = withCanvasAxes(framedAt, { leftRight: 20 })
+    const setting = on({ leftRight: true })
+    expect(mirroredOnCanvas(project, setting, [{ row: 0, column: 25, layer: 'canvas' }])).toEqual([
+      { row: 0, column: 25, layer: 'canvas' },
+      { row: 0, column: 15, layer: 'canvas' },
+    ])
+    // The margin is four positions round the Frame at rows 10 to 11, columns 10 to 13: (8, 15) lies in it.
+    expect(mirroredOnCanvas(project, setting, [{ row: 8, column: 25, layer: 'canvas' }])).toEqual([{ row: 8, column: 25, layer: 'canvas' }])
+  })
+
   it('expands Canvas positions that lie on the Frame through the Frame\'s own positions, and leaves the Canvas\'s alone', () => {
     const project = framed('loom', 4, 2)
     const { row, column } = project.layers[1]!

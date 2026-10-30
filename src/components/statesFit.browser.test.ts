@@ -13,8 +13,11 @@ import ConvertImageWizard from './import/ConvertImageWizard.vue'
 import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
+import FirstRunHints from './canvas/FirstRunHints.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ContextBar from './tools/ContextBar.vue'
+import SchemaTags from './canvas/SchemaTags.vue'
+import { withPieceName } from '../domain/pieceNames'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { paintAt } from '../testUtils/layers'
@@ -61,6 +64,21 @@ const MirrorPopoverHost = defineComponent({
   },
 })
 
+/** The same popover on the open Canvas (ticket 0704): a straight Axis on in Repeat and no Frame, so the Canvas's
+ * Note shows in place of the Steppers. */
+const MirrorPopoverOnCanvasHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true }),
+      ])
+  },
+})
+
 /** The app's drop look, a picture being dragged over it. */
 const PictureDragged = defineComponent({
   setup() {
@@ -91,8 +109,10 @@ const SaveFailedNotice = defineComponent({
 
 /** The Bead's Color catalog as its list reads it (a stand-in for `useBeadColors`). */
 function beadColors(state: 'ready' | 'failed') {
-  const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: 'metallic', hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
-  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), load: () => {}, add: () => 'added' as const }
+  const finishes = ['metallic', 'matte', 'opaque'] as const
+  const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: finishes[i]!, hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
+  // With `report`, so the foot row that opens a color Report (ticket 0700) is measured too.
+  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const, report: () => {} }
 }
 
 /** A Delica catalog of a few codes, so Bead colors is offered and matched to. */
@@ -136,14 +156,57 @@ const MarginColorPopoverHost = defineComponent({
   },
 })
 
+/** Two unframed Schemas hanging their tags in a phone-sized canvas box (ticket 0721): "Owl" written out, "Butterfly"
+ * folded to dots, which opens into the paper tag. */
+const schemaTagsHost = defineComponent({
+  setup() {
+    const colors = createPalette(defaultPaletteIds()).colors.map((color) => color.hex)
+    const drawn = paintAt(paintAt(withLayers(empty, { frame: undefined }), [0, 1, 2].map((column) => ({ row: 0, column })), colors[0]!), [{ row: 6, column: 0 }, { row: 6, column: 1 }], colors[1]!)
+    const project = withPieceName(withPieceName(drawn, { row: 0, column: 0 }, 'Owl'), { row: 6, column: 0 }, 'Butterfly')
+    const anchors = {
+      schemas: [
+        { name: 'Owl', anchor: { row: 0, column: 0 }, piece: { row: 0, column: 0, rows: 1, columns: 3 }, box: { left: 24, top: 24, width: 64, height: 24 } },
+        { name: 'Butterfly', anchor: { row: 6, column: 0 }, piece: { row: 6, column: 0, rows: 1, columns: 2 }, box: { left: 200, top: 120, width: 44, height: 24 } },
+      ],
+      viewport: { width: 300, height: 420 },
+    }
+    return () => h('div', { style: { position: 'relative', width: '300px', height: '420px' } }, [h(SchemaTags, { project, anchors })])
+  },
+})
+const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[aria-label^="Butterfly"]')?.click()
+
+/** The first-run hints (ticket 0725) in a canvas box like the app's: the strip's four buttons above the drawing area,
+ * the Tool pill docked at its foot with the tiles the notes point at. */
+const firstRunHintsHost = defineComponent({
+  setup() {
+    const box = ref<HTMLElement>()
+    const button = (hint: string, width: number) => h('button', { type: 'button', 'data-hint': hint, style: { width: `${width}px`, height: '30px' } })
+    const tile = (hint?: string) => h('button', { type: 'button', 'data-hint': hint, style: { width: '40px', height: '40px', flex: 'none' } })
+    return () =>
+      h('div', { ref: box, style: { display: 'flex', flexDirection: 'column', width: '100%', height: '640px' } }, [
+        h('div', { style: { display: 'flex', gap: '4px', height: '32px', alignItems: 'center' } }, [
+          button('menu', 60), button('project', 70), button('frame', 60), h('span', { style: { flex: 1 } }), button('export', 30),
+        ]),
+        h('div', { style: { position: 'relative', flex: 1 } }, [
+          box.value ? h(FirstRunHints, { scope: box.value, pillPosition: 'bottom', pillRect: undefined, background: undefined }) : null,
+          h('div', { 'data-hint-obstacle': '', style: { position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '2px', padding: '4px' } }, [
+            tile('paint'), tile(), tile('select'), tile(), tile(), tile(), tile('mirror'), tile('color'),
+          ]),
+        ]),
+      ])
+  },
+})
+
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
+  ['MirrorPopover on the Canvas', MirrorPopoverOnCanvasHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
+  ['FirstRunHints', firstRunHintsHost as Component, {}],
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
@@ -155,6 +218,8 @@ const CASES: FitCase[] = [
     { project: painted, selection: { top: 0, left: 0, rows: 2, columns: 2 }, selectionSummary: '2×2 ≈ 3 × 3 mm', pasteArmed: false, canRemoveLine: true, canNamePiece: true, hasClipboard: true, anchor: { box: { left: 40, top: 160, width: 100, height: 60 }, viewport: { width: 360, height: 640 } } },
     async () => void (await armSelectionBar()),
   ],
+  ['SchemaTags', schemaTagsHost, {}],
+  ['SchemaTags (open)', schemaTagsHost, {}, openSchemaTag],
   ['StarterGallery', StarterGallery, {}],
   ['StarterGallery (Shapes)', StarterGallery, { category: 'shapes' }],
   ['StarterSetup', StarterSetup, { starter: starterById('kaleidocycle') }],

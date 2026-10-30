@@ -40,6 +40,12 @@ export function useNamePieceFlow(deps: NamePieceFlowDeps) {
     }
   }
 
+  /** Rename on a Schema's paper tag (ticket 0721): the same dialog, for the Schema holding the bead at `at`. */
+  function onRenameSchema(at: GridPosition) {
+    const project = deps.currentProject()
+    if (project) naming.value = { at, name: pieceNameAt(project, at) ?? '' }
+  }
+
   function onSavePieceName(name: string) {
     const at = naming.value?.at
     naming.value = undefined
@@ -48,5 +54,5 @@ export function useNamePieceFlow(deps: NamePieceFlowDeps) {
     }
   }
 
-  return { canNamePiece, naming, onNamePiece, onSavePieceName, onCancelPieceName: () => (naming.value = undefined) }
+  return { canNamePiece, naming, onNamePiece, onRenameSchema, onSavePieceName, onCancelPieceName: () => (naming.value = undefined) }
 }

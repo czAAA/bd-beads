@@ -89,13 +89,19 @@ describe('the numbers of a ruled box', () => {
     expect(labels.filter((l) => l.axis === 'row' && l.x > 80).map((l) => l.text)).toEqual(['1', '2', '3'])
   })
 
-  it('leave out the side shown at the bottom, whichever way the view is turned (ticket 0657)', () => {
-    const turned = { rotation: 180 as const, centred: frame }
-    const { labels } = framed(frame, turned)
-    const columns = labels.filter((l) => l.axis === 'column')
-    expect(columns.length).toBe(4)
-    expect(columns.every((l) => l.y < 1000)).toBe(true)
-    expect(labels.filter((l) => l.axis === 'row')).toHaveLength(6)
+  it('leave out the side along the screen edge the title block is on, whichever way the view is turned (tickets 0657, 0728)', () => {
+    // The title block sits at the Frame's own bottom-right corner: along the screen's bottom at 0° and 90°, along its
+    // top at 180° and 270°. Each number is on the screen side its offset from the Frame's middle (the viewport's) points to most.
+    const sides = (rotation: Rotation) => {
+      const { labels } = framed(frame, { rotation, centred: frame })
+      const middle = { x: 1000, y: 1000 }
+      const sideOf = ({ x, y }: RulerLabel) => (Math.abs(x - middle.x) > Math.abs(y - middle.y) ? (x < middle.x ? 'left' : 'right') : y < middle.y ? 'top' : 'bottom')
+      return [...new Set(labels.map(sideOf))].sort()
+    }
+    expect(sides(0)).toEqual(['left', 'right', 'top'])
+    expect(sides(90)).toEqual(['left', 'right', 'top'])
+    expect(sides(180)).toEqual(['bottom', 'left', 'right'])
+    expect(sides(270)).toEqual(['bottom', 'left', 'right'])
   })
 
   it('stand 3px clear of the line, which is 7px outside the beads, on each side', () => {

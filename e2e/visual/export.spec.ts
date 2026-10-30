@@ -41,7 +41,7 @@ test('PNG export is the Cover page: one A4 portrait picture, drawn on the print 
   const png = PNG.sync.read(bytes)
   const dpi = png.width / (A4_PORTRAIT.width / PRINT_DPI)
 
-  expect(name).toBe('openbeads-fixture-loom.png')
+  expect(name).toBe('fixture-loom.png')
   // A4 portrait at the Export quality's dpi (Medium: 300).
   expect(png.width / png.height).toBeCloseTo(A4_PORTRAIT.width / A4_PORTRAIT.height, 2)
   expect(dpi).toBeCloseTo(300, 3)
@@ -86,7 +86,7 @@ test('PDF export holds the legend and the chart, and splits a large Project over
   const { name, bytes } = await downloadOf(page, 'export-pdf')
   const pdf = bytes.toString('latin1')
 
-  expect(name).toBe('openbeads-fixture-brick.pdf')
+  expect(name).toBe('fixture-brick.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
   // A legend page, then the chart at 3 mm a bead: 120 columns are several parts.
   const plan = planPrint(project)

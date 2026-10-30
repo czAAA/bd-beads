@@ -11,6 +11,7 @@ import { loadLocale } from '../i18n/useI18n'
 import { browserDevicePreferences } from '../services/devicePreferences'
 import { loadProjects } from '../services/libraryStore'
 import { startOfflineShell } from '../services/offlineShell'
+import { browserFeedback } from '../services/feedback'
 import { markEditorChosen } from './homepageRoute'
 import HomePage from './HomePage.vue'
 
@@ -31,6 +32,7 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
     render: () =>
       h(HomePage, {
         projectCount: loadProjects().length,
+        feedback: browserFeedback,
         onMakeFirstProject: goToEditor,
         onOpenEditor: goToEditor,
       }),

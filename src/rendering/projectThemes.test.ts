@@ -10,7 +10,7 @@ const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/sys
 const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) => entry.name === name)!.value[theme]
 
 /** DESIGN.md §4.2: which token each ProjectTheme field copies. */
-const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finished' | 'margin'>, string> = {
+const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finished' | 'margin' | 'chip'>, string> = {
   background: 'board',
   canvas: 'box',
   positionMark: 'position-mark',
@@ -32,6 +32,9 @@ describe('ProjectTheme', () => {
     }
     expect(values.rim).toBe(token('bead-rim', theme))
     expect(values.margin.line, 'margin line').toBe(token('margin-line', theme))
+    // A handle chip on the canvas (ticket 0704) is `elevated`, with its shadow only where the theme casts one.
+    expect(values.chip.fill, 'chip').toBe(token('elevated', theme))
+    expect(values.chip.shadow !== undefined, 'chip shadow').toBe(theme === 'light')
   })
 
   it('rims a near-black bead in the dark rim token (white) in light and dark, in its own rim in high contrast', () => {

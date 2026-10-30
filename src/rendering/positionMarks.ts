@@ -15,7 +15,7 @@ export interface MarkTileInput {
   technique: Technique
   /** Its settings (ticket 0625): peyote's or brick stitch's Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. */
+  /** The Bead's real cell (ADR 0068, ticket 0724); nothing draws the Technique's own cell. */
   cell?: BeadCell
   /** Device pixels per grid px: the zoom times the screen's pixel ratio. */
   deviceScale: number
@@ -80,7 +80,7 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile):
 }
 
 /** The tile as a bitmap, kept by its key, with its size in grid px; null without a canvas. */
-function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; size: Tile['size']; width: number; height: number } | undefined {
+function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; key: string; size: Tile['size']; width: number; height: number } | undefined {
   if (typeof document === 'undefined') {
     return undefined
   }
@@ -107,7 +107,7 @@ function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; siz
     tile = own ? canvas : null
     tiles.set(key, tile)
   }
-  return { tile, size, width, height }
+  return { tile, key, size, width, height }
 }
 
 // The tile for the Canvas's Position marks as a pattern on `context`, scaled to repeat every bead across in grid px, or
@@ -133,4 +133,40 @@ export function positionMarkBackground(input: MarkTileInput): { url: string; wid
   }
   const url = tile.toDataURL()
   return url === 'data:,' ? undefined : { url, width: bitmap.size.width * (input.deviceScale / input.pixelRatio), height: bitmap.size.height * (input.deviceScale / input.pixelRatio) }
+}
+
+/** The part of a map from grid px to the screen that turns it, a quarter turn: each entry -1, 0 or 1. */
+export interface QuarterTurn {
+  a: number
+  b: number
+  c: number
+  d: number
+}
+
+const turnedUrls = new Map<string, string | undefined>()
+
+/** The same tile turned as the screen shows the grid, as an image URL for a CSS background (ticket 0717): the empty
+ * Canvas laid under the editor's drawing. Kept by key, as a pinch asks again and again; undefined without a canvas. */
+export function positionMarkImage(input: MarkTileInput, turn: QuarterTurn): string | undefined {
+  const bitmap = tileBitmap(input)
+  const tile = bitmap?.tile
+  if (!bitmap || !(tile instanceof HTMLCanvasElement)) return undefined
+  const key = [bitmap.key, turn.a, turn.b, turn.c, turn.d].join('|')
+  if (turnedUrls.has(key)) return turnedUrls.get(key)
+  if (turnedUrls.size >= MAX_TILES) turnedUrls.clear()
+  const { width, height } = bitmap
+  const turned = document.createElement('canvas')
+  turned.width = Math.abs(turn.a) * width + Math.abs(turn.c) * height
+  turned.height = Math.abs(turn.b) * width + Math.abs(turn.d) * height
+  const own = turned.getContext('2d')
+  let url: string | undefined
+  if (own) {
+    // Turned about its corner, then moved back so the turned tile starts at the canvas's.
+    own.setTransform(turn.a, turn.b, turn.c, turn.d, -Math.min(0, turn.a * width, turn.c * height, turn.a * width + turn.c * height), -Math.min(0, turn.b * width, turn.d * height, turn.b * width + turn.d * height))
+    own.drawImage(tile, 0, 0)
+    url = turned.toDataURL()
+  }
+  url = url === 'data:,' ? undefined : url
+  turnedUrls.set(key, url)
+  return url
 }

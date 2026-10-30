@@ -3,7 +3,7 @@ import type { BeadMap, FrameSheet } from './canvas'
 import type { Rotation } from './grid'
 import type { PieceName } from './pieceNames'
 import type { Project, RowProgress } from './project'
-import { BRICK_DROP_SETTING, type BeadShape, type Technique, type TechniqueSettings } from './weave'
+import { BRICK_DROP_SETTING, type Technique, type TechniqueSettings } from './weave'
 
 // The Brick block of earlier stored versions: brick stitch's Drop under its old name (ticket 0691), flat beside a
 // layer's Technique (file v4–v10, library v1–v4; ticket 0636) or in its settings map (file v11–v12, library v4–v5).
@@ -19,7 +19,7 @@ export interface FlatWeave {
 }
 
 /** A Project as stores and files held it before it held its layers (file versions 3 to 11, library 1 to 4; ticket
- * 0664): the Canvas's Weave, Bead, Bead shape, beads, Letters, Piece names and name were the Project's own fields, its
+ * 0664): the Canvas's Weave, Bead, beads, Letters, Piece names and name were the Project's own fields, its
  * rotation the view's turn, and the Frame a sheet beside them with the Project's Row progress. Read only. */
 export interface FlatProject extends Omit<Project, 'layers'> {
   name: string
@@ -27,7 +27,6 @@ export interface FlatProject extends Omit<Project, 'layers'> {
   techniqueSettings?: TechniqueSettings
   beadId: string
   bead?: Bead
-  beadShape?: BeadShape
   beads: BeadMap
   frame?: FrameSheet
   rowProgress: RowProgress

@@ -2,22 +2,26 @@
  * translates; routes invent no codes of their own. Anything else a handler throws is a crash, left to the platform
  * (500, counted by the watchdog). */
 type ApiErrorCode =
+  | 'bad-request' // 400: a JSON body not shaped as the route takes it, or a field past its length
   | 'forbidden-origin' // 403: a changing request from another origin, or with none
   | 'turnstile-failed' // 403: a missing or rejected Turnstile token
   | 'not-found' // 404: no such route, or no such blob
   | 'length-required' // 411: an upload to R2 without Content-Length (R2 takes only a stream of known length)
   | 'too-large' // 413: the body is over its cap (`cap`, in bytes)
   | 'rate-limited' // 429: too many requests (`Retry-After`)
+  | 'feedback-failed' // 502: GitHub did not take the Report (ADR 0081); the app offers Copy report
   | 'feature-off' // 503: switched off by the maintainer (`feature`, `Retry-After`)
   | 'storage-full' // 507: the blobs database is past BLOBS_STORAGE_LIMIT_MB
 
 const STATUS: Record<ApiErrorCode, number> = {
+  'bad-request': 400,
   'forbidden-origin': 403,
   'turnstile-failed': 403,
   'not-found': 404,
   'length-required': 411,
   'too-large': 413,
   'rate-limited': 429,
+  'feedback-failed': 502,
   'feature-off': 503,
   'storage-full': 507,
 }

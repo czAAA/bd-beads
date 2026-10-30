@@ -99,4 +99,31 @@ describe('a swatch added from the catalog keeps its code (ticket 0538)', () => {
     harness.history.onUndo()
     expect(harness.project.paletteCodes).toBeUndefined()
   })
+
+  it('prefills a color Report from the highlighted swatch, else the active Palette color with a code (ticket 0700)', async () => {
+    const harness = editHarness(delica)
+    const { currentProject } = harness
+    const { palette, addUsed } = useProjectPalette({ currentProject, edit: harness.edit })
+    const reports: unknown[] = []
+    const active: { id?: string } = {}
+    const colors = useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => active.id, report: (_kind, prefill) => void reports.push(prefill) })
+    await colors.load()
+    const swatch = colors.swatches.value.find((entry) => entry.code === 'DB1')!
+
+    colors.report!()
+    expect(reports.at(-1)).toEqual({ brand: 'Miyuki', catalog: 'miyuki-delica' })
+
+    colors.report!({ code: 'DB1', hex: swatch.hex })
+    expect(reports.at(-1)).toEqual({ brand: 'Miyuki', catalog: 'miyuki-delica', code: 'DB1', hex: swatch.hex })
+
+    colors.add(swatch.hex, 'DB1')
+    active.id = palette.value.colors.find((color) => color.code === 'DB1')!.id
+    colors.report!()
+    expect(reports.at(-1)).toEqual({ brand: 'Miyuki', catalog: 'miyuki-delica', code: 'DB1', hex: swatch.hex, swatchLetter: currentProject()!.paletteLetters![swatch.hex] })
+    expect(reports.at(-1)).toHaveProperty('swatchLetter', expect.stringMatching(/^[A-Z]+$/))
+  })
+
+  it('offers no Report without a way to open one', () => {
+    expect(setup()).not.toHaveProperty('report')
+  })
 })

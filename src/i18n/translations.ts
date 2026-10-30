@@ -47,11 +47,6 @@ export interface Translations {
       size: string
       choose: string
     }
-    beadShapeLabel: string
-    beadShapeSymmetric: string
-    beadShapeReal: string
-    beadShapeSymmetricTip: string
-    beadShapeRealTip: string
     techniqueLabel: string
     widthLabel: string
     heightLabel: string
@@ -142,6 +137,14 @@ export interface Translations {
     /** The Note while the mode is on and no Axis is. */
     turnAxisOn: string
     close: string
+    /** The open Canvas's details (ticket 0704): the handle on the canvas is the setting; Repeat needs an Area. */
+    dragHandle: string
+    repeatNeedsArea: string
+    /** The Selection bar's Mirror (ticket 0707): its Tooltip body, what it announces, and the Message counting the
+     * counterparts that had nowhere to land (off the layer, on a Seam or Off-shape, in a finished row). */
+    copyToCounterparts: string
+    announceSelectionMirrored: string
+    droppedMessage: PluralForms
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
@@ -169,6 +172,9 @@ export interface Translations {
       deleteAllTitle: string
       deleteAllMessage: string
       deleteAllConfirm: string
+      /** The Help row and the Language row's link that open the Feedback sheet (ticket 0700). */
+      sendFeedback: string
+      reportTranslation: string
     }
     project: {
       rename: string
@@ -324,6 +330,21 @@ export interface Translations {
       hand: string
       rulers: string
     }
+    /** The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): the four steps, the quiet notes,
+     * the welcome and its steps line, and the phone's shorter steps. A line break is `\n`. */
+    firstRun: {
+      paint: string
+      select: string
+      frame: string
+      export: string
+      menu: string
+      project: string
+      mirror: string
+      color: string
+      welcome: string
+      steps: string
+      phone: Record<'paint' | 'select' | 'frame' | 'export', string>
+    }
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
@@ -462,8 +483,9 @@ export interface Translations {
     removeAllConfirmTitle: string
     removeAllConfirmMessage: PluralForms
     removeAllConfirmButton: string
-    /** The Bead's Color catalog, to add a maker's color to the Palette (ticket 0537): `{code}` in a label is the maker's
-     * code, `{count}` in `showingFirst` the number of rows shown. */
+    /** The Bead's Color catalog, to add a maker's color to the Palette (ticket 0537): `{code}` is the maker's code,
+     * `{count}` a count of rows or of a filter value `{name}`. Its filters and empty state (ticket 0713): `{query}` the
+     * search text, `{filters}` the on values' names (Finishes, then families), `{sizes}` a code's sizes, `{size}` the Bead's. */
     beadColors: {
       open: string
       label: string
@@ -476,6 +498,15 @@ export interface Translations {
       takenLabel: string
       showingFirst: string
       noMatch: string
+      noMatchFiltered: string
+      noneFiltered: string
+      otherSizes: string
+      colorFilter: string
+      finishFilter: string
+      clearFilters: string
+      /** The foot row that opens a bead-color Report (ticket 0700). */
+      reportColor: string
+      valueCount: string
       loading: string
       failed: string
       /** The Finish list shared by every Brand (ADR 0072). */
@@ -508,6 +539,9 @@ export interface Translations {
     removeLineShort: string
     /** The selection bar's Name button (ticket 406): gives the selected Piece a name, which makes it a Schema. */
     namePieceButton: string
+    /** A Fill tool press refused by Fill reach (ticket 0715): open space nothing encloses, or more than the Fill cap. */
+    fillOpenMessage: string
+    fillTooBigMessage: string
   }
   /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
   inputMode: {
@@ -597,7 +631,6 @@ export interface Translations {
     wherePartsAre: string
     partsNote: string
     rowByRowOn: string
-    shape: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string
@@ -1111,5 +1144,72 @@ export interface Translations {
   layerSettings: {
     frameHeading: string
     background: string
+  }
+  /** An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
+   * Schema tag copy). */
+  schemaTag: {
+    /** The tags' one Tab stop. */
+    group: string
+    /** A tag's accessible name. */
+    label: string
+    /** The Tooltip's body on a tag whose name shows as three dots. */
+    tooltipBody: string
+    /** The paper tag's label over the name, lowercased by style. */
+    heading: string
+    /** The Schema's rectangle in beads; its Estimated size follows after " · ≈ ". */
+    sizeBeads: string
+    beads: PluralForms
+    colors: PluralForms
+  }
+  /** The Feedback sheet (ADR 0081, spec 0698, ticket 0700): its three Report kinds' titles and fields, the Also sent
+   * block's rows, and why a Report was not sent. */
+  feedback: {
+    titleGeneral: string
+    titleTranslation: string
+    titleBeadColor: string
+    introGeneral: string
+    introTranslation: string
+    introBeadColor: string
+    message: string
+    language: string
+    shown: string
+    shouldSay: string
+    note: string
+    problem: string
+    wrongColor: string
+    missingColor: string
+    brandCatalog: string
+    code: string
+    looksLike: string
+    looksLikeHint: string
+    email: string
+    emailHint: string
+    messageRequired: string
+    shownRequired: string
+    emailInvalid: string
+    alsoSent: string
+    alsoSentNote: string
+    ctxAppVersion: string
+    ctxUiLanguage: string
+    ctxBrowser: string
+    ctxOs: string
+    ctxViewport: string
+    ctxLanguage: string
+    ctxBrand: string
+    ctxCatalog: string
+    ctxCode: string
+    ctxHex: string
+    ctxSwatchLetter: string
+    send: string
+    sending: string
+    cancel: string
+    copyReport: string
+    copied: string
+    copyFailed: string
+    off: string
+    offline: string
+    rateLimited: string
+    failed: string
+    sent: string
   }
 }

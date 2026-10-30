@@ -28,6 +28,11 @@
   --step-rail: 44px; /* ConvertImage card: the sticky step rail atop the sections pane; 40px on a phone. */
   --step-rail-phone: 40px; /* PhoneForms card: the step rail under the sticky preview. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
+  --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter row. */
+  --filter-chip-height: 28px; /* BeadColors card: a Finish chip in the Finish filter row. */
+  --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
+  --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
+  --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
   --convert-thumb-width: 64px; /* ConvertImage card: the Picture section's thumbnail. */
   --convert-thumb-height: 48px; /* ConvertImage card: the thumbnail's height. */
   --ratio-bead-width: 22px; /* PixelToBeadRatio card: the explainer's one bead. */
@@ -89,10 +94,10 @@
   --mirror-axis-width: 1.25px;
   --mirror-axis-dash: 5 4;
   --mirror-axis-soft: 0.45;
-  --mirror-band-opacity: 0.06;
   --mirror-ring-radius: 7px;
   --mirror-handle: 32px;
   --mirror-handle-icon: 16px;
+  --mirror-handle-inset: 56px;
   --mirror-chip-height: 32px;
   --mirror-area-handle: 9px;
   --mirror-preview-dash: 4 3;
@@ -146,6 +151,29 @@
   --margin-edit-width: 260px;
   --margin-title-name: 600 0.75rem/1rem var(--font-sans);
   --margin-legend-letter: 600 0.5rem/1 var(--font-sans);
+  --schema-tag-height: 22px;
+  --schema-tag-end: 8px;
+  --schema-tag-hole: 3.2px;
+  --schema-tag-tilt: 10deg;
+  --schema-tag-drop: 24px;
+  --schema-tag-name: 600 0.6875rem/1.375rem var(--font-sans);
+  --schema-card-width: 236px;
+  --schema-card-cut: 20px;
+  --schema-card-hole: 8px;
+  --schema-card-min-height: 160px;
+  --schema-card-name: 600 0.875rem/1.25rem var(--font-sans);
+  --schema-card-name-inset: 46px;
+  --hint-note: italic 400 1.1875rem/1.15 var(--font-serif);
+  --hint-step: italic 400 1.375rem/1.15 var(--font-serif);
+  --hint-welcome: italic 400 1.5rem/1.2 var(--font-serif);
+  --hint-wordmark: italic 400 4rem/1 var(--font-serif);
+  --hint-step-phone: italic 400 1.25rem/1.15 var(--font-serif);
+  --hint-welcome-phone: italic 400 1.25rem/1.2 var(--font-serif);
+  --hint-wordmark-phone: italic 400 2.75rem/1 var(--font-serif);
+  --hint-arrow: 1.4px;
+  --hint-step-arrow: 1.5px;
+  --hint-ring-gap: 2px;
+  --hint-ring-width: 2px;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
 [data-theme="contrast"] { --underline-width: 3px; }
@@ -591,28 +619,28 @@ body {
 @media (prefers-reduced-motion:reduce){:root{--duration-slow:120ms;--duration-base:120ms}}
 .rm{--duration-slow:120ms;--duration-base:120ms}
 
-/* Row progress motion (ticket 0728; interaction-and-motion.md, Row progress): the glint, the track spark and the Pattern's finish. */
+/* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress): the glint, the track spark and Pattern done. */
 :root{
   --row-glint-duration:380ms;--row-glint-step:24ms;--row-glint-span:480ms;--row-glint-peak:.55;--row-dim-delay:520ms;
   --spark-size:10px;--spark-size-compact:8px;--spark-tail:70px;--spark-tail-compact:24px;--spark-flare:2.2;--spark-flare-duration:520ms;
-  --finish-delay:450ms;--finish-burst-2:420ms;--finish-burst-3:760ms;
-  --finish-shimmer-delay:250ms;--finish-shimmer:1000ms;--finish-restore:500ms;
-  --finish-stars-delay:1100ms;--finish-star-step:90ms;--finish-star:900ms;
+  --pattern-done-delay:450ms;--pattern-done-burst-2:420ms;--pattern-done-burst-3:760ms;
+  --pattern-done-shimmer-delay:250ms;--pattern-done-shimmer:1000ms;--pattern-done-restore:500ms;
+  --pattern-done-stars-delay:1100ms;--pattern-done-star-step:90ms;--pattern-done-star:900ms;
 }
 :root,[data-theme="light"]{
   --row-glint:#ffffff;--spark-core:#ffffff;--spark-glow:rgba(250,82,15,.6);
-  --finish-spark-1:#5f6670;--finish-spark-2:#7d858f;--finish-spark-3:#9aa1aa;--finish-spark-4:#c3c8ce;
-  --finish-glow:rgba(95,102,112,.35);--finish-shimmer-fill:rgba(255,255,255,.6);
+  --pattern-done-spark-1:#5f6670;--pattern-done-spark-2:#7d858f;--pattern-done-spark-3:#9aa1aa;--pattern-done-spark-4:#c3c8ce;
+  --pattern-done-glow:rgba(95,102,112,.35);--pattern-done-shimmer-fill:rgba(255,255,255,.6);
 }
 [data-theme="dark"]{
   --row-glint:#ffffff;--spark-core:#ffffff;--spark-glow:rgba(250,255,105,.7);
-  --finish-spark-1:#ffffff;--finish-spark-2:#e9ecef;--finish-spark-3:#c0c5cc;--finish-spark-4:#a3a9b1;
-  --finish-glow:rgba(225,230,236,.55);--finish-shimmer-fill:rgba(255,255,255,.45);
+  --pattern-done-spark-1:#ffffff;--pattern-done-spark-2:#e9ecef;--pattern-done-spark-3:#c0c5cc;--pattern-done-spark-4:#a3a9b1;
+  --pattern-done-glow:rgba(225,230,236,.55);--pattern-done-shimmer-fill:rgba(255,255,255,.45);
 }
 [data-theme="contrast"]{
   --row-glint:#ffffff;--spark-core:var(--ink);--spark-glow:transparent;
-  --finish-spark-1:var(--ink);--finish-spark-2:var(--ink);--finish-spark-3:var(--ink);--finish-spark-4:var(--ink);
-  --finish-glow:transparent;--finish-shimmer-fill:transparent;
+  --pattern-done-spark-1:var(--ink);--pattern-done-spark-2:var(--ink);--pattern-done-spark-3:var(--ink);--pattern-done-spark-4:var(--ink);
+  --pattern-done-glow:transparent;--pattern-done-shimmer-fill:transparent;
 }
 /* The spark: inside the track's box (position:relative), translateX((done / total - 1) * 100%). The tail sits in a copy clipped to the track; the dot in one that is not. Restart the flare on each Row done by swapping is-flaring and is-flaring-alt. */
 .bb-spark{position:absolute;inset:0;pointer-events:none;transition:transform var(--duration-base) var(--ease-standard)}
@@ -628,27 +656,27 @@ body {
 @keyframes bb-spark-flare-alt{30%{transform:scale(var(--spark-flare))}}
 @keyframes bb-spark-tail{0%{transform:scaleX(1.8)}100%{transform:none;opacity:.7}}
 @keyframes bb-spark-tail-alt{0%{transform:scaleX(1.8)}100%{transform:none;opacity:.7}}
-/* The finish: one layer over the Frame, mounted --finish-delay after the press that marks the last pass and removed after about 2.6s. */
-.bb-finish{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.bb-finish-burst{position:absolute;width:0;height:0}
-.bb-finish-flash{position:absolute;left:-40px;top:-40px;width:80px;height:80px;border-radius:50%;opacity:0;background:radial-gradient(circle,var(--finish-spark-1),color-mix(in srgb,var(--finish-spark-3) 40%,transparent) 40%,transparent 70%);animation:bb-finish-bloom 600ms var(--ease-out) both}
-.bb-finish-ray{position:absolute;left:0;top:0;width:0;height:0} /* turned: rotate(angle) */
-.bb-finish-ray>i{position:absolute;left:0;top:-1.5px;width:20px;height:3px;border-radius:3px;opacity:0;background:var(--finish-spark-1);box-shadow:0 0 6px var(--finish-glow);transform-origin:left center;animation:bb-finish-ray 900ms var(--ease-out) both}
-.bb-finish-ray>i::after{content:"";position:absolute;right:-2px;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:inherit}
-.bb-finish-ray--short>i{width:12px;height:2px;top:-1px;animation-name:bb-finish-ray-short;animation-duration:760ms}
-.bb-finish-ray--shorter>i{width:8px;height:2px;top:-1px;animation-name:bb-finish-ray-shorter;animation-duration:620ms}
-.bb-finish-shimmer{position:absolute;inset:0;overflow:hidden;container-type:inline-size}
-.bb-finish-shimmer>i{position:absolute;top:-60px;bottom:-60px;left:0;width:160px;background:linear-gradient(90deg,transparent,var(--finish-shimmer-fill),transparent);transform:translateX(-220px) skewX(-24deg);animation:bb-finish-shimmer var(--finish-shimmer) var(--ease-standard) var(--finish-shimmer-delay) both}
-.bb-finish-star{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;opacity:0;color:var(--finish-spark-2);filter:drop-shadow(0 0 4px var(--finish-glow));animation:bb-finish-star var(--finish-star) var(--ease-out) both}
-.bb-finish-star--large{width:30px;height:30px;margin:-15px 0 0 -15px}
-@keyframes bb-finish-bloom{0%{opacity:0;transform:scale(.2)}25%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
-@keyframes bb-finish-ray{0%{opacity:0;transform:translateX(6px) scaleX(.3)}15%{opacity:1;transform:translateX(30px) scaleX(1.2)}100%{opacity:0;transform:translateX(150px) scaleX(.2)}}
-@keyframes bb-finish-ray-short{0%{opacity:0;transform:translateX(4px) scaleX(.3)}15%{opacity:1;transform:translateX(20px) scaleX(1.2)}100%{opacity:0;transform:translateX(96px) scaleX(.2)}}
-@keyframes bb-finish-ray-shorter{0%{opacity:0;transform:translateX(2px) scaleX(.3)}15%{opacity:1;transform:translateX(12px) scaleX(1.2)}100%{opacity:0;transform:translateX(56px) scaleX(.2)}}
-@keyframes bb-finish-shimmer{0%{transform:translateX(-220px) skewX(-24deg)}100%{transform:translateX(calc(100cqw + 220px)) skewX(-24deg)}}
-@keyframes bb-finish-star{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1) rotate(45deg)}100%{opacity:0;transform:scale(.4) rotate(90deg)}}
-[data-theme="contrast"] .bb-finish-shimmer{display:none}
-@media (prefers-reduced-motion:reduce){.bb-spark{transition:none}.bb-spark>b,.bb-spark>i{animation:none!important}.bb-spark>b{display:none}.bb-finish{display:none}}
+/* Pattern done: one layer over the Frame, mounted --pattern-done-delay after the press that marks the last pass and removed after about 2.6s. */
+.bb-pattern-done{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.bb-pattern-done-burst{position:absolute;width:0;height:0}
+.bb-pattern-done-flash{position:absolute;left:-40px;top:-40px;width:80px;height:80px;border-radius:50%;opacity:0;background:radial-gradient(circle,var(--pattern-done-spark-1),color-mix(in srgb,var(--pattern-done-spark-3) 40%,transparent) 40%,transparent 70%);animation:bb-pattern-done-bloom 600ms var(--ease-out) both}
+.bb-pattern-done-ray{position:absolute;left:0;top:0;width:0;height:0} /* turned: rotate(angle) */
+.bb-pattern-done-ray>i{position:absolute;left:0;top:-1.5px;width:20px;height:3px;border-radius:3px;opacity:0;background:var(--pattern-done-spark-1);box-shadow:0 0 6px var(--pattern-done-glow);transform-origin:left center;animation:bb-pattern-done-ray 900ms var(--ease-out) both}
+.bb-pattern-done-ray>i::after{content:"";position:absolute;right:-2px;top:50%;width:4px;height:4px;margin-top:-2px;border-radius:50%;background:inherit}
+.bb-pattern-done-ray--short>i{width:12px;height:2px;top:-1px;animation-name:bb-pattern-done-ray-short;animation-duration:760ms}
+.bb-pattern-done-ray--shorter>i{width:8px;height:2px;top:-1px;animation-name:bb-pattern-done-ray-shorter;animation-duration:620ms}
+.bb-pattern-done-shimmer{position:absolute;inset:0;overflow:hidden;container-type:inline-size}
+.bb-pattern-done-shimmer>i{position:absolute;top:-60px;bottom:-60px;left:0;width:160px;background:linear-gradient(90deg,transparent,var(--pattern-done-shimmer-fill),transparent);transform:translateX(-220px) skewX(-24deg);animation:bb-pattern-done-shimmer var(--pattern-done-shimmer) var(--ease-standard) var(--pattern-done-shimmer-delay) both}
+.bb-pattern-done-star{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;opacity:0;color:var(--pattern-done-spark-2);filter:drop-shadow(0 0 4px var(--pattern-done-glow));animation:bb-pattern-done-star var(--pattern-done-star) var(--ease-out) both}
+.bb-pattern-done-star--large{width:30px;height:30px;margin:-15px 0 0 -15px}
+@keyframes bb-pattern-done-bloom{0%{opacity:0;transform:scale(.2)}25%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
+@keyframes bb-pattern-done-ray{0%{opacity:0;transform:translateX(6px) scaleX(.3)}15%{opacity:1;transform:translateX(30px) scaleX(1.2)}100%{opacity:0;transform:translateX(150px) scaleX(.2)}}
+@keyframes bb-pattern-done-ray-short{0%{opacity:0;transform:translateX(4px) scaleX(.3)}15%{opacity:1;transform:translateX(20px) scaleX(1.2)}100%{opacity:0;transform:translateX(96px) scaleX(.2)}}
+@keyframes bb-pattern-done-ray-shorter{0%{opacity:0;transform:translateX(2px) scaleX(.3)}15%{opacity:1;transform:translateX(12px) scaleX(1.2)}100%{opacity:0;transform:translateX(56px) scaleX(.2)}}
+@keyframes bb-pattern-done-shimmer{0%{transform:translateX(-220px) skewX(-24deg)}100%{transform:translateX(calc(100cqw + 220px)) skewX(-24deg)}}
+@keyframes bb-pattern-done-star{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1) rotate(45deg)}100%{opacity:0;transform:scale(.4) rotate(90deg)}}
+[data-theme="contrast"] .bb-pattern-done-shimmer{display:none}
+@media (prefers-reduced-motion:reduce){.bb-spark{transition:none}.bb-spark>b,.bb-spark>i{animation:none!important}.bb-spark>b{display:none}.bb-pattern-done{display:none}}
 /* live interactive samples */
 .ix{white-space:nowrap;font:500 14px/20px var(--font-sans);display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;border:1px solid transparent;cursor:pointer;color:var(--ink);background:none;
   transition:background-color var(--duration-fast) var(--ease-standard),border-color var(--duration-fast) var(--ease-standard),color var(--duration-fast) var(--ease-standard),box-shadow var(--duration-fast) var(--ease-standard),transform var(--duration-instant) var(--ease-standard)}
@@ -912,7 +940,6 @@ body {
 .bb-mirror-area-btn.is-set { border-color: var(--marker); color: var(--marker); }
 .bb-mirror-axis { stroke: var(--marker); stroke-width: var(--mirror-axis-width); stroke-dasharray: var(--mirror-axis-dash); pointer-events: none; }
 .bb-mirror-axis.is-soft { opacity: var(--mirror-axis-soft); }
-.bb-mirror-band { fill: var(--marker); opacity: var(--mirror-band-opacity); pointer-events: none; }
 .bb-mirror-ring { fill: none; stroke: var(--marker); stroke-width: 2px; pointer-events: none; }
 .bb-mirror-handle { position: absolute; width: var(--mirror-handle); height: var(--mirror-handle); margin: calc(var(--mirror-handle) / -2) 0 0 calc(var(--mirror-handle) / -2); border-radius: var(--radius-full); background: var(--elevated); border: 1.5px solid var(--marker); color: var(--marker); display: grid; place-items: center; cursor: grab; box-shadow: var(--elevation-2); touch-action: none; }
 .bb-mirror-handle svg { width: var(--mirror-handle-icon); height: var(--mirror-handle-icon); }
@@ -964,3 +991,39 @@ body {
 .qs-stop:disabled b, .qs-stop.is-disabled b, .qs-stop:disabled small, .qs-stop.is-disabled small { color: var(--faint); }
 .qs-note { margin: 0; font: 400 12px/16px var(--font-sans); color: var(--muted); }
 [data-theme="contrast"] .qs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
+
+/* Ticket 0721: an unframed Schema's name as a hang tag (SchemaTag card) */
+.bb-schema-thread { position: absolute; overflow: visible; pointer-events: none; fill: none; stroke: var(--muted); stroke-width: 1px; }
+.bb-schema-thread circle { fill: var(--ink); stroke: none; }
+.bb-schema-tag { position: absolute; display: inline-flex; align-items: center; height: var(--schema-tag-height); box-sizing: border-box; padding: 0 8px 0 calc(var(--schema-tag-end) + 3px); border: 0; border-radius: 0 var(--radius-xs) var(--radius-xs) 0; background: var(--ink); color: var(--canvas); font: var(--schema-tag-name); white-space: nowrap; cursor: pointer; transform: rotate(var(--schema-tag-tilt)); transform-origin: calc(var(--schema-tag-end) / 2 + 0.5px) 50%; transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out); clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 16px, 0 6px); -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%); }
+.bb-schema-tag--left { transform: rotate(calc(var(--schema-tag-tilt) * -1)); }
+.bb-schema-tag:hover { transform: none; background: var(--body); }
+.bb-schema-tag:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.bb-schema-tag--dots { gap: 2px; padding-right: 7px; }
+.bb-schema-tag--dots > i { width: 3px; height: 3px; border-radius: var(--radius-full); background: currentColor; }
+@media (prefers-reduced-motion: reduce) { .bb-schema-tag { transition: none; } }
+/* The paper tag: the outer layer is the 1px edge, the inner one the paper, both cut at the top-right and holed. */
+.bb-schema-card { position: absolute; width: var(--schema-card-width); box-sizing: border-box; padding: 1px; background: var(--line-strong); border-radius: var(--radius-lg); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut)) 0, 100% var(--schema-card-cut), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2) at calc(100% - 18px) 18px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2) at calc(100% - 18px) 18px, transparent 98%, #000 100%); }
+[data-theme="contrast"] .bb-schema-card { padding: var(--border-emphasis); }
+.bb-schema-card-paper { display: flex; flex-direction: column; gap: 8px; min-height: var(--schema-card-min-height); box-sizing: border-box; padding: 11px 13px 13px; background: var(--elevated); border-radius: calc(var(--radius-lg) - 1px); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut) + 0.4px) 0, 100% calc(var(--schema-card-cut) - 0.4px), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); }
+.bb-schema-card-label { font: var(--type-meta-tiny); color: var(--muted); text-transform: lowercase; }
+.bb-schema-card-name { margin: 0; padding-right: var(--schema-card-name-inset); font: var(--schema-card-name); color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.bb-schema-card-meta { display: flex; flex-direction: column; gap: 2px; font: var(--type-meta-small); color: var(--muted); text-transform: lowercase; }
+.bb-schema-card-swatches { display: inline-flex; margin-right: 6px; vertical-align: -1px; }
+.bb-schema-card-swatches > i { width: 10px; height: 10px; border-radius: var(--radius-xs); }
+.bb-schema-card-swatches > i + i { margin-left: -4px; }
+.bb-schema-card-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.bb-schema-card-actions .bb-schema-card-close { margin-left: auto; }
+
+/* Ticket 0725: hand-drawn notes over an empty Project (FirstRunHints card) */
+.bb-hint-layer { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-canvas-overlay); }
+.bb-hint-note { position: absolute; margin: 0; font: var(--hint-note); color: var(--muted); white-space: pre-line; }
+.bb-hint-note--step { font: var(--hint-step); }
+.bb-hint-arrow { position: absolute; overflow: visible; fill: none; stroke: var(--muted); stroke-width: var(--hint-arrow); stroke-linecap: round; stroke-linejoin: round; }
+.bb-hint-arrow--step { stroke-width: var(--hint-step-arrow); }
+.bb-hint-ring { box-shadow: 0 0 0 var(--hint-ring-gap) var(--hint-ring-behind, var(--box)), 0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent); }
+.bb-hint-welcome { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; color: var(--muted); }
+.bb-hint-wordmark { font: var(--hint-wordmark); letter-spacing: -0.6px; }
+.bb-hint-welcome p { margin: 0; font: var(--hint-welcome); }
+.bb-hint-welcome p b { font-weight: 400; color: var(--accent-strong); }
+@media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }
