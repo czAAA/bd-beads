@@ -6,6 +6,7 @@ import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
 import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
+import { browserFeedback, type FeedbackService } from './feedback'
 
 // Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
 // cares about.
@@ -18,6 +19,8 @@ export interface Services {
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
   persistentStorage: PersistentStorage
+  /** Sending a Report from the Feedback sheet, and Copy report (ADR 0081). */
+  feedback: FeedbackService
 }
 
 export const browserServices: Services = {
@@ -28,4 +31,5 @@ export const browserServices: Services = {
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,
+  feedback: browserFeedback,
 }

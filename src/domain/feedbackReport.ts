@@ -3,7 +3,7 @@
 // no imports, so the Worker's own build can take it.
 
 /** The three Reports the Feedback sheet sends, each with its own fields (glossary: Report kind). */
-type ReportKind = 'general' | 'translation' | 'bead-color'
+export type ReportKind = 'general' | 'translation' | 'bead-color'
 
 interface ReportFieldsByKind {
   general: { message: string }
@@ -19,7 +19,7 @@ interface ReportFieldsByKind {
 }
 
 /** What the app attaches and shows in the sheet's Also sent block; never the Project or the device id (spec 0698). */
-interface ReportContext {
+export interface ReportContext {
   appVersion: string
   uiLanguage: string
   browser: string
@@ -36,9 +36,16 @@ interface ReportContext {
 }
 
 /** One Report: its kind, the person's fields, the context, and an optional email. */
-type Report = {
+export type Report = {
   [K in ReportKind]: { kind: K; fields: ReportFieldsByKind[K]; context: ReportContext; email?: string }
 }[ReportKind]
+
+/** How sending a Report ended, as the Feedback sheet tells it (spec 0698): sent, or why not, with the wait the Worker
+ * asked for (`Retry-After`) where it gave one. */
+export type ReportSent =
+  | { sent: true }
+  | { sent: false; reason: 'off' | 'rate-limited'; retryAfterSeconds: number }
+  | { sent: false; reason: 'offline' | 'failed' }
 
 /** The issue a Report becomes; the Worker adds `dev` to the labels on the dev Worker. */
 interface ReportIssue {
@@ -48,8 +55,8 @@ interface ReportIssue {
 }
 
 /** Message and Note are free text; every other field and context value is one short line (spec 0698). */
-const NOTE_MAX = 2000
-const FIELD_MAX = 200
+export const NOTE_MAX = 2000
+export const FIELD_MAX = 200
 
 /** Each kind's fields, whether a Report needs it, and its length limit. */
 const FIELDS: { [K in ReportKind]: Array<{ key: keyof ReportFieldsByKind[K]; required: boolean; max: number }> } = {
@@ -84,7 +91,7 @@ const CONTEXT_ROWS: Array<{ key: keyof ReportContext; label: string; required?: 
   { key: 'hex', label: 'Stored hex' },
   { key: 'swatchLetter', label: 'Swatch letter' },
 ]
-const EMAIL_MAX = 320
+export const EMAIL_MAX = 320
 const PROBLEMS = { wrong: 'Wrong color', missing: 'Missing color' }
 /** Each kind's label beside `from-app`, which is also the first word of its title. */
 const KIND_LABEL: Record<ReportKind, string> = { general: 'feedback', translation: 'translation', 'bead-color': 'bead-color' }
@@ -96,6 +103,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function onlyKeys(record: Record<string, unknown>, allowed: string[]): boolean {
   return Object.keys(record).every((key) => allowed.includes(key))
+}
+
+/** Whether `text` is shaped as an email: something, an @, a domain with a dot. */
+export function isEmail(text: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
 }
 
 /** An optional string: absent is empty; anything but a string within `max` is refused (undefined). */
@@ -128,7 +140,7 @@ export function parseReport(value: unknown): Report | null {
     parsedContext[key] = row
   }
   const parsedEmail = text(email, EMAIL_MAX)
-  if (parsedEmail === undefined || (parsedEmail !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parsedEmail))) return null
+  if (parsedEmail === undefined || (parsedEmail !== '' && !isEmail(parsedEmail))) return null
   return {
     kind,
     fields: parsedFields,
