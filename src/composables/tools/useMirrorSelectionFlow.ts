@@ -1,7 +1,6 @@
 import type { Ref } from 'vue'
 import { isMirrorOn, type MirrorSetting } from '../../domain/mirror'
 import { mirrorLayerSelection } from '../../domain/mirrorSelection'
-import type { Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -10,7 +9,6 @@ import type { EditFn } from '../project/useEdit'
 
 export interface MirrorSelectionFlowDeps {
   edit: EditFn
-  currentProject: () => Project | undefined
   /** The Select tool's Selection: the fragment Mirror copies from, and still the Selection after. */
   selection: Ref<Selection | undefined>
   /** The Project's Mirror setting (useMirrorFlow): the Axes and Mirror mode the counterparts follow. */
@@ -30,7 +28,7 @@ export function useMirrorSelectionFlow(deps: MirrorSelectionFlowDeps) {
   function onMirrorSelection(): void {
     const selection = deps.selection.value
     const setting = deps.mirror()
-    if (!selection || !deps.currentProject() || !isMirrorOn(setting)) return
+    if (!selection || !isMirrorOn(setting)) return
 
     let dropped = 0
     const outcome = deps.edit('drawing', (project) => {

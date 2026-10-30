@@ -28,6 +28,7 @@ export function mirrorLayerSelection(project: Project, selection: Selection, set
 
   const mirrored = counterparts(sheet, setting, sources)
   const finished = finishedRowsOf(project)
+  // `counterparts` gives the sources back first, as given, then the images: the fragment's own cells are never written.
   const images = mirrored.positions.slice(sources.length)
   const landed = images.filter((image) => !finished({ ...positionOnCanvas(project, layer, image), layer }))
   const copied = onLayer(project, layer, ({ beads }) => withColors(beads, landed))
