@@ -2,7 +2,7 @@ import type { Env } from './env'
 
 /** The features the maintainer can switch off by hand (spec 385, "Kill switches"); `api` is all of /api except health.
  * A feature ticket registers its name here and in `docs/operations.md`. */
-export const FEATURES = ['api', 'view-links', 'sign-up', 'sign-in', 'sync', 'magic-link'] as const
+export const FEATURES = ['api', 'view-links', 'sign-up', 'sign-in', 'sync', 'magic-link', 'feedback'] as const
 export type FeatureName = (typeof FEATURES)[number]
 
 /** How long the app waits before retrying a switched-off feature: a switch is lifted by hand, so there is no end

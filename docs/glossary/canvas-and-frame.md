@@ -11,7 +11,7 @@ A Piece that has a Frame or a name; the word for finished work. A **framed Schem
 _Avoid_: pattern, chart (all replaced by Schema, ADR 0050); for the whole saved thing, which is a Project; for an unnamed Piece with no Frame
 
 **Canvas**:
-The open area a Project is drawn on: an endless field of bead positions with no board and no fixed size (see ADR 0026), laid out on its own Technique's Grid. The first layer, with every Layer setting of its own; a Project has exactly one, and its name is the Project's. Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag.
+The open area a Project is drawn on: an endless field of bead positions with no board and no fixed size (see ADR 0026), laid out on its own Technique's Grid. The first layer, with every Layer setting of its own; a Project has exactly one, and its name is the Project's. Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag. A Fill tool press on it keeps to **Fill reach** (editing.md): beads as far as they join, empty space only as a hole the screen holds whole, under the Fill cap.
 _Avoid_: open canvas, board, infinite grid, sheet
 
 **Grid**:

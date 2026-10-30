@@ -1121,6 +1121,23 @@ describe('ProjectSurface', () => {
       })
     })
 
+    it('shows the not-allowed pointer for a moment after Fill reach refused a press, in place of the tool\'s (ticket 0715)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: toolCapabilities('fill'), fillRefusals: 0 })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      vi.useFakeTimers()
+      try {
+        await wrapper.setProps({ fillRefusals: 1 })
+        expect(surface.classes()).toContain('project-surface--refused')
+
+        vi.advanceTimersByTime(1000)
+        await nextTick()
+        expect(surface.classes()).not.toContain('project-surface--refused')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('says which bead a press landed on, hovering it first as its own pointerenter did', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)

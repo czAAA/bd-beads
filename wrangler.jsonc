@@ -51,6 +51,9 @@
         // Workers and localhost. Their secrets are set with `wrangler secret put`.
         "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
+        // ADR 0081: the private repo a Report from the Feedback sheet becomes an issue in, the same for both Workers.
+        // Its token is the secret GITHUB_TOKEN.
+        "FEEDBACK_REPO": "czAAA/bd-beads-docs",
         // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
         // 100 MB request body.
         "UPLOAD_CAP_D1_BYTES": 1990000,
@@ -79,7 +82,10 @@
           "migrations_dir": "worker/migrations/blobs"
         }
       ],
-      "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads-dev" }]
+      "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads-dev" }],
+      // Spec 0698: Reports per IP. The binding counts over 10 or 60 seconds only, so "five an hour" became 2 a minute; it
+      // stops floods. A namespace id is the account's own number for the counter, one per Worker.
+      "ratelimits": [{ "name": "FEEDBACK_RATE", "namespace_id": "1001", "simple": { "limit": 2, "period": 60 } }]
     },
     "production": {
       "name": "bd-beads",
@@ -100,6 +106,7 @@
         "BLOBS_BUCKET_NAME": "bd-beads",
         "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
         "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
+        "FEEDBACK_REPO": "czAAA/bd-beads-docs",
         "UPLOAD_CAP_D1_BYTES": 1990000,
         "UPLOAD_CAP_R2_MB": 90,
         "BLOBS_STORAGE_LIMIT_MB": 450,
@@ -124,7 +131,8 @@
           "migrations_dir": "worker/migrations/blobs"
         }
       ],
-      "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads" }]
+      "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads" }],
+      "ratelimits": [{ "name": "FEEDBACK_RATE", "namespace_id": "1002", "simple": { "limit": 2, "period": 60 } }]
     }
   }
 }
