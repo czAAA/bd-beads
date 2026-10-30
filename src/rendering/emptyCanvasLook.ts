@@ -7,7 +7,7 @@ import type { Scroll, SurfaceView } from './surfaceView'
 // the drawing area, so whatever a moved bitmap uncovers during a pan or pinch, or before the first draw, already looks
 // like empty Canvas. The drawing covers it wherever it lies (`opaque` in the Project renderer).
 
-/** How the Canvas's Weave and Bead shape draw a Position mark. */
+/** How the Canvas's Weave and Bead cell draw a Position mark. */
 type MarkWeave = Pick<MarkTileInput, 'technique' | 'techniqueSettings' | 'cell'>
 
 /** Where the Position marks' tile repeats on the drawing area: turned by the view's quarter turn, its corner `at` and

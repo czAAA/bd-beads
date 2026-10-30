@@ -70,4 +70,16 @@ describe('MirrorPopover (ticket 0703, MirrorPopover card)', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
     expect(mountPopover(MIRROR_OFF).find('[data-testid="mirror-no-axis-note"]').exists()).toBe(false)
   })
+
+  it('on the open Canvas with a straight Axis on, notes that the handle is the setting, or in Repeat that an area is needed, in place of the count Steppers (ticket 0704)', () => {
+    const mirror = mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: on({ leftRight: true }), onCanvas: true } })
+    expect(mirror.get('[data-testid="mirror-canvas-note"]').text()).toBe('Drag the handle on the axis to move it.')
+    expect(mirror.find('[data-testid="mirror-count-leftRight"]').exists()).toBe(false)
+
+    const repeat = mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: on({ topBottom: true }, {}, 'repeat'), onCanvas: true } })
+    expect(repeat.get('[data-testid="mirror-canvas-note"]').text()).toBe('Repeat on the Canvas needs an area.')
+
+    expect(mount(MirrorPopover, { props: { tile: undefined, pill: undefined, position: 'bottom', setting: on({}), onCanvas: true } }).find('[data-testid="mirror-canvas-note"]').exists()).toBe(false)
+    expect(mountPopover(on({ leftRight: true }), { leftRight: 3, topBottom: 3 }).find('[data-testid="mirror-canvas-note"]').exists()).toBe(false)
+  })
 })

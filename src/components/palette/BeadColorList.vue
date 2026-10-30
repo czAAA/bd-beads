@@ -15,9 +15,9 @@ import AppNote from '../ui/AppNote.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import TextField from '../ui/form/TextField.vue'
 
-// The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code the Project's Bead size has, each with a
-// generated swatch that says it is approximate; a code whose color the Palette holds is taken. Adding is an Edit. The
-// Color and Finish filter rows narrow the list with the search (ticket 0713); the component's own, they reset on close.
+// The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code in the Bead's size, swatches approximate,
+// a code the Palette holds taken; adding is an Edit. Color and Finish filters narrow the search (ticket 0713) and reset on
+// close. The foot row opens a bead-color Report (ticket 0700) from the row last focused.
 const props = defineProps<{ colors: BeadColors }>()
 const emit = defineEmits<{ added: [hex: string] }>()
 
@@ -89,6 +89,11 @@ const colorRow = ref<HTMLElement>()
 const finishRow = ref<HTMLElement>()
 const colorRoving = useRovingFocus(colorRow, { axis: () => 'horizontal', managesTabIndex: true })
 const finishRoving = useRovingFocus(finishRow, { axis: () => 'horizontal', managesTabIndex: true })
+
+/** The swatch the person last moved to with focus (a press focuses it too): a color Report starts from its code. */
+const highlighted = ref<{ code: string; hex: string }>()
+/** The highlighted swatch while the list still shows it: a search or filter that hid it leaves no code to start from. */
+const highlightedShown = computed(() => (shown.value.some((entry) => entry.code === highlighted.value?.code) ? highlighted.value : undefined))
 
 function add(hex: string, code: string) {
   if (props.colors.add(hex, code) === 'added') emit('added', hex)
@@ -170,6 +175,7 @@ function add(hex: string, code: string) {
             :data-code="entry.code"
             :data-taken="entry.taken || undefined"
             @click="!entry.taken && add(entry.hex, entry.code)"
+            @focus="highlighted = { code: entry.code, hex: entry.hex }"
           >
             <span class="bead-color-list__chip" :class="{ 'bead-color-list__chip--approximate': entry.approximate }" :style="{ backgroundColor: entry.hex }" />
             <span class="bead-color-list__text">
@@ -189,6 +195,16 @@ function add(hex: string, code: string) {
       </div>
       <AppNote v-else-if="matches.length > SHOWN">{{ fillBlanks(words.showingFirst, { count: SHOWN }) }}</AppNote>
     </template>
+    <AppButton
+      v-if="colors.report"
+      variant="link"
+      icon="message"
+      class="bead-color-list__report"
+      data-testid="bead-colors-report"
+      @click="colors.report(highlightedShown)"
+    >
+      {{ words.reportColor }}
+    </AppButton>
   </div>
 </template>
 
@@ -362,6 +378,12 @@ function add(hex: string, code: string) {
 .bead-color-list__taken {
   flex: none;
   font: var(--type-meta);
+}
+
+/* The foot row (BeadColors card): a link under the list, apart from it. */
+.bead-color-list__report {
+  align-self: flex-start;
+  margin-top: var(--space-4);
 }
 
 .bead-color-list__empty {

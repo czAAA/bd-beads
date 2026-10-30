@@ -7,11 +7,13 @@ import type { Project } from './project'
 import { withFrame } from './frame'
 import { canvasWeave, frameWeave } from './layerWeave'
 import { withWeave } from './weaveSwitch'
-import { rowCycle } from './weave'
+import { beadCell, rowCycle } from './weave'
+import { findBead } from './beads'
 import { canvasOf, frameOf, withFrameSheet } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 
 describe('a Frame woven in its own Technique (ticket 492)', () => {
+  const cell = beadCell(findBead('toho-cube-1.5mm'))
   const canvasLoom = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
   /** A loom Canvas with a peyote Frame of 4 × 6 at (10, 10). */
   const peyoteOnLoom = (): Project => {
@@ -22,15 +24,15 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   it('is made in the Technique the Project was made in, and its Weave is the Frame\'s own', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     expect(frameOf(brick)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
-    expect(frameWeave(peyoteOnLoom())).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
-    expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom' })
+    expect(frameWeave(peyoteOnLoom())).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell })
+    expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom', cell })
   })
 
   it('reads each layer\'s settings map, and keeps brick stitch\'s Drop off it for a switch back (tickets 0624, 0625)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     const brickFrame = withLayers(brick, { technique: 'peyote' as const, techniqueSettings: {}, frame: { ...frameOf(brick)!, techniqueSettings: { brickDrop: 5 } } })
-    expect(canvasWeave(brickFrame)).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
-    expect(frameWeave(brickFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 5 } })
+    expect(canvasWeave(brickFrame)).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell })
+    expect(frameWeave(brickFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 5 }, cell })
     // Brick stitch's Drop kept off it, for a switch back, lays nothing out in loom.
     const loom = withWeave(brick, 'canvas', { technique: 'loom' })
     expect(canvasWeave(loom).techniqueSettings).toEqual({ brickDrop: 3 })
@@ -49,7 +51,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
 
   it('counts a Canvas with no Frame in the Canvas\'s own Weave', () => {
     const open = withFrameSheet(peyoteOnLoom(), undefined)
-    expect(frameWeave(open)).toEqual({ technique: 'loom' })
+    expect(frameWeave(open)).toEqual({ technique: 'loom', cell })
   })
 
   it('counts its rows, passes and size in its own Weave: peyote\'s first line takes one pass and every later one two', () => {

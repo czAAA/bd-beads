@@ -66,7 +66,7 @@ import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
-import { DEFAULT_BEAD_SHAPE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
  * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
@@ -97,7 +97,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const beadId = ref(start.beadId)
   const technique = ref<Technique>(start.technique)
   const settings = ref<TechniqueSettings>({ ...start.techniqueSettings })
-  const beadShape = ref<BeadShape>(start.beadShape ?? DEFAULT_BEAD_SHAPE)
   const techniqueSettings = computed(() => weaveSettings({ technique: technique.value, techniqueSettings: settings.value }))
   const bead = computed(() => findBead(beadId.value) ?? DEFAULT_BEAD)
   const weave = computed(() => ({ technique: technique.value, techniqueSettings: techniqueSettings.value }))
@@ -381,7 +380,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   })
 
   /** The lattice as a block of beads for the Project renderer: shaped like a Project, upright, with no Row progress,
-   * in the Bead shape chosen. */
+   * in the Bead chosen. */
   const drawnProject = computed(() => {
     const shown = live.value
     if (!shown) return undefined
@@ -389,7 +388,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     const cells: Grid = Array.from({ length: rows }, (_row, row) =>
       Array.from({ length: columns }, (_cell, column) => ({ color: beadColors.value[row * columns + column] ?? null })),
     )
-    return framedGrid(cells, { ...weave.value, beadId: bead.value.id, bead: bead.value, beadShape: beadShape.value })
+    return framedGrid(cells, { ...weave.value, beadId: bead.value.id, bead: bead.value })
   })
 
   // --- Colors -------------------------------------------------------------------------------------------------------
@@ -452,7 +451,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       technique: technique.value,
       ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
       beadId: bead.value.id,
-      ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
       makerName: makerName.value.trim(),
       size: { width: rest.value.grid.columns, height: rest.value.grid.rows, unit: 'beads' },
       grid: grid.value,
@@ -478,7 +476,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     technique,
     settings,
     techniqueSettings,
-    beadShape,
     setSetting: (id: string, value: number) => (settings.value = { ...settings.value, [id]: value }),
     // Picture
     image,

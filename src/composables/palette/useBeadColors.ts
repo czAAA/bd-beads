@@ -6,6 +6,7 @@ import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
 import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
+import type { FeedbackPrefill } from '../shell/useFeedbackFlow'
 
 /** What the Bead's colors need from the app shell: the open Project, its Palette, and how a color joins the Palette
  * (an Edit, so Undo covers it, ADR 0036). */
@@ -13,11 +14,15 @@ export interface BeadColorsDeps {
   currentProject: () => Project | undefined
   palette: Readonly<Ref<Palette>>
   addUsed: (hex: string, code?: string) => { outcome: AddUsedColorOutcome }
+  /** The active Palette color, whose code a color Report starts from when no swatch is highlighted (ticket 0700). */
+  selectedColorId?: () => string | undefined
+  /** Opens the Feedback sheet; without it the list offers no Report (the Convert image wizard's remap picker). */
+  report?: (kind: 'bead-color', prefill: FeedbackPrefill) => void
 }
 
 /** The Color catalog of the open Project's Bead as a list of swatches to add to its Palette (ticket 0537, ADR 0072).
  * The catalog is fetched on the first `load`, not when the Project opens. */
-export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDeps) {
+export function useBeadColors({ currentProject, palette, addUsed, selectedColorId, report }: BeadColorsDeps) {
   const catalog = shallowRef<ColorCatalog>()
   const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
 
@@ -55,9 +60,23 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
       : []
   })
 
+  /** A color Report from the list's foot row (ticket 0700): the Bead's Brand and catalog, and the code, stored hex and
+   * Swatch letter of the highlighted swatch, else of the active Palette color when it has a code. */
+  function reportColor(highlighted?: { code: string; hex: string }) {
+    const active = palette.value.byId(selectedColorId?.())
+    const color = highlighted ?? (active?.code ? { code: active.code, hex: active.hex } : undefined)
+    const letter = color && currentProject()?.paletteLetters?.[color.hex]
+    report?.('bead-color', {
+      ...(bead.value ? { brand: bead.value.brand.name } : {}),
+      ...(catalogId.value ? { catalog: catalogId.value } : {}),
+      ...(color ? { code: color.code, hex: color.hex } : {}),
+      ...(letter ? { swatchLetter: letter } : {}),
+    })
+  }
+
   // `bead` is handed out so the list reads a typed shop code as the Bead's own (ticket 0696); `catalog` so its empty
   // state can say which sizes a code exists in (ticket 0713).
-  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog }
+  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog, ...(report ? { report: reportColor } : {}) }
 }
 
 export type BeadColors = ReturnType<typeof useBeadColors>

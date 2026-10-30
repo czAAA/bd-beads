@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed } from 'vue'
 import { BEAD_CATALOG, beadAfterPick, formFactorName, uniqueBy, type Bead } from '../../domain/beads'
-import type { BeadShape } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import PanelPicker from '../shell/PanelPicker.vue'
-import BeadShapeField from './BeadShapeField.vue'
 
-// A layer's bead section, in Layer settings (LayerSettings card, tickets 554, 568, 0670): Bead shape, then Brand, Type
+// A layer's bead section, in Layer settings (LayerSettings card, tickets 554, 568, 0670): Brand, Type
 // and Size as three pickers on one row that narrow each other. A pick only asks (`pick`): New Project sets its draft, a
 // layer's panel confirms Replace Bead; until then the pickers keep showing the Bead they were given.
 const props = defineProps<{
@@ -17,14 +15,12 @@ const props = defineProps<{
   /** The Bead shown differs from the catalog's of its id (ticket 534): its size shows "(as saved)" beside the catalog's. */
   outdated?: boolean
 }>()
-const shape = defineModel<BeadShape>('beadShape', { required: true })
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
 /** The size option standing for the Bead's own copy when it is out of date, as the catalog's Bead holds its id. */
 const AS_SAVED = 'as-saved'
 
 const { t } = useI18n()
-const shapeLabelId = useId()
 const own = computed(() => props.bead)
 /** The candidates and the Bead shown, in the catalog's order. */
 const entries = computed(() => {
@@ -73,10 +69,6 @@ function pickSize(beadId: string) {
 
 <template>
   <div class="bead-section" data-testid="bead-section">
-    <div class="bead-section__shape" data-testid="bead-shape-row">
-      <span :id="shapeLabelId">{{ t.form.beadShapeLabel }}</span>
-      <BeadShapeField :model-value="shape" :labelledby="shapeLabelId" small testid="bead-shape" @update:model-value="shape = $event" />
-    </div>
     <div v-if="own" class="bead-section__pickers" role="group" :aria-label="t.panels.project.bead">
       <PanelPicker bare :label="t.panels.project.beadBrand" :model-value="own.brand.id" :options="brands" data-testid="bead-brand" @update:model-value="pickBrand" />
       <PanelPicker bare :label="t.panels.project.beadType" :model-value="own.formFactor.id" :options="types" data-testid="bead-type" @update:model-value="pickType" />
@@ -91,16 +83,6 @@ function pickSize(beadId: string) {
   flex-direction: column;
   gap: var(--space-6);
   padding: var(--space-4) var(--space-10);
-}
-
-.bead-section__shape {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  min-height: var(--panel-item-height);
-  font: var(--type-control);
-  color: var(--ink);
 }
 
 .bead-section__pickers {

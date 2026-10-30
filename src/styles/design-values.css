@@ -28,6 +28,9 @@
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter row. */
   --filter-chip-height: 28px; /* BeadColors card: a Finish chip in the Finish filter row. */
+  --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
+  --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
+  --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
   --convert-thumb-width: 64px; /* ConvertImage card: the Picture section's thumbnail. */
   --convert-thumb-height: 48px; /* ConvertImage card: the thumbnail's height. */
   --ratio-bead-width: 22px; /* PixelToBeadRatio card: the explainer's one bead. */
@@ -114,11 +117,11 @@
   --pill-popover-radius: 24px;
   --mirror-axis-width: 1.25px; /* MirrorPopover card: an Axis line on the overlay. */
   --mirror-axis-dash: 5 4; /* MirrorPopover card: the Axis line's dash. */
-  --mirror-axis-soft: 0.45; /* MirrorPopover card: the Radial mirror lines after the first, and a Repeat strip's outer edges. */
-  --mirror-band-opacity: 0.06; /* MirrorPopover card: the Repeat strip's tint on the open Canvas. */
+  --mirror-axis-soft: 0.45; /* MirrorPopover card: the Radial mirror lines after the first. */
   --mirror-ring-radius: 7px; /* MirrorPopover card: the Radial centre's ring. */
   --mirror-handle: 32px; /* MirrorPopover card: an Axis or centre handle chip on the open Canvas. */
   --mirror-handle-icon: 16px; /* MirrorPopover card: the icon inside a handle chip. */
+  --mirror-handle-inset: 56px; /* MirrorPopover card: how far along its line from the view's edge a handle chip stands. */
   --mirror-chip-height: 32px; /* MirrorPopover card: an Axis chip in the popover. */
   --mirror-area-handle: 9px; /* MirrorPopover card: a handle square on the Area's rectangle, the Selection's. */
   --mirror-preview-dash: 4 3; /* MirrorPopover card: the whole-Frame preview while the margin is hovered. */

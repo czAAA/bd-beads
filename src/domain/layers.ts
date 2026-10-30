@@ -5,8 +5,9 @@ export type { Layer }
 import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { beadsOfLayer, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
 import { frameWeave, laidOnCanvas } from './layerWeave'
+import type { CanvasAxes } from './mirror'
 import { touch, type Project } from './project'
 import { projectCell } from './projectBead'
 import type { Weave } from './weave'
@@ -19,13 +20,16 @@ import type { Weave } from './weave'
  * woven in (ticket 492), and the Layer geometry that says where its beads are. */
 export interface LayerSheet {
   beads: BeadMap
-  /** Its Weave, with the Bead shape's cell the Project draws it in. */
+  /** Its Weave, with the Bead's cell the Project draws it in. */
   weave: Weave
   geometry: LayerGeometry
   /** The Frame's rectangle in its own positions, its first row and column 0, 0; none on the Canvas, which has no edge. */
   edge?: Rect
   /** The Frame as its Frame shape reads it (its shape, settings, turn, size and Weave); none on the Canvas. */
   frame?: ShapedSheet
+  /** Where Mirror's straight Axes cross the open Canvas (ticket 0704), its own geometry; none on the Frame, whose Axes
+   * come from its edge and the setting's counts. */
+  axes?: CanvasAxes
 }
 
 
@@ -67,13 +71,13 @@ export function positionOnCanvas(project: Layered, layer: Layer, position: GridP
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
-/** The Frame as its Frame shape reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
+/** The Frame as its Frame shape reads it, in its own Weave with the Bead's cell. The Project must have a Frame. */
 function shapedFrame(project: Layered): ShapedSheet {
   const { rows, columns, shape, settings, quarterTurns } = frameOf(project)!
   return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
 }
 
-// A Frame is never changed in place, so its geometry is built once for each Bead shape's cell it is drawn in.
+// A Frame is never changed in place, so its geometry is built once for each Bead's cell it is drawn in.
 const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
 
 /** The Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have a Frame. */
@@ -100,27 +104,34 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
   const frame = layer === 'frame' ? frameOf(project) : undefined
   if (!frame) {
     const { beads, weave } = layerOf(project, 'canvas')
-    return { beads, weave, geometry: gridGeometry(weave) }
+    const axes = canvasOf(project).mirrorAxes
+    return { beads, weave, geometry: gridGeometry(weave), ...(axes ? { axes } : {}) }
   }
   const { beads, weave } = layerOf(project, 'frame')!
   const edge = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
   return { beads, weave, geometry: frameGeometryOf(project), edge, frame: shapedFrame(project) }
 }
 
-/** `after` with every position under the Frame put back as `before` had it: the Canvas beads a Frame covers are neither
- * changed nor drawn. The same map back when nothing was under it. */
-function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
+/** `after` with every position under the Frame put back as `before` had it, but for those `through` lets by: the Canvas
+ * beads a Frame covers are neither changed nor drawn. The same map back when nothing was under it. */
+function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect, through: (position: GridPosition) => boolean = () => false): BeadMap {
   const reverts: BeadChange[] = []
   forEachChangedPosition(before, after, (row, column) => {
-    if (frameContains(frame, { row, column })) reverts.push({ row, column, color: colorAt(before, row, column) })
+    if (frameContains(frame, { row, column }) && !through({ row, column })) reverts.push({ row, column, color: colorAt(before, row, column) })
   })
   return reverts.length === 0 ? after : withColors(after, reverts)
+}
+
+/** What a Canvas command may change under the Frame: nothing by default, the Frame hiding what lies there untouched;
+ * `underFrame` names the positions it may paint there, hidden: a Mirror counterpart's (ticket 0704, spec 0702's Edges). */
+export interface OnLayerOptions {
+  underFrame?: (position: GridPosition) => boolean
 }
 
 /** Runs a command on one layer. The command gets the layer (see `layerSheet`) and `local`, which turns a Canvas position
  * into one of that layer, and gives back the layer's beads, which are put back. The same Project back when they came
  * back as they went in, which is a drawing command's "nothing changed". */
-export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap): Project {
+export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap, options: OnLayerOptions = {}): Project {
   const frame = frameOf(project)
   if (layer === 'frame') {
     if (!frame) {
@@ -135,7 +146,7 @@ export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSh
     return project
   }
   const covered = footprintOf(project)
-  const beads = covered ? keepUnderFrame(before, made, covered) : made
+  const beads = covered ? keepUnderFrame(before, made, covered, options.underFrame) : made
   // Everything the command did was under the Frame, so nothing is left of it.
   if (beads !== made && !anyChangedPosition(before, beads)) {
     return project
