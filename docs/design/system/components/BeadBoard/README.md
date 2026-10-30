@@ -17,3 +17,8 @@ How a Pattern is drawn: beads on an open canvas you can draw on anywhere, in pie
 - **PNG and PDF exports always use the light values**, and still draw the Frame's beads on a board (`print-board`).
 
 Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mockups); static rendition (the app draws this on a canvas renderer).
+
+## As built (ticket 0730)
+
+- **Glint:** the canvas's overlay draws the finished pass's beads again at full color until `--row-dim-delay` and the white wash on each, one after another; the bead layer below already has the finished look. With Row highlight off there is no glint.
+- **Every pass done:** the finished passes are drawn at full color whenever every pass is done, a finished Project opened included (Motion section, Row progress, As built).

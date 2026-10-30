@@ -149,7 +149,11 @@ function wireAppShell(services: Services) {
     onRedo,
   } = useUndoHistory({
     currentProject,
-    restore: (snapshot) => editing.restore(snapshot),
+    // Undo and Redo stop Row done's motion on the Pattern (ticket 0730).
+    restore: (snapshot) => {
+      rowOps.stopRowMotion()
+      editing.restore(snapshot)
+    },
     settle: () => editing.settle(),
   })
 
@@ -716,6 +720,8 @@ function wireAppShell(services: Services) {
       toggleRulers,
       rowHighlight,
       toggleRowHighlight,
+      /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
+      rowPress: rowOps.rowPress,
       panBy,
       scrollBy,
       setZoom,
