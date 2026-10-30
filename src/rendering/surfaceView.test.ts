@@ -234,7 +234,7 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
   })
 })
 
-describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
+describe("A Bead's real cell finds beads where they are drawn (ADR 0068)", () => {
   const cell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const TECHS: Technique[] = ['loom', 'peyote', 'brick']
 
@@ -251,9 +251,9 @@ describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
 
   it('steps down by the Bead height, not the square', () => {
     const real = surfaceView({ space: OPEN_SPACE, technique: 'loom', cell, rotation: 0, zoom: 1 }).beadStep().row
-    const symmetric = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1 }).beadStep().row
+    const square = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1 }).beadStep().row
     expect(real.y).toBeCloseTo(CELL_SIZE_PX * cell.aspect)
-    expect(symmetric.y).toBe(CELL_SIZE_PX)
+    expect(square.y).toBe(CELL_SIZE_PX)
   })
 })
 

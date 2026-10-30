@@ -28,7 +28,7 @@ All three are subpanels (MenuPanel card): the header is the Back icon button and
 
 ## Pictures
 
-Each picture is the option's design, a Project file kept with the app, drawn by the Project renderer in Real bead shape with Color catalog colours, fitted to its well with 7% padding and never cropped. Colours stay as painted whatever Bead is chosen. A category card shows its best option: the Star, a pair of V fringe earrings, a Ring and a Band.
+Each picture is the option's design, a Project file kept with the app, drawn by the Project renderer at its Bead's real proportions with Color catalog colours, fitted to its well with 7% padding and never cropped. Colours stay as painted whatever Bead is chosen. A category card shows its best option: the Star, a pair of V fringe earrings, a Ring and a Band.
 
 How each kind lays its Beads (these are also the Frame shapes' layouts and counts, spec 0590):
 
@@ -50,7 +50,7 @@ In order, in the body:
 
 1. The picture: 280px tall, the panel's width, `surface`, 1px `line-strong`, `radius-lg`. It updates as the settings change; it is `role="img"` named "{option}, with design" or "{option}, empty shape with seams".
 2. **Name**, on New Project only, optional, with the option's name as its placeholder.
-3. The Frame's **Layer settings** (LayerSettings card; ADR 0079, ticket 0671), on New Project and on an open Project alike, pre-filled from the Starter: its Weave (the manifest's one Technique, and on a Frame shape only the Techniques that shape supports), Delica 11/0, Symmetric and the device's last Background. Each can be changed; the shape's sizes stay in the setup's own rows below, so the section shows no shape settings. On an open Project they set the Frame alone and the Canvas keeps its own; on New Project the Canvas copies them.
+3. The Frame's **Layer settings** (LayerSettings card; ADR 0079, ticket 0671), on New Project and on an open Project alike, pre-filled from the Starter: its Weave (the manifest's one Technique, and on a Frame shape only the Techniques that shape supports), Delica 11/0 and the device's last Background. Each can be changed; the shape's sizes stay in the setup's own rows below, so the section shows no shape settings. On an open Project they set the Frame alone and the Canvas keeps its own; on New Project the Canvas copies them.
 4. **Design:** a SegmentedControl, **Use design** (on by default) and **Start empty**. When it is off, a Note under it says why (below).
 5. The option's settings, each under its `label`, with its unit at the right in `meta`:
    - A count is a Stepper (`field-height`) with the usual sizes as chips beside it (`item-height`, 44px hit, `radius-md`, `line-strong` edge; the matching one `aria-pressed` in `accent` with `on-accent` text). The chip of the design's own size carries a 5px dot, named "design size" for screen readers.

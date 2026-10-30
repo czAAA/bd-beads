@@ -3,8 +3,8 @@ import { beadCopy, findBead } from './beads'
 import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { lettersFor } from './swatchLetters'
 import { framedGrid } from './layerBeads'
-import { frameWeave, weaveOf } from './layerWeave'
-import { rowCycle } from './weave'
+import { canvasWeave, frameWeave, weaveOf } from './layerWeave'
+import { beadCell, rowCycle } from './weave'
 import type { FrameSheet } from './canvas'
 import type { FlatProject } from './flatWeave'
 import type { Grid, Project, RowProgress } from './project'
@@ -82,17 +82,22 @@ const defaultIds = defaultPaletteIds(defaultPalette(CUBE_COPY.id))
 const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => color.hex), undefined)
 
 /** A Project saved before it held its layers as it reads today (ticket 0664, ADR 0079): its Canvas from its own fields
- * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead, Bead shape and
+ * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead and
  * Letters, each layer named by the Project's id. */
-/** A stored value of file version 12 or library version 5 as this build writes it back (ticket 0691): the next version,
- * with brick stitch's Drop under its new id where the value held its Brick block. */
+/** A stored value as this build writes it back: without the Bead shape every layer is now drawn without (ticket 0724). */
+function writtenBack(stored: string): unknown {
+  return JSON.parse(stored, (key, value) => (key === 'beadShape' ? undefined : value))
+}
+
+/** A stored value of file version 12 or library version 5 as this build writes it back (tickets 0691, 0724): the next
+ * version, with brick stitch's Drop under its new id where the value held its Brick block, and no Bead shape. */
 function withDrops(stored: string, version: number): unknown {
-  return { ...JSON.parse(stored.replaceAll('"brickBlock"', '"brickDrop"')), version }
+  return { ...(writtenBack(stored.replaceAll('"brickBlock"', '"brickDrop"')) as object), version }
 }
 
 function layered(flat: Omit<FlatProject, 'frame'> & { frame?: FrameSheet }): Project {
-  const { name, technique, techniqueSettings, beadId, bead, beadShape, beads, frame, rowProgress, letters, pieceNames, rotation, ...rest } = flat
-  const shared = { beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters } : {}) }
+  const { name, technique, techniqueSettings, beadId, bead, beads, frame, rowProgress, letters, pieceNames, rotation, ...rest } = flat
+  const shared = { beadId, ...(bead ? { bead } : {}), ...(letters ? { letters } : {}) }
   const canvas = { id: `${flat.id}:canvas`, name, ...weaveOf({ technique, techniqueSettings }), ...shared, beads, ...(pieceNames ? { pieceNames } : {}), orientation: rotation }
   return { ...rest, layers: frame ? [canvas, { id: `${flat.id}:frame`, ...shared, ...frame, rowProgress }] : [canvas] }
 }
@@ -310,8 +315,8 @@ describe('stored-data compatibility', () => {
 
       const [framed, open] = loadProjects()
       expect(framed!.layers.map((layer) => layer.id)).toEqual(['layer-canvas', 'layer-frame'])
-      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadShape: 'real', letters: true, orientation: 90 })
-      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', beadShape: 'real', rowProgress: { currentRow: 1 } })
+      expect(canvasOf(framed!)).toMatchObject({ name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, letters: true, orientation: 90 })
+      expect(frameOf(framed!)).toMatchObject({ technique: 'peyote', quarterTurns: 1, name: 'Fox', rowProgress: { currentRow: 1 } })
       expect(open!.layers).toEqual([expect.objectContaining({ id: 'open-canvas', name: 'Open sketch', beads: { [-2]: { 4: '#1a1a1a' } }, orientation: 0 })])
       saveProjects(loadProjects())
       expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(withDrops(libraryV5, 6))
@@ -453,11 +458,23 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV12).projects
       expect(opened!.id).toBe('v12-layers')
       expect(opened!.makerName).toBe('Maria')
-      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
+      expect(canvasOf(opened!)).toMatchObject({ id: 'layer-canvas', name: 'Layered fox', technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'miyuki/delica/11-0', letters: true, orientation: 90, pieceNames: [{ name: 'Tail', row: 30, column: 30 }] })
       expect(beadsOfLayer(opened!, 'canvas')).toEqual({ 0: { 0: '#2fb6ae' }, 30: { 30: '#e63746', 31: '#e63746' } })
       expect(frameSheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
-      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+      expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
       expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, 13))
+    })
+
+    it('opens a file whose layers saved a Bead shape, Real, Symmetric or none, drawn in each Bead\'s real cell, and writes no Bead shape back (ticket 0724)', () => {
+      const delica = beadCell(findBead('miyuki/delica/11-0'))
+      const asSaved = JSON.parse(projectFileV12)
+      for (const beadShape of ['real', 'symmetric', undefined]) {
+        const layers = asSaved.projects[0].layers.map(({ beadShape: _saved, ...layer }: Record<string, unknown>) => ({ ...layer, ...(beadShape ? { beadShape } : {}) }))
+        const [opened] = parseProjectsFile(JSON.stringify({ ...asSaved, projects: [{ ...asSaved.projects[0], layers }] })).projects
+        expect([canvasWeave(opened!).cell, frameWeave(opened!).cell]).toEqual([delica, delica])
+        expect(opened!.layers.some((layer) => 'beadShape' in layer)).toBe(false)
+        expect(serializeProject(opened!)).not.toContain('beadShape')
+      }
     })
 
     it('opens a version 13 file with peyote\'s Drop and brick stitch\'s each under its own id, and writes it back the same (ticket 0691)', () => {
@@ -465,13 +482,13 @@ describe('stored-data compatibility', () => {
       expect(canvasOf(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3, peyoteDrop: 4 } })
       expect(frameOf(opened!)).toMatchObject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } })
       expect(rowCycle(frameWeave(opened!))).toBe(4)
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13Drops))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Drops))
     })
 
     it('opens a version 13 file with its Mirror setting and writes it back the same, and one from before Mirror opens with it off (ticket 0703)', () => {
       const [opened] = parseProjectsFile(projectFileV13Mirror).projects
       expect(mirrorSettingOf(opened!)).toEqual({ mode: 'repeat', axes: { leftRight: true, topBottom: false, radial: false }, fold: 2, counts: { leftRight: 2, topBottom: 1 } })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13Mirror))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Mirror))
 
       const [older] = parseProjectsFile(projectFileV13Drops).projects
       expect(older!.mirror).toBeUndefined()

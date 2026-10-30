@@ -1,6 +1,6 @@
 import type { Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
-import type { BeadShape, Weave } from './weave'
+import type { Weave } from './weave'
 import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
@@ -44,7 +44,7 @@ export interface RowProgress {
 export type Background = number | string
 
 /** What every layer holds (ADR 0079, ticket 0664): a sub-canvas, the Canvas or a Frame, with its own id, its Weave (a
- * Technique and its settings), Bead, Bead shape, beads, Letters switch and Piece names. */
+ * Technique and its settings), Bead, beads, Letters switch and Piece names. */
 export interface LayerFields extends Weave {
   /** Its own id, unique within the Project. */
   id: string
@@ -52,8 +52,6 @@ export interface LayerFields extends Weave {
   /** A full copy of its Bead, saved in the file so the layer opens, draws and is sized the same whatever the catalog
    * later does (ticket 534, ADR 0072). Absent only for an id the catalog never had; a file without one gets it on open. */
   bead?: Bead
-  /** Its Bead shape (ADR 0068): how each cell is drawn. Absent means Symmetric. */
-  beadShape?: BeadShape
   /** The color it is drawn on (ADR 0079, ticket 0666), a view saved with it. Absent on a layer saved before it had one,
    * which shows the device's last pick. */
   background?: Background
