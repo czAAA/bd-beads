@@ -44,6 +44,11 @@ const props = defineProps<{
   exportOpen?: boolean
   /** Where the Selection is, if there is one: its handles win a press where the sheet's controls lie over them. */
   selection?: BarBox
+  /** Mirror's Select area (ticket 0710, MirrorPopover card): while `picking` the sheet is the whole Frame's target and
+   * its controls take no press; `targeted` while the pointer is on the margin, which tints the paper, turns its edge
+   * solid and previews the Frame. */
+  picking?: boolean
+  targeted?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -231,6 +236,19 @@ const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.
 const progressEl = ref<HTMLElement>()
 const roving = useRovingFocus(progressEl, { axis: () => 'horizontal', managesTabIndex: true })
 
+/** The whole-Frame preview and the tint's inner edge (ticket 0710): the Frame's box in the sheet's own px. */
+const frameInSheet = computed(() => {
+  const { box, sheet } = props.anchor
+  return { left: box.left - sheet.left, top: box.top - sheet.top, width: box.width, height: box.height }
+})
+const previewStyle = computed(() => ({ left: `${frameInSheet.value.left}px`, top: `${frameInSheet.value.top}px`, width: `${frameInSheet.value.width}px`, height: `${frameInSheet.value.height}px` }))
+/** The tint covers the paper alone: a border as wide as each band, the Frame left clear. */
+const tintStyle = computed(() => {
+  const { left, top, width, height } = frameInSheet.value
+  const { sheet } = props.anchor
+  return { borderWidth: `${top}px ${sheet.width - left - width}px ${sheet.height - top - height}px ${left}px` }
+})
+
 /** Whether the Move bar is being dragged: it turns accent until the canvas press ends. */
 const dragging = ref(false)
 watch(
@@ -269,7 +287,18 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 </script>
 
 <template>
-  <div class="margin-sheet" :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare' }]" :style="sheetStyle" data-testid="margin-sheet">
+  <div
+    class="margin-sheet"
+    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--picking': picking, 'margin-sheet--target': picking && targeted }]"
+    :style="sheetStyle"
+    data-testid="margin-sheet"
+  >
+    <template v-if="picking">
+      <div class="margin-sheet__tint" :style="tintStyle" data-testid="margin-area-tint" />
+      <svg class="margin-sheet__area-preview" :style="previewStyle" aria-hidden="true" data-testid="margin-area-preview">
+        <rect class="margin-sheet__area-preview-line" x="0" y="0" width="100%" height="100%" />
+      </svg>
+    </template>
     <div
       v-if="row"
       ref="bandEl"
@@ -421,10 +450,63 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   pointer-events: auto;
 }
 
-/* Over a Selection's handles the controls give way (ticket 498). */
+/* Over a Selection's handles the controls give way (ticket 498), and while an Area is being picked every control does
+ * (ticket 0710): the sheet is then the whole Frame's target and the canvas under it takes the press. */
 .margin-sheet__yielding,
-.margin-sheet__band.margin-sheet__yielding > * {
+.margin-sheet__band.margin-sheet__yielding > *,
+.margin-sheet--picking .margin-sheet__band > *,
+.margin-sheet--picking .margin-sheet__title,
+.margin-sheet--picking .margin-sheet__handle {
   pointer-events: none;
+}
+
+/* The whole-Frame target (MirrorPopover card, MarginSheet card): under the pointer the paper tints `marker` at
+ * --mirror-margin-opacity, the outer edge turns a solid 1.5px `marker` line and a dashed `marker` rectangle previews
+ * the Frame, each over --duration-fast. */
+.margin-sheet__tint {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--marker) calc(var(--mirror-margin-opacity) * 100%), transparent);
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.margin-sheet__area-preview {
+  position: absolute;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.margin-sheet__area-preview-line {
+  fill: none;
+  stroke: var(--marker);
+  stroke-width: var(--mirror-area-line);
+  stroke-dasharray: var(--mirror-preview-dash);
+}
+
+.margin-sheet--target .margin-sheet__tint,
+.margin-sheet--target .margin-sheet__area-preview {
+  opacity: 1;
+}
+
+.margin-sheet--target {
+  outline: var(--mirror-area-line) solid var(--marker);
+  outline-offset: 0;
+  transition: outline-color var(--duration-fast) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .margin-sheet__tint,
+  .margin-sheet__area-preview,
+  .margin-sheet--target {
+    transition: none;
+  }
 }
 
 .margin-sheet__progress {

@@ -21,7 +21,8 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, regionInGridSpace, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads } from './draftRenderer'
-import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, quarterTurnOf } from '../domain/layerRecord'
+import type { Layer } from '../domain/grid'
 import { axisOffsets, isMirrorOn, type CanvasAxes, type MirrorAxis, type MirrorSetting } from '../domain/mirror'
 import { AXIS_ICON_BOX_PX, AXIS_ICON_PATHS, axisGridPx, centreGridPx, MIRROR_HANDLE_ICON_PX, type AxisHandle } from './mirrorAxes'
 
@@ -115,6 +116,9 @@ export interface OverlayInput {
    * and Radial's centre (ticket 0705) as a ring with its lines or rays, each with its handle chip in the viewport's px,
    * the one being dragged (`held`) in the accent. Canvas only. */
   canvasAxes?: { axes: CanvasAxes; handles: readonly AxisHandle[]; held?: MirrorAxis }
+  /** How the Area is drawn (ticket 0710): the view its handles are measured in and `touch` for the larger ones; the
+   * Area itself is each layer's own record. `band` is the rectangle a pick is dragging, drawn with no handles. */
+  mirrorArea?: { surface: SurfaceView; touch: boolean; band?: Rect & { layer: Layer } }
   /** Row done's motion (ticket 0730), each with the ms since its press: the passes just finished, glinting and held at
    * full color for the dim delay, and the pass the marker left, its ruler pill gliding on. Never given by an export. */
   rowMotion?: RowMotion
@@ -623,9 +627,14 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
   context.restore()
 }
 
-/** Draws Mirror's Axis lines across a Frame on a grid (spec 0702): N axes cut it into N + 1 equal strips, the lines at
- * the strip boundaries of the box round its beads, in the Frame's own px, so they move with it; with Radial on, its ring
- * and lines about the Frame's centre instead (ticket 0705). In grid space: the widths are divided by the zoom. */
+/** The Area or a pick's band as the Selection is drawn (ticket 0710): the marker rectangle round its cells. */
+function drawAreaRect(context: DrawingContext, weave: Weave, space: Space, rect: Rect, theme: ProjectTheme, view: () => VisiblePositions, origin: GridPosition): void {
+  drawSelection(context, weave, space, { top: rect.row, left: rect.column, rows: rect.rows, columns: rect.columns }, theme, view, origin)
+}
+
+/** Draws Mirror's Axis lines across a rectangle on a grid (spec 0702), the Frame's or its Area's (ticket 0710): N axes
+ * cut it into N + 1 equal strips, the lines at the strip boundaries of the box round its beads, in the layer's own px;
+ * with Radial on, its ring and lines about the rectangle's centre (ticket 0705). Widths are divided by the zoom. */
 function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, setting: MirrorSetting, zoom: number, theme: ProjectTheme): void {
   if (!isMirrorOn(setting)) return
   const box = gridBox(weave, frame)
@@ -747,7 +756,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, canvasAxes, rowMotion } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, canvasAxes, mirrorArea, rowMotion } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -780,6 +789,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   if (space.open && marginOutline > 0 && frameOf(project)) {
     drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
   }
+  // Each layer's Area (ticket 0710), drawn while Mirror is on: its rectangle, the Axes inside it, and its handles after.
+  const canvasArea = mirror ? canvasOf(project).mirrorArea : undefined
+  const frameArea = mirror && frame ? frame.mirrorArea : undefined
+  const band = mirrorArea?.band
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, and the marker lifted above its row.
@@ -787,8 +800,13 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme, canvasView, { row: 0, column: 0 })
     if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme)
     if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio)
-    // The open Canvas's Axes (ticket 0704), across the part of the grid the view shows.
-    if (mirror && canvasAxes) drawCanvasAxes(context, canvasWeaveOf, canvasAxes.axes, mirror, regionInGridSpace(space.extent, region, zoom, quarterTurnOf(project)), zoom, theme)
+    // The Canvas's Area and the Axes inside it (ticket 0710), else the open Canvas's Axes (ticket 0704) across the
+    // part of the grid the view shows.
+    if (canvasArea) {
+      drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme, canvasView, { row: 0, column: 0 })
+      drawMirrorAxes(context, canvasWeaveOf, canvasArea, mirror!, zoom, theme)
+    } else if (mirror && canvasAxes) drawCanvasAxes(context, canvasWeaveOf, canvasAxes.axes, mirror, regionInGridSpace(space.extent, region, zoom, quarterTurnOf(project)), zoom, theme)
+    if (band && band.layer !== 'frame') drawAreaRect(context, canvasWeaveOf, space, band, theme, canvasView, { row: 0, column: 0 })
   }
 
   // The Frame's layer, or the Project drawn alone.
@@ -824,9 +842,13 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme, sheetView, layerOrigin)
-    // A Frame on a grid (a Custom frame's Axes are ticket 0706's), in its own positions from its first, drawn alone too.
+    // A Frame on a grid (a Custom frame's Axes are ticket 0706's), in its own positions from its first, drawn alone too:
+    // the Axes across its Area where one is set (ticket 0710), else across the whole Frame.
     const mirrored = mirror && geometry!.grid ? frameOf(project) : undefined
-    if (mirrored) drawMirrorAxes(context, sheetWeave, { row: 0, column: 0, rows: mirrored.rows, columns: mirrored.columns }, mirror!, zoom * scale, theme)
+    const sheetArea = mirrored?.mirrorArea
+    if (sheetArea) drawAreaRect(context, sheetWeave, sheetSpace, sheetArea, theme, sheetView, layerOrigin)
+    if (mirrored) drawMirrorAxes(context, sheetWeave, sheetArea ?? { row: 0, column: 0, rows: mirrored.rows, columns: mirrored.columns }, mirror!, zoom * scale, theme)
+    if (band && band.layer === 'frame' && geometry!.grid) drawAreaRect(context, sheetWeave, sheetSpace, band, theme, sheetView, layerOrigin)
     const sheetCells = preview ? onSheet(preview.cells) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
     if (preview && sheetCells.length + sheetStamp.length > 0) {
@@ -868,6 +890,11 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
     drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), pixelRatio, theme, selectionHandles.touch)
+  }
+  // The Area's handles (ticket 0710), the Selection's eight, never draggable; a Frame's Area in Canvas positions.
+  if (mirrorArea && space.open) {
+    if (canvasArea) drawBoxHandles(context, mirrorArea.surface.beadBox(canvasArea, 'canvas'), pixelRatio, theme, mirrorArea.touch)
+    if (frameArea && frame && geometry!.grid) drawBoxHandles(context, mirrorArea.surface.beadBox({ ...frameArea, row: frameArea.row + frame.row, column: frameArea.column + frame.column }, 'frame'), pixelRatio, theme, mirrorArea.touch)
   }
   if (space.open && mirror && canvasAxes && canvasAxes.handles.length > 0) {
     drawAxisHandles(context, canvasAxes.handles, canvasAxes.held, pixelRatio, theme)

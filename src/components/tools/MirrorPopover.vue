@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
+import type { Rect } from '../../domain/canvas'
+import type { Layer } from '../../domain/grid'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePillPopoverPlacement } from '../../composables/tools/usePillPopoverPlacement'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
@@ -24,6 +26,7 @@ import {
 } from '../../domain/mirror'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
+import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
@@ -31,7 +34,7 @@ import IconButton from '../ui/IconButton.vue'
 
 // The Mirror popover (ADR 0082, spec 0702, ticket 0703; MirrorPopover card): the Mirror tile's popover, the colour
 // popover's box beside the pill. Its rows are sections of their own, so Radial and the Fold (ticket 0705) and the Area
-// (ticket 0710) slot in: the Mode, the Axes, then the details that apply (the Frame's Axis count Steppers).
+// (ticket 0710) slot in: the Mode, the Axes, the Area on a grid layer, then the details that apply (the count Steppers).
 const props = defineProps<{
   /** The Mirror tile that opened it, and the pill it is part of: where the popover is placed. */
   tile: HTMLElement | undefined
@@ -41,14 +44,26 @@ const props = defineProps<{
   /** Each direction's Axis count limit, the Frame's beads minus one; none without a Frame on a grid, where the count
    * Steppers are not shown. */
   limits?: Record<MirrorDirection, number>
-  /** Whether the open Canvas is the only layer (ticket 0704): with a straight Axis on, the details say the handle on
-   * the canvas is the setting, or in Repeat that an Area is needed (spec 0702's decision). */
+  /** Whether the open Canvas is the only layer (ticket 0704): with a straight Axis on and no Area, the details say
+   * the handle on the canvas is the setting, or in Repeat that an Area is needed (spec 0702's decision). */
   onCanvas?: boolean
+  /** The layer the Area row is for (ticket 0710): the Frame (with Whole Frame beside Select area) or the Canvas; none
+   * on a Custom frame, whose Axes are the shape's, where the row is not shown. */
+  areaRow?: Layer
+  /** That layer's Area, where one is set: the button reads its size and Clear the area is offered. */
+  area?: Rect
+  /** Whether an Area is being picked on the canvas: the button is pressed and says to drag. */
+  picking?: boolean
 }>()
 
 const emit = defineEmits<{
   close: []
   'update:setting': [setting: MirrorSetting]
+  /** Select area pressed: the popover closes and a drag over the beads (or the margin) sets the Area. */
+  pick: []
+  /** Whole Frame pressed: the Frame's rectangle is the Area, with no pick. */
+  'whole-frame': []
+  'clear-area': []
 }>()
 
 const { t } = useI18n()
@@ -56,6 +71,7 @@ const rootEl = ref<HTMLElement>()
 const closeAction = controlAction('close')
 const modeId = useId()
 const axesId = useId()
+const areaId = useId()
 
 useOverlayLayer({
   isOpen: () => true,
@@ -82,10 +98,22 @@ const countOf = (direction: MirrorDirection) => Math.min(props.setting.counts[di
 const folded = computed(() => props.setting.axes.radial && (props.limits !== undefined || props.onCanvas === true))
 /** The rule the Fold is under (MirrorPopover card): exact by index at 2 and 4, else the nearest bead to a turn. */
 const foldNote = computed(() => (foldByIndex(props.setting.fold) ? t.value.mirror.foldExact : fillBlanks(t.value.mirror.foldNearest, { angle: foldAngle(props.setting.fold) })))
-/** The open Canvas's own detail (ticket 0704), with a straight Axis on: the handle, or in Repeat the Area it needs. */
+/** The open Canvas's own detail (ticket 0704), with a straight Axis on and no Area (an Area has the count Steppers
+ * instead, ticket 0710): the handle, or in Repeat the Area it needs. */
 const canvasNote = computed(() => {
-  if (!props.onCanvas || !isMirrorOn(props.setting) || !MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction])) return undefined
+  if (!props.onCanvas || props.area || !isMirrorOn(props.setting) || !MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction])) return undefined
   return props.setting.mode === 'repeat' ? t.value.mirror.repeatNeedsArea : t.value.mirror.dragHandle
+})
+/** The Select area button's text (MirrorPopover card, The Area): its state, picking, set (columns × rows), or not. */
+const areaWord = computed(() => {
+  if (props.picking) return t.value.mirror.pickingArea
+  if (props.area) return fillBlanks(t.value.mirror.areaSize, { columns: props.area.columns, rows: props.area.rows })
+  return t.value.mirror.selectArea
+})
+/** The Note under the Area row: where the Axes run, and how to pick, in the layer's words. */
+const areaNote = computed(() => {
+  if (props.area) return t.value.mirror.areaSet
+  return props.areaRow === 'frame' ? t.value.mirror.areaNoneFrame : t.value.mirror.areaNoneCanvas
 })
 
 const setMode = (mode: MirrorMode) => emit('update:setting', withMirrorMode(props.setting, mode))
@@ -121,6 +149,28 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
           {{ chipWord(axis) }}
         </button>
       </div>
+    </section>
+
+    <section v-if="areaRow" class="mirror-popover__row" data-testid="mirror-area-row">
+      <span :id="areaId" class="mirror-popover__label">{{ t.mirror.area }}</span>
+      <div class="mirror-popover__area" role="group" :aria-labelledby="areaId">
+        <AppButton
+          variant="secondary"
+          icon="select"
+          class="mirror-popover__area-button"
+          :class="{ 'mirror-popover__area--set': !!area && !picking }"
+          :aria-pressed="!!picking"
+          data-testid="mirror-select-area"
+          @click="emit('pick')"
+        >
+          {{ areaWord }}
+        </AppButton>
+        <AppButton v-if="areaRow === 'frame'" variant="secondary" class="mirror-popover__whole-frame" data-testid="mirror-whole-frame" @click="emit('whole-frame')">
+          {{ t.mirror.wholeFrame }}
+        </AppButton>
+        <IconButton v-if="area" variant="secondary" icon="close" :label="t.mirror.clearArea" tooltip data-testid="mirror-clear-area" @click="emit('clear-area')" />
+      </div>
+      <AppNote data-testid="mirror-area-note">{{ areaNote }}</AppNote>
     </section>
 
     <section v-if="folded" class="mirror-popover__row" data-testid="mirror-fold">
@@ -262,5 +312,40 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
 .mirror-popover__chip:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* The Area row (MirrorPopover card): Select area fills the row, 34px with `radius-md` corners; after it, on a line of
+ * their own, Whole Frame while a Frame is the layer and Clear the area (an icon button) while an Area is set; set, the
+ * button's border, text and icon take the Selection colour. */
+.mirror-popover__area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+.mirror-popover__area :deep(.app-button) {
+  height: var(--mirror-area-row);
+  border-radius: var(--radius-md);
+}
+
+.mirror-popover__area-button {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.mirror-popover__whole-frame {
+  flex: 1 1 auto;
+}
+
+.mirror-popover__area :deep(.icon-btn) {
+  flex: none;
+  width: var(--mirror-area-row);
+  height: var(--mirror-area-row);
+  border-radius: var(--radius-md);
+}
+
+.mirror-popover__area--set {
+  color: var(--marker);
+  border-color: var(--marker);
 }
 </style>
