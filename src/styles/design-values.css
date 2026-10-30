@@ -56,6 +56,15 @@
   --tooltip-fill: color-mix(in srgb, var(--elevated) 92%, transparent);
   --tooltip-blur: 8px;
   --tooltip-muted: var(--muted);
+  --row-glint: #ffffff; /* BeadBoard card: the wash on a finished bead. */
+  --spark-core: #ffffff; /* ProgressBar card: the spark's dot. */
+  --spark-glow: rgba(250, 82, 15, .6); /* ProgressBar card: its halo, the light track's orange. */
+  --pattern-done-spark-1: #5f6670; /* Motion section: Pattern done's firework and stars, pewter in light. */
+  --pattern-done-spark-2: #7d858f;
+  --pattern-done-spark-3: #9aa1aa;
+  --pattern-done-spark-4: #c3c8ce;
+  --pattern-done-glow: rgba(95, 102, 112, .35); /* Motion section: the halo round a ray or star. */
+  --pattern-done-shimmer-fill: rgba(255, 255, 255, .6); /* Motion section: the shimmer's band. */
 }
 
 :root[data-theme="dark"] {
@@ -74,6 +83,15 @@
   --tooltip-fill: color-mix(in srgb, var(--elevated) 90%, transparent);
   --tooltip-blur: 8px;
   --tooltip-muted: var(--body);
+  --row-glint: #ffffff;
+  --spark-core: #ffffff;
+  --spark-glow: rgba(250, 255, 105, .7); /* ProgressBar card: the spark's halo, the dark track's yellow. */
+  --pattern-done-spark-1: #ffffff; /* Motion section: Pattern done's firework and stars, silver in dark. */
+  --pattern-done-spark-2: #e9ecef;
+  --pattern-done-spark-3: #c0c5cc;
+  --pattern-done-spark-4: #a3a9b1;
+  --pattern-done-glow: rgba(225, 230, 236, .55);
+  --pattern-done-shimmer-fill: rgba(255, 255, 255, .45);
 }
 
 :root[data-theme="contrast"] {
@@ -92,6 +110,15 @@
   --tooltip-blur: 0;
   --tooltip-muted: var(--muted);
   --underline-width: 3px;
+  --row-glint: #ffffff;
+  --spark-core: var(--ink); /* ProgressBar card: a solid dot, no halo, in high contrast. */
+  --spark-glow: transparent;
+  --pattern-done-spark-1: var(--ink); /* Motion section: Pattern done in ink, no halos and no shimmer. */
+  --pattern-done-spark-2: var(--ink);
+  --pattern-done-spark-3: var(--ink);
+  --pattern-done-spark-4: var(--ink);
+  --pattern-done-glow: transparent;
+  --pattern-done-shimmer-fill: transparent;
 }
 
 /* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar
@@ -216,6 +243,27 @@
   /* Homepage card: the rolling slogan holds each word, then rolls to the next */
   --slogan-hold: 2200ms;
   --slogan-roll: 650ms;
+  /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress) */
+  --row-glint-duration: 380ms; /* BeadBoard card: each bead of the finished pass washes in --row-glint and back. */
+  --row-glint-step: 24ms; /* BeadBoard card: the gap between one bead's glint and the next, in the Row direction. */
+  --row-glint-span: 480ms; /* BeadBoard card: the whole pass starts glinting within this; the step shrinks to fit. */
+  --row-glint-peak: 0.55; /* BeadBoard card: the glint's strongest wash. */
+  --row-dim-delay: 520ms; /* BeadBoard card: the finished pass takes the finished look after its glint. */
+  --spark-size: 10px; /* ProgressBar card: the spark's dot. */
+  --spark-size-compact: 8px; /* MarginSheet card: the spark's dot on the 64px track. */
+  --spark-tail: 70px; /* ProgressBar card: the spark's tail back along the fill. */
+  --spark-tail-compact: 24px; /* MarginSheet card: the spark's tail on the 64px track. */
+  --spark-flare: 2.2; /* ProgressBar card: the dot's size at the height of its flare on Row done. */
+  --spark-flare-duration: 520ms; /* ProgressBar card: the flare, out and back. */
+  --pattern-done-delay: 450ms; /* Motion section: from the press that marks the last pass to Pattern done. */
+  --pattern-done-burst-2: 420ms; /* Motion section: the second burst, up and to the left. */
+  --pattern-done-burst-3: 760ms; /* Motion section: the third burst, up and to the right. */
+  --pattern-done-shimmer-delay: 250ms; /* Motion section: the shimmer and the return to full color start. */
+  --pattern-done-shimmer: 1000ms; /* Motion section: the band's sweep across the Frame. */
+  --pattern-done-restore: 500ms; /* Motion section: the finished passes fade back to full color. */
+  --pattern-done-stars-delay: 1100ms; /* Motion section: the first star. */
+  --pattern-done-star-step: 90ms; /* Motion section: the gap between stars. */
+  --pattern-done-star: 900ms; /* Motion section: each star grows, turns and fades. */
 }
 
 @media (prefers-reduced-motion: reduce) {
