@@ -97,6 +97,15 @@ describe('renderProject', () => {
     expect(beads.every(({ cornerRadius }) => cornerRadius === 0)).toBe(true)
   })
 
+  it('places peyote beads with the half-bead stagger, the tighter row packing and rounded corners, in the Technique\'s own cell where no Bead is known', () => {
+    const project = projectOf('peyote', 2, 3, { bead: undefined })
+
+    const beads = beadsDrawn(project, whole(project))
+
+    expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 15], [30, 15], [0, 30], [20, 30]])
+    expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
+  })
+
   it('draws a Project the same with Mirror on: its Axis lines are the overlay\'s, never an export\'s (ticket 0703)', () => {
     const project = projectOf('loom', 4, 3)
     const mirrored = withMirror(project, { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } })
@@ -896,7 +905,7 @@ describe('a Bead\'s real cell (ADR 0068)', () => {
   })
 })
 
-describe('a round Bead in Real shape is a pill (ADR 0068)', () => {
+describe('a round Bead is a pill (ADR 0068)', () => {
   it('never rounds a corner past half the shorter side', () => {
     const { context, calls } = recordingContext()
     const drawn = { x: 0, y: 0, size: 20, width: 20, height: 26, cornerRadius: 10, color: '#111111', dimmed: false, deviceScale: 1, theme: DEFAULT_THEME }

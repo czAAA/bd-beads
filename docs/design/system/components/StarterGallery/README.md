@@ -28,7 +28,7 @@ All three are subpanels (MenuPanel card): the header is the Back icon button and
 
 ## Pictures
 
-Each picture is the option's design, a Project file kept with the app, drawn by the Project renderer at its Bead's real proportions with Color catalog colours, fitted to its well with 7% padding and never cropped. Colours stay as painted whatever Bead is chosen. A category card shows its best option: the Star, a pair of V fringe earrings, a Ring and a Band.
+Each picture is the option's design, a Project file kept with the app, drawn by the Project renderer in the Bead's own cell with Color catalog colours, fitted to its well with 7% padding and never cropped. Colours stay as painted whatever Bead is chosen. A category card shows its best option: the Star, a pair of V fringe earrings, a Ring and a Band.
 
 How each kind lays its Beads (these are also the Frame shapes' layouts and counts, spec 0590):
 

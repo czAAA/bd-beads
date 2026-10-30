@@ -147,10 +147,10 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
 
   it('drops its beads onto the Canvas on Remove Frame, each on the Canvas position nearest its centre, clearing its footprint', () => {
     const covered = withLayers(triangle(4), { beads: { 20: { 30: BLUE } } })
-    const project = paintFrame(covered, [{ row: 3, column: 5 }], RED)
+    const project = paintFrame(covered, [{ row: 3, column: 4 }], RED)
     const removed = changed(project, { remove: true })
     expect(frameOf(removed)).toBeUndefined()
-    const at = nearestCanvasPosition(project, { row: 3, column: 5 })
+    const at = nearestCanvasPosition(project, { row: 3, column: 4 })
     expect(beadsOfLayer(removed, 'canvas')).toEqual({ [at.row]: { [at.column]: RED } })
   })
 

@@ -7,5 +7,6 @@ The one line at the top-centre of the drawing area, under the strip, that says h
 - **Shown only while the Project has no beads**, at every size except a phone (30rem and under, which has no wheel and no keyboard). It goes with the first bead and returns if the Project is emptied (ticket 429).
 - On Windows and Linux the `⌘` chip reads "Ctrl".
 - aria-hidden: the same shortcuts are listed in Keyboard shortcuts (ShortcutsHelp).
+- **Shown with the first-run hints** (FirstRunHints card, ticket 0725), by the same rule: the hand-drawn notes and the welcome sit under this line and go with the first bead too.
 
 Hand-written from the v16 sign-off (open canvas mockups); static rendition.

@@ -160,6 +160,17 @@
   --schema-card-width: 236px;
   --schema-card-cut: 20px;
   --schema-card-hole: 8px;
+  --schema-card-min-height: 160px;
+  --schema-card-name: 600 0.875rem/1.25rem var(--font-sans);
+  --schema-card-name-inset: 46px;
+  --hint-note: italic 400 1.1875rem/1.15 var(--font-serif);
+  --hint-step: italic 400 1.375rem/1.15 var(--font-serif);
+  --hint-welcome: italic 400 1.5rem/1.2 var(--font-serif);
+  --hint-wordmark: italic 400 4rem/1 var(--font-serif);
+  --hint-arrow: 1.4px;
+  --hint-step-arrow: 1.5px;
+  --hint-ring-gap: 2px;
+  --hint-ring-width: 2px;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
 [data-theme="contrast"] { --underline-width: 3px; }
@@ -932,12 +943,25 @@ body {
 /* The paper tag: the outer layer is the 1px edge, the inner one the paper, both cut at the top-right and holed. */
 .bb-schema-card { position: absolute; width: var(--schema-card-width); box-sizing: border-box; padding: 1px; background: var(--line-strong); border-radius: var(--radius-lg); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut)) 0, 100% var(--schema-card-cut), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2) at calc(100% - 18px) 18px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2) at calc(100% - 18px) 18px, transparent 98%, #000 100%); }
 [data-theme="contrast"] .bb-schema-card { padding: var(--border-emphasis); }
-.bb-schema-card-paper { display: flex; flex-direction: column; gap: 8px; min-height: 160px; box-sizing: border-box; padding: 11px 13px 13px; background: var(--elevated); border-radius: calc(var(--radius-lg) - 1px); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut) + 0.4px) 0, 100% calc(var(--schema-card-cut) - 0.4px), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); }
+.bb-schema-card-paper { display: flex; flex-direction: column; gap: 8px; min-height: var(--schema-card-min-height); box-sizing: border-box; padding: 11px 13px 13px; background: var(--elevated); border-radius: calc(var(--radius-lg) - 1px); clip-path: polygon(0 0, calc(100% - var(--schema-card-cut) + 0.4px) 0, 100% calc(var(--schema-card-cut) - 0.4px), 100% 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-card-hole) / 2 + 1px) at calc(100% - 17px) 17px, transparent 98%, #000 100%); }
 .bb-schema-card-label { font: var(--type-meta-tiny); color: var(--muted); text-transform: lowercase; }
-.bb-schema-card-name { margin: 0; padding-right: 46px; font: 600 14px/20px var(--font-sans); color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.bb-schema-card-name { margin: 0; padding-right: var(--schema-card-name-inset); font: var(--schema-card-name); color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
 .bb-schema-card-meta { display: flex; flex-direction: column; gap: 2px; font: var(--type-meta-small); color: var(--muted); text-transform: lowercase; }
 .bb-schema-card-swatches { display: inline-flex; margin-right: 6px; vertical-align: -1px; }
 .bb-schema-card-swatches > i { width: 10px; height: 10px; border-radius: var(--radius-xs); }
 .bb-schema-card-swatches > i + i { margin-left: -4px; }
 .bb-schema-card-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 .bb-schema-card-actions .bb-schema-card-close { margin-left: auto; }
+
+/* Ticket 0725: hand-drawn notes over an empty Project (FirstRunHints card) */
+.bb-hint-layer { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-canvas-overlay); }
+.bb-hint-note { position: absolute; margin: 0; font: var(--hint-note); color: var(--muted); white-space: pre-line; }
+.bb-hint-note--step { font: var(--hint-step); }
+.bb-hint-arrow { position: absolute; overflow: visible; fill: none; stroke: var(--muted); stroke-width: var(--hint-arrow); stroke-linecap: round; stroke-linejoin: round; }
+.bb-hint-arrow--step { stroke-width: var(--hint-step-arrow); }
+.bb-hint-ring { box-shadow: 0 0 0 var(--hint-ring-gap) var(--hint-ring-behind, var(--box)), 0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent); }
+.bb-hint-welcome { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; color: var(--muted); }
+.bb-hint-wordmark { font: var(--hint-wordmark); letter-spacing: -0.6px; }
+.bb-hint-welcome p { margin: 0; font: var(--hint-welcome); }
+.bb-hint-welcome p b { font-weight: 400; color: var(--accent-strong); }
+@media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }

@@ -4,7 +4,6 @@ import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
-import type { NamedPiece } from '../domain/pieceNames'
 import { hasGuides, type Selection } from '../domain/selection'
 import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
@@ -163,8 +162,6 @@ export interface RulerLayout {
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
   boxes: RuledBox[]
-  /** The named Pieces, whose names are drawn under them whether the Rulers are on or not (ADR 0050). */
-  named: NamedPiece[]
   /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none. */
   step: number
   /** Whether the current pass is marked: the margin sheet is there, not in the bare form (tickets 0682, 0685). */
@@ -330,7 +327,6 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     scale,
     numbers,
     boxes,
-    named: pieces.named,
     step: Math.max(1, ...laid.map((box) => box.step)),
     passMark: sheet !== 'bare',
     sheetScale: sheetScale ?? 1,

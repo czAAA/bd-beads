@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { type BeadMap, colorAt, type FrameSheet, type Rect, withColors } from './canvas'
 import { TECHNIQUES } from './weave'
 import { findBead } from './beads'
+import { squareBead } from '../testUtils/squareBead'
 import { replaceBead } from './projectBead'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
 import { shownBeads } from './layers'
@@ -781,9 +782,9 @@ describe('a Frame in a Bead of its own is read on the Canvas through millimetres
   const BLUE = '#2f6fed'
   /** An 8/0 loom Canvas whose 4 by 4 Frame at row 2, column 3 is in 15/0 (half as wide) or in a Miyuki Delica 11/0. */
   function inOtherBead(beadId = 'toho/round/15-0', beads: BeadMap = {}): Project {
-    const made = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const made = withLayers(createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } }), { bead: squareBead(findBead('toho/round/8-0')!) })
     const framedIn = withLayers(made, { frame: { ...sheet({ row: 2, column: 3, rows: 4, columns: 4 }, beads) } })
-    return replaceBead(framedIn, findBead(beadId)!)
+    return replaceBead(framedIn, squareBead(findBead(beadId)!))
   }
   const halves = { 0: { 0: RED, 1: RED, 2: RED, 3: RED }, 1: { 0: RED, 1: RED, 2: RED, 3: RED }, 2: { 0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE }, 3: { 0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE } }
 

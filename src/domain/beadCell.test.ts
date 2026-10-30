@@ -5,7 +5,7 @@ import { canvasWeave, frameWeave } from './layerWeave'
 import { createProject } from './createProject'
 import { normalizeProject } from './storedProject'
 import { projectCell } from './projectBead'
-import { serializeProject } from './projectFile'
+import { parseProjectsFile, serializeProject } from './projectFile'
 import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
 import { canvasOf, withLayer } from './layerRecord'
 import { bareProject, withLayers } from '../testUtils/layerFields'
@@ -59,6 +59,7 @@ describe('a Bead\'s cell in a Project', () => {
   })
 
   it('draws a Bead this device does not know in the Technique\'s own cell', () => {
+    expect(beadCell(undefined)).toBeUndefined()
     expect(projectCell(bareProject({}))).toBeUndefined()
   })
 
@@ -69,7 +70,8 @@ describe('a Bead\'s cell in a Project', () => {
       const read = normalizeProject(stored as never)
       expect(canvasWeave(read).cell).toEqual(beadCell(delica))
       expect('beadShape' in canvasOf(read)).toBe(false)
-      expect(serializeProject(read)).not.toContain('beadShape')
+      const [saved] = parseProjectsFile(serializeProject(read)).projects
+      expect(JSON.stringify(saved)).not.toContain('beadShape')
     }
   })
 })

@@ -217,3 +217,27 @@ describe('the Hand tool', () => {
   })
 })
 
+
+describe('an unframed Schema\'s hang tag (ticket 0721)', () => {
+  const named = () => unframedProject({ pieceNames: [{ row: 0, column: 0, name: 'Owl' }] })
+
+  it('frames its Schema from the paper tag as one Undo step, and Rename opens Name Piece\'s editor', async () => {
+    saveProjects([named()])
+    const wrapper = mountApp()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="schema-tag"]').trigger('click')
+    await wrapper.get('[data-testid="schema-card-rename"]').trigger('click')
+    await flushPromises()
+    expect(document.querySelector<HTMLInputElement>('[data-testid="piece-name-input"]')?.value).toBe('Owl')
+    await key({ key: 'Escape' })
+
+    await wrapper.get('[data-testid="schema-card-frame"]').trigger('click')
+    await flushPromises()
+    expect(frameOf(loadProjects()[0]!)).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2, name: 'Owl' })
+    expect(wrapper.find('[data-testid="schema-tag"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
+    await flushPromises()
+    expect(frameOf(loadProjects()[0]!)).toBeUndefined()
+  })
+})

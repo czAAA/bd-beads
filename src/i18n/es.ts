@@ -320,7 +320,7 @@ export const es: Translations = {
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
     notes: { onUs: 'va por nosotros' },
-    coffee: { title: 'Una sola familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró una tarde de contar, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
+    coffee: { title: 'Hecho por una familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró tiempo, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {
       label: 'planes',
       heading: 'Tres formas de usarlo',
@@ -989,6 +989,15 @@ export const es: Translations = {
   layerSettings: {
     frameHeading: 'Ajustes',
     background: 'Fondo',
+  },
+  schemaTag: {
+    group: 'Nombres de esquemas',
+    label: '{name}, ver detalles',
+    tooltipBody: 'Pulsa para ver el tamaño y los colores.',
+    heading: 'esquema',
+    sizeBeads: '{columns} × {rows} cuentas',
+    beads: { one: '{count} cuenta', many: '{count} de cuentas', other: '{count} cuentas' },
+    colors: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },
   },
   feedback: {
     titleGeneral: 'Enviar comentarios',

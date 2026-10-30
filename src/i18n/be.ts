@@ -322,7 +322,7 @@ export const be: Translations = {
     previousFeature: 'Папярэдняя магчымасць',
     nextFeature: 'Наступная магчымасць',
     notes: { onUs: 'гэта мы' },
-    coffee: { title: 'Адна сям’я', text: 'openbeads робіць адна сям’я, бісерына за бісерынай, і ён бясплатны. Калі ён зэканоміў вам вечар падлікаў, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
+    coffee: { title: 'Робіць адна сям’я', text: 'openbeads робіць адна сям’я, бісерына за бісерынай, і праграма бясплатная. Калі праграма зэканоміла вам час, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
     plans: {
       label: 'тарыфы',
       heading: 'Тры варыянты',
@@ -997,6 +997,15 @@ export const be: Translations = {
   layerSettings: {
     frameHeading: 'Налады',
     background: 'Фон',
+  },
+  schemaTag: {
+    group: 'Назвы схем',
+    label: '{name}, паказаць падрабязнасці',
+    tooltipBody: 'Націсніце, каб убачыць памер і колеры.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бісерын',
+    beads: { one: '{count} бісерына', few: '{count} бісерыны', many: '{count} бісерын', other: '{count} бісерыны' },
+    colors: { one: '{count} колер', few: '{count} колеры', many: '{count} колераў', other: '{count} колеру' },
   },
   feedback: {
     titleGeneral: 'Адправіць водгук',
