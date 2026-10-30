@@ -211,8 +211,8 @@ export function areaBetween(from: GridPosition, to: GridPosition, within?: Rect)
 }
 
 /** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): the Area where one is set, else the
- * Frame's own rectangle, else the open Canvas with the Axes its handles placed. The straight rules take their strips
- * from a rectangle's edges and Radial its centre; a Custom frame's layout joins as a kind of its own (ticket 0706). */
+ * Frame's rectangle, else the open Canvas with its placed Axes. Strips come from a rectangle's edges and Radial's
+ * centre from its middle; a Custom frame's layout joins as a kind of its own (ticket 0706). */
 export type MirrorRegion = { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
 
 export function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
@@ -483,10 +483,8 @@ function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSettin
 }
 
 /** The positions a gesture changes under Mirror, on one layer (spec 0702): the sources as given, then their counterparts
- * on the layer's grid inside its region (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a
- * source outside the region (off the Frame, outside the Area) is not mirrored at all, and `dropped` counts the
- * counterparts the layer has no position for or that fall outside the region. A Custom frame (ticket 0706) gives the
- * sources alone, as yet. */
+ * inside the layer's region (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a source
+ * outside the region is not mirrored, `dropped` counts counterparts off the grid or outside it; a Custom frame (0706) as yet none. */
 export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting: MirrorSetting, positions: readonly T[]): { positions: T[]; dropped: number } {
   const { geometry } = sheet
   const region = mirrorRegionOf(sheet)

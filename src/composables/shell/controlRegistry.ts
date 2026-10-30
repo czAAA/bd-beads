@@ -33,6 +33,8 @@ export interface ControlDeps {
   anyDialogOpen: () => boolean
   /** Ends Pick color from canvas; true if it was on. */
   cancelColorPick: () => boolean
+  /** Cancels a pick of Mirror's Area (ticket 0710); true if one was going on. */
+  cancelAreaPick: () => boolean
   /** Collapses an expanded Tool group; true if one was open. */
   /** Dismisses the paste preview, else clears the Selection; true if either was there. */
   backOutOfSelect: () => boolean
@@ -209,8 +211,9 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 'Escape', shift: 'any', label: 'Esc' }],
     allowWhileTyping: true,
     run: (deps) => {
-      // Picking a color from the canvas (ticket 398) is the first thing Escape ends.
+      // Picking a color from the canvas (ticket 398), or Mirror's Area (ticket 0710), is the first thing Escape ends.
       if (deps.cancelColorPick()) return
+      if (deps.cancelAreaPick()) return
       // Then the paste preview, the Selection.
       if (deps.backOutOfSelect()) return
       // Ticket 214: with nothing left to dismiss, Escape falls through to Paint.

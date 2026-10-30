@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import type { PreviewCell } from '../../domain/grid'
+import type { Layer, PreviewCell } from '../../domain/grid'
+import type { Rect } from '../../domain/canvas'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
 import { nearestQuarterTurn, tiltOf } from '../../domain/canvasOrientation'
@@ -89,6 +90,11 @@ const props = withDefaults(defineProps<{
    * grabs before the tool, and Radial's centre (ticket 0705) with its chip; `heldAxis` is the one being dragged. */
   mirrorAxes?: CanvasAxes
   heldAxis?: MirrorAxis
+  /** Mirror's Select area (ticket 0710): while `pickingArea`, a press and drag go to the band on `areaLayer` and the
+   * margin is the whole Frame's target; `areaBand` is the band so far, drawn as the Selection with no handles. */
+  pickingArea?: boolean
+  areaLayer?: Layer
+  areaBand?: Rect
   /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
   fillRefusals?: number
   /** The last press of Row done or Row not done (ticket 0730): the Pattern's motion plays from it, never from the

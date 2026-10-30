@@ -152,6 +152,7 @@
   --mirror-chip-height: 32px; /* MirrorPopover card: an Axis chip in the popover. */
   --mirror-area-handle: 9px; /* MirrorPopover card: a handle square on the Area's rectangle, the Selection's. */
   --mirror-area-row: 34px; /* MirrorPopover card: the Area row's buttons. */
+  --mirror-area-line: 1.5px; /* MirrorPopover card: the Area's rectangle, the margin target's edge and preview. */
   --mirror-preview-dash: 4 3; /* MirrorPopover card: the whole-Frame preview while the margin is hovered. */
   --mirror-margin-opacity: 0.1; /* MirrorPopover card: the margin's tint while it is the Area target under the pointer. */
   --mirror-ghost-opacity: 0.45; /* MirrorPopover card: a counterpart in the hover preview. */

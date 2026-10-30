@@ -111,6 +111,16 @@ const {
   onAxisPress,
   onAxisDrag,
   onAxisRelease,
+  mirrorAreaRow,
+  mirrorArea,
+  mirrorPicking,
+  mirrorBand,
+  onAreaPick,
+  onAreaWholeFrame,
+  onAreaClear,
+  onAreaPress,
+  onAreaDrag,
+  onAreaRelease,
   selectedColorHex,
   selectedColorId,
   customColor,
@@ -216,6 +226,8 @@ const selectionSummary = computed(() => {
 const selectionAnchor = ref<SelectionAnchor>()
 /** Where the Frame and its margin sheet are on the canvas box: the sheet's tools follow them (tickets 473, 0657). */
 const frameAnchor = ref<FrameAnchor>()
+/** Whether the pointer is on the keep-out margin while Mirror's Area is being picked (ticket 0710): the sheet lights. */
+const areaTargeted = ref(false)
 /** Where the unframed Schemas are on the canvas box: their hang tags follow them (ticket 0721). */
 const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
@@ -289,7 +301,7 @@ const drawingStyle = computed(() => {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="emptyProject" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="emptyProject || mirrorPicking" class="app-shell__canvas-hint" :picking="mirrorPicking ? mirrorAreaRow : undefined" />
 
         <!-- The hand-drawn way to a first Pattern (ticket 0725, FirstRunHints card): over an empty Project, gone with
           the first bead, under the Tool pill. -->
@@ -327,6 +339,9 @@ const drawingStyle = computed(() => {
               :mirror="mirrorSetting"
               :mirror-axes="mirrorCanvasAxes"
               :held-axis="mirrorHeldAxis"
+              :picking-area="mirrorPicking"
+              :area-layer="mirrorAreaRow"
+              :area-band="mirrorBand"
               :selection="selection"
               :selection-refusals="selectionRefusals"
               :fill-refusals="fillRefusals"
@@ -346,6 +361,11 @@ const drawingStyle = computed(() => {
               @axis-press="onAxisPress"
               @axis-drag="onAxisDrag"
               @axis-release="onAxisRelease"
+              @area-press="onAreaPress"
+              @area-drag="onAreaDrag"
+              @area-release="onAreaRelease"
+              @area-target="areaTargeted = $event"
+              @area-whole="onAreaWholeFrame"
               @selection-press="onSelectionPress"
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
@@ -383,6 +403,9 @@ const drawingStyle = computed(() => {
           :mirror="mirrorSetting"
           :mirror-limits="mirrorLimits"
           :mirror-on-canvas="mirrorOnCanvas"
+          :mirror-area-row="mirrorAreaRow"
+          :mirror-area="mirrorArea"
+          :mirror-picking="mirrorPicking"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"
@@ -394,6 +417,9 @@ const drawingStyle = computed(() => {
           @select-tool="onSelectTool"
           @paste-mode="onPasteMode"
           @update:mirror="onMirrorChange"
+          @mirror-pick="onAreaPick"
+          @mirror-whole-frame="onAreaWholeFrame"
+          @mirror-clear-area="onAreaClear"
           @pick-recent="pickRecent"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
@@ -473,6 +499,8 @@ const drawingStyle = computed(() => {
           :row-press="rowPress"
           :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
+          :picking="mirrorPicking"
+          :targeted="areaTargeted"
           @rotate="onRotateFrame"
           @toggle-edit="onEditFrame"
           @export="onOpenExport"
