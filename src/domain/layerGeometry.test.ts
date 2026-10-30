@@ -14,15 +14,15 @@ import type { Box } from './weaveGeometry'
 // shape. Drawing and the Surface view's hit test ask it since ticket 0630, so it is checked against the domain's own
 // answers and the bead boxes the Weave gives in px.
 
-/** A Real cell, unlike any Technique's own, so the Bead shape is part of every answer. */
+/** A Real cell, unlike any Technique's own, so the cell is part of every answer. */
 const REAL: BeadCell = { aspect: 1.3, roundness: 0.35 }
 
-/** Every Technique, with its settings at their defaults and moved off them, in each Bead shape. */
+/** Every Technique, with its settings at their defaults and moved off them, in its own cell and a Bead's real one. */
 const WEAVES: Weave[] = TECHNIQUES.flatMap((technique) =>
   [{ technique }, { technique, techniqueSettings: { brickDrop: 2 } }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
 )
 
-const named = (weave: Weave) => `${weave.technique} ${Object.values(weave.techniqueSettings ?? {}).join('')} ${weave.cell ? 'real' : 'symmetric'}`
+const named = (weave: Weave) => `${weave.technique} ${Object.values(weave.techniqueSettings ?? {}).join('')} ${weave.cell ? 'real' : 'own cell'}`
 
 /** Each Frame shape at two small sizes: a shape left out fails the type check. */
 const CUSTOM: Record<FrameShapeId, FrameSettings[]> = {
@@ -39,7 +39,7 @@ const CUSTOM: Record<FrameShapeId, FrameSettings[]> = {
 
 const TURNS: (QuarterTurns | undefined)[] = [undefined, 1, 2, 3]
 
-/** Every Frame shape, size and turn, in each Bead shape: its rectangle as Change Frame makes it. */
+/** Every Frame shape, size and turn, in its own cell and a real one: its rectangle as Change Frame makes it. */
 const CUSTOM_FRAMES: ShapedSheet[] = (Object.entries(CUSTOM) as [FrameShapeId, FrameSettings[]][]).flatMap(([shape, sizes]) =>
   sizes.flatMap((settings) =>
     TURNS.flatMap((quarterTurns) =>
@@ -55,7 +55,7 @@ const CUSTOM_FRAMES: ShapedSheet[] = (Object.entries(CUSTOM) as [FrameShapeId, F
   ),
 )
 
-const customNamed = (frame: ShapedSheet) => `${frame.shape} ${JSON.stringify(frame.settings)} turned ${frame.quarterTurns ?? 0} ${frame.cell ? 'real' : 'symmetric'}`
+const customNamed = (frame: ShapedSheet) => `${frame.shape} ${JSON.stringify(frame.settings)} turned ${frame.quarterTurns ?? 0} ${frame.cell ? 'real' : 'own cell'}`
 
 /** A Frame without a shape in a Weave, 7 rows by 6 columns. */
 const plain = (weave: Weave): ShapedSheet => ({ ...weave, rows: 7, columns: 6 })

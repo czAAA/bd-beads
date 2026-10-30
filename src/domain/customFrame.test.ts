@@ -5,7 +5,7 @@ import { beadCount, colorAt, type FrameSheet } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { frameLayoutOf, type FrameSettings } from './frameShape'
 import { frameGeometryOf, onLayer } from './layers'
-import { gridGeometry } from './layerGeometry'
+import { describeWeave } from './weave'
 import { frameWeave } from './layerWeave'
 import { projectPalette } from './palette'
 import { parseProjectsFile, serializeProject } from './projectFile'
@@ -136,10 +136,12 @@ describe('changing a Custom frame\'s Rounds', () => {
 })
 
 describe('every Frame action on a Custom frame, each done through its shape (ADR 0079, ticket 0669)', () => {
-  /** The Canvas position nearest a Frame bead's centre: the cell of the Frame's own Weave under it, on the Canvas. */
+  /** The Canvas position nearest a Frame bead's centre: the cell of the Frame's own Weave nearest it, on the Canvas (a
+   * real cell's rows overlap, so the one drawn over it may be another). */
   const nearestCanvasPosition = (project: Project, position: { row: number; column: number }) => {
     const { box } = frameGeometryOf(project).place(position)!
-    const cell = gridGeometry(frameWeave(project)).positionAt({ x: box.x + box.width / 2, y: box.y + box.height / 2 })!
+    const weave = describeWeave(frameWeave(project))
+    const cell = weave.nearestPosition(box.x + box.width / 2, box.y + box.height / 2, 1, weave.cellAspect)
     return { row: cell.row + frameOf(project)!.row, column: cell.column + frameOf(project)!.column }
   }
 

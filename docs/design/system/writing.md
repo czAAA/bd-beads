@@ -367,7 +367,7 @@ Russian here is a proposal for review, like the section below.
 | Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
 | project: · name: · maker: · Add your name for exports · Change the maker's name | проект: · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
 | Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
-| Bead shape · Symmetric · Real · Brand · Type · Size | Форма бусины · Симметричная · Реальная · Бренд · Тип · Размер |
+| Brand · Type · Size | Бренд · Тип · Размер |
 | Project file · Picture · Printable chart · Clear all beads · Delete project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
 | frame: · Name this frame · Rename the frame · Frame from template · Fit a frame to the drawing · A frame sets the size, the exports and the bead count. | рамка: · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
 | Estimated size · An estimate. · Rows are marked done. Remove the frame to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Уберите рамку, чтобы изменить размер. · Показать все цвета ({n}) |
@@ -479,14 +479,14 @@ Russian, Ukrainian and Polish here are proposals for review with the build. "Ш�
 
 ## Layer settings copy (ticket 0670)
 
-The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Drop, Bead shape, Symmetric, Real, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
+The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Drop, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
 | Settings (the Frame panel's section) | Настройки | Налаштування | Налады | 设置 | Ajustes | Ustawienia |
 | Background (the heading over the picker) | Фон | Фон | Фон | 背景 | Fondo | Tło |
 
-"Bead" over the Bead shape and pickers is the Project panel's existing section word.
+"Bead" over the pickers is the Project panel's existing section word.
 
 ## Bead colors filters (ticket 0713)
 

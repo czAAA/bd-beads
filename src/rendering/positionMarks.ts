@@ -15,7 +15,7 @@ export interface MarkTileInput {
   technique: Technique
   /** Its settings (ticket 0625): peyote's or brick stitch's Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. */
+  /** The Bead's real cell (ADR 0068, ticket 0724); nothing draws the Technique's own cell. */
   cell?: BeadCell
   /** Device pixels per grid px: the zoom times the screen's pixel ratio. */
   deviceScale: number

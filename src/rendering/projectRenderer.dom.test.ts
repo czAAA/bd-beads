@@ -88,13 +88,13 @@ describe('renderProject', () => {
     expect(beads.every(({ size, cornerRadius }) => size === 20 && cornerRadius === 0)).toBe(true)
   })
 
-  it('places peyote beads with the half-bead stagger, the tighter row packing and rounded corners', () => {
+  it('places peyote beads with the half-bead stagger and the tighter row packing, in its Bead\'s outline (a cube\'s square)', () => {
     const project = projectOf('peyote', 2, 3)
 
     const beads = beadsDrawn(project, whole(project))
 
     expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 15], [30, 15], [0, 30], [20, 30]])
-    expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
+    expect(beads.every(({ cornerRadius }) => cornerRadius === 0)).toBe(true)
   })
 
   it('draws a Project the same with Mirror on: its Axis lines are the overlay\'s, never an export\'s (ticket 0703)', () => {
@@ -876,18 +876,13 @@ frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, b
   })
 })
 
-describe('Bead shape (ADR 0068)', () => {
+describe('a Bead\'s real cell (ADR 0068)', () => {
   const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
   const painted = (project: Project): Project => (withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) } }))
 
-  it('draws the Symmetric cell exactly as the Technique had it', () => {
-    const project = painted(projectOf('peyote', 3, 3))
-    expect(drawnBeads(withLayers(project, { beadShape: 'symmetric' }))).toEqual(drawnBeads(project))
-  })
-
-  it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
-    const real = withLayers(painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), { beadShape: 'real' })
+  it('draws each cell with the Bead height and its outline, and rows at its pitch (ticket 0724)', () => {
+    const real = painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') }))
     const beads = drawnBeads(real)
     expect(beads).toHaveLength(9)
     for (const bead of beads) {

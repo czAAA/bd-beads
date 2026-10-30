@@ -98,7 +98,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
 }
 
 /** Where a Custom frame's layout lies in its rectangle, in cell widths from its first position's corner: a bead width to
- * a cell's width, smaller only where the Bead shape makes the rectangle shorter than the layout, and centred. The
+ * a cell's width, smaller only where the Bead's cell makes the rectangle shorter than the layout, and centred. The
  * renderer, the hit test and a Selection over it (ticket 0594) all place it here, so they agree where each bead is. */
 export interface LayoutPlacement {
   layout: FrameLayout
@@ -116,7 +116,7 @@ export function layoutPlacement(layout: FrameLayout, frame: Pick<ShapedSheet, 'r
 }
 
 /** A Custom frame laid out by its layout (ADR 0077), placed in its rectangle as `layoutPlacement` puts it: a bead a
- * cell wide, as deep as the Bead shape's cell where the rounds leave it room, turned to its panel. Its Frame shape's
+ * cell wide, as deep as the Bead's cell where the rounds leave it room, turned to its panel. Its Frame shape's
  * own geometry (`frameGeometry`). */
 export function layoutGeometry(layout: FrameLayout, frame: ShapedSheet): LayerGeometry {
   const { scale, x, y } = layoutPlacement(layout, frame, frame)
@@ -148,7 +148,7 @@ export function layoutGeometry(layout: FrameLayout, frame: ShapedSheet): LayerGe
   }
 }
 
-/** What a Frame's turned grid is built from: its own rows and columns, its Weave with the Bead shape's cell, and
+/** What a Frame's turned grid is built from: its own rows and columns, its Weave with the Bead's cell, and
  * how many quarter turns clockwise it lies at. */
 type TurnedGrid = Pick<ShapedSheet, 'rows' | 'columns' | 'quarterTurns'> & Weave
 
