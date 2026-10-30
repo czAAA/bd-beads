@@ -56,7 +56,7 @@ describe('printText (tickets 162, 164)', () => {
   it('words the facts and the color count page 1 prints (ticket 580)', () => {
     const text = printText(delicaProject(10), en, 'en', at)
 
-    expect(text.shape).toBe('Symmetric')
+    expect(text).not.toHaveProperty('shape')
     expect(text.colorsCount).toBe('1 color')
   })
 

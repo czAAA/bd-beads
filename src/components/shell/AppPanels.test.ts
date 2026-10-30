@@ -156,19 +156,18 @@ describe('Menu', () => {
 })
 
 describe('Project', () => {
-  it('sets the Canvas from its Layer settings: Technique and its settings as Undo steps, the Bead shape with none (ticket 0670)', async () => {
+  it('sets the Canvas from its Layer settings: Technique and its settings as Undo steps (ticket 0670)', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await choose(mounted, 'canvas-technique', 'brick')
     await click(mounted, 'canvas-brick-drop-more')
-    await choose(mounted, 'bead-shape', 'real')
     const saved = () => loadProjects()[0]
-    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadShape: 'real' })
-    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric' })
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } } })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'loom' } })
 
     mounted.canvas.onUndo()
     mounted.canvas.onUndo()
-    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'real' })
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' } })
   })
 
   it('renames from the pencil, and Try again saves what a full storage refused', async () => {
@@ -242,20 +241,19 @@ describe('Project', () => {
 })
 
 describe('The Frame panel', () => {
-  it('sets the Frame from its Layer settings: Technique, its settings and Bead as Undo steps, the Bead shape with none (ticket 0670)', async () => {
+  it('sets the Frame from its Layer settings: Technique, its settings and Bead as Undo steps (ticket 0670)', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('frame')
     await choose(mounted, 'frame-technique', 'brick')
     await click(mounted, 'frame-brick-drop-more')
-    await choose(mounted, 'bead-shape', 'real')
     await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
     await click(mounted, 'confirm-modal-confirm')
     const saved = () => loadProjects()[0]
-    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadShape: 'real', beadId: 'toho/round/11-0' })
-    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric', beadId: 'toho/cube/1.5mm' })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 2 } }, beadId: 'toho/round/11-0' })
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm' })
 
     mounted.canvas.onUndo()
-    expect(layerOf(saved(), 'frame')).toMatchObject({ beadShape: 'real', beadId: 'toho/cube/1.5mm' })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick' }, beadId: 'toho/cube/1.5mm' })
   })
 
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {

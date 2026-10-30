@@ -139,7 +139,7 @@ export interface SurfaceViewInput {
   technique: Technique
   /** The Canvas's Technique settings (ticket 0625): its Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** How the Canvas's Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. A Frame given without
+  /** How the Canvas's Bead is drawn (ADR 0068): its real cell; nothing is the Technique's own cell. A Frame given without
    * a cell of its own is drawn in it too. */
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
@@ -248,13 +248,13 @@ function layerOf(weave: Weave, geometry: LayerGeometry, origin: Scroll, offset: 
   return { weave, geometry, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset, scale }
 }
 
-export function surfaceView({ space, technique, techniqueSettings, cell: beadShapeCell, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
-  const canvasWeave: Weave = { technique, techniqueSettings, cell: beadShapeCell }
+export function surfaceView({ space, technique, techniqueSettings, cell: canvasCell, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
+  const canvasWeave: Weave = { technique, techniqueSettings, cell: canvasCell }
   // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
   const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }
   const canvas = layerOf(canvasWeave, gridGeometry(canvasWeave, edge), { x: 0, y: 0 }, { row: 0, column: 0 })
   const held = frame && weaveOf(frame)
-  const sheetWeave: Weave | undefined = held && { ...held, cell: frame.cell ?? beadShapeCell }
+  const sheetWeave: Weave | undefined = held && { ...held, cell: frame.cell ?? canvasCell }
   const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...unwoven(frame), ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }, frame.scale) : undefined
   // The rectangle the Frame lies in, turned with it (ticket 0667).
   const laid = frame && sheetWeave ? laidRect({ ...unwoven(frame), ...sheetWeave }) : undefined
@@ -351,7 +351,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
       return addressOf(on, cellIn(on, (gridX - on.origin.x) / on.scale, (gridY - on.origin.y) / on.scale))
     },
     frameBox: (box) => {
-      const lying = 'technique' in box ? laidRect({ ...box, cell: sheetWeave?.cell ?? beadShapeCell }) : box
+      const lying = 'technique' in box ? laidRect({ ...box, cell: sheetWeave?.cell ?? canvasCell }) : box
       const shown = inViewport(displayedBox(lying, zoom, sheet ?? canvas))
       const outset = frameOutsetPx(zoom)
       return { x: shown.x - outset, y: shown.y - outset, width: shown.width + outset * 2, height: shown.height + outset * 2 }

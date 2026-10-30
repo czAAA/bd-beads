@@ -23,7 +23,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 ## Preview pane
 
-- `box` fill. The picture drawn as beads by the Project renderer in the Frame's space (Real bead shape, the dragging draft look), redrawn on every change; the Frame line in `ink` (1.5px, with a 1.5px `canvas` halo so it reads over any picture); the size tag "32×24" in `meta-small` on `ink` above the Frame's top-left corner.
+- `box` fill. The picture drawn as beads by the Project renderer in the Frame's space (in the Bead's own cell, the dragging draft look), redrawn on every change; the Frame line in `ink` (1.5px, with a 1.5px `canvas` halo so it reads over any picture); the size tag "32×24" in `meta-small` on `ink` above the Frame's top-left corner.
 - **By Pixel to bead ratio, crop:** the whole picture is the Frame at first. Four 16px corner handles (`--crop-handle`, `canvas` fill, 2px `ink` edge, radius 3, `--crop-handle-radius`) and four 28 × 8 bars at the edges' middles (`--crop-bar-length`, `--crop-bar-width`) crop it, each named for its edge or corner ("Crop: top-left corner", a control registry entry), snapping to whole pixel blocks. The picture stays outside the crop, dimmed by `--framing-dim`. A focused handle moves one block per arrow.
 - **By size, pan:** the Frame stays in the middle; the picture, zoomed by the Size section's slider, is dragged under it and never uncovers it, dimmed outside it. A hint on `overlay-fill` at the bottom left, the `hand` icon and "Drag the picture to move it under the Frame", until the first drag. Arrows pan by one bead, Shift + arrows by ten.
 - **Zoom** (the view only; it never changes what is framed): zoom out, the level, zoom in and Fit, floating at the bottom right on `overlay-fill` with `elevation-3`, the Canvas strip's buttons from the same registry actions (ticket 0650): their Tooltips with the key chips, and at a limit zoom out or zoom in is disabled with the strip's reason ("Already zoomed out as far as it goes."), still hoverable and focusable. Ctrl/⌘ + plus, minus and 0 zoom the preview and Fit it while the popup is open, never the canvas behind it, and the browser's page zoom stays claimed. Pinch and wheel too. On a phone it is compact and sits above the picture (PhoneForms card).
@@ -43,7 +43,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 ## 2 Bead & Technique
 
-- The New Project form's own sections in panel rows (ProjectPanel card): bead (Brand, Type and Size PanelPickers), bead shape (small SegmentedControl, Symmetric | Real), technique (PanelPicker, with the Drop row for peyote and brick stitch). They start from the form's values and are the popup's own copy. No Note: nothing here needs explaining.
+- The New Project form's own sections in panel rows (ProjectPanel card): bead (Brand, Type and Size PanelPickers), technique (PanelPicker, with the Drop row for peyote and brick stitch). They start from the form's values and are the popup's own copy. No Note: nothing here needs explaining.
 
 ## 3 Size
 

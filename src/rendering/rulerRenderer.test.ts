@@ -7,11 +7,12 @@ import { rotateFrame } from '../domain/rotate'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
 import { MARGIN_PX } from './marginSizes'
+import { ROW_MOTION } from './rowMotion'
 import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
-import { type LayersChange, withLayers } from '../testUtils/layerFields'
+import { withLayers } from '../testUtils/layerFields'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */
 function fakeContext() {
@@ -128,29 +129,16 @@ describe('drawRulers', () => {
   })
 })
 
-describe('the names under the Pieces (ADR 0066)', () => {
-  const piece = (row: number, column: number) => [0, 1, 2].map((offset) => ({ row, column: column + offset, color: '#ff0000' }))
-  const named = (framed: LayersChange) =>
-    withLayers(base, {
-      beads: withColors({}, [...piece(10, 10), ...piece(1, 0)]),
-      pieceNames: [{ name: 'Sketch', row: 10, column: 10 }, { name: 'Hidden', row: 1, column: 0 }],
-      ...framed,
+describe('the names of the Schemas', () => {
+  it('are not drawn on the canvas: an unframed Schema\'s name is its hang tag, page markup over it (ticket 0721)', () => {
+    const named = withLayers(base, {
+      beads: withColors({}, [0, 1, 2].map((offset) => ({ row: 10, column: 10 + offset, color: '#ff0000' }))),
+      pieceNames: [{ name: 'Sketch', row: 10, column: 10 }],
     })
-
-  it('draws a Canvas Piece\'s name, and none under a named Frame (ticket 0719)', () => {
     const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, name: 'Cherry', beads: {} } }), { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(named, { zoom: 1, numbers: false }))
 
-    expect(texts).not.toContain('Cherry')
-    expect(texts).toContain('Sketch')
-  })
-
-  it('leaves out the name of a Piece the Frame wholly covers', () => {
-    const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } }), { zoom: 1, numbers: false }))
-
-    expect(texts).toContain('Sketch')
-    expect(texts).not.toContain('Hidden')
+    expect(texts).not.toContain('Sketch')
   })
 })
 
@@ -283,6 +271,53 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     const { context, fills } = fakeContext()
     drawRulers(context, at(moveToRow(base, 1), 'bare', { zoom: 0.25 }))
     expect(marks(fills)).toEqual([])
+  })
+})
+
+describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () => {
+  const marks = (fills: { style: unknown; rect: number[] }[]) => fills.filter((fill) => fill.style === LIGHT_THEME.marker)
+  const at = (project: RulerDrawInput['project'], sheet: 'full' | 'compact', glide: RulerDrawInput['glide'], zoom = 1) => {
+    const surface = surfaceAt(zoom)
+    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers: true, sheet }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: true, glide }
+  }
+  const centreY = (rect: number[]) => rect[1]! + rect[3]! / 2
+
+  it('glides each band\'s pill from the number of the pass left toward the next one\'s, and rests on it once the glide is over', () => {
+    const project = moveToRow(base, 2)
+    const numberY = (index: number) => at(project, 'full', undefined).layout.labels.find((label) => label.axis === 'row' && label.index === index)!.y
+    const midway = fakeContext()
+    drawRulers(midway.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide / 2 }))
+    expect(marks(midway.fills)).toHaveLength(2)
+    for (const pill of marks(midway.fills)) {
+      expect(centreY(pill.rect)).toBeGreaterThan(numberY(1))
+      expect(centreY(pill.rect)).toBeLessThan(numberY(2))
+    }
+
+    const over = fakeContext()
+    drawRulers(over.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide }))
+    for (const pill of marks(over.fills)) expect(centreY(pill.rect)).toBeCloseTo(numberY(2))
+  })
+
+  it('glides the tick along the Frame\'s line in the compact form', () => {
+    const project = moveToRow(base, 2)
+    const input = at(project, 'compact', { from: 1, elapsed: ROW_MOTION.glide / 2 }, 0.5)
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+    const rowY = (row: number) => input.surface.beadToPoint({ row: frameOf(base)!.row + row, column: frameOf(base)!.column }, 'frame').y
+    expect(marks(fills)).toHaveLength(2)
+    for (const tick of marks(fills)) {
+      expect(centreY(tick.rect)).toBeGreaterThan(rowY(1))
+      expect(centreY(tick.rect)).toBeLessThan(rowY(2))
+    }
+  })
+
+  it('fades the pill out where it was once every pass is done', () => {
+    const { context, fills } = fakeContext()
+    drawRulers(context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade / 2 }))
+    expect(marks(fills)).toHaveLength(2)
+    const gone = fakeContext()
+    drawRulers(gone.context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade }))
+    expect(marks(gone.fills)).toEqual([])
   })
 })
 

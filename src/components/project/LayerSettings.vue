@@ -5,7 +5,7 @@ import type { FrameSheet } from '../../domain/canvas'
 import { FRINGE_STYLES, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
 import type { Background } from '../../domain/project'
-import type { BeadShape, Technique, TechniqueSettings } from '../../domain/weave'
+import type { Technique, TechniqueSettings } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
@@ -15,7 +15,7 @@ import TechniqueSection from './TechniqueSection.vue'
 
 // Layer settings (ADR 0079, ticket 0670; LayerSettings card): the one section that sets a layer, wherever a layer is
 // set (the New Project form, the Project panel's Canvas section, the Frame panel). Its Technique and that Technique's
-// settings, a Custom frame's shape settings, its Bead and Bead shape, and its Background. It only asks; the caller works.
+// settings, a Custom frame's shape settings, its Bead, and its Background. It only asks; the caller works.
 const props = defineProps<{
   layer: Layer
   technique: Technique
@@ -25,7 +25,6 @@ const props = defineProps<{
   techniques?: readonly Technique[]
   /** The layer's Bead, or nothing for one that is no longer offered. */
   bead: Bead | undefined
-  beadShape: BeadShape
   /** Its Background as it shows: its own, or the device's last pick where it has none. */
   background: Background
   /** The Frame it sets, for a Custom frame's shape settings; none for the Canvas, a draft or a Frame with no shape. */
@@ -40,7 +39,6 @@ const emit = defineEmits<{
   'set-setting': [id: string, value: number]
   'set-shape-settings': [change: FrameSettings]
   'pick-bead': [beadId: string]
-  'set-bead-shape': [shape: BeadShape]
   'set-background': [background: Background]
 }>()
 
@@ -109,14 +107,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
 
     <div class="layer-settings__group" role="group" :aria-labelledby="beadLabelId">
       <span :id="beadLabelId" class="layer-settings__label layer-settings__heading">{{ t.panels.project.bead }}</span>
-      <BeadSection
-        :bead="bead"
-        :bead-shape="beadShape"
-        :candidates="candidates"
-        :outdated="outdated"
-        @update:bead-shape="emit('set-bead-shape', $event)"
-        @pick="emit('pick-bead', $event)"
-      />
+      <BeadSection :bead="bead" :candidates="candidates" :outdated="outdated" @pick="emit('pick-bead', $event)" />
     </div>
 
     <div class="layer-settings__group" role="group" :aria-labelledby="backgroundLabelId">

@@ -47,11 +47,6 @@ export interface Translations {
       size: string
       choose: string
     }
-    beadShapeLabel: string
-    beadShapeSymmetric: string
-    beadShapeReal: string
-    beadShapeSymmetricTip: string
-    beadShapeRealTip: string
     techniqueLabel: string
     widthLabel: string
     heightLabel: string
@@ -334,6 +329,21 @@ export interface Translations {
       scrollToZoom: string
       hand: string
       rulers: string
+    }
+    /** The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): the four steps, the quiet notes,
+     * the welcome and its steps line, and the phone's shorter steps. A line break is `\n`. */
+    firstRun: {
+      paint: string
+      select: string
+      frame: string
+      export: string
+      menu: string
+      project: string
+      mirror: string
+      color: string
+      welcome: string
+      steps: string
+      phone: Record<'paint' | 'select' | 'frame' | 'export', string>
     }
   }
   shell: {
@@ -621,7 +631,6 @@ export interface Translations {
     wherePartsAre: string
     partsNote: string
     rowByRowOn: string
-    shape: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string
@@ -1135,6 +1144,22 @@ export interface Translations {
   layerSettings: {
     frameHeading: string
     background: string
+  }
+  /** An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
+   * Schema tag copy). */
+  schemaTag: {
+    /** The tags' one Tab stop. */
+    group: string
+    /** A tag's accessible name. */
+    label: string
+    /** The Tooltip's body on a tag whose name shows as three dots. */
+    tooltipBody: string
+    /** The paper tag's label over the name, lowercased by style. */
+    heading: string
+    /** The Schema's rectangle in beads; its Estimated size follows after " · ≈ ". */
+    sizeBeads: string
+    beads: PluralForms
+    colors: PluralForms
   }
   /** The Feedback sheet (ADR 0081, spec 0698, ticket 0700): its three Report kinds' titles and fields, the Also sent
    * block's rows, and why a Report was not sent. */

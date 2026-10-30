@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import type { Project, RowProgress } from '../../domain/project'
+import { rotateFrame } from '../../domain/rotate'
 import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
@@ -16,8 +17,11 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../../domain/layerRecord'
-import { rowProgressOf } from '../../domain/rowProgress'
+import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameSheet } from '../../domain/layerRecord'
+import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
+import type { RowPress } from '../../composables/project/useRowOps'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
+import { PATTERN_DONE_MS, ROW_MOTION } from '../../rendering/rowMotion'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 /** A Project of this many beads, with any of its fields changed. */
@@ -333,7 +337,6 @@ describe('ProjectSurface', () => {
     })
 
     it.each([
-      ['Bead shape', (project: Project): Project => (withLayers(project, { beadShape: 'real' }))],
       ['piece names', (project: Project): Project => (withLayers(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
       ['Technique', (project: Project): Project => (withLayers(project, { technique: 'peyote' }))],
       ['Bead', (project: Project): Project => (withLayers(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],
@@ -1738,6 +1741,15 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
   })
 
+  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0728)', async () => {
+    const corner = async (project: Project) => {
+      const { wrapper } = await mountSurface(project, 1)
+      return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner
+    }
+    expect(await corner(withCanvas(framed(), { orientation: 180 }))).toEqual({ top: true, left: true })
+    expect(await corner(rotateFrame(framed())!)).toEqual({ top: false, left: false })
+  })
+
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {
     const full = await mountSurface(framed(), 1, { x: 0, y: 0 }, { showRulers: true })
     expect(rulerNumbers(full.wrapper).length).toBeGreaterThan(0)
@@ -1839,5 +1851,122 @@ describe('ProjectSurface with a Frame', () => {
     expect(wrapper.emitted('frame-cancel')).toHaveLength(1)
     await surface.trigger('pointermove', { buttons: 1, clientX: 45, clientY: 35, pointerId: 1, pointerType: 'touch', isPrimary: true })
     expect(wrapper.emitted('frame-drag')).toBeUndefined()
+  })
+
+  describe('Row done’s motion and Pattern done (ticket 0730)', () => {
+    /** A Frame of 10 rows with a red bead in its first, the weaver on `row`. */
+    function woven(row: number): Project {
+      const project = projectOf(20, 10)
+      const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
+      return moveToRow(painted, row)
+    }
+    const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
+    const lastPass: RowPress = { id: 1, done: true, from: 9, to: 10, patternDone: true }
+    const patternDone = (wrapper: VueWrapper) => wrapper.find('[data-testid="pattern-done"]')
+
+    // Unmounted while the test's animation frames are still stubbed: unmounting cancels the ones waiting.
+    const mounted: VueWrapper[] = []
+    afterEach(() => mounted.splice(0).forEach((wrapper) => wrapper.unmount()))
+    const mountPlaying = async (...args: Parameters<typeof mountSurface>) => {
+      const { wrapper } = await mountSurface(...args)
+      mounted.push(wrapper)
+      return { wrapper }
+    }
+
+    /** Animation frames the test hands out at the times it chooses. */
+    function frameClock() {
+      const waiting = new Map<number, FrameRequestCallback>()
+      let next = 0
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => (waiting.set(++next, callback), next))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => waiting.delete(id))
+      return async (time: number) => {
+        const due = [...waiting.values()]
+        waiting.clear()
+        due.forEach((callback) => callback(time))
+        await nextTick()
+      }
+    }
+
+    it('plays Pattern done after the press that marks the last pass, then shows the finished passes at full color', async () => {
+      const at = frameClock()
+      const { wrapper } = await mountPlaying(woven(9))
+      await at(0)
+      await wrapper.setProps({ project: woven(10), rowPress: lastPass })
+      await at(1000)
+      await at(1000 + ROW_MOTION.patternDoneDelay - 1)
+      expect(patternDone(wrapper).exists()).toBe(false)
+
+      context.calls.length = 0
+      await at(1000 + ROW_MOTION.patternDoneDelay)
+      expect(patternDone(wrapper).exists()).toBe(true)
+      expect(patternDone(wrapper).attributes('aria-hidden')).toBe('true')
+      expect(patternDone(wrapper).findAll('.pattern-done__star')).toHaveLength(14)
+      await at(1000 + ROW_MOTION.patternDoneDelay + 1)
+      expect(redShown()).toBe(false)
+
+      // From the shimmer the finished passes are at full color, and stay so once it is over.
+      await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay)
+      await at(1000 + ROW_MOTION.patternDoneDelay + ROW_MOTION.restoreDelay + 1)
+      expect(redShown()).toBe(true)
+      await at(1000 + ROW_MOTION.patternDoneDelay + PATTERN_DONE_MS)
+      expect(patternDone(wrapper).exists()).toBe(false)
+      context.calls.length = 0
+      await wrapper.setProps({ project: { ...woven(10) } })
+      await at(9000)
+      expect(redShown()).toBe(true)
+    })
+
+    it('plays nothing when the Project comes finished without a press (opened, Undo, Redo), and shows it at full color', async () => {
+      const at = frameClock()
+      const { wrapper } = await mountPlaying(woven(9))
+      await at(0)
+      await wrapper.setProps({ project: woven(10) })
+      context.calls.length = 0
+      await at(1000)
+      await at(1000 + ROW_MOTION.patternDoneDelay)
+      expect(patternDone(wrapper).exists()).toBe(false)
+      expect(redShown()).toBe(true)
+    })
+
+    it('plays nothing when Row highlight is turned back on over a finished Project', async () => {
+      const at = frameClock()
+      const { wrapper } = await mountPlaying(woven(10), 1, { x: 0, y: 0 }, { rowMarks: false })
+      await wrapper.setProps({ rowMarks: true })
+      context.calls.length = 0
+      await at(1000)
+      await at(1000 + ROW_MOTION.patternDoneDelay)
+      expect(patternDone(wrapper).exists()).toBe(false)
+      expect(redShown()).toBe(true)
+    })
+
+    it('stops at once when the press is taken back (Row not done) or its motion stopped (Reset progress, Undo, Remove Frame)', async () => {
+      const at = frameClock()
+      const { wrapper } = await mountPlaying(woven(9))
+      await wrapper.setProps({ project: woven(10), rowPress: lastPass })
+      await at(0)
+      await at(ROW_MOTION.patternDoneDelay)
+      expect(patternDone(wrapper).exists()).toBe(true)
+      await wrapper.setProps({ project: woven(9), rowPress: { id: 2, done: false, from: 10, to: 9, patternDone: false } })
+      expect(patternDone(wrapper).exists()).toBe(false)
+
+      await wrapper.setProps({ project: woven(10), rowPress: { ...lastPass, id: 3 } })
+      await at(1000)
+      await at(1000 + ROW_MOTION.patternDoneDelay)
+      expect(patternDone(wrapper).exists()).toBe(true)
+      await wrapper.setProps({ rowPress: undefined })
+      expect(patternDone(wrapper).exists()).toBe(false)
+    })
+
+    it('under reduced motion plays nothing, and shows the finished passes at full color at once', async () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }).matchMedia)
+      const at = frameClock()
+      const { wrapper } = await mountPlaying(woven(9))
+      context.calls.length = 0
+      await wrapper.setProps({ project: woven(10), rowPress: lastPass })
+      await at(0)
+      expect(redShown()).toBe(true)
+      await at(ROW_MOTION.patternDoneDelay)
+      expect(patternDone(wrapper).exists()).toBe(false)
+    })
   })
 })
