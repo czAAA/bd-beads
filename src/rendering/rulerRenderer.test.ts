@@ -7,6 +7,7 @@ import { rotateFrame } from '../domain/rotate'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
 import { MARGIN_PX } from './marginSizes'
+import { ROW_MOTION } from './rowMotion'
 import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
@@ -270,6 +271,53 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     const { context, fills } = fakeContext()
     drawRulers(context, at(moveToRow(base, 1), 'bare', { zoom: 0.25 }))
     expect(marks(fills)).toEqual([])
+  })
+})
+
+describe('the marker gliding on after Row done (Rulers card, ticket 0730)', () => {
+  const marks = (fills: { style: unknown; rect: number[] }[]) => fills.filter((fill) => fill.style === LIGHT_THEME.marker)
+  const at = (project: RulerDrawInput['project'], sheet: 'full' | 'compact', glide: RulerDrawInput['glide'], zoom = 1) => {
+    const surface = surfaceAt(zoom)
+    return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers: true, sheet }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: true, glide }
+  }
+  const centreY = (rect: number[]) => rect[1]! + rect[3]! / 2
+
+  it('glides each band\'s pill from the number of the pass left toward the next one\'s, and rests on it once the glide is over', () => {
+    const project = moveToRow(base, 2)
+    const numberY = (index: number) => at(project, 'full', undefined).layout.labels.find((label) => label.axis === 'row' && label.index === index)!.y
+    const midway = fakeContext()
+    drawRulers(midway.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide / 2 }))
+    expect(marks(midway.fills)).toHaveLength(2)
+    for (const pill of marks(midway.fills)) {
+      expect(centreY(pill.rect)).toBeGreaterThan(numberY(1))
+      expect(centreY(pill.rect)).toBeLessThan(numberY(2))
+    }
+
+    const over = fakeContext()
+    drawRulers(over.context, at(project, 'full', { from: 1, elapsed: ROW_MOTION.glide }))
+    for (const pill of marks(over.fills)) expect(centreY(pill.rect)).toBeCloseTo(numberY(2))
+  })
+
+  it('glides the tick along the Frame\'s line in the compact form', () => {
+    const project = moveToRow(base, 2)
+    const input = at(project, 'compact', { from: 1, elapsed: ROW_MOTION.glide / 2 }, 0.5)
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+    const rowY = (row: number) => input.surface.beadToPoint({ row: frameOf(base)!.row + row, column: frameOf(base)!.column }, 'frame').y
+    expect(marks(fills)).toHaveLength(2)
+    for (const tick of marks(fills)) {
+      expect(centreY(tick.rect)).toBeGreaterThan(rowY(1))
+      expect(centreY(tick.rect)).toBeLessThan(rowY(2))
+    }
+  })
+
+  it('fades the pill out where it was once every pass is done', () => {
+    const { context, fills } = fakeContext()
+    drawRulers(context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade / 2 }))
+    expect(marks(fills)).toHaveLength(2)
+    const gone = fakeContext()
+    drawRulers(gone.context, at(moveToRow(base, 3), 'full', { from: 2, elapsed: ROW_MOTION.markFade }))
+    expect(marks(gone.fills)).toEqual([])
   })
 })
 

@@ -9,6 +9,7 @@ import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { frameHandles, type Handle, type HandleId } from './frameHandles'
 import { frameOf } from '../domain/layerRecord'
+import { ROW_MOTION, easeIn, easeStandard } from './rowMotion'
 
 /** The mono stack every number and label on the canvas is set in. */
 const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
@@ -29,6 +30,9 @@ export interface RulerDrawInput {
   theme: ProjectTheme
   /** Whether the current pass is marked, on its number or by a tick. Defaults to `rowProgressOn(project)` (tickets 434, 0685). */
   rowMarks?: boolean
+  /** Row done or Row not done just pressed (ticket 0730): the pass the marker left and the ms since, so the pill and the
+   * tick glide on from it, or fade out once every pass is done. */
+  glide?: { from: number; elapsed: number }
 }
 
 /** The box's line: a rounded rectangle just outside its outermost beads. */
@@ -52,18 +56,26 @@ function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, them
   context.fill()
 }
 
+/** The current pass's `marker` pill (ticket 0685): fully rounded round a box centred at `x`, `y`. */
+function drawPill(context: DrawingContext, { x, y, width, height }: { x: number; y: number; width: number; height: number }, theme: ProjectTheme): void {
+  context.fillStyle = theme.marker
+  context.beginPath()
+  context.roundRect(x - width / 2, y - height / 2, width, height, Math.min(width, height) / 2)
+  context.fill()
+}
+
+/** A ruler number's box grown by `pad` all round: the pill it sits on. */
+const pillOf = (label: RulerLabel, pad: number) => ({ x: label.x, y: label.y, width: label.width + pad * 2, height: label.height + pad * 2 })
+
 /** One ruler number, in the style its role asks for (Rulers card); the current pass's on its `marker` pill, `pad` round
  * the number (ticket 0685), or `false` for any other. */
 function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, theme: ProjectTheme, pad: number | false): void {
-  const current = pad !== false
-  if (current) {
-    const width = label.width + pad * 2
-    const height = label.height + pad * 2
-    context.fillStyle = theme.marker
-    context.beginPath()
-    context.roundRect(label.x - width / 2, label.y - height / 2, width, height, Math.min(width, height) / 2)
-    context.fill()
-  }
+  if (pad !== false) drawPill(context, pillOf(label, pad), theme)
+  drawNumber(context, label, fontPx, theme, pad !== false)
+}
+
+/** A ruler number's text alone: bold in `canvas` where it is on the pill. */
+function drawNumber(context: DrawingContext, label: RulerLabel, fontPx: number, theme: ProjectTheme, current: boolean): void {
   const weight = current || label.fifth ? 700 : 400
   context.font = `${weight} ${fontPx}px ${MONO_FONT}`
   context.fillStyle = current ? theme.canvas : label.fifth ? theme.rulerStrong : theme.ruler
@@ -91,11 +103,10 @@ interface PassOnScreen {
   box: RuledBox
 }
 
-function passOnScreen({ project, surface, layout }: RulerDrawInput): PassOnScreen | undefined {
+function passOnScreen({ project, surface, layout }: RulerDrawInput, pass = currentPass(rowProgressOf(project))): PassOnScreen | undefined {
   const frame = frameOf(project)
   const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
   const order = frameRowOrder(project)
-  const pass = currentPass(rowProgressOf(project))
   const line = pass < order.count ? order.lineOf(pass) : undefined
   if (!frame || !box || line === undefined) return undefined
   const columns = rowProgressOf(project).direction === 'columns'
@@ -117,7 +128,7 @@ function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProjec
 
 // Where the current pass has no number drawn (the compact and folded forms, Rulers off, a turned Frame, a Ruler step
 // past it), a `marker` tick from the Frame's line in to the beads (ticket 0685): inside the line, so never under a tool.
-function drawPassTicks(context: DrawingContext, { surface }: RulerDrawInput, { across, first, box }: PassOnScreen, theme: ProjectTheme): void {
+function drawPassTicks(context: DrawingContext, { surface }: RulerDrawInput, { across, first, box }: Pick<PassOnScreen, 'across' | 'first' | 'box'>, theme: ProjectTheme): void {
   const shown = surface.beadBox(box, 'frame')
   const thick = MARGIN_PX.pass.tick
   const reach = box.outset + FRAME_LINE_PX / 2
@@ -147,14 +158,79 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
     drawDot(context, dot, layout.scale, theme)
   }
   // The current pass is marked on its number, or by a tick where it has none (MarginSheet card, ticket 0685).
-  const pass = rowMarks && layout.passMark ? passOnScreen(input) : undefined
+  const marked = rowMarks && layout.passMark
+  const pass = marked ? passOnScreen(input) : undefined
+  const pad = MARGIN_PX.pass.pillPad * layout.sheetScale
+  const { glide } = input
+  const left = marked && glide && glide.elapsed < ROW_MOTION.glide ? passOnScreen(input, glide.from) : undefined
+  if (glide && left && glide.from !== currentPass(rowProgressOf(project))) {
+    drawGliding(context, input, { left, reached: pass, elapsed: glide.elapsed }, theme, fontPx, pad)
+    return
+  }
   let numbered = false
   for (const label of layout.labels) {
     const current = pass !== undefined && numbersPass(label, pass, project)
     numbered ||= current
-    drawLabel(context, label, fontPx, theme, current && MARGIN_PX.pass.pillPad * layout.sheetScale)
+    drawLabel(context, label, fontPx, theme, current && pad)
   }
   if (pass && !numbered) drawPassTicks(context, input, pass, theme)
+}
+
+/** Draws `draw` at an opacity, as the canvas's motion does: opacity and position only (ADR 0018). */
+function faded(context: DrawingContext, alpha: number, draw: () => void): void {
+  if (alpha <= 0) return
+  context.save()
+  context.globalAlpha *= Math.min(1, alpha)
+  draw()
+  context.restore()
+}
+
+const mix = (a: number, b: number, t: number) => a + (b - a) * t
+
+// Row done's marker (ticket 0730, Rulers card): the pill glides from the number of the pass it left to the next one's
+// in every band that numbers both, the two numbers crossfading, and the tick glides along the Frame's line. Once every
+// pass is done there is no next one: the pill and the tick fade out where they were.
+function drawGliding(context: DrawingContext, input: RulerDrawInput, motion: { left: PassOnScreen; reached?: PassOnScreen; elapsed: number }, theme: ProjectTheme, fontPx: number, pad: number): void {
+  const { project, layout } = input
+  const { left, reached, elapsed } = motion
+  const t = easeStandard(elapsed / ROW_MOTION.glide)
+  const fade = 1 - easeIn(Math.min(1, elapsed / ROW_MOTION.markFade))
+  const fromLabels = layout.labels.filter((label) => numbersPass(label, left, project))
+  const toLabels = reached ? layout.labels.filter((label) => numbersPass(label, reached, project)) : []
+  // A band is the run of numbers on one side: its pass's numbers share an x or a y with each other.
+  const sameBand = (a: RulerLabel, b: RulerLabel) => Math.abs(a.x - b.x) < 1 || Math.abs(a.y - b.y) < 1
+  for (const label of layout.labels) {
+    if (!fromLabels.includes(label) && !toLabels.includes(label)) drawNumber(context, label, fontPx, theme, false)
+  }
+  for (const from of fromLabels) {
+    const to = toLabels.find((label) => sameBand(from, label))
+    if (!reached) {
+      faded(context, fade, () => drawPill(context, pillOf(from, pad), theme))
+      faded(context, fade, () => drawNumber(context, from, fontPx, theme, true))
+      faded(context, 1 - fade, () => drawNumber(context, from, fontPx, theme, false))
+      continue
+    }
+    if (!to) {
+      drawNumber(context, from, fontPx, theme, false)
+      continue
+    }
+    const [a, b] = [pillOf(from, pad), pillOf(to, pad)]
+    drawPill(context, { x: mix(a.x, b.x, t), y: mix(a.y, b.y, t), width: mix(a.width, b.width, t), height: mix(a.height, b.height, t) }, theme)
+    faded(context, 1 - t, () => drawNumber(context, from, fontPx, theme, true))
+    faded(context, t, () => drawNumber(context, from, fontPx, theme, false))
+    faded(context, 1 - t, () => drawNumber(context, to, fontPx, theme, false))
+    faded(context, t, () => drawNumber(context, to, fontPx, theme, true))
+  }
+  // A number of the pass reached with no number of the one left beside it: at rest on its pill.
+  for (const to of toLabels.filter((label) => !fromLabels.some((from) => sameBand(from, label)))) drawLabel(context, to, fontPx, theme, pad)
+  // The tick, where a pass has no number drawn: gliding on from the one left where that had a tick too.
+  if (!reached) {
+    if (fromLabels.length === 0) faded(context, fade, () => drawPassTicks(context, input, left, theme))
+    return
+  }
+  if (toLabels.length > 0) return
+  const glides = fromLabels.length === 0 && reached.across === left.across
+  drawPassTicks(context, input, glides ? { ...reached, first: { x: mix(left.first.x, reached.first.x, t), y: mix(left.first.y, reached.first.y, t) } } : reached, theme)
 }
 
 /** The size tooltip's look (Frame card): `ink` on the canvas, 12px mono, at the Frame's bottom-right corner. */

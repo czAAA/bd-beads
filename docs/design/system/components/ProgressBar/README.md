@@ -25,3 +25,8 @@ Row done and Row not done show text and follow Row direction: top to bottom they
 **In the margin too (ticket 0655; MarginSheet card):** the Frame's margin sheet carries the same Row progress component in its top band, compact: Turn row direction, Reset progress, Row highlight, the counter and a 64px track, Row not done (icon only) and Row done. It is one component in two places tracking the same progress: a press in either moves the one pointer, and both show it. The bar stays.
 
 Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.
+
+## As built (ticket 0730)
+
+- **Track:** a groove inside the track's box holds the fill and the spark's tail, clipped to its rounded ends; the spark's dot sits in a copy outside it, so its halo and flare are not cut. The fill is the track's width moved left by the share still to weave (`translateX`), so it grows by `transform`; the spark moves the same way.
+- **Flare:** two names for one animation are swapped on each Row done so the next press restarts it; a track shown afresh (the margin changing form) does not flare until the next press.

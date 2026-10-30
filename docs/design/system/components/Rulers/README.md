@@ -19,3 +19,7 @@ The BeadBoard and Frame cards show the piece and Frame rulers in place.
 **On the margin sheet (ticket 0655; MarginSheet card):** with a Frame its rulers are drawn on three sides only: none along the screen edge the title block is on, the bottom, or the top on a Canvas turned 180° or 270° (ticket 0728). They sit on the margin's color, so they take the nearest grey to the look's `ruler` at 4.5:1 or more against it (the 5th numbers at 7:1), the rule a Custom Canvas color uses. The current pass is marked on its number in every band that numbers it (left and right for a row, the top for a column), never by a pointer outside the numbers, so the mark never meets the tools of the top band (ticket 0685). In the margin's compact and folded forms no numbers are drawn; the pass is a tick on the Frame's line instead (MarginSheet card).
 
 Hand-written from the approved Rulers design (claude.ai, variant A). Replace this card with the claude.ai one when the design system is next synced (DESIGN.md §6).
+
+## As built (ticket 0730)
+
+- **Gliding pill:** drawn on the canvas, the pill moves from the number of the pass left to the next one's in each band that numbers both, and the two numbers crossfade by drawing each in both styles at opposite opacities. In a band that numbers only the next pass the pill shows there at once. Once every pass is done the pill and its number fade back to the plain number over 150ms where they were.
