@@ -926,10 +926,11 @@ body {
 .bb-schema-thread { position: absolute; overflow: visible; pointer-events: none; fill: none; stroke: var(--muted); stroke-width: 1px; }
 .bb-schema-thread circle { fill: var(--ink); stroke: none; }
 .bb-schema-tag { position: absolute; display: inline-flex; align-items: center; height: var(--schema-tag-height); box-sizing: border-box; padding: 0 8px 0 calc(var(--schema-tag-end) + 3px); border: 0; border-radius: 0 var(--radius-xs) var(--radius-xs) 0; background: var(--ink); color: var(--canvas); font: var(--schema-tag-name); white-space: nowrap; cursor: pointer; transform: rotate(var(--schema-tag-tilt)); transform-origin: calc(var(--schema-tag-end) / 2 + 0.5px) 50%; transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out); clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 16px, 0 6px); -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%); }
-.bb-schema-tag--left { transform: rotate(calc(var(--schema-tag-tilt) * -1)); }
+.bb-schema-tag--left { padding: 0 calc(var(--schema-tag-end) + 3px) 0 8px; border-radius: var(--radius-xs) 0 0 var(--radius-xs); transform: rotate(calc(var(--schema-tag-tilt) * -1)); transform-origin: calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 16px, calc(100% - 6px) 100%, 0 100%); -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%, transparent 98%, #000 100%); mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%, transparent 98%, #000 100%); }
 .bb-schema-tag:hover { transform: none; background: var(--body); }
 .bb-schema-tag:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .bb-schema-tag--dots { gap: 2px; padding-right: 7px; }
+.bb-schema-tag--dots.bb-schema-tag--left { padding: 0 calc(var(--schema-tag-end) + 3px) 0 7px; }
 .bb-schema-tag--dots > i { width: 3px; height: 3px; border-radius: var(--radius-full); background: currentColor; }
 @media (prefers-reduced-motion: reduce) { .bb-schema-tag { transition: none; } }
 /* The paper tag: the outer layer is the 1px edge, the inner one the paper, both cut at the top-right and holed. */
