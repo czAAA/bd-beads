@@ -67,6 +67,13 @@ Reference: MacBook Air (1440 × 900), the Tool pill docked at the bottom.
 - The whole layer, rings included, is decoration: `aria-hidden`, `pointer-events: none`, so the first press on the canvas paints the first bead. The same steps are in Keyboard shortcuts and in each control's Tooltip.
 - No keyboard stop, nothing to dismiss.
 
+## As built (ticket 0725)
+
+- **Phone values:** `--hint-step-phone` (20px), `--hint-welcome-phone` (20px) and `--hint-wordmark-phone` (44px) carry the Phone section's sizes; the mark is 40px there.
+- **Placing:** each note tries distances of 40 to 110px from its control (a quiet note up to 170px) and slides along its edge, away from the control, before it gives up; it may not cover the Tool pill, the CanvasHint line, the welcome, another note or another note's arrow, and its arrow may not cross any of them. Each arrow tries a bow to either side, then a flatter one. Two orders are tried, steps first and a staircase (colour, Mirror, then step 2, so step 2's note sits above theirs), and the one that places most notes with every step in a free place wins.
+- **Ring:** a strip button is lifted to `z-canvas-overlay` while ringed so the ring's foot shows over the drawing area; the strip's scrolling controls keep the ring's 4px inside them so Export's ring is not cut.
+- A step note is at most 22rem wide and wraps; the wordmark's -0.6px tracking is twice `tracking-brand`.
+
 The copy in every language is in `writing.md`, "First-run hints copy".
 
 Hand-written from the approved canvas (2026-10-30, ticket 0725); static rendition.
