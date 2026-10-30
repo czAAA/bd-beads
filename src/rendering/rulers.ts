@@ -5,7 +5,7 @@ import { describeWeave, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
 import { hasGuides, type Selection } from '../domain/selection'
-import type { MarginForm } from './marginForm'
+import { titleBlockCorner, type MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
@@ -287,11 +287,12 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     }
   }
 
-  // A Frame's sides are the ones its margin sheet shows on screen above, left and right of it: the one at the bottom
-  // holds the title block (MarginSheet card, ticket 0657), whichever way the view is turned.
-  const shownBelow = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y > 0.5
+  // A Frame's sides are the ones its margin sheet shows on screen but along the edge its title block is on, the bottom
+  // or, on a Canvas turned 180° or 270°, the top (MarginSheet card, tickets 0657, 0728).
+  const titleEdge = titleBlockCorner(surface).top ? -1 : 1
+  const alongTitle = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y * titleEdge > 0.5
   const side = (normal: [number, number], lay: () => void) => {
-    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !shownBelow(normal)) lay()
+    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !alongTitle(normal)) lay()
   }
   side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
   side([-1, 0], () => rowsAt(left, [-1, 0]))

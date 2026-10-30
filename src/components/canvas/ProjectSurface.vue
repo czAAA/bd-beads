@@ -11,7 +11,7 @@ import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from 
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { Size } from '../../rendering/cellSize'
 import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
-import { marginForm, marginScale } from '../../rendering/marginForm'
+import { marginForm, marginScale, titleBlockCorner } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
@@ -275,6 +275,7 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
     band: grid.band * props.zoom,
     viewport: { ...size.value },
     origin: unleaned(surface.value.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')),
+    titleCorner: titleBlockCorner(surface.value),
     ...(degrees === 0 ? {} : { tilt: degrees }),
   }
 })
