@@ -18,11 +18,6 @@ export const ru: Translations = {
       size: 'Размер бисеринки',
       choose: 'Выбрать',
     },
-    beadShapeLabel: 'Форма бисеринки',
-    beadShapeSymmetric: 'Ровная',
-    beadShapeReal: 'Настоящая',
-    beadShapeSymmetricTip: 'Рисовать каждую бисеринку ровной клеткой; меняется только вид холста.',
-    beadShapeRealTip: 'Рисовать каждую бисеринку в её настоящих пропорциях; меняется только вид холста.',
     techniqueLabel: 'Техника плетения',
     widthLabel: 'Ширина',
     heightLabel: 'Высота',
@@ -86,6 +81,8 @@ export const ru: Translations = {
     moreAxes: 'Больше осей',
     turnAxisOn: 'Включите ось.',
     close: 'Закрыть',
+    dragHandle: 'Перетащите ручку на оси, чтобы сдвинуть её.',
+    repeatNeedsArea: 'Повтор на холсте работает только внутри области.',
     copyToCounterparts: 'Скопировать бусины фрагмента на их отражения.',
     announceSelectionMirrored: 'Фрагмент отражён',
     droppedMessage: {
@@ -293,6 +290,24 @@ export const ru: Translations = {
       hand: 'Рука',
       rulers: 'Линейки',
     },
+    firstRun: {
+      paint: '1 · возьмите «Кисть»\nи рисуйте где угодно',
+      select: '2 · возьмите «Выделение» и обведите рисунок',
+      frame: '3 · обведите рисунок рамкой,\nа здесь задайте её название, размер и бисер',
+      export: '4 · экспортируйте картинку\nили схему для печати',
+      menu: 'открыть, сохранить,\nнастройки,\nязык…',
+      project: 'ваш проект: название, автор,\nтехника, бисер и фон',
+      mirror: '«Отражение»: рисуйте по обе стороны оси',
+      color: 'цвета и ваша палитра',
+      welcome: 'ваша первая схема в четыре шага:',
+      steps: 'рисунок → выделение → рамка → экспорт',
+      phone: {
+        paint: '1 · «Кисть»: рисуйте',
+        select: '2 · «Выделение»: обведите',
+        frame: '3 · рамка вокруг рисунка,\nнастройте её здесь',
+        export: '4 · экспорт: в конце\nэтой полосы',
+      },
+    },
   },
   shell: {
     canvasPlaceholderHint: 'Создайте его кнопкой «Новый проект», откройте сохранённый проект или импортируйте файл. Двигайте холст, перетаскивая его правой кнопкой мыши или с пробелом.',
@@ -327,7 +342,7 @@ export const ru: Translations = {
     previousFeature: 'Предыдущая возможность',
     nextFeature: 'Следующая возможность',
     notes: { onUs: 'это мы' },
-    coffee: { title: 'Одна семья', text: 'openbeads делает одна семья, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
+    coffee: { title: 'Делает одна семья', text: 'openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
     plans: {
       label: 'тарифы',
       heading: 'Три способа работать',
@@ -549,7 +564,6 @@ export const ru: Translations = {
     wherePartsAre: 'Где какая часть',
     partsNote: 'В части до {beads} бусин по стороне. Части на одном листе делят номер страницы; каждая повторяет {overlap} бусины соседней, они затенены.',
     rowByRowOn: 'Построчно на странице {page} →',
-    shape: 'Форма',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'часть {part} · стр. {page}',
     partPageShort: '{part} · с. {page}',
@@ -1003,6 +1017,15 @@ export const ru: Translations = {
   layerSettings: {
     frameHeading: 'Настройки',
     background: 'Фон',
+  },
+  schemaTag: {
+    group: 'Названия схем',
+    label: '{name}, показать подробности',
+    tooltipBody: 'Нажмите, чтобы увидеть размер и цвета.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бисерин',
+    beads: { one: '{count} бисеринка', few: '{count} бисеринки', many: '{count} бисеринок', other: '{count} бисеринки' },
+    colors: { one: '{count} цвет', few: '{count} цвета', many: '{count} цветов', other: '{count} цвета' },
   },
   feedback: {
     titleGeneral: 'Отправить отзыв',

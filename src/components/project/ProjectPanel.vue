@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { Layer } from '../../domain/grid'
 import type { Background, Project } from '../../domain/project'
-import type { BeadShape, Technique } from '../../domain/weave'
+import type { Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -25,7 +25,6 @@ const emit = defineEmits<{
   /** The Canvas's Layer settings (ticket 0670), each naming its layer as the Frame panel's do. */
   'set-technique': [layer: Layer, technique: Technique]
   'set-weave-setting': [layer: Layer, id: string, value: number]
-  'set-bead-shape': [layer: Layer, shape: BeadShape]
   'set-background': [layer: Layer, background: Background]
   'replace-bead': [layer: Layer, beadId: string]
   save: []
@@ -67,7 +66,6 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
         @set-technique="emit('set-technique', 'canvas', $event)"
         @set-setting="(id, value) => emit('set-weave-setting', 'canvas', id, value)"
         @pick-bead="emit('replace-bead', 'canvas', $event)"
-        @set-bead-shape="emit('set-bead-shape', 'canvas', $event)"
         @set-background="emit('set-background', 'canvas', $event)"
       />
     </PanelSection>

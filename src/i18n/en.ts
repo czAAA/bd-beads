@@ -16,11 +16,6 @@ export const en: Translations = {
       size: 'Bead size',
       choose: 'Choose',
     },
-    beadShapeLabel: 'Bead shape',
-    beadShapeSymmetric: 'Symmetric',
-    beadShapeReal: 'Real',
-    beadShapeSymmetricTip: 'Draw every bead as an even cell; this changes only how the Canvas looks.',
-    beadShapeRealTip: 'Draw each bead in its real proportions; this changes only how the Canvas looks.',
     techniqueLabel: 'Technique',
     widthLabel: 'Width',
     heightLabel: 'Height',
@@ -84,6 +79,8 @@ export const en: Translations = {
     moreAxes: 'More axes',
     turnAxisOn: 'Turn an Axis on.',
     close: 'Close',
+    dragHandle: 'Drag the handle on the axis to move it.',
+    repeatNeedsArea: 'Repeat on the Canvas needs an area.',
     copyToCounterparts: 'Copy the fragment\'s beads to their counterparts.',
     announceSelectionMirrored: 'Fragment mirrored',
     droppedMessage: {
@@ -289,6 +286,24 @@ export const en: Translations = {
       hand: 'Hand',
       rulers: 'Rulers',
     },
+    firstRun: {
+      paint: '1 · pick Paint and draw anywhere',
+      select: '2 · pick Select and drag a box round your drawing',
+      frame: '3 · make a Frame round your drawing,\nthen set its name, size and Bead here',
+      export: '4 · export a picture\nor a printable chart',
+      menu: 'open, save,\npreferences,\nlanguage…',
+      project: 'your Project: its name, maker,\nTechnique, Bead and background',
+      mirror: 'Mirror: paint both sides of an axis at once',
+      color: 'colors and your Palette',
+      welcome: 'your first Pattern in four steps:',
+      steps: 'draw → select → frame → export',
+      phone: {
+        paint: '1 · pick Paint and draw',
+        select: '2 · pick Select, drag a box',
+        frame: '3 · make a Frame round it,\nthen set it up here',
+        export: '4 · export, at the end\nof this strip',
+      },
+    },
   },
   shell: {
     canvasPlaceholderHint: 'Make one with New Project, open a Saved Project, or import a file. Drag the Canvas around with the right mouse button or Space.',
@@ -323,7 +338,7 @@ export const en: Translations = {
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
     notes: { onUs: 'on us' },
-    coffee: { title: 'Made by one family', text: "openbeads is made by one family, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
+    coffee: { title: 'Made by one family', text: "openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
       label: 'plans',
       heading: 'Three ways to use it',
@@ -539,7 +554,6 @@ export const en: Translations = {
     wherePartsAre: 'Where each part is',
     partsNote: 'Parts hold up to {beads} beads a side. Parts on one sheet share its page number; each repeats {overlap} beads of its neighbour, shaded.',
     rowByRowOn: 'Row by row on page {page} →',
-    shape: 'Shape',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'part {part} · page {page}',
     partPageShort: '{part} · p {page}',
@@ -987,6 +1001,15 @@ export const en: Translations = {
   layerSettings: {
     frameHeading: 'Settings',
     background: 'Background',
+  },
+  schemaTag: {
+    group: 'Schema names',
+    label: '{name}, show details',
+    tooltipBody: 'Click for the size and colors.',
+    heading: 'schema',
+    sizeBeads: '{columns} × {rows} beads',
+    beads: { one: '{count} bead', other: '{count} beads' },
+    colors: { one: '{count} color', other: '{count} colors' },
   },
   feedback: {
     titleGeneral: 'Send feedback',

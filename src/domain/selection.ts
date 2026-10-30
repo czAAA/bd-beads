@@ -1,5 +1,5 @@
 import { type GridPosition } from './grid'
-import { counterparts, MIRROR_OFF, type MirrorSetting } from './mirror'
+import { canvasMirrors, counterparts, MIRROR_OFF, type MirrorSetting } from './mirror'
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
@@ -227,12 +227,13 @@ export function stampedCells(block: CopiedBlock, at: GridPosition): PastedCell[]
   return pastedCells(block, { row: at.row - block.anchor.row, column: at.column - block.anchor.column })
 }
 
-/** The paste stamp: `block` at `at` on a layer laid on a grid, as one edit (one undo step). */
-function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting): BeadMap {
+/** The paste stamp: `block` at `at` on a layer laid on a grid, as one edit (one undo step): the beads put down, and
+ * the block's own cells, whose counterparts under Mirror are the rest. */
+function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting): { beads: BeadMap; sources: readonly GridPosition[] } {
   const { edge } = sheet
   // A Frame holds only its own cells: what a stamp puts outside it is dropped (ADR 0066).
   const cells = stampedCells(block, at).filter((cell) => !edge || frameContains(edge, cell))
-  return withColors(sheet.beads, counterparts(sheet, mirror, cells).positions.map(({ row, column, color }) => ({ row, column, color })))
+  return { beads: withColors(sheet.beads, counterparts(sheet, mirror, cells).positions.map(({ row, column, color }) => ({ row, column, color }))), sources: cells }
 }
 
 /** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
@@ -339,9 +340,17 @@ export function paintLayerSelection(project: Project, selection: Selection, colo
  * (ticket 0594). */
 export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting = MIRROR_OFF): Project {
   const layer = layerAt(project, at)
-  return onLayer(project, layer, (sheet, local) =>
-    sheet.geometry.grid ? stampBlock(sheet, block, local(at), mirror) : withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed),
-  )
+  /** The block's own cells, which the Frame keeps clear of as ever; only their counterparts land under it, hidden
+   * (ticket 0704, spec 0702's Edges). */
+  let sources: readonly GridPosition[] = []
+  const stamped = (sheet: LayerSheet, local: (position: GridPosition) => GridPosition): BeadMap => {
+    if (!sheet.geometry.grid) return withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed)
+    const stamp = stampBlock(sheet, block, local(at), mirror)
+    sources = stamp.sources
+    return stamp.beads
+  }
+  const through = canvasMirrors(project, mirror) ? { underFrame: (position: GridPosition) => !sources.some((source) => source.row === position.row && source.column === position.column) } : {}
+  return onLayer(project, layer, stamped, through)
 }
 
 /** The Selection a tap with the Piece tool makes at a position, on the layer the tap is on (ticket 414): the Piece of

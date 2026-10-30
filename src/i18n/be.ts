@@ -19,11 +19,6 @@ export const be: Translations = {
       size: 'Памер бісерыны',
       choose: 'Выбраць',
     },
-    beadShapeLabel: 'Форма бісерыны',
-    beadShapeSymmetric: 'Роўная',
-    beadShapeReal: 'Сапраўдная',
-    beadShapeSymmetricTip: 'Маляваць кожную бісерыну роўнай клеткай; змяняецца толькі выгляд палатна.',
-    beadShapeRealTip: 'Маляваць кожную бісерыну ў яе сапраўдных прапорцыях; змяняецца толькі выгляд палатна.',
     techniqueLabel: 'Тэхніка пляцення',
     widthLabel: 'Шырыня',
     heightLabel: 'Вышыня',
@@ -87,6 +82,8 @@ export const be: Translations = {
     moreAxes: 'Больш восей',
     turnAxisOn: 'Уключыце вось.',
     close: 'Закрыць',
+    dragHandle: 'Перацягніце ручку на восі, каб зрушыць яе.',
+    repeatNeedsArea: 'Паўтор на палатне працуе толькі ўнутры вобласці.',
     copyToCounterparts: 'Скапіяваць пацеркі фрагмента на іх адлюстраванні.',
     announceSelectionMirrored: 'Фрагмент адлюстраваны',
     droppedMessage: {
@@ -294,6 +291,24 @@ export const be: Translations = {
       hand: 'Рука',
       rulers: 'Лінейкі',
     },
+    firstRun: {
+      paint: '1 · вазьміце «Пэндзаль»\nі малюйце дзе заўгодна',
+      select: '2 · вазьміце «Вылучэнне» і абвядзіце малюнак',
+      frame: '3 · абвядзіце малюнак рамкай,\nа тут задайце яе назву, памер і бісер',
+      export: '4 · экспартуйце выяву\nабо схему для друку',
+      menu: 'адкрыць, захаваць,\nналады,\nмова…',
+      project: 'ваш праект: назва, аўтар,\nтэхніка, бісер і фон',
+      mirror: '«Адлюстраванне»: малюйце з абодвух бакоў восі',
+      color: 'колеры і ваша палітра',
+      welcome: 'ваша першая схема ў чатыры крокі:',
+      steps: 'малюнак → вылучэнне → рамка → экспарт',
+      phone: {
+        paint: '1 · «Пэндзаль»: малюйце',
+        select: '2 · «Вылучэнне»: абвядзіце',
+        frame: '3 · рамка вакол малюнка,\nналадзьце яе тут',
+        export: '4 · экспарт: у канцы\nгэтай паласы',
+      },
+    },
   },
   shell: {
     canvasPlaceholderHint: 'Стварыце яго кнопкай «Новы праект», адкрыйце захаваны праект або імпартуйце файл. Перасоўвайце палатно правай кнопкай мышы або прабелам.',
@@ -328,7 +343,7 @@ export const be: Translations = {
     previousFeature: 'Папярэдняя магчымасць',
     nextFeature: 'Наступная магчымасць',
     notes: { onUs: 'гэта мы' },
-    coffee: { title: 'Адна сям’я', text: 'openbeads робіць адна сям’я, бісерына за бісерынай, і ён бясплатны. Калі ён зэканоміў вам вечар падлікаў, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
+    coffee: { title: 'Робіць адна сям’я', text: 'openbeads робіць адна сям’я, бісерына за бісерынай, і праграма бясплатная. Калі праграма зэканоміла вам час, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
     plans: {
       label: 'тарыфы',
       heading: 'Тры варыянты',
@@ -550,7 +565,6 @@ export const be: Translations = {
     wherePartsAre: 'Дзе якая частка',
     partsNote: 'У частцы да {beads} бісерын па баку. Часткі на адным аркушы маюць агульны нумар старонкі; кожная паўтарае {overlap} бісерыны суседняй, яны зацемнены.',
     rowByRowOn: 'Радок за радком на старонцы {page} →',
-    shape: 'Форма',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'частка {part} · стар. {page}',
     partPageShort: '{part} · с. {page}',
@@ -1004,6 +1018,15 @@ export const be: Translations = {
   layerSettings: {
     frameHeading: 'Налады',
     background: 'Фон',
+  },
+  schemaTag: {
+    group: 'Назвы схем',
+    label: '{name}, паказаць падрабязнасці',
+    tooltipBody: 'Націсніце, каб убачыць памер і колеры.',
+    heading: 'схема',
+    sizeBeads: '{columns} × {rows} бісерын',
+    beads: { one: '{count} бісерына', few: '{count} бісерыны', many: '{count} бісерын', other: '{count} бісерыны' },
+    colors: { one: '{count} колер', few: '{count} колеры', many: '{count} колераў', other: '{count} колеру' },
   },
   feedback: {
     titleGeneral: 'Адправіць водгук',

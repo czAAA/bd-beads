@@ -81,7 +81,7 @@ export function sameLayers(a: Layered, b: Layered): boolean {
 
 /** A dense grid of cells as a Frame the size of the grid holding them, on an empty upright Canvas woven alike: what the
  * Convert image preview, the Homepage's pictures and a test's hand-made block of beads are drawn from. */
-export function framedGrid(grid: Grid, layer: Weave & Partial<Pick<LayerFields, 'beadId' | 'bead' | 'beadShape'>> = { technique: DEFAULT_TECHNIQUE }): Layered {
+export function framedGrid(grid: Grid, layer: Weave & Partial<Pick<LayerFields, 'beadId' | 'bead'>> = { technique: DEFAULT_TECHNIQUE }): Layered {
   const { cell: _cell, technique, techniqueSettings, beadId = DEFAULT_BEAD.id, ...bead } = layer
   const own = { ...weaveOf({ technique, techniqueSettings }), beadId, ...bead }
   const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))

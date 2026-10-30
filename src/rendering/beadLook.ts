@@ -44,6 +44,11 @@ export type DrawingContext = Pick<
   | 'translate'
   | 'rotate'
   | 'scale'
+  | 'transform'
+  | 'getTransform'
+  | 'shadowColor'
+  | 'shadowBlur'
+  | 'shadowOffsetY'
 >
 
 /** The white tint of dark's rim (`bead-rim`, dark). */
@@ -81,6 +86,9 @@ export interface ProjectTheme {
   accent: string
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
   outline: string
+  /** A handle chip drawn on the canvas, Mirror's Axis handles (ticket 0704, MirrorPopover card): its fill (`elevated`)
+   * and the colour of its `elevation-2` shadow, none where the theme casts no shadow. */
+  chip: { fill: string; shadow?: string }
   /** A bead in a finished row: its own color at `opacity` over the board in every theme (ticket 352), never grey;
    * `grey` is the greyscale option. */
   finished: { grey: boolean; opacity: number }
@@ -111,6 +119,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   marker: '#1d4ed8',
   accent: '#fa520f',
   outline: '#1f1f1f',
+  chip: { fill: '#ffffff', shadow: 'rgba(0,0,0,.08)' },
   finished: { grey: false, opacity: FINISHED_OPACITY },
 })
 
@@ -130,6 +139,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   marker: '#faff69',
   accent: '#faff69',
   outline: '#ffffff',
+  chip: { fill: '#2a2a2a' },
   finished: { grey: false, opacity: FINISHED_OPACITY },
 })
 
@@ -148,6 +158,7 @@ const CONTRAST_THEME: ProjectTheme = {
   marker: '#000000',
   accent: '#a82c00',
   outline: '#000000',
+  chip: { fill: '#ffffff' },
   finished: { grey: false, opacity: FINISHED_OPACITY },
   // White paper with a black edge whatever is picked (MarginSheet card); the inner border is `margin-line`.
   margin: { fill: '#ffffff', line: '#595959', edge: '#000000', edgeWidth: 2, ruler: '#3d3d3d', rulerStrong: '#1f1f1f' },
@@ -172,7 +183,7 @@ export interface BeadShape {
   x: number
   y: number
   size: number
-  /** The bead's own width and height where it isn't `size` square (a Real cell, ADR 0068). */
+  /** The bead's own width and height where it isn't `size` square (a Bead's cell, ADR 0068, ticket 0724). */
   width?: number
   height?: number
   /** 0 for a square bead. */
@@ -438,7 +449,8 @@ export function letterInk(color: string): string {
 }
 
 /** The Swatch letter centred on a bead (ticket 0573): white on a dark bead, `ink` on a light one, judged on the color
- * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. */
+ * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. It reads
+ * upright on screen however the Canvas, the Frame or the bead is turned (ticket 0728). */
 export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
   const shown = dimmed ? finishedColor(color, theme) : color
   const side = Math.min(width, height)
@@ -447,5 +459,13 @@ export function drawBeadLetter(context: DrawingContext, { x, y, size, width = si
   context.textAlign = 'center'
   context.textBaseline = 'middle'
   context.fillStyle = letterInk(shown)
-  context.fillText(letter, x + width / 2, y + height / 2 + fontSize * LETTER_DROP_EM)
+  // Undo the turn (and any mirror) the bead is drawn at, keeping its size: the letter stands upright on the screen.
+  const { a, b, c, d } = context.getTransform()
+  const det = a * d - b * c
+  const kept = Math.sqrt(Math.abs(det)) / det
+  context.save()
+  context.translate(x + width / 2, y + height / 2)
+  if (det !== 0) context.transform(d * kept, -b * kept, -c * kept, a * kept, 0, 0)
+  context.fillText(letter, 0, fontSize * LETTER_DROP_EM)
+  context.restore()
 }

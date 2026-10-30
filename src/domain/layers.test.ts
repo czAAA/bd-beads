@@ -63,6 +63,13 @@ describe('onLayer', () => {
     expect(beadsOfLayer(painted, 'canvas')[30]).toEqual({ 30: RED })
   })
 
+  it('paints the Canvas under the Frame, hidden, at the positions the command lets through (a Mirror counterpart, ticket 0704) and keeps the rest', () => {
+    const project = layered()
+    const painted = onLayer(project, 'canvas', (view) => paintCells(view, [{ row: 11, column: 21 }, { row: 11, column: 22 }], RED), { underFrame: ({ column }) => column === 21 })
+    expect(beadsOfLayer(painted, 'canvas')[11]).toEqual({ 21: RED })
+    expect(beadColorAt(painted, 11, 21)).toBeNull()
+  })
+
   it('hands back the Project itself when the command changed nothing, or only what is under the Frame', () => {
     const project = layered()
     expect(onLayer(project, 'frame', (sheet) => sheet.beads)).toBe(project)

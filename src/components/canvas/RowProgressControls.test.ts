@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils'
 import RowProgressControls from './RowProgressControls.vue'
 import { createProject } from '../../domain/createProject'
 import { withLayers } from '../../testUtils/layerFields'
+import { moveToRow } from '../../domain/rowProgress'
+import type { RowPress } from '../../composables/project/useRowOps'
 
 beforeEach(() => {
   localStorage.clear()
@@ -35,5 +37,37 @@ describe('Row progress on the margin as its row runs out of room (MarginSheet ca
     expect(shown('compact', 2)).toEqual(['highlight', 'next'])
     expect(shown('folded')).toEqual(['highlight', 'compact-position', 'next'])
     expect(shown('folded', 2)).toEqual(['highlight', 'next'])
+  })
+})
+
+describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
+  const press = (id: number, done: boolean): RowPress => ({ id, done, from: 0, to: 1, patternDone: false })
+  const spark = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="margin-progress-spark"]')
+
+  it('is hidden before the first pass, rides the fill’s edge after it and stays at the end once every pass is done', async () => {
+    const wrapper = mount(RowProgressControls, { props: { project, form: 'margin', testid: 'margin-progress' } })
+    expect(spark(wrapper).attributes('hidden')).toBeDefined()
+
+    await wrapper.setProps({ project: moveToRow(project, 1) })
+    expect(spark(wrapper).attributes('hidden')).toBeUndefined()
+    expect(spark(wrapper).attributes('style')).toContain(`translateX(${(1 / 11 - 1) * 100}%)`)
+
+    await wrapper.setProps({ project: moveToRow(project, 11) })
+    expect(spark(wrapper).attributes('hidden')).toBeUndefined()
+    expect(spark(wrapper).attributes('style')).toContain('translateX(0%)')
+  })
+
+  it('flares on each Row done, restarting each time, and not on Row not done or on being shown', async () => {
+    const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1), form: 'margin', testid: 'margin-progress', rowPress: press(1, true) } })
+    expect(spark(wrapper).classes().filter((name) => name.includes('flaring'))).toEqual([])
+
+    await wrapper.setProps({ rowPress: press(2, true) })
+    expect(spark(wrapper).classes()).toContain('row-progress__spark--flaring')
+    await wrapper.setProps({ rowPress: press(3, true) })
+    expect(spark(wrapper).classes()).toContain('row-progress__spark--flaring-alt')
+    await wrapper.setProps({ rowPress: press(4, false) })
+    expect(spark(wrapper).classes()).toContain('row-progress__spark--flaring-alt')
+    // The margin's track carries it at the compact size.
+    expect(spark(wrapper).classes()).toContain('row-progress__spark--compact')
   })
 })

@@ -8,7 +8,7 @@ import { paintAt } from '../../testUtils/layers'
 import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
-import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
+import { MIRROR_OFF, withCanvasAxes, type MirrorSetting } from '../../domain/mirror'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 import { withColors, type BeadChange, type Rect } from '../../domain/canvas'
@@ -152,12 +152,32 @@ describe('usePaintStroke', () => {
       expect([0, 1, 2, 3].map((column) => at(0, column))).toEqual(['#0000ff', '#0000ff', null, null])
     })
 
-    it('paints only where aimed on the open Canvas (ticket 0704 adds its Axes)', () => {
+    it('paints only where aimed on the open Canvas until its Axis is placed (ticket 0704)', () => {
       const { stroke, harness, frame } = setup('paint', fourWide(), leftRight)
       stroke.beginOrCommitPress('paint', '#ff0000', frame.row - 6, frame.column)
       stroke.endStroke()
 
       expect(beadsOfLayer(harness.project, 'canvas')).toEqual({ [frame.row - 6]: { [frame.column]: '#ff0000' } })
+    })
+
+    it('lands a Canvas stroke and a Fill across the Canvas\'s own Axis, a counterpart under the Frame painted there hidden (ticket 0704)', () => {
+      // A 4 x 3 Frame at (10, 10), its margin out to (6, 6); the Axis at column 6 maps column 2 to 10, under the Frame
+      // on row 11 and clear of it on row 20.
+      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
+      const { stroke, harness } = setup('paint', withCanvasAxes(framed, { leftRight: 6 }), leftRight)
+      stroke.beginOrCommitPress('paint', '#ff0000', 11, 2)
+      stroke.paintStrokeCell(20, 2, '#ff0000')
+      stroke.endStroke()
+
+      expect(beadsOfLayer(harness.project, 'canvas')[11]).toEqual({ 2: '#ff0000', 10: '#ff0000' })
+      expect(beadColorAt(harness.project, 11, 10)).toBeNull()
+      expect(beadsOfLayer(harness.project, 'canvas')[20]).toEqual({ 2: '#ff0000', 10: '#ff0000' })
+      expect(frameOf(harness.project)!.beads).toEqual({})
+
+      const { stroke: fill, harness: filled } = setup('fill', withCanvasAxes(framed, { leftRight: 6 }), leftRight)
+      filled.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 2 }, { row: 20, column: 3 }], '#0000ff'))
+      fill.beginOrCommitPress('paint', '#00ff00', 20, 2)
+      expect(beadsOfLayer(filled.project, 'canvas')[20]).toEqual({ 2: '#00ff00', 3: '#00ff00', 9: '#00ff00', 10: '#00ff00' })
     })
   })
 

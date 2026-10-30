@@ -5,6 +5,8 @@ import HomePage from './HomePage.vue'
 import { createProject } from '../domain/createProject'
 import { en } from '../i18n/en'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
+import { findBead } from '../domain/beads'
+import { beadCell } from '../domain/weave'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
@@ -308,9 +310,9 @@ const { positionMarkBackground } = vi.hoisted(() => ({
 vi.mock('../rendering/positionMarks', () => ({ positionMarkBackground }))
 
 describe('HomePage background', () => {
-  it("draws the Canvas's empty positions of a Delica 11/0 Symmetric peyote Project, not the loom's square grid", () => {
+  it("draws the Canvas's empty positions of a Delica 11/0 peyote Project at the Bead's real cell, not the loom's square grid", () => {
     page()
-    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote' }))
+    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote', cell: beadCell(findBead('miyuki/delica/11-0')) }))
   })
 
   it("is the editor's tile: a bead across", () => {
