@@ -66,18 +66,18 @@ function fileNameSlug(name: string): string {
 }
 
 /** The names, each made filename-safe and joined by `-`; a name that leaves nothing to write is left out, and
- * `openbeads` stands in when none does (ticket 0719). */
+ * `openbeads` stands in when none does (ticket 0720). */
 function fileStem(names: (string | undefined)[]): string {
   return names.map((name) => fileNameSlug(name ?? '')).filter(Boolean).join('-') || 'openbeads'
 }
 
 /** The project file's name, e.g. `summer-ada.openbeads`: it holds the whole Project, so no Frame's name (tickets 392,
- * 0719). */
+ * 0720). */
 export function projectFileName(project: Project): string {
   return `${fileStem([projectNameOf(project), project.makerName])}.openbeads`
 }
 
-/** The name a picture or document of the Project is saved under (tickets 73, 74, 0719), e.g. `summer-rose-ada.png`. */
+/** The name a picture or document of the Project is saved under (tickets 73, 74, 0720), e.g. `summer-rose-ada.png`. */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
   return `${fileStem([projectNameOf(project), frameOf(project)?.name, project.makerName])}.${extension}`
 }

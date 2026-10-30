@@ -91,7 +91,7 @@ describe('printText (tickets 162, 164)', () => {
     expect(text.maker).toBe('Bead Master')
   })
 
-  it("titles the export with the Frame's name, else the Project's (ticket 0719)", () => {
+  it("titles the export with the Frame's name, else the Project's (ticket 0720)", () => {
     const framed = withLayer(delicaProject(10), 'frame', { name: 'Rose' })
 
     expect(printText(framed, en, 'en', at).name).toBe('Rose')
