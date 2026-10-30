@@ -5,17 +5,17 @@ import type { CanvasLayer, FrameLayer, LayerFields, Project } from '../domain/pr
 import { DEFAULT_BEAD } from '../domain/beads'
 import { DEFAULT_TECHNIQUE } from '../domain/weave'
 
-/** What a test sets on a Project in one go (ticket 0664): the Canvas layer's own fields, the Bead, Bead shape and
+/** What a test sets on a Project in one go (ticket 0664): the Canvas layer's own fields, the Bead and
  * Letters of every layer, the Frame layer as a sheet (none removes it) and its Row progress, and the Project's own. */
 export type LayersChange = Partial<Pick<CanvasLayer, 'name' | 'technique' | 'techniqueSettings' | 'beads' | 'pieceNames' | 'orientation'>> &
-  Partial<Pick<LayerFields, 'beadId' | 'bead' | 'beadShape' | 'letters'>> &
+  Partial<Pick<LayerFields, 'beadId' | 'bead' | 'letters'>> &
   Partial<Pick<FrameLayer, 'rowProgress'>> & { frame?: (FrameSheet & Partial<FrameLayer>) | undefined } & Partial<Omit<Project, 'layers'>>
 
 /** The Project with its layers' fields set where given (ticket 0664): `technique`, `techniqueSettings`, `beads`,
- * `name`, `pieceNames` and `orientation` go to the Canvas, the Bead, Bead shape and Letters to every layer, `frame`
+ * `name`, `pieceNames` and `orientation` go to the Canvas, the Bead and Letters to every layer, `frame`
  * lays the Frame's sheet (or removes it) and `rowProgress` goes to the Frame. Not stamped. */
 export function withLayers(project: Project, change: LayersChange): Project {
-  const { name, technique, techniqueSettings, beadId, bead, beadShape, beads, frame, rowProgress, letters, pieceNames, orientation, ...rest } = change
+  const { name, technique, techniqueSettings, beadId, bead, beads, frame, rowProgress, letters, pieceNames, orientation, ...rest } = change
   let next: Project = { ...project, ...rest }
   const canvas: Partial<CanvasLayer> = {
     ...(name !== undefined ? { name } : {}),
@@ -35,7 +35,6 @@ export function withLayers(project: Project, change: LayersChange): Project {
   const shared: Partial<LayerFields> = {
     ...(beadId !== undefined ? { beadId } : {}),
     ...('bead' in change ? { bead } : {}),
-    ...('beadShape' in change ? { beadShape } : {}),
   }
   if (Object.keys(shared).length > 0) {
     next = { ...next, layers: next.layers.map((layer) => ({ ...layer, ...shared })) as Project['layers'] }
@@ -48,7 +47,7 @@ export function withLayers(project: Project, change: LayersChange): Project {
 export function frameSheetOf(project: Pick<Project, 'layers'>): FrameSheet | undefined {
   const frame = frameOf(project)
   if (!frame) return undefined
-  const { id: _id, beadId: _beadId, bead: _bead, beadShape: _shape, letters: _letters, pieceNames: _names, rowProgress: _progress, ...sheet } = frame
+  const { id: _id, beadId: _beadId, bead: _bead, letters: _letters, pieceNames: _names, rowProgress: _progress, ...sheet } = frame
   return sheet
 }
 

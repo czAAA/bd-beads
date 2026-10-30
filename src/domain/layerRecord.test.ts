@@ -25,23 +25,21 @@ const open = (): Project => {
 }
 
 describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
-  it('reads the Canvas from the Project: its Weave, Bead, Bead shape, beads and the Project\'s name', () => {
+  it('reads the Canvas from the Project: its Weave, Bead, beads and the Project\'s name', () => {
     expect(layerOf(framed(), 'canvas')).toEqual({
-      weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 } },
+      weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 }, cell: beadCell(delica) },
       beadId: delica.id,
       bead: beadCopy(delica),
-      beadShape: 'symmetric',
       beads: { 9: { 9: RED } },
       name: 'Garden',
     })
   })
 
-  it('reads the Frame from its sheet, with the Project\'s Bead and Bead shape', () => {
-    expect(layerOf(withLayers(framed(), { beadShape: 'real' }), 'frame')).toEqual({
-      weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica, 'real') },
+  it('reads the Frame from its sheet, with the Project\'s Bead', () => {
+    expect(layerOf(framed(), 'frame')).toEqual({
+      weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica) },
       beadId: delica.id,
       bead: beadCopy(delica),
-      beadShape: 'real',
       beads: { 1: { 2: BLUE } },
       name: 'Rose',
     })
@@ -87,20 +85,17 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
   })
 
   it('keeps a Weave\'s cell out of what it stores, and clears a Frame\'s name with an empty one', () => {
-    const after = withLayer(framed(), 'frame', { weave: { technique: 'loom', cell: beadCell(delica, 'real') }, name: '' })
+    const after = withLayer(framed(), 'frame', { weave: { technique: 'loom', cell: beadCell(delica) }, name: '' })
     expect(frameOf(after)).not.toHaveProperty('cell')
     expect(frameOf(after)).not.toHaveProperty('name')
   })
 
-  it('writes a layer\'s Bead and Bead shape into that layer alone (tickets 0665, 0670)', () => {
-    const after = withLayer(framed(), 'frame', { bead: cube, beadShape: 'real' })
-    expect(frameOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
+  it('writes a layer\'s Bead into that layer alone (tickets 0665, 0670)', () => {
+    const after = withLayer(framed(), 'frame', { bead: cube })
+    expect(frameOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube) })
     expect(canvasOf(after)).toMatchObject({ beadId: delica.id, bead: beadCopy(delica) })
-    expect(canvasOf(after)).not.toHaveProperty('beadShape')
     expect(canvasOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: cube.id, bead: beadCopy(cube) })
     expect(frameOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: delica.id })
-    const symmetric = withLayer(after, 'frame', { beadShape: 'symmetric' })
-    expect(symmetric.layers.some((layer) => 'beadShape' in layer)).toBe(false)
   })
 
   it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and place', () => {
@@ -129,17 +124,17 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
     expect(beadsOfLayer(open(), 'frame')).toBeUndefined()
   })
 
-  it('reads each layer\'s own Bead, its id and Bead shape, Symmetric where none is saved; a Frame the Project lacks reads the Canvas\'s', () => {
-    const project = withLayer(withLayers(framed(), { beadShape: 'real' }), 'frame', { bead: cube })
-    expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(cube), beadShape: 'real' })
+  it('reads each layer\'s own Bead, and its id; a Frame the Project lacks reads the Canvas\'s', () => {
+    const project = withLayer(framed(), 'frame', { bead: cube })
+    expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(cube) })
     expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)
     expect(beadIdOfLayer(project, 'frame')).toBe(cube.id)
-    expect(beadOfLayer(open(), 'canvas')).toEqual({ bead: beadCopy(delica), beadShape: 'symmetric' })
+    expect(beadOfLayer(open(), 'canvas')).toEqual({ bead: beadCopy(delica) })
     expect(beadIdOfLayer(withLayer(open(), 'canvas', { bead: cube }), 'frame')).toBe(cube.id)
   })
 
   it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {
-    const project = withLayers(framed(), { beadShape: 'real' })
+    const project = framed()
     expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
     expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } })
     expect(heldWeave(open(), 'frame')).toBeUndefined()
@@ -148,9 +143,9 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
 
 describe('the layer list (ADR 0079, ticket 0664)', () => {
   it('lays a Frame anew as a copy of the Canvas\'s Bead and Letters, at the first row, under an id of its own', () => {
-    const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube, beadShape: 'real' }), true)
+    const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube }), true)
     const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
-    expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 } })
+    expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), letters: true, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 } })
     expect(frameOf(laid)!.id).not.toBe(canvasOf(laid).id)
   })
 

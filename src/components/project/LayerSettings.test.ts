@@ -13,13 +13,13 @@ beforeEach(() => {
 })
 
 const delica = findBead('miyuki/delica/11-0')!
-const base = { layer: 'frame' as const, technique: 'brick' as const, techniqueSettings: { brickDrop: 3 }, bead: delica, beadShape: 'symmetric' as const, background: 1, testid: 'x' }
+const base = { layer: 'frame' as const, technique: 'brick' as const, techniqueSettings: { brickDrop: 3 }, bead: delica, background: 1, testid: 'x' }
 const mountSettings = (props: Record<string, unknown> = {}) => mount(LayerSettings, { props: { ...base, ...props }, attachTo: document.body })
 
 describe('LayerSettings (ADR 0079, ticket 0670)', () => {
-  it('sets the Technique and its settings, then the Bead and its shape, then the Background, each headed', () => {
+  it('sets the Technique and its settings, then the Bead, then the Background, each headed', () => {
     const wrapper = mountSettings()
-    const order = ['x-technique', 'x-brick-drop', 'bead-shape', 'bead-brand', 'frame-background-picker']
+    const order = ['x-technique', 'x-brick-drop', 'bead-brand', 'frame-background-picker']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -35,13 +35,11 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     await wrapper.get('[data-testid="x-technique"] button').trigger('click')
     await wrapper.get('[data-testid="x-technique"] [data-value="peyote"]').trigger('click')
     await wrapper.get('[data-testid="x-brick-drop-more"]').trigger('click')
-    await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
     await wrapper.get('[data-testid="bead-size"] button').trigger('click')
     await wrapper.get('[data-testid="bead-size"] [data-value="miyuki/delica/15-0"]').trigger('click')
     await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
     expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
     expect(wrapper.emitted('set-setting')).toEqual([['brickDrop', 4]])
-    expect(wrapper.emitted('set-bead-shape')).toEqual([['real']])
     expect(wrapper.emitted('pick-bead')).toEqual([['miyuki/delica/15-0']])
     expect(wrapper.emitted('set-background')).toEqual([[2]])
     expect(wrapper.get('[data-testid="x-technique"] button').attributes('aria-label')).toBe('Technique: Brick stitch')
@@ -53,13 +51,12 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     expect(wrapper.findAll('[data-testid="x-technique"] [role="menuitemradio"]').map((item) => item.attributes('data-value'))).toEqual(['peyote'])
   })
 
-  it('holds the Technique, its settings and a shape\'s settings while locked, with the reason, never the Bead, its shape or the Background', () => {
+  it('holds the Technique, its settings and a shape\'s settings while locked, with the reason, never the Bead or the Background', () => {
     const wrapper = mountSettings({ locked: true, frame: { shape: 'triangle', settings: { rounds: 4 } } })
     expect(wrapper.get('[data-testid="x-technique"] button').attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="frame-setting-rounds-more"]').attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
     expect(wrapper.get('[data-testid="bead-size"] button').attributes('aria-disabled')).toBeUndefined()
-    expect(wrapper.get('[data-testid="bead-shape"] [data-value="real"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-background-picker"] [aria-disabled="true"]').exists()).toBe(false)
   })
 

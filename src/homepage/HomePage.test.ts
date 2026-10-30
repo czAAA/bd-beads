@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import HomePage from './HomePage.vue'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
+import { fakeFeedback } from '../testUtils/fakeFeedback'
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
 
 function page(projectCount = 0) {
-  return mount(HomePage, { props: { projectCount }, attachTo: document.body })
+  return mount(HomePage, { props: { projectCount, feedback: fakeFeedback() }, attachTo: document.body })
 }
 
 /** The page's width as the carousel's tier reads it before the first resize report. */
@@ -113,6 +114,20 @@ describe('HomePage', () => {
     expect(item.attributes('href')).toContain('homepage/')
   })
 
+  it('sends a general Report from the Menu’s Send feedback, and thanks with a toast of its own', async () => {
+    const feedback = fakeFeedback()
+    const wrapper = mount(HomePage, { props: { projectCount: 0, feedback }, attachTo: document.body })
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="menu-item-feedback"]').trigger('click')
+    expect(wrapper.get('[data-testid="feedback-sheet"]').attributes('data-kind')).toBe('general')
+    await wrapper.get('[data-testid="feedback-message"]').setValue('The editor does not open on my tablet.')
+    await wrapper.get('form#feedback-sheet-form').trigger('submit')
+    await vi.waitFor(() => expect(wrapper.find('[data-testid="feedback-sheet"]').exists()).toBe(false))
+    expect(feedback.send).toHaveBeenCalledOnce()
+    expect(wrapper.get('[data-testid="feedback-sent"]').text()).toContain('Thanks, your report was sent')
+    wrapper.unmount()
+  })
+
   it('switches to Russian with the language switcher in the Menu, and remembers it', async () => {
     const wrapper = page()
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
@@ -169,7 +184,7 @@ describe('HomePage', () => {
 describe('the features carousel', () => {
   const mountWide = () => {
     setScreenWidth(1200)
-    return mount(HomePage, { props: { projectCount: 0 }, attachTo: document.body })
+    return mount(HomePage, { props: { projectCount: 0, feedback: fakeFeedback() }, attachTo: document.body })
   }
 
   it('is a named tablist of the seven features in order, each with an icon, and no Mirror (from 1024)', () => {
@@ -264,7 +279,7 @@ const { positionMarkBackground } = vi.hoisted(() => ({
 vi.mock('../rendering/positionMarks', () => ({ positionMarkBackground }))
 
 describe('HomePage background', () => {
-  it("draws the Canvas's empty positions of a Delica 11/0 Symmetric peyote Project, not the loom's square grid", () => {
+  it("draws the Canvas's empty positions of a Delica 11/0 peyote Project, not the loom's square grid", () => {
     page()
     expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote' }))
   })

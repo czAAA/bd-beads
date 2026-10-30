@@ -34,7 +34,7 @@ describe('rows of beads', () => {
     expect(peyote.positionAt(-5, 20, 20, 20, { rows: 2, columns: 2 })).toBeUndefined()
   })
 
-  it('misses a Real cell\'s own rounded corner, not the Technique\'s', () => {
+  it('misses a Bead\'s cell\'s own rounded corner, not the Technique\'s', () => {
     expect(describeWeave({ technique: 'loom', cell: { aspect: 1, roundness: 0.5 } }).positionAt(1, 1, 20, 20)).toBeUndefined()
   })
 

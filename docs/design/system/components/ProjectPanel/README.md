@@ -15,7 +15,7 @@ The panel shell (width, edge, radius, motion, closing, focus), the density and t
 
 ## Sections (PanelSection, in this order)
 
-1. **canvas:** the Canvas's Layer settings (LayerSettings card, ticket 0670): its Technique and settings, its Bead (heading, Bead shape, Brand, Type and Size) and its Background, saved with the Project (CanvasBackground card). They change any time, with a Frame and once Row progress has started. A Bead picked here asks Replace bead? for the Canvas (ConfirmDialogs card). Collapsed summary: "Loom · Miyuki Delica 11/0". The old bead section is folded into it.
+1. **canvas:** the Canvas's Layer settings (LayerSettings card, ticket 0670): its Technique and settings, its Bead (heading, Brand, Type and Size) and its Background, saved with the Project (CanvasBackground card). They change any time, with a Frame and once Row progress has started. A Bead picked here asks Replace bead? for the Canvas (ConfirmDialogs card). Collapsed summary: "Loom · Miyuki Delica 11/0". The old bead section is folded into it.
 2. **export:** **Project file** (`export`, value `.openbeads`). Picture (PNG) and Printable chart (PDF) need a Frame and live in the Frame panel (Frame card).
 3. **this project:** Duplicate, **Clear all beads** (`erase`, `danger`) and **Delete project** (`delete`, `danger`), as PanelItems. Clear all beads is the app's existing Clear: every bead of this canvas emptied and Row progress off, behind its usual confirmation, one Undo step; the Project stays.
 
@@ -34,6 +34,6 @@ Not here any more: the size estimate, Frame from starter and Beads needed (all i
 
 ## Copy
 
-English: project:, name:, maker:, Saved in local browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Drop, Bead shape, Symmetric, Real, Bead, Project file, Duplicate, Clear all beads, Delete project. Russian: `writing.md` (Panels redesign).
+English: project:, name:, maker:, Saved in local browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Drop, Bead, Project file, Duplicate, Clear all beads, Delete project. Russian: `writing.md` (Panels redesign).
 
 Hand-written from spec 0440, the Menu and Project mockups and the ticket 0553 canvas; static rendition.

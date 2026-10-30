@@ -63,6 +63,21 @@ const MirrorPopoverHost = defineComponent({
   },
 })
 
+/** The same popover on the open Canvas (ticket 0704): a straight Axis on in Repeat and no Frame, so the Canvas's
+ * Note shows in place of the Steppers. */
+const MirrorPopoverOnCanvasHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true }),
+      ])
+  },
+})
+
 /** The app's drop look, a picture being dragged over it. */
 const PictureDragged = defineComponent({
   setup() {
@@ -95,7 +110,8 @@ const SaveFailedNotice = defineComponent({
 function beadColors(state: 'ready' | 'failed') {
   const finishes = ['metallic', 'matte', 'opaque'] as const
   const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: finishes[i]!, hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
-  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const }
+  // With `report`, so the foot row that opens a color Report (ticket 0700) is measured too.
+  return { available: ref(true), state: ref(state), swatches: ref(swatches), bead: ref(BEAD_CATALOG[2]), catalog: ref(undefined), load: () => {}, add: () => 'added' as const, report: () => {} }
 }
 
 /** A Delica catalog of a few codes, so Bead colors is offered and matched to. */
@@ -161,6 +177,7 @@ const openSchemaTag = (root: HTMLElement) => root.querySelector<HTMLElement>('[a
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
+  ['MirrorPopover on the Canvas', MirrorPopoverOnCanvasHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],

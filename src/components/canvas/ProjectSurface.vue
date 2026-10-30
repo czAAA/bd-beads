@@ -26,7 +26,8 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
-import type { MirrorSetting } from '../../domain/mirror'
+import type { MirrorDirection, MirrorSetting } from '../../domain/mirror'
+import { axisHandles as axisHandlesOf } from '../../rendering/mirrorAxes'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -79,6 +80,10 @@ const props = withDefaults(defineProps<{
   selectionRefusals?: number
   /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
   mirror?: MirrorSetting
+  /** The open Canvas's Axes that act (ticket 0704): a line across the whole view each, with a handle chip the press
+   * grabs before the tool; `heldAxis` is the one being dragged. */
+  mirrorAxes?: Partial<Record<MirrorDirection, number>>
+  heldAxis?: MirrorDirection
   /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
   fillRefusals?: number
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
@@ -146,7 +151,7 @@ const drawnProps = viewProps({ get project() { return drawnProject.value }, get 
  * position is. */
 const space = computed(() => spaceOf(props.project, true))
 
-/** The Canvas's Weave (ADR 0079), with the cell its Bead and Bead shape draw it in. */
+/** The Canvas's Weave (ADR 0079), with the cell its Bead draws it in. */
 const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
@@ -293,12 +298,15 @@ watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: 
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 
 const marginCue = useMarginCue(props)
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
+/** Mirror's Axis handles on the open Canvas (ticket 0704), laid out once per view: the overlay draws them and the
+ * pointer asks them which one a press grabbed, so the two cannot disagree. */
+const axisHandles = computed(() => (props.mirrorAxes ? axisHandlesOf(props.mirrorAxes, canvasWeave.value, surface.value) : []))
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse, axisHandles })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
 useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
-  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
+  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
 

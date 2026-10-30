@@ -2,7 +2,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
-import { DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { DEFAULT_TECHNIQUE, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { formatImageLimits } from '../../domain/imageConversion'
 import type { Background } from '../../domain/project'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -27,8 +27,6 @@ const emit = defineEmits<{
 const name = ref('')
 const beadId = ref(DEFAULT_BEAD.id)
 const technique = ref<Technique>(DEFAULT_TECHNIQUE)
-/** The Bead shape (ADR 0068, ticket 508): how the Canvas draws each cell. */
-const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
 /** The Technique settings' values by id (tickets 477, 485, 0626): each kept while another Technique is chosen, used by
  * the Technique that describes it only; one never changed is its default. */
 const settings = ref<TechniqueSettings>({})
@@ -68,13 +66,12 @@ function currentInput(): CreateProjectInput {
     technique: technique.value,
     ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
     beadId: beadId.value,
-    ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
     ...(background.value !== undefined ? { background: background.value } : {}),
     makerName: makerName.value.trim(),
   }
 }
 
-watch([name, beadId, beadShape, technique, settings, background, makerName], () => emit('draft', currentInput()), { immediate: true })
+watch([name, beadId, technique, settings, background, makerName], () => emit('draft', currentInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -107,13 +104,11 @@ const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsH
       :technique="technique"
       :technique-settings="settings"
       :bead="selectedBead"
-      :bead-shape="beadShape"
       :background="background ?? deviceBackground"
       testid="new-project"
       @set-technique="technique = $event"
       @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
       @pick-bead="beadId = $event"
-      @set-bead-shape="beadShape = $event"
       @set-background="background = $event"
     />
 

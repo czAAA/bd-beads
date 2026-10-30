@@ -35,7 +35,6 @@ const {
   onRequestDeleteAllProjects,
   onSetTechnique,
   onSetWeaveSetting,
-  onSetBeadShape,
   onSetBackground,
   onFitFrame,
   onSelectFrame,
@@ -72,6 +71,7 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   onOpenShortcutsHelp,
+  onOpenFeedback,
 } = usePanelsContext()
 
 /** The Starter gallery's category and Starter open (ticket 0596): a card sets its own as it pushes the next level. */
@@ -100,7 +100,6 @@ const chosenStarter = ref<StarterId>()
       @set-settings="onSetFrameSettings"
       @set-technique="onSetTechnique"
       @set-weave-setting="onSetWeaveSetting"
-      @set-bead-shape="onSetBeadShape"
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
     />
@@ -161,6 +160,7 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
+      @feedback="onOpenFeedback"
     />
     <ProjectPanel
       v-else-if="activeProject"
@@ -170,7 +170,6 @@ const chosenStarter = ref<StarterId>()
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
       @set-weave-setting="onSetWeaveSetting"
-      @set-bead-shape="onSetBeadShape"
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"

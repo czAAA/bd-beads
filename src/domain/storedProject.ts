@@ -9,12 +9,12 @@ import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } fr
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import { readMirrorSetting } from './mirror'
+import { readCanvasAxes, readMirrorSetting } from './mirror'
 import { readPieceNames } from './pieceNames'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress } from './rowProgress'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
-import { beadCell, DEFAULT_BEAD_SHAPE, isTechnique, withCell, type Technique, type Weave } from './weave'
+import { beadCell, isTechnique, withCell, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
 // older app saved becomes today's Project, so nothing else has to know the old ones.
@@ -31,6 +31,8 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
     id?: string
     name?: string
     orientation?: number
+    /** The Canvas's Mirror Axes (ticket 0704), as a file may have left them. */
+    mirrorAxes?: unknown
     rowProgress?: Partial<RowProgress> & { currentRow: number }
   }
 
@@ -108,7 +110,7 @@ export function normalizeProject(stored: StoredProject): Project {
 }
 
 /** A Project saved before its layers (ticket 0664) as its layers: the Canvas from its own fields, its rotation its
- * orientation, the Frame with its Row progress, both with its Bead, Bead shape and Letters. A grid-shaped one gets a
+ * orientation, the Frame with its Row progress, both with its Bead and Letters. A grid-shaped one gets a
  * Frame the size of its grid, a version 3 one its Frame's beads lifted into it (versionThree.ts, temporary). */
 function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): LayeredProject {
   const upright: SavedProject | VersionThreeProject = isGridProject(stored)
@@ -134,7 +136,6 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
     techniqueSettings,
     beadId,
     bead,
-    beadShape,
     beads,
     frame,
     rowProgress,
@@ -142,7 +143,7 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
     pieceNames,
     ...rest
   } = project
-  const shared = { beadId, bead, beadShape, letters }
+  const shared = { beadId, bead, letters }
   const canvas: StoredLayer = { name, technique, techniqueSettings, ...shared, beads: beads ?? {}, pieceNames, orientation: legacyRotation(project) }
   return { ...rest, layers: frame ? [canvas, { ...frame, ...shared, beads: frame.beads ?? {}, rowProgress }] : [canvas] }
 }
@@ -152,7 +153,9 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
 function readCanvas(stored: StoredLayer, projectId: string): CanvasLayer {
   const layer = readLayer(stored, `${projectId}:canvas`, readWeave(stored.technique, stored))
   const name = typeof stored.name === 'string' && stored.name ? stored.name : layer.bead ? beadLabel(layer.bead) : layer.beadId
-  return { ...layer, name, orientation: readOrientation(stored.orientation) }
+  // The Canvas's Mirror Axes (ticket 0704): a file from before them, or an unreadable record, opens with none placed.
+  const mirrorAxes = readCanvasAxes(stored.mirrorAxes)
+  return { ...layer, name, orientation: readOrientation(stored.orientation), ...(mirrorAxes ? { mirrorAxes } : {}) }
 }
 
 /** The Frame a store or file holds, its Row progress read inside it. One stored before it had a Weave of its own
@@ -161,7 +164,7 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas))
   const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
   const laid = readFrameShape(stored)
-  const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.beadShape ?? DEFAULT_BEAD_SHAPE)), ...laid, rows, columns }
+  const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead)), ...laid, rows, columns }
   return {
     ...layer,
     row,
@@ -176,7 +179,7 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
 }
 
 /** What every stored layer holds, read: its id (or `fallbackId` for one saved without), Weave, Bead copy (its own when
- * readable, else the catalog's of that id through the alias map, ticket 534), Bead shape, Background, beads, Letters,
+ * readable, else the catalog's of that id through the alias map, ticket 534), Background, beads, Letters,
  * Piece names. */
 function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): LayerFields {
   const bead = readBeadCopy(stored.bead) ?? catalogCopy(stored.beadId)
@@ -186,8 +189,6 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
     ...weave,
     beadId: bead?.id ?? stored.beadId,
     ...(bead ? { bead } : {}),
-    // An unreadable or missing Bead shape reads as Symmetric, which is left unsaved.
-    ...(stored.beadShape === 'real' ? { beadShape: stored.beadShape } : {}),
     ...withBackgroundRead(stored.background),
     beads: stored.beads ?? {},
     ...(stored.letters === true ? { letters: true } : {}),

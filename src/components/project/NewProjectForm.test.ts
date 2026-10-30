@@ -121,20 +121,6 @@ describe('NewProjectForm', () => {
     expect(events![0]![0]).toMatchObject({ technique: 'peyote' })
   })
 
-  it('offers Symmetric and Real, starts Symmetric and sends Real only when it is chosen (ticket 508)', async () => {
-    const wrapper = mount(NewProjectForm)
-
-    const options = wrapper.findAll('[data-testid="bead-shape"] [role="radio"]')
-    expect(options.map((option) => option.attributes('data-value'))).toEqual(['symmetric', 'real'])
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')![0]![0]).not.toHaveProperty('beadShape')
-
-    await wrapper.find('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')![1]![0]).toMatchObject({ beadShape: 'real' })
-    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ beadShape: 'real' })
-  })
-
   it('starts on the device\'s Background and sends one only when it is picked, for both layers (ticket 0670)', async () => {
     const wrapper = mount(NewProjectForm, { attachTo: document.body })
 

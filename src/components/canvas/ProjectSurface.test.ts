@@ -333,7 +333,6 @@ describe('ProjectSurface', () => {
     })
 
     it.each([
-      ['Bead shape', (project: Project): Project => (withLayers(project, { beadShape: 'real' }))],
       ['piece names', (project: Project): Project => (withLayers(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
       ['Technique', (project: Project): Project => (withLayers(project, { technique: 'peyote' }))],
       ['Bead', (project: Project): Project => (withLayers(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],

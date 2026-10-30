@@ -25,7 +25,7 @@ import {
   usRingSize,
   type StarterManifest,
 } from './starters'
-import { beadsOfLayer, canvasOf, frameOf, withBackground, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, withBackground } from './layerRecord'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 
 const beadId = 'miyuki/delica/11-0'
@@ -138,31 +138,30 @@ describe('a new Project from a Starter', () => {
 
 describe('the Frame\'s Layer settings from a Starter\'s setup (ADR 0079, ticket 0671)', () => {
   const toho = 'toho/cube/1.5mm'
-  const set = { beadId: toho, beadShape: 'real' as const, background: '#123456' }
+  const set = { beadId: toho, background: '#123456' }
 
-  it('gives a new Project\'s Frame the setup\'s Weave, Bead, Bead shape and Background, and the Canvas copies them', () => {
+  it('gives a new Project\'s Frame the setup\'s Weave, Bead and Background, and the Canvas copies them', () => {
     const project = starterProject(starterById('bandStripes'), { name: 'Band', ...asDesigned('bandStripes'), weave: { technique: 'loom' }, ...set })
     for (const layer of [canvasOf(project), frameOf(project)!]) {
-      expect(layer).toMatchObject({ technique: 'loom', beadId: toho, beadShape: 'real', background: '#123456' })
+      expect(layer).toMatchObject({ technique: 'loom', beadId: toho, background: '#123456' })
     }
   })
 
-  it('on an open Project sets only the Frame: the Canvas keeps its Weave, Bead, Bead shape and Background', () => {
+  it('on an open Project sets only the Frame: the Canvas keeps its Weave, Bead and Background', () => {
     const open = withBackground(createProject({ technique: 'loom', beadId, name: 'Open' }), 'canvas', 2)
     const result = placedStarter(open, starterById('triangle'), { ...asDesigned('triangle'), ...set }, { row: 20, column: 20 })
     if (result.kind !== 'changed') throw new Error(result.kind)
-    expect(frameOf(result.project)).toMatchObject({ shape: 'triangle', technique: 'peyote', beadId: toho, beadShape: 'real', background: '#123456' })
+    expect(frameOf(result.project)).toMatchObject({ shape: 'triangle', technique: 'peyote', beadId: toho, background: '#123456' })
     expect(frameOf(result.project)!.beads).toEqual(starterDesign(starterById('triangle')))
     expect(canvasOf(result.project)).toEqual(canvasOf(open))
   })
 
-  it('replaces a Frame\'s own Bead, Bead shape and Background with the setup\'s', () => {
+  it('replaces a Frame\'s own Bead and Background with the setup\'s', () => {
     const open = createProject({ technique: 'peyote', beadId, name: 'Open', size: { unit: 'beads', width: 10, height: 10 } })
-    const framed = withBackground(withLayer(open, 'frame', { beadShape: 'real' }), 'frame', 4)
-    const result = placedStarter(framed, starterById('kite'), { ...asDesigned('kite'), ...set, beadShape: 'symmetric' }, { row: 30, column: 30 })
+    const framed = withBackground(open, 'frame', 4)
+    const result = placedStarter(framed, starterById('kite'), { ...asDesigned('kite'), ...set }, { row: 30, column: 30 })
     if (result.kind !== 'changed') throw new Error(result.kind)
     expect(frameOf(result.project)).toMatchObject({ shape: 'kite', beadId: toho, background: '#123456' })
-    expect(frameOf(result.project)!.beadShape).toBeUndefined()
   })
 
   it('measures a Ring\'s length in the setup\'s Bead, not the Project\'s', () => {

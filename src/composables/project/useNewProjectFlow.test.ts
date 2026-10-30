@@ -27,7 +27,7 @@ describe('useNewProjectFlow', () => {
 
   it('creates a Project from a Starter, its design in the Frame (ticket 0596)', () => {
     const { deps, flow } = setup()
-    flow.onCreateFromStarter(starterById('triangle'), { name: 'Sun', beadId: 'miyuki/delica/11-0', beadShape: 'symmetric', background: 0, sizes: { rounds: 10 }, useDesign: true })
+    flow.onCreateFromStarter(starterById('triangle'), { name: 'Sun', beadId: 'miyuki/delica/11-0', background: 0, sizes: { rounds: 10 }, useDesign: true })
     const created = deps.addProject.mock.calls[0][0]
     expect(layersView(created)).toMatchObject({ name: 'Sun', frame: { shape: 'triangle', settings: { rounds: 10 } } })
     expect(frameOf(created)!.beads).toEqual(starterDesign(starterById('triangle')))
