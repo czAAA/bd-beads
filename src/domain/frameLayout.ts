@@ -32,6 +32,20 @@ export interface LayoutJoin {
   parts: readonly number[]
 }
 
+/** A layout's own symmetry (ticket 0706, spec 0702), what Mirror finds a Custom frame's counterparts by: how many turns
+ * about its centre map it onto itself (a round shape's side count; one for a Kite or Fringe earring, which only
+ * reflect), and the angle of its first mirror line through the centre, a Seam's or the spine's, in radians clockwise
+ * from straight up on screen. Its mirror lines lie 180° over the fold apart from there, its Seam rays 360° over it. */
+export interface LayoutSymmetry {
+  fold: number
+  line: number
+}
+
+/** The angle of a ray from the origin to a point, clockwise from straight up on screen (y down). */
+function lineTo({ x, y }: LayoutPoint): number {
+  return Math.atan2(x, -y)
+}
+
 /** What a Frame shape's panel builder makes of its settings. */
 export interface FrameLayout {
   positions: readonly LayoutPosition[]
@@ -45,6 +59,8 @@ export interface FrameLayout {
   centre: LayoutPoint
   /** The Seams between panels and parts, each a line, as far as the bounding rectangle. */
   seams: readonly (readonly [LayoutPoint, LayoutPoint])[]
+  /** Its symmetry about its centre (ticket 0706); none for a layout with no mirror line, a turned grid's. */
+  symmetry?: LayoutSymmetry
   /** How far a bead of it reaches out across its panel, in bead widths: a round shape's Bead's depth (ticket 0723). */
   beadDepth: number
   /** Beads that touch though the chart draws them apart, as pairs of indexes into `positions`: a peyote bead and those
@@ -170,7 +186,7 @@ function joinedParts(parts: readonly RoundsPart[]): { positions: LayoutPosition[
 /** A layout worked out round 0, 0, moved so its beads sit in the middle of a box hugging them: half a bead's diagonal
  * round their centres, not the empty points of the shape's corners. Its Seams stop at the box. */
 function boxed(
-  raw: Pick<FrameLayout, 'positions' | 'panels' | 'seams' | 'beadDepth' | 'links'> & { joins?: readonly LayoutJoin[] },
+  raw: Pick<FrameLayout, 'positions' | 'panels' | 'seams' | 'beadDepth' | 'links' | 'symmetry'> & { joins?: readonly LayoutJoin[] },
   middle: LayoutPoint = { x: 0, y: 0 },
 ): FrameLayout {
   const pad = Math.hypot(0.5, raw.beadDepth / 2)
@@ -196,6 +212,7 @@ function boxed(
     seams: raw.seams.map(([from, to]) => [shift(from), clipped(shift(from), shift(to))] as const),
     beadDepth: raw.beadDepth,
     ...(raw.links ? { links: raw.links } : {}),
+    ...(raw.symmetry ? { symmetry: raw.symmetry } : {}),
   }
 }
 
@@ -204,7 +221,9 @@ function boxed(
 export function roundsLayout(corners: number, rounds: number, depth: number): FrameLayout {
   return remembered(`rounds:${corners}:${rounds}:${depth}`, () => {
     const part = roundsPart(Array.from({ length: corners }, () => Math.PI - (2 * Math.PI) / corners), rounds, depth)
-    return boxed({ ...joinedParts([part]), seams: partSeams(part, { x: 0, y: 0 }), beadDepth: part.beadDepth })
+    // A Seam to a corner is a mirror line of a regular polygon.
+    const symmetry = { fold: corners, line: lineTo(part.corners[0]!) }
+    return boxed({ ...joinedParts([part]), seams: partSeams(part, { x: 0, y: 0 }), beadDepth: part.beadDepth, symmetry })
   })
 }
 
@@ -264,7 +283,9 @@ export function starLayout(partSize: number, depth: number): FrameLayout {
       ...[0, 1, 2, 3].map((arm): LayoutJoin => ({ step: 'zip', parts: [arm, arm + 1] })),
       { step: 'close', parts: [4, 0] },
     ]
-    return boxed({ ...joinedParts(arms), joins, seams, beadDepth: square.beadDepth }, centre)
+    // The Seam between two arms is a mirror line of the Star, through the arm across from it.
+    const symmetry = { fold: 5, line: STAR_ARM / 2 }
+    return boxed({ ...joinedParts(arms), joins, seams, beadDepth: square.beadDepth, symmetry }, centre)
   })
 }
 
@@ -300,7 +321,9 @@ export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout
       { step: 'close', parts: [3, 4] },
       { step: 'close', parts: [5, 0] },
     ]
-    return boxed({ ...joinedParts(parts), joins, seams: [...parts.flatMap((part) => partSeams(part, middleOf(part))), ...gaps], beadDepth: triangle.beadDepth }, centre)
+    // The gap between two triangles is a mirror line of the ring, through the gap across from it.
+    const symmetry = { fold: 6, line: Math.PI / 6 }
+    return boxed({ ...joinedParts(parts), joins, seams: [...parts.flatMap((part) => partSeams(part, middleOf(part))), ...gaps], beadDepth: triangle.beadDepth, symmetry }, centre)
   })
 }
 
@@ -339,9 +362,13 @@ export function kiteLayout(rows: number): FrameLayout {
     }
     // The spine runs from the first row's point down past the last row's pair.
     const spine: [LayoutPoint, LayoutPoint] = [{ x: 0, y: Math.SQRT2 }, { x: 0, y: (rows + 1) * Math.SQRT2 }]
-    return boxed({ positions, panels: wings.map(() => ({ part: 0, order: 0 })), seams: [spine], beadDepth: 1 }, { x: 0, y: ((rows + 2) * Math.SQRT2) / 2 })
+    return boxed({ positions, panels: wings.map(() => ({ part: 0, order: 0 })), seams: [spine], beadDepth: 1, symmetry: MIRRORED_ACROSS }, { x: 0, y: ((rows + 2) * Math.SQRT2) / 2 })
   })
 }
+
+/** The symmetry of a shape that only reflects across its upright middle (ticket 0706): a Kite about its spine, a Fringe
+ * earring about the middle of its top. */
+const MIRRORED_ACROSS: LayoutSymmetry = { fold: 1, line: 0 }
 
 /** A Fringe earring's settings (ticket 0597): its brick-stitch top's base row and rows, and its strands' style and
  * length. */
@@ -383,7 +410,7 @@ export function fringeLayout(settings: FringeSettings): FrameLayout {
     }
     const panels: LayoutPanel[] = [{ part: 0, order: 0 }, ...Array.from({ length: topWidth }, (_unused, strand) => ({ part: strand + 1, order: strand + 1, strand: true as const }))]
     const seam: [LayoutPoint, LayoutPoint] = [{ x: -0.5, y: (1 + FRINGE_GAP) / 2 }, { x: topWidth - 0.5, y: (1 + FRINGE_GAP) / 2 }]
-    return boxed({ positions, panels, seams: [seam], beadDepth: 1 }, { x: (topWidth - 1) / 2, y: 0 })
+    return boxed({ positions, panels, seams: [seam], beadDepth: 1, symmetry: MIRRORED_ACROSS }, { x: (topWidth - 1) / 2, y: 0 })
   })
 }
 
@@ -406,6 +433,7 @@ export function turnedLayout(layout: FrameLayout, turns: number): FrameLayout {
       height: from.width,
       centre: turn(from.centre),
       seams: from.seams.map(([start, end]) => [turn(start), turn(end)] as const),
+      ...(from.symmetry ? { symmetry: { ...from.symmetry, line: from.symmetry.line + Math.PI / 2 } } : {}),
     }
   }
   let turned = layout
@@ -445,6 +473,13 @@ export function layoutPositionAt(layout: FrameLayout, x: number, y: number): Gri
     if (Math.abs(across) <= 0.5 && Math.abs(out) <= depth) return { row: position.row, column: position.column }
   }
   return undefined
+}
+
+/** The bead a point of a layout is on, as a press finds it (its outline holds the point, so a packed bead between two
+ * Seams can be aimed at, ticket 0723), else the one a bead put there lands on (`landingAt`); none on a Seam or Off-shape. */
+export function beadUnder(layout: FrameLayout, x: number, y: number): LayoutPosition | undefined {
+  const pressed = layoutPositionAt(layout, x, y)
+  return (pressed && layoutPosition(layout, pressed)) ?? landingAt(layout, x, y)
 }
 
 /** How far a point may lie from the nearest bead's centre and still be on the shape, in bead widths: the gaps peyote
