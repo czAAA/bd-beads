@@ -14,12 +14,15 @@
   // Until ticket 0078 the Worker's guards, body reader and blob stores have no caller but the fixture Worker
   // (docs/testing.md, the Worker's tests), so the production run takes those and the fixture Worker as entries of
   // their own. 0078 gives them their caller and removes the `!` from the fixture Worker and the three entries after it.
+  // The production run does not follow wrangler.jsonc's Worker past its entry, so the feedback route, the one route the
+  // domain/ builder it shares with the app is read by, is an entry of its own (ticket 0699).
   "entry": [
     "index.html!",
     "homepage/index.html!",
     "src/browserSetup.ts",
     "src/testUtils/*.ts",
     "e2e/support/*.ts",
+    "worker/src/feedback.ts!",
     "worker/test/fixtureWorker.ts!",
     "worker/src/guards.ts!",
     "worker/src/body.ts!",
