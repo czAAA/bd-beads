@@ -1,7 +1,7 @@
 import { colorAt, forEachBead, type BeadChange, type BeadMap } from './canvas'
 import { frameLayoutOf } from './frameShape'
 import { laidSize } from './frameOrientation'
-import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import { keyOf, landingAt, layoutPosition, layoutPositionAt, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { layoutPlacement, turnedGridCentre, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
@@ -82,6 +82,13 @@ function cellsAround(cell: GridPosition): GridPosition[] {
   return [-1, 0, 1].flatMap((rows) => [-1, 0, 1].map((columns) => ({ row: cell.row + rows, column: cell.column + columns })))
 }
 
+/** The bead a Paste aimed at a point of a layout puts its anchor on: the one whose outline holds the point, as a press
+ * finds it, so a packed bead between two Seams can be aimed at (ticket 0723); else the one a bead put there lands on. */
+function aimedBead(layout: FrameLayout, x: number, y: number): LayoutPosition | undefined {
+  const pressed = layoutPositionAt(layout, x, y)
+  return (pressed && layoutPosition(layout, pressed)) ?? landingAt(layout, x, y)
+}
+
 /** The Custom frame's cell aimed at one of its beads, named by round and place: a cell whose centre lies on that bead
  * where one does, so a Paste aimed there lands its anchor on it (Ctrl+V under a tool that hovers beads); else the cell
  * holding the bead's centre. Any other position is returned as it is. */
@@ -94,7 +101,7 @@ export function cellOfBead(sheet: LayerSheet, position: GridPosition): GridPosit
   const near = cellsAround(holding)
   const onBead = (cell: GridPosition) => {
     const { x, y } = cellCentre(weave, cell)
-    return landingAt(placement.layout, (x - placement.x) / placement.scale, (y - placement.y) / placement.scale) === found
+    return aimedBead(placement.layout, (x - placement.x) / placement.scale, (y - placement.y) / placement.scale) === found
   }
   // The cell holding the centre first, if its own centre is on the bead; else a neighbour whose centre is.
   return (onBead(holding) ? holding : near.find(onBead)) ?? holding
@@ -224,12 +231,12 @@ function droppedOnCells(weave: Weave, beads: readonly { centre: LayoutPoint; col
 }
 
 /** Where a Paste aimed at a Custom frame's cell puts the anchor bead, on screen in cell widths: on the centre of the bead
- * under the cell's centre, so a copy laid on the same shape lands bead for bead; the cell's centre on a Seam or
- * Off-shape. */
+ * under the cell's centre (`aimedBead`), so a copy laid on the same shape lands bead for bead; the cell's centre on a
+ * Seam or Off-shape. */
 export function aimOf(sheet: LayerSheet, cell: GridPosition): LayoutPoint {
   const placement = placementOf(sheet)
   const aim = cellCentre(sheet.weave, cell)
-  const under = landingAt(placement.layout, (aim.x - placement.x) / placement.scale, (aim.y - placement.y) / placement.scale)
+  const under = aimedBead(placement.layout, (aim.x - placement.x) / placement.scale, (aim.y - placement.y) / placement.scale)
   return under ? centreOf(placement, under) : aim
 }
 
