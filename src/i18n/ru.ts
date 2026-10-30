@@ -435,6 +435,8 @@ export const ru: Translations = {
     removeLineButton: 'Удалить выделенный ряд/столбец',
     removeLineShort: 'Удалить линию',
     namePieceButton: 'Назвать кусочек',
+    fillOpenMessage: 'Это место ничем не окружено. Выделите область, чтобы залить её.',
+    fillTooBigMessage: 'Слишком большая область для заливки. Увеличьте масштаб или выделите область.',
   },
   inputMode: {
     penLabel: 'Режим пера',

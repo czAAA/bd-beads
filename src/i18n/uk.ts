@@ -435,6 +435,8 @@ export const uk: Translations = {
     removeLineButton: 'Видалити виділений ряд/стовпець',
     removeLineShort: 'Видалити лінію',
     namePieceButton: 'Назвати шматочок',
+    fillOpenMessage: 'Це місце нічим не оточене. Виділіть область, щоб залити її.',
+    fillTooBigMessage: 'Завелика область для заливки. Збільште масштаб або виділіть область.',
   },
   inputMode: {
     penLabel: 'Режим пера',

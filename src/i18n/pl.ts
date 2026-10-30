@@ -435,6 +435,8 @@ export const pl: Translations = {
     removeLineButton: 'Usuń zaznaczony rząd/kolumnę',
     removeLineShort: 'Usuń linię',
     namePieceButton: 'Nazwij kawałek',
+    fillOpenMessage: 'Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić.',
+    fillTooBigMessage: 'Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar.',
   },
   inputMode: {
     penLabel: 'Tryb rysika',

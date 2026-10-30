@@ -432,6 +432,8 @@ export const es: Translations = {
     removeLineButton: 'Quitar fila/columna seleccionada',
     removeLineShort: 'Quitar línea',
     namePieceButton: 'Nombrar trozo',
+    fillOpenMessage: 'Nada rodea este punto. Selecciona un área para rellenarla.',
+    fillTooBigMessage: 'Demasiado grande para rellenar. Acerca la vista o selecciona un área.',
   },
   inputMode: {
     penLabel: 'Modo lápiz',

@@ -423,6 +423,8 @@ export const zh: Translations = {
     removeLineButton: '删除所选行/列',
     removeLineShort: '删除行列',
     namePieceButton: '命名小块',
+    fillOpenMessage: '这里没有被围住。选择一个区域即可填充。',
+    fillTooBigMessage: '区域太大，无法填充。放大画布，或选择一个区域。',
   },
   inputMode: {
     penLabel: '手写笔模式',

@@ -1,11 +1,14 @@
 import { ref } from 'vue'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
-import { fillArea } from '../../domain/fill'
+import { fillArea, isFillRefusal, type FillRefusal } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
+import type { Rect } from '../../domain/canvas'
+import type { Translations } from '../../i18n/translations'
+import type { MessageTone } from '../ui/useToasts'
 
 /** What a stroke needs from the app shell: the open Project, Edit and its stroke calls and the active Tool. */
 export interface PaintStrokeDeps {
@@ -14,6 +17,10 @@ export interface PaintStrokeDeps {
   activeTool: () => Tool
   /** A Select press ends on the same mouseup as a stroke does. */
   endSelectPress: () => void
+  /** The Canvas positions on screen at a Fill press (Fill reach, ticket 0715); nothing until the view is measured. */
+  onScreen: () => Rect | undefined
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
 }
 
 // The Paint-tool drag (tickets 24, 55; ADR 0020, 0036): begin a stroke, paint cells as the pointer moves, end it as one
@@ -24,6 +31,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   const strokeMode = ref<'paint' | 'erase' | null>(null)
   /** The layer the stroke began on, which it stays on however far the pointer goes (ADR 0066). */
   let strokeLayer: Layer = 'canvas'
+  /** How many Fill presses Fill reach has refused (ticket 0715): the canvas shows the not-allowed cue each time it grows. */
+  const fillRefusals = ref(0)
 
   function beginStroke(mode: 'paint' | 'erase', layer: Layer) {
     strokeMode.value = mode
@@ -83,10 +92,20 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
     const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
+      let refused: FillRefusal | undefined
       deps.edit.edit('drawing', (current) => onLayer(current, layer, (sheet, local) => {
         const at = local({ row, column })
-        return fillArea(sheet, at.row, at.column, color)
+        const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen() })
+        if (!isFillRefusal(filled)) return filled
+        // Unchanged beads leave the Project as it was: no Undo step, nothing saved.
+        refused = filled
+        return sheet.beads
       }))
+      if (refused) {
+        fillRefusals.value += 1
+        const t = deps.messages().tools
+        deps.showToast('fill-refused', refused === 'open' ? t.fillOpenMessage : t.fillTooBigMessage, 'info')
+      }
       return
     }
 
@@ -94,5 +113,5 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     paintStrokeCell(row, column, color)
   }
 
-  return { strokeMode, beginStroke, endStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
+  return { strokeMode, fillRefusals, beginStroke, endStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
 }
