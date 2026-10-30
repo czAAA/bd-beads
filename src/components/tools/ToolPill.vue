@@ -300,7 +300,7 @@ watch(
     </div>
 
     <!-- The popovers sit in the app shell, not in the canvas box (ToolPill card): the box clips what it holds and stacks
-      it under its bars, so an iPad held sideways hid the Custom color picker under the Progress bar (ticket 0725). In
+      it under its bars, so an iPad held sideways hid the Custom color picker under the Progress bar (ticket 0726). In
       the shell they stack by StackingOrder: over the bars, under a dialog opened from them. -->
     <Teleport defer to=".app-shell">
       <MirrorPopover

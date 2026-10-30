@@ -24,6 +24,7 @@
     "components/EmptyCanvas/README.md",
     "components/EmptyPanels/README.md",
     "components/ExportPanel/README.md",
+    "components/FirstRunHints/README.md",
     "components/FoundColorRow/README.md",
     "components/FrameControls/README.md",
     "components/Glossary/README.md",
@@ -242,6 +243,11 @@
       "name": "ExportPanel",
       "group": "Overlays",
       "summary": "The small panel from the Canvas strip's Export button: Picture, Printable chart and Export quality with a Frame, Select a frame and Fit a frame to the drawing without one."
+    },
+    {
+      "name": "FirstRunHints",
+      "group": "Canvas",
+      "summary": "Hand-drawn muted notes over an empty Project teaching draw, select, frame, export, with the four controls ringed in accent and a welcome; gone with the first bead."
     },
     {
       "name": "MenuPanel",

@@ -121,7 +121,7 @@ describe('ToolPill (ticket 439)', () => {
   })
 
   // The canvas box clips what it holds and stacks it under its own bars: on an iPad held sideways, with the pill on the
-  // right, the Custom color picker opened under the Progress bar and could not be reached (ticket 0725). The popovers sit
+  // right, the Custom color picker opened under the Progress bar and could not be reached (ticket 0726). The popovers sit
   // in the app shell, where StackingOrder puts them over the bars and under a dialog.
   it.each([
     ['colour', { popoverOpen: true }, 'color-popover'],
