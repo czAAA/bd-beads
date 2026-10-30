@@ -53,7 +53,7 @@ const ColorPopoverHost = defineComponent({
 })
 
 /** The Mirror popover placed against its tile on the pill (ticket 0703): with a Frame, both Axes on, so the count
- * Steppers and every row show. */
+ * Steppers and every row show; the Area row with an Area set (ticket 0710), so its size, Whole Frame and Clear show. */
 const MirrorPopoverHost = defineComponent({
   setup() {
     const tile = ref<HTMLElement>()
@@ -62,13 +62,13 @@ const MirrorPopoverHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
         h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 } }),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 }, areaRow: 'frame', area: { row: 1, column: 2, rows: 10, columns: 12 } }),
       ])
   },
 })
 
 /** The same popover on the open Canvas (ticket 0704): a straight Axis on in Repeat and no Frame, so the Canvas's
- * Note shows in place of the Steppers. */
+ * Note shows in place of the Steppers, and the Area row with none set, its Canvas Note (ticket 0710). */
 const MirrorPopoverOnCanvasHost = defineComponent({
   setup() {
     const tile = ref<HTMLElement>()
@@ -77,7 +77,21 @@ const MirrorPopoverOnCanvasHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
         h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true }),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true, areaRow: 'canvas' }),
+      ])
+  },
+})
+
+/** The popover with a Frame and no Area yet: the Frame's Note under Select area and Whole Frame, while picking. */
+const MirrorPopoverPickingHost = defineComponent({
+  setup() {
+    const tile = ref<HTMLElement>()
+    const pill = ref<HTMLElement>()
+    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    return () =>
+      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
+        h('button', { ref: tile, type: 'button' }, 'Mirror'),
+        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 }, areaRow: 'frame', picking: true }),
       ])
   },
 })
@@ -223,6 +237,7 @@ const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['MirrorPopover', MirrorPopoverHost as Component, {}],
   ['MirrorPopover on the Canvas', MirrorPopoverOnCanvasHost as Component, {}],
+  ['MirrorPopover picking an Area', MirrorPopoverPickingHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['Missed Project notice', MissedProjectNotice, {}],
@@ -230,6 +245,8 @@ const CASES: FitCase[] = [
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
+  ['CanvasHint picking an Area on a Frame', CanvasHint, { picking: 'frame' }],
+  ['CanvasHint picking an Area on the Canvas', CanvasHint, { picking: 'canvas' }],
   ['FirstRunHints', firstRunHintsHost as Component, {}],
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
