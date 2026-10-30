@@ -407,7 +407,7 @@
     {
       "name": "SchemaTag",
       "group": "Canvas",
-      "summary": "An unframed Schema's name as a hang tag on a thread from the Piece's corner: a short name on it, dots for a longer one, opening into a paper tag with its size, colors, Rename and Frame."
+      "summary": "An unframed Schema's name as a tag above the Piece's top-left corner, the Piece outlined: the name on it, an ellipsis for a long one, opening into a paper tag with its size, colors, Rename and Frame."
     },
     {
       "name": "ScreenReaders",

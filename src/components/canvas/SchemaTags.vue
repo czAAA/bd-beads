@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUpdated, reactive, ref, watch } from 'vue'
-import { cardPlacement, tagOrigin, tagPlacement, threadPath, type SchemaAnchor, type SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
+import { cardPlacement, tagPlacement, type SchemaAnchor, type SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -11,16 +11,16 @@ import type { GridPosition } from '../../domain/grid'
 import { frameOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { formatSizeInMm } from '../../domain/projectSize'
-import { nameFitsTag, schemaDetails } from '../../domain/schemaTags'
+import { schemaDetails } from '../../domain/schemaTags'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// Each unframed Schema's name as a hang tag from its Piece's corner (SchemaTag card, ticket 0721): page markup over the
-// canvas, in screen px at every zoom, placed from the boxes the surface reports. A tag opens into a paper tag with the
-// Schema's details, Rename and Frame; one at a time. The tags are one Tab stop, stepped by the arrows in reading order.
+// Each unframed Schema's name on a tag above its Piece's top-left corner, the Piece outlined (SchemaTag card, 0733): page
+// markup in screen px at every zoom, placed from the boxes the surface reports. A tag opens into a paper tag with the
+// details, Rename and Frame, one at a time. The tags are one Tab stop, stepped by the arrows in reading order.
 const props = defineProps<{
   project: Project
   /** The unframed Schemas' boxes on the canvas box, as the surface reports them. */
@@ -42,15 +42,17 @@ const SWATCHES_SHOWN = 5
 
 const keyOf = ({ anchor }: Pick<SchemaAnchor, 'anchor'>) => `${anchor.row}:${anchor.column}`
 
-/** Each tag's width as laid out, measured after it renders: whether it has room to hang right follows from it. */
-const widths = reactive<Record<string, number>>({})
+/** Whether each tag cuts its name short, measured after it renders: such a tag shows the full name in a Tooltip. */
+const cut = reactive<Record<string, boolean>>({})
 const groupEl = ref<HTMLElement>()
 const cardEl = ref<HTMLElement>()
 const cardHeight = ref(0)
 function measure() {
   for (const tag of groupEl.value?.querySelectorAll<HTMLElement>('.schema-tag') ?? []) {
+    const name = tag.querySelector<HTMLElement>('.schema-tag__name')!
     const key = tag.dataset.key!
-    if (widths[key] !== tag.offsetWidth) widths[key] = tag.offsetWidth
+    const isCut = name.scrollWidth > name.clientWidth
+    if (cut[key] !== isCut) cut[key] = isCut
   }
   const height = cardEl.value?.offsetHeight ?? 0
   if (height !== cardHeight.value) cardHeight.value = height
@@ -58,15 +60,15 @@ function measure() {
 onMounted(measure)
 onUpdated(measure)
 
-/** The tags in view, in reading order: top to bottom, then left to right, by the Piece's corner. */
+/** The tags in view, in reading order: top to bottom, then left to right, by the tag's place. */
 const tags = computed(() =>
   props.anchors.schemas
     .flatMap((schema) => {
       const key = keyOf(schema)
-      const placed = tagPlacement(schema.box, props.anchors.viewport, widths[key] ?? 0)
-      return placed ? [{ ...schema, key, placed, fits: nameFitsTag(schema.name) }] : []
+      const placed = tagPlacement(schema.box, props.anchors.viewport)
+      return placed ? [{ ...schema, key, placed, fits: !cut[key] }] : []
     })
-    .sort((a, b) => a.placed.corner.y - b.placed.corner.y || a.placed.corner.x - b.placed.corner.x),
+    .sort((a, b) => a.placed.top - b.placed.top || a.placed.left - b.placed.left),
 )
 
 /** The Schema whose paper tag is open, followed by the bead its name is kept on or, should that bead go, its name. */
@@ -91,7 +93,7 @@ const card = computed(() => {
   const tag = openTag.value
   const details = tag && schemaDetails(props.project, tag.anchor)
   if (!tag || !details) return undefined
-  const at = cardPlacement(tag.placed, tag.box, props.anchors.viewport, cardHeight.value)
+  const at = cardPlacement(tag.placed, props.anchors.viewport, cardHeight.value)
   const size = fillBlanks(t.value.schemaTag.sizeBeads, { columns: details.columns, rows: details.rows })
   const estimate = details.sizeMm && formatSizeInMm(details.sizeMm, t.value.form.unitMm, locale.value)
   return {
@@ -123,26 +125,14 @@ useOverlayLayer({ isOpen: () => !!card.value, root: () => cardEl.value, close: (
 
 const roving = useRovingFocus(groupEl, { selector: '.schema-tag', managesTabIndex: true })
 
-function tagStyle({ key, placed }: (typeof tags.value)[number]) {
-  const { left, top } = tagOrigin(placed, widths[key] ?? 0)
-  return { left: `${left}px`, top: `${top}px` }
-}
-const threads = computed(() =>
-  tags.value
-    .filter((tag) => tag.key !== card.value?.key)
-    .map((tag) => ({ key: tag.key, corner: tag.placed.corner, d: threadPath(tag.placed.corner, tag.placed.hole, tag.placed.side) }))
-    .concat(card.value ? [{ key: card.value.key, corner: card.value.placed.corner, d: threadPath(card.value.placed.corner, card.value.at.hole, card.value.placed.side) }] : []),
-)
+const px = (value: number) => `${value}px`
+const tagStyle = ({ placed }: (typeof tags.value)[number]) => ({ left: px(placed.left), top: px(placed.top) })
+const borderStyle = ({ box }: SchemaAnchor) => ({ left: px(box.left), top: px(box.top), width: px(box.width), height: px(box.height) })
 </script>
 
 <template>
   <div class="schema-tags" data-testid="schema-tags">
-    <svg class="schema-tags__threads" :width="anchors.viewport.width" :height="anchors.viewport.height" aria-hidden="true">
-      <g v-for="thread in threads" :key="thread.key">
-        <path :d="thread.d" />
-        <circle :cx="thread.corner.x" :cy="thread.corner.y" r="1.6" />
-      </g>
-    </svg>
+    <div v-for="tag in tags" :key="tag.key" class="schema-tags__border" :style="borderStyle(tag)" aria-hidden="true" data-testid="schema-border" />
     <div ref="groupEl" class="schema-tags__group" role="group" :aria-label="t.schemaTag.group" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
       <component
         :is="tag.fits ? 'span' : AppTooltip"
@@ -156,17 +146,13 @@ const threads = computed(() =>
         <button
           type="button"
           class="schema-tag"
-          :class="{ 'schema-tag--left': tag.placed.side === 'left' }"
           :data-key="tag.key"
           :aria-label="fillBlanks(t.schemaTag.label, { name: tag.name })"
           :aria-expanded="tag.key === card?.key"
           data-testid="schema-tag"
           @click="open(tag)"
         >
-          <span class="schema-tag__shape" :class="{ 'schema-tag__shape--dots': !tag.fits, 'schema-tag__shape--left': tag.placed.side === 'left' }">
-            <template v-if="tag.fits">{{ tag.name }}</template>
-            <template v-else><i /><i /><i /></template>
-          </span>
+          <span class="schema-tag__shape"><span class="schema-tag__name">{{ tag.name }}</span></span>
         </button>
       </component>
     </div>
@@ -210,22 +196,15 @@ const threads = computed(() =>
   pointer-events: none;
 }
 
-.schema-tags__threads {
+.schema-tags__border {
   position: absolute;
-  inset: 0;
-  overflow: visible;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 1px;
+  box-sizing: border-box;
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-sm);
 }
 
-.schema-tags__threads circle {
-  fill: var(--ink);
-  stroke: none;
-}
-
-:root[data-theme='contrast'] .schema-tags__threads {
-  stroke: var(--ink);
+:root[data-theme='contrast'] .schema-tags__border {
+  border-color: var(--ink);
 }
 
 .schema-tags__hang {
@@ -233,8 +212,8 @@ const threads = computed(() =>
   display: block;
 }
 
-/* The press target: the tag's own box, turned about its hole; the shape inside is cut and holed, so the focus ring
- * and a finger's larger hit area belong to the button round it. */
+/* The press target: the tag's own box; the shape inside is cut and holed, so the focus ring and a finger's larger hit
+ * area belong to the button round it. */
 .schema-tag {
   position: relative;
   display: block;
@@ -243,70 +222,40 @@ const threads = computed(() =>
   background: none;
   cursor: pointer;
   pointer-events: auto;
-  transform: rotate(var(--schema-tag-tilt));
-  transform-origin: calc(var(--schema-tag-end) / 2 + 0.5px) 50%;
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-
-/* Hanging left, the tag is mirrored, turned about its hole at the right end: it reaches out from the Piece and droops
- * as one hanging right does. */
-.schema-tag--left {
-  transform: rotate(calc(var(--schema-tag-tilt) * -1));
-  transform-origin: calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%;
 }
 
 .schema-tag:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
 }
 
+/* A luggage tag standing straight: its left end cut on both corners and holed, the canvas showing through. */
 .schema-tag__shape {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   height: var(--schema-tag-height);
+  max-width: var(--schema-tag-max-width);
   box-sizing: border-box;
-  padding: 0 var(--space-8) 0 calc(var(--schema-tag-end) + 3px);
-  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  padding: 0 var(--space-12) 0 calc(var(--schema-tag-end) + var(--space-8));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: var(--ink);
   color: var(--canvas);
   font: var(--schema-tag-name);
   white-space: nowrap;
   transition: background-color var(--duration-fast) var(--ease-out);
-  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 16px, 0 6px);
-  -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%);
-  mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(var(--schema-tag-end) / 2 + 0.5px) 50%, transparent 98%, #000 100%);
+  clip-path: polygon(var(--schema-tag-end) 0, 100% 0, 100% 100%, var(--schema-tag-end) 100%, 0 calc(100% - var(--schema-tag-end)), 0 var(--schema-tag-end));
+  -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at var(--schema-tag-end) 50%, transparent 95%, #000 100%);
+  mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at var(--schema-tag-end) 50%, transparent 95%, #000 100%);
 }
 
-.schema-tag__shape--left {
-  padding: 0 calc(var(--schema-tag-end) + 3px) 0 var(--space-8);
-  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
-  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 16px, calc(100% - 6px) 100%, 0 100%);
-  -webkit-mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%, transparent 98%, #000 100%);
-  mask: radial-gradient(circle calc(var(--schema-tag-hole) / 2) at calc(100% - var(--schema-tag-end) / 2 - 0.5px) 50%, transparent 98%, #000 100%);
-}
-
-.schema-tag__shape--dots {
-  gap: var(--space-2);
-  padding-right: 7px;
-}
-
-.schema-tag__shape--dots.schema-tag__shape--left {
-  padding: 0 calc(var(--schema-tag-end) + 3px) 0 7px;
-}
-
-.schema-tag__shape--dots > i {
-  width: 3px;
-  height: 3px;
-  border-radius: var(--radius-full);
-  background: currentColor;
+.schema-tag__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @media (hover: hover) {
-  .schema-tag:hover {
-    transform: none;
-  }
-
   .schema-tag:hover .schema-tag__shape {
     background: var(--body);
   }
@@ -326,7 +275,6 @@ const threads = computed(() =>
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .schema-tag,
   .schema-tag__shape {
     transition: none;
   }
