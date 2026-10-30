@@ -1,11 +1,11 @@
-import { beadPitchMm, type Bead } from './beads'
+import { beadPitchMm, findBead, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
 import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
-import { describeWeave, TECHNIQUES, type Technique, type Weave } from './weave'
+import { beadCell, describeWeave, TECHNIQUES, withCell, type Technique, type Weave } from './weave'
 
 /** The Frame shapes (spec 0590, ADR 0077, ADR 0079): what specialises a Frame into a Custom frame. A Triangle and a
  * Warped Square in Rounds (ticket 0592), a Star and a Kaleidocycle of such parts, a Kite in Rows from its point (ticket
@@ -35,8 +35,9 @@ type FrameSetting = SettingSpec<FrameSettingName>
  * frame's layout, or a Frame's own grid, turned. One setting for both. */
 export type QuarterTurns = 1 | 2 | 3
 
-/** What a Custom frame's layout is built from: its Frame shape, its settings and how far it is turned. */
-type Laid = Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>
+/** What a Custom frame's layout is built from: its Frame shape, its settings, how far it is turned, and the cell of its
+ * layer's Bead, whose depth a round shape packs its beads by (ticket 0723). */
+type Laid = Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns' | 'cell'>
 
 /** A Frame as its Frame shape reads it: its shape, its settings, its turn, its size and its Weave. */
 export type ShapedSheet = Laid & Pick<FrameSheet, 'rows' | 'columns'> & Weave
@@ -70,8 +71,9 @@ export interface FrameShape extends FrameRules {
   techniques: readonly [Technique, ...Technique[]]
   settings: readonly [FrameSetting, ...FrameSetting[]]
   styles?: readonly FringeStyle[]
-  /** Built from its settings as `settingsOf` reads them: every one the shape has. */
-  layout(settings: FrameSettings): FrameLayout
+  /** Built from its settings as `settingsOf` reads them, every one the shape has, and its Bead's depth across the
+   * thread over its pitch along it, which only a round shape's packing reads (ticket 0723). */
+  layout(settings: FrameSettings, depth: number): FrameLayout
 }
 
 /** A Frame without a Frame shape: its beads in its Weave's rows over its own rectangle, every action open to it. */
@@ -115,7 +117,7 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
     id,
     geometry: (sheet) => layoutGeometry(laidLayout(sheet), sheet),
     sizeMm: (frame, bead) => {
-      const { width, height } = laidLayout(frame)
+      const { width, height } = laidLayout({ ...frame, cell: beadCell(bead) })
       return { widthMm: width * beadPitchMm(bead), heightMm: height * beadPitchMm(bead) }
     },
     rowOrder: (sheet) => layoutOrder(laidLayout(sheet), lines),
@@ -126,13 +128,13 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
 
 /** The registry, one entry per Frame shape, like the Starters'. */
 const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
-  triangle: frameShape('triangle', 'round', { techniques: ['peyote'], settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(3, rounds!) }),
-  warpedSquare: frameShape('warpedSquare', 'round', { techniques: ['peyote'], settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(4, rounds!) }),
-  star: frameShape('star', 'round', { techniques: ['peyote'], settings: [STAR_PART], layout: ({ partSize }) => starLayout(partSize!) }),
+  triangle: frameShape('triangle', 'round', { techniques: ['peyote'], settings: [ROUNDS], layout: ({ rounds }, depth) => roundsLayout(3, rounds!, depth) }),
+  warpedSquare: frameShape('warpedSquare', 'round', { techniques: ['peyote'], settings: [ROUNDS], layout: ({ rounds }, depth) => roundsLayout(4, rounds!, depth) }),
+  star: frameShape('star', 'round', { techniques: ['peyote'], settings: [STAR_PART], layout: ({ partSize }, depth) => starLayout(partSize!, depth) }),
   kaleidocycle: frameShape('kaleidocycle', 'round', {
     techniques: ['peyote'],
     settings: [KALEIDOCYCLE_PART],
-    layout: ({ partSize }) => kaleidocycleLayout(partSize!),
+    layout: ({ partSize }, depth) => kaleidocycleLayout(partSize!, depth),
   }),
   kite: frameShape('kite', 'row', { techniques: ['peyote'], settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) }),
   fringeEarring: frameShape('fringeEarring', 'row', {
@@ -247,9 +249,18 @@ function isSheet(frame: Laid & Partial<ShapedSheet>): frame is ShapedSheet {
   return frame.technique !== undefined && frame.rows !== undefined && frame.columns !== undefined
 }
 
+/** How deep a bead of a round shape is drawn where its layer's Bead is unknown: a Delica 11/0's, as the MiniStar is
+ * beaded (ticket 0723). */
+const UNKNOWN_BEAD_DEPTH = beadCell(findBead('miyuki/delica/11-0'))!.aspect
+
+/** The depth a Custom frame's beads pack by: its Bead's height across the thread over its pitch along it (ticket 0723). */
+function depthOf(frame: Pick<Laid, 'cell'>): number {
+  return frame.cell?.aspect ?? UNKNOWN_BEAD_DEPTH
+}
+
 /** The layout a Custom frame's Frame shape lays it out by: called only on a Frame that has one. */
 function laidLayout(frame: Laid): FrameLayout {
-  return turnedLayout(frameShapeOf(frame)!.layout(settingsOf(frame)!), frame.quarterTurns ?? 0)
+  return turnedLayout(frameShapeOf(frame)!.layout(settingsOf(frame)!, depthOf(frame)), frame.quarterTurns ?? 0)
 }
 
 /** A Frame's Layer geometry (ADR 0078): what it lays its beads out by, its own rows or its shape's layout. `frame`
@@ -264,14 +275,16 @@ export function frameSizeMm(frame: Measured, bead: Bead): { widthMm: number; hei
 }
 
 /** The rows and columns of a Custom frame's Technique (the first its shape supports unless given) that cover its
- * layout: the bounding rectangle its footprint is made from (ADR 0077), counted in the Technique's own square cell. */
-export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, quarterTurns?: QuarterTurns, technique: Technique = FRAME_SHAPES[shape].techniques[0]): GridDimensions {
-  const layout = laidLayout({ shape, settings, quarterTurns })
-  const description = describeWeave({ technique })
+ * layout: the bounding rectangle its footprint is made from (ADR 0077), counted in the cells of its layer's Bead
+ * (ticket 0723), so a bead of the layout is a cell wide. */
+export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, quarterTurns?: QuarterTurns, technique: Technique = FRAME_SHAPES[shape].techniques[0], cell?: Laid['cell']): GridDimensions {
+  const layout = laidLayout({ shape, settings, quarterTurns, cell })
+  const description = describeWeave(withCell({ technique }, cell))
+  const aspect = description.cellAspect
   let columns = 1
-  while (description.blockExtent(columns, 2, 1, 1).width < layout.width) columns += 1
+  while (description.blockExtent(columns, 2, 1, aspect).width < layout.width) columns += 1
   let rows = 1
-  while (description.blockExtent(columns, rows, 1, 1).height < layout.height) rows += 1
+  while (description.blockExtent(columns, rows, 1, aspect).height < layout.height) rows += 1
   return { rows, columns }
 }
 
@@ -286,7 +299,7 @@ export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' 
   if (!setting) return undefined
   const settings = settingsOf(frame)!
   const at = (value: number): FrameSettings => ({ ...settings, [setting.id]: value })
-  const sizeAt = (value: number) => customFrameSize(frame.shape!, at(value), frame.quarterTurns, frame.technique)
+  const sizeAt = (value: number) => customFrameSize(frame.shape!, at(value), frame.quarterTurns, frame.technique, frame.cell)
   if (fit === 'cover') {
     for (let value = setting.min; value < setting.max; value += 1) {
       const size = sizeAt(value)
@@ -308,7 +321,7 @@ export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' 
 /** A Custom frame's settings grown until its layout holds every one of these positions, or as far as they go: where
  * Remove Frame finds its Folded beads (ticket 0669), as growing it back would show them. Its numbered settings step up
  * together, in its own Fringe style first, then in each other. */
-export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings'>, positions: readonly GridPosition[]): FrameSettings {
+export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | 'cell'>, positions: readonly GridPosition[]): FrameSettings {
   const shape = frameShapeOf(frame)!
   const start = settingsOf(frame)!
   const styles = shape.styles ? [start.fringeStyle, ...shape.styles.filter((style) => style !== start.fringeStyle)] : [start.fringeStyle]
@@ -316,7 +329,7 @@ export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings'>, p
   for (const style of styles) {
     let settings: FrameSettings = { ...start, ...(style ? { fringeStyle: style } : {}) }
     for (;;) {
-      const layout = shape.layout(settings)
+      const layout = shape.layout(settings, depthOf(frame))
       const held = positions.filter((position) => layoutPosition(layout, position)).length
       if (held === positions.length) return settings
       if (!best || held > best.held) best = { settings, held }
