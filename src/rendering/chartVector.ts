@@ -75,7 +75,7 @@ interface PlacedBead {
   down: number
 }
 
-/** The positions of a part, bead by bead, for any Technique, rotation or Bead shape: each bead in view where the Layer
+/** The positions of a part, bead by bead, for any Technique, rotation or Bead: each bead in view where the Layer
  * geometry places it, through the page's transform.
  * @internal Its test checks where each bead lands on its own. */
 export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): PlacedBead[] {

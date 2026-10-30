@@ -10,6 +10,7 @@ import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
 import { currentPass, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type PastedCell, type PasteStamp, type Selection } from '../domain/selection'
 import type { VisiblePositions } from '../domain/weaveGeometry'
+import { GLINT_COLOR, ROW_MOTION, glintMs, glintWash } from './rowMotion'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
@@ -114,6 +115,15 @@ export interface OverlayInput {
    * and Radial's centre (ticket 0705) as a ring with its lines or rays, each with its handle chip in the viewport's px,
    * the one being dragged (`held`) in the accent. Canvas only. */
   canvasAxes?: { axes: CanvasAxes; handles: readonly AxisHandle[]; held?: MirrorAxis }
+  /** Row done's motion (ticket 0730), each with the ms since its press: the passes just finished, glinting and held at
+   * full color for the dim delay, and the pass the marker left, its ruler pill gliding on. Never given by an export. */
+  rowMotion?: RowMotion
+}
+
+/** Row done's motion on the Pattern as the overlay draws it (ticket 0730). */
+export interface RowMotion {
+  glints: readonly { pass: number; elapsed: number }[]
+  glide?: { from: number; elapsed: number }
 }
 
 /** A bead the current pass weaves: its cell, top left, and its color; on a Custom frame (ticket 0594) its box is centred
@@ -142,7 +152,7 @@ function inPlace(context: DrawingContext, bead: PassBead, draw: () => void): voi
 
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
  * when the Frame has no such pass. */
-function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry): PassBead[] {
+function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometry, pass = currentPass(rowProgressOf(project))): PassBead[] {
   if (!space.hasFrame) {
     return []
   }
@@ -155,7 +165,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
     const beads = beadsOfLayer(project, 'frame')!
-    return order.positionsOf(currentPass(rowProgressOf(project))).flatMap((position) => {
+    return order.positionsOf(pass).flatMap((position) => {
       const color = colorAt(beads, position.row, position.column)
       const place = geometry.place(position)
       if (color === null || !place) return []
@@ -164,7 +174,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
       return [{ x: -width / 2, y: -height / 2, width, height, color, turned: { centre: { x: x + width / 2, y: y + height / 2 }, angle: place.angle, radius } }]
     })
   }
-  return order.positionsOf(currentPass(rowProgressOf(project))).flatMap((position) => {
+  return order.positionsOf(pass).flatMap((position) => {
     const row = space.origin.row + position.row
     const column = space.origin.column + position.column
     // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
@@ -175,24 +185,45 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
 // brick stitch, where the next row nests into the gaps, their corners aren't covered.
-/** A bead's width and height, where they aren't a square of the drawn size (a Real cell, ADR 0068). */
+/** A bead's width and height, where they aren't a square of the drawn size (a Bead's cell, ADR 0068, ticket 0724). */
 function sizedLike(box: { width: number; height: number }): { width?: number; height?: number } {
   return box.width === CELL_SIZE_PX && box.height === CELL_SIZE_PX ? {} : { width: box.width, height: box.height }
 }
 
-function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>): void {
+// A pass just finished is drawn the same way, unbrightened, while its glint shows it at full color (ticket 0730).
+function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>, lift = CURRENT_ROW_BRIGHTNESS): void {
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   for (const bead of beads) {
     const size = bead.turned ? { size: bead.width, width: bead.width, height: bead.height } : { size: CELL_SIZE_PX, ...sizedLike(bead) }
     const radius = bead.turned?.radius ?? cornerRadius
+    const color = lift ? brighten(bead.color, lift) : bead.color
     inPlace(context, bead, () => {
-      drawFlatBead(context, { x: bead.x, y: bead.y, ...size, cornerRadius: radius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
+      drawFlatBead(context, { x: bead.x, y: bead.y, ...size, cornerRadius: radius, color, dimmed: false, deviceScale: zoom * pixelRatio, theme })
       const letter = letters?.[bead.color]
       if (letter) {
-        drawBeadLetter(context, { x: bead.x, y: bead.y, ...size, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), letter, dimmed: false, theme })
+        drawBeadLetter(context, { x: bead.x, y: bead.y, ...size, color, letter, dimmed: false, theme })
       }
     })
   }
+}
+
+/** The glint (ticket 0730, BeadBoard card): each bead of a pass just finished washed in white, one after another in
+ * the Row direction, `elapsed` ms after the press; opacity only. */
+function drawGlint(context: DrawingContext, beads: readonly PassBead[], weave: Weave, elapsed: number): void {
+  const corner = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
+  context.save()
+  context.fillStyle = GLINT_COLOR
+  beads.forEach((bead, index) => {
+    const wash = glintWash(elapsed, index, beads.length)
+    if (wash <= 0) return
+    context.globalAlpha = wash
+    inPlace(context, bead, () => {
+      context.beginPath()
+      roundedRect(context, bead.x, bead.y, bead.width, bead.height, bead.turned?.radius ?? corner)
+      context.fill()
+    })
+  })
+  context.restore()
 }
 
 // The Row progress marker (tickets 352, 375, 376): a ring, MARKER_RING_PX thick, round each bead in the current pass,
@@ -716,7 +747,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, canvasAxes } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, canvasAxes, rowMotion } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -782,6 +813,13 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     context.translate(origin.x, origin.y)
     if (scale !== 1) context.scale(scale, scale)
     const inPass = showRows ? beadsInPass(project, sheetSpace, geometry!) : []
+    // Under the current pass, so on peyote and brick stitch its lifted beads still lie over the one just finished.
+    for (const { pass, elapsed } of showRows ? (rowMotion?.glints ?? []) : []) {
+      const finished = beadsInPass(project, sheetSpace, geometry!, pass)
+      if (elapsed >= glintMs(finished.length)) continue
+      if (elapsed < ROW_MOTION.dimDelay) drawLiftedBeads(context, finished, sheetWeave, zoom * scale, pixelRatio, theme, letters, 0)
+      drawGlint(context, finished, sheetWeave, elapsed)
+    }
     if (showRows) {
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
@@ -813,6 +851,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       pixelRatio,
       theme,
       rowMarks: showRows,
+      glide: rowMotion?.glide,
     })
   }
   if (space.open && rulers && frameEditing && frameOf(project)) {

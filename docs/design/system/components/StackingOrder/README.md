@@ -8,4 +8,5 @@ Which layer sits above which: the twelve `zIndex` tokens, from the canvas overla
 
 Hand-written from the Phase C sign-off.
 
+- **The Tool pill's popovers (ticket 0726):** the colour and Mirror popovers are drawn in the app shell, outside the canvas box, at `z-popover`: over the Progress bar and the margin sheet, under toasts and a dialog opened from them (Report a bead color).
 - **Menu and Project (spec 0440):** the dropdown is a popover at `z-popover`; Duplicate and Delete open at `z-modal` after the panel has closed.

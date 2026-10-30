@@ -30,7 +30,7 @@ describe('migrateLegacyMakerName', () => {
       removeItem: (key: string) => void data.delete(key),
     }
     let saved: Project[] | undefined
-    const library: LibraryStore = { load: () => projects, save: (next) => void (saved = next) }
+    const library: LibraryStore = { load: () => projects, open: () => ({ projects, sealed: [] }), unseal: () => projects[0]!, save: (next) => void (saved = next) }
     return { storage, library, data, saved: () => saved }
   }
 
@@ -50,7 +50,7 @@ describe('migrateLegacyMakerName', () => {
 
   it('keeps the device value when the library refuses the write, to try again next load', () => {
     const { storage, data } = fakes({ [LEGACY_MAKER_NAME_KEY]: 'Ada' }, [])
-    const library: LibraryStore = { load: () => [make('Fox')], save: () => { throw new Error('quota') } }
+    const library: LibraryStore = { load: () => [make('Fox')], open: () => ({ projects: [], sealed: [] }), unseal: () => make('Fox'), save: () => { throw new Error('quota') } }
     migrateLegacyMakerName(library, storage)
     expect(data.get(LEGACY_MAKER_NAME_KEY)).toBe('Ada')
   })

@@ -20,7 +20,7 @@ import type { Weave } from './weave'
  * woven in (ticket 492), and the Layer geometry that says where its beads are. */
 export interface LayerSheet {
   beads: BeadMap
-  /** Its Weave, with the Bead shape's cell the Project draws it in. */
+  /** Its Weave, with the cell its Bead draws it in. */
   weave: Weave
   geometry: LayerGeometry
   /** The Frame's rectangle in its own positions, its first row and column 0, 0; none on the Canvas, which has no edge. */
@@ -71,13 +71,13 @@ export function positionOnCanvas(project: Layered, layer: Layer, position: GridP
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
-/** The Frame as its Frame shape reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
+/** The Frame as its Frame shape reads it, in its own Weave with its Bead's cell. The Project must have a Frame. */
 function shapedFrame(project: Layered): ShapedSheet {
   const { rows, columns, shape, settings, quarterTurns } = frameOf(project)!
   return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
 }
 
-// A Frame is never changed in place, so its geometry is built once for each Bead shape's cell it is drawn in.
+// A Frame is never changed in place, so its geometry is built once for each Bead's cell it is drawn in.
 const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
 
 /** The Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have a Frame. */

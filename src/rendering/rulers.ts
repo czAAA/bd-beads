@@ -4,9 +4,8 @@ import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
-import type { NamedPiece } from '../domain/pieceNames'
 import { hasGuides, type Selection } from '../domain/selection'
-import type { MarginForm } from './marginForm'
+import { titleBlockCorner, type MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
@@ -38,6 +37,8 @@ export interface RuledBox extends Rect {
   outset: number
   /** The Frame's sides but the one shown at the bottom (`sheet`, ticket 0657), or only above and to the left (a Piece). */
   sides: 'sheet' | 'start'
+  /** False for the box round every bead of a layer whose Pieces aren't counted yet (ticket 0716): numbers, no line. */
+  outlined?: false
 }
 
 /** One number on a ruler, where it is in the viewport and what a click on it selects. */
@@ -75,7 +76,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPiece
   }
   return (pieces.areas ?? [])
     .filter(hasGuides)
-    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
+    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const, ...(pieces.uncounted ? { outlined: false as const } : {}) }))
 }
 
 /** The Ruler steps in order: every bead, then 5, 10, 50, 100, 500... (ADR 0033). */
@@ -163,8 +164,6 @@ export interface RulerLayout {
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
   boxes: RuledBox[]
-  /** The named Pieces, whose names are drawn under them whether the Rulers are on or not (ADR 0050). */
-  named: NamedPiece[]
   /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none. */
   step: number
   /** Whether the current pass is marked: the margin sheet is there, not in the bare form (tickets 0682, 0685). */
@@ -290,11 +289,12 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     }
   }
 
-  // A Frame's sides are the ones its margin sheet shows on screen above, left and right of it: the one at the bottom
-  // holds the title block (MarginSheet card, ticket 0657), whichever way the view is turned.
-  const shownBelow = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y > 0.5
+  // A Frame's sides are the ones its margin sheet shows on screen but along the edge its title block is on, the bottom
+  // or, on a Canvas turned 180° or 270°, the top (MarginSheet card, tickets 0657, 0728).
+  const titleEdge = titleBlockCorner(surface).top ? -1 : 1
+  const alongTitle = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y * titleEdge > 0.5
   const side = (normal: [number, number], lay: () => void) => {
-    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !shownBelow(normal)) lay()
+    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !alongTitle(normal)) lay()
   }
   side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
   side([-1, 0], () => rowsAt(left, [-1, 0]))
@@ -330,7 +330,6 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     scale,
     numbers,
     boxes,
-    named: pieces.named,
     step: Math.max(1, ...laid.map((box) => box.step)),
     passMark: sheet !== 'bare',
     sheetScale: sheetScale ?? 1,

@@ -34,7 +34,7 @@ describe('piece names', () => {
 
     expect(pieceNameAt(named, { row: 0, column: 0 })).toBe('Fox')
     expect(pieceNameAt(named, { row: 5, column: 0 })).toBeUndefined()
-    expect(namedPieces(named)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
+    expect(namedPieces(named)).toEqual([{ name: 'Fox', anchor: { row: 0, column: 2 }, row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
     expect(canvasOf(withPieceName(named, { row: 0, column: 0 }, '')).pieceNames).toBeUndefined()
   })
 
@@ -52,14 +52,14 @@ describe('piece names', () => {
 
     // The anchor bead itself is erased, and the name stays with the Piece.
     const erased = draw(named, [{ row: 0, column: 0, color: null }])
-    expect(namedPieces(erased)).toEqual([{ name: 'Fox', row: 0, column: 1, rows: 1, columns: 3, beads: 3 }])
+    expect(namedPieces(erased)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 1, rows: 1, columns: 3, beads: 3 })])
   })
 
   it('lets a named Piece absorb an unnamed one', () => {
     const named = withPieceName(projectWith(row(0, 0, 1), row(0, 4, 5)), { row: 0, column: 0 }, 'Fox')
     const joined = draw(named, row(0, 2, 3))
 
-    expect(namedPieces(joined)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 6, beads: 6 }])
+    expect(namedPieces(joined)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 1, columns: 6, beads: 6 })])
   })
 
   it('refuses a bead that would join two named Pieces, and paints the rest', () => {
@@ -84,7 +84,7 @@ describe('piece names', () => {
     const named = withPieceName(projectWith(row(0, 0, 1), row(0, 2, 2), row(0, 3, 8)), { row: 0, column: 0 }, 'Fox')
     const split = draw(named, [{ row: 0, column: 2, color: null }])
 
-    expect(namedPieces(split)).toEqual([{ name: 'Fox', row: 0, column: 3, rows: 1, columns: 6, beads: 6 }])
+    expect(namedPieces(split)).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 3, rows: 1, columns: 6, beads: 6 })])
     expect(pieceNameAt(split, { row: 0, column: 0 })).toBeUndefined()
   })
 
@@ -203,5 +203,42 @@ describe('which Piece a Selection holds', () => {
 
     expect([...counting.reads.rows].every((read) => read >= 10 && read < 15)).toBe(true)
     expect(counting.reads.rows.size).toBe(5)
+  })
+})
+
+// A layer over the walk limit (ticket 0716): no edit walks a named Piece whole, the names stay on their beads.
+describe('piece names on a layer too big to walk', () => {
+  function huge() {
+    const counting = countingBeads(withColors({}, Array.from({ length: 260 }, (_, r) => row(r, 0, 999)).flat()))
+    const project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), {
+      beads: counting.beads,
+      pieceNames: [{ name: 'Fill', row: 3, column: 3 }, { name: 'Dot', row: 300, column: 0 }],
+    })
+    return { project, ...counting }
+  }
+
+  it('lets a bead that joins two named Pieces through, unwalked, and keeps both names on their beads', () => {
+    const { project, reads, reset } = huge()
+    const withDot = draw(project, [{ row: 300, column: 0, color: R }])
+    reset()
+
+    const joined = draw(withDot, row(260, 0, 0).concat(row(261, 0, 0), row(262, 0, 0), row(263, 0, 0), row(264, 0, 0), row(265, 0, 0)).concat(Array.from({ length: 34 }, (_, i) => ({ row: 266 + i, column: 0, color: R }))))
+
+    expect(canvasOf(joined).pieceNames?.map((entry) => entry.name)).toEqual(['Fill', 'Dot'])
+    expect(reads.beads).toBeLessThan(100_000)
+  })
+
+  it('moves each name with its bead when an edit moves the beads', () => {
+    const { project } = huge()
+    const shifted = withLayers(project, { beads: Object.fromEntries(Object.entries(beadsOfLayer(project, 'canvas')).map(([r, cells]) => [Number(r) + 1, cells])) })
+
+    const carried = carryNames(project, shifted, ({ row: r, column }) => ({ row: r + 1, column }))
+
+    expect(canvasOf(carried).pieceNames).toEqual([{ name: 'Fill', row: 4, column: 3 }])
+  })
+
+  it('names no Piece of it from a Selection, as that would flood it in the press', () => {
+    const { project } = huge()
+    expect(pieceInSelection(project, { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
   })
 })

@@ -27,6 +27,12 @@ export function hasProjectBeads(project: Layered): boolean {
  * so the Project's colors after a stroke cost its rows, not every bead (ticket 0677). */
 const rowColors = new WeakMap<Record<number, string>, readonly string[]>()
 
+/** Records a row's colors worked out elsewhere, in the order `Object.values` gives them: decoding knows them from the
+ * stored runs (ticket 0716). */
+export function knownRowColors(row: Record<number, string>, colors: readonly string[]): void {
+  rowColors.set(row, colors)
+}
+
 function colorsOfRow(row: Record<number, string>): readonly string[] {
   let colors = rowColors.get(row)
   if (!colors) {
@@ -75,7 +81,7 @@ export function sameLayers(a: Layered, b: Layered): boolean {
 
 /** A dense grid of cells as a Frame the size of the grid holding them, on an empty upright Canvas woven alike: what the
  * Convert image preview, the Homepage's pictures and a test's hand-made block of beads are drawn from. */
-export function framedGrid(grid: Grid, layer: Weave & Partial<Pick<LayerFields, 'beadId' | 'bead' | 'beadShape'>> = { technique: DEFAULT_TECHNIQUE }): Layered {
+export function framedGrid(grid: Grid, layer: Weave & Partial<Pick<LayerFields, 'beadId' | 'bead'>> = { technique: DEFAULT_TECHNIQUE }): Layered {
   const { cell: _cell, technique, techniqueSettings, beadId = DEFAULT_BEAD.id, ...bead } = layer
   const own = { ...weaveOf({ technique, techniqueSettings }), beadId, ...bead }
   const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))

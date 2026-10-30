@@ -35,10 +35,10 @@ import {
   type QuarterTurns,
 } from './frameShape'
 import type { LayerGeometry } from './layerGeometry'
-import type { Weave } from './weave'
+import type { BeadCell, Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasDistance, canvasWeave, laidOnCanvas, sameBeadSize, weaveOf } from './layerWeave'
+import { canvasDistance, canvasWeave, frameWeave, laidOnCanvas, sameBeadSize, weaveOf } from './layerWeave'
 import { withWovenPalette } from './projectBead'
 import { clampPointer, firstPasses, progressWithoutLine, rowProgressOf, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
@@ -202,7 +202,7 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
 
   // A Custom frame's resize handles step its size setting (ADR 0079).
   const current = frameOf(project)
-  const sized = 'set' in change && current ? sizedSettings(current, change.set, 'nearest') : undefined
+  const sized = 'set' in change && current ? sizedSettings({ ...current, cell: frameWeave(project).cell }, change.set, 'nearest') : undefined
   if ('settings' in change || sized) {
     const frame = frameOf(project)!
     const asked = 'settings' in change ? change.settings : sized
@@ -250,11 +250,12 @@ function frameRefuses(frame: FrameSheet, change: FrameChange): boolean {
 }
 
 /** A Custom frame built from its Frame shape and settings round a Canvas position: its bounding rectangle in its own
- * Technique, its first row and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
-function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns, woven?: Weave): FrameSheet {
+ * Technique and its layer's Bead (by default the Bead a Frame of the Project is made in, ticket 0723), its first row
+ * and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
+function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns, woven?: Weave, cell: BeadCell | undefined = frameWeave(project).cell): FrameSheet {
   const read = settingsOf({ shape, settings })!
   const weave = weaveOf(woven ?? { technique: frameShapeOf({ shape })!.techniques[0] })
-  const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave.technique)
+  const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave.technique, cell)
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
   return { row: snapRow(canvas, centre.row - half.row), column: centre.column - half.column, rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
@@ -279,14 +280,25 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: firstPasses(rowProgressOf(project)) })
 }
 
-/** A Custom frame laid out again from new settings round its own centre: each bead whose position is still in the
- * layout shows, the rest fold, kept by their position's name, until a layout has it again (ticket 0640). */
-function resettled<T extends FrameSheet>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
-  const centre = canvasDistance(project, heldWeave(project, 'frame')!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
+/** A Custom frame laid out again from new settings round its own centre, as it lay in `before` (the Project itself, or
+ * the one before its Bead changed): each bead whose position is still in the layout shows, the rest fold, kept by their
+ * position's name, until a layout has it again (ticket 0640). */
+function resettled<T extends FrameSheet>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined, before: Project = project): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
+  const centre = canvasDistance(before, heldWeave(before, 'frame')!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
   const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns, heldWeave(project, 'frame'))
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
   const geometry = frameGeometry(sheet)
   return { ...rest, ...sheet, ...refoldSheet(frame, (position) => geometry.hasPosition(position)) }
+}
+
+/** A Custom frame laid out again in the Bead its layer now has in `after`, `before` with a Bead replaced (ticket 0723):
+ * a round shape packs by its Bead, so its rectangle follows round its own centre, as a size change's does, every bead
+ * keeping its name and colour. `after` itself without a Frame shape, or where its rectangle is as it was. */
+export function relaidInBead(before: Project, after: Project): Project {
+  const frame = frameOf(after)
+  if (!frame || !frameShapeOf(frame)) return after
+  const sheet = resettled(after, frame, frame.settings ?? {}, frame.quarterTurns, before)
+  return sameFrame(frame, sheet) ? after : withFrameSheet(after, sheet)
 }
 
 /** Rotate Frame on a Custom frame (ticket 0594): its layout a quarter turn further clockwise round its own centre, its
@@ -388,10 +400,11 @@ function placedFrame(project: Project, place: { frame: Rect; weave: Weave; beads
  * the Canvas beads the new one hides are lifted in, each as a Paste lands it; one on a Seam or Off-shape stays, hidden. */
 function madeCustomFrame(project: Project, rectangle: Rect): Project {
   const frame = frameOf(project)!
-  const settings = sizedSettings(frame, coveringSize(project, frame, rectangle), 'cover')!
+  const { cell } = frameWeave(project)
+  const settings = sizedSettings({ ...frame, cell }, coveringSize(project, frame, rectangle), 'cover')!
   const centre = { row: rectangle.row + Math.floor(rectangle.rows / 2), column: rectangle.column + Math.floor(rectangle.columns / 2) }
   const laid = removedFrame(project)
-  const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, 'frame'))
+  const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, 'frame'), cell)
   // It stays the same layer: its id, Bead, Letters switch and Row progress.
   const framed = withFrameSheet(laid, { ...sheet, ...frameIdentity(frame) })
   const under = beadsOfLayer(laid, 'canvas')
@@ -433,7 +446,7 @@ function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
   const positions: GridPosition[] = []
   forEachBead(folded, (row, column) => positions.push({ row, column }))
   // The Folded beads as the beads it shows, on the Frame grown to hold them.
-  const grown = resettled(project, { ...frame, beads: folded, folded: undefined }, settingsHolding(frame, positions), frame.quarterTurns)
+  const grown = resettled(project, { ...frame, beads: folded, folded: undefined }, settingsHolding({ ...frame, cell: frameWeave(project).cell }, positions), frame.quarterTurns)
   return { shown, folded: onCanvas(grown, droppedFromLayout(layerSheet(withFrameSheet(project, grown), 'frame'))) }
 }
 

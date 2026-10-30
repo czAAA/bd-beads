@@ -9,7 +9,7 @@ for (const [mode, fold] of [['mirror', 4], ['repeat', 3]] as const) {
   test(`the Radial overlay on a loom Frame in ${mode} mode at Fold ${fold}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await openApp(page, [fixtureProject({ technique: 'loom', blank: true })])
+    await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, 100)
     await page.getByTestId('pill-tool-mirror').click()

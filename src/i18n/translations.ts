@@ -47,11 +47,6 @@ export interface Translations {
       size: string
       choose: string
     }
-    beadShapeLabel: string
-    beadShapeSymmetric: string
-    beadShapeReal: string
-    beadShapeSymmetricTip: string
-    beadShapeRealTip: string
     techniqueLabel: string
     widthLabel: string
     heightLabel: string
@@ -262,6 +257,14 @@ export interface Translations {
     unnamedPieces: string
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
+    /** A row's Piece count over the size gate, never counted (ticket 0716). */
+    tooBigToCount: string
+    /** The Tooltip of a row's count still being worked out in idle time (ticket 0716). */
+    countingPieces: string
+    /** "31 771 024 beads": a sealed Project's bead count, in its row (ticket 0716). */
+    beads: PluralForms
+    /** A sealed Project's row: "made {created} · saved {saved}", dates in the app's language (ticket 0716). */
+    sealedDates: string
   }
   /** The Starter gallery and its setup (tickets 0596, 0597; StarterGallery card). */
   starters: {
@@ -343,6 +346,21 @@ export interface Translations {
       hand: string
       rulers: string
     }
+    /** The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): the four steps, the quiet notes,
+     * the welcome and its steps line, and the phone's shorter steps. A line break is `\n`. */
+    firstRun: {
+      paint: string
+      select: string
+      frame: string
+      export: string
+      menu: string
+      project: string
+      mirror: string
+      color: string
+      welcome: string
+      steps: string
+      phone: Record<'paint' | 'select' | 'frame' | 'export', string>
+    }
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
@@ -375,7 +393,6 @@ export interface Translations {
     tagline: string
     makeFirstProject: string
     openEditor: string
-    projectsSaved: string
     whatsInside: string
     /** The carousel's ‹ › buttons. */
     previousFeature: string
@@ -629,7 +646,6 @@ export interface Translations {
     wherePartsAre: string
     partsNote: string
     rowByRowOn: string
-    shape: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string
@@ -1144,6 +1160,22 @@ export interface Translations {
     frameHeading: string
     background: string
   }
+  /** An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
+   * Schema tag copy). */
+  schemaTag: {
+    /** The tags' one Tab stop. */
+    group: string
+    /** A tag's accessible name. */
+    label: string
+    /** The Tooltip's body on a tag whose name shows as three dots. */
+    tooltipBody: string
+    /** The paper tag's label over the name, lowercased by style. */
+    heading: string
+    /** The Schema's rectangle in beads; its Estimated size follows after " · ≈ ". */
+    sizeBeads: string
+    beads: PluralForms
+    colors: PluralForms
+  }
   /** The Feedback sheet (ADR 0081, spec 0698, ticket 0700): its three Report kinds' titles and fields, the Also sent
    * block's rows, and why a Report was not sent. */
   feedback: {
@@ -1194,5 +1226,19 @@ export interface Translations {
     rateLimited: string
     failed: string
     sent: string
+  }
+  /** Safe start and the size gate (ticket 0716): the notice of a Project that didn't open last time, and the question
+   * before a Project over the gate opens. */
+  opening: {
+    /** The notice row, with {name}. */
+    didNotOpen: string
+    removeButton: string
+    exportButton: string
+    /** "Open “Scarf”?", with {name}. */
+    largeTitle: string
+    /** "31 million beads. Opening may be slow or fail.", {count} in millions. */
+    largeMessage: string
+    openAnyway: string
+    cancelButton: string
   }
 }

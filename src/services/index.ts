@@ -7,6 +7,9 @@ import { browserDevicePreferences, type DevicePreferences } from './devicePrefer
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
 import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
 import { browserFeedback, type FeedbackService } from './feedback'
+import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
+import { takeOpeningAddress } from './openingAddress'
+import type { OpeningAddress } from '../domain/openingAddress'
 
 // Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
 // cares about.
@@ -21,6 +24,10 @@ export interface Services {
   persistentStorage: PersistentStorage
   /** Sending a Report from the Feedback sheet, and Copy report (ADR 0081). */
   feedback: FeedbackService
+  /** The safe start's "opening Project X" note (ticket 0716). */
+  openingNote: OpeningNoteStore
+  /** What the address the editor opened at asks for, read once (ticket 0716). */
+  openingAddress: () => OpeningAddress
 }
 
 export const browserServices: Services = {
@@ -32,4 +39,6 @@ export const browserServices: Services = {
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,
   feedback: browserFeedback,
+  openingNote: browserOpeningNote,
+  openingAddress: takeOpeningAddress,
 }

@@ -12,7 +12,6 @@ import { useThemePick } from '../../theme/useThemePick'
 import PanelItem from './PanelItem.vue'
 import PanelPicker from './PanelPicker.vue'
 import PanelSection from './PanelSection.vue'
-import type { Project } from '../../domain/project'
 import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
@@ -20,19 +19,20 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections; Help's
 // Send feedback and the link under Language open the Feedback sheet (ticket 0700). It only asks: the app shell does the
-// work. On the Homepage (ticket 540, ADR 0073) its Homepage item is the current page and the editor's parts are left out.
+// work. On the Homepage (ticket 540, ADR 0073) the editor's parts are left out, Saved Projects kept (ticket 0716).
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
     page?: 'editor' | 'homepage'
-    projects?: Project[]
+    /** How many Projects the library holds, sealed ones too (ticket 0716). */
+    projectCount?: number
     toolsPosition?: PillPosition
     inputMode?: InputMode
     handedness?: Handedness
     /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
     penSeen?: boolean
   }>(),
-  { page: 'editor', projects: () => [], toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
+  { page: 'editor', projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
 )
 const inEditor = computed(() => props.page === 'editor')
 const emit = defineEmits<{
@@ -86,10 +86,11 @@ const inputOptions = computed(() => [
 
 <template>
   <div class="menu-panel" data-testid="menu-panel">
-    <PanelSection v-if="inEditor" id="menu:projects" :label="t.panels.menu.projects">
+    <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
+    <PanelSection v-if="inEditor || projectCount > 0" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
-      <PanelItem icon="plus" accent sub stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
-      <PanelItem icon="library" :value="String(projects.length)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
+      <PanelItem v-if="inEditor" icon="plus" accent sub stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem icon="library" :value="String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
       </PanelItem>
     </PanelSection>
