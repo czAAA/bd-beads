@@ -6,7 +6,6 @@ import { namedPieces, namedPiecesFrom, type NamedPiece } from '../domain/pieceNa
 import { pieceAreasOf, type WalkedPieces } from '../domain/pieces'
 import { beadsOver, SIZE_GATE_BEADS, tooManyToWalk } from '../domain/openingLimits'
 import { rowCycle, type Weave } from '../domain/weave'
-import type { GridPosition as Anchor } from '../domain/grid'
 import type { RuledProject } from './rulers'
 
 /** The Pieces the rulers hang from (ticket 0674): the Piece areas that carry rulers, none while the rulers are hidden
@@ -23,7 +22,7 @@ export interface RuledPieces {
 }
 
 /** The Pieces of a layer too big to walk at once, once walked in idle time; undefined until then (ticket 0716). */
-export type IdleWalk = (beads: BeadMap, weave: Weave, anchors: readonly Anchor[]) => WalkedPieces | undefined
+export type IdleWalk = (beads: BeadMap, weave: Weave, anchors: readonly GridPosition[]) => WalkedPieces | undefined
 
 /** How far from an area a painted bead still counts as its: a bead touching it, or one empty bead off (the margin
  * that joins Piece areas). A named Piece takes only a bead touching it. */

@@ -113,7 +113,7 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
   })
 
   it('lists a sealed Project by its name, dates and bead count, with no thumbnail and no Piece count, among the rest by last save', async () => {
-    const sealed: SealedProject = { id: 'big', name: 'Black fill', createdAt: Date.UTC(2026, 9, 1), updatedAt: Date.UTC(2026, 9, 30), savedAt: Date.UTC(2026, 9, 30), layerBeads: [31_771_024, 440], beads: 31_771_464, stored: '{}' }
+    const sealed: SealedProject = { id: 'big', name: 'Black fill', createdAt: Date.UTC(2026, 9, 1, 12), updatedAt: Date.UTC(2026, 9, 30, 12), savedAt: Date.UTC(2026, 9, 30, 12), layerBeads: [31_771_024, 440], beads: 31_771_464, stored: '{}' }
     const older = { ...first, savedAt: 1 }
 
     const wrapper = mountLibrary({ projects: [older], sealed: [sealed] })

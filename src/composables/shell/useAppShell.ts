@@ -687,7 +687,9 @@ function wireAppShell(services: Services) {
       missedProject,
       onRemoveMissed: () => missedProject.value && savedProjectConfirms.onRequestRemove(missedProject.value.id),
       onExportMissed: () => missedProject.value && exportFlow.onExportSealed(missedProject.value),
-      onDismissMissed: () => void (safeStart.missed.value = undefined),
+      onDismissMissed: () => {
+        safeStart.missed.value = undefined
+      },
       /** A picture dropped or pasted on the app opens Convert image with it set (spec 0645). */
       onPictureForConvert: convertImage.onPicture,
       dialogOpen: dialogs.open,
