@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { letterAt, lettersFor, lowestFreeLetter } from './swatchLetters'
+import { letterAt, lettersDrawn, lettersFor, lowestFreeLetter } from './swatchLetters'
 
 describe('letterAt', () => {
   it('counts A to Z, then AA, AB and on past AZ', () => {
@@ -33,5 +33,11 @@ describe('lettersFor', () => {
 
   it('drops an unreadable or repeated stored letter and gives that color another', () => {
     expect(lettersFor(['#111111', '#222222', '#333333'], { '#111111': 'B', '#222222': 'B', '#333333': 7 })).toEqual({ '#111111': 'B', '#222222': 'A', '#333333': 'C' })
+  })
+})
+
+describe('lettersDrawn', () => {
+  it('is true only when some color has a letter, so a board without any crosses its empty positions', () => {
+    expect([lettersDrawn(undefined), lettersDrawn({}), lettersDrawn({ '#111111': '' }), lettersDrawn({ '#111111': 'A' })]).toEqual([false, false, false, true])
   })
 })
