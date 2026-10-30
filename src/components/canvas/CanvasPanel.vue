@@ -55,6 +55,7 @@ const {
   toggleRulers,
   rowHighlight,
   toggleRowHighlight,
+  rowPress,
   canUndo,
   canRedo,
   onUndo,
@@ -316,6 +317,7 @@ const drawingStyle = computed(() => {
               :show-rulers="showRulers"
               :stroking="stroking"
               :row-marks="rowHighlight"
+              :row-press="rowPress"
               :input-mode="surfaceInputMode"
               :handedness="handedness"
               :preview-cells="previewCells"
@@ -411,6 +413,7 @@ const drawingStyle = computed(() => {
         v-if="activeProject"
         :project="activeProject"
         :row-highlight="rowHighlight"
+        :row-press="rowPress"
         @move-row="onMoveRow"
         @reset-progress="onResetProgress"
         @toggle-row-direction="onToggleRowDirection"
@@ -465,6 +468,7 @@ const drawingStyle = computed(() => {
           :editing="settingFrame"
           :pressing="surfacePressing"
           :row-highlight="rowHighlight"
+          :row-press="rowPress"
           :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
           @rotate="onRotateFrame"

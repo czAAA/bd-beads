@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import RowProgressControls from './RowProgressControls.vue'
+import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
@@ -16,6 +17,8 @@ const props = withDefaults(defineProps<{
   project: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): pressed while it does. */
   rowHighlight?: boolean
+  /** The last press of Row done or Row not done (ticket 0730): Row done flares the track's spark. */
+  rowPress?: RowPress
 }>(), { rowHighlight: true })
 
 const emit = defineEmits<{
@@ -59,6 +62,7 @@ const hasFrame = computed(() => frameOf(props.project) !== undefined)
       v-else
       :project="project"
       :row-highlight="rowHighlight"
+      :row-press="rowPress"
       form="bar"
       testid="progress-bar"
       @move-row="emit('move-row', $event)"

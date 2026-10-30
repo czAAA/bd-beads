@@ -131,3 +131,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - [ ] No gutter controls remain; exports never show the sheet.
 
 Hand-written from the ticket 0655 design canvas; static rendition.
+
+## As built (ticket 0730)
+
+- The spark is at the compact size on the margin's track in every form that keeps a track (full, compact, folded); where the row gives the track up it has none. The tick glides along the Frame's line between two passes that both have a tick on the same side, and jumps otherwise.

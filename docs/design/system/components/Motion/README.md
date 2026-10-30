@@ -12,3 +12,7 @@ How things move: four durations, three easings, and the rules that keep motion o
 Hand-written from the Phase B sign-off; the tokens and classes live in `components/bundle.css`.
 
 - **Menu and Project (spec 0440):** the dropdown fades in over `duration-base` with a 4px move and out in 150ms, on every screen size. Under reduced motion it only fades.
+
+## As built (ticket 0730)
+
+- Row done and Pattern done are built as the Motion section's Row progress part says, with its own As built note: the press is the trigger, the canvas runs a frame loop only while something moves, and Pattern done lasts until its last star (3.2s from its start).
