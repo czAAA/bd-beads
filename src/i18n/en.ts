@@ -450,6 +450,8 @@ export const en: Translations = {
     removeLineButton: 'Remove selected row/column',
     removeLineShort: 'Remove line',
     namePieceButton: 'Name Piece',
+    fillOpenMessage: 'Nothing encloses this spot. Select an area to fill it.',
+    fillTooBigMessage: 'Too big to fill. Zoom in, or select an area.',
   },
   inputMode: {
     penLabel: 'Pen mode',

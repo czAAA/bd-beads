@@ -68,6 +68,23 @@ describe('useCanvasView', () => {
     expect(view.scroll.value).toEqual({ x: -500, y: -400 })
   })
 
+  it('knows the Canvas positions on screen, as the renderer counts them in view, and follows a move (ticket 0715)', () => {
+    const { view } = setup(withLayers(projectOf(2, 2), { frame: undefined }))
+    view.fit()
+    // At 100% a bead is 20px: the 1000 × 800 view centred on the origin shows 50 columns and 40 rows round it, and the
+    // renderer counts the bead touching each edge as well.
+    expect(view.canvasOnScreen()).toEqual({ row: -21, column: -26, rows: 42, columns: 52 })
+
+    view.panBy(-200, 100)
+    expect(view.canvasOnScreen()).toEqual({ row: -26, column: -16, rows: 42, columns: 52 })
+  })
+
+  it('knows no positions on screen until the area is measured', () => {
+    const { view } = setup(projectOf(2, 2), { width: 0, height: 0 })
+
+    expect(view.canvasOnScreen()).toBeUndefined()
+  })
+
   it('moves with a drag the way the content moves, with a wheel the way the wheel turns, and stops following the fit', () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()
