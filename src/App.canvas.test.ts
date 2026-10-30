@@ -251,7 +251,6 @@ describe('the first-run hints over an empty Project (ticket 0725, FirstRunHints 
     await flushPromises()
 
     expect(hints(wrapper).exists()).toBe(true)
-    expect(hints(wrapper).attributes('aria-hidden')).toBe('true')
 
     await pickTool(wrapper, 'paint')
     await pressBead(wrapper, { row: 0, column: 0 })

@@ -4,11 +4,13 @@ import AppLogo from '../ui/AppLogo.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { contrastRatio, fromHex } from '../../domain/color'
+import { clamp } from '../../domain/clamp'
 import type { PillPosition, PillRect } from '../../domain/toolPill'
 import type { BarBox } from '../../composables/tools/selectionBarPlacement'
 import {
   QUIET_HINTS,
   STEP_HINTS,
+  isStepHint,
   placeFirstRunHints,
   type HintId,
   type PlacedHint,
@@ -34,7 +36,6 @@ const phone = useMediaQuery('(max-width: 30rem)')
 
 const shownIds = computed<HintId[]>(() => (phone.value ? [...STEP_HINTS] : [...STEP_HINTS, ...QUIET_HINTS]))
 const copy = computed<Record<HintId, string>>(() => ({ ...t.value.canvas.firstRun, ...(phone.value ? t.value.canvas.firstRun.phone : {}) }))
-const isStep = (id: HintId) => (STEP_HINTS as readonly HintId[]).includes(id)
 
 const layerEl = ref<HTMLElement>()
 const welcomeEl = ref<HTMLElement>()
@@ -43,6 +44,7 @@ const placed = ref<PlacedHint[]>([])
 const placeOf = computed(() => new Map(placed.value.map((hint) => [hint.id, hint])))
 /** On a Canvas background where `muted` reads under 4.5:1 the notes take `body` (CanvasBackground card). */
 const lowContrast = ref(false)
+const READABLE_CONTRAST = 4.5
 
 function noteRef(id: HintId) {
   return (el: unknown) => {
@@ -68,7 +70,7 @@ function measure() {
   for (const id of shownIds.value) {
     const target = boxOf(scope.querySelector(`[data-hint="${id}"]`))
     // A control scrolled off the strip's end (Export on a phone) is pointed at where the strip ends.
-    if (target) targets[id] = { ...target, left: Math.min(Math.max(target.left, 0), area.width - target.width) }
+    if (target) targets[id] = { ...target, left: clamp(target.left, 0, area.width - target.width) }
     const note = noteEls.get(id)
     if (note) notes[id] = { width: note.offsetWidth, height: note.offsetHeight }
   }
@@ -80,7 +82,7 @@ function measure() {
 function mutedIsFaint(layer: HTMLElement): boolean {
   const muted = fromHex(getComputedStyle(layer).getPropertyValue('--muted').trim())
   const background = props.background ? fromHex(props.background) : undefined
-  return !!muted && !!background && contrastRatio(muted, background) < 4.5
+  return !!muted && !!background && contrastRatio(muted, background) < READABLE_CONTRAST
 }
 
 const remeasure = () => void nextTick(measure)
@@ -100,7 +102,7 @@ onBeforeUnmount(() => {
   observer?.disconnect()
   props.scope?.removeEventListener('scroll', remeasure, { capture: true })
 })
-watch([() => props.pillPosition, () => props.pillRect, () => props.background, phone, t], remeasure, { deep: true })
+watch([() => props.pillPosition, () => props.pillRect, () => props.background, phone, t], remeasure)
 
 function noteStyle(id: HintId) {
   const place = placeOf.value.get(id)
@@ -120,7 +122,7 @@ function noteStyle(id: HintId) {
       v-for="hint in placed"
       :key="`arrow-${hint.id}`"
       class="first-run-hints__arrow"
-      :class="{ 'first-run-hints__arrow--step': isStep(hint.id) }"
+      :class="{ 'first-run-hints__arrow--step': isStepHint(hint.id) }"
       :data-testid="`first-run-arrow-${hint.id}`"
     >
       <path :d="hint.arrow" />
@@ -130,7 +132,7 @@ function noteStyle(id: HintId) {
       :key="id"
       :ref="noteRef(id)"
       class="first-run-hints__note"
-      :class="{ 'first-run-hints__note--step': isStep(id) }"
+      :class="{ 'first-run-hints__note--step': isStepHint(id) }"
       :style="noteStyle(id)"
       :data-testid="`first-run-hint-${id}`"
     >{{ copy[id] }}</p>

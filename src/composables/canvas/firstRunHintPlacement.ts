@@ -1,3 +1,4 @@
+import { clamp } from '../../domain/clamp'
 import type { PillPosition } from '../../domain/toolPill'
 import type { BarBox } from '../tools/selectionBarPlacement'
 
@@ -9,6 +10,9 @@ import type { BarBox } from '../tools/selectionBarPlacement'
 export const STEP_HINTS = ['paint', 'select', 'frame', 'export'] as const
 export const QUIET_HINTS = ['color', 'mirror', 'menu', 'project'] as const
 export type HintId = (typeof STEP_HINTS)[number] | (typeof QUIET_HINTS)[number]
+
+/** Whether a note is one of the four steps, which always show. */
+export const isStepHint = (id: HintId): boolean => (STEP_HINTS as readonly HintId[]).includes(id)
 
 /** The controls in the Canvas strip, above the drawing area; the rest are Tool pill tiles. */
 const STRIP_HINTS: readonly HintId[] = ['menu', 'project', 'frame', 'export']
@@ -84,7 +88,7 @@ function placeInOrder(layout: HintLayout, order: readonly HintId[]): { placed: P
     const target = layout.targets[id]
     const size = layout.notes[id]
     if (!target || !size) continue
-    const step = (STEP_HINTS as readonly HintId[]).includes(id)
+    const step = isStepHint(id)
     const end = arrowEnd(id, target, layout.pillPosition)
     const candidates = (step ? STEP_DISTANCES : QUIET_DISTANCES)
       .flatMap((distance) => SHIFTS.map((shift) => noteBox(id, target, size, distance, shift, layout)))
@@ -141,8 +145,8 @@ function noteBox(id: HintId, target: BarBox, size: Size, distance: number, shift
     }
   }
   return {
-    left: Math.round(clamp(left, EDGE, layout.area.width - EDGE - width)),
-    top: Math.round(clamp(top, EDGE, layout.area.height - EDGE - height)),
+    left: Math.round(clamp(left, EDGE, Math.max(EDGE, layout.area.width - EDGE - width))),
+    top: Math.round(clamp(top, EDGE, Math.max(EDGE, layout.area.height - EDGE - height))),
     width,
     height,
   }
@@ -216,10 +220,6 @@ function covers(box: BarBox, { x, y }: Point, gap = GAP): boolean {
 
 function overlaps(a: BarBox, b: BarBox): boolean {
   return a.left < b.left + b.width + GAP && b.left < a.left + a.width + GAP && a.top < b.top + b.height + GAP && b.top < a.top + a.height + GAP
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), Math.max(min, max))
 }
 
 const round = (value: number) => Math.round(value * 10) / 10
