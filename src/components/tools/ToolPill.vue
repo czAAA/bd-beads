@@ -17,6 +17,7 @@ import MirrorPopover from './MirrorPopover.vue'
 import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
 import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
 import type { Rect } from '../../domain/canvas'
+import type { Layer } from '../../domain/grid'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
@@ -37,7 +38,7 @@ const props = withDefaults(defineProps<{
   mirrorOnCanvas?: boolean
   /** The Area row (ticket 0710): the layer it is for (none on a Custom frame), that layer's Area, and whether one is
    * being picked. */
-  mirrorAreaRow?: 'frame' | 'canvas'
+  mirrorAreaRow?: Layer
   mirrorArea?: Rect
   mirrorPicking?: boolean
   position: PillPosition

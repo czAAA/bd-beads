@@ -1,6 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
+import { frameContains } from '../../../domain/canvas'
 import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
@@ -505,17 +506,19 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     emit('area-target', over)
   }
 
-  /** A press while picking: on the margin it waits for its release, over the beads it starts the band. */
+  /** A press while picking: on the margin it waits for its release, over the beads it starts the band; with a Frame,
+   * one off the Frame and its margin sets nothing. */
   function pressArea(event: PointerEvent): void {
     const point = pointInDrawing(event)
+    const covered = footprintOf(props.project)
     hideMarker()
-    rootEl.value?.setPointerCapture?.(event.pointerId)
     if (onMarginAt(point)) {
       marginPress = true
-    } else {
+    } else if (!covered || frameContains(covered, surface.value.pointToCell(point, 'canvas'))) {
       areaDrag = true
       emit('area-press', surface.value.pointToCell(point, props.areaLayer ?? 'canvas'))
-    }
+    } else return
+    rootEl.value?.setPointerCapture?.(event.pointerId)
     event.preventDefault()
   }
 

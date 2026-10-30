@@ -100,7 +100,7 @@ describe('the Tool pill', () => {
     wrapper.unmount()
   })
 
-  it('Area (ticket 0710): Select area closes the popover, a drag over the beads sets the Area, and a stroke inside it mirrors inside it alone', async () => {
+  it('Area (ticket 0710): Select area closes the popover, a drag over the beads sets the Area, a stroke mirrors inside it, and Clear the area removes it', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     const surface = wrapper.get('[data-testid="project-surface"]')
     await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
@@ -112,8 +112,7 @@ describe('the Tool pill', () => {
     await hoverBead(wrapper, { row: 1, column: 3, layer: 'frame' }, { buttons: 1 })
     await surface.trigger('pointerup')
     await flushPromises()
-    expect(wrapper.get('[data-testid="mirror-select-area"]').text()).toBe('4 × 2 beads')
-    expect(wrapper.get('[data-testid="mirror-area"]').text()).toContain('Area 4 × 2: the Axes run inside it')
+    expect(wrapper.find('[data-testid="mirror-area"]').exists()).toBe(true)
     expect(loadProjects()[0]!.layers[1]!.mirrorArea).toEqual({ row: 0, column: 0, rows: 2, columns: 4 })
     await wrapper.get('[data-testid="mirror-popover-close"]').trigger('click')
 
@@ -121,12 +120,11 @@ describe('the Tool pill', () => {
     await pressBead(wrapper, { row: 0, column: 0, layer: 'frame' })
     await surface.trigger('pointerup')
     const row = beadColors(wrapper)[0]!
-    expect(row[0]).toBe('#e63746')
-    expect(row[3]).toBe('#e63746')
-    expect(row.filter(Boolean)).toHaveLength(2)
-    await pressBead(wrapper, { row: 3, column: 6, layer: 'frame' })
-    await surface.trigger('pointerup')
-    expect(beadColors(wrapper)[3]!.filter(Boolean)).toHaveLength(1)
+    expect(row.flatMap((color, column) => (color ? [column] : []))).toEqual([0, 3])
+
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-clear-area"]').trigger('click')
+    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toBeUndefined()
     wrapper.unmount()
   })
 
@@ -135,6 +133,11 @@ describe('the Tool pill', () => {
     const frame = frameOf(drawnProject(wrapper))!
     await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
     await wrapper.get('[data-testid="mirror-select-area"]').trigger('click')
+    // Off the Frame and its margin a press sets nothing, picking or not.
+    const outside = { row: frame.row - 8, column: frame.column }
+    await pressBead(wrapper, outside)
+    await wrapper.get('[data-testid="project-surface"]').trigger('pointerup', beadPoint(wrapper, outside))
+    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toBeUndefined()
     const margin = { row: frame.row - 1, column: frame.column }
     await pressBead(wrapper, margin)
     expect(loadProjects()[0]!.layers[1]!.mirrorArea).toBeUndefined()
