@@ -45,6 +45,7 @@ const {
   canvasOrientation,
   twistPhase,
   selectionRefusals,
+  fillRefusals,
   activeTool,
   showRulers,
   stroking,
@@ -286,6 +287,7 @@ const drawingStyle = computed(() => {
               :preview-color="previewColor"
               :selection="selection"
               :selection-refusals="selectionRefusals"
+              :fill-refusals="fillRefusals"
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
