@@ -298,7 +298,7 @@ export const pl: Translations = {
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
     notes: { onUs: 'na nasz koszt' },
-    coffee: { title: 'Jedna rodzina', text: 'openbeads robi jedna rodzina, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci wieczór liczenia, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
+    coffee: { title: 'Robi to jedna rodzina', text: 'openbeads robi jedna rodzina, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci czas, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
       label: 'plany',
       heading: 'Trzy sposoby użycia',

@@ -5,7 +5,8 @@ import { useI18n } from '../i18n/useI18n'
 
 // The coffee tile (ticket 219; Homepage card): a beaded cup with steam, who made the app, one line and a secondary
 // button that opens the Coffee link in a new tab (ticket 560), inert while it is empty. No donation-service name, logo or colours.
-// The cup and steam are decorative.
+// The cup and steam are decorative. The whole tile is the link (ticket 0718): the button's `::after` covers the tile, so a
+// click anywhere opens it while keyboards and screen readers still meet one link, named by the button.
 const { t } = useI18n()
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */
@@ -50,12 +51,13 @@ const steam = [
       <h3 class="coffee__title">{{ t.homepage.coffee.title }}</h3>
       <p class="coffee__text">{{ t.homepage.coffee.text }}</p>
     </div>
-    <AppButton :href="COFFEE_URL || undefined" data-testid="homepage-coffee-button">{{ t.homepage.coffee.button }}</AppButton>
+    <AppButton :href="COFFEE_URL || undefined" :class="{ coffee__link: COFFEE_URL }" data-testid="homepage-coffee-button">{{ t.homepage.coffee.button }}</AppButton>
   </section>
 </template>
 
 <style scoped>
 .coffee {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -68,6 +70,20 @@ const steam = [
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: 1.25rem;
+}
+
+/* The link's box is the tile, not its own (a coarse pointer makes every control `relative`, and a press scales it, which
+   would shrink the cover mid-click), so its `::after` reaches the tile's edges. */
+.coffee :deep(.coffee__link.app-button),
+.coffee :deep(.coffee__link.app-button:active) {
+  position: static;
+  transform: none;
+}
+
+.coffee :deep(.coffee__link)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
 .coffee-cup {
