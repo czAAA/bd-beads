@@ -26,9 +26,9 @@ import MarginTitleBlock from './MarginTitleBlock.vue'
 import RowProgressControls from './RowProgressControls.vue'
 import { frameOf } from '../../domain/layerRecord'
 
-// The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658): Row progress, the Move bar and the tools
-// in its top band, the title block in the Frame's own bottom-right corner (ticket 0726), laid over the sheet the canvas draws. The controls keep
-// their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, only the Move bar.
+// The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 0726): Row progress, the Move bar and the
+// tools in its top band, the title block in the Frame's own bottom-right corner, laid over the sheet the canvas draws. The
+// controls keep their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, the Move bar.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
@@ -159,7 +159,7 @@ const titleStyle = computed(() => {
     [left ? 'left' : 'right']: `${titleInset.value.side}px`,
     [top ? 'top' : 'bottom']: `${titleInset.value.edge}px`,
     maxWidth: `${titleRoom.value / scale.value}px`,
-    ...scaledFrom(`${left ? 0 : '100%'} ${top ? 0 : '100%'}`),
+    ...scaledFrom([left ? 0 : '100%', top ? 0 : '100%'].join(' ')),
   }
 })
 

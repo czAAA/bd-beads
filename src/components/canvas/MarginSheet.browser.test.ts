@@ -195,7 +195,10 @@ describe('the title block giving way at its new corner (tickets 498, 0726)', () 
   it('gives way to a Selection\'s handles that reach under it at the top-left, and not to one at the bottom-right', async () => {
     const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>
       defineComponent({
-        setup: () => () => h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { project: projectOf(40), anchor: { ...anchorAt(1, 40), titleCorner: { top: true, left: true } }, editing: false, pressing: false, selection })]),
+        setup: () => () => {
+          const anchor = { ...anchorAt(1, 40), titleCorner: { top: true, left: true } }
+          return h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { project: projectOf(40), anchor, editing: false, pressing: false, selection })])
+        },
       })
     const yielding = async (selection: { left: number; top: number; width: number; height: number }) => {
       const { root } = await mountAt(sheetAt(selection), {}, { locale: 'en', width: 1280 })
