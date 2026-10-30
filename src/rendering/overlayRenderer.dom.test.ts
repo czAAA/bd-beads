@@ -490,6 +490,48 @@ describe('renderOverlay', () => {
     })
   })
 
+  describe('Mirror\'s Axes on the open Canvas (ticket 0704)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+    const open = () => withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
+    const handle = { direction: 'leftRight' as const, x: 70, y: 56, size: 32 }
+
+    it('draws each Axis as a dashed marker line across the whole view in screen px, and its chip at a fixed size over everything', () => {
+      const { context, calls, named } = recordingContext()
+      renderOverlayWith(context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 2, pixelRatio: 2, mirror: on({ leftRight: true, topBottom: true }), canvasAxes: { axes: { leftRight: 3, topBottom: 1 }, handles: [handle] } })
+
+      expect(lines(calls)).toEqual([
+        [[70, 0], [70, 150]],
+        [[0, 30], [200, 30]],
+      ])
+      expect(named('setLineDash')[0]!.args[0]).toEqual([2.5, 2])
+      expect(calls.find((call) => call.name === 'stroke')!.strokeStyle).toBe(DEFAULT_THEME.marker)
+      const chip = named('arc').find((call) => call.args[2] === 16)!
+      expect(chip.args.slice(0, 3)).toEqual([70, 56, 16])
+      expect(chip.fillStyle).toBe(DEFAULT_THEME.chip.fill)
+      expect(chip.strokeStyle).toBe(DEFAULT_THEME.marker)
+      // The chips are drawn in the viewport's px: the transform set just before them is the pixel ratio alone.
+      const transforms = named('setTransform').map((call) => call.args)
+      expect(transforms[transforms.length - 1]).toEqual([2, 0, 0, 2, 0, 0])
+    })
+
+    it('draws a held chip in the accent, and nothing while the mode is Off or no Axis is given', () => {
+      const held = recordingContext()
+      renderOverlayWith(held.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: { leftRight: 3 }, handles: [handle], held: 'leftRight' } })
+      expect(held.named('arc').find((call) => call.args[2] === 16)!.strokeStyle).toBe(DEFAULT_THEME.accent)
+
+      const off = recordingContext()
+      renderOverlayWith(off.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, canvasAxes: { axes: { leftRight: 3 }, handles: [handle] } })
+      expect(off.named('stroke')).toHaveLength(0)
+      const none = recordingContext()
+      renderOverlayWith(none.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: {}, handles: [] } })
+      expect(none.named('stroke')).toHaveLength(0)
+    })
+  })
+
   describe('the Frame margin outline (ticket 276)', () => {
     const framed = withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: { technique: 'loom' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } })
 

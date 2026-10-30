@@ -201,6 +201,9 @@ export interface SurfaceView {
   beadStep(layer?: ViewLayer): { column: Scroll; row: Scroll }
   /** A point in grid space, in the viewport. For the layouts that hang things off a bead's edge (the rulers). */
   gridToPoint(x: number, y: number): Scroll
+  /** A point of the viewport in the Canvas's grid space, the turn and the zoom undone: where a dragged Axis handle is
+   * (ticket 0704). */
+  pointToGrid(point: Scroll): Scroll
   /** A direction in grid space as it points on screen: turned, not zoomed. */
   gridDirection(x: number, y: number): Scroll
 }
@@ -375,6 +378,10 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
     gridToPoint: (x, y) => {
       const at = displayed(x, y, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
+    },
+    pointToGrid: (point) => {
+      const [x, y] = toGrid(point)
+      return { x, y }
     },
     gridDirection: (x, y) => {
       const origin = displayed(0, 0, 1)

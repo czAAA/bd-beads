@@ -25,7 +25,7 @@ import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
-import { isMirrorOn, MIRROR_OFF, mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
+import { canvasMirrors, isMirrorOn, MIRROR_OFF, mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
 import type { FramePress } from '../../rendering/frameHandles'
 
 // The Select tool's whole gesture (ticket 63): the Selection, in-session clipboard, the in-progress press (click vs
@@ -343,19 +343,20 @@ export function useSelectionGesture(
   function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
     if (!pasteProjectionActive.value || pastePreviewStamp(project, hovered)) return []
     const cells = pastedCellsOnLayer(project, copiedBlock.value!, hovered)
-    return mirroredOnFrame(project, hovered) ? mirroredOnCanvas(project, mirror(), cells) : cells
+    return mirroredAt(project, hovered) ? mirroredOnCanvas(project, mirror(), cells) : cells
   }
 
-  /** Whether a Paste aimed at `hovered` lands on the Frame under Mirror (ticket 0703): its preview then lists every
-   * counterpart, as a stamp cannot. */
-  function mirroredOnFrame(project: Project, hovered: GridPosition): boolean {
-    return isMirrorOn(mirror()) && layerAt(project, hovered) === 'frame'
+  /** Whether a Paste aimed at `hovered` is mirrored: on the Frame under Mirror (ticket 0703), or on the open Canvas
+   * with an Axis placed (ticket 0704); its preview then lists every counterpart, as a stamp cannot. */
+  function mirroredAt(project: Project, hovered: GridPosition): boolean {
+    if (!isMirrorOn(mirror())) return false
+    return layerAt(project, hovered) === 'frame' || canvasMirrors(project, mirror())
   }
 
   /** The same preview on a layer laid on a grid, as the block aimed where it lands (ticket 0675): built in a step
    * however big the block, and read by the overlay only where it shows. */
   function pastePreviewStamp(project: Project, hovered: GridPosition): PasteStamp | undefined {
-    return pasteProjectionActive.value && !mirroredOnFrame(project, hovered) ? pasteStampOnLayer(project, copiedBlock.value!, hovered) : undefined
+    return pasteProjectionActive.value && !mirroredAt(project, hovered) ? pasteStampOnLayer(project, copiedBlock.value!, hovered) : undefined
   }
 
   // Clears just the Selection, not the clipboard (ADR 0016): a copied block is colors, not a place. Called on a Project

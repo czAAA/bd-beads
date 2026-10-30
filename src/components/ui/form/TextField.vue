@@ -2,16 +2,16 @@
 import { ref, useId } from 'vue'
 import { coarsePointer } from '../../../composables/ui/touchKeyboard'
 
-// A single-line input (ticket 149): a `unit` labels and cuts the top border (ticket 224) and is read once, as the
-// description. Attributes go to the <input>. `compact` is the 2rem Frame panel field (ticket 517), `selectOnFocus` selects
-// on every focus, `bare` has no frame, for a field over a control that has one (Stepper, ticket 518).
+// A text field (ticket 149), attributes on the <input>: `unit` labels the top border (ticket 224), `compact` is the Frame
+// panel's (ticket 517), `selectOnFocus` selects on focus, `bare` has no frame (Stepper, ticket 518), `multiline` is a
+// textarea for free text whose height its form sets (ticket 0700).
 defineOptions({ inheritAttrs: false })
-withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean; bare?: boolean }>(), {
+withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean; bare?: boolean; multiline?: boolean }>(), {
   unit: undefined,
 })
 const value = defineModel<string | number>()
 const unitId = useId()
-const input = ref<HTMLInputElement>()
+const input = ref<HTMLInputElement | HTMLTextAreaElement>()
 // Set by a press on the field, cleared when it loses focus: a focus after it is the person's own (ticket 515).
 const tapped = ref(false)
 
@@ -27,8 +27,21 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled, 'text-field--compact': compact, 'text-field--bare': bare }">
+  <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled, 'text-field--compact': compact, 'text-field--bare': bare, 'text-field--multiline': multiline }">
+    <textarea
+      v-if="multiline"
+      ref="input"
+      v-model="value"
+      class="ui-control text-field__input text-field__area"
+      rows="2"
+      :disabled="disabled"
+      :aria-invalid="invalid || undefined"
+      v-bind="$attrs"
+      @pointerdown="tapped = true"
+      @blur="tapped = false"
+    />
     <input
+      v-else
       ref="input"
       v-model="value"
       class="ui-control text-field__input"
@@ -84,6 +97,17 @@ defineExpose({ focus })
 
 .text-field--invalid {
   border-color: var(--danger);
+}
+
+/* A textarea grows with its rows and can be pulled taller (TextField card, ticket 0700). */
+.text-field--multiline {
+  height: auto;
+  padding: var(--space-8) var(--space-12);
+}
+
+.text-field__area {
+  min-height: calc(var(--field-height) - 2 * var(--space-8));
+  resize: vertical;
 }
 
 .text-field--compact {

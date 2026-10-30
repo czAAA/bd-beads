@@ -18,9 +18,9 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
 
-// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): what is about the app and the device, in four sections
-// (Projects, Preferences, Help, About), each folding shut. Import, Export all and Delete all live in the Projects library. It only asks: the app shell does the work. On the Homepage (ticket 540, ADR 0073)
-// the same panel shows its Homepage item as the current page and leaves out what belongs to the editor.
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections; Help's
+// Send feedback and the link under Language open the Feedback sheet (ticket 0700). It only asks: the app shell does the
+// work. On the Homepage (ticket 540, ADR 0073) its Homepage item is the current page and the editor's parts are left out.
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
@@ -42,6 +42,8 @@ const emit = defineEmits<{
   'update:inputMode': [mode: InputMode]
   'update:handedness': [hand: Handedness]
   shortcuts: []
+  /** Opens the Feedback sheet with its Report kind (ticket 0700). */
+  feedback: [kind: 'general' | 'translation']
 }>()
 
 const { t, locale, setLocale } = useI18n()
@@ -101,6 +103,7 @@ const inputOptions = computed(() => [
         data-testid="language-switcher"
         @update:model-value="setLocale"
       />
+      <PanelItem secondary data-testid="menu-report-translation" @select="emit('feedback', 'translation')">{{ t.panels.menu.reportTranslation }}</PanelItem>
       <PanelPicker
         :model-value="pick"
         :label="t.theme.groupLabel"
@@ -140,6 +143,7 @@ const inputOptions = computed(() => [
 
     <PanelSection id="menu:help" :label="t.panels.menu.help">
       <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
+      <PanelItem icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
       <PanelItem icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 

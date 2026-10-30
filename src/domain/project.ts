@@ -5,7 +5,7 @@ import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
 import type { PieceName } from './pieceNames'
-import type { MirrorSetting } from './mirror'
+import type { CanvasAxes, MirrorSetting } from './mirror'
 
 // The Project record and `touch`, which stamps a change (ticket 0620); it imports types alone. The operations live by
 // concern: createProject, storedProject (old files), layerWeave, weaveSwitch, rowProgress, layerBeads, drawing, fill,
@@ -71,6 +71,9 @@ export interface CanvasLayer extends LayerFields {
   /** View-only turn (tickets 28, 171, ADR 0079): the Canvas, and every layer on it, shown turned this many degrees
    * clockwise, from 0 up to a whole turn; any angle by a twist on touch (ticket 0672). Never a data transform. */
   orientation: number
+  /** Where Mirror's straight Axes cross the open Canvas (ticket 0704, spec 0702): the Canvas's own geometry, the
+   * handles' positions, kept apart from the Project-wide setting. Absent until an Axis is placed (domain/mirror.ts). */
+  mirrorAxes?: CanvasAxes
 }
 
 /** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings,

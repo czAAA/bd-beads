@@ -1,14 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 import { shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
-import { MIRROR_OFF, mirrorSettingOf, withMirror } from '../../domain/mirror'
+import { canvasAxesOf, MIRROR_OFF, mirrorSettingOf, withAxisToggled, withMirror } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
+import { editHarness } from '../../testUtils/editHarness'
 import { useMirrorFlow } from './useMirrorFlow'
+
+/** No Edit and no measured view: the setting tests need neither. */
+const NO_VIEW = { edit: () => ({ kind: 'unchanged' as const }), viewCentre: () => undefined }
 
 function setup(initial?: Project) {
   const project = shallowRef<Project | undefined>(initial ?? createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }))
   const replaceProject = vi.fn((next: Project) => void (project.value = next))
-  const flow = useMirrorFlow({ currentProject: () => project.value, replaceProject })
+  const flow = useMirrorFlow({ currentProject: () => project.value, replaceProject, ...NO_VIEW })
   return { flow, project, replaceProject }
 }
 
@@ -49,7 +53,7 @@ describe('useMirrorFlow (ticket 0703)', () => {
     const { flow: none, replaceProject } = setup()
     none.toggle()
     expect(replaceProject).toHaveBeenCalledTimes(1)
-    const empty = useMirrorFlow({ currentProject: () => undefined, replaceProject })
+    const empty = useMirrorFlow({ currentProject: () => undefined, replaceProject, ...NO_VIEW })
     empty.toggle()
     expect(replaceProject).toHaveBeenCalledTimes(1)
     expect(empty.setting.value).toEqual(MIRROR_OFF)
@@ -59,5 +63,64 @@ describe('useMirrorFlow (ticket 0703)', () => {
   it('a Project opened with Mirror on shows it on, as saved', () => {
     const saved = withMirror(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }), { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, topBottom: true } })
     expect(setup(saved).flow.on.value).toBe(true)
+  })
+})
+
+describe('the Canvas\'s Axes and their handles (ticket 0704)', () => {
+  /** The flow over a real Edit and Undo, the view's middle over a loom position's centre or a point between two. */
+  function withView(centre: { x: number; y: number } | null = { x: 73, y: 10 }) {
+    const harness = editHarness(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 5, height: 3, unit: 'beads' } }))
+    const flow = useMirrorFlow({ currentProject: harness.currentProject, replaceProject: harness.replaceProject, edit: harness.edit, viewCentre: () => centre ?? undefined })
+    return { flow, harness, axes: () => canvasAxesOf(harness.project!) }
+  }
+
+  it('places an Axis through the view\'s centre, snapped, each time its direction goes on, with no Undo step; Off keeps it', () => {
+    const { flow, axes, harness } = withView()
+    expect(flow.canvasAxes.value).toEqual({})
+    flow.update(withAxisToggled(MIRROR_OFF, 'leftRight'))
+    expect(axes()).toEqual({ leftRight: 3 })
+    expect(flow.canvasAxes.value).toEqual({ leftRight: 3 })
+    expect(harness.history.canUndo.value).toBe(false)
+
+    flow.update(withAxisToggled(flow.setting.value, 'leftRight'))
+    expect(axes()).toEqual({ leftRight: 3 })
+    expect(flow.canvasAxes.value).toEqual({})
+    flow.toggle()
+    expect(axes()).toEqual({ leftRight: 3 })
+    flow.update({ ...flow.setting.value, axes: { ...flow.setting.value.axes, leftRight: true, topBottom: true } })
+    expect(axes()).toEqual({ leftRight: 3, topBottom: 0 })
+  })
+
+  it('places Left–right at the origin when key 8 turns Mirror on before the view is measured', () => {
+    const { flow, axes } = withView(null)
+    flow.toggle()
+    expect(axes()).toEqual({ leftRight: 0 })
+  })
+
+  it('shows no Canvas Axis in Repeat mode: with no edge there is no strip to repeat (spec 0702)', () => {
+    const { flow } = withView()
+    flow.update({ ...withAxisToggled(MIRROR_OFF, 'leftRight'), mode: 'repeat' })
+    expect(flow.canvasAxes.value).toEqual({})
+  })
+
+  it('drags a handle to a snapped position, shown as it goes and saved on release as one Undo step; a release without a move is none', () => {
+    const { flow, axes, harness } = withView()
+    flow.update(withAxisToggled(MIRROR_OFF, 'leftRight'))
+    flow.pressAxis('leftRight')
+    expect(flow.heldAxis.value).toBe('leftRight')
+    flow.dragAxis('leftRight', 118)
+    expect(flow.canvasAxes.value).toEqual({ leftRight: 5.5 })
+    expect(axes()).toEqual({ leftRight: 3 })
+    flow.releaseAxis()
+    expect(flow.heldAxis.value).toBeUndefined()
+    expect(axes()).toEqual({ leftRight: 5.5 })
+    expect(harness.history.canUndo.value).toBe(true)
+    harness.history.onUndo()
+    expect(axes()).toEqual({ leftRight: 3 })
+    expect(harness.history.canUndo.value).toBe(false)
+
+    flow.pressAxis('leftRight')
+    flow.releaseAxis()
+    expect(harness.history.canUndo.value).toBe(false)
   })
 })
