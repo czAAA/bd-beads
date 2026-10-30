@@ -1,4 +1,5 @@
 import { type GridPosition } from './grid'
+import { counterparts, MIRROR_OFF, type MirrorSetting } from './mirror'
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
@@ -227,11 +228,11 @@ export function stampedCells(block: CopiedBlock, at: GridPosition): PastedCell[]
 }
 
 /** The paste stamp: `block` at `at` on a layer laid on a grid, as one edit (one undo step). */
-function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition): BeadMap {
+function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting): BeadMap {
   const { edge } = sheet
   // A Frame holds only its own cells: what a stamp puts outside it is dropped (ADR 0066).
   const cells = stampedCells(block, at).filter((cell) => !edge || frameContains(edge, cell))
-  return withColors(sheet.beads, cells.map(({ row, column, color }) => ({ row, column, color })))
+  return withColors(sheet.beads, counterparts(sheet, mirror, cells).positions.map(({ row, column, color }) => ({ row, column, color })))
 }
 
 /** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
@@ -332,12 +333,13 @@ export function paintLayerSelection(project: Project, selection: Selection, colo
   return onLayer(project, layer, (sheet) => paintCells(sheet, selectionCells(sheet, local, selectableOn(project, sheet)), color))
 }
 
-/** Paste on the layer the pointer is at: the block at `at`, cut to the Frame when it lands in it; on a Custom frame each
- * bead on the nearest free position of the panel under it (ticket 0594). */
-export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition): Project {
+/** Paste on the layer the pointer is at: the block at `at`, cut to the Frame when it lands in it, and under Mirror at
+ * its counterparts too (ticket 0703); on a Custom frame each bead on the nearest free position of the panel under it
+ * (ticket 0594). */
+export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting = MIRROR_OFF): Project {
   const layer = layerAt(project, at)
   return onLayer(project, layer, (sheet, local) =>
-    sheet.geometry.grid ? stampBlock(sheet, block, local(at)) : withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed),
+    sheet.geometry.grid ? stampBlock(sheet, block, local(at), mirror) : withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed),
   )
 }
 

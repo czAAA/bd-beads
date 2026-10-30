@@ -539,6 +539,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     // Colors
     hasCatalog,
     catalogState,
+    /** The loaded catalog itself, for the remap picker's empty state to name a code's other sizes (ticket 0713). */
+    catalog,
     source,
     setSource: (next: ColorSource) => (chosenSource.value = next),
     beadTargets,
