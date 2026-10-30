@@ -119,6 +119,9 @@ export interface RenderInput {
   // Draw each layer as one draft image where its beads are too small to show their look (ticket 0676): the editor's
   // surface. An export or a picture keeps every bead's look at any size.
   draftWhenSmall?: boolean
+  /** Fill an open Canvas in its Background before drawing, so the drawing hides the empty-canvas look the editor's
+   * surface lays under it (ticket 0717). Elsewhere the Canvas stays clear. */
+  opaque?: boolean
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -589,7 +592,7 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false, opaque = false } = input
   const frameTheme = input.frameTheme ?? theme
   const frame = frameOf(project)
   const rotation = quarterTurnOf(project)
@@ -616,8 +619,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     context.clip()
   }
   context.clearRect(cleared.x, cleared.y, cleared.width, cleared.height)
-  if (!space.open) {
-    context.fillStyle = frameTheme.background
+  if (!space.open || opaque) {
+    context.fillStyle = space.open ? theme.canvas : frameTheme.background
     context.fillRect(cleared.x, cleared.y, cleared.width, cleared.height)
   }
 
