@@ -86,6 +86,8 @@ export const uk: Translations = {
     moreAxes: 'Більше осей',
     turnAxisOn: 'Увімкніть вісь.',
     close: 'Закрити',
+    dragHandle: 'Перетягніть ручку на осі, щоб зсунути її.',
+    repeatNeedsArea: 'Повтор на полотні працює лише всередині області.',
   },
   colorNames: {
     black: 'Чорний',

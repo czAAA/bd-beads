@@ -86,6 +86,8 @@ export const zh: Translations = {
     moreAxes: '增加轴',
     turnAxisOn: '请打开一条轴。',
     close: '关闭',
+    dragHandle: '拖动轴上的手柄即可移动它。',
+    repeatNeedsArea: '画布上的重复需要先选定区域。',
   },
   colorNames: {
     black: '黑色',

@@ -9,7 +9,7 @@ import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } fr
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
-import { readMirrorSetting } from './mirror'
+import { readCanvasAxes, readMirrorSetting } from './mirror'
 import { readPieceNames } from './pieceNames'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress } from './rowProgress'
@@ -31,6 +31,8 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
     id?: string
     name?: string
     orientation?: number
+    /** The Canvas's Mirror Axes (ticket 0704), as a file may have left them. */
+    mirrorAxes?: unknown
     rowProgress?: Partial<RowProgress> & { currentRow: number }
   }
 
@@ -152,7 +154,9 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
 function readCanvas(stored: StoredLayer, projectId: string): CanvasLayer {
   const layer = readLayer(stored, `${projectId}:canvas`, readWeave(stored.technique, stored))
   const name = typeof stored.name === 'string' && stored.name ? stored.name : layer.bead ? beadLabel(layer.bead) : layer.beadId
-  return { ...layer, name, orientation: readOrientation(stored.orientation) }
+  // The Canvas's Mirror Axes (ticket 0704): a file from before them, or an unreadable record, opens with none placed.
+  const mirrorAxes = readCanvasAxes(stored.mirrorAxes)
+  return { ...layer, name, orientation: readOrientation(stored.orientation), ...(mirrorAxes ? { mirrorAxes } : {}) }
 }
 
 /** The Frame a store or file holds, its Row progress read inside it. One stored before it had a Weave of its own

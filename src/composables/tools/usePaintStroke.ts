@@ -73,9 +73,15 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     deps.edit.strokeStep(
       ...landing.map((cell) => (project: Project) =>
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), [local({ row: cell.row, column: cell.column })]).positions, color)),
+        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), [local({ row: cell.row, column: cell.column })]).positions, color), mirrored()),
       ),
     )
+  }
+
+  /** How a Canvas command treats the Frame's footprint: under Mirror a counterpart lands there, hidden (ticket 0704,
+   * spec 0702's Edges); otherwise the Frame keeps it untouched. */
+  function mirrored() {
+    return isMirrorOn(deps.mirror()) ? { underFrame: 'paint' as const } : {}
   }
 
   /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke. */
@@ -93,7 +99,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
         // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
         if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
         return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), changedPositions(sheet.beads, filled)).positions, color)
-      }))
+      }, mirrored()))
       return
     }
 

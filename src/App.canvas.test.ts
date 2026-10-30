@@ -5,7 +5,7 @@ import { withColors } from './domain/canvas'
 import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
-import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
+import { beadColor, beadPoint, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 import { pickColor, pickTool } from './testUtils/pill'
 import { beadsOfLayer, frameOf, orientationOf } from './domain/layerRecord'
 import { type LayersChange, withLayers } from './testUtils/layerFields'
@@ -50,6 +50,39 @@ async function key(init: KeyboardEventInit) {
 }
 
 const surface = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid="project-surface"]')
+
+describe('Mirror on the open Canvas (ticket 0704)', () => {
+  it('places the Axis when key 8 turns Mirror on, moves it by a drag of its handle, and a stroke then lands across it', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mountApp()
+    await flushPromises()
+    // jsdom does no layout: the surface is given a box, so the handle has a view to stand in.
+    const root = surface(wrapper)
+    ;(root.element as HTMLElement).style.width = '400px'
+    ;(root.element as HTMLElement).style.height = '300px'
+    window.dispatchEvent(new Event('resize'))
+    await flushPromises()
+    await pickColor(wrapper, 'red')
+
+    await key({ key: '8' })
+    const placed = loadProjects()[0]!.layers[0].mirrorAxes?.leftRight
+    expect(placed).toBeDefined()
+
+    // The chip stands on the Axis's line 56px in from the top of the view (MirrorPopover card); dragged two columns on.
+    const columnX = (column: number) => beadPoint(wrapper, { row: 0, column }).clientX
+    await root.trigger('pointerdown', { clientX: columnX(placed!), clientY: 56, button: 0, buttons: 1, isPrimary: true, pointerId: 1 })
+    await root.trigger('pointermove', { clientX: columnX(placed! + 2), clientY: 56, buttons: 1, pointerId: 1 })
+    await root.trigger('pointerup', { pointerId: 1 })
+    await flushPromises()
+    expect(loadProjects()[0]!.layers[0].mirrorAxes?.leftRight).toBe(placed! + 2)
+    expect(wrapper.find('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeUndefined()
+
+    await pressBead(wrapper, { row: 5, column: placed! + 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+    expect(beadsOfLayer(loadProjects()[0], 'canvas')[5]).toEqual({ [placed! + 1]: RED, [placed! + 3]: RED })
+  })
+})
 
 describe('Rotate canvas (ticket 471)', () => {
   it('turns the picture a quarter from the Canvas strip, saved with the Project and no Undo step', async () => {

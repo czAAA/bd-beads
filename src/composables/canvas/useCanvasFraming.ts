@@ -19,7 +19,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   const { width, height } = useElementSize(canvasAreaEl)
   const viewport = computed(() => ({ width: width.value, height: height.value }))
 
-  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist })
+  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, visibleCentrePx, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist })
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
    * threaded down as a second prop. */
@@ -47,6 +47,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     scrollBy,
     centreOn,
     visibleCentre,
+    visibleCentrePx,
     orientation,
     twistPhase,
     pinchStep,

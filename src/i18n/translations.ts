@@ -142,6 +142,9 @@ export interface Translations {
     /** The Note while the mode is on and no Axis is. */
     turnAxisOn: string
     close: string
+    /** The open Canvas's details (ticket 0704): the handle on the canvas is the setting; Repeat needs an Area. */
+    dragHandle: string
+    repeatNeedsArea: string
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
