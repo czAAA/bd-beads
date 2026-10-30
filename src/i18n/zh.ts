@@ -107,6 +107,11 @@ export const zh: Translations = {
     pickCancel: '取消',
     areaSetMessage: '区域 {columns} × {rows}：轴在其中',
     wholeFrameMessage: '整个边框即为区域',
+    sidesFromShape: { other: '{count} 条边，取自形状。镜像模式还会在每条边内翻转。' },
+    repeatNeedsRadial: '在形状上重复是绕其中心旋转：需要环绕轴。',
+    noLeftRight: '此形状左右不对称。',
+    noTopBottom: '此形状上下不对称。',
+    noRadial: '环绕轴需要圆形形状：三角形、弯曲方形、星形或万花筒环。',
   },
   colorNames: {
     black: '黑色',

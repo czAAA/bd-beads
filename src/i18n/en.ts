@@ -108,6 +108,14 @@ export const en: Translations = {
     pickCancel: 'cancels',
     areaSetMessage: 'Area {columns} × {rows}: the Axes run inside it',
     wholeFrameMessage: 'The whole Frame is the area',
+    sidesFromShape: {
+      one: '{count} side, from the shape. Mirror reflects within each side too.',
+      other: '{count} sides, from the shape. Mirror reflects within each side too.',
+    },
+    repeatNeedsRadial: 'Repeat on a shape turns about its centre: it needs Radial.',
+    noLeftRight: 'The shape is not the same left and right.',
+    noTopBottom: 'The shape is not the same top and bottom.',
+    noRadial: 'Radial needs a round shape: a Triangle, Warped Square, Star or Kaleidocycle.',
   },
   colorNames: {
     black: 'Black',

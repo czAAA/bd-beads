@@ -15,7 +15,7 @@ import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import MirrorPopover from './MirrorPopover.vue'
 import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
-import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
+import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting, type ShapeAxes } from '../../domain/mirror'
 import type { Rect } from '../../domain/canvas'
 import type { Layer } from '../../domain/grid'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -41,6 +41,8 @@ const props = withDefaults(defineProps<{
   mirrorAreaRow?: Layer
   mirrorArea?: Rect
   mirrorPicking?: boolean
+  /** A Custom frame's shape (ticket 0706): the Axes it offers and its side count. */
+  mirrorShape?: ShapeAxes
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -329,6 +331,7 @@ watch(
         :area-row="mirrorAreaRow"
         :area="mirrorArea"
         :picking="mirrorPicking"
+        :shape="mirrorShape"
         @close="emit('update:mirrorPopoverOpen', false)"
         @update:setting="emit('update:mirror', $event)"
         @pick="emit('mirror-pick')"
