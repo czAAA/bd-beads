@@ -90,7 +90,7 @@ The live drawing aid that lands every drawing gesture (a Paint or Eraser stroke,
 _Avoid_: mirror tool, symmetry, symmetry tool, kaleidoscope (Kaleidocycle is a Frame shape), copy mode, Mirror current (retired names)
 
 **Mirror mode**:
-How Mirror lays a counterpart: **Mirror**, a reflection (A | A′), or **Repeat**, the same way round (A | A). One switch for every Axis, Radial included: Mirror with Radial is a kaleidoscope, Repeat with Radial a plain turn. Off is the popover's third position and keeps every other setting for next time.
+How Mirror lays a counterpart: **Mirror**, a reflection (A | A′), or **Repeat**, the same way round (A | A). One switch for every Axis, Radial included: Mirror with Radial is a kaleidoscope, Repeat with Radial a plain turn. Off is the segmented control's first position (Off | Mirror | Repeat) and keeps every other setting for next time; key `8` brings the mode back as it last was.
 _Avoid_: copy mode, flip mode, symmetry kind
 
 **Axis**:

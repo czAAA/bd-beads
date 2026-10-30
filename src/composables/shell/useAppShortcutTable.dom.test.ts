@@ -30,6 +30,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onCopy: vi.fn(),
     onCut: vi.fn(),
     onPasteMode: vi.fn(),
+    onToggleMirror: vi.fn(),
     onFillSelection: vi.fn(),
     onFrameFromSelection: vi.fn(),
     pasteAtPointer: vi.fn(),
@@ -94,6 +95,18 @@ describe('useAppShortcutTable', () => {
     window.dispatchEvent(event)
     expect(event.defaultPrevented).toBe(true)
     expect(deps.onZoomIn).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('8 toggles Mirror, only while a Project is open (ticket 0703)', () => {
+    const none = mountTable()
+    press({ key: '8' })
+    expect(none.deps.onToggleMirror).not.toHaveBeenCalled()
+    none.wrapper.unmount()
+
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
+    press({ key: '8' })
+    expect(deps.onToggleMirror).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
 

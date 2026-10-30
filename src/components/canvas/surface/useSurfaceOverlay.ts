@@ -13,6 +13,7 @@ import type { Size } from '../../../rendering/cellSize'
 import type { HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
 import { frameOf } from '../../../domain/layerRecord'
+import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
 // redrawn frame by frame; with reduced motion at once. At rest the sheet's own edge marks the margin (ticket 0656).
@@ -87,6 +88,8 @@ export interface SurfaceOverlayDeps {
     showRulers?: boolean
     frameTooltip?: string
     tools: ToolCapabilities
+    /** The Mirror setting (ticket 0703): its Axis lines are drawn across the Frame while the mode is not Off. */
+    mirror?: MirrorSetting
   }
   canvas: Ref<HTMLCanvasElement | undefined>
   size: Ref<Size>
@@ -159,6 +162,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '', hot: hotHandle.value } : undefined,
         selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value } : undefined,
         rulers: { layout: rulers.value, surface: surface.value },
+        mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
       })
     }
   }
@@ -183,6 +187,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.tools.selects,
       () => props.tools.picking,
       () => props.frameTooltip,
+      () => props.mirror,
       marginOpacity,
       touchInput,
       hotHandle,

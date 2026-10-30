@@ -59,4 +59,9 @@ Mode: Off, Mirror, Repeat. Axes: Left–right, Top–bottom, Radial. Area: Selec
 - The margin target and the rubber band need a pointer; Whole Frame and Clear the area cover the keyboard, and the Canvas hint names Escape.
 - Every control keeps the 34px row height and a `touch-target` hit area on coarse pointers.
 
+## Built state
+
+- **Ticket 0703** (2026-10-30): the tile (after Piece, key `8`, lit while the mode is not Off, `aria-haspopup="dialog"`), the popover with a head (the name "Mirror" and a Close icon button, as the colour popover's head) over the rows: Mode, Axes with the Left–right and Top–bottom chips (no Radial chip yet), and an Axis count Stepper per direction that is on, with a Frame on a grid only (the count is shown clamped to the Frame's limit). The Note "Turn an Axis on." shows while the mode is on and no Axis is. Opening the Mirror popover closes the colour popover and the other way round. The Axis lines are drawn as above across a Frame on a grid. The hover preview shows every counterpart at the preview's usual 60%; the 45% ghost with its outline is not built yet.
+- Waiting: Radial and the Fold (ticket 0705), the Area row and the margin target (0710), the open Canvas's Axes and handles (0704), Custom frames (0706), the Selection bar's Mirror (0707).
+
 Hand-written from the prototype (2026-10-29 to 2026-10-30); static rendition. Built by tickets 0703 to 0707 and 0710.

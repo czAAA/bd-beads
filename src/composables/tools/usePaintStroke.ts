@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
 import { fillArea, isFillRefusal, type FillRefusal } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
+import { counterparts, isMirrorOn, type MirrorSetting } from '../../domain/mirror'
+import { changedPositions } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -17,6 +19,8 @@ export interface PaintStrokeDeps {
   activeTool: () => Tool
   /** A Select press ends on the same mouseup as a stroke does. */
   endSelectPress: () => void
+  /** The Mirror setting (ticket 0703): a stroke and a Fill land at their counterparts too. */
+  mirror: () => MirrorSetting
   /** The Canvas positions on screen at a Fill press (Fill reach, ticket 0715); nothing until the view is measured. */
   onScreen: () => Rect | undefined
   showToast: (id: string, text: string, tone?: MessageTone) => void
@@ -78,7 +82,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     deps.edit.strokeStep(
       ...landing.map((cell) => (project: Project) =>
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, [local({ row: cell.row, column: cell.column })], color)),
+        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), [local({ row: cell.row, column: cell.column })]).positions, color)),
       ),
     )
   }
@@ -96,10 +100,14 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       deps.edit.edit('drawing', (current) => onLayer(current, layer, (sheet, local) => {
         const at = local({ row, column })
         const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen() })
-        if (!isFillRefusal(filled)) return filled
-        // Unchanged beads leave the Project as it was: no Undo step, nothing saved.
-        refused = filled
-        return sheet.beads
+        if (isFillRefusal(filled)) {
+          // Refused, it lands nowhere, counterparts included: the beads as they were leave no Undo step, nothing saved.
+          refused = filled
+          return sheet.beads
+        }
+        // Under Mirror the flooded region's counterparts take the color too (ticket 0703): what the flood changed, mapped.
+        if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
+        return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), changedPositions(sheet.beads, filled)).positions, color)
       }))
       if (refused) {
         fillRefusals.value += 1

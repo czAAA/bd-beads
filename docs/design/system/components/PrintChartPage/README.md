@@ -66,7 +66,7 @@ The lines count from the Schema's first bead, not the part's. On part B (columns
 
 ## Header
 
-- Line 1, baseline 16.4 mm: the technique word ("loom") in Instrument Serif italic 14 pt `accent`, then a 1.6 mm space, then the Project's name in Inter 600 13 pt `ink`.
+- Line 1, baseline 16.4 mm: the technique word ("loom") in Instrument Serif italic 14 pt `accent`, then a 1.6 mm space, then the title (the Frame's name, else the Project's; ticket 0720) in Inter 600 13 pt `ink`.
 - Line 2, the **part label**, baseline 21.4 mm, in DM Mono 7.5 pt `muted`: "part A · columns 1–60 · rows 1–75 · by {maker}". The range is the part's own, without the overlap. The maker is cut at 32 characters with an ellipsis, and " · by {maker}" is left out when the maker's name is empty.
 - Right: the page number in Inter 600 18 pt `ink`, then 0.8 mm and "/ 9" in DM Mono 8 pt `muted`. Its right edge is on the right margin, baseline 18.6 mm.
 - Left of the page number, 3 mm from it, with its top at 11.6 mm: the **mini map**. It shows the parts to scale in a 9.4 mm square, 0.4 mm apart, corners 0.3 mm. The current part is filled `accent`; the others are a 0.15 mm `faint` outline.
