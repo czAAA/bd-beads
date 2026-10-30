@@ -52,7 +52,7 @@ The tests apply every migration before each Worker starts (`docs/testing.md`), s
 
 ## Variables and secrets
 
-**Variables** are declared per environment in `wrangler.jsonc`: the Worker's name and script, the ids its watchdog filters by, the Google OAuth client id and the Turnstile site key (public, one of each for both Workers), every upload cap, the blob storage limit and every warn level. Change one there and deploy, or in the dashboard for a quick trial (a later deploy puts the file's value back). `keep_vars` keeps the variables that aren't in the file.
+**Variables** are declared per environment in `wrangler.jsonc`: the Worker's name and script, the ids its watchdog filters by, the Google OAuth client id and the Turnstile site key (public, one of each for both Workers), `FEEDBACK_REPO` (the private docs repo a Report from the Feedback sheet becomes an issue in, ADR 0081), every upload cap, the blob storage limit and every warn level. Change one there and deploy, or in the dashboard for a quick trial (a later deploy puts the file's value back). `keep_vars` keeps the variables that aren't in the file.
 
 **`DISABLED_FEATURES` is never in `wrangler.jsonc`.** It is the kill switch, set by hand in the dashboard (Workers → the Worker → Settings → Variables), comma-separated feature names (`worker/src/features.ts`). Because the file doesn't declare it, deploys leave it alone.
 
@@ -64,6 +64,7 @@ The tests apply every migration before each Worker starts (`docs/testing.md`), s
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | wizard H3b |
 | `HEALTHCHECK_URL` | this Worker's Healthchecks.io ping URL | wizard H3d |
 | `CF_ANALYTICS_TOKEN` | read-only Account Analytics token, for the watchdog | wizard H3d |
+| `GITHUB_TOKEN` | fine-grained GitHub token, Issues read and write on `FEEDBACK_REPO` only, one year; renewal dated in the runbook's weekly check | `scripts/wizard-feedback.sh` |
 
 GitHub holds only what CI needs, in the `production` environment (limited to `main`): the secret `CLOUDFLARE_API_TOKEN` (this account only, Workers Scripts edit and D1 edit), the variable `CLOUDFLARE_ACCOUNT_ID`, and for the backup the secret `HEALTHCHECK_BACKUP_URL` and the variable `AGE_PUBLIC_KEY`.
 
@@ -89,6 +90,6 @@ Nothing in the code names this account, so a fork deploys its own copy with its 
 1. **Cloudflare.** Its own account. Create the four D1 databases (`npx wrangler d1 create <name>`, a `core` and a `blobs` per Worker) and the two R2 buckets (`npx wrangler r2 bucket create <name>`).
 2. **`wrangler.jsonc`.** For each environment: the Worker's `name` and `WORKER_SCRIPT`, `CF_ACCOUNT_ID`, each database's `database_name` and `database_id` (in `d1_databases` and in `CORE_DATABASE_ID` / `BLOBS_DATABASE_ID`), the bucket's `bucket_name`, and the fork's own `GOOGLE_CLIENT_ID` and `TURNSTILE_SITE_KEY`. Keep or tune the caps and warn levels.
 3. **Outside services.** Its own Google OAuth client, Turnstile widget, Healthchecks.io checks, UptimeRobot monitors and Access applications. `scripts/backend-wizard.sh` walks each one; its phases work for any account.
-4. **Secrets.** The four in the table above, per Worker, with `wrangler secret put`.
+4. **Secrets.** The five in the table above, per Worker, with `wrangler secret put`.
 5. **GitHub.** A `production` environment limited to `main`, holding `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (and, for the backup, `HEALTHCHECK_BACKUP_URL` and `AGE_PUBLIC_KEY`). Without them the deploy workflow fails at its first Wrangler step and touches nothing. GitHub keeps a fork's workflows off until its Actions tab turns them on.
 6. **First deploy.** By hand (above) or through the workflow; the smoke check reads the address from Wrangler, so nothing else names a host.

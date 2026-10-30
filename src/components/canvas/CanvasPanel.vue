@@ -45,6 +45,7 @@ const {
   canvasOrientation,
   twistPhase,
   selectionRefusals,
+  fillRefusals,
   activeTool,
   showRulers,
   stroking,
@@ -85,6 +86,8 @@ const {
   onCellHover,
   onHoverEnd,
   onRotate,
+  mirrorOn,
+  onMirrorSelection,
   onRotateCanvas,
   onSelectAll,
   toolPillPosition,
@@ -299,6 +302,7 @@ const drawingStyle = computed(() => {
               :held-axis="mirrorHeldAxis"
               :selection="selection"
               :selection-refusals="selectionRefusals"
+              :fill-refusals="fillRefusals"
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
@@ -404,6 +408,7 @@ const drawingStyle = computed(() => {
           :has-paint-color="hasPaintColor()"
           :select-active="activeTool === 'select'"
           :obstacle="pillRect"
+          :mirror-on="mirrorOn"
           @copy="onCopy"
           @cut="onCut"
           @paste="onPasteMode"
@@ -411,6 +416,7 @@ const drawingStyle = computed(() => {
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
           @rotate="onRotate"
+          @mirror-selection="onMirrorSelection"
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"

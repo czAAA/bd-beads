@@ -17,6 +17,7 @@ import type { TiltedView } from '../../../rendering/tiltedView'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
+import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
 import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
 import type { MirrorDirection } from '../../../domain/mirror'
 import { axisHandleAt, type AxisHandle } from '../../../rendering/mirrorAxes'
@@ -74,6 +75,8 @@ export interface SurfacePointerDeps {
     selection?: Selection
     inputMode?: InputMode
     handedness?: Handedness
+    /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for a moment. */
+    fillRefusals?: number
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
@@ -145,13 +148,22 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   const touchInput = ref(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
   let lastBead: GridPosition | undefined
   let lastPoint = { x: 0, y: 0 }
+  /** Whether a Fill press was just refused (ticket 0715): the not-allowed pointer shows where it was, for a moment. */
+  const fillRefused = ref(false)
+  let fillRefusedTimer: ReturnType<typeof setTimeout> | undefined
+  watch(() => props.fillRefusals, (now, before) => {
+    if (now === undefined || now === before) return
+    fillRefused.value = true
+    clearTimeout(fillRefusedTimer)
+    fillRefusedTimer = setTimeout(() => (fillRefused.value = false), REFUSED_PRESS_MS)
+  })
 
   /** The tool's own pointer (ticket 542): not while the eyedropper, Space or a canvas move by another button
    * (the system's grab and grabbing) or the Frame's margin (not-allowed) has the pointer. Hand closes its hand while
    * it pans. */
   const toolCursor = computed(() => {
     const { tool, picking, markerHidden } = props.tools
-    if (!tool || picking || markerHidden || overRefusedMargin.value) return undefined
+    if (!tool || picking || markerHidden || overRefusedMargin.value || fillRefused.value) return undefined
     if (dragging.value && !handMoves.value) return undefined
     return toolPointer(tool, { color: props.previewColor, dragging: dragging.value })
   })
@@ -163,7 +175,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return {
       'project-surface--over-bead': overBead.value && !tool && !handMoves.value && !picking && !selects,
       'project-surface--picking': eyedropperShown.value,
-      'project-surface--refused': overRefusedMargin.value && !handMoves.value,
+      'project-surface--refused': (overRefusedMargin.value || fillRefused.value) && !handMoves.value,
       'project-surface--moving': handMoves.value,
       'project-surface--dragging': dragging.value,
     }
@@ -766,6 +778,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   })
 
   onBeforeUnmount(() => {
+    clearTimeout(fillRefusedTimer)
     clearTimeout(wheelTimer)
     if (edgeScrollFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(edgeScrollFrame)
     window.removeEventListener('blur', dropPressedPointers)
