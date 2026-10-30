@@ -6,8 +6,12 @@ import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { TOOL_HOTKEYS } from '../tools/toolIcons'
 
 // The one line under the strip while the Project has no beads (ticket 429; CanvasHint card): "scroll or space drag to
-// move · ⌘ scroll to zoom · 5 Hand · R Rulers". Fixed to the drawing area, decoration (shortcuts are in Keyboard
-// shortcuts), left out on phone; ⌘ reads "Ctrl" on Windows/Linux.
+// move · ⌘ scroll to zoom · 5 Hand · R Rulers", decoration, left out on phone; ⌘ reads "Ctrl" on Windows/Linux. While
+// Mirror's Area is being picked (ticket 0710) it says how instead, in the Selection colour.
+const props = defineProps<{
+  /** The layer an Area is being picked on, while one is; none for the usual line. */
+  picking?: 'frame' | 'canvas'
+}>()
 const { t } = useI18n()
 /** The line is made of key chips, so it goes when they do (ticket 438). */
 const { shown } = useKeyHints()
@@ -17,7 +21,17 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
 </script>
 
 <template>
-  <p v-if="shown" class="canvas-hint" data-testid="canvas-hint" data-hint-obstacle aria-hidden="true">
+  <p v-if="props.picking" class="canvas-hint canvas-hint--picking" data-testid="canvas-hint-picking" data-hint-obstacle>
+    <span>{{ picking === 'frame' ? t.mirror.pickDrag : t.mirror.pickDragCanvas }}</span>
+    <template v-if="picking === 'frame'">
+      <span class="canvas-hint__dot">·</span>
+      <span>{{ t.mirror.pickMargin }}</span>
+    </template>
+    <span class="canvas-hint__dot">·</span>
+    <KeyChip class="hint-chip canvas-hint__key">Esc</KeyChip>
+    <span>{{ t.mirror.pickCancel }}</span>
+  </p>
+  <p v-else-if="shown" class="canvas-hint" data-testid="canvas-hint" data-hint-obstacle aria-hidden="true">
     <span>{{ t.canvas.hint.scrollOr }}</span>
     <KeyChip class="hint-chip canvas-hint__key">{{ t.canvas.hint.spaceKey }}</KeyChip>
     <span>{{ t.canvas.hint.dragToMove }}</span>
@@ -57,6 +71,15 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
   .canvas-hint {
     display: none;
   }
+}
+
+/* Picking an Area (MirrorPopover card): the line in `marker` with a 1px `marker` border on `elevated`, read out. */
+.canvas-hint--picking {
+  padding: var(--space-4) var(--space-10);
+  color: var(--marker);
+  background: var(--elevated);
+  border: 1px solid var(--marker);
+  border-radius: var(--radius-full);
 }
 
 .canvas-hint__dot {

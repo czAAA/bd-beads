@@ -22,7 +22,7 @@ import { displayedExtentPx, surfaceView } from './surfaceView'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
-import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
+import { MIRROR_OFF, withMirrorArea, type MirrorSetting } from '../domain/mirror'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -540,6 +540,47 @@ describe('renderOverlay', () => {
       const noAxis = recordingContext()
       renderOverlay(noAxis.context, { project, region: whole(project), zoom: 1, mirror: on({}) })
       expect(noAxis.named('stroke')).toHaveLength(0)
+    })
+  })
+
+  describe('the Area the Axes run inside (ticket 0710, MirrorPopover card)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
+    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+    }
+    const fills = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fillRect').map((call) => call.args)
+
+    it('on a Frame draws the Area as the Selection\'s rectangle round its cells and the Axis lines inside it, not across the Frame', () => {
+      const project = withMirrorArea(projectOf('loom', 6, 4, { marks: false }), 'frame', { row: 1, column: 1, rows: 2, columns: 4 })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: on({ leftRight: true }) })
+
+      expect(lines(calls)).toEqual([[[60, 20], [60, 60]]])
+      expect(fills(calls)).toEqual([[20, 20, 80, 2], [20, 58, 80, 2], [20, 20, 2, 40], [98, 20, 2, 40]])
+      expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.marker)
+    })
+
+    it('on the open Canvas draws the Area and its Axes in place of the view-wide Axes, with the Selection\'s eight handles when the view is known, and the band a pick drags with none', () => {
+      const framed = projectOf('loom', 6, 5, { marks: false })
+      const open = withMirrorArea((changeFrame(framed, { remove: true }) as { project: Project }).project, 'canvas', { row: 2, column: 3, rows: 2, columns: 2 })
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(open, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project: open, space: spaceOf(open, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: { leftRight: 1 }, handles: [] }, mirrorArea: { surface, touch: false, band: { row: 0, column: 0, rows: 1, columns: 3, layer: 'canvas' } } })
+
+      expect(lines(calls)).toEqual([[[80, 40], [80, 80]]])
+      expect(fills(calls).slice(0, 4)).toEqual([[60, 40, 40, 2], [60, 78, 40, 2], [60, 40, 2, 40], [98, 40, 2, 40]])
+      expect(fills(calls).slice(4)).toEqual([[0, 0, 60, 2], [0, 18, 60, 2], [0, 0, 2, 20], [58, 0, 2, 20]])
+      expect(named('roundRect')).toHaveLength(8)
+    })
+
+    it('draws no Area while the mode is Off', () => {
+      const project = withMirrorArea(projectOf('loom', 6, 4, { marks: false }), 'frame', { row: 1, column: 1, rows: 2, columns: 4 })
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+      expect(named('fillRect')).toHaveLength(0)
     })
   })
 

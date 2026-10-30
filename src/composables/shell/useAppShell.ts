@@ -184,7 +184,7 @@ function wireAppShell(services: Services) {
 
   /** Mirror (ADR 0082, ticket 0703): the Project's setting, the tile's light, the popover and key `8`; on the open
    * Canvas its Axes' handles, placed at the view's middle and dragged as one Undo step (ticket 0704). */
-  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, viewCentre: visibleCentrePx })
+  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, viewCentre: visibleCentrePx, showToast, messages })
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
@@ -220,6 +220,9 @@ function wireAppShell(services: Services) {
     (count, loss) => showToast('paste-clipped', plural(locale.value, count, loss === 'shape' ? t.value.tools.droppedOnShapeMessage : t.value.tools.pasteClippedMessage), 'info'),
     () => mirror.setting.value,
   )
+
+  /** The hover preview is off while Mirror's Area is being picked (ticket 0710): the pointer draws the band, not beads. */
+  const shownPreviewCells = computed(() => (mirror.picking.value ? [] : previewCells.value))
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
    * 0016). */
@@ -642,6 +645,7 @@ function wireAppShell(services: Services) {
       pickingColor.value = false
       return was
     },
+    cancelAreaPick: mirror.cancelPick,
     hasOpenLayer,
     anyDialogOpen: () => dialogs.open.value !== undefined,
     backOutOfSelect: backOutOfSelectOrFraming,
@@ -789,7 +793,18 @@ function wireAppShell(services: Services) {
       onAxisPress: mirror.pressAxis,
       onAxisDrag: mirror.dragAxis,
       onAxisRelease: mirror.releaseAxis,
-      previewCells,
+      // The Area (ticket 0710): the row's layer, the Area, the pick and its band
+      mirrorAreaRow: mirror.areaRow,
+      mirrorArea: mirror.area,
+      mirrorPicking: mirror.picking,
+      mirrorBand: mirror.band,
+      onAreaPick: mirror.startPick,
+      onAreaWholeFrame: mirror.pickWholeFrame,
+      onAreaClear: mirror.clearArea,
+      onAreaPress: mirror.pressArea,
+      onAreaDrag: mirror.dragArea,
+      onAreaRelease: mirror.releaseArea,
+      previewCells: shownPreviewCells,
       previewStamp,
       onCellPrimaryDown,
       onCellPrimaryMove,

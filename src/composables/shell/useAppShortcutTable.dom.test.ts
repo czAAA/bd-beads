@@ -16,6 +16,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     cancelColorPick: () => false,
+    cancelAreaPick: () => false,
     onPickColorKey: vi.fn(),
     backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),

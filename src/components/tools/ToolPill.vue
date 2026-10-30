@@ -16,6 +16,7 @@ import ColorPopover from './ColorPopover.vue'
 import MirrorPopover from './MirrorPopover.vue'
 import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
 import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting } from '../../domain/mirror'
+import type { Rect } from '../../domain/canvas'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
@@ -34,6 +35,11 @@ const props = withDefaults(defineProps<{
   mirrorLimits?: Record<MirrorDirection, number>
   /** Whether the open Canvas is the only layer (ticket 0704): the popover's details are then the Canvas's. */
   mirrorOnCanvas?: boolean
+  /** The Area row (ticket 0710): the layer it is for (none on a Custom frame), that layer's Area, and whether one is
+   * being picked. */
+  mirrorAreaRow?: 'frame' | 'canvas'
+  mirrorArea?: Rect
+  mirrorPicking?: boolean
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -55,6 +61,10 @@ const emit = defineEmits<{
   'update:mirrorPopoverOpen': [open: boolean]
   /** The Mirror popover changed the setting (ticket 0703). */
   'update:mirror': [setting: MirrorSetting]
+  /** The Area row (ticket 0710): Select area, Whole Frame, Clear the area. */
+  'mirror-pick': []
+  'mirror-whole-frame': []
+  'mirror-clear-area': []
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
@@ -315,8 +325,14 @@ watch(
         :setting="mirror"
         :limits="mirrorLimits"
         :on-canvas="mirrorOnCanvas"
+        :area-row="mirrorAreaRow"
+        :area="mirrorArea"
+        :picking="mirrorPicking"
         @close="emit('update:mirrorPopoverOpen', false)"
         @update:setting="emit('update:mirror', $event)"
+        @pick="emit('mirror-pick')"
+        @whole-frame="emit('mirror-whole-frame')"
+        @clear-area="emit('mirror-clear-area')"
       />
 
       <ColorPopover

@@ -101,6 +101,7 @@
   --mirror-chip-height: 32px;
   --mirror-area-handle: 9px;
   --mirror-area-row: 34px;
+  --mirror-area-line: 1.5px;
   --mirror-preview-dash: 4 3;
   --mirror-margin-opacity: 0.1;
   --mirror-ghost-opacity: 0.45;
