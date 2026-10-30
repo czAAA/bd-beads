@@ -14,7 +14,9 @@ Run typechecking regularly and single test files regularly. At the end run `npm 
 
 Once done, use /bd-review to review the work.
 
-After the PR is open, run `gh pr checks <number> --watch --fail-fast` in the background and report its result in your final message. If it fails, read it with `bash scripts/ci-failures.sh <number>`, fix, push and watch again; don't end on "CI not seen yet". If you update visual baselines, read the changed images first (`docs/testing.md`, Visual baselines).
+If you update visual baselines, read the changed images first (`docs/testing.md`, Visual baselines).
+
+Once the PR is open, you are done: don't watch its CI. No `gh pr checks --watch`, no subscribing to the PR's activity, no scheduled check-ins, no PR comments about CI. The user watches CI and comes back to you if it fails (then read it with `bash scripts/ci-failures.sh <number>`, fix and push). Watching CI is only for a bulk run, which merges its PRs in order once they are green (`bd-implement-bulk`).
 
 Commit your work to the ticket's branch, in its worktree (`CLAUDE.md`, Implementing tickets), never on `main`.
 

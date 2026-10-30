@@ -186,8 +186,8 @@ export interface StarterChoice {
   weave?: Weave
 }
 
-/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead and
- * Background. Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
+/** The rest of the Frame's Layer settings a Starter's setup sets (ADR 0079, ticket 0671): its Bead and Background.
+ * Left out, a Frame keeps what it would have had: a new one the Canvas's, one replaced its own. */
 export interface StarterLayerSettings {
   beadId: string
   background: Background

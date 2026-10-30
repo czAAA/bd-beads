@@ -4,8 +4,8 @@ import { BEAD_CATALOG, beadAfterPick, formFactorName, uniqueBy, type Bead } from
 import { useI18n } from '../../i18n/useI18n'
 import PanelPicker from '../shell/PanelPicker.vue'
 
-// A layer's bead section, in Layer settings (LayerSettings card, tickets 554, 568, 0670): Brand, Type
-// and Size as three pickers on one row that narrow each other. A pick only asks (`pick`): New Project sets its draft, a
+// A layer's bead section, in Layer settings (LayerSettings card, tickets 554, 568, 0670, 0724): Brand, Type and Size
+// as three pickers on one row that narrow each other. A pick only asks (`pick`): New Project sets its draft, a
 // layer's panel confirms Replace Bead; until then the pickers keep showing the Bead they were given.
 const props = defineProps<{
   /** The Bead shown, or nothing for one that is no longer offered. */

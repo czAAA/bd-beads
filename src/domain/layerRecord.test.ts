@@ -25,7 +25,7 @@ const open = (): Project => {
 }
 
 describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
-  it('reads the Canvas from the Project: its Weave, Bead, beads and the Project\'s name', () => {
+  it('reads the Canvas from the Project: its Weave in its Bead\'s cell, Bead, beads and the Project\'s name', () => {
     expect(layerOf(framed(), 'canvas')).toEqual({
       weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 }, cell: beadCell(delica) },
       beadId: delica.id,
@@ -35,7 +35,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
     })
   })
 
-  it('reads the Frame from its sheet, with the Project\'s Bead', () => {
+  it('reads the Frame from its sheet, with its Bead and the cell that Bead draws', () => {
     expect(layerOf(framed(), 'frame')).toEqual({
       weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica) },
       beadId: delica.id,
@@ -124,7 +124,7 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
     expect(beadsOfLayer(open(), 'frame')).toBeUndefined()
   })
 
-  it('reads each layer\'s own Bead, and its id; a Frame the Project lacks reads the Canvas\'s', () => {
+  it('reads each layer\'s own Bead and its id; a Frame the Project lacks reads the Canvas\'s', () => {
     const project = withLayer(framed(), 'frame', { bead: cube })
     expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(cube) })
     expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)

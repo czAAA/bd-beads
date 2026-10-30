@@ -54,8 +54,10 @@ function isLayered(project: StoredProject): project is LayeredProject {
 }
 
 /** A Project as an older app may have saved it: with the color-to-bead override (ADR 0007/ticket 36), the stored
- * `widthMm`/`heightMm` (ADR 0026) and ticket 28's `rotated` boolean instead of ticket 171's `rotation`. */
+ * `widthMm`/`heightMm` (ADR 0026), ticket 28's `rotated` boolean instead of ticket 171's `rotation`, and the Bead shape
+ * every layer is now drawn without (ADR 0068, ticket 0724). */
 type ProjectWithLegacyFields = SavedProject & {
+  beadShape?: unknown
   columns?: unknown
   rows?: unknown
   grid?: unknown
@@ -131,6 +133,7 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
     grid: _legacyGrid,
     brickBlock: _brickBlock,
     rotation: _rotation,
+    beadShape: _legacyBeadShape,
     name,
     technique,
     techniqueSettings,

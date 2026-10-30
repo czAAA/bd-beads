@@ -121,6 +121,14 @@ describe('NewProjectForm', () => {
     expect(events![0]![0]).toMatchObject({ technique: 'peyote' })
   })
 
+  it('offers no Bead shape and sends none (ticket 0724)', async () => {
+    const wrapper = mount(NewProjectForm)
+
+    expect(wrapper.find('[data-testid="bead-shape"]').exists()).toBe(false)
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit')![0]![0]).not.toHaveProperty('beadShape')
+  })
+
   it('starts on the device\'s Background and sends one only when it is picked, for both layers (ticket 0670)', async () => {
     const wrapper = mount(NewProjectForm, { attachTo: document.body })
 

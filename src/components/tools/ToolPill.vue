@@ -303,31 +303,36 @@ watch(
 
     </div>
 
-    <MirrorPopover
-      v-if="mirrorPopoverOpen"
-      :tile="mirrorTileEl"
-      :pill="pillEl"
-      :position="position"
-      :setting="mirror"
-      :limits="mirrorLimits"
-      :on-canvas="mirrorOnCanvas"
-      @close="emit('update:mirrorPopoverOpen', false)"
-      @update:setting="emit('update:mirror', $event)"
-    />
+    <!-- The popovers sit in the app shell, not in the canvas box (ToolPill card): the box clips what it holds and stacks
+      it under its bars, so an iPad held sideways hid the Custom color picker under the Progress bar (ticket 0726). In
+      the shell they stack by StackingOrder: over the bars, under a dialog opened from them. -->
+    <Teleport defer to=".app-shell">
+      <MirrorPopover
+        v-if="mirrorPopoverOpen"
+        :tile="mirrorTileEl"
+        :pill="pillEl"
+        :position="position"
+        :setting="mirror"
+        :limits="mirrorLimits"
+        :on-canvas="mirrorOnCanvas"
+        @close="emit('update:mirrorPopoverOpen', false)"
+        @update:setting="emit('update:mirror', $event)"
+      />
 
-    <ColorPopover
-      v-if="popoverOpen"
-      :tile="colorTileEl"
-      :pill="pillEl"
-      :position="position"
-      :color-hex="colorHex"
-      :color-name="colorName"
-      :selected-color-id="selectedColorId"
-      :custom-color="customColor"
-      @close="emit('update:popoverOpen', false)"
-      @select-color="emit('select-color', $event)"
-      @select-custom-color="emit('select-custom-color', $event)"
-    />
+      <ColorPopover
+        v-if="popoverOpen"
+        :tile="colorTileEl"
+        :pill="pillEl"
+        :position="position"
+        :color-hex="colorHex"
+        :color-name="colorName"
+        :selected-color-id="selectedColorId"
+        :custom-color="customColor"
+        @close="emit('update:popoverOpen', false)"
+        @select-color="emit('select-color', $event)"
+        @select-custom-color="emit('select-custom-color', $event)"
+      />
+    </Teleport>
   </div>
 </template>
 
