@@ -516,3 +516,59 @@ An unframed Schema's name as a hang tag, opening into a paper tag (SchemaTag car
 | Schema names (the tags' Tab stop) | Названия схем | Назви схем | Назвы схем | 图样名称 | Nombres de esquemas | Nazwy schematów |
 
 The size line's "beads" stays in the many form whatever the numbers, as a measure («11 × 11 бисерин»). Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for review with the build.
+
+## Feedback sheet copy (ticket 0700)
+
+The FeedbackSheet card's words, with the Menu's Send feedback and Report a translation problem and the Bead colors list's Wrong or missing color?. The Report is "отчёт" in Russian (not «репорт»), "звіт", "справаздача", 报告, "informe", "zgłoszenie"; a general Report is "feedback" / «отзыв». `{minutes}` and `{seconds}` are the Worker's wait with a unit abbreviation, so no plural is needed. Cancel and optional keep their existing words. Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Send feedback | Отправить отзыв | Надіслати відгук | Адправіць водгук | 发送反馈 | Enviar comentarios | Wyślij opinię |
+| Report a translation problem | Сообщить об ошибке перевода | Повідомити про помилку перекладу | Паведаміць пра памылку перакладу | 报告翻译问题 | Informar de un problema de traducción | Zgłoś błąd tłumaczenia |
+| Wrong or missing color? | Не тот цвет или его нет? | Не той колір або його немає? | Не той колер або яго няма? | 颜色不对或缺少颜色？ | ¿Color equivocado o que falta? | Zły kolor albo go brak? |
+| Send feedback | Отправить отзыв | Надіслати відгук | Адправіць водгук | 发送反馈 | Enviar comentarios | Wyślij opinię |
+| Report a translation problem | Сообщить об ошибке перевода | Повідомити про помилку перекладу | Паведаміць пра памылку перакладу | 报告翻译问题 | Informar de un problema de traducción | Zgłoś błąd tłumaczenia |
+| Report a bead color | Сообщить о цвете бисера | Повідомити про колір бісеру | Паведаміць пра колер бісеру | 报告珠子颜色 | Informar de un color de cuenta | Zgłoś kolor koralików |
+| Say what works, what doesn't, or what you miss. It goes to the person who makes openbeads. | Расскажите, что работает, что нет и чего не хватает. Это прочитает тот, кто делает openbeads. | Розкажіть, що працює, що ні і чого бракує. Це прочитає той, хто робить openbeads. | Раскажыце, што працуе, што не і чаго не хапае. Гэта прачытае той, хто робіць openbeads. | 说说哪里好用、哪里不好用、还缺什么。制作 openbeads 的人会读到。 | Cuenta qué funciona, qué no y qué echas en falta. Lo lee quien hace openbeads. | Napisz, co działa, co nie i czego brakuje. Przeczyta to osoba, która tworzy openbeads. |
+| Copy the words as the app shows them, and say what they should be. | Скопируйте слова так, как их показывает приложение, и напишите, как должно быть. | Скопіюйте слова так, як їх показує застосунок, і напишіть, як має бути. | Скапіруйце словы так, як іх паказвае праграма, і напішыце, як павінна быць. | 按应用显示的样子复制文字，并写出应该是什么。 | Copia las palabras tal como las muestra la app y escribe cómo deberían ser. | Skopiuj słowa tak, jak pokazuje je aplikacja, i napisz, jak powinny brzmieć. |
+| Say which code is drawn in the wrong color, or which code is missing. | Укажите, какой код нарисован не тем цветом или какого кода не хватает. | Вкажіть, який код намальовано не тим кольором або якого коду бракує. | Пазначце, які код намаляваны не тым колерам або якога кода не хапае. | 说明哪个编号的颜色画错了，或者缺少哪个编号。 | Di qué código se dibuja con un color equivocado o qué código falta. | Napisz, który kod ma zły kolor albo którego kodu brakuje. |
+| Message | Сообщение | Повідомлення | Паведамленне | 留言 | Mensaje | Wiadomość |
+| Language | Язык | Мова | Мова | 语言 | Idioma | Język |
+| Text as shown | Текст в приложении | Текст у застосунку | Тэкст у праграме | 显示的文字 | Texto tal como aparece | Tekst w aplikacji |
+| Should say | Должно быть | Має бути | Павінна быць | 应为 | Debería decir | Powinno być |
+| Note | Примечание | Примітка | Заўвага | 备注 | Nota | Uwaga |
+| Problem | Проблема | Проблема | Праблема | 问题 | Problema | Problem |
+| Wrong color | Не тот цвет | Не той колір | Не той колер | 颜色不对 | Color equivocado | Zły kolor |
+| Missing color | Нет цвета | Немає кольору | Няма колеру | 缺少颜色 | Falta el color | Brak koloru |
+| Brand and catalog | Бренд и каталог | Бренд і каталог | Брэнд і каталог | 品牌和色卡 | Marca y catálogo | Marka i katalog |
+| Code | Код | Код | Код | 编号 | Código | Kod |
+| Looks like | Как выглядит | Як виглядає | Як выглядае | 看起来像 | Se ve como | Wygląda jak |
+| In words or as a hex, such as dark teal or #1d5c63. | Словами или в hex, например тёмно-бирюзовый или #1d5c63. | Словами або в hex, наприклад темно-бірюзовий або #1d5c63. | Словамі або ў hex, напрыклад цёмна-бірузовы або #1d5c63. | 用文字或 hex 描述，例如深青色或 #1d5c63。 | Con palabras o en hex, como verde azulado oscuro o #1d5c63. | Słowami lub w hex, np. ciemny morski albo #1d5c63. |
+| Email | Эл. почта | Ел. пошта | Эл. пошта | 电子邮件 | Correo | E-mail |
+| Only to ask you about this report. | Только чтобы задать вопрос об этом отчёте. | Лише щоб поставити запитання про цей звіт. | Толькі каб задаць пытанне пра гэтую справаздачу. | 仅用于就此报告向你提问。 | Solo para preguntarte sobre este informe. | Tylko po to, by zapytać cię o to zgłoszenie. |
+| Write a message. | Напишите сообщение. | Напишіть повідомлення. | Напішыце паведамленне. | 写下留言。 | Escribe un mensaje. | Napisz wiadomość. |
+| Enter the text as it shows. | Укажите текст так, как он показан. | Вкажіть текст так, як його показано. | Пазначце тэкст так, як ён паказаны. | 按显示的样子填写文字。 | Escribe el texto tal como aparece. | Wpisz tekst tak, jak jest pokazany. |
+| Enter an email such as name@example.com. | Укажите почту, например name@example.com. | Вкажіть пошту, наприклад name@example.com. | Пазначце пошту, напрыклад name@example.com. | 填写电子邮件，例如 name@example.com。 | Escribe un correo como name@example.com. | Wpisz e-mail, np. name@example.com. |
+| Also sent | Также отправляется | Також надсилається | Таксама адпраўляецца | 一并发送 | También se envía | Wysyłane też |
+| Nothing from your Projects, and nothing that identifies this device. | Ничего из ваших проектов и ничего, что указывает на это устройство. | Нічого з ваших проєктів і нічого, що вказує на цей пристрій. | Нічога з вашых праектаў і нічога, што паказвае на гэтую прыладу. | 不含你的项目，也不含可识别此设备的信息。 | Nada de tus proyectos ni nada que identifique este dispositivo. | Nic z twoich projektów i nic, co wskazuje na to urządzenie. |
+| Version | Версия | Версія | Версія | 版本 | Versión | Wersja |
+| App language | Язык приложения | Мова застосунку | Мова праграмы | 应用语言 | Idioma de la app | Język aplikacji |
+| Browser | Браузер | Браузер | Браўзер | 浏览器 | Navegador | Przeglądarka |
+| System | Система | Система | Сістэма | 系统 | Sistema | System |
+| Window size | Размер окна | Розмір вікна | Памер акна | 窗口大小 | Tamaño de ventana | Rozmiar okna |
+| Language | Язык | Мова | Мова | 语言 | Idioma | Język |
+| Brand | Бренд | Бренд | Брэнд | 品牌 | Marca | Marka |
+| Catalog | Каталог | Каталог | Каталог | 色卡 | Catálogo | Katalog |
+| Code | Код | Код | Код | 编号 | Código | Kod |
+| Stored hex | Сохранённый hex | Збережений hex | Захаваны hex | 存储的 hex | Hex guardado | Zapisany hex |
+| Swatch letter | Буква цвета | Літера кольору | Літара колеру | 颜色字母 | Letra del color | Litera koloru |
+| Send | Отправить | Надіслати | Адправіць | 发送 | Enviar | Wyślij |
+| Sending… | Отправляем… | Надсилаємо… | Адпраўляем… | 正在发送… | Enviando… | Wysyłanie… |
+| Copy report | Скопировать отчёт | Скопіювати звіт | Скапіраваць справаздачу | 复制报告 | Copiar informe | Kopiuj zgłoszenie |
+| Report copied. | Отчёт скопирован. | Звіт скопійовано. | Справаздачу скапіравана. | 报告已复制。 | Informe copiado. | Zgłoszenie skopiowane. |
+| The browser refused to copy. Select the text and copy it yourself. | Браузер не дал скопировать. Выделите текст и скопируйте его сами. | Браузер не дав скопіювати. Виділіть текст і скопіюйте його самі. | Браўзер не даў скапіраваць. Вылучыце тэкст і скапіруйце яго самі. | 浏览器拒绝复制。选中文字后自行复制。 | El navegador no dejó copiar. Selecciona el texto y cópialo tú. | Przeglądarka nie pozwoliła skopiować. Zaznacz tekst i skopiuj go sam. |
+| Sending reports is switched off for now. Try again in {minutes} min. | Отправка отчётов пока выключена. Попробуйте через {minutes} мин. | Надсилання звітів поки вимкнено. Спробуйте за {minutes} хв. | Адпраўка справаздач пакуль выключана. Паспрабуйце праз {minutes} хв. | 报告发送暂时关闭。{minutes} 分钟后再试。 | El envío de informes está desactivado por ahora. Vuelve a intentarlo en {minutes} min. | Wysyłanie zgłoszeń jest na razie wyłączone. Spróbuj za {minutes} min. |
+| You are offline. Your report stays here: send it once you are back online, or copy it. | Нет сети. Отчёт останется здесь: отправьте его, когда сеть появится, или скопируйте. | Немає мережі. Звіт залишиться тут: надішліть його, коли мережа з’явиться, або скопіюйте. | Няма сеткі. Справаздача застанецца тут: адпраўце яе, калі сетка з’явіцца, або скапіруйце. | 你已离线。报告会留在这里：联网后发送，或复制下来。 | Estás sin conexión. Tu informe se queda aquí: envíalo cuando vuelvas a tener conexión o cópialo. | Jesteś offline. Zgłoszenie zostaje tutaj: wyślij je, gdy wrócisz do sieci, albo je skopiuj. |
+| Too many reports at once. Try again in {seconds} s. | Слишком много отчётов сразу. Попробуйте через {seconds} с. | Забагато звітів одразу. Спробуйте за {seconds} с. | Занадта шмат справаздач адразу. Паспрабуйце праз {seconds} с. | 报告太多。{seconds} 秒后再试。 | Demasiados informes a la vez. Vuelve a intentarlo en {seconds} s. | Za dużo zgłoszeń naraz. Spróbuj za {seconds} s. |
+| The report could not be sent. Try again later, or copy it. | Отчёт не отправился. Попробуйте позже или скопируйте его. | Звіт не надіслано. Спробуйте пізніше або скопіюйте його. | Справаздачу не адпраўлена. Паспрабуйце пазней або скапіруйце яе. | 报告未能发送。稍后再试，或复制下来。 | No se pudo enviar el informe. Inténtalo más tarde o cópialo. | Nie udało się wysłać zgłoszenia. Spróbuj później albo je skopiuj. |
+| Thanks, your report was sent | Спасибо, отчёт отправлен | Дякуємо, звіт надіслано | Дзякуй, справаздачу адпраўлена | 谢谢，报告已发送 | Gracias, tu informe se ha enviado | Dziękujemy, zgłoszenie wysłane |

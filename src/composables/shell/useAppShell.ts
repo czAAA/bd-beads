@@ -62,6 +62,7 @@ import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
 import { useDialogs } from './useDialogs'
+import { useFeedbackFlow } from './useFeedbackFlow'
 
 // The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
@@ -221,7 +222,11 @@ function wireAppShell(services: Services) {
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
   const { palette, addUsed, removeAdded, removeAllAdded, moveColor } = useProjectPalette({ currentProject, edit })
-  provideBeadColors(useBeadColors({ currentProject, palette, addUsed }))
+  /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
+  const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs })
+  provideBeadColors(
+    useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
+  )
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -794,6 +799,7 @@ function wireAppShell(services: Services) {
       phoneSavedProjectsOpen: overlays.phoneSavedProjectsOpen,
       onSelectProjectFromPhoneDrawer: overlays.onSelectProjectFromPhoneDrawer,
       onOpenShortcutsHelp,
+      onOpenFeedback: feedback.onOpenFeedback,
       // Menu: the device and the library
       toolPillPosition: toolPill.toolPillPosition,
       inputMode,
@@ -892,6 +898,11 @@ function wireAppShell(services: Services) {
       onConfirmStorageNote: storageAsk.onConfirmStorageNote,
       onCancelStorageNote: storageAsk.onCancelStorageNote,
       onCloseShortcutsHelp,
+      feedbackRequest: feedback.feedbackRequest,
+      onCloseFeedback: feedback.onCloseFeedback,
+      sendReport: feedback.sendReport,
+      verifyFeedback: feedback.verifyFeedback,
+      copyReport: feedback.copyReport,
       duplicating: manageProject.duplicating,
       onConfirmDuplicate: manageProject.onConfirmDuplicate,
       onCancelDuplicate: manageProject.onCancelDuplicate,
