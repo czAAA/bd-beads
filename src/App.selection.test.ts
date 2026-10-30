@@ -229,4 +229,20 @@ describe('App select, copy and paste', () => {
     await click(wrapper, 15) // (3,3)
     expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBe('#e63746')
   })
+
+  it('Mirror on the Selection bar copies the fragment to its counterparts while Mirror is on (ticket 0707)', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4
+    await projectWithMotif(wrapper) // red (0,0) and blue (1,1)
+    await drag(wrapper, [0, 5])
+    expect(wrapper.find('[data-testid="context-bar-mirror-selection"]').exists()).toBe(false)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }))
+    await flushPromises()
+    await pressBar(wrapper, 'mirror-selection')
+
+    const grid = frameGrid(loadProjects()[0]!)
+    expect(grid[0]![3]!.color).toBe('#e63746')
+    expect(grid[1]![2]!.color).toBe(grid[1]![1]!.color)
+    expect(selectedCount(wrapper)).toBe(4)
+  })
 })
