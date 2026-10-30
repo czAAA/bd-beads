@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type CDPSession, type Page } from '@playwright/test'
 import type { GridPosition } from '../../src/domain/grid'
 import type { BeadMap } from '../../src/domain/canvas'
 import type { Project } from '../../src/domain/project'
@@ -12,9 +12,9 @@ import { beadCentre, fixtureProject } from '../support/projects'
 import { canvasFixtures, isGround } from './canvasFixtures'
 import { attribution, busyMs, longFramesSince, pageNow, throttle, watchLongFrames } from './measure'
 
-// Fill reach (ticket 0715), by hand with `npm run perf`: a Fill as big as the Fill cap allows, with its redraw, save and
-// Piece recount, and a press on empty space a screen away from the scattered Pieces at the Zoom floor, which is refused.
-// Each held to the 100 ms an edit has. Env: PERF_SLOWDOWNS (4), PERF_TECHNIQUES (loom,peyote).
+// Fill reach (ticket 0715), by hand with `npm run perf`: a Fill at the Fill cap with its redraw, save and Piece recount,
+// a refused press a screen from the scattered Pieces at the Zoom floor, and small edits on a layer at the cap (ticket
+// 0731), each held to the 100 ms an edit has. Env: PERF_SLOWDOWNS (4), PERF_TECHNIQUES (loom,peyote).
 
 const SLOWDOWNS = (process.env.PERF_SLOWDOWNS ?? '4').split(',').map(Number)
 const TECHNIQUES = (process.env.PERF_TECHNIQUES ?? 'loom,peyote').split(',') as Technique[]
@@ -54,10 +54,15 @@ async function screenOf(page: Page, project: Project): Promise<(position: GridPo
 async function timedClick(page: Page, at: { x: number; y: number }, slowdown: number): Promise<{ ms: number; long: string }> {
   const cdp = await throttle(page, slowdown)
   await page.waitForTimeout(OPENING_SETTLE_MS)
+  return timed(page, cdp, () => page.mouse.click(at.x, at.y))
+}
+
+/** The main thread's busy time of `act` until it has settled, its save included, with the long frames it made. */
+async function timed(page: Page, cdp: CDPSession, act: () => Promise<void>): Promise<{ ms: number; long: string }> {
   await settle(page)
   const since = await pageNow(page)
   const before = await busyMs(cdp)
-  await page.mouse.click(at.x, at.y)
+  await act()
   await settle(page)
   await page.waitForTimeout(AFTERMATH_MS)
   const ms = (await busyMs(cdp)) - before
@@ -105,6 +110,41 @@ for (const slowdown of SLOWDOWNS) {
       record('refused fill', slowdown, technique, measured, 'empty space a screen from the scattered Pieces, at 10%')
       await expect(page.getByTestId('fill-refused')).toBeVisible()
       expect(await stored()).toEqual(before)
+    })
+  }
+}
+
+for (const slowdown of SLOWDOWNS) {
+  for (const technique of TECHNIQUES) {
+    test(`small edits on a layer at the cap, ${technique} at ${slowdown}× slowdown`, async ({ page }) => {
+      const project = cappedPiece(technique)
+      await watchLongFrames(page)
+      await openApp(page, [project])
+      const cdp = await throttle(page, slowdown)
+      await page.waitForTimeout(OPENING_SETTLE_MS)
+      const at = await screenOf(page, project)
+      const middle = Math.floor(SIDE / 2)
+      let accent = { row: middle, column: middle }
+      while (isGround(accent.row, accent.column)) accent = { ...accent, column: accent.column + 1 }
+      const note = `${SIDE}×${SIDE} Piece, rulers on`
+
+      await selectTool(page, 'fill')
+      record('one-bead fill', slowdown, technique, await timed(page, cdp, () => page.mouse.click(at(accent).x, at(accent).y)), note)
+
+      const stroke = async (row: number) => {
+        await page.mouse.move(at({ row, column: middle - 10 }).x, at({ row, column: middle - 10 }).y)
+        await page.mouse.down()
+        for (let step = 1; step <= 20; step += 1) await page.mouse.move(at({ row, column: middle - 10 + step }).x, at({ row, column: middle - 10 + step }).y)
+      }
+      await selectTool(page, 'paint')
+      await stroke(middle - 20)
+      record('stroke end', slowdown, technique, await timed(page, cdp, () => page.mouse.up()), note)
+
+      record('undo', slowdown, technique, await timed(page, cdp, () => page.keyboard.press('ControlOrMeta+z')), note)
+
+      await selectTool(page, 'erase')
+      await stroke(middle + 20)
+      record('erase stroke end', slowdown, technique, await timed(page, cdp, () => page.mouse.up()), note)
     })
   }
 }
