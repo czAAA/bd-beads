@@ -22,8 +22,10 @@ import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
+import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
-import type { MirrorSetting } from '../../domain/mirror'
+import type { MirrorDirection, MirrorSetting } from '../../domain/mirror'
+import { axisHandles as axisHandlesOf } from '../../rendering/mirrorAxes'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -76,6 +78,12 @@ const props = withDefaults(defineProps<{
   selectionRefusals?: number
   /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
   mirror?: MirrorSetting
+  /** The open Canvas's Axes that act (ticket 0704): a line across the whole view each, with a handle chip the press
+   * grabs before the tool; `heldAxis` is the one being dragged. */
+  mirrorAxes?: Partial<Record<MirrorDirection, number>>
+  heldAxis?: MirrorDirection
+  /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
+  fillRefusals?: number
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -271,14 +279,20 @@ watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, 
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 
 const marginCue = useMarginCue(props)
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
+/** Mirror's Axis handles on the open Canvas (ticket 0704), laid out once per view: the overlay draws them and the
+ * pointer asks them which one a press grabbed, so the two cannot disagree. */
+const axisHandles = computed(() => (props.mirrorAxes ? axisHandlesOf(props.mirrorAxes, canvasWeave.value, surface.value) : []))
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse, axisHandles })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
 useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
-  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
+  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
+
+/** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
+const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
 
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers, pressMoveHandle })
@@ -324,7 +338,7 @@ onBeforeUnmount(() => {
     @wheel="handlers.onWheel"
     @contextmenu.prevent
   >
-    <div class="project-surface__drawing" :style="drawingStyle">
+    <div class="project-surface__drawing" :style="[drawingStyle, emptyCanvasStyle]">
       <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
     </div>
@@ -428,6 +442,16 @@ onBeforeUnmount(() => {
 .project-surface__drawing {
   position: absolute;
   inset: 0;
+}
+
+/* The empty Canvas under the drawing (ticket 0717): the Position marks' tile repeated at the view's zoom, scroll and
+ * quarter turn, reaching past the box so a twist that moves it still covers the surface. The drawing hides it. */
+.project-surface__drawing::before {
+  position: absolute;
+  inset: calc(-1 * var(--empty-reach, 0px));
+  background: var(--empty-marks, none) var(--empty-marks-at, 0 0) / var(--empty-marks-size, auto) repeat;
+  content: '';
+  pointer-events: none;
 }
 
 .project-surface__canvas {

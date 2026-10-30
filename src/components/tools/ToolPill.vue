@@ -32,6 +32,8 @@ const props = withDefaults(defineProps<{
   mirror?: MirrorSetting
   mirrorPopoverOpen?: boolean
   mirrorLimits?: Record<MirrorDirection, number>
+  /** Whether the open Canvas is the only layer (ticket 0704): the popover's details are then the Canvas's. */
+  mirrorOnCanvas?: boolean
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -42,7 +44,7 @@ const props = withDefaults(defineProps<{
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
-}>(), { mirror: () => MIRROR_OFF, mirrorPopoverOpen: false, mirrorLimits: undefined })
+}>(), { mirror: () => MIRROR_OFF, mirrorPopoverOpen: false, mirrorLimits: undefined, mirrorOnCanvas: false })
 
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
@@ -304,6 +306,7 @@ watch(
       :position="position"
       :setting="mirror"
       :limits="mirrorLimits"
+      :on-canvas="mirrorOnCanvas"
       @close="emit('update:mirrorPopoverOpen', false)"
       @update:setting="emit('update:mirror', $event)"
     />

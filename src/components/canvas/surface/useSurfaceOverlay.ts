@@ -13,12 +13,14 @@ import type { Size } from '../../../rendering/cellSize'
 import type { HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
 import { frameOf } from '../../../domain/layerRecord'
-import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
+import { isMirrorOn, type MirrorDirection, type MirrorSetting } from '../../../domain/mirror'
+import type { AxisHandle } from '../../../rendering/mirrorAxes'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
 // redrawn frame by frame; with reduced motion at once. At rest the sheet's own edge marks the margin (ticket 0656).
 const MARGIN_FADE_MS = 120
-const REFUSED_PRESS_MS = 1000
+/** How long a refused press shows its cue: the margin's outline, or the not-allowed pointer after a Fill. */
+export const REFUSED_PRESS_MS = 1000
 const SIZE_FLASH_MS = 1200
 
 function reducedMotion(): boolean {
@@ -89,8 +91,13 @@ export interface SurfaceOverlayDeps {
     tools: ToolCapabilities
     /** The Mirror setting (ticket 0703): its Axis lines are drawn across the Frame while the mode is not Off. */
     mirror?: MirrorSetting
+    /** The open Canvas's Axes that act (ticket 0704), drawn across the whole view, and the one being dragged. */
+    mirrorAxes?: Partial<Record<MirrorDirection, number>>
+    heldAxis?: MirrorDirection
   }
   canvas: Ref<HTMLCanvasElement | undefined>
+  /** The Axis handles' chips (ticket 0704), the same list the pointer hit-tests. */
+  axisHandles: Ref<readonly AxisHandle[]>
   size: Ref<Size>
   space: Ref<Space>
   surface: Ref<SurfaceView>
@@ -112,7 +119,7 @@ export interface SurfaceOverlayDeps {
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity, axisHandles } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -162,6 +169,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value } : undefined,
         rulers: { layout: rulers.value, surface: surface.value },
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
+        canvasAxes: props.mirrorAxes ? { axes: props.mirrorAxes, handles: axisHandles.value, held: props.heldAxis } : undefined,
       })
     }
   }
@@ -187,6 +195,9 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.tools.picking,
       () => props.frameTooltip,
       () => props.mirror,
+      () => props.mirrorAxes,
+      () => props.heldAxis,
+      axisHandles,
       marginOpacity,
       touchInput,
       hotHandle,

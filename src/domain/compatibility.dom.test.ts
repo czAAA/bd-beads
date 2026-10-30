@@ -40,7 +40,8 @@ import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.j
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
 import projectFileV13Mirror from './fixtures/project-file-v13-mirror.json?raw'
-import { MIRROR_OFF, mirrorSettingOf } from './mirror'
+import projectFileV13MirrorAxes from './fixtures/project-file-v13-mirror-axes.json?raw'
+import { canvasAxesOf, MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
@@ -476,6 +477,13 @@ describe('stored-data compatibility', () => {
       const [older] = parseProjectsFile(projectFileV13Drops).projects
       expect(older!.mirror).toBeUndefined()
       expect(mirrorSettingOf(older!)).toEqual(MIRROR_OFF)
+    })
+
+    it('opens a version 13 file with the Canvas\'s Mirror Axes on its Canvas layer and writes it back the same; one from before them opens with none (ticket 0704)', () => {
+      const [opened] = parseProjectsFile(projectFileV13MirrorAxes).projects
+      expect(canvasAxesOf(opened!)).toEqual({ leftRight: 4.5, topBottom: -2 })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV13MirrorAxes))
+      expect(canvasOf(parseProjectsFile(projectFileV13Mirror).projects[0]!).mirrorAxes).toBeUndefined()
     })
 
     it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {
