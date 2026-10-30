@@ -1,0 +1,62 @@
+# MirrorPopover
+
+The Mirror tile in the Tool pill and the popover it opens: the Mirror mode, the Axes, an Area to mirror inside, and the details that apply. Mirror is a live mode, not a Tool (ADR 0082, spec 0702): Paint, Eraser, Fill and Paste stay the active tool and every cell they change also changes its counterparts, as one Undo step. Prototype, approved 2026-10-30: https://claude.ai/artifact/PUzLRyd4rCvT4nir5VYU19 (a private page with the pill, the popover and three scenes to paint in: the open Canvas, a peyote Frame, a Star Frame).
+
+## The tile
+
+- **Where:** in the pill right after Piece and before the Paste tile (ToolPill card): a tool tile, 40px, the 22px `mirror` icon (a bead split by the set's dotted line), hotkey chip `8`. `aria-haspopup="dialog"`, `aria-expanded` while the popover is open. Tooltip "Mirror", key `8`, line "Draw on both sides of an axis".
+- **Lit while the mode is not Off**, the active tool's look (`panel` fill, icon and digit in `accent-strong`), whatever tool is active: the tile says the mode, not the tool. A press opens or closes the popover. Key `8` toggles the mode with its last settings (Mirror with Left–right on if no Axis was on) without opening the popover; while an Area is being picked a press on the tile cancels the pick instead.
+
+## The popover
+
+- **The box** is the colour popover's: `--popover-width` (288px), `--pill-popover-radius`, `overlay-fill`, 1px `overlay-line`, `elevation-3`, padding 12px 14px 14px, 12px between rows; placed beside the pill toward the canvas, centred on the tile, clamped `float-edge` inside the screen; the pop motion; Escape, a press outside or the tile close it. A `dialog` named "Mirror".
+- **Rows, top to bottom,** each under a `label` (Mode, Axes, Area, and the details' own):
+  1. **Mode:** a SegmentedControl, Off | Mirror | Repeat (34px). Mirror lays a reflection (A | A′), Repeat the same way round (A | A); one switch for every Axis. Off keeps every other setting for next time.
+  2. **Axes:** three toggle chips, Left–right, Top–bottom, Radial: 32px tall, `radius-full`, `button` fill, 1px `button-line`; pressed: `panel` fill, `accent-strong` border and text at 600. The two straight ones may be on together; Radial on turns them off and remembers them, Radial off brings them back. Turning an Axis on while the mode is Off sets the mode to Mirror.
+  3. **Area** (a grid layer only; the row is not shown on a Custom frame, whose Axes are the shape's): a full-width 34px `radius-md` button, the 18px `select` icon and **Select area**; after it, only while an Area is set, a 34px icon button `close`, "Clear the area"; under them a Note. Its three states are below.
+  4. **Details,** only what applies, else nothing:
+     - a Frame or an Area with a straight Axis on: an **Axis count** Stepper per direction, "Left–right axes 1 − +" (buttons "Fewer axes" and "More axes"), 1 to that direction's beads minus 1, the Frame's or the Area's; a count above the new limit is clamped when the Area shrinks;
+     - Radial on a grid: the **Fold** Stepper (below);
+     - Radial on a round Custom frame: a Note "6 sides, from the shape. Mirror reflects within each side too.";
+     - the open Canvas, no Area, a straight Axis: a Note "Drag the handle on the axis to move it." (in Repeat the strip width, see the open question in spec 0702);
+     - the mode on and no Axis: a Note "Turn an Axis on."
+- **No Apply to what's drawn.** The button of the 2026-10-29 decision was dropped on 2026-10-30; the Selection bar's Mirror (ContextBar card) is the one one-shot command.
+
+## The Area
+
+An Area is a rectangle of cells on the layer the Axes run inside, in place of the whole Frame or the whole Canvas. It is not a Selection: the Selection bar never shows for it, and the Select tool's Selection is separate.
+
+- **Not set:** the button reads "Select area"; the Note under it: on a Frame "The Axes run through the whole Frame. Select an area to mirror inside part of it; a click on the keep-out margin takes the whole Frame.", on the Canvas "The Axes run across the whole Canvas. Select an area to mirror inside it, as in a Frame."
+- **Picking** (the button pressed): the popover closes so the drawing shows; the button is `aria-pressed="true"` and reads "Drag on the canvas…" when the popover is next open. The Canvas hint (CanvasHint card) reads "Drag over the beads · click the margin for the whole Frame · Esc cancels" (on the Canvas "Drag over the beads to set the area · Esc cancels"), in `marker` with a 1px `marker` border on `elevated`; the pointer over the beads is the Select tool's. The hover preview of counterparts is off meanwhile. Escape, or the tile, cancels and reopens the popover.
+  - **A drag over the beads** draws the rubber band, a 1.5px `marker` rectangle round the cells from the press to the pointer, no handles; release sets the Area, reopens the popover and shows a toast "Area 10 × 5: the Axes run inside it". If the mode was Off it becomes Mirror, with Left–right on if no Axis was.
+  - **The keep-out margin is a target** (MarginSheet card): under the pointer the margin's paper tints `marker` at 10%, its outer outline turns a solid 1.5px `marker` line (radius 12), and a dashed (4 3) `marker` preview rectangle shows round the whole Frame; both come and go over `duration-fast` (none under reduced motion). A press there, taken on release, makes the whole Frame the Area, toast "The whole Frame is the area". The sheet's own controls take no press meanwhile. The open Canvas has no margin and no such target.
+  - **Keyboard and screen readers:** picking needs a pointer, so while a Frame is the layer the Area row also offers **Whole Frame**, a second 34px button after Select area, which sets the Area to the Frame without picking.
+- **Set:** drawn as the Select tool's Selection (ContextBar card): a 1.5px `marker` rectangle round the cells, the peyote half-bead included, with the eight 9px handles (1.5px `ink`, radius 2, `canvas` fill), not draggable; a new pick replaces it, Clear the area removes it. The button reads "10 × 5 beads" (columns × rows) with its border, text and icon in `marker`; the Note reads "The Axes run inside the area. Drawing outside it is not mirrored."
+- **What it does:** the Axes run inside the Area exactly as inside a Frame: a straight Axis through its centre, or N axes cutting it into N+1 equal strips; Radial's centre is its centre. A counterpart that would land outside the Area is dropped, and a gesture outside the Area is not mirrored at all. On the open Canvas an Area makes a bounded region: the Canvas's handles are not drawn while it is set, the count Steppers show instead, and Repeat needs no strip width (the Area's width is the strip). One Area per layer, saved with the Project.
+
+## Fold (Radial on a grid)
+
+- A Stepper, label "Fold", 2 to 8, buttons "Fewer folds" and "More folds", `faint` at the ends; a Note under it says the rule in force: at 2 and 4 "An exact turn of the grid, by row and column."; otherwise "A turn of 60°: each bead's centre turns and the nearest bead takes it, so near the centre images merge." (the angle is 360 over the fold, rounded).
+- **The rule:** 2 and 4 map by row and column about the centre, as Rotate turns a fragment (ADR 0052), so on peyote and brick a counterpart keeps its index and takes the half-bead shift. 3 and 5 to 8 are geometric: every turn of the source bead's centre about the Radial centre (and in Mirror mode every turn of its reflection across the vertical through the centre) is taken in one shot from the source, the nearest cell taking each, never chained from image to image, so snapping cannot drift. The range stops at 8 because beyond it the sectors are narrower than a bead a few beads out, and the images merge.
+- On a round Custom frame the Fold is the shape's side count and there is no Stepper.
+
+## On the canvas
+
+Everything here is drawn on the canvas overlay layer in the layer's geometry (Frame-relative, or Canvas-absolute), with every tool while the mode is not Off, not hidden by the Rulers toggle, never in exports.
+
+- **Axis lines:** `marker`, 1.25px, dash 5 4, across the Frame or the Area, or the whole view on the open Canvas. In Repeat on the Canvas, the strip either side of the axis is tinted `marker` at 6% with its outer edges as the same line at 45% (the open question).
+- **Radial:** the centre is a ring, 7px radius, 2px `marker`. Mirror: the fold's mirror lines through the centre, 180° over the fold apart, the first full and the others at 45%. Repeat: the fold's rays from the centre, 360° over the fold apart, the first straight up; on a round Custom frame the rays run along the Seams, and in Mirror the lines run down the middle of each part.
+- **Handles** (the open Canvas, no Area): a 32px chip on each Axis line and at the Radial centre, `elevated` fill, 1.5px `marker` border, `elevation-2`, a 16px `marker` icon (`axis-left-right`, `axis-top-bottom`, `axis-centre`), cursor `grab`, never zooming, like the Move handle; dragging snaps to a position boundary or centre.
+- **Hover preview:** every counterpart under the pointer at 45% of the colour with a 1.5px `marker` outline (an Eraser's with no fill), none while picking an Area.
+
+## Copy
+
+Mode: Off, Mirror, Repeat. Axes: Left–right, Top–bottom, Radial. Area: Select area, Whole Frame, Clear the area, "n × m beads", and the Notes above. Details: "Left–right axes" / "Top–bottom axes", Fold, the Fold Notes. Toasts: "Area n × m: the Axes run inside it", "The whole Frame is the area". Tooltip: "Mirror", "Draw on both sides of an axis". Russian and the other languages are made at implementation following `writing.md` (Mirror is «Отражение»).
+
+## Accessibility
+
+- The popover is a `dialog` named "Mirror"; the Mode row a `radiogroup`; each chip `aria-pressed`; the Stepper buttons named as above; the Area button `aria-pressed` while picking, and its text is its state.
+- The margin target and the rubber band need a pointer; Whole Frame and Clear the area cover the keyboard, and the Canvas hint names Escape.
+- Every control keeps the 34px row height and a `touch-target` hit area on coarse pointers.
+
+Hand-written from the prototype (2026-10-29 to 2026-10-30); static rendition. Built by tickets 0703 to 0707 and 0710.

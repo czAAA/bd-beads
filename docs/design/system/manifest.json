@@ -453,6 +453,11 @@
       "summary": "The tools as a draggable pill floating over the drawing area, docked to any edge, with the colour popover."
     },
     {
+      "name": "MirrorPopover",
+      "group": "Responsive",
+      "summary": "The Mirror tile's popover: the Mirror mode, the Axes, an Area to mirror inside, and the details that apply."
+    },
+    {
       "name": "ToolSheet",
       "group": "Responsive",
       "summary": "The sheet a Dock button opens on the phone, holding every option of that kind."
