@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ToolPill from './ToolPill.vue'
 import type { PillPosition } from '../../domain/toolPill'
+import { MIRROR_OFF } from '../../domain/mirror'
 
 const TOOL_IDS = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
@@ -14,7 +15,7 @@ describe('ToolPill (ticket 439)', () => {
     localStorage.setItem('openbeads:locale', 'en')
   })
 
-  it('is a toolbar named Tools with the grip first, then the six tools, a divider and the colour control', () => {
+  it('is a toolbar named Tools with the grip first, then the six tools, the Mirror tile, a divider and the colour control', () => {
     const wrapper = mount(ToolPill, { props: base })
     const pill = wrapper.get('[data-testid="tool-pill"]')
     expect(pill.attributes('role')).toBe('toolbar')
@@ -22,17 +23,44 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.findAll('button').map((button) => button.attributes('data-testid'))).toEqual([
       'tool-pill-grip',
       ...TOOL_IDS.map((id) => `pill-tool-${id}`),
+      'pill-tool-mirror',
       'pill-color',
     ])
     expect(wrapper.findAll('.tool-pill__divider')).toHaveLength(1)
   })
 
-  it('shows a Paste tile right after Piece only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
+  it('has the Mirror tile after Piece, key 8, lit while the mode is not Off whatever the tool, and its press opens the popover (ticket 0703)', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'fill' } })
+    const ids = wrapper.findAll('button').map((button) => button.attributes('data-testid'))
+    expect(ids.indexOf('pill-tool-mirror')).toBe(ids.indexOf('pill-tool-piece') + 1)
+    const tile = wrapper.get('[data-testid="pill-tool-mirror"]')
+    expect(tile.attributes('aria-label')).toBe('Mirror')
+    expect(tile.get('.icon-btn__key').text()).toBe('8')
+    expect(tile.attributes('aria-haspopup')).toBe('dialog')
+    expect(tile.attributes('aria-expanded')).toBe('false')
+    expect(tile.attributes('aria-pressed')).toBeUndefined()
+    expect(tile.classes()).not.toContain('icon-btn--accent')
+    expect(wrapper.find('[data-testid="mirror-popover"]').exists()).toBe(false)
+
+    await tile.trigger('click')
+    expect(wrapper.emitted('update:mirrorPopoverOpen')).toEqual([[true]])
+    expect(wrapper.emitted('select-tool')).toBeUndefined()
+
+    await wrapper.setProps({ mirrorPopoverOpen: true, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } } })
+    expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
+    expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--accent')
+    expect(wrapper.get('[data-testid="mirror-popover"]').attributes('aria-label')).toBe('Mirror')
+    await wrapper.get('[data-testid="mirror-axis-topBottom"]').trigger('click')
+    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }]])
+  })
+
+  it('shows a Paste tile right after the Mirror tile only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
     expect(mount(ToolPill, { props: base }).find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
 
     const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
     const ids = wrapper.findAll('button').map((button) => button.attributes('data-testid'))
-    expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-piece') + 1)
+    expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-mirror') + 1)
     const paste = wrapper.get('[data-testid="pill-tool-paste"]')
     expect(paste.attributes('aria-label')).toBe('Paste')
     expect(paste.get('.icon-btn__key').text()).toBe('7')
@@ -59,10 +87,10 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.emitted('select-tool')).toEqual(TOOL_IDS.map((id) => [id]))
   })
 
-  it('lays the tool tiles out in hotkey order, 1 to 6, then Paste 7 (ticket 461)', () => {
+  it('lays the tool tiles out in hotkey order, 1 to 6, then Mirror 8 and Paste 7 (tickets 461, 0703)', () => {
     const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
     const keys = wrapper.findAll('[data-testid^="pill-tool-"] .icon-btn__key').map((key) => key.text())
-    expect(keys).toEqual(['1', '2', '3', '4', '5', '6', '7'])
+    expect(keys).toEqual(['1', '2', '3', '4', '5', '6', '8', '7'])
   })
 
   it('goes vertical on the left and right, and docks to the position it is given', async () => {

@@ -5,6 +5,7 @@ import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
 import type { PieceName } from './pieceNames'
+import type { MirrorSetting } from './mirror'
 
 // The Project record and `touch`, which stamps a change (ticket 0620); it imports types alone. The operations live by
 // concern: createProject, storedProject (old files), layerWeave, weaveSwitch, rowProgress, layerBeads, drawing, fill,
@@ -102,6 +103,9 @@ export interface Project {
   /** This Project's maker's name (ADR 0060), printed on exports and the background watermark. Absent: no name
    * printed (domain/makerName.ts). */
   makerName?: string
+  /** The Mirror setting (ADR 0082, ticket 0703): the mode, the Axes and the Frame's Axis counts, one per Project, read
+   * by whichever layer a stroke lands on. Absent on a Project saved before Mirror, which reads as off (domain/mirror.ts). */
+  mirror?: MirrorSetting
   createdAt: number
   updatedAt: number
   /** When the Project last reached this device's storage (ticket 145): orders the library, newest first. Absent on
