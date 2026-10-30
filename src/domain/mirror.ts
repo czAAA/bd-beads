@@ -213,9 +213,9 @@ export function areaBetween(from: GridPosition, to: GridPosition, within?: Rect)
 /** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): the Area where one is set, else the
  * Frame's rectangle, else the open Canvas with its placed Axes. Strips come from a rectangle's edges and Radial's
  * centre from its middle; a Custom frame's layout joins as a kind of its own (ticket 0706). */
-export type MirrorRegion = { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
+type MirrorRegion = { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
 
-export function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
+function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
   if (sheet.area) return { kind: 'area', rect: sheet.area }
   if (sheet.edge) return { kind: 'frame', rect: sheet.edge }
   return { kind: 'canvas', ...(sheet.axes ? { axes: sheet.axes } : {}) }

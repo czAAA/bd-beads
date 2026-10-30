@@ -143,7 +143,7 @@ describe('the Tool pill', () => {
     await flushPromises()
     expect(wrapper.get('[data-testid="mirror-area"]').text()).toContain('The whole Frame is the area')
     expect(loadProjects()[0]!.layers[1]!.mirrorArea).toEqual({ row: 0, column: 0, rows: frame.rows, columns: frame.columns })
-    expect(wrapper.get('[data-testid="mirror-popover"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mirror-popover"]').exists()).toBe(true)
     wrapper.unmount()
   })
 
