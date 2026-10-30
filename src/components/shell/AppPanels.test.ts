@@ -253,7 +253,7 @@ describe('The Frame panel', () => {
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm' })
 
     mounted.canvas.onUndo()
-    expect(layerOf(saved(), 'frame')).toMatchObject({ beadId: 'toho/cube/1.5mm' })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick' }, beadId: 'toho/cube/1.5mm' })
   })
 
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {

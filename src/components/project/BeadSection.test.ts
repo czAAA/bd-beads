@@ -33,6 +33,13 @@ describe('BeadSection (ticket 568)', () => {
     expect(panelOptionShown(wrapper, 'bead-brand')).toBe(other.brand.name)
   })
 
+  it('holds the Bead pickers alone, with no Bead shape choice (ticket 0724)', () => {
+    const wrapper = mountSection()
+
+    expect(wrapper.findAll('[role="radiogroup"], [role="radio"]')).toHaveLength(0)
+    expect(wrapper.text()).not.toMatch(/shape/i)
+  })
+
   it('shows an out-of-date copy "(as saved)" beside the catalog’s Bead of its id, and asks for that one (ticket 534)', async () => {
     const current = offeredBeads()[0]!
     const copy = { ...current, widthMm: current.widthMm + 0.2 }
