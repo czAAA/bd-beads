@@ -17,11 +17,12 @@ import type { HandleId } from './frameHandles'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
+import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, regionInGridSpace, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads } from './draftRenderer'
 import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
-import { axisOffsets, isMirrorOn, type MirrorSetting } from '../domain/mirror'
+import { axisOffsets, isMirrorOn, type MirrorDirection, type MirrorSetting } from '../domain/mirror'
+import { AXIS_ICON_BOX_PX, AXIS_ICON_PATHS, AXIS_ICON_STROKE_PX, axisGridPx, MIRROR_HANDLE_ICON_PX, type AxisHandle } from './mirrorAxes'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
 // tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see
@@ -109,6 +110,9 @@ export interface OverlayInput {
   /** The Mirror setting while the mode is not Off (ticket 0703, MirrorPopover card): its Axis lines are drawn across the
    * Frame, with every tool, whatever the Rulers toggle says. Never given by an export. */
   mirror?: MirrorSetting
+  /** The open Canvas's Axes that act (ticket 0704): each drawn as a line across the whole view in the Canvas's grid,
+   * with its handle chip in the viewport's px, the one being dragged (`held`) in the accent. Canvas only. */
+  canvasAxes?: { axes: Partial<Record<MirrorDirection, number>>; handles: readonly AxisHandle[]; held?: MirrorDirection }
 }
 
 /** A bead the current pass weaves: its cell, top left, and its color; on a Custom frame (ticket 0594) its box is centred
@@ -571,6 +575,69 @@ function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, sett
   context.restore()
 }
 
+/** Draws the open Canvas's Axes (ticket 0704): one dashed marker line per direction across the part of the grid the
+ * view shows, in grid space, so it turns with the Canvas; the widths divided by the zoom to stay screen px. */
+function drawCanvasAxes(context: DrawingContext, weave: Weave, axes: Partial<Record<MirrorDirection, number>>, shown: { left: number; right: number; top: number; bottom: number }, zoom: number, theme: ProjectTheme): void {
+  if (axes.leftRight === undefined && axes.topBottom === undefined) return
+  context.save()
+  context.strokeStyle = theme.marker
+  context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
+  context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
+  context.beginPath()
+  if (axes.leftRight !== undefined) {
+    const x = axisGridPx(weave, 'leftRight', axes.leftRight)
+    context.moveTo(x, shown.top)
+    context.lineTo(x, shown.bottom)
+  }
+  if (axes.topBottom !== undefined) {
+    const y = axisGridPx(weave, 'topBottom', axes.topBottom)
+    context.moveTo(shown.left, y)
+    context.lineTo(shown.right, y)
+  }
+  context.stroke()
+  context.restore()
+}
+
+/** A chip's border (MirrorPopover card: 1.5px `marker`), and its `elevation-2` shadow where the theme casts one. */
+const MIRROR_HANDLE_LINE_PX = 1.5
+const CHIP_SHADOW_BLUR_PX = 24
+const CHIP_SHADOW_OFFSET_PX = 12
+
+/** Draws the Axis handles (ticket 0704, MirrorPopover card) in the viewport's px over everything: a round `elevated`
+ * chip with a `marker` border (the held one's in the accent) and the direction's icon from the set, at a fixed size
+ * whatever the zoom, like the Move handle. */
+function drawAxisHandles(context: DrawingContext, handles: readonly AxisHandle[], held: MirrorDirection | undefined, pixelRatio: number, theme: ProjectTheme): void {
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+  for (const handle of handles) {
+    const line = held === handle.direction ? theme.accent : theme.marker
+    context.save()
+    context.setLineDash([])
+    context.fillStyle = theme.chip.fill
+    context.strokeStyle = line
+    context.lineWidth = MIRROR_HANDLE_LINE_PX
+    if (theme.chip.shadow) {
+      context.shadowColor = theme.chip.shadow
+      context.shadowBlur = CHIP_SHADOW_BLUR_PX
+      context.shadowOffsetY = CHIP_SHADOW_OFFSET_PX
+    }
+    context.beginPath()
+    context.arc(handle.x, handle.y, handle.size / 2, 0, Math.PI * 2)
+    context.fill()
+    context.shadowColor = 'transparent'
+    context.stroke()
+    // jsdom has no Path2D: the chip is drawn there without its icon.
+    if (typeof Path2D === 'function') {
+      context.translate(handle.x - MIRROR_HANDLE_ICON_PX / 2, handle.y - MIRROR_HANDLE_ICON_PX / 2)
+      context.scale(MIRROR_HANDLE_ICON_PX / AXIS_ICON_BOX_PX, MIRROR_HANDLE_ICON_PX / AXIS_ICON_BOX_PX)
+      context.lineWidth = AXIS_ICON_STROKE_PX
+      context.lineCap = 'round'
+      context.lineJoin = 'round'
+      context.stroke(new Path2D(AXIS_ICON_PATHS[handle.direction]))
+    }
+    context.restore()
+  }
+}
+
 /** Whether a position of the Canvas is on the Frame (ticket 492): the layer it names, or else whether it lies under what
  * the Frame draws (ADR 0066). */
 function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, covered: Rect | undefined, position: GridPosition): boolean {
@@ -589,7 +656,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, canvasAxes } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -629,6 +696,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme, canvasView, { row: 0, column: 0 })
     if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme)
     if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio)
+    // The open Canvas's Axes (ticket 0704), across the part of the grid the view shows.
+    if (mirror && canvasAxes) drawCanvasAxes(context, canvasWeaveOf, canvasAxes.axes, regionInGridSpace(space.extent, region, zoom, quarterTurnOf(project)), zoom, theme)
   }
 
   // The Frame's layer, or the Project drawn alone.
@@ -700,6 +769,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
     drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), pixelRatio, theme, selectionHandles.touch)
+  }
+  if (space.open && mirror && canvasAxes && canvasAxes.handles.length > 0) {
+    drawAxisHandles(context, canvasAxes.handles, canvasAxes.held, pixelRatio, theme)
   }
   if (pointer) {
     const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf

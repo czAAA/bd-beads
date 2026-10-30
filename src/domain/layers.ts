@@ -5,8 +5,9 @@ export type { Layer }
 import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { beadsOfLayer, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
 import { frameWeave, laidOnCanvas } from './layerWeave'
+import type { CanvasAxes } from './mirror'
 import { touch, type Project } from './project'
 import { projectCell } from './projectBead'
 import type { Weave } from './weave'
@@ -26,6 +27,9 @@ export interface LayerSheet {
   edge?: Rect
   /** The Frame as its Frame shape reads it (its shape, settings, turn, size and Weave); none on the Canvas. */
   frame?: ShapedSheet
+  /** Where Mirror's straight Axes cross the open Canvas (ticket 0704), its own geometry; none on the Frame, whose Axes
+   * come from its edge and the setting's counts. */
+  axes?: CanvasAxes
 }
 
 
@@ -100,7 +104,8 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
   const frame = layer === 'frame' ? frameOf(project) : undefined
   if (!frame) {
     const { beads, weave } = layerOf(project, 'canvas')
-    return { beads, weave, geometry: gridGeometry(weave) }
+    const axes = canvasOf(project).mirrorAxes
+    return { beads, weave, geometry: gridGeometry(weave), ...(axes ? { axes } : {}) }
   }
   const { beads, weave } = layerOf(project, 'frame')!
   const edge = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
@@ -117,10 +122,16 @@ function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
   return reverts.length === 0 ? after : withColors(after, reverts)
 }
 
+/** What a Canvas command may do under the Frame: nothing, the Frame hiding what lies there untouched (the default),
+ * or paint there, hidden, as a Mirror counterpart does (ticket 0704, spec 0702's Edges). */
+export interface OnLayerOptions {
+  underFrame?: 'keep' | 'paint'
+}
+
 /** Runs a command on one layer. The command gets the layer (see `layerSheet`) and `local`, which turns a Canvas position
  * into one of that layer, and gives back the layer's beads, which are put back. The same Project back when they came
  * back as they went in, which is a drawing command's "nothing changed". */
-export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap): Project {
+export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap, options: OnLayerOptions = {}): Project {
   const frame = frameOf(project)
   if (layer === 'frame') {
     if (!frame) {
@@ -134,7 +145,7 @@ export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSh
   if (made === before) {
     return project
   }
-  const covered = footprintOf(project)
+  const covered = options.underFrame === 'paint' ? undefined : footprintOf(project)
   const beads = covered ? keepUnderFrame(before, made, covered) : made
   // Everything the command did was under the Frame, so nothing is left of it.
   if (beads !== made && !anyChangedPosition(before, beads)) {

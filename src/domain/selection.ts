@@ -1,5 +1,5 @@
 import { type GridPosition } from './grid'
-import { counterparts, MIRROR_OFF, type MirrorSetting } from './mirror'
+import { counterparts, isMirrorOn, MIRROR_OFF, type MirrorSetting } from './mirror'
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
@@ -338,9 +338,10 @@ export function paintLayerSelection(project: Project, selection: Selection, colo
  * (ticket 0594). */
 export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting = MIRROR_OFF): Project {
   const layer = layerAt(project, at)
+  // Under Mirror a Canvas counterpart lands under the Frame, hidden (ticket 0704, spec 0702's Edges).
   return onLayer(project, layer, (sheet, local) =>
     sheet.geometry.grid ? stampBlock(sheet, block, local(at), mirror) : withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed),
-  )
+  isMirrorOn(mirror) ? { underFrame: 'paint' } : {})
 }
 
 /** The Selection a tap with the Piece tool makes at a position, on the layer the tap is on (ticket 414): the Piece of

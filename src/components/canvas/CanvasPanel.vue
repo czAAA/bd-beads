@@ -93,8 +93,14 @@ const {
   pickRecent,
   mirrorSetting,
   mirrorLimits,
+  mirrorOnCanvas,
   mirrorPopoverOpen,
   onMirrorChange,
+  mirrorCanvasAxes,
+  mirrorHeldAxis,
+  onAxisPress,
+  onAxisDrag,
+  onAxisRelease,
   selectedColorHex,
   selectedColorId,
   customColor,
@@ -289,6 +295,8 @@ const drawingStyle = computed(() => {
               :preview-stamp="previewStamp"
               :preview-color="previewColor"
               :mirror="mirrorSetting"
+              :mirror-axes="mirrorCanvasAxes"
+              :held-axis="mirrorHeldAxis"
               :selection="selection"
               :selection-refusals="selectionRefusals"
               :label="projectLabel"
@@ -304,6 +312,9 @@ const drawingStyle = computed(() => {
               @frame-drag="onFrameDrag"
               @frame-release="onFrameRelease"
               @frame-cancel="onFrameCancel"
+              @axis-press="onAxisPress"
+              @axis-drag="onAxisDrag"
+              @axis-release="onAxisRelease"
               @selection-press="onSelectionPress"
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
@@ -329,6 +340,7 @@ const drawingStyle = computed(() => {
           v-model:mirror-popover-open="mirrorPopoverOpen"
           :mirror="mirrorSetting"
           :mirror-limits="mirrorLimits"
+          :mirror-on-canvas="mirrorOnCanvas"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"

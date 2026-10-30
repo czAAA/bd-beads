@@ -89,10 +89,10 @@
   --mirror-axis-width: 1.25px;
   --mirror-axis-dash: 5 4;
   --mirror-axis-soft: 0.45;
-  --mirror-band-opacity: 0.06;
   --mirror-ring-radius: 7px;
   --mirror-handle: 32px;
   --mirror-handle-icon: 16px;
+  --mirror-handle-inset: 56px;
   --mirror-chip-height: 32px;
   --mirror-area-handle: 9px;
   --mirror-preview-dash: 4 3;
@@ -862,7 +862,6 @@ body {
 .bb-mirror-area-btn.is-set { border-color: var(--marker); color: var(--marker); }
 .bb-mirror-axis { stroke: var(--marker); stroke-width: var(--mirror-axis-width); stroke-dasharray: var(--mirror-axis-dash); pointer-events: none; }
 .bb-mirror-axis.is-soft { opacity: var(--mirror-axis-soft); }
-.bb-mirror-band { fill: var(--marker); opacity: var(--mirror-band-opacity); pointer-events: none; }
 .bb-mirror-ring { fill: none; stroke: var(--marker); stroke-width: 2px; pointer-events: none; }
 .bb-mirror-handle { position: absolute; width: var(--mirror-handle); height: var(--mirror-handle); margin: calc(var(--mirror-handle) / -2) 0 0 calc(var(--mirror-handle) / -2); border-radius: var(--radius-full); background: var(--elevated); border: 1.5px solid var(--marker); color: var(--marker); display: grid; place-items: center; cursor: grab; box-shadow: var(--elevation-2); touch-action: none; }
 .bb-mirror-handle svg { width: var(--mirror-handle-icon); height: var(--mirror-handle-icon); }

@@ -145,6 +145,16 @@ export function useCanvasView(
     return cellAt({ x: viewport.value.width / 2, y: viewport.value.height / 2 })
   }
 
+  /** The point of the Canvas, in its grid px, under the middle of the view (ticket 0704: where a Mirror Axis goes
+   * when it is turned on), or nothing until the area is measured. */
+  function visibleCentrePx(): Scroll | undefined {
+    const project = currentProject()
+    if (!project || !measured()) {
+      return undefined
+    }
+    return surfaceOf(project).pointToGrid(leaning.value.toView({ x: viewport.value.width / 2, y: viewport.value.height / 2 }))
+  }
+
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
   function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
@@ -261,6 +271,7 @@ export function useCanvasView(
     scrollBy,
     centreOn,
     visibleCentre,
+    visibleCentrePx,
     cellAt,
     isAtFit,
     orientation,

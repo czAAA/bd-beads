@@ -16,7 +16,7 @@ import { stampCells, type PasteLoss } from '../../domain/selection'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
-import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
+import { MIRROR_OFF, withCanvasAxes, type MirrorSetting } from '../../domain/mirror'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -386,6 +386,23 @@ describe('useSelectionGesture', () => {
       expect(frameGrid(harness.project)[3]!.map((cell) => cell.color)).toEqual([RED, null, null, RED])
       harness.history.onUndo()
       expect(frameGrid(harness.project)[3]!.map((cell) => cell.color)).toEqual([null, null, null, null])
+    })
+
+    it('stamps a Canvas Paste across the Canvas\'s own Axis, the preview listing both, and aims it as a stamp until an Axis is placed (ticket 0704)', () => {
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+      const unplaced = setup(paintedProject(), mirror)
+      copyTopLeft(unplaced.gesture)
+      expect(unplaced.gesture.pastePreviewStamp(unplaced.harness.project, { row: 20, column: 0 })).toBeDefined()
+
+      const { gesture, harness } = setup(withCanvasAxes(paintedProject(), { leftRight: 2 }), mirror)
+      copyTopLeft(gesture)
+      expect(gesture.pastePreviewStamp(harness.project, { row: 20, column: 0 })).toBeUndefined()
+      expect(gesture.pastePreviewCells(harness.project, { row: 20, column: 0 }).map(({ row, column }) => [row, column])).toEqual([
+        [20, 0],
+        [20, 4],
+      ])
+      expect(gesture.pasteAt({ row: 20, column: 0 })).toBe(true)
+      expect(beadsOfLayer(harness.project, 'canvas')[20]).toEqual({ 0: RED, 4: RED })
     })
 
     it('is a no-op with nothing copied', () => {

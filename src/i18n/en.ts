@@ -84,6 +84,8 @@ export const en: Translations = {
     moreAxes: 'More axes',
     turnAxisOn: 'Turn an Axis on.',
     close: 'Close',
+    dragHandle: 'Drag the handle on the axis to move it.',
+    repeatNeedsArea: 'Repeat on the Canvas needs an area.',
   },
   colorNames: {
     black: 'Black',
