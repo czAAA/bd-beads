@@ -29,6 +29,10 @@ import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
 import type { MirrorDirection, MirrorSetting } from '../../domain/mirror'
 import { axisHandles as axisHandlesOf } from '../../rendering/mirrorAxes'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
+import { useRowMotion } from './surface/useRowMotion'
+import type { RowPress } from '../../composables/project/useRowOps'
+import PatternDone from './PatternDone.vue'
+import { PATTERN_DONE_STARS } from '../../rendering/rowMotion'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
 // canvases (beads and dots; overlay: see overlayRenderer), no board; `scroll` and `zoom` decide what shows. Its parts
@@ -86,6 +90,9 @@ const props = withDefaults(defineProps<{
   heldAxis?: MirrorDirection
   /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
   fillRefusals?: number
+  /** The last press of Row done or Row not done (ticket 0730): the Pattern's motion plays from it, never from the
+   * pointer changing. */
+  rowPress?: RowPress
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -109,6 +116,7 @@ const frameTheme = canvasBackground.frameTheme
 const rootEl = ref<HTMLElement>()
 const baseEl = ref<HTMLCanvasElement>()
 const overlayEl = ref<HTMLCanvasElement>()
+const fadeEl = ref<HTMLCanvasElement>()
 
 /** How big the surface is on screen, measured: the canvases are exactly this big. */
 const size = ref({ width: 0, height: 0 })
@@ -249,19 +257,26 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
+/** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. */
+function sheetIn(view: SurfaceView): { x: number; y: number; width: number; height: number } | undefined {
+  const grid = marginSheetPx(props.project)
+  if (!grid) return undefined
+  const corners = [view.gridToPoint(grid.sheet.x, grid.sheet.y), view.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
+  return {
+    x: Math.min(corners[0].x, corners[1].x),
+    y: Math.min(corners[0].y, corners[1].y),
+    width: Math.abs(corners[1].x - corners[0].x),
+    height: Math.abs(corners[1].y - corners[0].y),
+  }
+}
+
 /** Where the Frame and its margin sheet are on screen, none once the sheet is out of view (tickets 417, 473, 0657):
  * told to the sheet's tools and title block. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = frameOf(props.project)
   const grid = marginSheetPx(props.project)
   if (!frame || !grid || size.value.width === 0) return undefined
-  const corners = [surface.value.gridToPoint(grid.sheet.x, grid.sheet.y), surface.value.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
-  const drawnSheet = {
-    x: Math.min(corners[0].x, corners[1].x),
-    y: Math.min(corners[0].y, corners[1].y),
-    width: Math.abs(corners[1].x - corners[0].x),
-    height: Math.abs(corners[1].y - corners[0].y),
-  }
+  const drawnSheet = sheetIn(surface.value)!
   // Scrolled wholly out of view, the sheet has no tools to keep on screen.
   const seen = leaning.value.screenBox(drawnSheet)
   const { width, height } = size.value
@@ -305,10 +320,28 @@ const axisHandles = computed(() => (props.mirrorAxes ? axisHandlesOf(props.mirro
 const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse, axisHandles })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
-useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
+const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
+/** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
+const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
+useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
+  rowMotion: rowMotion.rowMotion,
+})
+
+/** Where Pattern done plays (ticket 0730): the margin sheet, the Frame in it and the beads its stars light, in the
+ * drawing's px, as the layers draw it. */
+const patternDoneAt = computed(() => {
+  const frame = frameOf(props.project)
+  const sheet = sheetIn(layerSurface.value)
+  if (!frame || !sheet || rowMotion.patternDone.value === undefined) return undefined
+  const box = layerSurface.value.frameBox(frame)
+  const stars = PATTERN_DONE_STARS.map(({ across, down }) => {
+    const at = layerSurface.value.beadToPoint({ row: frame.row + Math.round(down * (frame.rows - 1)), column: frame.column + Math.round(across * (frame.columns - 1)) }, 'frame')
+    return { x: at.x - sheet.x, y: at.y - sheet.y }
+  })
+  return { id: rowMotion.patternDone.value, sheet, frame: { ...box, x: box.x - sheet.x, y: box.y - sheet.y }, stars }
 })
 
 /** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
@@ -360,7 +393,10 @@ onBeforeUnmount(() => {
   >
     <div class="project-surface__drawing" :style="[drawingStyle, emptyCanvasStyle]">
       <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
+      <!-- The finished passes as they were dimmed, fading out as Pattern done brings them back (ticket 0730). -->
+      <canvas v-show="rowMotion.fadeOpacity.value > 0" ref="fadeEl" class="project-surface__canvas" :style="{ opacity: rowMotion.fadeOpacity.value }" aria-hidden="true" />
       <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
+      <PatternDone v-if="patternDoneAt" :key="patternDoneAt.id" :sheet="patternDoneAt.sheet" :frame="patternDoneAt.frame" :stars="patternDoneAt.stars" />
     </div>
     <img
       v-if="penPointer"

@@ -24,6 +24,7 @@ import MarginColorPopover from './MarginColorPopover.vue'
 import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import RowProgressControls from './RowProgressControls.vue'
+import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658, 0728): Row progress, the Move bar and the
@@ -37,6 +38,8 @@ const props = defineProps<{
   /** Whether a pointer is down on the canvas, so the Move bar knows when its drag has ended. */
   pressing: boolean
   rowHighlight?: boolean
+  /** The last press of Row done or Row not done (ticket 0730): Row done flares the track's spark. */
+  rowPress?: RowPress
   /** Whether the Export panel is open from this sheet's Export button. */
   exportOpen?: boolean
   /** Where the Selection is, if there is one: its handles win a press where the sheet's controls lie over them. */
@@ -281,6 +284,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           v-if="row !== 'narrow'"
           :project="project"
           :row-highlight="rowHighlight"
+          :row-press="rowPress"
           :form="progressForm"
           :drop="progressDrop"
           testid="margin-progress"

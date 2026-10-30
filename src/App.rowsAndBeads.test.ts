@@ -51,6 +51,19 @@ describe('App row progress', () => {
     expect(rowMarks()).toBe(true)
     expect(JSON.stringify(loadProjects())).not.toContain('highlight')
   })
+
+  it('hands a press of Row done to the canvas, which Undo stops (ticket 0730)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const rowPress = () => wrapper.findComponent(ProjectSurface).props('rowPress')
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 0)
+
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    expect(rowPress()).toMatchObject({ done: true, from: 0, to: 1 })
+
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
+    expect(rowPress()).toBeUndefined()
+  })
 })
 
 describe('App delete all', () => {
