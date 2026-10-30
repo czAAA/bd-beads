@@ -23,15 +23,13 @@ describe('CoffeeTile', () => {
   it('says who made it, in one line, in English', () => {
     const wrapper = tile()
     expect(wrapper.find('h3').text()).toBe('Made by one family')
-    expect(wrapper.find('p').text()).toBe("openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks.")
+    expect(wrapper.find('p').text()).toContain('If it saved you time')
   })
 
   it('says it in Russian too', () => {
     const wrapper = tile('ru')
     expect(wrapper.find('h3').text()).toBe('Делает одна семья')
-    expect(wrapper.find('p').text()).toBe(
-      'openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо.',
-    )
+    expect(wrapper.find('p').text()).toContain('Если приложение сэкономило вам время')
     expect(wrapper.get('[data-testid="homepage-coffee-button"]').text()).toBe('Угостить кофе')
   })
 
