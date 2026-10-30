@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardPlacement, tagPlacement } from './schemaTagPlacement'
+import { cardPlacement, tagOrigin, tagPlacement } from './schemaTagPlacement'
 
 const viewport = { width: 800, height: 600 }
 /** A Piece's box on screen, outset included: its bottom-right corner at (300, 200). */
@@ -16,9 +16,24 @@ describe('where a Schema\'s tag hangs (SchemaTag card)', () => {
     expect(tagPlacement(atEdge, viewport, 40)).toEqual({ side: 'left', corner: { x: 680, y: 200 }, hole: { x: 671, y: 224 } })
   })
 
+  it('hangs on the side with more room where it fits on neither', () => {
+    expect(tagPlacement({ ...piece, left: 10, width: 775 }, viewport, 60)).toMatchObject({ side: 'right' })
+    expect(tagPlacement({ ...piece, left: 30, width: 760 }, viewport, 60)).toMatchObject({ side: 'left' })
+  })
+
   it('shows no tag while the Piece\'s corner is out of view', () => {
     expect(tagPlacement({ ...piece, top: 600 }, viewport, 40)).toBeUndefined()
     expect(tagPlacement({ ...piece, left: -150 }, viewport, 40)).toBeUndefined()
+  })
+})
+
+describe('where a tag\'s box goes', () => {
+  it('reaches right from its hole when it hangs right', () => {
+    expect(tagOrigin({ side: 'right', corner: { x: 300, y: 200 }, hole: { x: 309, y: 224 } }, 40)).toEqual({ left: 304.5, top: 213 })
+  })
+
+  it('reaches left from its hole when it hangs left, mirrored, so it hangs out from the Piece', () => {
+    expect(tagOrigin({ side: 'left', corner: { x: 680, y: 200 }, hole: { x: 671, y: 224 } }, 40)).toEqual({ left: 635.5, top: 213 })
   })
 })
 
