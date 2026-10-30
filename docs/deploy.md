@@ -64,7 +64,7 @@ The tests apply every migration before each Worker starts (`docs/testing.md`), s
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | wizard H3b |
 | `HEALTHCHECK_URL` | this Worker's Healthchecks.io ping URL | wizard H3d |
 | `CF_ANALYTICS_TOKEN` | read-only Account Analytics token, for the watchdog | wizard H3d |
-| `GITHUB_TOKEN` | fine-grained GitHub token, Issues read and write on `FEEDBACK_REPO` only, one year; renewal dated in the runbook's weekly check | `scripts/wizard-feedback.sh` |
+| `GITHUB_TOKEN` | fine-grained GitHub token, Issues read and write on `FEEDBACK_REPO` only, one year; renewal dated in the runbook's weekly check | `scripts/wizard-feedback.sh` in the docs repo `czAAA/bd-beads-docs` |
 
 GitHub holds only what CI needs, in the `production` environment (limited to `main`): the secret `CLOUDFLARE_API_TOKEN` (this account only, Workers Scripts edit and D1 edit), the variable `CLOUDFLARE_ACCOUNT_ID`, and for the backup the secret `HEALTHCHECK_BACKUP_URL` and the variable `AGE_PUBLIC_KEY`.
 
