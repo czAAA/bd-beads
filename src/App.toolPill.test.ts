@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mountWithProject } from './testUtils/seedProject'
 import { beadColors, beadPoint, drawnProject, hoverBead, pressBead } from './testUtils/beads'
-import { frameOf } from './domain/layerRecord'
+import { beadsOfLayer, frameOf, withFrameSheet } from './domain/layerRecord'
+import { beadCount, colorAt } from './domain/canvas'
+import { changeFrame } from './domain/changeFrame'
+import { createProject } from './domain/createProject'
+import { DEFAULT_BEAD } from './domain/beads'
+import { saveProjects } from './services/libraryStore'
+import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
+import App from './App.vue'
 import { flushPromises } from '@vue/test-utils'
 import { loadProjects } from './services/libraryStore'
 import { choosePanelOption } from './testUtils/choosePanelOption'
@@ -97,6 +105,32 @@ describe('the Tool pill', () => {
     expect(corners).toEqual(['#e63746', '#e63746', '#e63746', '#e63746'])
     expect(grid.flat().filter(Boolean)).toHaveLength(4)
     expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'mirror', axes: { leftRight: false, topBottom: false, radial: true }, fold: 2 })
+    wrapper.unmount()
+  })
+
+  it('Radial on a Star Frame (ticket 0706): the popover notes the five sides from the shape, and a stroke on one arm lands on every arm, reflected within each in Mirror mode', async () => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: DEFAULT_BEAD.id, size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Star')
+    saveProjects([placed.project])
+    const wrapper = mount(App, { attachTo: document.body })
+    await nextTick()
+    await pickColor(wrapper, 'red')
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-axis-radial"]').trigger('click')
+    expect(wrapper.get('[data-testid="mirror-sides-note"]').text()).toBe('5 sides, from the shape. Mirror reflects within each side too.')
+    expect(wrapper.find('[data-testid="mirror-fold-value"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="mirror-area-row"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="mirror-popover-close"]').trigger('click')
+    await flushPromises()
+
+    // The Star's first bead (round 0, place 0), named from the Frame's corner as a Frame press is aimed.
+    const own = frameOf(drawnProject(wrapper))!
+    await pressBead(wrapper, { row: own.row, column: own.column, layer: 'frame' })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    const beads = beadsOfLayer(drawnProject(wrapper), 'frame')!
+    expect(beadCount(beads)).toBe(10)
+    expect([0, 4, 8, 12, 16].map((column) => colorAt(beads, 0, column))).toEqual(['#e63746', '#e63746', '#e63746', '#e63746', '#e63746'])
     wrapper.unmount()
   })
 
