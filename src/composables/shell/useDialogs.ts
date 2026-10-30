@@ -20,6 +20,7 @@ type DialogId =
   | 'delete-all-projects'
   | 'name-piece'
   | 'convert-image'
+  | 'feedback'
 
 interface Asked {
   id: DialogId

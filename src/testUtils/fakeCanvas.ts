@@ -48,6 +48,9 @@ export function installFakeCanvas(): {
     lineCap: 'butt',
     lineJoin: 'miter',
     setLineDash: () => undefined,
+    shadowColor: 'transparent',
+    shadowBlur: 0,
+    shadowOffsetY: 0,
   }
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D)
 

@@ -103,6 +103,23 @@ describe('MenuPanel (ticket 443)', () => {
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 
+  it('opens the Feedback sheet from Help’s Send feedback, after Keyboard shortcuts, and from the link under Language (ticket 0700)', async () => {
+    const wrapper = mountIn()
+    const panel = wrapper.getComponent(MenuPanel)
+    const help = wrapper.findAll('[role="group"]').find((group) => group.find('h3').text() === en.panels.menu.help)!
+    const rows = help.findAll('.panel-item').map((row) => row.attributes('data-testid'))
+    expect(rows.slice(0, 2)).toEqual(['menu-item-shortcuts', 'menu-item-feedback'])
+    const feedback = wrapper.get('[data-testid="menu-item-feedback"]')
+    expect(feedback.text()).toBe(en.panels.menu.sendFeedback)
+    expect(feedback.find('svg[data-icon="message"]').exists()).toBe(true)
+    const link = wrapper.get('[data-testid="menu-report-translation"]')
+    expect(link.text()).toBe(en.panels.menu.reportTranslation)
+    expect(link.element.previousElementSibling?.getAttribute('data-testid')).toBe('language-switcher')
+    await feedback.trigger('click')
+    await link.trigger('click')
+    expect(panel.emitted('feedback')).toEqual([['general'], ['translation']])
+  })
+
   // Folding and remembering is PanelSection's; the Menu names each section for it.
   it('folds a section shut, remembered under the Menu\'s own name for it', async () => {
     const wrapper = mountIn()
@@ -121,6 +138,8 @@ describe('MenuPanel on the Homepage (ticket 540)', () => {
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="menu-tools-position"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="menu-item-feedback"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="menu-report-translation"]').exists()).toBe(true)
   })
 
   it('links to the Homepage without marking it current in the editor, and has the shortcuts there', () => {
