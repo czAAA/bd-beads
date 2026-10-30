@@ -86,6 +86,14 @@ export const ru: Translations = {
     moreAxes: 'Больше осей',
     turnAxisOn: 'Включите ось.',
     close: 'Закрыть',
+    copyToCounterparts: 'Скопировать бусины фрагмента на их отражения.',
+    announceSelectionMirrored: 'Фрагмент отражён',
+    droppedMessage: {
+      one: '{count} отражению некуда было лечь, оно не поставлено.',
+      few: '{count} отражениям некуда было лечь, они не поставлены.',
+      many: '{count} отражениям некуда было лечь, они не поставлены.',
+      other: '{count} отражениям некуда было лечь, они не поставлены.',
+    },
   },
   colorNames: {
     black: 'Чёрный',
@@ -461,6 +469,8 @@ export const ru: Translations = {
     removeLineButton: 'Удалить выделенный ряд/столбец',
     removeLineShort: 'Удалить линию',
     namePieceButton: 'Назвать кусочек',
+    fillOpenMessage: 'Это место ничем не окружено. Выделите область, чтобы залить её.',
+    fillTooBigMessage: 'Слишком большая область для заливки. Увеличьте масштаб или выделите область.',
   },
   inputMode: {
     penLabel: 'Режим пера',

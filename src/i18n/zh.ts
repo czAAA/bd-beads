@@ -86,6 +86,9 @@ export const zh: Translations = {
     moreAxes: '增加轴',
     turnAxisOn: '请打开一条轴。',
     close: '关闭',
+    copyToCounterparts: '把片段的珠子复制到对应位置。',
+    announceSelectionMirrored: '片段已镜像',
+    droppedMessage: { other: '{count} 个镜像无处落下，未放入。' },
   },
   colorNames: {
     black: '黑色',
@@ -449,6 +452,8 @@ export const zh: Translations = {
     removeLineButton: '删除所选行/列',
     removeLineShort: '删除行列',
     namePieceButton: '命名小块',
+    fillOpenMessage: '这里没有被围住。选择一个区域即可填充。',
+    fillTooBigMessage: '区域太大，无法填充。放大画布，或选择一个区域。',
   },
   inputMode: {
     penLabel: '手写笔模式',
