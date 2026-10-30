@@ -24,6 +24,7 @@
     "components/EmptyCanvas/README.md",
     "components/EmptyPanels/README.md",
     "components/ExportPanel/README.md",
+    "components/FirstRunHints/README.md",
     "components/FoundColorRow/README.md",
     "components/FrameControls/README.md",
     "components/Glossary/README.md",
@@ -244,6 +245,11 @@
       "summary": "The small panel from the Canvas strip's Export button: Picture, Printable chart and Export quality with a Frame, Select a frame and Fit a frame to the drawing without one."
     },
     {
+      "name": "FirstRunHints",
+      "group": "Canvas",
+      "summary": "Hand-drawn muted notes over an empty Project teaching draw, select, frame, export, with the four controls ringed in accent and a welcome; gone with the first bead."
+    },
+    {
       "name": "MenuPanel",
       "group": "Overlays",
       "summary": "The Menu: Projects, Preferences, Help and About, as a dropdown on every screen size; setting rows."
@@ -361,7 +367,7 @@
     {
       "name": "LayerSettings",
       "group": "Overlays",
-      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead and Bead shape, Background; in New Project, Project and the Frame panel."
+      "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead, Background; in New Project, Project and the Frame panel."
     },
     {
       "name": "QualitySlider",

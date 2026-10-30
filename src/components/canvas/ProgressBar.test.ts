@@ -78,7 +78,8 @@ describe('ProgressBar', () => {
     const track = wrapper.find('[data-testid="progress-bar-track"]')
     expect(track.attributes('aria-valuenow')).toBe('2')
     expect(track.attributes('aria-valuemax')).toBe('20')
-    expect(track.find('span').attributes('style')).toContain('width: 10%')
+    // Grown by transform (ticket 0730): the fill is the track's width, moved left by the share still to weave.
+    expect(track.find('.row-progress__fill').attributes('style')).toContain('translateX(-90%)')
   })
 
   it('shows a compact "current/total" counter and large text Previous/Next with their hotkeys (tickets 188, 411)', async () => {

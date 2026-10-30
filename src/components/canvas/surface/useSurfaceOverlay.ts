@@ -5,7 +5,7 @@ import type { Project } from '../../../domain/project'
 import type { PasteStamp, Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import type { ProjectTheme } from '../../../rendering/beadLook'
-import { renderOverlay } from '../../../rendering/overlayRenderer'
+import { renderOverlay, type RowMotion } from '../../../rendering/overlayRenderer'
 import type { RulerLayout } from '../../../rendering/rulers'
 import type { Space } from '../../../rendering/space'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
@@ -23,7 +23,8 @@ const MARGIN_FADE_MS = 120
 export const REFUSED_PRESS_MS = 1000
 const SIZE_FLASH_MS = 1200
 
-function reducedMotion(): boolean {
+/** Whether the person asked for reduced motion: what fades then shows at once, and Row done plays nothing (ticket 0730). */
+export function reducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
@@ -113,13 +114,15 @@ export interface SurfaceOverlayDeps {
   /** The Frame's handle under the pointer or being dragged: drawn grown, its corner with the size Tooltip (ticket 0657). */
   hotHandle: Ref<HandleId | undefined>
   marginOpacity: Ref<number>
+  /** Row done's glints and the marker's glide (ticket 0730), while they play. */
+  rowMotion: Ref<RowMotion | undefined>
   oncePerFrame: (draw: () => void) => () => void
 }
 
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity, axisHandles } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity, axisHandles, rowMotion } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -170,6 +173,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         rulers: { layout: rulers.value, surface: surface.value },
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
         canvasAxes: props.mirrorAxes ? { axes: props.mirrorAxes, handles: axisHandles.value, held: props.heldAxis } : undefined,
+        rowMotion: rowMotion.value,
       })
     }
   }
@@ -199,6 +203,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.heldAxis,
       axisHandles,
       marginOpacity,
+      rowMotion,
       touchInput,
       hotHandle,
       theme,

@@ -27,7 +27,7 @@ describe('the Pieces the rulers hang from', () => {
     const edited = ruledPieces(ruledPieces(undefined, project, { numbers: true, stroking: false }), paint(project, [{ row: 0, column: 5, color: R }]), { numbers: true, stroking: false })
 
     expect(edited.areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 6 }, { row: 0, column: 20, rows: 5, columns: 5 }])
-    expect(edited.named).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 5, columns: 6, beads: 26 }])
+    expect(edited.named).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 5, columns: 6, beads: 26 })])
   })
 
   it('are not recounted between a stroke\'s start and its end: the box each step touches grows, and the end counts again', () => {
@@ -46,7 +46,7 @@ describe('the Pieces the rulers hang from', () => {
 
     expect([...counting.reads.rows]).toEqual([2])
     expect(pieces.areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 8 }, { row: 0, column: 20, rows: 5, columns: 5 }, { row: 40, column: 40, rows: 1, columns: 1 }])
-    expect(pieces.named).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 5, columns: 8, beads: 25 }])
+    expect(pieces.named).toEqual([expect.objectContaining({ name: 'Fox', row: 0, column: 0, rows: 5, columns: 8, beads: 25 })])
 
     const ended = ruledPieces(pieces, project, { numbers: true, stroking: false })
     expect(counting.reads.rows.size).toBe(5)

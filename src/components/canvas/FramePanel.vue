@@ -26,7 +26,7 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameOf, layerOf, lettersOn } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Background, Project } from '../../domain/project'
-import type { BeadShape, Technique } from '../../domain/weave'
+import type { Technique } from '../../domain/weave'
 import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
@@ -61,7 +61,6 @@ const emit = defineEmits<{
   /** The Frame's Layer settings (ticket 0670), each naming its layer as the Project panel's do. */
   'set-technique': [layer: Layer, technique: Technique]
   'set-weave-setting': [layer: Layer, id: string, value: number]
-  'set-bead-shape': [layer: Layer, shape: BeadShape]
   'set-background': [layer: Layer, background: Background]
   'replace-bead': [layer: Layer, beadId: string]
 }>()
@@ -341,7 +340,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         @set-setting="(id, value) => emit('set-weave-setting', 'frame', id, value)"
         @set-shape-settings="emit('set-settings', $event)"
         @pick-bead="emit('replace-bead', 'frame', $event)"
-        @set-bead-shape="emit('set-bead-shape', 'frame', $event)"
         @set-background="emit('set-background', 'frame', $event)"
       />
     </PanelSection>

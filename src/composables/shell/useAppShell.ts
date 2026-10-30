@@ -30,7 +30,6 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
-import { useBeadShapeFlow } from '../project/useBeadShapeFlow'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { withStartBackground } from '../../domain/layerRecord'
@@ -150,7 +149,11 @@ function wireAppShell(services: Services) {
     onRedo,
   } = useUndoHistory({
     currentProject,
-    restore: (snapshot) => editing.restore(snapshot),
+    // Undo and Redo stop Row done's motion on the Pattern (ticket 0730).
+    restore: (snapshot) => {
+      rowOps.stopRowMotion()
+      editing.restore(snapshot)
+    },
     settle: () => editing.settle(),
   })
 
@@ -559,8 +562,6 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
-  /** Each layer's Bead shape (ticket 0670): a view, so no Edit. */
-  const beadShapeFlow = useBeadShapeFlow({ currentProject, replaceProject })
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
@@ -719,6 +720,8 @@ function wireAppShell(services: Services) {
       toggleRulers,
       rowHighlight,
       toggleRowHighlight,
+      /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
+      rowPress: rowOps.rowPress,
       panBy,
       scrollBy,
       setZoom,
@@ -788,10 +791,12 @@ function wireAppShell(services: Services) {
       onMirrorSelection: mirrorSelectionFlow.onMirrorSelection,
       canNamePiece: namePiece.canNamePiece,
       onNamePiece: namePiece.onNamePiece,
+      onRenameSchema: namePiece.onRenameSchema,
       canRemoveSelectedLine: removeLine.canRemoveSelectedLine,
       onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
       // The Frame and Row progress
       onFrameFromSelection,
+      onFrameSchema: frameFlow.setTo,
       settingFrame: frameFlow.settingFrame,
       framePanelOpen: frameFlow.barOpen,
       frameDraftProject: frameFlow.draftProject,
@@ -858,7 +863,6 @@ function wireAppShell(services: Services) {
       // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
       onSetTechnique: frameFlow.setLayerTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
-      onSetBeadShape: beadShapeFlow.setBeadShape,
       onSetBackground: backgroundFlow.setBackground,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,

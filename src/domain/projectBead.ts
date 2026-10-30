@@ -5,21 +5,14 @@ import { beadIdOfLayer, beadOfLayer, frameOf, type Layered, withLayer } from './
 import { codesForBead, defaultPalette, paletteForBead } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
-import { beadCell, type BeadCell, type BeadShape } from './weave'
+import { beadCell, type BeadCell } from './weave'
 
-// The Project's Bead (ticket 534, ADR 0072): each layer's saved copy (ADR 0079, ticket 0665), its Bead shape (ADR 0068)
+// The Project's Bead (ticket 534, ADR 0072): each layer's saved copy (ADR 0079, ticket 0665), the cell it draws (ADR 0068)
 // and swapping it for another. The woven layer's, the Frame's when there is one, is the one the Project is made in.
 
-/** How the woven layer's Bead is drawn, from its own copy: none in Symmetric, or for a Bead nobody knows. */
+/** How the woven layer's Bead is drawn, from its own copy (ADR 0068, ticket 0724): none for a Bead nobody knows. */
 export function projectCell(project: Layered): BeadCell | undefined {
-  const { bead, beadShape } = beadOfLayer(project, 'frame')
-  return beadCell(bead, beadShape)
-}
-
-/** The Project with a layer drawn in another Bead shape (ADR 0068, 0079, ticket 0670): a view, so not stamped.
- * Symmetric is the default and is left unsaved. The same Project for a Frame it lacks. */
-export function withBeadShape(project: Project, layer: Layer, shape: BeadShape): Project {
-  return withLayer(project, layer, { beadShape: shape })
+  return beadCell(beadOfLayer(project, 'frame').bead)
 }
 
 /** The Bead a Project is woven from (ticket 37, ADR 0079): the Frame's when there is one, else the Canvas's, its own

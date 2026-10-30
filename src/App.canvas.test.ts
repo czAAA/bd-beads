@@ -6,7 +6,7 @@ import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, beadPoint, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
-import { pickColor, pickTool } from './testUtils/pill'
+import { deleteAll, pickColor, pickTool } from './testUtils/pill'
 import { beadsOfLayer, frameOf, orientationOf } from './domain/layerRecord'
 import { type LayersChange, withLayers } from './testUtils/layerFields'
 
@@ -217,3 +217,53 @@ describe('the Hand tool', () => {
   })
 })
 
+
+describe('an unframed Schema\'s hang tag (ticket 0721)', () => {
+  const named = () => unframedProject({ pieceNames: [{ row: 0, column: 0, name: 'Owl' }] })
+
+  it('frames its Schema from the paper tag as one Undo step, and Rename opens Name Piece\'s editor', async () => {
+    saveProjects([named()])
+    const wrapper = mountApp()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="schema-tag"]').trigger('click')
+    await wrapper.get('[data-testid="schema-card-rename"]').trigger('click')
+    await flushPromises()
+    expect(document.querySelector<HTMLInputElement>('[data-testid="piece-name-input"]')?.value).toBe('Owl')
+    await key({ key: 'Escape' })
+
+    await wrapper.get('[data-testid="schema-card-frame"]').trigger('click')
+    await flushPromises()
+    expect(frameOf(loadProjects()[0]!)).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2, name: 'Owl' })
+    expect(wrapper.find('[data-testid="schema-tag"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
+    await flushPromises()
+    expect(frameOf(loadProjects()[0]!)).toBeUndefined()
+  })
+})
+
+describe('the first-run hints over an empty Project (ticket 0725, FirstRunHints card)', () => {
+  const hints = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid="first-run-hints"]')
+
+  it('shows them while the Project has no beads, takes them away with the first bead and brings them back when it is emptied', async () => {
+    saveProjects([unframedProject({ beads: {} })])
+    const wrapper = mountApp()
+    await flushPromises()
+
+    expect(hints(wrapper).exists()).toBe(true)
+
+    await pickTool(wrapper, 'paint')
+    await pressBead(wrapper, { row: 0, column: 0 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+
+    expect(hints(wrapper).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="canvas-hint"]').exists()).toBe(false)
+
+    await deleteAll(wrapper)
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+
+    expect(hints(wrapper).exists()).toBe(true)
+  })
+})

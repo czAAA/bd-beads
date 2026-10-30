@@ -276,7 +276,7 @@
   --text-word: italic 400 240px/1 var(--font-serif); /* The background technique word only, italic, in word color, anchored bottom-right behind the board. */
   --text-tagline: italic 400 60px/62px var(--font-serif); /* Homepage only: the rolling slogan. 40px on the phone, 58px from 744, 60px from 1024, 70px at 24″, the same in every language. "open" in ink, the rolling word in accent-strong. */
   --text-serif-heading: italic 400 34px/38px var(--font-serif); /* Homepage only: section headings ("What's inside", "Three ways to use it") and plan names (30px); 42px from 744 below 1024. */
-  --text-note: italic 400 17px/1 var(--font-serif); /* Homepage only: handwritten notes beside things ("you", "on us", "eleven small steps"), 15–19px, muted or accent-strong, with a 1.25px hand-drawn arrow. Decorative, aria-hidden. */
+  --text-note: italic 400 17px/1 var(--font-serif); /* The Homepage and the editor's first-run hints (FirstRunHints card, which sets its own sizes): handwritten notes beside things ("you", "on us", "eleven small steps"), 15–19px, muted or accent-strong, with a 1.25px hand-drawn arrow. Decorative, aria-hidden. */
 }
 .brand {
   font-family: var(--font-sans);
