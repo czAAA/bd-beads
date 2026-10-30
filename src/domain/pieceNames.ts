@@ -224,7 +224,7 @@ function namesStay(before: Project, after: Project): BeadPresence | undefined {
     return removed.some((at) => anchors.has(numericKey(at))) || !piecesStayWhole(now, weave, removed) ? undefined : change
   }
   // On a layer too big to walk (ticket 0716) whether new beads join two named Pieces is not looked into.
-  return added.length > 0 && pieceNamesOf(before)!.length > 1 && !tooManyToWalk(was) && joinsNamedPieces(was, weave, pieceNamesOf(before)!, added) ? undefined : change
+  return added.length > 0 && pieceNamesOf(before)!.length > 1 && !tooManyToWalk(now) && joinsNamedPieces(was, weave, pieceNamesOf(before)!, added) ? undefined : change
 }
 
 /** The Project `after` with Piece names carried over from `before`; `moved` says where a `before` bead went
@@ -235,12 +235,12 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
     return after
   }
   const change = moved ? undefined : namesStay(before, after)
-  const huge = tooManyToWalk(beadsOfLayer(before, 'canvas')) || tooManyToWalk(beadsOfLayer(after, 'canvas'))
   if (change) {
-    if (!huge) carryPieceIndex(beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas'), heldWeave(after, 'canvas'), change)
+    // The labels exist only where something asked which Piece a bead is on, which a layer too big to walk never does.
+    carryPieceIndex(beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas'), heldWeave(after, 'canvas'), change)
     return pieceNamesOf(after) === pieceNamesOf(before) ? after : withPieceNames(after, pieceNamesOf(before))
   }
-  if (huge) return withPieceNames(after, namesOnTheirBeads(before, after, moved))
+  if (tooManyToWalk(beadsOfLayer(before, 'canvas')) || tooManyToWalk(beadsOfLayer(after, 'canvas'))) return withPieceNames(after, namesOnTheirBeads(before, after, moved))
   const kept: Landing[] = []
   const { beads, weave } = canvasPieces(after)
   for (const landing of landNames(before, after, pieceLabeller(beads, weave), moved)) {
@@ -272,7 +272,7 @@ function namesOnTheirBeads(before: Project, after: Project, moved?: (position: G
 export function keepNamesApart(before: Project, after: Project): Project {
   const [beads, was] = [beadsOfLayer(after, 'canvas'), beadsOfLayer(before, 'canvas')]
   // A layer too big to walk (ticket 0716) is not walked to find a join in the press.
-  if ((pieceNamesOf(before)?.length ?? 0) < 2 || beads === was || tooManyToWalk(was)) {
+  if ((pieceNamesOf(before)?.length ?? 0) < 2 || beads === was || tooManyToWalk(beads)) {
     return after
   }
   // Only a new bead joins Pieces; whether it joins named ones is read from the beads the edit changed (ticket 0674).

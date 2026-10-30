@@ -39,10 +39,11 @@ const {
       <!-- Safe start (ticket 0716): the Project that didn't open last time stays shut, named here with a way out. -->
       <AppMessage v-if="missedProject" tone="warning" placement="notice" data-testid="missed-project" @close="onDismissMissed">
         <span data-testid="missed-project-message">{{ fillBlanks(t.opening.didNotOpen, { name: missedProject.name }) }}</span>
-        <template #actions>
+        <!-- Under the line, not beside it: two buttons beside a long name leave the line no room on a phone. -->
+        <span class="app-shell__notice-actions">
           <AppButton variant="in-box" size="sm" icon="delete" data-testid="missed-project-remove" @click="onRemoveMissed">{{ t.opening.removeButton }}</AppButton>
           <AppButton variant="in-box" size="sm" icon="export" data-testid="missed-project-export" @click="onExportMissed">{{ t.opening.exportButton }}</AppButton>
-        </template>
+        </span>
       </AppMessage>
       <AppMessage v-if="saveFailed" tone="danger" placement="notice" :closable="false">
         <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
@@ -102,6 +103,14 @@ const {
 .app-shell__notices {
   flex: none;
   padding: var(--space-8) var(--space-16) 0;
+}
+
+/* The actions of a notice whose line names a Project, on their own line under it (ticket 0716). */
+.app-shell__notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
 }
 
 /* Body (tickets 383, 439, 513, ADR 0046): the canvas box is the screen, flush with every edge except where the device's

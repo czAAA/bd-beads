@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, nextTick } from 'vue'
 import ProjectsLibrary from './ProjectsLibrary.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import { createProject } from '../../domain/createProject'
 import { summarizeProject } from '../../domain/projectLibrary'
 import type { Project } from '../../domain/project'
@@ -119,8 +120,9 @@ describe('ProjectsLibrary with a huge Project (ticket 0716)', () => {
     const [row] = wrapper.findAll('[data-testid="project-item"]')
 
     expect(row!.text()).toContain('Black fill')
-    expect(row!.text()).toContain('made Oct 1, 2026 · saved Oct 30, 2026')
-    expect(row!.get('[data-testid="project-beads"]').text()).toBe('31\u00a0771\u00a0464 beads')
+    expect(row!.text()).toContain('31\u00a0771\u00a0464 beads')
+    expect(row!.get('[data-testid="project-saved-on"]').text()).toBe('Oct 30')
+    expect(row!.getComponent(AppTooltip).props('name')).toBe('made Oct 1, 2026 · saved Oct 30, 2026')
     expect(row!.find('[data-testid="project-pieces"]').exists()).toBe(false)
     expect(row!.find('[data-testid="project-sealed"]').exists()).toBe(true)
     await row!.get('[data-testid="select-project-big"]').trigger('click')

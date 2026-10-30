@@ -42,12 +42,16 @@ function counted(beads: BeadMap, limit: number): Count {
 
 /** The count of `now` from that of `was`, reading only the rows the two do not share. */
 function carriedCount(was: BeadMap, count: Count, now: BeadMap): Count | undefined {
-  let changed = 0
-  let beads = count.beads
+  if (was === now) return undefined
+  const changed: string[] = []
   for (const key of new Set([...Object.keys(was), ...Object.keys(now)])) {
+    if (was[Number(key)] === now[Number(key)]) continue
+    changed.push(key)
+    if (changed.length > MOST_ROWS_TO_CARRY) return undefined
+  }
+  let beads = count.beads
+  for (const key of changed) {
     const [before, after] = [was[Number(key)], now[Number(key)]]
-    if (before === after) continue
-    if (++changed > MOST_ROWS_TO_CARRY) return undefined
     beads += (after ? Object.keys(after).length : 0) - (before ? Object.keys(before).length : 0)
   }
   return { beads, exact: count.exact }
