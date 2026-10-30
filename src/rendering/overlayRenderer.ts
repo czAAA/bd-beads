@@ -657,8 +657,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme, sheetView, layerOrigin)
-    // A Frame on a grid (a Custom frame's Axes are ticket 0706's), in its own positions from its first.
-    if (mirror && frameOf(project) && geometry!.grid) drawMirrorAxes(context, sheetWeave, { row: 0, column: 0, rows: frameOf(project)!.rows, columns: frameOf(project)!.columns }, mirror, zoom * scale, theme)
+    // A Frame on a grid (a Custom frame's Axes are ticket 0706's), in its own positions from its first, drawn alone too.
+    const mirrored = mirror && geometry!.grid ? frameOf(project) : undefined
+    if (mirrored) drawMirrorAxes(context, sheetWeave, { row: 0, column: 0, rows: mirrored.rows, columns: mirrored.columns }, mirror!, zoom * scale, theme)
     const sheetCells = preview ? onSheet(preview.cells) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
     if (preview && sheetCells.length + sheetStamp.length > 0) {

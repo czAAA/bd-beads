@@ -141,6 +141,7 @@ describe('the Mirror setting on the Project', () => {
     expect(readMirrorSetting(JSON.parse(JSON.stringify(setting)))).toEqual(setting)
     expect(readMirrorSetting({ mode: 'sideways', axes: 3 })).toBeUndefined()
     expect(readMirrorSetting({ mode: 'mirror', axes: { leftRight: true }, counts: { leftRight: 0 } })).toEqual({ ...on({ leftRight: true }), counts: { leftRight: 1, topBottom: 1 } })
+    expect(readMirrorSetting({ ...MIRROR_OFF, fold: 20 })?.fold).toBe(8)
   })
 
   it('turning an Axis on while Off sets the mode to Mirror, and Off keeps the Axes and counts for next time', () => {
