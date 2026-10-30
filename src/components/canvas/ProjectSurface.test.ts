@@ -16,7 +16,7 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../../domain/layerRecord'
+import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameSheet } from '../../domain/layerRecord'
 import { rowProgressOf } from '../../domain/rowProgress'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
@@ -1735,6 +1735,17 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.band).toBe(80)
     expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
+  })
+
+  it('tells the sheet which corner holds the title block: the Frame\'s own bottom-right as the Canvas turns (ticket 0726)', async () => {
+    const corner = async (orientation: number) => {
+      const { wrapper } = await mountSurface(withCanvas(framed(), { orientation }), 1)
+      return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner
+    }
+    expect(await corner(0)).toEqual({ top: false, left: false })
+    expect(await corner(90)).toEqual({ top: false, left: true })
+    expect(await corner(180)).toEqual({ top: true, left: true })
+    expect(await corner(270)).toEqual({ top: true, left: false })
   })
 
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {

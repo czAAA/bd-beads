@@ -27,7 +27,7 @@ import RowProgressControls from './RowProgressControls.vue'
 import { frameOf } from '../../domain/layerRecord'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658): Row progress, the Move bar and the tools
-// in its top band, the title block in its bottom-right corner, laid over the sheet the canvas draws. The controls keep
+// in its top band, the title block in the Frame's own bottom-right corner (ticket 0726), laid over the sheet the canvas draws. The controls keep
 // their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, only the Move bar.
 const props = defineProps<{
   project: Project
@@ -120,13 +120,61 @@ const place = computed(() => {
 const roomAbove = computed(() => props.anchor.box.top - props.anchor.sheet.top)
 const roomBelow = computed(() => props.anchor.sheet.top + props.anchor.sheet.height - props.anchor.box.top - props.anchor.box.height)
 const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab * scale.value) / 2)
+/** The sheet's corner the title block sits in: the Frame's own bottom-right, wherever the Canvas's turn puts it. */
+const corner = computed(() => props.anchor.titleCorner ?? { top: false, left: false })
+/** The narrowest band row, the Move bar and the Frame tools button, in drafting px: at a top corner the title block
+ * leaves it this much room beside it, so the Frame can always be moved. */
+const NARROWEST_ROW = MARGIN_PX.moveWidth + 2 * MARGIN_PX.tab + 2 * MARGIN_PX.gap
 /** A part drawn at the scale from its `origin` corner. */
 const scaledFrom = (origin: string) => ({ transform: `scale(${scale.value})`, transformOrigin: origin })
 
+const titleEl = ref<HTMLElement>()
+const titleSize = useElementSize(titleEl)
+/** The title block's inset from its corner's side, inside the border or, folded, as the row is. */
+const titleSide = computed(() => (form.value === 'folded' ? MARGIN_PX.place.compact.side * scale.value : place.value.border))
+/** The title block's room on screen: the sheet's width inside its border, less the narrowest row where it shares the
+ * top edge with the band's row. */
+const titleRoom = computed(() =>
+  corner.value.top
+    ? props.anchor.sheet.width - titleSide.value - place.value.side - (NARROWEST_ROW + MARGIN_PX.gap) * scale.value
+    : props.anchor.sheet.width - 2 * titleSide.value,
+)
+const title = useFittingForm({
+  forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? TITLE_FORMS[form.value].filter((shown) => shown === 'tab') : TITLE_FORMS[form.value]) : []),
+  room: () => titleRoom.value / scale.value,
+  measure: () => (titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
+  observed: () => [titleEl.value?.firstElementChild],
+})
+/** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
+const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
+/** The title block's inset from its corner, along the sheet's side and its top or bottom edge: the inner border's, or
+ * folded, the tab's in the middle of the room between the edge and the Frame's line. */
+const titleInset = computed(() => ({
+  side: titleSide.value,
+  edge: form.value === 'folded' ? middle(corner.value.top ? roomAbove.value : roomBelow.value) : place.value.border,
+}))
+const titleStyle = computed(() => {
+  const { top, left } = corner.value
+  return {
+    [left ? 'left' : 'right']: `${titleInset.value.side}px`,
+    [top ? 'top' : 'bottom']: `${titleInset.value.edge}px`,
+    maxWidth: `${titleRoom.value / scale.value}px`,
+    ...scaledFrom(`${left ? 0 : '100%'} ${top ? 0 : '100%'}`),
+  }
+})
+
+/** How much more of the top edge than the row's inset the title block takes there, with the gap after it, on screen:
+ * none where it sits at the bottom (ticket 0726). */
+const titleTaken = computed(() => {
+  if (!corner.value.top || !title.value || titleSize.width.value === 0) return 0
+  return titleInset.value.side + (titleSize.width.value + MARGIN_PX.gap) * scale.value - place.value.side
+})
+
 const bandEl = ref<HTMLElement>()
 const bandParts = () => [...(bandEl.value?.children ?? [])]
-/** The band's room on screen: the sheet's width inside the row's inset. */
-const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side))
+/** The band's room on screen: the sheet's width inside the row's inset, less what the title block takes beside it. */
+const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side - titleTaken.value))
+const bandLeft = computed(() => place.value.side + (corner.value.left ? titleTaken.value : 0))
 /** The band row's width in drafting px: the Move bar centred, with room on each side for the wider of Row progress and
  * the tools. */
 function bandWidth(): number {
@@ -145,40 +193,23 @@ const progressDrop = computed(() => Number(rowFit.value?.split(':')[1] ?? 0) as 
 const rowTop = computed(() => (form.value === 'folded' ? middle(roomAbove.value) : place.value.top))
 /** The row's height in drafting px; on screen, times the scale. */
 const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
-const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${place.value.side}px`, width: `${bandRoom.value / scale.value}px`, height: `${rowHeight.value}px`, ...scaledFrom('0 0') }))
+const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${bandLeft.value}px`, width: `${bandRoom.value / scale.value}px`, height: `${rowHeight.value}px`, ...scaledFrom('0 0') }))
 const small = computed(() => row.value !== 'full')
 const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
 const progressForm = computed(() => (row.value === 'full' ? 'margin' : row.value === 'compact' ? 'compact' : 'folded'))
-
-const titleEl = ref<HTMLElement>()
-/** The title block's room on screen: the sheet's width inside its border. */
-const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? MARGIN_PX.place.compact.side * scale.value : place.value.border))
-const title = useFittingForm({
-  forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? TITLE_FORMS[form.value].filter((shown) => shown === 'tab') : TITLE_FORMS[form.value]) : []),
-  room: () => titleRoom.value / scale.value,
-  measure: () => (titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
-  observed: () => [titleEl.value?.firstElementChild],
-})
-/** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
-const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
-/** The title block's inset from the sheet's bottom-right corner: the inner border's, or folded, the tab's. */
-const titleInset = computed(() =>
-  form.value === 'folded' ? { right: MARGIN_PX.place.compact.side * scale.value, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border },
-)
-const titleStyle = computed(() => ({ right: `${titleInset.value.right}px`, bottom: `${titleInset.value.bottom}px`, maxWidth: `${titleRoom.value / scale.value}px`, ...scaledFrom('100% 100%') }))
 
 // The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498).
 // The Tool pill needs no such rule: it is drawn over the sheet, so it takes its own presses.
 const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
-  return { left: sheet.left + place.value.side, top: sheet.top + rowTop.value, width: bandRoom.value, height: rowHeight.value * scale.value }
+  return { left: sheet.left + bandLeft.value, top: sheet.top + rowTop.value, width: bandRoom.value, height: rowHeight.value * scale.value }
 })
-const titleSize = useElementSize(titleEl)
 const titleBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
   const { width, height } = { width: titleSize.width.value * scale.value, height: titleSize.height.value * scale.value }
-  const { right, bottom } = titleInset.value
-  return { left: sheet.left + sheet.width - right - width, top: sheet.top + sheet.height - bottom - height, width, height }
+  const { side, edge } = titleInset.value
+  const { top, left } = corner.value
+  return { left: sheet.left + (left ? side : sheet.width - side - width), top: sheet.top + (top ? edge : sheet.height - edge - height), width, height }
 })
 const yields = (box: BarBox) => !!props.selection && overlapsSelectionHandles(box, props.selection)
 const bandYields = computed(() => yields(bandBox.value))
@@ -315,7 +346,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       v-if="title"
       ref="titleEl"
       class="margin-sheet__title"
-      :class="{ 'margin-sheet__yielding': titleYields }"
+      :class="{ 'margin-sheet__yielding': titleYields, 'margin-sheet__title--left': corner.left }"
       :style="titleStyle"
       :data-form="title"
       data-testid="margin-title"
@@ -458,11 +489,16 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   }
 }
 
-/* The title block, anchored to the inner border's bottom-right corner; folded, the tab in the middle of the band. */
+/* The title block, anchored to the inner border's corner at the Frame's own bottom-right; folded, the tab in the middle
+ * of the band. */
 .margin-sheet__title {
   position: absolute;
   display: flex;
   justify-content: flex-end;
+}
+
+.margin-sheet__title--left {
+  justify-content: flex-start;
 }
 
 /* The name tab: 24px, `margin-title` fill, the name (Inter 600 11) and `chevron-up` when it unfolds the block. */
