@@ -2,8 +2,11 @@ import { expect, test } from '@playwright/test'
 import { openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { changeFrame } from '../../src/domain/changeFrame'
+import { paintCells } from '../../src/domain/drawing'
+import { frameLayoutOf } from '../../src/domain/frameShape'
+import { onLayer } from '../../src/domain/layers'
+import { frameOf, withFrameSheet } from '../../src/domain/layerRecord'
 import type { Project } from '../../src/domain/project'
-import { withFrameSheet } from '../../src/domain/layerRecord'
 
 /** Radial on a loom Frame (ticket 0705, MirrorPopover card): Mirror at Fold 4 (the Frame's ring with four mirror lines,
  * the vertical full, the others soft, clipped to the Frame) and Repeat at Fold 3 (three rays, the first straight up).
@@ -33,12 +36,17 @@ for (const [mode, fold] of [['mirror', 4], ['repeat', 3]] as const) {
   })
 }
 
-/** A blank Star Frame of Part size 5 on a loom Canvas, as the Custom frame scenes place it. */
+/** A Star Frame of Part size 5 on a loom Canvas, as the Custom frame scenes place it, its first arm's rounds painted
+ * a colour each, so the piece is not empty and the arm the lines run between shows. */
 function starFramed(): Project {
   const open = withFrameSheet(fixtureProject({ technique: 'loom', blank: true }), undefined)
   const placed = changeFrame(open, { custom: { shape: 'star', size: 5, centre: { row: 8, column: 10 } } })
   if (placed.kind !== 'changed') throw new Error('expected a Star')
-  return placed.project
+  const arm = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ panel }) => panel < 4)
+  return ['#e63746', '#f2c94c', '#2f6fed', '#27ae60', '#9b51e0'].reduce(
+    (project, color, round) => onLayer(project, 'frame', (view) => paintCells(view, arm.filter(({ row }) => row === round), color)),
+    placed.project,
+  )
 }
 
 /** Radial on a Star Frame (ticket 0706, MirrorPopover card): the Fold is the shape's five sides, the ring at the
