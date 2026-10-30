@@ -23,23 +23,34 @@ const walked = new WeakMap<BeadMap, { cycle: number; anchors: string; result: Wa
 const waiting = new Map<string, Walk>()
 let scheduled = false
 
-/** The longest a step may run in one moment when the browser has no idle callback (Safari). */
-const FALLBACK_SLICE_MS = 8
+/** The most one idle moment walks for, whatever the browser offers, so a press right after never waits on a walk. */
+const SLICE_MS = 8
 const FALLBACK_DELAY_MS = 50
+/** How long the asking must have stopped (an edit asks again with its new beads) before a walk starts: edits in a row
+ * walk nothing until the person pauses. */
+const QUIET_MS = 1000
+let quietUntil = 0
 
 function whenIdle(work: (timeLeft: () => number) => void): void {
+  const sliced = (offered: () => number) => {
+    const until = performance.now() + SLICE_MS
+    work(() => Math.min(offered(), until - performance.now()))
+  }
   if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback((deadline) => work(() => deadline.timeRemaining()))
+    requestIdleCallback((deadline) => sliced(() => deadline.timeRemaining()))
   } else {
-    setTimeout(() => {
-      const until = performance.now() + FALLBACK_SLICE_MS
-      work(() => until - performance.now())
-    }, FALLBACK_DELAY_MS)
+    setTimeout(() => sliced(() => Infinity), FALLBACK_DELAY_MS)
   }
 }
 
 function runSome(timeLeft: () => number): void {
   scheduled = false
+  const wait = quietUntil - performance.now()
+  if (wait > 0) {
+    scheduled = true
+    setTimeout(() => whenIdle(runSome), wait)
+    return
+  }
   // At least one step a moment, so a browser that reports no time left still gets through.
   let stepped = false
   for (const [asker, walk] of waiting) {
@@ -74,6 +85,7 @@ export function piecesWhenIdle(asker: string, beads: BeadMap, weave: Weave, anch
   const current = waiting.get(asker)
   if (!current || current.beads !== beads || current.cycle !== cycle || current.anchors !== anchorKey) {
     waiting.set(asker, { beads, cycle, anchors: anchorKey, steps: piecesInSteps(beads, weave, anchors) })
+    quietUntil = performance.now() + QUIET_MS
     schedule()
   }
   return undefined

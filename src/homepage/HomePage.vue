@@ -43,7 +43,7 @@ const emit = defineEmits<{
 }>()
 
 /** What the Homepage's Saved Projects needs of the library (ticket 0716). */
-export type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'addProjects' | 'entryOf'>
+type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'addProjects' | 'entryOf'>
 
 const { t } = provideI18n()
 watchEffect(() => {

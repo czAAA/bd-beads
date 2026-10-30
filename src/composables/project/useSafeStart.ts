@@ -13,10 +13,9 @@ function animationFrame(run: () => void): void {
   else run()
 }
 
-/** Safe start (ticket 0716): before the editor opens a Project it notes "opening Project X", and clears the note once a
- * frame has gone by after the Project's first drawn frame. A load that finds the note still set (the tab froze and was
- * closed) holds that Project back, opens none, and says so; the note is cleared then, so the next load tries again.
- * Call `follow` once the library knows which Project is open. */
+/** Safe start (ticket 0716): the editor notes "opening Project X" before it opens one, cleared a frame after its first
+ * drawn frame; a load that finds the note still set holds that Project back, opens none, says so and clears the note,
+ * so the next load tries again. Call `follow` once the library knows which Project is open. */
 export function useSafeStart({ note = browserOpeningNote, nextFrame = animationFrame }: SafeStartDeps = {}) {
   const left = note.read()
   if (left) note.clear()

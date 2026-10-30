@@ -1,4 +1,6 @@
-import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
+import { hasBeads, knownBounds, sortedKeys, type BeadMap, type FrameSheet } from './canvas'
+import { knownRowColors } from './layerBeads'
+import { knownBeadCount } from './openingLimits'
 import { isFrameShape, type QuarterTurns } from './frameShape'
 import { liftFlatWeave, renamedBrickBlock, renamedBrickBlocks, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import type { FrameLayer, Grid, Project } from './project'
@@ -59,6 +61,43 @@ const RUN_SEPARATOR = ','
 const LENGTH_MARKER = 'x'
 const START_SEPARATOR = ':'
 
+/** A row's beads as runs of one color (undefined for a gap), from its first column: what its stored string is made of
+ * once the color table numbers the colors. */
+interface RowRuns {
+  first: number
+  colors: (string | undefined)[]
+  lengths: number[]
+}
+
+/** Each row's runs, kept for that row object: an edit replaces only the rows it changes, so a save after it reads
+ * those rows alone and not every bead of a huge layer (ticket 0716). */
+const rowRunsCache = new WeakMap<Record<number, string>, RowRuns>()
+
+function rowRunsOf(cells: Record<number, string>): RowRuns {
+  const known = rowRunsCache.get(cells)
+  if (known) return known
+  const colors: (string | undefined)[] = []
+  const lengths: number[] = []
+  const columns = sortedKeys(cells)
+  let next = columns[0] ?? 0
+  for (const column of columns) {
+    if (column > next) {
+      colors.push(undefined)
+      lengths.push(column - next)
+    }
+    const color = cells[column]!
+    if (lengths.length > 0 && colors[colors.length - 1] === color) lengths[lengths.length - 1]! += 1
+    else {
+      colors.push(color)
+      lengths.push(1)
+    }
+    next = column + 1
+  }
+  const runs = { first: columns[0] ?? 0, colors, lengths }
+  rowRunsCache.set(cells, runs)
+  return runs
+}
+
 function encodeBeads(beads: BeadMap): EncodedBeads {
   const colors: string[] = []
   const slotByColor = new Map<string, number>()
@@ -76,60 +115,18 @@ function encodeBeads(beads: BeadMap): EncodedBeads {
     return slot
   }
 
-  let currentRow: number | undefined
-  let firstColumn = 0
-  let nextColumn = 0
-  let runs: string[] = []
-  let runIndex = EMPTY_INDEX
-  let runLength = 0
-
-  function closeRun(): void {
-    if (runLength > 0) {
-      runs.push(runLength === 1 ? String(runIndex) : `${runIndex}${LENGTH_MARKER}${runLength}`)
-    }
-    runLength = 0
+  for (const row of sortedKeys(beads)) {
+    const cells = beads[row]!
+    const runs = rowRunsOf(cells)
+    if (runs.lengths.length === 0) continue
+    const parts: string[] = []
+    runs.colors.forEach((color, at) => {
+      const index = color === undefined ? EMPTY_INDEX : slotFor(color)
+      const length = runs.lengths[at]!
+      parts.push(length === 1 ? String(index) : `${index}${LENGTH_MARKER}${length}`)
+    })
+    rows[String(row)] = `${runs.first}${START_SEPARATOR}${parts.join(RUN_SEPARATOR)}`
   }
-
-  function push(index: number, count: number): void {
-    if (index === runIndex && runLength > 0) {
-      runLength += count
-      return
-    }
-    closeRun()
-    runIndex = index
-    runLength = count
-  }
-
-  function closeRow(): void {
-    if (currentRow !== undefined) {
-      closeRun()
-      rows[String(currentRow)] = `${firstColumn}${START_SEPARATOR}${runs.join(RUN_SEPARATOR)}`
-    }
-  }
-
-  // A run of one color asks the table once (a Fill's rows are mostly one color, ticket 0677).
-  let lastColor: string | undefined
-  let lastSlot = EMPTY_INDEX
-  forEachBead(beads, (row, column, color) => {
-    if (row !== currentRow) {
-      closeRow()
-      currentRow = row
-      firstColumn = column
-      nextColumn = column
-      runs = []
-      runLength = 0
-    }
-    if (column > nextColumn) {
-      push(EMPTY_INDEX, column - nextColumn)
-    }
-    if (color !== lastColor) {
-      lastColor = color
-      lastSlot = slotFor(color)
-    }
-    push(lastSlot, 1)
-    nextColumn = column + 1
-  })
-  closeRow()
 
   return { colors, rows }
 }
@@ -152,21 +149,72 @@ function expandRuns(runs: string): number[] {
   return indexes
 }
 
-/** The beads a compact encoding holds, by position: a layer's, or a Starter's design (ticket 0636). */
+/** One stored row read back: its beads by column, the runs a save writes them from again, and the colors in the order
+ * `Object.values` lists them (columns from 0 up first, then the negative ones). */
+function decodeRow(entry: string, colors: readonly string[]): { cells: Record<number, string>; runs: RowRuns; inOrder: string[] } | undefined {
+  const split = entry.indexOf(START_SEPARATOR)
+  let column = Number(entry.slice(0, split))
+  const text = entry.slice(split + 1)
+  const cells: Record<number, string> = {}
+  const runs: RowRuns = { first: 0, colors: [], lengths: [] }
+  const ahead: string[] = []
+  const behind: string[] = []
+  let gap = 0
+  let found = false
+  for (const run of text === '' ? [] : text.split(RUN_SEPARATOR)) {
+    const marker = run.indexOf(LENGTH_MARKER)
+    const index = Number(marker === -1 ? run : run.slice(0, marker))
+    const length = marker === -1 ? 1 : Number(run.slice(marker + 1))
+    // As expandRuns reads it: a run covers as many positions as a loop up to its length makes.
+    const covers = length > 0 ? Math.ceil(length) : 0
+    const color = Number.isFinite(index) && index !== EMPTY_INDEX ? colors[index - 1] : undefined
+    if (color === undefined || covers === 0) {
+      if (found) gap += covers
+      column += covers
+      continue
+    }
+    if (!found) runs.first = column
+    if (gap > 0) {
+      runs.colors.push(undefined)
+      runs.lengths.push(gap)
+      gap = 0
+    }
+    if (runs.colors.length > 0 && runs.colors[runs.colors.length - 1] === color) runs.lengths[runs.lengths.length - 1]! += covers
+    else {
+      runs.colors.push(color)
+      runs.lengths.push(covers)
+    }
+    for (let at = column; at < column + covers; at += 1) cells[at] = color
+    if (column + covers > 0 && !ahead.includes(color)) ahead.push(color)
+    if (column < 0 && !behind.includes(color)) behind.push(color)
+    found = true
+    column += covers
+  }
+  if (!found) return undefined
+  return { cells, runs, inOrder: [...new Set([...ahead, ...behind])] }
+}
+
+/** The beads a compact encoding holds, by position: a layer's, or a Starter's design (ticket 0636). What it reads on
+ * the way (each row's runs and colors, the count and the box round them) is kept, so a huge layer just opened is not
+ * walked again for them (ticket 0716). */
 export function decodeBeads({ colors, rows }: EncodedBeads): BeadMap {
   const beads: BeadMap = {}
+  let count = 0
+  let box: { top: number; bottom: number; left: number; right: number } | undefined
   for (const [rowKey, entry] of Object.entries(rows)) {
-    const split = entry.indexOf(START_SEPARATOR)
-    const firstColumn = Number(entry.slice(0, split))
-    expandRuns(entry.slice(split + 1)).forEach((index, offset) => {
-      const color = index === EMPTY_INDEX ? undefined : colors[index - 1]
-      if (color !== undefined) {
-        const row = Number(rowKey)
-        beads[row] ??= {}
-        beads[row][firstColumn + offset] = color
-      }
-    })
+    const decoded = decodeRow(entry, colors)
+    if (!decoded) continue
+    const row = Number(rowKey)
+    beads[row] = decoded.cells
+    rowRunsCache.set(decoded.cells, decoded.runs)
+    knownRowColors(decoded.cells, decoded.inOrder)
+    const width = decoded.runs.lengths.reduce((sum, length) => sum + length, 0)
+    count += decoded.runs.lengths.reduce((sum, length, at) => sum + (decoded.runs.colors[at] === undefined ? 0 : length), 0)
+    const [left, right] = [decoded.runs.first, decoded.runs.first + width - 1]
+    box = box ? { top: Math.min(box.top, row), bottom: Math.max(box.bottom, row), left: Math.min(box.left, left), right: Math.max(box.right, right) } : { top: row, bottom: row, left, right }
   }
+  knownBeadCount(beads, count)
+  knownBounds(beads, box && { row: box.top, column: box.left, rows: box.bottom - box.top + 1, columns: box.right - box.left + 1 })
   return beads
 }
 

@@ -19,8 +19,7 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): what is about the app and the device, in four sections
 // (Projects, Preferences, Help, About), each folding shut. Import, Export all and Delete all live in the Projects library. It only asks: the app shell does the work. On the Homepage (ticket 540, ADR 0073)
-// the same panel shows its Homepage item as the current page and leaves out what belongs to the editor; its Projects
-// section holds Saved Projects alone (ticket 0716).
+// it shows Homepage as the current page and leaves out the editor's items, Saved Projects alone kept (ticket 0716).
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */

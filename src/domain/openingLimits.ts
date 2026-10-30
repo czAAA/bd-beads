@@ -8,8 +8,8 @@ import { FILL_CAP } from './fill'
  * its stored form until it is picked; measured so an open stays under one second at 4× slowdown (ticket 0716). */
 export const SIZE_GATE_BEADS = 2_000_000
 
-/** Past this many beads a layer's Pieces are not walked on open or in a press, only in idle time: the Fill cap (ticket
- * 0715), the most one press may paint, so what a press costs and what a walk would stay of one size. */
+/** Past this many beads a layer's Pieces are walked only in idle time, never on open or in a press: the Fill cap (ticket
+ * 0715). @internal Tests size their layers just over it. */
 export const PIECE_WALK_LIMIT = FILL_CAP
 
 /** Whether a Project of this many beads is over the size gate. */
@@ -72,6 +72,16 @@ function countUpTo(beads: BeadMap, limit: number): Count {
  * answer is kept per set of beads, and an edit's set is counted from the last by the rows it changed. */
 export function beadsOver(beads: BeadMap, limit: number): boolean {
   return counted(beads, limit).beads > limit
+}
+
+/** How many beads a layer holds, every one counted (or carried from the last set by the rows an edit changed). */
+export function beadTotal(beads: BeadMap): number {
+  return counted(beads, Infinity).beads
+}
+
+/** Records a count worked out elsewhere: decoding knows it from the stored runs (ticket 0716). */
+export function knownBeadCount(beads: BeadMap, count: number): void {
+  counts.set(beads, { beads: count, exact: true })
 }
 
 /** Whether a layer's beads are too many to walk whole (more than PIECE_WALK_LIMIT). */

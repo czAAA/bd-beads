@@ -1,4 +1,4 @@
-import { frameContains, type BeadMap, type Rect } from './canvas'
+import { frameContains, sortedKeys, type BeadMap, type Rect } from './canvas'
 import { type GridPosition } from './grid'
 import { neighborsOf, rowCycle, type Weave } from './weave'
 
@@ -54,21 +54,13 @@ export function pieceBeadsAt(beads: BeadMap, weave: Weave, start: GridPosition):
 const cache = new WeakMap<BeadMap, Map<number, Piece[]>>()
 
 /** How many beads `piecesInSteps` visits between two yields: a few milliseconds of work (ticket 0716). */
-const BEADS_PER_STEP = 20_000
+const BEADS_PER_STEP = 2_000
 
 /** What a walk over every bead finds: the Pieces, and the Piece each anchor asked about lies on. */
 export interface WalkedPieces {
   pieces: Piece[]
   /** By the anchor's numeric key; an anchor on no bead is not in it. */
   anchored: Map<number, Piece>
-}
-
-function sortedNumbers(record: Record<number, unknown>): number[] {
-  const keys = Object.keys(record).map(Number)
-  for (let at = 1; at < keys.length; at += 1) {
-    if (keys[at]! < keys[at - 1]!) return keys.sort((a, b) => a - b)
-  }
-  return keys
 }
 
 /** Every Piece on the canvas worked out a step at a time (ticket 0716): it yields after each BEADS_PER_STEP beads, so
@@ -78,9 +70,9 @@ export function* piecesInSteps(beads: BeadMap, weave: Weave, anchors: readonly G
   const anchorKeys = new Set(anchors.map(numericKey))
   const unvisited = new Set<number>()
   let since = 0
-  const rows = sortedNumbers(beads)
+  const rows = sortedKeys(beads)
   for (const row of rows) {
-    for (const column of sortedNumbers(beads[row]!)) {
+    for (const column of sortedKeys(beads[row]!)) {
       unvisited.add(numericKey({ row, column }))
       if (++since >= BEADS_PER_STEP) {
         since = 0
@@ -92,7 +84,7 @@ export function* piecesInSteps(beads: BeadMap, weave: Weave, anchors: readonly G
   const pieces: Piece[] = []
   const anchoredAt = new Map<number, number>()
   for (const row of rows) {
-    for (const column of sortedNumbers(beads[row]!)) {
+    for (const column of sortedKeys(beads[row]!)) {
       if (!unvisited.has(numericKey({ row, column }))) continue
       let top = row
       let bottom = row

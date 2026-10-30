@@ -92,7 +92,8 @@ export function forEachBead(beads: BeadMap, visit: (row: number, column: number,
   }
 }
 
-function sortedKeys(record: Record<number, unknown>): number[] {
+/** A row's or a map's keys as numbers, in order (ticket 0677's fast path for keys already in order). */
+export function sortedKeys(record: Record<number, unknown>): number[] {
   const keys = Object.keys(record).map(Number)
   // Keys from 0 up come out in order already; only a negative row or column puts them out of it (ticket 0677).
   for (let at = 1; at < keys.length; at += 1) {
@@ -120,6 +121,12 @@ export function beadCount(beads: BeadMap): number {
  * not touch, so its box is grown from that one's by the changed rows alone (ADR 0080). */
 const boundsCache = new WeakMap<BeadMap, { box: Rect | undefined }>()
 let lastBounds: { beads: BeadMap; box: Rect | undefined } | undefined
+
+/** Records the box of a set of beads worked out elsewhere: decoding knows it from the stored runs, so a huge layer is
+ * never walked for it on open (ticket 0716). */
+export function knownBounds(beads: BeadMap, box: Rect | undefined): void {
+  boundsCache.set(beads, { box })
+}
 
 /** Past this many changed rows a set of beads is measured afresh rather than grown from the last. */
 const MOST_ROWS_TO_GROW_BOUNDS = 64
