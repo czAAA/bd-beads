@@ -89,7 +89,7 @@ describe('the numbers of a ruled box', () => {
     expect(labels.filter((l) => l.axis === 'row' && l.x > 80).map((l) => l.text)).toEqual(['1', '2', '3'])
   })
 
-  it('leave out the side along the screen edge the title block is on, whichever way the view is turned (tickets 0657, 0726)', () => {
+  it('leave out the side along the screen edge the title block is on, whichever way the view is turned (tickets 0657, 0728)', () => {
     // The title block sits at the Frame's own bottom-right corner: along the screen's bottom at 0° and 90°, along its
     // top at 180° and 270°. Each number is on the screen side its offset from the Frame's middle (the viewport's) points to most.
     const sides = (rotation: Rotation) => {

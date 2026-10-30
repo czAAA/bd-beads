@@ -288,7 +288,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   }
 
   // A Frame's sides are the ones its margin sheet shows on screen but along the edge its title block is on, the bottom
-  // or, on a Canvas turned 180° or 270°, the top (MarginSheet card, tickets 0657, 0726).
+  // or, on a Canvas turned 180° or 270°, the top (MarginSheet card, tickets 0657, 0728).
   const titleEdge = titleBlockCorner(surface).top ? -1 : 1
   const alongTitle = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y * titleEdge > 0.5
   const side = (normal: [number, number], lay: () => void) => {

@@ -1738,7 +1738,7 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
   })
 
-  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0726)', async () => {
+  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0728)', async () => {
     const corner = async (project: Project) => {
       const { wrapper } = await mountSurface(project, 1)
       return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner

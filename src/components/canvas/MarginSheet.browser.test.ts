@@ -21,7 +21,7 @@ const columns = ref(40)
 /** Brick stitch gives the title block a Drop cell (ticket 0698). */
 const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
-/** The sheet's corner the title block is in: the Frame's own bottom-right on a turned Canvas (ticket 0726). */
+/** The sheet's corner the title block is in: the Frame's own bottom-right on a turned Canvas (ticket 0728). */
 const corner = ref({ top: false, left: false })
 
 /** Where a loom Frame of `columns` × 11 and its sheet are at a zoom, as the surface reports them: beads of 20px at
@@ -152,7 +152,7 @@ describe('the margin sheet at each zoom (tickets 0658, 0698)', () => {
   }
 })
 
-describe('the title block at the Frame\'s own corner on a turned Canvas (ticket 0726)', () => {
+describe('the title block at the Frame\'s own corner on a turned Canvas (ticket 0728)', () => {
   const corners = { 0: { top: false, left: false }, 90: { top: false, left: true }, 180: { top: true, left: true }, 270: { top: true, left: false } }
 
   for (const locale of FIT_LOCALES) {
@@ -191,7 +191,7 @@ describe('the title block at the Frame\'s own corner on a turned Canvas (ticket 
   }
 })
 
-describe('the title block giving way at its new corner (tickets 498, 0726)', () => {
+describe('the title block giving way at its new corner (tickets 498, 0728)', () => {
   it('gives way to a Selection\'s handles that reach under it at the top-left, and not to one at the bottom-right', async () => {
     const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>
       defineComponent({
