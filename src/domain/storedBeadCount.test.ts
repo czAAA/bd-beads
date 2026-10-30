@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { storedBeadCount, storedLayerBeads } from './storedBeadCount'
+import { storedLayerBeads } from './storedBeadCount'
 
 /** A Project as the library stores it, shaped like the maintainer's repaired drawing (ticket 0716): a Canvas of 50 beads
  * in short runs with gaps and a negative first column, and a 40 × 11 Frame of 440 beads. Synthetic, made up here. */
@@ -47,7 +47,6 @@ const repairedDrawing = {
 describe('the bead count read from the stored runs (ticket 0716)', () => {
   it('counts each layer of the repaired drawing without decoding it: 50 on the Canvas, 440 in the Frame', () => {
     expect(storedLayerBeads(repairedDrawing)).toEqual([50, 440])
-    expect(storedBeadCount(repairedDrawing)).toBe(490)
   })
 
   it('counts a solid run of 9 million beads from its 3 000 row strings', () => {

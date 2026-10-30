@@ -89,7 +89,7 @@ function wireAppShell(services: Services) {
   // The Project library and persistence (ticket 55, ADR 0012): replaceProject is the single commit point for the open
   // Project and saves as it lands; a dragged stroke defers its save per cell and writes once at the end (see
   // usePaintStroke).
-  // Safe start (ticket 0716): a Project whose last open never drew a frame is held back sealed, and none opens.
+  /** Safe start (ticket 0716): a Project whose last open never drew a frame is held back sealed, and none opens. */
   const safeStart = useSafeStart({ note: services.openingNote })
   const {
     projects,

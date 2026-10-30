@@ -8,7 +8,7 @@ import type { LayerSheet } from './layers'
 
 /** The Fill cap (ticket 0715): the most positions one Fill tool press may paint on the open Canvas, about a 500 × 500
  * patch, so a Fill never grows a layer past what the app carries.
- * @internal The perf check (`e2e/perf/fillReach.spec.ts`) fills a Piece as big as it. */
+ * The perf check (`e2e/perf/fillReach.spec.ts`) fills a Piece as big as it; the Piece walk limit is it (ticket 0716). */
 export const FILL_CAP = 250_000
 
 /** Why a Fill on the open Canvas changed nothing (ticket 0715): the empty space pressed runs off the screen, so

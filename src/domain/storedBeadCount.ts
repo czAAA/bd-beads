@@ -37,8 +37,3 @@ export function storedLayerBeads(stored: unknown): number[] | undefined {
   if (project && isEncoded(project.encodedBeads)) return [layerBeads(project), ...(project.frame ? [layerBeads(project.frame)] : [])]
   return undefined
 }
-
-/** Every bead of a stored Project across its layers; undefined where `storedLayerBeads` has no count. */
-export function storedBeadCount(stored: unknown): number | undefined {
-  return storedLayerBeads(stored)?.reduce((sum, beads) => sum + beads, 0)
-}

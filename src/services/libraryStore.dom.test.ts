@@ -416,3 +416,18 @@ describe('a library opened with some Projects kept sealed (ticket 0716)', () => 
     expect(storedProjectCount()).toBe(0)
   })
 })
+
+describe('a library of version 5 opened with a Project kept sealed (ticket 0716)', () => {
+  it('keeps it sealed in the current form, brick stitch\'s Brick block read as its Drop, and decodes the rest as before', () => {
+    const brick = encodeProject(makeProject('brick')) as unknown as { layers: { techniqueSettings?: Record<string, number> }[] }
+    brick.layers[0]!.techniqueSettings = { brickBlock: 2 }
+    const other = makeProject()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 5, patterns: [brick, encodeProject(other)] }))
+    const whole = loadProjects()
+
+    const opened = browserLibraryStore.open((summary) => summary.id !== other.id)
+
+    expect(opened.projects).toEqual(whole.filter((project) => project.id === other.id))
+    expect(browserLibraryStore.unseal(opened.sealed[0]!)).toEqual(whole.find((project) => project.id !== other.id))
+  })
+})

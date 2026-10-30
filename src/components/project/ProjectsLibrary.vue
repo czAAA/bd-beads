@@ -20,11 +20,9 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import ProjectThumbnail from './ProjectThumbnail.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import and Export all, then every
-// saved Project as a two-line row, newest first (`projects` arrives in that order, ticket 145). A press opens the
-// Project; × Remove asks first. Delete all projects is the panel's pinned footer. A sealed Project (ticket 0716) is
-// never decoded here: its row shows its bead count and last save (both dates in the Tooltip) in place of the thumbnail
-// and the Piece count.
+// The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import and Export all, then every saved
+// Project as a two-line row, newest first (ticket 145); a press opens it, × Remove asks first. A sealed Project (ticket
+// 0716) is never decoded: its bead count and last save stand in for the thumbnail and the Piece count.
 const props = withDefaults(
   defineProps<{
     projects: Project[]

@@ -12,7 +12,7 @@ import {
   type EncodedVersionThreeProject,
 } from '../domain/projectEncoding'
 import { paletteFromDevice } from '../domain/palette'
-import { liftFlatWeave, type SavedProject } from '../domain/flatWeave'
+import { liftFlatWeave, renamedBrickBlock, type SavedProject } from '../domain/flatWeave'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
 import { projectSummaryOf, type ProjectSummary, type SealedProject } from '../domain/sealedProject'
@@ -28,6 +28,8 @@ const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 // with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame's own beads, its settings a map (0636) or a
 // flat Brick block, v5 (0664, ADR 0079) the layer list, v6 (0691) brick stitch's Drop under its new id.
 const STORED_VERSION = 6
+/** The first version that stores the layer list, which a Project is kept sealed from (ticket 0716). */
+const LAYERED_VERSION = 5
 
 interface StoredLibrary {
   version: number
@@ -105,7 +107,7 @@ function withDevicePalette(stored: StoredProject[], sealed: readonly SealedProje
 }
 
 /** The library as the editor opens it (ticket 0716): Projects decoded, and those kept sealed in their stored form. */
-export interface OpenedLibrary {
+interface OpenedLibrary {
   projects: Project[]
   sealed: SealedProject[]
 }
@@ -123,10 +125,12 @@ function openStored(keepSealed: (summary: ProjectSummary) => boolean): OpenedLib
     const parsed: unknown = JSON.parse(raw)
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
-    if (read && version === STORED_VERSION) {
+    if (read && (version === STORED_VERSION || version === LAYERED_VERSION)) {
       const sealed: SealedProject[] = []
       const decoded: EncodedProject[] = []
-      for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns)) {
+      // Version 5 differs only in brick stitch's Drop, stored as a Brick block: renamed here, the beads left encoded.
+      const current = (stored: EncodedProject) => (version === STORED_VERSION ? stored : { ...stored, layers: stored.layers.map(renamedBrickBlock) })
+      for (const encoded of inKnownTechniques((parsed as StoredLibrary).patterns).map(current)) {
         const summary = projectSummaryOf(encoded)
         if (summary && keepSealed(summary)) sealed.push({ ...summary, stored: JSON.stringify(encoded) })
         else decoded.push(encoded)
@@ -144,7 +148,7 @@ function openStored(keepSealed: (summary: ProjectSummary) => boolean): OpenedLib
   return { projects: [], sealed: [] }
 }
 
-/** Every stored Project, decoded (see openStored). */
+/** Every stored Project, decoded (see openStored). @internal Tests read back what the app saved with it. */
 export function loadProjects(): Project[] {
   return openStored(() => false).projects
 }
@@ -176,9 +180,8 @@ function storedJsonOf(project: Project): string {
   return json
 }
 
-/** Writes the whole library over what was there, compactly (ADR 0009), from each Project's kept encoding and each
- * sealed Project's stored JSON as it was read (ticket 0716): the in-memory library is the truth (ticket 55). Throws what
- * the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
+/** Writes the whole library (ADR 0009) from each Project's kept encoding and each sealed one's stored JSON (ticket 0716):
+ * memory is the truth (ticket 55). Throws the browser's QuotaExceededError when it doesn't fit; the caller surfaces it.
  * @internal Tests seed a library with it before mounting the App. */
 export function saveProjects(projects: Project[], sealed: readonly SealedProject[] = []): void {
   const patterns = [...projects.map(storedJsonOf), ...sealed.map((project) => project.stored)]

@@ -64,7 +64,7 @@ describe('opening the editor (ticket 0716)', () => {
     await flushPromises()
     await openSavedProjects(wrapper)
 
-    expect(wrapper.get('[data-testid="project-sealed"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-sealed"]').exists()).toBe(true)
     await wrapper.get('[data-testid="select-project-huge"]').trigger('click')
     expect(wrapper.get('[data-testid="open-large-project-modal"]').text()).toContain('2 million beads. Opening may be slow or fail.')
   })

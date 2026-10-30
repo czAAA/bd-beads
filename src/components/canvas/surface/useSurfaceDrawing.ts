@@ -1,5 +1,6 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
-import { changedRows, type BeadMap } from '../../../domain/canvas'
+import { changedRows } from '../../../domain/canvas'
+import { beadTotal } from '../../../domain/openingLimits'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
 import { layersAlike } from '../../../domain/layerWeave'
 import { draftCost } from '../../../domain/weave'
@@ -147,20 +148,11 @@ function changedBands(before: Project, after: Project): { first: number; last: n
   return bands
 }
 
-/** How many beads a Project stores: counted once per set of beads, since an edit replaces it. */
-const storedCounts = new WeakMap<object, number>()
-
+/** How many beads a Project stores: counted once per set of beads, an edit's from the last by the rows it changed, and
+ * known from decoding for a layer just opened (ticket 0716). */
 function storedBeads(project: Project): number {
-  const counted = (beads: BeadMap) => {
-    let count = storedCounts.get(beads)
-    if (count === undefined) {
-      count = Object.values(beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
-      storedCounts.set(beads, count)
-    }
-    return count
-  }
   const frame = layerOf(project, 'frame')
-  return counted(layerOf(project, 'canvas').beads) + (frame ? counted(frame.beads) : 0)
+  return beadTotal(layerOf(project, 'canvas').beads) + (frame ? beadTotal(frame.beads) : 0)
 }
 
 /** What one bead of the Project costs to draw, in square beads: its costlier layer's (a rounded bead is three). */
