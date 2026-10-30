@@ -8,12 +8,11 @@ function make(id: string): Project {
 }
 
 const open = make('open')
-const other = make('other')
 
 function setup(options: { open?: boolean; saved?: boolean } = {}) {
   const deps = {
     currentProject: () => (options.open === false ? undefined : open),
-    findProject: (id: string) => [open, other].find((project) => project.id === id),
+    findProject: (id: string) => [{ id: 'open', name: 'Open' }, { id: 'other', name: 'Other' }, { id: 'huge', name: 'Huge', gatedBeads: 31_000_000 }].find((entry) => entry.id === id),
     openProject: vi.fn(),
     removeProject: vi.fn(),
     saveNow: vi.fn(() => options.saved ?? true),
@@ -74,5 +73,21 @@ describe('useSavedProjectConfirms', () => {
     expect(switchSaveRefused.value).toBe(true)
     onConfirmSwitch()
     expect(deps.openProject).toHaveBeenCalledWith('other')
+  })
+
+  it('asks before opening a Project over the size gate, with or without one open, and opens it only on Open anyway (ticket 0716)', () => {
+    for (const isOpen of [true, false]) {
+      const { deps, pendingLargeOpen, pendingSwitch, onRequestSwitch, onCancelLargeOpen, onConfirmLargeOpen } = setup({ open: isOpen })
+      const opened = vi.fn()
+      onRequestSwitch('huge', opened)
+      expect(pendingLargeOpen.value).toMatchObject({ id: 'huge', gatedBeads: 31_000_000 })
+      expect(pendingSwitch.value).toBeUndefined()
+      onCancelLargeOpen()
+      expect(deps.openProject).not.toHaveBeenCalled()
+      onRequestSwitch('huge', opened)
+      onConfirmLargeOpen()
+      expect(deps.openProject).toHaveBeenCalledWith('huge')
+      expect(opened).toHaveBeenCalledOnce()
+    }
   })
 })

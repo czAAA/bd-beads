@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, withColors } from './canvas'
-import { pieceAreasOf, piecesOf } from './pieces'
+import { numericKey, pieceAreasOf, piecesInSteps, piecesOf } from './pieces'
 
 const R = '#e63746'
 const place = (...at: [number, number][]) => withColors({}, at.map(([row, column]) => ({ row, column, color: R })))
@@ -138,5 +138,38 @@ describe('pieces with a Drop (ticket 477)', () => {
     const beads = place([1, 0], [2, 1])
     expect(piecesOf(beads, { technique: 'brick' })).toHaveLength(1)
     expect(piecesOf(beads, block2)).toHaveLength(2)
+  })
+})
+
+describe('the Pieces walked a step at a time (ticket 0716)', () => {
+  /** Two solid blocks 60,000 beads in all, apart, and a name on the second. */
+  function twoBlocks() {
+    const beads: Record<number, Record<number, string>> = {}
+    for (let row = 0; row < 200; row += 1) {
+      beads[row] = {}
+      for (let column = 0; column < 150; column += 1) beads[row]![column] = R
+      for (let column = 200; column < 350; column += 1) beads[row]![column] = R
+    }
+    return beads
+  }
+
+  it('stops more than once on a big layer and ends with what a walk at once finds, and the Piece each anchor is on', () => {
+    const beads = twoBlocks()
+    const walk = piecesInSteps(beads, { technique: 'loom' }, [{ row: 5, column: 210 }, { row: 5, column: 160 }])
+    let stops = 0
+    let step = walk.next()
+    while (!step.done) {
+      stops += 1
+      step = walk.next()
+    }
+
+    expect(stops).toBeGreaterThan(2)
+    expect(step.value.pieces).toEqual([
+      { row: 0, column: 0, rows: 200, columns: 150, beads: 30_000 },
+      { row: 0, column: 200, rows: 200, columns: 150, beads: 30_000 },
+    ])
+    expect(step.value.anchored.get(numericKey({ row: 5, column: 210 }))).toBe(step.value.pieces[1])
+    expect(step.value.anchored.has(numericKey({ row: 5, column: 160 }))).toBe(false)
+    expect(piecesOf(beads, { technique: 'loom' })).toBe(step.value.pieces)
   })
 })

@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, shallowRef, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
+import ConfirmModal from '../components/ui/ConfirmModal.vue'
+import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
+import { controlAction } from '../composables/shell/controlRegistry'
+import type { ProjectLibrary } from '../composables/project/useProjectLibrary'
+import type { LibraryEntry } from '../composables/project/useSavedProjectConfirms'
+import type { Project } from '../domain/project'
+import type { SealedProject } from '../domain/sealedProject'
 import CanvasStrip from '../components/canvas/CanvasStrip.vue'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 import PanelHost from '../components/shell/PanelHost.vue'
@@ -15,6 +22,8 @@ import RollingSlogan from './RollingSlogan.vue'
 import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
+import { findBead } from '../domain/beads'
+import { beadCell } from '../domain/weave'
 import FeedbackSheet from '../components/shell/FeedbackSheet.vue'
 import ToastRegion from '../components/ui/ToastRegion.vue'
 import { useDialogs } from '../composables/shell/useDialogs'
@@ -26,12 +35,25 @@ import type { FeedbackService } from '../services/feedback'
 // editor's (ticket 540, ADR 0073): the Canvas strip on top, the content scrolling between, an empty Canvas footer below.
 // It only reports which way in was chosen: the entry decides where that goes.
 const props = defineProps<{
-  /** How many Projects this device has saved; none means a new visitor. */
+  /** How many Projects this device has saved, read without decoding any; none means a new visitor. */
   projectCount: number
   /** Sending a Report: the Menu's Send feedback works here too (spec 0698), so a beader can say the app won't start. */
   feedback: FeedbackService
+  /** The library, opened only once its Saved Projects are shown in the Menu (ticket 0716). */
+  openLibrary?: () => HomepageLibrary
 }>()
-const emit = defineEmits<{ makeFirstProject: []; openEditor: [] }>()
+const emit = defineEmits<{
+  makeFirstProject: []
+  openEditor: []
+  /** The editor with no Project open and the Menu on Saved Projects (ticket 0716). */
+  openSavedProjects: []
+  /** The editor on the Project picked in the Menu's Saved Projects. */
+  openProject: [id: string]
+  exportAll: [projects: Project[], sealed: SealedProject[]]
+}>()
+
+/** What the Homepage's Saved Projects needs of the library (ticket 0716). */
+type HomepageLibrary = Pick<ProjectLibrary, 'projects' | 'sealed' | 'removeProject' | 'addProjects' | 'entryOf'>
 
 const { t, locale } = provideI18n()
 watchEffect(() => {
@@ -51,14 +73,17 @@ const scrollEl = ref<HTMLElement>()
 const scrollSize = useElementSize(scrollEl)
 const pageWidth = computed(() => (scrollSize.width.value || window.innerWidth) / (zoom.percent.value / 100))
 const canvasBackground = useCanvasBackground()
-// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project in the Symmetric bead
-// shape worked in peyote (each row shifted half a bead), outlined in the theme's Position mark color, sized by the zoom.
+/** The Delica 11/0's real cell, the one an editor Project in that Bead draws (ticket 0724). */
+const DELICA_CELL = beadCell(findBead('miyuki/delica/11-0'))
+// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project worked in peyote (each
+// row shifted half a bead), in the Bead's real cell, outlined in the theme's Position mark color, sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   const zoomScale = zoom.percent.value / 100
   const pixelRatio = window.devicePixelRatio || 1
   const marks = positionMarkBackground({
     technique: 'peyote',
+    cell: DELICA_CELL,
     deviceScale: zoomScale * pixelRatio,
     pixelRatio,
     color: canvasBackground.projectTheme.value.positionMark,
@@ -69,8 +94,25 @@ const boxStyle = computed(() => {
   }
 })
 
-const isNew = computed(() => props.projectCount === 0)
-const projectsSaved = computed(() => fillBlanks(t.value.homepage.projectsSaved, { count: props.projectCount }))
+// The Menu's Saved Projects (ticket 0716): the editor's list, its Remove asking first, a pick opening the editor on it.
+const library = shallowRef<HomepageLibrary>()
+const count = computed(() => (library.value ? library.value.projects.value.length + library.value.sealed.value.length : props.projectCount))
+const pendingRemove = ref<LibraryEntry>()
+
+function showSavedProjects() {
+  library.value ??= props.openLibrary?.()
+}
+
+function confirmRemove() {
+  const entry = pendingRemove.value
+  pendingRemove.value = undefined
+  if (entry) library.value?.removeProject(entry.id)
+}
+
+const isNew = computed(() => count.value === 0)
+const savedProjects = controlAction('saved-projects')
+/** "Saved Projects · 3": the Menu row's name with the count (ticket 0716). */
+const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${count.value}`)
 </script>
 
 <template>
@@ -86,9 +128,30 @@ const projectsSaved = computed(() => fillBlanks(t.value.homepage.projectsSaved, 
       @zoom-out="zoom.zoomOut"
       @reset="zoom.reset"
     />
-    <PanelHost v-if="menuOpen" open="menu" :only="['menu']" @close="menuOpen = false">
-      <MenuPanel page="homepage" @feedback="feedback.onOpenFeedback" />
+    <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
+      <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
+      <template #sub="{ depth }">
+        <ProjectsLibrary
+          v-if="depth === 1 && library"
+          :projects="library.projects.value"
+          :sealed="library.sealed.value"
+          @select="emit('openProject', $event)"
+          @remove="pendingRemove = library.entryOf($event)"
+          @import="library.addProjects"
+          @export-all="emit('exportAll', library.projects.value, library.sealed.value)"
+        />
+      </template>
     </PanelHost>
+    <ConfirmModal
+      v-if="pendingRemove"
+      data-testid="remove-project-modal"
+      :title="t.removeProject.title"
+      :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
+      :confirm-label="t.removeProject.confirmButton"
+      :cancel-label="t.removeProject.cancelButton"
+      @confirm="confirmRemove"
+      @cancel="pendingRemove = undefined"
+    />
     <FeedbackSheet
       v-if="dialogs.open.value === 'feedback' && feedback.feedbackRequest.value"
       :request="feedback.feedbackRequest.value"
@@ -124,10 +187,15 @@ const projectsSaved = computed(() => fillBlanks(t.value.homepage.projectsSaved, 
             </span>
           </template>
           <template v-else>
-            <AppButton variant="primary" size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
-              {{ t.homepage.openEditor }}
-            </AppButton>
-            <p class="homepage__saved" data-testid="homepage-saved">{{ projectsSaved }}</p>
+            <span class="homepage__buttons">
+              <AppButton variant="primary" size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
+                {{ t.homepage.openEditor }}
+              </AppButton>
+              <!-- Saved Projects (ticket 0716): the editor with no Project open and the Menu on its list. -->
+              <AppButton size="lg" icon="library" data-testid="homepage-saved-projects" @click="emit('openSavedProjects')">
+                {{ savedProjectsLabel }}
+              </AppButton>
+            </span>
           </template>
         </div>
       </section>
@@ -328,12 +396,6 @@ const projectsSaved = computed(() => fillBlanks(t.value.homepage.projectsSaved, 
   align-items: center;
   justify-content: center;
   gap: var(--space-12);
-}
-
-.homepage__saved {
-  margin: 0;
-  font: var(--type-meta-small);
-  color: var(--muted);
 }
 
 .homepage__inside {

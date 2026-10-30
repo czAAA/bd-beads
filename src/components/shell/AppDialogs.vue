@@ -8,6 +8,8 @@ import ShortcutsHelp from './ShortcutsHelp.vue'
 import FeedbackSheet from './FeedbackSheet.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
 import { projectNameOf } from '../../domain/layerRecord'
+import { inMillions } from '../../domain/formatNumber'
+import { useI18n } from '../../i18n/useI18n'
 
 // The app's dialogs (ticket 0618): the registry shows one at a time, named by `open`; each flow holds what its dialog
 // asks about and answers it.
@@ -48,6 +50,9 @@ const {
   onCancelSwitch,
   onConfirmSwitch,
   onSaveBeforeSwitch,
+  pendingLargeOpen,
+  onConfirmLargeOpen,
+  onCancelLargeOpen,
   onKeepCurrentAfterImport,
   onSwitchToImported,
   onSaveBeforeImportSwitch,
@@ -76,6 +81,7 @@ const {
   onConvertImageCreate,
   onConvertImageCancel,
 } = useDialogsContext()
+const { locale } = useI18n()
 </script>
 
 <template>
@@ -207,7 +213,7 @@ const {
     v-if="open === 'remove-project' && pendingRemove"
     data-testid="remove-project-modal"
     :title="t.removeProject.title"
-    :message="fillBlanks(t.removeProject.message, { name: projectNameOf(pendingRemove) })"
+    :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
     :confirm-label="t.removeProject.confirmButton"
     :cancel-label="t.removeProject.cancelButton"
     @confirm="onConfirmRemove"
@@ -221,7 +227,7 @@ const {
     :message="
       saveFailed
         ? fillBlanks(t.importSwitch.unsavedMessage, { current: projectNameOf(activeProject) })
-        : fillBlanks(t.switchProject.message, { current: projectNameOf(activeProject), picked: projectNameOf(pendingSwitch) })
+        : fillBlanks(t.switchProject.message, { current: projectNameOf(activeProject), picked: pendingSwitch.name })
     "
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchProject.confirmButton"
     :cancel-label="t.switchProject.cancelButton"
@@ -235,6 +241,19 @@ const {
       {{ t.storage.saveFailedMessage }}
     </p>
   </ConfirmModal>
+
+  <!-- A Project over the size gate opens only when picked, after this warning (ticket 0716). -->
+  <ConfirmModal
+    v-if="open === 'open-large-project' && pendingLargeOpen"
+    data-testid="open-large-project-modal"
+    :title="fillBlanks(t.opening.largeTitle, { name: pendingLargeOpen.name })"
+    :message="fillBlanks(t.opening.largeMessage, { count: inMillions(pendingLargeOpen.gatedBeads ?? 0, locale) })"
+    :confirm-label="t.opening.openAnyway"
+    :cancel-label="t.opening.cancelButton"
+    :confirm-danger="false"
+    @confirm="onConfirmLargeOpen"
+    @cancel="onCancelLargeOpen"
+  />
 
   <!-- The note before the browser's storage prompt, once per device at its first save (ticket 399). -->
   <ConfirmModal

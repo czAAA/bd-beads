@@ -21,6 +21,8 @@ const columns = ref(40)
 /** Brick stitch gives the title block a Drop cell (ticket 0698). */
 const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
+/** The sheet's corner the title block is in: the Frame's own bottom-right on a turned Canvas (ticket 0728). */
+const corner = ref({ top: false, left: false })
 
 /** Where a loom Frame of `columns` × 11 and its sheet are at a zoom, as the surface reports them: beads of 20px at
  * 100%, its line out from them, its sheet 4 beads round them. */
@@ -33,6 +35,7 @@ function anchorAt(at: number, across: number): FrameAnchor {
     sheet: { left: 0, top: 0, width: beads.width + 2 * band, height: beads.height + 2 * band },
     band,
     viewport: { width: 1280, height: 800 },
+    titleCorner: corner.value,
   }
 }
 
@@ -147,6 +150,64 @@ describe('the margin sheet at each zoom (tickets 0658, 0698)', () => {
       expect(found).toEqual({})
     })
   }
+})
+
+describe('the title block at the Frame\'s own corner on a turned Canvas (ticket 0728)', () => {
+  const corners = { 0: { top: false, left: false }, 90: { top: false, left: true }, 180: { top: true, left: true }, 270: { top: true, left: false } }
+
+  for (const locale of FIT_LOCALES) {
+    it(`sits in its corner at every turn, the band's row beside it at the top, nothing overlapping, in ${locale}`, async () => {
+      zoom.value = 1
+      columns.value = 40
+      onTestFinished(() => {
+        corner.value = corners[0]
+      })
+      const { root } = await mountAt(Host, {}, { locale, width: 1280 })
+      const found: Record<string, string[]> = {}
+      for (const [turn, at] of Object.entries(corners)) {
+        corner.value = at
+        for (const across of [40, 16, 8]) {
+          columns.value = across
+          for (const percent of [150, 100, 60, 40, 25]) {
+            zoom.value = percent / 100
+            await settled(root)
+            const where = `${turn}° with ${across} columns at ${percent}%`
+            const wrong = problems(root)
+            const sheet = root.querySelector('[data-testid="margin-sheet"]')!.getBoundingClientRect()
+            const title = root.querySelector('[data-testid="margin-title"] > *')?.getBoundingClientRect()
+            if (title) {
+              const middle = { x: sheet.left + sheet.width / 2, y: sheet.top + sheet.height / 2 }
+              const top = title.bottom < middle.y
+              const left = title.right < middle.x || (title.left - sheet.left < sheet.right - title.right && title.left < middle.x)
+              if (top !== at.top || left !== at.left) wrong.push(`the title block is not in its corner`)
+            }
+            if (!root.querySelector('[data-testid="frame-move-handle"]')) wrong.push('no Move bar')
+            if (wrong.length) found[where] = wrong
+          }
+        }
+      }
+      expect(found).toEqual({})
+    })
+  }
+})
+
+describe('the title block giving way at its new corner (tickets 498, 0728)', () => {
+  it('gives way to a Selection\'s handles that reach under it at the top-left, and not to one at the bottom-right', async () => {
+    const sheetAt = (selection?: { left: number; top: number; width: number; height: number }) =>
+      defineComponent({
+        setup: () => () => {
+          const anchor = { ...anchorAt(1, 40), titleCorner: { top: true, left: true } }
+          return h('div', { style: { position: 'relative', height: '400px' } }, [h(MarginSheet, { project: projectOf(40), anchor, editing: false, pressing: false, selection })])
+        },
+      })
+    const yielding = async (selection: { left: number; top: number; width: number; height: number }) => {
+      const { root } = await mountAt(sheetAt(selection), {}, { locale: 'en', width: 1280 })
+      await settled(root)
+      return root.querySelector('[data-testid="margin-title"]')!.classList.contains('margin-sheet__yielding')
+    }
+    expect(await yielding({ left: 40, top: 40, width: 200, height: 100 })).toBe(true)
+    expect(await yielding({ left: 700, top: 250, width: 100, height: 60 })).toBe(false)
+  })
 })
 
 describe('the bare margin sheet, under 0.6 of a 31px band (tickets 0682, 0698)', () => {

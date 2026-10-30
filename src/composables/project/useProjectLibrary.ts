@@ -1,6 +1,9 @@
 import { computed, ref, shallowRef, type ComputedRef, type Ref, type ShallowRef } from 'vue'
 import { inSavedOrder, markSaved, mostRecentlyUpdated } from '../../domain/projectLibrary'
 import type { Project } from '../../domain/project'
+import { gated, type SealedProject } from '../../domain/sealedProject'
+import { projectNameOf } from '../../domain/layerRecord'
+import type { LibraryEntry } from './useSavedProjectConfirms'
 import { browserLibraryStore, type LibraryStore } from '../../services/libraryStore'
 
 /** How a change to a Project should reach storage (see replaceProject). */
@@ -15,6 +18,15 @@ export interface ProjectLibrary {
    * persistence follows. Shallow (ticket 0616): a Project is only ever replaced whole, so it is held as it is and its
    * beads are read without a reactive proxy in the way. */
   projects: ShallowRef<Project[]>
+  /** The Projects kept sealed in their stored form (ticket 0716): over the size gate, or the one that didn't open last
+   * time. Listed in Saved Projects, never open; picking one opens it (openSealed). */
+  sealed: ShallowRef<SealedProject[]>
+  /** Decodes a sealed Project and opens it. */
+  openSealed: (id: string) => void
+  /** A Project of the library by id, decoded or sealed, as the Saved Projects questions name it. */
+  entryOf: (id: string) => LibraryEntry | undefined
+  /** Opens a Project by id: a sealed one is decoded first. */
+  openProject: (id: string) => void
   /** Which Project is open, or none (the New Project form). Writable: opening a Project is just setting this. */
   activeProjectId: Ref<string | undefined>
   activeProject: ComputedRef<Project | undefined>
@@ -42,9 +54,14 @@ export function useProjectLibrary(
   /** Called after each write that got through with a Project in the library, a removal aside (ticket 399: the first
    * one asks the browser to keep it). */
   onSaved?: () => void,
+  /** `held`: the Project that didn't open last time (safe start, ticket 0716), kept sealed, and then none opens. */
+  { held }: { held?: string } = {},
 ): ProjectLibrary {
-  const projects = shallowRef<Project[]>(inSavedOrder(store.load()))
-  const activeProjectId = ref<string | undefined>(mostRecentlyUpdated(projects.value)?.id)
+  // A Project over the size gate stays in its stored form and never opens on its own (ticket 0716).
+  const opened = store.open((summary) => summary.id === held || gated(summary))
+  const projects = shallowRef<Project[]>(inSavedOrder(opened.projects))
+  const sealed = shallowRef<SealedProject[]>(opened.sealed)
+  const activeProjectId = ref<string | undefined>(held === undefined ? mostRecentlyUpdated(projects.value)?.id : undefined)
   const activeProject = computed(() =>
     projects.value.find((project) => project.id === activeProjectId.value),
   )
@@ -55,7 +72,7 @@ export function useProjectLibrary(
 
   function save(announce = true): void {
     try {
-      store.save(projects.value)
+      store.save(projects.value, sealed.value)
       savePending.value = false
       saveFailed.value = false
       if (announce && projects.value.length > 0) onSaved?.()
@@ -80,12 +97,37 @@ export function useProjectLibrary(
     }
   }
 
+  /** Decodes a sealed Project and opens it: it joins the library in its place by last save, and stays stored as it
+   * was until it changes, so nothing is written. */
+  function openSealed(id: string): void {
+    const picked = sealed.value.find((project) => project.id === id)
+    if (!picked) return
+    const project = store.unseal(picked)
+    sealed.value = sealed.value.filter((other) => other !== picked)
+    projects.value = inSavedOrder([...projects.value, project])
+    activeProjectId.value = id
+  }
+
   return {
     projects,
+    sealed,
+    openSealed,
     activeProjectId,
     activeProject,
     saveFailed,
     unsaved: savePending,
+
+    entryOf(id: string): LibraryEntry | undefined {
+      const project = projects.value.find((each) => each.id === id)
+      if (project) return { id, name: projectNameOf(project) }
+      const kept = sealed.value.find((each) => each.id === id)
+      return kept && { id, name: kept.name, ...(gated(kept) ? { gatedBeads: kept.beads } : {}) }
+    },
+
+    openProject(id: string) {
+      if (sealed.value.some((each) => each.id === id)) openSealed(id)
+      else activeProjectId.value = id
+    },
 
     /** Adds a newly created Project and opens it. */
     addProject(project: Project) {
@@ -112,6 +154,7 @@ export function useProjectLibrary(
     /** Removes a Project; if it was the open one, the most recently updated of the rest takes its place. */
     removeProject(id: string) {
       projects.value = projects.value.filter((project) => project.id !== id)
+      sealed.value = sealed.value.filter((project) => project.id !== id)
       if (activeProjectId.value === id) {
         activeProjectId.value = mostRecentlyUpdated(projects.value)?.id
       }
@@ -123,6 +166,7 @@ export function useProjectLibrary(
      * storage note. */
     removeAllProjects() {
       projects.value = []
+      sealed.value = []
       activeProjectId.value = undefined
       commit(undefined, false)
     },

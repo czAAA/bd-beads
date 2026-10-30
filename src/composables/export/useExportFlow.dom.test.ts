@@ -3,6 +3,9 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
+import { readProjectsFile } from '../../services/projectFileCodec'
+import { encodeProject } from '../../domain/projectEncoding'
+import { projectSummaryOf } from '../../domain/sealedProject'
 import { useExportFlow } from './useExportFlow'
 
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
@@ -95,6 +98,19 @@ describe('useExportFlow', () => {
     it('hands over the open Project as a Project file', async () => {
       await setup().onExportProjectFile()
       expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
+    })
+
+    it('hands over a sealed Project, and the library with it, read back from its stored form (ticket 0716)', async () => {
+      const kept = { ...projectSummaryOf(encodeProject(project))!, stored: JSON.stringify(encodeProject(project)) }
+      const flow = useExportFlow({ currentProject: () => undefined, projects: () => [], sealed: () => [kept], messages: () => en, locale: () => 'en', replaceProject: () => {}, downloadFile })
+
+      await flow.onExportSealed(kept)
+      await flow.onExportLibraryFile()
+
+      const [one, library] = vi.mocked(downloadFile).mock.calls.slice(-2)
+      expect(one![0]).toBe(projectFileName(project))
+      expect((await readProjectsFile(new Blob([one![1] as Uint8Array<ArrayBuffer>]))).projects.map((each) => each.id)).toEqual([project.id])
+      expect((await readProjectsFile(new Blob([library![1] as Uint8Array<ArrayBuffer>]))).projects.map((each) => each.id)).toEqual([project.id])
     })
 
     it('hands over the whole library when no Project is open', async () => {

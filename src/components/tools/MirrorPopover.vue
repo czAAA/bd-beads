@@ -168,9 +168,8 @@ const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.se
  * line, elevation-3, padding 12px 14px 14px, 12px between rows. */
 .mirror-popover {
   position: fixed;
+  /* In the app shell, not the canvas box (ToolPill), so nothing there clips it or is drawn over it. */
   z-index: var(--z-popover);
-  /* It lives in the pill's layer, which takes no pointer events; the popover takes its own. */
-  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-12);

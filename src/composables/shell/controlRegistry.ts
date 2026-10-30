@@ -477,6 +477,14 @@ export const CONTROLS: readonly ControlAction[] = [
       if (rowProgressIsOn(deps)) deps.onMoveRow(-1)
     },
   },
+  // A Schema's paper tag (ticket 0721): Rename opens Name Piece's editor for it; Frame frames it as the Selection
+  // bar's Frame does with the Piece selected.
+  unkeyed('rename-schema', (t) => t.panels.project.renameAction, 'edit', { icon: 'pencil' }),
+  unkeyed('frame-schema', (t) => t.frame.title, 'canvas', {
+    icon: 'frame',
+    enabled: (deps: ControlDeps) => !frameLocked(deps),
+    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrame,
+  }),
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {
     icon: 'delete',
     body: (t) => t.tooltips.removeFrame,
