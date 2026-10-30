@@ -3,6 +3,9 @@ import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
+import AppButton from './ui/AppButton.vue'
+import { useI18n } from '../i18n/useI18n'
+import { fillBlanks } from '../domain/fillBlanks'
 import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import StarterGallery from './project/StarterGallery.vue'
@@ -72,6 +75,25 @@ const SaveFailedNotice = defineComponent({
   setup: () => () => h(AppMessage, { tone: 'danger', placement: 'notice' }, () => 'This device could not save your Project. Download it to keep it.'),
 })
 
+/** The notice of a Project that didn't open last time, with its Remove and Export (ticket 0716). */
+const MissedProjectNotice = defineComponent({
+  setup() {
+    const { t } = useI18n()
+    return () =>
+      h(AppMessage, { tone: 'warning', placement: 'notice' }, () => [
+        h('span', fillBlanks(t.value.opening.didNotOpen, { name: 'Panel with a logo' })),
+        h('span', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' } }, [
+          h(AppButton, { variant: 'in-box', size: 'sm', icon: 'delete' }, () => t.value.opening.removeButton),
+          h(AppButton, { variant: 'in-box', size: 'sm', icon: 'export' }, () => t.value.opening.exportButton),
+        ]),
+      ])
+  },
+})
+
+/** A sealed Project's row and one whose Pieces are still being counted, among the rest (ticket 0716). */
+const hugeRows = Object.fromEntries(Array.from({ length: 251 }, (_r, row) => [row, Object.fromEntries(Array.from({ length: 1000 }, (_c, column) => [column, '#1a1a1a']))]))
+const sealedProject = { id: 'sealed', name: 'Black fill', createdAt: Date.UTC(2026, 9, 1), updatedAt: Date.UTC(2026, 9, 30), savedAt: Date.UTC(2026, 9, 30), layerBeads: [31_771_024, 440], beads: 31_771_464, stored: '{}' }
+
 /** The Bead's Color catalog as its list reads it (a stand-in for `useBeadColors`). */
 function beadColors(state: 'ready' | 'failed') {
   const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: 'metallic', hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
@@ -123,6 +145,8 @@ const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
+  ['Missed Project notice', MissedProjectNotice, {}],
+  ['ProjectsLibrary (sealed and counting)', ProjectsLibrary, { projects: [withLayers(empty, { id: 'h', name: 'Counting', beads: hugeRows, updatedAt: 1, savedAt: 1 })], sealed: [sealedProject] }],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],

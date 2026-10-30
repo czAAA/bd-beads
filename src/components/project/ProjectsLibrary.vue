@@ -23,7 +23,8 @@ import { fillBlanks } from '../../domain/fillBlanks'
 // The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import and Export all, then every
 // saved Project as a two-line row, newest first (`projects` arrives in that order, ticket 145). A press opens the
 // Project; × Remove asks first. Delete all projects is the panel's pinned footer. A sealed Project (ticket 0716) is
-// never decoded here: its row shows its dates and bead count in place of the thumbnail and the Piece count.
+// never decoded here: its row shows its bead count and last save (both dates in the Tooltip) in place of the thumbnail
+// and the Piece count.
 const props = withDefaults(
   defineProps<{
     projects: Project[]
@@ -93,8 +94,14 @@ function frameSize(project: Project): string {
 }
 
 const dateFormat = computed(() => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', year: 'numeric' }))
+const shortDateFormat = computed(() => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short' }))
 
-/** A sealed row's second line: when it was made and last saved. */
+/** A sealed row's last save, short ("Oct 30"); its Tooltip has both dates in full. */
+function shortDate(at: number): string {
+  return shortDateFormat.value.format(new Date(at))
+}
+
+/** A sealed row's dates in full, for its Tooltip: when it was made and last saved. */
 function sealedDates(project: SealedProject): string {
   const date = (at: number) => dateFormat.value.format(new Date(at))
   return fillBlanks(t.value.projects.sealedDates, { created: date(project.createdAt), saved: date(project.savedAt ?? project.updatedAt) })
@@ -130,14 +137,16 @@ function sealedDates(project: SealedProject): string {
         <PanelListRow
           v-if="isSealed(entry)"
           :name="entry.name"
-          :sub="sealedDates(entry)"
+          :sub="plural(locale, entry.beads, t.projects.beads)"
           :label="entry.name"
           :select-testid="`select-project-${entry.id}`"
           @select="emit('select', entry.id)"
         >
           <template #thumb><span class="projects-library__sealed" data-testid="project-sealed" aria-hidden="true"><AppIcon name="library" :size="16" /></span></template>
           <template #facts>
-            <span class="projects-library__pieces" data-testid="project-beads">{{ plural(locale, entry.beads, t.projects.beads) }}</span>
+            <AppTooltip :name="sealedDates(entry)" :announce="false">
+              <span class="projects-library__pieces" data-testid="project-saved-on">{{ shortDate(entry.savedAt ?? entry.updatedAt) }}</span>
+            </AppTooltip>
           </template>
           <template #actions>
             <button

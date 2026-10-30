@@ -30,3 +30,17 @@ describe('HomePage text fit', () => {
     }
   }
 })
+
+// With Projects saved the hero holds Open the editor and Saved Projects · N side by side (ticket 0716).
+describe('HomePage text fit with Projects saved', () => {
+  for (const width of WIDTHS) {
+    for (const locale of FIT_LOCALES) {
+      it(`${locale} at ${width}px, the hero's two buttons`, async () => {
+        const mounted = await mountAt(HomePage, { projectCount: 128 }, { locale, width })
+        const labels = ['homepage-open-editor', 'homepage-saved-projects'].map((id) => mounted.root.querySelector(`[data-testid="${id}"]`)!.textContent!.trim())
+        // The rest of the page is the case above's; only what these two buttons hold is checked here.
+        expect((await misfitsNow()).filter((misfit) => labels.some((label) => misfit.includes(label)))).toEqual([])
+      })
+    }
+  }
+})
