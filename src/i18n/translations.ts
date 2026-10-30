@@ -150,6 +150,14 @@ export interface Translations {
     copyToCounterparts: string
     announceSelectionMirrored: string
     droppedMessage: PluralForms
+    /** Radial and its Fold (ticket 0705): the chip, the Stepper's label and buttons, and the Note saying the rule in
+     * force: by index at Fold 2 and 4, else geometric, the turn between images in `{angle}` degrees. */
+    radial: string
+    fold: string
+    fewerFolds: string
+    moreFolds: string
+    foldExact: string
+    foldNearest: string
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
