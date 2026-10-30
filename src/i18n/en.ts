@@ -92,6 +92,12 @@ export const en: Translations = {
       one: '{count} counterpart had nowhere to land and was left out.',
       other: '{count} counterparts had nowhere to land and were left out.',
     },
+    radial: 'Radial',
+    fold: 'Fold',
+    fewerFolds: 'Fewer folds',
+    moreFolds: 'More folds',
+    foldExact: 'An exact turn of the grid, by row and column.',
+    foldNearest: 'A turn of {angle}°: each bead\'s centre turns and the nearest bead takes it, so near the centre images merge.',
   },
   colorNames: {
     black: 'Black',

@@ -95,6 +95,12 @@ export const es: Translations = {
       many: '{count} de reflejos no tenían dónde caer y no se colocaron.',
       other: '{count} reflejos no tenían dónde caer y no se colocaron.',
     },
+    radial: 'Radial',
+    fold: 'Partes',
+    fewerFolds: 'Menos partes',
+    moreFolds: 'Más partes',
+    foldExact: 'Un giro exacto de la cuadrícula, por fila y columna.',
+    foldNearest: 'Un giro de {angle}°: el centro de cada cuenta gira y la cuenta más cercana lo toma, así que cerca del centro las imágenes se funden.',
   },
   colorNames: {
     black: 'Negro',
