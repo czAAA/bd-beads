@@ -24,6 +24,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
+import type { MirrorSetting } from '../../domain/mirror'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -74,6 +75,8 @@ const props = withDefaults(defineProps<{
   /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
    * 433): each one shows the not-allowed cue, the margin outline for 1s. */
   selectionRefusals?: number
+  /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
+  mirror?: MirrorSetting
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
