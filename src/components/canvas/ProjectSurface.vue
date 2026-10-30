@@ -78,6 +78,8 @@ const props = withDefaults(defineProps<{
   selectionRefusals?: number
   /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
   mirror?: MirrorSetting
+  /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
+  fillRefusals?: number
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
