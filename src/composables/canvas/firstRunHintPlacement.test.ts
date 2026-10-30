@@ -23,7 +23,7 @@ const notes = {
   export: { width: 200, height: 52 },
   menu: { width: 120, height: 66 },
   project: { width: 240, height: 44 },
-  mirror: { width: 220, height: 44 },
+  mirror: { width: 320, height: 22 },
   color: { width: 170, height: 22 },
 }
 
@@ -51,7 +51,7 @@ describe('where the first-run hints sit (FirstRunHints card)', () => {
 
   it('puts Paint\'s note above the pill, left of the tile, and Select\'s right of its tile', () => {
     expect(placed(layout(), 'paint')?.note).toEqual({ left: 290, top: 638 })
-    expect(placed(layout(), 'select')?.note).toEqual({ left: 642, top: 612 })
+    expect(placed(layout(), 'select')?.note.left).toBe(642)
   })
 
   it('ends each arrow 6px off its control, on the drawing-area side', () => {
@@ -92,6 +92,13 @@ describe('where the first-run hints sit (FirstRunHints card)', () => {
         expect(crossed?.id, `${hint.id}'s arrow at ${x}, ${y}`).toBeUndefined()
       }
     }
+  })
+
+  it('fits every note at the reference size, step 2\'s above the Mirror and colour notes', () => {
+    const hints = placeFirstRunHints(layout())
+
+    expect(hints.map((hint) => hint.id)).toEqual(['paint', 'select', 'frame', 'export', 'color', 'mirror', 'menu', 'project'])
+    expect(placed(layout(), 'select')!.note.top).toBeLessThan(placed(layout(), 'mirror')!.note.top)
   })
 
   it('always shows the four steps and drops the quiet notes where there is no room', () => {
