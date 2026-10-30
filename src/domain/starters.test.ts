@@ -14,6 +14,7 @@ import {
   designSizes,
   euRingSize,
   placedStarter,
+  STARTER_BEAD_ID,
   STARTER_CATEGORIES,
   starterBeadCount,
   starterById,
@@ -26,6 +27,7 @@ import {
   type StarterManifest,
 } from './starters'
 import { beadsOfLayer, canvasOf, frameOf, withBackground } from './layerRecord'
+import { frameGeometryOf } from './layers'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 
 const beadId = 'miyuki/delica/11-0'
@@ -127,6 +129,22 @@ describe('a new Project from a Starter', () => {
   it('puts the same Frame in place empty when it starts empty, or at another size', () => {
     expect(frameOf(starterProject(starterById('star'), { name: 'Star', beadId, sizes: { partSize: 5 }, useDesign: false }))).toMatchObject({ shape: 'star', settings: { partSize: 5 }, beads: {} })
     expect(frameOf(starterProject(starterById('star'), { name: 'Star', beadId, sizes: { partSize: 7 }, useDesign: true }))).toMatchObject({ settings: { partSize: 7 }, beads: {} })
+  })
+
+  it('starts a round shape on a Delica 11/0, packed by it, its rectangle covering its layout a bead to a cell (ticket 0723)', () => {
+    expect(STARTER_BEAD_ID).toBe(beadId)
+    for (const id of ['triangle', 'warpedSquare', 'star', 'kaleidocycle'] as const) {
+      const starter = starterById(id)
+      const project = starterProject(starter, { name: 'Piece', beadId: STARTER_BEAD_ID, ...asDesigned(id) })
+      expect(frameOf(project)).toMatchObject({ beadId, ...starterFrameSize(starter, asDesigned(id), delica) })
+      const geometry = frameGeometryOf(project)
+      const place = geometry.place(geometry.positions()[0]!)!
+      expect(place.box.width).toBeCloseTo(1, 9)
+      expect(place.box.height).toBeCloseTo(1.3 / 1.6, 9)
+      // Added to a Project in a Cube, it is laid out in the Delica it is given.
+      const added = placedStarter(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 40, height: 40, unit: 'beads' } }), starter, { ...asDesigned(id), beadId }, { row: 20, column: 20 })
+      expect(frameOf((added as { project: typeof project }).project)).toMatchObject(starterFrameSize(starter, asDesigned(id), delica))
+    }
   })
 
   it('records nothing of the Starter', () => {

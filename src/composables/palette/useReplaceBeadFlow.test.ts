@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadCopy, findBead } from '../../domain/beads'
+import { changeFrame } from '../../domain/changeFrame'
 import { createProject } from '../../domain/createProject'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { setPalette } from '../../domain/paletteEdits'
@@ -81,6 +82,20 @@ describe('useReplaceBeadFlow', () => {
 
     harness.history.onUndo()
     expect(frameOf(harness.project)!.beadId).toBe(canvasOf(base).beadId)
+    expect(harness.history.canUndo.value).toBe(false)
+  })
+
+  it('confirming on a Custom frame lays its round shape out again in the new Bead, in the same undo step (ticket 0723)', async () => {
+    const placed = changeFrame(withLayers(base, { frame: undefined }), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 20 } } })
+    const square = (placed as { project: Project }).project
+    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(square)
+    onRequestReplaceBead('frame', 'toho/round/11-0')
+    await onConfirmReplaceBead()
+
+    expect(frameOf(harness.project)!.beadId).toBe('toho/round/11-0')
+    expect(frameOf(harness.project)!.rows).not.toBe(frameOf(square)!.rows)
+    harness.history.onUndo()
+    expect(frameOf(harness.project)!.rows).toBe(frameOf(square)!.rows)
     expect(harness.history.canUndo.value).toBe(false)
   })
 

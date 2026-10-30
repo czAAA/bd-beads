@@ -45,14 +45,17 @@ export interface FrameLayout {
   centre: LayoutPoint
   /** The Seams between panels and parts, each a line, as far as the bounding rectangle. */
   seams: readonly (readonly [LayoutPoint, LayoutPoint])[]
-  /** How far a bead of it reaches across its panel, in bead widths: rounds that nest close leave less room. */
+  /** How far a bead of it reaches out across its panel, in bead widths: a round shape's Bead's depth (ticket 0723). */
   beadDepth: number
+  /** Beads that touch though the chart draws them apart, as pairs of indexes into `positions`: a peyote bead and those
+   * of the round before that it sits between, which a steep Seam lifts off a corner pair (ticket 0723). */
+  links?: readonly (readonly [number, number])[]
 }
 
-/** Beads whose centres are this close touch: a bead's neighbour in the round next to it, or its corner partner. Two
- * beads of one round on one side sit two widths apart, the rounds either side lying between them; on a Star's arm, a
- * rhombus, the next round's beads stand a third of a bead off the gaps, so a neighbour may be as far as 1.62. */
-const TOUCHING = 1.7
+/** Beads whose outlines lie this close touch, in bead widths (ticket 0723): side by side, end to end, a corner pair at
+ * its corner, or a Fringe earring's strand a quarter bead under the top. A packed round shape's column lies over half a
+ * bead off the next but for the beads that touch, so those are not reached by distance alone. */
+const TOUCHING = 0.3
 
 const layouts = new Map<string, FrameLayout>()
 
@@ -71,18 +74,17 @@ interface RoundsPart {
   positions: LayoutPosition[]
   corners: LayoutPoint[]
   beadDepth: number
+  links: [number, number][]
 }
 
-/** Geometric peyote in Rounds from the centre (research: custom-frame-beading-order.md) on a polygon of equal sides round
- * a circle (regular, or a rhombus), its corners at these angles: a panel a side, round n with n beads a side, a corner
- * pair split between two sides, each round far enough out to lengthen every side by two widths, so the rounds nest. */
-function roundsPart(angles: readonly number[], rounds: number): RoundsPart {
+/** Geometric peyote in Rounds from the centre (research: custom-frame-beading-order.md) on a polygon of equal sides,
+ * its corners at these angles, charted as a bead artist charts it (ticket 0723): a panel a side, round n with n beads a
+ * side, each bead a width along it and `depth` out, stacked end to end in columns from the Seam at their end. */
+function roundsPart(angles: readonly number[], rounds: number, depth: number): RoundsPart {
   const sides = angles.length
   const cot = (angle: number) => 1 / Math.tan(angle / 2)
-  // A side between corners a and b at distance d from the centre is d × (cot(a / 2) + cot(b / 2)) long.
-  const pitch = 2 / (cot(angles[sides - 1]!) + cot(angles[0]!))
-  // The first round sits far enough out that no bead crosses a Seam.
-  const first = pitch / 2 + 0.5
+  // How far a Seam from the centre to a corner of this angle runs out from a side for each width along it.
+  const slope = (angle: number) => Math.tan(angle / 2)
   // Each side turns from the one before by the corner between them; side i runs from the corner it shares with side
   // i - 1 (along +) to the one it shares with side i + 1 (along -).
   const sideAngles = [0]
@@ -92,37 +94,53 @@ function roundsPart(angles: readonly number[], rounds: number): RoundsPart {
     return { angle, along: { x: Math.cos(angle), y: Math.sin(angle) }, normal: { x: -Math.sin(angle), y: Math.cos(angle) } }
   }
   const positions: LayoutPosition[] = []
+  const links: [number, number][] = []
+  // Where each bead is in `positions`, by round, side and column: a bead sits between the two of the round before.
+  const indexOf = new Map<string, number>()
+  let outline = 0
   for (let round = 0; round < rounds; round += 1) {
-    const out = first + round * pitch
     for (let side = 0; side < sides; side += 1) {
       const { angle, along, normal } = frame(side)
-      // The side's middle, from the foot of the centre's perpendicular: the two corners stand back unequally on a rhombus.
-      const middle = (out * (cot(angles[(side + sides - 1) % sides]!) - cot(angles[side]!))) / 2
+      const [ahead, behind] = [slope(angles[(side + sides - 1) % sides]!), slope(angles[side]!)]
+      // The middle column stands where its first bead touches both Seams: off the side's middle on a rhombus.
+      const middle = (behind - ahead) / (2 * (ahead + behind))
       for (let place = 0; place <= round; place += 1) {
         // Placed from the side's end that meets the panel before towards the next, so a round runs on round the shape.
-        const offset = middle + round - 2 * place
+        const column = round - 2 * place
+        const offset = middle + column
+        const first = depth / 2 + (column < 0 ? (0.5 - offset) * behind : (0.5 + offset) * ahead)
+        const out = first + ((round - Math.abs(column)) / 2) * depth
+        outline = Math.max(outline, out + depth / 2)
+        for (const before of [column - 1, column + 1]) {
+          const under = indexOf.get(`${round - 1}:${side}:${before}`)
+          if (under !== undefined) links.push([under, positions.length])
+        }
+        indexOf.set(`${round}:${side}:${column}`, positions.length)
         positions.push({ row: round, column: side * (round + 1) + place, panel: side, angle, x: normal.x * out + along.x * offset, y: normal.y * out + along.y * offset })
       }
     }
   }
-  const outline = first + (rounds - 1) * pitch + 0.5
+  // The outline's sides touch the outermost beads, its corners where the Seams reach them.
   const corners = angles.map((angle, side) => {
     const { along, normal } = frame(side)
     return { x: normal.x * outline - along.x * outline * cot(angle), y: normal.y * outline - along.y * outline * cot(angle) }
   })
-  return { positions, corners, beadDepth: Math.min(1, 2 * pitch) }
+  return { positions, corners, beadDepth: depth, links }
 }
 
-/** A part turned and moved so that one of its corners lands on a point, the part lying out from it at an angle. */
-function placedPart(part: RoundsPart, corner: number, at: LayoutPoint, outwards: number): RoundsPart {
+/** A part turned so that one of its corners points back to a point, the part lying out from it at an angle: its centre
+ * that far from the point, or as far as the corner reaches, so the corner lands on it. */
+function placedPart(part: RoundsPart, corner: number, at: LayoutPoint, outwards: number, distance?: number): RoundsPart {
   const reach = part.corners[corner]!
   const turn = outwards + Math.PI - Math.atan2(reach.y, reach.x)
-  const centre = { x: at.x + Math.hypot(reach.x, reach.y) * Math.cos(outwards), y: at.y + Math.hypot(reach.x, reach.y) * Math.sin(outwards) }
+  const away = distance ?? Math.hypot(reach.x, reach.y)
+  const centre = { x: at.x + away * Math.cos(outwards), y: at.y + away * Math.sin(outwards) }
   const moved = ({ x, y }: LayoutPoint) => ({ x: centre.x + x * Math.cos(turn) - y * Math.sin(turn), y: centre.y + x * Math.sin(turn) + y * Math.cos(turn) })
   return {
     positions: part.positions.map((position) => ({ ...position, ...moved(position), angle: position.angle + turn })),
     corners: part.corners.map(moved),
     beadDepth: part.beadDepth,
+    links: part.links,
   }
 }
 
@@ -133,24 +151,26 @@ function partSeams(part: RoundsPart, centre: LayoutPoint): [LayoutPoint, LayoutP
 
 /** Parts put together: their positions named on, part after part (column = the part's place × its round's beads + the
  * bead's column in the part), so a bead keeps its name when the Part size changes. */
-function joinedParts(parts: readonly RoundsPart[]): { positions: LayoutPosition[]; panels: LayoutPanel[] } {
+function joinedParts(parts: readonly RoundsPart[]): { positions: LayoutPosition[]; panels: LayoutPanel[]; links: [number, number][] } {
   const positions: LayoutPosition[] = []
   const panels: LayoutPanel[] = []
+  const links: [number, number][] = []
   parts.forEach((part, index) => {
     const sides = part.corners.length
     const firstPanel = panels.length
+    links.push(...part.links.map(([a, b]): [number, number] => [positions.length + a, positions.length + b]))
     for (let side = 0; side < sides; side += 1) panels.push({ part: index, order: index })
     for (const position of part.positions) {
       positions.push({ ...position, column: index * sides * (position.row + 1) + position.column, panel: firstPanel + position.panel })
     }
   })
-  return { positions, panels }
+  return { positions, panels, links }
 }
 
 /** A layout worked out round 0, 0, moved so its beads sit in the middle of a box hugging them: half a bead's diagonal
  * round their centres, not the empty points of the shape's corners. Its Seams stop at the box. */
 function boxed(
-  raw: { positions: readonly LayoutPosition[]; panels: readonly LayoutPanel[]; joins?: readonly LayoutJoin[]; seams: readonly (readonly [LayoutPoint, LayoutPoint])[]; beadDepth: number },
+  raw: Pick<FrameLayout, 'positions' | 'panels' | 'seams' | 'beadDepth' | 'links'> & { joins?: readonly LayoutJoin[] },
   middle: LayoutPoint = { x: 0, y: 0 },
 ): FrameLayout {
   const pad = Math.hypot(0.5, raw.beadDepth / 2)
@@ -175,14 +195,15 @@ function boxed(
     centre: shift(middle),
     seams: raw.seams.map(([from, to]) => [shift(from), clipped(shift(from), shift(to))] as const),
     beadDepth: raw.beadDepth,
+    ...(raw.links ? { links: raw.links } : {}),
   }
 }
 
 /** A Triangle (3 corners) or Warped Square (4) in Rounds from the centre: one part, a panel a side, round n with
- * k × n beads, a Seam from the centre to each corner. */
-export function roundsLayout(corners: number, rounds: number): FrameLayout {
-  return remembered(`rounds:${corners}:${rounds}`, () => {
-    const part = roundsPart(Array.from({ length: corners }, () => Math.PI - (2 * Math.PI) / corners), rounds)
+ * k × n beads, a Seam from the centre to each corner, its beads packed by the Bead's `depth` (ticket 0723). */
+export function roundsLayout(corners: number, rounds: number, depth: number): FrameLayout {
+  return remembered(`rounds:${corners}:${rounds}:${depth}`, () => {
+    const part = roundsPart(Array.from({ length: corners }, () => Math.PI - (2 * Math.PI) / corners), rounds, depth)
     return boxed({ ...joinedParts([part]), seams: partSeams(part, { x: 0, y: 0 }), beadDepth: part.beadDepth })
   })
 }
@@ -190,20 +211,55 @@ export function roundsLayout(corners: number, rounds: number): FrameLayout {
 /** A Star's five arms meet at its centre with this angle each. */
 const STAR_ARM = (2 * Math.PI) / 5
 
+/** A bead's outline: one width across its panel and `depth` out from the centre, turned to its panel. */
+function outlineOf({ x, y, angle }: LayoutPosition, depth: number): LayoutPoint[] {
+  const along = { x: Math.cos(angle) / 2, y: Math.sin(angle) / 2 }
+  const out = { x: (-Math.sin(angle) * depth) / 2, y: (Math.cos(angle) * depth) / 2 }
+  return [1, -1].flatMap((a) => [1, -1].map((o) => ({ x: x + a * along.x + o * out.x, y: y + a * along.y + o * out.y })))
+}
+
+/** How far from a point beads reach in a direction (a unit vector): the farthest corner of their outlines, of those
+ * within a bead of the line from the point, or of all when `near` is not asked. */
+function reachFrom(points: readonly LayoutPoint[], from: LayoutPoint, direction: LayoutPoint, near?: true): number {
+  let farthest = 0
+  for (const { x, y } of points) {
+    const [dx, dy] = [x - from.x, y - from.y]
+    if (!near || Math.abs(dx * direction.y - dy * direction.x) <= 1) farthest = Math.max(farthest, dx * direction.x + dy * direction.y)
+  }
+  return farthest
+}
+
 /** A Star (research: the MiniStar): five Warped Squares, each beaded on its own in Part size rounds, then zipped
- * together one pair at a time, the last to the first closed last. Drawn as its finished face, each square lies flat as
- * a rhombus with its close pair of corners at the centre and the tip (the sharp corners 72°, the side corners 108°). */
-export function starLayout(partSize: number): FrameLayout {
-  return remembered(`star:${partSize}`, () => {
-    const square = roundsPart([STAR_ARM, Math.PI - STAR_ARM, STAR_ARM, Math.PI - STAR_ARM], partSize)
+ * together one pair at a time, the last to the first closed last. Drawn flat, each square's packed beads (ticket 0723)
+ * make a rhombus with 72° tips at the centre and out, each arm as near the centre as its fifth of the Star lets it. */
+export function starLayout(partSize: number, depth: number): FrameLayout {
+  return remembered(`star:${partSize}:${depth}`, () => {
+    // Packed, a square's beads reach farther along a Seam the wider its panels' corner: they make a 72° tip where the
+    // panels meet at 108°.
+    const square = roundsPart([Math.PI - STAR_ARM, STAR_ARM, Math.PI - STAR_ARM, STAR_ARM], partSize, depth)
     const centre = { x: 0, y: 0 }
+    // The arm's axis, out from the Star's centre through its own, and across it.
+    const tip = square.corners[0]!
+    const axis = { x: -tip.x / Math.hypot(tip.x, tip.y), y: -tip.y / Math.hypot(tip.x, tip.y) }
+    const points = square.positions.flatMap((position) => outlineOf(position, depth))
+    const distance = Math.max(...points.map(({ x, y }) => Math.abs(x * axis.y - y * axis.x) / Math.tan(STAR_ARM / 2) - (x * axis.x + y * axis.y)))
     // The first arm points up, the rest round clockwise.
-    const arms = Array.from({ length: 5 }, (_unused, arm) => placedPart(square, 0, centre, -Math.PI / 2 + arm * STAR_ARM))
-    const seams = arms.flatMap((arm) => [
-      ...partSeams(arm, middleOf(arm)),
-      // The edge it shares with the next arm, from the centre to their side corner.
-      [centre, arm.corners[1]!] as [LayoutPoint, LayoutPoint],
-    ])
+    const outwards = (arm: number) => -Math.PI / 2 + arm * STAR_ARM
+    const arms = Array.from({ length: 5 }, (_unused, arm) => placedPart(square, 0, centre, outwards(arm), distance))
+    const outlines = arms.map((arm) => arm.positions.flatMap((position) => outlineOf(position, depth)))
+    const ray = (from: LayoutPoint, angle: number, points: readonly LayoutPoint[], near?: true): [LayoutPoint, LayoutPoint] => {
+      const direction = { x: Math.cos(angle), y: Math.sin(angle) }
+      const length = reachFrom(points, from, direction, near)
+      return [from, { x: from.x + direction.x * length, y: from.y + direction.y * length }]
+    }
+    const seams = arms.flatMap((arm, index) => {
+      const middle = { x: centre.x + distance * Math.cos(outwards(index)), y: centre.y + distance * Math.sin(outwards(index)) }
+      return [
+        ...arm.corners.map((corner) => ray(middle, Math.atan2(corner.y - middle.y, corner.x - middle.x), outlines[index]!)),
+        // The edge it shares with the next arm, from the centre as far as their beads.
+        ray(centre, outwards(index) + STAR_ARM / 2, [...outlines[index]!, ...outlines[(index + 1) % 5]!], true),
+      ]
+    })
     const joins: LayoutJoin[] = [
       ...[0, 1, 2, 3].map((arm): LayoutJoin => ({ step: 'zip', parts: [arm, arm + 1] })),
       { step: 'close', parts: [4, 0] },
@@ -223,9 +279,9 @@ const KALEIDOCYCLE_HOLE = 1
 /** A Kaleidocycle (research: the CGB Kali Primer) drawn as its finished face: six peyote Triangles of Part size beads a
  * side round a hole, each beaded on its own, then (inferred: the face shows one triangle of each tetrahedron) each zipped
  * into its strip and tetrahedron, mirror tetrahedra hinged in pairs, and the pairs joined into the ring. */
-export function kaleidocycleLayout(partSize: number): FrameLayout {
-  return remembered(`kaleidocycle:${partSize}`, () => {
-    const triangle = roundsPart([Math.PI / 3, Math.PI / 3, Math.PI / 3], partSize)
+export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout {
+  return remembered(`kaleidocycle:${partSize}:${depth}`, () => {
+    const triangle = roundsPart([Math.PI / 3, Math.PI / 3, Math.PI / 3], partSize, depth)
     const centre = { x: 0, y: 0 }
     const outwards = (part: number) => -Math.PI / 2 + (part * Math.PI) / 3
     const apex = (part: number) => ({ x: KALEIDOCYCLE_HOLE * Math.cos(outwards(part)), y: KALEIDOCYCLE_HOLE * Math.sin(outwards(part)) })
@@ -391,8 +447,8 @@ export function layoutPositionAt(layout: FrameLayout, x: number, y: number): Gri
   return undefined
 }
 
-/** How far a point may lie from the nearest bead's centre and still be on the shape, in bead widths: a peyote panel's
- * gaps between the beads of a round, which the rounds either side leave open, lie a bead from every neighbour. */
+/** How far a point may lie from the nearest bead's centre and still be on the shape, in bead widths: the gaps peyote
+ * leaves open, along a round shape's Seams (ticket 0723) or between a Kite's beads, lie a bead from a neighbour. */
 const ON_SHAPE = 1.05
 
 /** How near a Seam a bead's centre may not lie, in bead widths: its bead would cross it. */
@@ -425,30 +481,53 @@ export function landingAt(layout: FrameLayout, x: number, y: number): LayoutPosi
 
 const neighbors = new WeakMap<FrameLayout, Map<string, GridPosition[]>>()
 
+/** Whether two beads of a layout touch: their outlines, one width across and the bead depth out, each turned to its
+ * panel, lie no more than the touching distance apart along every axis of either. */
+function touching(a: LayoutPosition, b: LayoutPosition, depth: number): boolean {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  return [a.angle, b.angle].every((angle) =>
+    [angle, angle + Math.PI / 2].every((axis) => {
+      const [x, y] = [Math.cos(axis), Math.sin(axis)]
+      // Each outline's half reach along the axis, from its own half width and half depth turned to it.
+      const reach = (bead: LayoutPosition) => (Math.abs(Math.cos(bead.angle) * x + Math.sin(bead.angle) * y) + depth * Math.abs(-Math.sin(bead.angle) * x + Math.cos(bead.angle) * y)) / 2
+      return Math.abs(dx * x + dy * y) <= reach(a) + reach(b) + TOUCHING
+    }),
+  )
+}
+
 /** The positions whose beads touch this one's, on its panel or across a Seam: where a Fill spreads. */
 export function layoutNeighbors(layout: FrameLayout, position: GridPosition): GridPosition[] {
   let lists = neighbors.get(layout)
   if (!lists) {
     lists = new Map()
-    // Buckets a touching distance wide, so each bead is measured only against those near it.
+    // Buckets wider than two touching beads' centres may lie apart, so each bead is measured only against those near it.
+    const size = 1.5 * (1 + layout.beadDepth) + TOUCHING
     const buckets = new Map<string, LayoutPosition[]>()
-    const bucketOf = (x: number, y: number) => `${Math.floor(x / TOUCHING)}:${Math.floor(y / TOUCHING)}`
+    const bucketOf = (x: number, y: number) => `${Math.floor(x / size)}:${Math.floor(y / size)}`
     for (const each of layout.positions) {
       const key = bucketOf(each.x, each.y)
       buckets.set(key, [...(buckets.get(key) ?? []), each])
     }
     for (const each of layout.positions) {
-      const bucketX = Math.floor(each.x / TOUCHING)
-      const bucketY = Math.floor(each.y / TOUCHING)
+      const bucketX = Math.floor(each.x / size)
+      const bucketY = Math.floor(each.y / size)
       const near: GridPosition[] = []
       for (let dx = -1; dx <= 1; dx += 1) {
         for (let dy = -1; dy <= 1; dy += 1) {
           for (const other of buckets.get(`${bucketX + dx}:${bucketY + dy}`) ?? []) {
-            if (other !== each && Math.hypot(other.x - each.x, other.y - each.y) <= TOUCHING) near.push({ row: other.row, column: other.column })
+            if (other !== each && touching(each, other, layout.beadDepth)) near.push({ row: other.row, column: other.column })
           }
         }
       }
       lists.set(keyOf(each), near)
+    }
+    for (const pair of layout.links ?? []) {
+      const [a, b] = pair.map((index) => layout.positions[index]!)
+      for (const [from, to] of [[a!, b!], [b!, a!]]) {
+        const near = lists.get(keyOf(from!))!
+        if (!near.some(({ row, column }) => row === to!.row && column === to!.column)) near.push({ row: to!.row, column: to!.column })
+      }
     }
     neighbors.set(layout, lists)
   }
