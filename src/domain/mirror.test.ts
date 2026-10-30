@@ -3,7 +3,8 @@ import { createProject } from './createProject'
 import { layerSheet } from './layers'
 import { changeFrame } from './changeFrame'
 import { withLayers } from '../testUtils/layerFields'
-import { frameOf } from './layerRecord'
+import { frameOf, withFrameSheet } from './layerRecord'
+import { frameLayoutOf, type FrameShapeId, type QuarterTurns } from './frameShape'
 import type { Project } from './project'
 import {
   MIRROR_OFF,
@@ -32,6 +33,7 @@ import {
   mirrorLayerOf,
   readMirrorArea,
   areaBetween,
+  shapeAxesOf,
   type CanvasAxes,
   type MirrorSetting,
 } from './mirror'
@@ -512,5 +514,72 @@ describe('the Area the Axes run inside (ticket 0710, spec 0702)', () => {
     expect(areaBetween(at(3, 5), at(1, 2))).toEqual(area(1, 2, 3, 4))
     expect(areaBetween(at(0, 0), at(0, 0))).toEqual(area(0, 0, 1, 1))
     expect(areaBetween(at(-2, 1), at(9, 9), area(0, 0, 4, 6))).toEqual(area(0, 1, 4, 5))
+  })
+})
+
+describe('Mirror on a Custom frame through its layout (ticket 0706, spec 0702)', () => {
+  /** A Custom frame of the shape at a size, its layout, and its layer as a command works on it. */
+  const custom = (shape: FrameShapeId, size: number, quarterTurns?: QuarterTurns) => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 30 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
+    const project = quarterTurns ? withLayers(placed.project, { frame: { ...frameOf(placed.project)!, quarterTurns } }) : placed.project
+    return { project, sheet: layerSheet(project, 'frame'), layout: frameLayoutOf(frameOf(project)!)! }
+  }
+  const radialOn = (mode: MirrorSetting['mode']): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { leftRight: false, topBottom: false, radial: true } })
+
+  it('on a Star Radial is the shape\'s fivefold turn: Repeat lands a bead at the same round and place on every arm, Mirror at its reflected place within each arm too', () => {
+    const { sheet } = custom('star', 3)
+    const repeat = counterparts(sheet, radialOn('repeat'), [at(0, 0)])
+    expect(cells(repeat)).toEqual([[0, 0], [0, 4], [0, 8], [0, 12], [0, 16]])
+    expect(repeat.dropped).toBe(0)
+    const mirror = counterparts(sheet, radialOn('mirror'), [at(2, 1)])
+    expect(mirror.positions).toHaveLength(10)
+    expect(new Set(mirror.positions.map(({ column }) => column)).size).toBe(10)
+    expect(mirror.positions.every(({ row }) => row === 2)).toBe(true)
+    expect(mirror.dropped).toBe(0)
+  })
+
+  it('is exact by construction on a Star: every bead\'s every counterpart lands on a position, none dropped, in both modes', () => {
+    const { sheet, layout } = custom('star', 3)
+    for (const position of layout.positions) {
+      const repeat = counterparts(sheet, radialOn('repeat'), [at(position.row, position.column)])
+      expect(repeat.positions).toHaveLength(5)
+      expect(repeat.dropped).toBe(0)
+      expect(counterparts(sheet, radialOn('mirror'), [at(position.row, position.column)]).dropped).toBe(0)
+    }
+  })
+
+  it('on a Triangle Left–right reflects across the vertical through the centre: a side\'s places swap and its middle bead is its own; Top–bottom is no symmetry of it and maps nothing', () => {
+    const { sheet, project } = custom('triangle', 4)
+    expect(cells(counterparts(sheet, on({ leftRight: true }), [at(1, 0)]))).toEqual([[1, 0], [1, 1]])
+    expect(cells(counterparts(sheet, on({ leftRight: true }), [at(0, 0)]))).toEqual([[0, 0]])
+    expect(cells(counterparts(sheet, on({ topBottom: true }), [at(1, 0)]))).toEqual([[1, 0]])
+    expect(shapeAxesOf(project)).toEqual({ offered: { leftRight: true, topBottom: false, radial: true }, sides: 3 })
+    expect(counterparts(sheet, radialOn('repeat'), [at(1, 0)]).positions).toHaveLength(3)
+  })
+
+  it('on a Kite Left–right pairs the wings, Radial is not offered and maps nothing, and Repeat with a straight Axis maps nothing (no strip on a shape)', () => {
+    const { sheet, project, layout } = custom('kite', 15)
+    expect(cells(counterparts(sheet, on({ leftRight: true }), [at(3, 2)]))).toEqual([[3, 2], [3, 3]])
+    expect(shapeAxesOf(project)).toEqual({ offered: { leftRight: true, topBottom: false, radial: false } })
+    expect(cells(counterparts(sheet, radialOn('repeat'), [at(3, 2)]))).toEqual([[3, 2]])
+    expect(cells(counterparts(sheet, on({ leftRight: true }, {}, 'repeat'), [at(3, 2)]))).toEqual([[3, 2]])
+    for (const position of layout.positions) expect(counterparts(sheet, on({ leftRight: true }), [at(position.row, position.column)]).dropped).toBe(0)
+  })
+
+  it('on a Fringe earring Left–right pairs the strands and the top\'s beads across its middle, every counterpart landing', () => {
+    const { sheet, layout } = custom('fringeEarring', 7)
+    expect(cells(counterparts(sheet, on({ leftRight: true }), [at(1000, 0)]))).toEqual([[1000, 0], [1000, 6]])
+    expect(cells(counterparts(sheet, on({ leftRight: true }), [at(1, 0)]))).toEqual([[1, 0], [1, 5]])
+    for (const position of layout.positions) expect(counterparts(sheet, on({ leftRight: true }), [at(position.row, position.column)]).dropped).toBe(0)
+  })
+
+  it('a turned Kite lies with its spine across, so Top–bottom is the Axis offered and Left–right is not; a turned Star likewise, a Warped Square either way', () => {
+    expect(shapeAxesOf(custom('kite', 15, 1).project)).toEqual({ offered: { leftRight: false, topBottom: true, radial: false } })
+    expect(shapeAxesOf(custom('warpedSquare', 4, 1).project)).toEqual({ offered: { leftRight: true, topBottom: true, radial: true }, sides: 4 })
+    expect(shapeAxesOf(custom('kaleidocycle', 3).project)).toEqual({ offered: { leftRight: true, topBottom: true, radial: true }, sides: 6 })
+    expect(shapeAxesOf(custom('star', 3, 1).project)?.offered).toEqual({ leftRight: false, topBottom: true, radial: true })
+    expect(shapeAxesOf(withFrameSheet(custom('star', 3).project, undefined))).toBeUndefined()
   })
 })

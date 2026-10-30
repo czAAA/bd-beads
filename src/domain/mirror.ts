@@ -1,4 +1,6 @@
 import { frameContains, type Rect } from './canvas'
+import { beadUnder, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutSymmetry } from './frameLayout'
+import { frameLayoutOf } from './frameShape'
 import type { GridPosition, Layer } from './grid'
 import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { canvasOf, frameOf, type Layered } from './layerRecord'
@@ -210,12 +212,15 @@ export function areaBetween(from: GridPosition, to: GridPosition, within?: Rect)
   return { row, column, rows: Math.max(...rows) - row + 1, columns: Math.max(...columns) - column + 1 }
 }
 
-/** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): the Area where one is set, else the
- * Frame's rectangle, else the open Canvas with its placed Axes. Strips come from a rectangle's edges and Radial's
- * centre from its middle; a Custom frame's layout joins as a kind of its own (ticket 0706). */
-type MirrorRegion = { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
+/** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): a Custom frame's layout (ticket 0706),
+ * else the Area where one is set, else the Frame's rectangle, else the open Canvas with its placed Axes. Strips come
+ * from a rectangle's edges and Radial's centre from its middle; a layout's counterparts are geometric, about its own
+ * centre. */
+type MirrorRegion = { kind: 'layout'; layout: FrameLayout } | { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
 
 function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
+  const layout = sheet.frame?.shape ? frameLayoutOf(sheet.frame) : undefined
+  if (layout) return { kind: 'layout', layout }
   if (sheet.area) return { kind: 'area', rect: sheet.area }
   if (sheet.edge) return { kind: 'frame', rect: sheet.edge }
   return { kind: 'canvas', ...(sheet.axes ? { axes: sheet.axes } : {}) }
@@ -224,7 +229,7 @@ function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
 /** The rectangle a region is bounded by, or none on the open Canvas: a gesture outside it is not mirrored, and a
  * counterpart outside it is dropped. */
 function boundsOf(region: MirrorRegion): Rect | undefined {
-  return region.kind === 'canvas' ? undefined : region.rect
+  return region.kind === 'canvas' || region.kind === 'layout' ? undefined : region.rect
 }
 
 /** The open Project's Canvas Axes; none placed for a Project saved without. */
@@ -351,7 +356,7 @@ const same: IndexImages = (index) => [index]
  * rectangle's (the Frame's, ticket 0703, or the Area's, 0710) strips from its edges and the counts; the open Canvas's
  * single Axes from its record, in Mirror mode only (0704: with no edge there is no strip to repeat, spec 0702). */
 function imagesBy(region: MirrorRegion, setting: MirrorSetting): Record<MirrorDirection, IndexImages> | undefined {
-  if (!(setting.axes.leftRight || setting.axes.topBottom)) return undefined
+  if (!(setting.axes.leftRight || setting.axes.topBottom) || region.kind === 'layout') return undefined
   if (region.kind !== 'canvas') {
     const { rect } = region
     const repeat = setting.mode === 'repeat'
@@ -370,8 +375,9 @@ function imagesBy(region: MirrorRegion, setting: MirrorSetting): Record<MirrorDi
   return { leftRight: across('leftRight'), topBottom: across('topBottom') }
 }
 
-/** Every position a position maps to under the setting, itself first. */
-type PositionImages = (position: GridPosition) => GridPosition[]
+/** Every position a position maps to under the setting, itself first; none for an image that lands on no position (a
+ * layout's Seam or Off-shape), which is dropped. */
+type PositionImages = (position: GridPosition) => (GridPosition | undefined)[]
 
 /** The straight Axes' images as one map: each row image with each column image. */
 function straightImages(by: Record<MirrorDirection, IndexImages>): PositionImages {
@@ -464,15 +470,94 @@ function radialImages(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSe
 }
 
 /** Where Radial turns about in the region: a rectangle's own centre (the Frame's or the Area's), or the Canvas's placed
- * handle; none without. */
+ * handle; none without (a layout turns about its own point, `layoutImages`). */
 function radialCentreOf(region: MirrorRegion): RadialCentre | undefined {
+  if (region.kind === 'layout') return undefined
   return region.kind === 'canvas' ? region.axes?.centre : rectCentre(region.rect)
 }
 
-/** How the layer maps a position under the setting inside its region, or nothing where it has no Axis to map by:
- * Radial about the region's centre when that is on, else the straight Axes by index. */
+// A Custom frame (ticket 0706, spec 0702): every counterpart is geometric, through the shape's layout. Its symmetry
+// (`LayoutSymmetry`) says which Axes it offers and Radial's Fold, its side count, exact by construction.
+
+/** Whether a layout has a mirror line at an angle (clockwise from up): one of its fold's lines, read modulo a half turn. */
+function hasLine({ fold, line }: LayoutSymmetry, angle: number): boolean {
+  const steps = (angle - line) / (Math.PI / fold)
+  return Math.abs(steps - Math.round(steps)) < 1e-6
+}
+
+/** The Axes a layout's symmetry offers (ticket 0706): a straight one where the shape has that mirror line (Left–right
+ * a vertical one, Top–bottom a horizontal one), Radial on a round shape, three sides or more. */
+export function offeredAxes(symmetry: LayoutSymmetry): Record<MirrorAxis, boolean> {
+  return { leftRight: hasLine(symmetry, 0), topBottom: hasLine(symmetry, Math.PI / 2), radial: symmetry.fold >= 3 }
+}
+
+/** How a Custom frame's shape bounds the Mirror popover (ticket 0706, MirrorPopover card): the Axes its symmetry
+ * offers, the others disabled with the reason, and on a round shape `sides`, Radial's Fold, which is not changeable. */
+export interface ShapeAxes {
+  offered: Record<MirrorAxis, boolean>
+  sides?: number
+}
+
+/** The open Project's Frame shape's Axes; none without a Custom frame. */
+export function shapeAxesOf(project: Layered): ShapeAxes | undefined {
+  const frame = frameOf(project)
+  const symmetry = frame?.shape ? frameLayoutOf(frame)?.symmetry : undefined
+  if (!symmetry) return undefined
+  return { offered: offeredAxes(symmetry), ...(symmetry.fold >= 3 ? { sides: symmetry.fold } : {}) }
+}
+
+/** A point turned about a centre by an angle, clockwise on screen. */
+function turnedAbout({ x, y }: LayoutPoint, centre: LayoutPoint, angle: number): LayoutPoint {
+  const [dx, dy] = [x - centre.x, y - centre.y]
+  return { x: centre.x + dx * Math.cos(angle) - dy * Math.sin(angle), y: centre.y + dx * Math.sin(angle) + dy * Math.cos(angle) }
+}
+
+/** A point reflected across the line through a centre at an angle clockwise from up. */
+function reflectedAcross({ x, y }: LayoutPoint, centre: LayoutPoint, angle: number): LayoutPoint {
+  const [dx, dy] = [x - centre.x, y - centre.y]
+  const along = dx * Math.sin(angle) - dy * Math.cos(angle)
+  return { x: centre.x + 2 * along * Math.sin(angle) - dx, y: centre.y - 2 * along * Math.cos(angle) - dy }
+}
+
+/** A Custom frame's images (ticket 0706): the bead's centre reflected across a straight Axis through the layout's
+ * centre, or turned about it by the shape's fold (in Mirror mode its reflection across the shape's first mirror line
+ * turned too, the kaleidoscope), and the bead under each point taking it, as Paste lands a bead, none on a Seam or
+ * Off-shape. An Axis the symmetry does not offer maps nothing, nor does a straight Axis in Repeat mode: a shape has no
+ * strip to repeat. */
+function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImages | undefined {
+  const { symmetry, centre } = layout
+  if (!symmetry) return undefined
+  const offered = offeredAxes(symmetry)
+  const mirror = setting.mode === 'mirror'
+  let pointsOf: (point: LayoutPoint) => LayoutPoint[]
+  if (setting.axes.radial) {
+    if (!offered.radial) return undefined
+    const step = (2 * Math.PI) / symmetry.fold
+    const turns = Array.from({ length: symmetry.fold }, (_turn, turn) => turn * step)
+    pointsOf = (point) => [point, ...(mirror ? [reflectedAcross(point, centre, symmetry.line)] : [])].flatMap((from) => turns.map((angle) => turnedAbout(from, centre, angle)))
+  } else {
+    const leftRight = setting.axes.leftRight && offered.leftRight
+    const topBottom = setting.axes.topBottom && offered.topBottom
+    if (!mirror || !(leftRight || topBottom)) return undefined
+    pointsOf = ({ x, y }) => (topBottom ? [y, 2 * centre.y - y] : [y]).flatMap((imageY) => (leftRight ? [x, 2 * centre.x - x] : [x]).map((imageX) => ({ x: imageX, y: imageY })))
+  }
+  return (position) => {
+    const from = layoutPosition(layout, position)
+    if (!from) return []
+    return pointsOf(from).map(({ x, y }) => {
+      const under = beadUnder(layout, x, y)
+      return under && { row: under.row, column: under.column }
+    })
+  }
+}
+
+/** How the layer maps a position under the setting inside its region, or nothing where it has no Axis to map by: a
+ * layout's geometry on a Custom frame; else Radial about the region's centre when that is on, else the straight Axes
+ * by index. */
 function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting): PositionImages | undefined {
-  if (!isMirrorOn(setting) || !sheet.geometry.grid) return undefined
+  if (!isMirrorOn(setting)) return undefined
+  if (region.kind === 'layout') return layoutImages(region.layout, setting)
+  if (!sheet.geometry.grid) return undefined
   if (setting.axes.radial) {
     const centre = radialCentreOf(region)
     return centre && radialImages(sheet, region, setting, centre)
@@ -483,7 +568,8 @@ function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSettin
 
 /** The positions a gesture changes under Mirror, on one layer (spec 0702): the sources as given, then their counterparts
  * inside the layer's region (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a source
- * outside the region is not mirrored, `dropped` counts counterparts off the grid or outside it; a Custom frame (0706) as yet none. */
+ * outside the region is not mirrored, `dropped` counts counterparts off the grid or outside it, or on a Custom frame's
+ * Seam or Off-shape (ticket 0706). */
 export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting: MirrorSetting, positions: readonly T[]): { positions: T[]; dropped: number } {
   const { geometry } = sheet
   const region = mirrorRegionOf(sheet)
@@ -498,7 +584,12 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
   let dropped = 0
   for (const source of positions) {
     if (bounds && !frameContains(bounds, source)) continue
-    for (const { row, column } of images(source)) {
+    for (const image of images(source)) {
+      if (!image) {
+        dropped += 1
+        continue
+      }
+      const { row, column } = image
       const key = `${row}:${column}`
       if (taken.has(key)) continue
       taken.add(key)
