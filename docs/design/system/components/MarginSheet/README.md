@@ -86,6 +86,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **Hot corners** are drawn just outside the Frame line, as in the design canvas: a bracket's stroke 3px clear of it, an edge's bar against it; their hit points are on the line.
 - **Touch:** every control on the sheet is a `ui-control`, whose coarse-pointer hit area is 44px (controls.css). Edit Frame keeps the Frame card's four corner handles on touch.
 - **Gives way:** the band's row and the title block take no press where a Selection's handles reach under them (ticket 498). The Tool pill, its color popover and the Selection bar are drawn over the sheet and take their own presses (ticket 0698).
+- **Mirror's Select area (MirrorPopover card, ticket 0710):** while an Area is being picked the sheet is a target for the whole Frame: under the pointer its paper tints `marker` at 10%, its outer edge turns a solid 1.5px `marker` line (radius 12) and a dashed (4 3) `marker` preview rectangle shows round the Frame, over `duration-fast` (none under reduced motion); a press, taken on release, makes the whole Frame the Area. The sheet's own controls take no press meanwhile.
 - **Edit Frame's outline** is the sheet element's own outline (DOM), the hot corners and size Tooltip are drawn on the canvas; the Tooltip sits out from the hot corner, beyond its disc.
 
 ## As built (ticket 0658)

@@ -85,6 +85,19 @@
   --selbar-gap: 6px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
+  /* Mirror (MirrorPopover card): the Axis lines, the Radial ring, the Canvas handles, the Area and the margin target */
+  --mirror-axis-width: 1.25px;
+  --mirror-axis-dash: 5 4;
+  --mirror-axis-soft: 0.45;
+  --mirror-band-opacity: 0.06;
+  --mirror-ring-radius: 7px;
+  --mirror-handle: 32px;
+  --mirror-handle-icon: 16px;
+  --mirror-chip-height: 32px;
+  --mirror-area-handle: 9px;
+  --mirror-preview-dash: 4 3;
+  --mirror-margin-opacity: 0.1;
+  --mirror-ghost-opacity: 0.45;
   --color-wheel-size: 200px;
   --color-slider-height: 20px;
   --color-thumb-size: 18px;
@@ -827,6 +840,32 @@ body {
 [data-theme="dark"] .bb-popover { background: var(--panel); border-color: var(--line-strong); }
 .bb-popover p { margin: 0; font: 400 13px/18px var(--font-sans); color: var(--body); }
 .bb-popover-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+/* MirrorPopover card: the popover's rows, the Axis chips, the Area button, and the overlay's lines, ring, handles, Area and margin target. */
+.bb-mirror-row { display: grid; gap: 6px; }
+.bb-mirror-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.bb-mirror-chip { height: var(--mirror-chip-height); padding: 0 12px; border: 1px solid var(--button-line); border-radius: var(--radius-full); background: var(--button); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
+.bb-mirror-chip[aria-pressed="true"] { background: var(--panel); border-color: var(--accent-strong); color: var(--accent-strong); font-weight: 600; }
+.bb-mirror-area { display: flex; gap: 6px; align-items: center; }
+.bb-mirror-area-btn { flex: 1; height: 34px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--button-line); border-radius: var(--radius-md); background: var(--button); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
+.bb-mirror-area-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+.bb-mirror-area-btn[aria-pressed="true"] { background: var(--panel); border-color: var(--accent-strong); color: var(--accent-strong); font-weight: 600; }
+.bb-mirror-area-btn.is-set { border-color: var(--marker); color: var(--marker); }
+.bb-mirror-axis { stroke: var(--marker); stroke-width: var(--mirror-axis-width); stroke-dasharray: var(--mirror-axis-dash); pointer-events: none; }
+.bb-mirror-axis.is-soft { opacity: var(--mirror-axis-soft); }
+.bb-mirror-band { fill: var(--marker); opacity: var(--mirror-band-opacity); pointer-events: none; }
+.bb-mirror-ring { fill: none; stroke: var(--marker); stroke-width: 2px; pointer-events: none; }
+.bb-mirror-handle { position: absolute; width: var(--mirror-handle); height: var(--mirror-handle); margin: calc(var(--mirror-handle) / -2) 0 0 calc(var(--mirror-handle) / -2); border-radius: var(--radius-full); background: var(--elevated); border: 1.5px solid var(--marker); color: var(--marker); display: grid; place-items: center; cursor: grab; box-shadow: var(--elevation-2); touch-action: none; }
+.bb-mirror-handle svg { width: var(--mirror-handle-icon); height: var(--mirror-handle-icon); }
+.bb-mirror-sel { fill: none; stroke: var(--marker); stroke-width: 1.5px; pointer-events: none; }
+.bb-mirror-sel.is-preview { stroke-dasharray: var(--mirror-preview-dash); }
+.bb-mirror-sel-handle { fill: var(--canvas); stroke: var(--ink); stroke-width: 1.5px; pointer-events: none; }
+.bb-mirror-margin { fill: var(--marker); fill-opacity: 0; pointer-events: none; transition: fill-opacity var(--duration-fast); }
+.bb-mirror-margin.is-picking { pointer-events: all; cursor: pointer; }
+.bb-mirror-margin.is-hot { fill-opacity: var(--mirror-margin-opacity); }
+.bb-mirror-ghost { pointer-events: none; fill-opacity: var(--mirror-ghost-opacity); stroke: var(--marker); stroke-width: 1.5px; }
+.bb-canvas-hint.is-picking { color: var(--marker); border: 1px solid var(--marker); background: var(--elevated); }
+@media (prefers-reduced-motion: reduce) { .bb-mirror-margin { transition: none; } }
 .bb-btn.is-disabled { color: var(--faint); cursor: default; }
 .p-zoom b.on { background: var(--ink); color: var(--canvas); border-radius: 99px; }
 
