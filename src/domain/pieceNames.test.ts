@@ -228,6 +228,15 @@ describe('piece names on a layer too big to walk', () => {
     expect(reads.beads).toBeLessThan(100_000)
   })
 
+  it('moves each name with its bead when an edit moves the beads', () => {
+    const { project } = huge()
+    const shifted = withLayers(project, { beads: Object.fromEntries(Object.entries(beadsOfLayer(project, 'canvas')).map(([r, cells]) => [Number(r) + 1, cells])) })
+
+    const carried = carryNames(project, shifted, ({ row: r, column }) => ({ row: r + 1, column }))
+
+    expect(canvasOf(carried).pieceNames).toEqual([{ name: 'Fill', row: 4, column: 3 }])
+  })
+
   it('names no Piece of it from a Selection, as that would flood it in the press', () => {
     const { project } = huge()
     expect(pieceInSelection(project, { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()

@@ -32,5 +32,6 @@ describe('Pieces walked in idle time (ticket 0716)', () => {
 
     expect(piecesWhenIdle('edit', after, { technique: 'loom' })?.pieces).toHaveLength(1)
     expect(piecesWhenIdle('other', before, { technique: 'loom' })).toBeUndefined()
+    await vi.runAllTimersAsync()
   })
 })

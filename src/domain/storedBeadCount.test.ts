@@ -65,6 +65,10 @@ describe('the bead count read from the stored runs (ticket 0716)', () => {
     expect(storedLayerBeads(flat)).toEqual([2, 4])
   })
 
+  it('counts as decoding reads: a color the table does not hold is no bead', () => {
+    expect(storedLayerBeads({ layers: [{ encodedBeads: { colors: ['#000'], rows: { 0: '0:1x2,2x5,1' } } }] })).toEqual([3])
+  })
+
   it('has no count for a shape it does not know, so the caller decodes it as before', () => {
     expect(storedLayerBeads({ cells: { colors: [], runs: '' } })).toBeUndefined()
     expect(storedLayerBeads(null)).toBeUndefined()

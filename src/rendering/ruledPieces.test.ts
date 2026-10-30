@@ -88,6 +88,15 @@ describe('the Pieces the rulers hang from on a layer too big to walk', () => {
     expect(reads.beads).toBeLessThan(5 * SIZE)
   })
 
+  it('stay uncounted through a stroke, the box growing with what it paints', () => {
+    const { project } = huge()
+    const before = ruledPieces(undefined, project, { numbers: true, stroking: false })
+
+    const step = ruledPieces(before, paint(project, [{ row: 261, column: 0, color: R }]), { numbers: true, stroking: true })
+
+    expect(step).toMatchObject({ areas: [{ row: 0, column: 0, rows: 262, columns: 1000 }], uncounted: true })
+  })
+
   it('take the Piece areas and the names from the walk once it is in', () => {
     const { project } = huge()
     const beads = beadsOfLayer(project, 'canvas')
