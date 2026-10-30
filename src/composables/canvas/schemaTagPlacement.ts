@@ -49,7 +49,7 @@ export function tagPlacement(box: BarBox, viewport: { width: number; height: num
   const right = box.left + box.width
   const roomRight = viewport.width - (right + DROP_X - TAG_HOLE_INSET)
   const roomLeft = box.left - DROP_X + TAG_HOLE_INSET
-  const side = roomRight >= width || roomRight >= roomLeft ? 'right' : 'left'
+  const side = roomRight < width && roomLeft > roomRight ? 'left' : 'right'
   const corner = { x: side === 'right' ? right : box.left, y: bottom }
   if (corner.x < 0 || corner.y < 0 || corner.x > viewport.width || corner.y > viewport.height) return undefined
   return { side, corner, hole: { x: corner.x + (side === 'right' ? DROP_X : -DROP_X), y: corner.y + DROP_Y } }
