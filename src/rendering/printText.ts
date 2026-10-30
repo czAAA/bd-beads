@@ -16,7 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
-import { beadOfLayer, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
+import { beadOfLayer, frameOf, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -55,6 +55,7 @@ interface PrintedWordChart {
 // empty.
 export interface PrintText {
   locale: Locale
+  /** The title: the Frame's name, else the Project's (ticket 0719). */
   name: string
   techniqueWord: string
   maker: string
@@ -147,7 +148,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
 
   return {
     locale,
-    name: projectNameOf(project),
+    name: frameOf(project)?.name?.trim() || projectNameOf(project),
     techniqueWord: technique,
     maker,
     exportedAt: `${date} · ${time}`,

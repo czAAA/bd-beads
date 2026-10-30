@@ -6,7 +6,7 @@ import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
 import { headerMaker, printText } from './printText'
-import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { frameOf, withFrameSheet, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 
 const at = new Date(2026, 8, 26, 14, 32)
@@ -89,6 +89,14 @@ describe('printText (tickets 162, 164)', () => {
     const text = printText(project, en, 'en', at)
 
     expect(text.maker).toBe('Bead Master')
+  })
+
+  it("titles the export with the Frame's name, else the Project's (ticket 0719)", () => {
+    const framed = withLayer(delicaProject(10), 'frame', { name: 'Rose' })
+
+    expect(printText(framed, en, 'en', at).name).toBe('Rose')
+    expect(printText(delicaProject(10), en, 'en', at).name).toBe('Logo panel')
+    expect(printText(withLayer(delicaProject(10), 'frame', { name: '  ' }), en, 'en', at).name).toBe('Logo panel')
   })
 
   it('prints no name when the Project has none (ADR 0060)', () => {

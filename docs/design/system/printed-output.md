@@ -5,7 +5,7 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 ## Look and feel
 
 - **The chart comes first.** The Cover page shows the whole Schema across the full width of the sheet; every chart page shows one part with every row and column numbered. Everything else is small and sits around the board, so the page works at the craft table.
-- **The canvas, on paper.** On the Cover page the Schema sits on a pale rounded board (`print-board`) like the app's canvas. A chart page has no board fill, only a thin rounded outline (`print-pad-line`, `print-pad-radius`), so only beads take toner. The technique word is set in Instrument Serif italic in `accent` next to the Project's name.
+- **The canvas, on paper.** On the Cover page the Schema sits on a pale rounded board (`print-board`) like the app's canvas. A chart page has no board fill, only a thin rounded outline (`print-pad-line`, `print-pad-radius`), so only beads take toner. The technique word is set in Instrument Serif italic in `accent` next to the title (the Frame's name, else the Project's).
 - **Open, with no watermarks.** Nothing is drawn behind or over the chart or the text: no background maker's name, no X1 marks, no accent line, no signature on the beads. The PDF and PNG are meant to be shared. The maker's name is still printed as information (Made by, the header, "by {maker}").
 - **Accent marks structure only**: the technique word, the lines where the chart parts meet, the part labels and the current part on the mini map. Text is `ink` or `muted`. A black-and-white printer turns the accent gray and loses no information: every bead on a chart page carries its letter.
 - **On every page**: the X1 mark and "bd-beads" (small, in the header or footer, never as a background), technique and name, the maker's name, the export date and time, "page 2 / 9".
@@ -22,11 +22,11 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 One A4 portrait page for both formats, drawn by the same code, inside a 10 mm margin on all four sides (`print-margin`). The PDF opens with it; the PNG is it.
 
-- **Title block**: the Project's name as the title (Inter 700 22, `ink`), "by {Maker's name}" under it (Instrument Serif italic 13, `muted`), then one tech line (DM Mono `muted`: technique, Bead, grid, Estimated size). An empty name leaves out the title, an empty maker the "by" line; the Bead's name is never the title.
+- **Title block**: the Frame's name as the title, else the Project's (Inter 700 22, `ink`), "by {Maker's name}" under it (Instrument Serif italic 13, `muted`), then one tech line (DM Mono `muted`: technique, Bead, grid, Estimated size). An empty name leaves out the title, an empty maker the "by" line; the Bead's name is never the title.
 - **The whole Schema on the board**: rulers on all four sides with a number every 5, or 10 when the beads are small (every 10th and the 1 in `ink` 500, the others `muted`) and a hairline every 10. A small Schema's bead is capped at `print-bead-max` (6 mm) and the picture is centred in its area, Beads needed moving up under it at an even gap; a big Schema is scaled down to fit with no minimum bead size; a wide flat one fits the page width.
 - **The chart parts** are marked on it in the PDF only: solid 2 px `accent` lines with a white keyline, run through the rulers, with "101 →" and "101 ↓" in `accent-strong` where each cut is, and a white pill with an `accent` border on each part: "part A · page 2", "B · p 3".
 - **Beads needed** under the board, in two columns that read down: a letter swatch (the color, its Swatch letter on it when Letters is on), color name, beads, grams; then the Total ("Total · 14 colors · 16 900 beads · ≈ 84.5 g") and the grams note. It takes at most 40% of the room under the title block.
-- **List pages**: colors that do not fit go on pages that follow, in the PDF right after the cover (so chart pages start later) and in the PNG as `_2`, `_3` files after the Project's name. Each has the Project's name, small, and the same two columns; the Total and the grams note end the last. The full legend, with codes and what to buy, stays on the Specification.
+- **List pages**: colors that do not fit go on pages that follow, in the PDF right after the cover (so chart pages start later) and in the PNG as `_2`, `_3` files after the export's file name. Each has the title, small, and the same two columns; the Total and the grams note end the last. The full legend, with codes and what to buy, stays on the Specification.
 - **Footer**: the X1 mark and "openbeads" on the left, date and time on the right.
 
 ## Chart pages
@@ -72,6 +72,6 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 ## PNG image
 
 - **The Cover page, alone**: the same A4 portrait page as the PDF's first (above), drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. The lines and pills that point at chart pages are left out, the PNG having no pages.
-- Beads needed that does not fit continues in further files, `_2`, `_3` after the Project's name, handed over in order after the cover. Drawn in the app's language. No watermark. File names stay `bd-beads-{pattern}.png` and `.pdf`.
+- Beads needed that does not fit continues in further files, `_2`, `_3` after the file name, handed over in order after the cover. Drawn in the app's language. No watermark. Every export file, PNG, PDF and project file, is named `{project}-{frame}-{maker}.{png|pdf|openbeads}`, each part made filename-safe and left out when it leaves nothing to write (ticket 0719).
 
 The sizes are the `print-*` tokens; the board color is `print-board`. The PrintPage1 (the Cover page), PrintChartPage, PrintSpecification, PrintWordChart and PngExport cards show the pages. The signed-off canvas is in the claude.ai design project "Export sheets — PDF & PNG".
