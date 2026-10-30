@@ -86,6 +86,12 @@ export const zh: Translations = {
     copyToCounterparts: '把片段的珠子复制到对应位置。',
     announceSelectionMirrored: '片段已镜像',
     droppedMessage: { other: '{count} 个镜像无处落下，未放入。' },
+    radial: '环绕',
+    fold: '份数',
+    fewerFolds: '减少份数',
+    moreFolds: '增加份数',
+    foldExact: '按行列精确旋转网格。',
+    foldNearest: '旋转 {angle}°：每颗珠子的中心旋转后由最近的珠子承接，因此靠近中心的镜像会合并。',
   },
   colorNames: {
     black: '黑色',

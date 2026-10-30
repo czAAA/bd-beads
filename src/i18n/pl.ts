@@ -91,6 +91,12 @@ export const pl: Translations = {
       many: '{count} odbić nie miało gdzie się położyć i zostało pominiętych.',
       other: '{count} odbicia nie miało gdzie się położyć i zostało pominiętych.',
     },
+    radial: 'Wokół środka',
+    fold: 'Części',
+    fewerFolds: 'Mniej części',
+    moreFolds: 'Więcej części',
+    foldExact: 'Dokładny obrót siatki, po wierszach i kolumnach.',
+    foldNearest: 'Obrót o {angle}°: środek każdego koralika obraca się i bierze go najbliższy koralik, więc przy środku obrazy się zlewają.',
   },
   colorNames: {
     black: 'Czarny',

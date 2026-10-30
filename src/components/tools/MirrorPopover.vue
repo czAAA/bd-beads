@@ -3,7 +3,25 @@ import { computed, ref, useId } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePillPopoverPlacement } from '../../composables/tools/usePillPopoverPlacement'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
-import { isMirrorOn, MIRROR_DIRECTIONS, MIRROR_MODES, withAxisToggled, withMirrorCount, withMirrorMode, type MirrorDirection, type MirrorMode, type MirrorSetting } from '../../domain/mirror'
+import { fillBlanks } from '../../domain/fillBlanks'
+import {
+  foldAngle,
+  foldByIndex,
+  isMirrorOn,
+  MAX_FOLD,
+  MIN_FOLD,
+  MIRROR_AXES,
+  MIRROR_DIRECTIONS,
+  MIRROR_MODES,
+  withAxisToggled,
+  withMirrorCount,
+  withMirrorFold,
+  withMirrorMode,
+  type MirrorAxis,
+  type MirrorDirection,
+  type MirrorMode,
+  type MirrorSetting,
+} from '../../domain/mirror'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
@@ -53,11 +71,17 @@ const directionWords: Record<MirrorDirection, { chip: () => string; count: () =>
   leftRight: { chip: () => t.value.mirror.leftRight, count: () => t.value.mirror.leftRightAxes },
   topBottom: { chip: () => t.value.mirror.topBottom, count: () => t.value.mirror.topBottomAxes },
 }
+const chipWord = (axis: MirrorAxis) => (axis === 'radial' ? t.value.mirror.radial : directionWords[axis].chip())
 const anyAxis = computed(() => MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction]) || props.setting.axes.radial)
 /** The directions whose Axis count Stepper shows: a Frame on a grid, and that Axis on. */
 const counted = computed(() => (props.limits ? MIRROR_DIRECTIONS.filter((direction) => props.setting.axes[direction]) : []))
 /** A count above the Frame's limit is shown clamped, as it acts (spec 0702). */
 const countOf = (direction: MirrorDirection) => Math.min(props.setting.counts[direction], props.limits?.[direction] ?? Infinity)
+/** Whether the Fold Stepper shows (ticket 0705): Radial on, on a grid (a Frame with limits, or the open Canvas); a
+ * Custom frame's Fold is its shape's (ticket 0706). Its own section, so 0706 can put a Note in its place. */
+const folded = computed(() => props.setting.axes.radial && (props.limits !== undefined || props.onCanvas === true))
+/** The rule the Fold is under (MirrorPopover card): exact by index at 2 and 4, else the nearest bead to a turn. */
+const foldNote = computed(() => (foldByIndex(props.setting.fold) ? t.value.mirror.foldExact : fillBlanks(t.value.mirror.foldNearest, { angle: foldAngle(props.setting.fold) })))
 /** The open Canvas's own detail (ticket 0704), with a straight Axis on: the handle, or in Repeat the Area it needs. */
 const canvasNote = computed(() => {
   if (!props.onCanvas || !isMirrorOn(props.setting) || !MIRROR_DIRECTIONS.some((direction) => props.setting.axes[direction])) return undefined
@@ -65,8 +89,9 @@ const canvasNote = computed(() => {
 })
 
 const setMode = (mode: MirrorMode) => emit('update:setting', withMirrorMode(props.setting, mode))
-const toggleAxis = (direction: MirrorDirection) => emit('update:setting', withAxisToggled(props.setting, direction))
+const toggleAxis = (axis: MirrorAxis) => emit('update:setting', withAxisToggled(props.setting, axis))
 const setCount = (direction: MirrorDirection, count: number) => emit('update:setting', withMirrorCount(props.setting, direction, count))
+const setFold = (fold: number) => emit('update:setting', withMirrorFold(props.setting, fold))
 </script>
 
 <template>
@@ -85,17 +110,35 @@ const setCount = (direction: MirrorDirection, count: number) => emit('update:set
       <span :id="axesId" class="mirror-popover__label">{{ t.mirror.axes }}</span>
       <div class="mirror-popover__chips" role="group" :aria-labelledby="axesId">
         <button
-          v-for="direction in MIRROR_DIRECTIONS"
-          :key="direction"
+          v-for="axis in MIRROR_AXES"
+          :key="axis"
           type="button"
           class="ui-control mirror-popover__chip"
-          :aria-pressed="setting.axes[direction]"
-          :data-testid="`mirror-axis-${direction}`"
-          @click="toggleAxis(direction)"
+          :aria-pressed="setting.axes[axis]"
+          :data-testid="`mirror-axis-${axis}`"
+          @click="toggleAxis(axis)"
         >
-          {{ directionWords[direction].chip() }}
+          {{ chipWord(axis) }}
         </button>
       </div>
+    </section>
+
+    <section v-if="folded" class="mirror-popover__row" data-testid="mirror-fold">
+      <span class="mirror-popover__label">{{ t.mirror.fold }}</span>
+      <AppStepper
+        :model-value="setting.fold"
+        :min="MIN_FOLD"
+        :max="MAX_FOLD"
+        :decrease-label="t.mirror.fewerFolds"
+        :value-label="t.mirror.fold"
+        :increase-label="t.mirror.moreFolds"
+        tooltip
+        decrease-testid="mirror-fold-fewer"
+        increase-testid="mirror-fold-more"
+        value-testid="mirror-fold-value"
+        @update:model-value="setFold"
+      />
+      <AppNote data-testid="mirror-fold-note">{{ foldNote }}</AppNote>
     </section>
 
     <section v-for="direction in counted" :key="direction" class="mirror-popover__row" :data-testid="`mirror-count-${direction}`">

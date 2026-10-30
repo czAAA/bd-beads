@@ -9,18 +9,23 @@ import {
   MIRROR_OFF,
   axisLimitsOf,
   canvasAxesOf,
+  canvasMirrors,
   counterparts,
+  foldAngle,
+  foldByIndex,
   mirrorSettingOf,
   mirroredOnCanvas,
   readCanvasAxes,
   readMirrorSetting,
   snapAxis,
+  snapCentre,
   toggledMirror,
   withAxesPlaced,
   withAxisToggled,
   withCanvasAxes,
   withMirror,
   withMirrorCount,
+  withMirrorFold,
   withMirrorMode,
   type CanvasAxes,
   type MirrorSetting,
@@ -40,6 +45,11 @@ const on = (axes: Partial<MirrorSetting['axes']>, counts: Partial<MirrorSetting[
 })
 
 const columnsOf = (result: { positions: { column: number }[] }) => result.positions.map(({ column }) => column)
+
+/** Radial on at a Fold (ticket 0705), a position, and a result's positions as [row, column] pairs. */
+const radial = (fold: number, mode: MirrorSetting['mode'] = 'repeat'): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
+const at = (row: number, column: number) => ({ row, column })
+const cells = (result: { positions: { row: number; column: number }[] }) => result.positions.map(({ row, column }) => [row, column])
 
 describe('counterparts on a Frame by index (ticket 0703, spec 0702)', () => {
   it('reflects the column about one Left–right axis: 0 and 3 are a pair on 4 beads across, and the middle bead of 5 is its own', () => {
@@ -265,5 +275,159 @@ describe('the Mirror setting on the Project', () => {
     const project = framed('loom', 5, 3)
     expect(axisLimitsOf(project)).toEqual({ leftRight: 4, topBottom: 2 })
     expect(axisLimitsOf((changeFrame(project, { remove: true }) as { project: Project }).project)).toBeUndefined()
+  })
+})
+
+describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
+
+  it('at Fold 4 turns the position a quarter at a time about the Frame\'s centre by index, as Rotate turns a fragment (ADR 0052), on a Frame of odd and of even size', () => {
+    const odd = layerSheet(framed('loom', 5, 5), 'frame')
+    expect(cells(counterparts(odd, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
+    expect(cells(counterparts(odd, radial(4), [at(0, 1)]))).toEqual([[0, 1], [1, 4], [4, 3], [3, 0]])
+    expect(cells(counterparts(odd, radial(4), [at(2, 2)]))).toEqual([[2, 2]])
+    const even = layerSheet(framed('loom', 4, 4), 'frame')
+    expect(cells(counterparts(even, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
+  })
+
+  it('at Fold 2 turns the position a half about the centre, and in Mirror mode reflects it too: the two straight Axes\' four images', () => {
+    const sheet = layerSheet(framed('loom', 5, 5), 'frame')
+    expect(cells(counterparts(sheet, radial(2), [at(0, 1)]))).toEqual([[0, 1], [4, 3]])
+    expect(cells(counterparts(sheet, radial(2, 'mirror'), [at(0, 1)]))).toEqual([[0, 1], [4, 3], [0, 3], [4, 1]])
+  })
+
+  it('in Mirror mode at Fold 4 on a loom grid is the eightfold kaleidoscope, the diagonal reflections as index swaps: up to 2n − 1 counterparts, Repeat n − 1', () => {
+    const sheet = layerSheet(framed('loom', 5, 5), 'frame')
+    expect(cells(counterparts(sheet, radial(4, 'mirror'), [at(0, 1)]))).toEqual([[0, 1], [1, 4], [4, 3], [3, 0], [0, 3], [3, 4], [4, 1], [1, 0]])
+    // A bead on the diagonal is its own reflection across it: four images.
+    expect(cells(counterparts(sheet, radial(4, 'mirror'), [at(0, 0)]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
+  })
+
+  it('on peyote and brick keeps the index and takes the grid\'s half-bead shift, and four quarter turns come back to the start: every image has the same images', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      for (const [columns, rows] of [[6, 6], [7, 7], [5, 4]]) {
+        const sheet = layerSheet(framed(technique, columns, rows), 'frame')
+        const source = at(1, 0)
+        const images = counterparts(sheet, radial(4, 'mirror'), [source]).positions
+        for (const image of images) {
+          const back = counterparts(sheet, radial(4, 'mirror'), [image]).positions
+          expect(new Set(back.map(({ row, column }) => `${row}:${column}`)), `${technique} ${columns}×${rows} from ${image.row}:${image.column}`).toEqual(new Set(images.map(({ row, column }) => `${row}:${column}`)))
+        }
+      }
+    }
+    expect(cells(counterparts(layerSheet(framed('brick', 4, 4), 'frame'), radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
+  })
+
+  it('on a Frame whose rows and columns differ in parity a quarter turn can land off the Frame, which is dropped, while the half turn stays exact', () => {
+    const sheet = layerSheet(framed('loom', 4, 5), 'frame')
+    expect(cells(counterparts(sheet, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
+    expect(counterparts(sheet, radial(4), [at(4, 0)])).toEqual({ positions: [at(4, 0)], dropped: 3 })
+    expect(cells(counterparts(sheet, radial(2), [at(0, 0)]))).toEqual([[0, 0], [4, 3]])
+    expect(cells(counterparts(sheet, radial(2, 'mirror'), [at(0, 0)]))).toEqual([[0, 0], [4, 3], [0, 3], [4, 0]])
+    expect(cells(counterparts(sheet, radial(2), [at(4, 3)]))).toEqual([[4, 3], [0, 0]])
+  })
+})
+
+describe('Radial counterparts by geometry, Fold 3 and 5 to 8 (ticket 0705, spec 0702)', () => {
+
+  it('at Fold 3 turns the bead\'s centre about the Frame\'s centre by 120° and the nearest bead takes each image; Mirror turns its reflection too, 2n images', () => {
+    const sheet = layerSheet(framed('loom', 7, 7), 'frame')
+    expect(cells(counterparts(sheet, radial(3), [at(3, 1)]))).toEqual([[3, 1], [1, 4], [5, 4]])
+    expect(cells(counterparts(sheet, radial(3, 'mirror'), [at(3, 1)]))).toEqual([[3, 1], [1, 4], [5, 4], [3, 5], [5, 2], [1, 2]])
+  })
+
+  it('takes every image in one shot from the source, never chained: at Fold 8 the images far out are exact and symmetric', () => {
+    const sheet = layerSheet(framed('loom', 15, 15), 'frame')
+    expect(cells(counterparts(sheet, radial(8), [at(7, 1)]))).toEqual([[7, 1], [3, 3], [1, 7], [3, 11], [7, 13], [11, 11], [13, 7], [11, 3]])
+  })
+
+  it('merges images near the centre rather than drifting: the centre bead has none, and a bead one out at Fold 7 has fewer than six', () => {
+    const sheet = layerSheet(framed('loom', 7, 7), 'frame')
+    expect(cells(counterparts(sheet, radial(7), [at(3, 3)]))).toEqual([[3, 3]])
+    const near = counterparts(sheet, radial(7), [at(3, 2)])
+    expect(near.positions.length).toBeLessThan(7)
+    expect(near.positions.length).toBeGreaterThan(1)
+    expect(new Set(near.positions.map(({ row, column }) => `${row}:${column}`)).size).toBe(near.positions.length)
+    expect(near.dropped).toBe(0)
+  })
+
+  it('lands on the Frame\'s own positions on peyote and brick too, at most the Fold in Repeat, and drops what turns off the Frame', () => {
+    for (const technique of ['peyote', 'brick'] as const) {
+      const sheet = layerSheet(framed(technique, 8, 8), 'frame')
+      const result = counterparts(sheet, radial(6), [at(2, 2)])
+      expect(result.positions.length, technique).toBeGreaterThan(1)
+      expect(result.positions.length, technique).toBeLessThanOrEqual(6)
+      expect(result.positions.every((position) => sheet.geometry.hasPosition(position)), technique).toBe(true)
+    }
+    // A corner of a square turned 60° lies outside it.
+    const corner = counterparts(layerSheet(framed('loom', 9, 9), 'frame'), radial(6), [at(0, 0)])
+    expect(corner.dropped).toBeGreaterThan(0)
+  })
+})
+
+describe('Radial on the open Canvas about its centre handle (ticket 0705)', () => {
+  function open(technique: Technique, axes: CanvasAxes): Project {
+    const project = (changeFrame(framed(technique, 4, 4), { remove: true }) as { project: Project }).project
+    return withCanvasAxes(project, axes)
+  }
+
+  it('turns by index about a position or a corner between four, in Repeat mode too (a turn needs no edge), and the geometric Folds about its point', () => {
+    const onPosition = layerSheet(open('loom', { centre: { row: 2, column: 2 } }), 'canvas')
+    expect(cells(counterparts(onPosition, radial(4), [{ row: 0, column: 0 }]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
+    const onCorner = layerSheet(open('brick', { centre: { row: 1.5, column: 1.5 } }), 'canvas')
+    expect(cells(counterparts(onCorner, radial(2, 'mirror'), [{ row: 0, column: 0 }]))).toEqual([[0, 0], [3, 3], [0, 3], [3, 0]])
+    const geometric = layerSheet(open('loom', { centre: { row: 3, column: 3 } }), 'canvas')
+    expect(cells(counterparts(geometric, radial(3), [{ row: 3, column: 1 }]))).toEqual([[3, 1], [1, 4], [5, 4]])
+  })
+
+  it('mirrors nothing until the centre is placed, and says so through canvasMirrors', () => {
+    const unplaced = open('loom', {})
+    expect(counterparts(layerSheet(unplaced, 'canvas'), radial(4), [{ row: 0, column: 0 }])).toEqual({ positions: [{ row: 0, column: 0 }], dropped: 0 })
+    expect(canvasMirrors(unplaced, radial(4))).toBe(false)
+    const placed = open('loom', { centre: { row: 2, column: 2 } })
+    expect(canvasMirrors(placed, radial(4))).toBe(true)
+    expect(canvasMirrors(placed, radial(4, 'mirror'))).toBe(true)
+    expect(canvasMirrors(placed, radial(4, 'off'))).toBe(false)
+  })
+
+  it('snaps the centre to the nearer of a position and a corner between four, a tie taking the position', () => {
+    expect(snapCentre({ row: 2.3, column: 2.4 })).toEqual({ row: 2.5, column: 2.5 })
+    expect(snapCentre({ row: -0.7, column: 0.9 })).toEqual({ row: -1, column: 1 })
+    expect(snapCentre({ row: 2.2, column: 2.3 })).toEqual({ row: 2, column: 2 })
+  })
+
+  it('places the centre at the view\'s middle when Radial goes on, or is on with none placed, and keeps one placed', () => {
+    const centre = { leftRight: 4.3, topBottom: -1.1 }
+    expect(withAxesPlaced({}, MIRROR_OFF, radial(4), centre)).toEqual({ centre: { row: -1, column: 4 } })
+    expect(withAxesPlaced({ leftRight: 2 }, MIRROR_OFF, radial(4), undefined)).toEqual({ leftRight: 2, centre: { row: 0, column: 0 } })
+    const placed = { centre: { row: 3, column: 3 } }
+    expect(withAxesPlaced(placed, radial(4), radial(4), centre)).toBe(placed)
+    expect(withAxesPlaced(placed, MIRROR_OFF, radial(4), centre)).toEqual({ centre: { row: -1, column: 4 } })
+    expect(withAxesPlaced(placed, radial(4), withAxisToggled(radial(4), 'radial'), centre)).toBe(placed)
+  })
+
+  it('reads the centre back from a file\'s raw value, snapped, and leaves out one that is no point', () => {
+    expect(readCanvasAxes({ centre: { row: 1.3, column: 1.4 } })).toEqual({ centre: { row: 1.5, column: 1.5 } })
+    expect(readCanvasAxes({ leftRight: 1, centre: 'x' })).toEqual({ leftRight: 1 })
+    expect(readCanvasAxes({ centre: { row: 1 } })).toBeUndefined()
+  })
+})
+
+describe('the Radial chip and the Fold on the setting (ticket 0705)', () => {
+  it('Radial on turns the straight Axes off and remembers them, Radial off brings them back, and a straight Axis on turns Radial off', () => {
+    const straight = on({ leftRight: true, topBottom: true })
+    const radial = withAxisToggled(straight, 'radial')
+    expect(radial).toEqual({ ...on({ radial: true }), beforeRadial: { leftRight: true, topBottom: true } })
+    expect(withAxisToggled(radial, 'radial')).toEqual(straight)
+    expect(withAxisToggled(radial, 'topBottom')).toEqual({ ...on({ topBottom: true }), beforeRadial: { leftRight: true, topBottom: true } })
+    expect(withAxisToggled(MIRROR_OFF, 'radial')).toEqual({ ...on({ radial: true }), beforeRadial: { leftRight: false, topBottom: false } })
+    expect(readMirrorSetting(JSON.parse(JSON.stringify(radial)))).toEqual(radial)
+  })
+
+  it('steps the Fold within 2 to 8, says which Folds map by index, and the turn between images in degrees', () => {
+    expect(withMirrorFold(MIRROR_OFF, 5).fold).toBe(5)
+    expect(withMirrorFold(MIRROR_OFF, 1).fold).toBe(2)
+    expect(withMirrorFold(MIRROR_OFF, 9).fold).toBe(8)
+    expect([2, 3, 4, 5, 6, 7, 8].filter(foldByIndex)).toEqual([2, 4])
+    expect([3, 6, 7].map(foldAngle)).toEqual([120, 60, 51])
   })
 })
