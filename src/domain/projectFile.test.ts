@@ -251,37 +251,38 @@ describe('single-Project roundtrip', () => {
   })
 
   it('names the file after the Project, without characters a filesystem would choke on', () => {
-    expect(projectFileName(makeProject('Fox'))).toBe('fox_pr.openbeads')
-    expect(projectFileName(makeProject('TOHO Cube 1.5mm'))).toBe('toho-cube-1-5mm_pr.openbeads')
-    expect(projectFileName(makeProject('a/b:c*?'))).toBe('a-b-c_pr.openbeads')
-    expect(projectFileName(makeProject('Лиса'))).toBe('лиса_pr.openbeads')
+    expect(projectFileName(makeProject('Fox'))).toBe('fox.openbeads')
+    expect(projectFileName(makeProject('TOHO Cube 1.5mm'))).toBe('toho-cube-1-5mm.openbeads')
+    expect(projectFileName(makeProject('a/b:c*?'))).toBe('a-b-c.openbeads')
+    expect(projectFileName(makeProject('Лиса'))).toBe('лиса.openbeads')
   })
 
   it('falls back to a generic name for a Project whose name has nothing filename-safe in it', () => {
-    expect(projectFileName(makeProject('???'))).toBe('openbeads_pr.openbeads')
+    expect(projectFileName(makeProject('???'))).toBe('openbeads.openbeads')
   })
 })
 
-describe('the export file names (tickets 73, 74, 0708)', () => {
-  const rose = withLayer(makeProject('Summer'), 'frame', { name: 'Rose' })
+describe('the export file names (tickets 73, 74, 0708, 0720)', () => {
+  const rose = { ...withLayer(makeProject('Summer'), 'frame', { name: 'Rose' }), makerName: 'Ada Lovelace' }
 
-  it('names the PNG, its further pages and the PDF after the Frame', () => {
-    expect(projectExportFileName(rose, 'png')).toBe('openbeads-rose.png')
-    expect(projectListFileName(rose, 2)).toBe('openbeads-rose_2.png')
-    expect(projectExportFileName(rose, 'pdf')).toBe('openbeads-rose.pdf')
+  it('names the PNG, its further pages and the PDF {project}-{frame}-{maker}', () => {
+    expect(projectExportFileName(rose, 'png')).toBe('summer-rose-ada-lovelace.png')
+    expect(projectListFileName(rose, 2)).toBe('summer-rose-ada-lovelace_2.png')
+    expect(projectExportFileName(rose, 'pdf')).toBe('summer-rose-ada-lovelace.pdf')
   })
 
-  it('names an unnamed Frame’s exports after the Project, and a Frame’s whose name leaves nothing to write', () => {
-    expect(projectExportFileName(makeProject('Summer'), 'pdf')).toBe('openbeads-summer.pdf')
-    expect(projectExportFileName(withLayer(makeProject('Summer'), 'frame', { name: '???' }), 'pdf')).toBe('openbeads-summer.pdf')
+  it('names the project file {project}-{maker}, without the Frame’s name', () => {
+    expect(projectFileName(rose)).toBe('summer-ada-lovelace.openbeads')
   })
 
-  it('falls back to a generic name when neither name has anything filename-safe in it', () => {
-    expect(projectExportFileName(makeProject('???'), 'png')).toBe('openbeads-project.png')
+  it('leaves out an unnamed Frame, a missing maker and a name that leaves nothing to write', () => {
+    expect(projectExportFileName(makeProject('Summer'), 'pdf')).toBe('summer.pdf')
+    expect(projectExportFileName(withLayer(makeProject('Summer'), 'frame', { name: '???' }), 'pdf')).toBe('summer.pdf')
+    expect(projectExportFileName({ ...withLayer(makeProject('???'), 'frame', { name: 'Rose' }), makerName: 'Ada' }, 'png')).toBe('rose-ada.png')
   })
 
-  it('keeps the Project’s name on the project file', () => {
-    expect(projectFileName(rose)).toBe('summer_pr.openbeads')
+  it('falls back to a generic name when no part has anything filename-safe in it', () => {
+    expect(projectExportFileName(makeProject('???'), 'png')).toBe('openbeads.png')
   })
 })
 
