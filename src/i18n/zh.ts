@@ -224,6 +224,10 @@ export const zh: Translations = {
     pieces: { other: '{count} 个小块' },
     unnamedPieces: '{count} 个未命名',
     frameSize: '边框 {width} × {height} 颗珠子',
+    tooBigToCount: '太多，无法计数',
+    countingPieces: '正在计数小块',
+    beads: { other: '{count} 颗珠子' },
+    sealedDates: '创建于 {created} · 保存于 {saved}',
   },
   starters: {
     title: '起始方案',
@@ -328,7 +332,6 @@ export const zh: Translations = {
     tagline: '保存。计数。导出',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
-    projectsSaved: '已保存的项目：{count}',
     whatsInside: '功能一览',
     previousFeature: '上一个功能',
     nextFeature: '下一个功能',
@@ -1042,5 +1045,14 @@ export const zh: Translations = {
     rateLimited: '报告太多。{seconds} 秒后再试。',
     failed: '报告未能发送。稍后再试，或复制下来。',
     sent: '谢谢，报告已发送',
+  },
+  opening: {
+    didNotOpen: '“{name}”上次没有打开。',
+    removeButton: '移除',
+    exportButton: '导出',
+    largeTitle: '打开“{name}”？',
+    largeMessage: '{count} 百万颗珠子。打开可能很慢或失败。',
+    openAnyway: '仍然打开',
+    cancelButton: '取消',
   },
 }

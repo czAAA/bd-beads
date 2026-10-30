@@ -15,6 +15,7 @@ import { marginForm, marginScale, titleBlockCorner } from '../../rendering/margi
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
+import { piecesWhenIdle } from '../../composables/canvas/idlePieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
@@ -105,6 +106,8 @@ const emit = defineEmits<SurfacePointerEvents & {
   /** The unframed Schemas' boxes in the surface's pixels (ticket 0721), the Piece outset included: where their hang
    * tags hang from. Follows pan and zoom. */
   'schema-anchors': [anchors: SchemaAnchors | undefined]
+  /** Every bead in view was drawn (ticket 0716's safe start). */
+  drawn: []
 }>()
 
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
@@ -170,7 +173,9 @@ const surface = computed(() =>
 
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
  * until it ends (ticket 0674). */
-const pieces = computed<RuledPieces>((previous) => ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false }))
+const pieces = computed<RuledPieces>((previous) =>
+  ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false, idleWalk: (beads, weave, anchors) => piecesWhenIdle('rulers', beads, weave, anchors) }),
+)
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
 function rulerFontPx(): number {
@@ -323,7 +328,7 @@ const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
-useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame })
+useBeadLayer({ props: layerProps, canvas: baseEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn') })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,

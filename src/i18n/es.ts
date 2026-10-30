@@ -228,6 +228,10 @@ export const es: Translations = {
     pieces: { one: '{count} trozo', many: '{count} trozos', other: '{count} trozos' },
     unnamedPieces: 'sin nombre: {count}',
     frameSize: 'Marco de {width} × {height} cuentas',
+    tooBigToCount: 'demasiado para contar',
+    countingPieces: 'Contando trozos',
+    beads: { one: '{count} cuenta', many: '{count} de cuentas', other: '{count} cuentas' },
+    sealedDates: 'creado {created} · guardado {saved}',
   },
   starters: {
     title: 'Punto de partida',
@@ -333,7 +337,6 @@ export const es: Translations = {
     tagline: 'guarda. cuenta. exporta',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
-    projectsSaved: 'Proyectos guardados: {count}',
     whatsInside: 'Qué incluye',
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
@@ -1065,5 +1068,14 @@ export const es: Translations = {
     rateLimited: 'Demasiados informes a la vez. Vuelve a intentarlo en {seconds} s.',
     failed: 'No se pudo enviar el informe. Inténtalo más tarde o cópialo.',
     sent: 'Gracias, tu informe se ha enviado',
+  },
+  opening: {
+    didNotOpen: '«{name}» no se abrió la última vez.',
+    removeButton: 'Quitar',
+    exportButton: 'Exportar',
+    largeTitle: '¿Abrir «{name}»?',
+    largeMessage: '{count} millones de cuentas. Abrirlo puede ser lento o fallar.',
+    openAnyway: 'Abrir igualmente',
+    cancelButton: 'Cancelar',
   },
 }

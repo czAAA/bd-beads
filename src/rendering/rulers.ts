@@ -37,6 +37,8 @@ export interface RuledBox extends Rect {
   outset: number
   /** The Frame's sides but the one shown at the bottom (`sheet`, ticket 0657), or only above and to the left (a Piece). */
   sides: 'sheet' | 'start'
+  /** False for the box round every bead of a layer whose Pieces aren't counted yet (ticket 0716): numbers, no line. */
+  outlined?: false
 }
 
 /** One number on a ruler, where it is in the viewport and what a click on it selects. */
@@ -74,7 +76,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPiece
   }
   return (pieces.areas ?? [])
     .filter(hasGuides)
-    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
+    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const, ...(pieces.uncounted ? { outlined: false as const } : {}) }))
 }
 
 /** The Ruler steps in order: every bead, then 5, 10, 50, 100, 500... (ADR 0033). */

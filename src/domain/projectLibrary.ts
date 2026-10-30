@@ -19,7 +19,7 @@ export function summarizeProject(project: Project): string {
 }
 
 /** When a Project was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */
-function lastSaved(project: Project): number {
+function lastSaved(project: Pick<Project, 'savedAt' | 'updatedAt'>): number {
   return project.savedAt ?? project.updatedAt
 }
 
@@ -29,8 +29,8 @@ export function markSaved(project: Project, at = Date.now()): Project {
 }
 
 /** The Project library's order (ticket 145): newest saved first; ties, most recently edited first; otherwise as they
- * were, so a library read twice comes out the same. */
-export function inSavedOrder(projects: Project[]): Project[] {
+ * were, so a library read twice comes out the same. Sealed Projects (ticket 0716) are ordered alike. */
+export function inSavedOrder<T extends Pick<Project, 'savedAt' | 'updatedAt'>>(projects: T[]): T[] {
   return projects
     .map((project, index) => ({ project, index }))
     .sort((a, b) => lastSaved(b.project) - lastSaved(a.project) || b.project.updatedAt - a.project.updatedAt || a.index - b.index)

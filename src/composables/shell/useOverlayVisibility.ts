@@ -24,8 +24,9 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     openPanel.value = shown ? null : 'export'
   }
 
-  /** Whether Menu opens on its New Project subpanel (the empty-canvas bar's button, spec 0478); Menu also does when
-   * the library is empty. Clears once the panel is gone or swapped. */
+  /** Whether Menu opens on a subpanel: New Project (the empty-canvas bar's button, spec 0478), or Saved Projects when
+   * `phoneSavedProjectsOpen` is set with it (ticket 0716); Menu also does when the library is empty. Clears once the
+   * panel is gone or swapped. */
   const menuOpensOnForm = ref(false)
   watch(openPanel, (sheet) => {
     if (sheet !== 'menu') menuOpensOnForm.value = false
@@ -42,6 +43,13 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     phoneSavedProjectsOpen.value = false
   }, { flush: 'sync' })
 
+  /** Opens Menu straight on Saved Projects (ticket 0716): its address, or a load that opened no Project. */
+  function openMenuOnSavedProjects() {
+    menuOpensOnForm.value = true
+    openPanel.value = 'menu'
+    phoneSavedProjectsOpen.value = true
+  }
+
   /** Picking a Project from Menu's Saved Projects opens it and puts the panel away. */
   function onSelectProjectFromPhoneDrawer(id: string) {
     deps.selectProject(id, () => {
@@ -57,6 +65,7 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     onOpenExport,
     menuOpensOnForm,
     openMenuOnForm,
+    openMenuOnSavedProjects,
     phoneSavedProjectsOpen,
     onSelectProjectFromPhoneDrawer,
   }

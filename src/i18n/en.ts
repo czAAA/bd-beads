@@ -225,6 +225,10 @@ export const en: Translations = {
     pieces: { one: '{count} piece', other: '{count} pieces' },
     unnamedPieces: '{count} unnamed',
     frameSize: 'Frame {width} × {height} beads',
+    tooBigToCount: 'too big to count',
+    countingPieces: 'Counting pieces',
+    beads: { one: '{count} bead', other: '{count} beads' },
+    sealedDates: 'made {created} · saved {saved}',
   },
   starters: {
     title: 'Starter',
@@ -330,7 +334,6 @@ export const en: Translations = {
     tagline: 'save. count. export',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
-    projectsSaved: 'Projects saved: {count}',
     whatsInside: "What's inside",
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
@@ -1056,5 +1059,14 @@ export const en: Translations = {
     rateLimited: 'Too many reports at once. Try again in {seconds} s.',
     failed: 'The report could not be sent. Try again later, or copy it.',
     sent: 'Thanks, your report was sent',
+  },
+  opening: {
+    didNotOpen: '“{name}” didn\'t open last time.',
+    removeButton: 'Remove',
+    exportButton: 'Export',
+    largeTitle: 'Open “{name}”?',
+    largeMessage: '{count} million beads. Opening may be slow or fail.',
+    openAnyway: 'Open anyway',
+    cancelButton: 'Cancel',
   },
 }

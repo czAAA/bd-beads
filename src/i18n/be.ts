@@ -230,6 +230,10 @@ export const be: Translations = {
     pieces: { one: '{count} частка', few: '{count} часткі', many: '{count} частак', other: '{count} часткі' },
     unnamedPieces: 'без назвы: {count}',
     frameSize: 'Рамка {width} × {height} бісерын',
+    tooBigToCount: 'зашмат, каб палічыць',
+    countingPieces: 'Лічым часткі',
+    beads: { one: '{count} бісерынка', few: '{count} бісерынкі', many: '{count} бісерынак', other: '{count} бісерынкі' },
+    sealedDates: 'створаны {created} · захаваны {saved}',
   },
   starters: {
     title: 'Стартар',
@@ -335,7 +339,6 @@ export const be: Translations = {
     tagline: 'захаваем. палічым. экспартуем',
     makeFirstProject: 'Стварыць першы праект',
     openEditor: 'Адкрыць рэдактар',
-    projectsSaved: 'Праектаў захавана: {count}',
     whatsInside: 'Што ўнутры',
     previousFeature: 'Папярэдняя магчымасць',
     nextFeature: 'Наступная магчымасць',
@@ -1073,5 +1076,14 @@ export const be: Translations = {
     rateLimited: 'Занадта шмат справаздач адразу. Паспрабуйце праз {seconds} с.',
     failed: 'Справаздачу не адпраўлена. Паспрабуйце пазней або скапіруйце яе.',
     sent: 'Дзякуй, справаздачу адпраўлена',
+  },
+  opening: {
+    didNotOpen: 'Праект «{name}» не адкрыўся ў мінулы раз.',
+    removeButton: 'Выдаліць',
+    exportButton: 'Экспартаваць',
+    largeTitle: 'Адкрыць «{name}»?',
+    largeMessage: '{count} млн бісерынак. Адкрыццё можа быць павольным або не атрымацца.',
+    openAnyway: 'Усё адно адкрыць',
+    cancelButton: 'Скасаваць',
   },
 }

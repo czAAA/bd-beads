@@ -21,6 +21,7 @@ type DialogId =
   | 'name-piece'
   | 'convert-image'
   | 'feedback'
+  | 'open-large-project'
 
 interface Asked {
   id: DialogId

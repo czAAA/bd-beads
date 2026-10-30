@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { shallowRef } from 'vue'
 import HomePage from './HomePage.vue'
+import { createProject } from '../domain/createProject'
+import { en } from '../i18n/en'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
 import { findBead } from '../domain/beads'
 import { beadCell } from '../domain/weave'
@@ -68,11 +71,37 @@ describe('HomePage', () => {
   })
 
   describe('with Projects saved', () => {
-    it('offers only "Open the editor", as the primary button, and the count', () => {
+    it('offers "Open the editor" as the primary button and "Saved Projects · N" beside it (ticket 0716)', async () => {
       const wrapper = page(3)
       expect(wrapper.find('[data-testid="homepage-make-first"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="homepage-open-editor"]').classes()).toContain('app-button--primary')
-      expect(wrapper.find('[data-testid="homepage-saved"]').text()).toBe('Projects saved: 3')
+      const saved = wrapper.get('[data-testid="homepage-saved-projects"]')
+      expect(saved.text()).toBe(`${en.projects.heading} · 3`)
+      await saved.trigger('click')
+      expect(wrapper.emitted('openSavedProjects')).toHaveLength(1)
+      expect(page(0).find('[data-testid="homepage-saved-projects"]').exists()).toBe(false)
+    })
+
+    it('lists the library in the Menu\'s Saved Projects, opened only then, with Remove asking first and a pick opening it (ticket 0716)', async () => {
+      const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
+      const projects = shallowRef([project])
+      const library = { projects, sealed: shallowRef([]), removeProject: vi.fn(() => void (projects.value = [])), addProjects: vi.fn(), entryOf: (id: string) => ({ id, name: 'Moth' }) }
+      const openLibrary = vi.fn(() => library)
+      const wrapper = mount(HomePage, { props: { projectCount: 1, openLibrary, feedback: fakeFeedback() }, attachTo: document.body })
+      await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+      expect(openLibrary).not.toHaveBeenCalled()
+
+      await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
+      await wrapper.get(`[data-testid="select-project-${project.id}"]`).trigger('click')
+      expect(wrapper.emitted('openProject')).toEqual([[project.id]])
+      await wrapper.get('[data-testid="menu-export-all"]').trigger('click')
+      expect(wrapper.emitted('exportAll')).toEqual([[[project], []]])
+      await wrapper.get(`[data-testid="remove-project-${project.id}"]`).trigger('click')
+      expect(library.removeProject).not.toHaveBeenCalled()
+      await wrapper.get('[data-testid="remove-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+
+      expect(library.removeProject).toHaveBeenCalledWith(project.id)
+      expect(wrapper.find('[data-testid="homepage-saved-projects"]').exists()).toBe(false)
     })
   })
 

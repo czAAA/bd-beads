@@ -27,6 +27,12 @@ export function hasProjectBeads(project: Layered): boolean {
  * so the Project's colors after a stroke cost its rows, not every bead (ticket 0677). */
 const rowColors = new WeakMap<Record<number, string>, readonly string[]>()
 
+/** Records a row's colors worked out elsewhere, in the order `Object.values` gives them: decoding knows them from the
+ * stored runs (ticket 0716). */
+export function knownRowColors(row: Record<number, string>, colors: readonly string[]): void {
+  rowColors.set(row, colors)
+}
+
 function colorsOfRow(row: Record<number, string>): readonly string[] {
   let colors = rowColors.get(row)
   if (!colors) {
