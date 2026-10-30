@@ -525,3 +525,21 @@ The two toasts (Message card, info tone) after a Fill tool press on the Canvas t
 |---|---|---|---|---|---|---|
 | Nothing encloses this spot. Select an area to fill it. | Это место ничем не окружено. Выделите область, чтобы залить её. | Це місце нічим не оточене. Виділіть область, щоб залити її. | Гэта месца нічым не акружана. Вылучыце вобласць, каб заліць яе. | 这里没有被围住。选择一个区域即可填充。 | Nada rodea este punto. Selecciona un área para rellenarla. | Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić. |
 | Too big to fill. Zoom in, or select an area. | Слишком большая область для заливки. Увеличьте масштаб или выделите область. | Завелика область для заливки. Збільште масштаб або виділіть область. | Завялікая вобласць для заліўкі. Павялічце маштаб або вылучыце вобласць. | 区域太大，无法填充。放大画布，或选择一个区域。 | Demasiado grande para rellenar. Acerca la vista o selecciona un área. | Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar. |
+
+## A Project that won't open copy (ticket 0716)
+
+The notice row after a load that found the safe start's note still set (Message card, warning tone), the question before a Project over the size gate opens (ConfirmDialogs card), the Projects library's rows for a sealed Project and a count not yet in (MenuPanel card), and the Homepage's second button, which is the Menu row's own name and the count ("Projects library · 3"), so it needs no string of its own. The size warning gives the count in millions: Russian, Ukrainian, Belarusian and Polish write «млн» / "mln", which takes no plural form after a number.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| “{name}” didn't open last time. | Проект «{name}» не открылся в прошлый раз. | Проєкт «{name}» не відкрився минулого разу. | Праект «{name}» не адкрыўся ў мінулы раз. | “{name}”上次没有打开。 | «{name}» no se abrió la última vez. | Projekt „{name}” nie otworzył się ostatnim razem. |
+| Remove · Export | Удалить · Экспортировать | Видалити · Експортувати | Выдаліць · Экспартаваць | 移除 · 导出 | Quitar · Exportar | Usuń · Eksportuj |
+| Open “{name}”? | Открыть «{name}»? | Відкрити «{name}»? | Адкрыць «{name}»? | 打开“{name}”？ | ¿Abrir «{name}»? | Otworzyć „{name}”? |
+| {count} million beads. Opening may be slow or fail. | {count} млн бисеринок. Открытие может быть медленным или не удаться. | {count} млн бісеринок. Відкриття може бути повільним або не вдатися. | {count} млн бісерынак. Адкрыццё можа быць павольным або не атрымацца. | {count} 百万颗珠子。打开可能很慢或失败。 | {count} millones de cuentas. Abrirlo puede ser lento o fallar. | {count} mln koralików. Otwieranie może być wolne lub się nie udać. |
+| Open anyway · Cancel | Всё равно открыть · Отмена | Однаково відкрити · Скасувати | Усё адно адкрыць · Скасаваць | 仍然打开 · 取消 | Abrir igualmente · Cancelar | Otwórz mimo to · Anuluj |
+| too big to count | слишком много, чтобы посчитать | забагато, щоб порахувати | зашмат, каб палічыць | 太多，无法计数 | demasiado para contar | za dużo, by policzyć |
+| Counting pieces | Считаем части | Рахуємо частини | Лічым часткі | 正在计数小块 | Contando trozos | Liczenie kawałków |
+| {count} beads | {count} бисеринка / бисеринки / бисеринок | {count} бісеринка / бісеринки / бісеринок | {count} бісерынка / бісерынкі / бісерынак | {count} 颗珠子 | {count} cuenta / cuentas | {count} koralik / koraliki / koralików |
+| made {created} · saved {saved} | создан {created} · сохранён {saved} | створено {created} · збережено {saved} | створаны {created} · захаваны {saved} | 创建于 {created} · 保存于 {saved} | creado {created} · guardado {saved} | utworzono {created} · zapisano {saved} |
+
+Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for review with the build.
