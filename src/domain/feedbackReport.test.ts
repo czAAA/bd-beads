@@ -75,9 +75,9 @@ describe('reportIssue', () => {
     expect(reportIssue({ kind: 'general', fields: { message: 'Hi' }, context }).body).not.toContain('Email')
   })
 
-  it('keeps a pipe or a line break in the context from breaking the table', () => {
-    const issue = reportIssue({ kind: 'general', fields: { message: 'Hi' }, context: { ...context, browser: 'A|B\nC' } })
-    expect(issue.body).toContain('| Browser | A\\|B C |')
+  it('keeps a pipe, a backslash or a line break in the context from breaking the table', () => {
+    const issue = reportIssue({ kind: 'general', fields: { message: 'Hi' }, context: { ...context, browser: 'A|B\\\nC' } })
+    expect(issue.body).toContain('| Browser | A\\|B\\\\ C |')
   })
 })
 
