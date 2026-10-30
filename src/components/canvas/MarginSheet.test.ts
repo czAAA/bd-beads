@@ -296,3 +296,29 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
     expect(control(mountSheet(), 'margin-title').attributes('data-form')).toBe('tab')
   })
 })
+
+describe('the title block on a turned Canvas (ticket 0726)', () => {
+  const at = (titleCorner: { top: boolean; left: boolean }, zoom = 0.9) => styleOf(mountSheet({ anchor: { ...anchorAt(zoom), titleCorner } }), 'margin-title')
+
+  it('sits inside the border at the Frame\'s own bottom-right corner, wherever the turn puts it, drawn from that corner', () => {
+    expect(at({ top: false, left: false })).toMatch(/right: 10px; bottom: 10px;.*transform-origin: 100% 100%/)
+    expect(at({ top: false, left: true })).toMatch(/left: 10px; bottom: 10px;.*transform-origin: 0 100%/)
+    expect(at({ top: true, left: true })).toMatch(/left: 10px; top: 10px;.*transform-origin: 0 0/)
+    expect(at({ top: true, left: false })).toMatch(/right: 10px; top: 10px;.*transform-origin: 100% 0/)
+  })
+
+  it('leaves the narrowest band row its room beside it at a top corner, so the Frame can always be moved', () => {
+    const room = (style: string) => Number.parseFloat(style.split('max-width: ')[1]!)
+    // In drafting px at 100% (scale 80 / 72): the sheet less the 10px border on the block's side and the row's 14px inset
+    // on the other, and the Move bar, the Frame tools button and their gaps beside it; at the bottom, the two borders.
+    const width = anchorAt(1).sheet.width / (80 / 72)
+    expect(room(at({ top: true, left: true }, 1))).toBeCloseTo(width - 10 - 14 - (56 + 2 * 24 + 2 * 4 + 4), 4)
+    expect(room(at({ top: false, left: true }, 1))).toBeCloseTo(width - 2 * 10, 4)
+  })
+
+  it('stands the folded tab in the middle of the room above the Frame\'s line at a top corner', () => {
+    const style = at({ top: true, left: false }, 0.25)
+    const inset = (20 - frameOutsetPx(0.25) - 24 * 0.6) / 2
+    expect(Number.parseFloat(style.split('top: ')[1]!)).toBeCloseTo(inset, 2)
+  })
+})

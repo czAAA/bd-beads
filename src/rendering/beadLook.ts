@@ -44,6 +44,8 @@ export type DrawingContext = Pick<
   | 'translate'
   | 'rotate'
   | 'scale'
+  | 'transform'
+  | 'getTransform'
   | 'shadowColor'
   | 'shadowBlur'
   | 'shadowOffsetY'
@@ -447,7 +449,8 @@ export function letterInk(color: string): string {
 }
 
 /** The Swatch letter centred on a bead (ticket 0573): white on a dark bead, `ink` on a light one, judged on the color
- * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. */
+ * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. It reads
+ * upright on screen however the Canvas, the Frame or the bead is turned (ticket 0726). */
 export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
   const shown = dimmed ? finishedColor(color, theme) : color
   const side = Math.min(width, height)
@@ -456,5 +459,13 @@ export function drawBeadLetter(context: DrawingContext, { x, y, size, width = si
   context.textAlign = 'center'
   context.textBaseline = 'middle'
   context.fillStyle = letterInk(shown)
-  context.fillText(letter, x + width / 2, y + height / 2 + fontSize * LETTER_DROP_EM)
+  // Undo the turn (and any mirror) the bead is drawn at, keeping its size: the letter stands upright on the screen.
+  const { a, b, c, d } = context.getTransform()
+  const det = a * d - b * c
+  const kept = Math.sqrt(Math.abs(det)) / det
+  context.save()
+  context.translate(x + width / 2, y + height / 2)
+  if (det !== 0) context.transform(d * kept, -b * kept, -c * kept, a * kept, 0, 0)
+  context.fillText(letter, 0, fontSize * LETTER_DROP_EM)
+  context.restore()
 }

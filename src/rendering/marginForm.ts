@@ -24,3 +24,10 @@ export function marginForm(bandPx: number): MarginForm {
   if (designPx >= band.compact) return 'compact'
   return designPx >= band.folded ? 'folded' : 'bare'
 }
+
+/** The margin sheet's corner on screen that holds its title block (ticket 0726): the Frame's own bottom-right as it lies
+ * on the upright Canvas, wherever the Canvas's quarter turn brings it. Read from the drawn view's turn of the grid. */
+export function titleBlockCorner(surface: { gridDirection(x: number, y: number): { x: number; y: number } }): { top: boolean; left: boolean } {
+  const toward = surface.gridDirection(1, 1)
+  return { top: toward.y < 0, left: toward.x < 0 }
+}
