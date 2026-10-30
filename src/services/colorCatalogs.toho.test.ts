@@ -35,22 +35,24 @@ describe('the toho catalog', () => {
     expect(orphans.map((code) => code.code)).toEqual([])
   })
 
-  it('takes a card code\'s finish and wording from the card\'s heading, a Japan-only code\'s from the Japanese tag', async () => {
+  it('holds the 1,066 card codes and no other: a code on no card is gone (ticket 0712)', async () => {
+    const catalog = await loadColorCatalog('toho')
+    expect(catalog.codes).toHaveLength(1066)
+    const codes = catalog.codes.map((row) => row.code)
+    for (const japanOnly of ['108C', '194', '423F', '1221F', '1222F']) expect(codes).not.toContain(japanOnly)
+  })
+
+  it('takes a card code\'s finish and wording from the card\'s heading', async () => {
     const catalog = await loadColorCatalog('toho')
     const byCode = (code: string) => catalog.codes.find((row) => row.code === code)
     expect(byCode('1F')).toMatchObject({ finish: 'matte', wording: 'Transparent · Matte' })
-    expect(byCode('1F')?.japanOnly).toBeUndefined()
     expect(byCode('21')).toMatchObject({ finish: 'silver-lined', wording: 'Transparent Silver Lined' })
-    const japanOnly = catalog.codes.filter((row) => row.japanOnly)
-    expect(japanOnly.length).toBeGreaterThan(0)
-    for (const row of japanOnly) expect(row.wording, row.code).toMatch(/\(.+\)/)
   })
 
-  it('holds the PermaFinish codes, plated, in the three sizes of the PF card, none of them Japan-only', async () => {
+  it('holds the PermaFinish codes, plated, in the three sizes of the PF card', async () => {
     const catalog = await loadColorCatalog('toho')
     const pf = catalog.codes.filter((row) => row.code.startsWith('PF'))
     for (const row of pf) expect(row.finish, row.code).toBe('plated')
-    for (const row of pf) expect(row.japanOnly, row.code).toBeUndefined()
     expect(catalog.codes.find((row) => row.code === 'PF581')?.sizes).toEqual(['15/0', '11/0', '8/0'])
   })
 })

@@ -21,14 +21,8 @@ describe('parseColorCatalog', () => {
     expect(() => parseColorCatalog(file, 'x')).toThrow(/Color catalog x/)
   })
 
-  it('keeps the Japan-only flag of a code sold only in Japan, and rejects one that is not true (ticket 0695)', () => {
-    const catalog = parseColorCatalog({ id: 'x', codes: [row, { ...row, code: 'DB2', japanOnly: true }] }, 'x')
-    expect(catalog.codes.map((code) => code.japanOnly)).toEqual([undefined, true])
-    expect(() => parseColorCatalog({ id: 'x', codes: [{ ...row, japanOnly: 'yes' }] }, 'x')).toThrow(/Color catalog x/)
-  })
-
-  it('leaves the photos and durability out of what it keeps', () => {
-    const catalog = parseColorCatalog({ id: 'x', codes: [{ ...row, photo: 'a.jpg', durability: 1 }] }, 'x')
+  it('leaves the photos, durability and the retired Japan-only flag (ticket 0712) out of what it keeps', () => {
+    const catalog = parseColorCatalog({ id: 'x', codes: [{ ...row, photo: 'a.jpg', durability: 1, japanOnly: true }] }, 'x')
     expect(Object.keys(catalog.codes[0]!)).toEqual(['code', 'family', 'finish', 'wording', 'sizes'])
   })
 
