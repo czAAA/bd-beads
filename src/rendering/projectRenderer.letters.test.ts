@@ -62,7 +62,14 @@ function turningContext() {
   type Matrix = [number, number, number, number, number, number]
   let matrix: Matrix = [1, 0, 0, 1, 0, 0]
   const kept: Matrix[] = []
-  const times = ([a, b, c, d, e, f]: Matrix, [g, h, i, j, k, l]: Matrix): Matrix => [a * g + c * h, b * g + d * h, a * i + c * j, b * i + d * j, a * k + c * l + e, b * k + d * l + f]
+  const times = ([a, b, c, d, e, f]: Matrix, [g, h, i, j, k, l]: Matrix): Matrix => [
+    a * g + c * h,
+    b * g + d * h,
+    a * i + c * j,
+    b * i + d * j,
+    a * k + c * l + e,
+    b * k + d * l + f,
+  ]
   const letters: { text: string; degrees: number; mirrored: boolean }[] = []
   const { context: base } = recordingContext()
   const context = Object.assign(base, {
@@ -87,7 +94,8 @@ describe('a letter reads upright however the Frame or the Canvas is turned (tick
   // The letters in view, each with how it is turned and whether it is mirrored on screen.
   const lettered = (project: Project) => {
     const { context, letters } = turningContext()
-    renderProject(context, { project, space: spaceOf(project, true), region, zoom: 2, pixelRatio: 2, rowMarks: false, letters: { '#1a1a1a': 'A', '#f2c94c': 'D' } })
+    const swatches = { '#1a1a1a': 'A', '#f2c94c': 'D' }
+    renderProject(context, { project, space: spaceOf(project, true), region, zoom: 2, pixelRatio: 2, rowMarks: false, letters: swatches })
     return letters
   }
   const upright = (letters: ReturnType<typeof lettered>) => letters.length > 0 && letters.every(({ degrees, mirrored }) => degrees === 0 && !mirrored)
@@ -103,10 +111,16 @@ describe('a letter reads upright however the Frame or the Canvas is turned (tick
     expect(upright(lettered(withCanvas(project, { orientation: 90 })))).toBe(true)
   })
 
-  it('on its own, under any turn the context is drawn at', () => {
+  it('on its own, under a turn or a mirror the context is drawn at', () => {
     const { context, letters } = turningContext()
+    const letter = () => drawBeadLetter(context, { x: 0, y: 0, size: 20, color: '#1a1a1a', letter: 'A', dimmed: false, theme: LIGHT_THEME })
     context.rotate(Math.PI)
-    drawBeadLetter(context, { x: 0, y: 0, size: 20, color: '#1a1a1a', letter: 'A', dimmed: false, theme: LIGHT_THEME })
-    expect(letters).toEqual([{ text: 'A', degrees: 0, mirrored: false }])
+    letter()
+    context.scale(-1, 1)
+    letter()
+    expect(letters).toEqual([
+      { text: 'A', degrees: 0, mirrored: false },
+      { text: 'A', degrees: 0, mirrored: false },
+    ])
   })
 })

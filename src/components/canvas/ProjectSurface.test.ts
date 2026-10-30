@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import type { Project, RowProgress } from '../../domain/project'
+import { rotateFrame } from '../../domain/rotate'
 import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
@@ -1737,15 +1738,13 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
   })
 
-  it('tells the sheet which corner holds the title block: the Frame\'s own bottom-right as the Canvas turns (ticket 0726)', async () => {
-    const corner = async (orientation: number) => {
-      const { wrapper } = await mountSurface(withCanvas(framed(), { orientation }), 1)
+  it('tells the sheet the corner the title block is in: the Frame\'s own bottom-right, moved by the Canvas\'s turn, not by Rotate Frame (ticket 0726)', async () => {
+    const corner = async (project: Project) => {
+      const { wrapper } = await mountSurface(project, 1)
       return (wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor).titleCorner
     }
-    expect(await corner(0)).toEqual({ top: false, left: false })
-    expect(await corner(90)).toEqual({ top: false, left: true })
-    expect(await corner(180)).toEqual({ top: true, left: true })
-    expect(await corner(270)).toEqual({ top: true, left: false })
+    expect(await corner(withCanvas(framed(), { orientation: 180 }))).toEqual({ top: true, left: true })
+    expect(await corner(rotateFrame(framed())!)).toEqual({ top: false, left: false })
   })
 
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {

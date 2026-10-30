@@ -1,3 +1,5 @@
+import type { TitleCorner } from '../../rendering/marginForm'
+
 /** A rectangle in the canvas box's own pixels. */
 export interface BarBox {
   left: number
@@ -74,7 +76,7 @@ export interface FrameAnchor extends SelectionAnchor {
   origin?: BarBox
   /** The sheet's corner that holds the title block, the Frame's own bottom-right on a turned Canvas (ticket 0726): as
    * drawn before it leans. None, bottom-right. */
-  titleCorner?: { top: boolean; left: boolean }
+  titleCorner?: TitleCorner
   /** How far the Canvas leans off its quarter turn, in degrees clockwise (ticket 0672): the boxes above are as drawn
    * before it leans, and the sheet's tools lean with it about the viewport's middle. None upright. */
   tilt?: number

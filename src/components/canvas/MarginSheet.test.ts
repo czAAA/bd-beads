@@ -10,6 +10,7 @@ import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf } from '../../domain/layerRecord'
+import { MARGIN_PX } from '../../rendering/marginSizes'
 import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
@@ -307,18 +308,17 @@ describe('the title block on a turned Canvas (ticket 0726)', () => {
     expect(at({ top: true, left: false })).toMatch(/right: 10px; top: 10px;.*transform-origin: 100% 0/)
   })
 
-  it('leaves the narrowest band row its room beside it at a top corner, so the Frame can always be moved', () => {
+  it('leaves the narrowest band row, the Move bar and the Frame tools button, its room beside it at a top corner', () => {
     const room = (style: string) => Number.parseFloat(style.split('max-width: ')[1]!)
-    // In drafting px at 100% (scale 80 / 72): the sheet less the 10px border on the block's side and the row's 14px inset
-    // on the other, and the Move bar, the Frame tools button and their gaps beside it; at the bottom, the two borders.
-    const width = anchorAt(1).sheet.width / (80 / 72)
-    expect(room(at({ top: true, left: true }, 1))).toBeCloseTo(width - 10 - 14 - (56 + 2 * 24 + 2 * 4 + 4), 4)
-    expect(room(at({ top: false, left: true }, 1))).toBeCloseTo(width - 2 * 10, 4)
+    const { moveWidth, tab, gap, place } = MARGIN_PX
+    const narrowestRow = moveWidth + 2 * tab + 2 * gap
+    // In drafting px: at the top the row's inset stands on the far side in place of the border, and the row beside it.
+    expect(room(at({ top: false, left: true }, 1)) - room(at({ top: true, left: true }, 1))).toBeCloseTo(place.full.side - place.full.border + narrowestRow + gap, 4)
   })
 
-  it('stands the folded tab in the middle of the room above the Frame\'s line at a top corner', () => {
-    const style = at({ top: true, left: false }, 0.25)
-    const inset = (20 - frameOutsetPx(0.25) - 24 * 0.6) / 2
-    expect(Number.parseFloat(style.split('top: ')[1]!)).toBeCloseTo(inset, 2)
+  it('stands the folded tab beside the folded row at a top corner, in the middle of the room above the Frame\'s line', () => {
+    const wrapper = mountSheet({ anchor: { ...anchorAt(0.25), titleCorner: { top: true, left: false } } })
+    const top = (testid: string) => Number.parseFloat(styleOf(wrapper, testid).split('top: ')[1]!)
+    expect(top('margin-title')).toBeCloseTo(top('margin-band'), 4)
   })
 })
