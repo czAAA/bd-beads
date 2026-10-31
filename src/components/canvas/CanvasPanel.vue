@@ -581,9 +581,9 @@ const drawingStyle = computed(() => {
   position: relative;
 }
 
-/* The first-run steps' controls ringed in accent over what is behind them (FirstRunHints card); a strip button is lifted
- * over the drawing area so the ring's foot shows. */
-.app-shell__canvas--first-run :deep(:is([data-hint='paint'], [data-hint='select'], [data-hint='frame'], [data-hint='export'])) {
+/* Select, Mirror and Export ringed in accent over what is behind them, the controls a newcomer wouldn't guess at
+ * (FirstRunHints card); Export is lifted over the drawing area so the ring's foot shows. */
+.app-shell__canvas--first-run :deep(:is([data-hint='select'], [data-hint='mirror'], [data-hint='export'])) {
   position: relative;
   z-index: var(--z-canvas-overlay);
   box-shadow:
@@ -591,7 +591,7 @@ const drawingStyle = computed(() => {
     0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent);
 }
 
-.app-shell__canvas--first-run :deep(:is([data-hint='paint'], [data-hint='select'])) {
+.app-shell__canvas--first-run :deep(:is([data-hint='select'], [data-hint='mirror'])) {
   --hint-ring-behind: var(--elevated);
 }
 

@@ -370,10 +370,9 @@ export interface Translations {
       hand: string
       rulers: string
     }
-    /** The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): the four steps, the quiet notes,
-     * the welcome and its steps line, and the phone's shorter steps. A line break is `\n`. */
+    /** The captions over an empty Project, one beside each control (FirstRunHints card, ticket 0738), the welcome's
+     * steps line and its storage line, which the Project file's path follows. A line break is `\n`. */
     firstRun: {
-      paint: string
       select: string
       frame: string
       export: string
@@ -381,9 +380,8 @@ export interface Translations {
       project: string
       mirror: string
       color: string
-      welcome: string
       steps: string
-      phone: Record<'paint' | 'select' | 'frame' | 'export', string>
+      storage: string
     }
   }
   shell: {
