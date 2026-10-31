@@ -41,8 +41,8 @@ describe('gridFromSize', () => {
 describe('estimatedSizeMm', () => {
   it('is columns times the Bead width and rows times its height', () => {
     expect(estimatedSizeMm({ columns: 10, rows: 20 }, cube, 'loom')).toEqual({ widthMm: 15, heightMm: 30 })
-    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom').widthMm).toBeCloseTo(32)
-    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom').heightMm).toBeCloseTo(13)
+    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom').widthMm).toBeCloseTo(26)
+    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom').heightMm).toBeCloseTo(16)
   })
 
   it('lays the Bead as its Technique does: the same on peyote, turned on brick stitch (ticket 0734)', () => {

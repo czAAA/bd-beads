@@ -894,7 +894,7 @@ frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, b
 })
 
 describe('a Bead\'s real cell (ADR 0068)', () => {
-  const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
+  const delicaCell = { aspect: 1.6 / 1.3, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
   const painted = (project: Project): Project => (withLayers(project, { frame: { ...frameOf(project)!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) } }))
 

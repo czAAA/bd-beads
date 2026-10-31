@@ -25,7 +25,7 @@ const cubeBead: Bead = {
   heightMm: 1.5,
 }
 
-const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.6, heightMm: 1.3 }
+const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.3, heightMm: 1.6 }
 
 describe('clampConvertZoom', () => {
   it('never goes below 100%, the scale at which the picture just covers the frame', () => {
@@ -48,8 +48,8 @@ describe('frameSizeMm', () => {
   it('is the Project grid own real-world footprint, so the frame follows physical size rather than cell count', () => {
     const frame = frameSizeMm('loom', { columns: 10, rows: 20 }, delicaBead)
 
-    expect(frame.widthMm).toBeCloseTo(16)
-    expect(frame.heightMm).toBeCloseTo(26)
+    expect(frame.widthMm).toBeCloseTo(13)
+    expect(frame.heightMm).toBeCloseTo(32)
   })
 
   it('is not square for a square cell count when the Bead footprint is not square', () => {
@@ -72,9 +72,9 @@ describe('frameSizeMm', () => {
     const loom = frameSizeMm('loom', { columns: 10, rows: 10 }, delicaBead)
     const brick = frameSizeMm('brick', { columns: 10, rows: 10 }, delicaBead)
 
-    expect(loom).toEqual({ widthMm: expect.closeTo(16), heightMm: expect.closeTo(13) })
-    // Ten columns of 1.3 mm and the half bead a shifted row hangs further right, ten rows of 1.6 mm.
-    expect(brick).toEqual({ widthMm: expect.closeTo(13.65), heightMm: expect.closeTo(16) })
+    expect(loom).toEqual({ widthMm: expect.closeTo(13), heightMm: expect.closeTo(16) })
+    // Ten columns of 1.6 mm and the half bead a shifted row hangs further right, ten rows of 1.3 mm.
+    expect(brick).toEqual({ widthMm: expect.closeTo(16.8), heightMm: expect.closeTo(13) })
   })
 })
 

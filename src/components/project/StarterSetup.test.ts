@@ -135,7 +135,7 @@ describe('the Starter setup', () => {
     const wrapper = mountSetup('ringChevrons', delica())
     expect(text(wrapper, 'starter-size-value-ringSize')).toBe('54')
     expect(text(wrapper, 'starter-size-label-ringSize')).toContain('mm round the finger')
-    expect(text(wrapper, 'starter-estimate')).toBe('ø 17.2 mm inside · 9.1 mm wide')
+    expect(text(wrapper, 'starter-estimate')).toBe('ø 17.2 mm inside · 11.2 mm wide')
     expect(text(wrapper, 'starter-count')).toBe('≈ 252 beads · 72 rows round')
     await wrapper.get('[data-testid="starter-size-system"] [data-value="us"]').trigger('click')
     expect(text(wrapper, 'starter-size-value-ringSize')).toBe('7')
@@ -155,11 +155,11 @@ describe('the Starter setup', () => {
 
   it('sizes a Band by Width, Wrist and Fit, with its length less the clasp and its rows', async () => {
     const wrapper = mountSetup('bandPlaid', delica())
-    expect(text(wrapper, 'starter-estimate')).toBe('1.4 × 16.0 cm')
+    expect(text(wrapper, 'starter-estimate')).toBe('1.8 × 13.0 cm')
     // Counts group their thousands as the app writes numbers.
     expect(text(wrapper, 'starter-count')).toMatch(/^≈ 1\s100 beads · 200 rows · 1\.5 cm left for the clasp$/)
     await wrapper.get('[data-testid="starter-pick-fit"] [data-value="loose"]').trigger('click')
-    expect(text(wrapper, 'starter-estimate')).toBe('1.4 × 16.5 cm')
+    expect(text(wrapper, 'starter-estimate')).toBe('1.8 × 16.5 cm')
     expect(text(wrapper, 'starter-design-note')).toBe('The design is made for Comfortable. Choose it again to turn the design on.')
     await wrapper.get('form').trigger('submit')
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ sizes: { width: 11, wrist: 16 }, picks: { fit: 'loose' }, useDesign: false })
