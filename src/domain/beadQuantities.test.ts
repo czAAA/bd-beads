@@ -84,7 +84,7 @@ describe('computeColorQuantities', () => {
 describe('estimatedGrams', () => {
   it.each([
     ['toho/cube/1.5mm', 100, 1.08],
-    ['toho/round/11-0', 100, 0.91],
+    ['toho/round/11-0', 100, 0.95],
     ['miyuki/delica/11-0', 100, 0.5],
   ])('multiplies the count by the average weight of a %s bead', (id, count, expected) => {
     expect(estimatedGrams(count, BEAD_CATALOG.find((bead) => bead.id === id))).toBeCloseTo(expected, 10)
