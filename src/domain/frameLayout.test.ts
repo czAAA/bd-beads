@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import chart from './fixtures/warpedSquareChart.json'
 import { fringeLayout, kaleidocycleLayout, kiteLayout, kiteWingBeads, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 
-/** A Delica 11/0's depth across the thread over its pitch along it (1.3 mm over 1.6 mm). */
-const DELICA = 0.8125
+/** A Delica 11/0's depth across the thread over its pitch along it (1.6 mm over 1.3 mm). */
+const DELICA = 1.6 / 1.3
 /** The depths the round shapes are checked at: a Delica, a Cube and a Round 11/0. */
 const DEPTHS = [DELICA, 1, 2.2 / 1.65]
 

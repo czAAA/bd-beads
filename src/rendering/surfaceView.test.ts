@@ -238,7 +238,7 @@ describe('the Surface view with a Frame in a Bead half as wide as the Canvas\'s 
 })
 
 describe("A Bead's real cell finds beads where they are drawn (ADR 0068)", () => {
-  const cell = { aspect: 1.3 / 1.6, roundness: 0.1 }
+  const cell = { aspect: 1.6 / 1.3, roundness: 0.1 }
   const TECHS: Technique[] = ['loom', 'peyote', 'brick']
 
   it('puts each bead under its own centre in every Technique and rotation', () => {

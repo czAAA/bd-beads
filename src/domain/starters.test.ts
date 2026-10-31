@@ -140,7 +140,7 @@ describe('a new Project from a Starter', () => {
       const geometry = frameGeometryOf(project)
       const place = geometry.place(geometry.positions()[0]!)!
       expect(place.box.width).toBeCloseTo(1, 9)
-      expect(place.box.height).toBeCloseTo(1.3 / 1.6, 9)
+      expect(place.box.height).toBeCloseTo(1.6 / 1.3, 9)
       // Added to a Project in a Cube, it is laid out in the Delica it is given.
       const added = placedStarter(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 40, height: 40, unit: 'beads' } }), starter, { ...asDesigned(id), beadId }, { row: 20, column: 20 })
       expect(frameOf((added as { project: typeof project }).project)).toMatchObject(starterFrameSize(starter, asDesigned(id), delica))
@@ -193,8 +193,8 @@ describe('the Frame\'s Layer settings from a Starter\'s setup (ADR 0079, ticket 
   it('sizes and counts a Starter in the Technique the setup chose', () => {
     const ring = { sizes: { width: 7, ringSize: 54 }, useDesign: false }
     // Peyote counts each column twice round; loom once.
-    expect(starterMeasure(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toMatchObject({ rows: 36 })
-    expect(starterBeadCount(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toBe(252)
+    expect(starterMeasure(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toMatchObject({ rows: 45 })
+    expect(starterBeadCount(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toBe(315)
     expect(starterBeadCount(starterById('triangle'), { ...asDesigned('triangle'), weave: { technique: 'peyote' } }, delica)).toBe(165)
   })
 })
@@ -226,20 +226,20 @@ describe('a Ring or Band Starter (ticket 0597)', () => {
   const ringAt = (ringSize: number) => ({ sizes: { width: 7, ringSize }, useDesign: false })
 
   it('lies across in peyote, its Width in rows and its length in columns of the Bead: a Ring 4 mm longer than the finger', () => {
-    // EU 54 is 54 mm round; 58 mm of Delica 11/0, 1.6 mm a column, is 36 columns, 72 rows round.
-    expect(starterFrameSize(starterById('ringStripes'), ringAt(54), delica)).toEqual({ rows: 7, columns: 36 })
-    expect(starterMeasure(starterById('ringStripes'), ringAt(54), delica)).toEqual({ shape: 'ring', insideMm: 54 / Math.PI, widthMm: 7 * 1.3, rows: 72 })
-    expect(starterBeadCount(starterById('ringStripes'), ringAt(54), delica)).toBe(252)
+    // EU 54 is 54 mm round; 58 mm of Delica 11/0, 1.3 mm a column, is 45 columns, 90 rows round.
+    expect(starterFrameSize(starterById('ringStripes'), ringAt(54), delica)).toEqual({ rows: 7, columns: 45 })
+    expect(starterMeasure(starterById('ringStripes'), ringAt(54), delica)).toEqual({ shape: 'ring', insideMm: 54 / Math.PI, widthMm: 7 * 1.6, rows: 90 })
+    expect(starterBeadCount(starterById('ringStripes'), ringAt(54), delica)).toBe(315)
     expect(layersView(starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...asDesigned('ringStripes') }))).toMatchObject({ technique: 'peyote', frame: { rows: 7, columns: 36, technique: 'peyote' } })
   })
 
   it('makes a Band of the wrist and its Fit\'s ease, less 1.5 cm for the clasp', () => {
-    // A 16 cm wrist, Comfortable (1.5 cm) less the clasp: 160 mm, 100 columns, 200 rows.
+    // A 16 cm wrist, Comfortable (1.5 cm) less the clasp: 160 mm, 123 columns, 246 rows.
     const comfortable = { sizes: { width: 11, wrist: 16 }, useDesign: false }
-    expect(starterFrameSize(starterById('bandStripes'), comfortable, delica)).toEqual({ rows: 11, columns: 100 })
-    expect(starterMeasure(starterById('bandStripes'), comfortable, delica)).toMatchObject({ shape: 'band', lengthMm: 160, rows: 200 })
-    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'snug' } }, delica).columns).toBe(Math.round(155 / 1.6))
-    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'loose' } }, delica).columns).toBe(Math.round(165 / 1.6))
+    expect(starterFrameSize(starterById('bandStripes'), comfortable, delica)).toEqual({ rows: 11, columns: 123 })
+    expect(starterMeasure(starterById('bandStripes'), comfortable, delica)).toMatchObject({ shape: 'band', lengthMm: 159.9, rows: 246 })
+    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'snug' } }, delica).columns).toBe(Math.round(155 / 1.3))
+    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'loose' } }, delica).columns).toBe(Math.round(165 / 1.3))
     expect(starterFrameSize(starterById('bandStripes'), comfortable, toho).columns).toBe(Math.round(160 / 1.5))
     expect(designFits(starterById('bandStripes'), { sizes: { width: 11, wrist: 16 }, picks: { fit: 'loose' } })).toBe(false)
   })

@@ -79,7 +79,7 @@ function anchorOf(project: Project) {
 
 describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
   /** A Star with a few beads of two colours on two of its arms. */
-  const painted = () => paintFrame(paintFrame(custom('star', 4), [{ row: 3, column: 0 }, { row: 3, column: 1 }, { row: 2, column: 0 }], RED), [{ row: 3, column: 16 }, { row: 1, column: 8 }], BLUE)
+  const painted = () => paintFrame(paintFrame(custom('star', 4), [{ row: 3, column: 0 }, { row: 3, column: 1 }, { row: 1, column: 0 }], RED), [{ row: 3, column: 16 }, { row: 1, column: 8 }], BLUE)
 
   it('keeps each bead\'s place on screen: pasted back where it was, every bead lands on its own position', () => {
     const project = painted()
