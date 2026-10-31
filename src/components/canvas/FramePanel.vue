@@ -141,7 +141,7 @@ function onSizeFocusOut(event: FocusEvent): void {
  * (ticket 0687), or nothing for an unknown Bead. */
 const estimate = computed(() => {
   const bead = layerOf(props.project, 'frame')?.bead
-  return bead && frame.value ? `≈ ${formatSizeInMm(estimatedSizeMm(frame.value, bead), t.value.form.unitMm, locale.value)}` : ''
+  return bead && frame.value ? `≈ ${formatSizeInMm(estimatedSizeMm(frame.value, bead, frame.value.technique), t.value.form.unitMm, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
   [sizeSettings.value[0] ? plural(locale.value, sizeSettings.value[0].value, sizeSettings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),

@@ -432,7 +432,7 @@ function centrePoint(sheet: LayerSheet, region: MirrorRegion, centre: RadialCent
     return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   }
   const origin = description.center({ row: 0, column: 0 }, 1, height)
-  return { x: origin.x + centre.column, y: origin.y + centre.row * description.rowPitch * height }
+  return { x: origin.x + centre.column, y: origin.y + centre.row * height }
 }
 
 /** The other Folds, geometric: the source bead's centre turned about the centre's point by 360° over the Fold, each

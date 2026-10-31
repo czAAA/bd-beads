@@ -7,8 +7,10 @@ import { createProject } from './createProject'
 import { fillArea } from './fill'
 import { paintCells } from './drawing'
 import type { Project } from './project'
-import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
+import { beadsOfLayer, frameOf, withFrameSheet, withLayer } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
+import { scaledBead } from '../testUtils/squareBead'
+import { findBead } from './beads'
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'
@@ -129,9 +131,10 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
 })
 
 describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
-  // 48 peyote rows over a loom Canvas: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
+  // 48 rows of a Bead three quarters the Canvas's size: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
-  const project: Project = withLayers(base, { frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) } })
+  const sheet = { technique: 'loom' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) }
+  const project: Project = withLayer(withLayers(base, { frame: sheet }), 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
 
   it('says a position under the drawing is the Frame\'s, and one in the strip the Canvas\'s', () => {
     expect(layerAt(project, { row: 20, column: 3 })).toBe('frame')

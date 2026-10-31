@@ -127,9 +127,14 @@ describe('proportionalSide', () => {
     expect(proportionalSide({ width: 200, height: 100 }, delicaBead, 'loom', { columns: 40 })).toBe(25)
   })
 
-  it('counts peyote rows at their nested spacing', () => {
-    // 30 mm down at 0.75 × 1.5 mm a row is 27 rows (rounded).
-    expect(proportionalSide({ width: 100, height: 100 }, cubeBead, 'peyote', { columns: 20 })).toBe(27)
+  it('counts peyote rows a full bead apart, nothing nesting (ticket 0734)', () => {
+    // 30 mm down at 1.5 mm a row is 20 rows.
+    expect(proportionalSide({ width: 100, height: 100 }, cubeBead, 'peyote', { columns: 20 })).toBe(20)
+  })
+
+  it('turns the bead on brick stitch, whose thread runs down: columns a diameter wide, rows a length tall', () => {
+    // 40 beads of 1.3 mm is 52 mm across; half of that down is 26 mm, about 16 beads of 1.6 mm.
+    expect(proportionalSide({ width: 200, height: 100 }, delicaBead, 'brick', { columns: 40 })).toBe(16)
   })
 
   it('never gives fewer than one bead', () => {
@@ -201,22 +206,26 @@ describe('convertResult', () => {
   }
 
   it('reads a ratio as the size in beads and cm and the block a bead is', () => {
-    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, ratio: { pixels: 8, beads: 1 } }, labels)).toEqual({
+    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'loom' as const, ratio: { pixels: 8, beads: 1 } }, labels)).toEqual({
       grid: '32×24 beads',
       measured: '5.1 × 3.1 cm',
       ratio: '1 bead = 8 × 8 px',
     })
   })
 
+  it('measures the size with the bead laid on the Technique\'s thread: swapped on brick stitch (ticket 0734)', () => {
+    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'brick', ratio: { pixels: 8, beads: 1 } }, labels).measured).toBe('4.2 × 3.8 cm')
+  })
+
   it('reads 1:n as the beads one pixel is', () => {
-    expect(convertResult({ grid: { columns: 64, rows: 48 }, bead: cubeBead, ratio: { pixels: 1, beads: 4 } }, labels).ratio).toBe('1 px = 4 × 4 beads')
+    expect(convertResult({ grid: { columns: 64, rows: 48 }, bead: cubeBead, technique: 'loom' as const, ratio: { pixels: 1, beads: 4 } }, labels).ratio).toBe('1 px = 4 × 4 beads')
   })
 
   it('reads a size as pixels per bead, approximate unless it is a whole ratio', () => {
     const crop = { x: 0, y: 0, width: 172, height: 129.5 }
-    expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, crop }, labels).ratio).toBe('1 bead ≈ 4.3 × 3.5 px')
-    expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, crop }, labels, 'ru').ratio).toBe('1 bead ≈ 4,3 × 3,5 px')
-    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, crop: { x: 0, y: 0, width: 40, height: 20 } }, labels).ratio).toBe('1 bead = 2 × 2 px')
-    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, crop: { x: 0, y: 0, width: 10, height: 5 } }, labels).ratio).toBe('1 px = 2 × 2 beads')
+    expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, technique: 'loom' as const, crop }, labels).ratio).toBe('1 bead ≈ 4.3 × 3.5 px')
+    expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, technique: 'loom' as const, crop }, labels, 'ru').ratio).toBe('1 bead ≈ 4,3 × 3,5 px')
+    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, technique: 'loom' as const, crop: { x: 0, y: 0, width: 40, height: 20 } }, labels).ratio).toBe('1 bead = 2 × 2 px')
+    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, technique: 'loom' as const, crop: { x: 0, y: 0, width: 10, height: 5 } }, labels).ratio).toBe('1 px = 2 × 2 beads')
   })
 })

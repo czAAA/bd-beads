@@ -332,6 +332,21 @@ describe('peyote passes (ticket 347)', () => {
     expect(finished(peyote('rows', 1))).toHaveLength(3)
     expect(finished(peyote('rows', 2)).filter((bead) => bead.startsWith('1,'))).toEqual(['1,0', '1,2'])
   })
+
+  it('steps through the passes on the column-staggered grid as weavers do: a row at a time, even beads then odd (ticket 0734)', () => {
+    // The thread runs along a row whose beads sit in staggered columns, so a Drop of 2 changes where beads lie, not the passes.
+    const dropped = (pass: number) => {
+      const project = createProject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 }, beadId: cubeBead.id, size: { width: 6, height: 10.5, unit: 'mm' } })
+      return moveToRow(project, pass)
+    }
+    const row1 = (project: ReturnType<typeof dropped>) =>
+      [0, 1, 2, 3].filter((column) => isInFinishedRow(project, { row: 1, column })).map((column) => `1,${column}`)
+
+    expect(rowProgressPosition(dropped(0)).total).toBe(13)
+    expect(row1(dropped(1))).toEqual([])
+    expect(row1(dropped(2))).toEqual(['1,0', '1,2'])
+    expect(row1(dropped(3))).toEqual(['1,0', '1,1', '1,2', '1,3'])
+  })
 })
 
 describe('resetRowProgress (ticket 455)', () => {

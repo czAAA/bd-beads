@@ -165,9 +165,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     return isSizeStated(width, height, unit.value === 'beads' ? 'beads' : 'mm') ? { width, height, unit: unit.value } : undefined
   })
   watch(
-    [stated, bead],
+    [stated, bead, technique],
     ([size]) => {
-      if (size) sizeDimensions.value = gridFromSize(size, bead.value)
+      if (size) sizeDimensions.value = gridFromSize(size, bead.value, technique.value)
     },
     { immediate: true },
   )
@@ -179,7 +179,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   /** A grid's size in a unit, as the fields show it: beads, or mm and cm to one decimal. */
   function sizeIn(grid: GridDimensions, to: ConvertSizeUnit): { width: number; height: number } {
     if (to === 'beads') return { width: grid.columns, height: grid.rows }
-    const { widthMm, heightMm } = estimatedSizeMm(grid, bead.value)
+    const { widthMm, heightMm } = estimatedSizeMm(grid, bead.value, technique.value)
     const scale = to === 'cm' ? 10 : 1
     return { width: Math.round((widthMm / scale) * 10) / 10, height: Math.round((heightMm / scale) * 10) / 10 }
   }

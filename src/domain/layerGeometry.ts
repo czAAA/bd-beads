@@ -3,7 +3,7 @@ import type { ShapedSheet } from './frameShape'
 import { layoutNeighbors, layoutPosition, layoutPositionAt, turnedLayout, type FrameLayout, type LayoutPoint, type LayoutPosition, type LayoutSymmetry } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { describeWeave, type Weave } from './weave'
-import { insideBounds, type Box } from './weaveGeometry'
+import { insideBounds, type Box, type SpanAxis } from './weaveGeometry'
 
 // The Layer geometry (ADR 0078, ticket 0628): one set of questions every Layer answers, the Canvas and every Frame,
 // with a Frame shape or none, alike, in bead widths from the Layer's first position's corner (a cell is 1 wide). A grid answers from its Weave, a
@@ -30,10 +30,10 @@ export interface LayerGeometry {
   hasPosition(position: GridPosition): boolean
   /** The positions whose beads touch this one's, each a position the Layer has: where a Fill spreads. */
   neighbors(position: GridPosition): GridPosition[]
-  /** On a Layer of rows (any Weave's grid, upright or turned): which columns of `toRow`, the row above or below, a bead
-   * of `row` touches, as offsets from its column, edge aside; along a row a bead touches the next column either side.
-   * What lets Fill flood a row span at a time (ticket 0677). None on a Custom frame, whose beads touch by its layout. */
-  readonly rowReach?: (row: number, toRow: number) => readonly [number, number]
+  /** On a Layer of rows and columns (any grid, upright or turned): the lines a Fill floods a span at a time (tickets
+   * 0677, 0734) and which positions of the line either side a bead of `line` touches, as offsets from its own. None on a
+   * Custom frame, whose beads touch by its layout. */
+  readonly spans?: { along: SpanAxis; reach: (line: number, toLine: number) => readonly [number, number] }
   /** Where a position's bead lies, or none where the Layer has no such position. */
   place(position: GridPosition): BeadPlace | undefined
   /** The position whose bead a point is on, or none between beads, on a Seam, Off-shape or off the Layer. */
@@ -60,8 +60,8 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
   const has = (position: GridPosition): boolean => insideBounds(bounds, position)
   const box = (position: GridPosition): Box => description.box(position, 1, height)
   const extent = bounds && description.blockBox(bounds, 1, height)
-  // Where rows nest, the bead drawn last wins among the edge's own rows: the description takes an edge from the first
-  // position. A rectangle elsewhere is hit as the open Weave is, then cut to its edge.
+  // A stagger is counted from the first position, so the description takes an edge from it. A rectangle elsewhere is hit
+  // as the open Weave is, then cut to its edge.
   const within = bounds && bounds.row === 0 && bounds.column === 0 ? bounds : undefined
   return {
     grid: true,
@@ -77,7 +77,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
     },
     hasPosition: has,
     neighbors: (position) => description.neighbors(bounds, position).filter(has),
-    rowReach: description.reach,
+    spans: description.spans,
     place: (position) => (has(position) ? { box: box(position), angle: 0 } : undefined),
     positionAt: ({ x, y }) => {
       const found = description.positionAt(x, y, 1, height, within)
@@ -175,10 +175,10 @@ function unturnPoint({ x, y }: LayoutPoint, width: number, height: number, turns
 /** The fewest rows and columns of a Weave's cells whose block covers a box `width` by `height` in cell widths. */
 function coveringSize(description: ReturnType<typeof describeWeave>, width: number, height: number): GridDimensions {
   const aspect = description.cellAspect
-  const extra = description.blockExtent(1, 1, 1, aspect).width - 1
-  const columns = Math.max(1, Math.ceil(width - extra - 1e-9))
-  const pitch = description.rowPitch * aspect
-  const rows = Math.max(1, Math.ceil((height - aspect) / pitch - 1e-9) + 1)
+  // What the stagger adds to a block, along the line that shifts: the half bead a shifted row adds across, or a column down.
+  const extra = description.blockExtent(1, 1, 1, aspect)
+  const columns = Math.max(1, Math.ceil(width - (extra.width - 1) - 1e-9))
+  const rows = Math.max(1, Math.ceil((height - (extra.height - aspect)) / aspect - 1e-9))
   return { rows, columns }
 }
 
@@ -254,7 +254,7 @@ export function turnedGridGeometry(sheet: TurnedGrid): LayerGeometry {
     positions: upright.positions,
     hasPosition: upright.hasPosition,
     neighbors: upright.neighbors,
-    rowReach: upright.rowReach,
+    spans: upright.spans,
     place: (position) => {
       if (!upright.hasPosition(position)) return undefined
       const centre = toRectangle(description.center(position, 1, aspect))

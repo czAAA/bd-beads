@@ -18,10 +18,13 @@ import { withLayers } from '../testUtils/layerFields'
 import { changeFrame } from '../domain/changeFrame'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
+/** Where the Frame starts: peyote's must be an even column, as its columns alternate (ticket 0734). */
+const frameColumn = (technique: Technique): number => (technique === 'peyote' ? 6 : 5)
+
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
   const cells = Array.from({ length: 12 }, (_, index) => ({ row: Math.floor(index / 3), column: index % 3, color: '#e63746' }))
-  const frame = { ...weaveOf(canvasOf(project)), technique, row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
+  const frame = { ...weaveOf(canvasOf(project)), technique, row: 6, column: frameColumn(technique), rows: 4, columns: 3, beads: withColors({}, cells) }
   return withLayers(project, { technique, orientation: rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
 }
 
@@ -60,7 +63,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
 
 describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (technique) => {
   describe.each([
-    { space: 'open', open: true, origin: { row: 6, column: 5 } },
+    { space: 'open', open: true, origin: { row: 6, column: frameColumn(technique) } },
     { space: 'Frame-only', open: false, origin: { row: 0, column: 0 } },
   ])('in $space space', ({ open, origin }) => {
     it('puts every bead of the Frame where its row and column say, shifted by the bead\'s own row', () => {
@@ -71,7 +74,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
       const expected = Array.from({ length: 12 }, (_, index) => {
         const row = origin.row + Math.floor(index / 3)
         const column = origin.column + (index % 3)
-        // The Frame starts on an even row, so a row's shift is the same numbered in the space or in the Project.
+        // The Frame starts on an even row and column, so a line's shift is the same numbered in the space or in the Project.
         const { x, y } = positionBoxPx({ technique }, row, column)
         return { x, y }
       })
@@ -377,15 +380,18 @@ describe('Position marks tile', () => {
 /** The Frame woven in `frame` over a Canvas woven in `canvas`: 3 across, 4 down, at row 6, column 5, every position painted. */
 function mixedProject(canvas: Technique, frame: Technique): Project {
   const base = framedProject(canvas)
-  return withLayers(base, { technique: canvas, frame: { ...frameOf(base)!, technique: frame } })
+  return withLayers(base, { technique: canvas, frame: { ...frameOf(base)!, column: mixedColumn(canvas, frame), technique: frame } })
 }
+
+/** Where the mixed Frame starts: an even column where either layer is peyote, whose columns alternate (ticket 0734). */
+const mixedColumn = (canvas: Technique, frame: Technique): number => frameColumn(canvas === 'peyote' || frame === 'peyote' ? 'peyote' : canvas)
 
 describe.each<{ canvas: Technique; frame: Technique }>([
   { canvas: 'loom', frame: 'peyote' },
   { canvas: 'peyote', frame: 'loom' },
   { canvas: 'loom', frame: 'brick' },
 ])('a $frame Frame over a $canvas Canvas (ticket 492)', ({ canvas, frame }) => {
-  const origin = positionBoxPx({ technique: canvas }, 6, 5)
+  const origin = positionBoxPx({ technique: canvas }, 6, mixedColumn(canvas, frame))
 
   it('draws the Frame\'s beads in its own Weave from the corner of the Canvas position it lies on, its first row straight', () => {
     const painted = render(mixedProject(canvas, frame), true).beads.filter(({ color }) => color !== null)
@@ -415,7 +421,7 @@ describe.each<{ canvas: Technique; frame: Technique }>([
 
   it('hides the Canvas bead lying under the Frame, and draws the one beside it', () => {
     const base = mixedProject(canvas, frame)
-    const project = withLayers(base, { beads: withColors({}, [{ row: 6, column: 5, color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) })
+    const project = withLayers(base, { beads: withColors({}, [{ row: 6, column: mixedColumn(canvas, frame), color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) })
 
     const colors = render(project, true).beads.map(({ color }) => color)
 

@@ -1,42 +1,40 @@
-import { beadPitchMm } from './beads'
 import type { GridPosition } from './grid'
-import { insideBounds, type Box, type CellCenter, type GeometryStrategy, type RowsGeometry } from './weaveGeometry'
+import { insideBounds, inRoundedCorner, linePasses, type Box, type CellCenter, type GeometryStrategy, type RowsGeometry } from './weaveGeometry'
 
 // The columns a bead reaches in a row offset further right, further left, or the same (see `reach`).
 const REACH_BACK = [-1, 0] as const
 const REACH_ON = [0, 1] as const
 const REACH_SAME = [0, 0] as const
 
-/** Beads laid on rows (loom, peyote, brick stitch; ADR 0078): every other row, or block of `block` rows, sits
- * `shift` across where the rows are shifted, and rows sit `rowPitch` apart. Passes are lines: one each, or peyote's
- * first line in one pass and every later one in two. */
+/** Beads laid on rows (loom, brick stitch; ADR 0078): every other row, or block of `block` rows, sits `shift` across
+ * where the rows are shifted, and rows sit a full bead apart. Passes are lines: one each. */
 export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => {
-  const { shifted, shift, rowPitch, passes, block } = geometry
-  const frameStep = shifted ? 2 * block : 1
+  const { shifted, shift, passes, block } = geometry
+  const rowCycle = shifted ? 2 * block : 1
   const twoPasses = passes === 'twoAfterFirst'
   // A Bead's cell's own rounding, which a press in a bead's corner misses.
   const roundness = cell?.roundness ?? geometry.roundness
   // The second half of each cycle is shifted, whichever side of row 0 it is on.
-  const isShiftedRow = (row: number): boolean => frameStep > 1 && Math.abs(Math.floor((row * 2) / frameStep)) % 2 === 1
+  const isShiftedRow = (row: number): boolean => rowCycle > 1 && Math.abs(Math.floor((row * 2) / rowCycle)) % 2 === 1
   const rowOffset = (row: number, cellSize: number): number => (isShiftedRow(row) ? cellSize * shift : 0)
   const center = ({ row, column }: GridPosition, cellWidth: number, cellHeight: number): CellCenter => ({
     x: column * cellWidth + cellWidth / 2 + rowOffset(row, cellWidth),
-    y: cellHeight / 2 + row * (cellHeight * rowPitch),
+    y: cellHeight / 2 + row * cellHeight,
   })
   const box = ({ row, column }: GridPosition, cellWidth: number, cellHeight: number): Box => ({
     x: rowOffset(row, cellWidth) + column * cellWidth,
-    y: row * (cellHeight * rowPitch),
+    y: row * cellHeight,
     width: cellWidth,
     height: cellHeight,
   })
   const blockExtent = (columns: number, rows: number, cellWidth: number, cellHeight: number) => ({
     width: columns * cellWidth + (shifted ? cellWidth * shift : 0),
-    height: rows === 0 ? 0 : cellHeight + (rows - 1) * (cellHeight * rowPitch),
+    height: rows * cellHeight,
   })
   // The rows whose beads reach a height of the grid: a bead hangs its height below its row's top.
   const rowsAt = (top: number, bottom: number, cellHeight: number) => ({
-    firstRow: Math.ceil((top - cellHeight) / (cellHeight * rowPitch)),
-    lastRow: Math.floor(bottom / (cellHeight * rowPitch)),
+    firstRow: Math.ceil((top - cellHeight) / cellHeight),
+    lastRow: Math.floor(bottom / cellHeight),
   })
   // A row's cell overlaps the same column of a row with the same offset, and two columns of a row offset the other way.
   const reach = (fromRow: number, toRow: number): readonly [number, number] => {
@@ -44,48 +42,42 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
     const to = rowOffset(toRow, 1)
     return to > from ? REACH_BACK : to < from ? REACH_ON : REACH_SAME
   }
-  const lineOf = (pass: number): number => (twoPasses && pass > 0 ? Math.ceil(pass / 2) : pass)
   return {
     shifted,
     shift,
-    rowPitch,
+    staggers: 'rows',
     cellAspect: cell?.aspect ?? geometry.cellAspect,
     roundness: geometry.roundness,
-    frameStep,
+    rowCycle,
+    columnCycle: 1,
     box,
     rowOffset,
+    columnOffset: () => 0,
     blockExtent,
     blockBox: ({ row, column, rows, columns }, cellWidth, cellHeight) => ({
       x: column * cellWidth,
-      y: row * (cellHeight * rowPitch),
+      y: row * cellHeight,
       ...blockExtent(columns, rows, cellWidth, cellHeight),
     }),
     // The marks either side of a column edge are a shifted and an unshifted row's; a row's middle is its beads'.
     boundary: ({ row, column, rows, columns }, cellWidth, cellHeight) => {
-      const pitch = cellHeight * rowPitch
-      const top = row * pitch + cellHeight / 2 - pitch / 2
+      const top = row * cellHeight
       const left = column * cellWidth + cellWidth / 4
-      return { x: left, y: top, width: (column + columns) * cellWidth + cellWidth / 4 - left, height: (row + rows - 1) * pitch + cellHeight / 2 + pitch / 2 - top }
+      return { x: left, y: top, width: (column + columns) * cellWidth + cellWidth / 4 - left, height: (row + rows) * cellHeight - top }
     },
-    // Later rows are drawn over earlier ones, so the lowest row whose bead holds the point wins; a rounded corner misses.
+    // Rows don't overlap, so the one row whose bead holds the point is the answer; a rounded corner misses.
     positionAt: (x, y, cellWidth, cellHeight, within) => {
-      const { firstRow, lastRow } = rowsAt(y, y, cellHeight)
-      const radius = roundness * cellWidth
-      for (let row = Math.min(lastRow, within ? within.rows - 1 : Infinity); row >= Math.max(firstRow, within ? 0 : -Infinity); row -= 1) {
-        const { x: left, y: top } = box({ row, column: 0 }, cellWidth, cellHeight)
-        const offsetX = x - left
-        const offsetY = y - top
-        if (offsetY < 0 || offsetY >= cellHeight || (within && offsetX < 0)) continue
-        const column = Math.floor(offsetX / cellWidth)
-        if (within && column >= within.columns) continue
-        if (inRoundedCorner(offsetX - column * cellWidth, offsetY, radius, cellWidth, cellHeight)) continue
-        return { row, column }
-      }
-      return undefined
+      const row = Math.floor(y / cellHeight)
+      if (within && (row < 0 || row >= within.rows)) return undefined
+      const offsetX = x - rowOffset(row, cellWidth)
+      if (within && offsetX < 0) return undefined
+      const column = Math.floor(offsetX / cellWidth)
+      if (within && column >= within.columns) return undefined
+      return inRoundedCorner(offsetX - column * cellWidth, y - row * cellHeight, roundness * cellWidth, cellWidth, cellHeight) ? undefined : { row, column }
     },
     nearestPosition: (x, y, cellWidth, cellHeight) => {
       // + 0 turns a rounded -0 into row 0.
-      const row = Math.round((y - cellHeight / 2) / (cellHeight * rowPitch)) + 0
+      const row = Math.round((y - cellHeight / 2) / cellHeight) + 0
       return { row, column: Math.floor((x - rowOffset(row, cellWidth)) / cellWidth) }
     },
     visible: (area, cellWidth, cellHeight) => ({
@@ -96,9 +88,9 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
       },
     }),
     tile: (cellWidth, cellHeight) => {
-      const rows = Math.max(2, frameStep)
+      const rows = Math.max(2, rowCycle)
       return {
-        size: { width: cellWidth, height: rows * (cellHeight * rowPitch) },
+        size: { width: cellWidth, height: rows * cellHeight },
         beads: Array.from({ length: rows }, (_row, row) => box({ row, column: 0 }, cellWidth, cellHeight)),
       }
     },
@@ -119,27 +111,9 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
       }
       return candidates.filter((position) => insideBounds(bounds, position))
     },
-    reach,
+    spans: { along: 'row', reach },
     twoPasses,
-    passes: {
-      count: (lines) => (!twoPasses || lines <= 0 ? Math.max(0, lines) : 1 + (lines - 1) * 2),
-      of: (line, along) => (!twoPasses || line === 0 ? line : (line - 1) * 2 + 1 + (along % 2)),
-      lineOf,
-      lines: (pass) => [lineOf(pass)],
-    },
+    passes: linePasses(twoPasses),
     turned: ({ row, column }, block) => ({ row: column, column: block.rows - 1 - row }),
-    stepMm: (bead) => ({ across: beadPitchMm(bead), down: bead.heightMm * rowPitch }),
   }
-}
-
-/** Whether a point of a bead's cell, from its top-left, lies outside its rounded corners. A corner can't be rounder
- * than half the shorter side (a pill). */
-function inRoundedCorner(x: number, y: number, wanted: number, width: number, height: number): boolean {
-  const radius = Math.min(wanted, width / 2, height / 2)
-  if (radius <= 0) {
-    return false
-  }
-  const cornerX = x < radius ? radius : x > width - radius ? width - radius : x
-  const cornerY = y < radius ? radius : y > height - radius ? height - radius : y
-  return (x - cornerX) ** 2 + (y - cornerY) ** 2 > radius ** 2
 }

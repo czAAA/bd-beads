@@ -84,7 +84,8 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
 /** What Remove line asks before it goes (ticket 0647, ADR 0055), its rows and columns the way the rows run. */
 export type RemoveLineQuestion =
   /** A finished row: its number counted the way the rows run (from the far edge on a reversed way), and the row Row
-   * progress shows once it has gone back by that row's passes; `shifts` where rows alternate (peyote, brick stitch). */
+   * progress shows once it has gone back by that row's passes; `shifts` where the removed line is the one that
+   * alternates (brick stitch's rows, peyote's columns, ticket 0734). */
   | { kind: 'finished-row'; row: number; backTo: number; shifts: boolean; direction: PassDirection }
   /** A line across finished rows, which each lose a bead and stay finished: how many. */
   | { kind: 'across-rows'; rows: number; direction: PassDirection }
@@ -110,7 +111,8 @@ export function removeLineQuestion(project: Project, selection: Selection | unde
   const backTo = Math.min(after.current + 1, after.total)
   const lines = line.axis === 'row' ? line.area.rows : line.area.columns
   const row = (rowProgressOf(project).reversed ? lines - 1 - line.index : line.index) + 1
-  return { kind: 'finished-row', row, backTo, shifts: describeWeave(frameWeave(project)).shifted, direction }
+  const { shifted, staggers } = describeWeave(frameWeave(project))
+  return { kind: 'finished-row', row, backTo, shifts: shifted && staggers === `${line.axis}s`, direction }
 }
 
 /** Taking out the Selection's line: changeFrame's result with a Frame, else an edit of a Piece area's beads only. */

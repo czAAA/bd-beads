@@ -61,8 +61,8 @@ const MAX_PIXELS_PER_BEAD = 8
 /** How close to a whole number of pixels a shift must come to count as one: a third times three is not exactly 1. */
 const WHOLE_PIXEL_TOLERANCE = 1e-9
 
-/** How many pixels a bead takes across so its row shift is a whole number of them: 1 where rows don't shift, 2 for half
- * a bead, 3 for a third. */
+/** How many pixels a bead takes along the staggered axis so the stagger is a whole number of them: 1 where nothing is
+ * staggered, 2 for half a bead, 3 for a third. */
 function pixelsPerBead(shift: number): number {
   for (let wide = 1; wide < MAX_PIXELS_PER_BEAD; wide += 1) {
     if (Math.abs(shift * wide - Math.round(shift * wide)) < WHOLE_PIXEL_TOLERANCE) {
@@ -72,13 +72,30 @@ function pixelsPerBead(shift: number): number {
   return MAX_PIXELS_PER_BEAD
 }
 
-/** The beads as an image at the description's own row shift: as many pixels a bead as put a shifted row a whole number
- * of them in (one for loom, two for peyote). `colors` is one entry per bead, row by row; undefined is empty.
+/** What a draft image reads of a geometry: its stagger, and which lines it shifts (ticket 0734). */
+type DraftGeometry = Pick<WeaveGeometry, 'shift' | 'staggers' | 'rowOffset' | 'columnOffset'>
+
+/** The pixels a bead takes across and down in the draft: as many along the staggered axis as put a shifted line a whole
+ * number of pixels in (two for peyote's columns, down; two for brick stitch's rows, across), one the other way. */
+function pixelsOf(geometry: DraftGeometry): { wide: number; tall: number } {
+  const along = pixelsPerBead(geometry.shift)
+  return geometry.staggers === 'columns' ? { wide: 1, tall: along } : { wide: along, tall: 1 }
+}
+
+/** The pixels a stagger adds to a block's width (a shifted row's) or height (a shifted column's). */
+function staggerPixels(geometry: DraftGeometry, wide: number, tall: number): { across: number; down: number } {
+  return geometry.staggers === 'columns' ? { across: 0, down: Math.round(geometry.shift * tall) } : { across: Math.round(geometry.shift * wide), down: 0 }
+}
+
+/** The beads as an image at the description's own stagger: as many pixels a bead as put a shifted row or column a whole
+ * number of them in. `colors` is one entry per bead, row by row; undefined is empty.
  * @internal Its test reads the pixels on their own. */
-export function draftImage(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
-  const wide = pixelsPerBead(geometry.shift)
-  const width = columns * wide + Math.round(geometry.shift * wide)
-  const data = new Uint8ClampedArray(width * rows * 4)
+export function draftImage(geometry: DraftGeometry, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
+  const { wide, tall } = pixelsOf(geometry)
+  const { across: extraAcross, down: extraDown } = staggerPixels(geometry, wide, tall)
+  const width = columns * wide + extraAcross
+  const height = rows * tall + extraDown
+  const data = new Uint8ClampedArray(width * height * 4)
   const [backgroundR, backgroundG, backgroundB] = channels(theme.background)
   for (let at = 0; at < data.length; at += 4) {
     data[at] = backgroundR
@@ -88,18 +105,21 @@ export function draftImage(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>,
   }
 
   for (let row = 0; row < rows; row += 1) {
-    const start = Math.round(geometry.rowOffset(row, wide))
     for (let column = 0; column < columns; column += 1) {
       const [r, g, b] = channels(colors[row * columns + column] ?? theme.emptyBead)
-      for (let across = 0; across < wide; across += 1) {
-        const at = (row * width + start + column * wide + across) * 4
-        data[at] = r
-        data[at + 1] = g
-        data[at + 2] = b
+      const startX = column * wide + Math.round(geometry.rowOffset(row, wide))
+      const startY = row * tall + Math.round(geometry.columnOffset(column, tall))
+      for (let down = 0; down < tall; down += 1) {
+        for (let across = 0; across < wide; across += 1) {
+          const at = ((startY + down) * width + startX + across) * 4
+          data[at] = r
+          data[at + 1] = g
+          data[at + 2] = b
+        }
       }
     }
   }
-  return { width, height: rows, data }
+  return { width, height, data }
 }
 
 let scratch: HTMLCanvasElement | undefined
@@ -137,12 +157,17 @@ export function renderDraft(
   context.drawImage(scratch, 0, 0, image.width, image.height, 0, 0, bitmapWidth, bitmapHeight)
 }
 
-/** Where a draft image of a block of positions puts each bead (tickets 0675, 0676): `wide` pixels a bead across as in
- * `draftImage`, a row's first pixel at its shift, so the block's first column of an unshifted row is pixel 0. */
-function draftLayout(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, block: Rect): { wide: number; width: number; height: number; pixelOf: (row: number, column: number) => number } {
-  const wide = pixelsPerBead(geometry.shift)
-  const width = block.columns * wide + Math.round(geometry.shift * wide)
-  return { wide, width, height: block.rows, pixelOf: (row, column) => (row - block.row) * width + Math.round(geometry.rowOffset(row, wide)) + (column - block.column) * wide }
+/** Where a draft image of a block of positions puts each bead (tickets 0675, 0676, 0734): `wide` by `tall` pixels a bead as
+ * in `draftImage`, a shifted row's first pixel at its shift across, a shifted column's down, so the block's first bead of
+ * an unshifted line is pixel 0. */
+function draftLayout(geometry: DraftGeometry, block: Rect): { wide: number; tall: number; width: number; height: number; pixelOf: (row: number, column: number) => number } {
+  const { wide, tall } = pixelsOf(geometry)
+  const extra = staggerPixels(geometry, wide, tall)
+  const width = block.columns * wide + extra.across
+  const height = block.rows * tall + extra.down
+  const pixelOf = (row: number, column: number) =>
+    ((row - block.row) * tall + Math.round(geometry.columnOffset(column, tall))) * width + Math.round(geometry.rowOffset(row, wide)) + (column - block.column) * wide
+  return { wide, tall, width, height, pixelOf }
 }
 
 const packed = new Map<string, number>()
@@ -159,22 +184,26 @@ function packedPixel(color: string): number {
   return known
 }
 
-/** Puts one bead's color into a draft image's pixels, `wide` of them from pixel `start`, opaque. */
-function putPixels(pixels: Uint32Array, start: number, wide: number, color: string): void {
+/** Puts one bead's color into a draft image's pixels, `wide` by `tall` of them from pixel `start` in an image `width`
+ * across, opaque. */
+function putPixels(pixels: Uint32Array, start: number, width: number, wide: number, tall: number, color: string): void {
   const pixel = packedPixel(color)
-  for (let at = start; at < start + wide; at += 1) pixels[at] = pixel
+  for (let down = 0; down < tall; down += 1) {
+    const from = start + down * width
+    for (let at = from; at < from + wide; at += 1) pixels[at] = pixel
+  }
 }
 
-/** Beads where they lie as a draft image (ticket 0675): `wide` pixels a bead across as in `draftImage`, its first pixel
+/** Beads where they lie as a draft image (ticket 0675): `wide` by `tall` pixels a bead as in `draftImage`, its first pixel
  * at `firstColumn` of `firstRow`, the first any bead reaches, and clear where there is no bead.
  * @internal Its test reads the pixels on their own. */
-export function draftOfBeads(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, beads: readonly PastedCell[]): DraftImage & { firstRow: number; firstColumn: number; wide: number } {
+export function draftOfBeads(geometry: DraftGeometry, beads: readonly PastedCell[]): DraftImage & { firstRow: number; firstColumn: number; wide: number; tall: number } {
   const block = blockAround(beads) ?? { row: 0, column: 0, rows: 0, columns: 0 }
-  const { wide, width, height, pixelOf } = draftLayout(geometry, block)
+  const { wide, tall, width, height, pixelOf } = draftLayout(geometry, block)
   const data = new Uint8ClampedArray(width * height * 4)
   const words = new Uint32Array(data.buffer)
-  for (const { row, column, color } of beads) putPixels(words, pixelOf(row, column), wide, color)
-  return { width, height, data, firstRow: block.row, firstColumn: block.column, wide }
+  for (const { row, column, color } of beads) putPixels(words, pixelOf(row, column), width, wide, tall, color)
+  return { width, height, data, firstRow: block.row, firstColumn: block.column, wide, tall }
 }
 
 /** The rectangle of positions round some beads, or undefined for none. */
@@ -204,7 +233,7 @@ export interface DraftImageOf {
 /** Paints a block's draft image onto `canvas`, sized to it: `paint` puts each bead's color, clear where it puts none.
  * Undefined where the canvas has no 2D context. */
 function paintDraft(canvas: HTMLCanvasElement, weave: Weave, block: Rect, paint: DraftPainter): DraftImageOf | undefined {
-  const { wide, width, height, pixelOf } = draftLayout(describeWeave(weave), block)
+  const { wide, tall, width, height, pixelOf } = draftLayout(describeWeave(weave), block)
   // Resizing a canvas reallocates it: a pan at one zoom keeps the size.
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width
@@ -214,7 +243,7 @@ function paintDraft(canvas: HTMLCanvasElement, weave: Weave, block: Rect, paint:
   if (!own) return undefined
   const pixels = own.createImageData(width, height)
   const words = new Uint32Array(pixels.data.buffer)
-  paint((row, column, color) => putPixels(words, pixelOf(row, column), wide, color))
+  paint((row, column, color) => putPixels(words, pixelOf(row, column), width, wide, tall, color))
   own.putImageData(pixels, 0, 0)
   return { image: canvas, block, weave }
 }
@@ -232,16 +261,15 @@ export function keptDraft(weave: Weave, block: Rect, paint: DraftPainter): Draft
 }
 
 /** Lays a draft image over its beads' boxes through the context's grid transform and at its opacity (tickets 0675,
- * 0676). `origin` is where the layer's row 0, column 0 lies in grid px. Each row is drawn its pitch tall from its top,
- * where a later row nests. */
+ * 0676, 0734). `origin` is where the layer's row 0, column 0 lies in grid px. */
 export function layDraft(context: DrawingContext, { image, block, weave }: DraftImageOf, origin: { x: number; y: number } = { x: 0, y: 0 }): void {
   const description = describeWeave(weave)
-  const { wide, width, height } = draftLayout(description, block)
+  const { wide, tall, width, height } = draftLayout(description, block)
   const cell = cellSizePx(weave.technique, weave.cell)
   const corner = description.box({ row: block.row, column: block.column }, cell.width, cell.height)
-  const pitch = description.box({ row: block.row + 1, column: block.column }, cell.width, cell.height).y - corner.y
   const x = origin.x + corner.x - description.rowOffset(block.row, cell.width)
-  context.drawImage(image, 0, 0, width, height, x, origin.y + corner.y, (width * cell.width) / wide, height * pitch)
+  const y = origin.y + corner.y - description.columnOffset(block.column, cell.height)
+  context.drawImage(image, 0, 0, width, height, x, y, (width * cell.width) / wide, (height * cell.height) / tall)
 }
 
 let beadsScratch: HTMLCanvasElement | undefined

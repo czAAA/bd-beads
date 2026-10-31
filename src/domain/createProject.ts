@@ -36,7 +36,7 @@ export function createProject(input: CreateProjectInput): Project {
   }
 
   const created = weaveOf(input)
-  const dimensions = input.size ? gridFromSize(input.size, bead) : undefined
+  const dimensions = input.size ? gridFromSize(input.size, bead, created.technique) : undefined
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')

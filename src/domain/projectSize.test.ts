@@ -21,32 +21,39 @@ const units = { mm: 'mm', cm: 'cm' }
 describe('gridFromSize', () => {
   it('takes a size in beads as the columns and rows directly, whatever the Bead', () => {
     for (const bead of BEAD_CATALOG) {
-      expect(gridFromSize({ width: 12, height: 7, unit: 'beads' }, bead)).toEqual({ columns: 12, rows: 7 })
+      expect(gridFromSize({ width: 12, height: 7, unit: 'beads' }, bead, 'loom')).toEqual({ columns: 12, rows: 7 })
     }
   })
 
   it('rounds a fractional size in beads and never goes below one', () => {
-    expect(gridFromSize({ width: 2.6, height: 0.2, unit: 'beads' }, cube)).toEqual({ columns: 3, rows: 1 })
+    expect(gridFromSize({ width: 2.6, height: 0.2, unit: 'beads' }, cube, 'loom')).toEqual({ columns: 3, rows: 1 })
   })
 
   it('converts mm once, through the chosen Bead', () => {
-    expect(gridFromSize({ width: 15, height: 30, unit: 'mm' }, cube)).toEqual({ columns: 10, rows: 20 })
+    expect(gridFromSize({ width: 15, height: 30, unit: 'mm' }, cube, 'loom')).toEqual({ columns: 10, rows: 20 })
   })
 
   it('converts cm as ten times the mm', () => {
-    expect(gridFromSize({ width: 1.5, height: 3, unit: 'cm' }, cube)).toEqual({ columns: 10, rows: 20 })
+    expect(gridFromSize({ width: 1.5, height: 3, unit: 'cm' }, cube, 'loom')).toEqual({ columns: 10, rows: 20 })
   })
 })
 
 describe('estimatedSizeMm', () => {
   it('is columns times the Bead width and rows times its height', () => {
-    expect(estimatedSizeMm({ columns: 10, rows: 20 }, cube)).toEqual({ widthMm: 15, heightMm: 30 })
-    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica).widthMm).toBeCloseTo(32)
-    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica).heightMm).toBeCloseTo(13)
+    expect(estimatedSizeMm({ columns: 10, rows: 20 }, cube, 'loom')).toEqual({ widthMm: 15, heightMm: 30 })
+    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom').widthMm).toBeCloseTo(32)
+    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom').heightMm).toBeCloseTo(13)
+  })
+
+  it('lays the Bead as its Technique does: the same on peyote, turned on brick stitch (ticket 0734)', () => {
+    expect(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'peyote')).toEqual(estimatedSizeMm({ columns: 20, rows: 10 }, delica, 'loom'))
+    // Ten columns a diameter wide and ten rows a length plus slack tall: TOHO Round 11/0 is 22 mm across, 16.5 down.
+    expect(estimatedSizeMm({ columns: 10, rows: 10 }, round, 'brick')).toEqual({ widthMm: expect.closeTo(22), heightMm: expect.closeTo(16.5) })
+    expect(estimatedSizeMm({ columns: 10, rows: 10 }, round, 'loom')).toEqual({ widthMm: expect.closeTo(16.5), heightMm: expect.closeTo(22) })
   })
 
   it("includes TOHO Round 11/0's width correction in every column", () => {
-    const size = estimatedSizeMm({ columns: 9, rows: 73 }, round)
+    const size = estimatedSizeMm({ columns: 9, rows: 73 }, round, 'loom')
     expect(size.widthMm).toBeCloseTo(14.85)
     expect(size.heightMm).toBeCloseTo(160.6)
   })
@@ -61,11 +68,14 @@ describe('estimatedSizeMm', () => {
   })
 
   it('is the inverse of the mm conversion, so a stated size estimates back to about itself', () => {
-    for (const bead of BEAD_CATALOG) {
-      const dimensions = gridFromSize({ width: 30, height: 60, unit: 'mm' }, bead)
-      const estimate = estimatedSizeMm(dimensions, bead)
-      expect(Math.abs(estimate.widthMm - 30)).toBeLessThanOrEqual(bead.widthMm)
-      expect(Math.abs(estimate.heightMm - 60)).toBeLessThanOrEqual(bead.heightMm)
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      for (const bead of BEAD_CATALOG) {
+        const dimensions = gridFromSize({ width: 30, height: 60, unit: 'mm' }, bead, technique)
+        const estimate = estimatedSizeMm(dimensions, bead, technique)
+        const room = Math.max(bead.widthMm + (bead.widthCorrectionMm ?? 0), bead.heightMm)
+        expect(Math.abs(estimate.widthMm - 30)).toBeLessThanOrEqual(room)
+        expect(Math.abs(estimate.heightMm - 60)).toBeLessThanOrEqual(room)
+      }
     }
   })
 })
@@ -146,13 +156,13 @@ describe('a Custom frame\'s Estimated size (ticket 0592)', () => {
   const triangle = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 6 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 6 } }
 
   it('measures its shape, a Triangle standing on its side, not the cells of its bounding rectangle', () => {
-    const { widthMm, heightMm } = estimatedSizeMm(triangle, cube)
+    const { widthMm, heightMm } = estimatedSizeMm(triangle, cube, 'peyote')
     expect(widthMm / heightMm).toBeCloseTo(2 / Math.sqrt(3), 1)
-    expect(heightMm).toBeLessThan(triangle.rows * cube.heightMm)
+    expect(heightMm).not.toBeCloseTo(triangle.rows * cube.heightMm, 1)
   })
 
   it('grows with its Rounds', () => {
     const larger = { ...triangle, ...customFrameSize('triangle', { rounds: 9 }), settings: { rounds: 9 } }
-    expect(estimatedSizeMm(larger, cube).widthMm).toBeGreaterThan(estimatedSizeMm(triangle, cube).widthMm)
+    expect(estimatedSizeMm(larger, cube, 'peyote').widthMm).toBeGreaterThan(estimatedSizeMm(triangle, cube, 'peyote').widthMm)
   })
 })

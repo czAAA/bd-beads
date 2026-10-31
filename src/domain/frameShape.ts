@@ -1,11 +1,11 @@
-import { beadPitchMm, findBead, type Bead } from './beads'
+import { findBead, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
 import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
-import { beadCell, describeWeave, TECHNIQUES, withCell, type Technique, type Weave } from './weave'
+import { beadCell, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, withCell, type Technique, type Weave } from './weave'
 
 /** The Frame shapes (spec 0590, ADR 0077, ADR 0079): what specialises a Frame into a Custom frame. A Triangle and a
  * Warped Square in Rounds (ticket 0592), a Star and a Kaleidocycle of such parts, a Kite in Rows from its point (ticket
@@ -47,14 +47,15 @@ export type ShapedSheet = Laid & Pick<FrameSheet, 'rows' | 'columns'> & Weave
 export type FrameAction = 'resize' | 'remove-line' | 'from-selection' | 'rotate' | 'technique' | 'select'
 
 /** A Frame's rectangle as its Frame shape measures it. */
-type Measured = Laid & Pick<FrameSheet, 'rows' | 'columns'>
+type Measured = Laid & Pick<FrameSheet, 'rows' | 'columns' | 'technique'>
 
 /** What every Frame answers, a Frame's own way or its Frame shape's; code asks the Frame rather than testing its shape. */
 interface FrameRules {
   /** Where its beads are (ADR 0078): its Weave's rows over its own rectangle, or its shape's layout laid in it. */
   geometry(sheet: ShapedSheet): LayerGeometry
-  /** Its Estimated size in mm (CONTEXT.md) on a Bead, before the view turns it: a Bead's pitch a column and its height a
-   * row, or a Custom frame as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592). */
+  /** Its Estimated size in mm (CONTEXT.md) on a Bead, before the view turns it: the Bead laid on its Technique's thread
+   * a column wide and a row tall, or a Custom frame as big as its shape, a bead's width to a bead width of its layout
+   * (tickets 0592, 0734). */
   sizeMm(frame: Measured, bead: Bead): { widthMm: number; heightMm: number }
   /** The Techniques it may be woven in: any, or those its Frame shape supports (ADR 0079). */
   techniques: readonly Technique[]
@@ -80,8 +81,9 @@ export interface FrameShape extends FrameRules {
 const FRAME: FrameRules = {
   // Turned (ticket 0667), its own grid is drawn turned in the rectangle it covers.
   geometry: (sheet) => (sheet.quarterTurns ? turnedGridGeometry(sheet) : gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns })),
-  sizeMm: ({ columns, rows, quarterTurns }, bead) => {
-    const upright = { widthMm: columns * beadPitchMm(bead), heightMm: rows * bead.heightMm }
+  sizeMm: ({ columns, rows, quarterTurns, technique }, bead) => {
+    const laid = describeWeave({ technique }).beadMm(bead)
+    const upright = { widthMm: columns * laid.widthMm, heightMm: rows * laid.heightMm }
     return (quarterTurns ?? 0) % 2 === 1 ? { widthMm: upright.heightMm, heightMm: upright.widthMm } : upright
   },
   techniques: TECHNIQUES,
@@ -117,8 +119,9 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
     id,
     geometry: (sheet) => layoutGeometry(laidLayout(sheet), sheet),
     sizeMm: (frame, bead) => {
-      const { width, height } = laidLayout({ ...frame, cell: beadCell(bead) })
-      return { widthMm: width * beadPitchMm(bead), heightMm: height * beadPitchMm(bead) }
+      const { width, height } = laidLayout({ ...frame, cell: beadCell(bead, frame.technique) })
+      const { widthMm } = describeWeave({ technique: frame.technique }).beadMm(bead)
+      return { widthMm: width * widthMm, heightMm: height * widthMm }
     },
     rowOrder: (sheet) => layoutOrder(laidLayout(sheet), lines),
     allows: CUSTOM_ALLOWS,
@@ -251,7 +254,7 @@ function isSheet(frame: Laid & Partial<ShapedSheet>): frame is ShapedSheet {
 
 /** How deep a bead of a round shape is drawn where its layer's Bead is unknown: a Delica 11/0's, as the MiniStar is
  * beaded (ticket 0723). */
-const UNKNOWN_BEAD_DEPTH = beadCell(findBead('miyuki/delica/11-0'))!.aspect
+const UNKNOWN_BEAD_DEPTH = beadCell(findBead('miyuki/delica/11-0'), DEFAULT_TECHNIQUE)!.aspect
 
 /** The depth a Custom frame's beads pack by: its Bead's height across the thread over its pitch along it (ticket 0723). */
 function depthOf(frame: Pick<Laid, 'cell'>): number {

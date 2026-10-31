@@ -312,7 +312,7 @@ vi.mock('../rendering/positionMarks', () => ({ positionMarkBackground }))
 describe('HomePage background', () => {
   it("draws the Canvas's empty positions of a Delica 11/0 peyote Project at the Bead's real cell, not the loom's square grid", () => {
     page()
-    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote', cell: beadCell(findBead('miyuki/delica/11-0')) }))
+    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote', cell: beadCell(findBead('miyuki/delica/11-0'), 'peyote') }))
   })
 
   it("is the editor's tile: a bead across", () => {

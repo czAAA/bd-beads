@@ -92,7 +92,7 @@ describe('drawRulers', () => {
 
   it('numbers the box round every bead of a layer whose Pieces are not counted yet, without its line (ticket 0716)', () => {
     const surface = surfaceAt(1)
-    const pieces = { beads: beadsOfLayer(twoPieces, 'canvas'), cycle: 1, areas: [{ row: 0, column: 0, rows: 13, columns: 13 }], named: [], uncounted: true as const }
+    const pieces = { beads: beadsOfLayer(twoPieces, 'canvas'), touch: 1, areas: [{ row: 0, column: 0, rows: 13, columns: 13 }], named: [], uncounted: true as const }
     const layout = rulerLayout(twoPieces, surface, { fontPx: 11, numbers: true, pieces })
     const { context, strokes, texts } = fakeContext()
 

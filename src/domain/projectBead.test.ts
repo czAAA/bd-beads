@@ -125,14 +125,14 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
 
     expect(resolveProjectBead(opened)).toMatchObject({ id: retired.id, widthMm: 2 })
     expect(projectCell(opened)).toBeDefined()
-    expect(estimatedSizeMm(frameOf(opened)!, resolveProjectBead(opened)!).widthMm).toBe(20)
+    expect(estimatedSizeMm(frameOf(opened)!, resolveProjectBead(opened)!, frameOf(opened)!.technique).widthMm).toBe(20)
   })
 
   it('keeps the Project’s numbers when the catalog’s Bead of that id changes, until it is replaced', () => {
     const older = normalizeProject(withLayers(made(), { bead: { ...cubeBead, widthMm: 2, heightMm: 2 } }))
 
-    expect(estimatedSizeMm(frameOf(older)!, resolveProjectBead(older)!).widthMm).toBe(20)
-    expect(estimatedSizeMm(frameOf(replaceBead(older, cubeBead))!, resolveProjectBead(replaceBead(older, cubeBead))!).widthMm).toBe(15)
+    expect(estimatedSizeMm(frameOf(older)!, resolveProjectBead(older)!, frameOf(older)!.technique).widthMm).toBe(20)
+    expect(estimatedSizeMm(frameOf(replaceBead(older, cubeBead))!, resolveProjectBead(replaceBead(older, cubeBead))!, frameOf(older)!.technique).widthMm).toBe(15)
   })
 
   it('gives a Project with no copy the catalog’s Bead, read through the alias map, and lets an unknown id stay unknown', () => {

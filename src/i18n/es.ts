@@ -782,6 +782,11 @@ export const es: Translations = {
       many: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',
       other: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',
     },
+    snapAddedLeft: {
+      one: 'Se añadió una columna vacía a la izquierda: un marco debe empezar en una columna sin desplazar.',
+      many: 'Se añadieron {count} columnas vacías a la izquierda: un marco debe empezar en una columna sin desplazar.',
+      other: 'Se añadieron {count} columnas vacías a la izquierda: un marco debe empezar en una columna sin desplazar.',
+    },
     announceTechnique: 'Técnica cambiada a {technique}',
     announceSelectionRotated: 'Selección girada',
     rotateFrameLabel: 'Girar marco',
