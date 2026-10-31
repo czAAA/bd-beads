@@ -83,6 +83,7 @@
     "components/ToolSheet/README.md",
     "components/ToolTabs/README.md",
     "components/Toolbox/README.md",
+    "components/ValueSlider/README.md",
     "components/WritingPatterns/README.md",
     "components/bundle.css",
     "forms-and-states.md",
@@ -317,7 +318,7 @@
     {
       "name": "PixelToBeadRatio",
       "group": "Forms",
-      "summary": "The Pixel to bead ratio presets, Custom and the drawn explainer, and the result line both Size modes share."
+      "summary": "Retired (ticket 0747): Convert image sizes with the Width slider, whose marks give the exact pixel grid; the result line moved to ConvertImage."
     },
     {
       "name": "PngExport",
@@ -368,6 +369,11 @@
       "name": "LayerSettings",
       "group": "Overlays",
       "summary": "The one section that sets a layer: Technique and its settings, a Custom frame's shape settings, Bead, Background; in New Project, Project and the Frame panel."
+    },
+    {
+      "name": "ValueSlider",
+      "group": "Forms",
+      "summary": "A slider over a range of whole numbers with its value written above it, the ends under it and optional marks: Convert image's Width and Colors."
     },
     {
       "name": "QualitySlider",
@@ -437,7 +443,7 @@
     {
       "name": "Stepper",
       "group": "Forms",
-      "summary": "The − value + control for every counted setting on desktop: Mirror axes, Size, Colors at most."
+      "summary": "The − value + control for every counted setting on desktop: Mirror axes, Size, Drop."
     },
     {
       "name": "SwitchAndFileButton",
