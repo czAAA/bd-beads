@@ -33,14 +33,14 @@ describe('toMillimeters', () => {
 
 describe('computeGridDimensions', () => {
   it('divides physical size by bead footprint to get columns and rows', () => {
-    expect(computeGridDimensions({ widthMm: 15, heightMm: 15 }, cubeBead)).toEqual({
+    expect(computeGridDimensions({ widthMm: 15, heightMm: 15 }, cubeBead, 'loom')).toEqual({
       columns: 10,
       rows: 10,
     })
   })
 
   it('uses the bead width for columns and bead height for rows independently', () => {
-    expect(computeGridDimensions({ widthMm: 16, heightMm: 13 }, delicaBead)).toEqual({
+    expect(computeGridDimensions({ widthMm: 16, heightMm: 13 }, delicaBead, 'loom')).toEqual({
       columns: 10,
       rows: 10,
     })
@@ -49,14 +49,14 @@ describe('computeGridDimensions', () => {
   it('counts columns in the bead width plus its per-bead correction', () => {
     const correctedBead: Bead = { ...cubeBead, widthMm: 1.5, widthCorrectionMm: 0.15 }
     // 16.5 / 1.65 = 10 columns, where the bare 1.5mm width would give 11. Rows ignore the correction.
-    expect(computeGridDimensions({ widthMm: 16.5, heightMm: 15 }, correctedBead)).toEqual({
+    expect(computeGridDimensions({ widthMm: 16.5, heightMm: 15 }, correctedBead, 'loom')).toEqual({
       columns: 10,
       rows: 10,
     })
   })
 
   it('rounds up to the next whole bead (ticket 342)', () => {
-    expect(computeGridDimensions({ widthMm: 15.1, heightMm: 16 }, cubeBead)).toEqual({
+    expect(computeGridDimensions({ widthMm: 15.1, heightMm: 16 }, cubeBead, 'loom')).toEqual({
       columns: 11,
       rows: 11,
     })
@@ -65,12 +65,20 @@ describe('computeGridDimensions', () => {
   it('keeps an exact multiple of the bead as it is, despite floating-point noise', () => {
     // 0.3 / 0.1 is 2.9999999999999996 and 0.7 / 0.1 is 6.999999999999999: neither may round up a bead.
     const fine: Bead = { ...cubeBead, widthMm: 0.1, heightMm: 0.1 }
-    expect(computeGridDimensions({ widthMm: 0.3, heightMm: 0.7 }, fine)).toEqual({ columns: 3, rows: 7 })
-    expect(computeGridDimensions({ widthMm: 0.6, heightMm: 2.1 }, fine)).toEqual({ columns: 6, rows: 21 })
+    expect(computeGridDimensions({ widthMm: 0.3, heightMm: 0.7 }, fine, 'loom')).toEqual({ columns: 3, rows: 7 })
+    expect(computeGridDimensions({ widthMm: 0.6, heightMm: 2.1 }, fine, 'loom')).toEqual({ columns: 6, rows: 21 })
+  })
+
+  it('counts columns across the diameter and rows along the length plus slack on brick stitch, whose thread runs down (ticket 0734)', () => {
+    const slack: Bead = { ...delicaBead, widthCorrectionMm: 0.2 }
+    // 13 / 1.3 = 10 columns, 18 / (1.6 + 0.2) = 10 rows; on loom the same bead counts 13 / 1.8 = 8 columns, 18 / 1.3 = 14 rows.
+    expect(computeGridDimensions({ widthMm: 13, heightMm: 18 }, slack, 'brick')).toEqual({ columns: 10, rows: 10 })
+    expect(computeGridDimensions({ widthMm: 13, heightMm: 18 }, slack, 'loom')).toEqual({ columns: 8, rows: 14 })
+    expect(computeGridDimensions({ widthMm: 13, heightMm: 18 }, slack, 'peyote')).toEqual({ columns: 8, rows: 14 })
   })
 
   it('never returns fewer than one column or row', () => {
-    expect(computeGridDimensions({ widthMm: 0.1, heightMm: 0.1 }, cubeBead)).toEqual({
+    expect(computeGridDimensions({ widthMm: 0.1, heightMm: 0.1 }, cubeBead, 'loom')).toEqual({
       columns: 1,
       rows: 1,
     })

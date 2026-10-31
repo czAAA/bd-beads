@@ -149,7 +149,7 @@ describe('a Custom frame in another Bead (ticket 0723)', () => {
     const project = paintFrame(changed(openPeyote(), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 30 } } }), [{ row: 5, column: 0 }, { row: 2, column: 4 }], RED)
     const round = findBead('toho/round/11-0')!
     const relaid = relaidInBead(project, replaceBead(project, round))
-    expect(frameOf(relaid)).toMatchObject(customFrameSize('warpedSquare', { rounds: 6 }, undefined, 'peyote', beadCell(round)))
+    expect(frameOf(relaid)).toMatchObject(customFrameSize('warpedSquare', { rounds: 6 }, undefined, 'peyote', beadCell(round, 'peyote')))
     expect(frameOf(relaid)!.rows).not.toBe(frameOf(project)!.rows)
     expect(frameOf(relaid)!.beads).toEqual(frameOf(project)!.beads)
     expect(frameLayoutOf({ ...frameOf(relaid)!, cell: frameWeave(relaid).cell })!.beadDepth).toBeCloseTo(2.2 / 1.65, 9)
@@ -222,8 +222,8 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   it('becomes its shape round a Selection on Frame from Selection, the smallest that covers it, lifting the Canvas beads in', () => {
     // On a Canvas woven like it, the rectangle a 4-round Triangle round row 20, column 30 has, and Canvas beads over four
     // of its beads.
-    const selection = { row: 16, column: 26, rows: 11, columns: 9 }
-    const drawn = withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 31: BLUE }, 24: { 29: BLUE } } })
+    const selection = { row: 16, column: 26, rows: 8, columns: 9 }
+    const drawn = withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 31: BLUE }, 22: { 29: BLUE } } })
     const made = changed(drawn, { make: selection })
     expect(frameOf(made)).toMatchObject({ ...selection, shape: 'triangle', settings: { rounds: 4 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual({})
@@ -231,7 +231,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   })
 
   it('leaves a Canvas bead it cannot lift, on a Seam or Off-shape, hidden on the Canvas under it', () => {
-    const made = changed(withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 26: RED } } }), { make: { row: 16, column: 26, rows: 11, columns: 9 } })
+    const made = changed(withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 26: RED } } }), { make: { row: 16, column: 26, rows: 8, columns: 9 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual({ 16: { 26: RED } })
     expect(frameOf(made)!.beads).toEqual({})
   })

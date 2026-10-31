@@ -23,7 +23,7 @@ import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
 import { findBead } from '../domain/beads'
-import { beadCell } from '../domain/weave'
+import { beadCell, type Technique } from '../domain/weave'
 import FeedbackSheet from '../components/shell/FeedbackSheet.vue'
 import ToastRegion from '../components/ui/ToastRegion.vue'
 import { useDialogs } from '../composables/shell/useDialogs'
@@ -73,16 +73,18 @@ const scrollEl = ref<HTMLElement>()
 const scrollSize = useElementSize(scrollEl)
 const pageWidth = computed(() => (scrollSize.width.value || window.innerWidth) / (zoom.percent.value / 100))
 const canvasBackground = useCanvasBackground()
+/** What the page's background is woven in (ticket 0734: its every other column hangs half a bead lower). */
+const BACKGROUND: { technique: Technique } = { technique: 'peyote' }
 /** The Delica 11/0's real cell, the one an editor Project in that Bead draws (ticket 0724). */
-const DELICA_CELL = beadCell(findBead('miyuki/delica/11-0'))
-// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project worked in peyote (each
-// row shifted half a bead), in the Bead's real cell, outlined in the theme's Position mark color, sized by the zoom.
+const DELICA_CELL = beadCell(findBead('miyuki/delica/11-0'), BACKGROUND.technique)
+// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project worked in peyote, in the
+// Bead's real cell, outlined in the theme's Position mark color, sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   const zoomScale = zoom.percent.value / 100
   const pixelRatio = window.devicePixelRatio || 1
   const marks = positionMarkBackground({
-    technique: 'peyote',
+    technique: BACKGROUND.technique,
     cell: DELICA_CELL,
     deviceScale: zoomScale * pixelRatio,
     pixelRatio,

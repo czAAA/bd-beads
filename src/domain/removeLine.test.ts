@@ -170,10 +170,10 @@ describe('Remove row/column once rows are marked done (ticket 0647, ADR 0055)', 
     expect(rowProgressOf(removed)).toMatchObject({ currentRow: 3 })
   })
 
-  it('moves the pointer back two passes for a later peyote row, one for its first, and says the rows after it shift', () => {
+  it('moves the pointer back two passes for a later peyote row, one for its first, and says the rows after it shift only on brick stitch, whose rows alternate (ticket 0734)', () => {
     // Peyote's rows 0 to 3 are done: passes 0, 1 and 2, 3 and 4, 5 and 6.
     const project = woven(down(7), 'peyote')
-    expect(removeLineQuestion(project, rowOf(project, 2))).toEqual({ kind: 'finished-row', row: 3, backTo: 6, shifts: true, direction: 'rows' })
+    expect(removeLineQuestion(project, rowOf(project, 2))).toEqual({ kind: 'finished-row', row: 3, backTo: 6, shifts: false, direction: 'rows' })
     expect(rowProgressOf(removeSelectedLine(project, rowOf(project, 2)))).toMatchObject({ currentRow: 5 })
     expect(rowProgressOf(removeSelectedLine(project, rowOf(project, 0)))).toMatchObject({ currentRow: 6 })
     expect(removeLineQuestion(woven(down(2), 'brick'), rowOf(project, 0))).toMatchObject({ kind: 'finished-row', shifts: true })

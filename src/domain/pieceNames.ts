@@ -1,6 +1,6 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { type GridPosition } from './grid'
-import { rowCycle, type Weave } from './weave'
+import { touchKey, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt, type WalkedPieces } from './pieces'
 import { carryPieceIndex, joinsNamedPieces, pieceLabelAt, piecesStayWhole, presenceChanges, type BeadPresence } from './pieceIndex'
@@ -51,7 +51,7 @@ function canvasPieces(project: Layered): { beads: BeadMap; weave: Weave } {
 
 /** The last answer of `namedPieces` per set of beads: the canvas asks on every repaint of the rulers, and the answer
  * only changes when the beads or the names do. */
-const namedCache = new WeakMap<BeadMap, { names: PieceName[]; cycle: number; found: NamedPiece[] }>()
+const namedCache = new WeakMap<BeadMap, { names: PieceName[]; touch: number; found: NamedPiece[] }>()
 
 /** The Piece names that still have a Piece under them, and which Piece each is on. Unresolved names are skipped. */
 export function namedPieces(project: Layered): NamedPiece[] {
@@ -61,7 +61,7 @@ export function namedPieces(project: Layered): NamedPiece[] {
   }
   const { beads, weave } = canvasPieces(project)
   const known = namedCache.get(beads)
-  if (known && known.names === names && known.cycle === rowCycle(weave)) {
+  if (known && known.names === names && known.touch === touchKey(weave)) {
     return known.found
   }
   const found: NamedPiece[] = []
@@ -76,7 +76,7 @@ export function namedPieces(project: Layered): NamedPiece[] {
     const left = Math.min(...columns)
     found.push({ name, anchor: { row, column }, row: top, column: left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1, beads: members.length })
   }
-  namedCache.set(beads, { names, cycle: rowCycle(weave), found })
+  namedCache.set(beads, { names, touch: touchKey(weave), found })
   return found
 }
 

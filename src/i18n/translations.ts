@@ -865,6 +865,8 @@ export interface Translations {
     announceCustom: string
     /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows added on top, and why. */
     snapAddedTop: PluralForms
+    /** The same for columns on the left (ticket 0734), where a Technique staggers its columns. */
+    snapAddedLeft: PluralForms
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
     /** Announced after Rotate turned the Selection and covered no bead. */

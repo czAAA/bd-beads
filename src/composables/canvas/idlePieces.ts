@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { BeadMap } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import { numericKey, piecesInSteps, type WalkedPieces } from '../../domain/pieces'
-import { rowCycle, type Weave } from '../../domain/weave'
+import { touchKey, type Weave } from '../../domain/weave'
 
 // The Pieces of a layer too big to walk on open or in a press (ticket 0716), walked a step at a time in idle moments:
 // the Saved Projects list's count and the rulers' Piece boxes come in once a walk is done.
@@ -12,13 +12,13 @@ const finished = ref(0)
 
 interface Walk {
   beads: BeadMap
-  cycle: number
+  touch: number
   anchors: string
   steps: Generator<undefined, WalkedPieces>
 }
 
-/** What each set of beads walked to, with the cycle and anchors it was walked for. */
-const walked = new WeakMap<BeadMap, { cycle: number; anchors: string; result: WalkedPieces }>()
+/** What each set of beads walked to, with the touch key and anchors it was walked for. */
+const walked = new WeakMap<BeadMap, { touch: number; anchors: string; result: WalkedPieces }>()
 /** The walk each asker is waiting for; a later ask of the same asker replaces it (an edit made new beads). */
 const waiting = new Map<string, Walk>()
 let scheduled = false
@@ -58,7 +58,7 @@ function runSome(timeLeft: () => number): void {
       stepped = true
       const step = walk.steps.next()
       if (!step.done) continue
-      walked.set(walk.beads, { cycle: walk.cycle, anchors: walk.anchors, result: step.value })
+      walked.set(walk.beads, { touch: walk.touch, anchors: walk.anchors, result: step.value })
       waiting.delete(asker)
       finished.value += 1
       break
@@ -78,13 +78,13 @@ function schedule(): void {
  * in idle time for `asker` (one walk at a time per asker). Read in a computed, it re-runs once the walk is done. */
 export function piecesWhenIdle(asker: string, beads: BeadMap, weave: Weave, anchors: readonly GridPosition[] = []): WalkedPieces | undefined {
   void finished.value
-  const cycle = rowCycle(weave)
+  const touch = touchKey(weave)
   const anchorKey = anchors.map(numericKey).join(',')
   const known = walked.get(beads)
-  if (known && known.cycle === cycle && known.anchors === anchorKey) return known.result
+  if (known && known.touch === touch && known.anchors === anchorKey) return known.result
   const current = waiting.get(asker)
-  if (!current || current.beads !== beads || current.cycle !== cycle || current.anchors !== anchorKey) {
-    waiting.set(asker, { beads, cycle, anchors: anchorKey, steps: piecesInSteps(beads, weave, anchors) })
+  if (!current || current.beads !== beads || current.touch !== touch || current.anchors !== anchorKey) {
+    waiting.set(asker, { beads, touch, anchors: anchorKey, steps: piecesInSteps(beads, weave, anchors) })
     quietUntil = performance.now() + QUIET_MS
     schedule()
   }

@@ -5,7 +5,7 @@ import { beadUnder, keyOf, landingAt, layoutPosition, type FrameLayout, type Lay
 import type { GridPosition } from './grid'
 import { layoutPlacement, turnedGridCentre, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
-import { describeWeave, rowPitch, type Weave } from './weave'
+import { describeWeave, type Weave } from './weave'
 
 // A Selection over a Custom frame or a turned Frame (tickets 0594, 0667): a rectangle of the Frame's cells on screen
 // holding every bead whose centre lies in it. Paste and Rotate put each bead on the nearest free position of the panel
@@ -32,22 +32,18 @@ function centreOf(placement: LayoutPlacement, position: LayoutPoint): LayoutPoin
   return { x: placement.x + position.x * placement.scale, y: placement.y + position.y * placement.scale }
 }
 
-/** The cell geometry of a Weave in cell widths: a cell's height and the distance between row tops. */
-function cellsOf(weave: Weave): { description: ReturnType<typeof describeWeave>; aspect: number; pitch: number } {
+/** The cell geometry of a Weave in cell widths: its description and a cell's height. */
+function cellsOf(weave: Weave): { description: ReturnType<typeof describeWeave>; aspect: number } {
   const description = describeWeave(weave)
-  return { description, aspect: description.cellAspect, pitch: rowPitch(weave.technique, description.cellAspect) }
+  return { description, aspect: description.cellAspect }
 }
 
-/** The Selection's rectangle on screen, in cell widths: its rows and columns with the half bead a shifted row adds on
- * the right, as its outline is drawn. */
+/** The Selection's rectangle on screen, in cell widths: its rows and columns with the half bead a shifted line adds, as
+ * its outline is drawn. */
 function regionOf(weave: Weave, selection: CellRectangle) {
-  const { description, aspect, pitch } = cellsOf(weave)
-  return {
-    left: selection.left,
-    right: selection.left + description.blockExtent(selection.columns, 0, 1, aspect).width,
-    top: selection.top * pitch,
-    bottom: (selection.top + selection.rows - 1) * pitch + aspect,
-  }
+  const { description, aspect } = cellsOf(weave)
+  const { x, y, width, height } = description.blockBox({ row: selection.top, column: selection.left, rows: selection.rows, columns: selection.columns }, 1, aspect)
+  return { left: x, right: x + width, top: y, bottom: y + height }
 }
 
 /** The beads of a Custom frame whose centres lie in a rectangle of its cells, in reading order on screen (top to bottom,
@@ -63,12 +59,10 @@ export function positionsInRectangle(sheet: LayerSheet, selection: CellRectangle
     .sort((a, b) => a.y - b.y || a.x - b.x)
 }
 
-/** The cell of a Weave whose box holds a point on screen, in cell widths: the row by its pitch, the column across it. */
+/** The cell of a Weave whose box holds a point on screen, in cell widths. */
 function cellAt(weave: Weave, { x, y }: LayoutPoint): GridPosition {
-  const { description, aspect, pitch } = cellsOf(weave)
-  const row = Math.round((y - aspect / 2) / pitch)
-  const shift = description.center({ row, column: 0 }, 1, aspect).x - 0.5
-  return { row, column: Math.floor(x - shift) }
+  const { description, aspect } = cellsOf(weave)
+  return description.nearestPosition(x, y, 1, aspect)
 }
 
 /** A cell's centre on screen in a Weave, in cell widths. */

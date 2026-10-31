@@ -14,6 +14,7 @@ export function useConvertResult(wizard: ConvertImageWizard) {
       {
         grid: wizard.dimensions.value,
         bead: wizard.bead.value,
+        technique: wizard.technique.value,
         ...(wizard.mode.value === 'ratio' ? { ratio: wizard.ratio.value } : { crop: wizard.resultCrop.value }),
       },
       { grid: words.resultGrid, exact: words.resultExact, approximate: words.resultApprox, perPixel: words.resultPerPixel, mm: t.value.form.unitMm, cm: t.value.form.unitCm },

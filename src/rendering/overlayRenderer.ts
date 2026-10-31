@@ -189,7 +189,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
 }
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
-// brick stitch, where the next row nests into the gaps, their corners aren't covered.
+// brick stitch, where a neighbour sits in the gaps between corners, their corners aren't covered.
 /** A bead's width and height, where they aren't a square of the drawn size (a Bead's cell, ADR 0068, ticket 0724). */
 function sizedLike(box: { width: number; height: number }): { width?: number; height?: number } {
   return box.width === CELL_SIZE_PX && box.height === CELL_SIZE_PX ? {} : { width: box.width, height: box.height }
@@ -267,14 +267,12 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 }
 
 // The hover preview on each bead it names, inside the rim: its color at a faint opacity over what the bead holds (a
-// pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape,
-// less what the next row's beads lie over: a row at a time, so a big block takes one clip a row (ticket 0675).
+// pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape.
 function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = weave
   const inset = BEAD_GAP_PX / 2
   const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
   const boxOf = boxesOf(weave)
-  const rows = new Map<number, PreviewRow>()
 
   for (const cell of cells) {
     if (!inSpace(space, cell.row, cell.column)) {
@@ -288,57 +286,11 @@ function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells:
     const color = cell.color ?? preview.color
 
     if (color) {
-      const row: PreviewRow = rows.get(cell.row) ?? { beads: [], first: cell.column, last: cell.column }
-      rows.set(cell.row, row)
-      row.beads.push({ column: cell.column, bead: { x, y, width, height, radius: Math.max(0, roundness) }, color })
-      row.first = Math.min(row.first, cell.column)
-      row.last = Math.max(row.last, cell.column)
+      fillFaintly(context, { x, y, width, height, radius: Math.max(0, roundness) }, color)
     } else {
       outlineBead(context, { x, y, width, height, radius: roundness }, theme)
     }
   }
-  for (const [row, { beads, first, last }] of rows) {
-    fillRowFaintly(context, beads, nextRowBeads(boxOf, space, row, first, last, beads[0]!))
-  }
-}
-
-/** A row of the hover preview's colored beads, and the first and last columns they reach. */
-interface PreviewRow {
-  beads: { column: number; bead: BeadRect; color: string }[]
-  first: number
-  last: number
-}
-
-/** One row's beads of the hover preview at its faint opacity, leaving out the next row's beads lying over them: one
- * clip for the row and one path for each color, as the beads of a row never overlap one another. */
-function fillRowFaintly(context: DrawingContext, beads: PreviewRow['beads'], coveredBy: readonly BeadRect[]): void {
-  if (coveredBy.length === 0) {
-    for (const { bead, color } of beads) fillFaintly(context, bead, color)
-    return
-  }
-  const left = Math.min(...beads.map(({ bead }) => bead.x))
-  const top = Math.min(...beads.map(({ bead }) => bead.y))
-  const right = Math.max(...beads.map(({ bead }) => bead.x + bead.width))
-  const bottom = Math.max(...beads.map(({ bead }) => bead.y + bead.height))
-  context.globalAlpha = PREVIEW_OPACITY
-  context.save()
-  context.beginPath()
-  // The even-odd clip needs an outer rectangle bigger than the beads; the covering beads are holes in it.
-  context.rect(left - CELL_SIZE_PX, top - CELL_SIZE_PX, right - left + 2 * CELL_SIZE_PX, bottom - top + 2 * CELL_SIZE_PX)
-  for (const over of coveredBy) {
-    roundedRect(context, over.x, over.y, over.width, over.height, over.radius)
-  }
-  context.clip('evenodd')
-  for (const color of new Set(beads.map((entry) => entry.color))) {
-    context.fillStyle = color
-    context.beginPath()
-    for (const { bead } of beads.filter((entry) => entry.color === color)) {
-      roundedRect(context, bead.x, bead.y, bead.width, bead.height, bead.radius)
-    }
-    context.fill()
-  }
-  context.restore()
-  context.globalAlpha = 1
 }
 
 /** How small a bead is on the screen, in device px, below which a pasted block's preview is drawn in the draft look
@@ -397,27 +349,6 @@ function boxesOf(weave: Weave): BoxOf {
   const description = describeWeave(weave)
   const size = cellSizePx(weave.technique, weave.cell)
   return (row, column) => description.box({ row, column }, size.width, size.height)
-}
-
-// The beads of the next row that lie over a row's beads from `first` to `last` as drawn (peyote's rows nest): none where
-// rows stack. Each is drawn in as far from its box as `sample`, one of the row's beads, is. One that lies over none of
-// the row's beads is a hole where nothing is drawn, so the row is asked about once, not bead by bead.
-function nextRowBeads(boxOf: BoxOf, space: Space, row: number, first: number, last: number, sample: { column: number; bead: BeadRect }): BeadRect[] {
-  const own = boxOf(row, first)
-  const end = boxOf(row, last)
-  const { bead } = sample
-  const inset = { x: bead.x - boxOf(row, sample.column).x, y: bead.y - boxOf(row, sample.column).y }
-  const below = boxOf(row + 1, first)
-  if (below.y >= own.y + own.height || below.y + below.height <= own.y) return []
-  const beads: BeadRect[] = []
-  for (let column = first - 1; column <= last + 1; column++) {
-    const next = boxOf(row + 1, column)
-    // One the Project does not have is not drawn, so it covers nothing.
-    if (next.x < end.x + end.width && next.x + next.width > own.x && inSpace(space, row + 1, column)) {
-      beads.push({ ...bead, x: next.x + inset.x, y: next.y + inset.y })
-    }
-  }
-  return beads
 }
 
 /** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity. */
@@ -563,8 +494,8 @@ function stampInView(stamp: PasteStamp, view: VisiblePositions, origin: GridPosi
 const MARGIN_OUTLINE_DASH_PX = [4, 3]
 const MARGIN_OUTLINE_RADIUS_PX = 12
 
-/** Strokes the box round the margin's drawn extent on the Canvas (ticket 372): peyote rows nest closer than a bead is
- * tall, and offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
+/** Strokes the box round the margin's drawn extent on the Canvas (ticket 372): a staggered Technique adds half a bead across
+ * (brick stitch) or down (peyote), so it is not `rows * CELL_SIZE_PX`. */
 function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
   const { x, y, width, height } = gridBox(weave, withMargin(frame, margin))
   context.save()

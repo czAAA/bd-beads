@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { gridHeight, gridWidth, slowFramingCells, TECHNIQUES } from './weave'
+import { slowFramingCells, TECHNIQUES } from './weave'
 import {
   CENTERED_PAN,
   CONVERT_MAX_ZOOM,
@@ -58,12 +58,23 @@ describe('frameSizeMm', () => {
     expect(frame.widthMm).not.toBeCloseTo(frame.heightMm)
   })
 
-  it('accounts for an offset technique half-cell overhang and peyote tighter row packing', () => {
+  it('accounts for an offset technique\'s half-cell overhang: across for brick stitch\'s rows, down for peyote\'s columns (ticket 0734)', () => {
     const peyote = frameSizeMm('peyote', { columns: 10, rows: 10 }, cubeBead)
+    const brick = frameSizeMm('brick', { columns: 10, rows: 10 }, cubeBead)
 
-    expect(peyote.widthMm).toBeCloseTo(gridWidth('peyote', 10, 1.5))
-    expect(peyote.heightMm).toBeCloseTo(gridHeight('peyote', 10, 1.5))
-    expect(peyote.heightMm).toBeLessThan(frameSizeMm('loom', { columns: 10, rows: 10 }, cubeBead).heightMm)
+    expect(peyote.widthMm).toBeCloseTo(15)
+    expect(peyote.heightMm).toBeCloseTo(15.75)
+    expect(brick.widthMm).toBeCloseTo(15.75)
+    expect(brick.heightMm).toBeCloseTo(15)
+  })
+
+  it('lays the Bead turned on brick stitch, whose thread runs down: a Delica\'s columns a diameter wide (ticket 0734)', () => {
+    const loom = frameSizeMm('loom', { columns: 10, rows: 10 }, delicaBead)
+    const brick = frameSizeMm('brick', { columns: 10, rows: 10 }, delicaBead)
+
+    expect(loom).toEqual({ widthMm: expect.closeTo(16), heightMm: expect.closeTo(13) })
+    // Ten columns of 1.3 mm and the half bead a shifted row hangs further right, ten rows of 1.6 mm.
+    expect(brick).toEqual({ widthMm: expect.closeTo(13.65), heightMm: expect.closeTo(16) })
   })
 })
 

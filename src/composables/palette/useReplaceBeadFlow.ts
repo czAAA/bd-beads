@@ -58,8 +58,8 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     }
     return fillBlanks(t.replaceBead.frameMessage, {
       ...sizes,
-      newSize: mm(estimatedSizeMm(frame, bead)),
-      oldSize: mm(estimatedSizeMm(frame, own)),
+      newSize: mm(estimatedSizeMm(frame, bead, frame.technique)),
+      oldSize: mm(estimatedSizeMm(frame, own, frame.technique)),
     })
   })
 

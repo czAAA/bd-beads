@@ -1,6 +1,7 @@
-import { beadPitchMm, type Bead } from './beads'
+import { threadMeasures, type Bead, type BeadMeasures } from './beads'
 import type { Rect } from './canvas'
 import type { GridPosition } from './grid'
+import { columnsGeometry } from './columnsGeometry'
 import { rowsGeometry } from './rowsGeometry'
 import { settingValue, type SettingSpec } from './settingSpec'
 import type { CellCenter, GeometryNumber, GeometryRef, GeometryStrategy, WeaveGeometry } from './weaveGeometry'
@@ -8,10 +9,12 @@ import type { CellCenter, GeometryNumber, GeometryRef, GeometryStrategy, WeaveGe
 /** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
 export type Technique = keyof typeof TECHNIQUE_RULES
 
-/** One row to a block of rows: every other row shifts, as ordinary peyote's and brick stitch's do. */
-const ONE_ROW_BLOCK = 1
-/** The most beads a Drop may pick up in one stitch, so the most rows level beside each other (tickets 477, 0691). */
+/** One line to a block of lines: every other line shifts, as ordinary peyote's and brick stitch's do. */
+const ONE_LINE_BLOCK = 1
+/** The most beads a Drop may pick up in one stitch, so the most lines level beside each other (tickets 477, 0691). */
 const MAX_DROP = 20
+/** One more than the longest cycle a stagger repeats after (2 × MAX_DROP). */
+const MAX_CYCLE = 2 * MAX_DROP + 1
 
 /** A Technique's setting (ticket 0627): the shape every setting has, and the number of its Technique's geometry it sets
  * in place of the entry's own, where it changes the layout. */
@@ -19,10 +22,10 @@ interface TechniqueSetting<Sets extends string = GeometryNumber> extends Setting
   sets?: Sets
 }
 
-/** A Drop (ticket 0691): the beads each stitch picks up, so the rows' block, 1, every other row, up to MAX_DROP; the
+/** A Drop (ticket 0691): the beads each stitch picks up, so the lines' block, 1, every other line, up to MAX_DROP; the
  * same cells, so a change loses no bead. Each Technique that has one keeps its own, under its own id and words. */
 function dropSetting<Id extends string>(id: Id): TechniqueSetting<'block'> & { id: Id } {
-  return { id, labelKey: id, min: ONE_ROW_BLOCK, max: MAX_DROP, step: 1, default: ONE_ROW_BLOCK, sets: 'block' }
+  return { id, labelKey: id, min: ONE_LINE_BLOCK, max: MAX_DROP, step: 1, default: ONE_LINE_BLOCK, sets: 'block' }
 }
 
 /** Peyote's Drop (ticket 0691): 2-drop, 3-drop and on; 1 is ordinary peyote. */
@@ -49,17 +52,23 @@ export interface Weave {
   cell?: BeadCell
 }
 
-/** A Bead's cell: its height over its pitch along the thread, and how much of the cell's width its corners are
- * rounded by, from the Bead's Form factor. */
+/** A Bead's cell as laid on its Technique's Grid (ticket 0734): its height over its width, and how much of the cell's
+ * width its corners are rounded by, from the Bead's Form factor. */
 export interface BeadCell {
   aspect: number
   roundness: number
 }
 
+/** Which way the thread runs through the beads on a Technique's Grid (ticket 0734): fixed by the Technique, never a
+ * setting. Each bead is laid with its hole along it. */
+type ThreadDirection = 'leftToRight' | 'topToBottom'
+
 /** A Technique's own facts: its geometry kind with its values (ADR 0078), and what it offers and costs. */
 interface TechniqueRules<G extends GeometryRef = GeometryRef> {
   /** Its name's key in the `techniques` translations: a plain string, checked in every language by a test (ADR 0078). */
   nameKey: string
+  /** Which way its thread runs: left to right on loom and peyote, top to bottom on brick stitch. */
+  threadDirection: ThreadDirection
   /** How its beads are laid out: a kind of geometry and the values that kind reads. */
   geometry: G
   /** Its settings (ticket 0624), in the order they are offered: the Weave holds their values in `techniqueSettings`, and
@@ -87,7 +96,8 @@ const SLOW_FRAMING_CELLS = 12_000
 const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'loom',
-    geometry: { kind: 'rows', shifted: false, shift: 0, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_ROW_BLOCK },
+    threadDirection: 'leftToRight',
+    geometry: { kind: 'rows', shifted: false, shift: 0, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_LINE_BLOCK },
     settings: [],
     wordChart: { marked: false },
     draftCost: 1,
@@ -95,7 +105,8 @@ const TECHNIQUE_RULES = {
   },
   peyote: {
     nameKey: 'peyote',
-    geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 0.75, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst', block: ONE_ROW_BLOCK },
+    threadDirection: 'leftToRight',
+    geometry: { kind: 'columns', shift: 0.5, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst', block: ONE_LINE_BLOCK },
     settings: [PEYOTE_DROP_SETTING],
     wordChart: { marked: true },
     draftCost: 3,
@@ -103,7 +114,8 @@ const TECHNIQUE_RULES = {
   },
   brick: {
     nameKey: 'brick',
-    geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_ROW_BLOCK },
+    threadDirection: 'topToBottom',
+    geometry: { kind: 'rows', shifted: true, shift: 0.5, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_LINE_BLOCK },
     settings: [BRICK_DROP_SETTING],
     wordChart: { marked: true },
     draftCost: 1,
@@ -113,13 +125,22 @@ const TECHNIQUE_RULES = {
 
 const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
 
-/** The one geometry function for a Bead's cell (ADR 0068, ticket 0724): the Bead's height over its pitch along the
- * thread and its outline. No Bead (a bare Weave) leaves the Technique's own cell, so every rule below reads as before. */
-export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'> & { formFactor: Pick<Bead['formFactor'], 'roundness'> } | undefined): BeadCell | undefined {
+/** A Bead laid on a Technique's thread (ticket 0734): its length through the hole, with the thread slack, runs the way the
+ * thread does, and its diameter across; so the cell's width and height in mm. A turned bead swaps them. */
+function laidMm(direction: ThreadDirection, bead: BeadMeasures): { widthMm: number; heightMm: number } {
+  const { alongMm, acrossMm } = threadMeasures(bead)
+  return direction === 'leftToRight' ? { widthMm: alongMm, heightMm: acrossMm } : { widthMm: acrossMm, heightMm: alongMm }
+}
+
+/** The one geometry function for a Bead's cell (ADR 0068, tickets 0724, 0734): the Bead as its Technique lays it, its
+ * height over its width and its outline. No Bead (a bare Weave) leaves the Technique's own cell, so every rule below
+ * reads as before. */
+export function beadCell(bead: (BeadMeasures & { formFactor: Pick<Bead['formFactor'], 'roundness'> }) | undefined, technique: Technique): BeadCell | undefined {
   if (!bead) {
     return undefined
   }
-  return { aspect: bead.heightMm / beadPitchMm(bead), roundness: bead.formFactor.roundness }
+  const { widthMm, heightMm } = laidMm(RULES[technique].threadDirection, bead)
+  return { aspect: heightMm / widthMm, roundness: bead.formFactor.roundness }
 }
 
 /** The Weave with the Bead's cell added (none, without a Bead, leaves it as it is). */
@@ -133,8 +154,16 @@ export const TECHNIQUES = Object.keys(TECHNIQUE_RULES) as readonly Technique[]
 /** The Technique a new Project and an unframed Canvas start in: the first listed. */
 export const DEFAULT_TECHNIQUE: Technique = TECHNIQUES[0]
 
+/** What a Weave answers about the Bead it is laid with, beside its Technique's facts and its geometry's answers. */
+interface BeadLaid {
+  /** A Bead's cell in mm as this Technique lays it: its width across and its height down. */
+  beadMm(bead: BeadMeasures): { widthMm: number; heightMm: number }
+  /** The physical size, in mm, of one step across and one step down from a Bead. */
+  stepMm(bead: BeadMeasures): { across: number; down: number }
+}
+
 /** Everything the app asks about how a Weave is laid out: its Technique's facts and its geometry's answers. */
-export interface WeaveDescription extends Omit<TechniqueRules, 'geometry'>, WeaveGeometry {}
+export interface WeaveDescription extends Omit<TechniqueRules, 'geometry'>, WeaveGeometry, BeadLaid {}
 
 /** The Weave's settings, each its Technique describes, read within its range from its settings map, or else its
  * default. Another Technique's (brick stitch's Drop kept off it) is left out. */
@@ -183,6 +212,7 @@ export function techniqueGeometry(technique: Technique): GeometryRef {
  * module and one entry here; the compiler names a kind left out. */
 const GEOMETRIES: { [Kind in GeometryRef['kind']]: GeometryStrategy<Extract<GeometryRef, { kind: Kind }>> } = {
   rows: rowsGeometry,
+  columns: columnsGeometry,
 }
 
 function geometryOf(geometry: GeometryRef, cell: BeadCell | undefined): WeaveGeometry {
@@ -208,7 +238,12 @@ export function describeWeave(weave: Weave): WeaveDescription {
   // Each setting that sets a number of the geometry, in place of the entry's own (ADR 0078, ticket 0627).
   const set = Object.fromEntries(rules.settings.flatMap(({ id, sets }) => (sets ? [[sets, values[id]]] : [])))
   const built = geometryOf({ ...geometry, ...set } as GeometryRef, weave.cell)
-  const description: WeaveDescription = { ...facts, ...built }
+  const beadMm = (bead: BeadMeasures) => laidMm(rules.threadDirection, bead)
+  const stepMm = (bead: BeadMeasures) => {
+    const { widthMm, heightMm } = beadMm(bead)
+    return { across: widthMm, down: heightMm }
+  }
+  const description: WeaveDescription = { ...facts, ...built, beadMm, stepMm }
   if (descriptions.size >= MAX_DESCRIPTIONS) {
     descriptions.clear()
   }
@@ -228,10 +263,23 @@ function describeTechnique(technique: Technique): WeaveDescription {
   return known
 }
 
-/** After how many rows the shift repeats: 1 for loom (it never shifts), 2N for peyote and brick stitch with a Drop of
- * N. Frame starts, edges and moves go by multiples of it. */
+/** After how many rows the stagger repeats: 1 where rows stand straight (loom, and peyote, whose columns are staggered
+ * instead), 2N for brick stitch with a Drop of N. A Frame's top edge, starts and moves go by multiples of it. */
 export function rowCycle(weave: Weave): number {
-  return describeWeave(weave).frameStep
+  return describeWeave(weave).rowCycle
+}
+
+/** After how many columns the stagger repeats (ticket 0734): 2N for peyote with a Drop of N, 1 for loom and brick stitch.
+ * A Frame's left edge, starts and moves go by multiples of it. */
+export function columnCycle(weave: Weave): number {
+  return describeWeave(weave).columnCycle
+}
+
+/** A number the same for Weaves whose beads touch alike (tickets 0691, 0734): the stagger's cycle along rows and along
+ * columns, which brick stitch and peyote with the same Drop do not share. What a cache of Pieces is keyed by. */
+export function touchKey(weave: Weave): number {
+  const { rowCycle: rows, columnCycle: columns } = describeWeave(weave)
+  return rows * MAX_CYCLE + columns
 }
 
 /** A Technique's name key in the `techniques` translations. */
@@ -262,42 +310,24 @@ export function beadRoundness(technique: Technique, cell?: BeadCell): number {
 
 // Physical and px geometry both come from the grid units of the Weave's geometry, scaled by the cell size asked for.
 
-/** Horizontal offset for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by their
- * shift so beads interlock instead of stacking in a straight grid.
+/** Horizontal offset for a row's cells: only brick stitch's rows shift, every other one (or block of N) by half a bead,
+ * so beads interlock instead of stacking in a straight grid.
  * @internal Tests check a Technique's shift on its own. */
 export function rowOffset(weave: Weave, rowIndex: number, cellSize: number): number {
   return describeWeave(weave).rowOffset(rowIndex, cellSize)
 }
 
-/** Total grid width, including the extra half-cell an offset technique's shifted rows take up.
- * @internal Tests check a Technique's width on its own. */
-export function gridWidth(technique: Technique, columns: number, cellSize: number): number {
-  const { shifted, shift } = describeTechnique(technique)
-  return columns * cellSize + (shifted ? cellSize * shift : 0)
+/** Vertical offset for a column's cells (ticket 0734): only peyote's columns shift, every other one (or block of N) by half
+ * a bead.
+ * @internal Tests check a Technique's shift on its own. */
+export function columnOffset(weave: Weave, columnIndex: number, cellSize: number): number {
+  return describeWeave(weave).columnOffset(columnIndex, cellSize)
 }
 
-/** Vertical distance from one row's top to the next. Peyote rows interlock, packing tighter than a full cell (the
- * real stitch's rows nest into each other); brick stitch stacks rows at full height like coursed brickwork, same as
- * loom. */
-export function rowPitch(technique: Technique, cellSize: number): number {
-  return cellSize * describeTechnique(technique).rowPitch
-}
-
-/** Total grid height, accounting for peyote's tighter row packing.
- * @internal Tests check a Technique's height on its own. */
-export function gridHeight(technique: Technique, rows: number, cellSize: number): number {
-  if (rows === 0) {
-    return 0
-  }
-  return cellSize + (rows - 1) * rowPitch(technique, cellSize)
-}
-
-/** How far one step across and one step down go in a Weave, in beads' widths: what converts a distance counted in one
- * Weave's positions into another's (a Frame in a Technique other than the Canvas's, ticket 492). */
+/** How far one step across and one step down go in a Weave, in the Weave's cell widths: what converts a distance counted
+ * in one Weave's positions into another's (a Frame in a Technique other than the Canvas's, ticket 492). */
 export function positionStep(weave: Weave): { across: number; down: number } {
-  const description = describeWeave(weave)
-  // The step of a bead one wide and as tall as the cell.
-  return description.stepMm({ widthMm: 1, widthCorrectionMm: 0, heightMm: description.cellAspect })
+  return { across: 1, down: describeWeave(weave).cellAspect }
 }
 
 /** Where a cell's centre sits from the grid's top-left, in the unit of the cell size passed (real mm for a Bead's

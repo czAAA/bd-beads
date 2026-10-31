@@ -4,7 +4,7 @@ import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { lettersFor } from './swatchLetters'
 import { framedGrid } from './layerBeads'
 import { canvasWeave, frameWeave, weaveOf } from './layerWeave'
-import { beadCell, rowCycle } from './weave'
+import { beadCell, columnCycle } from './weave'
 import type { FrameSheet } from './canvas'
 import type { FlatProject } from './flatWeave'
 import type { Grid, Project, RowProgress } from './project'
@@ -468,12 +468,12 @@ describe('stored-data compatibility', () => {
     })
 
     it('opens a file whose layers saved a Bead shape, Real, Symmetric or none, drawn in each Bead\'s real cell, and writes no Bead shape back (ticket 0724)', () => {
-      const delica = beadCell(findBead('miyuki/delica/11-0'))
+      const delica = findBead('miyuki/delica/11-0')
       const asSaved = JSON.parse(projectFileV12)
       for (const beadShape of ['real', 'symmetric', undefined]) {
         const layers = asSaved.projects[0].layers.map(({ beadShape: _saved, ...layer }: Record<string, unknown>) => ({ ...layer, ...(beadShape ? { beadShape } : {}) }))
         const [opened] = parseProjectsFile(JSON.stringify({ ...asSaved, projects: [{ ...asSaved.projects[0], layers }] })).projects
-        expect([canvasWeave(opened!).cell, frameWeave(opened!).cell]).toEqual([delica, delica])
+        expect([canvasWeave(opened!).cell, frameWeave(opened!).cell]).toEqual([beadCell(delica, canvasWeave(opened!).technique), beadCell(delica, frameWeave(opened!).technique)])
         expect(opened!.layers.some((layer) => 'beadShape' in layer)).toBe(false)
         expect(serializeProject(opened!)).not.toContain('beadShape')
       }
@@ -483,7 +483,7 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV13Drops).projects
       expect(canvasOf(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3, peyoteDrop: 4 } })
       expect(frameOf(opened!)).toMatchObject({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } })
-      expect(rowCycle(frameWeave(opened!))).toBe(4)
+      expect(columnCycle(frameWeave(opened!))).toBe(4)
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Drops))
     })
 

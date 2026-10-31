@@ -1,7 +1,7 @@
 import { changedRows, type BeadMap } from './canvas'
 import type { GridPosition } from './grid'
 import { numericKey, touching } from './pieces'
-import { rowCycle, type Weave } from './weave'
+import { touchKey, type Weave } from './weave'
 
 // Which Piece the beads of a set of beads are on (ADR 0080), so the Piece-name checks of an edit look only at the beads
 // it changed: a Piece is labelled the first time an edit touches it, and the labels are handed on to the next set of
@@ -35,7 +35,7 @@ export function presenceChanges(before: BeadMap, after: BeadMap): BeadPresence {
 
 /** Each bead's Piece: a label per bead, and the labels merged as Pieces join (a union-find), with each Piece's size. */
 interface PieceIndex {
-  cycle: number
+  touch: number
   labels: Map<number, number>
   parent: number[]
   size: number[]
@@ -69,10 +69,10 @@ function pieceOf(index: PieceIndex, key: number): number | undefined {
 /** The labels of `beads` found so far: a Piece is labelled whole the first time a bead of it is asked about, and the
  * labels are handed on from edit to edit, so only the Pieces edits touch are ever flooded. */
 function indexOf(beads: BeadMap, weave: Weave): PieceIndex {
-  const cycle = rowCycle(weave)
+  const touch = touchKey(weave)
   const known = indexes.get(beads)
-  if (known?.cycle === cycle) return known
-  const index: PieceIndex = { cycle, labels: new Map(), parent: [], size: [] }
+  if (known?.touch === touch) return known
+  const index: PieceIndex = { touch, labels: new Map(), parent: [], size: [] }
   indexes.set(beads, index)
   return index
 }
@@ -212,7 +212,7 @@ function reachEachOther(beads: BeadMap, weave: Weave, seeds: GridPosition[], bud
  * is labelled again if it is asked about later (Undo). */
 export function carryPieceIndex(before: BeadMap, after: BeadMap, weave: Weave, change: BeadPresence): void {
   const index = indexes.get(before)
-  if (!index || index.cycle !== rowCycle(weave) || before === after) return
+  if (!index || index.touch !== touchKey(weave) || before === after) return
   indexes.delete(before)
   for (const at of change.removed) {
     const key = numericKey(at)
