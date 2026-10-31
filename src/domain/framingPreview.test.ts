@@ -77,7 +77,7 @@ describe('exactPreviewColors', () => {
     'shows the Project inside the frame and the held color around it (%s)',
     (technique: Technique) => {
       const image = busyImage(60, 45)
-      const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
+      const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead, technique)
       const frame = frameSizeMm(technique, dimensions, bead)
 
       for (const maxColors of [3, 7, 14]) {
@@ -117,7 +117,7 @@ describe('approximatePreviewColors', () => {
 
   it('keeps to the held colors however the picture has moved, never inventing one', () => {
     const image = busyImage(60, 45)
-    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
+    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead, 'loom')
     const frame = frameSizeMm('loom', dimensions, bead)
     const colors = ['#1a1a1a', '#e63746', '#2f6fed']
     const held = heldColorLookup(colors.map((hex) => ({ pictureHex: hex, result: { hex } })))

@@ -13,7 +13,7 @@ interface Brand {
   colorFamilies?: readonly ColorFamily[]
 }
 
-/** Which way a Bead's hole runs: `along` its width (the thread's way on a loom, peyote and brick stitch) or `across`. */
+/** Which way a Bead's hole runs: `along` its width (its length through the hole) or `across` it, along its height. */
 type HoleDirection = 'along' | 'across'
 
 /** The shape of a family of Beads (ADR 0072): what is drawn for it and how it is threaded. A new shape is a new row,
@@ -36,9 +36,9 @@ export interface Bead {
   brand: Brand
   formFactor: FormFactor
   size: string
-  // Bead footprint in millimeters, to convert a physical size into a grid. `widthMm` runs along the thread (length
-  // through the hole), `heightMm` across it (diameter): on a loom, peyote and brick stitch the thread passes along a
-  // row, so beads sit side by side hole to hole.
+  // Bead footprint in millimeters, to convert a physical size into a grid. `widthMm` is the length through the hole and
+  // `heightMm` the diameter across it (for a hole running `along`); the Technique's Thread direction decides which way
+  // each is laid on its Grid (ticket 0734).
   widthMm: number
   heightMm: number
   // Extra millimeters added to each bead's `widthMm` for thread and slack between neighbours, which the manufacturer's
@@ -51,9 +51,22 @@ export interface Bead {
   retired?: boolean
 }
 
-/** A Bead's real column pitch: its own width plus the per-bead correction. What a grid's columns are counted in. */
+/** A Bead's real pitch along the thread when its hole runs along its width: its length through the hole plus the
+ * per-bead correction. */
 export function beadPitchMm(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm'>): number {
   return bead.widthMm + (bead.widthCorrectionMm ?? 0)
+}
+
+/** What a Bead's measures need to be laid on a thread: its Form factor's hole direction is read where it is known (ticket
+ * 0734), and a bead without one is a hole along its width. */
+export type BeadMeasures = Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'> & { formFactor?: Pick<Bead['formFactor'], 'holes'> }
+
+/** A Bead laid with its hole along the thread (ticket 0734): the length through its hole plus the thread slack, which
+ * goes with the thread, and its diameter across. A hole that runs `across` the width turns the bead the other way. */
+export function threadMeasures(bead: BeadMeasures): { alongMm: number; acrossMm: number } {
+  const turned = bead.formFactor?.holes.direction === 'across'
+  const [length, diameter] = turned ? [bead.heightMm, bead.widthMm] : [bead.widthMm, bead.heightMm]
+  return { alongMm: length + (bead.widthCorrectionMm ?? 0), acrossMm: diameter }
 }
 
 /** Average weight of one bead in grams, from its beads per kg, to three significant digits so a figure reads the same

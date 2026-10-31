@@ -294,7 +294,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const { project, area, rows: band } = draw
   const geometry = geometryDrawnAlone(project)
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
-  // A band of rows is redrawn with the rows either side, whose beads nest into it; beads that keep no rows are all drawn.
+  // A band of rows is redrawn with the rows either side, into which a shifted column's beads hang; beads that keep no rows are all drawn.
   const inView = () => geometry.positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
   const placed = () => inView().map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
@@ -463,9 +463,8 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
 
   // Only the stored rows in view, and only their stored columns: the cost follows the beads, not the canvas.
   const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
-  // The beads round the margin nest into its edge (peyote rows sit closer than a bead is tall, offset rows reach half
-  // a bead across): cut out its box so none shows inside the outline (the outer rectangle is the view, a cell wider each side so
-  // only the cut-out matters).
+  // The beads round the margin reach into its edge (a shifted row hangs half a bead across, a shifted column down): cut
+  // out its box so none shows inside the outline (the outer rectangle is the view, a cell wider each side).
   const footprint = frameFootprintPx(project, margin)
   const cutOut = footprint !== undefined && rowsInView.length > 0
   if (footprint && cutOut) {

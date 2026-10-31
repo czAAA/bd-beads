@@ -228,7 +228,7 @@ watch(
         :accent="isActive(tile.tool)"
         :tabindex="roving.tabIndexFor(isActive(tile.tool))"
         :data-testid="`pill-tool-${tile.tool}`"
-        :data-hint="tile.tool === 'paint' || tile.tool === 'select' ? tile.tool : undefined"
+        :data-hint="tile.tool === 'select' ? tile.tool : undefined"
         @click="emit('select-tool', tile.tool)"
       />
 

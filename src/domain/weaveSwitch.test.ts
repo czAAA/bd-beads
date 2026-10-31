@@ -7,14 +7,14 @@ import type { Project } from './project'
 import { withFrame } from './frame'
 import { canvasWeave, frameWeave } from './layerWeave'
 import { withWeave } from './weaveSwitch'
-import { beadCell, rowCycle } from './weave'
+import { beadCell, columnCycle, rowCycle } from './weave'
 import { findBead } from './beads'
 import { canvasOf, frameOf, withFrameSheet } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 
 describe('a Frame woven in its own Technique (ticket 492)', () => {
   /** The cube's real cell, which every layer of these Projects draws (ticket 0724). */
-  const cell = beadCell(findBead('toho-cube-1.5mm'))
+  const cell = beadCell(findBead('toho-cube-1.5mm'), 'loom')
   const canvasLoom = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
   /** A loom Canvas with a peyote Frame of 4 × 6 at (10, 10). */
   const peyoteOnLoom = (): Project => {
@@ -44,10 +44,10 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     const peyote = withWeave(brick, 'canvas', { technique: 'peyote', techniqueSettings: { brickDrop: 3, peyoteDrop: 2 } })
     expect(canvasWeave(peyote).techniqueSettings).toEqual({ brickDrop: 3, peyoteDrop: 2 })
-    expect(rowCycle(canvasWeave(peyote))).toBe(4)
+    expect(columnCycle(canvasWeave(peyote))).toBe(4)
     const back = withWeave(withWeave(peyote, 'canvas', { technique: 'loom' }), 'canvas', { technique: 'brick' })
     expect(rowCycle(canvasWeave(back))).toBe(6)
-    expect(rowCycle(canvasWeave(withWeave(back, 'canvas', { technique: 'peyote' })))).toBe(4)
+    expect(columnCycle(canvasWeave(withWeave(back, 'canvas', { technique: 'peyote' })))).toBe(4)
   })
 
   it('counts a Canvas with no Frame in the Canvas\'s own Weave', () => {
@@ -81,9 +81,9 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   })
 
   it('moves its corner on the Canvas by as far as its own rows went, to the nearest position', () => {
-    // Four rows of peyote (3/4 of a bead each) are three Canvas rows: dragging the top edge up by 4 moves the corner up 3.
+    // Peyote's rows are a full bead each, as loom's: dragging the top edge up by 4 moves the corner up 4 (ticket 0734).
     const grown = withFrame(peyoteOnLoom(), { row: 6, column: 10, rows: 10, columns: 4 })
-    expect(frameOf(grown)).toMatchObject({ row: 7, rows: 10 })
+    expect(frameOf(grown)).toMatchObject({ row: 6, rows: 10 })
     // Alike, it is exactly the rectangle asked for.
     const alike = withFrame(withWeave(peyoteOnLoom(), 'canvas', { technique: 'peyote' }), { row: 6, column: 10, rows: 10, columns: 4 })
     expect(frameOf(alike)).toMatchObject({ row: 6, rows: 10 })

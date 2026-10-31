@@ -83,15 +83,15 @@ describe('thumbnailPixels', () => {
   })
 
   // Peyote's and brick stitch's every other row lies half a bead to the right, as the editor draws it (ticket 0631).
-  it("shifts peyote's every other row half a bead, its rows nesting", () => {
-    // Beads 4 px wide: a peyote row nests a quarter into the one above, so two rows stand 7 px, not 8.
+  it("shifts peyote's every other column half a bead down, nothing nesting (ticket 0734)", () => {
+    // Beads 4 px each way: the second column hangs 2 px lower, so two rows stand 10 px tall and two columns 8 wide.
     const image = thumbnailPixels(project([['#ff0000', '#ff0000'], ['#0000ff', '#0000ff']], 0, 'peyote'), 10)
 
-    expect([image.width, image.height]).toEqual([10, 7])
-    expect(pixel(image, 0, 6)).toEqual(NONE)
-    expect(pixel(image, 2, 6)).toEqual(BLUE)
-    expect(pixel(image, 9, 0)).toEqual(NONE)
-    expect(pixel(image, 9, 6)).toEqual(BLUE)
+    expect([image.width, image.height]).toEqual([8, 10])
+    expect(pixel(image, 0, 8)).toEqual(NONE)
+    expect(pixel(image, 0, 7)).toEqual(BLUE)
+    expect(pixel(image, 4, 0)).toEqual(NONE)
+    expect(pixel(image, 4, 9)).toEqual(BLUE)
   })
 
   it("shifts brick stitch's every other row half a bead", () => {

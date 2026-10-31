@@ -5,7 +5,7 @@ import { frameWeave, layersAlike } from './layerWeave'
 import { beadsOfLayer, canvasOf, frameOf, heldWeave } from './layerRecord'
 import { pieceBeadsAt } from './pieces'
 import type { Project } from './project'
-import { rowCycle } from './weave'
+import { columnCycle, rowCycle } from './weave'
 
 // A Frame woven like the Canvas grown over it (ticket 0639, ADR 0066): positions match one to one, so it lifts the
 // Canvas beads it newly covers, as Frame from Selection does, and takes a named Piece whole or not at all.
@@ -32,7 +32,7 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
   const frame = frameOf(project)
   const pieces = frame && !frameShapeOf(frame) && tradesWithCanvas(project) ? namedPieceBeads(project) : []
   if (!frame || pieces.length === 0) return { rectangle }
-  const cycle = rowCycle(frameWeave(project))
+  const [cycle, across] = [rowCycle(frameWeave(project)), columnCycle(frameWeave(project))]
   let at = rectangle
   let stoppedAt: string | undefined
   for (;;) {
@@ -47,7 +47,7 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
     let right = at.column + at.columns - 1
     if (inStrips.some(({ row }) => row < frame.row)) top = Math.min(frame.row, top + cycle)
     if (inStrips.some(({ row }) => row >= frame.row + frame.rows)) bottom = Math.max(frame.row + frame.rows - 1, bottom - 1)
-    if (inStrips.some(({ column }) => column < frame.column)) left = Math.min(frame.column, left + 1)
+    if (inStrips.some(({ column }) => column < frame.column)) left = Math.min(frame.column, left + across)
     if (inStrips.some(({ column }) => column >= frame.column + frame.columns)) right = Math.max(frame.column + frame.columns - 1, right - 1)
     at = { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
   }

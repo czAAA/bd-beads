@@ -1,4 +1,4 @@
-import { beadPitchMm, type Bead } from './beads'
+import type { Bead } from './beads'
 import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
@@ -189,19 +189,16 @@ type SamplingInput = {
   techniqueSettings?: TechniqueSettings
 } & (SizePlacement | RatioPlacement)
 
-/** A bead one unit each way, so a Weave's step comes out in bead units: rows nest by their pitch alone. */
-const UNIT_BEAD = { widthMm: 1, widthCorrectionMm: 0, heightMm: 1 }
-
 /** A placement as cell sizes and the step from a bead centre to a picture pixel: pixel = (centre − corner − offset) /
  * scale. By ratio the cells are in pixels, a bead step one block; by size in millimetres. */
 function samplingGrid(input: SamplingInput) {
   if ('view' in input) {
-    return { cellWidth: beadPitchMm(input.bead), cellHeight: input.bead.heightMm, offsetX: input.view.offsetXMm, offsetY: input.view.offsetYMm, scale: input.view.scaleMm, slack: 0 }
+    const { widthMm, heightMm } = describeWeave(input).beadMm(input.bead)
+    return { cellWidth: widthMm, cellHeight: heightMm, offsetX: input.view.offsetXMm, offsetY: input.view.offsetYMm, scale: input.view.scaleMm, slack: 0 }
   }
   const per = pixelsPerBead(input.ratio)
-  const step = describeWeave(input).stepMm(UNIT_BEAD)
-  // A staggered row's last bead reaches half a bead past the crop: one block of slack keeps it on the picture.
-  return { cellWidth: per / step.across, cellHeight: per / step.down, offsetX: -input.crop.x, offsetY: -input.crop.y, scale: 1, slack: Math.max(1, per) }
+  // A staggered line's last bead reaches half a bead past the crop: one block of slack keeps it on the picture.
+  return { cellWidth: per, cellHeight: per, offsetX: -input.crop.x, offsetY: -input.crop.y, scale: 1, slack: Math.max(1, per) }
 }
 
 /** The picture's raw colors at the centre of each bead of a framing preview's lattice (see previewLattice), row by row,

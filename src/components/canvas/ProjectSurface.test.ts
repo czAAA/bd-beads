@@ -17,7 +17,9 @@ import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameSheet } from '../../domain/layerRecord'
+import { canvasOf, frameOf, quarterTurnOf, withCanvas, withFrameSheet, withLayer } from '../../domain/layerRecord'
+import { findBead } from '../../domain/beads'
+import { scaledBead } from '../../testUtils/squareBead'
 import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
@@ -1228,10 +1230,10 @@ describe('ProjectSurface', () => {
     })
 
     it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0066)', async () => {
-      // 48 peyote rows over a loom Canvas cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
-      const project = projectOf(11, 48, { frame: { technique: 'peyote', row: 0, column: 0, rows: 48, columns: 11, beads: {} } })
+      // 48 rows of a Bead three quarters the Canvas's size cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
+      const project = withLayer(projectOf(11, 48, { frame: { technique: 'loom', row: 0, column: 0, rows: 48, columns: 11, beads: {} } }), 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
       const { wrapper } = await mountSurface(project)
-      const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: frameOf(project), rotation: 0, zoom: 1 })
+      const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: { ...frameOf(project)!, scale: 0.75 }, rotation: 0, zoom: 1 })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'frame').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'frame').y }, button: 0, buttons: 1 })

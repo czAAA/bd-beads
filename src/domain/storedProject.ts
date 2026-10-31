@@ -168,7 +168,7 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas))
   const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
   const laid = readFrameShape(stored)
-  const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead)), ...laid, rows, columns }
+  const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, rows, columns }
   return {
     ...layer,
     row,

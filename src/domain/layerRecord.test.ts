@@ -27,7 +27,7 @@ const open = (): Project => {
 describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
   it('reads the Canvas from the Project: its Weave in its Bead\'s cell, Bead, beads and the Project\'s name', () => {
     expect(layerOf(framed(), 'canvas')).toEqual({
-      weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 }, cell: beadCell(delica) },
+      weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 }, cell: beadCell(delica, 'brick') },
       beadId: delica.id,
       bead: beadCopy(delica),
       beads: { 9: { 9: RED } },
@@ -37,7 +37,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
   it('reads the Frame from its sheet, with its Bead and the cell that Bead draws', () => {
     expect(layerOf(framed(), 'frame')).toEqual({
-      weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica) },
+      weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, cell: beadCell(delica, 'peyote') },
       beadId: delica.id,
       bead: beadCopy(delica),
       beads: { 1: { 2: BLUE } },
@@ -85,7 +85,7 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
   })
 
   it('keeps a Weave\'s cell out of what it stores, and clears a Frame\'s name with an empty one', () => {
-    const after = withLayer(framed(), 'frame', { weave: { technique: 'loom', cell: beadCell(delica) }, name: '' })
+    const after = withLayer(framed(), 'frame', { weave: { technique: 'loom', cell: beadCell(delica, 'loom') }, name: '' })
     expect(frameOf(after)).not.toHaveProperty('cell')
     expect(frameOf(after)).not.toHaveProperty('name')
   })

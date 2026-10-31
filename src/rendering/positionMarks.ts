@@ -48,7 +48,7 @@ function squarePath(context: DrawingContext, x: number, y: number, width: number
 }
 
 // Draws a square for each tile position and the copies spilling over its edges, top row down as beads are: each first
-// clears the bead's own area (so overlapping peyote rows leave no outline showing through), then outlines the cell's
+// clears the bead's own area (so no outline shows through a bead), then outlines the cell's
 // edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
 function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile): void {
   const { size } = tile

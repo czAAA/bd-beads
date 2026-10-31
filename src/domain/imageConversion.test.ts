@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { computeGridDimensions, type GridDimensions } from './grid'
-import { cellCenter, rowPitch, type Technique } from './weave'
+import { cellCenter, describeWeave, type Technique } from './weave'
 import { channelsOf } from './color'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, ratioLattice, type PreviewLattice } from './imageFraming'
 import { reducePictureColors } from './imageColors'
@@ -128,7 +128,7 @@ function convert(
   bead: Bead = cubeBead,
   maxColors = 4096,
 ) {
-  const dimensions = computeGridDimensions(size, bead)
+  const dimensions = computeGridDimensions(size, bead, technique)
   const frame = frameSizeMm(technique, dimensions, bead)
   const view = framingView(image, frame, 1, CENTERED_PAN)
   return { dimensions, ...convertImage({ image, view, technique, bead, dimensions, maxColors }) }
@@ -142,7 +142,7 @@ function convertRawGrid(
   size: { widthMm: number; heightMm: number },
   bead: Bead = cubeBead,
 ): (string | undefined)[][] {
-  const dimensions = computeGridDimensions(size, bead)
+  const dimensions = computeGridDimensions(size, bead, technique)
   const frame = frameSizeMm(technique, dimensions, bead)
   const view = framingView(image, frame, 1, CENTERED_PAN)
   const lattice: PreviewLattice = { columns: dimensions.columns, rows: dimensions.rows, frameColumn: 0, frameRow: 0 }
@@ -201,12 +201,14 @@ describe('sampleLatticePacked', () => {
     view: ReturnType<typeof framingView>,
     lattice: ReturnType<typeof previewLattice>,
   ): (string | undefined)[] {
-    const originXMm = lattice.frameColumn * bead.widthMm
-    const originYMm = lattice.frameRow * rowPitch(technique, bead.heightMm)
+    const { widthMm, heightMm } = describeWeave({ technique }).beadMm(bead)
+    // The frame's first row and column are never shifted, so its corner is a whole cell per row and column.
+    const originXMm = lattice.frameColumn * widthMm
+    const originYMm = lattice.frameRow * heightMm
     const cells: (string | undefined)[] = []
     for (let row = 0; row < lattice.rows; row += 1) {
       for (let column = 0; column < lattice.columns; column += 1) {
-        const center = cellCenter({ technique }, { row, column }, bead.widthMm, bead.heightMm)
+        const center = cellCenter({ technique }, { row, column }, widthMm, heightMm)
         const pixel = sourcePixelAt(view, image, center.x - originXMm, center.y - originYMm)
         cells.push(pixel && pixelColorAt(image, pixel.x, pixel.y))
       }
@@ -231,7 +233,7 @@ describe('sampleLatticePacked', () => {
     ['brick', delicaBead],
   ] as const)('takes exactly the colors sampling cell by cell does, in %s, at every zoom and pan', (technique, bead) => {
     const image = busyImage(53, 41)
-    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
+    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead, technique)
     const frame = frameSizeMm(technique, dimensions, bead)
 
     for (const zoom of [1, 1.75, 4]) {
@@ -462,34 +464,40 @@ describe('convertImage', () => {
     expect(new Set(firstColumn).size).toBe(1)
   })
 
-  it('reproduces the peyote and brick stitch half-cell stagger on odd rows', () => {
+  it('reproduces brick stitch\'s half-cell stagger on odd rows', () => {
     // Sampled below Convert image's Palette quantization (ticket 177): the raw marker colors coordinateImage relies
     // on to decode which pixel a cell sampled would otherwise collapse onto the same nearest Palette color.
-    for (const technique of ['peyote', 'brick'] as const) {
-      const grid = convertRawGrid(coordinateImage(9, 20), technique, { widthMm: 6, heightMm: 6 })
+    const grid = convertRawGrid(coordinateImage(9, 20), 'brick', { widthMm: 6, heightMm: 6 })
 
-      const evenRow = sampledPixel(grid[0]![0]!).x
-      const oddRow = sampledPixel(grid[1]![0]!).x
-      const nextEvenRow = sampledPixel(grid[2]![0]!).x
+    const evenRow = sampledPixel(grid[0]![0]!).x
+    const oddRow = sampledPixel(grid[1]![0]!).x
+    const nextEvenRow = sampledPixel(grid[2]![0]!).x
 
-      expect(oddRow).toBeGreaterThan(evenRow)
-      expect(nextEvenRow).toBe(evenRow)
-    }
+    expect(oddRow).toBeGreaterThan(evenRow)
+    expect(nextEvenRow).toBe(evenRow)
   })
 
-  it('packs peyote rows tighter than brick stitch, so its rows walk down the picture more slowly', () => {
-    // Same frame, same picture: peyote's rows are 0.75 of a cell apart, brick's a full cell. Sampled below Convert
-    // image's Palette quantization (ticket 177) for the same reason as the stagger test above.
-    const image = coordinateImage(40, 40)
+  it('reproduces peyote\'s half-cell stagger on odd columns, down the picture (ticket 0734)', () => {
+    const grid = convertRawGrid(coordinateImage(20, 9), 'peyote', { widthMm: 6, heightMm: 6 })
+
+    const evenColumn = sampledPixel(grid[0]![0]!).y
+    const oddColumn = sampledPixel(grid[0]![1]!).y
+    const nextEvenColumn = sampledPixel(grid[0]![2]!).y
+
+    expect(oddColumn).toBeGreaterThan(evenColumn)
+    expect(nextEvenColumn).toBe(evenColumn)
+    // Its rows are straight across: the first row of every even column samples the same height.
+    expect(sampledPixel(grid[1]![0]!).y).toBe(sampledPixel(grid[1]![2]!).y)
+  })
+
+  it('walks peyote\'s rows a full bead apart, as loom\'s, nothing nesting (ticket 0734)', () => {
+    const image = coordinateImage(60, 60)
     const size = { widthMm: 15, heightMm: 15 }
+    const [peyote, loom] = [convertRawGrid(image, 'peyote', size), convertRawGrid(image, 'loom', size)]
 
-    const peyote = convertRawGrid(image, 'peyote', size)
-    const brick = convertRawGrid(image, 'brick', size)
-
-    const lastPeyoteRow = sampledPixel(peyote.at(-1)![0]!).y
-    const lastBrickRow = sampledPixel(brick.at(-1)![0]!).y
-
-    expect(lastPeyoteRow).toBeLessThan(lastBrickRow)
+    expect(peyote).toHaveLength(loom.length)
+    const step = (grid: typeof peyote) => sampledPixel(grid[2]![0]!).y - sampledPixel(grid[1]![0]!).y
+    expect(step(peyote) / step(loom)).toBeCloseTo(1, 1)
   })
 
   it('does not distort a picture just because the Bead footprint is not square', () => {
@@ -512,7 +520,7 @@ describe('frameColors', () => {
   it('converts exactly the cells the preview shows inside the frame', () => {
     const image = coordinateImage(40, 20)
     const technique: Technique = 'peyote'
-    const dimensions = computeGridDimensions({ widthMm: 15, heightMm: 15 }, cubeBead)
+    const dimensions = computeGridDimensions({ widthMm: 15, heightMm: 15 }, cubeBead, technique)
     const frame = frameSizeMm(technique, dimensions, cubeBead)
     const view = framingView(image, frame, 1.5, { x: 0.3, y: 0.7 })
     const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique })
@@ -575,9 +583,15 @@ describe('sampling By Pixel to bead ratio (spec 0645)', () => {
     expect(pixels[1]!.map((pixel) => pixel!.x)).toEqual([2, 4, 6, 7])
   })
 
-  it('walks a peyote row one block down the picture, though its rows nest', () => {
+  it('walks a peyote row one block down the picture', () => {
     const pixels = ratioPixels(coordinateImage(4, 8), 'peyote', { x: 0, y: 0, width: 4, height: 8 }, { pixels: 2, beads: 1 })
     expect(pixels.map((row) => row[0]!.y)).toEqual([1, 3, 5, 7])
+  })
+
+  it('keeps peyote\'s half-bead stagger down its columns, the shifted column\'s last bead staying on the picture (ticket 0734)', () => {
+    const pixels = ratioPixels(coordinateImage(4, 8), 'peyote', { x: 0, y: 0, width: 4, height: 8 }, { pixels: 2, beads: 1 })
+    expect(pixels.map((row) => row[1]!.y)).toEqual([2, 4, 6, 7])
+    expect(pixels[0]!.map((pixel) => pixel!.x)).toEqual([1, 3])
   })
 
   it('draws the rest of the picture round the crop in the preview, off-picture beads left empty', () => {

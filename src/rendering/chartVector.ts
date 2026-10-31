@@ -101,12 +101,12 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   for (const position of geometry.positionsIn(inView)) {
     const { x, y, width, height } = inGridPx(geometry.place(position)!.box)
     const box = rectOf(x, y, width, height)
-    // A bead's cell ends where the bead below it starts (peyote's rows nest), and the unshifted cell's middle names its
-    // position, so an offset row stays in its own column.
+    // A bead's cell ends where the bead below it starts, and the unshifted cell's middle names its position, so a
+    // staggered row (brick stitch) or column (peyote, ticket 0734) stays in its own.
     const below = { row: position.row + 1, column: position.column }
     const share = Math.min(height, description.box(below, size.width, size.height).y - y)
     const cell = rectOf(x, y, width, share)
-    const middle = at(x - description.rowOffset(position.row, size.width) + width / 2, y + share / 2)
+    const middle = at(x - description.rowOffset(position.row, size.width) + width / 2, y - description.columnOffset(position.column, size.height) + share / 2)
     const across = Math.floor(middle[0] / stepAcross)
     const down = Math.floor(middle[1] / stepDown)
     // Beads past the part's edge belong to its neighbour.
@@ -208,7 +208,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   const filled = beads.filter((bead) => bead.color !== null).sort((p, q) => (p.color! < q.color! ? -1 : 1))
   for (const bead of filled) {
     const fill = inOverlap(bead) ? tint(bead.color!, OVERLAP_TINT) : bead.color!
-    // A square bead fills its cell, so beads that nest (peyote's rows sit closer than a bead is tall) don't overlap.
+    // A square bead fills its cell, so staggered beads don't overlap.
     const { x, y, width, height } = round ? bead.box : bead.cell
     const inset = round ? (Math.min(width, height) * (1 - ROUND_SHARE)) / 2 : 0
     const left = (chart.x + x + inset) * K

@@ -3,7 +3,7 @@ import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type Bea
 import type { QuarterTurns } from './frameShape'
 import { laidSize } from './frameOrientation'
 import { normalizedOrientation, turnedOrientation } from './canvasOrientation'
-import { snapRow } from './frame'
+import { snapColumn, snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave } from './layerWeave'
@@ -24,8 +24,8 @@ export interface RotatedSelection {
   selection: Selection
 }
 
-/** The Selection turned a quarter about its centre: rows and columns swap, and where rows alternate it starts on a
- * multiple of the shift's cycle, `inset` being how far inside it the row that must land on one begins (ticket 477).
+/** The Selection turned a quarter about its centre: rows and columns swap, and where rows or columns alternate (ticket
+ * 0734) it starts on a multiple of the cycle, `inset` being how far inside it the row that must land on one begins.
  * @internal Its test checks the turned rectangle on its own. */
 export function rotatedSelection(weave: Weave, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
@@ -36,7 +36,7 @@ export function rotatedSelection(weave: Weave, selection: Selection, inset = 0):
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
   return {
     top: snapRow(weave, frame.row + rowShift + inset) - inset,
-    left: frame.column + columnShift,
+    left: snapColumn(weave, frame.column + columnShift),
     rows: frame.columns,
     columns: frame.rows,
   }

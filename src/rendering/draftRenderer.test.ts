@@ -22,20 +22,25 @@ describe('draftImage', () => {
     expect(image.data[3]).toBe(255)
   })
 
-  it('makes each peyote bead two pixels wide and shifts every other row by one, so the rows sit half a bead apart', () => {
-    const image = draftImage(describeWeave({ technique: 'peyote' }), 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
+  it('makes each brick stitch bead two pixels wide and shifts every other row by one, so the rows sit half a bead apart', () => {
+    const image = draftImage(describeWeave({ technique: 'brick' }), 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
 
     expect([image.width, image.height]).toEqual([5, 2])
     expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 0))).toEqual([[255, 0, 0], [255, 0, 0], [0, 255, 0], [0, 255, 0], [232, 227, 223]])
     expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 1))).toEqual([[232, 227, 223], [0, 0, 255], [0, 0, 255], [255, 255, 0], [255, 255, 0]])
   })
 
-  it('shifts brick stitch rows the same way', () => {
-    expect(draftImage(describeWeave({ technique: 'brick' }), 3, 2, new Array(6).fill('#000000'), DEFAULT_THEME).width).toBe(7)
+  it('makes each peyote bead two pixels tall and shifts every other column down by one, so the columns sit half a bead apart (ticket 0734)', () => {
+    const image = draftImage(describeWeave({ technique: 'peyote' }), 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
+    const background = [232, 227, 223]
+
+    expect([image.width, image.height]).toEqual([2, 5])
+    expect([0, 1, 2, 3, 4].map((y) => pixel(image, 0, y))).toEqual([[255, 0, 0], [255, 0, 0], [0, 0, 255], [0, 0, 255], background])
+    expect([0, 1, 2, 3, 4].map((y) => pixel(image, 1, y))).toEqual([background, [0, 255, 0], [0, 255, 0], [255, 255, 0], [255, 255, 0]])
   })
 
   it('draws any shift the geometry has: a third of a bead is three pixels a bead, a shifted row one in (ticket 0623)', () => {
-    const thirds = rowsGeometry({ kind: 'rows', shifted: true, shift: 1 / 3, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: 1 }, undefined)
+    const thirds = rowsGeometry({ kind: 'rows', shifted: true, shift: 1 / 3, cellAspect: 1, roundness: 0, passes: 'one', block: 1 }, undefined)
     const image = draftImage(thirds, 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
 
     expect([image.width, image.height]).toEqual([7, 2])
@@ -57,11 +62,19 @@ describe('draftOfBeads (ticket 0675)', () => {
     expect(rgba(image, 1, 0)).toEqual([0, 0, 0, 0])
   })
 
-  it('makes a peyote bead two pixels wide, a shifted row one pixel in', () => {
-    const image = draftOfBeads(describeWeave({ technique: 'peyote' }), [{ row: 0, column: 0, color: '#ff0000' }, { row: 1, column: 0, color: '#0000ff' }])
+  it('makes a brick stitch bead two pixels wide, a shifted row one pixel in', () => {
+    const image = draftOfBeads(describeWeave({ technique: 'brick' }), [{ row: 0, column: 0, color: '#ff0000' }, { row: 1, column: 0, color: '#0000ff' }])
 
-    expect(image).toMatchObject({ width: 3, height: 2, wide: 2 })
+    expect(image).toMatchObject({ width: 3, height: 2, wide: 2, tall: 1 })
     expect([0, 1, 2].map((x) => rgba(image, x, 1)[3])).toEqual([0, 255, 255])
+  })
+
+  it('makes a peyote bead two pixels tall, a shifted column one pixel down (ticket 0734)', () => {
+    const image = draftOfBeads(describeWeave({ technique: 'peyote' }), [{ row: 0, column: 0, color: '#ff0000' }, { row: 0, column: 1, color: '#0000ff' }])
+
+    expect(image).toMatchObject({ width: 2, height: 3, wide: 1, tall: 2 })
+    expect([0, 1, 2].map((y) => rgba(image, 1, y)[3])).toEqual([0, 255, 255])
+    expect([0, 1, 2].map((y) => rgba(image, 0, y)[3])).toEqual([255, 255, 0])
   })
 })
 

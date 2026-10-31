@@ -304,46 +304,27 @@ describe('renderOverlay', () => {
       expect(named('fillRect')).toHaveLength(0)
     })
 
-    it('follows a shifted row and the Technique\'s packing, and rounds a peyote outline', () => {
+    it('follows a shifted peyote column and rounds its outline (ticket 0734)', () => {
       const project = ownCell(projectOf('peyote', 4, 3, noProgress))
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: null } })
 
-      // Row 1: half a bead across (10) and 15px down; the color goes inside the 1px rim.
+      // Column 1: one bead across (20) and half a bead down (10) on top of its row's 20; the color goes inside the 1px rim.
       const outline = named('roundRect').map((call) => call.args as number[])
-      expect(outline.map((args) => args.slice(0, 4))).toEqual([[30.5, 15.5, 19, 19], [32.5, 17.5, 15, 15]])
+      expect(outline.map((args) => args.slice(0, 4))).toEqual([[20.5, 30.5, 19, 19], [22.5, 32.5, 15, 15]])
       // Rounded at 22% of the bead less its gap, and 2px less inside.
       expect(outline[0]![4]).toBeCloseTo(3.9)
       expect(outline[1]![4]).toBeCloseTo(1.9)
     })
 
-    it('fills a peyote bead\'s own rounded shape, leaving out what the next row\'s beads lie over', () => {
+    it('fills a peyote bead\'s preview in its color (ticket 0734)', () => {
       const project = projectOf('peyote', 4, 3, noProgress)
-      const { context, calls, named } = recordingContext()
+      const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: '#e63746' } })
 
-      expect(named('fillRect')).toHaveLength(0)
-      // Row 2 sits 15px lower and half a bead back: its beads at x = 21 and 41 (the bead is at 31), under the bead's own 1px gap.
-      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 4))
-      expect(cutOuts).toEqual([[20.5, 30.5, 19, 19], [40.5, 30.5, 19, 19], [30.5, 15.5, 19, 19]])
-      const clipAt = calls.findIndex((call) => call.name === 'clip')
-      const fillAt = calls.findIndex((call) => call.name === 'fill' && call.fillStyle === '#e63746')
-      expect(clipAt).toBeGreaterThan(0)
-      expect(fillAt).toBeGreaterThan(clipAt)
-      expect(named('clip')[0]!.args).toEqual(['evenodd'])
-    })
-
-    it('leaves out only the next-row beads the Project has', () => {
-      const project = projectOf('peyote', 4, 3, noProgress)
-      const { context, named } = recordingContext()
-
-      // Row 1 is shifted half a bead, so row 2's beads under its last bead are columns 3 and 4, and 4 is not there.
-      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 3 }], color: '#e63746' } })
-
-      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
-      expect(cutOuts).toEqual([[60.5, 30.5], [70.5, 15.5]])
+      expect(calls.some((call) => (call.name === 'fill' || call.name === 'fillRect') && call.fillStyle === '#e63746')).toBe(true)
     })
 
     it('leaves a bead on the last peyote row whole, and a loom bead too', () => {
@@ -520,15 +501,15 @@ describe('renderOverlay', () => {
     })
 
     it('moves with the Frame on the open Canvas, across the box round a peyote Frame\'s beads', () => {
-      const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } })
+      const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 6, rows: 4, columns: 4, beads: {} } })
       const { context, calls, named } = recordingContext()
 
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true }) })
 
-      // Column 5 of a peyote Canvas is 100px in, plus the odd row's half-bead shift; row 5 sits at 5 × 15px.
-      expect(named('translate').map((call) => call.args)).toContainEqual([110, 75])
-      // The box round 4 peyote columns is 4 × 20 + 10px wide (the shifted rows), 20 + 3 × 15px tall.
-      expect(lines(calls)).toEqual([[[45, 0], [45, 65]]])
+      // Column 6 of a peyote Canvas is 120px in, and unshifted; row 5 sits at 5 × 20px (ticket 0734).
+      expect(named('translate').map((call) => call.args)).toContainEqual([120, 100])
+      // The box round 4 peyote columns is 4 × 20px wide, 4 × 20 + 10px tall (the shifted columns).
+      expect(lines(calls)).toEqual([[[40, 0], [40, 90]]])
     })
 
     it('draws nothing while the mode is Off or no Axis is on', () => {
@@ -756,8 +737,8 @@ describe('renderOverlay', () => {
 
     it.each([
       ['loom', (rows: number, columns: number) => ({ width: columns * 20, height: rows * 20 })],
-      ['peyote', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 15 })], // rows nest at three quarters of a bead; shifted rows add half a bead across
-      ['brick', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 20 })], // rows sit a bead apart
+      ['peyote', (rows: number, columns: number) => ({ width: columns * 20, height: rows * 20 + 10 })], // shifted columns add half a bead down
+      ['brick', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: rows * 20 })], // shifted rows add half a bead across
     ] as const)('wraps the %s margin as drawn, not as a full-bead grid', (technique, sizeOf) => {
       const { width, height, outer } = outline(technique, frame)
 
@@ -783,7 +764,8 @@ describe('renderOverlay', () => {
 })
 
 describe('the overlay of a Frame woven in its own Technique (ticket 492)', () => {
-  /** A peyote Frame of 3 × 3 at row 2, column 3 of a loom Canvas, every bead painted, the first pass the current one. */
+  /** A peyote Frame of 3 × 3 at row 2, column 3 of a loom Canvas, every bead painted, the first pass the current one. A Frame
+   * in another Technique than the Canvas's starts anywhere: its own first column is unshifted. */
   function mixed(): Project {
     const base = projectOf('loom', 3, 3, { currentRow: 1 })
     return withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
@@ -796,9 +778,9 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
     renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
-    // Pass 1 is row 1's even beads, columns 0 and 2: x 10 and 50, y 15 (peyote's second row, shifted half a bead).
+    // Pass 1 is row 1's even beads, columns 0 and 2: x 0 and 40, y 20 (columns 0 and 2 are unshifted).
     const rings = ringRects(calls).map((call) => call.args as number[])
-    expect(rings.map(([x, y]) => [x! - 1, y! - 1])).toEqual([[10, 15], [50, 15]])
+    expect(rings.map(([x, y]) => [x! - 1, y! - 1])).toEqual([[0, 20], [40, 20]])
   })
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
@@ -811,7 +793,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
 
     const inFrame = draw('frame', 3)
     expect(inFrame.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
-    expect(inFrame.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([10, 15, 20, 2])
+    expect(inFrame.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
     const onCanvas = draw('canvas', 9)
     expect(onCanvas.findIndex((call) => call.name === 'fillRect')).toBeLessThan(onCanvas.findIndex((call) => call.name === 'translate'))
     expect(onCanvas.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([60, 180, 20, 2])
@@ -888,15 +870,14 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     }
   })
 
-  it('leaves out what the next peyote row lies over with one clip a row, not one a bead, and one fill a color', () => {
+  it('draws a big peyote paste preview in the colors it holds (ticket 0734)', () => {
     const project: Project = withLayers(canvas(), { technique: 'peyote' })
     const { context, named } = recordingContext()
     const colors = [[RED, RED, '#2f6fed', RED], [RED, RED, RED, RED], [RED, RED, RED, RED]]
 
     renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, preview: { cells: [], stamp: stampOf(colors), color: null } })
 
-    expect(named('clip')).toHaveLength(3)
-    expect(named('fill').map((call) => call.fillStyle)).toEqual([RED, '#2f6fed', RED, RED])
+    expect(new Set([...named('fill'), ...named('fillRect')].map((call) => call.fillStyle))).toEqual(new Set([RED, '#2f6fed']))
   })
 
   it('draws no more of a 300 × 300 Piece-shaped Selection\'s outline than the beads on screen', () => {
@@ -929,7 +910,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
     renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] } })
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
-    expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([10, 15, 20, 2])
+    expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([0, 20, 20, 2])
   })
 })
 

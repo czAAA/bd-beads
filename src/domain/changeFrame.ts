@@ -13,7 +13,7 @@ import {
   type FrameSheet,
   sameFrame,
 } from './canvas'
-import { movedFrame, snapRow, withFrame, withFrameGiving } from './frame'
+import { movedFrame, snapColumn, snapRow, withFrame, withFrameGiving } from './frame'
 import { frameGeometryOf, layerSheet, shownBeads } from './layers'
 import { droppedFromLayout, droppedFromTurnedGrid, liftedOntoLayout } from './customSelection'
 import type { GridPosition } from './grid'
@@ -258,7 +258,7 @@ function customSheet(project: Project, shape: FrameShapeId, settings: FrameSetti
   const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave.technique, cell)
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
-  return { row: snapRow(canvas, centre.row - half.row), column: centre.column - half.column, rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
+  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
 }
 
 /** A new Custom frame: its Frame shape, its size or all its settings, the Canvas position it goes round, any beads, and
