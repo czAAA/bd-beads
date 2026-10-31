@@ -62,12 +62,12 @@ describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
     expect(spark(wrapper).classes().filter((name) => name.includes('flaring'))).toEqual([])
 
     await wrapper.setProps({ rowPress: press(2, true) })
-    expect(spark(wrapper).classes()).toContain('row-progress__spark--flaring')
+    expect(spark(wrapper).classes()).toContain('progress-track__spark--flaring')
     await wrapper.setProps({ rowPress: press(3, true) })
-    expect(spark(wrapper).classes()).toContain('row-progress__spark--flaring-alt')
+    expect(spark(wrapper).classes()).toContain('progress-track__spark--flaring-alt')
     await wrapper.setProps({ rowPress: press(4, false) })
-    expect(spark(wrapper).classes()).toContain('row-progress__spark--flaring-alt')
+    expect(spark(wrapper).classes()).toContain('progress-track__spark--flaring-alt')
     // The margin's track carries it at the compact size.
-    expect(spark(wrapper).classes()).toContain('row-progress__spark--compact')
+    expect(spark(wrapper).classes()).toContain('progress-track__spark--compact')
   })
 })

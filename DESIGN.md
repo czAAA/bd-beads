@@ -194,7 +194,22 @@ checks them against `tokens.json`. The splash in `index.html` is held to the sam
 - Card sizes that aren't tokens (the Export prompt's 288px and 10px radius, `--popover-width` and `--popover-radius`)
   live in `src/styles/controls.css`.
 
-### 4.7 Decisions
+### 4.7 The Homepage's scroll story
+
+The Homepage card describes the page (ticket 0739); how the app builds it:
+
+- The page is its own scroller (`position: fixed`), three viewports tall with a snap point at each, around a sticky
+  stage that holds the canvas box, so the box never moves while the page scrolls. The section shown is the nearest
+  viewport's (`homepage/sections.ts`); Back and Next scroll the page, never set the section. The page takes the focus
+  when it opens, so the keys scroll it.
+- Its bottom bar is the editor's `ProgressBar` with the sections in its slot, and `ProgressTrack`, the track and spark
+  Row progress draws, with Pattern done's burst at its end: one component, not a copy.
+- The free list's roll lies on the stage, not in the box, so the box's edge doesn't cut it; it is measured from the
+  tile's window when it unrolls, and the page grows by what it reaches below the stage. Its items are No account's
+  `items` in every language.
+- The two X1 marks are `AppLogo`, the design system's own file.
+
+### 4.8 Decisions
 
 - ADR 0021: the visual language follows this file and the
   design system, and the desktop layout.

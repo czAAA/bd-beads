@@ -363,18 +363,19 @@ export const es: Translations = {
     whatsInside: 'Qué incluye',
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
+    sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.' },
     notes: { onUs: 'va por nosotros' },
     coffee: { title: 'Hecho por una familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró tiempo, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {
-      label: 'planes',
       heading: 'Tres formas de usarlo',
       why: 'Las cuentas de usuario y Pro aún no están abiertas. Todo funciona sin ellas.',
       youAreHere: 'estás aquí',
       tiles: [
-        { name: 'Sin cuenta', price: 'Gratis', meta: 'sin registro', text: 'Dibuja, cuenta y teje en este dispositivo. Sin registrarte en nada.', button: 'Abrir el editor', includes: 'qué recibes', items: ['Las tres técnicas', 'Todas las herramientas, Convertir imagen y Progreso por filas', 'Exportación a PDF, PNG y archivo de proyecto', 'Proyectos guardados en este dispositivo'] },
-        { name: 'Cuenta gratuita', price: 'Gratis', meta: 'llegará más adelante', text: 'La misma aplicación, con tus proyectos en cada dispositivo que uses.', button: 'Crear cuenta gratuita', includes: 'todo lo de sin cuenta, y además', items: ['Proyectos en todos tus dispositivos', 'Copia de seguridad de cada proyecto guardado', 'Comparte un proyecto con un enlace'] },
+        { name: 'Sin cuenta', price: 'Gratis', meta: 'sin registro', text: 'Dibuja, cuenta y teje en este dispositivo. Sin registrarte en nada.', button: 'Abrir el editor', includes: 'qué recibes', items: ['Telar', 'Peyote', 'Punto ladrillo', 'Pintar, Rellenar y Borrador', 'Seleccionar, copiar y pegar', 'Espejo', 'Deshacer cada paso', 'Trozos con nombre', 'Convertir imagen, hasta 14 colores', 'Progreso por filas', 'Cuentas necesarias, también en gramos', 'Tu propia paleta', 'Elegir color del lienzo', 'Marco y Reglas', 'Exportar a PDF', 'Exportar a PNG', 'Archivo de proyecto', 'Proyectos guardados en este dispositivo', 'Tema claro, oscuro y alto contraste', 'Siete idiomas', 'Funciona sin conexión', 'Atajos de teclado', 'Sin registro'] },
+        { name: 'Cuenta gratuita', price: 'Gratis', meta: 'llegará más adelante', text: 'La misma aplicación, con tus proyectos en cada dispositivo que uses.', button: 'Crear cuenta gratuita', includes: 'todo lo de sin cuenta, y además', items: ['Proyectos en todos tus dispositivos', 'Copia de seguridad de cada proyecto guardado'] },
         { name: 'Pro', price: 'Precio más adelante', meta: 'llegará más adelante', text: 'Para quienes enseñan, venden o imprimen mucho.', button: 'Próximamente', includes: 'todo lo de la cuenta gratuita, y además', items: ['Tu propia portada y logotipo en los PDF exportados', 'Tus propias paletas y catálogos de cuentas', 'Las técnicas nuevas, antes que nadie'] },
       ],
+      free: { count: '{count} · gratis', window: 'Todo lo gratuito, desplázate para verlo todo', rollUp: 'Enrollar la lista' },
     },
     features: {
       techniques: { name: 'Técnicas', text: 'Telar, peyote y punto ladrillo, cada una dibujada como se colocan sus cuentas.', tabLine: 'Telar, peyote y ladrillo, dibujados como se colocan.' },
