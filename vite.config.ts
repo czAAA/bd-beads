@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { playwright } from '@vitest/browser-playwright'
 import vue from '@vitejs/plugin-vue'
@@ -27,6 +27,15 @@ const browserTestsOn = (): boolean => {
 
 const APP_VERSION = (JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }).version
 
+/** How many codes each Color catalog holds, by its id (ticket 0742): the Homepage's free list counts them without
+ * fetching a catalog, each a lazy chunk of its own. */
+const CATALOGS = resolve(import.meta.dirname, 'src/data/colorCatalogs')
+const COLOR_CATALOG_CODES = Object.fromEntries(
+  readdirSync(CATALOGS)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => [file.slice(0, -'.json'.length), (JSON.parse(readFileSync(resolve(CATALOGS, file), 'utf8')) as { codes: unknown[] }).codes.length]),
+)
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   // Production builds (build and preview alike) resolve assets relative to the path the app is served from.
@@ -37,8 +46,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [vue(), offlineShell()],
   // Lets `tailscale serve` reach the dev server from other devices on the tailnet.
   server: { allowedHosts: ['.ts.net'] },
-  // The version the Menu's About section shows (ticket 443).
-  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
+  // The version the Menu's About section shows (ticket 443); the catalogs' code counts the Homepage names (ticket 0742).
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION), __COLOR_CATALOG_CODES__: JSON.stringify(COLOR_CATALOG_CODES) },
   build: {
     // Two pages: the editor and the Homepage (ticket 77), which is a folder with its own index.html so a static host
     // serves /homepage/ with no rewrite rules (ADR 0014).
