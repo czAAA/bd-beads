@@ -77,6 +77,16 @@ describe('reducePictureColors (ticket 177, ADR 0010)', () => {
     expect(reduced.byHex.size).toBe(0)
   })
 
+  // Ticket 0747: the Colors slider goes up to every color the picture has, so a photo asks for thousands.
+  it('takes any count, keeping that many of a photo', () => {
+    // 20 000 distinct colors, spread over the cube.
+    const photo = new Map(Array.from({ length: 20000 }, (_unused, i) => [toHex({ r: i & 255, g: (i >> 8) & 255, b: (i * 37) & 255 }), 1]))
+
+    const reduced = reducePictureColors(photo, 10000)
+    expect(reduced.colors).toHaveLength(10000)
+    expect(reduced.colors.reduce((sum, color) => sum + color.count, 0)).toBe(20000)
+  })
+
   it('weights a reduction by how much of the picture each color covers', () => {
     // Nearly all of the picture is black, so the one color it keeps lands near it.
     const reduced = reducePictureColors(counts({ '#000000': 99, '#ffffff': 1 }), 1)

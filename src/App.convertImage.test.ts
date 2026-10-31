@@ -82,10 +82,11 @@ describe('App Convert image (spec 0645)', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(false)
-    // 8 px on its long side starts at 1:4: 32 × 32 beads of 1.5 mm cubes, the left half red, the right half blue.
-    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 32, columns: 32 } })
+    // An 8 px picture opens at one bead per pixel (ticket 0747): 8 × 8 beads of 1.5 mm cubes, the left half red, the
+    // right half blue.
+    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 8, columns: 8 } })
     expect(beadColor(wrapper, 0)).toBe('#e63746')
-    expect(beadColor(wrapper, 31)).toBe('#2f6fed')
+    expect(beadColor(wrapper, 7)).toBe('#2f6fed')
     wrapper.unmount()
   })
 

@@ -84,24 +84,36 @@ function representative(box: readonly WeightedColor[]): Rgb {
   return { r: sum.r / total, g: sum.g / total, b: sum.b / total }
 }
 
+/** A box with how far it spreads along its widest channel, worked out once: the Colors slider asks for thousands of
+ * boxes from a photo (ticket 0747), and only the two halves of a split change. */
+interface MeasuredBox {
+  colors: WeightedColor[]
+  spread: number
+}
+
+function measured(colors: WeightedColor[]): MeasuredBox {
+  return { colors, spread: colors.length > 1 ? channelRange(colors, widestChannel(colors)) : -1 }
+}
+
 /** Median cut down to at most `maxColors` boxes by splitting the widest box until done. Over k-means (fixed steps,
  * no unlucky start) and a fixed octree (adapts to where flat artwork's few colors crowd the cube). */
 function medianCut(colors: WeightedColor[], maxColors: number): WeightedColor[][] {
-  let boxes: WeightedColor[][] = [colors]
+  const boxes: MeasuredBox[] = [measured(colors)]
 
   while (boxes.length < maxColors) {
-    const splittable = boxes.filter((box) => box.length > 1)
-    if (splittable.length === 0) {
-      return boxes
+    let widest = 0
+    for (let at = 1; at < boxes.length; at += 1) {
+      if (boxes[at]!.spread > boxes[widest]!.spread) widest = at
     }
+    // A box of one color cannot split: a spread of -1 says so.
+    if (boxes[widest]!.spread < 0) break
 
-    const widest = splittable.reduce((best, box) =>
-      channelRange(box, widestChannel(box)) > channelRange(best, widestChannel(best)) ? box : best,
-    )
-    boxes = boxes.flatMap((box) => (box === widest ? splitBox(box) : [box]))
+    const [left, right] = splitBox(boxes[widest]!.colors)
+    boxes[widest] = measured(left)
+    boxes.push(measured(right))
   }
 
-  return boxes
+  return boxes.map((box) => box.colors)
 }
 
 /** A picture's colors reduced to a buyable count (ticket 177, ADR 0010), before any snap: the Convert image wizard

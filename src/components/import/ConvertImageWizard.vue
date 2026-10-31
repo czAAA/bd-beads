@@ -113,7 +113,7 @@ const summaries = computed<Record<ConvertStep, string | undefined>>(() => {
   return {
     picture: undefined,
     bead: `${formFactorName(bead.formFactor)} ${bead.size} · ${techniqueName(t.value, wizard.technique.value)}`,
-    size: `${grid.columns}×${grid.rows}${wizard.mode.value === 'ratio' ? ` · ${wizard.ratio.value.pixels}:${wizard.ratio.value.beads}` : ''}`,
+    size: `${grid.columns}×${grid.rows}${result.value ? ` · ${result.value.measured}` : ''}`,
     colors: `${source} · ${used}`,
     review: weight === undefined ? undefined : `≈ ${formatGrams(weight, t.value.quantities.gramsUnit, locale.value)}`,
   }

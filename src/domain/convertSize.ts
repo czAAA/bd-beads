@@ -2,53 +2,16 @@ import type { Bead } from './beads'
 import { clamp } from './clamp'
 import type { GridDimensions } from './grid'
 import type { PixelData } from './imageConversion'
-import { CENTERED_PAN, clampConvertZoom, coverScaleMm, type FrameSizeMm, type FramingView, type ImageSize, type PanFraction } from './imageFraming'
+import type { ImageSize } from './imageFraming'
 import { describeWeave, type Technique, type TechniqueSettings } from './weave'
 import { fillBlanks } from './fillBlanks'
 import type { Locale } from './locale'
 import { estimatedSizeMm, formatMm, formatSizeMm } from './projectSize'
 
-/** How the Convert image wizard sizes a Schema (spec 0645): By Pixel to bead ratio, the size read from the picture, or
- * By size, a stated size the picture is zoomed and panned under (imageFraming.ts). */
-export type SizeMode = 'ratio' | 'size'
+/** How the Convert image wizard sizes a Schema (spec 0645, ticket 0747): one Width in beads over the part of the
+ * picture to weave; the height follows the picture, exactly on a mark and through the Bead between them. */
 
-/** A Pixel to bead ratio (glossary): picture pixels : beads, one side always 1. 2:1 is every 2 × 2 pixel block one bead,
- * 1:2 every pixel 2 × 2 beads. */
-export interface PixelToBeadRatio {
-  pixels: number
-  beads: number
-}
-
-/** The ratio chips, finest first (PixelToBeadRatio card). */
-export const RATIO_PRESETS: readonly PixelToBeadRatio[] = [
-  { pixels: 1, beads: 4 },
-  { pixels: 1, beads: 2 },
-  { pixels: 1, beads: 1 },
-  { pixels: 2, beads: 1 },
-  { pixels: 4, beads: 1 },
-  { pixels: 8, beads: 1 },
-]
-
-/** A Custom ratio's whole number, either way (PixelToBeadRatio card's Stepper). */
-export const CUSTOM_RATIO_MIN = 2
-export const CUSTOM_RATIO_MAX = 32
-
-/** A ratio's short key, "2-1": its chip's value and its control registry action's id (ticket 0650). */
-export function ratioId(ratio: PixelToBeadRatio): string {
-  return `${ratio.pixels}-${ratio.beads}`
-}
-
-/** Whether two ratios are the same. */
-export function sameRatio(a: PixelToBeadRatio, b: PixelToBeadRatio): boolean {
-  return a.pixels === b.pixels && a.beads === b.beads
-}
-
-/** Picture pixels along one side of a bead: 2 for 2:1, a half for 1:2. */
-export function pixelsPerBead({ pixels, beads }: PixelToBeadRatio): number {
-  return pixels / beads
-}
-
-/** The part of the picture a ratio converts, in picture pixels from its top-left corner. */
+/** The part of the picture to weave, in picture pixels from its top-left corner: the whole picture, or A part. */
 export interface PixelCrop {
   x: number
   y: number
@@ -60,72 +23,187 @@ export interface PixelCrop {
 export const CONVERT_STEPS = ['picture', 'bead', 'size', 'colors', 'review'] as const
 export type ConvertStep = (typeof CONVERT_STEPS)[number]
 
-/** The crop's handles on the preview, in Tab order round it (ConvertImage card): four corners, four edge bars. */
+/** The part's handles on the preview, in Tab order round it (ConvertImage card): four corners, four edge bars. */
 export const CROP_HANDLES = ['topLeft', 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left'] as const
 export type CropHandle = (typeof CROP_HANDLES)[number]
 
-/** The whole picture as a crop: where By Pixel to bead ratio starts. */
+/** The whole picture as the part: weave Whole picture. */
 export function fullCrop({ width, height }: ImageSize): PixelCrop {
   return { x: 0, y: 0, width, height }
 }
 
-/** The Schema a ratio makes of a crop: one bead per block, a part block at the edge counting as a whole one. */
-export function ratioGrid(crop: PixelCrop, ratio: PixelToBeadRatio): GridDimensions {
-  const per = pixelsPerBead(ratio)
-  // The allowance keeps float noise on an exact multiple from adding a bead.
-  return { columns: Math.max(1, Math.ceil(crop.width / per - 1e-9)), rows: Math.max(1, Math.ceil(crop.height / per - 1e-9)) }
-}
+/** The fewest pixels a part has on a side (ConvertImage card). */
+const MIN_PART_PX = 8
 
-/** The pixels one block is: n for n:1, one pixel for 1:n. */
-function blockPx(ratio: PixelToBeadRatio): number {
-  return Math.max(1, pixelsPerBead(ratio))
-}
-
-/** An edge at the nearest block boundary, counted from the picture's corner, or at the picture's own far edge. */
-function snapEdge(at: number, block: number, length: number): number {
-  const onBlock = Math.round(at / block) * block
-  const snapped = Math.abs(length - at) < Math.abs(onBlock - at) ? length : onBlock
-  return clamp(snapped, 0, length)
-}
-
-/** A crop snapped to whole pixel blocks (ConvertImage card), so no pixel is cut in half: each edge on a block boundary
- * or the picture's edge, at least one block, all on the picture. */
-export function snapCrop(crop: PixelCrop, ratio: PixelToBeadRatio, image: ImageSize): PixelCrop {
-  const block = blockPx(ratio)
+/** A part a whole number of pixels, on the picture, at least MIN_PART_PX a side. */
+function clampPart(part: PixelCrop, image: ImageSize): PixelCrop {
   const axis = (start: number, size: number, length: number) => {
-    const first = Math.min(snapEdge(start, block, length), Math.max(0, length - block))
-    const last = Math.max(snapEdge(start + size, block, length), Math.min(length, first + block))
-    return [first, last - first] as const
+    const least = Math.min(MIN_PART_PX, length)
+    const extent = clamp(Math.round(size), least, length)
+    return [clamp(Math.round(start), 0, length - extent), extent] as const
   }
-  const [x, width] = axis(crop.x, crop.width, image.width)
-  const [y, height] = axis(crop.y, crop.height, image.height)
+  const [x, width] = axis(part.x, part.width, image.width)
+  const [y, height] = axis(part.y, part.height, image.height)
   return { x, y, width, height }
 }
 
-/** Under this many pixels on its long side a picture is likely pixel art, so the wizard starts By Pixel to bead ratio. */
-const SMALL_PICTURE_PX = 400
-/** The most beads the starting ratio gives on the long side. */
+/** Where A part starts (ConvertImage card): 10% in from each edge, so there is something to drag at once. */
+export function partInset(image: ImageSize): PixelCrop {
+  const inX = Math.round(image.width * 0.1)
+  const inY = Math.round(image.height * 0.1)
+  return clampPart({ x: inX, y: inY, width: image.width - inX * 2, height: image.height - inY * 2 }, image)
+}
+
+/** The edges a handle holds. */
+function edgesOf(handle: CropHandle) {
+  const lower = handle.toLowerCase()
+  return {
+    left: lower.includes('left'),
+    right: lower.includes('right'),
+    top: handle.startsWith('top'),
+    bottom: handle.startsWith('bottom'),
+  }
+}
+
+/** The part with a handle's edges moved by picture pixels (ConvertImage card): whole pixels, on the picture, never
+ * under MIN_PART_PX a side. */
+export function partMoved(part: PixelCrop, handle: CropHandle, dx: number, dy: number, image: ImageSize): PixelCrop {
+  const edges = edgesOf(handle)
+  let left = part.x
+  let right = part.x + part.width
+  let top = part.y
+  let bottom = part.y + part.height
+  if (edges.left) left = Math.min(left + dx, right - MIN_PART_PX)
+  if (edges.right) right = Math.max(right + dx, left + MIN_PART_PX)
+  if (edges.top) top = Math.min(top + dy, bottom - MIN_PART_PX)
+  if (edges.bottom) bottom = Math.max(bottom + dy, top + MIN_PART_PX)
+  const moved = { x: Math.round(left), y: Math.round(top), width: Math.round(right) - Math.round(left), height: Math.round(bottom) - Math.round(top) }
+  // A moved edge stays put at the picture's edge; the other edges keep their place.
+  return clampPart(
+    {
+      x: edges.left ? clamp(moved.x, 0, part.x + part.width - MIN_PART_PX) : moved.x,
+      y: edges.top ? clamp(moved.y, 0, part.y + part.height - MIN_PART_PX) : moved.y,
+      width: edges.left ? part.x + part.width - clamp(moved.x, 0, part.x + part.width - MIN_PART_PX) : Math.min(moved.width, image.width - moved.x),
+      height: edges.top ? part.y + part.height - clamp(moved.y, 0, part.y + part.height - MIN_PART_PX) : Math.min(moved.height, image.height - moved.y),
+    },
+    image,
+  )
+}
+
+/** Beads on a side beyond which converting and drawing take longer: the Large Schema note, and where the Width slider
+ * stops (ConvertImage card). */
+export const LARGE_SCHEMA_BEADS = 300
+
+/** Whether a Schema is large enough for the Large Schema note: more than LARGE_SCHEMA_BEADS on a side. */
+export function isLargeSchema({ columns, rows }: GridDimensions): boolean {
+  return columns > LARGE_SCHEMA_BEADS || rows > LARGE_SCHEMA_BEADS
+}
+
+/** The least Width the slider offers. */
+const MIN_WIDTH_BEADS = 8
+/** Under this many pixels wide a part may be made up to ENLARGE_TIMES wider than its pixels, so small pixel art can
+ * still be made bigger. */
+const ENLARGE_UNDER_PX = 75
+const ENLARGE_TIMES = 4
+/** The blocks a mark may stand for: one bead for a whole n × n pixels. */
+const BLOCKS_PX = [32, 16, 8, 4, 2, 1]
+/** The enlargements a mark may stand for: one pixel for a whole k × k beads. */
+const ENLARGEMENTS = [2, 4]
+
+interface WidthRange {
+  min: number
+  max: number
+}
+
+/** The Width slider's ends for a part (ConvertImage card): 8 beads to one bead per pixel, at most the Large Schema
+ * line; a part under 75 px wide goes up to 4× its pixels.
+ * @internal Reached through sizingFor; its test checks the cap and the 4× rule on their own. */
+export function widthRange(part: ImageSize): WidthRange {
+  const max = Math.max(1, Math.min(LARGE_SCHEMA_BEADS, part.width < ENLARGE_UNDER_PX ? part.width * ENLARGE_TIMES : part.width))
+  return { min: Math.min(MIN_WIDTH_BEADS, max), max }
+}
+
+/** A mark on the Width slider: a Width where one bead is a whole n × n pixels (pixelsPerBead n), or, enlarging, one
+ * pixel a whole k × k beads (pixelsPerBead 1/k). */
+interface SizeMark {
+  width: number
+  pixelsPerBead: number
+}
+
+/** The marks of a part, narrowest first: every block its width divides by and every enlargement, inside the range.
+ * @internal Reached through sizingFor; its test checks which blocks and enlargements make a mark on their own. */
+export function sizeMarks(part: ImageSize): SizeMark[] {
+  const { min, max } = widthRange(part)
+  const inRange = (mark: SizeMark) => mark.width >= min && mark.width <= max
+  const blocks = BLOCKS_PX.filter((n) => part.width % n === 0).map((n) => ({ width: part.width / n, pixelsPerBead: n }))
+  const enlarged = ENLARGEMENTS.map((k) => ({ width: part.width * k, pixelsPerBead: 1 / k }))
+  return [...blocks, ...enlarged].filter(inRange)
+}
+
+/** The beads a part makes on a mark: its pixels divided by the block both ways, a part block at the edge counting as
+ * a whole one. The allowance keeps float noise on an exact multiple from adding a bead. */
+function markGrid(part: ImageSize, mark: SizeMark): GridDimensions {
+  return { columns: mark.width, rows: Math.max(1, Math.ceil(part.height / mark.pixelsPerBead - 1e-9)) }
+}
+
+/** What the Size section asks the rule: the part, the Width in beads, and the Bead the height follows between marks. */
+export interface SizingInput {
+  part: ImageSize
+  width: number
+  bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
+  technique: Technique
+  techniqueSettings?: TechniqueSettings
+}
+
+/** What the rule gives: the slider's ends and marks, the Width kept inside them, the grid, the mark it sits on if
+ * any, and the picture pixels each bead stands for along each side. */
+export interface Sizing {
+  range: WidthRange
+  marks: SizeMark[]
+  width: number
+  grid: GridDimensions
+  mark?: SizeMark
+  pixelsPerBead: { x: number; y: number }
+}
+
+/** The one sizing rule (ticket 0747): on a mark the grid is the pixel grid, exact; between marks the height follows the
+ * picture's physical shape through the Bead (proportionalSide). */
+export function sizingFor({ part, width, bead, technique, techniqueSettings }: SizingInput): Sizing {
+  const range = widthRange(part)
+  const marks = sizeMarks(part)
+  const kept = clamp(Math.round(width), range.min, range.max)
+  const mark = marks.find((candidate) => candidate.width === kept)
+  if (mark) {
+    return { range, marks, width: kept, grid: markGrid(part, mark), mark, pixelsPerBead: { x: mark.pixelsPerBead, y: mark.pixelsPerBead } }
+  }
+  const grid = { columns: kept, rows: proportionalSide(part, bead, technique, { columns: kept }, techniqueSettings) }
+  return { range, marks, width: kept, grid, pixelsPerBead: { x: part.width / grid.columns, y: part.height / grid.rows } }
+}
+
+/** The most beads the starting Width gives on the long side. */
 const STARTING_MAX_BEADS = 150
 
-/** The wizard's first proposal for a picture (spec 0645): By Pixel to bead ratio for a small picture, By size for a
- * larger one, at the preset giving the most beads up to 150 on the long side, else 1:1. */
-export function startingProposal(image: ImageSize): { mode: SizeMode; ratio: PixelToBeadRatio } {
-  const long = Math.max(image.width, image.height)
-  const fitting = RATIO_PRESETS.find((ratio) => Math.ceil(long / pixelsPerBead(ratio)) <= STARTING_MAX_BEADS)
-  return { mode: long < SMALL_PICTURE_PX ? 'ratio' : 'size', ratio: fitting ?? { pixels: 1, beads: 1 } }
+/** The wizard's first proposal (ConvertImage card): one bead per pixel where that mark is in range and keeps inside
+ * the Large Schema line both ways, as pixel art is drawn at the bead count it wants; else the largest mark giving at
+ * most 150 beads on the long side; with no such mark, 150 beads on the long side, or the max where that is smaller. */
+export function startingWidth(part: ImageSize): number {
+  const { min, max } = widthRange(part)
+  const marks = sizeMarks(part)
+  const exact = marks.find((mark) => mark.pixelsPerBead === 1 && !isLargeSchema(markGrid(part, mark)))
+  if (exact) return exact.width
+  const fitting = marks.filter((mark) => {
+    const grid = markGrid(part, mark)
+    return Math.max(grid.columns, grid.rows) <= STARTING_MAX_BEADS
+  })
+  const best = fitting.at(-1)
+  if (best) return best.width
+  const longSide = part.width >= part.height ? STARTING_MAX_BEADS : Math.round((STARTING_MAX_BEADS * part.width) / part.height)
+  return clamp(longSide, min, max)
 }
 
-/** The starting size By size: the starting ratio's Schema, or the picture's shape at 150 beads on its long side. */
-export function startingSize(image: ImageSize, bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>, technique: Technique): GridDimensions {
-  const grid = ratioGrid(fullCrop(image), startingProposal(image).ratio)
-  if (Math.max(grid.columns, grid.rows) <= STARTING_MAX_BEADS) return grid
-  return image.width >= image.height
-    ? { columns: STARTING_MAX_BEADS, rows: proportionalSide(image, bead, technique, { columns: STARTING_MAX_BEADS }) }
-    : { columns: proportionalSide(image, bead, technique, { rows: STARTING_MAX_BEADS }), rows: STARTING_MAX_BEADS }
-}
-
-/** Keep picture proportions (spec 0645): the other side, in whole beads, of a Frame with the picture's physical shape
- * through the Bead and the Technique's row spacing, from the side that was set. */
+/** The other side, in whole beads, of a Frame with the picture's physical shape through the Bead and the Technique's
+ * row spacing, from the side that was set (spec 0645).
+ * @internal Only sizingFor calls it; its test checks the shape on each Technique and a non-square Bead directly. */
 export function proportionalSide(
   image: ImageSize,
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>,
@@ -138,57 +216,6 @@ export function proportionalSide(
     ? (side.columns * step.across * image.height) / image.width / step.down
     : (side.rows * step.down * image.width) / image.height / step.across
   return Math.max(1, Math.round(beads))
-}
-
-/** The ratio nearest a number of pixels per bead (spec 0645's mode switch): n:1 from one pixel per bead up, 1:n below,
- * each side at most CUSTOM_RATIO_MAX. */
-export function nearestRatio(pixelsPerBeadValue: number): PixelToBeadRatio {
-  if (pixelsPerBeadValue >= 1) return { pixels: clamp(Math.round(pixelsPerBeadValue), 1, CUSTOM_RATIO_MAX), beads: 1 }
-  return { pixels: 1, beads: clamp(Math.round(1 / pixelsPerBeadValue), 1, CUSTOM_RATIO_MAX) }
-}
-
-/** What a size is as a ratio, picture pixels per bead along each side: the result line's "1 bead ≈ 4.3 × 3.5 px". */
-export function ratioOfSize(crop: PixelCrop, grid: GridDimensions): { x: number; y: number } {
-  return { x: crop.width / grid.columns, y: crop.height / grid.rows }
-}
-
-/** The part of the picture under the Frame By size, in picture pixels: what a switch to By Pixel to bead ratio crops to. */
-export function cropForView(image: ImageSize, frame: FrameSizeMm, view: FramingView): PixelCrop {
-  const width = Math.min(image.width, frame.widthMm / view.scaleMm)
-  const height = Math.min(image.height, frame.heightMm / view.scaleMm)
-  return {
-    x: clamp(-view.offsetXMm / view.scaleMm, 0, image.width - width),
-    y: clamp(-view.offsetYMm / view.scaleMm, 0, image.height - height),
-    width,
-    height,
-  }
-}
-
-/** The zoom and pan that put a crop under the Frame By size, centred on it and still covering the Frame: what a switch
- * from By Pixel to bead ratio carries across. */
-export function viewForCrop(image: ImageSize, frame: FrameSizeMm, crop: PixelCrop): { zoom: number; pan: PanFraction } {
-  const zoom = clampConvertZoom(Math.max(frame.widthMm / crop.width, frame.heightMm / crop.height) / coverScaleMm(image, frame))
-  const scaleMm = coverScaleMm(image, frame) * zoom
-  const pan = (center: number, frameMm: number, length: number, fallback: number) => {
-    const range = length * scaleMm - frameMm
-    return range <= 1e-9 ? fallback : clamp((center * scaleMm - frameMm / 2) / range, 0, 1)
-  }
-  return {
-    zoom,
-    pan: {
-      x: pan(crop.x + crop.width / 2, frame.widthMm, image.width, CENTERED_PAN.x),
-      y: pan(crop.y + crop.height / 2, frame.heightMm, image.height, CENTERED_PAN.y),
-    },
-  }
-}
-
-/** Beads on a side beyond which converting and drawing take longer: the Large Schema note (spec 0645). The preview
- * draws at most PREVIEW_MAX_CELLS around the Frame, so the Frame itself is what grows. */
-export const LARGE_SCHEMA_BEADS = 300
-
-/** Whether a Schema is large enough for the Large Schema note: more than LARGE_SCHEMA_BEADS on a side. */
-export function isLargeSchema({ columns, rows }: GridDimensions): boolean {
-  return columns > LARGE_SCHEMA_BEADS || rows > LARGE_SCHEMA_BEADS
 }
 
 /** A picture's pixels moved to new places: `from` names the source pixel of each target pixel. */
@@ -217,7 +244,7 @@ export function flipPicture(image: PixelData): PixelData {
   return remap(image, image.width, image.height, (x, y) => y * image.width + (image.width - 1 - x))
 }
 
-/** The words the result line is made of (PixelToBeadRatio card), in the app's language. */
+/** The words the result line is made of (ConvertImage card), in the app's language. */
 export interface ResultLabels {
   /** "{columns}×{rows} beads" */
   grid: string
@@ -231,41 +258,26 @@ export interface ResultLabels {
   cm: string
 }
 
-/** What a conversion makes, for the result line: its grid, through the Bead, and the ratio, given By Pixel to bead ratio
- * or read from the crop By size. */
+/** What a conversion makes, for the result line: the sizing, measured through the Bead. */
 export interface ResultInput {
-  grid: GridDimensions
   bead: Bead
   technique: Technique
-  ratio?: PixelToBeadRatio
-  crop?: PixelCrop
+  sizing: Pick<Sizing, 'grid' | 'mark' | 'pixelsPerBead'>
 }
 
-/** The result line both Size modes share (spec 0645): "32×24 beads", "5.1 × 3.1 cm" and "1 bead = 8 × 8 px", with "≈"
- * when a size is not a whole ratio. */
-export function convertResult({ grid, bead, technique, ratio, crop }: ResultInput, labels: ResultLabels, locale: Locale = 'en'): { grid: string; measured: string; ratio: string } {
-  const exactRatio = ratio ?? (crop && wholeRatio(ratioOfSize(crop, grid)))
+/** The result line (ConvertImage card): "32×24 beads", "5.1 × 3.1 cm" and "1 bead = 8 × 8 px" on a mark, "1 px = 2 × 2
+ * beads" on an enlarging one, "1 bead ≈ 4.3 × 3.5 px" between marks. */
+export function convertResult({ bead, technique, sizing }: ResultInput, labels: ResultLabels, locale: Locale = 'en'): { grid: string; measured: string; ratio: string } {
+  const { grid, mark, pixelsPerBead } = sizing
   // Pixels per bead read as formatMm reads a length: one decimal at most, in the language's decimal sign.
   const oneDecimal = (value: number) => formatMm(value, locale)
-  let ratioText = ''
-  if (exactRatio) {
-    ratioText = exactRatio.beads > 1 ? fillBlanks(labels.perPixel, { n: exactRatio.beads }) : fillBlanks(labels.exact, { n: exactRatio.pixels })
-  } else if (crop) {
-    const { x, y } = ratioOfSize(crop, grid)
-    ratioText = fillBlanks(labels.approximate, { x: oneDecimal(x), y: oneDecimal(y) })
-  }
+  let ratioText: string
+  if (!mark) ratioText = fillBlanks(labels.approximate, { x: oneDecimal(pixelsPerBead.x), y: oneDecimal(pixelsPerBead.y) })
+  else if (mark.pixelsPerBead < 1) ratioText = fillBlanks(labels.perPixel, { n: Math.round(1 / mark.pixelsPerBead) })
+  else ratioText = fillBlanks(labels.exact, { n: mark.pixelsPerBead })
   return {
     grid: fillBlanks(labels.grid, { columns: grid.columns, rows: grid.rows }),
     measured: formatSizeMm(estimatedSizeMm(grid, bead, technique), labels, locale),
     ratio: ratioText,
   }
-}
-
-/** The ratio a size is when it is a whole one: the same whole number of pixels per bead each way, or of beads per
- * pixel. */
-function wholeRatio({ x, y }: { x: number; y: number }): PixelToBeadRatio | undefined {
-  const same = (a: number, b: number) => Math.abs(a - b) < 1e-9
-  if (!same(x, y)) return undefined
-  if (x >= 1) return same(x, Math.round(x)) ? { pixels: Math.round(x), beads: 1 } : undefined
-  return same(1 / x, Math.round(1 / x)) ? { pixels: 1, beads: Math.round(1 / x) } : undefined
 }

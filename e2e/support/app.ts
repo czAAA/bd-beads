@@ -155,20 +155,16 @@ export async function gridBox(page: Page): Promise<Box> {
   return projectBox(page, box)
 }
 
-/** Opens the Convert image wizard from the New Project form with a picture (spec 0645) and, given a size, states it By
- * size in beads, Keep picture proportions off. */
-export async function convertPicture(page: Page, buffer: Buffer, size?: { columns: number; rows: number }): Promise<void> {
+/** Opens the Convert image wizard from the New Project form with a picture (spec 0645), read and shown. */
+export async function convertPicture(page: Page, buffer: Buffer): Promise<void> {
   await page.getByTestId('convert-image').click()
   await page.getByTestId('convert-choose-file').setInputFiles({ name: 'fixture.png', mimeType: 'image/png', buffer })
-  await page.getByTestId('found-color').first().waitFor()
-  if (!size) return
-  await page.getByTestId('convert-size-mode').locator('[data-value="size"]').click()
-  await page.getByTestId('convert-size-unit').locator('[data-value="beads"]').click()
-  const keep = page.getByTestId('convert-keep-proportions')
-  if ((await keep.getAttribute('aria-checked')) === 'true') await keep.click()
-  await page.getByTestId('convert-width').fill(String(size.columns))
-  await page.getByTestId('convert-height').fill(String(size.rows))
-  await page.getByTestId('convert-height').blur()
+  await page.getByTestId('convert-result').waitFor()
+}
+
+/** Sets the wizard's Width slider to a number of beads (ticket 0747); the height follows the picture. */
+export async function setConvertWidth(page: Page, beads: number): Promise<void> {
+  await page.getByTestId('convert-width-range').fill(String(beads))
 }
 
 /** The Project the app has saved, read back the way it is stored. Edits reach the device on their own (ticket 523). */
