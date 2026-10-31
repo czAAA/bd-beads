@@ -111,8 +111,8 @@ const PLANS = SECTIONS.indexOf('plans')
 function onPageScroll() {
   const page = pageEl.value!
   const shown = sectionAt(page.scrollTop, page.clientHeight)
-  freeGrowth.past.value = Math.max(0, page.scrollTop - PLANS * page.clientHeight)
-  if (freeGrowth.past.value > 0) snapOff.value = true
+  freeGrowth.scrolledPast(page.scrollTop - PLANS * page.clientHeight)
+  if (freeGrowth.growing.value) snapOff.value = true
   if (shown === section.value) return
   section.value = shown
   if (shown !== PLANS) snapOff.value = false

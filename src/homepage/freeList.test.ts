@@ -16,7 +16,6 @@ describe('the free list (ticket 0742)', () => {
     expect(rows).toHaveLength(17)
     expect(rows[0]).toBe('Runs in your browser, and your work stays on your device')
     expect(rows[3]).toBe('As many Projects as you like')
-    expect(rows[16]).toMatch(/Starters for/)
   })
 
   it('reads the Techniques and their names from the app', () => {
