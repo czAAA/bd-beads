@@ -7,6 +7,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import type { RowPress } from '../../composables/project/useRowOps'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import ProgressTrack from './ProgressTrack.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -55,17 +56,12 @@ const position = computed(() => rowProgressPosition(props.project))
 /** Rows before the current one are finished. */
 const finishedShare = computed(() => (position.value.total > 0 ? position.value.current / position.value.total : 0))
 
-/** The fill and the spark at its edge are the track's width moved left by what is still to weave (ProgressBar card,
- * ticket 0730): they grow by `transform`. */
-const fillShift = computed(() => ({ transform: `translateX(${(finishedShare.value - 1) * 100}%)` }))
-
-/** The spark's flare on each Row done (ticket 0730): two names for one animation, swapped so the next press restarts it;
- * none until a press here, so a form shown afresh doesn't flare. Row not done moves it back with none. */
-const flare = ref<'' | 'row-progress__spark--flaring' | 'row-progress__spark--flaring-alt'>('')
+/** Each Row done flares the track's spark (ticket 0730), wherever it was pressed; Row not done moves it with none. */
+const flares = ref(0)
 watch(
   () => props.rowPress,
   (press) => {
-    if (press?.done) flare.value = flare.value === 'row-progress__spark--flaring' ? 'row-progress__spark--flaring-alt' : 'row-progress__spark--flaring'
+    if (press?.done) flares.value += 1
   },
 )
 
@@ -164,31 +160,19 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     <p v-else-if="item === 'counter'" class="row-progress__counter" :data-testid="`${testid}-compact-position`">
       {{ shownRow }}/{{ position.total }}
     </p>
-    <div
+    <ProgressTrack
       v-else-if="item === 'track'"
       class="row-progress__track"
       :class="{ 'row-progress__track--margin': margin }"
-      role="progressbar"
-      :aria-label="t.rowProgress.finishedLabel"
-      aria-valuemin="0"
-      :aria-valuemax="position.total"
-      :aria-valuenow="position.current"
-      :data-testid="`${testid}-track`"
-    >
-      <!-- The spark rides the fill's edge (ticket 0730): its tail inside the clipped groove, its dot outside so its flare and halo show. -->
-      <span class="row-progress__groove">
-        <span class="row-progress__fill" :style="fillShift" />
-        <span class="row-progress__spark" :class="[flare, { 'row-progress__spark--compact': margin }]" :style="fillShift" :hidden="position.current === 0" aria-hidden="true"><b /></span>
-      </span>
-      <span
-        class="row-progress__spark"
-        :class="[flare, { 'row-progress__spark--compact': margin }]"
-        :style="fillShift"
-        :hidden="position.current === 0"
-        aria-hidden="true"
-        :data-testid="`${testid}-spark`"
-      ><i /></span>
-    </div>
+      :share="finishedShare"
+      :flares="flares"
+      :compact="margin"
+      :label="t.rowProgress.finishedLabel"
+      :min="0"
+      :max="position.total"
+      :now="position.current"
+      :testid="testid"
+    />
     <span v-else-if="item === 'divider'" class="row-progress__divider" aria-hidden="true" />
     <!-- Row not done and Row done follow Row direction with their label and arrow (ticket 411); on the margin Row not
       done is its arrow alone, named by the label, and the smaller forms leave it to the Progress bar. -->
@@ -298,126 +282,10 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   transform: rotate(90deg);
 }
 
-.row-progress__track {
-  position: relative;
-  flex: 1 1 auto;
-  min-width: var(--space-32);
-  height: var(--track-height);
-}
-
-.row-progress__groove {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: var(--track);
-  border-radius: var(--radius-full);
-}
-
 /* On the margin the track is 64px (MarginSheet card). */
 .row-progress__track--margin {
   flex: none;
   width: var(--margin-track);
-}
-
-.row-progress__fill {
-  display: block;
-  height: 100%;
-  background: var(--track-fill);
-  border-radius: inherit;
-  transition: transform var(--duration-base) var(--ease-standard);
-}
-
-/* The spark (ProgressBar card, ticket 0730; `.bb-spark` in bundle.css, whose halo and tail stretch it copies): a dot
- * with a halo and a tail fading back along the fill, riding its edge; hidden, not removed, before the first pass. */
-.row-progress__spark {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  transition: transform var(--duration-base) var(--ease-standard);
-}
-
-.row-progress__spark[hidden] {
-  display: block;
-  opacity: 0;
-}
-
-.row-progress__spark > b {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: var(--spark-tail);
-  height: 100%;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--spark-core) 85%, transparent));
-  border-radius: var(--radius-full);
-  transform-origin: right center;
-}
-
-.row-progress__spark > i {
-  position: absolute;
-  top: 50%;
-  right: calc(var(--spark-size) / -2);
-  width: var(--spark-size);
-  height: var(--spark-size);
-  margin-top: calc(var(--spark-size) / -2);
-  background: var(--spark-core);
-  border-radius: 50%;
-  box-shadow: 0 0 8px 3px var(--spark-glow);
-}
-
-/* On the margin's track, the compact size (MarginSheet card). */
-.row-progress__spark--compact {
-  --spark-size: var(--spark-size-compact);
-  --spark-tail: var(--spark-tail-compact);
-}
-
-.row-progress__spark--flaring > i {
-  animation: row-progress-flare var(--spark-flare-duration) var(--ease-out) both;
-}
-
-.row-progress__spark--flaring-alt > i {
-  animation: row-progress-flare-alt var(--spark-flare-duration) var(--ease-out) both;
-}
-
-.row-progress__spark--flaring > b {
-  animation: row-progress-tail var(--spark-flare-duration) var(--ease-out) both;
-}
-
-.row-progress__spark--flaring-alt > b {
-  animation: row-progress-tail-alt var(--spark-flare-duration) var(--ease-out) both;
-}
-
-@keyframes row-progress-flare {
-  30% {
-    transform: scale(var(--spark-flare));
-  }
-}
-
-@keyframes row-progress-flare-alt {
-  30% {
-    transform: scale(var(--spark-flare));
-  }
-}
-
-@keyframes row-progress-tail {
-  0% {
-    transform: scaleX(1.8);
-  }
-
-  100% {
-    transform: none;
-    opacity: 0.7;
-  }
-}
-
-@keyframes row-progress-tail-alt {
-  0% {
-    transform: scaleX(1.8);
-  }
-
-  100% {
-    transform: none;
-    opacity: 0.7;
-  }
 }
 
 /* A 1px rule between the switch, the counter and the steps (MarginSheet card). */
@@ -487,22 +355,6 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     gap: var(--space-2);
     justify-content: center;
     font: var(--type-small);
-  }
-}
-
-/* Reduced motion: the fill steps, and the spark neither flares nor trails (ticket 0730). */
-@media (prefers-reduced-motion: reduce) {
-  .row-progress__fill,
-  .row-progress__spark {
-    transition: none;
-  }
-
-  .row-progress__spark > i {
-    animation: none !important;
-  }
-
-  .row-progress__spark > b {
-    display: none;
   }
 }
 </style>

@@ -10,11 +10,12 @@ import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
 
-// Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
-// canvas box's bottom. On whenever there is a Frame (ADR 0055); without one it offers Fit to drawing. With a Frame its
-// controls are RowProgressControls, the same the margin sheet carries (ticket 0657), moving the pointer like the hotkeys.
+// Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control along the canvas box's
+// bottom; with no Frame (ADR 0055) it offers Fit to drawing, with one its RowProgressControls (ticket 0657). The Homepage
+// fills the same bar with its sections through the slot, with no Project (ticket 0739).
 const props = withDefaults(defineProps<{
-  project: Project
+  /** The Project whose Row progress it shows; none where the slot fills the bar. */
+  project?: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): pressed while it does. */
   rowHighlight?: boolean
   /** The last press of Row done or Row not done (ticket 0730): Row done flares the track's spark. */
@@ -41,11 +42,12 @@ const fitFrame = controlAction('fit-to-drawing')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
-const hasFrame = computed(() => frameOf(props.project) !== undefined)
+const hasFrame = computed(() => props.project !== undefined && frameOf(props.project) !== undefined)
 </script>
 
 <template>
   <div ref="rootEl" class="progress-bar no-page-pan" data-testid="progress-bar" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
+    <slot>
     <template v-if="!hasFrame">
       <!-- Styled like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
       <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
@@ -59,7 +61,7 @@ const hasFrame = computed(() => frameOf(props.project) !== undefined)
       </span>
     </template>
     <RowProgressControls
-      v-else
+      v-else-if="project"
       :project="project"
       :row-highlight="rowHighlight"
       :row-press="rowPress"
@@ -70,6 +72,7 @@ const hasFrame = computed(() => frameOf(props.project) !== undefined)
       @toggle-row-direction="emit('toggle-row-direction')"
       @toggle-row-highlight="emit('toggle-row-highlight')"
     />
+    </slot>
   </div>
 </template>
 

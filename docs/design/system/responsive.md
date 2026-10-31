@@ -48,7 +48,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 ## Header menu and Homepage (v15)
 
 - **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0046), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
-- **Homepage:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Homepage card.
+- **Homepage:** the one page outside the editor: one canvas box mid-page (at most 1120 × 880, 8px from the edge on a phone, 24px from 744) whose sections turn as the page scrolls (ticket 0739). The features carousel is a list beside a large example from 1024 and a row of tabs above it below; on a phone the plan tiles scroll sideways, and a section taller than the box scrolls inside itself. See the Homepage card.
 
 ## Open canvas and Frame (v16)
 

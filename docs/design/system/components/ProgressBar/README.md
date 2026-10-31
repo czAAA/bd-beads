@@ -1,6 +1,6 @@
 # ProgressBar
 
-The bar along the canvas box's bottom edge holding every Row progress control. It is always shown, at every width including under 1024px, whatever the Pattern's shape. Its height is its tallest item (the large Row done / Row not done buttons, 38px) plus 1px above and 1px below, 40px (ticket 544; it was 48px); `--progress-height` (controls.css) is the same rule for the Homepage's empty Canvas footer. It has a 1px edge on its left, right and top, and its bottom corners take the canvas box's radius (`radius-lg`, `--canvas-box-radius`).
+The bar along the canvas box's bottom edge holding every Row progress control. It is always shown, at every width including under 1024px, whatever the Pattern's shape. Its height is its tallest item (the large Row done / Row not done buttons, 38px) plus 1px above and 1px below, 40px (ticket 544; it was 48px); `--progress-height` (controls.css). It has a 1px edge on its left, right and top, and its bottom corners take the canvas box's radius (`radius-lg`, `--canvas-box-radius`).
 
 Left to right, padding 0 12 0 16, gap 12, top divider `box-muted` at 22%:
 1. **Remove frame (ticket 426)** was a box button here until ticket 0455: it is now the cross on the Frame's corner (Frame card), and still asks first. Row progress is on whenever the Project has a Frame, so there is no switch and no `P` key.
@@ -22,6 +22,8 @@ Row done and Row not done show text and follow Row direction: top to bottom they
 
 **A Custom frame (ticket 0594).** Row progress steps through it by its Row order: a Triangle or Warped Square round by round from the centre, a Kite row by row from its point, a Star or Kaleidocycle part by part in making order and then through the joins, a Fringe earring (ticket 0597) through its top row by row from the base and then strand by strand from the left. The position reads its pass in place of "Row 3 of 20 · Top to bottom": "Round 3 of 9" or "Row 4 of 21", and for a part or a join "Part 2, round 3 · 8 of 20" or "Zip 1–2 · 16 of 20", on a Fringe earring "Row 2 · 2 of 13" or "Strand 3 · 9 of 13", counted of all its passes (same spans and type as the row's). Turn row direction is not offered. On the Canvas its finished rounds fade and the current one is lit and ringed as rows are, each bead's ring turned with it.
 
+**On the Homepage too (ticket 0739; Homepage card):** the same bar, with the Homepage's sections in place of rows: the counter, the section's name, the track a third per section with its spark, Back where Row not done sits and Next where Row done sits. A step forward flares the spark, a step back moves it with none, and the last section plays Pattern done's burst at the track's end.
+
 **In the margin too (ticket 0655; MarginSheet card):** the Frame's margin sheet carries the same Row progress component in its top band, compact: Turn row direction, Reset progress, Row highlight, the counter and a 64px track, Row not done (icon only) and Row done. It is one component in two places tracking the same progress: a press in either moves the one pointer, and both show it. The bar stays.
 
 Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.
@@ -30,3 +32,4 @@ Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.
 
 - **Track:** a groove inside the track's box holds the fill and the spark's tail, clipped to its rounded ends; the spark's dot sits in a copy outside it, so its halo and flare are not cut. The fill is the track's width moved left by the share still to weave (`translateX`), so it grows by `transform`; the spark moves the same way.
 - **Flare:** two names for one animation are swapped on each Row done so the next press restarts it; a track shown afresh (the margin changing form) does not flare until the next press.
+- **One track (ticket 0739):** the track, its fill and spark are one component (`ProgressTrack`), told the share done and counting the steps forward; Row progress's bar and margin and the Homepage's bar all draw it. The bar's frame takes other content in place of Row progress's, so the Homepage's bar is this bar.

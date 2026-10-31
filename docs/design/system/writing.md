@@ -227,7 +227,7 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Made by one family | Делает одна семья |
 | openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks. | openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо. |
 | Buy me a coffee | Угостить кофе |
-| plans · Three ways to use it | тарифы · Три способа работать |
+| Three ways to use it (the "plans" label is gone, ticket 0739) | Три способа работать |
 | Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
 | you are here (note) | вы здесь |
 | No account · Free · no sign-up · Draw, count and weave on this device. Nothing to sign up for. · Open the editor | Без аккаунта · Бесплатно · без регистрации · Рисуйте, считайте и плетите на этом устройстве. Регистрироваться не нужно. · Открыть редактор |
@@ -236,6 +236,18 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | what you get · everything without an account, plus · everything in Free account, plus | что входит · всё без аккаунта, плюс · всё из бесплатного аккаунта, плюс |
 
 Plan contents are placeholders until paid features exist.
+
+The scroll story (ticket 0739): the Progress bar's words, the free list and its roll. The free list names the app's features in the words the app uses for them; every shipped language has it (`homepage.plans.tiles[0].items`).
+
+| English | Russian |
+| --- | --- |
+| Sections (the track's name) · Back · Next | Разделы · Назад · Дальше |
+| This is the first section. · This is the last section. (why Back or Next is off) | Это первый раздел. · Это последний раздел. |
+| 23 · free | 23 · бесплатно |
+| Everything free, scroll to see all (the window's name) | Всё бесплатное, прокрутите, чтобы увидеть всё |
+| Roll the list back up (the curl) | Свернуть список |
+| Loom · Peyote · Brick stitch · Paint, Fill and Erase · Select, copy and paste · Mirror · Undo for every step · Named Pieces · Convert image, up to 14 colors · Row progress · Beads needed, in grams too · Your own Palette · Pick color from Canvas · Frame and Rulers · PDF export · PNG export · Project file · Projects saved on this device · Light, dark and high contrast · Seven languages · Works offline · Keyboard shortcuts · No sign-up | Ткачество · Мозаичное плетение · Кирпичное плетение · Кисть, заливка и ластик · Выделение, копирование и вставка · Отражение · Отмена любого шага · Кусочки с именами · Конвертация изображения, до 14 цветов · Прогресс по рядам · Нужно бисера, и вес в граммах · Своя палитра · Взять цвет с холста · Рамка и линейки · Экспорт в PDF · Экспорт в PNG · Файл проекта · Проекты хранятся на этом устройстве · Светлая, тёмная и контрастная темы · Семь языков · Работает без интернета · Горячие клавиши · Без регистрации |
+| Free account's list: Projects on all your devices · A backup of every Saved Project ("Share a Project by link" is gone) | Проекты на всех устройствах · Резервная копия каждого сохранённого проекта |
 
 ## Copy added in v16
 

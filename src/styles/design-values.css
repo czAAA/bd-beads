@@ -243,6 +243,16 @@
   /* Homepage card: the rolling slogan holds each word, then rolls to the next */
   --slogan-hold: 2200ms;
   --slogan-roll: 650ms;
+  /* Homepage card, scroll story (ticket 0739) */
+  --homepage-box-width: 70rem; /* The canvas box's widest, 1120px. */
+  --homepage-box-height: 55rem; /* The canvas box's tallest, 880px. */
+  --section-turn: 600ms; /* A section slides and fades out as the next rises in. */
+  --section-shift: 3.5rem; /* How far a section slides as it turns, 56px. */
+  --section-scale: 0.985; /* A section shrinks this little as it turns. */
+  --homepage-mark-large: 26.25rem; /* The faint X1 mark beside the box, 420px, at 7%. */
+  --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
+  --free-window: 6.25rem; /* The free list's window in the No account tile, 100px: four rows and the next one fading. */
+  --free-roll-curl: 1.125rem; /* The unrolled list's curled end, 18px. */
   /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress) */
   --row-glint-duration: 380ms; /* BeadBoard card: each bead of the finished pass washes in --row-glint and back. */
   --row-glint-step: 24ms; /* BeadBoard card: the gap between one bead's glint and the next, in the Row direction. */

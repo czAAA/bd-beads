@@ -35,6 +35,7 @@
   --button: #ffffff;
   --button-line: #c7c7c7;
   --box: #fafafa;
+  --page-ground: #ebebeb;
   --box-line: #e5e5e5;
   --box-muted: #6a6a6a;
   --box-button: #00000000;
@@ -96,6 +97,7 @@
   --button: #202020;
   --button-line: #202020;
   --box: #202020;
+  --page-ground: #0a0a0a;
   --box-line: #202020;
   --box-muted: #949494;
   --box-button: #2a2a2a;
@@ -157,6 +159,7 @@
   --button: #ffffff;
   --button-line: #595959;
   --box: #ffffff;
+  --page-ground: #d9d9d9;
   --box-line: #595959;
   --box-muted: #3d3d3d;
   --box-button: #ffffff;
