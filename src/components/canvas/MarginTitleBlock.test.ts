@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import { createProject } from '../../domain/createProject'
@@ -130,6 +131,24 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
       expect(wrapper.find('[data-testid="margin-brick-drop-edit"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
     })
+  })
+
+  // Safari lays out a top-layer popup that sits inside the sheet's scale where it first showed (the top-left corner),
+  // and a field there drops what is typed: every popup the block opens sits in the app shell, outside the scale.
+  it.each([
+    ['name field', '[data-testid="margin-frame-name-edit"]', '[data-testid="margin-frame-name-form"]'],
+    ['maker field', '[data-testid="margin-maker-edit"]', '[data-testid="margin-maker-form"]'],
+    ['Technique list', '[data-testid="margin-technique-picker"] button', '.panel-picker__list'],
+    ['Drop stepper', '[data-testid="margin-brick-drop-edit"]', '[data-testid="margin-brick-drop-popover"]'],
+  ] as const)('opens its %s in the app shell, outside the sheet\'s scale', async (_, pencil, popup) => {
+    const shell = document.body.appendChild(document.createElement('div'))
+    shell.className = 'app-shell'
+    onTestFinished(() => shell.remove())
+    const project = framed({ frame: { ...frameOf(framed())!, technique: 'brick', techniqueSettings: { brickDrop: 2 } } })
+    const wrapper = mount(MarginTitleBlock, { props: { project }, attachTo: shell, global: { stubs: { teleport: false } } })
+    await wrapper.get(pencil).trigger('click')
+    await nextTick()
+    expect(document.querySelector(popup)?.parentElement).toBe(shell)
   })
 
   it('turns Letters on and off, the Frame panel\'s setting', async () => {

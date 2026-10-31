@@ -218,7 +218,7 @@ describe('the Hand tool', () => {
 })
 
 
-describe('an unframed Schema\'s hang tag (ticket 0721)', () => {
+describe('an unframed Schema\'s tag (tickets 0721, 0733)', () => {
   const named = () => unframedProject({ pieceNames: [{ row: 0, column: 0, name: 'Owl' }] })
 
   it('frames its Schema from the paper tag as one Undo step, and Rename opens Name Piece\'s editor', async () => {

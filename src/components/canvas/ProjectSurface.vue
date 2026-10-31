@@ -308,17 +308,22 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
 })
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
 
+/** The clear px between a Piece's tag and the column numbers under it. */
+const TAG_NUMBER_CLEARANCE = 2
+
 /** Where each unframed Schema is on screen (ticket 0721), from the named Pieces the rulers hold through a stroke: told
- * to their hang tags. */
+ * to their tags. */
 const schemaAnchors = computed<SchemaAnchors | undefined>(() => {
   if (size.value.width === 0) return undefined
-  const outset = rulers.value.scale.pieceOutset
+  const { scale } = rulers.value
+  const outset = scale.pieceOutset
+  const lift = scale.gap + scale.fontPx + TAG_NUMBER_CLEARANCE
   const schemas = unframedSchemas(props.project, pieces.value.named).map(({ name, anchor, row, column, rows, columns }) => {
     const piece = { row, column, rows, columns }
     const shown = leaning.value.screenBox(surface.value.beadBox(piece, 'canvas'))
     return { name, anchor, piece, box: { left: shown.x - outset, top: shown.y - outset, width: shown.width + 2 * outset, height: shown.height + 2 * outset } }
   })
-  return { schemas, viewport: { ...size.value } }
+  return { schemas, viewport: { ...size.value }, lift }
 })
 watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: true, flush: 'post' })
 
