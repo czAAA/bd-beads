@@ -35,12 +35,12 @@ async function setup(picture: PixelData, beadId = 'toho/cube/1.5mm') {
 }
 
 describe('useConvertImageWizard sizing (ticket 0747)', () => {
-  it('starts on the whole picture at the largest mark up to 150 beads, the grid exact on it', async () => {
+  it('starts on the whole picture at one bead per pixel, the grid exact on that mark', async () => {
     const wizard = await setup(flat(32, 32))
     expect(wizard.weave.value).toBe('whole')
-    expect(wizard.sizing.value.width).toBe(128)
-    expect(wizard.sizing.value.mark).toEqual({ width: 128, pixelsPerBead: 0.25 })
-    expect(wizard.dimensions.value).toEqual({ columns: 128, rows: 128 })
+    expect(wizard.sizing.value.width).toBe(32)
+    expect(wizard.sizing.value.mark).toEqual({ width: 32, pixelsPerBead: 1 })
+    expect(wizard.dimensions.value).toEqual({ columns: 32, rows: 32 })
   })
 
   it('follows the picture’s physical shape through the Bead between marks', async () => {
@@ -100,5 +100,14 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     expect(wizard.found.value).toHaveLength(1)
     wizard.setMaxColors(99)
     expect(wizard.maxColors.value).toBe(3)
+  })
+
+  it('offers at most 256 colors of a picture that has more: a pattern, not the picture itself', async () => {
+    // 300 px wide, every column its own color.
+    const data = new Uint8ClampedArray(300 * 4)
+    for (let x = 0; x < 300; x += 1) data.set([x & 255, (x >> 8) * 90, 60, 255], x * 4)
+    const wizard = await setup({ width: 300, height: 1, data })
+    expect(wizard.colorsMax.value).toBe(256)
+    expect(wizard.colorsCapped.value).toBe(true)
   })
 })

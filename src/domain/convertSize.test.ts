@@ -135,9 +135,14 @@ describe('sizingFor', () => {
 })
 
 describe('startingWidth (the starting proposal)', () => {
-  it('is the largest mark giving at most 150 beads on the long side', () => {
+  it('is one bead per pixel where that mark is in range: pixel art opens exact', () => {
+    expect(startingWidth({ width: 32, height: 32 })).toBe(32)
+    expect(startingWidth({ width: 240, height: 160 })).toBe(240)
+  })
+
+  it('is the largest mark giving at most 150 beads on the long side for a picture too wide for one bead per pixel', () => {
     expect(startingWidth({ width: 1920, height: 1080 })).toBe(120)
-    expect(startingWidth({ width: 32, height: 32 })).toBe(128)
+    // 4 px wide goes from 8 to 16 beads: one bead per pixel is under the min, so the ×4 mark.
     expect(startingWidth({ width: 4, height: 2 })).toBe(16)
   })
 
@@ -151,7 +156,7 @@ describe('startingWidth (the starting proposal)', () => {
     expect(startingWidth({ width: 2500, height: 5000 })).toBe(75)
   })
 
-  it('is the max where that is smaller', () => {
+  it('is the max where that is smaller, one bead per pixel not being for a strip taller than the Large Schema line', () => {
     expect(startingWidth({ width: 77, height: 1000 })).toBe(12)
   })
 })

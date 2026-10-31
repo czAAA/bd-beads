@@ -33,7 +33,7 @@ const colorsText = (count: number) => plural(locale.value, count, words.value.co
 const colorsValue = computed(() => colorsText(wizard.maxColors.value))
 const colorsMaxText = computed(() => groupThousands(wizard.colorsMax.value, locale.value))
 const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: colorsMaxText.value }))
-const colorsHint = computed(() => fillBlanks(words.value.colorsHint, { n: colorsMaxText.value }))
+const colorsHint = computed(() => fillBlanks(wizard.colorsCapped.value ? words.value.colorsHintCapped : words.value.colorsHint, { n: colorsMaxText.value }))
 
 const note = computed(() => {
   if (wizard.source.value === 'bead-colors') return t.value.palette.beadColors.approximate
