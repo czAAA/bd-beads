@@ -354,7 +354,7 @@ export const zh: Translations = {
     whatsInside: '功能一览',
     previousFeature: '上一个功能',
     nextFeature: '下一个功能',
-    sections: { label: '章节', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。' },
+    sections: { label: '章节', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}' },
     notes: { onUs: '我们请客' },
     coffee: { title: '一家人做的', text: 'openbeads 由一家人一颗一颗珠子做出来，并且免费。如果它帮你节省了时间，请我喝杯咖啡就是最好的感谢。', button: '请我喝咖啡' },
     plans: {
