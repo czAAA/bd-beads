@@ -1,24 +1,20 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { Bead } from './beads'
-import { computeGridDimensions, type GridDimensions } from './grid'
-import { cellCenter, describeWeave, type Technique } from './weave'
+import type { GridDimensions } from './grid'
+import { cellCenter, type Technique, type TechniqueSettings } from './weave'
 import { channelsOf } from './color'
-import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, ratioLattice, type PreviewLattice } from './imageFraming'
+import { partLattice, type PreviewLattice } from './imageFraming'
 import { reducePictureColors } from './imageColors'
 import { convertFrame, matchFoundColors, sourceTargets } from './convertColors'
 import { BUILT_IN_COLORS } from './palette'
 import type { Grid } from './project'
+import type { PixelCrop } from './convertSize'
 import {
   ACCEPTED_IMAGE_FORMATS,
-  DEFAULT_MAX_IMAGE_COLORS,
   IMAGE_MAX_BYTES,
   IMAGE_MAX_MEGABYTES,
   IMAGE_MAX_MEGAPIXELS,
   IMAGE_MAX_PIXELS,
-  MAX_IMAGE_COLORS,
-  MIN_IMAGE_COLORS,
-  clampMaxImageColors,
   frameColors,
   imageInputAccept,
   formatImageLimits,
@@ -30,17 +26,6 @@ import {
   validateImagePixelCount,
   type PixelData,
 } from './imageConversion'
-
-const cubeBead: Bead = {
-  id: 'test-cube',
-  brand: { id: 'test', name: 'Test' },
-  size: '1.5mm',
-  formFactor: { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' } },
-  widthMm: 1.5,
-  heightMm: 1.5,
-}
-
-const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.3, heightMm: 1.6 }
 
 /** A picture built from one RGBA quadruple per pixel, row by row — the shape a decoded image arrives in. */
 function pixels(width: number, height: number, rgba: number[][]): PixelData {
@@ -81,6 +66,11 @@ function pixelColorAt(image: PixelData, x: number, y: number): string | undefine
   return packed === NO_COLOR ? undefined : packedToHex(packed)
 }
 
+/** The whole picture as the part, each bead standing for the pixels that put the grid over it. */
+function wholePicture(image: PixelData, dimensions: GridDimensions) {
+  return { part: { x: 0, y: 0, width: image.width, height: image.height }, pixelsPerBead: { x: image.width / dimensions.columns, y: image.height / dimensions.rows } }
+}
+
 /** The picture's raw colors for every cell of a lattice, as `#rrggbb` strings. */
 function sampleLattice(input: Parameters<typeof sampleLatticePacked>[0]): (string | undefined)[][] {
   const { lattice } = input
@@ -101,52 +91,17 @@ function convertSampled(sampled: Int32Array, lattice: PreviewLattice, dimensions
   return { grid: convertFrame(raw, reduced, found), imageColors: [...new Set(found.map((color) => color.result!.hex))] }
 }
 
-/** One Convert image, straight from a picture and a framing view: the frame is the whole lattice. */
-function convertImage(
-  input: { image: PixelData; view: ReturnType<typeof framingView>; technique: Technique; bead: Bead; dimensions: GridDimensions; maxColors: number },
-): { grid: Grid; imageColors: string[] } {
-  const lattice: PreviewLattice = { columns: input.dimensions.columns, rows: input.dimensions.rows, frameColumn: 0, frameRow: 0 }
-  return convertSampled(sampleLatticePacked({ ...input, lattice }), lattice, input.dimensions, input.maxColors)
-}
-
-/** The pixel of the picture under a point in the frame's own millimetres, as the sampling arithmetic reads it. */
-function sourcePixelAt(
-  view: ReturnType<typeof framingView>,
-  image: PixelData,
-  xMm: number,
-  yMm: number,
-): { x: number; y: number } | undefined {
-  const x = Math.floor((xMm - view.offsetXMm) / view.scaleMm)
-  const y = Math.floor((yMm - view.offsetYMm) / view.scaleMm)
-  return x < 0 || y < 0 || x >= image.width || y >= image.height ? undefined : { x, y }
-}
-
-function convert(
-  image: PixelData,
-  technique: Technique,
-  size: { widthMm: number; heightMm: number },
-  bead: Bead = cubeBead,
-  maxColors = 4096,
-) {
-  const dimensions = computeGridDimensions(size, bead, technique)
-  const frame = frameSizeMm(technique, dimensions, bead)
-  const view = framingView(image, frame, 1, CENTERED_PAN)
-  return { dimensions, ...convertImage({ image, view, technique, bead, dimensions, maxColors }) }
+/** One Convert image of the whole picture onto a grid, the frame the whole lattice. */
+function convert(image: PixelData, technique: Technique, dimensions: GridDimensions, maxColors = 4096): { grid: Grid; imageColors: string[] } {
+  const lattice: PreviewLattice = { ...dimensions, frameColumn: 0, frameRow: 0 }
+  return convertSampled(sampleLatticePacked({ image, technique, ...wholePicture(image, dimensions), lattice }), lattice, dimensions, maxColors)
 }
 
 /** The grid's raw sampled colors, before Convert image snaps them onto the Palette (ticket 177), which would
  * otherwise obscure which source pixel each cell picked (nearby markers can snap to one color). */
-function convertRawGrid(
-  image: PixelData,
-  technique: Technique,
-  size: { widthMm: number; heightMm: number },
-  bead: Bead = cubeBead,
-): (string | undefined)[][] {
-  const dimensions = computeGridDimensions(size, bead, technique)
-  const frame = frameSizeMm(technique, dimensions, bead)
-  const view = framingView(image, frame, 1, CENTERED_PAN)
-  const lattice: PreviewLattice = { columns: dimensions.columns, rows: dimensions.rows, frameColumn: 0, frameRow: 0 }
-  return sampleLattice({ image, view, technique, bead, lattice })
+function convertRawGrid(image: PixelData, technique: Technique, dimensions: GridDimensions): (string | undefined)[][] {
+  const lattice: PreviewLattice = { ...dimensions, frameColumn: 0, frameRow: 0 }
+  return sampleLattice({ image, technique, ...wholePicture(image, dimensions), lattice })
 }
 
 describe('pixelColorAt', () => {
@@ -192,25 +147,30 @@ describe('pixelPackedAt', () => {
 })
 
 describe('sampleLatticePacked', () => {
-  /** What one cell took, the way it was worked out before sampling ran a row at a time: cellCenter, then
-   * sourcePixelAt, then the pixel's color. */
+  /** What one cell took, the way it was worked out before sampling ran a row at a time: cellCenter, then the pixel
+   * under it, then the pixel's color. */
   function cellByCell(
     image: PixelData,
     technique: Technique,
-    bead: Bead,
-    view: ReturnType<typeof framingView>,
-    lattice: ReturnType<typeof previewLattice>,
+    part: PixelCrop,
+    pixelsPerBead: { x: number; y: number },
+    lattice: PreviewLattice,
+    techniqueSettings?: TechniqueSettings,
   ): (string | undefined)[] {
-    const { widthMm, heightMm } = describeWeave({ technique }).beadMm(bead)
     // The frame's first row and column are never shifted, so its corner is a whole cell per row and column.
-    const originXMm = lattice.frameColumn * widthMm
-    const originYMm = lattice.frameRow * heightMm
+    const originX = lattice.frameColumn * pixelsPerBead.x
+    const originY = lattice.frameRow * pixelsPerBead.y
     const cells: (string | undefined)[] = []
     for (let row = 0; row < lattice.rows; row += 1) {
       for (let column = 0; column < lattice.columns; column += 1) {
-        const center = cellCenter({ technique }, { row, column }, widthMm, heightMm)
-        const pixel = sourcePixelAt(view, image, center.x - originXMm, center.y - originYMm)
-        cells.push(pixel && pixelColorAt(image, pixel.x, pixel.y))
+        const center = cellCenter({ technique, techniqueSettings }, { row, column }, pixelsPerBead.x, pixelsPerBead.y)
+        const x = Math.floor(center.x - originX + part.x)
+        const y = Math.floor(center.y - originY + part.y)
+        const slackX = Math.max(1, pixelsPerBead.x)
+        const slackY = Math.max(1, pixelsPerBead.y)
+        const onX = x >= image.width && x < image.width + slackX ? image.width - 1 : x
+        const onY = y >= image.height && y < image.height + slackY ? image.height - 1 : y
+        cells.push(onX < 0 || onY < 0 || onX >= image.width || onY >= image.height ? undefined : pixelColorAt(image, onX, onY))
       }
     }
     return cells
@@ -227,24 +187,18 @@ describe('sampleLatticePacked', () => {
     return pixels(width, height, rgba)
   }
 
-  it.each([
-    ['loom', cubeBead],
-    ['peyote', cubeBead],
-    ['brick', delicaBead],
-  ] as const)('takes exactly the colors sampling cell by cell does, in %s, at every zoom and pan', (technique, bead) => {
+  it.each(['loom', 'peyote', 'brick'] as const)('takes exactly the colors sampling cell by cell does, in %s, for any part and pixels per bead', (technique) => {
     const image = busyImage(53, 41)
-    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead, technique)
-    const frame = frameSizeMm(technique, dimensions, bead)
 
-    for (const zoom of [1, 1.75, 4]) {
-      for (const pan of [{ x: 0, y: 0 }, CENTERED_PAN, { x: 1, y: 0.3 }]) {
-        const view = framingView(image, frame, zoom, pan)
-        const lattice = previewLattice({ view, frame, dimensions, bead, technique })
+    for (const part of [{ x: 0, y: 0, width: 53, height: 41 }, { x: 10, y: 7, width: 24, height: 20 }, { x: 40, y: 30, width: 13, height: 11 }]) {
+      for (const pixelsPerBead of [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 1.3, y: 1.7 }, { x: 0.5, y: 0.5 }]) {
+        const dimensions = { columns: Math.ceil(part.width / pixelsPerBead.x), rows: Math.ceil(part.height / pixelsPerBead.y) }
+        const lattice = partLattice({ image, part, pixelsPerBead, dimensions, technique })
 
-        const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
+        const packed = sampleLatticePacked({ image, part, pixelsPerBead, technique, lattice })
 
         expect(Array.from(packed, (color) => (color === NO_COLOR ? undefined : packedToHex(color)))).toEqual(
-          cellByCell(image, technique, bead, view, lattice),
+          cellByCell(image, technique, part, pixelsPerBead, lattice),
         )
       }
     }
@@ -252,16 +206,13 @@ describe('sampleLatticePacked', () => {
 
   it('leaves off-picture cells as NO_COLOR', () => {
     const image = flat(2, 2, [10, 20, 30])
-    const dimensions = { columns: 2, rows: 2 }
-    const frame = frameSizeMm('loom', dimensions, cubeBead)
-    const view = framingView(image, frame, 1, CENTERED_PAN)
 
     // A lattice bigger than the picture: 6 × 6 cells with the frame in the middle.
     const packed = sampleLatticePacked({
       image,
-      view,
+      part: { x: 0, y: 0, width: 2, height: 2 },
+      pixelsPerBead: { x: 1, y: 1 },
       technique: 'loom',
-      bead: cubeBead,
       lattice: { columns: 6, rows: 6, frameColumn: 2, frameRow: 2 },
     })
 
@@ -340,15 +291,6 @@ describe('validateImagePixelCount', () => {
   })
 })
 
-describe('clampMaxImageColors', () => {
-  it('keeps the adjustable color count inside its range', () => {
-    expect(clampMaxImageColors(0)).toBe(MIN_IMAGE_COLORS)
-    expect(clampMaxImageColors(1000)).toBe(MAX_IMAGE_COLORS)
-    expect(clampMaxImageColors(6.4)).toBe(6)
-    expect(DEFAULT_MAX_IMAGE_COLORS).toBe(clampMaxImageColors(DEFAULT_MAX_IMAGE_COLORS))
-  })
-})
-
 describe('convertImage', () => {
   it('gives every cell of the grid the Palette color nearest the picture under it (ticket 177)', () => {
     // A 2 x 2 picture into a 2 x 2 grid: each cell covers exactly one pixel.
@@ -359,7 +301,7 @@ describe('convertImage', () => {
       [255, 255, 255, 255],
     ])
 
-    const { grid } = convert(image, 'loom', { widthMm: 3, heightMm: 3 })
+    const { grid } = convert(image, 'loom', { columns: 2, rows: 2 })
 
     expect(grid.map((row) => row.map((cell) => cell.color))).toEqual([
       ['#e63746', '#27ae60'], // Palette red, green
@@ -368,9 +310,8 @@ describe('convertImage', () => {
   })
 
   it('produces a grid of exactly the Project dimensions', () => {
-    const { grid, dimensions } = convert(coordinateImage(20, 20), 'loom', { widthMm: 15, heightMm: 30 })
+    const { grid } = convert(coordinateImage(20, 20), 'loom', { columns: 10, rows: 20 })
 
-    expect(dimensions).toEqual({ columns: 10, rows: 20 })
     expect(grid).toHaveLength(20)
     expect(grid[0]).toHaveLength(10)
   })
@@ -383,7 +324,7 @@ describe('convertImage', () => {
       [17, 17, 17, 255],
     ])
 
-    const { imageColors } = convert(image, 'loom', { widthMm: 3, heightMm: 3 }, cubeBead, 8)
+    const { imageColors } = convert(image, 'loom', { columns: 2, rows: 2 }, 8)
 
     expect(new Set(imageColors)).toEqual(new Set(['#e63746', '#27ae60', '#2f6fed', '#1a1a1a']))
   })
@@ -395,7 +336,7 @@ describe('convertImage', () => {
       Array.from({ length: 64 }, (_unused, index) => [index * 3, 255 - index * 3, 128, 255]),
     )
 
-    const { imageColors, grid } = convert(many, 'loom', { widthMm: 12, heightMm: 12 }, cubeBead, 5)
+    const { imageColors, grid } = convert(many, 'loom', { columns: 8, rows: 8 }, 5)
 
     expect(imageColors.length).toBeLessThanOrEqual(5)
     for (const row of grid) {
@@ -406,7 +347,7 @@ describe('convertImage', () => {
   })
 
   it('saves only the colors the conversion actually put on the grid', () => {
-    const { imageColors, grid } = convert(flat(4, 4, [10, 20, 30]), 'loom', { widthMm: 6, heightMm: 6 })
+    const { imageColors, grid } = convert(flat(4, 4, [10, 20, 30]), 'loom', { columns: 4, rows: 4 })
 
     expect(imageColors).toEqual(['#1a1a1a']) // nearest Palette color to #0a141e is black
     expect(grid.flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
@@ -419,7 +360,7 @@ describe('convertImage', () => {
       Array.from({ length: 4 }, () => [255, 0, 0, 0]),
     )
 
-    const { grid, imageColors } = convert(invisible, 'loom', { widthMm: 3, heightMm: 3 })
+    const { grid, imageColors } = convert(invisible, 'loom', { columns: 2, rows: 2 })
 
     expect(imageColors).toEqual([])
     expect(grid.flat().every((cell) => cell.color === null)).toBe(true)
@@ -433,7 +374,7 @@ describe('convertImage', () => {
       [0, 0, 0, 0],
     ])
 
-    const { grid } = convert(dot, 'loom', { widthMm: 3, heightMm: 3 })
+    const { grid } = convert(dot, 'loom', { columns: 2, rows: 2 })
 
     expect(grid.map((row) => row.map((cell) => cell.color))).toEqual([
       [null, '#e63746'], // Palette red
@@ -441,8 +382,8 @@ describe('convertImage', () => {
     ])
   })
 
-  it('upscales a picture smaller than the grid rather than leaving the frame unfilled', () => {
-    const { grid, imageColors } = convert(flat(1, 1, [1, 2, 3]), 'loom', { widthMm: 15, heightMm: 15 })
+  it('makes every pixel many beads when the grid is bigger than the picture, leaving no bead unfilled', () => {
+    const { grid, imageColors } = convert(flat(1, 1, [1, 2, 3]), 'loom', { columns: 10, rows: 10 })
 
     expect(imageColors).toEqual(['#1a1a1a']) // nearest Palette color to #010203 is black
     expect(grid.flat()).toHaveLength(100)
@@ -450,15 +391,15 @@ describe('convertImage', () => {
   })
 
   it('converts a single-pixel picture', () => {
-    const { grid } = convert(flat(1, 1, [255, 255, 255]), 'loom', { widthMm: 1.5, heightMm: 1.5 })
+    const { grid } = convert(flat(1, 1, [255, 255, 255]), 'loom', { columns: 1, rows: 1 })
 
     expect(grid).toEqual([[{ color: '#ffffff' }]])
   })
 
   it('samples a loom row straight across, with no stagger', () => {
     // 9 pixels across a 4-cell frame puts about one pixel on every half cell, so a half-cell stagger shows as a
-    // one-pixel shift. The picture is deliberately tall enough that its width is what the cover scale follows.
-    const grid = convertRawGrid(coordinateImage(9, 20), 'loom', { widthMm: 6, heightMm: 6 })
+    // one-pixel shift.
+    const grid = convertRawGrid(coordinateImage(9, 20), 'loom', { columns: 4, rows: 9 })
 
     const firstColumn = grid.map((row) => sampledPixel(row[0]!).x)
     expect(new Set(firstColumn).size).toBe(1)
@@ -467,7 +408,7 @@ describe('convertImage', () => {
   it('reproduces brick stitch\'s half-cell stagger on odd rows', () => {
     // Sampled below Convert image's Palette quantization (ticket 177): the raw marker colors coordinateImage relies
     // on to decode which pixel a cell sampled would otherwise collapse onto the same nearest Palette color.
-    const grid = convertRawGrid(coordinateImage(9, 20), 'brick', { widthMm: 6, heightMm: 6 })
+    const grid = convertRawGrid(coordinateImage(9, 20), 'brick', { columns: 4, rows: 9 })
 
     const evenRow = sampledPixel(grid[0]![0]!).x
     const oddRow = sampledPixel(grid[1]![0]!).x
@@ -478,7 +419,7 @@ describe('convertImage', () => {
   })
 
   it('reproduces peyote\'s half-cell stagger on odd columns, down the picture (ticket 0734)', () => {
-    const grid = convertRawGrid(coordinateImage(20, 9), 'peyote', { widthMm: 6, heightMm: 6 })
+    const grid = convertRawGrid(coordinateImage(20, 9), 'peyote', { columns: 9, rows: 4 })
 
     const evenColumn = sampledPixel(grid[0]![0]!).y
     const oddColumn = sampledPixel(grid[0]![1]!).y
@@ -492,27 +433,11 @@ describe('convertImage', () => {
 
   it('walks peyote\'s rows a full bead apart, as loom\'s, nothing nesting (ticket 0734)', () => {
     const image = coordinateImage(60, 60)
-    const size = { widthMm: 15, heightMm: 15 }
-    const [peyote, loom] = [convertRawGrid(image, 'peyote', size), convertRawGrid(image, 'loom', size)]
+    const [peyote, loom] = [convertRawGrid(image, 'peyote', { columns: 10, rows: 10 }), convertRawGrid(image, 'loom', { columns: 10, rows: 10 })]
 
     expect(peyote).toHaveLength(loom.length)
     const step = (grid: typeof peyote) => sampledPixel(grid[2]![0]!).y - sampledPixel(grid[1]![0]!).y
     expect(step(peyote) / step(loom)).toBeCloseTo(1, 1)
-  })
-
-  it('does not distort a picture just because the Bead footprint is not square', () => {
-    // A Delica grid of a square physical size samples the same square region of the picture as a cube Bead does.
-    const image = coordinateImage(60, 60)
-
-    const cube = convert(image, 'loom', { widthMm: 15, heightMm: 15 }, cubeBead)
-    const delica = convert(image, 'loom', { widthMm: 15, heightMm: 15 }, delicaBead)
-
-    const cubeCorner = sampledPixel(cube.grid.at(-1)!.at(-1)!.color!)
-    const delicaCorner = sampledPixel(delica.grid.at(-1)!.at(-1)!.color!)
-
-    expect(delica.dimensions).not.toEqual(cube.dimensions)
-    expect(delicaCorner.x).toBeCloseTo(cubeCorner.x, -1)
-    expect(delicaCorner.y).toBeCloseTo(cubeCorner.y, -1)
   })
 })
 
@@ -520,14 +445,15 @@ describe('frameColors', () => {
   it('converts exactly the cells the preview shows inside the frame', () => {
     const image = coordinateImage(40, 20)
     const technique: Technique = 'peyote'
-    const dimensions = computeGridDimensions({ widthMm: 15, heightMm: 15 }, cubeBead, technique)
-    const frame = frameSizeMm(technique, dimensions, cubeBead)
-    const view = framingView(image, frame, 1.5, { x: 0.3, y: 0.7 })
-    const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique })
+    const part = { x: 12, y: 4, width: 20, height: 12 }
+    const pixelsPerBead = { x: 2, y: 2 }
+    const dimensions = { columns: 10, rows: 6 }
+    const lattice = partLattice({ image, part, pixelsPerBead, dimensions, technique })
 
-    const sampled = sampleLatticePacked({ image, view, technique, bead: cubeBead, lattice })
+    const sampled = sampleLatticePacked({ image, part, pixelsPerBead, technique, lattice })
     const fromPreview = convertSampled(sampled, lattice, dimensions, 4096)
-    const direct = convertImage({ image, view, technique, bead: cubeBead, dimensions, maxColors: 4096 })
+    const frameOnly: PreviewLattice = { ...dimensions, frameColumn: 0, frameRow: 0 }
+    const direct = convertSampled(sampleLatticePacked({ image, part, pixelsPerBead, technique, lattice: frameOnly }), frameOnly, dimensions, 4096)
 
     expect(lattice.frameColumn).toBeGreaterThan(0)
     expect(fromPreview).toEqual(direct)
@@ -541,13 +467,12 @@ describe('frameColors', () => {
   })
 })
 
-describe('sampling By Pixel to bead ratio (spec 0645)', () => {
+describe('sampling the part (spec 0645, ticket 0747)', () => {
   /** The pixel each bead of a frame-only lattice took. */
-  function ratioPixels(image: PixelData, technique: Technique, crop: { x: number; y: number; width: number; height: number }, ratio: { pixels: number; beads: number }) {
-    const per = ratio.pixels / ratio.beads
-    const dimensions = { columns: Math.ceil(crop.width / per), rows: Math.ceil(crop.height / per) }
+  function partPixels(image: PixelData, technique: Technique, part: PixelCrop, per: number) {
+    const dimensions = { columns: Math.ceil(part.width / per), rows: Math.ceil(part.height / per) }
     const lattice: PreviewLattice = { ...dimensions, frameColumn: 0, frameRow: 0 }
-    const packed = sampleLatticePacked({ image, technique, crop, ratio, lattice })
+    const packed = sampleLatticePacked({ image, technique, part, pixelsPerBead: { x: per, y: per }, lattice })
     return Array.from({ length: lattice.rows }, (_row, row) =>
       Array.from({ length: lattice.columns }, (_cell, column) => {
         const color = packed[row * lattice.columns + column]!
@@ -556,51 +481,50 @@ describe('sampling By Pixel to bead ratio (spec 0645)', () => {
     )
   }
 
-  it('gives every pixel its own bead at 1:1, in the crop', () => {
-    expect(ratioPixels(coordinateImage(6, 6), 'loom', { x: 2, y: 1, width: 2, height: 2 }, { pixels: 1, beads: 1 })).toEqual([
+  it('gives every pixel its own bead at one pixel per bead, in the part', () => {
+    expect(partPixels(coordinateImage(6, 6), 'loom', { x: 2, y: 1, width: 2, height: 2 }, 1)).toEqual([
       [{ x: 2, y: 1 }, { x: 3, y: 1 }],
       [{ x: 2, y: 2 }, { x: 3, y: 2 }],
     ])
   })
 
-  it('samples the centre of each block at 2:1', () => {
-    expect(ratioPixels(coordinateImage(4, 4), 'loom', { x: 0, y: 0, width: 4, height: 4 }, { pixels: 2, beads: 1 })).toEqual([
+  it('samples the centre of each block on a 2 × 2 px mark', () => {
+    expect(partPixels(coordinateImage(4, 4), 'loom', { x: 0, y: 0, width: 4, height: 4 }, 2)).toEqual([
       [{ x: 1, y: 1 }, { x: 3, y: 1 }],
       [{ x: 1, y: 3 }, { x: 3, y: 3 }],
     ])
   })
 
-  it('makes every pixel n × n beads at 1:n', () => {
-    expect(ratioPixels(coordinateImage(2, 1), 'loom', { x: 0, y: 0, width: 2, height: 1 }, { pixels: 1, beads: 2 })).toEqual([
+  it('makes every pixel n × n beads on an enlarging mark', () => {
+    expect(partPixels(coordinateImage(2, 1), 'loom', { x: 0, y: 0, width: 2, height: 1 }, 0.5)).toEqual([
       [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 0 }],
       [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 0 }],
     ])
   })
 
   it('keeps brick stitch’s half-bead stagger, the shifted row’s last bead staying on the picture', () => {
-    const pixels = ratioPixels(coordinateImage(8, 4), 'brick', { x: 0, y: 0, width: 8, height: 4 }, { pixels: 2, beads: 1 })
-    expect(pixels[0]!.map((pixel) => pixel!.x)).toEqual([1, 3, 5, 7])
-    expect(pixels[1]!.map((pixel) => pixel!.x)).toEqual([2, 4, 6, 7])
+    const pixelsTaken = partPixels(coordinateImage(8, 4), 'brick', { x: 0, y: 0, width: 8, height: 4 }, 2)
+    expect(pixelsTaken[0]!.map((pixel) => pixel!.x)).toEqual([1, 3, 5, 7])
+    expect(pixelsTaken[1]!.map((pixel) => pixel!.x)).toEqual([2, 4, 6, 7])
   })
 
   it('walks a peyote row one block down the picture', () => {
-    const pixels = ratioPixels(coordinateImage(4, 8), 'peyote', { x: 0, y: 0, width: 4, height: 8 }, { pixels: 2, beads: 1 })
-    expect(pixels.map((row) => row[0]!.y)).toEqual([1, 3, 5, 7])
+    const pixelsTaken = partPixels(coordinateImage(4, 8), 'peyote', { x: 0, y: 0, width: 4, height: 8 }, 2)
+    expect(pixelsTaken.map((row) => row[0]!.y)).toEqual([1, 3, 5, 7])
   })
 
   it('keeps peyote\'s half-bead stagger down its columns, the shifted column\'s last bead staying on the picture (ticket 0734)', () => {
-    const pixels = ratioPixels(coordinateImage(4, 8), 'peyote', { x: 0, y: 0, width: 4, height: 8 }, { pixels: 2, beads: 1 })
-    expect(pixels.map((row) => row[1]!.y)).toEqual([2, 4, 6, 7])
-    expect(pixels[0]!.map((pixel) => pixel!.x)).toEqual([1, 3])
+    const pixelsTaken = partPixels(coordinateImage(4, 8), 'peyote', { x: 0, y: 0, width: 4, height: 8 }, 2)
+    expect(pixelsTaken.map((row) => row[1]!.y)).toEqual([2, 4, 6, 7])
+    expect(pixelsTaken[0]!.map((pixel) => pixel!.x)).toEqual([1, 3])
   })
 
-  it('draws the rest of the picture round the crop in the preview, off-picture beads left empty', () => {
+  it('draws the rest of the picture round the part in the preview, off-picture beads left empty', () => {
     const image = coordinateImage(8, 8)
-    const crop = { x: 2, y: 2, width: 4, height: 4 }
-    const ratio = { pixels: 2, beads: 1 }
-    const lattice = ratioLattice({ image, crop, pixelsPerBead: 2, dimensions: { columns: 2, rows: 2 }, technique: 'loom' })
-    expect(lattice).toEqual({ columns: 4, rows: 5, frameColumn: 1, frameRow: 2 })
-    const packed = sampleLatticePacked({ image, technique: 'loom', crop, ratio, lattice })
+    const part = { x: 2, y: 2, width: 4, height: 4 }
+    const pixelsPerBead = { x: 2, y: 2 }
+    const lattice = partLattice({ image, part, pixelsPerBead, dimensions: { columns: 2, rows: 2 }, technique: 'loom' })
+    const packed = sampleLatticePacked({ image, technique: 'loom', part, pixelsPerBead, lattice })
     // The first lattice row lies above the picture: rows above the frame are whole cycles of the shift.
     expect(packed[0]).toBe(NO_COLOR)
     expect(sampledPixel(packedToHex(packed[2 * 4 + 1]!))).toEqual({ x: 3, y: 3 })

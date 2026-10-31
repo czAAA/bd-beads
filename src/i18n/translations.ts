@@ -971,18 +971,9 @@ export interface Translations {
     fileLabel: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
-    /** Heads-up once the grid passes isSlowFramingSize (ticket 61): informational, never blocks. `{technique}` is
-     * its localized name. */
-    slowFramingWarning: string
-    /** How to move the picture under the frame. */
-    panHint: string
     createButton: string
     cancelButton: string
-    /** The adjustable ceiling on how many colors the conversion may keep. */
-    maxColorsLabel: string
-    decreaseColorsButton: string
-    increaseColorsButton: string
-    /** The Convert image wizard (spec 0645; ConvertImage, PixelToBeadRatio, FoundColorRow cards; writing.md). */
+    /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
       /** The five sections' titles, and their short labels on the step rail. */
@@ -1011,31 +1002,30 @@ export interface Translations {
       dropToUse: string
       dropToConvert: string
       dropLimits: string
-      byRatio: string
-      bySize: string
-      /** The Pixel to bead ratio's label, and each chip's name: "2:1, picture pixels : beads". */
-      ratioLabel: string
-      ratioChip: string
-      custom: string
-      customRatio: string
-      pixelsPerBead: string
-      beadsPerPixel: string
-      /** The Custom ratio Stepper's buttons. */
-      fewerPixels: string
-      morePixels: string
-      /** The explainer sentence and the drawing's captions. */
-      everyBlock: string
-      everyPixel: string
-      everyPixelBeads: string
-      blockPx: string
-      onePx: string
-      oneBead: string
-      blockBeads: string
-      /** The crop handles' names, each edge and corner. */
+      /** What to weave (ticket 0747): the row's label, its two choices, the hint under A part and the line under the
+       * result box while a part is woven. */
+      weave: string
+      wholePicture: string
+      aPart: string
+      partHint: string
+      partFollows: string
+      /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
+       * its marks ("8×8 px", "×2") and the hint under it. */
+      slideIn: string
+      widthBeads: string
+      widthMm: string
+      maxLabel: string
+      markPx: string
+      markTimes: string
+      widthHint: string
+      /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
+      colorsHint: string
+      /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
+      colorsHintCapped: string
+      colorByColor: string
+      emptyCount: string
+      /** The part's handles' names, each edge and corner. */
       crop: Record<CropHandle, string>
-      cropHint: string
-      keepProportions: string
-      pictureZoom: string
       /** The Large Schema Note; `{beads}` is the threshold. */
       largeSchema: string
       /** The result box: its label, then the grid size, and the ratio exact, approximate or one pixel as beads. */
@@ -1193,7 +1183,6 @@ export interface Translations {
     changeName: string
     convertImage: string
     treatAsEmpty: string
-    customRatio: string
     remapColor: string
     emptyColor: string
     /** "A, B, C." from the item names. */

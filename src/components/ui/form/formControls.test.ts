@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import FileButton from './FileButton.vue'
 import FormField from './FormField.vue'
-import NumberField from './NumberField.vue'
 import SegmentedControl from './SegmentedControl.vue'
 import AppStepper from './AppStepper.vue'
 import ChipRadioGroup from './ChipRadioGroup.vue'
@@ -28,7 +27,7 @@ describe('FormField', () => {
   })
 })
 
-describe('TextField and NumberField', () => {
+describe('TextField', () => {
   it('binds its value and passes attributes to the input', async () => {
     const value = ref('Fox')
     const wrapper = mount(TextField, {
@@ -51,19 +50,6 @@ describe('TextField and NumberField', () => {
     const disabled = mount(TextField, { props: { disabled: true } })
     expect(disabled.classes()).toContain('text-field--disabled')
     expect(disabled.find('input').element.disabled).toBe(true)
-  })
-
-  it('shows its unit as a border label, described once, and asks for the right keyboard', () => {
-    const beads = mount(NumberField, { props: { unit: 'beads', whole: true } })
-    const unit = beads.find('.text-field__unit')
-    expect(unit.text()).toBe('beads')
-    expect(beads.find('input').attributes('aria-describedby')).toBe(unit.attributes('id'))
-    expect(unit.attributes('aria-hidden')).toBe('true')
-    expect(mount(NumberField).find('input').attributes('aria-describedby')).toBeUndefined()
-    expect(beads.find('input').attributes('type')).toBe('number')
-    expect(beads.find('input').attributes('inputmode')).toBe('numeric')
-
-    expect(mount(NumberField, { props: { unit: 'mm' } }).find('input').attributes('inputmode')).toBe('decimal')
   })
 })
 
@@ -234,39 +220,6 @@ describe('ChipRadioGroup', () => {
     expect(tips[1]!.get('.app-tooltip__name').text()).toBe('2:1, picture pixels : beads')
     expect(tips[1]!.get('.app-tooltip__body').text()).toBe('Every 2 × 2 pixel block is one bead.')
     wrapper.unmount()
-  })
-})
-
-describe('NumberField stepper', () => {
-  it('repeats while held, stops at the minimum, and a release adds no step', async () => {
-    vi.useFakeTimers()
-    try {
-      const value = ref<string | number | undefined>('4')
-      const wrapper = mount(NumberField, {
-        props: {
-          modelValue: value.value,
-          'onUpdate:modelValue': (next: string | number | undefined) => {
-            value.value = next
-            void wrapper.setProps({ modelValue: next })
-          },
-          stepper: true,
-          min: 1,
-          decreaseLabel: 'Fewer',
-          increaseLabel: 'More',
-          testidPrefix: 'n',
-        },
-      })
-      const minus = wrapper.find('[data-testid="n-decrease"]')
-      await minus.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
-      expect(value.value).toBe('3')
-      await vi.advanceTimersByTimeAsync(3000)
-      expect(value.value).toBe('1')
-      await minus.trigger('pointerup')
-      await minus.trigger('click')
-      expect(value.value).toBe('1')
-    } finally {
-      vi.useRealTimers()
-    }
   })
 })
 
