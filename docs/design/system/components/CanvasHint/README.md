@@ -8,6 +8,6 @@ The one line at the top-centre of the drawing area, under the strip, that says h
 - On Windows and Linux the `⌘` chip reads "Ctrl".
 - aria-hidden: the same shortcuts are listed in Keyboard shortcuts (ShortcutsHelp).
 - **Shown with the first-run hints** (FirstRunHints card, tickets 0725, 0738), by the same rule: the captions and the welcome sit under this line and go with the first bead too.
-- **While Mirror's Area is being picked** (MirrorPopover card, ticket 0710) the line says how instead, beads or not: "Drag over the beads · click the margin for the whole Frame · `Esc` cancels" on a Frame, "Drag over the beads to set the area · `Esc` cancels" on the Canvas, in `marker` with a 1px `marker` border on `elevated` (`radius-full`, 4px 10px padding), read out rather than aria-hidden since it is the pick's only instruction.
+- **Mirror's Area pick** had a line of its own here (ticket 0710); it is retired with the Mirror popover (ticket 0750): Mirror mode says itself by the lit Mirror tile and the Select tool's cursor (ContextBar card, Mirror bar).
 
 Hand-written from the v16 sign-off (open canvas mockups); static rendition.
