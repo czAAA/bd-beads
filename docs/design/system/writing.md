@@ -251,7 +251,7 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | --- | --- |
 | Runs in your browser, and your work stays on your device | Работает в браузере, а ваши работы остаются на вашем устройстве |
 | An open Canvas: draw anywhere, it has no edges | Открытое полотно: рисуйте где угодно, у него нет краёв |
-| {n} Techniques: {techniques} | Техник: {n} — {techniques} |
+| {n} Techniques: {techniques} (a counted word: one Technique, many Techniques) | {n} техника / техники / техник: {techniques} |
 | As many Projects as you like | Сколько угодно проектов |
 | Turn a picture into beads | Картинка превращается в бисер |
 | One Frame per Project, for the piece you'll weave | Одна рамка в проекте, для того, что будете плести |
@@ -265,8 +265,10 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | Your Projects as an .openbeads file | Ваши проекты в файле .openbeads |
 | Word chart: the Schema written out row by row | Ряд за рядом: схема, расписанная словами |
 | Mirror: draw one side, the other follows | Отражение: рисуете одну сторону, вторая повторяет |
-| {n} Starters for {categories} | Стартеров: {n} — {categories} |
+| {n} Starters for {categories} (a counted word) | {n} стартер / стартера / стартеров: {categories} |
 | More on the way (muted, with a plus) | Скоро будет больше |
+
+The names are joined as the language joins a list (`formatList`): English with a serial comma, "loom, peyote, and brick stitch". The counted rows take the language's counted forms (ticket 0742; the Russian rows had an em dash, which the Russian copy never uses).
 
 "An open Canvas" is the owner's wording for the Homepage only; everywhere else the copy says Canvas, never "open canvas" (ADR 0050).
 

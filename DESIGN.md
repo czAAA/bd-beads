@@ -204,9 +204,14 @@ The Homepage card describes the page (ticket 0739); how the app builds it:
   when it opens, so the keys scroll it.
 - Its bottom bar is the editor's `ProgressBar` with the sections in its slot, and `ProgressTrack`, the track and spark
   Row progress draws, with Pattern done's burst at its end: one component, not a copy.
-- The free list's roll lies on the stage, not in the box, so the box's edge doesn't cut it; it is measured from the
-  tile's window when it unrolls, and the page grows by what it reaches below the stage. Its items are No account's
-  `items` in every language.
+- The free list grows with the page (ticket 0742). Past the plans the page reaches on by the room the whole list needs
+  (`--free-room` on the track; the stage keeps a viewport's height and stays sticky, and the plans' snap area covers
+  the room, so the first wheel turn past them isn't snapped back). The plans section is the card's "screen": its
+  content moves up with the page (a transform; it never scrolls by itself) and the list is as tall as
+  `homepage/freeGrowth.ts` says, measured by `useFreeGrowth` from the section, the list and the tile in the section's
+  own px (the zoom and the section's turn scale divided out). The rows come from `homepage/freeList.ts`: the
+  Techniques from `TECHNIQUES`, the brands from the offered Beads' catalogs, the codes counted from the catalog files
+  at build time (`__COLOR_CATALOG_CODES__`, so the Homepage fetches no catalog), the Starters from `categories.json`.
 - The two X1 marks are `AppLogo`, the design system's own file.
 
 ### 4.8 Decisions

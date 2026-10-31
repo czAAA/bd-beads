@@ -1,23 +1,27 @@
 <script setup lang="ts">
 import AppIcon from '../components/ui/AppIcon.vue'
 
-// The free list (ticket 0739; Homepage card): everything the app does without an account, a check before each. The same
-// list fills the No account tile's window and the roll it unrolls into, so the two line up row for row.
-defineProps<{ items: readonly string[] }>()
+// The free list (tickets 0739, 0742; Homepage card): everything the app does without an account, a check before each,
+// then "More on the way", muted, with a plus. Whole in the DOM at every height of its tile, so every row is read out.
+defineProps<{ rows: readonly string[]; more: string; labelledBy: string }>()
 </script>
 
 <template>
-  <ul class="free-list">
-    <li v-for="item in items" :key="item" class="free-list__item">
-      <AppIcon name="check" :size="14" class="free-list__check" />{{ item }}
+  <ul class="free-list" :aria-labelledby="labelledBy">
+    <li v-for="row in rows" :key="row" class="free-list__item">
+      <AppIcon name="check" :size="14" class="free-list__mark" />{{ row }}
     </li>
+    <li class="free-list__item free-list__item--more" data-testid="free-more"><AppIcon name="plus" :size="14" class="free-list__mark" />{{ more }}</li>
   </ul>
 </template>
 
 <style scoped>
 .free-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
   margin: 0;
-  padding: 0 0 var(--space-8);
+  padding: 0;
   list-style: none;
 }
 
@@ -29,13 +33,14 @@ defineProps<{ items: readonly string[] }>()
   color: var(--body);
 }
 
-.free-list__item + .free-list__item {
-  margin-top: var(--space-4);
-}
-
-.free-list__check {
+.free-list__mark {
   flex: none;
   margin-top: 0.1875rem;
   color: var(--accent-strong);
+}
+
+.free-list__item--more,
+.free-list__item--more .free-list__mark {
+  color: var(--muted);
 }
 </style>
