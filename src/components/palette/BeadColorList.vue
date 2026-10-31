@@ -379,9 +379,11 @@ function add(hex: string, code: string) {
   font: var(--type-meta);
 }
 
-/* The foot row (BeadColors card): a link under the list, apart from it; at the left when narrow, the right when wide. */
+/* The foot row (BeadColors card): a link under the list, apart from it; at the left when narrow, the right when wide.
+ * The one accent-colored link: it is the way out when a color is wrong or missing. */
 .bead-color-list__report {
   align-self: flex-start;
+  color: var(--accent-strong);
   margin-top: var(--space-4);
 }
 

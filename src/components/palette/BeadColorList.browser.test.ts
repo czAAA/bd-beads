@@ -5,6 +5,7 @@ import { findBead } from '../../domain/beads'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
 import type { CatalogSwatch } from '../../domain/beadSwatch'
 import BeadColorList from './BeadColorList.vue'
+import BeadColorsEntry from './BeadColorsEntry.vue'
 
 // The list lays itself out by its own width, not the screen's (BeadColors card, ticket 0746): wide from 480px.
 afterEach(unmountAll)
@@ -52,5 +53,33 @@ describe('BeadColorList layout', () => {
     await new Promise((resolve) => requestAnimationFrame(resolve))
     expect(getComputedStyle(narrow.filters).display).not.toBe('none')
     expect(narrow.filters.getBoundingClientRect().top).toBeGreaterThan(narrow.search.bottom - 1)
+  })
+})
+
+describe('BeadColorsEntry and the report link (ticket 0749)', () => {
+  const host = (open: boolean) => defineComponent(() => () => h('div', { style: { width: '400px', display: 'flex', flexDirection: 'column' } }, [h(BeadColorsEntry, { bead: findBead('miyuki/delica/11-0'), open, testid: 'entry' })]))
+
+  it('fills its row while the list is open, with the Info button after it, and is a small pill closed', async () => {
+    const closed = await mountAt(host(false), {}, { locale: 'en', width: 1280 })
+    expect(closed.root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect().width).toBeLessThan(300)
+    unmountAll()
+
+    const { root } = await mountAt(host(true), {}, { locale: 'en', width: 1280 })
+    const button = root.querySelector<HTMLElement>('[data-testid="entry"]')!.getBoundingClientRect()
+    const info = root.querySelector<HTMLElement>('[data-testid="bead-colors-info"]')!.getBoundingClientRect()
+    expect(info.left).toBeGreaterThanOrEqual(button.right)
+    expect(info.right).toBeGreaterThan(400 - 8)
+  })
+
+  it('shows Wrong or missing color? in the accent color', async () => {
+    const withReport = { ...colors, report: () => {} } as unknown as BeadColors
+    const { root } = await mountAt(defineComponent(() => () => h(BeadColorList, { colors: withReport })), {}, { locale: 'en', width: 1280 })
+    const link = root.querySelector<HTMLElement>('[data-testid="bead-colors-report"]')!
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-strong').trim()
+    const probe = document.createElement('span')
+    probe.style.color = accent
+    document.body.append(probe)
+    expect(getComputedStyle(link).color).toBe(getComputedStyle(probe).color)
+    probe.remove()
   })
 })
