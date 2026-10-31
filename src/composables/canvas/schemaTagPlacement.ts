@@ -25,7 +25,7 @@ export interface SchemaAnchor {
 export interface SchemaAnchors {
   schemas: SchemaAnchor[]
   viewport: { width: number; height: number }
-  /** How far the column numbers stand above a Piece's line while the Rulers are on, 0 with them off: the tags rise over it. */
+  /** How far the column numbers stand above a Piece's line, and a little more: the tags rise over it, with the Rulers on or off so they never jump. */
   lift?: number
 }
 
@@ -36,7 +36,7 @@ export interface TagPlacement {
 }
 
 /** Where the tag stands for `box` (the Piece's rectangle on screen, outset included): always above its top-left
- * corner, `lift` px higher where the Rulers' numbers stand there, moving with the Piece and clipped by the canvas box as
+ * corner, `lift` px higher, clear of where the Rulers' numbers stand, moving with the Piece and clipped by the canvas box as
  * the Piece is. None while neither the Piece nor its tag is in view. */
 export function tagPlacement(box: BarBox, viewport: { width: number; height: number }, lift = 0): TagPlacement | undefined {
   const top = box.top - lift - TAG_GAP - TAG_HEIGHT
