@@ -11,7 +11,7 @@ Quiet captions over an empty Project, each beside the control it names, and a we
 
 ## Captions
 
-Each caption sits right beside its control, on the drawing-area side. A caption names what its control holds in the app's own words (the Selection bar's actions, the Mirror popover's modes, the Menu's items). In English:
+Each caption sits right beside its control, on the drawing-area side. A caption names what its control holds in the app's own words (the Selection bar's actions, the Mirror bar's Axes, the Menu's items). In English:
 
 | Control | Caption | Look |
 |---|---|---|

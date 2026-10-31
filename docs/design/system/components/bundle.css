@@ -100,20 +100,15 @@
   --selbar-gap: 6px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
-  /* Mirror (MirrorPopover card): the Axis lines, the Radial ring, the Canvas handles, the Area and the margin target */
+  /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview */
+  --mirror-bar-control: 24px;
+  --mirror-bar-control-touch: 30px;
   --mirror-axis-width: 1.25px;
   --mirror-axis-dash: 5 4;
   --mirror-axis-soft: 0.45;
   --mirror-ring-radius: 7px;
-  --mirror-handle: 32px;
-  --mirror-handle-icon: 16px;
-  --mirror-handle-inset: 56px;
-  --mirror-chip-height: 32px;
   --mirror-area-handle: 9px;
-  --mirror-area-row: 34px;
   --mirror-area-line: 1.5px;
-  --mirror-preview-dash: 4 3;
-  --mirror-margin-opacity: 0.1;
   --mirror-ghost-opacity: 0.45;
   --color-wheel-size: 200px;
   --color-slider-height: 20px;
@@ -941,31 +936,36 @@ body {
 .bb-popover p { margin: 0; font: 400 13px/18px var(--font-sans); color: var(--body); }
 .bb-popover-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
-/* MirrorPopover card: the popover's rows, the Axis chips, the Area button, and the overlay's lines, ring, handles, Area and margin target. */
-.bb-mirror-row { display: grid; gap: 6px; }
-.bb-mirror-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.bb-mirror-chip { height: var(--mirror-chip-height); padding: 0 12px; border: 1px solid var(--button-line); border-radius: var(--radius-full); background: var(--button); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
-.bb-mirror-chip[aria-pressed="true"] { background: var(--panel); border-color: var(--accent-strong); color: var(--accent-strong); font-weight: 600; }
-.bb-mirror-chip[aria-disabled="true"] { background: var(--surface); border-color: var(--line); color: var(--faint); cursor: not-allowed; }
-.bb-mirror-area { display: flex; gap: 6px; align-items: center; }
-.bb-mirror-area-btn { flex: 1; height: 34px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--button-line); border-radius: var(--radius-md); background: var(--button); color: var(--ink); font: 500 14px/20px var(--font-sans); cursor: pointer; }
-.bb-mirror-area-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
-.bb-mirror-area-btn[aria-pressed="true"] { background: var(--panel); border-color: var(--accent-strong); color: var(--accent-strong); font-weight: 600; }
-.bb-mirror-area-btn.is-set { border-color: var(--marker); color: var(--marker); }
+/* ContextBar card, Mirror bar: the Mode switch, the Axis chips with their counts, and the overlay's lines, ring, Area and hover preview. The bar itself is the Selection bar's (--selbar-* values). */
+.bb-mirror-mode { display: inline-flex; height: var(--mirror-bar-control); padding: 1px; gap: 1px; border: 1px solid color-mix(in srgb, var(--canvas) 30%, transparent); border-radius: var(--radius-sm); }
+.bb-mirror-mode button { padding: 0 8px; border: 0; border-radius: 4px; background: none; color: color-mix(in srgb, var(--canvas) 74%, transparent); font: 500 12px/1 var(--font-sans); cursor: pointer; }
+.bb-mirror-mode button[aria-checked="true"] { background: var(--canvas); color: var(--ink); font-weight: 600; }
+.bb-mirror-chip { display: inline-flex; align-items: center; height: var(--mirror-bar-control); border: 1px solid color-mix(in srgb, var(--canvas) 30%, transparent); border-radius: var(--radius-sm); color: color-mix(in srgb, var(--canvas) 80%, transparent); }
+.bb-mirror-chip > button { width: calc(var(--mirror-bar-control) - 2px); height: calc(var(--mirror-bar-control) - 2px); display: grid; place-items: center; border: 0; border-radius: 4px; background: none; color: inherit; cursor: pointer; }
+.bb-mirror-chip > button svg { width: 16px; height: 16px; stroke: currentColor; fill: none; }
+.bb-mirror-chip.is-on { border-color: var(--canvas); }
+.bb-mirror-chip.is-on > button[aria-pressed="true"] { background: var(--canvas); color: var(--ink); }
+.bb-mirror-chip[aria-disabled="true"] { opacity: .38; }
+.bb-mirror-count { display: inline-flex; align-items: center; }
+.bb-mirror-count button { width: var(--mirror-bar-control); height: calc(var(--mirror-bar-control) - 2px); display: grid; place-items: center; border: 0; background: none; color: var(--canvas); cursor: pointer; }
+.bb-mirror-count button svg { width: 12px; height: 12px; stroke: currentColor; fill: none; }
+.bb-mirror-count button[aria-disabled="true"] { opacity: .38; cursor: default; }
+.bb-mirror-count output { min-width: 14px; text-align: center; font: 500 12px/1 var(--font-mono); color: var(--canvas); }
+.bb-mirror-note { padding: 0 6px; font: 400 11px/1 var(--font-mono); color: color-mix(in srgb, var(--canvas) 74%, transparent); }
+@media (pointer: coarse) {
+  .bb-mirror-mode, .bb-mirror-chip { height: var(--mirror-bar-control-touch); }
+  .bb-mirror-chip > button { width: calc(var(--mirror-bar-control-touch) - 2px); height: calc(var(--mirror-bar-control-touch) - 2px); }
+  .bb-mirror-chip > button svg { width: 18px; height: 18px; }
+  .bb-mirror-count button { width: var(--mirror-bar-control-touch); height: calc(var(--mirror-bar-control-touch) - 2px); }
+}
 .bb-mirror-axis { stroke: var(--marker); stroke-width: var(--mirror-axis-width); stroke-dasharray: var(--mirror-axis-dash); pointer-events: none; }
 .bb-mirror-axis.is-soft { opacity: var(--mirror-axis-soft); }
 .bb-mirror-ring { fill: none; stroke: var(--marker); stroke-width: 2px; pointer-events: none; }
-.bb-mirror-handle { position: absolute; width: var(--mirror-handle); height: var(--mirror-handle); margin: calc(var(--mirror-handle) / -2) 0 0 calc(var(--mirror-handle) / -2); border-radius: var(--radius-full); background: var(--elevated); border: 1.5px solid var(--marker); color: var(--marker); display: grid; place-items: center; cursor: grab; box-shadow: var(--elevation-2); touch-action: none; }
-.bb-mirror-handle svg { width: var(--mirror-handle-icon); height: var(--mirror-handle-icon); }
-.bb-mirror-sel { fill: none; stroke: var(--marker); stroke-width: 1.5px; pointer-events: none; }
-.bb-mirror-sel.is-preview { stroke-dasharray: var(--mirror-preview-dash); }
+.bb-mirror-sel { fill: none; stroke: var(--marker); stroke-width: var(--mirror-area-line); pointer-events: none; }
 .bb-mirror-sel-handle { fill: var(--canvas); stroke: var(--ink); stroke-width: 1.5px; pointer-events: none; }
-.bb-mirror-margin { fill: var(--marker); fill-opacity: 0; pointer-events: none; transition: fill-opacity var(--duration-fast); }
-.bb-mirror-margin.is-picking { pointer-events: all; cursor: pointer; }
-.bb-mirror-margin.is-hot { fill-opacity: var(--mirror-margin-opacity); }
 .bb-mirror-ghost { pointer-events: none; fill-opacity: var(--mirror-ghost-opacity); stroke: var(--marker); stroke-width: 1.5px; }
-.bb-canvas-hint.is-picking { color: var(--marker); border: 1px solid var(--marker); background: var(--elevated); }
-@media (prefers-reduced-motion: reduce) { .bb-mirror-margin { transition: none; } }
+/* MarginSheet card: the whole-Frame Mirror button, selected while on. */
+.bb-margin-tool.is-selected, .bb-margin-tool.is-selected[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .bb-btn.is-disabled { color: var(--faint); cursor: default; }
 .p-zoom b.on { background: var(--ink); color: var(--canvas); border-radius: 99px; }
 
