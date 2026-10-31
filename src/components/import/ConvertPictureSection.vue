@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watchPostEffect } from 'vue'
-import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { computed, ref, useId, watchPostEffect } from 'vue'
+import { useConvertImageWizardState, type ConvertWeave } from '../../composables/import/useConvertImageWizard'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits, imageInputAccept } from '../../domain/imageConversion'
@@ -10,16 +10,24 @@ import AppMessage from '../ui/AppMessage.vue'
 import AppNote from '../ui/AppNote.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 
 // Convert image's Picture section (ConvertImage card, 1 Picture): every way in (Choose file, Paste, Take photo on touch)
-// through the wizard's one validation and decode, the picture's thumbnail and facts with Turn 90° and Flip, the Note of
-// every way in until the first picture, and the app's own message for a refused file.
+// through the wizard's one validation and decode, the thumbnail and facts with Turn 90° and Flip, weave (Whole picture
+// or A part, ticket 0747), the Note of every way in until the first picture, and the app's message for a refused file.
 const emit = defineEmits<{ paste: [] }>()
 
 const { t } = useI18n()
 const wizard = useConvertImageWizardState()
 const touch = useMediaQuery('(pointer: coarse)')
 const accept = imageInputAccept()
+const weaveLabelId = useId()
+
+const weaveOptions = computed(() => [
+  { value: 'whole' as const, label: t.value.convertImage.wizard.wholePicture },
+  { value: 'part' as const, label: t.value.convertImage.wizard.aPart },
+])
+const weave = computed({ get: () => wizard.weave.value, set: (next: ConvertWeave) => wizard.setWeave(next) })
 
 const note = computed(() => formatImageLimits(touch.value ? t.value.convertImage.wizard.pictureNoteTouch : t.value.convertImage.wizard.pictureNote))
 const error = computed(() => (wizard.rejection.value ? formatImageLimits(t.value.convertImage.errors[wizard.rejection.value]) : undefined))
@@ -100,6 +108,11 @@ watchPostEffect(() => {
           <AppButton variant="in-box" size="sm" data-testid="convert-replace-paste" @click="emit('paste')">{{ t.convertImage.wizard.paste }}</AppButton>
         </span>
       </div>
+      <div class="convert-picture__row">
+        <span :id="weaveLabelId" class="convert-picture__label">{{ t.convertImage.wizard.weave }}</span>
+        <SegmentedControl v-model="weave" :options="weaveOptions" small :labelledby="weaveLabelId" data-testid="convert-weave" />
+      </div>
+      <p v-if="wizard.weave.value === 'part'" class="convert-picture__hint" data-testid="convert-part-hint">{{ t.convertImage.wizard.partHint }}</p>
     </template>
 
     <LoadingState v-if="wizard.reading.value" compact :text="t.convertImage.readingPicture" />
@@ -180,5 +193,24 @@ watchPostEffect(() => {
   font: var(--type-label);
   color: var(--muted);
   text-transform: lowercase;
+}
+
+.convert-picture__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  min-height: var(--panel-row);
+}
+
+.convert-picture__label {
+  font: var(--type-label);
+  color: var(--muted);
+}
+
+.convert-picture__hint {
+  margin: 0;
+  font: var(--type-small);
+  color: var(--muted);
 }
 </style>

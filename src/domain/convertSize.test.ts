@@ -2,23 +2,20 @@
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import {
-  RATIO_PRESETS,
+  LARGE_SCHEMA_BEADS,
   convertResult,
-  cropForView,
   flipPicture,
   fullCrop,
   isLargeSchema,
-  nearestRatio,
+  partInset,
+  partMoved,
   proportionalSide,
-  ratioGrid,
-  ratioOfSize,
-  snapCrop,
-  startingProposal,
-  startingSize,
+  sizeMarks,
+  sizingFor,
+  startingWidth,
   turnPicture,
-  viewForCrop,
+  widthRange,
 } from './convertSize'
-import { framingView, frameSizeMm } from './imageFraming'
 import type { PixelData } from './imageConversion'
 
 const cubeBead: Bead = {
@@ -48,78 +45,143 @@ function pixel(image: PixelData, x: number, y: number): [number, number] {
   return [image.data[at]!, image.data[at + 1]!]
 }
 
-describe('Pixel to bead ratio', () => {
-  it('offers 1:4, 1:2, 1:1, 2:1, 4:1 and 8:1', () => {
-    expect(RATIO_PRESETS.map(({ pixels, beads }) => `${pixels}:${beads}`)).toEqual(['1:4', '1:2', '1:1', '2:1', '4:1', '8:1'])
+describe('widthRange (ConvertImage card, 3 Size)', () => {
+  it('runs from 8 beads to one bead per pixel of the part', () => {
+    expect(widthRange({ width: 256, height: 192 })).toEqual({ min: 8, max: 256 })
   })
 
-  it('makes one bead of every n × n pixel block, a part block counting as a bead', () => {
-    expect(ratioGrid({ x: 0, y: 0, width: 64, height: 48 }, { pixels: 2, beads: 1 })).toEqual({ columns: 32, rows: 24 })
-    expect(ratioGrid({ x: 0, y: 0, width: 65, height: 47 }, { pixels: 2, beads: 1 })).toEqual({ columns: 33, rows: 24 })
+  it('stops at the Large Schema line', () => {
+    expect(widthRange({ width: 1920, height: 1080 })).toEqual({ min: 8, max: LARGE_SCHEMA_BEADS })
   })
 
-  it('makes n × n beads of every pixel the other way', () => {
-    expect(ratioGrid({ x: 0, y: 0, width: 16, height: 12 }, { pixels: 1, beads: 4 })).toEqual({ columns: 64, rows: 48 })
+  it('lets a part under 75 px wide grow to four times its pixels, still under the line', () => {
+    expect(widthRange({ width: 32, height: 32 })).toEqual({ min: 8, max: 128 })
+    expect(widthRange({ width: 74, height: 10 })).toEqual({ min: 8, max: 296 })
+    expect(widthRange({ width: 75, height: 10 })).toEqual({ min: 8, max: 75 })
   })
 
-  it('counts only the cropped pixels', () => {
-    expect(ratioGrid({ x: 8, y: 4, width: 16, height: 8 }, { pixels: 4, beads: 1 })).toEqual({ columns: 4, rows: 2 })
-  })
-})
-
-describe('snapCrop', () => {
-  const image = { width: 50, height: 30 }
-
-  it('snaps every edge to a whole block counted from the picture corner', () => {
-    expect(snapCrop({ x: 3, y: 5, width: 21, height: 13 }, { pixels: 4, beads: 1 }, image)).toEqual({ x: 4, y: 4, width: 20, height: 16 })
-  })
-
-  it('lets the far edge sit on the picture edge, where the last block is a part block', () => {
-    expect(snapCrop({ x: 0, y: 0, width: 50, height: 30 }, { pixels: 4, beads: 1 }, image)).toEqual({ x: 0, y: 0, width: 50, height: 30 })
-    expect(snapCrop({ x: 40, y: 0, width: 9.6, height: 30 }, { pixels: 4, beads: 1 }, image)).toEqual({ x: 40, y: 0, width: 10, height: 30 })
-  })
-
-  it('keeps at least one block and stays on the picture', () => {
-    expect(snapCrop({ x: 10, y: -6, width: 0.5, height: 80 }, { pixels: 4, beads: 1 }, image)).toEqual({ x: 12, y: 0, width: 4, height: 30 })
-  })
-
-  it('snaps to whole pixels when one pixel is several beads', () => {
-    expect(snapCrop({ x: 2.4, y: 1.6, width: 10.2, height: 4.4 }, { pixels: 1, beads: 2 }, image)).toEqual({ x: 2, y: 2, width: 11, height: 4 })
+  it('never puts the min above the max for a tiny picture', () => {
+    expect(widthRange({ width: 1, height: 1 })).toEqual({ min: 4, max: 4 })
   })
 })
 
-describe('startingProposal', () => {
-  it('starts a small picture by ratio, at the preset giving the most beads up to 150 on the long side', () => {
-    expect(startingProposal({ width: 64, height: 32 })).toEqual({ mode: 'ratio', ratio: { pixels: 1, beads: 2 } })
-    expect(startingProposal({ width: 150, height: 90 })).toEqual({ mode: 'ratio', ratio: { pixels: 1, beads: 1 } })
-    expect(startingProposal({ width: 300, height: 399 })).toEqual({ mode: 'ratio', ratio: { pixels: 4, beads: 1 } })
+describe('sizeMarks', () => {
+  it('marks every whole n × n pixels per bead the width divides by, inside the range', () => {
+    // 256 divides by 32, 16, 8, 4 and 2; 256 / 32 = 8 is the min itself.
+    expect(sizeMarks({ width: 256, height: 192 })).toEqual([
+      { width: 8, pixelsPerBead: 32 },
+      { width: 16, pixelsPerBead: 16 },
+      { width: 32, pixelsPerBead: 8 },
+      { width: 64, pixelsPerBead: 4 },
+      { width: 128, pixelsPerBead: 2 },
+      { width: 256, pixelsPerBead: 1 },
+    ])
   })
 
-  it('starts a picture of about 400 px or more on its long side by size', () => {
-    expect(startingProposal({ width: 400, height: 300 }).mode).toBe('size')
-    expect(startingProposal({ width: 300, height: 1200 }).mode).toBe('size')
+  it('leaves out a block the width does not divide by, and a mark past the line', () => {
+    // 1000 / 16 and 1000 / 32 are not whole; 1000 / 2 and 1000 / 1 are past 300.
+    expect(sizeMarks({ width: 1000, height: 500 })).toEqual([
+      { width: 125, pixelsPerBead: 8 },
+      { width: 250, pixelsPerBead: 4 },
+    ])
   })
 
-  it('falls back to 1:1 when no preset keeps to 150 beads', () => {
-    expect(startingProposal({ width: 4000, height: 3000 }).ratio).toEqual({ pixels: 1, beads: 1 })
+  it('adds the enlarging marks, every pixel 2 × 2 and 4 × 4 beads, for a small part', () => {
+    expect(sizeMarks({ width: 16, height: 10 })).toEqual([
+      { width: 8, pixelsPerBead: 2 },
+      { width: 16, pixelsPerBead: 1 },
+      { width: 32, pixelsPerBead: 0.5 },
+      { width: 64, pixelsPerBead: 0.25 },
+    ])
+  })
+
+  it('has no marks for a width nothing divides', () => {
+    expect(sizeMarks({ width: 5000, height: 5000 })).toEqual([])
   })
 })
 
-describe('startingSize', () => {
-  it('is the starting ratio’s Schema when it keeps to 150 beads', () => {
-    expect(startingSize({ width: 600, height: 400 }, cubeBead, 'loom')).toEqual({ columns: 150, rows: 100 })
+describe('sizingFor', () => {
+  it('snaps the height to the pixel grid on a mark, a part block at the edge counting as a bead', () => {
+    const sizing = sizingFor({ part: { width: 256, height: 190 }, width: 32, bead: delicaBead, technique: 'loom' })
+    expect(sizing.mark).toEqual({ width: 32, pixelsPerBead: 8 })
+    expect(sizing.grid).toEqual({ columns: 32, rows: 24 })
+    expect(sizing.pixelsPerBead).toEqual({ x: 8, y: 8 })
   })
 
-  it('is the picture’s shape at 150 beads on its long side for a larger picture, either way up', () => {
-    expect(startingSize({ width: 3000, height: 1500 }, cubeBead, 'loom')).toEqual({ columns: 150, rows: 75 })
-    expect(startingSize({ width: 1500, height: 3000 }, cubeBead, 'loom')).toEqual({ columns: 75, rows: 150 })
+  it('makes every pixel n × n beads on an enlarging mark', () => {
+    const sizing = sizingFor({ part: { width: 16, height: 10 }, width: 64, bead: cubeBead, technique: 'loom' })
+    expect(sizing.mark).toEqual({ width: 64, pixelsPerBead: 0.25 })
+    expect(sizing.grid).toEqual({ columns: 64, rows: 40 })
+  })
+
+  it('follows the physical shape of the picture through the Bead between marks', () => {
+    // 40 beads of 1.3 mm is 52 mm across; the picture is half as tall, 26 mm, about 16 beads of 1.6 mm.
+    const sizing = sizingFor({ part: { width: 200, height: 100 }, width: 40, bead: delicaBead, technique: 'loom' })
+    expect(sizing.mark).toBeUndefined()
+    expect(sizing.grid).toEqual({ columns: 40, rows: 16 })
+    expect(sizing.pixelsPerBead).toEqual({ x: 5, y: 6.25 })
+  })
+
+  it('keeps the Width inside the range, and says so', () => {
+    expect(sizingFor({ part: { width: 256, height: 192 }, width: 999, bead: cubeBead, technique: 'loom' }).width).toBe(256)
+    expect(sizingFor({ part: { width: 256, height: 192 }, width: 2, bead: cubeBead, technique: 'loom' }).width).toBe(8)
+  })
+
+  it('hands the slider its ends and marks', () => {
+    const sizing = sizingFor({ part: { width: 16, height: 10 }, width: 16, bead: cubeBead, technique: 'loom' })
+    expect(sizing.range).toEqual({ min: 8, max: 64 })
+    expect(sizing.marks.map((mark) => mark.width)).toEqual([8, 16, 32, 64])
+  })
+})
+
+describe('startingWidth (the starting proposal)', () => {
+  it('is the largest mark giving at most 150 beads on the long side', () => {
+    expect(startingWidth({ width: 1920, height: 1080 })).toBe(120)
+    expect(startingWidth({ width: 32, height: 32 })).toBe(128)
+    expect(startingWidth({ width: 4, height: 2 })).toBe(16)
+  })
+
+  it('judges the long side by the height of a tall picture', () => {
+    // 1080 / 8 = 135 wide is 240 tall, too tall, and 1080 divides by no larger block: so 150 tall, 84 wide.
+    expect(startingWidth({ width: 1080, height: 1920 })).toBe(84)
+  })
+
+  it('is 150 beads on the long side when no mark keeps to it', () => {
+    expect(startingWidth({ width: 5000, height: 2500 })).toBe(150)
+    expect(startingWidth({ width: 2500, height: 5000 })).toBe(75)
+  })
+
+  it('is the max where that is smaller', () => {
+    expect(startingWidth({ width: 77, height: 1000 })).toBe(12)
+  })
+})
+
+describe('the part (weave: A part)', () => {
+  const image = { width: 200, height: 100 }
+
+  it('starts 10% in from each edge', () => {
+    expect(partInset(image)).toEqual({ x: 20, y: 10, width: 160, height: 80 })
+  })
+
+  it('is at least 8 pixels a side even on a tiny picture', () => {
+    expect(partInset({ width: 10, height: 9 })).toEqual({ x: 1, y: 1, width: 8, height: 8 })
+  })
+
+  it('moves the edges a handle holds, in whole pixels, never off the picture', () => {
+    const part = { x: 20, y: 10, width: 160, height: 80 }
+    expect(partMoved(part, 'topLeft', -5.4, 3.6, image)).toEqual({ x: 15, y: 14, width: 165, height: 76 })
+    expect(partMoved(part, 'right', 50, 50, image)).toEqual({ x: 20, y: 10, width: 180, height: 80 })
+    expect(partMoved(part, 'bottom', 0, -100, image)).toEqual({ x: 20, y: 10, width: 160, height: 8 })
+  })
+
+  it('is the whole picture when nothing is cropped', () => {
+    expect(fullCrop(image)).toEqual({ x: 0, y: 0, width: 200, height: 100 })
   })
 })
 
 describe('proportionalSide', () => {
   it('gives the other side from the picture shape on a square bead', () => {
     expect(proportionalSide({ width: 200, height: 100 }, cubeBead, 'loom', { columns: 40 })).toBe(20)
-    expect(proportionalSide({ width: 200, height: 100 }, cubeBead, 'loom', { rows: 20 })).toBe(40)
   })
 
   it('keeps the physical shape on a bead taller or wider than it is long', () => {
@@ -139,34 +201,6 @@ describe('proportionalSide', () => {
 
   it('never gives fewer than one bead', () => {
     expect(proportionalSide({ width: 1000, height: 1 }, cubeBead, 'loom', { columns: 3 })).toBe(1)
-  })
-})
-
-describe('mode switch', () => {
-  it('names the nearest ratio for a size, both ways', () => {
-    expect(nearestRatio(3.4)).toEqual({ pixels: 3, beads: 1 })
-    expect(nearestRatio(1)).toEqual({ pixels: 1, beads: 1 })
-    expect(nearestRatio(0.3)).toEqual({ pixels: 1, beads: 3 })
-    expect(nearestRatio(500)).toEqual({ pixels: 32, beads: 1 })
-  })
-
-  it('reads a size as pixels per bead along each side', () => {
-    expect(ratioOfSize({ x: 0, y: 0, width: 172, height: 129.5 }, { columns: 40, rows: 37 })).toEqual({ x: 4.3, y: 3.5 })
-  })
-
-  it('carries what is framed across as the crop, and the crop back as the view', () => {
-    const image = { width: 400, height: 300 }
-    const frame = frameSizeMm('loom', { columns: 20, rows: 20 }, cubeBead)
-    const view = framingView(image, frame, 2, { x: 0.25, y: 1 })
-    const crop = cropForView(image, frame, view)
-    expect(crop).toEqual({ x: 62.5, y: 150, width: 150, height: 150 })
-    expect(viewForCrop(image, frame, crop)).toEqual({ zoom: 2, pan: { x: 0.25, y: 1 } })
-  })
-
-  it('frames the whole picture again for a crop it cannot cover', () => {
-    const image = { width: 400, height: 300 }
-    const frame = frameSizeMm('loom', { columns: 20, rows: 20 }, cubeBead)
-    expect(viewForCrop(image, frame, fullCrop(image))).toEqual({ zoom: 1, pan: { x: 0.5, y: 0.5 } })
   })
 })
 
@@ -204,9 +238,11 @@ describe('convertResult', () => {
     mm: 'mm',
     cm: 'cm',
   }
+  const on = (part: { width: number; height: number }, width: number, bead: Bead, technique: 'loom' | 'brick' = 'loom') =>
+    sizingFor({ part, width, bead, technique })
 
-  it('reads a ratio as the size in beads and cm and the block a bead is', () => {
-    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'loom' as const, ratio: { pixels: 8, beads: 1 } }, labels)).toEqual({
+  it('reads a mark as the size in beads and cm and the block a bead is', () => {
+    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing: on({ width: 256, height: 192 }, 32, delicaBead) }, labels)).toEqual({
       grid: '32×24 beads',
       measured: '4.2 × 3.8 cm',
       ratio: '1 bead = 8 × 8 px',
@@ -214,18 +250,17 @@ describe('convertResult', () => {
   })
 
   it('measures the size with the bead laid on the Technique\'s thread: swapped on brick stitch (ticket 0734)', () => {
-    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'brick', ratio: { pixels: 8, beads: 1 } }, labels).measured).toBe('5.1 × 3.1 cm')
+    expect(convertResult({ bead: delicaBead, technique: 'brick', sizing: on({ width: 256, height: 192 }, 32, delicaBead, 'brick') }, labels).measured).toBe('5.1 × 3.1 cm')
   })
 
-  it('reads 1:n as the beads one pixel is', () => {
-    expect(convertResult({ grid: { columns: 64, rows: 48 }, bead: cubeBead, technique: 'loom' as const, ratio: { pixels: 1, beads: 4 } }, labels).ratio).toBe('1 px = 4 × 4 beads')
+  it('reads an enlarging mark as the beads one pixel is', () => {
+    expect(convertResult({ bead: cubeBead, technique: 'loom', sizing: on({ width: 16, height: 12 }, 64, cubeBead) }, labels).ratio).toBe('1 px = 4 × 4 beads')
   })
 
-  it('reads a size as pixels per bead, approximate unless it is a whole ratio', () => {
-    const crop = { x: 0, y: 0, width: 172, height: 129.5 }
-    expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, technique: 'loom' as const, crop }, labels).ratio).toBe('1 bead ≈ 4.3 × 3.5 px')
-    expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, technique: 'loom' as const, crop }, labels, 'ru').ratio).toBe('1 bead ≈ 4,3 × 3,5 px')
-    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, technique: 'loom' as const, crop: { x: 0, y: 0, width: 40, height: 20 } }, labels).ratio).toBe('1 bead = 2 × 2 px')
-    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, technique: 'loom' as const, crop: { x: 0, y: 0, width: 10, height: 5 } }, labels).ratio).toBe('1 px = 2 × 2 beads')
+  it('reads a Width between marks as pixels per bead, about, in the language\'s decimal sign', () => {
+    // 40 Delicas are 52 mm across, the picture 30 mm tall at that: 19 rows of 1.6 mm.
+    const sizing = on({ width: 172, height: 100 }, 40, delicaBead)
+    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing }, labels).ratio).toBe('1 bead ≈ 4.3 × 5.3 px')
+    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing }, labels, 'ru').ratio).toBe('1 bead ≈ 4,3 × 5,3 px')
   })
 })

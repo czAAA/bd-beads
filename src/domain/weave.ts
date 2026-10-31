@@ -80,17 +80,12 @@ interface TechniqueRules<G extends GeometryRef = GeometryRef> {
   /** What one of its beads costs to draw on every move of a drag, in square beads: a rounded bead costs three (measured,
    * ticket 122). */
   draftCost: number
-  /** From how many cells of a Frame's own grid (not the margin) framing a picture in it may be slow to update (ticket 61). */
-  slowFramingCells: number
 }
 
 /** An entry's rules on whichever geometry kind it names, so a setting may set only a number that kind has. */
 type CheckedRules = { [Kind in GeometryRef['kind']]: TechniqueRules<Extract<GeometryRef, { kind: Kind }>> }[GeometryRef['kind']]
 
 const ROUNDED_BEAD_CORNER = 0.22
-/** Every Technique's slow-framing limit: as many cells as the framing preview draws (imageFraming's PREVIEW_MAX_CELLS),
- * since no profiling shows Techniques differ. A Technique found slower lowers its own. */
-const SLOW_FRAMING_CELLS = 12_000
 
 /** The single config map: one entry per Technique. A Technique on an existing geometry is an entry here (ADR 0078). */
 const TECHNIQUE_RULES = {
@@ -101,7 +96,6 @@ const TECHNIQUE_RULES = {
     settings: [],
     wordChart: { marked: false },
     draftCost: 1,
-    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   peyote: {
     nameKey: 'peyote',
@@ -110,7 +104,6 @@ const TECHNIQUE_RULES = {
     settings: [PEYOTE_DROP_SETTING],
     wordChart: { marked: true },
     draftCost: 3,
-    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   brick: {
     nameKey: 'brick',
@@ -119,7 +112,6 @@ const TECHNIQUE_RULES = {
     settings: [BRICK_DROP_SETTING],
     wordChart: { marked: true },
     draftCost: 1,
-    slowFramingCells: SLOW_FRAMING_CELLS,
   },
 } satisfies Record<string, CheckedRules>
 
@@ -290,11 +282,6 @@ export function techniqueNameKey(technique: Technique): string {
 /** What one of the Technique's beads costs to draw on every move of a drag, in square beads. */
 export function draftCost(technique: Technique): number {
   return RULES[technique].draftCost
-}
-
-/** From how many cells of a Frame's own grid framing a picture in the Technique may be slow to update. */
-export function slowFramingCells(technique: Technique): number {
-  return RULES[technique].slowFramingCells
 }
 
 /** Whether the Technique is one of these. */

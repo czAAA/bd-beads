@@ -281,17 +281,18 @@ const CASES: FitCase[] = [
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
-      press(root, 'ratio-custom')
+      press(root, 'convert-color-by-color')
       press(root, 'found-color-remap')
     },
   ],
   [
-    'ConvertImageWizard (by size)',
+    'ConvertImageWizard (a part, in mm)',
     ConvertImageWizard,
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
-      root.querySelector<HTMLElement>('[data-testid="convert-size-mode"] [data-value="size"]')?.click()
+      root.querySelector<HTMLElement>('[data-testid="convert-weave"] [data-value="part"]')?.click()
+      root.querySelector<HTMLElement>('[data-testid="convert-size-unit"] [data-value="mm"]')?.click()
     },
   ],
 ]
