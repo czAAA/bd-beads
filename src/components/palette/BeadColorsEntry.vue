@@ -18,8 +18,8 @@ const name = computed(() => fillBlanks(words.value.open, { bead: props.bead ? be
 </script>
 
 <template>
-  <div class="bead-colors-entry">
-    <AppButton variant="in-box" size="sm" :trailing-icon="open ? 'chevron-up' : 'chevron-down'" :aria-expanded="open" :data-testid="testid" @click="$emit('toggle')">
+  <div class="bead-colors-entry" :class="{ 'bead-colors-entry--open': open }">
+    <AppButton class="bead-colors-entry__button" variant="in-box" size="sm" :trailing-icon="open ? 'chevron-up' : 'chevron-down'" :aria-expanded="open" :data-testid="testid" @click="$emit('toggle')">
       {{ name }}
     </AppButton>
     <InfoButton v-if="open" :label="words.info" :body="`${words.approximate} ${words.takenNote}`" data-testid="bead-colors-info" />
@@ -32,5 +32,20 @@ const name = computed(() => fillBlanks(words.value.open, { bead: props.bead ? be
   align-items: center;
   align-self: flex-start;
   gap: var(--space-4);
+}
+
+/* Open, the entry takes the row: label at the left, chevron at the right edge, the Info button after it. */
+.bead-colors-entry--open {
+  align-self: stretch;
+}
+
+.bead-colors-entry--open .bead-colors-entry__button {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.bead-colors-entry--open .bead-colors-entry__button :deep(.app-button__trailing) {
+  margin-left: auto;
 }
 </style>
