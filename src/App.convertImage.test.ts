@@ -114,8 +114,8 @@ describe('App Convert image (spec 0645)', () => {
   })
 })
 
-describe('App empty canvas (ticket 158)', () => {
-  it('keeps the canvas box with an empty board, what is missing and what to do, and no Progress bar or Tool pill', () => {
+describe('App empty canvas (tickets 158, 0748)', () => {
+  it('keeps the canvas box with its empty positions, what is missing and what to do, an empty Canvas footer and no Tool pill', () => {
     const wrapper = mount(App)
 
     const empty = wrapper.find('[data-testid="app-canvas-placeholder"]')
@@ -124,7 +124,9 @@ describe('App empty canvas (ticket 158)', () => {
     expect(empty.text()).toContain(ru.shell.canvasPlaceholderHint)
     // The strip heads the canvas box, above the board (ticket 143).
     expect(wrapper.get('[data-testid="app-canvas"]').element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
-    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(false)
+    // The footer is there as with a Project open, with nothing in it (ticket 0748).
+    const footer = wrapper.get('[data-testid="progress-bar"]')
+    expect(wrapper.get('[data-testid="app-canvas"]').element.lastElementChild).toBe(footer.element)
     expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(false)
   })
 })
