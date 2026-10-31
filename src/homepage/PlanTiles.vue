@@ -1,24 +1,35 @@
 <script setup lang="ts">
+import { shallowRef } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
-import DrawnLayer from './DrawnLayer.vue'
+import { fillBlanks } from '../domain/fillBlanks'
 import { useI18n } from '../i18n/useI18n'
+import FreeList from './FreeList.vue'
+import { SCROLLS_TO_UNROLL } from './useFreeRoll'
 
 // The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account opens the editor, like the hero's
-// button; Free account and Pro are switched off, one shared reason. Contents are placeholders: no account, pricing or
-// payment behaviour here.
-const emit = defineEmits<{ openEditor: [] }>()
+// button; Free account and Pro are switched off, one shared reason. No account's list is everything free, in a short
+// window scrolled by hand (ticket 0739); the page counts the scrolls and unrolls it. Free account and Pro are placeholders.
+defineProps<{
+  /** How many of the beads beside the free count are lit: one per scroll of the window. */
+  lit: number
+  /** Whether the list is unrolled below the tile: the roll then lies over the window. */
+  unrolled: boolean
+}>()
+const emit = defineEmits<{ openEditor: []; freeScroll: [] }>()
 const { t } = useI18n()
 
 /** The tiles' ids, in the design system's order; the first is the one that works now. */
 const IDS = ['no-account', 'free-account', 'pro'] as const
+/** The free list's window, for the page to measure the roll from; a ref inside the tiles' loop would be a list. */
+const freeWindow = shallowRef<HTMLElement>()
+const setFreeWindow = (el: unknown) => (freeWindow.value = el instanceof HTMLElement ? el : undefined)
+defineExpose({ freeWindow })
 </script>
 
 <template>
   <section class="plans" aria-labelledby="homepage-plans" data-testid="homepage-plans">
-    <DrawnLayer section="plans" />
     <header class="plans__head">
-      <p class="plans__label">{{ t.homepage.plans.label }}</p>
       <h2 id="homepage-plans" class="plans__heading">{{ t.homepage.plans.heading }}</h2>
       <p class="plans__why"><AppIcon name="info" :size="16" />{{ t.homepage.plans.why }}</p>
     </header>
@@ -55,7 +66,30 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
         >
           {{ tile.button }}
         </AppButton>
-        <ul class="plan__list">
+        <template v-if="i === 0">
+          <p class="plan__includes plan__free-head">
+            <span>{{ tile.includes }}</span>
+            <span class="plan__free-count" data-testid="free-count">
+              {{ fillBlanks(t.homepage.plans.free.count, { count: tile.items.length }) }}
+              <span class="plan__ticks" aria-hidden="true">
+                <i v-for="tick in SCROLLS_TO_UNROLL" :key="tick" :class="{ 'plan__tick--on': tick <= lit }" data-testid="free-tick" />
+              </span>
+            </span>
+          </p>
+          <div
+            :ref="setFreeWindow"
+            class="plan__free-window"
+            :class="{ 'plan__free-window--unrolled': unrolled }"
+            role="region"
+            tabindex="0"
+            :aria-label="t.homepage.plans.free.window"
+            data-testid="free-window"
+            @scroll.passive="emit('freeScroll')"
+          >
+            <FreeList :items="tile.items" />
+          </div>
+        </template>
+        <ul v-else class="plan__list">
           <li class="plan__includes">{{ tile.includes }}</li>
           <li v-for="item in tile.items" :key="item" class="plan__item">
             <AppIcon name="check" :size="15" class="plan__check" /><span>{{ item }}</span>
@@ -68,61 +102,68 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
 
 <style scoped>
 .plans {
-  position: relative;
-  isolation: isolate;
-  padding: var(--space-32) 0;
+  display: flex;
+  flex-direction: column;
 }
 
+/* The heading on the left and the one reason on the right, wrapping under it where there is no room. */
 .plans__head {
-  text-align: center;
-}
-
-.plans__label {
-  margin: 0;
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-16);
 }
 
 .plans__heading {
-  margin: var(--space-4) 0 0;
+  margin: 0;
   font: var(--type-serif-heading);
-  font-size: 2.125rem;
-  line-height: 2.375rem;
   letter-spacing: var(--tracking-serif-heading);
   color: var(--ink);
-}
-
-@container homepage (min-width: 744px) {
-  .plans__heading {
-    font-size: 2.625rem;
-    line-height: 2.875rem;
-  }
 }
 
 .plans__why {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-8);
-  margin: var(--space-10) 0 0;
+  margin: 0;
   font: var(--type-body);
   font-size: 0.8125rem;
   line-height: 1.125rem;
   color: var(--muted);
 }
 
+/* On a phone the tiles scroll sideways, one and a bit in view; from 744 the three side by side. The top padding is the
+ * room for "you are here". */
 .plans__grid {
   display: grid;
-  gap: var(--space-14);
-  margin-top: var(--space-24);
+  grid-auto-columns: 84%;
+  grid-auto-flow: column;
+  align-items: start;
+  gap: var(--space-12);
+  padding-top: var(--space-32);
+  padding-bottom: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.plans__grid::-webkit-scrollbar {
+  display: none;
+}
+
+.plans__grid > * {
+  scroll-snap-align: start;
 }
 
 @container homepage (min-width: 744px) {
   .plans__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-12);
-    margin-top: var(--space-32);
+    grid-auto-columns: auto;
+    grid-auto-flow: row;
+    gap: var(--space-16);
+    overflow: visible;
   }
 }
 
@@ -130,47 +171,38 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-14);
+  gap: var(--space-10);
   box-sizing: border-box;
   min-width: 0;
-  padding: 1.375rem var(--space-20);
+  padding: var(--space-16) var(--space-20);
   text-align: left;
   background: var(--canvas);
   border: 1px solid var(--line);
   border-radius: 1rem;
 }
 
-@container homepage (min-width: 744px) {
-  .plan {
-    padding: var(--space-20) 1.125rem;
-  }
-}
-
 @container homepage (min-width: 1024px) {
   .plan {
-    padding: 1.625rem var(--space-24);
+    padding: var(--space-20) var(--space-24);
   }
 }
 
 .plan--current {
   border: 2px solid var(--ink);
-  padding: calc(1.375rem - 1px) calc(var(--space-20) - 1px);
-}
-
-@container homepage (min-width: 744px) {
-  .plan--current {
-    padding: calc(var(--space-20) - 1px) calc(1.125rem - 1px);
-  }
+  padding: calc(var(--space-16) - 1px) calc(var(--space-20) - 1px);
 }
 
 @container homepage (min-width: 1024px) {
   .plan--current {
-    padding: calc(1.625rem - 1px) calc(var(--space-24) - 1px);
+    padding: calc(var(--space-20) - 1px) calc(var(--space-24) - 1px);
   }
 }
 
-/* The hand-written note: decorative, only from 744 where there is room above the tile. */
+/* The hand-written note: decorative, above the tile, only from 744 where there is room for it. */
 .plan__here {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: none;
   pointer-events: none;
 }
@@ -275,7 +307,7 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   gap: var(--space-8);
   align-content: start;
   margin: 0;
-  padding: var(--space-14) 0 0;
+  padding: var(--space-10) 0 0;
   list-style: none;
   border-top: 1px solid var(--line-soft);
 }
@@ -284,6 +316,62 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   font: var(--type-meta-small);
   color: var(--muted);
   text-transform: lowercase;
+}
+
+/* "what you get" and "23 · free" with the three beads, one lit per scroll of the window below. */
+.plan__free-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin: 0;
+  padding-top: var(--space-10);
+  border-top: 1px solid var(--line-soft);
+}
+
+.plan__free-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* The beads are the carousel's dots. */
+.plan__ticks {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.plan__ticks i {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--bead-empty);
+  border-radius: var(--radius-xs);
+  transition: background var(--duration-base) var(--ease-standard);
+}
+
+.plan__ticks i.plan__tick--on {
+  background: var(--accent);
+}
+
+/* The window: a few rows, scrolled by hand, fading out at its foot; its scrolling never runs on into the page's. */
+.plan__free-window {
+  height: var(--free-window);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  mask-image: linear-gradient(180deg, var(--ink) 72%, transparent);
+}
+
+.plan__free-window:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* The roll lies over it while unrolled; it scrolls no more, so the rest of a swipe already on it runs on into the page. */
+.plan__free-window--unrolled {
+  overflow: hidden;
+  overscroll-behavior: auto;
+  opacity: 0;
 }
 
 .plan__item {

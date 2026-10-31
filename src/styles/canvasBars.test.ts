@@ -21,7 +21,7 @@ describe('Canvas strip and Canvas footer height (ticket 544)', () => {
   it.each([
     ['src/components/canvas/CanvasStrip.vue', /border-radius: var\(--canvas-box-radius\) var\(--canvas-box-radius\) 0 0/],
     ['src/components/canvas/ProgressBar.vue', /border-radius: 0 0 var\(--canvas-box-radius\) var\(--canvas-box-radius\)/],
-    ['src/homepage/HomePage.vue', /border-radius: 0 0 var\(--canvas-box-radius\) var\(--canvas-box-radius\)/],
+    ['src/homepage/HomePage.vue', /\.homepage \{[^}]*border-radius: var\(--canvas-box-radius\)/],
   ])('rounds %s with the canvas box radius token', (file, corners) => {
     expect(read(file)).toMatch(corners)
   })

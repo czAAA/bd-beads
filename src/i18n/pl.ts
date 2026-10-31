@@ -372,18 +372,19 @@ export const pl: Translations = {
     whatsInside: 'Co jest w środku',
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
+    sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.' },
     notes: { onUs: 'na nasz koszt' },
     coffee: { title: 'Robi to jedna rodzina', text: 'openbeads robi jedna rodzina, koralik po koraliku, i jest darmowe. Jeśli zaoszczędziło ci czas, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
-      label: 'plany',
       heading: 'Trzy sposoby użycia',
       why: 'Konta i Pro nie są jeszcze otwarte. Wszystko działa bez nich.',
       youAreHere: 'jesteś tutaj',
       tiles: [
-        { name: 'Bez konta', price: 'Za darmo', meta: 'bez rejestracji', text: 'Rysuj, licz i pleć na tym urządzeniu. Nie musisz się nigdzie rejestrować.', button: 'Otwórz edytor', includes: 'co dostajesz', items: ['Wszystkie trzy techniki', 'Każde narzędzie, Konwertuj obraz i Postęp rzędów', 'Eksport do PDF, PNG i pliku projektu', 'Projekty zapisane na tym urządzeniu'] },
-        { name: 'Darmowe konto', price: 'Za darmo', meta: 'wkrótce', text: 'Ta sama aplikacja, z twoimi projektami na każdym używanym urządzeniu.', button: 'Załóż konto', includes: 'wszystko z wersji bez konta, a do tego', items: ['Projekty na wszystkich urządzeniach', 'Kopia zapasowa każdego zapisanego projektu', 'Udostępnianie projektu przez link'] },
+        { name: 'Bez konta', price: 'Za darmo', meta: 'bez rejestracji', text: 'Rysuj, licz i pleć na tym urządzeniu. Nie musisz się nigdzie rejestrować.', button: 'Otwórz edytor', includes: 'co dostajesz', items: ['Krosno', 'Peyote', 'Ścieg ceglasty', 'Maluj, Wypełnij i Gumka', 'Zaznaczanie, kopiowanie i wklejanie', 'Odbicie', 'Cofnięcie każdego kroku', 'Kawałki z nazwami', 'Konwertuj obraz, do 14 kolorów', 'Postęp rzędów', 'Potrzebne koraliki, także w gramach', 'Własna paleta', 'Pobierz kolor z płótna', 'Ramka i Linijki', 'Eksport do PDF', 'Eksport do PNG', 'Plik projektu', 'Projekty zapisane na tym urządzeniu', 'Jasny, ciemny i wysoki kontrast', 'Siedem języków', 'Działa offline', 'Skróty klawiszowe', 'Bez rejestracji'] },
+        { name: 'Darmowe konto', price: 'Za darmo', meta: 'wkrótce', text: 'Ta sama aplikacja, z twoimi projektami na każdym używanym urządzeniu.', button: 'Załóż konto', includes: 'wszystko z wersji bez konta, a do tego', items: ['Projekty na wszystkich urządzeniach', 'Kopia zapasowa każdego zapisanego projektu'] },
         { name: 'Pro', price: 'Cena później', meta: 'wkrótce', text: 'Dla twórców, którzy uczą, sprzedają lub dużo drukują.', button: 'Wkrótce', includes: 'wszystko z darmowego konta, a do tego', items: ['Własna strona tytułowa i logo w eksportach PDF', 'Własne palety i katalogi koralików', 'Nowe techniki jako pierwszy'] },
       ],
+      free: { count: '{count} · za darmo', window: 'Wszystko za darmo, przewiń, aby zobaczyć całość', rollUp: 'Zwiń listę' },
     },
     features: {
       techniques: { name: 'Techniki', text: 'Krosno, peyote i ścieg ceglasty, każda narysowana tak, jak układają się koraliki.', tabLine: 'Krosno, peyote, ścieg ceglasty, rysowane jak koraliki.' },

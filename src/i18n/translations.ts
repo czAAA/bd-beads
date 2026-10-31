@@ -421,17 +421,21 @@ export interface Translations {
     /** The carousel's ‹ › buttons. */
     previousFeature: string
     nextFeature: string
+    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end. */
+    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string }
     /** The hand-written notes of the hero (Homepage card); decorative, hidden from screen readers. */
     notes: { onUs: string }
     /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string }
     /** The plan tiles (ticket 220; Homepage card): placeholders until accounts and payment exist. */
     plans: {
-      label: string
       heading: string
       why: string
       youAreHere: string
+      /** No account's items are the whole free list (ticket 0739): the app's real features. */
       tiles: Array<{ name: string; price: string; meta: string; text: string; button: string; includes: string; items: string[] }>
+      /** The free list's window in the No account tile and the roll it unrolls into (ticket 0739). */
+      free: { count: string; window: string; rollUp: string }
     }
     features: {
       techniques: FeatureCopy

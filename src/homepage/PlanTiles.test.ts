@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PlanTiles from './PlanTiles.vue'
+import { en } from '../i18n/en'
 
-function tiles(locale: 'en' | 'ru' = 'en') {
+function tiles(locale: 'en' | 'ru' = 'en', props = { lit: 0, unrolled: false }) {
   localStorage.setItem('openbeads:locale', locale)
-  return mount(PlanTiles)
+  return mount(PlanTiles, { props })
 }
 
 beforeEach(() => localStorage.clear())
@@ -24,7 +25,32 @@ describe('PlanTiles', () => {
     const filled = wrapper.findAll('.plan__strand').map((s) => s.findAll('.plan__bead--on').length)
     expect(filled).toEqual([1, 2, 3])
     expect(wrapper.find('[data-testid="plan-pro"]').text()).toContain('everything in Free account, plus')
-    expect(wrapper.find('[data-testid="plan-free-account"]').findAll('li')).toHaveLength(4)
+    expect(wrapper.find('[data-testid="plan-free-account"]').findAll('li')).toHaveLength(3)
+    expect(wrapper.find('[data-testid="plan-pro"]').findAll('li')).toHaveLength(4)
+  })
+
+  describe('the free list (ticket 0739)', () => {
+    it('is the No account tile’s "what you get": every free feature, counted, in a window scrolled by hand', () => {
+      const wrapper = tiles()
+      const tile = wrapper.get('[data-testid="plan-no-account"]')
+      expect(tile.text()).toContain('what you get')
+      expect(tile.get('[data-testid="free-count"]').text()).toBe(`${en.homepage.plans.tiles[0]!.items.length} · free`)
+      const window = tile.get('[data-testid="free-window"]')
+      expect(window.attributes()).toMatchObject({ role: 'region', tabindex: '0', 'aria-label': 'Everything free, scroll to see all' })
+      expect(window.findAll('li').map((item) => item.text())).toEqual(en.homepage.plans.tiles[0]!.items)
+    })
+
+    it('lights a bead beside the count per scroll the page counted, and says each scroll of the window', async () => {
+      const wrapper = tiles('en', { lit: 2, unrolled: false })
+      const ticks = wrapper.findAll('[data-testid="free-tick"]')
+      expect(ticks.map((tick) => tick.classes().includes('plan__tick--on'))).toEqual([true, true, false])
+      await wrapper.get('[data-testid="free-window"]').trigger('scroll')
+      expect(wrapper.emitted('freeScroll')).toHaveLength(1)
+    })
+
+    it('leaves the window to the roll while the list is unrolled', () => {
+      expect(tiles('en', { lit: 3, unrolled: true }).get('[data-testid="free-window"]').classes()).toContain('plan__free-window--unrolled')
+    })
   })
 
   it('opens the editor from the No account tile, which is marked as the current one', async () => {
