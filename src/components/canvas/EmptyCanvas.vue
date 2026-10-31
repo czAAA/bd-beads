@@ -1,15 +1,33 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { DEFAULT_BEAD } from '../../domain/beads'
+import { beadCell, DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
+import { positionMarkBackground } from '../../rendering/positionMarks'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
-/** The canvas box with no Project open (ticket 158; EmptyCanvas card): an empty board (`bead-empty` beads), "No
- * Project open yet", one hint line, then the slot (New Project and Import). */
+/** The canvas box with no Project open (tickets 158, 0748; EmptyCanvas card): the empty positions of New Project's
+ * default Technique and Bead at 100%, on the Canvas's last Background, then the message and the slot. */
 const { t } = useI18n()
+const canvasBackground = useCanvasBackground()
+const DEFAULT_CELL = beadCell(DEFAULT_BEAD, DEFAULT_TECHNIQUE)
+const boardStyle = computed(() => {
+  const pixelRatio = window.devicePixelRatio || 1
+  const marks = positionMarkBackground({
+    technique: DEFAULT_TECHNIQUE,
+    cell: DEFAULT_CELL,
+    deviceScale: pixelRatio,
+    pixelRatio,
+    color: canvasBackground.projectTheme.value.positionMark,
+  })
+  return marks ? { '--empty-marks': `url(${marks.url})`, '--empty-marks-size': `${marks.width}px ${marks.height}px` } : undefined
+})
 </script>
 
 <template>
   <div class="empty-canvas" data-testid="app-canvas-placeholder">
-    <!-- Board fills the entire container; dots are behind the message. -->
-    <span class="empty-canvas__board" aria-hidden="true" />
+    <!-- The positions fill the entire container, behind the message. -->
+    <span class="empty-canvas__board" :style="boardStyle" aria-hidden="true" />
     <div class="empty-canvas__message">
       <p class="empty-canvas__title">{{ t.shell.canvasPlaceholder }}</p>
       <p class="empty-canvas__hint">{{ t.shell.canvasPlaceholderHint }}</p>
@@ -27,15 +45,14 @@ const { t } = useI18n()
   min-height: 160px;
 }
 
-/* Dot board: covers the whole container. */
+/* The empty positions: cover the whole container, over the drawing area's Background. */
 .empty-canvas__board {
   position: absolute;
   inset: 0;
-  background: var(--board) radial-gradient(circle, var(--bead-empty) 0 36%, transparent 40%) var(--space-6) var(--space-6) /
-    var(--space-12) var(--space-12);
+  background: var(--empty-marks, none) 0 0 / var(--empty-marks-size, auto) repeat;
 }
 
-/* Message floats in the centre; a translucent pad keeps the text readable over the dots. */
+/* Message floats in the centre, over the positions. */
 .empty-canvas__message {
   position: absolute;
   inset: 0;

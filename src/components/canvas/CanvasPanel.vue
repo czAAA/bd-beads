@@ -439,10 +439,9 @@ const drawingStyle = computed(() => {
 
       <!--
         Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
-        first control is Remove frame (ticket 426).
+        first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
       -->
       <ProgressBar
-        v-if="activeProject"
         :project="activeProject"
         :row-highlight="rowHighlight"
         :row-press="rowPress"
