@@ -83,15 +83,15 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       ...landing.map((cell) => (project: Project) => {
         const sources = [{ row: cell.row, column: cell.column }]
         // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-        return onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), sources.map(local)).positions, color), counterpartsThrough(project, () => sources))
+        return onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, counterparts(sheet, deps.mirror(), sources.map(local)).positions, color), counterpartsThrough(() => sources))
       }),
     )
   }
 
-  /** How a Canvas command treats the Frame's footprint while the Canvas mirrors (ticket 0704, spec 0702's Edges): a
+  /** How a Canvas command treats the Frame's footprint while the Mirror is on the Canvas (spec 0702's Edges): a
    * counterpart lands there, hidden; the command's own sources, and everything otherwise, the Frame keeps untouched. */
-  function counterpartsThrough(project: Project, sources: () => readonly GridPosition[]): OnLayerOptions {
-    if (!canvasMirrors(project, deps.mirror())) return {}
+  function counterpartsThrough(sources: () => readonly GridPosition[]): OnLayerOptions {
+    if (!canvasMirrors(deps.mirror())) return {}
     return { underFrame: (position) => !sources().some((source) => source.row === position.row && source.column === position.column) }
   }
 
@@ -120,7 +120,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
           if (filled === sheet.beads || !isMirrorOn(deps.mirror())) return filled
           flooded = changedPositions(sheet.beads, filled)
           return paintCells({ ...sheet, beads: filled }, counterparts(sheet, deps.mirror(), flooded).positions, color)
-        }, counterpartsThrough(current, () => flooded))
+        }, counterpartsThrough(() => flooded))
       })
       if (refused) {
         fillRefusals.value += 1

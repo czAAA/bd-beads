@@ -1,7 +1,6 @@
 import { defineComponent, h, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
-import MirrorPopover from './tools/MirrorPopover.vue'
 import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
@@ -52,48 +51,15 @@ const ColorPopoverHost = defineComponent({
   },
 })
 
-/** The Mirror popover placed against its tile on the pill (ticket 0703): with a Frame, both Axes on, so the count
- * Steppers and every row show; the Area row with an Area set (ticket 0710), so its size, Whole Frame and Clear show. */
-const MirrorPopoverHost = defineComponent({
-  setup() {
-    const tile = ref<HTMLElement>()
-    const pill = ref<HTMLElement>()
-    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }
-    return () =>
-      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
-        h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 }, areaRow: 'frame', area: { row: 1, column: 2, rows: 10, columns: 12 } }),
-      ])
-  },
-})
-
-/** The same popover on the open Canvas (ticket 0704): a straight Axis on in Repeat and no Frame, so the Canvas's
- * Note shows in place of the Steppers, and the Area row with none set, its Canvas Note (ticket 0710). */
-const MirrorPopoverOnCanvasHost = defineComponent({
-  setup() {
-    const tile = ref<HTMLElement>()
-    const pill = ref<HTMLElement>()
-    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'repeat', axes: { ...MIRROR_OFF.axes, leftRight: true } }
-    return () =>
-      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
-        h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, onCanvas: true, areaRow: 'canvas' }),
-      ])
-  },
-})
-
-/** The popover with a Frame and no Area yet: the Frame's Note under Select area and Whole Frame, while picking. */
-const MirrorPopoverPickingHost = defineComponent({
-  setup() {
-    const tile = ref<HTMLElement>()
-    const pill = ref<HTMLElement>()
-    const setting: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
-    return () =>
-      h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' }, ref: pill }, [
-        h('button', { ref: tile, type: 'button' }, 'Mirror'),
-        h(MirrorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', setting, limits: { leftRight: 11, topBottom: 11 }, areaRow: 'frame', picking: true }),
-      ])
-  },
+/** The Mirror bar (ticket 0750, ContextBar card): both straight Axes on with their counts, the widest it gets in one
+ * row, over a Canvas Area; it takes two rows where the canvas box is too narrow for that. */
+const mirrorBoth: MirrorSetting = { ...MIRROR_OFF, axes: { leftRight: true, topBottom: true, radial: false }, counts: { leftRight: 2, topBottom: 3 }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 10, columns: 12 } } }
+const mirrorBar = (setting: MirrorSetting) => ({
+  project: painted,
+  pasteArmed: false,
+  canRemoveLine: false,
+  mirror: { setting, summary: '12×10 ≈ 1.8 × 1.5 cm', rect: { row: 0, column: 0, rows: 10, columns: 12 } },
+  mirrorAnchor: { box: { left: 40, top: 160, width: 100, height: 60 }, viewport: { width: 360, height: 640 } },
 })
 
 /** The app's drop look, a picture being dragged over it. */
@@ -235,9 +201,6 @@ const firstRunHintsHost = defineComponent({
 
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
-  ['MirrorPopover', MirrorPopoverHost as Component, {}],
-  ['MirrorPopover on the Canvas', MirrorPopoverOnCanvasHost as Component, {}],
-  ['MirrorPopover picking an Area', MirrorPopoverPickingHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
   ['Missed Project notice', MissedProjectNotice, {}],
@@ -245,8 +208,6 @@ const CASES: FitCase[] = [
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
-  ['CanvasHint picking an Area on a Frame', CanvasHint, { picking: 'frame' }],
-  ['CanvasHint picking an Area on the Canvas', CanvasHint, { picking: 'canvas' }],
   ['FirstRunHints', firstRunHintsHost as Component, {}],
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
@@ -259,6 +220,10 @@ const CASES: FitCase[] = [
     { project: painted, selection: { top: 0, left: 0, rows: 2, columns: 2 }, selectionSummary: '2×2 ≈ 3 × 3 mm', pasteArmed: false, canRemoveLine: true, canNamePiece: true, hasClipboard: true, anchor: { box: { left: 40, top: 160, width: 100, height: 60 }, viewport: { width: 360, height: 640 } } },
     async () => void (await armSelectionBar()),
   ],
+  ['Mirror bar', ContextBar, mirrorBar(mirrorBoth)],
+  ['Mirror bar (Radial)', ContextBar, mirrorBar({ ...mirrorBoth, axes: { leftRight: false, topBottom: false, radial: true } })],
+  ['Mirror bar (one bead wide)', ContextBar, { ...mirrorBar(mirrorBoth), mirror: { setting: mirrorBoth, summary: '1×10 ≈ 1.5 × 15 mm', rect: { row: 0, column: 0, rows: 10, columns: 1 } } }],
+  ['Mirror bar (Custom frame)', ContextBar, { ...mirrorBar({ ...mirrorBoth, mode: 'repeat' }), mirror: { setting: { ...mirrorBoth, mode: 'repeat' }, summary: 'Fringe earring · 21×20 ≈ 3.2 × 3 cm', shape: { axes: { leftRight: true, topBottom: false, radial: false } } } }],
   ['SchemaTags', schemaTagsHost, {}],
   ['SchemaTags (open)', schemaTagsHost, {}, openSchemaTag],
   ['StarterGallery', StarterGallery, {}],

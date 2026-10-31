@@ -81,7 +81,7 @@ describe('App keyboard shortcuts', () => {
     expect(firstCellColor()).toBeNull()
   })
 
-  it('Ctrl+C copies the Selection into paste mode, and the Paste tile and 7 enter it again (ticket 447)', async () => {
+  it('Ctrl+C copies the Selection into paste mode, and the Paste tile and 8, its place in the pill, enter it again (ticket 447, ADR 0084)', async () => {
     const wrapper = await mountApp(6, 6)
     await selectPaintedBead(wrapper)
 
@@ -95,7 +95,7 @@ describe('App keyboard shortcuts', () => {
     expect(previewedBeads(wrapper)).toHaveLength(1)
 
     await pressKey({ key: 'Escape' })
-    await pressKey({ key: '7' })
+    await pressKey({ key: '8' })
     await hoverBead(wrapper, 8)
     expect(previewedBeads(wrapper)).toHaveLength(1)
     expect(frameGrid(loadProjects()[0]!).flat().filter((cell) => cell.color)).toHaveLength(2) // nothing stamped

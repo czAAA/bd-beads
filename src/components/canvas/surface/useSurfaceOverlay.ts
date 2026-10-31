@@ -1,6 +1,5 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
-import type { Layer, PreviewCell } from '../../../domain/grid'
-import type { Rect } from '../../../domain/canvas'
+import type { PreviewCell } from '../../../domain/grid'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
 import type { PasteStamp, Selection } from '../../../domain/selection'
@@ -14,8 +13,7 @@ import type { Size } from '../../../rendering/cellSize'
 import type { HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
 import { frameOf } from '../../../domain/layerRecord'
-import { isMirrorOn, type CanvasAxes, type MirrorAxis, type MirrorSetting } from '../../../domain/mirror'
-import type { AxisHandle } from '../../../rendering/mirrorAxes'
+import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
 // redrawn frame by frame; with reduced motion at once. At rest the sheet's own edge marks the margin (ticket 0656).
@@ -91,18 +89,10 @@ export interface SurfaceOverlayDeps {
     showRulers?: boolean
     frameTooltip?: string
     tools: ToolCapabilities
-    /** The Mirror setting (ticket 0703): its Axis lines are drawn across the Frame while the mode is not Off. */
+    /** The Mirror (ADR 0082): its Area and Axis lines are drawn while it is on. */
     mirror?: MirrorSetting
-    /** The open Canvas's Axes that act (ticket 0704), drawn across the whole view, and the one being dragged. */
-    mirrorAxes?: CanvasAxes
-    heldAxis?: MirrorAxis
-    /** The band a pick of Mirror's Area is dragging (ticket 0710), in the positions of the layer it is for. */
-    areaBand?: Rect
-    areaLayer?: Layer
   }
   canvas: Ref<HTMLCanvasElement | undefined>
-  /** The Axis handles' chips (ticket 0704), the same list the pointer hit-tests. */
-  axisHandles: Ref<readonly AxisHandle[]>
   size: Ref<Size>
   space: Ref<Space>
   surface: Ref<SurfaceView>
@@ -126,7 +116,7 @@ export interface SurfaceOverlayDeps {
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity, axisHandles, rowMotion } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity, rowMotion } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -176,8 +166,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value } : undefined,
         rulers: { layout: rulers.value, surface: surface.value },
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
-        canvasAxes: props.mirrorAxes ? { axes: props.mirrorAxes, handles: axisHandles.value, held: props.heldAxis } : undefined,
-        mirrorArea: { surface: surface.value, touch: touchInput.value, band: props.areaBand ? { ...props.areaBand, layer: props.areaLayer ?? 'canvas' } : undefined },
+        mirrorArea: { surface: surface.value, touch: touchInput.value },
         rowMotion: rowMotion.value,
       })
     }
@@ -204,10 +193,6 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.tools.picking,
       () => props.frameTooltip,
       () => props.mirror,
-      () => props.mirrorAxes,
-      () => props.heldAxis,
-      () => props.areaBand,
-      axisHandles,
       marginOpacity,
       rowMotion,
       touchInput,

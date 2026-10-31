@@ -47,7 +47,7 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
 }
 
 /** Where a bead's centre is in the page, for a surface at the corner of it, whichever Technique, zoom, rotation and
- * scroll: what a press on the bead aims at, or a press on a line through it (a Mirror Axis handle, ticket 0704). */
+ * scroll: what a press on the bead aims at. */
 export function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: number } {
   const root = surfaceRoot(wrapper)
   const technique = root.attributes('data-technique') as Technique

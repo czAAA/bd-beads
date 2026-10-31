@@ -80,6 +80,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
       'Row not done',
       'Row done',
       'Move Frame',
+      'Mirror the whole Frame',
       'Rotate Frame',
       'Edit Frame',
       'Export',
@@ -214,7 +215,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     const wrapper = mountSheet({ anchor: anchorAt(0.4), project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
     // Two rows done: the Frame holds still, so no Edit Frame.
-    expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
+    expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('3/11')
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(true)
     expect(styleOf(wrapper, 'margin-band')).toContain('top: 4.8px')
@@ -273,13 +274,16 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     const items = async () => {
       await menu().trigger('click')
       await nextTick()
-      return wrapper.findAll('[role="menuitem"]')
+      return wrapper.findAll('[role^="menuitem"]')
     }
-    expect((await items()).map((item) => item.text())).toEqual(['Rotate Frame', 'Edit Frame', 'Export', 'Remove Frame'])
-    for (const id of ['rotate', 'edit', 'export', 'remove']) {
-      if (!wrapper.find('[role="menuitem"]').exists()) await items()
+    expect((await items()).map((item) => item.text())).toEqual(['Mirror the whole Frame', 'Rotate Frame', 'Edit Frame', 'Export', 'Remove Frame'])
+    expect(control(wrapper, 'margin-frame-tools-mirror').attributes('role')).toBe('menuitemcheckbox')
+    expect(control(wrapper, 'margin-frame-tools-mirror').attributes('aria-checked')).toBe('false')
+    for (const id of ['mirror', 'rotate', 'edit', 'export', 'remove']) {
+      if (!wrapper.find('[role^="menuitem"]').exists()) await items()
       await control(wrapper, `margin-frame-tools-${id}`).trigger('click')
     }
+    expect(wrapper.emitted('mirror')).toHaveLength(1)
     expect(wrapper.emitted('rotate')).toHaveLength(1)
     expect(wrapper.emitted('toggle-edit')).toHaveLength(1)
     // Export hangs from the menu's button, the one it was asked from.
@@ -336,20 +340,20 @@ describe('the title block on a turned Canvas (ticket 0728)', () => {
   })
 })
 
-describe('the whole-Frame target while Mirror\'s Area is being picked (ticket 0710, MirrorPopover card)', () => {
-  it('while picking, the controls take no press and the tint and the Frame preview stand ready; under the pointer the sheet is the target', async () => {
-    const wrapper = mountSheet({ picking: true })
-    const sheet = control(wrapper, 'margin-sheet')
-    expect(sheet.classes()).toContain('margin-sheet--picking')
-    expect(sheet.classes()).not.toContain('margin-sheet--target')
-    expect(control(wrapper, 'margin-area-tint').attributes('style')).toContain(`border-width: ${anchor.box.top}px`)
-    const preview = control(wrapper, 'margin-area-preview')
-    expect(preview.attributes('style')).toContain(`left: ${anchor.box.left}px`)
-    expect(preview.attributes('style')).toContain(`width: ${anchor.box.width}px`)
-    await wrapper.setProps({ targeted: true })
-    expect(sheet.classes()).toContain('margin-sheet--target')
-    await wrapper.setProps({ picking: false, targeted: true })
-    expect(sheet.classes()).not.toContain('margin-sheet--target')
-    expect(wrapper.find('[data-testid="margin-area-tint"]').exists()).toBe(false)
+describe('Mirror the whole Frame (MarginSheet card, ADR 0082)', () => {
+  it('stands left of Rotate Frame, named for what it does, pressed in the accent and named Mirror off while the whole Frame is the Mirror', async () => {
+    const wrapper = mountSheet()
+    const ids = wrapper.findAll('.margin-sheet__tools button').map((button) => button.attributes('data-testid'))
+    expect(ids.indexOf('margin-mirror-frame')).toBe(ids.indexOf('margin-rotate-frame') - 1)
+    const button = control(wrapper, 'margin-mirror-frame')
+    expect(button.attributes('aria-label')).toBe('Mirror the whole Frame')
+    expect(button.attributes('aria-pressed')).toBe('false')
+    await button.trigger('click')
+    expect(wrapper.emitted('mirror')).toHaveLength(1)
+
+    await wrapper.setProps({ mirrorOnFrame: true })
+    expect(control(wrapper, 'margin-mirror-frame').attributes('aria-label')).toBe('Mirror off')
+    expect(control(wrapper, 'margin-mirror-frame').attributes('aria-pressed')).toBe('true')
+    expect(control(wrapper, 'margin-mirror-frame').classes()).toContain('margin-sheet__mirror--on')
   })
 })

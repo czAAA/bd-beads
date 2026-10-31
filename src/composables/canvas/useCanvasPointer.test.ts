@@ -61,7 +61,7 @@ describe('useCanvasPointer', () => {
 
     it('shows every counterpart of the hovered Frame bead under Mirror, those in finished rows left out (ticket 0703)', () => {
       const { row, column } = frameOf(base)!
-      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'frame' } }
       const { previewCells, onCellHover } = setup({ project: moveToRow(base, 1), mirror })
       onCellHover(row + 3, column, 'frame')
       expect(previewCells.value).toEqual([

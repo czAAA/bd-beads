@@ -148,66 +148,41 @@ export interface Translations {
     /** A recent colour's name. */
     useColor: string
   }
-  /** Mirror (ADR 0082, spec 0702, ticket 0703; MirrorPopover card): the tile's name, the popover's rows and their
-   * controls. Radial, the Fold and the Area come with tickets 0705 and 0710. */
+  /** Mirror (ADR 0082, ticket 0750; ContextBar card's Mirror bar): the tile's name, the Mirror bar's controls, the
+   * Selection bar's Mirror and the margin's Mirror the whole Frame. */
   mirror: {
-    /** The tile's and the popover's name. */
+    /** The tile's name, and the Mirror bar's (a toolbar, ContextBar card). */
     title: string
+    /** The Mirror bar's Mode switch: its name and its two segments. */
     mode: string
-    off: string
     mirror: string
     repeat: string
-    axes: string
+    /** The Axis chips, and on a chip that is on its Stepper's value name and buttons: an Axis count, or Radial's Fold. */
     leftRight: string
     topBottom: string
-    /** The Axis count Steppers' labels and buttons. */
+    radial: string
     leftRightAxes: string
     topBottomAxes: string
     fewerAxes: string
     moreAxes: string
-    /** The Note while the mode is on and no Axis is. */
-    turnAxisOn: string
-    close: string
-    /** The open Canvas's details (ticket 0704): the handle on the canvas is the setting; Repeat needs an Area. */
-    dragHandle: string
-    repeatNeedsArea: string
-    /** The Selection bar's Mirror (ticket 0707): its Tooltip body, what it announces, and the Message counting the
-     * counterparts that had nowhere to land (off the layer, on a Seam or Off-shape, in a finished row). */
-    copyToCounterparts: string
-    announceSelectionMirrored: string
-    droppedMessage: PluralForms
-    /** Radial and its Fold (ticket 0705): the chip, the Stepper's label and buttons, and the Note saying the rule in
-     * force: by index at Fold 2 and 4, else geometric, the turn between images in `{angle}` degrees. */
-    radial: string
     fold: string
     fewerFolds: string
     moreFolds: string
-    foldExact: string
-    foldNearest: string
-    /** The Area row (ticket 0710): its label, the Select area button in its states, Whole Frame, Clear the area, the
-     * Notes, the Canvas hint's parts while picking, and the toasts. */
-    area: string
-    selectArea: string
-    pickingArea: string
-    wholeFrame: string
-    clearArea: string
-    areaSize: string
-    areaNoneFrame: string
-    areaNoneCanvas: string
-    areaSet: string
-    pickDrag: string
-    pickMargin: string
-    pickDragCanvas: string
-    pickCancel: string
-    areaSetMessage: string
-    wholeFrameMessage: string
-    /** A Custom frame (ticket 0706): the Note with the side count in place of the Fold Stepper on a round shape, the
-     * Note while Repeat has a straight Axis on a shape, and why a chip the shape's symmetry does not offer is off. */
-    sidesFromShape: PluralForms
+    /** Why a direction's chip is off: the Area is one bead across it. */
+    oneBeadWide: string
+    oneBeadTall: string
+    /** A Custom frame's fixed Axes, noted in place of the chips (ADR 0082): Radial with the side count `{count}`, or
+     * the shape's one straight line `{axis}`, which in Repeat maps nothing. */
+    radialFromShape: string
+    lineFromShape: string
     repeatNeedsRadial: string
-    noLeftRight: string
-    noTopBottom: string
-    noRadial: string
+    closeMirror: string
+    /** The Selection bar's Mirror: its Tooltip body, and why it is off on a Frame Selection. */
+    insideArea: string
+    frameMirrorsWhole: string
+    /** The margin's Mirror the whole Frame (MarginSheet card): its name while off, and while on. */
+    wholeFrame: string
+    mirrorOff: string
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>

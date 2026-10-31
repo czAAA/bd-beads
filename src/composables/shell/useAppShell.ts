@@ -8,7 +8,7 @@ import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import type { Layer } from '../../domain/layers'
-import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads } from '../../domain/selection'
+import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
@@ -60,7 +60,6 @@ import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRem
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
-import { useMirrorSelectionFlow } from '../tools/useMirrorSelectionFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
@@ -147,7 +146,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, visibleCentrePx, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
@@ -182,9 +181,8 @@ function wireAppShell(services: Services) {
   })
   const { edit } = editing
 
-  /** Mirror (ADR 0082, ticket 0703): the Project's setting, the tile's light, the popover and key `8`; on the open
-   * Canvas its Axes' handles, placed at the view's middle and dragged as one Undo step (ticket 0704). */
-  const mirror = useMirrorFlow({ currentProject, replaceProject, edit, viewCentre: visibleCentrePx, showToast, messages })
+  /** Mirror (ADR 0082, ticket 0750): the Project's one Mirror, its place and bar settings, and Mirror mode. */
+  const mirror = useMirrorFlow({ currentProject, replaceProject, edit })
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
@@ -220,9 +218,6 @@ function wireAppShell(services: Services) {
     (count, loss) => showToast('paste-clipped', plural(locale.value, count, loss === 'shape' ? t.value.tools.droppedOnShapeMessage : t.value.tools.pasteClippedMessage), 'info'),
     () => mirror.setting.value,
   )
-
-  /** The hover preview is off while Mirror's Area is being picked (ticket 0710): the pointer draws the band, not beads. */
-  const shownPreviewCells = computed(() => (mirror.picking.value ? [] : previewCells.value))
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
    * 0016). */
@@ -277,10 +272,12 @@ function wireAppShell(services: Services) {
    * Selection being made, Escape or another tool. */
   const selectingFrame = ref(false)
 
-  // Choosing a tool. Leaving Select drops the Selection, the Eraser included; its beads stay.
+  // Choosing a tool. Leaving Select drops the Selection, the Eraser included; its beads stay. Any tool leaves Mirror mode,
+  // the Mirror staying on (ADR 0082).
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
     selectingFrame.value = false
+    mirror.marking.value = false
     // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on
     // touch.
     if (tool !== 'select' || (touch.value && activeTool.value === 'select')) leavePasteMode()
@@ -320,12 +317,64 @@ function wireAppShell(services: Services) {
     showToast('select-frame', t.value.frame.selectFrameHint, 'info')
   }
 
-  /** The end of a Select press: when the drag was made to set the Frame, the Frame is set to it. */
+  /** The end of a Select press: when the drag was made to set the Frame, the Frame is set to it; in Mirror mode its
+   * rectangle is the Mirror's Area at once (ADR 0082), the Selection gone; a click that dragged nothing makes none. */
   function endSelectPressFraming() {
     endSelectPress()
+    if (mirror.marking.value && selection.value) {
+      const area = selectionFrame(selection.value)
+      if (area.rows * area.columns > 1) mirror.makeFrom(area)
+      resetSelection()
+      return
+    }
     if (!selectingFrame.value || !selection.value) return
     selectingFrame.value = false
     onFrameFromSelection()
+    resetSelection()
+  }
+
+  // Mirror mode runs under Select: whatever takes the tool elsewhere (a colour picked into Paint too) ends it.
+  watch(activeTool, (tool) => {
+    if (tool !== 'select') mirror.marking.value = false
+  })
+
+  /** Mirror mode (ADR 0082, ToolPill card): the Select tool's drag makes the Mirror's Area, the Selection and paste mode
+   * put away first. */
+  function enterMirrorMode() {
+    onSelectTool('select')
+    leavePasteMode()
+    resetSelection()
+    mirror.marking.value = true
+  }
+
+  /** The Mirror tile or its key: Mirror mode on, or, while on, off for Paint as Escape does. */
+  function onMirrorTile() {
+    if (mirror.marking.value) onSelectTool('paint')
+    else enterMirrorMode()
+  }
+
+  /** Escape in Mirror mode falls to Paint, the Mirror kept; whether it was on. */
+  function leaveMirrorMode(): boolean {
+    if (!mirror.marking.value) return false
+    onSelectTool('paint')
+    return true
+  }
+
+  /** The margin's Mirror the whole Frame (MarginSheet card): the whole Frame becomes the Mirror and Mirror mode is on;
+   * pressed while it is there, the Mirror is closed. */
+  function onMirrorWholeFrame() {
+    if (mirror.onFrame.value) {
+      mirror.close()
+      return
+    }
+    mirror.placeWholeFrame()
+    enterMirrorMode()
+  }
+
+  /** The Selection bar's Mirror (ADR 0082): the Selection's rectangle, a shape's bounding one, becomes the Mirror. */
+  function onMirrorSelection() {
+    if (!selection.value) return
+    mirror.makeFrom(selectionFrame(selection.value))
     resetSelection()
   }
 
@@ -347,14 +396,19 @@ function wireAppShell(services: Services) {
     if (cutSelected()) selectTool('select')
   }
 
-  /** The Paste tool and the Selection bar's Paste button (ticket 447): paste mode under Select, nothing stamped. */
+  /** The Paste tool and the Selection bar's Paste button (ticket 447): paste mode under Select, nothing stamped; it
+   * leaves Mirror mode. */
   function onPasteMode() {
-    if (armPaste()) selectTool('select')
+    if (!armPaste()) return
+    mirror.marking.value = false
+    selectTool('select')
   }
 
-  /** Ctrl/Cmd+V (ticket 92) pastes at the pointer and, like Copy, leaves paste mode on under Select (ADR 0016). */
+  /** Ctrl/Cmd+V (ticket 92) pastes at the pointer and, like Copy, leaves paste mode on under Select (ADR 0016), out of
+   * Mirror mode. */
   function pasteAtCell(cell: GridPosition | undefined): boolean {
     if (!pasteAtGesture(cell)) return false
+    mirror.marking.value = false
     selectTool('select')
     return true
   }
@@ -367,9 +421,21 @@ function wireAppShell(services: Services) {
     onSelectTool('select')
   }
 
-  /** The Selection's handles or inside were pressed (ticket 414): the active tool decides what a tap inside does. */
+  /** The Selection's handles or inside were pressed (ticket 414): the active tool decides what a tap inside does. With
+   * no Selection in Mirror mode they are the Mirror's Area's (ADR 0082), resized and moved the same way. */
   function onSelectionPress(target: FramePress, cell: GridPosition) {
-    beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
+    if (!selection.value && mirror.marking.value) mirror.pressArea(target, cell)
+    else beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
+  }
+
+  function onSelectionDrag(cell: GridPosition) {
+    if (mirror.adjusting.value || (!selection.value && mirror.marking.value)) mirror.dragArea(cell)
+    else dragAdjust(cell)
+  }
+
+  function onSelectionRelease() {
+    mirror.releaseArea()
+    endAdjust()
   }
 
   /** Removing added colors from the Palette, one or all, each after a confirmation (tickets 228, 304, 0532). */
@@ -459,7 +525,8 @@ function wireAppShell(services: Services) {
     selectedColorHex,
     pastePreviewCells,
     pastePreviewStamp,
-    beginSelectPress,
+    // In Mirror mode the same press marks out the Mirror's Area, refused on the Frame and leaving the clipboard alone.
+    beginSelectPress: (row, column, layer) => beginSelectPress(row, column, layer, mirror.marking.value),
     extendSelection,
     tapPiece,
     beginOrCommitPress: (mode, color, row, column, layer) => {
@@ -504,18 +571,6 @@ function wireAppShell(services: Services) {
     edit,
     currentProject,
     selection,
-    announce,
-    showToast,
-    onUndo,
-    messages,
-    locale: () => locale.value,
-  })
-
-  /** Mirror (Selection bar): the fragment copied to its counterparts, one Undo step (ticket 0707, spec 0702). */
-  const mirrorSelectionFlow = useMirrorSelectionFlow({
-    edit,
-    selection,
-    mirror: () => mirror.setting.value,
     announce,
     showToast,
     onUndo,
@@ -641,7 +696,7 @@ function wireAppShell(services: Services) {
       pickingColor.value = false
       return was
     },
-    cancelAreaPick: mirror.cancelPick,
+    leaveMirrorMode,
     hasOpenLayer,
     anyDialogOpen: () => dialogs.open.value !== undefined,
     backOutOfSelect: backOutOfSelectOrFraming,
@@ -653,7 +708,7 @@ function wireAppShell(services: Services) {
     onClearSelection,
     onCut,
     onPasteMode,
-    onToggleMirror: mirror.toggle,
+    onMirrorTile,
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
@@ -664,6 +719,7 @@ function wireAppShell(services: Services) {
     pasteAtPointer,
     onRotate: rotateFlow.onRotate,
     selectionInFinishedRows: () => rotateFlow.heldBack.value,
+    selectionOnFrame: () => !!selection.value && !!currentProject() && selectionLayer(currentProject()!, selection.value) === 'frame',
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
     canNamePiece: () => namePiece.canNamePiece.value,
@@ -777,31 +833,20 @@ function wireAppShell(services: Services) {
       toolPillPopoverOpen: toolPill.toolPillPopoverOpen,
       recentsInPill: toolPill.recentsInPill,
       pickRecent: toolPill.pickRecent,
-      // Mirror (ticket 0703): the Project's setting, the popover and the Frame's count limits; the open Canvas's Axes
-      // and their handles (ticket 0704)
+      // Mirror (ADR 0082, ticket 0750): the Project's one Mirror and its bar, Mirror mode, the three ways to make one
       mirrorSetting: mirror.setting,
-      mirrorLimits: mirror.limits,
-      mirrorOnCanvas: mirror.onCanvas,
-      mirrorPopoverOpen: mirror.popoverOpen,
-      onMirrorChange: mirror.update,
-      mirrorCanvasAxes: mirror.canvasAxes,
-      mirrorHeldAxis: mirror.heldAxis,
-      onAxisPress: mirror.pressAxis,
-      onAxisDrag: mirror.dragAxis,
-      onAxisRelease: mirror.releaseAxis,
-      // The Area (ticket 0710): the row's layer, the Area, the pick and its band
-      mirrorAreaRow: mirror.areaRow,
-      mirrorArea: mirror.area,
+      mirrorOn: mirror.on,
+      mirrorOnFrame: mirror.onFrame,
+      mirrorRect: mirror.rect,
       mirrorShape: mirror.shape,
-      mirrorPicking: mirror.picking,
-      mirrorBand: mirror.band,
-      onAreaPick: mirror.startPick,
-      onAreaWholeFrame: mirror.pickWholeFrame,
-      onAreaClear: mirror.clearArea,
-      onAreaPress: mirror.pressArea,
-      onAreaDrag: mirror.dragArea,
-      onAreaRelease: mirror.releaseArea,
-      previewCells: shownPreviewCells,
+      mirrorMarking: mirror.marking,
+      mirrorAdjusting: mirror.adjusting,
+      onMirrorChange: mirror.update,
+      onCloseMirror: mirror.close,
+      onMirrorTile,
+      onMirrorWholeFrame,
+      onMirrorSelection,
+      previewCells,
       previewStamp,
       onCellPrimaryDown,
       onCellPrimaryMove,
@@ -812,8 +857,8 @@ function wireAppShell(services: Services) {
       selectionRefusals,
       fillRefusals,
       onSelectionPress,
-      onSelectionDrag: dragAdjust,
-      onSelectionRelease: endAdjust,
+      onSelectionDrag,
+      onSelectionRelease,
       pasteProjectionActive,
       hasClipboard,
       onCopy,
@@ -824,9 +869,6 @@ function wireAppShell(services: Services) {
       hasPaintColor,
       onSelectAll,
       onRotate: rotateFlow.onRotate,
-      // The Selection bar's Mirror, offered while Mirror is on (ticket 0707)
-      mirrorOn: mirror.on,
-      onMirrorSelection: mirrorSelectionFlow.onMirrorSelection,
       canNamePiece: namePiece.canNamePiece,
       onNamePiece: namePiece.onNamePiece,
       onRenameSchema: namePiece.onRenameSchema,

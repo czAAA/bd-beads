@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { MIRROR_OFF, withCanvasAxes, type MirrorSetting } from './mirror'
+import { MIRROR_OFF, type MirrorSetting } from './mirror'
 import {
   allBeadsSelection,
   selectAllSelection,
@@ -226,17 +226,19 @@ describe('stampedCells and pasteOnLayer', () => {
   it('lands the block at its counterparts too under Mirror, a source bead winning over a counterpart (ticket 0703)', () => {
     const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, BLUE]], anchor: { row: 0, column: 0 } }
     const target = painted(['......'])
-    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'frame' } }
 
     expect(picture(pasteOnLayer(target, motif, { row: 0, column: 0 }, mirror))).toEqual(['rb..br'])
     expect(picture(pasteOnLayer(target, motif, { row: 0, column: 1 }, mirror))).toEqual(['.rbbr.'])
     expect(picture(pasteOnLayer(target, motif, { row: 0, column: 2 }, mirror))).toEqual(['..rb..'])
   })
 
-  it('lands a Canvas Paste across the Canvas\'s own Axis, a counterpart under the Frame painted there hidden (ticket 0704)', () => {
+  it('lands a Canvas Paste inside a Canvas Area, a counterpart under the Frame painted there hidden (ADR 0082)', () => {
     const motif: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]], anchor: { row: 0, column: 0 } }
-    const target = withCanvasAxes(withLayers(painted(['....']), { frame: { ...frameOf(painted(['....']))!, row: 10, column: 10 } }), { leftRight: 8 })
-    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+    const target = withLayers(painted(['....']), { frame: { ...frameOf(painted(['....']))!, row: 10, column: 10 } })
+    // An Area of columns 0 to 16 has its Axis through column 8; one of 0 to 12 through column 6.
+    const inArea = (columns: number): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas', area: { row: 10, column: 0, rows: 1, columns } } })
+    const mirror = inArea(17)
 
     const pasted = pasteOnLayer(target, motif, { row: 10, column: 6 }, mirror)
     expect(beadsOfLayer(pasted, 'canvas')).toEqual({ 10: { 6: RED, 10: RED } })
@@ -245,7 +247,7 @@ describe('stampedCells and pasteOnLayer', () => {
     // The block's own cells keep clear of the Frame as ever: a 2-wide block from column 9 puts its second cell under it.
     const wide: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, BLUE]], anchor: { row: 0, column: 0 } }
     expect(beadsOfLayer(pasteOnLayer(target, wide, { row: 10, column: 5 }, mirror), 'canvas')).toEqual({ 10: { 5: RED, 6: BLUE, 10: BLUE, 11: RED } })
-    expect(beadsOfLayer(pasteOnLayer(withCanvasAxes(target, { leftRight: 6 }), wide, { row: 10, column: 9 }, mirror), 'canvas')).toEqual({ 10: { 9: RED, 3: RED, 2: BLUE } })
+    expect(beadsOfLayer(pasteOnLayer(target, wide, { row: 10, column: 9 }, inArea(13)), 'canvas')).toEqual({ 10: { 9: RED, 3: RED, 2: BLUE } })
   })
 
   it('clips what runs past the grid’s edge', () => {
