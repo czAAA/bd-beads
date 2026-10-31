@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, nextTick, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import ConfirmModal from '../components/ui/ConfirmModal.vue'
 import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
@@ -13,18 +13,16 @@ import MenuPanel from '../components/shell/MenuPanel.vue'
 import PanelHost from '../components/shell/PanelHost.vue'
 import { useElementSize } from '../composables/ui/useElementSize'
 import { useMediaQuery } from '../composables/ui/useMediaQuery'
-import { useOverlayLayer } from '../composables/ui/useOverlayLayer'
 import AppLogo from '../components/ui/AppLogo.vue'
 import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
-import FreeRoll, { type RollPlace } from './FreeRoll.vue'
 import PlanTiles from './PlanTiles.vue'
 import RollingSlogan from './RollingSlogan.vue'
 import SectionBar from './SectionBar.vue'
 import { SECTIONS, sectionAt } from './sections'
-import { useFreeRoll } from './useFreeRoll'
+import { useFreeGrowth } from './useFreeGrowth'
 import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
@@ -105,7 +103,6 @@ const boxStyle = computed(() => {
 // The sections (ticket 0739): the page is a viewport of scroll per section, snapping, and the section shown is the
 // nearest one; the box stays put on a sticky stage while it scrolls.
 const pageEl = ref<HTMLElement>()
-const stageEl = ref<HTMLElement>()
 const section = ref(0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const sectionNames = computed(() => [t.value.homepage.whatsInside, t.value.homepage.coffee.title, t.value.homepage.plans.heading])
@@ -114,9 +111,11 @@ const PLANS = SECTIONS.indexOf('plans')
 function onPageScroll() {
   const page = pageEl.value!
   const shown = sectionAt(page.scrollTop, page.clientHeight)
+  freeGrowth.scrolledPast(page.scrollTop - PLANS * page.clientHeight)
+  if (freeGrowth.growing.value) snapOff.value = true
   if (shown === section.value) return
   section.value = shown
-  if (shown !== PLANS) putRollAway()
+  if (shown !== PLANS) snapOff.value = false
 }
 
 /** Back and Next: the page scrolls a section's worth, and the scroll turns the box. */
@@ -133,63 +132,25 @@ function sectionState(index: number) {
 // Keys scroll the page itself (Page Down, Space, the arrows), so it holds the focus until something in it takes it.
 onMounted(() => pageEl.value?.focus({ preventScroll: true }))
 
-// The free list (ticket 0739): on the third scroll of its window it unrolls below the No account tile; the page grows
-// by the roll's length, stops snapping and scrolls on to show it. A click outside the roll or on its curl, Escape, or
-// scrolling back to the coffee rolls it up.
-const freeRoll = useFreeRoll()
+// The free list (ticket 0742): scrolling past the plans grows No account's list, the plans scrolling up in their section
+// as the page does, and the page reaches as far as the whole list needs. The page stops snapping once it grows, until
+// it is back at the coffee.
 const plans = ref<InstanceType<typeof PlanTiles>>()
-const rollEl = ref<InstanceType<typeof FreeRoll>>()
-const rollPlace = ref<RollPlace & { extra: number }>()
-/** The room the page keeps below the roll's curl. */
-const ROLL_ROOM = 48
-let rollingUp = false
-
-watch(freeRoll.unrolled, (unrolled) => {
-  const freeWindow = plans.value?.freeWindow
-  const stage = stageEl.value
-  if (!unrolled || !freeWindow || !stage) return
-  const at = freeWindow.getBoundingClientRect()
-  const list = freeWindow.firstElementChild!.getBoundingClientRect()
-  const from = stage.getBoundingClientRect()
-  const offset = at.top - list.top
-  const rolledHeight = at.height
-  const height = Math.max(rolledHeight, list.height - offset)
-  const y = at.top - from.top
-  rollPlace.value = { x: at.left - from.left, y, width: at.width, rolledHeight, height, offset, extra: Math.max(0, Math.round(y + height + ROLL_ROOM - from.height)) }
+const plansSection = ref<HTMLElement>()
+const snapOff = ref(false)
+const freeGrowth = useFreeGrowth({
+  section: plansSection,
+  freeWindow: () => plans.value?.freeWindow,
+  freeTile: () => plans.value?.freeTile,
+  zoom: () => zoom.percent.value / 100,
 })
-
-/** Rolls the list back into the tile and the page back up to the plans. */
-async function rollUp() {
-  if (!rollPlace.value || rollingUp) return
-  rollingUp = true
-  const page = pageEl.value!
-  const plansTop = PLANS * page.clientHeight
-  if (page.scrollTop > plansTop) page.scrollTo?.({ top: plansTop, behavior: reducedMotion.value ? 'auto' : 'smooth' })
-  await rollEl.value?.rollUp()
-  rollingUp = false
-  rollPlace.value = undefined
-  freeRoll.rollUp()
-}
-
-/** Leaving the plans puts the roll away at once and the window back to its top. */
-function putRollAway() {
-  rollPlace.value = undefined
-  freeRoll.rollUp()
-  const freeWindow = plans.value?.freeWindow
-  if (freeWindow?.scrollTop) {
-    freeRoll.ignoreNextScroll()
-    freeWindow.scrollTop = 0
-  }
-}
-
-/** A click anywhere outside the roll rolls it up; a swipe is no click, so it scrolls the page on. */
-function onPageClick(event: MouseEvent) {
-  if (!rollPlace.value || !(event.target instanceof Node)) return
-  if (!rollEl.value?.root?.contains(event.target)) void rollUp()
-}
-
-// Escape rolls it up too; a press is the click's to judge, so the registry leaves every press alone.
-useOverlayLayer({ isOpen: () => rollPlace.value !== undefined, root: () => rollEl.value?.root, close: () => void rollUp(), keepsPress: () => true })
+const plansStyle = computed(() => (freeGrowth.offset.value ? { transform: `translateY(${-freeGrowth.offset.value}px)` } : undefined))
+const remeasureFree = () => void nextTick(freeGrowth.remeasure)
+onMounted(() => {
+  remeasureFree()
+  void document.fonts?.ready.then(remeasureFree)
+})
+watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === PLANS], remeasureFree)
 
 // The Menu's Saved Projects (ticket 0716): the editor's list, its Remove asking first, a pick opening the editor on it.
 const library = shallowRef<HomepageLibrary>()
@@ -216,14 +177,13 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   <div
     ref="pageEl"
     class="homepage-page"
-    :class="{ 'homepage-page--unrolled': rollPlace }"
+    :class="{ 'homepage-page--growing': snapOff }"
     tabindex="-1"
     data-testid="homepage-page"
     @scroll.passive="onPageScroll"
-    @click="onPageClick"
   >
-    <div class="homepage-page__track">
-      <div ref="stageEl" class="homepage-page__stage">
+    <div class="homepage-page__track" :style="{ '--free-room': `${freeGrowth.room.value}px` }">
+      <div class="homepage-page__stage">
         <!-- The two faint X1 marks beside the box, drifting a little as the page scrolls. -->
         <span class="homepage-page__marks">
           <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
@@ -326,27 +286,42 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
                 >
                   <CoffeeTile />
                 </section>
-                <div class="homepage__section" :class="`homepage__section--${sectionState(2)}`" data-testid="homepage-section-plans">
-                  <PlanTiles ref="plans" :lit="freeRoll.lit.value" :unrolled="freeRoll.unrolled.value" @open-editor="emit('openEditor')" @free-scroll="freeRoll.onWindowScroll" />
+                <div
+                  ref="plansSection"
+                  class="homepage__section homepage__section--plans"
+                  :class="`homepage__section--${sectionState(2)}`"
+                  data-testid="homepage-section-plans"
+                >
+                  <PlanTiles
+                    ref="plans"
+                    :style="plansStyle"
+                    :free-height="freeGrowth.height.value"
+                    :free-open="freeGrowth.open.value"
+                    @open-editor="emit('openEditor')"
+                  />
                 </div>
               </div>
             </main>
           </div>
           <SectionBar :section="section" :names="sectionNames" @go="goTo" />
         </div>
-
-        <FreeRoll v-if="rollPlace" ref="rollEl" :place="rollPlace" :items="t.homepage.plans.tiles[0]!.items" :zoom="zoom.percent.value / 100" @roll-up="rollUp" />
       </div>
-      <span v-for="(id, index) in SECTIONS" :key="id" class="homepage-page__snap" :style="{ top: `calc(${index} * 100% / var(--sections))` }" aria-hidden="true" />
+      <span
+        v-for="(id, index) in SECTIONS"
+        :key="id"
+        class="homepage-page__snap"
+        :class="{ 'homepage-page__snap--last': index === SECTIONS.length - 1 }"
+        :style="{ top: `calc(${index} * (100% - var(--free-room)) / var(--sections))` }"
+        aria-hidden="true"
+      />
     </div>
-    <div v-if="rollPlace" :style="{ height: `${rollPlace.extra}px` }" aria-hidden="true" data-testid="homepage-roll-room" />
   </div>
 </template>
 
 <style scoped>
 /* The page (ticket 0739): the theme's own ground, a viewport of scroll per section, snapping to each; the stage holding
- * the box stays on screen while it scrolls. While the free list is unrolled the page grows by its length and stops
- * snapping. */
+ * the box stays on screen while it scrolls. Past the plans the page reaches on as far as the free list grows (ticket
+ * 0742), the stage still on screen, and stops snapping while it grows. */
 .homepage-page {
   position: fixed;
   inset: 0;
@@ -362,13 +337,13 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   display: none;
 }
 
-.homepage-page--unrolled {
+.homepage-page--growing {
   scroll-snap-type: none;
 }
 
 .homepage-page__track {
   position: relative;
-  height: calc(var(--sections) * 100%);
+  height: calc(var(--sections) * 100% + var(--free-room));
   --sections: 3;
 }
 
@@ -376,9 +351,15 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   position: absolute;
   left: 0;
   width: 1px;
-  height: calc(100% / var(--sections));
+  height: calc((100% - var(--free-room)) / var(--sections));
   scroll-snap-align: start;
   pointer-events: none;
+}
+
+/* The plans' snap area reaches as far as the free list grows: taller than the screen, so the page scrolls freely in it
+ * from the first wheel turn on, before it stops snapping. */
+.homepage-page__snap--last {
+  height: calc((100% - var(--free-room)) / var(--sections) + var(--free-room));
 }
 
 .homepage-page__stage {
@@ -388,7 +369,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   display: flex;
   align-items: center;
   justify-content: center;
-  height: calc(100% / var(--sections));
+  height: calc((100% - var(--free-room)) / var(--sections));
   padding: max(var(--space-8), env(safe-area-inset-top)) max(var(--space-8), env(safe-area-inset-right))
     max(var(--space-8), env(safe-area-inset-bottom)) max(var(--space-8), env(safe-area-inset-left));
 }
@@ -660,6 +641,11 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
 .homepage__section--after {
   transform: translateY(var(--section-shift)) scale(var(--section-scale));
+}
+
+/* The plans scroll with the page, never by themselves (ticket 0742). */
+.homepage__section--plans {
+  overflow: clip;
 }
 
 .homepage__section--centred {
