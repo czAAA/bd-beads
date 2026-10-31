@@ -345,70 +345,61 @@ describe('HomePage sections (ticket 0739)', () => {
     expect(wrapper.find('.drawn-layer').exists()).toBe(false)
   })
 
-  describe('the free list', () => {
-    beforeEach(() => vi.useFakeTimers())
-    afterEach(() => vi.useRealTimers())
-
-    /** One scroll of the No account tile's window: a burst of events, then a pause. */
-    async function scrollWindow(wrapper: ReturnType<typeof page>) {
-      const window = wrapper.get('[data-testid="free-window"]')
-      for (let i = 0; i < 4; i++) await window.trigger('scroll')
-      vi.advanceTimersByTime(400)
-      await wrapper.vm.$nextTick()
+  describe('the free list (ticket 0742)', () => {
+    /** A layout for the plans: a section 500 tall, the list 300 down it, its four rows 100 tall, the whole list 700, the
+     * tile's padding 20 under it. The tile's foot may run 40 further down before it reaches the section's. */
+    function laidOut(wrapper: ReturnType<typeof page>) {
+      const rect = (el: Element, top: number, height: number) =>
+        Object.defineProperty(el, 'getBoundingClientRect', { configurable: true, value: () => ({ top, bottom: top + height, height }) })
+      const freeWindow = wrapper.get('[data-testid="free-window"]').element
+      const list = freeWindow.firstElementChild!
+      rect(wrapper.get('[data-testid="homepage-section-plans"]').element, 0, 500)
+      rect(freeWindow, 300, 100)
+      rect(list, 300, 700)
+      rect(list.children[3]!, 380, 20)
+      rect(wrapper.get('[data-testid="plan-no-account"]').element, 0, 420)
     }
-    async function unrolled() {
+    async function atThePlans() {
       const { wrapper, el } = pageWithHeight()
+      laidOut(wrapper)
       scrollPage(el, 2 * VIEWPORT)
-      for (let i = 0; i < 3; i++) await scrollWindow(wrapper)
+      await flushPromises()
       return { wrapper, el }
     }
+    const list = (wrapper: ReturnType<typeof page>) => wrapper.get('[data-testid="free-window"]')
+    const snapping = (wrapper: ReturnType<typeof page>) => !wrapper.get('[data-testid="homepage-page"]').classes().includes('homepage-page--growing')
 
-    it('lights a bead per scroll of its window and unrolls below the tile on the third, the page growing and snapping no more', async () => {
-      const { wrapper, el } = pageWithHeight()
+    it('shows four rows at the plans, and the page reaches on as far as the whole list needs', async () => {
+      const { wrapper } = await atThePlans()
+      expect(list(wrapper).attributes('style')).toContain('height: 100px')
+      expect(list(wrapper).classes()).toContain('plan__free--fading')
+      expect(wrapper.get('.homepage-page__track').attributes('style')).toContain('--free-room: 560px')
+      expect(snapping(wrapper)).toBe(true)
+    })
+
+    it('grows as the page scrolls past the plans, the plans scrolling up with it and the page snapping no more', async () => {
+      const { wrapper, el } = await atThePlans()
+      scrollPage(el, 2 * VIEWPORT + 10)
+      await flushPromises()
+      expect(list(wrapper).attributes('style')).toContain('height: 125px')
+      expect(wrapper.get('[data-testid="homepage-plans"]').attributes('style')).toContain('translateY(-10px)')
+      expect(snapping(wrapper)).toBe(false)
+      scrollPage(el, 2 * VIEWPORT + 560)
+      await flushPromises()
+      expect(list(wrapper).attributes('style')).toContain('height: 700px')
+      expect(list(wrapper).classes()).not.toContain('plan__free--fading')
+    })
+
+    it('shrinks back as the page scrolls back, and snaps again once back at the coffee', async () => {
+      const { wrapper, el } = await atThePlans()
+      scrollPage(el, 2 * VIEWPORT + 100)
       scrollPage(el, 2 * VIEWPORT)
-      await scrollWindow(wrapper)
-      await scrollWindow(wrapper)
-      expect(wrapper.findAll('.plan__tick--on')).toHaveLength(2)
-      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
-      await scrollWindow(wrapper)
-      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="homepage-roll-room"]').exists()).toBe(true)
-      expect(wrapper.get('[data-testid="homepage-page"]').classes()).toContain('homepage-page--unrolled')
-      expect(wrapper.get('[data-testid="free-roll"]').text()).toContain('Works offline')
-    })
-
-    it('rolls up on a click outside the roll, and the page back up to the plans', async () => {
-      const { wrapper, el } = await unrolled()
-      await wrapper.get('[data-testid="free-roll"] [aria-hidden="true"]').trigger('click')
-      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(true)
-      el.scrollTop = 2 * VIEWPORT + 300
-      await wrapper.get('[data-testid="homepage-body"]').trigger('click')
       await flushPromises()
-      expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 2 * VIEWPORT, behavior: 'smooth' })
-      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
-      expect(wrapper.findAll('.plan__tick--on')).toHaveLength(0)
-      expect(wrapper.get('[data-testid="homepage-page"]').classes()).not.toContain('homepage-page--unrolled')
-    })
-
-    it('rolls up from its curl and from Escape', async () => {
-      const curl = await unrolled()
-      await curl.wrapper.get('[data-testid="free-roll-curl"]').trigger('click')
-      await flushPromises()
-      expect(curl.wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
-      curl.wrapper.unmount()
-
-      const escape = await unrolled()
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-      await flushPromises()
-      expect(escape.wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
-    })
-
-    it('is put away by scrolling back to the coffee', async () => {
-      const { wrapper, el } = await unrolled()
+      expect(list(wrapper).attributes('style')).toContain('height: 100px')
+      expect(snapping(wrapper)).toBe(false)
       scrollPage(el, VIEWPORT)
-      await wrapper.vm.$nextTick()
-      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
-      expect(wrapper.findAll('.plan__tick--on')).toHaveLength(0)
+      await flushPromises()
+      expect(snapping(wrapper)).toBe(true)
     })
   })
 })
