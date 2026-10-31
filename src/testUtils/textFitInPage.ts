@@ -32,9 +32,10 @@ const MORE_LINES: [string, number][] = [
 /** Boxes that hold artwork or the scrolling drawing, whose content is meant to be wider than the box. */
 const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"], [data-testid="example-paper"]'
 
-/** Words that roll through a one-line window (the Homepage's slogan, ticket 550): the window cuts them vertically on
- * purpose, so only sideways overflow counts. */
-const ROLLING = '[data-testid="slogan-column"]'
+/** Words that roll through a one-line window (the Homepage's slogan, ticket 550), and the Homepage's plans, which the
+ * page's scroll moves up through their section while it grows the free list (ticket 0742): cut vertically on purpose,
+ * so only sideways overflow counts. */
+const ROLLING = '[data-testid="slogan-column"], [data-testid="homepage-plans"]'
 
 /** Not checked: user-typed text (a long Project name may ellipsize) and the drawing's furniture (backdrop word,
  * ruler numbers). */
