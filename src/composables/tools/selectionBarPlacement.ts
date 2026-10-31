@@ -31,12 +31,13 @@ const boxesOverlap = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.le
 
 // Where the Selection bar sits (ticket 415): centred above the Selection's top edge, clamped inside the canvas box,
 // flipped below when there is no room above. The Tool pill's rectangle (`obstacle`, ticket 439) acts like a canvas
-// edge: the bar flips sides or slides clear of the pill the way it overlaps least.
+// edge: the bar flips sides or slides clear of the pill the way it overlaps least; with `keepSide` it only slides.
 export function selectionBarPlacement(
   selection: BarBox,
   bar: { width: number; height: number },
   viewport: { width: number; height: number },
   obstacle?: BarBox,
+  { keepSide = false }: { keepSide?: boolean } = {},
 ): BarPlacement {
   const onScreen = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
   const left = onScreen(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width)
@@ -51,7 +52,7 @@ export function selectionBarPlacement(
   const hits = (placement: BarPlacement) => !!obstacle && boxesOverlap({ ...placement, ...bar }, obstacle)
   if (!hits(preferred)) return preferred
   const flipped = at(!below)
-  if (!hits(flipped)) return flipped
+  if (!keepSide && !hits(flipped)) return flipped
   // Neither side is clear: slide the preferred spot off the pill, the shorter way, and keep it inside the box.
   const pill = obstacle!
   const slides: BarPlacement[] = [
