@@ -906,6 +906,7 @@ export const en: Translations = {
       markTimes: '×{n}',
       widthHint: 'Height follows the picture. Max: one bead per picture pixel. On a mark, one bead is a whole n × n pixels, the height too.',
       colorsHint: 'Each color is a bead to buy. Max {n}: every color the picture has.',
+      colorsHintCapped: 'Each color is a bead to buy. Max {n}: the picture has more, reduced to as many.',
       colorByColor: 'Color by color',
       emptyCount: '{n} empty',
       crop: { top: 'Crop: top edge', right: 'Crop: right edge', bottom: 'Crop: bottom edge', left: 'Crop: left edge', topLeft: 'Crop: top-left corner', topRight: 'Crop: top-right corner', bottomLeft: 'Crop: bottom-left corner', bottomRight: 'Crop: bottom-right corner' },

@@ -158,6 +158,9 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
  * the picture has where that is fewer. Floor 1, down from 2 (ticket 177, ADR 0010): quantization is unconditional. */
 export const MIN_IMAGE_COLORS = 1
 export const DEFAULT_MAX_IMAGE_COLORS = 12
+/** The most colors the Colors slider offers (ticket 0747): a pattern of more would be the picture itself, no one buys
+ * that many beads, and a photo's tens of thousands of colors made the wizard take minutes. 256, as a palette image. */
+export const MAX_IMAGE_COLORS = 256
 
 /** Where the picture sits under the Frame (ticket 0747): the part to weave, and the picture pixels each bead stands
  * for along each side (convertSize's Sizing: whole and equal on a mark, the picture's shape between marks). */

@@ -28,6 +28,7 @@ import { reducePictureColors } from '../../domain/imageColors'
 import {
   DEFAULT_MAX_IMAGE_COLORS,
   ImageConversionError,
+  MAX_IMAGE_COLORS,
   MIN_IMAGE_COLORS,
   NO_COLOR,
   frameColors,
@@ -221,8 +222,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   )
 
   const frameSampled = computed(() => rest.value && frameColors(rest.value.sampled, rest.value.lattice, rest.value.grid))
-  /** Every color the part has (the Colors slider's max, ConvertImage card): the distinct colors its beads sample. */
-  const colorsMax = computed(() => Math.max(MIN_IMAGE_COLORS, frameSampled.value?.counts.size ?? MIN_IMAGE_COLORS))
+  /** Every color the part has (the Colors slider's max, ConvertImage card): the distinct colors its beads sample, at
+   * most MAX_IMAGE_COLORS, since a pattern of more would not be one. */
+  const colorsFound = computed(() => Math.max(MIN_IMAGE_COLORS, frameSampled.value?.counts.size ?? MIN_IMAGE_COLORS))
+  const colorsMax = computed(() => Math.min(MAX_IMAGE_COLORS, colorsFound.value))
+  /** Whether the part has more colors than the slider offers, so the hint says so. */
+  const colorsCapped = computed(() => colorsFound.value > MAX_IMAGE_COLORS)
   /** The Colors slider: 12 at first, or every color where that is fewer; a part with fewer colors pulls it down. */
   const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
   const reduced = computed(() => reducePictureColors(frameSampled.value?.counts ?? new Map(), maxColors.value))
@@ -386,6 +391,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setSource: (next: ColorSource) => (chosenSource.value = next),
     beadTargets,
     colorsMax,
+    colorsCapped,
     maxColors,
     setMaxColors: (next: number) => (chosenColors.value = clamp(Math.round(next), MIN_IMAGE_COLORS, colorsMax.value)),
     found,

@@ -926,6 +926,7 @@ export const pl: Translations = {
       markTimes: '×{n}',
       widthHint: 'Wysokość idzie za obrazem. Maksimum: jeden koralik na piksel. Na znaczniku jeden koralik to dokładnie n × n pikseli, także w pionie.',
       colorsHint: 'Każdy kolor to koraliki do kupienia. Maks. {n}: wszystkie kolory obrazu.',
+      colorsHintCapped: 'Każdy kolor to koraliki do kupienia. Maks. {n}: obraz ma ich więcej, sprowadzone do tylu.',
       colorByColor: 'Kolor po kolorze',
       emptyCount: 'pustych: {n}',
       crop: { top: 'Kadrowanie: górna krawędź', right: 'Kadrowanie: prawa krawędź', bottom: 'Kadrowanie: dolna krawędź', left: 'Kadrowanie: lewa krawędź', topLeft: 'Kadrowanie: lewy górny róg', topRight: 'Kadrowanie: prawy górny róg', bottomLeft: 'Kadrowanie: lewy dolny róg', bottomRight: 'Kadrowanie: prawy dolny róg' },

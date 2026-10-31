@@ -888,6 +888,7 @@ export const zh: Translations = {
       markTimes: '×{n}',
       widthHint: '高度跟随图片。最大：每个像素一颗珠子。在刻度上，一颗珠子正好是 n × n 像素，高度也一样。',
       colorsHint: '每种颜色都是要买的珠子。最大 {n}：图片的全部颜色。',
+      colorsHintCapped: '每种颜色都是要买的珠子。最大 {n}：图片的颜色更多，已归并到这个数。',
       colorByColor: '逐色查看',
       emptyCount: '{n} 种为空',
       crop: { top: '裁剪：上边', right: '裁剪：右边', bottom: '裁剪：下边', left: '裁剪：左边', topLeft: '裁剪：左上角', topRight: '裁剪：右上角', bottomLeft: '裁剪：左下角', bottomRight: '裁剪：右下角' },

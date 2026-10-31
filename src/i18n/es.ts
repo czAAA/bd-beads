@@ -917,6 +917,7 @@ export const es: Translations = {
       markTimes: '×{n}',
       widthHint: 'El alto sigue la imagen. Máximo: una cuenta por píxel. En una marca, una cuenta es exactamente n × n píxeles, también en alto.',
       colorsHint: 'Cada color es una cuenta que comprar. Máx. {n}: todos los colores de la imagen.',
+      colorsHintCapped: 'Cada color es una cuenta que comprar. Máx. {n}: la imagen tiene más, reducidos a esos.',
       colorByColor: 'Color por color',
       emptyCount: '{n} vacíos',
       crop: { top: 'Recorte: borde superior', right: 'Recorte: borde derecho', bottom: 'Recorte: borde inferior', left: 'Recorte: borde izquierdo', topLeft: 'Recorte: esquina superior izquierda', topRight: 'Recorte: esquina superior derecha', bottomLeft: 'Recorte: esquina inferior izquierda', bottomRight: 'Recorte: esquina inferior derecha' },

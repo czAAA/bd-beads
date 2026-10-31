@@ -183,11 +183,15 @@ export function sizingFor({ part, width, bead, technique, techniqueSettings }: S
 /** The most beads the starting Width gives on the long side. */
 const STARTING_MAX_BEADS = 150
 
-/** The wizard's first proposal (ConvertImage card): the largest mark giving at most 150 beads on the long side; with
- * no such mark, 150 beads on the long side, or the max where that is smaller. */
+/** The wizard's first proposal (ConvertImage card): one bead per pixel where that mark is in range and keeps inside
+ * the Large Schema line both ways, as pixel art is drawn at the bead count it wants; else the largest mark giving at
+ * most 150 beads on the long side; with no such mark, 150 beads on the long side, or the max where that is smaller. */
 export function startingWidth(part: ImageSize): number {
   const { min, max } = widthRange(part)
-  const fitting = sizeMarks(part).filter((mark) => {
+  const marks = sizeMarks(part)
+  const exact = marks.find((mark) => mark.pixelsPerBead === 1 && !isLargeSchema(markGrid(part, mark)))
+  if (exact) return exact.width
+  const fitting = marks.filter((mark) => {
     const grid = markGrid(part, mark)
     return Math.max(grid.columns, grid.rows) <= STARTING_MAX_BEADS
   })

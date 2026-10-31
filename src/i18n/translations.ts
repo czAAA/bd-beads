@@ -1045,6 +1045,8 @@ export interface Translations {
       widthHint: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
+      /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
+      colorsHintCapped: string
       colorByColor: string
       emptyCount: string
       /** The part's handles' names, each edge and corner. */
