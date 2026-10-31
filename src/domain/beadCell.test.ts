@@ -16,7 +16,7 @@ const cube = findBead('toho-cube-1.5mm')!
 
 describe('a Bead\'s cell (ADR 0068, ticket 0724)', () => {
   it('gives each catalog Bead its proportions: height over its pitch along the thread', () => {
-    expect(beadCell(delica, 'loom')!.aspect).toBeCloseTo(1.3 / 1.6)
+    expect(beadCell(delica, 'loom')!.aspect).toBeCloseTo(1.6 / 1.3)
     expect(beadCell(round, 'loom')!.aspect).toBeCloseTo(2.2 / beadPitchMm(round))
     expect(beadCell(cube, 'loom')!.aspect).toBe(1)
   })
@@ -28,7 +28,7 @@ describe('a Bead\'s cell (ADR 0068, ticket 0724)', () => {
   })
 
   it('turns every bead on brick stitch, its thread running top to bottom: a wide cell for a tall one, a Cube unchanged (ticket 0734)', () => {
-    expect(beadCell(delica, 'brick')!.aspect).toBeCloseTo(1.6 / 1.3)
+    expect(beadCell(delica, 'brick')!.aspect).toBeCloseTo(1.3 / 1.6)
     expect(beadCell(round, 'brick')!.aspect).toBeCloseTo(beadPitchMm(round) / 2.2)
     expect(beadCell(round, 'brick')!.aspect).toBeLessThan(1)
     expect(beadCell(cube, 'brick')!.aspect).toBe(1)
@@ -36,8 +36,8 @@ describe('a Bead\'s cell (ADR 0068, ticket 0724)', () => {
 
   it('reads the Form factor\'s hole direction: a hole running across turns the bead the other way (ticket 0734)', () => {
     const sideways = { ...delica, formFactor: { ...delica.formFactor, holes: { count: 1, direction: 'across' as const } } }
-    expect(beadCell(sideways, 'loom')!.aspect).toBeCloseTo(1.6 / 1.3)
-    expect(beadCell(sideways, 'brick')!.aspect).toBeCloseTo(1.3 / 1.6)
+    expect(beadCell(sideways, 'loom')!.aspect).toBeCloseTo(1.3 / 1.6)
+    expect(beadCell(sideways, 'brick')!.aspect).toBeCloseTo(1.6 / 1.3)
   })
 
   it('rounds the outline from the Form factor: a cube square, a cylinder near sharp, a round bead a pill', () => {

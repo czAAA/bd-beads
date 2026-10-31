@@ -30,7 +30,7 @@ const cubeBead: Bead = {
   heightMm: 1.5,
 }
 
-const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.6, heightMm: 1.3 }
+const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.3, heightMm: 1.6 }
 
 /** A picture whose pixel at (x, y) holds red x, green y, so a moved pixel can be told apart. */
 function picture(width: number, height: number): PixelData {
@@ -123,8 +123,8 @@ describe('proportionalSide', () => {
   })
 
   it('keeps the physical shape on a bead taller or wider than it is long', () => {
-    // 40 beads of 1.6 mm is 64 mm across; half of that down is 32 mm, about 25 beads of 1.3 mm.
-    expect(proportionalSide({ width: 200, height: 100 }, delicaBead, 'loom', { columns: 40 })).toBe(25)
+    // 40 beads of 1.3 mm is 52 mm across; half of that down is 26 mm, about 16 beads of 1.6 mm.
+    expect(proportionalSide({ width: 200, height: 100 }, delicaBead, 'loom', { columns: 40 })).toBe(16)
   })
 
   it('counts peyote rows a full bead apart, nothing nesting (ticket 0734)', () => {
@@ -133,8 +133,8 @@ describe('proportionalSide', () => {
   })
 
   it('turns the bead on brick stitch, whose thread runs down: columns a diameter wide, rows a length tall', () => {
-    // 40 beads of 1.3 mm is 52 mm across; half of that down is 26 mm, about 16 beads of 1.6 mm.
-    expect(proportionalSide({ width: 200, height: 100 }, delicaBead, 'brick', { columns: 40 })).toBe(16)
+    // 40 beads of 1.6 mm is 64 mm across; half of that down is 32 mm, about 25 beads of 1.3 mm.
+    expect(proportionalSide({ width: 200, height: 100 }, delicaBead, 'brick', { columns: 40 })).toBe(25)
   })
 
   it('never gives fewer than one bead', () => {
@@ -208,13 +208,13 @@ describe('convertResult', () => {
   it('reads a ratio as the size in beads and cm and the block a bead is', () => {
     expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'loom' as const, ratio: { pixels: 8, beads: 1 } }, labels)).toEqual({
       grid: '32×24 beads',
-      measured: '5.1 × 3.1 cm',
+      measured: '4.2 × 3.8 cm',
       ratio: '1 bead = 8 × 8 px',
     })
   })
 
   it('measures the size with the bead laid on the Technique\'s thread: swapped on brick stitch (ticket 0734)', () => {
-    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'brick', ratio: { pixels: 8, beads: 1 } }, labels).measured).toBe('4.2 × 3.8 cm')
+    expect(convertResult({ grid: { columns: 32, rows: 24 }, bead: delicaBead, technique: 'brick', ratio: { pixels: 8, beads: 1 } }, labels).measured).toBe('5.1 × 3.1 cm')
   })
 
   it('reads 1:n as the beads one pixel is', () => {

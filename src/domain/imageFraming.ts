@@ -32,7 +32,7 @@ export interface FrameSizeMm {
 }
 
 /** The frame's real-world size: cells at the Bead's mm footprint as the Technique lays it (ticket 0734). Physical size,
- * not cell count (ADR 0010), so Delica's 1.6 x 1.3mm cell gives the finished piece's real shape. */
+ * not cell count (ADR 0010), so Delica's 1.3 x 1.6mm cell gives the finished piece's real shape. */
 export function frameSizeMm(
   technique: Technique,
   dimensions: GridDimensions,

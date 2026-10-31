@@ -40,7 +40,7 @@ const cubeBead: Bead = {
   heightMm: 1.5,
 }
 
-const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.6, heightMm: 1.3 }
+const delicaBead: Bead = { ...cubeBead, id: 'test-delica', widthMm: 1.3, heightMm: 1.6 }
 
 /** A picture built from one RGBA quadruple per pixel, row by row — the shape a decoded image arrives in. */
 function pixels(width: number, height: number, rgba: number[][]): PixelData {
