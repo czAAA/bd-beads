@@ -34,7 +34,7 @@ describe('grams on the printed output (ticket 162; printed-output.md)', () => {
 
   it('says how many beads make a gram, for the note', () => {
     expect(beadsPerGram(delica)).toBe(200)
-    expect(beadsPerGram(round)).toBe(110)
+    expect(beadsPerGram(round)).toBe(105)
     expect(beadsPerGram({ beadsPerKg: undefined })).toBeUndefined()
   })
 })

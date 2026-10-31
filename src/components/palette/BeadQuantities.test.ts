@@ -87,7 +87,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
 
   it.each([
     ['toho-cube-1.5mm', '1.08 g', 'Cube'],
-    ['toho-round-11-0', '0.91 g', 'Round'],
+    ['toho-round-11-0', '0.95 g', 'Round'],
     ['miyuki-delica-11-0', '0.50 g', 'Delica'],
   ])('shows a weight for 100 %s beads: %s (%s)', (beadId, weight) => {
     const wrapper = mountQuantities(wide(beadId, 100))
@@ -149,7 +149,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     const note = wrapper.find('[data-testid="quantities-weight-note"]')
 
     expect(note.text()).toBe(
-      'This is bead count × about 0.0091 g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
+      'This is bead count × about 0.0095 g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
     )
     expect(wrapper.find('button[aria-describedby], [role="tooltip"]').exists()).toBe(false)
   })
