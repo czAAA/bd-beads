@@ -148,7 +148,7 @@
     {
       "name": "ContextBar",
       "group": "Responsive",
-      "summary": "A floating bar above the Progress bar under 1024px that offers what a Selection can do, and the Frame panel."
+      "summary": "The bar anchored to a Selection that offers what it can do, and the Mirror bar anchored to the Mirror's Area."
     },
     {
       "name": "ContrastAudit",
@@ -469,11 +469,6 @@
       "name": "ToolPill",
       "group": "Responsive",
       "summary": "The tools as a draggable pill floating over the drawing area, docked to any edge, with the colour popover."
-    },
-    {
-      "name": "MirrorPopover",
-      "group": "Responsive",
-      "summary": "The Mirror tile's popover: the Mirror mode, the Axes, an Area to mirror inside, and the details that apply."
     },
     {
       "name": "ToolSheet",

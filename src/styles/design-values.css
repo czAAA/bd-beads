@@ -152,20 +152,24 @@
   --selbar-gap: 6px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
-  --mirror-axis-width: 1.25px; /* MirrorPopover card: an Axis line on the overlay. */
-  --mirror-axis-dash: 5 4; /* MirrorPopover card: the Axis line's dash. */
-  --mirror-axis-soft: 0.45; /* MirrorPopover card: the Radial mirror lines after the first. */
-  --mirror-ring-radius: 7px; /* MirrorPopover card: the Radial centre's ring. */
-  --mirror-handle: 32px; /* MirrorPopover card: an Axis or centre handle chip on the open Canvas. */
-  --mirror-handle-icon: 16px; /* MirrorPopover card: the icon inside a handle chip. */
-  --mirror-handle-inset: 56px; /* MirrorPopover card: how far along its line from the view's edge a handle chip stands. */
-  --mirror-chip-height: 32px; /* MirrorPopover card: an Axis chip in the popover. */
-  --mirror-area-handle: 9px; /* MirrorPopover card: a handle square on the Area's rectangle, the Selection's. */
-  --mirror-area-row: 34px; /* MirrorPopover card: the Area row's buttons. */
-  --mirror-area-line: 1.5px; /* MirrorPopover card: the Area's rectangle, the margin target's edge and preview. */
-  --mirror-preview-dash: 4 3; /* MirrorPopover card: the whole-Frame preview while the margin is hovered. */
-  --mirror-margin-opacity: 0.1; /* MirrorPopover card: the margin's tint while it is the Area target under the pointer. */
-  --mirror-ghost-opacity: 0.45; /* MirrorPopover card: a counterpart in the hover preview. */
+  --mirror-bar-control: 24px; /* ContextBar card, Mirror bar: the Mode switch, an Axis chip and a count button, on mouse and pen. */
+  --mirror-bar-control-touch: 30px; /* ContextBar card, Mirror bar: the same on touch, in the 36px bar. */
+  --mirror-axis-width: 1.25px; /* ContextBar card, Mirror bar: an Axis line on the overlay. */
+  --mirror-axis-dash: 5 4; /* ContextBar card, Mirror bar: the Axis line's dash. */
+  --mirror-axis-soft: 0.45; /* ContextBar card, Mirror bar: the Radial mirror lines after the first. */
+  --mirror-ring-radius: 7px; /* ContextBar card, Mirror bar: the Radial centre's ring. */
+  --mirror-area-handle: 9px; /* ContextBar card, Mirror bar: a handle square on the Area's rectangle, the Selection's. */
+  --mirror-area-line: 1.5px; /* ContextBar card, Mirror bar: the Area's rectangle. */
+  --mirror-ghost-opacity: 0.45; /* ContextBar card, Mirror bar: a counterpart in the hover preview. */
+  /* Retired by the Mirror bar (ticket 0750): gone from the design system, kept here only until the code that reads
+     them (the Mirror popover, the Canvas handles, the margin pick target) is removed in the same ticket. */
+  --mirror-handle: 32px;
+  --mirror-handle-icon: 16px;
+  --mirror-handle-inset: 56px;
+  --mirror-chip-height: 32px;
+  --mirror-area-row: 34px;
+  --mirror-preview-dash: 4 3;
+  --mirror-margin-opacity: 0.1;
   --color-wheel-size: 200px;
   --color-slider-height: 20px;
   --color-thumb-size: 18px;
