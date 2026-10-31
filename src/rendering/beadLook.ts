@@ -86,9 +86,6 @@ export interface ProjectTheme {
   accent: string
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
   outline: string
-  /** A handle chip drawn on the canvas, Mirror's Axis handles (ticket 0704, MirrorPopover card): its fill (`elevated`)
-   * and the colour of its `elevation-2` shadow, none where the theme casts no shadow. */
-  chip: { fill: string; shadow?: string }
   /** A bead in a finished row: its own color at `opacity` over the board in every theme (ticket 352), never grey;
    * `grey` is the greyscale option. */
   finished: { grey: boolean; opacity: number }
@@ -119,7 +116,6 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   marker: '#1d4ed8',
   accent: '#fa520f',
   outline: '#1f1f1f',
-  chip: { fill: '#ffffff', shadow: 'rgba(0,0,0,.08)' },
   finished: { grey: false, opacity: FINISHED_OPACITY },
 })
 
@@ -139,7 +135,6 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   marker: '#faff69',
   accent: '#faff69',
   outline: '#ffffff',
-  chip: { fill: '#2a2a2a' },
   finished: { grey: false, opacity: FINISHED_OPACITY },
 })
 
@@ -158,7 +153,6 @@ const CONTRAST_THEME: ProjectTheme = {
   marker: '#000000',
   accent: '#a82c00',
   outline: '#000000',
-  chip: { fill: '#ffffff' },
   finished: { grey: false, opacity: FINISHED_OPACITY },
   // White paper with a black edge whatever is picked (MarginSheet card); the inner border is `margin-line`.
   margin: { fill: '#ffffff', line: '#595959', edge: '#000000', edgeWidth: 2, ruler: '#3d3d3d', rulerStrong: '#1f1f1f' },

@@ -1,11 +1,11 @@
 import type { Bead } from './beads'
-import type { BeadMap, FrameSheet, Rect } from './canvas'
+import type { BeadMap, FrameSheet } from './canvas'
 import type { Weave } from './weave'
 import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
 import type { PieceName } from './pieceNames'
-import type { CanvasAxes, MirrorSetting } from './mirror'
+import type { MirrorSetting } from './mirror'
 
 // The Project record and `touch`, which stamps a change (ticket 0620); it imports types alone. The operations live by
 // concern: createProject, storedProject (old files), layerWeave, weaveSwitch, rowProgress, layerBeads, drawing, fill,
@@ -62,9 +62,6 @@ export interface LayerFields extends Weave {
   /** The names of its Pieces (ticket 406, ADR 0050): a named Piece is an unframed Schema, named by one bead's position
    * (the anchor) since Pieces aren't stored; see domain/pieceNames.ts. Absent when no Piece has a name. */
   pieceNames?: PieceName[]
-  /** Mirror's Area (ticket 0710, spec 0702): the rectangle of this layer's cells its Axes run inside, in the layer's
-   * own positions, in place of the whole Frame or Canvas. One per layer; absent means none (domain/mirror.ts). */
-  mirrorArea?: Rect
 }
 
 /** The Canvas (layer0, ADR 0079): its name is the Project's, and its orientation is the view's turn. */
@@ -74,9 +71,6 @@ export interface CanvasLayer extends LayerFields {
   /** View-only turn (tickets 28, 171, ADR 0079): the Canvas, and every layer on it, shown turned this many degrees
    * clockwise, from 0 up to a whole turn; any angle by a twist on touch (ticket 0672). Never a data transform. */
   orientation: number
-  /** Where Mirror's straight Axes cross the open Canvas (ticket 0704, spec 0702): the Canvas's own geometry, the
-   * handles' positions, kept apart from the Project-wide setting. Absent until an Axis is placed (domain/mirror.ts). */
-  mirrorAxes?: CanvasAxes
 }
 
 /** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings,
@@ -107,8 +101,8 @@ export interface Project {
   /** This Project's maker's name (ADR 0060), printed on exports and the background watermark. Absent: no name
    * printed (domain/makerName.ts). */
   makerName?: string
-  /** The Mirror setting (ADR 0082, ticket 0703): the mode, the Axes and the Frame's Axis counts, one per Project, read
-   * by whichever layer a stroke lands on. Absent on a Project saved before Mirror, which reads as off (domain/mirror.ts). */
+  /** The Mirror (ADR 0082, ticket 0750): one per Project, its place (a Canvas Area or the whole Frame), Mode, Axes and
+   * counts. Absent on a Project saved before Mirror, which reads as off (domain/mirror.ts). */
   mirror?: MirrorSetting
   createdAt: number
   updatedAt: number

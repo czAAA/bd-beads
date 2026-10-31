@@ -3,6 +3,7 @@ import type { HistoryCap } from './history'
 import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
+import { MIRROR_OFF, type MirrorPlace } from './mirror'
 import { touch, type Project } from './project'
 import type { SwatchLetters } from './swatchLetters'
 
@@ -23,12 +24,15 @@ export interface UndoEntry {
   paletteCodes?: PaletteCodes
   /** The Swatch letters as they were (ticket 0573), restored with the Palette they belong to. */
   paletteLetters?: SwatchLetters
+  /** Where the Mirror was (ADR 0082, ticket 0750): making, moving, resizing and closing it are Undo steps, its Mode,
+   * Axes and counts are not, so only its place is put back. */
+  mirrorPlace?: MirrorPlace | null
 }
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
   const { layers, palette, removedDefaults, paletteCodes, paletteLetters } = project
-  return { layers, palette, removedDefaults, paletteCodes, paletteLetters }
+  return { layers, palette, removedDefaults, paletteCodes, paletteLetters, ...(project.mirror ? { mirrorPlace: project.mirror.place ?? null } : {}) }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry), keeping its name, the Canvas's
@@ -45,7 +49,9 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     const now = backgroundOf(project, layer)
     return now === undefined || now === backgroundOf(kept, layer) ? kept : withBackground(kept, layer, now)
   }, lettered)
+  const placed = (project.mirror?.place ?? null) === (entry.mirrorPlace ?? null) ? {} : { mirror: { ...(project.mirror ?? MIRROR_OFF), place: entry.mirrorPlace ?? null } }
   return touch(layered, {
+    ...placed,
     palette: entry.palette,
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
     ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),

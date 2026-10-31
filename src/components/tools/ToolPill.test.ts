@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ToolPill from './ToolPill.vue'
-import type { PillPosition } from '../../domain/toolPill'
-import { MIRROR_OFF } from '../../domain/mirror'
+import { PILL_TILES, type PillPosition } from '../../domain/toolPill'
+import { controlAction } from '../../composables/shell/controlRegistry'
 
 const TOOL_IDS = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
@@ -30,30 +30,31 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.findAll('.tool-pill__divider')).toHaveLength(1)
   })
 
-  it('has the Mirror tile after Piece, key 8, lit while the mode is not Off whatever the tool, and its press opens the popover (ticket 0703)', async () => {
+  it('has the Mirror tile after Piece, key 7, lit while the Mirror is on whatever the tool, and its press asks for Mirror mode, opening nothing (ADR 0082)', async () => {
     const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'fill' } })
     const ids = wrapper.findAll('button').map((button) => button.attributes('data-testid'))
     expect(ids.indexOf('pill-tool-mirror')).toBe(ids.indexOf('pill-tool-piece') + 1)
     const tile = wrapper.get('[data-testid="pill-tool-mirror"]')
     expect(tile.attributes('aria-label')).toBe('Mirror')
-    expect(tile.get('.icon-btn__key').text()).toBe('8')
-    expect(tile.attributes('aria-haspopup')).toBe('dialog')
-    expect(tile.attributes('aria-expanded')).toBe('false')
-    expect(tile.attributes('aria-pressed')).toBeUndefined()
+    expect(tile.get('.icon-btn__key').text()).toBe('7')
+    expect(tile.attributes('aria-haspopup')).toBeUndefined()
+    expect(tile.attributes('aria-pressed')).toBe('false')
     expect(tile.classes()).not.toContain('icon-btn--accent')
-    expect(wrapper.find('[data-testid="mirror-popover"]').exists()).toBe(false)
 
     await tile.trigger('click')
-    expect(wrapper.emitted('update:mirrorPopoverOpen')).toEqual([[true]])
+    expect(wrapper.emitted('mirror-tile')).toHaveLength(1)
     expect(wrapper.emitted('select-tool')).toBeUndefined()
 
-    await wrapper.setProps({ mirrorPopoverOpen: true, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } } })
+    await wrapper.setProps({ mirrorOn: true })
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
-    expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--accent')
-    expect(wrapper.get('[data-testid="mirror-popover"]').attributes('aria-label')).toBe('Mirror')
-    await wrapper.get('[data-testid="mirror-axis-topBottom"]').trigger('click')
-    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true } }]])
+  })
+
+  it('lights the Mirror tile in Mirror mode, and not the Select tile it runs under (ADR 0082)', () => {
+    const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'select', mirrorMarking: true } })
+    expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('shows a Paste tile right after the Mirror tile only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
@@ -64,7 +65,7 @@ describe('ToolPill (ticket 439)', () => {
     expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-mirror') + 1)
     const paste = wrapper.get('[data-testid="pill-tool-paste"]')
     expect(paste.attributes('aria-label')).toBe('Paste')
-    expect(paste.get('.icon-btn__key').text()).toBe('7')
+    expect(paste.get('.icon-btn__key').text()).toBe('8')
     expect(paste.attributes('aria-pressed')).toBe('false')
     await paste.trigger('click')
     expect(wrapper.emitted('paste-mode')).toHaveLength(1)
@@ -88,10 +89,16 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.emitted('select-tool')).toEqual(TOOL_IDS.map((id) => [id]))
   })
 
-  it('lays the tool tiles out in hotkey order, 1 to 6, then Mirror 8 and Paste 7 (tickets 461, 0703)', () => {
+  it('keys every tile by its place in the pill, its badge and its registry chord agreeing: 1 to 8 (ADR 0084)', () => {
     const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
-    const keys = wrapper.findAll('[data-testid^="pill-tool-"] .icon-btn__key').map((key) => key.text())
-    expect(keys).toEqual(['1', '2', '3', '4', '5', '6', '8', '7'])
+    const tiles = wrapper.findAll('[data-testid^="pill-tool-"]')
+    expect(tiles.map((tile) => tile.attributes('data-testid'))).toEqual(PILL_TILES.map((tile) => `pill-tool-${tile}`))
+    tiles.forEach((tile, index) => {
+      const id = PILL_TILES[index]!
+      const chord = controlAction(id === 'mirror' ? 'mirror' : `tool-${id}`).chords[0]!.key
+      expect(tile.get('.icon-btn__key').text(), id).toBe(String(index + 1))
+      expect(chord, id).toBe(String(index + 1))
+    })
   })
 
   it('goes vertical on the left and right, and docks to the position it is given', async () => {
@@ -123,10 +130,7 @@ describe('ToolPill (ticket 439)', () => {
   // The canvas box clips what it holds and stacks it under its own bars: on an iPad held sideways, with the pill on the
   // right, the Custom color picker opened under the Progress bar and could not be reached (ticket 0726). The popovers sit
   // in the app shell, where StackingOrder puts them over the bars and under a dialog.
-  it.each([
-    ['colour', { popoverOpen: true }, 'color-popover'],
-    ['Mirror', { mirrorPopoverOpen: true, mirror: MIRROR_OFF }, 'mirror-popover'],
-  ] as const)('opens its %s popover in the app shell, outside the canvas box', async (_, open, testid) => {
+  it.each([['colour', { popoverOpen: true }, 'color-popover']] as const)('opens its %s popover in the app shell, outside the canvas box', async (_, open, testid) => {
     const shell = document.body.appendChild(document.createElement('div'))
     shell.className = 'app-shell'
     const wrapper = mount(ToolPill, { props: { ...base, ...open }, attachTo: shell, global: { stubs: { teleport: false } } })

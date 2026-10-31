@@ -16,7 +16,7 @@ import { stampCells, type PasteLoss } from '../../domain/selection'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
-import { MIRROR_OFF, withCanvasAxes, type MirrorSetting } from '../../domain/mirror'
+import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -96,6 +96,22 @@ describe('useSelectionGesture', () => {
       gesture.endPress()
 
       expect(commitGridChange).not.toHaveBeenCalled()
+    })
+
+    it('in Mirror mode marks out the Area with the same drag, refused on the Frame and leaving the clipboard alone (ADR 0082)', () => {
+      const { gesture } = setup(paintedProject())
+      copyTopLeft(gesture)
+      gesture.dismissPaste()
+
+      gesture.beginPress(0, 0, undefined, true)
+      expect(gesture.selection.value).toBeUndefined()
+      gesture.beginPress(20, 1, undefined, true)
+      gesture.extendPress(22, 4)
+      expect(gesture.selection.value).toMatchObject({ top: 20, left: 1, rows: 3, columns: 4 })
+      expect(gesture.hasClipboard()).toBe(true)
+      gesture.beginPress(20, 1)
+      gesture.extendPress(21, 1)
+      expect(gesture.hasClipboard()).toBe(false)
     })
 
     it('ignores a move or an end with no press in progress', () => {
@@ -374,7 +390,7 @@ describe('useSelectionGesture', () => {
     })
 
     it('stamps at the counterparts too under Mirror, as one Undo step, and the preview shows them (ticket 0703)', () => {
-      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
+      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'frame' } }
       const { gesture, harness } = setup(paintedProject(), mirror)
       copyTopLeft(gesture)
 
@@ -388,13 +404,13 @@ describe('useSelectionGesture', () => {
       expect(frameGrid(harness.project)[3]!.map((cell) => cell.color)).toEqual([null, null, null, null])
     })
 
-    it('stamps a Canvas Paste across the Canvas\'s own Axis, the preview listing both, and aims it as a stamp until an Axis is placed (ticket 0704)', () => {
-      const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true } }
-      const unplaced = setup(paintedProject(), mirror)
-      copyTopLeft(unplaced.gesture)
-      expect(unplaced.gesture.pastePreviewStamp(unplaced.harness.project, { row: 20, column: 0 })).toBeDefined()
+    it('stamps a Canvas Paste inside a Canvas Area, the preview listing both, and aims it as a stamp while the Mirror is the whole Frame\'s (ADR 0082)', () => {
+      const wholeFrame: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'frame' } }
+      const onFrame = setup(paintedProject(), wholeFrame)
+      copyTopLeft(onFrame.gesture)
+      expect(onFrame.gesture.pastePreviewStamp(onFrame.harness.project, { row: 20, column: 0 })).toBeDefined()
 
-      const { gesture, harness } = setup(withCanvasAxes(paintedProject(), { leftRight: 2 }), mirror)
+      const { gesture, harness } = setup(paintedProject(), { ...wholeFrame, place: { layer: 'canvas', area: { row: 18, column: 0, rows: 5, columns: 5 } } })
       copyTopLeft(gesture)
       expect(gesture.pastePreviewStamp(harness.project, { row: 20, column: 0 })).toBeUndefined()
       expect(gesture.pastePreviewCells(harness.project, { row: 20, column: 0 }).map(({ row, column }) => [row, column])).toEqual([

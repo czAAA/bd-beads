@@ -107,16 +107,21 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),
   })),
-  // Mirror's Axis lines across a peyote Frame (ticket 0703): two Left–right axes and one Top–bottom, dashed in the
-  // Selection colour, drawn with the Paint tool and the pointer away.
+  // The whole-Frame Mirror's Axis lines across a peyote Frame (tickets 0703, 0750): two Left–right axes and one
+  // Top–bottom, dashed in the Selection colour, set on the Mirror bar, drawn with the Paint tool and the pointer away.
   {
     technique: 'peyote',
     name: 'peyote-mirror-axes',
     prepare: async (page) => {
-      await page.getByTestId('pill-tool-mirror').click()
-      await page.getByTestId('mirror-axis-leftRight').click()
-      await page.getByTestId('mirror-axis-topBottom').click()
-      await page.getByTestId('mirror-count-leftRight-more').click()
+      // The band's own button, or where the band is folded (the turned Frame), its Frame tools menu's item.
+      const button = page.getByTestId('margin-mirror-frame')
+      if (await button.isVisible()) await button.click()
+      else {
+        await page.getByTestId('margin-frame-tools').click()
+        await page.getByTestId('margin-frame-tools-mirror').click()
+      }
+      await page.getByTestId('mirror-bar-axis-topBottom').click()
+      await page.getByTestId('mirror-bar-leftRight-more').click()
       await page.keyboard.press('Escape')
       await settle(page)
     },

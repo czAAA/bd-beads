@@ -16,7 +16,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     cancelColorPick: () => false,
-    cancelAreaPick: () => false,
+    leaveMirrorMode: () => false,
     onPickColorKey: vi.fn(),
     backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),
@@ -31,12 +31,13 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onCopy: vi.fn(),
     onCut: vi.fn(),
     onPasteMode: vi.fn(),
-    onToggleMirror: vi.fn(),
+    onMirrorTile: vi.fn(),
     onFillSelection: vi.fn(),
     onFrameFromSelection: vi.fn(),
     pasteAtPointer: vi.fn(),
     onRotate: vi.fn(),
     selectionInFinishedRows: () => false,
+    selectionOnFrame: () => false,
     canRemoveSelectedLine: () => true,
     canNamePiece: () => false,
     hasPaintColor: () => true,
@@ -99,19 +100,21 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('8 toggles Mirror, only while a Project is open (ticket 0703)', () => {
+  it('7 is the Mirror tile, its place in the pill, only while a Project is open (ADR 0084)', () => {
     const none = mountTable()
-    press({ key: '8' })
-    expect(none.deps.onToggleMirror).not.toHaveBeenCalled()
+    press({ key: '7' })
+    expect(none.deps.onMirrorTile).not.toHaveBeenCalled()
     none.wrapper.unmount()
 
     const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
+    press({ key: '7' })
+    expect(deps.onMirrorTile).toHaveBeenCalledOnce()
     press({ key: '8' })
-    expect(deps.onToggleMirror).toHaveBeenCalledOnce()
+    expect(deps.onPasteMode).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
 
-  it('Ctrl+A selects all only while a Project is open, and 7 is free (tickets 414, 431)', () => {
+  it('Ctrl+A selects all only while a Project is open, and 7 is not it (tickets 414, 431)', () => {
     const none = mountTable()
     press({ key: 'a', ctrlKey: true })
     expect(none.deps.onSelectAll).not.toHaveBeenCalled()
@@ -203,10 +206,10 @@ describe('useAppShortcutTable', () => {
     picking.wrapper.unmount()
   })
 
-  it('Escape cancels a pick of Mirror\'s Area before the Selection (ticket 0710)', () => {
-    const picking = mountTable({ activeTool: () => 'select', cancelAreaPick: vi.fn(() => true), backOutOfSelect: vi.fn(() => true) })
+  it('Escape leaves Mirror mode before the Selection (ADR 0082)', () => {
+    const picking = mountTable({ activeTool: () => 'select', leaveMirrorMode: vi.fn(() => true), backOutOfSelect: vi.fn(() => true) })
     press({ key: 'Escape' })
-    expect(picking.deps.cancelAreaPick).toHaveBeenCalled()
+    expect(picking.deps.leaveMirrorMode).toHaveBeenCalled()
     expect(picking.deps.backOutOfSelect).not.toHaveBeenCalled()
     picking.wrapper.unmount()
   })

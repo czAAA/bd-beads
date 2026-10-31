@@ -12,6 +12,7 @@ import { en } from '../../i18n/en'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 import { frameOf } from '../../domain/layerRecord'
+import { MIRROR_OFF } from '../../domain/mirror'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
@@ -48,7 +49,7 @@ describe('ContextBar', () => {
     expect(wrapper.emitted('select-all')).toHaveLength(1)
   })
 
-  it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate and Clear selection, icon-only', async () => {
+  it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate, Mirror and Clear selection, icon-only', async () => {
     const wrapper = mount(ContextBar, {
       props: { project: drawn, selection, selectionSummary: '3×5 ≈ 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
     })
@@ -56,7 +57,7 @@ describe('ContextBar', () => {
 
     expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
-    expect(ids).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-clear'])
+    expect(ids).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-mirror-selection', 'context-bar-clear'])
     for (const id of ids) expect(wrapper.get(`[data-testid="${id}"]`).text(), id).toBe('')
     expect(wrapper.get('[data-testid="context-bar-copy"]').attributes('aria-label')).toBe('Copy')
     expect(wrapper.get('[data-testid="context-bar-clear"]').attributes('aria-label')).toBe('Clear selection')
@@ -193,16 +194,23 @@ describe('ContextBar', () => {
     expect(mount(ContextBar, { props: { pasteArmed: false, canRemoveLine: false, project } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
   })
 
-  it('offers Mirror after Rotate while Mirror is on, and not while it is off (ticket 0707)', async () => {
+  it('offers Mirror after Rotate, always, and disables it on a Frame Selection saying the Frame mirrors whole (ADR 0082)', async () => {
     const props = { selection, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false, project: drawn }
-    const wrapper = mount(ContextBar, { props: { ...props, mirrorOn: true } })
+    const wrapper = mount(ContextBar, { props })
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
     expect(ids.indexOf('context-bar-mirror-selection')).toBe(ids.indexOf('context-bar-rotate') + 1)
     await arm()
-    await wrapper.get('[data-testid="context-bar-mirror-selection"]').trigger('click')
+    const button = wrapper.get('[data-testid="context-bar-mirror-selection"]')
+    expect(button.attributes('aria-label')).toBe('Mirror')
+    expect(button.attributes('aria-disabled')).toBeUndefined()
+    await button.trigger('click')
     expect(wrapper.emitted('mirror-selection')).toHaveLength(1)
 
-    expect(mount(ContextBar, { props }).find('[data-testid="context-bar-mirror-selection"]').exists()).toBe(false)
+    const onFrame = mount(ContextBar, { props: { ...props, project, selection: { ...selection, layer: 'frame' as const } } })
+    await arm()
+    expect(onFrame.get('[data-testid="context-bar-mirror-selection"]').attributes('aria-disabled')).toBe('true')
+    await onFrame.get('[data-testid="context-bar-mirror-selection"]').trigger('click')
+    expect(onFrame.emitted('mirror-selection')).toBeUndefined()
   })
 
   it('offers Rotate once a pass is done on the Canvas and clear of finished rows, and disables it saying why where the Selection reaches into them (ticket 0647)', async () => {
@@ -277,5 +285,86 @@ describe('ContextBar keyboard (ticket 563, ADR 0075)', () => {
     await last.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(last.element)
     wrapper.unmount()
+  })
+})
+
+describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
+  const setting = { ...MIRROR_OFF, axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas' as const, area: { row: 0, column: 0, rows: 4, columns: 6 } } }
+  const mirror = { setting, summary: '6×4 ≈ 1 × 0.7 cm', rect: { row: 0, column: 0, rows: 4, columns: 6 } }
+  const base = { project, pasteArmed: false, canRemoveLine: false, mirror }
+
+  it('is the bar with no Selection while the Mirror is on: a toolbar named Mirror with the size, the Mode, the Axis chips and Close mirror', async () => {
+    const wrapper = mount(ContextBar, { props: base })
+    const bar = wrapper.get('[data-testid="mirror-bar"]')
+    expect(bar.attributes('role')).toBe('toolbar')
+    expect(bar.attributes('aria-label')).toBe('Mirror')
+    expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('6×4 ≈ 1 × 0.7 cm')
+    expect(wrapper.get('[data-testid="mirror-bar-mode"]').attributes('role')).toBe('radiogroup')
+    expect(wrapper.get('[data-testid="mirror-bar-mode-mirror"]').attributes('aria-checked')).toBe('true')
+    expect(wrapper.find('[data-testid="mirror-bar-mode-off"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="mirror-bar-axis-leftRight"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="mirror-bar-axis-radial"]').attributes('aria-label')).toBe('Radial')
+    expect(wrapper.get('[data-testid="mirror-bar-close"]').attributes('aria-label')).toBe('Close mirror')
+    await wrapper.get('[data-testid="mirror-bar-close"]').trigger('click')
+    expect(wrapper.emitted('close-mirror')).toHaveLength(1)
+  })
+
+  it('switches the Mode and turns Axes on and off, with no Undo step of its own: it says what the Mirror becomes', async () => {
+    const wrapper = mount(ContextBar, { props: base })
+    await wrapper.get('[data-testid="mirror-bar-mode-repeat"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-bar-axis-topBottom"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-bar-axis-leftRight"]').trigger('click')
+    expect(wrapper.emitted('update:mirror')).toEqual([
+      [{ ...setting, mode: 'repeat' }],
+      [{ ...setting, axes: { leftRight: true, topBottom: true, radial: false } }],
+      [setting],
+    ])
+  })
+
+  it('carries a Stepper on a chip that is on, limited by the Area: an Axis count 1 to its beads across minus one, the Fold 2 to 8', async () => {
+    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, counts: { leftRight: 5, topBottom: 1 } } } } })
+    expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('5')
+    expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').attributes('aria-label')).toBe('Left–right axes, 5')
+    expect(wrapper.get('[data-testid="mirror-bar-leftRight-more"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="mirror-bar-topBottom-value"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="mirror-bar-leftRight-more"]').trigger('click')
+    await wrapper.get('[data-testid="mirror-bar-leftRight-fewer"]').trigger('click')
+    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...setting, counts: { leftRight: 4, topBottom: 1 } }]])
+
+    const radial = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 8 } } } })
+    expect(radial.get('[data-testid="mirror-bar-radial-value"]').attributes('aria-label')).toBe('Fold, 8')
+    expect(radial.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('turns a direction one bead across off, saying why, and its press does nothing', async () => {
+    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 4, columns: 1 } } } })
+    const chip = wrapper.get('[data-testid="mirror-bar-axis-leftRight"]')
+    expect(chip.attributes('aria-disabled')).toBe('true')
+    expect(chip.attributes('aria-pressed')).toBe('false')
+    await chip.trigger('click')
+    expect(wrapper.emitted('update:mirror')).toBeUndefined()
+  })
+
+  it('on a Custom frame notes the shape\'s own Axes in place of the chips, the Mode still switching', () => {
+    const star = { axes: { leftRight: false, topBottom: false, radial: true }, sides: 5 }
+    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, shape: star } } })
+    expect(wrapper.find('[data-testid="mirror-bar-chips"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="mirror-bar-shape-note"]').text()).toBe('Radial · 5, from the shape')
+    const kite = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, mode: 'repeat' as const }, shape: { axes: { leftRight: true, topBottom: false, radial: false } } } } })
+    expect(kite.get('[data-testid="mirror-bar-shape-note"]').text()).toBe('Left–right, from the shape: Repeat needs Radial.')
+  })
+
+  it('gives way to the Selection bar while a Selection exists, hides during a gesture, and shrinks to its size while the Area is resized', async () => {
+    const wrapper = mount(ContextBar, { props: { ...base, selection, selectionSummary: '2×2' } })
+    expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(true)
+    const shown = (testid: string) => (wrapper.get(`[data-testid="${testid}"]`).element as HTMLElement).style.display !== 'none'
+    await wrapper.setProps({ selection: undefined, selectionSummary: undefined })
+    expect(shown('mirror-bar')).toBe(true)
+    await wrapper.setProps({ gesturing: true })
+    expect(shown('mirror-bar')).toBe(false)
+    await wrapper.setProps({ mirrorSizeOnly: true })
+    expect(shown('mirror-bar')).toBe(true)
+    expect((wrapper.get('.mirror-bar__items').element as HTMLElement).style.display).toBe('none')
   })
 })
