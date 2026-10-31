@@ -220,18 +220,16 @@
   --schema-card-min-height: 160px; /* SchemaTag card: the paper tag's least height, its actions pushed to the bottom. */
   --schema-card-name: 600 0.875rem/1.25rem var(--font-sans); /* SchemaTag card: the paper tag's name (Inter 600 14/20). */
   --schema-card-name-inset: 46px; /* SchemaTag card: where the paper tag's name stops short of its right edge, clear of the hole. */
-  /* FirstRunHints card (ticket 0725): hand-drawn notes over an empty Project, in muted, the note face. */
-  --hint-note: italic 400 1.1875rem/1.15 var(--font-serif); /* FirstRunHints card: a quiet note (Menu, Project, Mirror, colour), 19px. */
-  --hint-step: italic 400 1.375rem/1.15 var(--font-serif); /* FirstRunHints card: a step note (1 to 4), 22px; 20px on a phone. */
-  --hint-welcome: italic 400 1.5rem/1.2 var(--font-serif); /* FirstRunHints card: the welcome's two lines, 24px; 20px on a phone. */
-  --hint-wordmark: italic 400 4rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark, 64px, -0.6px tracking; 44px on a phone. */
-  --hint-step-phone: italic 400 1.25rem/1.15 var(--font-serif); /* FirstRunHints card: a step note on a phone, 20px. */
-  --hint-welcome-phone: italic 400 1.25rem/1.2 var(--font-serif); /* FirstRunHints card: the welcome's lines on a phone, 20px. */
-  --hint-wordmark-phone: italic 400 2.75rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark on a phone, 44px. */
-  --hint-arrow: 1.4px; /* FirstRunHints card: a quiet note's hand-drawn arrow. */
-  --hint-step-arrow: 1.5px; /* FirstRunHints card: a step note's hand-drawn arrow. */
-  --hint-ring-gap: 2px; /* FirstRunHints card: the gap between a step's control and its accent ring. */
-  --hint-ring-width: 2px; /* FirstRunHints card: the accent ring round a step's control. */
+  /* FirstRunHints card (tickets 0725, 0738): captions beside their controls over an empty Project, the note face. */
+  --hint-note: italic 400 1rem/1.15 var(--font-serif); /* FirstRunHints card: a quiet caption (Menu, Project, Frame, Mirror, colour), 16px, muted. */
+  --hint-step: italic 400 1.1875rem/1.15 var(--font-serif); /* FirstRunHints card: Select's and Export's captions, 19px, body. */
+  --hint-welcome: italic 400 1.375rem/1.2 var(--font-serif); /* FirstRunHints card: the welcome's steps line, 22px; 18px on a phone. */
+  --hint-wordmark: italic 400 2.875rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark, 46px, -0.6px tracking; 36px on a phone. */
+  --hint-storage: 400 0.875rem/1.6 var(--font-sans); /* FirstRunHints card: the welcome's storage line and the Project file's path, 14px. */
+  --hint-welcome-phone: italic 400 1.125rem/1.2 var(--font-serif); /* FirstRunHints card: the steps line on a phone, 18px. */
+  --hint-wordmark-phone: italic 400 2.25rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark on a phone, 36px. */
+  --hint-ring-gap: 2px; /* FirstRunHints card: the gap between a ringed control and its accent ring. */
+  --hint-ring-width: 2px; /* FirstRunHints card: the accent ring round Select, Mirror and Export. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;
