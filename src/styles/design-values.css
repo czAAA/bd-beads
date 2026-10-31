@@ -28,7 +28,9 @@
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter. */
   --filter-chip-height: 28px; /* BeadColors card: a line of the Finish filter list. */
   --filter-check: 14px; /* BeadColors card: a Finish line's check box. */
-  --bead-filter-column: 184px; /* BeadColors card: the filter column beside the rows while the list is wide. */
+  --bead-filter-column: 200px; /* BeadColors card: the filter column beside the rows while the list is wide. */
+  --bead-list-height: 16rem; /* BeadColors card: the rows' tallest before they scroll while the list is narrow. */
+  --filter-badge: 18px; /* BeadColors card: the count badge on the narrow layout's Filters button. */
   --bead-list-height-wide: 24rem; /* BeadColors card: the rows' tallest before they scroll while the list is wide. */
   --popover-width-wide: var(--panel-width); /* ToolPill card: the colour popover while the Bead's palette is open. */
   --palette-swatch-min: 27px; /* PaletteSwatches card: the narrowest swatch in the wide colour popover. */

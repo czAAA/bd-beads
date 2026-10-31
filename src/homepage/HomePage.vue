@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, nextTick, onMounted, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import ConfirmModal from '../components/ui/ConfirmModal.vue'
 import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
@@ -21,7 +21,7 @@ import FeatureCarousel from './FeatureCarousel.vue'
 import PlanTiles from './PlanTiles.vue'
 import RollingSlogan from './RollingSlogan.vue'
 import SectionBar from './SectionBar.vue'
-import { SECTIONS, sectionAt } from './sections'
+import { sectionAt, type HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
 import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
@@ -100,28 +100,62 @@ const boxStyle = computed(() => {
   }
 })
 
-// The sections (ticket 0739): the page is a viewport of scroll per section, snapping, and the section shown is the
-// nearest one; the box stays put on a sticky stage while it scrolls.
+// The sections (tickets 0739, 0744): the page is a viewport of scroll per section, snapping, and the section shown is the
+// nearest one; the box stays put on a sticky stage while it scrolls. This list is the one place they are named and
+// ordered: the page draws them, their snap points and their turning from it, and the Progress bar its steps.
+const sections = computed<HomepageSection[]>(() => [
+  { id: 'inside', heading: t.value.homepage.whatsInside, title: 'above', shows: FeatureCarousel, with: () => ({ class: 'homepage__fill', wide: pageWidth.value >= WIDE_FROM }) },
+  { id: 'coffee', heading: t.value.homepage.coffee.title, title: 'hidden', centred: true, shows: CoffeeTile },
+  {
+    id: 'plans',
+    heading: t.value.homepage.plans.heading,
+    title: 'inside',
+    shows: PlanTiles,
+    with: () => ({ style: plansStyle.value, freeHeight: freeGrowth.height.value, freeOpen: freeGrowth.open.value, onOpenEditor: () => emit('openEditor') }),
+  },
+])
+const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id === 'plans'))
 const pageEl = ref<HTMLElement>()
 const section = ref(0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-const sectionNames = computed(() => [t.value.homepage.whatsInside, t.value.homepage.coffee.title, t.value.homepage.plans.heading])
-const PLANS = SECTIONS.indexOf('plans')
+/** The section a step's jump is on its way to: the box turns to it at once, not through each one the scroll passes. */
+let jumpingTo: number | undefined
 
 function onPageScroll() {
   const page = pageEl.value!
-  const shown = sectionAt(page.scrollTop, page.clientHeight)
-  freeGrowth.scrolledPast(page.scrollTop - PLANS * page.clientHeight)
+  if (plansIndex.value >= 0) freeGrowth.scrolledPast(page.scrollTop - plansIndex.value * page.clientHeight)
   if (freeGrowth.growing.value) snapOff.value = true
-  if (shown === section.value) return
-  section.value = shown
-  if (shown !== PLANS) snapOff.value = false
+  const shown = sectionAt(page.scrollTop, page.clientHeight, sections.value.length)
+  if (jumpingTo !== undefined && shown !== jumpingTo) return
+  jumpingTo = undefined
+  show(shown)
 }
 
-/** Back and Next: the page scrolls a section's worth, and the scroll turns the box. */
+function show(index: number) {
+  if (index === section.value) return
+  section.value = index
+  if (index !== plansIndex.value) snapOff.value = false
+}
+
+/** A jump's scroll has stopped, where it was going or wherever the beader took it: the box follows the page again. */
+function onScrollEnd() {
+  if (jumpingTo === undefined) return
+  jumpingTo = undefined
+  onPageScroll()
+}
+
+/** The beader takes the page over mid-jump (where a browser has no `scrollend`): the next scroll turns the box. */
+function endJump() {
+  jumpingTo = undefined
+}
+
+/** Back, Next and the steps: the page scrolls to the section and the box turns to it at once, however far it is. */
 function goTo(index: number) {
   const page = pageEl.value
-  page?.scrollTo?.({ top: index * page.clientHeight, behavior: reducedMotion.value ? 'auto' : 'smooth' })
+  if (!page || index === section.value) return
+  if (!reducedMotion.value) jumpingTo = index
+  page.scrollTo?.({ top: index * page.clientHeight, behavior: reducedMotion.value ? 'auto' : 'smooth' })
+  show(index)
 }
 
 /** Where a section is drawn: the one shown, or the side it slid out to. */
@@ -135,8 +169,11 @@ onMounted(() => pageEl.value?.focus({ preventScroll: true }))
 // The free list (ticket 0742): scrolling past the plans grows No account's list, the plans scrolling up in their section
 // as the page does, and the page reaches as far as the whole list needs. The page stops snapping once it grows, until
 // it is back at the coffee.
-const plans = ref<InstanceType<typeof PlanTiles>>()
-const plansSection = ref<HTMLElement>()
+const sectionEls = shallowReactive(new Map<string, HTMLElement>())
+/** What each section shows, by its id: the plans' tiles are what the free list is measured in. */
+const shownIn = shallowReactive(new Map<string, unknown>())
+const plans = computed(() => shownIn.get('plans') as InstanceType<typeof PlanTiles> | undefined)
+const plansSection = computed(() => sectionEls.get('plans'))
 const snapOff = ref(false)
 const freeGrowth = useFreeGrowth({
   section: plansSection,
@@ -150,7 +187,7 @@ onMounted(() => {
   remeasureFree()
   void document.fonts?.ready.then(remeasureFree)
 })
-watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === PLANS], remeasureFree)
+watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
 
 // The Menu's Saved Projects (ticket 0716): the editor's list, its Remove asking first, a pick opening the editor on it.
 const library = shallowRef<HomepageLibrary>()
@@ -181,8 +218,12 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
     tabindex="-1"
     data-testid="homepage-page"
     @scroll.passive="onPageScroll"
+    @scrollend="onScrollEnd"
+    @wheel.passive="endJump"
+    @touchstart.passive="endJump"
+    @keydown="endJump"
   >
-    <div class="homepage-page__track" :style="{ '--free-room': `${freeGrowth.room.value}px` }">
+    <div class="homepage-page__track" :style="{ '--free-room': `${freeGrowth.room.value}px`, '--sections': sections.length }">
       <div class="homepage-page__stage">
         <!-- The two faint X1 marks beside the box, drifting a little as the page scrolls. -->
         <span class="homepage-page__marks">
@@ -270,47 +311,33 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
               <div class="homepage__sections">
                 <section
+                  v-for="(entry, index) in sections"
+                  :key="entry.id"
+                  :ref="(el) => el ? sectionEls.set(entry.id, el as HTMLElement) : sectionEls.delete(entry.id)"
                   class="homepage__section"
-                  :class="`homepage__section--${sectionState(0)}`"
-                  aria-labelledby="homepage-inside"
-                  data-testid="homepage-section-inside"
+                  :class="[`homepage__section--${sectionState(index)}`, `homepage__section--${entry.id}`, { 'homepage__section--centred': entry.centred }]"
+                  :aria-labelledby="entry.title === 'above' ? `homepage-${entry.id}` : undefined"
+                  :aria-label="entry.title === 'hidden' ? entry.heading : undefined"
+                  :data-testid="`homepage-section-${entry.id}`"
                 >
-                  <h2 id="homepage-inside" class="homepage__heading">{{ t.homepage.whatsInside }}</h2>
-                  <FeatureCarousel class="homepage__fill" :wide="pageWidth >= WIDE_FROM" />
-                </section>
-                <section
-                  class="homepage__section homepage__section--centred"
-                  :class="`homepage__section--${sectionState(1)}`"
-                  :aria-label="t.homepage.coffee.title"
-                  data-testid="homepage-section-coffee"
-                >
-                  <CoffeeTile />
-                </section>
-                <div
-                  ref="plansSection"
-                  class="homepage__section homepage__section--plans"
-                  :class="`homepage__section--${sectionState(2)}`"
-                  data-testid="homepage-section-plans"
-                >
-                  <PlanTiles
-                    ref="plans"
-                    :style="plansStyle"
-                    :free-height="freeGrowth.height.value"
-                    :free-open="freeGrowth.open.value"
-                    @open-editor="emit('openEditor')"
+                  <h2 v-if="entry.title === 'above'" :id="`homepage-${entry.id}`" class="homepage__heading">{{ entry.heading }}</h2>
+                  <component
+                    :is="entry.shows"
+                    v-bind="entry.with?.()"
+                    :ref="(shown: unknown) => (shown ? shownIn.set(entry.id, shown) : shownIn.delete(entry.id))"
                   />
-                </div>
+                </section>
               </div>
             </main>
           </div>
-          <SectionBar :section="section" :names="sectionNames" @go="goTo" />
+          <SectionBar :section="section" :sections="sections" @go="goTo" />
         </div>
       </div>
       <span
-        v-for="(id, index) in SECTIONS"
-        :key="id"
+        v-for="(entry, index) in sections"
+        :key="entry.id"
         class="homepage-page__snap"
-        :class="{ 'homepage-page__snap--last': index === SECTIONS.length - 1 }"
+        :class="{ 'homepage-page__snap--last': index === sections.length - 1 }"
         :style="{ top: `calc(${index} * (100% - var(--free-room)) / var(--sections))` }"
         aria-hidden="true"
       />
@@ -344,7 +371,6 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 .homepage-page__track {
   position: relative;
   height: calc(var(--sections) * 100% + var(--free-room));
-  --sections: 3;
 }
 
 .homepage-page__snap {

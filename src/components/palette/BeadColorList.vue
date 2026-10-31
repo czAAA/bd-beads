@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
-import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { beadColorFilterCounts, codeInOtherSizes, filterBeadColors, searchBeadColors } from '../../domain/beadColorFilter'
 import { FINISHES, type Finish } from '../../domain/colorCatalog'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -11,13 +10,14 @@ import { colorName } from '../../i18n/colorName'
 import { formatList } from '../../i18n/listFormat'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import AppNote from '../ui/AppNote.vue'
-import AppTooltip from '../ui/AppTooltip.vue'
 import TextField from '../ui/form/TextField.vue'
+import BeadColorFilters from './BeadColorFilters.vue'
 
-// The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code in the Bead's size, swatches approximate,
-// a code the Palette holds taken; adding is an Edit. Color and Finish filters narrow the search (ticket 0713) and reset on
-// close. The foot row opens a bead-color Report (ticket 0700) from the row last focused.
+// The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code in the Bead's size, a code the Palette
+// holds taken; adding is an Edit. Color and Finish filters narrow the search (ticket 0713), reset on close, and stand
+// beside the rows or behind a Filters button by the list's width (ticket 0746).
 const props = defineProps<{ colors: BeadColors }>()
 const emit = defineEmits<{ added: [hex: string] }>()
 
@@ -46,23 +46,24 @@ const families = computed(() => {
   const present = new Map(props.colors.swatches.value.map((entry) => [familyColorId(entry.family), entry.family]))
   return brandColors(bead.value?.brand.id).flatMap((color) => {
     const family = present.get(color.id)
-    return family ? [{ family, hex: color.hex, on: filter.value.families.includes(family), count: counts.value.families.get(family) ?? 0 }] : []
+    return family ? [{ family, name: familyName(family), hex: color.hex, on: filter.value.families.includes(family), count: counts.value.families.get(family) ?? 0 }] : []
   })
 })
 /** The Finishes that have a code in the Bead's size, in the shared order. */
 const finishes = computed(() => {
   const present = new Set(props.colors.swatches.value.map((entry) => entry.finish))
-  return FINISHES.filter((finish) => present.has(finish)).map((finish) => ({ finish, on: filter.value.finishes.includes(finish), count: counts.value.finishes.get(finish) ?? 0 }))
+  return FINISHES.filter((finish) => present.has(finish)).map((finish) => ({ finish, name: words.value.finishes[finish], on: filter.value.finishes.includes(finish), count: counts.value.finishes.get(finish) ?? 0 }))
 })
-
-const valueName = (name: string, count: number) => fillBlanks(words.value.valueCount, { name, count: groupThousands(count, locale.value) })
 
 function toggle<T extends string>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value]
 }
 const toggleFamily = (family: string) => (filter.value = { ...filter.value, families: toggle(filter.value.families, family) })
 const toggleFinish = (finish: Finish) => (filter.value = { ...filter.value, finishes: toggle(filter.value.finishes, finish) })
-const filtersOn = computed(() => filter.value.families.length + filter.value.finishes.length > 0)
+const filtersOnCount = computed(() => filter.value.families.length + filter.value.finishes.length)
+const filtersOn = computed(() => filtersOnCount.value > 0)
+/** The Filters disclosure of the narrow layout; it starts closed each time the list opens. */
+const filtersOpen = ref(false)
 const clearFilters = () => (filter.value = { families: [], finishes: [] })
 
 /** What is on, as the empty sentence names it: the Finishes in lowercase, then the families, each row as one phrase. */
@@ -85,11 +86,6 @@ const emptyText = computed(() => {
   return fillBlanks(words.value.noMatch, { query: typed })
 })
 
-const colorRow = ref<HTMLElement>()
-const finishRow = ref<HTMLElement>()
-const colorRoving = useRovingFocus(colorRow, { axis: () => 'horizontal', managesTabIndex: true })
-const finishRoving = useRovingFocus(finishRow, { axis: () => 'horizontal', managesTabIndex: true })
-
 /** The swatch the person last moved to with focus (a press focuses it too): a color Report starts from its code. */
 const highlighted = ref<{ code: string; hex: string }>()
 /** The highlighted swatch while the list still shows it: a search or filter that hid it leaves no code to start from. */
@@ -102,99 +98,72 @@ function add(hex: string, code: string) {
 
 <template>
   <div class="bead-color-list" role="group" :aria-label="words.label" data-testid="bead-colors">
-    <AppNote data-testid="bead-colors-approximate">{{ words.approximate }} {{ words.takenNote }}</AppNote>
     <AppNote v-if="colors.state.value === 'loading'" role="status">{{ words.loading }}</AppNote>
     <AppNote v-else-if="colors.state.value === 'failed'" role="alert" data-testid="bead-colors-failed">{{ words.failed }}</AppNote>
-    <template v-else>
-      <TextField v-model="query" type="search" :aria-label="words.search" :placeholder="words.search" autocomplete="off" data-testid="bead-colors-search" />
-      <div class="bead-color-list__filter">
-        <span class="bead-color-list__filter-label" aria-hidden="true">{{ words.colorFilter }}</span>
-        <div
-          ref="colorRow"
-          class="bead-color-list__values"
-          role="group"
-          :aria-label="words.colorFilter"
-          data-testid="bead-colors-filter-color"
-          @keydown="colorRoving.onKeydown"
-          @focusin="colorRoving.onFocusin"
+    <div v-else class="bead-color-list__layout">
+      <div class="bead-color-list__search">
+        <TextField v-model="query" type="search" :aria-label="words.search" :placeholder="words.search" autocomplete="off" data-testid="bead-colors-search" />
+        <button
+          type="button"
+          class="bead-color-list__filters-toggle"
+          :aria-expanded="filtersOpen"
+          :aria-label="filtersOn ? fillBlanks(words.filtersOn, { count: filtersOnCount }) : words.filters"
+          data-testid="bead-colors-filters-toggle"
+          @click="filtersOpen = !filtersOpen"
         >
-          <AppTooltip v-for="item in families" :key="item.family" :name="valueName(familyName(item.family), item.count)" :announce="false">
-            <button
-              type="button"
-              class="bead-color-list__family"
-              :class="{ 'bead-color-list__family--on': item.on, 'bead-color-list__value--none': item.count === 0 }"
-              :style="{ backgroundColor: item.hex }"
-              :aria-pressed="item.on"
-              :aria-label="valueName(familyName(item.family), item.count)"
-              data-testid="bead-colors-family"
-              :data-value="item.family"
-              :data-none="item.count === 0 || undefined"
-              @click="toggleFamily(item.family)"
-            />
-          </AppTooltip>
-        </div>
+          {{ words.filters }}
+          <span v-if="filtersOn" class="bead-color-list__badge" aria-hidden="true" data-testid="bead-colors-filters-badge">{{ filtersOnCount }}</span>
+          <AppIcon :name="filtersOpen ? 'chevron-up' : 'chevron-down'" :size="14" aria-hidden="true" />
+        </button>
       </div>
-      <div class="bead-color-list__filter">
-        <span class="bead-color-list__filter-label" aria-hidden="true">{{ words.finishFilter }}</span>
-        <div
-          ref="finishRow"
-          class="bead-color-list__values"
-          role="group"
-          :aria-label="words.finishFilter"
-          data-testid="bead-colors-filter-finish"
-          @keydown="finishRoving.onKeydown"
-          @focusin="finishRoving.onFocusin"
-        >
-          <AppTooltip v-for="item in finishes" :key="item.finish" :name="valueName(words.finishes[item.finish], item.count)" :announce="false">
+      <BeadColorFilters
+        class="bead-color-list__filters"
+        :class="{ 'bead-color-list__filters--open': filtersOpen }"
+        :families="families"
+        :finishes="finishes"
+        :any-on="filtersOn"
+        :open="filtersOpen"
+        @toggle-family="toggleFamily"
+        @toggle-finish="toggleFinish"
+        @clear="clearFilters"
+      />
+      <div class="bead-color-list__results">
+        <p class="bead-color-list__count" data-testid="bead-colors-count">
+          <span>{{ fillBlanks(words.codeCount, { count: groupThousands(matches.length, locale) }) }}</span>
+          <span v-if="matches.length > SHOWN">{{ fillBlanks(words.firstShown, { count: SHOWN }) }}</span>
+        </p>
+        <ul class="bead-color-list__rows">
+          <li v-for="entry in shown" :key="entry.code">
             <button
               type="button"
-              class="ui-control bead-color-list__finish"
-              :class="{ 'bead-color-list__finish--on': item.on, 'bead-color-list__value--none': item.count === 0 }"
-              :aria-pressed="item.on"
-              :aria-label="valueName(words.finishes[item.finish], item.count)"
-              data-testid="bead-colors-finish"
-              :data-value="item.finish"
-              :data-none="item.count === 0 || undefined"
-              @click="toggleFinish(item.finish)"
+              class="bead-color-list__row"
+              :class="{ 'bead-color-list__row--taken': entry.taken }"
+              :aria-disabled="entry.taken ? 'true' : undefined"
+              :aria-label="fillBlanks(entry.taken ? words.takenLabel : words.add, { code: entry.code })"
+              data-testid="bead-color"
+              :data-code="entry.code"
+              :data-taken="entry.taken || undefined"
+              @click="!entry.taken && add(entry.hex, entry.code)"
+              @focus="highlighted = { code: entry.code, hex: entry.hex }"
             >
-              {{ words.finishes[item.finish] }}
-              <span class="bead-color-list__count">{{ groupThousands(item.count, locale) }}</span>
+              <span class="bead-color-list__chip" :class="{ 'bead-color-list__chip--approximate': entry.approximate }" :style="{ backgroundColor: entry.hex }" />
+              <span class="bead-color-list__text">
+                <span class="bead-color-list__code">{{ entry.code }}</span>
+                <span class="bead-color-list__meta">
+                  {{ familyName(entry.family) }} · {{ words.finishes[entry.finish] }}
+                  <span v-if="entry.discontinued" class="bead-color-list__note"> · {{ words.discontinued }}</span>
+                </span>
+              </span>
+              <span v-if="entry.taken" class="bead-color-list__taken">{{ words.inPalette }}</span>
             </button>
-          </AppTooltip>
+          </li>
+        </ul>
+        <div v-if="matches.length === 0" class="bead-color-list__empty">
+          <AppNote data-testid="bead-colors-empty">{{ emptyText }}</AppNote>
+          <AppButton v-if="filtersOn" variant="in-box" size="sm" data-testid="bead-colors-clear-filters" @click="clearFilters">{{ words.clearFilters }}</AppButton>
         </div>
       </div>
-      <ul class="bead-color-list__rows">
-        <li v-for="entry in shown" :key="entry.code">
-          <button
-            type="button"
-            class="bead-color-list__row"
-            :class="{ 'bead-color-list__row--taken': entry.taken }"
-            :aria-disabled="entry.taken ? 'true' : undefined"
-            :aria-label="fillBlanks(entry.taken ? words.takenLabel : words.add, { code: entry.code })"
-            data-testid="bead-color"
-            :data-code="entry.code"
-            :data-taken="entry.taken || undefined"
-            @click="!entry.taken && add(entry.hex, entry.code)"
-            @focus="highlighted = { code: entry.code, hex: entry.hex }"
-          >
-            <span class="bead-color-list__chip" :class="{ 'bead-color-list__chip--approximate': entry.approximate }" :style="{ backgroundColor: entry.hex }" />
-            <span class="bead-color-list__text">
-              <span class="bead-color-list__code">{{ entry.code }}</span>
-              <span class="bead-color-list__meta">
-                {{ familyName(entry.family) }} · {{ words.finishes[entry.finish] }}
-                <span v-if="entry.discontinued" class="bead-color-list__note"> · {{ words.discontinued }}</span>
-              </span>
-            </span>
-            <span v-if="entry.taken" class="bead-color-list__taken">{{ words.inPalette }}</span>
-          </button>
-        </li>
-      </ul>
-      <div v-if="matches.length === 0" class="bead-color-list__empty">
-        <AppNote data-testid="bead-colors-empty">{{ emptyText }}</AppNote>
-        <AppButton v-if="filtersOn" variant="in-box" size="sm" data-testid="bead-colors-clear-filters" @click="clearFilters">{{ words.clearFilters }}</AppButton>
-      </div>
-      <AppNote v-else-if="matches.length > SHOWN">{{ fillBlanks(words.showingFirst, { count: SHOWN }) }}</AppNote>
-    </template>
+    </div>
     <AppButton
       v-if="colors.report"
       variant="link"
@@ -209,108 +178,138 @@ function add(hex: string, code: string) {
 </template>
 
 <style scoped>
+/* The list lays itself out by its own width (BeadColors card): wide at 480px and more, narrow under it. The same
+ * 480px is in BeadColorFilters.vue; a container query can't take a token. */
 .bead-color-list {
+  container: bead-list / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
   margin-top: var(--space-12);
 }
 
-.bead-color-list__filter {
+.bead-color-list__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-8);
+}
+
+.bead-color-list__search {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-8);
 }
 
-.bead-color-list__filter-label {
-  font: var(--type-label);
-  color: var(--muted);
+.bead-color-list__search :deep(.text-field) {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.bead-color-list__values {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-6);
-}
-
-/* A family as its swatch (PaletteSwatches card): the same edge, and the Palette's selected ring while it is on. */
-.bead-color-list__family {
-  box-sizing: border-box;
-  width: var(--filter-swatch);
-  height: var(--filter-swatch);
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
-  cursor: pointer;
-}
-
-.bead-color-list__family--on {
-  box-shadow:
-    inset 0 0 0 1px var(--swatch-edge),
-    0 0 0 2px var(--swatch-gap, var(--panel)),
-    0 0 0 4px var(--ring);
-}
-
-/* A Finish as a toggle chip (the MirrorPopover card's Axes chips): a pill on `button`, `accent-strong` while on. */
-.bead-color-list__finish {
+/* The Filters disclosure of the narrow layout: a field-height button beside the search, a count badge while values are on. */
+.bead-color-list__filters-toggle {
   display: inline-flex;
-  gap: var(--space-4);
+  flex: none;
+  gap: var(--space-6);
   align-items: center;
   box-sizing: border-box;
-  height: var(--filter-chip-height);
+  height: var(--field-height);
   padding: 0 var(--space-10);
-  font: var(--type-meta);
+  font: var(--type-control);
   color: var(--ink);
-  background: var(--button);
-  border: 1px solid var(--button-line);
-  border-radius: var(--radius-full);
+  background: var(--elevated);
+  border: 1px solid var(--field-line);
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 
-.bead-color-list__finish--on {
-  font-weight: 600;
-  background: var(--panel);
-  border-color: var(--accent-strong);
-}
-
-.bead-color-list__count {
-  font-family: var(--font-mono);
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* A value with no rows is dimmed, not disabled: pressing it still turns it on (ticket 0713). */
-.bead-color-list__value--none {
-  opacity: var(--swatch-faded-opacity);
-}
-
-.bead-color-list__family:focus-visible,
-.bead-color-list__finish:focus-visible {
+.bead-color-list__filters-toggle:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
 
-@media (pointer: coarse) {
-  .bead-color-list__family {
-    width: var(--swatch-touch-min);
-    height: var(--swatch-touch-min);
-  }
+.bead-color-list__badge {
+  box-sizing: border-box;
+  min-width: var(--filter-badge);
+  height: var(--filter-badge);
+  padding: 0 var(--space-6);
+  font: var(--type-meta-tiny);
+  line-height: var(--filter-badge);
+  color: var(--canvas);
+  text-align: center;
+  background: var(--ink);
+  border-radius: var(--radius-full);
+}
 
-  .bead-color-list__finish {
-    height: var(--swatch-touch-min);
-  }
+/* Narrow: the filters sit behind the disclosure, closed until it is pressed. */
+.bead-color-list__layout > .bead-color-list__filters {
+  display: none;
+}
+
+.bead-color-list__layout > .bead-color-list__filters--open {
+  display: flex;
+}
+
+.bead-color-list__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.bead-color-list__count {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin: 0;
+  font: var(--type-meta-small);
+  color: var(--muted);
 }
 
 .bead-color-list__rows {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  max-height: 16rem;
+  max-height: var(--bead-list-height);
   margin: 0;
   padding: 0;
   overflow-y: auto;
   list-style: none;
+}
+
+@container bead-list (min-width: 480px) {
+  .bead-color-list__layout {
+    grid-template-columns: var(--bead-filter-column) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-14);
+  }
+
+  .bead-color-list__search {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .bead-color-list__layout > .bead-color-list__filters {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+  }
+
+  .bead-color-list__results {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .bead-color-list__filters-toggle {
+    display: none;
+  }
+
+  .bead-color-list__rows {
+    max-height: var(--bead-list-height-wide);
+  }
+
+  .bead-color-list__report {
+    align-self: flex-end;
+  }
 }
 
 .bead-color-list__row {
@@ -380,9 +379,11 @@ function add(hex: string, code: string) {
   font: var(--type-meta);
 }
 
-/* The foot row (BeadColors card): a link under the list, apart from it. */
+/* The foot row (BeadColors card): a link under the list, apart from it; at the left when narrow, the right when wide.
+ * The one accent-colored link: it is the way out when a color is wrong or missing. */
 .bead-color-list__report {
   align-self: flex-start;
+  color: var(--accent-strong);
   margin-top: var(--space-4);
 }
 

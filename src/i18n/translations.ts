@@ -450,8 +450,8 @@ export interface Translations {
     /** The carousel's ‹ › buttons. */
     previousFeature: string
     nextFeature: string
-    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end. */
-    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string }
+    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
+    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }
     /** The hand-written notes of the hero (Homepage card); decorative, hidden from screen readers. */
     notes: { onUs: string }
     /** The coffee tile (ticket 219; Homepage card). */
@@ -562,7 +562,16 @@ export interface Translations {
      * `{count}` a count of rows or of a filter value `{name}`. Its filters and empty state (ticket 0713): `{query}` the
      * search text, `{filters}` the on values' names (Finishes, then families), `{sizes}` a code's sizes, `{size}` the Bead's. */
     beadColors: {
+      /** The entry button, `{bead}` the Bead's label (ticket 0746). */
       open: string
+      /** The Info button after it, which holds the approximate and taken notes. */
+      info: string
+      /** The count line: `{count}` codes matched, and how many are shown past the cap. */
+      codeCount: string
+      firstShown: string
+      /** The narrow layout's disclosure, and its name while `{count}` values are on. */
+      filters: string
+      filtersOn: string
       label: string
       search: string
       approximate: string
@@ -571,7 +580,6 @@ export interface Translations {
       discontinued: string
       add: string
       takenLabel: string
-      showingFirst: string
       noMatch: string
       noMatchFiltered: string
       noneFiltered: string
