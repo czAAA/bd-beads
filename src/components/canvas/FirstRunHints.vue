@@ -8,8 +8,9 @@ import { clamp } from '../../domain/clamp'
 import type { PillPosition, PillRect } from '../../domain/toolPill'
 import type { BarBox } from '../../composables/tools/selectionBarPlacement'
 import {
+  KEPT_HINTS,
   QUIET_HINTS,
-  STEP_HINTS,
+  captionColumns,
   isStepHint,
   placeFirstRunHints,
   type HintId,
@@ -17,34 +18,38 @@ import {
   type Size,
 } from '../../composables/canvas/firstRunHintPlacement'
 
-// The hand-drawn notes over an empty Project (FirstRunHints card, ticket 0725): draw, select, frame, export, each note
-// pointing at its control (`data-hint` on it), quiet notes on Menu, Project, Mirror and the colour tile, and a welcome.
+// The quiet captions over an empty Project (FirstRunHints card, ticket 0738): one beside each control it names
+// (`data-hint` on it), no arrows, and a welcome that says where Projects are kept and how to keep a file of one.
 // Decoration only: hidden from screen readers and pointers, so the first press on the canvas paints the first bead.
 const props = defineProps<{
-  /** The canvas box: holds the strip and the Tool pill whose controls the notes point at. */
+  /** The canvas box: holds the strip and the Tool pill whose controls the captions sit beside. */
   scope: HTMLElement | undefined
   pillPosition: PillPosition
-  /** The Tool pill's box, so the notes move when it does. */
+  /** The Tool pill's box, so the captions move when it does. */
   pillRect: PillRect | undefined
   /** The Canvas's background color, or undefined in high contrast. */
   background: string | undefined
 }>()
 
 const { t } = useI18n()
-/** A phone keeps only the four steps, shorter, and the welcome (FirstRunHints card, Phone). */
+/** A phone keeps only the welcome and the rings (FirstRunHints card, Phone). */
 const phone = useMediaQuery('(max-width: 30rem)')
 
-const shownIds = computed<HintId[]>(() => (phone.value ? [...STEP_HINTS] : [...STEP_HINTS, ...QUIET_HINTS]))
-const copy = computed<Record<HintId, string>>(() => ({ ...t.value.canvas.firstRun, ...(phone.value ? t.value.canvas.firstRun.phone : {}) }))
+const shownIds = computed<HintId[]>(() => (phone.value ? [] : [...KEPT_HINTS, ...QUIET_HINTS]))
+/** The welcome's last line: where in the Project panel a Project file is made. */
+const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.project.exportHeading, t.value.panels.project.exportFile])
 
 const layerEl = ref<HTMLElement>()
 const welcomeEl = ref<HTMLElement>()
 const noteEls = new Map<HintId, HTMLElement>()
 const placed = ref<PlacedHint[]>([])
 const placeOf = computed(() => new Map(placed.value.map((hint) => [hint.id, hint])))
-/** On a Canvas background where `muted` reads under 4.5:1 the notes take `body` (CanvasBackground card). */
+/** The width each strip caption wraps in, under its own button. */
+const columns = ref<Partial<Record<HintId, number>>>({})
+/** On a Canvas background where `muted` reads under 4.5:1 the captions take `body` (CanvasBackground card). */
 const lowContrast = ref(false)
 const READABLE_CONTRAST = 4.5
+const STRIP_IDS: readonly HintId[] = ['menu', 'project', 'frame', 'export']
 
 function noteRef(id: HintId) {
   return (el: unknown) => {
@@ -53,8 +58,9 @@ function noteRef(id: HintId) {
   }
 }
 
-/** Measures the controls, the notes and what they may not cover on the drawing area, then places the notes. */
-function measure() {
+/** Measures the controls, gives the strip captions their columns, then measures the captions and what they may not
+ * cover on the drawing area and places them. A strip caption given no column is left out. */
+async function measure() {
   const layer = layerEl.value
   const scope = props.scope
   if (!layer || !scope) return
@@ -66,13 +72,17 @@ function measure() {
     return { left: rect.left - origin.left, top: rect.top - origin.top, width: rect.width, height: rect.height }
   }
   const targets: Partial<Record<HintId, BarBox>> = {}
-  const notes: Partial<Record<HintId, Size>> = {}
   for (const id of shownIds.value) {
     const target = boxOf(scope.querySelector(`[data-hint="${id}"]`))
-    // A control scrolled off the strip's end (Export on a phone) is pointed at where the strip ends.
+    // A control scrolled off the strip's end is placed where the strip ends.
     if (target) targets[id] = { ...target, left: clamp(target.left, 0, area.width - target.width) }
+  }
+  columns.value = captionColumns(targets)
+  await nextTick()
+  const notes: Partial<Record<HintId, Size>> = {}
+  for (const id of shownIds.value) {
     const note = noteEls.get(id)
-    if (note) notes[id] = { width: note.offsetWidth, height: note.offsetHeight }
+    if (note && (!STRIP_IDS.includes(id) || columns.value[id])) notes[id] = { width: note.offsetWidth, height: note.offsetHeight }
   }
   const obstacles = [...scope.querySelectorAll('[data-hint-obstacle]'), welcomeEl.value ?? null].map(boxOf).filter((box) => !!box)
   placed.value = placeFirstRunHints({ area, targets, notes, pillPosition: props.pillPosition, obstacles })
@@ -93,7 +103,7 @@ onMounted(() => {
     if (layerEl.value) observer.observe(layerEl.value)
     if (props.scope) observer.observe(props.scope)
   }
-  // The strip scrolls sideways on a phone, moving Export.
+  // The strip scrolls sideways when it runs out of room, moving Export.
   props.scope?.addEventListener('scroll', remeasure, { capture: true, passive: true })
   void document.fonts?.ready.then(remeasure)
   remeasure()
@@ -105,8 +115,10 @@ onBeforeUnmount(() => {
 watch([() => props.pillPosition, () => props.pillRect, () => props.background, phone, t], remeasure)
 
 function noteStyle(id: HintId) {
+  const column = columns.value[id]
+  const width = column ? { maxWidth: `${column}px` } : {}
   const place = placeOf.value.get(id)
-  return place ? { left: `${place.note.left}px`, top: `${place.note.top}px` } : { visibility: 'hidden' as const }
+  return place ? { left: `${place.note.left}px`, top: `${place.note.top}px`, ...width } : { visibility: 'hidden' as const, ...width }
 }
 </script>
 
@@ -118,29 +130,25 @@ function noteStyle(id: HintId) {
     aria-hidden="true"
     data-testid="first-run-hints"
   >
-    <svg
-      v-for="hint in placed"
-      :key="`arrow-${hint.id}`"
-      class="first-run-hints__arrow"
-      :class="{ 'first-run-hints__arrow--step': isStepHint(hint.id) }"
-      :data-testid="`first-run-arrow-${hint.id}`"
-    >
-      <path :d="hint.arrow" />
-    </svg>
     <p
       v-for="id in shownIds"
       :key="id"
       :ref="noteRef(id)"
       class="first-run-hints__note"
-      :class="{ 'first-run-hints__note--step': isStepHint(id) }"
+      :class="{ 'first-run-hints__note--step': isStepHint(id), 'first-run-hints__note--end': id === 'export' }"
       :style="noteStyle(id)"
       :data-testid="`first-run-hint-${id}`"
-    >{{ copy[id] }}</p>
+    >{{ t.canvas.firstRun[id] }}</p>
     <div ref="welcomeEl" class="first-run-hints__welcome" data-testid="first-run-welcome">
-      <AppLogo class="first-run-hints__mark" :size="phone ? 40 : 60" />
+      <AppLogo class="first-run-hints__mark" :size="phone ? 36 : 44" />
       <span class="first-run-hints__wordmark">{{ t.app.title }}</span>
-      <p class="first-run-hints__lines">
-        {{ t.canvas.firstRun.welcome }}<br><b class="first-run-hints__steps">{{ t.canvas.firstRun.steps }}</b>
+      <p class="first-run-hints__steps">{{ t.canvas.firstRun.steps }}</p>
+      <p class="first-run-hints__storage" data-testid="first-run-storage">{{ t.canvas.firstRun.storage }}</p>
+      <p class="first-run-hints__path" data-testid="first-run-path">
+        <template v-for="(step, index) in path" :key="step">
+          <span v-if="index">›</span>
+          <span class="hint-chip first-run-hints__chip">{{ step }}</span>
+        </template>
       </p>
     </div>
   </div>
@@ -149,6 +157,7 @@ function noteStyle(id: HintId) {
 <style scoped>
 .first-run-hints {
   --hint-ink: var(--muted);
+  --hint-step-ink: var(--body);
   position: absolute;
   inset: 0;
   z-index: var(--z-canvas-overlay);
@@ -172,7 +181,8 @@ function noteStyle(id: HintId) {
   opacity: 0;
 }
 
-/* Sized by their own lines, not the room left of them, so a note measured at the corner keeps its size where placed. */
+/* Sized by their own lines, not the room left of them, so a caption measured at the corner keeps its size where placed;
+ * a strip caption's column comes inline. */
 .first-run-hints__note {
   position: absolute;
   top: 0;
@@ -185,28 +195,18 @@ function noteStyle(id: HintId) {
   overflow-wrap: anywhere;
 }
 
+/* Select's and Export's captions, on the ringed controls they name: larger, in `body`. */
 .first-run-hints__note--step {
   font: var(--hint-step);
+  color: var(--hint-step-ink);
 }
 
-.first-run-hints__arrow {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: var(--hint-arrow);
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.first-run-hints__note--end {
+  text-align: right;
 }
 
-.first-run-hints__arrow--step {
-  stroke-width: var(--hint-step-arrow);
-}
-
-/* Centred on the drawing area, under the CanvasHint line: the mark, the wordmark 14px under it, the two lines 18px under that. */
+/* Centred on the drawing area, under the CanvasHint line: the mark, the wordmark 12px under it, then the steps line,
+ * the storage line and the Project file's path. */
 .first-run-hints__welcome {
   position: absolute;
   top: 50%;
@@ -225,34 +225,52 @@ function noteStyle(id: HintId) {
 }
 
 .first-run-hints__wordmark {
-  margin-top: var(--space-14);
+  margin-top: var(--space-12);
   font: var(--hint-wordmark);
   /* The card's -0.6px, twice the Brand's tracking at more than twice its size. */
   letter-spacing: calc(2 * var(--tracking-brand));
 }
 
-.first-run-hints__lines {
-  margin: calc(var(--space-16) + var(--space-2)) 0 0;
+.first-run-hints__steps {
+  margin: var(--space-16) 0 0;
   font: var(--hint-welcome);
+  color: var(--accent-strong);
 }
 
-.first-run-hints__steps {
-  font-weight: 400;
-  color: var(--accent-strong);
+.first-run-hints__storage {
+  max-width: 36rem;
+  margin: var(--space-24) 0 0;
+  font: var(--hint-storage);
+  white-space: pre-line;
+}
+
+.first-run-hints__path {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-6);
+  margin: var(--space-10) 0 0;
+  font: var(--hint-storage);
+}
+
+/* The CanvasHint's chip (controls.css), holding a label instead of a key. */
+.first-run-hints__chip {
+  font: var(--type-meta-small);
 }
 
 /* The width is controls.css's phone width. */
 @media (max-width: 30rem) {
-  .first-run-hints__note--step {
-    font: var(--hint-step-phone);
-  }
-
   .first-run-hints__wordmark {
     font: var(--hint-wordmark-phone);
   }
 
-  .first-run-hints__lines {
+  .first-run-hints__steps {
     font: var(--hint-welcome-phone);
+  }
+
+  .first-run-hints__storage {
+    margin-top: var(--space-20);
   }
 }
 </style>

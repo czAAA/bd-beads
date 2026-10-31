@@ -226,7 +226,7 @@ const firstRunHintsHost = defineComponent({
         h('div', { style: { position: 'relative', flex: 1 } }, [
           box.value ? h(FirstRunHints, { scope: box.value, pillPosition: 'bottom', pillRect: undefined, background: undefined }) : null,
           h('div', { 'data-hint-obstacle': '', style: { position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '2px', padding: '4px' } }, [
-            tile('paint'), tile(), tile('select'), tile(), tile(), tile(), tile('mirror'), tile('color'),
+            tile(), tile(), tile('select'), tile(), tile(), tile(), tile('mirror'), tile('color'),
           ]),
         ]),
       ])
