@@ -5,7 +5,6 @@ import { customFrameSize } from './frameShape'
 import {
   estimatedSizeMm,
   formatMm,
-  isSizeStated,
   formatSizeMm,
   formatSizeInMm,
   gridFromSize,
@@ -140,15 +139,6 @@ describe('formatMm (ticket 342)', () => {
 
   it("uses the language's decimal sign", () => {
     expect(formatMm(10.5, 'ru')).toBe('10,5')
-  })
-})
-
-describe('isSizeStated (ticket 342)', () => {
-  it('wants both sides above zero, and whole numbers in beads', () => {
-    expect(isSizeStated(10, 20, 'beads')).toBe(true)
-    expect(isSizeStated(0, 20, 'beads')).toBe(false)
-    expect(isSizeStated(2.5, 20, 'beads')).toBe(false)
-    expect(isSizeStated(2.5, 20, 'mm')).toBe(true)
   })
 })
 

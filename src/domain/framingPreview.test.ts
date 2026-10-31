@@ -1,23 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { Bead } from './beads'
-import { computeGridDimensions } from './grid'
 import { type Technique } from './weave'
 import { nearestColor, reducePictureColors } from './imageColors'
 import { NO_COLOR, frameColors, sampleLatticePacked, type PixelData } from './imageConversion'
 import { convertFrame, matchFoundColors, sourceTargets } from './convertColors'
 import { BUILT_IN_COLORS } from './palette'
-import { CENTERED_PAN, frameSizeMm, framingView, previewLattice } from './imageFraming'
+import { partLattice } from './imageFraming'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from './framingPreview'
-
-const bead: Bead = {
-  id: 'test-cube',
-  brand: { id: 'test', name: 'Test' },
-  size: '1.5mm',
-  formFactor: { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' } },
-  widthMm: 1.5,
-  heightMm: 1.5,
-}
 
 function pack(hex: string): number {
   return Number.parseInt(hex.slice(1), 16)
@@ -77,14 +66,14 @@ describe('exactPreviewColors', () => {
     'shows the Project inside the frame and the held color around it (%s)',
     (technique: Technique) => {
       const image = busyImage(60, 45)
-      const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead, technique)
-      const frame = frameSizeMm(technique, dimensions, bead)
+      const part = { x: 12, y: 20, width: 24, height: 16 }
+      const pixelsPerBead = { x: 1.2, y: 1 }
+      const dimensions = { columns: 20, rows: 16 }
 
       for (const maxColors of [3, 7, 14]) {
-        const view = framingView(image, frame, 2.5, { x: 0.2, y: 0.7 })
-        const lattice = previewLattice({ view, frame, dimensions, bead, technique })
+        const lattice = partLattice({ image, part, pixelsPerBead, dimensions, technique })
 
-        const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
+        const packed = sampleLatticePacked({ image, part, pixelsPerBead, technique, lattice })
         const { raw, counts } = frameColors(packed, lattice, dimensions)
         const reduced = reducePictureColors(counts, maxColors)
         const found = matchFoundColors(reduced, sourceTargets('default', BUILT_IN_COLORS, []), new Map())
@@ -117,15 +106,14 @@ describe('approximatePreviewColors', () => {
 
   it('keeps to the held colors however the picture has moved, never inventing one', () => {
     const image = busyImage(60, 45)
-    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead, 'loom')
-    const frame = frameSizeMm('loom', dimensions, bead)
+    const dimensions = { columns: 20, rows: 15 }
+    const pixelsPerBead = { x: 1, y: 1 }
     const colors = ['#1a1a1a', '#e63746', '#2f6fed']
     const held = heldColorLookup(colors.map((hex) => ({ pictureHex: hex, result: { hex } })))
 
-    for (const pan of [{ x: 0, y: 0 }, CENTERED_PAN, { x: 1, y: 1 }]) {
-      const view = framingView(image, frame, 3, pan)
-      const lattice = previewLattice({ view, frame, dimensions, bead, technique: 'loom' })
-      const packed = sampleLatticePacked({ image, view, technique: 'loom', bead, lattice })
+    for (const part of [{ x: 0, y: 0, width: 20, height: 15 }, { x: 20, y: 15, width: 20, height: 15 }, { x: 40, y: 30, width: 20, height: 15 }]) {
+      const lattice = partLattice({ image, part, pixelsPerBead, dimensions, technique: 'loom' })
+      const packed = sampleLatticePacked({ image, part, pixelsPerBead, technique: 'loom', lattice })
 
       const shown = approximatePreviewColors(packed, held)
 

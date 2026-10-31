@@ -5,7 +5,7 @@ import { useI18n } from '../../../i18n/useI18n'
 import AppTooltip from '../AppTooltip.vue'
 import type { ControlActionLike } from '../controlAction'
 
-// A choice of short chips in a row that wraps (PixelToBeadRatio card, ticket 0650): one radiogroup and one Tab stop,
+// A choice of short chips in a row that wraps (ChipRadioGroup of ticket 0650, once the ratio chips; now the Feedback sheet): one radiogroup and one Tab stop,
 // the chosen chip or else the first; the arrows, Home and End move focus and a press chooses. Each chip's name and
 // Tooltip come from its registry action (ADR 0035); its face is the short label.
 const props = defineProps<{
