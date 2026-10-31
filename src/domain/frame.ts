@@ -2,7 +2,7 @@ import { footprintOf } from './footprint'
 import { beadBounds, beadsOver, beadsWithout, sameFrame, shiftedBeads, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
-import { rowCycle, type Weave } from './weave'
+import { columnCycle, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import { canvasDistance, laidOnCanvas, layersAlike } from './layerWeave'
 import { beadsOfLayer, frameOf, heldWeave, type Layered, touchFrameSheet } from './layerRecord'
@@ -10,8 +10,8 @@ import type { Project } from './project'
 import { clampPointer, rowProgressOf } from './rowProgress'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
-// drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows so lifted beads keep their stagger;
-// once made, its edges go by whole cycles of its own rows (tickets 477, 492).
+// drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows (brick stitch) or columns (peyote,
+// ticket 0734) so lifted beads keep their stagger; once made, its edges go by whole cycles of its own (tickets 477, 492).
 
 export type FrameEdge = 'top' | 'bottom' | 'left' | 'right'
 
@@ -24,9 +24,16 @@ export function snapRow(weave: Weave, row: number): number {
   return row - (((row % cycle) + cycle) % cycle)
 }
 
+/** The column a Frame may start on (ticket 0734): the column itself, or the nearest start of a cycle to its left where
+ * columns alternate. */
+export function snapColumn(weave: Weave, column: number): number {
+  const cycle = columnCycle(weave)
+  return column - (((column % cycle) + cycle) % cycle)
+}
+
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
 // the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
-// least one bead each way. Worked out in the Frame's own rows, whose row 0 is always an unshifted one (ticket 492).
+// least one bead each way. Worked out in the Frame's own rows and columns, whose first are always unshifted (ticket 492).
 export function frameWithEdges(weave: Weave, frame: Rect, edges: readonly FrameEdge[], cell: GridPosition): Rect {
   let top = 0
   let bottom = frame.rows - 1
@@ -36,7 +43,7 @@ export function frameWithEdges(weave: Weave, frame: Rect, edges: readonly FrameE
 
   if (edges.includes('top')) top = Math.min(snapRow(weave, at.row), bottom)
   if (edges.includes('bottom')) bottom = Math.max(at.row, top)
-  if (edges.includes('left')) left = Math.min(at.column, right)
+  if (edges.includes('left')) left = Math.min(snapColumn(weave, at.column), right)
   if (edges.includes('right')) right = Math.max(at.column, left)
 
   return { row: frame.row + top, column: frame.column + left, rows: bottom - top + 1, columns: right - left + 1 }
@@ -58,13 +65,14 @@ const FEWEST_SIDE = 4
 const MAX_TYPED_SIDE = 999
 
 // The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the others staying put (Edit Frame's steppers,
-// ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a whole cycle of rows so the first row
-// keeps its place, as dragging the top handle does. A step that would leave less than four beads each way changes nothing (ticket 473).
+// ticket 417). The top edge goes by a whole cycle of rows (brick stitch) and the left by one of columns (peyote, ticket
+// 0734), as dragging does. A step that would leave less than four beads each way changes nothing (ticket 473).
 export function frameWithEdgeStep(weave: Weave, frame: Rect, edge: FrameEdge, step: 1 | -1): Rect {
   const rowStep = rowCycle(weave) * step
+  const columnStep = columnCycle(weave) * step
   switch (edge) {
     case 'left':
-      return step < 0 && frame.columns + step < FEWEST_SIDE ? frame : { ...frame, column: frame.column - step, columns: frame.columns + step }
+      return step < 0 && frame.columns + columnStep < FEWEST_SIDE ? frame : { ...frame, column: frame.column - columnStep, columns: frame.columns + columnStep }
     case 'right':
       return step < 0 && frame.columns + step < FEWEST_SIDE ? frame : { ...frame, columns: frame.columns + step }
     case 'top':
@@ -75,15 +83,15 @@ export function frameWithEdgeStep(weave: Weave, frame: Rect, edge: FrameEdge, st
 }
 
 /** The Frame resized to `columns` × `rows`, each side changing evenly on both edges (ticket 473), the right or bottom
- * taking an odd change's extra bead. Where rows alternate the top edge moves by whole cycles. A side keeps between
- * FEWEST_SIDE and MAX_TYPED_SIDE beads. */
+ * taking an odd change's extra bead. Where rows alternate the top edge moves by whole cycles, and where columns do the
+ * left edge (ticket 0734). A side keeps between FEWEST_SIDE and MAX_TYPED_SIDE beads. */
 export function frameResizedAround(weave: Weave, frame: Rect, columns: number, rows: number): Rect {
   const side = (n: number) => Math.min(MAX_TYPED_SIDE, Math.max(FEWEST_SIDE, Math.round(n)))
   const wide = side(columns)
   const tall = side(rows)
-  const left = Math.trunc((wide - frame.columns) / 2)
-  const cycle = rowCycle(weave)
-  const top = cycle > 1 ? cycle * Math.trunc((tall - frame.rows) / (2 * cycle)) : Math.trunc((tall - frame.rows) / 2)
+  const [across, down] = [columnCycle(weave), rowCycle(weave)]
+  const left = across > 1 ? across * Math.trunc((wide - frame.columns) / (2 * across)) : Math.trunc((wide - frame.columns) / 2)
+  const top = down > 1 ? down * Math.trunc((tall - frame.rows) / (2 * down)) : Math.trunc((tall - frame.rows) / 2)
   return { row: frame.row - top, column: frame.column - left, rows: tall, columns: wide }
 }
 
@@ -98,8 +106,9 @@ export function fitToDrawing(project: Layered): Rect | undefined {
   if (!bounds) {
     return undefined
   }
-  const top = snapRow(heldWeave(project, 'canvas'), bounds.row)
-  return { row: top, column: bounds.column, rows: bounds.row + bounds.rows - top, columns: bounds.columns }
+  const canvasWeave = heldWeave(project, 'canvas')
+  const [top, left] = [snapRow(canvasWeave, bounds.row), snapColumn(canvasWeave, bounds.column)]
+  return { row: top, column: left, rows: bounds.row + bounds.rows - top, columns: bounds.column + bounds.columns - left }
 }
 
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and

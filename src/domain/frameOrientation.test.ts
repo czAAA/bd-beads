@@ -34,10 +34,17 @@ describe('what a turned Frame covers', () => {
     expect(laidFrame(upright)).toBe(frameOf(upright))
   })
 
-  it('covers on peyote the rows its turned beads reach, which are not its own count', () => {
+  it('covers on brick stitch the rows its turned beads reach, which are not its own count', () => {
+    const frame = { technique: 'brick' as const, rows: 5, columns: 4, quarterTurns: 1 as const }
+    // Five brick rows are 5 beads tall: turned, 5 wide; four beads and a half shift across: turned, 4.5 tall.
+    expect(laidSize(frame)).toEqual({ columns: 5, rows: 5 })
+  })
+
+  it('covers on peyote the columns its turned beads reach, which are not its own count (ticket 0734)', () => {
     const frame = { technique: 'peyote' as const, rows: 5, columns: 4, quarterTurns: 1 as const }
-    // Five peyote rows nest to 4 beads tall: turned, 4 wide; four beads and a half shift across: turned, 4.5 tall.
-    expect(laidSize(frame)).toEqual({ columns: 4, rows: 6 })
+    // Five peyote rows and the half bead a shifted column hangs lower are 5.5 beads tall: turned, 5.5 wide; four columns
+    // are 4 wide: turned, 4 tall.
+    expect(laidSize(frame)).toEqual({ columns: 6, rows: 4 })
   })
 
   it('hides the Canvas and keeps the margin round what it covers, not round its own rows and columns', () => {

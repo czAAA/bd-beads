@@ -236,13 +236,14 @@ export interface ResultLabels {
 export interface ResultInput {
   grid: GridDimensions
   bead: Bead
+  technique: Technique
   ratio?: PixelToBeadRatio
   crop?: PixelCrop
 }
 
 /** The result line both Size modes share (spec 0645): "32×24 beads", "5.1 × 3.1 cm" and "1 bead = 8 × 8 px", with "≈"
  * when a size is not a whole ratio. */
-export function convertResult({ grid, bead, ratio, crop }: ResultInput, labels: ResultLabels, locale: Locale = 'en'): { grid: string; measured: string; ratio: string } {
+export function convertResult({ grid, bead, technique, ratio, crop }: ResultInput, labels: ResultLabels, locale: Locale = 'en'): { grid: string; measured: string; ratio: string } {
   const exactRatio = ratio ?? (crop && wholeRatio(ratioOfSize(crop, grid)))
   // Pixels per bead read as formatMm reads a length: one decimal at most, in the language's decimal sign.
   const oneDecimal = (value: number) => formatMm(value, locale)
@@ -255,7 +256,7 @@ export function convertResult({ grid, bead, ratio, crop }: ResultInput, labels: 
   }
   return {
     grid: fillBlanks(labels.grid, { columns: grid.columns, rows: grid.rows }),
-    measured: formatSizeMm(estimatedSizeMm(grid, bead), labels, locale),
+    measured: formatSizeMm(estimatedSizeMm(grid, bead, technique), labels, locale),
     ratio: ratioText,
   }
 }

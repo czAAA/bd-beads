@@ -1,14 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, sameFrame } from './canvas'
-import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapRow } from './frame'
+import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapColumn, snapRow } from './frame'
 import { bareProject } from '../testUtils/layerFields'
 
 describe('snapRow', () => {
   it('starts on an even row where rows alternate, reaching one row up rather than losing a row', () => {
     expect(snapRow({ technique: 'loom' }, 3)).toBe(3)
-    expect(snapRow({ technique: 'peyote' }, 3)).toBe(2)
-    expect(snapRow({ technique: 'peyote' }, -1)).toBe(-2)
+    expect(snapRow({ technique: 'brick' }, 3)).toBe(2)
+    expect(snapRow({ technique: 'brick' }, -1)).toBe(-2)
     expect(snapRow({ technique: 'brick' }, -3)).toBe(-4)
+  })
+
+  it('leaves peyote\'s rows alone: its columns alternate instead (ticket 0734)', () => {
+    expect(snapRow({ technique: 'peyote' }, 3)).toBe(3)
+  })
+})
+
+describe('snapColumn (ticket 0734)', () => {
+  it('starts on an even column where columns alternate, reaching one column left rather than losing a column', () => {
+    expect(snapColumn({ technique: 'loom' }, 3)).toBe(3)
+    expect(snapColumn({ technique: 'peyote' }, 3)).toBe(2)
+    expect(snapColumn({ technique: 'peyote' }, -1)).toBe(-2)
+    expect(snapColumn({ technique: 'brick' }, -3)).toBe(-3)
   })
 })
 
@@ -26,9 +39,15 @@ describe('frameWithEdges', () => {
     expect(frameWithEdges({ technique: 'loom' }, frame, ['bottom'], { row: -50, column: 0 })).toEqual({ row: 4, column: 4, rows: 1, columns: 6 })
   })
 
-  it('keeps the top on an even row for peyote, with the bottom where it was', () => {
-    const peyote = { row: 4, column: 0, rows: 6, columns: 3 }
-    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['top'], { row: 1, column: 0 })).toEqual({ row: 0, column: 0, rows: 10, columns: 3 })
+  it('keeps the top on an even row for brick stitch, with the bottom where it was', () => {
+    const brick = { row: 4, column: 0, rows: 6, columns: 3 }
+    expect(frameWithEdges({ technique: 'brick' }, brick, ['top'], { row: 1, column: 0 })).toEqual({ row: 0, column: 0, rows: 10, columns: 3 })
+  })
+
+  it('keeps the left on an even column for peyote, with the right where it was (ticket 0734)', () => {
+    const peyote = { row: 0, column: 4, rows: 3, columns: 6 }
+    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['left'], { row: 0, column: 1 })).toEqual({ row: 0, column: 0, rows: 3, columns: 10 })
+    expect(frameWithEdges({ technique: 'peyote' }, peyote, ['top'], { row: -1, column: 4 })).toEqual({ row: -1, column: 4, rows: 4, columns: 6 })
   })
 })
 
@@ -69,7 +88,11 @@ describe('fitToDrawing', () => {
   })
 
   it('starts on an even row where rows alternate, keeping the last row where it is', () => {
-    expect(fitToDrawing(bareProject({ technique: 'peyote', beads }))).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
+    expect(fitToDrawing(bareProject({ technique: 'brick', beads }))).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
+  })
+
+  it('starts on an even column where columns alternate, keeping the last column where it is (ticket 0734)', () => {
+    expect(fitToDrawing(bareProject({ technique: 'peyote', beads }))).toEqual({ row: 1, column: -4, rows: 6, columns: 13 })
   })
 
   it('is nothing for an empty canvas', () => {
@@ -106,11 +129,20 @@ describe('frameWithEdgeStep', () => {
   })
 
   it('moves the top edge by a pair of rows where rows alternate, so the first row stays even', () => {
-    const peyote = { row: 4, column: 0, rows: 6, columns: 3 }
-    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'top', 1)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
-    expect(frameWithEdgeStep({ technique: 'brick' }, peyote, 'top', -1)).toEqual({ row: 6, column: 0, rows: 4, columns: 3 })
-    expect(frameWithEdgeStep({ technique: 'peyote' }, { ...peyote, rows: 5 }, 'top', -1)).toEqual({ ...peyote, rows: 5 })
-    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'bottom', 1)).toEqual({ row: 4, column: 0, rows: 7, columns: 3 })
+    const brick = { row: 4, column: 0, rows: 6, columns: 3 }
+    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'top', 1)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
+    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'top', -1)).toEqual({ row: 6, column: 0, rows: 4, columns: 3 })
+    expect(frameWithEdgeStep({ technique: 'brick' }, { ...brick, rows: 5 }, 'top', -1)).toEqual({ ...brick, rows: 5 })
+    expect(frameWithEdgeStep({ technique: 'brick' }, brick, 'bottom', 1)).toEqual({ row: 4, column: 0, rows: 7, columns: 3 })
+  })
+
+  it('moves the left edge by a pair of columns where columns alternate, so the first column stays even (ticket 0734)', () => {
+    const peyote = { row: 0, column: 4, rows: 3, columns: 6 }
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'left', 1)).toEqual({ row: 0, column: 2, rows: 3, columns: 8 })
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'left', -1)).toEqual({ row: 0, column: 6, rows: 3, columns: 4 })
+    expect(frameWithEdgeStep({ technique: 'peyote' }, { ...peyote, columns: 5 }, 'left', -1)).toEqual({ ...peyote, columns: 5 })
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'right', 1)).toEqual({ row: 0, column: 4, rows: 3, columns: 7 })
+    expect(frameWithEdgeStep({ technique: 'peyote' }, peyote, 'top', 1)).toEqual({ row: -1, column: 4, rows: 4, columns: 6 })
   })
 })
 
@@ -124,8 +156,14 @@ describe('frameResizedAround (ticket 473)', () => {
   })
 
   it('moves the top edge by whole pairs of rows where rows alternate', () => {
-    expect(frameResizedAround({ technique: 'peyote' }, frame, 10, 20)).toEqual({ row: 6, column: 10, rows: 20, columns: 10 })
+    expect(frameResizedAround({ technique: 'brick' }, frame, 10, 20)).toEqual({ row: 6, column: 10, rows: 20, columns: 10 })
     expect(frameResizedAround({ technique: 'brick' }, frame, 10, 12)).toEqual({ row: 10, column: 10, rows: 12, columns: 10 })
+  })
+
+  it('moves the left edge by whole pairs of columns where columns alternate (ticket 0734)', () => {
+    expect(frameResizedAround({ technique: 'peyote' }, frame, 20, 10)).toEqual({ row: 10, column: 6, rows: 10, columns: 20 })
+    expect(frameResizedAround({ technique: 'peyote' }, frame, 12, 10)).toEqual({ row: 10, column: 10, rows: 10, columns: 12 })
+    expect(frameResizedAround({ technique: 'peyote' }, frame, 10, 20)).toEqual({ row: 5, column: 10, rows: 20, columns: 10 })
   })
 
   it('keeps each side between four and 999 beads', () => {
@@ -146,15 +184,19 @@ describe('a Drop (tickets 477, 0691)', () => {
 
   it('leaves a Drop of 1 going by pairs, each Technique reading only its own, and loom as it was', () => {
     expect(snapRow({ technique: 'brick' }, 3)).toBe(2)
-    expect(snapRow({ technique: 'peyote', techniqueSettings: { brickDrop: 5 } }, 7)).toBe(6)
+    expect(snapRow({ technique: 'brick', techniqueSettings: { peyoteDrop: 5 } }, 7)).toBe(6)
+    expect(snapColumn({ technique: 'peyote', techniqueSettings: { brickDrop: 5 } }, 7)).toBe(6)
     expect(snapRow({ technique: 'loom', techniqueSettings: { brickDrop: 5, peyoteDrop: 5 } }, 7)).toBe(7)
+    expect(snapColumn({ technique: 'loom', techniqueSettings: { brickDrop: 5, peyoteDrop: 5 } }, 7)).toBe(7)
   })
 
-  it('starts and edges a peyote Frame on a multiple of 2N rows with a Drop of N, as on brick stitch', () => {
+  it('starts and edges a peyote Frame on a multiple of 2N columns with a Drop of N, as brick stitch does rows (ticket 0734)', () => {
     const peyote2 = { technique: 'peyote' as const, techniqueSettings: { peyoteDrop: 2 } }
-    expect(snapRow(peyote2, 7)).toBe(4)
-    expect(snapRow(peyote2, -1)).toBe(-4)
-    expect(frameWithEdges(peyote2, { row: 8, column: 0, rows: 12, columns: 4 }, ['top'], { row: 3, column: 0 })).toEqual({ row: 0, column: 0, rows: 20, columns: 4 })
+    expect(snapColumn(peyote2, 7)).toBe(4)
+    expect(snapColumn(peyote2, -1)).toBe(-4)
+    expect(frameWithEdges(peyote2, { row: 0, column: 8, rows: 4, columns: 12 }, ['left'], { row: 0, column: 3 })).toEqual({ row: 0, column: 0, rows: 4, columns: 20 })
+    const frame = { row: 0, column: 8, rows: 12, columns: 12 }
+    expect(frameWithEdgeStep({ technique: 'peyote', techniqueSettings: { peyoteDrop: 3 } }, frame, 'left', 1)).toEqual({ row: 0, column: 2, rows: 12, columns: 18 })
   })
 
   it('drags the top edge by a whole cycle of the Frame\'s own rows', () => {

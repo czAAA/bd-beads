@@ -1,4 +1,4 @@
-import { beadPitchMm, findBead, type Bead } from './beads'
+import { findBead, type Bead } from './beads'
 import type { BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { customFrameSize, frameGeometry, frameShapeOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
@@ -259,15 +259,16 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
  * or Band lying across takes its Width in rows and its length in columns of the Bead's pitch, as put in place.
  * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
-  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice).technique, beadCell(bead))
+  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice).technique, beadCell(bead, weaveIn(starter, choice).technique))
   if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
-  return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / beadPitchMm(bead))) }
+  const across = describeWeave(weaveIn(starter, choice)).stepMm(bead).across
+  return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / across)) }
 }
 
 /** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
 export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: Bead): number {
   const size = starterFrameSize(starter, choice, bead)
-  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...withCell(weaveIn(starter, choice), beadCell(bead)) }).positions().length
+  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...withCell(weaveIn(starter, choice), beadCell(bead, weaveIn(starter, choice).technique)) }).positions().length
 }
 
 /** What a Starter's setup measures with a Bead (StarterGallery card, Setup): a Shape's or earring's width and height; a
@@ -280,12 +281,13 @@ export type StarterMeasure =
 /** A Starter's Frame for a choice, measured with a Bead by its measuring rule. */
 export function starterMeasure(starter: Starter, choice: StarterChoice, bead: Bead): StarterMeasure {
   const { rows, columns } = starterFrameSize(starter, choice, bead)
+  const { technique } = weaveIn(starter, choice)
   if (starter.measure === 'frame') {
-    return { shape: 'frame', ...estimatedSizeMm({ rows, columns, shape: starter.shape, settings: customSettings(starter, choice) }, bead) }
+    return { shape: 'frame', ...estimatedSizeMm({ rows, columns, shape: starter.shape, settings: customSettings(starter, choice) }, bead, technique) }
   }
   // Lying across, the strip's length is the Frame's width on screen and its width the Frame's height.
-  const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns }, bead)
-  // Where every other row shifts, each column zig-zags through two rows as a pattern counts them round (peyote).
+  const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns }, bead, technique)
+  // Where every other line shifts, a round zig-zags through two lines as a pattern counts it.
   const round = columns * (describeWeave(weaveIn(starter, choice)).shifted ? 2 : 1)
   if (starter.measure === 'ring') return { shape: 'ring', insideMm: sizeIn(starter, choice.sizes, 'ringSize') / Math.PI, widthMm, rows: round }
   return { shape: 'band', widthMm, lengthMm, rows: round }

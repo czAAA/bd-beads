@@ -36,7 +36,7 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
 
   it('draws each bead one width across and the Bead\'s depth deep, turned to its panel, its rectangle covering the layout a bead to a cell', () => {
     for (const bead of [delica, round]) {
-      const cell = beadCell(bead)!
+      const cell = beadCell(bead, 'peyote')!
       const size = customFrameSize('warpedSquare', settings, undefined, 'peyote', cell)
       const geometry = frameGeometry({ shape: 'warpedSquare', settings, ...size, technique: 'peyote', cell })
       const place = geometry.place({ row: 5, column: 3 })!
@@ -53,7 +53,7 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
 
   it('takes a footprint that covers its layout in the Bead\'s cells, and an Estimated size that follows it: a deeper Bead stands taller', () => {
     const [squat, tall] = [delica, round].map((bead) => {
-      const cell = beadCell(bead)!
+      const cell = beadCell(bead, 'peyote')!
       const layout = frameLayoutOf({ shape: 'warpedSquare', settings, cell })!
       const extent = frameGeometry({ shape: 'warpedSquare', settings, ...customFrameSize('warpedSquare', settings, undefined, 'peyote', cell), technique: 'peyote', cell }).extent()!
       expect(extent.width).toBeGreaterThanOrEqual(layout.width)
@@ -65,7 +65,7 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
     })
     expect(tall!.height).toBeGreaterThan(squat!.height)
     // In bead widths: a Round 11/0 is 1.65 mm along the thread and 2.2 across, a Delica 1.6 and 1.3.
-    const widths = (bead: typeof delica) => frameSizeMm({ shape: 'warpedSquare', settings, rows: 1, columns: 1 }, bead).heightMm / (bead.widthMm + (bead.widthCorrectionMm ?? 0))
+    const widths = (bead: typeof delica) => frameSizeMm({ shape: 'warpedSquare', settings, rows: 1, columns: 1, technique: 'peyote' }, bead).heightMm / (bead.widthMm + (bead.widthCorrectionMm ?? 0))
     expect(widths(round)).toBeCloseTo(tall!.height, 9)
     expect(widths(delica)).toBeCloseTo(squat!.height, 9)
   })

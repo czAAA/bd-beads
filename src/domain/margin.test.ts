@@ -6,8 +6,10 @@ import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { GridPosition } from './grid'
 import type { Project } from './project'
-import { beadsOfLayer, frameOf } from './layerRecord'
+import { beadsOfLayer, withLayer } from './layerRecord'
 import { withLayers } from '../testUtils/layerFields'
+import { scaledBead } from '../testUtils/squareBead'
+import { findBead } from './beads'
 
 const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
@@ -95,8 +97,9 @@ describe('mayPlace (ticket 501)', () => {
 
 describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-  const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-  const woven = withLayers(peyote, { frame: { ...frameOf(peyote)!, technique: 'peyote' as const } })
+  const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
+  // Its Bead is three quarters the Canvas's size, so its 48 rows cover 36 of the Canvas's.
+  const woven = withLayer(placed, 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
 
   it('hangs off what the Frame draws, so it is joined to it', () => {
     // The Frame covers 36 loom rows: the 4 below are the margin, the rows after those are free Canvas.

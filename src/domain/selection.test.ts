@@ -29,10 +29,11 @@ import { type BeadMap, withColors } from './canvas'
 import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { Project } from './project'
-import { BEAD_CATALOG } from './beads'
+import { BEAD_CATALOG, findBead } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
-import { beadsOfLayer, frameOf } from './layerRecord'
+import { beadsOfLayer, frameOf, withLayer } from './layerRecord'
 import { frameSheetOf, withLayers } from '../testUtils/layerFields'
+import { scaledBead } from '../testUtils/squareBead'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -366,9 +367,9 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
 
   it('copies, for a Canvas Selection across a Frame that draws shorter than the rows it names, only what lies clear of what it draws and its margin (ticket 0659)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-    // A 48-row peyote Frame covers 36 loom rows: rows 36 to 39 are its margin, row 40 is free Canvas.
-    const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-    const woven: Project = withLayers(placed, { frame: { ...frameOf(placed)!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
+    // A 48-row Frame in a Bead three quarters the Canvas's size covers 36 Canvas rows: rows 36 to 39 are its margin, row 40 is free Canvas.
+    const placed = withLayer(withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 }), 'frame', { bead: scaledBead(findBead('toho-cube-1.5mm')!, 0.75) })
+    const woven: Project = withLayers(placed, { beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) })
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 40, columns: 1, layer: 'canvas' })).toBe(false)
     expect(selectionHasBeads(woven, { top: 0, left: 3, rows: 41, columns: 1, layer: 'canvas' })).toBe(true)
