@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { usePalette } from '../../composables/tools/usePalette'
-import { useI18n } from '../../i18n/useI18n'
 import { useClosePopoverOnPick } from '../shell/pickContext'
-import AppButton from '../ui/AppButton.vue'
 import BeadColorList from '../palette/BeadColorList.vue'
+import BeadColorsEntry from '../palette/BeadColorsEntry.vue'
 import CustomColorPanel from '../palette/CustomColorPanel.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
@@ -23,6 +22,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
+  /** The Bead's palette is open or not: the colour popover is as wide as the panel while it is (ticket 0746). */
+  'wide-change': [wide: boolean]
 }>()
 
 /** Custom color is the active paint color exactly when no Palette swatch is (App.vue keeps the two mutually exclusive). */
@@ -32,10 +33,11 @@ const customColorSelected = computed(() => !props.selectedColorId && !!props.cus
 // outside, Escape, Enter) hands it up once and closes the sheet holding this control; picking a Palette swatch instead
 // closes the picker with nothing taken. Its + (ticket 0690) hands a color up at once and keeps the picker open.
 const palette = usePalette()
-const { t } = useI18n()
 // The Bead's own colors (ticket 0537) open under the grid the same way; only a Bead with a Color catalog offers them.
 const beadColors = useBeadColorsList()
 const catalogOpen = ref(false)
+const listShown = computed(() => catalogOpen.value && !!beadColors && !props.editing)
+watch(listShown, (wide) => emit('wide-change', wide))
 const closePanel = useClosePopoverOnPick()
 const pickerOpen = ref(false)
 const panel = ref<InstanceType<typeof CustomColorPanel>>()
@@ -76,22 +78,18 @@ async function cancel() {
 </script>
 
 <template>
-  <PalettePicker :selected-color-id="selectedColorId" :editing="editing" @select="selectColor">
+  <PalettePicker :selected-color-id="selectedColorId" :editing="editing" :wide="listShown" @select="selectColor">
     <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" :disabled="editing" @toggle="toggle" />
   </PalettePicker>
-  <AppButton
+  <BeadColorsEntry
     v-if="beadColors?.available.value && !editing"
-    variant="in-box"
-    size="sm"
-    :trailing-icon="catalogOpen ? 'chevron-up' : 'chevron-down'"
-    :aria-expanded="catalogOpen"
+    :bead="beadColors.bead.value"
+    :open="catalogOpen"
     class="tool-color-controls__catalog"
-    data-testid="bead-colors-toggle"
-    @click="toggleCatalog"
-  >
-    {{ t.palette.beadColors.open }}
-  </AppButton>
-  <BeadColorList v-if="beadColors && catalogOpen && !editing" :colors="beadColors" />
+    testid="bead-colors-toggle"
+    @toggle="toggleCatalog"
+  />
+  <BeadColorList v-if="beadColors && listShown" :colors="beadColors" />
   <CustomColorPanel
     ref="panel"
     v-if="pickerOpen"

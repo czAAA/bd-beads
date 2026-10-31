@@ -43,6 +43,8 @@ const removeAll = useRemoveAllAddedColors()
 const palette = usePalette()
 const hasAdded = computed(() => palette.value.colors.some((color) => isAddedColorId(color.id)))
 const editing = ref(false)
+/** The Bead's palette is open (ticket 0746): the popover is as wide as the panel, no wider than the screen. */
+const wide = ref(false)
 watch(hasAdded, (has) => {
   if (!has) editing.value = false
 })
@@ -59,7 +61,7 @@ const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: p
 </script>
 
 <template>
-  <div ref="rootEl" class="color-popover" :style="style" role="dialog" :aria-label="t.toolPill.popover" data-testid="color-popover">
+  <div ref="rootEl" class="color-popover" :class="{ 'color-popover--wide': wide }" :style="style" role="dialog" :aria-label="t.toolPill.popover" data-testid="color-popover">
     <div class="color-popover__head">
       <span class="color-popover__chosen" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
       <span class="color-popover__name" data-testid="color-popover-name">{{ colorName }}</span>
@@ -97,6 +99,7 @@ const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: p
         :editing="editing"
         @select-color="(id) => emit('select-color', id)"
         @select-custom-color="(hex) => emit('select-custom-color', hex)"
+        @wide-change="wide = $event"
       />
     </div>
   </div>
@@ -132,6 +135,10 @@ const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: p
     opacity: 0;
     transform: scale(0.94);
   }
+}
+
+.color-popover--wide {
+  width: min(var(--popover-width-wide), calc(100vw - 2 * var(--float-edge)));
 }
 
 .color-popover__head {
