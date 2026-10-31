@@ -26,8 +26,13 @@
   --step-rail: 44px; /* ConvertImage card: the sticky step rail atop the sections pane; 40px on a phone. */
   --step-rail-phone: 40px; /* PhoneForms card: the step rail under the sticky preview. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
-  --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter row. */
-  --filter-chip-height: 28px; /* BeadColors card: a Finish chip in the Finish filter row. */
+  --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter. */
+  --filter-chip-height: 28px; /* BeadColors card: a line of the Finish filter list. */
+  --filter-check: 14px; /* BeadColors card: a Finish line's check box. */
+  --bead-filter-column: 184px; /* BeadColors card: the filter column beside the rows while the list is wide. */
+  --bead-list-height-wide: 24rem; /* BeadColors card: the rows' tallest before they scroll while the list is wide. */
+  --popover-width-wide: var(--panel-width); /* ToolPill card: the colour popover while the Bead's palette is open. */
+  --palette-swatch-min: 27px; /* PaletteSwatches card: the narrowest swatch in the wide colour popover. */
   --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
   --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
