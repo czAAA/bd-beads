@@ -32,6 +32,8 @@ export function useFreeGrowth({ section, freeWindow, freeTile, zoom }: FreeGrowt
   const past = ref(0)
   /** How far the plans have scrolled up in their section, in their own px: as far as the page has. */
   const offset = computed(() => past.value / zoom())
+  /** Whether the page is past the plans, so the list is growing. */
+  const growing = computed(() => past.value > 0)
   const height = computed(() => measure.value && freeListHeight(measure.value, offset.value, growth))
   const open = computed(() => !!measure.value && height.value! >= measure.value.full - 0.5)
   /** How much further than the plans the page scrolls, in screen px. */
@@ -39,23 +41,32 @@ export function useFreeGrowth({ section, freeWindow, freeTile, zoom }: FreeGrowt
 
   /** Measures the list and its tile; its height and the plans' scroll are left out, so it can be measured at any time. */
   function remeasure() {
-    const room = section.value
-    const window = freeWindow()
-    const tile = freeTile()
-    const list = window?.firstElementChild
-    if (!room || !window || !tile || !list?.children.length) return
+    const plansEl = section.value
+    const windowEl = freeWindow()
+    const tileEl = freeTile()
+    const listEl = windowEl?.firstElementChild
+    if (!plansEl || !windowEl || !tileEl || !listEl?.children.length) return
     growth = designNumber('--free-growth', FREE_GROWTH)
-    const shown = Math.min(list.children.length, Math.round(designNumber('--free-start-rows', FREE_START_ROWS)))
-    const scale = zoom() * turnScale(room)
-    const [at, win, rows, last, foot] = [room, window, list, list.children[shown - 1]!, tile].map((el) => el.getBoundingClientRect())
+    const shown = Math.min(listEl.children.length, Math.round(designNumber('--free-start-rows', FREE_START_ROWS)))
+    const scale = zoom() * turnScale(plansEl)
+    const plans = plansEl.getBoundingClientRect()
+    const shownList = windowEl.getBoundingClientRect()
+    const list = listEl.getBoundingClientRect()
+    const lastShown = listEl.children[shown - 1]!.getBoundingClientRect()
+    const tile = tileEl.getBoundingClientRect()
     measure.value = {
-      viewport: at!.height / scale,
-      top: (win!.top - at!.top) / scale + offset.value,
-      start: (last!.bottom - rows!.top) / scale,
-      full: rows!.height / scale,
-      below: (foot!.bottom - win!.bottom) / scale,
+      viewport: plans.height / scale,
+      top: (shownList.top - plans.top) / scale + offset.value,
+      start: (lastShown.bottom - list.top) / scale,
+      full: list.height / scale,
+      below: (tile.bottom - shownList.bottom) / scale,
     }
   }
 
-  return { past, offset, height, open, room, remeasure }
+  /** The page's scroll: how far it is past the plans, in screen px. */
+  function scrolledPast(px: number) {
+    past.value = Math.max(0, px)
+  }
+
+  return { offset, growing, height, open, room, remeasure, scrolledPast }
 }
