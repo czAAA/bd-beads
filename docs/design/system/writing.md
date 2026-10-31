@@ -231,23 +231,44 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
 | you are here (note) | вы здесь |
 | No account · Free · no sign-up · Draw, count and weave on this device. Nothing to sign up for. · Open the editor | Без аккаунта · Бесплатно · без регистрации · Рисуйте, считайте и плетите на этом устройстве. Регистрироваться не нужно. · Открыть редактор |
-| Free account · Free · coming later · The same app, with your Patterns on every device you use. · Create free account | Бесплатный аккаунт · Бесплатно · появится позже · То же приложение, а схемы на всех ваших устройствах. · Создать бесплатный аккаунт |
-| Pro · Price later · coming later · For makers who teach, sell or print a lot. · Coming later | Pro · Цена позже · появится позже · Для тех, кто учит, продаёт или много печатает. · Появится позже |
-| what you get · everything without an account, plus · everything in Free account, plus | что входит · всё без аккаунта, плюс · всё из бесплатного аккаунта, плюс |
+| Free account · Free · Same as No account, plus more · Create free account (ticket 0740: no "coming later", no list) | Бесплатный аккаунт · Бесплатно · Всё, что без аккаунта, и больше · Создать бесплатный аккаунт |
+| Pro · Price later · Same as Free account, plus more · Coming later (ticket 0740: no "coming later" beside the price, no list) | Pro · Цена позже · Всё, что в бесплатном аккаунте, и больше · Появится позже |
+| COMING SOON (the stamp on Free account and Pro; its image name "Coming soon") | СКОРО (название картинки «Скоро») |
+| forever free: (No account's list; "what you get" and the two "everything in …, plus" lines are gone, ticket 0740) | бесплатно навсегда: |
 
-Plan contents are placeholders until paid features exist.
+Free account and Pro list nothing until their features are known: the stamp stands where the list was.
 
-The scroll story (ticket 0739): the Progress bar's words, the free list and its roll. The free list names the app's features in the words the app uses for them; every shipped language has it (`homepage.plans.tiles[0].items`).
+The scroll story (ticket 0739): the Progress bar's words.
 
 | English | Russian |
 | --- | --- |
 | Sections (the track's name) · Back · Next | Разделы · Назад · Дальше |
 | This is the first section. · This is the last section. (why Back or Next is off) | Это первый раздел. · Это последний раздел. |
-| 23 · free | 23 · бесплатно |
-| Everything free, scroll to see all (the window's name) | Всё бесплатное, прокрутите, чтобы увидеть всё |
-| Roll the list back up (the curl) | Свернуть список |
-| Loom · Peyote · Brick stitch · Paint, Fill and Erase · Select, copy and paste · Mirror · Undo for every step · Named Pieces · Convert image, up to 14 colors · Row progress · Beads needed, in grams too · Your own Palette · Pick color from Canvas · Frame and Rulers · PDF export · PNG export · Project file · Projects saved on this device · Light, dark and high contrast · Seven languages · Works offline · Keyboard shortcuts · No sign-up | Ткачество · Мозаичное плетение · Кирпичное плетение · Кисть, заливка и ластик · Выделение, копирование и вставка · Отражение · Отмена любого шага · Кусочки с именами · Конвертация изображения, до 14 цветов · Прогресс по рядам · Нужно бисера, и вес в граммах · Своя палитра · Взять цвет с холста · Рамка и линейки · Экспорт в PDF · Экспорт в PNG · Файл проекта · Проекты хранятся на этом устройстве · Светлая, тёмная и контрастная темы · Семь языков · Работает без интернета · Горячие клавиши · Без регистрации |
-| Free account's list: Projects on all your devices · A backup of every Saved Project ("Share a Project by link" is gone) | Проекты на всех устройствах · Резервная копия каждого сохранённого проекта |
+
+The free list (ticket 0740), one row each, in this order. It names the app's features in the words the app uses for them; every shipped language has it. `{n}` and the names in braces come from the app (Homepage card, The free list), never typed in: `{techniques}` the Techniques' names, `{brands}` the Color catalogs' brands, `{codes}` their codes added up, `{categories}` the Starters' categories, each joined as a list in the language. The 0739 list ("23 · free", the window's and the curl's names, the 23 rows) is gone with the window and the roll.
+
+| English | Russian |
+| --- | --- |
+| Runs in your browser, and your work stays on your device | Работает в браузере, а ваши работы остаются на вашем устройстве |
+| An open Canvas: draw anywhere, it has no edges | Открытое полотно: рисуйте где угодно, у него нет краёв |
+| {n} Techniques: {techniques} | Техник: {n} — {techniques} |
+| As many Projects as you like | Сколько угодно проектов |
+| Turn a picture into beads | Картинка превращается в бисер |
+| One Frame per Project, for the piece you'll weave | Одна рамка в проекте, для того, что будете плести |
+| Many Schemas in one Project | Много схем в одном проекте |
+| Row progress: mark rows done as you weave | Прогресс по рядам: отмечайте готовые ряды, пока плетёте |
+| The whole editor: paint, fill, erase, select, copy, paste, undo | Весь редактор: кисть, заливка, ластик, выделение, копирование, вставка, отмена |
+| PDF, ready to print | PDF, готовый к печати |
+| PNG, ready to share | PNG, чтобы поделиться |
+| Beads needed, counted per color, in grams too | Нужно бисера: по каждому цвету и в граммах |
+| {brands} colors built in, {codes} of them | Цвета {brands} уже внутри, {codes} штук |
+| Your Projects as an .openbeads file | Ваши проекты в файле .openbeads |
+| Word chart: the Schema written out row by row | Ряд за рядом: схема, расписанная словами |
+| Mirror: draw one side, the other follows | Отражение: рисуете одну сторону, вторая повторяет |
+| {n} Starters for {categories} | Стартеров: {n} — {categories} |
+| More on the way (muted, with a plus) | Скоро будет больше |
+
+"An open Canvas" is the owner's wording for the Homepage only; everywhere else the copy says Canvas, never "open canvas" (ADR 0050).
 
 ## Copy added in v16
 
