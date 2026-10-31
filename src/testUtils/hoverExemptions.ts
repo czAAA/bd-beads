@@ -14,15 +14,7 @@ export const INFO_POPOVERS: InfoPopover[] = []
 
 /** Components with text or a Tooltip that no browser fit test mounts, by name, each with the reason a reviewer would
  * accept (ticket 552); delete the entry when moot. */
-const IN_CAROUSEL = 'drawn inside the Homepage carousel, which homepageFit.browser.test.ts steps through'
-
 export const NOT_MOUNTED: Record<string, string> = {
   AppShell: 'the whole app: it only places the parts that are tried one by one',
   AppPanels: 'only mounts the panels of panels.ts through PanelHost; each panel is tried on its own',
-  BeadsExample: IN_CAROUSEL,
-  ConvertExample: IN_CAROUSEL,
-  ExportsExample: IN_CAROUSEL,
-  ProgressExample: IN_CAROUSEL,
-  SavedExample: IN_CAROUSEL,
-  TechniquesExample: IN_CAROUSEL,
 }

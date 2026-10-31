@@ -359,7 +359,7 @@ export const en: Translations = {
     whatsInside: "What's inside",
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
-    sections: { label: 'Sections', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.' },
+    sections: { label: 'Sections', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.', goTo: 'Go to {section}' },
     notes: { onUs: 'on us' },
     coffee: { title: 'Made by one family', text: "openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
