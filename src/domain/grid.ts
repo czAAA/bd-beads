@@ -1,4 +1,5 @@
-import { beadPitchMm, type Bead } from './beads'
+import type { Bead } from './beads'
+import { describeWeave, type Technique } from './weave'
 
 /** A real-world length unit. */
 export type PhysicalUnit = 'mm' | 'cm'
@@ -38,11 +39,11 @@ function beadsFor(lengthMm: number, beadMm: number): number {
   return Math.max(1, Math.ceil(lengthMm / beadMm - 1e-9))
 }
 
-/** The grid a real-world size needs, a typed mm value always rounding up to the next whole bead (ticket 342). */
-export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDimensions {
-  const columns = beadsFor(size.widthMm, beadPitchMm(bead))
-  const rows = beadsFor(size.heightMm, bead.heightMm)
-  return { columns, rows }
+/** The grid a real-world size needs, a typed mm value always rounding up to the next whole bead (ticket 342), each bead
+ * laid on the Technique's thread (ticket 0734). */
+export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead, technique: Technique): GridDimensions {
+  const { widthMm, heightMm } = describeWeave({ technique }).beadMm(bead)
+  return { columns: beadsFor(size.widthMm, widthMm), rows: beadsFor(size.heightMm, heightMm) }
 }
 
 /** The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. */

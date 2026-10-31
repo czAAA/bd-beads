@@ -43,5 +43,5 @@ export function schemaDetails(project: Project, anchor: GridPosition): SchemaDet
   const rank = (hex: string) => order.get(hex) ?? order.size
   const colors = [...new Set(members.map((at) => beads[at.row]![at.column]!))].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b))
   const { bead } = beadOfLayer(project, 'canvas')
-  return { ...size, sizeMm: bead ? estimatedSizeMm(size, bead) : undefined, beads: members.length, colors }
+  return { ...size, sizeMm: bead ? estimatedSizeMm(size, bead, heldWeave(project, 'canvas').technique) : undefined, beads: members.length, colors }
 }

@@ -83,7 +83,7 @@ describe('fillArea', () => {
 
     // Loom: (0,1)'s only straight neighbor below is (1,1), which is unpainted, so (1,0) stays red.
     expect(frameGrid(loomFilled)[1]![0]!.color).toBe('red')
-    // Peyote: row 1 is shifted right, so (0,1) overlaps (1,0) and (1,1) below it, reaching the red cell.
+    // Peyote: column 1 hangs half a bead lower, so (0,1) overlaps (0,0) and (1,0) beside it, reaching the red cell.
     expect(frameGrid(peyoteFilled)[1]![0]!.color).toBe('green')
   })
 })
@@ -95,6 +95,7 @@ describe('fillArea floods the same beads as one neighbour at a time', () => {
   const WEAVES: Weave[] = [
     { technique: 'loom' },
     { technique: 'peyote' },
+    { technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } },
     { technique: 'brick' },
     { technique: 'brick', techniqueSettings: { [BRICK_DROP_SETTING.id]: 3 } },
   ]
@@ -205,6 +206,20 @@ describe('fillArea floods the same beads as one neighbour at a time', () => {
     const filled = fillArea({ beads, weave, geometry: gridGeometry(weave) }, 0, 1, '#333333')
 
     expect(filled).toEqual({ 0: { 1: '#333333', 3: '#111111' }, 1: { 0: '#333333', 4: '#111111' } })
+  })
+
+  it('in peyote, reaches the bead beside a shifted column below it but not above it (ticket 0734)', () => {
+    const weave: Weave = { technique: 'peyote' }
+    // Column 1 hangs half a bead lower, so (1, 0) touches (0, 1) and (1, 1), and (0, 1) touches (0, 0) and (1, 0).
+    const beads = withColors({}, [
+      { row: 1, column: 0, color: '#111111' },
+      { row: 0, column: 1, color: '#111111' },
+      { row: 3, column: 0, color: '#111111' },
+      { row: 4, column: 1, color: '#111111' },
+    ])
+    const filled = fillArea({ beads, weave, geometry: gridGeometry(weave) }, 1, 0, '#333333')
+
+    expect(filled).toEqual({ 0: { 1: '#333333' }, 1: { 0: '#333333' }, 3: { 0: '#111111' }, 4: { 1: '#111111' } })
   })
 })
 

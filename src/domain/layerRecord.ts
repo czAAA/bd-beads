@@ -84,7 +84,7 @@ export function weaveOfLayer(project: Layered, layer: 'canvas'): Weave
 export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined
 export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined {
   const held = heldLayer(project, layer)
-  return held && withCell(weaveOf(held), beadCell(held.bead))
+  return held && withCell(weaveOf(held), beadCell(held.bead, held.technique))
 }
 
 /** A layer as one record (ADR 0079): its Weave, Bead, beads and name. None for a Frame the Project lacks. */

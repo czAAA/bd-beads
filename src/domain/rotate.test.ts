@@ -82,9 +82,10 @@ describe('rotateSelection', () => {
     expect(positionsOf(beadsOfLayer(rotateSelection(withBeads(beads), SELECTION).project, 'canvas'))).toContain('30,30:#123456')
   })
 
-  it('snaps the turned top row to an even row on peyote', () => {
-    const turned = rotatedSelection({ technique: 'peyote' }, { top: 10, left: 10, rows: 2, columns: 5 })
-    expect(turned.top % 2).toBe(0)
+  it('snaps the turned left column to an even column on peyote, whose columns alternate (ticket 0734)', () => {
+    const turned = rotatedSelection({ technique: 'peyote' }, { top: 10, left: 11, rows: 2, columns: 5 })
+    expect(turned.left % 2).toBe(0)
+    expect(turned.top).toBe(9)
     expect(turned).toMatchObject({ rows: 5, columns: 2 })
   })
 
@@ -94,9 +95,9 @@ describe('rotateSelection', () => {
     expect(turned).toMatchObject({ rows: 5, columns: 2 })
   })
 
-  it('snaps the turned top row to a multiple of 2N on peyote with a Drop of N (ticket 0691)', () => {
-    const turned = rotatedSelection({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } }, { top: 10, left: 10, rows: 2, columns: 5 })
-    expect(turned.top % 4).toBe(0)
+  it('snaps the turned left column to a multiple of 2N on peyote with a Drop of N (tickets 0691, 0734)', () => {
+    const turned = rotatedSelection({ technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } }, { top: 10, left: 11, rows: 2, columns: 5 })
+    expect(turned.left % 4).toBe(0)
     expect(turned).toMatchObject({ rows: 5, columns: 2 })
   })
 

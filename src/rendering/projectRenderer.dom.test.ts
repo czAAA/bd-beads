@@ -55,10 +55,11 @@ describe('Technique geometry', () => {
     expect(projectExtentPx('loom', 4, 3)).toEqual({ width: 80, height: 60 })
   })
 
-  it('nests peyote rows and shifts every other one half a bead', () => {
-    expect(beadStepPx({ technique: 'peyote' })).toEqual({ across: 20, down: 15 })
-    expect(rowStarts({ technique: 'peyote' })).toEqual([[0, 0], [10, 15], [0, 30], [10, 45]])
-    expect(projectExtentPx('peyote', 4, 3)).toEqual({ width: 90, height: 50 })
+  it('stacks peyote rows a bead apart and shifts every other column half a bead down (ticket 0734)', () => {
+    expect(beadStepPx({ technique: 'peyote' })).toEqual({ across: 20, down: 20 })
+    expect(rowStarts({ technique: 'peyote' })).toEqual([[0, 0], [0, 20], [0, 40], [0, 60]])
+    expect([0, 1, 2, 3].map((column) => positionBoxPx({ technique: 'peyote' }, 0, column)).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 10], [40, 0], [60, 10]])
+    expect(projectExtentPx('peyote', 4, 3)).toEqual({ width: 80, height: 70 })
   })
 
   it('stacks brick stitch rows a bead apart, with no seam between them', () => {
@@ -88,21 +89,21 @@ describe('renderProject', () => {
     expect(beads.every(({ size, cornerRadius }) => size === 20 && cornerRadius === 0)).toBe(true)
   })
 
-  it('places peyote beads with the half-bead stagger and the tighter row packing, in its Bead\'s outline (a cube\'s square)', () => {
+  it('places peyote beads with the half-bead column stagger, in its Bead\'s outline (a cube\'s square)', () => {
     const project = projectOf('peyote', 2, 3)
 
     const beads = beadsDrawn(project, whole(project))
 
-    expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 15], [30, 15], [0, 30], [20, 30]])
+    expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 10], [0, 20], [20, 30], [0, 40], [20, 50]])
     expect(beads.every(({ cornerRadius }) => cornerRadius === 0)).toBe(true)
   })
 
-  it('places peyote beads with the half-bead stagger, the tighter row packing and rounded corners, in the Technique\'s own cell where no Bead is known', () => {
+  it('places peyote beads with the half-bead column stagger and rounded corners, in the Technique\'s own cell where no Bead is known', () => {
     const project = projectOf('peyote', 2, 3, { bead: undefined })
 
     const beads = beadsDrawn(project, whole(project))
 
-    expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 15], [30, 15], [0, 30], [20, 30]])
+    expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 10], [0, 20], [20, 30], [0, 40], [20, 50]])
     expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
   })
 
@@ -137,11 +138,11 @@ describe('renderProject', () => {
     ])
   })
 
-  it('draws 2-drop peyote as pairs of lines level, the pairs shifted in turn, at peyote\'s own spacing (ticket 0691)', () => {
-    const project = projectOf('peyote', 2, 5, { techniqueSettings: { peyoteDrop: 2 } })
+  it('draws 2-drop peyote as pairs of columns level, the pairs shifted down in turn (tickets 0691, 0734)', () => {
+    const project = projectOf('peyote', 4, 3, { techniqueSettings: { peyoteDrop: 2 } })
 
     expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([
-      [0, 0], [20, 0], [0, 15], [20, 15], [10, 30], [30, 30], [10, 45], [30, 45], [0, 60], [20, 60],
+      [0, 0], [20, 0], [40, 10], [60, 10], [0, 20], [20, 20], [40, 30], [60, 30], [0, 40], [20, 40], [40, 50], [60, 50],
     ])
   })
 
@@ -499,7 +500,8 @@ describe('drawing only some rows again', () => {
     renderProject(recordingContext().context, { project, region: whole(project), zoom: 1, rows: { first: 2, last: 3 }, drawBead: (_c, b) => some.push(b) })
 
     const key = (b: BeadShape) => `${b.x},${b.y},${b.color}`
-    expect(some.map(key)).toEqual(all.filter(({ y }) => y >= 15 && y < 60 + 15).map(key))
+    // Rows 1 to 4: the band with the row either side, whose shifted columns' beads hang into it.
+    expect(some.map(key)).toEqual(all.filter(({ y }) => y >= 20 && y < 100).map(key))
   })
 
   it('starts a brick stitch band at the top of its first row, and no more of the rows above', () => {
@@ -550,18 +552,24 @@ describe('visibleBeads', () => {
     expect(lastRow).toBeLessThan(firstRow)
   })
 
-  it('includes a peyote row whose top is inside the region but whose nested beads overlap the row above', () => {
-    // Rows sit 15px apart: a region over the top 10px still meets row 0 and (at 15px) not yet row 1; 16px meets both.
-    expect(visibleBeads({ technique: 'peyote' }, 5, 10, { left: 0, right: 100, top: 0, bottom: 10 }).lastRow).toBe(0)
-    expect(visibleBeads({ technique: 'peyote' }, 5, 10, { left: 0, right: 100, top: 0, bottom: 16 }).lastRow).toBe(1)
+  it('includes the row a shifted peyote column\'s lower beads reach, which an unshifted column\'s do not (ticket 0734)', () => {
+    // Rows sit 20px apart: a region from 49px meets row 1 of a column hung 10px lower (30 to 50), but loom's row 2 first.
+    expect(visibleBeads({ technique: 'peyote' }, 5, 10, { left: 0, right: 100, top: 49, bottom: 60 }).firstRow).toBe(1)
+    expect(visibleBeads({ technique: 'loom' }, 5, 10, { left: 0, right: 100, top: 49, bottom: 60 }).firstRow).toBe(2)
   })
 
   it('takes the stagger into account for a shifted row\'s columns', () => {
-    const { columnsOf } = visibleBeads({ technique: 'peyote' }, 10, 4, { left: 0, right: 25, top: 0, bottom: 100 })
+    const { columnsOf } = visibleBeads({ technique: 'brick' }, 10, 4, { left: 0, right: 25, top: 0, bottom: 100 })
 
     // Row 0's beads sit at 0 and 20 (the second reaches 25); row 1's are shifted to 10 and 30, so 30 is out of reach.
     expect(columnsOf(0)).toEqual({ first: 0, last: 1 })
     expect(columnsOf(1)).toEqual({ first: 0, last: 0 })
+  })
+
+  it('reaches the same columns on every row of a peyote Project: its columns are what shifts', () => {
+    const { columnsOf } = visibleBeads({ technique: 'peyote' }, 10, 4, { left: 0, right: 25, top: 0, bottom: 100 })
+
+    expect([columnsOf(0), columnsOf(1)]).toEqual([{ first: 0, last: 1 }, { first: 0, last: 1 }])
   })
 })
 
@@ -834,14 +842,14 @@ describe('the keep-out margin on the Canvas', () => {
     return cutOut
   }
 
-  it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
+  it('hides the overhang of the beads just outside it, which a shifted peyote column hangs into its edge rows (ticket 0734)', () => {
     const frame = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
-    // A bead in the row just above the margin (row 15, the margin being rows 16 to 27): its bottom 5px lies inside the margin's outline.
-    const project = withLayers(projectOf('peyote', 4, 4), { frame: { ...frame, beads: {} }, beads: { 15: { 22: '#ff0000' } } })
+    // A bead of a shifted column in the row just above the margin (row 15, the margin being rows 16 to 27): its bottom 10px lies inside the margin's outline.
+    const project = withLayers(projectOf('peyote', 4, 4), { frame: { ...frame, beads: {} }, beads: { 15: { 23: '#ff0000' } } })
 
-    const cutOut = drawnWithMarginCutOut(project, [16 * 20, 16 * 15, 12 * 20 + 10, 11 * 15 + 20])
+    const cutOut = drawnWithMarginCutOut(project, [16 * 20, 16 * 20, 12 * 20, 12 * 20 + 10])
 
-    expect(cutOut.get(`${22 * 20 + 10},${15 * 15}`)).toBe(true)
+    expect(cutOut.get(`${23 * 20},${15 * 20 + 10}`)).toBe(true)
   })
 })
 
@@ -899,9 +907,9 @@ describe('a Bead\'s real cell (ADR 0068)', () => {
       expect(bead.height).toBeCloseTo(20 * delicaCell.aspect)
       expect(bead.cornerRadius).toBe(2)
     }
-    const rows = [...new Set(beads.map((bead) => bead.y))]
-    expect(rows[1]! - rows[0]!).toBeCloseTo(0.75 * 20 * delicaCell.aspect)
-    expect(projectExtentPx('peyote', 3, 3, delicaCell).height).toBeCloseTo(20 * delicaCell.aspect * (1 + 2 * 0.75))
+    const rows = [...new Set(beads.filter((bead) => bead.x === 0).map((bead) => bead.y))]
+    expect(rows[1]! - rows[0]!).toBeCloseTo(20 * delicaCell.aspect)
+    expect(projectExtentPx('peyote', 3, 3, delicaCell).height).toBeCloseTo(20 * delicaCell.aspect * (3 + 0.5))
   })
 })
 
@@ -953,27 +961,26 @@ describe('the draft look zoomed out (ticket 0676)', () => {
     }
   })
 
-  it('lays each layer\'s image over its beads\' boxes, peyote\'s and brick\'s shifted rows half a bead across', () => {
+  it('lays each layer\'s image over its beads\' boxes, brick\'s shifted rows half a bead across and peyote\'s shifted columns half a bead down (ticket 0734)', () => {
     const imagesSoFar = withDraftCanvas()
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       const before = imagesSoFar().length
       const { images: draws } = drawn(framedPiece(technique), 0.2)
       const images = imagesSoFar().slice(before)
-      const step = beadStepPx({ technique })
-      const wide = technique === 'loom' ? 1 : 2
-      // The Canvas: its 300 rows from row 0, its columns from 0, a shifted row's room on the right.
+      const wide = technique === 'brick' ? 2 : 1
+      const tall = technique === 'peyote' ? 2 : 1
+      // The Canvas: its 300 rows from row 0, its columns from 0, a shifted row's room on the right or a shifted column's below.
       const canvasImage = images[0]!
-      expect([canvasImage.width, canvasImage.height]).toEqual([300 * wide + (wide - 1), 300])
-      expect(draws[0]!.args.slice(1)).toEqual([0, 0, canvasImage.width, 300, 0, 0, (canvasImage.width * 20) / wide, 300 * step.down])
+      expect([canvasImage.width, canvasImage.height]).toEqual([300 * wide + (wide - 1), 300 * tall + (tall - 1)])
+      expect(draws[0]!.args.slice(1)).toEqual([0, 0, canvasImage.width, canvasImage.height, 0, 0, (canvasImage.width * 20) / wide, (canvasImage.height * 20) / tall])
       // The Frame: from its own first bead, red, at its place on the Canvas.
       const frameImage = images[1]!
-      expect([frameImage.width, frameImage.height]).toEqual([100 * wide + (wide - 1), 100])
-      expect(draws[1]!.args.slice(5)).toEqual([100 * 20, 100 * step.down, (frameImage.width * 20) / wide, 100 * step.down])
+      expect([frameImage.width, frameImage.height]).toEqual([100 * wide + (wide - 1), 100 * tall + (tall - 1)])
+      expect(draws[1]!.args.slice(5)).toEqual([100 * 20, 100 * 20, (frameImage.width * 20) / wide, (frameImage.height * 20) / tall])
       expect([...frameImage.data.slice(0, 4)]).toEqual([255, 0, 0, 255])
-      // Row 1 is shifted on peyote and brick: its first bead starts a pixel in, half a bead.
-      const shifted = frameImage.width * 4 + (wide - 1) * 4
-      expect([...frameImage.data.slice(shifted, shifted + 4)]).toEqual([...frameImage.data.slice(frameImage.width * 4 * 2, frameImage.width * 4 * 2 + 4)])
+      // Brick's row 1 starts a pixel in, half a bead; peyote's first bead is two pixels tall.
       if (wide === 2) expect(frameImage.data[frameImage.width * 4 + 3]).toBe(0)
+      if (tall === 2) expect([...frameImage.data.slice(frameImage.width * 4, frameImage.width * 4 + 4)]).toEqual([255, 0, 0, 255])
     }
   })
 

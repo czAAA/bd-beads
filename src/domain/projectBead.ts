@@ -1,7 +1,7 @@
 import { beadsDiffer, colorCatalogOf, type Bead } from './beads'
 import type { ColorCatalog } from './colorCatalog'
 import type { Layer } from './grid'
-import { beadIdOfLayer, beadOfLayer, frameOf, type Layered, withLayer } from './layerRecord'
+import { beadIdOfLayer, beadOfLayer, frameOf, type Layered, weaveOfLayer, withLayer } from './layerRecord'
 import { codesForBead, defaultPalette, paletteForBead } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
@@ -12,7 +12,7 @@ import { beadCell, type BeadCell } from './weave'
 
 /** How the woven layer's Bead is drawn, from its own copy (ADR 0068, ticket 0724): none for a Bead nobody knows. */
 export function projectCell(project: Layered): BeadCell | undefined {
-  return beadCell(beadOfLayer(project, 'frame').bead)
+  return beadCell(beadOfLayer(project, 'frame').bead, (weaveOfLayer(project, 'frame') ?? weaveOfLayer(project, 'canvas')).technique)
 }
 
 /** The Bead a Project is woven from (ticket 37, ADR 0079): the Frame's when there is one, else the Canvas's, its own

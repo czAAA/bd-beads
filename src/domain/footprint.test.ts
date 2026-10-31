@@ -10,13 +10,13 @@ describe('frameFootprint (ADR 0066)', () => {
     expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'loom' })).toEqual(frame)
   })
 
-  it('stops where a peyote Frame stops drawing on a loom Canvas: its rows nest closer than the Canvas\'s are tall', () => {
-    // 48 peyote rows are 1 + 47 × 0.75 = 36.25 beads tall; the loom rows whose middle lies inside it are 36.
-    expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'peyote' })).toEqual({ ...frame, rows: 36 })
+  it('is a peyote Frame\'s own rows on a loom Canvas: its rows nest nothing, so it draws as tall as it has rows (ticket 0734)', () => {
+    // 48 peyote rows and the half bead a shifted column hangs lower are 48.5 beads tall; the loom rows whose middle lies inside it are 48.
+    expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'peyote' })).toEqual(frame)
   })
 
-  it('reaches further down a peyote Canvas for a loom Frame, which draws taller than it has rows', () => {
-    expect(frameFootprint({ technique: 'peyote' }, { ...frame, technique: 'loom' }).rows).toBe(64)
+  it('stays as tall under a loom Frame on a peyote Canvas', () => {
+    expect(frameFootprint({ technique: 'peyote' }, { ...frame, technique: 'loom' }).rows).toBe(48)
   })
 
   it('keeps the Frame\'s columns and corner', () => {

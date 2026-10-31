@@ -96,25 +96,30 @@ function flood({ beads, geometry, edge, frame }: LayerSheet, start: GridPosition
   }
 }
 
-/** A flood over a Layer of rows (ticket 0677): a seed spreads along its row as far as it goes, the span is painted, and
- * the rows above and below are seeded once per run of beads the span touches in them. */
-function floodRows({ takes, paint, refusal }: Flood, start: GridPosition, reach: NonNullable<LayerGeometry['rowReach']>): void {
-  const seeds = [start.row, start.column]
+/** A flood over a Layer of rows or columns (tickets 0677, 0734): a seed spreads along its line as far as it goes, the span is
+ * painted, and the lines either side are seeded once per run of beads the span touches in them. `along` names the line:
+ * a column's span runs down it, and its positions are read as (column, row). */
+function floodLines({ takes, paint, refusal }: Flood, start: GridPosition, { along, reach }: NonNullable<LayerGeometry['spans']>): void {
+  const columns = along === 'column'
+  // A position as (line, place along it).
+  const takesAt = columns ? (line: number, place: number) => takes(place, line) : takes
+  const paintAt = columns ? (line: number, place: number) => paint(place, line) : paint
+  const seeds = columns ? [start.column, start.row] : [start.row, start.column]
   while (seeds.length > 0 && !refusal()) {
-    const column = seeds.pop()!
-    const row = seeds.pop()!
-    if (!takes(row, column)) continue
-    let first = column
-    let last = column
-    while (takes(row, first - 1)) first -= 1
-    while (takes(row, last + 1)) last += 1
-    for (let at = first; at <= last; at += 1) paint(row, at)
-    for (const toRow of [row - 1, row + 1]) {
-      const [before, after] = reach(row, toRow)
+    const place = seeds.pop()!
+    const line = seeds.pop()!
+    if (!takesAt(line, place)) continue
+    let first = place
+    let last = place
+    while (takesAt(line, first - 1)) first -= 1
+    while (takesAt(line, last + 1)) last += 1
+    for (let at = first; at <= last; at += 1) paintAt(line, at)
+    for (const toLine of [line - 1, line + 1]) {
+      const [before, after] = reach(line, toLine)
       let inRun = false
       for (let at = first + before; at <= last + after; at += 1) {
-        const taken = takes(toRow, at)
-        if (taken && !inRun) seeds.push(toRow, at)
+        const taken = takesAt(toLine, at)
+        if (taken && !inRun) seeds.push(toLine, at)
         inRun = taken
       }
     }
@@ -142,7 +147,7 @@ export function fillArea(sheet: LayerSheet, row: number, column: number, color: 
   }
   const start = { row, column }
   const painting = flood(sheet, start, color, reach)
-  if (sheet.geometry.rowReach) floodRows(painting, start, sheet.geometry.rowReach)
+  if (sheet.geometry.spans) floodLines(painting, start, sheet.geometry.spans)
   else floodNeighbors(painting, start, sheet.geometry)
   return painting.refusal() ?? painting.beads()
 }
