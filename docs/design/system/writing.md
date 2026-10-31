@@ -536,6 +536,19 @@ The two filter rows of the Bead colors list (BeadColors card) and its empty stat
 | No {filters} codes. | Нет кодов с фильтрами: {filters}. | Немає кодів з фільтрами: {filters}. | Няма кодаў з фільтрамі: {filters}. | {filters}中没有编号。 | Ningún código con los filtros: {filters}. | Żaden kod nie pasuje do filtrów: {filters}. |
 | {code} exists in {sizes}, not in {size}. | {code} есть в {sizes}, но не в {size}. | {code} є в {sizes}, але не в {size}. | {code} ёсць у {sizes}, але не ў {size}. | {code} 有 {sizes}，没有 {size}。 | {code} existe en {sizes}, no en {size}. | {code} istnieje w {sizes}, nie w {size}. |
 
+## The Bead's palette (ticket 0745)
+
+The BeadColors list made wider and quieter. The entry button is named for the Bead whose colors it lists: "Palette {bead}", where `{bead}` is the Bead's label (Brand, Form factor and size, a literal in every language: "Miyuki Delica 11/0"). It stays "Palette" with the Bead's name after it, so it reads as that Bead's own palette and not the Project's Palette; the Project's Palette keeps its words ("In the Palette", "Add {code} to the Palette"). The counts take the "Label: number" form in every language, so they need no plural. The two notes now in the Info button's Tooltip keep their existing words ("Approximate colors: …", "A color that comes out the same …"), and so do Clear filters and the empty-state sentences above. The entry's old name "Bead colors" (Convert image's match-to choice keeps it) and "Showing the first {count}. Search to narrow the list." are gone. Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Palette {bead} (the entry button) | Палитра {bead} | Палітра {bead} | Палітра {bead} | {bead} 调色板 | Paleta {bead} | Paleta {bead} |
+| About these colors (the Info button's name) | Об этих цветах | Про ці кольори | Пра гэтыя колеры | 关于这些颜色 | Sobre estos colores | O tych kolorach |
+| codes: {count} (the count line) | кодов: {count} | кодів: {count} | кодаў: {count} | 色号：{count} | códigos: {count} | kodów: {count} |
+| first {count} shown | показаны первые {count} | показано перші {count} | паказаны першыя {count} | 显示前 {count} 个 | se muestran los primeros {count} | pokazano pierwsze {count} |
+| Filters (the narrow layout's button) | Фильтры | Фільтри | Фільтры | 筛选 | Filtros | Filtry |
+| Filters, {count} on (its name while values are on) | Фильтры, включено: {count} | Фільтри, увімкнено: {count} | Фільтры, уключана: {count} | 筛选，已开启 {count} 个 | Filtros, activos: {count} | Filtry, włączone: {count} |
+
 ## Schema tag copy (ticket 0721)
 
 An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card). Rename, Frame and Close keep their existing words. The counts use `Intl.PluralRules` (Plurals and length): «96 бисеринок · 3 цвета», «1 бисеринка · 1 цвет».
