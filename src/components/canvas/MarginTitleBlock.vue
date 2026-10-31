@@ -128,6 +128,7 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
         <PanelPicker
           bare
           icon-only="pencil"
+          in-shell
           :model-value="technique"
           :label="t.frame.margin.changeTechnique"
           :options="options"

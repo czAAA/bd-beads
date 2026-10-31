@@ -18,6 +18,9 @@ const props = defineProps<{
   /** The button is this icon alone, named by `label` in its Tooltip (the margin title block's Technique pencil, ticket
    * 0657); the value is shown beside it by the host. */
   iconOnly?: IconName
+  /** The list sits in the app shell, not beside its button: inside the margin sheet's scale, Safari keeps a top-layer
+   * list where it first showed (the top-left corner). */
+  inShell?: boolean
   options: readonly { value: T; label: string; icon?: IconName; lang?: string; /** What the button shows when the name is long (a language's code). */ shortLabel?: string }[]
 }>()
 const value = defineModel<T>({ required: true })
@@ -57,7 +60,13 @@ function close(returnFocus = true) {
   if (returnFocus) buttonEl.value?.focus()
 }
 
-useOverlayLayer({ isOpen: () => open.value, root: () => rootEl.value, close: () => close(), onOutsidePress: () => close(false) })
+useOverlayLayer({
+  isOpen: () => open.value,
+  root: () => listEl.value,
+  close: () => close(),
+  onOutsidePress: () => close(false),
+  isOpener: (target) => rootEl.value?.contains(target) ?? false,
+})
 
 function onButtonClick() {
   if (props.disabled) return
@@ -144,24 +153,26 @@ function onListKeydown(event: KeyboardEvent) {
         </template>
       </button>
     </component>
-    <div v-if="open" :id="listId" ref="listEl" class="panel-picker__list anchored-popup" popover="manual" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
-      <button
-        v-for="option in options"
-        :key="option.value"
-        class="ui-control panel-picker__option"
-        type="button"
-        role="menuitemradio"
-        tabindex="-1"
-        :aria-checked="option.value === value"
-        :data-value="option.value"
-        :lang="option.lang"
-        @click="choose(option.value)"
-      >
-        <AppIcon v-if="option.value === value" name="check" :size="16" />
-        <span v-else class="panel-picker__gap" aria-hidden="true" />
-        <span>{{ option.label }}</span>
-      </button>
-    </div>
+    <Teleport v-if="open" to=".app-shell" :disabled="!inShell">
+      <div :id="listId" ref="listEl" class="panel-picker__list anchored-popup" popover="manual" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
+        <button
+          v-for="option in options"
+          :key="option.value"
+          class="ui-control panel-picker__option"
+          type="button"
+          role="menuitemradio"
+          tabindex="-1"
+          :aria-checked="option.value === value"
+          :data-value="option.value"
+          :lang="option.lang"
+          @click="choose(option.value)"
+        >
+          <AppIcon v-if="option.value === value" name="check" :size="16" />
+          <span v-else class="panel-picker__gap" aria-hidden="true" />
+          <span>{{ option.label }}</span>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
