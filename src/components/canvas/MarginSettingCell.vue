@@ -73,9 +73,12 @@ useOverlayLayer({
       :data-testid="`${testid}-edit`"
       @click="open ? close() : show()"
     />
-    <div v-if="open" ref="popupEl" class="margin-setting__popover anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="words.label" :data-testid="`${testid}-popover`">
-      <SettingStepper :setting="setting" :model-value="value" :testid="`${testid}-stepper`" @update:model-value="emit('set', $event)" />
-    </div>
+    <!-- In the app shell: inside the sheet's scale, Safari keeps a top-layer popup where it first showed. -->
+    <Teleport v-if="open" to=".app-shell">
+      <div ref="popupEl" class="margin-setting__popover anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="words.label" :data-testid="`${testid}-popover`">
+        <SettingStepper :setting="setting" :model-value="value" :testid="`${testid}-stepper`" @update:model-value="emit('set', $event)" />
+      </div>
+    </Teleport>
   </span>
 </template>
 

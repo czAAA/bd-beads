@@ -150,14 +150,14 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('Select all then the Eraser asks before wiping the drawing too (ticket 415)', async () => {
+  it('choosing the Eraser with a Selection only leaves Select: the beads stay', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
     await selectAll(wrapper)
 
     await pickTool(wrapper, 'erase')
 
-    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 

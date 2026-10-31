@@ -1,58 +1,52 @@
 import { describe, expect, it } from 'vitest'
-import { cardPlacement, tagOrigin, tagPlacement } from './schemaTagPlacement'
+import { cardPlacement, tagPlacement } from './schemaTagPlacement'
 
 const viewport = { width: 800, height: 600 }
-/** A Piece's box on screen, outset included: its bottom-right corner at (300, 200). */
+/** A Piece's box on screen, outset included: its top-left corner at (200, 100). */
 const piece = { left: 200, top: 100, width: 100, height: 100 }
 
-describe('where a Schema\'s tag hangs (SchemaTag card)', () => {
-  it('hangs from the bottom-right corner, its hole 9px right and 24px down', () => {
-    expect(tagPlacement(piece, viewport, 40)).toEqual({ side: 'right', corner: { x: 300, y: 200 }, hole: { x: 309, y: 224 } })
+describe('where a Schema\'s tag sits (SchemaTag card)', () => {
+  it('stands above the Piece\'s top-left corner, 4px over its box', () => {
+    expect(tagPlacement(piece, viewport)).toEqual({ left: 200, top: 68 })
   })
 
-  it('hangs from the bottom-left corner where it would cross the canvas box\'s right edge', () => {
-    const atEdge = { ...piece, left: 680, width: 100 }
-
-    expect(tagPlacement(atEdge, viewport, 40)).toEqual({ side: 'left', corner: { x: 680, y: 200 }, hole: { x: 671, y: 224 } })
+  it('rises over the Rulers\' numbers by the lift', () => {
+    expect(tagPlacement(piece, viewport, 18)).toEqual({ left: 200, top: 50 })
   })
 
-  it('hangs on the side with more room where it fits on neither', () => {
-    expect(tagPlacement({ ...piece, left: 10, width: 775 }, viewport, 60)).toMatchObject({ side: 'right' })
-    expect(tagPlacement({ ...piece, left: 30, width: 760 }, viewport, 60)).toMatchObject({ side: 'left' })
+  it('stays on the top-left corner at the canvas box\'s edge, never flipping to another corner', () => {
+    expect(tagPlacement({ ...piece, left: 760 }, viewport)).toEqual({ left: 760, top: 68 })
+    expect(tagPlacement({ ...piece, top: 10 }, viewport)).toEqual({ left: 200, top: -22 })
   })
 
-  it('shows no tag while the Piece\'s corner is out of view', () => {
-    expect(tagPlacement({ ...piece, top: 600 }, viewport, 40)).toBeUndefined()
-    expect(tagPlacement({ ...piece, left: -150 }, viewport, 40)).toBeUndefined()
-  })
-})
-
-describe('where a tag\'s box goes', () => {
-  it('reaches right from its hole when it hangs right', () => {
-    expect(tagOrigin({ side: 'right', corner: { x: 300, y: 200 }, hole: { x: 309, y: 224 } }, 40)).toEqual({ left: 304.5, top: 213 })
+  it('shows no tag while neither the Piece nor its tag is in view', () => {
+    expect(tagPlacement({ ...piece, top: 632 }, viewport)).toBeUndefined()
+    expect(tagPlacement({ ...piece, top: 600 }, viewport)).toEqual({ left: 200, top: 568 })
+    expect(tagPlacement({ ...piece, top: -140 }, viewport)).toBeUndefined()
+    expect(tagPlacement({ ...piece, left: 800 }, viewport)).toBeUndefined()
+    expect(tagPlacement({ ...piece, left: -200, width: 10 }, viewport)).toBeUndefined()
   })
 
-  it('reaches left from its hole when it hangs left, mirrored, so it hangs out from the Piece', () => {
-    expect(tagOrigin({ side: 'left', corner: { x: 680, y: 200 }, hole: { x: 671, y: 224 } }, 40)).toEqual({ left: 635.5, top: 213 })
+  it('shows the tag while only part of the Piece is in view', () => {
+    expect(tagPlacement({ ...piece, left: -150, width: 200 }, viewport)).toEqual({ left: -150, top: 68 })
   })
 })
 
 describe('where the paper tag opens', () => {
-  const tag = tagPlacement(piece, viewport, 40)!
+  const tag = tagPlacement(piece, viewport)!
 
-  it('opens below the Piece, hanging by its hole 18px in from its top-right corner', () => {
-    expect(cardPlacement(tag, piece, viewport, 160)).toEqual({ above: false, left: 91, top: 206, hole: { x: 309, y: 224 } })
+  it('opens in the tag\'s place, down over the Piece', () => {
+    expect(cardPlacement(tag, viewport, 160)).toEqual({ above: false, left: 200, top: 68 })
   })
 
-  it('opens above the Piece where there is no room below', () => {
-    const low = { ...piece, top: 400 }
+  it('opens upwards from the tag\'s foot where there is no room below', () => {
+    const low = tagPlacement({ ...piece, top: 500 }, viewport)!
 
-    expect(cardPlacement(tagPlacement(low, viewport, 40)!, low, viewport, 160)).toEqual({ above: true, left: 91, top: 234, hole: { x: 309, y: 252 } })
+    expect(cardPlacement(low, viewport, 160)).toEqual({ above: true, left: 200, top: 336 })
   })
 
-  it('stays inside the canvas box, the hole moving with it', () => {
-    const left = { ...piece, left: 0, width: 60 }
-
-    expect(cardPlacement(tagPlacement(left, viewport, 40)!, left, viewport, 160)).toMatchObject({ left: 8, hole: { x: 226 } })
+  it('stays inside the canvas box', () => {
+    expect(cardPlacement(tagPlacement({ ...piece, left: 700 }, viewport)!, viewport, 160)).toMatchObject({ left: 556 })
+    expect(cardPlacement(tagPlacement({ ...piece, top: 10 }, viewport)!, viewport, 160)).toMatchObject({ top: 8 })
   })
 })

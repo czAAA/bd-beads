@@ -231,7 +231,7 @@ const selectionAnchor = ref<SelectionAnchor>()
 const frameAnchor = ref<FrameAnchor>()
 /** Whether the pointer is on the keep-out margin while Mirror's Area is being picked (ticket 0710): the sheet lights. */
 const areaTargeted = ref(false)
-/** Where the unframed Schemas are on the canvas box: their hang tags follow them (ticket 0721). */
+/** Where the unframed Schemas are on the canvas box: their tags follow them (tickets 0721, 0733). */
 const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
@@ -386,7 +386,7 @@ const drawingStyle = computed(() => {
             </EmptyCanvas>
           </div>
 
-          <!-- The unframed Schemas' names as hang tags (ticket 0721, SchemaTag card): over the beads, one Tab stop after
+          <!-- The unframed Schemas' names on tags (tickets 0721, 0733, SchemaTag card): over the beads, one Tab stop after
             the canvas, under the Tool pill and the Selection bar. -->
           <SchemaTags
             v-if="activeProject && schemaAnchors?.schemas.length"

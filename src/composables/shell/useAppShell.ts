@@ -277,17 +277,13 @@ function wireAppShell(services: Services) {
    * Selection being made, Escape or another tool. */
   const selectingFrame = ref(false)
 
-  // Choosing a tool. The Eraser clears an existing Selection first (ticket 313), like Del under Select, so Select all
-  // asks for Delete all's confirmation (ticket 415); leaving Select drops the Selection, as for every other tool.
+  // Choosing a tool. Leaving Select drops the Selection, the Eraser included; its beads stay.
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
     selectingFrame.value = false
     // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on
     // touch.
     if (tool !== 'select' || (touch.value && activeTool.value === 'select')) leavePasteMode()
-    if (tool === 'erase' && selection.value) {
-      onClearSelection()
-    }
     selectTool(tool)
   }
 
