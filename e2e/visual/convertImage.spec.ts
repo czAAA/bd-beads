@@ -1,50 +1,46 @@
 import { expect, test, type Page } from '@playwright/test'
-import { chooseNewProjectTechnique, convertPicture, openApp, openNewProjectForm } from '../support/app'
+import { chooseNewProjectTechnique, convertPicture, openApp, openNewProjectForm, setConvertWidth } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
-// The Convert image wizard (spec 0645): the preview By size in each Technique, as the framing step's check was (ticket
-// 58), and each layout: two panes from 1024 px in landscape, one long scroll under a sticky, shrinking preview on a
-// phone. Beads are on a canvas at a non-integer fit scale, so the tolerance covers anti-aliasing.
+// The Convert image wizard (spec 0645, ticket 0747): the preview in each Technique at a Width on a mark, then A part
+// with its handles and the rest dimmed (as the framing step's check was, ticket 58), and each layout: two panes from
+// 1024 px in landscape, one long scroll under a sticky, shrinking preview on a phone. The tolerance covers anti-aliasing.
 
-async function openWizard(page: Page, size?: { columns: number; rows: number }, technique?: string) {
+async function openWizard(page: Page, technique?: string) {
   await openApp(page, [])
   await openNewProjectForm(page)
   if (technique) await chooseNewProjectTechnique(page, technique)
-  await convertPicture(page, fixturePicture(), size)
+  await convertPicture(page, fixturePicture())
   // Out of the way of the beads, so no hover ring or cursor shows.
   await page.mouse.move(2, 2)
 }
 
-/** Steps the picture zoom slider to `percent` with its arrows, 25% a press. */
-async function setPictureZoom(page: Page, percent: number) {
-  const slider = page.getByTestId('convert-picture-zoom')
-  await slider.focus()
-  await page.keyboard.press('Home')
-  for (let at = 100; at < percent; at += 25) await page.keyboard.press('ArrowRight')
-  await expect(slider).toHaveAttribute('aria-valuenow', String(percent))
-}
-
-test.describe('Convert image preview By size', () => {
+test.describe('Convert image preview', () => {
   for (const technique of ['loom', 'peyote', 'brick'] as const) {
     test(technique, async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 860 })
-      await openWizard(page, { columns: 16, rows: 10 }, technique)
+      await openWizard(page, technique)
       const preview = page.getByTestId('convert-image-box')
       const shot = (name: string) =>
         expect.soft(preview, name).toHaveScreenshot(`convert-${technique}-${name}.png`, { maxDiffPixelRatio: 0.008 })
 
-      await shot('zoom-100')
-      await setPictureZoom(page, 200)
-      await shot('zoom-200')
+      // The 240 px wide fixture on its 8 × 8 px mark: 30 × 20 beads, exact.
+      await setConvertWidth(page, 30)
+      await expect(page.getByTestId('convert-result')).toContainText('30×20')
+      await shot('whole')
 
-      // Drag the picture up and to the left under the Frame.
-      const box = (await preview.boundingBox())!
-      await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.7)
-      await page.mouse.down()
-      await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4, { steps: 8 })
-      await page.mouse.up()
+      // A part starts 10% in from each edge, the rest of the picture dimmed round it.
+      await page.getByTestId('convert-weave').locator('[data-value="part"]').click()
+      await expect(page.getByTestId('convert-crop-topLeft')).toBeVisible()
       await page.mouse.move(2, 2)
-      await shot('zoom-200-dragged')
+      await shot('part')
+
+      // The top-left handle moved 30 px right and down, ten per Shift + arrow.
+      await page.getByTestId('convert-crop-topLeft').focus()
+      for (let step = 0; step < 3; step += 1) await page.keyboard.press('Shift+ArrowRight')
+      for (let step = 0; step < 3; step += 1) await page.keyboard.press('Shift+ArrowDown')
+      await page.mouse.move(2, 2)
+      await shot('part-moved')
     })
   }
 })
