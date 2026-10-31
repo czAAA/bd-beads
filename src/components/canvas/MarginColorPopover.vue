@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
 import type { Project } from '../../domain/project'
-import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import MarginColorPicker from './MarginColorPicker.vue'
 
 // The margin sheet's Margin color popover (MarginSheet card, ticket 0657): the Frame panel's margin color picker, hung
@@ -15,8 +14,6 @@ const props = defineProps<{
   anchor: HTMLElement | undefined
   /** The Project whose Canvas's Background the margin's Auto follows (ticket 0666). */
   project: Project
-  /** Where the sheet is on screen: as the canvas is panned, zoomed or turned the popover follows its button (ticket 0698). */
-  sheet?: FrameAnchor
 }>()
 const emit = defineEmits<{ close: [] }>()
 
@@ -35,12 +32,6 @@ useOverlayLayer({
   onOutsidePress: () => emit('close'),
   isOpener: (target) => props.anchor?.contains(target) ?? false,
 })
-
-watch(
-  () => props.sheet,
-  () => anchored.place(),
-  { flush: 'post' },
-)
 
 onMounted(async () => {
   anchorEl.value = props.anchor

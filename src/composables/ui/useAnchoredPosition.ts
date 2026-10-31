@@ -1,4 +1,8 @@
-import { nextTick, onBeforeUnmount, ref, type Ref } from 'vue'
+import { inject, nextTick, onBeforeUnmount, ref, watch, type InjectionKey, type Ref } from 'vue'
+
+/** Where the margin sheet is on screen, provided by `MarginSheet`: a canvas pan or zoom moves the popups' cells without a
+ * window `scroll`, so every popup placed here places itself again when this changes (ticket 0736). */
+export const sheetMovedKey: InjectionKey<() => unknown> = Symbol('sheetMoved')
 
 /** `fixed` at a place; `right: auto` so a popup's own CSS `right` (an end-aligned Menu) doesn't stretch it. */
 const fixedAt = (top: number, left: number) => ({ position: 'fixed', top: `${top}px`, left: `${left}px`, right: 'auto' })
@@ -65,14 +69,23 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
   }
 
   const onMove = () => place()
+  let following = false
+  const sheetMoved = inject(sheetMovedKey, undefined)
+  if (sheetMoved) {
+    watch(sheetMoved, () => {
+      if (following) place()
+    }, { flush: 'post' })
+  }
 
   function follow() {
+    following = true
     place()
     window.addEventListener('scroll', onMove, true)
     window.addEventListener('resize', onMove)
   }
 
   function stop() {
+    following = false
     window.removeEventListener('scroll', onMove, true)
     window.removeEventListener('resize', onMove)
   }

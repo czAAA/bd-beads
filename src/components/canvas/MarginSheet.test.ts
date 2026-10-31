@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import MarginSheet from './MarginSheet.vue'
@@ -136,6 +136,19 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
     expect(document.querySelector('[data-testid="margin-color-popover"]')).toBeNull()
+  })
+
+  it('places the margin color\'s picker again against its button when the canvas is panned (ticket 0736)', async () => {
+    const wrapper = mountSheet()
+    const button = control(wrapper, 'margin-color')
+    await button.trigger('click')
+    await nextTick()
+    const rect = vi.spyOn(button.element, 'getBoundingClientRect')
+    rect.mockClear()
+    const panned = anchorAt(1)
+    await wrapper.setProps({ anchor: { ...panned, sheet: { ...panned.sheet, left: 120, top: 40 } } })
+    await nextTick()
+    expect(rect).toHaveBeenCalled()
   })
 
   it('keeps the margin color\'s picker open while its button stays, and closes it where the zoom takes the button away (ticket 0698)', async () => {
