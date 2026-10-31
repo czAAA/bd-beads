@@ -24,4 +24,4 @@ The one page outside the editor, at `/homepage`: the front door for a new visito
 
 Hand-written from the v15 sign-off; the scroll story from the signed prototype, the claude.ai canvas "bd-beads homepage — scroll story", its dark rendition the reference; the plan tiles from the claude.ai canvas "bd-beads — forever free tile" (ticket 0740).
 
-**Where the app differs, until ticket 0740's code lands:** the app still has the free list in a hand-scrolled window that lights three beads and unrolls into a paper roll on the third scroll (`--free-window`, `--free-roll-curl`, still in `src/styles/design-values.css` for it), and Free account and Pro still list their placeholder features.
+**Where the app differs, until ticket 0742 lands:** the app still has the free list in a hand-scrolled window that lights three beads and unrolls into a paper roll on the third scroll (`--free-window`, `--free-roll-curl`, still in `src/styles/design-values.css` for it), and Free account and Pro still list their placeholder features.
