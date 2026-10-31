@@ -28,6 +28,12 @@ function makeProject(): Project {
 }
 
 describe('ProgressBar', () => {
+  it('is an empty bar with no Project and nothing in its slot (ticket 0748)', () => {
+    const wrapper = mount(ProgressBar)
+
+    expect(wrapper.find('[data-testid="progress-bar"]').element.children).toHaveLength(0)
+  })
+
   it('is shielded from the page panning under a vertical touch drag', () => {
     const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
 

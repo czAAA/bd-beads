@@ -12,9 +12,9 @@ import { frameOf } from '../../domain/layerRecord'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control along the canvas box's
 // bottom; with no Frame (ADR 0055) it offers Fit to drawing, with one its RowProgressControls (ticket 0657). The Homepage
-// fills the same bar with its sections through the slot, with no Project (ticket 0739).
+// fills the same bar with its sections through the slot, with no Project (0739); the editor with none leaves it empty (0748).
 const props = withDefaults(defineProps<{
-  /** The Project whose Row progress it shows; none where the slot fills the bar. */
+  /** The Project whose Row progress it shows; none where the slot fills the bar, or where the bar is empty. */
   project?: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): pressed while it does. */
   rowHighlight?: boolean
@@ -48,7 +48,7 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
 <template>
   <div ref="rootEl" class="progress-bar no-page-pan" data-testid="progress-bar" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
     <slot>
-    <template v-if="!hasFrame">
+    <template v-if="project && !hasFrame">
       <!-- Styled like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
       <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
         <span class="hint-chip"><AppIcon name="select" :size="14" /></span>

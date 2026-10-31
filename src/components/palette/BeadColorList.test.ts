@@ -35,7 +35,6 @@ describe('BeadColorList', () => {
     expect(rows[0]!.text()).toContain(`DB1`)
     expect(rows[0]!.text()).toContain(`${en.colorNames.blue} · ${en.palette.beadColors.finishes.metallic}`)
     expect(rows[1]!.text()).toContain(en.palette.beadColors.discontinued)
-    expect(wrapper.get('[data-testid="bead-colors-approximate"]').text()).toContain(en.palette.beadColors.approximate)
     expect(colors.load).toHaveBeenCalled()
   })
 
@@ -56,7 +55,7 @@ describe('BeadColorList', () => {
 
     expect(row.attributes('aria-disabled')).toBe('true')
     expect(row.text()).toContain(en.palette.beadColors.inPalette)
-    expect(wrapper.text()).toContain(en.palette.beadColors.takenNote)
+    expect(wrapper.text()).not.toContain(en.palette.beadColors.takenNote)
     expect(colors.add).not.toHaveBeenCalled()
   })
 
@@ -88,7 +87,7 @@ describe('BeadColorList', () => {
 })
 
 describe('the Bead colors filters (ticket 0713)', () => {
-  it('offers the Brand’s families present as swatches in the Brand’s order, and the Finishes present as chips, each named with its count', () => {
+  it('offers the Brand’s families present as swatches in the Brand’s order, and the Finishes present as check lines, each named with its count', () => {
     const { wrapper } = setup(four)
 
     expect(wrapper.get('[data-testid="bead-colors-filter-color"]').attributes('aria-label')).toBe(en.palette.beadColors.colorFilter)
@@ -169,6 +168,95 @@ describe('the Bead colors filters (ticket 0713)', () => {
     expect(wrapper.findAll('[data-testid="bead-colors-finish"]').map((button) => button.attributes('tabindex'))).toEqual(['0', '-1', '-1'])
   })
 
+  it('moves through the Finish list with Up, Down, Home and End, and through the Color swatches with the arrows (ticket 0746)', async () => {
+    const wrapper = mount(BeadColorList, { props: { colors: setup(four).colors }, attachTo: document.body })
+    const finish = wrapper.findAll<HTMLElement>('[data-testid="bead-colors-finish"]').map((button) => button.element)
+    const color = wrapper.findAll<HTMLElement>('[data-testid="bead-colors-family"]').map((button) => button.element)
+    const key = async (group: string, name: string, from: HTMLElement) => {
+      from.focus()
+      await wrapper.get(`[data-testid="${group}"]`).trigger('keydown', { key: name })
+      return document.activeElement
+    }
+
+    expect(await key('bead-colors-filter-finish', 'ArrowDown', finish[0]!)).toBe(finish[1])
+    expect(await key('bead-colors-filter-finish', 'ArrowUp', finish[1]!)).toBe(finish[0])
+    expect(await key('bead-colors-filter-finish', 'ArrowRight', finish[0]!)).toBe(finish[0])
+    expect(await key('bead-colors-filter-finish', 'End', finish[0]!)).toBe(finish[2])
+    expect(await key('bead-colors-filter-finish', 'Home', finish[2]!)).toBe(finish[0])
+    expect(await key('bead-colors-filter-color', 'ArrowRight', color[0]!)).toBe(color[1])
+    expect(await key('bead-colors-filter-color', 'End', color[0]!)).toBe(color[2])
+    wrapper.unmount()
+  })
+
+  it('lays the filters out in the DOM after the search and before the rows, for the focus order (ticket 0746)', () => {
+    const { wrapper } = setup(four)
+    const order = ['bead-colors-search', 'bead-colors-filters-toggle', 'bead-colors-filter-color', 'bead-colors-filter-finish', 'bead-color']
+    const all = [...wrapper.element.querySelectorAll('[data-testid]')]
+
+    const at = order.map((id) => all.findIndex((el) => el.getAttribute('data-testid') === id))
+
+    expect(at.every((index) => index >= 0)).toBe(true)
+    expect(at).toEqual([...at].sort((a, b) => a - b))
+  })
+
+  it('shows Clear filters in the filter column only while a value is on, and turns the values off but keeps the search', async () => {
+    const { wrapper } = setup(four)
+    expect(wrapper.find('[data-testid="bead-colors-filters-clear"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="bead-colors-search"]').setValue('DB')
+    await press(wrapper, 'bead-colors-finish', 'matte')
+    await wrapper.get('[data-testid="bead-colors-filters-clear"]').trigger('click')
+
+    expect(wrapper.findAll('[aria-pressed="true"]')).toHaveLength(0)
+    expect((wrapper.get('[data-testid="bead-colors-search"]').element as HTMLInputElement).value).toBe('DB')
+    expect(wrapper.find('[data-testid="bead-colors-filters-clear"]').exists()).toBe(false)
+  })
+})
+
+describe('the Filters disclosure of the narrow layout (ticket 0746)', () => {
+  const toggle = (wrapper: VueWrapper) => wrapper.get('[data-testid="bead-colors-filters-toggle"]')
+
+  it('starts closed, opens the filters on a press and names how many values are on, with a count badge', async () => {
+    const { wrapper } = setup(four)
+    const filters = wrapper.get('[data-testid="bead-colors-filters"]')
+
+    expect(toggle(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(toggle(wrapper).attributes('aria-label')).toBe('Filters')
+    expect(wrapper.find('[data-testid="bead-colors-filters-badge"]').exists()).toBe(false)
+    expect(filters.classes()).not.toContain('bead-color-list__filters--open')
+
+    await toggle(wrapper).trigger('click')
+    expect(toggle(wrapper).attributes('aria-expanded')).toBe('true')
+    expect(filters.classes()).toContain('bead-color-list__filters--open')
+
+    await press(wrapper, 'bead-colors-family', 'Blue')
+    await press(wrapper, 'bead-colors-finish', 'matte')
+    expect(toggle(wrapper).attributes('aria-label')).toBe('Filters, 2 on')
+    expect(wrapper.get('[data-testid="bead-colors-filters-badge"]').text()).toBe('2')
+  })
+})
+
+describe('the count line (ticket 0746)', () => {
+  const many = (count: number) => Array.from({ length: count }, (_, i) => entry({ code: `DB${i + 1}` }))
+
+  it('counts the codes, and says only the first 60 are shown past 60', () => {
+    expect(setup(four).wrapper.get('[data-testid="bead-colors-count"]').text()).toBe('codes: 4')
+
+    const { wrapper } = setup(many(61))
+    expect(wrapper.get('[data-testid="bead-colors-count"]').findAll('span').map((span) => span.text())).toEqual(['codes: 61', 'first 60 shown'])
+    expect(codes(wrapper)).toHaveLength(60)
+  })
+
+  it('counts the matches, "codes: 0" included in the empty state, and has no Showing-the-first note', async () => {
+    const { wrapper } = setup(four)
+    await wrapper.get('[data-testid="bead-colors-search"]').setValue('zzz')
+
+    expect(wrapper.get('[data-testid="bead-colors-count"]').text()).toBe('codes: 0')
+    expect(wrapper.text()).not.toContain('Showing the first')
+  })
+})
+
+describe('the foot row (ticket 0700)', () => {
   it('offers a color Report at its foot only when the list has one, from the row last focused', async () => {
     expect(setup([entry({})]).wrapper.find('[data-testid="bead-colors-report"]').exists()).toBe(false)
     const report = vi.fn()
