@@ -15,6 +15,8 @@ const props = defineProps<{
   selectedColorId?: string
   /** Edit palette (ticket 531): a press on an added swatch asks to remove it, built-in ones are locked. */
   editing?: boolean
+  /** The wide colour popover (ticket 0746): swatches of the usual size fill the width. */
+  wide?: boolean
 }>()
 const emit = defineEmits<{
   select: [colorId: string]
@@ -97,7 +99,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
 </script>
 
 <template>
-  <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
+  <div ref="gridEl" class="palette-picker" :class="{ 'palette-picker--wide': wide }" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
     <AppSwatch
       v-for="({ color, slot }, index) in shown"
       :key="color.id"
@@ -131,6 +133,11 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: var(--space-6);
+}
+
+/* The wide colour popover (PaletteSwatches card): as many swatches of the usual size as fit, in fewer rows. */
+.palette-picker--wide {
+  grid-template-columns: repeat(auto-fill, minmax(var(--palette-swatch-min), 1fr));
 }
 
 /* A swatch being dragged to another slot (ticket 398), and the slot it would land in. */
