@@ -12,6 +12,8 @@ export interface SourceFile {
   /** The component's name as Vue reports it (the file's name). */
   name: string
   template: string
+  /** The components it draws through `<component :is>`: every one its script imports (the Homepage's sections, ticket 0744). */
+  drawsByName?: string[]
 }
 
 function walk(dir: string): string[] {
@@ -26,7 +28,9 @@ export function sourceFiles(): SourceFile[] {
       const text = readFileSync(file, 'utf8')
       const start = text.indexOf('<template>')
       const end = text.lastIndexOf('</template>')
-      return { path: relative(SRC, file), name: basename(file, '.vue'), template: start >= 0 && end > start ? text.slice(start, end) : '' }
+      const template = start >= 0 && end > start ? text.slice(start, end) : ''
+      const drawsByName = /<component\b/.test(template) ? [...text.matchAll(/import\s+(\w+)\s+from\s+'[^']*\.vue'/g)].map((match) => match[1]!) : undefined
+      return { path: relative(SRC, file), name: basename(file, '.vue'), template, drawsByName }
     })
 }
 
@@ -111,7 +115,9 @@ export function exercisedComponents(): Set<string> {
     for (const match of readFileSync(test, 'utf8').matchAll(/import\s+(\w+)\s+from\s+'[^']*\.vue'/g)) reach(match[1]!)
   }
   while (queue.length > 0) {
-    for (const tag of tags(byName.get(queue.pop()!)!.template)) reach(tag.name)
+    const file = byName.get(queue.pop()!)!
+    for (const tag of tags(file.template)) reach(tag.name)
+    for (const name of file.drawsByName ?? []) reach(name)
   }
   return reached
 }

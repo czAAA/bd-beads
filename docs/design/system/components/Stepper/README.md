@@ -1,9 +1,9 @@
 # Stepper
 
-The − value + control for every counted setting on desktop: Size, Colors at most.
+The − value + control for every counted setting on desktop: Size, Drop.
 
-- The desktop form of the phone's steppers, for every "−  value  +" in the app (Size, Colors at most): 40px tall, 40px buttons, the value in `meta` at 15px between hairlines.
-- At the limit the button turns `faint` (e.g. − at 2 colours). A locked stepper is all `faint` on `surface`, and the reason is written under it, not hidden in a tooltip (a disabled control shows none).
+- The desktop form of the phone's steppers, for every "−  value  +" in the app (Size, Drop; Convert image's Colors at most became a ValueSlider in ticket 0747): 40px tall, 40px buttons, the value in `meta` at 15px between hairlines.
+- At the limit the button turns `faint` (e.g. − at Drop 1). A locked stepper is all `faint` on `surface`, and the reason is written under it, not hidden in a tooltip (a disabled control shows none).
 - The Drop stepper (tickets 0477, 0691; brick stitch's was called Brick block) sits in each layer's Layer settings (LayerSettings card, ticket 0670) for peyote and for brick stitch, the Canvas's enabled at any time. Its buttons are "Fewer beads in each stitch" and "More beads in each stitch".
 - Each button has its own name for screen readers: "Fewer columns", "More columns".
 - Holding a button repeats (ticket 355): one step at once, after 400ms it keeps stepping, from every 160ms down to every 30ms, until release, pointer leave or the limit. Mouse, touch and Enter/Space all hold; a held press adds no step on release.

@@ -15,6 +15,37 @@ interface FeatureCopy {
   tabLine?: string
 }
 
+/** One Homepage plan tile's words (ticket 220): its name, its price, its one line and its button. */
+interface PlanCopy {
+  name: string
+  price: string
+  text: string
+  button: string
+}
+
+/** The Homepage's free list, a row each (ticket 0742; `writing.md`, the free list). The blanks are the app's own counts
+ * and names, never typed in: `{names}` the Techniques', `{brands}` and `{codes}` the Color catalogs', `{categories}` the
+ * Starters'. */
+interface FreeRows {
+  browser: string
+  canvas: string
+  techniques: PluralForms
+  projects: string
+  picture: string
+  frame: string
+  schemas: string
+  rowProgress: string
+  editor: string
+  pdf: string
+  png: string
+  beadsNeeded: string
+  colors: string
+  file: string
+  wordChart: string
+  mirror: string
+  starters: PluralForms
+}
+
 /** A Technique setting's words (tickets 0624, 0626): its name, its two buttons, its number's name for screen readers,
  * its hover text where it has one, why it is locked while rows are done and what is read out once it changed. */
 export interface SettingWords {
@@ -419,21 +450,24 @@ export interface Translations {
     /** The carousel's ‹ › buttons. */
     previousFeature: string
     nextFeature: string
-    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end. */
-    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string }
+    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
+    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }
     /** The hand-written notes of the hero (Homepage card); decorative, hidden from screen readers. */
     notes: { onUs: string }
     /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string }
-    /** The plan tiles (ticket 220; Homepage card): placeholders until accounts and payment exist. */
+    /** The plan tiles (ticket 220; Homepage card). */
     plans: {
       heading: string
       why: string
       youAreHere: string
-      /** No account's items are the whole free list (ticket 0739): the app's real features. */
-      tiles: Array<{ name: string; price: string; meta: string; text: string; button: string; includes: string; items: string[] }>
-      /** The free list's window in the No account tile and the roll it unrolls into (ticket 0739). */
-      free: { count: string; window: string; rollUp: string }
+      /** No account, then Free account and Pro, switched off (ticket 0742): those two list nothing, their line saying only
+       * what they build on. */
+      tiles: [PlanCopy & { meta: string }, PlanCopy, PlanCopy]
+      /** The stamp on Free account and Pro, written in capitals on it, and its image's name. */
+      comingSoon: string
+      /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them. */
+      free: { heading: string; rows: FreeRows; more: string }
     }
     features: {
       techniques: FeatureCopy
