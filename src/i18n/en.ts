@@ -774,6 +774,10 @@ export const en: Translations = {
       one: 'Added an empty row on top: a Frame must start on an unshifted row.',
       other: 'Added {count} empty rows on top: a Frame must start on an unshifted row.',
     },
+    snapAddedLeft: {
+      one: 'Added an empty column on the left: a Frame must start on an unshifted column.',
+      other: 'Added {count} empty columns on the left: a Frame must start on an unshifted column.',
+    },
     announceTechnique: 'Technique changed to {technique}',
     announceSelectionRotated: 'Selection rotated',
     rotateFrameLabel: 'Rotate Frame',

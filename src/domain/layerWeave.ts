@@ -1,4 +1,3 @@
-import { beadPitchMm } from './beads'
 import { beadBounds, colorAt, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet } from './canvas'
 import type { GridPosition, Layer } from './grid'
 import { beadOfLayer, frameOf, heldWeave, weaveOfLayer, weaveOf, type Layered } from './layerRecord'
@@ -34,11 +33,13 @@ export function sameWeave(a: Weave, b: Weave): boolean {
   return Object.keys(x).every((id) => x[id] === y[id])
 }
 
-/** How many times wider the Frame's Bead is than the Canvas's along a row (ADR 0079, ticket 0665): what a length of
- * the Frame's is read on the Canvas by, through millimetres. 1 without a Frame, or where a Bead has no copy. */
+/** How many times wider the Frame's cell is than the Canvas's, each Bead laid as its layer's Technique lays it (ADR 0079,
+ * tickets 0665, 0734): what a length of the Frame's is read on the Canvas by, through millimetres. 1 without a Frame, or
+ * where a Bead has no copy. */
 export function frameScale(project: Layered): number {
   const [canvas, frame] = [beadOfLayer(project, 'canvas').bead, beadOfLayer(project, 'frame').bead]
-  return canvas && frame ? beadPitchMm(frame) / beadPitchMm(canvas) : 1
+  if (!canvas || !frame) return 1
+  return describeWeave(frameWeave(project)).beadMm(frame).widthMm / describeWeave(canvasWeave(project)).beadMm(canvas).widthMm
 }
 
 /** Whether the Frame's Bead draws its cells as the Canvas's does (ticket 0665): as wide, and as tall where the Bead

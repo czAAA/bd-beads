@@ -526,15 +526,25 @@ describe('useFrameFlow', () => {
     })
 
     it('steps the top edge by a pair of rows where rows alternate', () => {
-      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'peyote', frame: { technique: 'peyote' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
+      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'brick', frame: { technique: 'brick' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
       stepEdge('top', 1)
       expect(lastFrame(deps)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
     })
 
-    it('steps the top edge by 2N rows on peyote with a Drop of N (ticket 0691)', () => {
-      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'peyote', frame: { technique: 'peyote' as const, techniqueSettings: { peyoteDrop: 2 }, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
+    it('steps the top edge by 2N rows on brick stitch with a Drop of N (ticket 0691)', () => {
+      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'brick', frame: { technique: 'brick' as const, techniqueSettings: { brickDrop: 2 }, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
       stepEdge('top', 1)
       expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 10, columns: 3 })
+    })
+
+    it('steps the left edge by a pair of columns on peyote, by 2N with a Drop of N (tickets 0691, 0734)', () => {
+      const peyote = { technique: 'peyote' as const, row: 0, column: 4, rows: 3, columns: 6, beads: {} }
+      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'peyote', frame: peyote }))
+      stepEdge('left', 1)
+      expect(lastFrame(deps)).toEqual({ row: 0, column: 2, rows: 3, columns: 8 })
+      const dropped = setup(withLayers(sized, { technique: 'peyote', frame: { ...peyote, techniqueSettings: { peyoteDrop: 2 } } }))
+      dropped.stepEdge('left', 1)
+      expect(lastFrame(dropped.deps)).toEqual({ row: 0, column: 0, rows: 3, columns: 10 })
     })
 
     it('does nothing with no Frame, or once Row progress holds it (ticket 411)', () => {

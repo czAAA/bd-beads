@@ -158,7 +158,7 @@ describe('the numbers of a ruled box', () => {
   })
 
   it('shift the column numbers by the half bead an offset technique’s odd rows sit', () => {
-    const { labels } = framed({ ...frame, row: 1 }, { technique: 'peyote' })
+    const { labels } = framed({ ...frame, row: 1 }, { technique: 'brick' })
     const first = labels.find((l) => l.axis === 'column' && l.text === '1')!
     // Row 1 is shifted 10px right, so bead 1's number is centred on 10 + 10.
     expect(first.x).toBe(20)
@@ -367,8 +367,8 @@ describe('the dots below the zoom where only the last number shows (ticket 378)'
 })
 
 describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => {
-  // A peyote Frame of 3 rows × 4 columns at row 2, column 3 of a loom Canvas: its corner is at (60, 40).
-  const frame = { technique: 'peyote' as const, row: 2, column: 3, rows: 3, columns: 4 }
+  // A brick stitch Frame of 3 rows × 4 columns at row 2, column 3 of a loom Canvas: its corner is at (60, 40).
+  const frame = { technique: 'brick' as const, row: 2, column: 3, rows: 3, columns: 4 }
   const subject = bareProject({ technique: 'loom', frame: { ...frame, beads: {} } })
   const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
   const { labels } = rulerLayout(subject, surface, { fontPx: 11, numbers: true })
@@ -376,7 +376,7 @@ describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => 
   it('number the rows at the Frame\'s own pitch, from its corner', () => {
     const rows = labels.filter((l) => l.axis === 'row' && l.x < 0 + 60)
     expect(rows.map((l) => l.text)).toEqual(['1', '2', '3'])
-    expect(rows.map((l) => l.y)).toEqual([50, 65, 80])
+    expect(rows.map((l) => l.y)).toEqual([50, 70, 90])
   })
 
   it('number the columns across, the shifted second row not moving the top ruler', () => {

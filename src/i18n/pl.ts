@@ -788,6 +788,12 @@ export const pl: Translations = {
       many: 'Dodano {count} pustych wierszy u góry: ramka musi zaczynać się od nieprzesuniętego wiersza.',
       other: 'Dodano {count} pustego wiersza u góry: ramka musi zaczynać się od nieprzesuniętego wiersza.',
     },
+    snapAddedLeft: {
+      one: 'Dodano pustą kolumnę po lewej: ramka musi zaczynać się od nieprzesuniętej kolumny.',
+      few: 'Dodano {count} puste kolumny po lewej: ramka musi zaczynać się od nieprzesuniętej kolumny.',
+      many: 'Dodano {count} pustych kolumn po lewej: ramka musi zaczynać się od nieprzesuniętej kolumny.',
+      other: 'Dodano {count} pustej kolumny po lewej: ramka musi zaczynać się od nieprzesuniętej kolumny.',
+    },
     announceTechnique: 'Zmieniono technikę na: {technique}',
     announceSelectionRotated: 'Obrócono zaznaczenie',
     rotateFrameLabel: 'Obróć ramkę',

@@ -24,13 +24,20 @@ describe('pieces', () => {
     expect(piecesOf(place([0, 0], [2, 0]), { technique: 'loom' })).toHaveLength(2)
   })
 
-  it('knows which beads nest on peyote and brick stitch, where a row sits half a bead across', () => {
+  it('knows which beads touch on brick stitch, where a row sits half a bead across', () => {
     // Row 1 is shifted half a bead right, so (1, 0) touches (0, 0) and (0, 1) but not (0, -1).
-    expect(piecesOf(place([0, 0], [1, 0]), { technique: 'peyote' })).toHaveLength(1)
-    expect(piecesOf(place([0, 1], [1, 0]), { technique: 'peyote' })).toHaveLength(1)
-    expect(piecesOf(place([0, -1], [1, 0]), { technique: 'peyote' })).toHaveLength(2)
+    expect(piecesOf(place([0, 0], [1, 0]), { technique: 'brick' })).toHaveLength(1)
+    expect(piecesOf(place([0, 1], [1, 0]), { technique: 'brick' })).toHaveLength(1)
+    expect(piecesOf(place([0, -1], [1, 0]), { technique: 'brick' })).toHaveLength(2)
     // The same two beads on loom touch by a corner: (0, -1) and (1, 0).
     expect(piecesOf(place([0, -1], [1, 0]), { technique: 'loom' })).toHaveLength(1)
+  })
+
+  it('knows which beads touch on peyote, where a column sits half a bead down (ticket 0734)', () => {
+    // Column 1 is shifted half a bead down, so (0, 1) touches (0, 0) and (-1, 0) but not (1, 0).
+    expect(piecesOf(place([0, 0], [0, 1]), { technique: 'peyote' })).toHaveLength(1)
+    expect(piecesOf(place([-1, 1], [0, 0]), { technique: 'peyote' })).toHaveLength(1)
+    expect(piecesOf(place([1, 1], [0, 0]), { technique: 'peyote' })).toHaveLength(2)
   })
 
   it('merges two pieces when a bead is painted between them, and splits them when it is erased', () => {

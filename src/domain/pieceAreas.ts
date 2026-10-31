@@ -2,7 +2,7 @@ import { frameContains, type BeadMap, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { piecesStayWhole, presenceChanges } from './pieceIndex'
 import { numericKey, piecesOf, touching } from './pieces'
-import { rowCycle, type Weave } from './weave'
+import { touchKey, type Weave } from './weave'
 
 // Piece areas (CONTEXT.md), what the rulers hang from: counted from a set of beads once, then carried from the last set
 // counted by the beads an edit filled and emptied (ticket 0731), so an edit costs the areas it touches, not the layer.
@@ -37,8 +37,8 @@ function areasJoin(weave: Weave, a: Rect, b: Rect): boolean {
  * bead between them join and two empty beads keep them apart (ticket 293). */
 const JOIN_MARGIN = 1
 
-/** Whether two Pieces' areas join: each, counted with the margin, joins the other. On peyote and brick stitch a row's
- * shift can bring one box's ring onto a bead two empty beads off that the other's misses; asking both keeps those apart
+/** Whether two Pieces' areas join: each, counted with the margin, joins the other. On peyote and brick stitch a column's or
+ * row's shift can bring one box's ring onto a bead two empty beads off that the other's misses; asking both keeps those apart
  * and the areas the same whichever Piece is met first (ticket 0731). */
 function areasJoinWithMargin(weave: Weave, a: Rect, b: Rect): boolean {
   return areasJoin(weave, withMargin(a), b) && areasJoin(weave, withMargin(b), a)
@@ -62,21 +62,21 @@ interface CountedAreas {
 const areaCache = new WeakMap<BeadMap, Map<number, CountedAreas>>()
 /** The last set of beads whose areas were counted: an edit's next set is counted from it, as `beadBounds` grows its
  * box. */
-let lastAreas: { beads: BeadMap; cycle: number; counted: CountedAreas } | undefined
+let lastAreas: { beads: BeadMap; touch: number; counted: CountedAreas } | undefined
 
 /** Every Piece area (CONTEXT.md): the rectangle round one or more Pieces. A Piece's area plus one bead outside its
  * bounds that overlaps or touches another's joins it, repeated until none do (the margin joins, it isn't drawn).
  * Top to bottom, left to right; kept per set of beads (an Undo finds it), else carried from the last set counted. */
 export function pieceAreasOf(beads: BeadMap, weave: Weave): Rect[] {
-  const cycle = rowCycle(weave)
-  const counted = areaCache.get(beads)?.get(cycle)
-    ?? (lastAreas?.cycle === cycle ? carriedAreas(lastAreas.beads, lastAreas.counted, beads, weave) : undefined)
+  const touch = touchKey(weave)
+  const counted = areaCache.get(beads)?.get(touch)
+    ?? (lastAreas?.touch === touch ? carriedAreas(lastAreas.beads, lastAreas.counted, beads, weave) : undefined)
     ?? joinedAreas([], piecesOf(beads, weave).map(({ row, column, rows, columns }) => ({ box: { row, column, rows, columns } })),
       weave)
-  const byCycle = areaCache.get(beads) ?? new Map<number, CountedAreas>()
-  byCycle.set(cycle, counted)
-  areaCache.set(beads, byCycle)
-  lastAreas = { beads, cycle, counted }
+  const byTouch = areaCache.get(beads) ?? new Map<number, CountedAreas>()
+  byTouch.set(touch, counted)
+  areaCache.set(beads, byTouch)
+  lastAreas = { beads, touch, counted }
   return counted.areas
 }
 

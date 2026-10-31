@@ -203,6 +203,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const middle = { x: cell.width / 2, y: cell.height / 2 }
   const area = gridBox(weave, { ...box, ...start })
   const lastRow = start.row + box.rows - 1
+  const lastColumn = start.column + box.columns - 1
   const bottom = area.y + area.height
   const right = area.x + area.width
   const left = area.x
@@ -280,9 +281,10 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
       along('column', index, gridX, gridY, normal, marked, box.column + index)
     }
   }
-  const rowsAt = (gridX: number, normal: [number, number]) => {
+  // A column of numbers stands beside the beads of the column it runs along, shifted with them (ticket 0734).
+  const rowsAt = (alongColumn: number, gridX: number, normal: [number, number]) => {
     for (let index = 0; index < count.rows; index += 1) {
-      const gridY = area.y + index * rowDown + middle.y
+      const gridY = area.y + description.columnOffset(alongColumn, cell.height) + index * rowDown + middle.y
       const first = box.row + index
       const marked = { top: first, left: box.column, rows: 1, columns: box.columns }
       along('row', index, gridX, gridY, normal, marked, first)
@@ -297,9 +299,9 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !alongTitle(normal)) lay()
   }
   side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
-  side([-1, 0], () => rowsAt(left, [-1, 0]))
+  side([-1, 0], () => rowsAt(start.column, left, [-1, 0]))
   side([0, 1], () => columnsAt(lastRow, bottom, [0, 1]))
-  side([1, 0], () => rowsAt(right, [1, 0]))
+  side([1, 0], () => rowsAt(lastColumn, right, [1, 0]))
   return { labels, beads, step: Math.max(columnStep, rowStep) }
 }
 

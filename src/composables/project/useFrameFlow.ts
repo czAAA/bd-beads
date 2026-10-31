@@ -7,6 +7,7 @@ import {
   frameWithEdgeStep,
   frameWithSize,
   movedFrame,
+  snapColumn,
   snapRow,
   type FrameEdge,
 } from '../../domain/frame'
@@ -291,14 +292,18 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
-  // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407); with a Frame already
-  // set, it moves it there.
+  // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407) or an even column where
+  // columns do (ticket 0734); with a Frame already set, it moves it there.
   function setTo(frame: Rect): void {
     const project = deps.currentProject()
-    const top = project ? snapRow(heldWeave(project, 'canvas'), frame.row) : frame.row
-    const applied = commit({ ...frame, row: top, rows: frame.row + frame.rows - top }, 'make')
-    // Ticket 570: a toast saying how many rows the snap added on top of what was picked.
-    if (applied && top < frame.row) deps.showToast('frame-snapped', plural(deps.locale(), frame.row - top, deps.messages().frame.snapAddedTop), 'info')
+    const canvas = project && heldWeave(project, 'canvas')
+    const top = canvas ? snapRow(canvas, frame.row) : frame.row
+    const left = canvas ? snapColumn(canvas, frame.column) : frame.column
+    const applied = commit({ row: top, column: left, rows: frame.row + frame.rows - top, columns: frame.column + frame.columns - left }, 'make')
+    // Ticket 570: a toast saying how many rows or columns the snap added to what was picked.
+    const words = deps.messages().frame
+    if (applied && top < frame.row) deps.showToast('frame-snapped', plural(deps.locale(), frame.row - top, words.snapAddedTop), 'info')
+    else if (applied && left < frame.column) deps.showToast('frame-snapped', plural(deps.locale(), frame.column - left, words.snapAddedLeft), 'info')
   }
 
   function fit(): void {

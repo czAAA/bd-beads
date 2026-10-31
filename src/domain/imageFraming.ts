@@ -1,7 +1,7 @@
-import { beadPitchMm, type Bead } from './beads'
+import type { Bead } from './beads'
 import { clamp } from './clamp'
 import { type GridDimensions } from './grid'
-import { describeWeave, rowCycle, slowFramingCells, type Technique, type TechniqueSettings } from './weave'
+import { columnCycle, describeWeave, rowCycle, slowFramingCells, type Technique, type TechniqueSettings } from './weave'
 
 /** The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project at its real-world size, the
  * picture scaled and panned beneath it. All in frame millimetres, where a cell's true centre maps to a picture
@@ -31,14 +31,16 @@ export interface FrameSizeMm {
   heightMm: number
 }
 
-/** The frame's real-world size: cells at the Bead's mm footprint, rows at the Technique's spacing. Physical size,
+/** The frame's real-world size: cells at the Bead's mm footprint as the Technique lays it (ticket 0734). Physical size,
  * not cell count (ADR 0010), so Delica's 1.6 x 1.3mm cell gives the finished piece's real shape. */
 export function frameSizeMm(
   technique: Technique,
   dimensions: GridDimensions,
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>,
 ): FrameSizeMm {
-  const { width, height } = describeWeave({ technique }).blockExtent(dimensions.columns, dimensions.rows, beadPitchMm(bead), bead.heightMm)
+  const description = describeWeave({ technique })
+  const laid = description.beadMm(bead)
+  const { width, height } = description.blockExtent(dimensions.columns, dimensions.rows, laid.widthMm, laid.heightMm)
   return { widthMm: width, heightMm: height }
 }
 
@@ -165,10 +167,11 @@ export function previewLattice({
   const wantedRows = Math.max(0, Math.ceil(overhangY / step.down))
 
   const fit = marginFit(dimensions, wantedColumns, wantedRows)
-  const frameColumn = Math.floor(wantedColumns * fit)
   // Rounded down to whole cycles of the shift, so the frame keeps its place in it (see PreviewLattice.frameRow).
   // Loom has a cycle of 1 but its frame row has always been even.
   const cycle = Math.max(2, rowCycle({ technique, techniqueSettings }))
+  const across = columnCycle({ technique, techniqueSettings })
+  const frameColumn = across * Math.floor((wantedColumns * fit) / across)
   const frameRow = cycle * Math.floor((wantedRows * fit) / cycle)
 
   return {
@@ -202,7 +205,8 @@ export function ratioLattice({ image, crop, pixelsPerBead, dimensions, technique
 
   const fit = marginFit(dimensions, (left + right) / 2, (top + bottom) / 2)
   const cycle = Math.max(2, rowCycle({ technique, techniqueSettings }))
-  const frameColumn = Math.floor(left * fit)
+  const across = columnCycle({ technique, techniqueSettings })
+  const frameColumn = across * Math.ceil(Math.floor(left * fit) / across)
   const frameRow = cycle * Math.ceil(Math.floor(top * fit) / cycle)
 
   return {

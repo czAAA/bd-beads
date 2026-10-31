@@ -81,7 +81,7 @@ const by = computed(() => {
 const size = computed(() => `${frame.value.columns} × ${frame.value.rows}`)
 const estimate = computed(() => {
   const bead = resolveProjectBead(props.project)
-  return bead ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
+  return bead ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead, frame.value.technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
 
 /** The legend shows at most this many colors, then "+n". */

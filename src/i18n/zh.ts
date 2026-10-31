@@ -762,6 +762,9 @@ export const zh: Translations = {
     snapAddedTop: {
       other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
     },
+    snapAddedLeft: {
+      other: '在左侧添加了 {count} 列空白：边框必须从未错位的列开始。',
+    },
     announceTechnique: '编织技法已改为{technique}',
     announceSelectionRotated: '选区已旋转',
     rotateFrameLabel: '旋转边框',

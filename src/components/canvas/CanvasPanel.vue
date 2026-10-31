@@ -26,6 +26,7 @@ import { hasGuides, selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
 import { beadOfLayer, frameOf, layerOf } from '../../domain/layerRecord'
+import { layerWeave } from '../../domain/layerWeave'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -203,7 +204,7 @@ const frameTooltip = computed(() => {
   const frame = frameOf(project)
   if (!project || !frame) return ''
   const bead = layerOf(project, 'frame')?.bead
-  const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead, frame.technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { ...seenSize(frame), estimate })
 })
 
@@ -217,8 +218,9 @@ const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
   if (!project || !current) return undefined
-  const { bead } = beadOfLayer(project, selectionLayer(project, current))
-  const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  const layer = selectionLayer(project, current)
+  const { bead } = beadOfLayer(project, layer)
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead, layerWeave(project, layer).technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { columns: current.columns, rows: current.rows, estimate })
 })
 
