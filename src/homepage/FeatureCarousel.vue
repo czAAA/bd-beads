@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import type { IconName } from '../components/ui/icons'
-import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import { useI18n } from '../i18n/useI18n'
 import type { Translations } from '../i18n/translations'
 import FeatureExample from './examples/FeatureExample.vue'
 
-// The Homepage's "What's inside" carousel (ticket 217; Homepage card): from 1024 a `tablist` beside the stage, below it
-// swipe cards with dots, both with ‹ ›. "1024" is the page's width after its zoom (ticket 540), which the page says;
-// each stage scales its example (ticket 218) to the room it leaves.
-const props = defineProps<{ wide: boolean }>()
+// The Homepage's "What's inside" carousel (ticket 217; Homepage card): a `tablist` of the features beside the selected
+// one's stage from 1024, a row of tabs above it below (ticket 0739), with ‹ › and the count. "1024" is the page's width
+// after its zoom (ticket 540), which the page says; each stage scales its example (ticket 218) to the room it leaves.
+defineProps<{ wide: boolean }>()
 const { t } = useI18n()
 
 /** The features in the order the design system lists them, each with its Icons v2 icon. */
@@ -24,27 +23,18 @@ const FEATURES: { key: keyof Translations['homepage']['features']; icon: IconNam
   { key: 'savedProjects', icon: 'library' },
 ]
 
-const wide = computed(() => props.wide)
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const current = ref(0)
-const track = useTemplateRef<HTMLElement>('track')
 const tabs = useTemplateRef<HTMLElement[]>('tabs')
-const count = computed(() => `${current.value + 1} / ${FEATURES.length}`)
 
-/** Selects a feature (wrapping at the ends); below 1024 it also scrolls that card into view. */
+/** Selects a feature, wrapping at the ends; the row of tabs scrolls the selected one into view. */
 function show(index: number, focusTab = false) {
   current.value = (index + FEATURES.length) % FEATURES.length
-  if (focusTab) void nextTick(() => tabs.value?.[current.value]?.focus())
-  if (!wide.value) {
-    void nextTick(() => {
-      const card = track.value?.children[current.value] as HTMLElement | undefined
-      if (card && track.value) track.value.scrollTo?.({ left: card.offsetLeft - track.value.offsetLeft, behavior: reducedMotion.value ? 'auto' : 'smooth' })
-    })
-  }
+  void nextTick(() => {
+    const tab = tabs.value?.[current.value]
+    tab?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    if (focusTab) tab?.focus()
+  })
 }
-
-/** Crossing 1024 either way re-seats the swipe track on the selected card. */
-watch(wide, () => show(current.value))
 
 function onTabKey(event: KeyboardEvent) {
   const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key]
@@ -56,36 +46,14 @@ function onTabKey(event: KeyboardEvent) {
     show(event.key === 'Home' ? 0 : FEATURES.length - 1, true)
   }
 }
-
-/** Swiping settles on the card nearest the left edge; the dots and count follow it. */
-let settle: ReturnType<typeof setTimeout> | undefined
-function onScroll() {
-  if (wide.value) return
-  clearTimeout(settle)
-  settle = setTimeout(() => {
-    const el = track.value
-    if (!el) return
-    let best = 0
-    let bestDistance = Infinity
-    for (let i = 0; i < el.children.length; i++) {
-      const distance = Math.abs((el.children[i] as HTMLElement).offsetLeft - el.offsetLeft - el.scrollLeft)
-      if (distance < bestDistance) {
-        best = i
-        bestDistance = distance
-      }
-    }
-    current.value = best
-  }, 80)
-}
 </script>
 
 <template>
   <div class="carousel" data-testid="feature-carousel">
     <div
-      v-if="wide"
       class="carousel__list"
       role="tablist"
-      aria-orientation="vertical"
+      :aria-orientation="wide ? 'vertical' : 'horizontal'"
       :aria-label="t.homepage.whatsInside"
       data-testid="homepage-features"
     >
@@ -111,43 +79,31 @@ function onScroll() {
     </div>
 
     <div class="carousel__view">
-      <div ref="track" class="carousel__track" data-testid="homepage-features-track" @scroll.passive="onScroll">
-        <div
-          v-for="(feature, i) in FEATURES"
-          v-show="!wide || i === current"
-          :id="`feature-panel-${feature.key}`"
-          :key="feature.key"
-          class="carousel__slide"
-          :role="wide ? 'tabpanel' : 'group'"
-          :aria-labelledby="wide ? `feature-tab-${feature.key}` : undefined"
-          :aria-label="wide ? undefined : t.homepage.features[feature.key].name"
-          :data-feature="feature.key"
-        >
-          <div class="carousel__stage" data-testid="feature-stage">
-            <FeatureExample :feature="feature.key" />
-            <p v-if="wide" class="carousel__caption">
-              <span class="carousel__number">0{{ i + 1 }}</span>
-              <strong class="carousel__title">{{ t.homepage.features[feature.key].name }}</strong>
-              <span class="carousel__description">{{ t.homepage.features[feature.key].text }}</span>
-            </p>
-          </div>
-          <div v-if="!wide" class="carousel__card-caption">
-            <h3 class="carousel__card-title">
-              <span class="carousel__number">0{{ i + 1 }}</span>{{ t.homepage.features[feature.key].name }}
-            </h3>
-            <p class="carousel__card-text">{{ t.homepage.features[feature.key].text }}</p>
-          </div>
+      <div
+        v-for="(feature, i) in FEATURES"
+        v-show="i === current"
+        :id="`feature-panel-${feature.key}`"
+        :key="feature.key"
+        class="carousel__slide"
+        role="tabpanel"
+        :aria-labelledby="`feature-tab-${feature.key}`"
+        :data-feature="feature.key"
+      >
+        <div class="carousel__stage" data-testid="feature-stage">
+          <FeatureExample :feature="feature.key" />
         </div>
+        <p class="carousel__caption">
+          <span class="carousel__number">0{{ i + 1 }}</span>
+          <strong class="carousel__title">{{ t.homepage.features[feature.key].name }}</strong>
+          <span class="carousel__description">{{ t.homepage.features[feature.key].text }}</span>
+        </p>
       </div>
 
       <div class="carousel__nav">
         <button type="button" class="carousel__arrow" :aria-label="t.homepage.previousFeature" data-testid="feature-prev" @click="show(current - 1)">
           <AppIcon name="chevron-left" :size="18" />
         </button>
-        <span v-if="!wide" class="carousel__dots" aria-hidden="true" data-testid="feature-dots">
-          <i v-for="(feature, i) in FEATURES" :key="feature.key" :class="{ 'carousel__dot--on': i === current }" />
-        </span>
-        <span class="carousel__count" data-testid="feature-count">{{ count }}</span>
+        <span class="carousel__count" data-testid="feature-count">{{ current + 1 }} / {{ FEATURES.length }}</span>
         <button type="button" class="carousel__arrow carousel__arrow--next" :aria-label="t.homepage.nextFeature" data-testid="feature-next" @click="show(current + 1)">
           <AppIcon name="chevron-left" :size="18" />
         </button>
@@ -157,50 +113,47 @@ function onScroll() {
 </template>
 
 <style scoped>
+/* It fills the section: below 1024 the row of tabs above the stage, the caption under it. */
 .carousel {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  height: 100%;
+  min-height: 0;
 }
 
 .carousel__view {
   position: relative;
-  min-width: 0;
-}
-
-/* Below 1024: swipe cards. */
-.carousel__track {
   display: flex;
-  gap: var(--space-12);
-  margin: 0 calc(var(--space-16) * -1);
-  padding: var(--space-2) var(--space-16) var(--space-4);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 var(--space-16);
-  scrollbar-width: none;
-}
-
-.carousel__track::-webkit-scrollbar {
-  display: none;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .carousel__slide {
   display: flex;
-  flex: 0 0 86%;
+  flex: 1 1 0;
   flex-direction: column;
   gap: var(--space-12);
-  min-width: 0;
-  scroll-snap-align: start;
+  min-height: 0;
 }
 
+/* A stage too small for its example would show nothing: below that the section scrolls inside itself. */
 .carousel__stage {
   position: relative;
   box-sizing: border-box;
-  aspect-ratio: 4 / 3;
   display: flex;
+  flex: 1 1 0;
   flex-direction: column;
+  min-height: 12rem;
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: var(--radius-board);
   overflow: hidden;
+
+  /* The example keeps clear of ‹ › and the count above it. */
+  --example-inset-top: 3.5rem;
 }
 
 .carousel__number {
@@ -209,27 +162,36 @@ function onScroll() {
   color: var(--accent-strong);
 }
 
-.carousel__card-title {
+.carousel__caption {
   display: flex;
-  align-items: center;
-  gap: var(--space-8);
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-4);
   margin: 0;
+}
+
+.carousel__caption .carousel__number {
+  display: none;
+}
+
+.carousel__title {
   font: var(--type-title);
   color: var(--ink);
 }
 
-.carousel__card-text {
-  margin: var(--space-4) 0 0;
+.carousel__description {
   font: var(--type-body);
   color: var(--body);
 }
 
+/* ‹ 1 / 7 › at the stage's top right. */
 .carousel__nav {
+  position: absolute;
+  top: var(--space-14);
+  right: var(--space-16);
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--space-12);
-  margin-top: var(--space-12);
 }
 
 .carousel__arrow {
@@ -259,116 +221,113 @@ function onScroll() {
   transform: scaleX(-1);
 }
 
-.carousel__dots {
-  display: flex;
-  gap: var(--space-6);
-}
-
-.carousel__dots i {
-  width: 0.5rem;
-  height: 0.5rem;
-  background: var(--bead-empty);
-  border-radius: var(--radius-xs);
-}
-
-.carousel__dots i.carousel__dot--on {
-  background: var(--accent);
-}
-
 .carousel__count {
   font: var(--type-meta-small);
   color: var(--muted);
 }
 
+/* Below 1024: a row of tabs, the names alone, scrolling sideways. */
 .carousel__list {
+  display: flex;
+  flex: none;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.carousel__list::-webkit-scrollbar {
   display: none;
 }
 
-/* From 1024: the list left, the stage right, ‹ › and the count top-right of the stage. */
+.carousel__tab {
+  position: relative;
+  flex: none;
+  display: grid;
+  grid-template-columns: auto;
+  column-gap: var(--space-10);
+  padding: var(--space-8) var(--space-14);
+  font: inherit;
+  color: var(--muted);
+  text-align: left;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.carousel__tab:hover {
+  color: var(--ink);
+  background: var(--hover-fill);
+}
+
+.carousel__tab[aria-selected='true'] {
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.carousel__tab[aria-selected='true'] .carousel__tab-icon {
+  color: var(--accent-strong);
+}
+
+.carousel__tab-icon,
+.carousel__tab-line {
+  display: none;
+}
+
+.carousel__tab-name {
+  font: var(--type-title);
+}
+
+/* From 1024: the list left with each tab's icon and the selected one's line, the stage right with its caption inside. */
 @container homepage (min-width: 1024px) {
   .carousel {
     display: grid;
     grid-template-columns: 18.75rem 1fr;
     gap: var(--space-24);
-    align-items: stretch;
   }
 
   .carousel__list {
-    display: flex;
     flex-direction: column;
     gap: var(--space-2);
+    overflow: visible;
   }
 
   .carousel__tab {
-    position: relative;
-    display: grid;
     grid-template-columns: 1.75rem 1fr;
-    column-gap: var(--space-10);
-    padding: var(--space-12) var(--space-14);
-    font: inherit;
-    color: var(--muted);
-    text-align: left;
-    background: none;
-    border: 0;
-    border-radius: var(--radius-lg);
-    cursor: pointer;
-  }
-
-  .carousel__tab:hover {
-    color: var(--ink);
-    background: var(--hover-fill);
-  }
-
-  .carousel__tab[aria-selected='true'] {
-    color: var(--ink);
-    background: var(--panel);
+    padding: var(--space-10) var(--space-14);
+    white-space: normal;
   }
 
   .carousel__tab[aria-selected='true']::before {
     content: '';
     position: absolute;
-    top: var(--space-14);
-    bottom: var(--space-14);
+    top: var(--space-12);
+    bottom: var(--space-12);
     left: 0;
     width: 2px;
     background: var(--accent);
     border-radius: var(--radius-xs);
   }
 
-  .carousel__tab[aria-selected='true'] .carousel__tab-icon {
-    color: var(--accent-strong);
-  }
-
-  .carousel__tab-name {
-    font: var(--type-title);
+  .carousel__tab-icon {
+    display: block;
   }
 
   .carousel__tab-line {
+    display: block;
     grid-column: 2;
     margin-top: var(--space-4);
     font: var(--type-body);
     color: var(--body);
   }
 
-  .carousel__track {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    scroll-snap-type: none;
-  }
-
   .carousel__slide {
-    flex: 0 0 100%;
+    position: relative;
   }
 
   .carousel__stage {
-    height: 100%;
-    /* Keeps the whole carousel above the fold on a MacBook Air. */
-    min-height: 26rem;
-    aspect-ratio: auto;
-
-    /* The example keeps clear of ‹ › and the count above it and the caption below it. */
-    --example-inset-top: 3.5rem;
+    /* The example keeps clear of the caption below it too. */
     --example-inset-bottom: 7.5rem;
   }
 
@@ -376,44 +335,17 @@ function onScroll() {
     position: absolute;
     bottom: var(--space-24);
     left: var(--space-24);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
     max-width: 24rem;
-    margin: 0;
   }
 
-  .carousel__title {
-    font: var(--type-title);
-    color: var(--ink);
-  }
-
-  .carousel__description {
-    font: var(--type-body);
-    color: var(--body);
-  }
-
-  .carousel__nav {
-    position: absolute;
-    top: var(--space-14);
-    right: var(--space-16);
-    margin: 0;
+  .carousel__caption .carousel__number {
+    display: inline;
   }
 }
 
 @container homepage (min-width: 1920px) {
   .carousel {
     grid-template-columns: 21.25rem 1fr;
-  }
-
-  .carousel__stage {
-    min-height: 31.25rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .carousel__track {
-    scroll-behavior: auto;
   }
 }
 </style>

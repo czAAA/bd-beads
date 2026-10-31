@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { shallowRef } from 'vue'
 import HomePage from './HomePage.vue'
 import { createProject } from '../domain/createProject'
@@ -105,13 +105,13 @@ describe('HomePage', () => {
     })
   })
 
-  it('is a canvas box: the Canvas strip on top, the content between, an empty Canvas footer below, and no header of its own', () => {
+  it('is one canvas box: the Canvas strip on top, the hero and the sections between, the Progress bar below, and no header of its own', () => {
     const wrapper = page()
     const box = wrapper.get('[data-testid="homepage"]')
     expect(box.element.children[0]).toBe(wrapper.get('[data-testid="canvas-strip"]').element)
-    expect(box.get('[data-testid="homepage-scroll"]').find('[data-testid="homepage-slogan"]').exists()).toBe(true)
-    expect(box.element.lastElementChild).toBe(wrapper.get('[data-testid="canvas-footer"]').element)
-    expect(wrapper.get('[data-testid="canvas-footer"]').text()).toBe('')
+    expect(box.get('[data-testid="homepage-body"]').find('[data-testid="homepage-slogan"]').exists()).toBe(true)
+    expect(box.element.lastElementChild).toBe(wrapper.get('[data-testid="section-bar"]').element)
+    expect(wrapper.find('[data-testid="canvas-footer"]').exists()).toBe(false)
     expect(wrapper.find('.homepage__header').exists()).toBe(false)
     expect(wrapper.find('[data-testid="header-menu"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
@@ -199,10 +199,10 @@ describe('HomePage', () => {
     it('decides the carousel\'s tier from the zoomed width, not the screen\'s', async () => {
       setScreenWidth(1200)
       const wrapper = page()
-      expect(wrapper.find('[role="tablist"]').exists()).toBe(true)
+      expect(wrapper.get('[role="tablist"]').attributes('aria-orientation')).toBe('vertical')
 
       for (let i = 0; i < 3; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
-      expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+      expect(wrapper.get('[role="tablist"]').attributes('aria-orientation')).toBe('horizontal')
     })
   })
 
@@ -261,16 +261,16 @@ describe('the features carousel', () => {
     wrapper.unmount()
   })
 
-  it('shows swipe cards with dots and no tablist below 1024', async () => {
+  it('is a row of tabs above the stage below 1024 (ticket 0739), the selected one\'s line under it', async () => {
     const wrapper = page()
-    expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
-    const cards = wrapper.findAll('[data-testid="homepage-features-track"] > [data-feature]')
-    expect(cards.map((card) => card.attributes('data-feature'))).toEqual(FEATURES)
-    expect(cards[2]!.text()).toContain('Turn a picture into a Schema in up to 14 colors.')
-    expect(wrapper.findAll('[data-testid="feature-dots"] i')).toHaveLength(7)
+    const list = wrapper.get('[role="tablist"]')
+    expect(list.attributes('aria-orientation')).toBe('horizontal')
+    expect(list.findAll('[role="tab"]').map((tab) => tab.attributes('data-feature'))).toEqual(FEATURES)
     await wrapper.find('[data-testid="feature-next"]').trigger('click')
-    expect(wrapper.find('[data-testid="feature-count"]').text()).toBe('2 / 7')
-    expect(wrapper.findAll('[data-testid="feature-dots"] i')[1]!.classes()).toContain('carousel__dot--on')
+    await wrapper.find('[data-testid="feature-next"]').trigger('click')
+    expect(wrapper.find('[data-testid="feature-count"]').text()).toBe('3 / 7')
+    expect(list.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
+    expect(wrapper.get('#feature-panel-convertImage').text()).toContain('Turn a picture into a Schema in up to 14 colors.')
   })
 
   it('has the Russian arrow labels', async () => {
@@ -279,6 +279,137 @@ describe('the features carousel', () => {
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="feature-prev"]').attributes('aria-label')).toBe('Предыдущая возможность')
     expect(wrapper.find('[data-testid="feature-next"]').attributes('aria-label')).toBe('Следующая возможность')
+  })
+})
+
+describe('HomePage sections (ticket 0739)', () => {
+  const VIEWPORT = 800
+
+  /** The page with a viewport's height, its scrollTo moving it at once and saying so, as a browser's does. */
+  function pageWithHeight(projectCount = 0) {
+    const wrapper = page(projectCount)
+    const el = wrapper.get('[data-testid="homepage-page"]').element as HTMLElement
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: VIEWPORT })
+    el.scrollTo = vi.fn(({ top }: ScrollToOptions) => scrollPage(el, top!)) as typeof el.scrollTo
+    return { wrapper, el }
+  }
+  function scrollPage(el: HTMLElement, top: number) {
+    el.scrollTop = top
+    el.dispatchEvent(new Event('scroll'))
+  }
+  const shown = (wrapper: ReturnType<typeof page>) =>
+    ['inside', 'coffee', 'plans'].filter((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
+
+  it('shows one section at a time under the hero, What\'s inside first, the others slid away', () => {
+    const { wrapper } = pageWithHeight()
+    expect(shown(wrapper)).toEqual(['inside'])
+    expect(wrapper.get('[data-testid="homepage-section-plans"]').classes()).toContain('homepage__section--after')
+    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/3')
+  })
+
+  it('turns to the section a scroll of the page comes to, and the bar follows', async () => {
+    const { wrapper, el } = pageWithHeight()
+    scrollPage(el, VIEWPORT)
+    await wrapper.vm.$nextTick()
+    expect(shown(wrapper)).toEqual(['coffee'])
+    expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--before')
+    expect(wrapper.get('[data-testid="section-name"]').text()).toBe('Made by one family')
+    scrollPage(el, 2 * VIEWPORT)
+    await wrapper.vm.$nextTick()
+    expect(shown(wrapper)).toEqual(['plans'])
+    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('3/3')
+  })
+
+  it('scrolls the page a section\'s worth with Next and Back', async () => {
+    const { wrapper, el } = pageWithHeight()
+    await wrapper.get('[data-testid="section-next"]').trigger('click')
+    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: VIEWPORT, behavior: 'smooth' })
+    expect(shown(wrapper)).toEqual(['coffee'])
+    await wrapper.get('[data-testid="section-back"]').trigger('click')
+    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+  })
+
+  it('takes the focus, so the keys scroll the page', () => {
+    const { wrapper } = pageWithHeight()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="homepage-page"]').element)
+  })
+
+  it('has no drawn layer, only two faint X1 marks outside the box, hidden from screen readers', () => {
+    const wrapper = page()
+    const marks = wrapper.findAll('[data-testid="homepage-mark"]')
+    expect(marks).toHaveLength(2)
+    for (const mark of marks) {
+      expect(mark.attributes('aria-hidden')).toBe('true')
+      expect(wrapper.get('[data-testid="homepage"]').element.contains(mark.element)).toBe(false)
+    }
+    expect(wrapper.find('.drawn-layer').exists()).toBe(false)
+  })
+
+  describe('the free list', () => {
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    /** One scroll of the No account tile's window: a burst of events, then a pause. */
+    async function scrollWindow(wrapper: ReturnType<typeof page>) {
+      const window = wrapper.get('[data-testid="free-window"]')
+      for (let i = 0; i < 4; i++) await window.trigger('scroll')
+      vi.advanceTimersByTime(400)
+      await wrapper.vm.$nextTick()
+    }
+    async function unrolled() {
+      const { wrapper, el } = pageWithHeight()
+      scrollPage(el, 2 * VIEWPORT)
+      for (let i = 0; i < 3; i++) await scrollWindow(wrapper)
+      return { wrapper, el }
+    }
+
+    it('lights a bead per scroll of its window and unrolls below the tile on the third, the page growing and snapping no more', async () => {
+      const { wrapper, el } = pageWithHeight()
+      scrollPage(el, 2 * VIEWPORT)
+      await scrollWindow(wrapper)
+      await scrollWindow(wrapper)
+      expect(wrapper.findAll('.plan__tick--on')).toHaveLength(2)
+      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
+      await scrollWindow(wrapper)
+      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="homepage-roll-room"]').exists()).toBe(true)
+      expect(wrapper.get('[data-testid="homepage-page"]').classes()).toContain('homepage-page--unrolled')
+      expect(wrapper.get('[data-testid="free-roll"]').text()).toContain('Works offline')
+    })
+
+    it('rolls up on a click outside the roll, and the page back up to the plans', async () => {
+      const { wrapper, el } = await unrolled()
+      await wrapper.get('[data-testid="free-roll"] [aria-hidden="true"]').trigger('click')
+      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(true)
+      el.scrollTop = 2 * VIEWPORT + 300
+      await wrapper.get('[data-testid="homepage-body"]').trigger('click')
+      await flushPromises()
+      expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 2 * VIEWPORT, behavior: 'smooth' })
+      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
+      expect(wrapper.findAll('.plan__tick--on')).toHaveLength(0)
+      expect(wrapper.get('[data-testid="homepage-page"]').classes()).not.toContain('homepage-page--unrolled')
+    })
+
+    it('rolls up from its curl and from Escape', async () => {
+      const curl = await unrolled()
+      await curl.wrapper.get('[data-testid="free-roll-curl"]').trigger('click')
+      await flushPromises()
+      expect(curl.wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
+      curl.wrapper.unmount()
+
+      const escape = await unrolled()
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await flushPromises()
+      expect(escape.wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
+    })
+
+    it('is put away by scrolling back to the coffee', async () => {
+      const { wrapper, el } = await unrolled()
+      scrollPage(el, VIEWPORT)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('[data-testid="free-roll"]').exists()).toBe(false)
+      expect(wrapper.findAll('.plan__tick--on')).toHaveLength(0)
+    })
   })
 })
 

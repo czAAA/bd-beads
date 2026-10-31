@@ -13,13 +13,12 @@ export interface FitPending {
 }
 
 export const FIT_PENDING: FitPending[] = [
-  { case: 'HomePage', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { longest: [1900, 1280, 1024] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { longest: [1900, 1280, 1024] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Бесплатный аккаунт'], at: { longest: [1900, 1280, 1024, 844, 820, 768, 390, 360, 320] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820, 768, 320] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Без аккаунта'], at: { longest: [820, 768] }, fixedBy: '231' },
+  { case: 'HomePage', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...'], at: { longest: [1900, 1280] }, fixedBy: '231' },
+  { case: 'HomePage', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { longest: [1900, 1280] }, fixedBy: '231' },
+  { case: 'HomePage', texts: ['Бесплатный аккаунт'], at: { longest: [1900, 1280, 1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
+  { case: 'HomePage', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
+  { case: 'HomePage', texts: ['Без аккаунта'], at: { longest: [844, 820, 320] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Три способа работать'], at: { longest: [390, 360, 320] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Конвертировать изображение'], at: { longest: [360, 320] }, fixedBy: '231' },
 ]
 
 const quoted = (text: string) => `"${text}"`
