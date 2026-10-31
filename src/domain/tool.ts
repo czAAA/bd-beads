@@ -11,6 +11,8 @@ export interface ToolModes {
   settingFrame?: boolean
   /** A paste is armed: a press places its beads (ticket 276). */
   pasteArmed?: boolean
+  /** Mirror mode (ADR 0082): the Select tool's drag makes the Mirror's Area. */
+  markingArea?: boolean
 }
 
 /** What the tool in hand and the modes on let a press, the pointer and the overlay do on the Drawing surface. */
@@ -34,6 +36,9 @@ export interface ToolCapabilities {
   markerHidden: boolean
   /** The Frame is being edited (ticket 417): a drag moves or resizes it, and its handles and size show. */
   settingFrame: boolean
+  /** Mirror mode (ADR 0082): the Select drag marks out the Mirror's Area and cannot start in the Frame, and the Area's
+   * handles take a press as the Selection's do. */
+  marksArea: boolean
 }
 
 /** Works out once what the tool and modes let the Drawing surface do (ticket 0619), so the surface reads one value
@@ -50,5 +55,6 @@ export function toolCapabilities(tool: Tool | undefined, modes: ToolModes = {}):
     picking,
     markerHidden: modes.spaceHeld === true,
     settingFrame: modes.settingFrame === true,
+    marksArea: tool === 'select' && modes.markingArea === true,
   }
 }

@@ -68,15 +68,18 @@ export function useSelectionGesture(
 
   // Where a Select press started and whether it has left that cell. Dragging marks a new Selection, a click in place
   // stamps the copy, so the press only records its anchor here and endPress decides which it was.
-  const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean } | null>(null)
+  const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean; marking: boolean } | null>(null)
 
-  /** Whether a Selection may not start here: on a Frame whose kind offers none (a Custom frame, ticket 0592). The
-   * margin is the Canvas's, where a drag may start (ticket 0659). */
-  function refusesSelection(project: Project, at: GridPosition): boolean {
-    return layerAt(project, at) === 'frame' && !frameAllows(frameOf(project), 'select')
+  /** Whether a Selection may not start here: on a Frame whose kind offers none (a Custom frame, ticket 0592), or on any
+   * Frame for a Mirror-mode drag, the Frame mirroring whole (ADR 0082). The margin is the Canvas's, where a drag may
+   * start (ticket 0659). */
+  function refusesSelection(project: Project, at: GridPosition, marking = false): boolean {
+    return layerAt(project, at) === 'frame' && (marking || !frameAllows(frameOf(project), 'select'))
   }
 
-  function beginPress(row: number, column: number, named?: Layer) {
+  /** A Select press; `marking` for Mirror mode's (ADR 0082), the same drag marking out the Mirror's Area, which the shell
+   * takes from the Selection on release and which leaves the clipboard alone. */
+  function beginPress(row: number, column: number, named?: Layer, marking = false) {
     const project = currentProject()
     if (!project) {
       return
@@ -85,11 +88,11 @@ export function useSelectionGesture(
 
     // A Selection cannot start on a Frame whose kind offers none (ticket 0592): nothing begins (the pointer shows the
     // cue itself, a key asks extendPress's caller to).
-    if (refusesSelection(project, at)) {
+    if (refusesSelection(project, at, marking)) {
       return
     }
     const layer = layerAt(project, at)
-    selectPress.value = { anchor: at, focus: at, layer, moved: false }
+    selectPress.value = { anchor: at, focus: at, layer, moved: false, marking }
 
     // With no active projection the press can only start a selection, so the marquee appears from the first cell. With
     // one active Paste claims the gesture, hence re-selecting a single cell takes a drag out and back: a click must
@@ -111,7 +114,7 @@ export function useSelectionGesture(
     press.moved = true
     // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0016).
     if (pasteProjectionActive.value) return false
-    dropClipboard()
+    if (!press.marking) dropClipboard()
     // The rectangle follows the pointer anywhere, across the Frame and its margin; the Selection stays on the layer the
     // drag began on (ticket 491), and selects only what that layer shows (ticket 0659).
     press.focus = { row, column }
@@ -346,11 +349,12 @@ export function useSelectionGesture(
     return mirroredAt(project, hovered) ? mirroredOnCanvas(project, mirror(), cells) : cells
   }
 
-  /** Whether a Paste aimed at `hovered` is mirrored: on the Frame under Mirror (ticket 0703), or on the open Canvas
-   * with an Axis placed (ticket 0704); its preview then lists every counterpart, as a stamp cannot. */
+  /** Whether a Paste aimed at `hovered` is mirrored: on the layer the Mirror is on (ADR 0082); its preview then lists
+   * every counterpart, as a stamp cannot. */
   function mirroredAt(project: Project, hovered: GridPosition): boolean {
     if (!isMirrorOn(mirror())) return false
-    return layerAt(project, hovered) === 'frame' || canvasMirrors(project, mirror())
+    const onFrame = layerAt(project, hovered) === 'frame'
+    return canvasMirrors(mirror()) ? !onFrame : onFrame
   }
 
   /** The same preview on a layer laid on a grid, as the block aimed where it lands (ticket 0675): built in a step

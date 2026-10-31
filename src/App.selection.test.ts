@@ -230,15 +230,20 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBe('#e63746')
   })
 
-  it('Mirror on the Selection bar copies the fragment to its counterparts while Mirror is on (ticket 0707)', async () => {
+  it('Mirror on the Selection bar makes the Selection\'s rectangle the Mirror, clears it and shows the Mirror bar (ADR 0082)', async () => {
     const wrapper = await mountWithProject(6, 6) // 4x4
-    await projectWithMotif(wrapper) // red (0,0) and blue (1,1)
-    await drag(wrapper, [0, 5])
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }))
-    await flushPromises()
+    const frame = frameOf(loadProjects()[0]!)!
+    await pickTool(wrapper, 'select')
+    const top = { row: frame.row - 10, column: frame.column }
+    await pressBead(wrapper, top)
+    await hoverBead(wrapper, { row: top.row + 1, column: top.column + 2 }, { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
 
     await pressBar(wrapper, 'mirror-selection')
+    await flushPromises()
 
-    expect(frameGrid(loadProjects()[0]!)[0]![3]!.color).toBe('#e63746')
+    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'canvas', area: { ...top, rows: 2, columns: 3 } })
+    expect(selectedBeadCount(wrapper)).toBe(0)
+    expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(true)
   })
 })

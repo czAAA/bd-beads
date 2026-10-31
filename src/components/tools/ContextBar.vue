@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -8,15 +8,27 @@ import { BAR_EDGE_PX, selectionBarPlacement, type BarBox, type SelectionAnchor }
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
+import MirrorBarItems from './MirrorBarItems.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { selectionHasBeads, selectionInFinishedRows, type Selection } from '../../domain/selection'
+import { selectionHasBeads, selectionInFinishedRows, selectionLayer, type Selection } from '../../domain/selection'
 import { frameOf } from '../../domain/layerRecord'
+import type { Rect } from '../../domain/canvas'
+import type { MirrorSetting, ShapeAxes } from '../../domain/mirror'
 
-// The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
-// clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
-// None in paste mode (ticket 437, ADR 0016) or Edit Frame (ticket 427, ADR 0054); no Select all button (ticket 439).
+/** What the Mirror bar shows (ADR 0082): the Mirror, its size readout, the Area in its layer's positions, and a Custom
+ * frame's own Axes while the whole Frame is the Mirror. */
+export interface MirrorBarState {
+  setting: MirrorSetting
+  summary: string
+  rect?: Rect
+  shape?: ShapeAxes
+}
+
+// The design system's ContextBar (tickets 168, 415, 0750; ContextBar card): an icon-only bar above the Selection, or with
+// none above the Mirror's Area as the Mirror bar, clamped in the canvas box, flipped below when no room. The Selection's
+// actions that don't fit fold into "..."; none in paste mode (ticket 437) or Edit Frame (ticket 427).
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
@@ -46,8 +58,11 @@ const props = withDefaults(defineProps<{
   selectActive?: boolean
   /** The Tool pill's rectangle in the same pixels: the bar keeps clear of it (ticket 439). */
   obstacle?: BarBox
-  /** Whether Mirror is on (useMirrorFlow): the bar then offers Mirror after Rotate (ticket 0707). */
-  mirrorOn?: boolean
+  /** The Mirror while it is on (ADR 0082): with no Selection the bar is the Mirror bar, anchored to `mirrorAnchor` and
+   * shrunk to its readout while `mirrorSizeOnly` (the Area resized) and a gesture runs. */
+  mirror?: MirrorBarState
+  mirrorAnchor?: SelectionAnchor
+  mirrorSizeOnly?: boolean
 }>(), { hasPaintColor: true })
 
 const emit = defineEmits<{
@@ -59,6 +74,8 @@ const emit = defineEmits<{
   'clear-selection': []
   rotate: []
   'mirror-selection': []
+  'update:mirror': [setting: MirrorSetting]
+  'close-mirror': []
   'select-all': []
   'remove-line': []
   'name-piece': []
@@ -90,6 +107,7 @@ const deps = computed(() =>
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
     hasPaintColor: () => props.hasPaintColor,
+    selectionOnFrame: () => !!props.selection && selectionLayer(props.project, props.selection) === 'frame',
   }),
 )
 
@@ -137,8 +155,8 @@ const items = computed<BarItem[]>(() => {
   if (frameAllows(frameOf(props.project), 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
-  // Mirror copies the fragment to its counterparts, so only while Mirror is on (ticket 0707, spec 0702).
-  if (props.mirrorOn) list.push({ id: 'mirror-selection', action: actions.mirrorSelection, group: 2, run: () => emit('mirror-selection') })
+  // Always offered: the Selection's rectangle becomes the Mirror's Area (ADR 0082); on a Frame Selection it says why not.
+  list.push({ id: 'mirror-selection', action: actions.mirrorSelection, group: 2, run: () => emit('mirror-selection') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })
@@ -154,7 +172,7 @@ const BAR_DIVIDER_PX = 1 + 2 * 3
 
 const rootEl = ref<HTMLElement>()
 // One Tab stop; ←/→ step along the buttons and stop at the ends (ADR 0075).
-const roving = useRovingFocus(rootEl, { selector: '.context-bar__button', axis: () => 'horizontal', managesTabIndex: true })
+const roving = useRovingFocus(rootEl, { selector: '.context-bar__button, .context-bar__control', axis: () => 'horizontal', managesTabIndex: true })
 const readoutEl = ref<HTMLElement>()
 const bar = useElementSize(rootEl)
 const readout = useElementSize(readoutEl)
@@ -171,10 +189,39 @@ const overflowing = computed(() => items.value.length > capacity.value)
 const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
 const folded = computed(() => (overflowing.value ? items.value.slice(shown.value.length) : []))
 
+/** The Mirror bar: the Mirror is on and no Selection takes the bar (ContextBar card, only one bar on screen). */
+const mirrorShown = computed(() => props.selectionSummary === undefined && !!props.mirror)
+const readoutText = computed(() => (mirrorShown.value ? props.mirror!.summary : props.selectionSummary))
+/** Touch's bigger icons, as the bar's own; the Mirror bar's chips take the same. */
+const chipIconSize = computed(() => (touch.value ? 18 : 16))
+
+// The Mirror bar where it cannot fit the canvas box (ContextBar card, Too narrow): first the readout drops, then the bar
+// takes two rows; nothing folds away. Measured afresh whenever its content or the box changes.
+const mirrorFit = ref<0 | 1 | 2>(0)
+/** The box the bar is placed in (the canvas box's layer): its width is the room the bar has. */
+const hostEl = computed(() => rootEl.value?.parentElement ?? undefined)
+const host = useElementSize(hostEl)
+watch(
+  () => [mirrorShown.value, host.width.value, props.mirrorAnchor?.viewport.width, props.mirror?.setting.axes, props.mirror?.setting.mode, props.mirror?.shape] as const,
+  async () => {
+    mirrorFit.value = 0
+    for (const next of [1, 2] as const) {
+      await nextTick()
+      const root = rootEl.value
+      if (!mirrorShown.value || !root || root.scrollWidth <= root.clientWidth + 1) return
+      mirrorFit.value = next
+    }
+  },
+  { immediate: true, deep: true, flush: 'post' },
+)
+
 const placement = computed(() => {
-  const anchor = props.anchor
+  const anchor = mirrorShown.value ? props.mirrorAnchor : props.anchor
   if (!anchor) return undefined
-  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle)
+  // Above the whole Frame's sheet, or below it with no room there, never flipped back over the band's tools (ContextBar
+  // card, Placement).
+  const keepSide = mirrorShown.value && props.mirror!.setting.place?.layer === 'frame'
+  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle, { keepSide })
 })
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
 
@@ -183,26 +230,36 @@ const isDisabled = (item: BarItem) => !armed.value || (item.action.enabled ? !it
 const disabledReason = (item: BarItem) => (armed.value && isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
 
 /** Gesturing with a size to show: only the readout, no buttons. */
-const compact = computed(() => !!props.gesturing && !!props.sizeOnly && props.selectionSummary !== undefined)
-const showing = computed(() => props.selectionSummary !== undefined)
+const compact = computed(() => !!props.gesturing && (mirrorShown.value ? !!props.mirrorSizeOnly : !!props.sizeOnly && props.selectionSummary !== undefined))
+const showing = computed(() => props.selectionSummary !== undefined || mirrorShown.value)
 </script>
 
 <template>
   <div
     v-if="showing"
     ref="rootEl"
-    v-show="!gesturing || (sizeOnly && selectionSummary !== undefined)"
+    v-show="!gesturing || compact"
     class="context-bar"
-    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below }"
+    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below, 'context-bar--mirror': mirrorShown, 'context-bar--two-rows': mirrorShown && mirrorFit === 2 && !compact }"
     :style="placedStyle"
     role="toolbar"
-    :aria-label="t.contextBar.label"
-    data-testid="context-bar"
+    :aria-label="mirrorShown ? t.mirror.title : t.contextBar.label"
+    :data-testid="mirrorShown ? 'mirror-bar' : 'context-bar'"
     @keydown="roving.onKeydown"
     @focusin="roving.onFocusin"
   >
-    <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
-    <template v-for="(item, index) in shown" :key="item.id">
+    <span v-show="!mirrorShown || mirrorFit === 0 || compact" ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ readoutText }}</span>
+    <MirrorBarItems
+      v-if="mirrorShown"
+      v-show="!compact"
+      :setting="mirror!.setting"
+      :rect="mirror!.rect"
+      :shape="mirror!.shape"
+      :icon-size="chipIconSize"
+      @update:setting="emit('update:mirror', $event)"
+      @close="emit('close-mirror')"
+    />
+    <template v-for="(item, index) in mirrorShown ? [] : shown" :key="item.id">
       <span v-if="index === 0 || shown[index - 1].group !== item.group" v-show="!compact" class="context-bar__divider" aria-hidden="true" />
       <IconButton
         v-show="!compact"
@@ -216,7 +273,7 @@ const showing = computed(() => props.selectionSummary !== undefined)
         @click="item.run()"
       />
     </template>
-    <template v-if="folded.length">
+    <template v-if="!mirrorShown && folded.length">
       <span v-show="!compact" class="context-bar__divider" aria-hidden="true" />
       <MenuButton v-show="!compact" class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
         <AppMenuItem
@@ -267,6 +324,33 @@ const showing = computed(() => props.selectionSummary !== undefined)
   position: absolute;
   z-index: var(--z-context-bar);
   max-width: calc(100% - 2 * var(--space-8));
+}
+
+/* The Mirror bar too narrow for one row (ContextBar card): twice as tall, the readout, Mode and Close mirror on the
+ * first row and the chips with their counts on the second. */
+.context-bar--two-rows {
+  flex-wrap: wrap;
+  justify-content: center;
+  height: auto;
+  min-height: calc(2 * var(--selbar-height));
+  padding-block: var(--space-2);
+  row-gap: var(--space-2);
+}
+
+.context-bar--two-rows :deep(.mirror-bar__chips),
+.context-bar--two-rows :deep(.mirror-bar__note) {
+  flex-basis: 100%;
+  justify-content: center;
+  order: 2;
+}
+
+.context-bar--two-rows :deep(.mirror-bar__chips-divider) {
+  display: none;
+}
+
+.context-bar--two-rows :deep(.mirror-bar__note) {
+  text-align: center;
+  white-space: normal;
 }
 
 .context-bar__size {

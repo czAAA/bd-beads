@@ -301,9 +301,8 @@ function landedOnCustom(sheet: LayerSheet, block: CopiedBlock, at: GridPosition)
 }
 
 /** Every position in a Selection on its layer: the Selection's rectangle (a shape's own cells), cut to what the layer
- * shows (`selectableOn`); on a Custom frame every bead whose centre lies in it (ticket 0594). Also what the Selection
- * bar's Mirror copies from (`mirrorSelection.ts`, ticket 0707). */
-export function selectionCells(sheet: LayerSheet, selection: Selection, selectable: (row: number, column: number) => boolean): GridPosition[] {
+ * shows (`selectableOn`); on a Custom frame every bead whose centre lies in it (ticket 0594). */
+function selectionCells(sheet: LayerSheet, selection: Selection, selectable: (row: number, column: number) => boolean): GridPosition[] {
   if (!sheet.geometry.grid) return positionsInRectangle(sheet, selection).map(({ row, column }) => ({ row, column }))
   const mask = selectionMask(selection)
   const cells: GridPosition[] = []
@@ -341,7 +340,7 @@ export function paintLayerSelection(project: Project, selection: Selection, colo
 export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition, mirror: MirrorSetting = MIRROR_OFF): Project {
   const layer = layerAt(project, at)
   /** The block's own cells, which the Frame keeps clear of as ever; only their counterparts land under it, hidden
-   * (ticket 0704, spec 0702's Edges). */
+   * (spec 0702's Edges). */
   let sources: readonly GridPosition[] = []
   const stamped = (sheet: LayerSheet, local: (position: GridPosition) => GridPosition): BeadMap => {
     if (!sheet.geometry.grid) return withColors(sheet.beads, landedOnCustom(sheet, block, local(at)).landed)
@@ -349,7 +348,7 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
     sources = stamp.sources
     return stamp.beads
   }
-  const through = canvasMirrors(project, mirror) ? { underFrame: (position: GridPosition) => !sources.some((source) => source.row === position.row && source.column === position.column) } : {}
+  const through = canvasMirrors(mirror) ? { underFrame: (position: GridPosition) => !sources.some((source) => source.row === position.row && source.column === position.column) } : {}
   return onLayer(project, layer, stamped, through)
 }
 

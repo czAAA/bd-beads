@@ -26,7 +26,13 @@ describe('toolCapabilities', () => {
   it('gives no tool any capability when none is in hand', () => {
     expect(toolCapabilities(undefined)).toEqual({
       tool: undefined, moves: false, selects: false, selectsAnywhere: false, nearestOnPress: false,
-      blocksMargin: false, picking: false, markerHidden: false, settingFrame: false,
+      blocksMargin: false, picking: false, markerHidden: false, settingFrame: false, marksArea: false,
     })
+  })
+
+  it('marks out the Mirror\'s Area only with Select in hand in Mirror mode (ADR 0082)', () => {
+    expect(toolCapabilities('select', { markingArea: true }).marksArea).toBe(true)
+    expect(toolCapabilities('paint', { markingArea: true }).marksArea).toBe(false)
+    expect(toolCapabilities('select').marksArea).toBe(false)
   })
 })

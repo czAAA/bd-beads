@@ -22,7 +22,7 @@ import { displayedExtentPx, surfaceView } from './surfaceView'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
-import { MIRROR_OFF, withMirrorArea, type MirrorSetting } from '../domain/mirror'
+import { MIRROR_OFF, type MirrorSetting } from '../domain/mirror'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -476,13 +476,16 @@ describe('renderOverlay', () => {
     })
   })
 
-  describe('Mirror\'s Axis lines on the Frame (ticket 0703)', () => {
-    const on = (axes: Partial<MirrorSetting['axes']>, counts: Partial<MirrorSetting['counts']> = {}): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes }, counts: { ...MIRROR_OFF.counts, ...counts } })
-    /** The lines stroked, as [from, to] in the Frame's px. */
-    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
-      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
-      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
-    }
+  /** The lines stroked, as [from, to] in the layer's px. */
+  const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
+    const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
+    return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
+  }
+  const WHOLE_FRAME = { layer: 'frame' } as const
+  const inArea = (row: number, column: number, rows: number, columns: number) => ({ layer: 'canvas' as const, area: { row, column, rows, columns } })
+
+  describe('the whole-Frame Mirror\'s Axis lines (tickets 0703, 0750)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>, counts: Partial<MirrorSetting['counts']> = {}): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes }, counts: { ...MIRROR_OFF.counts, ...counts }, place: WHOLE_FRAME })
 
     it('draws N dashed marker lines cutting the Frame into N + 1 equal strips, in screen px at any zoom, with the Frame alone', () => {
       const project = projectOf('loom', 6, 4, { marks: false })
@@ -512,7 +515,7 @@ describe('renderOverlay', () => {
       expect(lines(calls)).toEqual([[[40, 0], [40, 90]]])
     })
 
-    it('draws nothing while the mode is Off or no Axis is on', () => {
+    it('draws nothing while the Mirror is off or no Axis is on', () => {
       const project = projectOf('loom', 4, 4, { marks: false })
       const off = recordingContext()
       renderOverlay(off.context, { project, region: whole(project), zoom: 1, mirror: MIRROR_OFF })
@@ -524,95 +527,52 @@ describe('renderOverlay', () => {
     })
   })
 
-  describe('the Area the Axes run inside (ticket 0710, MirrorPopover card)', () => {
-    const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
-    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
-      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
-      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
-    }
+  describe('a Canvas Area (ticket 0750, ContextBar card\'s Mirror bar)', () => {
+    const on = (axes: Partial<MirrorSetting['axes']>, place = inArea(2, 3, 2, 2)): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes }, place })
     const fills = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fillRect').map((call) => call.args)
+    const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
 
-    it('on a Frame draws the Area as the Selection\'s rectangle round its cells and the Axis lines inside it, not across the Frame', () => {
-      const project = withMirrorArea(projectOf('loom', 6, 4, { marks: false }), 'frame', { row: 1, column: 1, rows: 2, columns: 4 })
-      const { context, calls } = recordingContext()
-
-      renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: on({ leftRight: true }) })
-
-      expect(lines(calls)).toEqual([[[60, 20], [60, 60]]])
-      expect(fills(calls)).toEqual([[20, 20, 80, 2], [20, 58, 80, 2], [20, 20, 2, 40], [98, 20, 2, 40]])
-      expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.marker)
-    })
-
-    it('on the open Canvas draws the Area and its Axes in place of the view-wide Axes, with the Selection\'s eight handles when the view is known, and the band a pick drags with none', () => {
-      const framed = projectOf('loom', 6, 5, { marks: false })
-      const open = withMirrorArea((changeFrame(framed, { remove: true }) as { project: Project }).project, 'canvas', { row: 2, column: 3, rows: 2, columns: 2 })
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(open, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+    it('draws the Area as the Selection\'s rectangle round its cells with its Axes inside it, and the Selection\'s eight handles when the view is known', () => {
+      const project = open()
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
       const { context, calls, named } = recordingContext()
 
-      renderOverlay(context, { project: open, space: spaceOf(open, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: { leftRight: 1 }, handles: [] }, mirrorArea: { surface, touch: false, band: { row: 0, column: 0, rows: 1, columns: 3, layer: 'canvas' } } })
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), mirrorArea: { surface, touch: false } })
 
       expect(lines(calls)).toEqual([[[80, 40], [80, 80]]])
-      expect(fills(calls).slice(0, 4)).toEqual([[60, 40, 40, 2], [60, 78, 40, 2], [60, 40, 2, 40], [98, 40, 2, 40]])
-      expect(fills(calls).slice(4)).toEqual([[0, 0, 60, 2], [0, 18, 60, 2], [0, 0, 2, 20], [58, 0, 2, 20]])
+      expect(fills(calls)).toEqual([[60, 40, 40, 2], [60, 78, 40, 2], [60, 40, 2, 40], [98, 40, 2, 40]])
+      expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.marker)
       expect(named('roundRect')).toHaveLength(8)
     })
 
-    it('draws no Area while the mode is Off', () => {
-      const project = withMirrorArea(projectOf('loom', 6, 4, { marks: false }), 'frame', { row: 1, column: 1, rows: 2, columns: 4 })
+    it('draws no line in a direction one bead across, its chip being off', () => {
+      const project = open()
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }, inArea(2, 3, 1, 2)) })
+      expect(lines(calls)).toEqual([[[80, 40], [80, 60]]])
+    })
+
+    it('turns Radial about the Area\'s centre, its ring and rays there, in Repeat mode too', () => {
+      const project = open()
+      const { context, calls, named } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: { ...on({ radial: true }, inArea(0, 2, 3, 3)), mode: 'repeat', fold: 2 } })
+
+      expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 7])
+      const drawn = lines(calls)
+      expect(drawn).toHaveLength(2)
+      expect(drawn.every(([from]) => from![0] === 70 && from![1] === 30)).toBe(true)
+    })
+
+    it('draws no Area while the Mirror is off', () => {
+      const project = open()
       const { context, named } = recordingContext()
-      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1 })
       expect(named('fillRect')).toHaveLength(0)
     })
   })
 
-  describe('Mirror\'s Axes on the open Canvas (ticket 0704)', () => {
-    const on = (axes: Partial<MirrorSetting['axes']>): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes } })
-    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
-      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
-      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
-    }
-    const open = () => withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
-    const handle = { axis: 'leftRight' as const, x: 70, y: 56, size: 32 }
-
-    it('draws each Axis as a dashed marker line across the whole view in screen px, and its chip at a fixed size over everything', () => {
-      const { context, calls, named } = recordingContext()
-      renderOverlayWith(context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 2, pixelRatio: 2, mirror: on({ leftRight: true, topBottom: true }), canvasAxes: { axes: { leftRight: 3, topBottom: 1 }, handles: [handle] } })
-
-      expect(lines(calls)).toEqual([
-        [[70, 0], [70, 150]],
-        [[0, 30], [200, 30]],
-      ])
-      expect(named('setLineDash')[0]!.args[0]).toEqual([2.5, 2])
-      expect(calls.find((call) => call.name === 'stroke')!.strokeStyle).toBe(DEFAULT_THEME.marker)
-      const chip = named('arc').find((call) => call.args[2] === 16)!
-      expect(chip.args.slice(0, 3)).toEqual([70, 56, 16])
-      expect(chip.fillStyle).toBe(DEFAULT_THEME.chip.fill)
-      expect(chip.strokeStyle).toBe(DEFAULT_THEME.marker)
-      // The chips are drawn in the viewport's px: the transform set just before them is the pixel ratio alone.
-      const transforms = named('setTransform').map((call) => call.args)
-      expect(transforms[transforms.length - 1]).toEqual([2, 0, 0, 2, 0, 0])
-    })
-
-    it('draws a held chip in the accent, and nothing while the mode is Off or no Axis is given', () => {
-      const held = recordingContext()
-      renderOverlayWith(held.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: { leftRight: 3 }, handles: [handle], held: 'leftRight' } })
-      expect(held.named('arc').find((call) => call.args[2] === 16)!.strokeStyle).toBe(DEFAULT_THEME.accent)
-
-      const off = recordingContext()
-      renderOverlayWith(off.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, canvasAxes: { axes: { leftRight: 3 }, handles: [handle] } })
-      expect(off.named('stroke')).toHaveLength(0)
-      const none = recordingContext()
-      renderOverlayWith(none.context, { project: open(), space: spaceOf(open(), true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: on({ leftRight: true }), canvasAxes: { axes: {}, handles: [] } })
-      expect(none.named('stroke')).toHaveLength(0)
-    })
-  })
-
-  describe('Radial on a Frame and on the open Canvas (ticket 0705, MirrorPopover card)', () => {
-    const radial = (fold: number, mode: MirrorSetting['mode']): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold })
-    const lines = (calls: ReturnType<typeof recordingContext>['calls']) => {
-      const moves = calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo')
-      return moves.flatMap((call, index) => (call.name === 'moveTo' ? [[call.args, moves[index + 1]!.args]] : []))
-    }
+  describe('Radial on the whole Frame (tickets 0705, 0750)', () => {
+    const radial = (fold: number, mode: MirrorSetting['mode']): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold, place: WHOLE_FRAME })
     const strokes = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'stroke')
 
     it('in Mirror mode draws the ring at the Frame\'s centre and the Fold\'s mirror lines through it, the first vertical and full, the others soft, clipped to the Frame', () => {
@@ -652,8 +612,8 @@ describe('renderOverlay', () => {
 
     /** A Star Frame of three rounds an arm, drawn alone; where its layout's centre is, in the Frame's px at zoom 1. */
     const star = () => {
-      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
-      const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
+      const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+      const placed = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
       if (placed.kind !== 'changed') throw new Error('expected a Star')
       const { centre } = frameGeometryOf(placed.project).symmetry!()
       return { project: placed.project, centre: { x: centre.x * CELL_SIZE_PX, y: centre.y * CELL_SIZE_PX } }
@@ -678,7 +638,7 @@ describe('renderOverlay', () => {
       expect(strokes(calls).map((call) => call.globalAlpha)).toEqual([1, 0.45, 0.45, 0.45, 0.45, 1])
     })
 
-    it('on a Star Frame in Repeat mode draws five rays along the Seams between the arms, 72° apart, and a Left–right Axis a vertical line through the centre; Top–bottom, no symmetry of a Star, draws nothing', () => {
+    it('on a Star Frame in Repeat mode draws five rays along the Seams between the arms, 72° apart, and the shape\'s own Radial whatever straight Axes the setting holds', () => {
       const { project, centre } = star()
       const repeat = recordingContext()
       renderOverlay(repeat.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'repeat') })
@@ -690,25 +650,9 @@ describe('renderOverlay', () => {
       expect(rays[0]![1][1]).toBeLessThan(centre.y)
 
       const straight = recordingContext()
-      renderOverlay(straight.context, { project, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false } } })
-      const axes = lines(straight.calls) as [number[], number[]][]
-      expect(axes).toHaveLength(1)
-      expect(axes[0]![0][0]).toBeCloseTo(centre.x, 6)
-      expect(axes[0]![1][0]).toBeCloseTo(centre.x, 6)
-      expect(straight.named('arc')).toHaveLength(0)
-    })
-
-    it('on the open Canvas draws the ring and lines at the centre handle\'s place, in Repeat mode too, with the centre chip', () => {
-      const open = withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined })
-      const chip = { axis: 'radial' as const, x: 70, y: 30, size: 32 }
-      const { context, calls, named } = recordingContext()
-      renderOverlayWith(context, { project: open, space: spaceOf(open, true), region: { x: 0, y: 0, width: 400, height: 300 }, zoom: 1, mirror: radial(2, 'repeat'), canvasAxes: { axes: { centre: { row: 1, column: 3 } }, handles: [chip] } })
-
-      expect(named('arc')[0]!.args.slice(0, 3)).toEqual([70, 30, 7])
-      const drawn = lines(calls)
-      expect(drawn).toHaveLength(2)
-      expect(drawn.every(([from]) => from![0] === 70 && from![1] === 30)).toBe(true)
-      expect(named('arc').find((call) => call.args[2] === 16)!.args.slice(0, 2)).toEqual([70, 30])
+      renderOverlay(straight.context, { project, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false }, place: WHOLE_FRAME } })
+      expect(lines(straight.calls)).toHaveLength(5)
+      expect(straight.named('arc')).toHaveLength(1)
     })
   })
 

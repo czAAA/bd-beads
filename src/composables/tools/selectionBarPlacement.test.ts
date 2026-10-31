@@ -70,4 +70,13 @@ describe('selectionBarPlacement around the Tool pill (ticket 439)', () => {
     expect(placed.left).toBeGreaterThanOrEqual(8)
     expect(placed.left + bar.width).toBeLessThanOrEqual(viewport.width - 8)
   })
+
+  it('keeps to its side when told to (the whole-Frame Mirror bar, ticket 0750): with no room above the sheet it slides clear of the pill below rather than flip back over the band', () => {
+    const sheet = { left: 20, top: 4, width: 360, height: 400 }
+    const pill = { left: 100, top: 246, width: 200, height: 48 }
+    expect(selectionBarPlacement(sheet, bar, viewport, pill).below).toBe(false)
+    const kept = selectionBarPlacement(sheet, bar, viewport, pill, { keepSide: true })
+    expect(kept.below).toBe(true)
+    expect(overlaps(kept, pill)).toBe(false)
+  })
 })

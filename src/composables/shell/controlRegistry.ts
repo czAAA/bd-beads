@@ -10,6 +10,7 @@ import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 import { frameOf } from '../../domain/layerRecord'
 import { frameWeave } from '../../domain/layerWeave'
+import { pillTileKey, type PillTile } from '../../domain/toolPill'
 
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
@@ -31,8 +32,8 @@ export interface ControlDeps {
   anyDialogOpen: () => boolean
   /** Ends Pick color from canvas; true if it was on. */
   cancelColorPick: () => boolean
-  /** Cancels a pick of Mirror's Area (ticket 0710); true if one was going on. */
-  cancelAreaPick: () => boolean
+  /** Leaves Mirror mode for Paint (ADR 0082); true if it was on. */
+  leaveMirrorMode: () => boolean
   /** Collapses an expanded Tool group; true if one was open. */
   /** Dismisses the paste preview, else clears the Selection; true if either was there. */
   backOutOfSelect: () => boolean
@@ -47,8 +48,8 @@ export interface ControlDeps {
   /** The Paste tool and the Selection bar's Paste button (ticket 447): enter paste mode under Select, stamping
    * nothing. */
   onPasteMode: () => void
-  /** Key `8` (ticket 0703): Mirror on with its last settings, or off. */
-  onToggleMirror: () => void
+  /** The Mirror tile and its key (ADR 0082): enters Mirror mode, or leaves it as Escape does. */
+  onMirrorTile: () => void
   onFillSelection: () => void
   onFrameFromSelection: () => void
   onToggleRulers: () => void
@@ -63,6 +64,8 @@ export interface ControlDeps {
   onRotate: () => void
   /** The Selection reaches into finished rows, so Rotate is held back (ticket 0647). */
   selectionInFinishedRows: () => boolean
+  /** The Selection is on the Frame, which mirrors whole, so the Selection bar's Mirror is held back (ADR 0082). */
+  selectionOnFrame: () => boolean
   /** Whether Remove row/column applies right now: a whole row or column of the Frame or a Piece area is selected. */
   canRemoveSelectedLine: () => boolean
   onRemoveSelectedLine: () => void
@@ -125,13 +128,16 @@ export type ControlAction = Disableable & {
   givesWayToFocusedButton?: boolean
 }
 
-const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translations) => string, group: ControlGroup = 'tools', body?: ControlAction['body']): ControlAction => ({
+/** A tile's key chord: its place in the pill (ADR 0084). */
+const tileChord = (tile: PillTile): Chord => ({ key: pillTileKey(tile), label: pillTileKey(tile) })
+
+const selectTool = (id: Tool, icon: IconName, name: (t: Translations) => string, group: ControlGroup = 'tools', body?: ControlAction['body']): ControlAction => ({
   id: `tool-${id}`,
   icon,
   name,
   body,
   group,
-  chords: [{ key, label: key }],
+  chords: [tileChord(id)],
   run: (deps) => deps.onSelectTool(id),
 })
 
@@ -174,10 +180,10 @@ const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, r
 // The control registry (ADR 0035, ticket 329): every action with a key, defined once; the shortcut table and the
 // shortcuts dialog (in this order) are built from it. A test fails if two actions share a key.
 export const CONTROLS: readonly ControlAction[] = [
-  selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel, 'tools'),
-  selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel, 'tools'),
-  selectTool('select', '3', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
-  selectTool('piece', '6', 'piece', (t) => t.tools.pieceLabel, 'tools', (t) => t.tooltips.piece),
+  selectTool('paint', 'paint', (t) => t.tools.paintLabel, 'tools'),
+  selectTool('fill', 'fill', (t) => t.tools.fillLabel, 'tools'),
+  selectTool('select', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
+  selectTool('piece', 'piece', (t) => t.tools.pieceLabel, 'tools', (t) => t.tooltips.piece),
   {
     id: 'select-all',
     icon: 'select-all',
@@ -189,7 +195,7 @@ export const CONTROLS: readonly ControlAction[] = [
     needsProject: true,
     run: (deps) => deps.onSelectAll(),
   },
-  selectTool('erase', '4', 'erase', (t) => t.tools.eraseLabel, 'tools', (t) => t.tooltips.erase),
+  selectTool('erase', 'erase', (t) => t.tools.eraseLabel, 'tools', (t) => t.tooltips.erase),
   {
     id: 'empty-selection',
     icon: 'delete',
@@ -209,25 +215,25 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 'Escape', shift: 'any', label: 'Esc' }],
     allowWhileTyping: true,
     run: (deps) => {
-      // Picking a color from the canvas (ticket 398), or Mirror's Area (ticket 0710), is the first thing Escape ends.
+      // Picking a color from the canvas (ticket 398), then Mirror mode (falling to Paint, ADR 0082), is what Escape ends first.
       if (deps.cancelColorPick()) return
-      if (deps.cancelAreaPick()) return
+      if (deps.leaveMirrorMode()) return
       // Then the paste preview, the Selection.
       if (deps.backOutOfSelect()) return
       // Ticket 214: with nothing left to dismiss, Escape falls through to Paint.
       if (deps.activeTool() !== 'paint') deps.onSelectTool('paint')
     },
   },
-  selectTool('hand', '5', 'hand', (t) => t.tools.handLabel, 'canvas', (t) => t.tooltips.hand),
+  selectTool('hand', 'hand', (t) => t.tools.handLabel, 'canvas', (t) => t.tooltips.hand),
   {
     id: 'mirror',
     icon: 'mirror',
     name: (t) => t.mirror.title,
     body: (t) => t.tooltips.mirror,
     group: 'tools',
-    chords: [{ key: '8', label: '8' }],
+    chords: [tileChord('mirror')],
     needsProject: true,
-    run: (deps) => deps.onToggleMirror(),
+    run: (deps) => deps.onMirrorTile(),
   },
   {
     id: 'tool-paste',
@@ -235,7 +241,7 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.tools.pasteLabel,
     body: (t) => t.tooltips.pasteTool,
     group: 'canvas',
-    chords: [{ key: '7', label: '7' }],
+    chords: [tileChord('paste')],
     run: (deps) => deps.onPasteMode(),
   },
   {
@@ -403,10 +409,12 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 'r', shift: true, label: 'R' }],
     run: (deps) => deps.onRotate(),
   },
-  // The Selection bar's Mirror (ticket 0707): no key, the bar's own surface runs it, while Mirror is on.
+  // The Selection bar's Mirror (ADR 0082): the Selection's rectangle becomes the Mirror's Area; no key.
   unkeyed('mirror-selection', (t) => t.mirror.title, 'edit', {
     icon: 'mirror',
-    body: (t) => t.mirror.copyToCounterparts,
+    body: (t) => t.mirror.insideArea,
+    enabled: (deps: ControlDeps) => !deps.selectionOnFrame(),
+    disabledBody: (t: Translations) => t.mirror.frameMirrorsWhole,
   }),
   {
     id: 'remove-line',
@@ -506,6 +514,8 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromStarter,
   }),
+  // The margin's Mirror the whole Frame (ADR 0082, MarginSheet card); its Tooltip says Mirror off while it is on.
+  unkeyed('mirror-frame', (t) => t.mirror.wholeFrame, 'canvas', { icon: 'mirror' }),
   unkeyed('rotate-frame', (t) => t.frame.rotateFrameLabel, 'canvas', {
     icon: 'rotate',
     body: (t) => t.tooltips.rotateFrame,
@@ -609,7 +619,7 @@ export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'selectionOnFrame' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

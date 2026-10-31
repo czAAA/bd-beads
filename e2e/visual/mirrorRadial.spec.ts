@@ -8,9 +8,9 @@ import { onLayer } from '../../src/domain/layers'
 import { frameOf, withFrameSheet } from '../../src/domain/layerRecord'
 import type { Project } from '../../src/domain/project'
 
-/** Radial on a loom Frame (ticket 0705, MirrorPopover card): Mirror at Fold 4 (the Frame's ring with four mirror lines,
- * the vertical full, the others soft, clipped to the Frame) and Repeat at Fold 3 (three rays, the first straight up).
- * The Canvas's own centre lands over the Frame's, so its chip is dragged to the top left first, its lines across the view. */
+/** Radial on the whole loom Frame (tickets 0705, 0750; ContextBar card's Mirror bar): Mirror at Fold 4 (the Frame's ring
+ * with four mirror lines, the vertical full, the others soft, clipped to the Frame) and Repeat at Fold 3 (three rays, the
+ * first straight up), set on the Mirror bar after the margin's Mirror the whole Frame. */
 for (const [mode, fold] of [['mirror', 4], ['repeat', 3]] as const) {
   test(`the Radial overlay on a loom Frame in ${mode} mode at Fold ${fold}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
@@ -18,17 +18,11 @@ for (const [mode, fold] of [['mirror', 4], ['repeat', 3]] as const) {
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, 100)
-    await page.getByTestId('pill-tool-mirror').click()
-    await page.getByTestId('mirror-axis-radial').click()
-    for (let step = 2; step < fold; step++) await page.getByTestId('mirror-fold-more').click()
+    await page.getByTestId('margin-mirror-frame').click()
+    await page.getByTestId('mirror-bar-axis-radial').click()
+    for (let step = 2; step < fold; step++) await page.getByTestId('mirror-bar-radial-more').click()
     if (mode === 'repeat') await page.getByRole('radio', { name: 'Repeat' }).click()
     await page.keyboard.press('Escape')
-    await settle(page)
-    const box = (await page.getByTestId('project-surface').boundingBox())!
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(box.x + 120, box.y + 120, { steps: 6 })
-    await page.mouse.up()
     await page.mouse.move(5, 5)
     await settle(page)
     await expect(page.getByTestId('project-surface')).toHaveScreenshot(`mirror-radial-frame-${mode}-${fold}.png`, { maxDiffPixelRatio: 0.01 })
@@ -49,9 +43,9 @@ function starFramed(): Project {
   )
 }
 
-/** Radial on a Star Frame (ticket 0706, MirrorPopover card): the Fold is the shape's five sides, the ring at the
- * layout's centre; in Mirror mode five mirror lines from the Seam between two arms (the first full, the others soft),
- * in Repeat mode five rays along the Seams between the arms. The Canvas's own centre chip is dragged aside first. */
+/** The whole-Frame Mirror on a Star Frame (tickets 0706, 0750): the shape's own Radial, its Fold the five sides, the
+ * ring at the layout's centre; in Mirror mode five mirror lines from the Seam between two arms (the first full, the
+ * others soft), in Repeat mode five rays along the Seams between the arms; the Mirror bar notes the shape's Axis. */
 for (const mode of ['mirror', 'repeat'] as const) {
   test(`the Radial overlay on a Star Frame in ${mode} mode`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
@@ -59,16 +53,9 @@ for (const mode of ['mirror', 'repeat'] as const) {
     await openApp(page, [starFramed()])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, 100)
-    await page.getByTestId('pill-tool-mirror').click()
-    await page.getByTestId('mirror-axis-radial').click()
+    await page.getByTestId('margin-mirror-frame').click()
     if (mode === 'repeat') await page.getByRole('radio', { name: 'Repeat' }).click()
     await page.keyboard.press('Escape')
-    await settle(page)
-    const box = (await page.getByTestId('project-surface').boundingBox())!
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(box.x + 120, box.y + 120, { steps: 6 })
-    await page.mouse.up()
     await page.mouse.move(5, 5)
     await settle(page)
     await expect(page.getByTestId('project-surface')).toHaveScreenshot(`mirror-radial-star-${mode}.png`, { maxDiffPixelRatio: 0.01 })

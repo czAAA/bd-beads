@@ -5,7 +5,7 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
-import { PILL_POSITIONS, isVerticalPill, pillPositionForKey, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect } from '../../domain/toolPill'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -13,36 +13,21 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
-import MirrorPopover from './MirrorPopover.vue'
-import { MIRROR_TILE_HOTKEY, PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
-import { isMirrorOn, MIRROR_OFF, type MirrorDirection, type MirrorSetting, type ShapeAxes } from '../../domain/mirror'
-import type { Rect } from '../../domain/canvas'
-import type { Layer } from '../../domain/grid'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
-// grip, six tool tiles, the Mirror tile (ticket 0703), the Paste tile, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
-// This layer takes no pointer events itself and sits outside the canvas's zoom transform (ADR 0034).
+// The Tool pill (ticket 439, ADR 0046; ToolPill card): grip, six tool tiles, the Mirror tile (ADR 0082), the Paste tile,
+// a divider, the colour control, each tile keyed by its place (ADR 0084), docked to one of four edges. This layer takes
+// no pointer events itself and sits outside the canvas's zoom transform (ADR 0034).
 const props = withDefaults(defineProps<{
   activeTool: Tool
   /** Whether the clipboard holds something: the Paste tile follows Hand then (ticket 447). */
   hasClipboard?: boolean
   /** Whether paste mode is on: the Paste tile then shows as the active tool. */
   pasteArmed?: boolean
-  /** Mirror (ticket 0703): the Project's setting (the tile is lit while its mode is not Off), its popover, and the
-   * Frame's Axis count limits (none without a Frame on a grid). */
-  mirror?: MirrorSetting
-  mirrorPopoverOpen?: boolean
-  mirrorLimits?: Record<MirrorDirection, number>
-  /** Whether the open Canvas is the only layer (ticket 0704): the popover's details are then the Canvas's. */
-  mirrorOnCanvas?: boolean
-  /** The Area row (ticket 0710): the layer it is for (none on a Custom frame), that layer's Area, and whether one is
-   * being picked. */
-  mirrorAreaRow?: Layer
-  mirrorArea?: Rect
-  mirrorPicking?: boolean
-  /** A Custom frame's shape (ticket 0706): the Axes it offers and its side count. */
-  mirrorShape?: ShapeAxes
+  /** Whether the Mirror is on (ADR 0082): its tile is lit, whatever tool is active. */
+  mirrorOn?: boolean
+  /** Whether Mirror mode is on: its tile is lit, and the Select tile it runs under is not. */
+  mirrorMarking?: boolean
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -53,7 +38,7 @@ const props = withDefaults(defineProps<{
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
-}>(), { mirror: () => MIRROR_OFF, mirrorPopoverOpen: false, mirrorLimits: undefined, mirrorOnCanvas: false })
+}>(), { mirrorOn: false, mirrorMarking: false })
 
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
@@ -61,13 +46,8 @@ const emit = defineEmits<{
   'paste-mode': []
   'update:position': [position: PillPosition]
   'update:popoverOpen': [open: boolean]
-  'update:mirrorPopoverOpen': [open: boolean]
-  /** The Mirror popover changed the setting (ticket 0703). */
-  'update:mirror': [setting: MirrorSetting]
-  /** The Area row (ticket 0710): Select area, Whole Frame, Clear the area. */
-  'mirror-pick': []
-  'mirror-whole-frame': []
-  'mirror-clear-area': []
+  /** The Mirror tile was pressed: Mirror mode on, or off as Escape does (ADR 0082). */
+  'mirror-tile': []
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
@@ -81,15 +61,15 @@ const { t } = useI18n()
 const layerEl = ref<HTMLElement>()
 const pillEl = ref<HTMLElement>()
 const colorTileEl = ref<HTMLElement>()
-const mirrorTileEl = ref<HTMLElement>()
 
 const vertical = computed(() => isVerticalPill(props.position))
-const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
+const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: pillTileKey(tool) }))
 const pasteAction = controlAction('tool-paste')
 const mirrorAction = controlAction('mirror')
-const mirrorOn = computed(() => isMirrorOn(props.mirror))
-/** Paste mode runs under Select, but the Paste tile is the one lit then (ticket 447). */
-const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && props.pasteArmed && props.hasClipboard)
+/** The Mirror tile is lit while the Mirror is on and through its pick (ToolPill card). */
+const mirrorLit = computed(() => props.mirrorOn || props.mirrorMarking)
+/** Paste mode and Mirror mode run under Select, but their own tile is the one lit then (tickets 447, 0750). */
+const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && ((props.pasteArmed && props.hasClipboard) || props.mirrorMarking))
 const colorAction = controlAction('pill-colors')
 const colorLabel = computed(() => fillBlanks(t.value.toolPill.color, { name: props.colorName ?? '' }))
 
@@ -101,10 +81,7 @@ const roving = useRovingFocus(pillEl, { selector: '.tool-pill__grip, .tool-pill_
 const buttonOf = (component: unknown) => (component as { $el?: HTMLElement } | null)?.$el?.querySelector('button') ?? undefined
 
 const drag = useToolPillDrag(pillEl, layerEl, {
-  onStart: () => {
-    emit('update:popoverOpen', false)
-    emit('update:mirrorPopoverOpen', false)
-  },
+  onStart: () => emit('update:popoverOpen', false),
   onDrop: (position) => emit('update:position', position),
 })
 
@@ -119,15 +96,8 @@ function onGripKeydown(event: KeyboardEvent) {
   emit('update:position', next)
 }
 
-/** One popover at a time: opening the colour popover or the Mirror popover closes the other. */
 function toggleColor() {
-  if (!props.popoverOpen) emit('update:mirrorPopoverOpen', false)
   emit('update:popoverOpen', !props.popoverOpen)
-}
-
-function toggleMirror() {
-  if (!props.mirrorPopoverOpen) emit('update:popoverOpen', false)
-  emit('update:mirrorPopoverOpen', !props.mirrorPopoverOpen)
 }
 
 /** The pill's rectangle in the layer's own pixels (the drawing area's), for the Selection bar to keep clear of. */
@@ -233,22 +203,19 @@ watch(
       />
 
       <IconButton
-        :ref="(component) => (mirrorTileEl = buttonOf(component))"
         class="tool-pill__stop"
         variant="pill"
         :action="mirrorAction"
         :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
-        :hotkey="MIRROR_TILE_HOTKEY"
+        :hotkey="pillTileKey('mirror')"
         show-hotkey
-        :selected="mirrorOn"
-        :accent="mirrorOn"
-        :aria-pressed="undefined"
-        aria-haspopup="dialog"
-        :aria-expanded="mirrorPopoverOpen"
+        :selected="mirrorLit"
+        :accent="mirrorLit"
+        :pressed="mirrorLit"
         :tabindex="-1"
         data-testid="pill-tool-mirror"
         data-hint="mirror"
-        @click="toggleMirror"
+        @click="emit('mirror-tile')"
       />
 
       <IconButton
@@ -257,7 +224,7 @@ watch(
         variant="pill"
         :action="pasteAction"
         :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
-        :hotkey="PASTE_TILE_HOTKEY"
+        :hotkey="pillTileKey('paste')"
         show-hotkey
         :selected="!!pasteArmed"
         :accent="!!pasteArmed"
@@ -320,25 +287,6 @@ watch(
       it under its bars, so an iPad held sideways hid the Custom color picker under the Progress bar (ticket 0726). In
       the shell they stack by StackingOrder: over the bars, under a dialog opened from them. -->
     <Teleport defer to=".app-shell">
-      <MirrorPopover
-        v-if="mirrorPopoverOpen"
-        :tile="mirrorTileEl"
-        :pill="pillEl"
-        :position="position"
-        :setting="mirror"
-        :limits="mirrorLimits"
-        :on-canvas="mirrorOnCanvas"
-        :area-row="mirrorAreaRow"
-        :area="mirrorArea"
-        :picking="mirrorPicking"
-        :shape="mirrorShape"
-        @close="emit('update:mirrorPopoverOpen', false)"
-        @update:setting="emit('update:mirror', $event)"
-        @pick="emit('mirror-pick')"
-        @whole-frame="emit('mirror-whole-frame')"
-        @clear-area="emit('mirror-clear-area')"
-      />
-
       <ColorPopover
         v-if="popoverOpen"
         :tile="colorTileEl"
