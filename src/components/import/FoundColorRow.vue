@@ -16,6 +16,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import BeadColorList from '../palette/BeadColorList.vue'
+import BeadColorsEntry from '../palette/BeadColorsEntry.vue'
 import CustomColorPanel from '../palette/CustomColorPanel.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
@@ -185,18 +186,13 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
       <PalettePicker :selected-color-id="selectedColorId" @select="pickSwatch">
         <CustomColorPicker :selected="false" :expanded="customOpen" @toggle="toggleCustom" />
       </PalettePicker>
-      <AppButton
+      <BeadColorsEntry
         v-if="wizard.hasCatalog.value"
-        variant="in-box"
-        size="sm"
-        class="found-color__catalog"
-        :trailing-icon="catalogOpen ? 'chevron-up' : 'chevron-down'"
-        :aria-expanded="catalogOpen"
-        data-testid="found-color-bead-colors"
-        @click="catalogOpen = !catalogOpen; customOpen = false"
-      >
-        {{ t.palette.beadColors.open }}
-      </AppButton>
+        :bead="wizard.bead.value"
+        :open="catalogOpen"
+        testid="found-color-bead-colors"
+        @toggle="catalogOpen = !catalogOpen; customOpen = false"
+      />
       <BeadColorList v-if="catalogOpen" :colors="beadColors" />
       <CustomColorPanel
         v-if="customOpen"
@@ -323,9 +319,5 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
 .found-color__label {
   font: var(--type-label);
   color: var(--muted);
-}
-
-.found-color__catalog {
-  align-self: flex-start;
 }
 </style>

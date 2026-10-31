@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
+import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
+import { findBead } from '../../domain/beads'
 import { addedColorId, defaultPaletteIds } from '../../domain/palette'
 import { mountWithPalette } from '../../testUtils/paletteHost'
 import ColorPopover from './ColorPopover.vue'
@@ -78,6 +81,44 @@ describe('ColorPopover, picking (tickets 397, 398, 444)', () => {
     await field.trigger('keydown', { key: 'Enter' })
     expect(popover.emitted('select-custom-color')).toEqual([['#123456']])
     expect(popover.emitted('close')).toHaveLength(2)
+    wrapper.unmount()
+  })
+})
+
+describe('ColorPopover, the Bead’s palette (ticket 0746)', () => {
+  function withCatalog() {
+    const colors = { available: ref(true), state: ref('ready'), swatches: ref([]), bead: ref(findBead('miyuki/delica/11-0')), catalog: ref(), load: vi.fn(), add: vi.fn() } as unknown as BeadColors
+    const Wrapped = defineComponent(() => {
+      provideBeadColors(colors)
+      return () => h(ColorPopover, { tile: undefined, pill: undefined, position: 'bottom' })
+    })
+    const host = mountWithPalette(Wrapped, [...defaultPaletteIds(), added], {}, { attachTo: document.body })
+    const popover = () => host.wrapper.get('[data-testid="color-popover"]')
+    const grid = () => host.wrapper.get('[data-testid="palette-picker"]')
+    return { ...host, popover, grid, toggle: () => host.wrapper.get('[data-testid="bead-colors-toggle"]').trigger('click') }
+  }
+
+  it('widens to the panel width while the list is open, and the Palette grid fills it; closing the list brings 288px back', async () => {
+    const { wrapper, popover, grid, toggle } = withCatalog()
+    expect(popover().classes()).not.toContain('color-popover--wide')
+
+    await toggle()
+    expect(popover().classes()).toContain('color-popover--wide')
+    expect(grid().classes()).toContain('palette-picker--wide')
+
+    await toggle()
+    expect(popover().classes()).not.toContain('color-popover--wide')
+    expect(grid().classes()).not.toContain('palette-picker--wide')
+    wrapper.unmount()
+  })
+
+  it('goes back to 288px in Edit palette, where the list is not offered', async () => {
+    const { wrapper, popover, toggle } = withCatalog()
+    await toggle()
+
+    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+
+    expect(popover().classes()).not.toContain('color-popover--wide')
     wrapper.unmount()
   })
 })
