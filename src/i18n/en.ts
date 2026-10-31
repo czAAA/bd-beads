@@ -366,18 +366,19 @@ export const en: Translations = {
     whatsInside: "What's inside",
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
+    sections: { label: 'Sections', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.' },
     notes: { onUs: 'on us' },
     coffee: { title: 'Made by one family', text: "openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
-      label: 'plans',
       heading: 'Three ways to use it',
       why: "Accounts and Pro aren't open yet. Everything works without them.",
       youAreHere: 'you are here',
       tiles: [
-        { name: 'No account', price: 'Free', meta: 'no sign-up', text: 'Draw, count and weave on this device. Nothing to sign up for.', button: 'Open the editor', includes: 'what you get', items: ['All three Techniques', 'Every tool, Convert image and Row progress', 'PDF, PNG and Project file exports', 'Projects saved on this device'] },
-        { name: 'Free account', price: 'Free', meta: 'coming later', text: 'The same app, with your Projects on every device you use.', button: 'Create free account', includes: 'everything without an account, plus', items: ['Projects on all your devices', 'A backup of every Saved Project', 'Share a Project by link'] },
+        { name: 'No account', price: 'Free', meta: 'no sign-up', text: 'Draw, count and weave on this device. Nothing to sign up for.', button: 'Open the editor', includes: 'what you get', items: ['Loom', 'Peyote', 'Brick stitch', 'Paint, Fill and Erase', 'Select, copy and paste', 'Mirror', 'Undo for every step', 'Named Pieces', 'Convert image, up to 14 colors', 'Row progress', 'Beads needed, in grams too', 'Your own Palette', 'Pick color from Canvas', 'Frame and Rulers', 'PDF export', 'PNG export', 'Project file', 'Projects saved on this device', 'Light, dark and high contrast', 'Seven languages', 'Works offline', 'Keyboard shortcuts', 'No sign-up'] },
+        { name: 'Free account', price: 'Free', meta: 'coming later', text: 'The same app, with your Projects on every device you use.', button: 'Create free account', includes: 'everything without an account, plus', items: ['Projects on all your devices', 'A backup of every Saved Project'] },
         { name: 'Pro', price: 'Price later', meta: 'coming later', text: 'For makers who teach, sell or print a lot.', button: 'Coming later', includes: 'everything in Free account, plus', items: ['Your own cover page and logo on PDF exports', 'Your own Palettes and Bead catalogs', 'New Techniques first'] },
       ],
+      free: { count: '{count} · free', window: 'Everything free, scroll to see all', rollUp: 'Roll the list back up' },
     },
     features: {
       techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },

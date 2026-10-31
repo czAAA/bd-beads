@@ -31,6 +31,7 @@
   --button: #ffffff; /* Secondary button fill on the page (header): EN / RU, theme toggle frame, keyboard shortcuts. */
   --button-line: #c7c7c7; /* Secondary button border on the page. */
   --box: #fafafa; /* Canvas box background. */
+  --page-ground: #ebebeb; /* The Homepage's page around its canvas box, darker than the box so the box stands off it. */
   --box-line: #e5e5e5; /* Canvas box border. */
   --box-muted: #6a6a6a; /* Meta text in the canvas box header strip and Progress bar. Strip dividers are this at 22% opacity. */
   --box-button: #00000000; /* Button fill in the Progress bar (transparent in light). */
@@ -90,6 +91,7 @@
   --button: #202020;
   --button-line: #202020;
   --box: #202020;
+  --page-ground: #0a0a0a;
   --box-line: #202020;
   --box-muted: #949494;
   --box-button: #2a2a2a;
@@ -149,6 +151,7 @@
   --button: #ffffff;
   --button-line: #595959;
   --box: #ffffff;
+  --page-ground: #d9d9d9;
   --box-line: #595959;
   --box-muted: #3d3d3d;
   --box-button: #ffffff;

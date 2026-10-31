@@ -616,6 +616,8 @@ body {
   --hover-fill:var(--surface);--press-fill:var(--line);
   --framing-dim:rgba(0,0,0,.45);
   --slogan-hold:2200ms;--slogan-roll:650ms;
+  --homepage-box-width:70rem;--homepage-box-height:55rem;--section-turn:600ms;--section-shift:3.5rem;--section-scale:.985;
+  --homepage-mark-large:26.25rem;--homepage-mark-small:7.5rem;--free-window:6.25rem;--free-roll-curl:1.125rem;
 }
 [data-theme="dark"]{--hover-fill:var(--elevated);--press-fill:var(--line-strong)}
 @media (prefers-reduced-motion:reduce){:root{--duration-slow:120ms;--duration-base:120ms}}
@@ -1027,3 +1029,13 @@ body {
 .bb-hint-welcome p { margin: 0; font: var(--hint-welcome); }
 .bb-hint-welcome p b { font-weight: 400; color: var(--accent-strong); }
 @media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }
+
+/* Homepage scroll story (ticket 0739; Homepage card): the page's ground, a section turning, the free list's window and roll. */
+.bb-homepage-page{background:var(--page-ground);scroll-snap-type:y mandatory}
+.bb-homepage-section{transition:opacity var(--section-turn) var(--ease-standard),transform var(--section-turn) var(--ease-standard),visibility 0s linear var(--section-turn)}
+.bb-homepage-section--before,.bb-homepage-section--after{visibility:hidden;opacity:0}
+.bb-homepage-section--before{transform:translateY(calc(var(--section-shift) * -1)) scale(var(--section-scale))}
+.bb-homepage-section--after{transform:translateY(var(--section-shift)) scale(var(--section-scale))}
+.bb-free-window{height:var(--free-window);overflow-y:auto;overscroll-behavior:contain;mask-image:linear-gradient(180deg,var(--ink) 72%,transparent)}
+.bb-free-roll__curl{height:var(--free-roll-curl);border-radius:var(--radius-full);background:linear-gradient(180deg,color-mix(in srgb,var(--ink) 28%,var(--canvas)),color-mix(in srgb,var(--ink) 18%,var(--canvas)) 45%,color-mix(in srgb,var(--ink) 6%,var(--canvas)))}
+@media (prefers-reduced-motion:reduce){.bb-homepage-section{transform:none!important;transition:none}}
