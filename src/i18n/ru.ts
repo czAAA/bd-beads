@@ -365,7 +365,7 @@ export const ru: Translations = {
     whatsInside: 'Что внутри',
     previousFeature: 'Предыдущая возможность',
     nextFeature: 'Следующая возможность',
-    sections: { label: 'Разделы', back: 'Назад', next: 'Дальше', firstBody: 'Это первый раздел.', lastBody: 'Это последний раздел.' },
+    sections: { label: 'Разделы', back: 'Назад', next: 'Дальше', firstBody: 'Это первый раздел.', lastBody: 'Это последний раздел.', goTo: 'Перейти: {section}' },
     notes: { onUs: 'это мы' },
     coffee: { title: 'Делает одна семья', text: 'openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
     plans: {

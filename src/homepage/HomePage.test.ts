@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { shallowRef } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 import HomePage from './HomePage.vue'
 import { createProject } from '../domain/createProject'
 import { en } from '../i18n/en'
@@ -313,7 +313,7 @@ describe('HomePage sections (ticket 0739)', () => {
     await wrapper.vm.$nextTick()
     expect(shown(wrapper)).toEqual(['coffee'])
     expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--before')
-    expect(wrapper.get('[data-testid="section-name"]').text()).toBe('Made by one family')
+    expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('2/3 · Made by one family')
     scrollPage(el, 2 * VIEWPORT)
     await wrapper.vm.$nextTick()
     expect(shown(wrapper)).toEqual(['plans'])
@@ -327,6 +327,44 @@ describe('HomePage sections (ticket 0739)', () => {
     expect(shown(wrapper)).toEqual(['coffee'])
     await wrapper.get('[data-testid="section-back"]').trigger('click')
     expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+  })
+
+  it('turns straight to the section a step asks for, once, not through the ones between', async () => {
+    const { wrapper, el } = pageWithHeight()
+    // A smooth scroll passes the coffee on its way to the plans, then ends; what the page shows is noted at each stop.
+    const turns: string[][] = []
+    el.scrollTo = vi.fn(({ top }: ScrollToOptions) => {
+      void (async () => {
+        for (const at of [VIEWPORT, top!]) {
+          await nextTick()
+          scrollPage(el, at)
+          await nextTick()
+          turns.push(shown(wrapper))
+        }
+        el.dispatchEvent(new Event('scrollend'))
+      })()
+    }) as typeof el.scrollTo
+    await wrapper.findAll('[data-testid="section-step"]')[2]!.trigger('click')
+    await flushPromises()
+    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 2 * VIEWPORT, behavior: 'smooth' })
+    expect(turns).toEqual([['plans'], ['plans']])
+    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('3/3')
+  })
+
+  it('follows the page again once a jump is over, wherever the beader scrolled it to', async () => {
+    const { wrapper, el } = pageWithHeight()
+    // The beader takes over mid-jump: the scroll stops at the coffee.
+    el.scrollTo = vi.fn(() => {
+      void (async () => {
+        await nextTick()
+        scrollPage(el, VIEWPORT)
+        await nextTick()
+        el.dispatchEvent(new Event('scrollend'))
+      })()
+    }) as typeof el.scrollTo
+    await wrapper.findAll('[data-testid="section-step"]')[2]!.trigger('click')
+    await flushPromises()
+    expect(shown(wrapper)).toEqual(['coffee'])
   })
 
   it('takes the focus, so the keys scroll the page', () => {

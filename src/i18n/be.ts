@@ -366,7 +366,7 @@ export const be: Translations = {
     whatsInside: 'Што ўнутры',
     previousFeature: 'Папярэдняя магчымасць',
     nextFeature: 'Наступная магчымасць',
-    sections: { label: 'Раздзелы', back: 'Назад', next: 'Далей', firstBody: 'Гэта першы раздзел.', lastBody: 'Гэта апошні раздзел.' },
+    sections: { label: 'Раздзелы', back: 'Назад', next: 'Далей', firstBody: 'Гэта першы раздзел.', lastBody: 'Гэта апошні раздзел.', goTo: 'Перайсці: {section}' },
     notes: { onUs: 'гэта мы' },
     coffee: { title: 'Робіць адна сям’я', text: 'openbeads робіць адна сям’я, бісерына за бісерынай, і праграма бясплатная. Калі праграма зэканоміла вам час, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
     plans: {
