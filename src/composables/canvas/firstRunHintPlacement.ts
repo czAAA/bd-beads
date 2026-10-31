@@ -19,7 +19,9 @@ export const isStepHint = (id: HintId): boolean => id === 'select' || id === 'ex
 /** The controls in the Canvas strip, above the drawing area, left to right; the rest are Tool pill tiles. */
 type StripHint = 'menu' | 'project' | 'frame' | 'export'
 const STRIP_HINTS: readonly StripHint[] = ['menu', 'project', 'frame', 'export']
-const isStrip = (id: HintId): id is StripHint => (STRIP_HINTS as readonly HintId[]).includes(id)
+/** Whether a caption names a Canvas strip button, so it wraps in a column from `captionColumns`. */
+export const isStripHint = (id: HintId): id is StripHint => (STRIP_HINTS as readonly HintId[]).includes(id)
+const isKept = (id: HintId): boolean => (KEPT_HINTS as readonly HintId[]).includes(id)
 
 /** A strip caption's column: the room under its button up to the next one, at most COLUMN_MAX; a quiet caption with
  * less than COLUMN_MIN is left out, a kept one wraps in COLUMN_MIN. */
@@ -71,7 +73,7 @@ export function captionColumns(targets: Partial<Record<HintId, BarBox>>): Partia
           ? next.left - GAP - Math.max(EDGE, target.left)
           : COLUMN_MAX
     if (room >= COLUMN_MIN) columns[id] = Math.min(COLUMN_MAX, room)
-    else if ((KEPT_HINTS as readonly HintId[]).includes(id)) columns[id] = COLUMN_MIN
+    else if (isKept(id)) columns[id] = COLUMN_MIN
   })
   return columns
 }
@@ -85,11 +87,11 @@ export function placeFirstRunHints(layout: HintLayout): PlacedHint[] {
     const target = layout.targets[id]
     const size = layout.notes[id]
     if (!target || !size) continue
-    const candidates = isStrip(id)
+    const candidates = isStripHint(id)
       ? STRIP_DISTANCES.map((distance) => stripBox(id, target, size, distance, layout.area))
       : SHIFTS.flatMap((shift) => TILE_DISTANCES.map((distance) => tileBox(target, size, distance, shift, layout)))
     const free = candidates.find((box) => inside(box, layout.area) && !taken.some((other) => overlaps(box, other)))
-    const chosen = free ?? ((KEPT_HINTS as readonly HintId[]).includes(id) ? candidates[0] : undefined)
+    const chosen = free ?? (isKept(id) ? candidates[0] : undefined)
     if (!chosen) continue
     taken.push(chosen)
     placed.push({ id, note: { left: chosen.left, top: chosen.top } })

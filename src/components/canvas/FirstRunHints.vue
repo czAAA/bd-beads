@@ -12,6 +12,7 @@ import {
   QUIET_HINTS,
   captionColumns,
   isStepHint,
+  isStripHint,
   placeFirstRunHints,
   type HintId,
   type PlacedHint,
@@ -49,7 +50,8 @@ const columns = ref<Partial<Record<HintId, number>>>({})
 /** On a Canvas background where `muted` reads under 4.5:1 the captions take `body` (CanvasBackground card). */
 const lowContrast = ref(false)
 const READABLE_CONTRAST = 4.5
-const STRIP_IDS: readonly HintId[] = ['menu', 'project', 'frame', 'export']
+/** The latest measure: an earlier one still waiting on the columns gives way to it. */
+let runs = 0
 
 function noteRef(id: HintId) {
   return (el: unknown) => {
@@ -64,6 +66,7 @@ async function measure() {
   const layer = layerEl.value
   const scope = props.scope
   if (!layer || !scope) return
+  const run = ++runs
   const origin = layer.getBoundingClientRect()
   const area: Size = { width: origin.width, height: origin.height }
   const boxOf = (el: Element | null): BarBox | undefined => {
@@ -79,10 +82,11 @@ async function measure() {
   }
   columns.value = captionColumns(targets)
   await nextTick()
+  if (run !== runs) return
   const notes: Partial<Record<HintId, Size>> = {}
   for (const id of shownIds.value) {
     const note = noteEls.get(id)
-    if (note && (!STRIP_IDS.includes(id) || columns.value[id])) notes[id] = { width: note.offsetWidth, height: note.offsetHeight }
+    if (note && (!isStripHint(id) || columns.value[id])) notes[id] = { width: note.offsetWidth, height: note.offsetHeight }
   }
   const obstacles = [...scope.querySelectorAll('[data-hint-obstacle]'), welcomeEl.value ?? null].map(boxOf).filter((box) => !!box)
   placed.value = placeFirstRunHints({ area, targets, notes, pillPosition: props.pillPosition, obstacles })
