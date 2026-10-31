@@ -218,7 +218,10 @@ watch(
 const placement = computed(() => {
   const anchor = mirrorShown.value ? props.mirrorAnchor : props.anchor
   if (!anchor) return undefined
-  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle)
+  // Above the whole Frame's sheet, or below it with no room there, never flipped back over the band's tools (ContextBar
+  // card, Placement).
+  const keepSide = mirrorShown.value && props.mirror!.setting.place?.layer === 'frame'
+  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle, { keepSide })
 })
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
 
