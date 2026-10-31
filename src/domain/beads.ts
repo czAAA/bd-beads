@@ -177,7 +177,7 @@ export const BEAD_CATALOG: readonly Bead[] = [
     // PROVISIONAL, as above (ticket 155).
     beadsPerKg: 109890,
   }),
-  defineBead({ brand: MIYUKI, formFactor: DELICA, size: '11/0', widthMm: 1.6, heightMm: 1.3, beadsPerKg: 200000 }),
+  defineBead({ brand: MIYUKI, formFactor: DELICA, size: '11/0', widthMm: 1.3, heightMm: 1.6, beadsPerKg: 200000 }),
   // Miyuki's size table (ticket 539) gives an outer diameter (`heightMm`) and beads per 10 cm of strung beads, which
   // gives the length along the thread (`widthMm`, 100 / count). Every figure is "approx." there.
   defineBead({ brand: MIYUKI, formFactor: DELICA, size: '15/0', widthMm: 1.1, heightMm: 1.3, beadsPerKg: 350000 }),
@@ -289,7 +289,13 @@ export function readBeadCopy(stored: unknown): Bead | undefined {
     isNumber(bead.widthMm) && isNumber(bead.heightMm) &&
     (bead.widthCorrectionMm === undefined || isNumber(bead.widthCorrectionMm)) &&
     (bead.beadsPerKg === undefined || isNumber(bead.beadsPerKg))
-  return valid ? beadCopy(bead as Bead) : undefined
+  return valid ? withDelica11Corrected(beadCopy(bead as Bead)) : undefined
+}
+
+/** A Delica 11/0 copy saved with the sizes the catalog had the wrong way round (1.6 along, 1.3 across, ticket 0722)
+ * turned to Miyuki's: 1.3 along the thread, 1.6 across. A copy with any other numbers is left as it is. */
+function withDelica11Corrected(copy: Bead): Bead {
+  return copy.id === 'miyuki/delica/11-0' && copy.widthMm === 1.6 && copy.heightMm === 1.3 ? { ...copy, widthMm: 1.3, heightMm: 1.6 } : copy
 }
 
 /** The Bead a pick in Brand or Type leads to (ticket 554): the three pickers narrow each other, so a new Brand keeps

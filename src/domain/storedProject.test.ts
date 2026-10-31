@@ -26,6 +26,20 @@ describe('normalizeProject', () => {
     expect(reopened.paletteLetters).toEqual(framed.paletteLetters)
   })
 
+  it('turns a layer copy of the Delica 11/0 with its old swapped sizes the right way round, and leaves other sizes alone (ticket 0722)', () => {
+    const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
+    const saved = JSON.parse(JSON.stringify(replaceBead(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), delica)))
+    const withSizes = (widthMm: number, heightMm: number) => {
+      const stored = structuredClone(saved)
+      for (const layer of stored.layers) layer.bead = { ...layer.bead, widthMm, heightMm }
+      return frameOf(normalizeProject(stored))!.bead
+    }
+
+    expect(withSizes(1.6, 1.3)).toMatchObject({ widthMm: 1.3, heightMm: 1.6 })
+    expect(withSizes(1.3, 1.6)).toMatchObject({ widthMm: 1.3, heightMm: 1.6 })
+    expect(withSizes(1.7, 1.2)).toMatchObject({ widthMm: 1.7, heightMm: 1.2 })
+  })
+
   it('keeps a reversed way and its pointers through a save, and opens an old file with neither (ticket 0589)', () => {
     const framed = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), { row: 0, column: 0, rows: 4, columns: 3 })
     const upward = moveToRow(toggleRowDirection(toggleRowDirection(framed)), 3)

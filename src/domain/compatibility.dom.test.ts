@@ -86,9 +86,14 @@ const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => co
 /** A Project saved before it held its layers as it reads today (ticket 0664, ADR 0079): its Canvas from its own fields
  * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead and
  * Letters, each layer named by the Project's id. */
-/** A stored value as this build writes it back: without the Bead shape every layer is now drawn without (ticket 0724). */
+/** A stored value as this build writes it back: without the Bead shape every layer is now drawn without (ticket 0724),
+ * and a Delica 11/0 copy with its sizes the right way round (ticket 0722). */
 function writtenBack(stored: string): unknown {
-  return JSON.parse(stored, (key, value) => (key === 'beadShape' ? undefined : value))
+  return JSON.parse(stored, (key, value) => {
+    if (key === 'beadShape') return undefined
+    const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
+    return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
+  })
 }
 
 /** A stored value of file version 12 or library version 5 as this build writes it back (tickets 0691, 0724): the next

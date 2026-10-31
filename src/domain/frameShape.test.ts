@@ -47,7 +47,7 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
   })
 
   it('packs by a Delica 11/0 where the Bead is unknown, and by a Cube\'s square cell in a Cube', () => {
-    expect(frameLayoutOf({ shape: 'triangle', settings })!.beadDepth).toBe(1.3 / 1.6)
+    expect(frameLayoutOf({ shape: 'triangle', settings })!.beadDepth).toBe(1.6 / 1.3)
     expect(frameLayoutOf({ shape: 'triangle', settings, cell: { aspect: 1, roundness: 0 } })!.beadDepth).toBe(1)
   })
 
@@ -64,7 +64,7 @@ describe('a round shape packed by its layer\'s Bead (ticket 0723)', () => {
       return layout
     })
     expect(tall!.height).toBeGreaterThan(squat!.height)
-    // In bead widths: a Round 11/0 is 1.65 mm along the thread and 2.2 across, a Delica 1.6 and 1.3.
+    // In bead widths: a Round 11/0 is 1.65 mm along the thread and 2.2 across, a Delica 1.3 and 1.6.
     const widths = (bead: typeof delica) => frameSizeMm({ shape: 'warpedSquare', settings, rows: 1, columns: 1, technique: 'peyote' }, bead).heightMm / (bead.widthMm + (bead.widthCorrectionMm ?? 0))
     expect(widths(round)).toBeCloseTo(tall!.height, 9)
     expect(widths(delica)).toBeCloseTo(squat!.height, 9)
