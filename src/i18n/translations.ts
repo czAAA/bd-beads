@@ -450,8 +450,8 @@ export interface Translations {
     /** The carousel's ‹ › buttons. */
     previousFeature: string
     nextFeature: string
-    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end. */
-    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string }
+    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
+    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }
     /** The hand-written notes of the hero (Homepage card); decorative, hidden from screen readers. */
     notes: { onUs: string }
     /** The coffee tile (ticket 219; Homepage card). */

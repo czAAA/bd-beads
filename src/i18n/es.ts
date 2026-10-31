@@ -363,7 +363,7 @@ export const es: Translations = {
     whatsInside: 'Qué incluye',
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
-    sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.' },
+    sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}' },
     notes: { onUs: 'va por nosotros' },
     coffee: { title: 'Hecho por una familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró tiempo, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {

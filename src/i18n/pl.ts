@@ -365,7 +365,7 @@ export const pl: Translations = {
     whatsInside: 'Co jest w środku',
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
-    sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.' },
+    sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}' },
     notes: { onUs: 'na nasz koszt' },
     coffee: { title: 'Robi to jedna rodzina', text: 'openbeads robi jedna rodzina, koralik po koraliku, i jest darmowe. Jeśli zaoszczędziło ci czas, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
