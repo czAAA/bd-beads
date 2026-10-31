@@ -256,9 +256,7 @@
   --section-scale: 0.985; /* A section shrinks this little as it turns. */
   --homepage-mark-large: 26.25rem; /* The faint X1 mark beside the box, 420px, at 7%. */
   --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
-  --free-window: 6.25rem; /* The free list's window in the No account tile, 100px: four rows and the next one fading. */
-  --free-roll-curl: 1.125rem; /* The unrolled list's curled end, 18px. */
-  /* Homepage card, plan tiles (ticket 0740). --free-window and --free-roll-curl above go when the app's tile follows the card. */
+  /* Homepage card, plan tiles (tickets 0740, 0742). */
   --free-start-rows: 4; /* The free list's rows shown before the page is scrolled. */
   --free-growth: 2.5; /* The tile grows this many times as fast as the page scrolls, until it reaches the screen's foot. */
   --free-fade: 1.75rem; /* The free list's faded foot while rows are still hidden, 28px. */
