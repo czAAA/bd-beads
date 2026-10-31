@@ -244,6 +244,7 @@ The scroll story (ticket 0739): the Progress bar's words.
 | --- | --- |
 | Sections (the track's name) · Back · Next | Разделы · Назад · Дальше |
 | This is the first section. · This is the last section. (why Back or Next is off) | Это первый раздел. · Это последний раздел. |
+| Go to {section} (a step's name for screen readers, ticket 0743; `{section}` is the section's heading, as on its step) | Перейти: {section} |
 
 The free list (ticket 0740), one row each, in this order. It names the app's features in the words the app uses for them; every shipped language has it. `{n}` and the names in braces come from the app (Homepage card, The free list), never typed in: `{techniques}` the Techniques' names, `{brands}` the Color catalogs' brands, `{codes}` their codes added up, `{categories}` the Starters' categories, each joined as a list in the language. The 0739 list ("23 · free", the window's and the curl's names, the 23 rows) is gone with the window and the roll.
 

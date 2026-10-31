@@ -54,7 +54,7 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 
 - **Beads and grams, side by side**: every color and the Total show the count and the weight, because beads are bought by the gram. The Total and the PNG say it both ways ("16 900 beads · ≈ 84.5 g").
 - **How grams are worked out**: count ÷ the Bead's beads per gram, rounded **up** to 0.1 g, trailing ".0" dropped ("24 g", "3.9 g"); the Total is rounded up from the total count, not added up from the rounded rows.
-- **Beads per gram is a catalog field** on each Bead: Miyuki Delica 11/0 about 200, TOHO Round 11/0 about 110–120 (published conversion charts); TOHO Cube 1.5 mm needs a weighed figure before it ships.
+- **Beads per gram is a catalog field** on each Bead: Miyuki Delica 11/0 about 200, TOHO Round 11/0 about 105 (TOHO's Beads Per Kg Chart, 105,300 a kg); TOHO Cube 1.5 mm needs a weighed figure before it ships.
 - A note under the Total says where the number comes from and suggests a spare: "≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares." An unknown Bead shows no grams, no tubes and no note.
 - The Beads needed box in the app has the same grams column, so the screen and the paper agree.
 

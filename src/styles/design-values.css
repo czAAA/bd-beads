@@ -257,6 +257,11 @@
   --free-fade: 1.75rem; /* The free list's faded foot while rows are still hidden, 28px. */
   --coming-soon-width: 14.75rem; /* The Coming soon stamp on Free account and Pro, 236px. */
   --coming-soon-tilt: -8deg; /* The stamp's tilt; Pro's is -5deg, so the two don't look pasted. */
+  /* Homepage card, the Progress bar's steps (ticket 0743) */
+  --step-dot: 0.5rem; /* A step's dot on the track, passed or ahead, 8px. */
+  --step-dot-current: 0.875rem; /* The current step's ring, 14px. */
+  --step-ring: 3px; /* The current step's ring line, in accent-strong. */
+  --step-name-max: 5.75rem; /* A step's name on a phone wraps at 92px. */
   /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress) */
   --row-glint-duration: 380ms; /* BeadBoard card: each bead of the finished pass washes in --row-glint and back. */
   --row-glint-step: 24ms; /* BeadBoard card: the gap between one bead's glint and the next, in the Row direction. */

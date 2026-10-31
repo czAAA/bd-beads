@@ -174,8 +174,8 @@ export const BEAD_CATALOG: readonly Bead[] = [
     widthMm: 1.5,
     heightMm: 2.2,
     widthCorrectionMm: 0.15,
-    // PROVISIONAL, as above (ticket 155).
-    beadsPerKg: 109890,
+    // TOHO's own Beads Per Kg Chart (ticket 0741), in place of seller listings' counts.
+    beadsPerKg: 105300,
   }),
   defineBead({ brand: MIYUKI, formFactor: DELICA, size: '11/0', widthMm: 1.3, heightMm: 1.6, beadsPerKg: 200000 }),
   // Miyuki's size table (ticket 539) gives an outer diameter (`heightMm`) and beads per 10 cm of strung beads, which

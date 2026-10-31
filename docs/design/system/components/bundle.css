@@ -616,6 +616,7 @@ body {
   --slogan-hold:2200ms;--slogan-roll:650ms;
   --homepage-box-width:70rem;--homepage-box-height:55rem;--section-turn:600ms;--section-shift:3.5rem;--section-scale:.985;
   --homepage-mark-large:26.25rem;--homepage-mark-small:7.5rem;--free-start-rows:4;--free-growth:2.5;--free-fade:1.75rem;--coming-soon-width:14.75rem;--coming-soon-tilt:-8deg;
+  --step-dot:.5rem;--step-dot-current:.875rem;--step-ring:3px;--step-name-max:5.75rem;
 }
 [data-theme="dark"]{--hover-fill:var(--elevated);--press-fill:var(--line-strong)}
 @media (prefers-reduced-motion:reduce){:root{--duration-slow:120ms;--duration-base:120ms}}
@@ -1039,3 +1040,27 @@ body {
 .bb-coming-soon{display:block;width:var(--coming-soon-width);margin:18px auto 6px;color:var(--accent-strong);opacity:.85;transform:rotate(var(--coming-soon-tilt))}
 .bb-plan--off + .bb-plan--off .bb-coming-soon{--coming-soon-tilt:-5deg}
 @media (prefers-reduced-motion:reduce){.bb-homepage-section{transform:none!important;transition:none}}
+
+/* The Homepage's Progress bar steps (ticket 0743; Homepage card): one per section, in the sections' order, the step at i of n at (i / (n - 1)) of the track, the first at its start, the last at its end; the fill is (section / (n - 1)), empty on the first. Each step is a button: a dot centred on the 4px track 8px down, its name under it. Give the current step is-lit once the fill has started (the ring takes the spark's glow), and swap is-flaring and is-flaring-alt on each step forward as the spark does; the spark's tail runs into it and its own dot is not drawn. */
+.bb-section-steps{position:relative;flex:1 1 auto;min-width:8rem;height:2.375rem;margin-inline:var(--space-8)}
+.bb-section-steps>.bb-track{position:absolute;inset-inline:0;top:var(--space-8);min-width:0}
+.bb-section-step{--d:var(--step-dot);position:absolute;top:0;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%);padding:0;margin:0;border:0;background:none;color:var(--muted);font:var(--type-meta-small);text-transform:lowercase;cursor:pointer}
+.bb-section-step::before{content:"";box-sizing:border-box;width:var(--d);height:var(--d);border-radius:50%;background:var(--track);border:2px solid var(--box)}
+.bb-section-step::before,.bb-section-step>span{margin-top:calc(var(--space-10) - var(--d) / 2)}
+.bb-section-step>span{white-space:nowrap}
+.bb-section-step--first{align-items:flex-start;transform:none;text-align:left}
+.bb-section-step--last{align-items:flex-end;transform:translateX(-100%);text-align:right}
+.bb-section-step--passed{color:var(--body)}
+.bb-section-step--passed::before{background:var(--accent)}
+.bb-section-step--current{--d:var(--step-dot-current);color:var(--ink)}
+.bb-section-step--current::before{background:var(--box);border:var(--step-ring) solid var(--accent-strong);transition:box-shadow var(--duration-base) var(--ease-standard)}
+.bb-section-step--current.is-lit::before{box-shadow:0 0 8px 3px var(--spark-glow)}
+.bb-section-step--current.is-flaring::before{animation:bb-spark-flare var(--spark-flare-duration) var(--ease-out) both}
+.bb-section-step--current.is-flaring-alt::before{animation:bb-spark-flare-alt var(--spark-flare-duration) var(--ease-out) both}
+.bb-section-step:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px;border-radius:var(--radius-xs)}
+@media (max-width:30rem){
+  .bb-section-steps{height:3.25rem;margin-inline:var(--space-6)}
+  .bb-section-step{font:var(--type-meta-tiny)}
+  .bb-section-step>span{white-space:normal;width:max-content;max-width:var(--step-name-max)}
+}
+@media (prefers-reduced-motion:reduce){.bb-section-step--current::before{animation:none!important;transition:none}}
