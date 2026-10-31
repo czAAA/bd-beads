@@ -1,4 +1,21 @@
 import { normalizeHex } from './color'
+import type { Tool } from './tool'
+
+/** A tile of the Tool pill: a Tool, the Mirror tile (a mode, ADR 0082) or the Paste tile (ticket 447). */
+export type PillTile = Tool | 'mirror' | 'paste'
+
+/** The pill's tiles in order, leading end first (ToolPill card): the one list a tile's key, its digit badge and the
+ * Keyboard shortcuts dialog read, so reordering or adding a tile renumbers them all (ADR 0084).
+ * @internal Exported for the test that checks each badge, chord and place agree. */
+export const PILL_TILES: readonly PillTile[] = ['paint', 'fill', 'select', 'erase', 'hand', 'piece', 'mirror', 'paste']
+
+/** The pill's Tool tiles, in their order. */
+export const PILL_TOOLS = PILL_TILES.filter((tile): tile is Tool => tile !== 'mirror' && tile !== 'paste')
+
+/** A tile's single-key shortcut: its place in the pill, counted from 1 (ADR 0084). */
+export function pillTileKey(tile: PillTile): string {
+  return String(PILL_TILES.indexOf(tile) + 1)
+}
 
 /** The four edges of the drawing area the Tool pill can dock to (ticket 439, ADR 0046). */
 export const PILL_POSITIONS = ['left', 'top', 'right', 'bottom'] as const

@@ -42,7 +42,8 @@ import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
 import projectFileV13Mirror from './fixtures/project-file-v13-mirror.json?raw'
 import projectFileV13MirrorAxes from './fixtures/project-file-v13-mirror-axes.json?raw'
 import projectFileV13MirrorArea from './fixtures/project-file-v13-mirror-area.json?raw'
-import { canvasAxesOf, MIRROR_OFF, mirrorAreaOf, mirrorSettingOf } from './mirror'
+import projectFileV13MirrorPlace from './fixtures/project-file-v13-mirror-place.json?raw'
+import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
@@ -492,31 +493,55 @@ describe('stored-data compatibility', () => {
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Drops))
     })
 
-    it('opens a version 13 file with its Mirror setting and writes it back the same, and one from before Mirror opens with it off (ticket 0703)', () => {
+    /** A first-form file (tickets 0703–0710) as this build writes it back (ticket 0750): the layers' Areas and Canvas
+     * Axes gone, the Mirror one record with its place. */
+    function placedBack(stored: string, place: unknown): unknown {
+      const back = writtenBack(stored) as { projects: { mirror: object; layers: Record<string, unknown>[] }[] }
+      const [project] = back.projects
+      for (const layer of project!.layers) {
+        delete layer.mirrorAxes
+        delete layer.mirrorArea
+      }
+      project!.mirror = { ...project!.mirror, place }
+      return back
+    }
+
+    it('opens a version 13 file with the first form\'s Mirror on a Frame as the whole-Frame Mirror, and one from before Mirror with it off (tickets 0703, 0750)', () => {
       const [opened] = parseProjectsFile(projectFileV13Mirror).projects
-      expect(mirrorSettingOf(opened!)).toEqual({ mode: 'repeat', axes: { leftRight: true, topBottom: false, radial: false }, fold: 2, counts: { leftRight: 2, topBottom: 1 } })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13Mirror))
+      expect(mirrorSettingOf(opened!)).toEqual({ mode: 'repeat', axes: { leftRight: true, topBottom: false, radial: false }, fold: 2, counts: { leftRight: 2, topBottom: 1 }, place: { layer: 'frame' } })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(placedBack(projectFileV13Mirror, { layer: 'frame' }))
 
       const [older] = parseProjectsFile(projectFileV13Drops).projects
       expect(older!.mirror).toBeUndefined()
       expect(mirrorSettingOf(older!)).toEqual(MIRROR_OFF)
     })
 
-    it('opens a version 13 file with the Canvas\'s Mirror Axes on its Canvas layer and writes it back the same; one from before them opens with none (ticket 0704)', () => {
+    it('opens a version 13 file with the Canvas\'s Mirror Axes as the whole-Frame Mirror, the Axes dropped (tickets 0704, 0750)', () => {
       const [opened] = parseProjectsFile(projectFileV13MirrorAxes).projects
-      expect(canvasAxesOf(opened!)).toEqual({ leftRight: 4.5, topBottom: -2 })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorAxes))
-      expect(canvasOf(parseProjectsFile(projectFileV13Mirror).projects[0]!).mirrorAxes).toBeUndefined()
+      expect(mirrorSettingOf(opened!).place).toEqual({ layer: 'frame' })
+      expect(canvasOf(opened!)).not.toHaveProperty('mirrorAxes')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(placedBack(projectFileV13MirrorAxes, { layer: 'frame' }))
     })
 
-    it('opens a version 13 file with each layer\'s Mirror Area and writes it back the same; one from before it opens with none (ticket 0710)', () => {
+    it('opens a version 13 file with each layer\'s Mirror Area as the Mirror on its Canvas Area, the Frame\'s dropped (tickets 0710, 0750)', () => {
       const [opened] = parseProjectsFile(projectFileV13MirrorArea).projects
-      expect(mirrorAreaOf(opened!, 'frame')).toEqual({ row: 1, column: 0, rows: 2, columns: 3 })
-      expect(mirrorAreaOf(opened!, 'canvas')).toEqual({ row: -2, column: 4, rows: 5, columns: 6 })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorArea))
-      const [older] = parseProjectsFile(projectFileV13MirrorAxes).projects
-      expect(mirrorAreaOf(older!, 'frame')).toBeUndefined()
-      expect(mirrorAreaOf(older!, 'canvas')).toBeUndefined()
+      const place = { layer: 'canvas', area: { row: -2, column: 4, rows: 5, columns: 6 } }
+      expect(mirrorSettingOf(opened!).place).toEqual(place)
+      expect(frameOf(opened!)).not.toHaveProperty('mirrorArea')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(placedBack(projectFileV13MirrorArea, place))
+    })
+
+    it('opens a version 13 file with the one Mirror of a Project and its place, and writes it back the same (ticket 0750)', () => {
+      const [opened] = parseProjectsFile(projectFileV13MirrorPlace).projects
+      expect(mirrorSettingOf(opened!)).toEqual({
+        mode: 'mirror',
+        axes: { leftRight: false, topBottom: true, radial: false },
+        fold: 3,
+        counts: { leftRight: 1, topBottom: 2 },
+        beforeRadial: { leftRight: false, topBottom: true },
+        place: { layer: 'canvas', area: { row: -2, column: 4, rows: 5, columns: 6 } },
+      })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorPlace))
     })
 
     it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {

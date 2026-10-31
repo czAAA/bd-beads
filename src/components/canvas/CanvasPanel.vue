@@ -4,7 +4,7 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import CanvasHint from './CanvasHint.vue'
 import FirstRunHints from './FirstRunHints.vue'
 import CanvasStrip from './CanvasStrip.vue'
-import ContextBar from '../tools/ContextBar.vue'
+import ContextBar, { type MirrorBarState } from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ToolPill from '../tools/ToolPill.vue'
@@ -94,8 +94,6 @@ const {
   onCellHover,
   onHoverEnd,
   onRotate,
-  mirrorOn,
-  onMirrorSelection,
   onRotateCanvas,
   onSelectAll,
   toolPillPosition,
@@ -103,26 +101,17 @@ const {
   recentsInPill,
   pickRecent,
   mirrorSetting,
-  mirrorLimits,
-  mirrorOnCanvas,
-  mirrorPopoverOpen,
-  onMirrorChange,
-  mirrorCanvasAxes,
-  mirrorHeldAxis,
-  onAxisPress,
-  onAxisDrag,
-  onAxisRelease,
-  mirrorAreaRow,
-  mirrorArea,
+  mirrorOn,
+  mirrorOnFrame,
+  mirrorRect,
   mirrorShape,
-  mirrorPicking,
-  mirrorBand,
-  onAreaPick,
-  onAreaWholeFrame,
-  onAreaClear,
-  onAreaPress,
-  onAreaDrag,
-  onAreaRelease,
+  mirrorMarking,
+  mirrorAdjusting,
+  onMirrorChange,
+  onCloseMirror,
+  onMirrorTile,
+  onMirrorWholeFrame,
+  onMirrorSelection,
   selectedColorHex,
   selectedColorId,
   customColor,
@@ -193,7 +182,7 @@ const colorPick = useColorPick()
  * release. */
 /** What the tool in hand and the modes on let the Drawing surface do (ticket 0619): one value, worked out once. */
 const surfaceTools = computed(() =>
-  toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value }),
+  toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value, markingArea: mirrorMarking.value }),
 )
 
 const shownProject = frameDraftProject
@@ -224,13 +213,29 @@ const selectionSummary = computed(() => {
   return fillBlanks(t.value.frame.sizeTooltip, { columns: current.columns, rows: current.rows, estimate })
 })
 
+/** The Mirror bar's state while the Mirror is on (ADR 0082): its readout is the Area's size as the Selection bar's,
+ * through the Bead of the layer it is on; the whole Frame's the Frame's own, a Custom frame's shape named first. */
+const mirrorBar = computed<MirrorBarState | undefined>(() => {
+  const project = activeProject.value
+  const setting = mirrorSetting.value
+  const rect = mirrorRect.value
+  if (!project || !mirrorOn.value || !rect) return undefined
+  if (setting.place?.layer === 'frame') {
+    const shape = frameOf(project)?.shape
+    return { setting, rect, shape: mirrorShape.value, summary: shape ? `${t.value.frame.shapes[shape]} · ${frameTooltip.value}` : frameTooltip.value }
+  }
+  const { bead } = beadOfLayer(project, 'canvas')
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(rect, bead, layerWeave(project, 'canvas').technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  return { setting, rect, summary: fillBlanks(t.value.frame.sizeTooltip, { columns: rect.columns, rows: rect.rows, estimate }) }
+})
+
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps
  * aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
+/** Where the Mirror's Area is on the surface: the Mirror bar anchors to it (ADR 0082). */
+const mirrorAnchor = ref<SelectionAnchor>()
 /** Where the Frame and its margin sheet are on the canvas box: the sheet's tools follow them (tickets 473, 0657). */
 const frameAnchor = ref<FrameAnchor>()
-/** Whether the pointer is on the keep-out margin while Mirror's Area is being picked (ticket 0710): the sheet lights. */
-const areaTargeted = ref(false)
 /** Where the unframed Schemas are on the canvas box: their tags follow them (tickets 0721, 0733). */
 const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
@@ -304,7 +309,7 @@ const drawingStyle = computed(() => {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="emptyProject || mirrorPicking" class="app-shell__canvas-hint" :picking="mirrorPicking ? mirrorAreaRow : undefined" />
+        <CanvasHint v-if="emptyProject" class="app-shell__canvas-hint" />
 
         <!-- The hand-drawn way to a first Pattern (ticket 0725, FirstRunHints card): over an empty Project, gone with
           the first bead, under the Tool pill. -->
@@ -339,12 +344,7 @@ const drawingStyle = computed(() => {
               :preview-cells="previewCells"
               :preview-stamp="previewStamp"
               :preview-color="previewColor"
-              :mirror="mirrorSetting"
-              :mirror-axes="mirrorCanvasAxes"
-              :held-axis="mirrorHeldAxis"
-              :picking-area="mirrorPicking"
-              :area-layer="mirrorAreaRow"
-              :area-band="mirrorBand"
+              :mirror="mirrorOn ? mirrorSetting : undefined"
               :selection="selection"
               :selection-refusals="selectionRefusals"
               :fill-refusals="fillRefusals"
@@ -361,18 +361,11 @@ const drawingStyle = computed(() => {
               @frame-drag="onFrameDrag"
               @frame-release="onFrameRelease"
               @frame-cancel="onFrameCancel"
-              @axis-press="onAxisPress"
-              @axis-drag="onAxisDrag"
-              @axis-release="onAxisRelease"
-              @area-press="onAreaPress"
-              @area-drag="onAreaDrag"
-              @area-release="onAreaRelease"
-              @area-target="areaTargeted = $event"
-              @area-whole="onAreaWholeFrame"
               @selection-press="onSelectionPress"
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
               @selection-anchor="selectionAnchor = $event"
+              @mirror-anchor="mirrorAnchor = $event"
               @frame-anchor="frameAnchor = $event"
               @schema-anchors="schemaAnchors = $event"
               @pressing="surfacePressing = $event"
@@ -402,14 +395,8 @@ const drawingStyle = computed(() => {
           v-if="activeProject"
           v-model:position="toolPillPosition"
           v-model:popover-open="toolPillPopoverOpen"
-          v-model:mirror-popover-open="mirrorPopoverOpen"
-          :mirror="mirrorSetting"
-          :mirror-limits="mirrorLimits"
-          :mirror-on-canvas="mirrorOnCanvas"
-          :mirror-area-row="mirrorAreaRow"
-          :mirror-area="mirrorArea"
-          :mirror-shape="mirrorShape"
-          :mirror-picking="mirrorPicking"
+          :mirror-on="mirrorOn"
+          :mirror-marking="mirrorMarking"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"
@@ -420,10 +407,7 @@ const drawingStyle = computed(() => {
           :custom-color="customColor"
           @select-tool="onSelectTool"
           @paste-mode="onPasteMode"
-          @update:mirror="onMirrorChange"
-          @mirror-pick="onAreaPick"
-          @mirror-whole-frame="onAreaWholeFrame"
-          @mirror-clear-area="onAreaClear"
+          @mirror-tile="onMirrorTile"
           @pick-recent="pickRecent"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
@@ -460,7 +444,8 @@ const drawingStyle = computed(() => {
       <div v-if="activeProject" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box, clear of the Tool pill; Select all is its first item.
+          inside the canvas box, clear of the Tool pill; Select all is its first item. With no Selection and the Mirror
+          on it is the Mirror bar, above the Mirror's Area (ticket 0750).
         -->
         <ContextBar
           :selection-summary="selectionSummary"
@@ -476,7 +461,9 @@ const drawingStyle = computed(() => {
           :has-paint-color="hasPaintColor()"
           :select-active="activeTool === 'select'"
           :obstacle="pillRect"
-          :mirror-on="mirrorOn"
+          :mirror="mirrorBar"
+          :mirror-anchor="mirrorAnchor"
+          :mirror-size-only="mirrorAdjusting"
           @copy="onCopy"
           @cut="onCut"
           @paste="onPasteMode"
@@ -485,6 +472,8 @@ const drawingStyle = computed(() => {
           @clear-selection="onClearSelection"
           @rotate="onRotate"
           @mirror-selection="onMirrorSelection"
+          @update:mirror="onMirrorChange"
+          @close-mirror="onCloseMirror"
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
@@ -502,8 +491,8 @@ const drawingStyle = computed(() => {
           :row-press="rowPress"
           :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
-          :picking="mirrorPicking"
-          :targeted="areaTargeted"
+          :mirror-on-frame="mirrorOnFrame"
+          @mirror="onMirrorWholeFrame"
           @rotate="onRotateFrame"
           @toggle-edit="onEditFrame"
           @export="onOpenExport"

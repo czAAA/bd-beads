@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mountWithProject } from './testUtils/seedProject'
-import { beadColors, beadPoint, drawnProject, hoverBead, pressBead } from './testUtils/beads'
+import { beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
 import { beadsOfLayer, frameOf, withFrameSheet } from './domain/layerRecord'
 import { colorAt } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
@@ -13,7 +13,9 @@ import App from './App.vue'
 import { flushPromises } from '@vue/test-utils'
 import { loadProjects } from './services/libraryStore'
 import { choosePanelOption } from './testUtils/choosePanelOption'
-import { openPanel, pickColor } from './testUtils/pill'
+import { copySelection, openPanel, pickColor, pickTool, selectAll } from './testUtils/pill'
+import { withMirrorPlace } from './domain/mirror'
+import type { GridPosition } from './domain/grid'
 import { frameGrid } from './testUtils/frameGrid'
 
 // The Tool pill's wiring (ticket 439, ADR 0046): one test per control → flow. Where it docks and how it reads and keeps
@@ -70,58 +72,100 @@ describe('the Tool pill', () => {
     wrapper.unmount()
   })
 
-  it('Mirror (ticket 0703): key 8 turns it on, a stroke lands on both sides of the Frame, the tile opens the popover and an Axis chip is saved with the Project', async () => {
+  /** A drag on the Canvas between two positions, released on the shell, as a real drag can end anywhere. */
+  async function dragOn(wrapper: Awaited<ReturnType<typeof mountWithProject>>, from: GridPosition, to: GridPosition) {
+    await pressBead(wrapper, from)
+    await hoverBead(wrapper, to, { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+  }
+
+  /** A Canvas position well clear of the Frame and its keep-out margin, above it. */
+  const aboveFrame = (wrapper: Awaited<ReturnType<typeof mountWithProject>>) => {
+    const frame = frameOf(drawnProject(wrapper))!
+    return { row: frame.row - 12, column: frame.column }
+  }
+
+  it('Mirror (ADR 0082): key 7 enters Mirror mode, a drag on the Canvas makes the Mirror there, saved, with its bar, and a Canvas stroke lands inside it', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    const top = aboveFrame(wrapper)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '7', bubbles: true }))
+    await flushPromises()
+    expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-pressed')).toBe('true')
+
+    await dragOn(wrapper, top, { row: top.row + 1, column: top.column + 3 })
+    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'canvas', area: { ...top, rows: 2, columns: 4 } })
+    expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(true)
+
+    await pickColor(wrapper, 'red')
+    await pickTool(wrapper, 'paint')
+    await pressBead(wrapper, top)
+    await wrapper.find('.app-shell').trigger('mouseup')
+    expect(beadsOfLayer(drawnProject(wrapper), 'canvas')[top.row]).toEqual({ [top.column]: '#e63746', [top.column + 3]: '#e63746' })
+    wrapper.unmount()
+  })
+
+  it('Mirror mode (ADR 0082): its drag is the Mirror\'s, so the clipboard stays and Paste with it', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     await pickColor(wrapper, 'red')
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: '8', bubbles: true }))
-    await flushPromises()
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await selectAll(wrapper)
+    await copySelection(wrapper)
+    expect(wrapper.find('[data-testid="pill-tool-paste"]').exists()).toBe(true)
 
+    const top = aboveFrame(wrapper)
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await dragOn(wrapper, top, { row: top.row + 2, column: top.column + 2 })
+    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'canvas', area: { ...top, rows: 3, columns: 3 } })
+    expect(wrapper.find('[data-testid="pill-tool-paste"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('the Mirror bar (ADR 0082): its Mode and Close mirror reach the Project', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    const top = aboveFrame(wrapper)
+    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
+    await dragOn(wrapper, top, { row: top.row + 3, column: top.column + 3 })
+
+    await wrapper.get('[data-testid="mirror-bar-mode-repeat"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.mirror?.mode).toBe('repeat')
+    await wrapper.get('[data-testid="mirror-bar-close"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'repeat', place: null })
+    expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('Mirror the whole Frame (MarginSheet card): the margin\'s button makes the whole Frame the Mirror, a stroke on the Frame lands at its counterpart, and pressed again it turns the Mirror off', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    await wrapper.get('[data-testid="margin-mirror-frame"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'frame' })
+
+    await pickColor(wrapper, 'red')
+    await pickTool(wrapper, 'paint')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     const row = beadColors(wrapper)[0]!
-    expect(row[0]).toBe('#e63746')
-    expect(row[row.length - 1]).toBe('#e63746')
-    expect(row.filter(Boolean)).toHaveLength(2)
+    expect([row[0], row.at(-1)]).toEqual(['#e63746', '#e63746'])
 
-    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
-    await wrapper.get('[data-testid="mirror-axis-topBottom"]').trigger('click')
-    expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'mirror', axes: { leftRight: true, topBottom: true } })
-    wrapper.unmount()
-  })
-
-  it('Radial (ticket 0705): the chip turns Radial on, and a stroke on a loom Frame lands at every corner in Mirror mode at Fold 2', async () => {
-    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
-    await pickColor(wrapper, 'red')
-    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
-    await wrapper.get('[data-testid="mirror-axis-radial"]').trigger('click')
-    expect(wrapper.get('[data-testid="mirror-fold-value"]').text()).toBe('2')
-    await wrapper.get('[data-testid="mirror-popover-close"]').trigger('click')
+    await wrapper.get('[data-testid="margin-mirror-frame"]').trigger('click')
     await flushPromises()
-
-    await pressBead(wrapper, 0)
-    await wrapper.find('.app-shell').trigger('mouseup')
-    const grid = beadColors(wrapper)
-    const corners = [grid[0]![0], grid[0]!.at(-1), grid.at(-1)![0], grid.at(-1)!.at(-1)]
-    expect(corners).toEqual(['#e63746', '#e63746', '#e63746', '#e63746'])
-    expect(grid.flat().filter(Boolean)).toHaveLength(4)
-    expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'mirror', axes: { leftRight: false, topBottom: false, radial: true }, fold: 2 })
+    expect(loadProjects()[0]!.mirror?.place).toBeNull()
     wrapper.unmount()
   })
 
-  it('Radial on a Star Frame (ticket 0706): the popover notes the five sides from the shape, and a stroke on one arm lands on every arm, reflected within each in Mirror mode', async () => {
+  it('Mirror the whole Frame on a Star Frame (ticket 0706): the shape\'s own Radial, a stroke on one arm landing on every arm', async () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: DEFAULT_BEAD.id, size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
-    saveProjects([placed.project])
+    saveProjects([withMirrorPlace(placed.project, { layer: 'frame' })])
     const wrapper = mount(App, { attachTo: document.body })
     await nextTick()
     await pickColor(wrapper, 'red')
-    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
-    await wrapper.get('[data-testid="mirror-axis-radial"]').trigger('click')
-    // The shape reaches the popover: the Note in the Fold's place (what it says is the popover's own test).
-    expect(wrapper.find('[data-testid="mirror-sides-note"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="mirror-popover-close"]').trigger('click')
-    await flushPromises()
+    await pickTool(wrapper, 'paint')
 
     // The Star's first bead (round 0, place 0), named from the Frame's corner as a Frame press is aimed.
     const own = frameOf(drawnProject(wrapper))!
@@ -130,56 +174,6 @@ describe('the Tool pill', () => {
     // The stroke reaches the other arms (which beads, and how many, is the domain's test).
     const beads = beadsOfLayer(drawnProject(wrapper), 'frame')!
     expect([0, 4, 8, 12, 16].map((column) => colorAt(beads, 0, column))).toEqual(['#e63746', '#e63746', '#e63746', '#e63746', '#e63746'])
-    wrapper.unmount()
-  })
-
-  it('Area (ticket 0710): Select area closes the popover, a drag over the beads sets the Area, a stroke mirrors inside it, and Clear the area removes it', async () => {
-    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
-    const surface = wrapper.get('[data-testid="project-surface"]')
-    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
-    await wrapper.get('[data-testid="mirror-select-area"]').trigger('click')
-    expect(wrapper.find('[data-testid="mirror-popover"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="canvas-hint-picking"]').text()).toContain('click the margin for the whole Frame')
-
-    await pressBead(wrapper, { row: 0, column: 0, layer: 'frame' })
-    await hoverBead(wrapper, { row: 1, column: 3, layer: 'frame' }, { buttons: 1 })
-    await surface.trigger('pointerup')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="mirror-area"]').exists()).toBe(true)
-    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toEqual({ row: 0, column: 0, rows: 2, columns: 4 })
-    await wrapper.get('[data-testid="mirror-popover-close"]').trigger('click')
-
-    await pickColor(wrapper, 'red')
-    await pressBead(wrapper, { row: 0, column: 0, layer: 'frame' })
-    await surface.trigger('pointerup')
-    const row = beadColors(wrapper)[0]!
-    expect(row.flatMap((color, column) => (color ? [column] : []))).toEqual([0, 3])
-
-    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
-    await wrapper.get('[data-testid="mirror-clear-area"]').trigger('click')
-    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toBeUndefined()
-    wrapper.unmount()
-  })
-
-  it('Area (ticket 0710): a press on the keep-out margin while picking, taken on release, makes the whole Frame the Area', async () => {
-    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
-    const frame = frameOf(drawnProject(wrapper))!
-    await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
-    await wrapper.get('[data-testid="mirror-select-area"]').trigger('click')
-    // Off the Frame and its margin a press sets nothing, picking or not.
-    const outside = { row: frame.row - 8, column: frame.column }
-    await pressBead(wrapper, outside)
-    await wrapper.get('[data-testid="project-surface"]').trigger('pointerup', beadPoint(wrapper, outside))
-    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toBeUndefined()
-    const margin = { row: frame.row - 1, column: frame.column }
-    await pressBead(wrapper, margin)
-    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toBeUndefined()
-    await hoverBead(wrapper, margin, { buttons: 1 })
-    await wrapper.get('[data-testid="project-surface"]').trigger('pointerup', beadPoint(wrapper, margin))
-    await flushPromises()
-    expect(wrapper.get('[data-testid="mirror-area"]').text()).toContain('The whole Frame is the area')
-    expect(loadProjects()[0]!.layers[1]!.mirrorArea).toEqual({ row: 0, column: 0, rows: frame.rows, columns: frame.columns })
-    expect(wrapper.find('[data-testid="mirror-popover"]').exists()).toBe(true)
     wrapper.unmount()
   })
 

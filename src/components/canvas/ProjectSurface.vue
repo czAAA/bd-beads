@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import type { Layer, PreviewCell } from '../../domain/grid'
-import type { Rect } from '../../domain/canvas'
+import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
 import { nearestQuarterTurn, tiltOf } from '../../domain/canvasOrientation'
@@ -28,8 +27,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useEmptyCanvasLook } from './surface/useEmptyCanvasLook'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
-import type { CanvasAxes, MirrorAxis, MirrorSetting } from '../../domain/mirror'
-import { axisHandles as axisHandlesOf } from '../../rendering/mirrorAxes'
+import type { MirrorSetting } from '../../domain/mirror'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 import { useRowMotion } from './surface/useRowMotion'
 import type { RowPress } from '../../composables/project/useRowOps'
@@ -84,17 +82,9 @@ const props = withDefaults(defineProps<{
   /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
    * 433): each one shows the not-allowed cue, the margin outline for 1s. */
   selectionRefusals?: number
-  /** The Mirror setting (ticket 0703): the overlay draws its Axis lines across the Frame while the mode is not Off. */
+  /** The Mirror (ADR 0082): the overlay draws its Area and Axis lines while it is on, and in Mirror mode a Canvas Area's
+   * handles take a press as the Selection's do. */
   mirror?: MirrorSetting
-  /** The open Canvas's Axes that act (ticket 0704): a line across the whole view each, with a handle chip the press
-   * grabs before the tool, and Radial's centre (ticket 0705) with its chip; `heldAxis` is the one being dragged. */
-  mirrorAxes?: CanvasAxes
-  heldAxis?: MirrorAxis
-  /** Mirror's Select area (ticket 0710): while `pickingArea`, a press and drag go to the band on `areaLayer` and the
-   * margin is the whole Frame's target; `areaBand` is the band so far, drawn as the Selection with no handles. */
-  pickingArea?: boolean
-  areaLayer?: Layer
-  areaBand?: Rect
   /** How many Fill presses Fill reach has refused (ticket 0715): each shows the not-allowed pointer for 1s. */
   fillRefusals?: number
   /** The last press of Row done or Row not done (ticket 0730): the Pattern's motion plays from it, never from the
@@ -106,6 +96,9 @@ const emit = defineEmits<SurfacePointerEvents & {
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors.
    * Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
+  /** The Mirror's Area in the surface's pixels (ADR 0082), or none while it is off: where the Mirror bar anchors, above
+   * a Canvas Area or above the whole Frame's margin sheet. Follows pan and zoom. */
+  'mirror-anchor': [anchor: SelectionAnchor | undefined]
   /** The Frame's and its margin sheet's rectangles in the surface's pixels (tickets 417, 473, 0657), or none once the
    * sheet is out of view: where the sheet's tools and title block sit. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
@@ -269,6 +262,24 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
+/** Where the Mirror's Area is on screen, told to the Mirror bar (ContextBar card): a Canvas Area's box, or the whole
+ * Frame's margin sheet (its Frame where no sheet is drawn). */
+watch(
+  [surface, () => props.mirror?.place, size],
+  () => {
+    const place = props.mirror?.place
+    const frame = frameOf(props.project)
+    if (!place || size.value.width === 0 || (place.layer === 'frame' && !frame)) {
+      emit('mirror-anchor', undefined)
+      return
+    }
+    const drawn = place.layer === 'canvas' ? surface.value.beadBox(place.area, 'canvas') : (sheetIn(surface.value) ?? surface.value.frameBox(frame!))
+    const box = leaning.value.screenBox(drawn)
+    emit('mirror-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
+  },
+  { immediate: true, flush: 'post' },
+)
+
 /** The Frame's margin sheet in a view's px, the drawing's before it leans; none without a Frame. */
 function sheetIn(view: SurfaceView): { x: number; y: number; width: number; height: number } | undefined {
   const grid = marginSheetPx(props.project)
@@ -331,10 +342,7 @@ watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: 
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 
 const marginCue = useMarginCue(props)
-/** Mirror's Axis handles on the open Canvas (ticket 0704), laid out once per view: the overlay draws them and the
- * pointer asks them which one a press grabbed, so the two cannot disagree. */
-const axisHandles = computed(() => (props.mirrorAxes ? axisHandlesOf(props.mirrorAxes, canvasWeave.value, surface.value) : []))
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse, axisHandles })
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
@@ -342,7 +350,7 @@ const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () =>
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
 useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn') })
 useSurfaceOverlay({
-  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame, axisHandles,
+  props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
   rowMotion: rowMotion.rowMotion,
 })

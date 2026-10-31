@@ -45,14 +45,13 @@ const props = defineProps<{
   exportOpen?: boolean
   /** Where the Selection is, if there is one: its handles win a press where the sheet's controls lie over them. */
   selection?: BarBox
-  /** Mirror's Select area (ticket 0710, MirrorPopover card): while `picking` the sheet is the whole Frame's target and
-   * its controls take no press; `targeted` while the pointer is on the margin, which tints the paper, turns its edge
-   * solid and previews the Frame. */
-  picking?: boolean
-  targeted?: boolean
+  /** Whether the whole Frame is the Mirror's Area (ADR 0082): its Mirror the whole Frame is pressed, in the accent. */
+  mirrorOnFrame?: boolean
 }>()
 
 const emit = defineEmits<{
+  /** Mirror the whole Frame pressed: the Mirror onto the whole Frame, or off while it is there (ADR 0082). */
+  mirror: []
   rotate: []
   'toggle-edit': []
   /** Export, hung from the button it was asked from: the sheet's Export or, folded, its Frame tools menu. */
@@ -75,6 +74,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const actions = {
+  mirror: controlAction('mirror-frame'),
   rotate: controlAction('rotate-frame'),
   edit: controlAction('edit-frame'),
   export: controlAction('strip-export'),
@@ -239,19 +239,6 @@ const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.
 const progressEl = ref<HTMLElement>()
 const roving = useRovingFocus(progressEl, { axis: () => 'horizontal', managesTabIndex: true })
 
-/** The whole-Frame preview and the tint's inner edge (ticket 0710): the Frame's box in the sheet's own px. */
-const frameInSheet = computed(() => {
-  const { box, sheet } = props.anchor
-  return { left: box.left - sheet.left, top: box.top - sheet.top, width: box.width, height: box.height }
-})
-const previewStyle = computed(() => ({ left: `${frameInSheet.value.left}px`, top: `${frameInSheet.value.top}px`, width: `${frameInSheet.value.width}px`, height: `${frameInSheet.value.height}px` }))
-/** The tint covers the paper alone: a border as wide as each band, the Frame left clear. */
-const tintStyle = computed(() => {
-  const { left, top, width, height } = frameInSheet.value
-  const { sheet } = props.anchor
-  return { borderWidth: `${top}px ${sheet.width - left - width}px ${sheet.height - top - height}px ${left}px` }
-})
-
 /** Whether the Move bar is being dragged: it turns accent until the canvas press ends. */
 const dragging = ref(false)
 watch(
@@ -276,9 +263,14 @@ const colorButton = computed(() =>
 const colorHangsFrom = computed(() => (row.value === 'narrow' ? 'menu' : row.value ? 'button' : 'none'))
 watch(colorHangsFrom, () => (colorOpen.value = false))
 
-/** Folded, the Frame tools menu holds the tools the band has no room for (MarginSheet card, Zoom forms). */
+/** Mirror the whole Frame's name: "Mirror off" while it is on (MarginSheet card). */
+const mirrorName = computed(() => (props.mirrorOnFrame ? t.value.mirror.mirrorOff : undefined))
+
+/** Folded, the Frame tools menu holds the tools the band has no room for (MarginSheet card, Zoom forms); Mirror the
+ * whole Frame first, checked while on, shown as Rotate Frame is. */
 const menuItems = computed(() =>
   [
+    rotatable.value && { id: 'mirror', action: actions.mirror, run: () => emit('mirror'), checked: !!props.mirrorOnFrame },
     rotatable.value && { id: 'rotate', action: actions.rotate, run: () => emit('rotate') },
     editable.value && { id: 'edit', action: actions.edit, run: () => emit('toggle-edit') },
     { id: 'export', action: actions.export, run: () => emit('export', 'margin-frame-tools') },
@@ -292,16 +284,10 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 <template>
   <div
     class="margin-sheet"
-    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--picking': picking, 'margin-sheet--target': picking && targeted }]"
+    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare' }]"
     :style="sheetStyle"
     data-testid="margin-sheet"
   >
-    <template v-if="picking">
-      <div class="margin-sheet__tint" :style="tintStyle" data-testid="margin-area-tint" />
-      <svg class="margin-sheet__area-preview" :style="previewStyle" aria-hidden="true" data-testid="margin-area-preview">
-        <rect class="margin-sheet__area-preview-line" x="0" y="0" width="100%" height="100%" />
-      </svg>
-    </template>
     <div
       v-if="row"
       ref="bandEl"
@@ -329,6 +315,18 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
       <div ref="toolsEl" class="margin-sheet__tools">
         <template v-if="row === 'full' || row === 'compact'">
+          <IconButton
+            v-if="rotatable"
+            variant="plain"
+            class="margin-sheet__mirror"
+            :class="{ 'margin-sheet__mirror--on': mirrorOnFrame }"
+            :icon-size="iconSize"
+            :action="actions.mirror"
+            :label="mirrorName"
+            :pressed="!!mirrorOnFrame"
+            data-testid="margin-mirror-frame"
+            @click="emit('mirror')"
+          />
           <IconButton v-if="rotatable" variant="plain" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
           <IconButton
             v-if="editable"
@@ -365,6 +363,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             :disabled="itemDisabled(item.action)"
             :name="item.action.name(t)"
             :disabled-body="itemDisabled(item.action) ? item.action.disabledBody?.(t, deps) : undefined"
+            :checked="'checked' in item ? item.checked : undefined"
             :data-testid="`margin-frame-tools-${item.id}`"
             @select="item.run()"
           >
@@ -453,63 +452,10 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   pointer-events: auto;
 }
 
-/* Over a Selection's handles the controls give way (ticket 498), and while an Area is being picked every control does
- * (ticket 0710): the sheet is then the whole Frame's target and the canvas under it takes the press. */
+/* Over a Selection's handles the controls give way (ticket 498). */
 .margin-sheet__yielding,
-.margin-sheet__band.margin-sheet__yielding > *,
-.margin-sheet--picking .margin-sheet__band > *,
-.margin-sheet--picking .margin-sheet__title,
-.margin-sheet--picking .margin-sheet__handle {
+.margin-sheet__band.margin-sheet__yielding > * {
   pointer-events: none;
-}
-
-/* The whole-Frame target (MirrorPopover card, MarginSheet card): under the pointer the paper tints `marker` at
- * --mirror-margin-opacity, the outer edge turns a solid 1.5px `marker` line and a dashed `marker` rectangle previews
- * the Frame, each over --duration-fast. */
-.margin-sheet__tint {
-  position: absolute;
-  inset: 0;
-  box-sizing: border-box;
-  border-style: solid;
-  border-color: color-mix(in srgb, var(--marker) calc(var(--mirror-margin-opacity) * 100%), transparent);
-  border-radius: var(--radius-lg);
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
-  pointer-events: none;
-}
-
-.margin-sheet__area-preview {
-  position: absolute;
-  overflow: visible;
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
-  pointer-events: none;
-}
-
-.margin-sheet__area-preview-line {
-  fill: none;
-  stroke: var(--marker);
-  stroke-width: var(--mirror-area-line);
-  stroke-dasharray: var(--mirror-preview-dash);
-}
-
-.margin-sheet--target .margin-sheet__tint,
-.margin-sheet--target .margin-sheet__area-preview {
-  opacity: 1;
-}
-
-.margin-sheet--target {
-  outline: var(--mirror-area-line) solid var(--marker);
-  outline-offset: 0;
-  transition: outline-color var(--duration-fast) var(--ease-out);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .margin-sheet__tint,
-  .margin-sheet__area-preview,
-  .margin-sheet--target {
-    transition: none;
-  }
 }
 
 .margin-sheet__progress {
@@ -543,6 +489,14 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 .margin-sheet__band:not(.margin-sheet__band--full) .margin-sheet__tools :deep(.icon-btn) {
   width: var(--margin-tool-compact);
   height: var(--margin-tool-compact);
+}
+
+/* Mirror the whole Frame on is the band's own selected look (MarginSheet card): `accent` with its icon `on-accent`, not
+ * Edit Frame's `ink`, the Mirror being a setting that stays on. */
+.margin-sheet__tools :deep(.margin-sheet__mirror--on),
+.margin-sheet__tools :deep(.margin-sheet__mirror--on:hover) {
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
 /* Remove Frame is `ink` on the paper and `danger` on hover. */

@@ -5,12 +5,12 @@ import AppTooltip from './AppTooltip.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
-// One item of a MenuButton's menu (Menu card): 34px, icon and label; choosing runs `select` and closes the menu.
-// `chosen` marks a set to pick from (ticket 368) with a check. With `href` it is a link. A disabled item given `name` and
-// `disabledBody` says why in the Tooltip (ADR 0035) but stays natively disabled, so the arrows skip it.
+// One item of a MenuButton's menu (Menu card): choosing runs `select` and closes the menu. `chosen` marks a set to pick
+// from (ticket 368), `checked` an on/off `menuitemcheckbox` (MarginSheet card), each with a check; `href` makes a link. A
+// disabled item given `name` and `disabledBody` says why (ADR 0035) but stays natively disabled, so the arrows skip it.
 const props = withDefaults(
-  defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean; chosen?: boolean; name?: string; disabledBody?: string }>(),
-  { icon: undefined, chosen: undefined, disabled: false, href: undefined, current: false, name: undefined, disabledBody: undefined },
+  defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean; chosen?: boolean; checked?: boolean; name?: string; disabledBody?: string }>(),
+  { icon: undefined, chosen: undefined, checked: undefined, disabled: false, href: undefined, current: false, name: undefined, disabledBody: undefined },
 )
 const emit = defineEmits<{ select: [] }>()
 const closeMenu = inject(MENU_CLOSE, () => {})
@@ -44,10 +44,11 @@ function onClick() {
     v-else
     class="ui-control app-menu-item"
     type="button"
-    role="menuitem"
+    :role="checked === undefined ? 'menuitem' : 'menuitemcheckbox'"
     tabindex="-1"
     :disabled="disabled"
     :aria-current="chosen ? 'true' : undefined"
+    :aria-checked="checked"
     @click="onClick"
   >
     <AppIcon v-if="icon" :name="icon" :size="16" />
@@ -56,6 +57,7 @@ function onClick() {
       <span v-else class="app-menu-item__gap" aria-hidden="true" />
     </template>
     <span class="app-menu-item__label"><slot /></span>
+    <AppIcon v-if="checked" name="check" :size="16" class="app-menu-item__check" />
   </button>
 </template>
 
@@ -107,5 +109,12 @@ function onClick() {
 .app-menu-item__gap {
   flex: none;
   width: 16px;
+}
+
+/* An on item's check, after its label in `accent-strong` (MarginSheet card). */
+.app-menu-item__check {
+  flex: none;
+  margin-left: auto;
+  color: var(--accent-strong);
 }
 </style>

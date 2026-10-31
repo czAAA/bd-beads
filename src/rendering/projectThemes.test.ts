@@ -32,9 +32,6 @@ describe('ProjectTheme', () => {
     }
     expect(values.rim).toBe(token('bead-rim', theme))
     expect(values.margin.line, 'margin line').toBe(token('margin-line', theme))
-    // A handle chip on the canvas (ticket 0704) is `elevated`, with its shadow only where the theme casts one.
-    expect(values.chip.fill, 'chip').toBe(token('elevated', theme))
-    expect(values.chip.shadow !== undefined, 'chip shadow').toBe(theme === 'light')
   })
 
   it('rims a near-black bead in the dark rim token (white) in light and dark, in its own rim in high contrast', () => {

@@ -5,9 +5,8 @@ export type { Layer }
 import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { beadsOfLayer, canvasOf, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
 import { frameWeave, laidOnCanvas } from './layerWeave'
-import type { CanvasAxes } from './mirror'
 import { touch, type Project } from './project'
 import { projectCell } from './projectBead'
 import type { Weave } from './weave'
@@ -27,12 +26,6 @@ export interface LayerSheet {
   edge?: Rect
   /** The Frame as its Frame shape reads it (its shape, settings, turn, size and Weave); none on the Canvas. */
   frame?: ShapedSheet
-  /** Where Mirror's straight Axes cross the open Canvas (ticket 0704), its own geometry; none on the Frame, whose Axes
-   * come from its edge and the setting's counts. */
-  axes?: CanvasAxes
-  /** Mirror's Area on this layer (ticket 0710), in its own positions: the rectangle the Axes run inside in place of
-   * the whole Frame or Canvas; none where the Axes run through the whole layer. */
-  area?: Rect
 }
 
 
@@ -106,13 +99,11 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
   const frame = layer === 'frame' ? frameOf(project) : undefined
   if (!frame) {
     const { beads, weave } = layerOf(project, 'canvas')
-    const { mirrorAxes: axes, mirrorArea: area } = canvasOf(project)
-    return { beads, weave, geometry: gridGeometry(weave), ...(axes ? { axes } : {}), ...(area ? { area } : {}) }
+    return { beads, weave, geometry: gridGeometry(weave) }
   }
   const { beads, weave } = layerOf(project, 'frame')!
-  const { mirrorArea: area } = frame
   const edge = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
-  return { beads, weave, geometry: frameGeometryOf(project), edge, frame: shapedFrame(project), ...(area ? { area } : {}) }
+  return { beads, weave, geometry: frameGeometryOf(project), edge, frame: shapedFrame(project) }
 }
 
 /** `after` with every position under the Frame put back as `before` had it, but for those `through` lets by: the Canvas
@@ -126,7 +117,7 @@ function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect, through: (
 }
 
 /** What a Canvas command may change under the Frame: nothing by default, the Frame hiding what lies there untouched;
- * `underFrame` names the positions it may paint there, hidden: a Mirror counterpart's (ticket 0704, spec 0702's Edges). */
+ * `underFrame` names the positions it may paint there, hidden: a Canvas Mirror's counterpart's (spec 0702's Edges). */
 export interface OnLayerOptions {
   underFrame?: (position: GridPosition) => boolean
 }

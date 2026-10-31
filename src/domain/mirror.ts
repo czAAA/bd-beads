@@ -1,195 +1,138 @@
 import { frameContains, type Rect } from './canvas'
 import { beadUnder, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutSymmetry } from './frameLayout'
 import { frameLayoutOf } from './frameShape'
-import type { GridPosition, Layer } from './grid'
+import type { GridPosition } from './grid'
 import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet } from './layers'
-import { canvasOf, frameOf, type Layered } from './layerRecord'
+import { frameOf, type Layered } from './layerRecord'
 import { mayPlace } from './margin'
-import { touch, type LayerFields, type Project } from './project'
+import { touch, type Project } from './project'
 import { describeWeave } from './weave'
 
-// Mirror (ADR 0082, spec 0702; ticket 0703): the live mode that lands a drawing gesture at its counterparts. This
-// module owns the setting and the counterpart maths, positions in and positions out, per layer; the callers of
-// `paintCells` (the Paint stroke, Fill, Paste) and the hover preview all ask `counterparts`, so they never disagree.
+// Mirror (ADR 0082, spec 0702; tickets 0703, 0750): the live mode that lands a drawing gesture at its counterparts,
+// one per Project, inside its Area. This module owns the record and the counterpart maths, positions in and positions
+// out; the callers of `paintCells` (the Paint stroke, Fill, Paste) and the hover preview all ask `counterparts`.
 
-/** How Mirror lays a counterpart (glossary: Mirror mode): a reflection, the same way round, or not at all. */
-export type MirrorMode = 'off' | 'mirror' | 'repeat'
-export const MIRROR_MODES: readonly MirrorMode[] = ['off', 'mirror', 'repeat']
+/** How Mirror lays a counterpart (glossary: Mirror mode): a reflection, or the same way round. No Off: Close mirror is
+ * the way out (ADR 0082). */
+export type MirrorMode = 'mirror' | 'repeat'
+export const MIRROR_MODES: readonly MirrorMode[] = ['mirror', 'repeat']
 
 /** A direction a straight Axis runs across (glossary: Axis): Left–right is a vertical line reflecting columns,
  * Top–bottom a horizontal one reflecting rows. */
 export type MirrorDirection = 'leftRight' | 'topBottom'
-export const MIRROR_DIRECTIONS: readonly MirrorDirection[] = ['leftRight', 'topBottom']
+const MIRROR_DIRECTIONS: readonly MirrorDirection[] = ['leftRight', 'topBottom']
 
 /** What Mirror maps across: the two straight Axes, or Radial (ticket 0705). */
 export type MirrorAxis = MirrorDirection | 'radial'
 export const MIRROR_AXES: readonly MirrorAxis[] = [...MIRROR_DIRECTIONS, 'radial']
 
 /** Radial's image count (ticket 0705): a stepper from 2 to 8 on a grid. Past 8 the sectors are narrower than a bead a
- * few beads out and the images merge (MirrorPopover card). */
+ * few beads out and the images merge. */
 export const MIN_FOLD = 2
 export const MAX_FOLD = 8
 
-/** The Mirror setting, one per Project (spec 0702, Kept where): the mode, the Axes, Radial's Fold and the Frame's Axis
- * counts (N axes cut the Frame into N + 1 equal strips). Saved with the Project, off by default. */
+/** Where the Mirror is (glossary: Area): a rectangle of the Canvas, in its positions, or the whole Frame, never a
+ * smaller part of it (ADR 0082). */
+export type MirrorPlace = { layer: 'canvas'; area: Rect } | { layer: 'frame' }
+
+/** The Mirror, one per Project (ADR 0082): the Mode, the Axes, Radial's Fold, the Axis counts (N axes cut the Area into
+ * N + 1 equal strips) and its place. Saved with the Project, off by default. */
 export interface MirrorSetting {
   mode: MirrorMode
   axes: Record<MirrorAxis, boolean>
   fold: number
   counts: Record<MirrorDirection, number>
-  /** The straight Axes as they were when Radial went on (ticket 0705, MirrorPopover card): Radial on turns them off
-   * and remembers them here, Radial off brings them back. Absent while Radial has not been on. */
+  /** The straight Axes as they were when Radial went on (ticket 0705): Radial on turns them off and remembers them
+   * here, Radial off brings them back. Absent while Radial has not been on. */
   beforeRadial?: Record<MirrorDirection, boolean>
+  /** Where the Mirror is while it is on; null once closed, so a file tells it apart from the first form's record,
+   * which never had one (`readMirrorSetting`). Absent on a Project that never had a Mirror. */
+  place?: MirrorPlace | null
 }
 
-/** Mirror as a new Project has it, and as an older file reads: off, no Axis, one axis per direction. */
-export const MIRROR_OFF: MirrorSetting = { mode: 'off', axes: { leftRight: false, topBottom: false, radial: false }, fold: MIN_FOLD, counts: { leftRight: 1, topBottom: 1 } }
+/** The Mirror as a new Project has it: off, Mirror mode, one axis per direction, no Axis yet (the first Mirror takes
+ * Left–right, `withMirrorPlace`). */
+export const MIRROR_OFF: MirrorSetting = { mode: 'mirror', axes: { leftRight: false, topBottom: false, radial: false }, fold: MIN_FOLD, counts: { leftRight: 1, topBottom: 1 } }
 
-/** The open Project's Mirror setting; off for one saved without. */
-export function mirrorSettingOf(project: Pick<Project, 'mirror'>): MirrorSetting {
-  return project.mirror ?? MIRROR_OFF
+/** The open Project's Mirror; off for one saved without, and for a whole-Frame one whose Frame is gone. */
+export function mirrorSettingOf(project: Layered & Pick<Project, 'mirror'>): MirrorSetting {
+  const setting = project.mirror ?? MIRROR_OFF
+  return setting.place?.layer === 'frame' && !frameOf(project) ? { ...setting, place: null } : setting
 }
 
-/** The Project with its Mirror setting replaced. Not an Undo step: a setting, like Letters (useExportFlow). */
+/** The Project with the Mirror bar's settings (Mode, Axes, counts) taken, its place as it is. Not an Undo step: a
+ * setting, like Letters (useExportFlow). */
 export function withMirror(project: Project, mirror: MirrorSetting): Project {
-  return { ...project, mirror }
+  return { ...project, mirror: { ...mirror, place: mirrorSettingOf(project).place ?? null } }
 }
 
-/** Whether the mode is not Off: the tile is lit, the lines are drawn, a gesture is mirrored where an Axis is on. */
+/** Whether the Mirror is on: it has a place, so the tile is lit, the bar shows and a gesture inside it is mirrored. */
 export function isMirrorOn(setting: MirrorSetting): boolean {
-  return setting.mode !== 'off'
+  return !!setting.place
 }
 
-/** A stored Mirror setting read back (spec 0702): each field as a file may have left it, anything unreadable at its
- * default; none for a value that is not a setting at all, which reads as off. */
-export function readMirrorSetting(stored: unknown): MirrorSetting | undefined {
-  const value = stored as Partial<MirrorSetting> | null
-  if (typeof value !== 'object' || value === null || !MIRROR_MODES.includes(value.mode as MirrorMode)) return undefined
+/** The Rect a Mirror place covers in its layer's own positions: the Canvas Area, or the Frame's rectangle from its first
+ * row and column; none for a Frame the Project does not have. */
+export function placeRect(project: Layered, place: MirrorPlace): Rect | undefined {
+  if (place.layer === 'canvas') return place.area
+  const frame = frameOf(project)
+  return frame && { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+}
+
+/** The Project with the Mirror made, moved or resized to a place, or closed with none (ADR 0082): one Undo step, which
+ * the caller's `edit` makes. A new place keeps the Mode and Axes, its counts clamped to it; onto a Custom frame the Axes
+ * become the shape's own, off one Left–right; a Mirror with no Axis takes Left–right. Closed, the rest is kept. */
+export function withMirrorPlace(project: Project, place: MirrorPlace | undefined): Project {
+  const before = mirrorSettingOf(project)
+  if (!place) return touch(project, { mirror: { ...before, place: null } })
+  const shape = place.layer === 'frame' ? shapeAxesOf(project) : undefined
+  // Leaving a Custom frame, straight off it or after Close mirror there, its fixed Axes stay behind (Left–right).
+  const left = !shape ? shapeAxesOf(project) : undefined
+  const offShape = !!left && (before.place?.layer === 'frame' || (!before.place && MIRROR_AXES.every((axis) => before.axes[axis] === left.axes[axis]) && before.fold === (left.sides ?? before.fold)))
+  const anyAxis = MIRROR_AXES.some((axis) => before.axes[axis])
+  const { beforeRadial, ...rest } = before
+  const axes = shape ? shape.axes : offShape || !anyAxis ? { leftRight: true, topBottom: false, radial: false } : before.axes
+  const rect = placeRect(project, place)
+  const limit = (direction: MirrorDirection) => (rect ? maxAxisCount(direction === 'leftRight' ? rect.columns : rect.rows) : Infinity)
+  const counts = { leftRight: Math.min(before.counts.leftRight, limit('leftRight')), topBottom: Math.min(before.counts.topBottom, limit('topBottom')) }
+  const kept = shape || offShape ? {} : beforeRadial ? { beforeRadial } : {}
+  return touch(project, { mirror: { ...rest, ...kept, axes, counts, fold: shape?.sides ?? before.fold, place } })
+}
+
+/** A stored Mirror read back (ADR 0082): each field as a file may have left it, anything unreadable at its default; none
+ * for a value that is no Mirror at all, which reads as off. The first form's record (tickets 0703–0710, no `place`) is
+ * placed as it acted: its Canvas Area as the Mirror, else on a Frame the whole Frame, else off; its Off stays off. */
+export function readMirrorSetting(stored: unknown, firstForm: { canvasArea?: Rect; framed: boolean }): MirrorSetting | undefined {
+  const value = stored as (Partial<Omit<MirrorSetting, 'mode'>> & { mode?: unknown }) | null
+  if (typeof value !== 'object' || value === null || !['off', ...MIRROR_MODES].includes(value.mode as string)) return undefined
   const axes = (value.axes ?? {}) as Partial<Record<MirrorAxis, unknown>>
   const counts = (value.counts ?? {}) as Partial<Record<MirrorDirection, unknown>>
   const count = (direction: MirrorDirection) => (Number.isInteger(counts[direction]) && (counts[direction] as number) >= 1 ? (counts[direction] as number) : 1)
   const before = value.beforeRadial as Partial<Record<MirrorDirection, unknown>> | undefined
+  const place = 'place' in value ? readMirrorPlace(value.place) : firstFormPlace(value.mode === 'off', firstForm)
   return {
-    mode: value.mode as MirrorMode,
+    mode: value.mode === 'repeat' ? 'repeat' : 'mirror',
     axes: { leftRight: axes.leftRight === true, topBottom: axes.topBottom === true, radial: axes.radial === true },
     fold: clampFold(value.fold),
     counts: { leftRight: count('leftRight'), topBottom: count('topBottom') },
     ...(typeof before === 'object' && before !== null ? { beforeRadial: { leftRight: before.leftRight === true, topBottom: before.topBottom === true } } : {}),
+    place,
   }
 }
 
-/** A Fold within the Stepper's range, 2 to 8; the least for anything that is no whole number. */
-function clampFold(fold: unknown): number {
-  return Number.isInteger(fold) ? Math.min(MAX_FOLD, Math.max(MIN_FOLD, fold as number)) : MIN_FOLD
+/** A stored place read back: the whole Frame, or a Canvas Area of whole beads; anything else is closed. */
+function readMirrorPlace(stored: unknown): MirrorPlace | null {
+  const value = stored as { layer?: unknown; area?: unknown } | null
+  if (value?.layer === 'frame') return { layer: 'frame' }
+  const area = value?.layer === 'canvas' ? readMirrorArea(value.area) : undefined
+  return area ? { layer: 'canvas', area } : null
 }
 
-export function withMirrorMode(setting: MirrorSetting, mode: MirrorMode): MirrorSetting {
-  return { ...setting, mode }
-}
-
-/** An Axis chip pressed (MirrorPopover card): turning one on while the mode is Off sets the mode to Mirror. Radial on
- * turns the straight Axes off and remembers them; Radial off brings them back; a straight Axis on turns Radial off. */
-export function withAxisToggled(setting: MirrorSetting, axis: MirrorAxis): MirrorSetting {
-  const on = !setting.axes[axis]
-  const mode = on && setting.mode === 'off' ? 'mirror' : setting.mode
-  if (axis === 'radial') {
-    const { leftRight, topBottom } = setting.axes
-    const { beforeRadial: before, ...rest } = setting
-    const axes = on ? { leftRight: false, topBottom: false, radial: true } : { ...(before ?? { leftRight, topBottom }), radial: false }
-    return { ...rest, mode, axes, ...(on ? { beforeRadial: { leftRight, topBottom } } : {}) }
-  }
-  return { ...setting, mode, axes: { ...setting.axes, ...(on ? { radial: false } : {}), [axis]: on } }
-}
-
-/** A direction's Axis count as the Stepper sets it, never under one; the Frame's own limit applies where it is used. */
-export function withMirrorCount(setting: MirrorSetting, direction: MirrorDirection, count: number): MirrorSetting {
-  return { ...setting, counts: { ...setting.counts, [direction]: Math.max(1, Math.round(count)) } }
-}
-
-/** Radial's Fold as the Stepper sets it, 2 to 8. */
-export function withMirrorFold(setting: MirrorSetting, fold: number): MirrorSetting {
-  return { ...setting, fold: clampFold(Math.round(fold)) }
-}
-
-/** Whether a Fold maps by index (2 and 4: a half or quarter turn of the grid, exact) or geometrically (3 and 5 to 8:
- * each bead's centre turned and the nearest bead taking it). The popover's Note says which (MirrorPopover card). */
-export function foldByIndex(fold: number): boolean {
-  return fold === 2 || fold === 4
-}
-
-/** The turn between a Fold's images in degrees, rounded, for the popover's Note. */
-export function foldAngle(fold: number): number {
-  return Math.round(360 / fold)
-}
-
-/** Key `8` (spec 0702): the mode off, or back on as it last was (`lastMode`), with Left–right on if no Axis was. */
-export function toggledMirror(setting: MirrorSetting, lastMode: Exclude<MirrorMode, 'off'>): MirrorSetting {
-  if (isMirrorOn(setting)) return withMirrorMode(setting, 'off')
-  const anyAxis = setting.axes.leftRight || setting.axes.topBottom || setting.axes.radial
-  return { ...setting, mode: lastMode, axes: anyAxis ? setting.axes : { ...setting.axes, leftRight: true } }
-}
-
-/** Where the open Canvas's straight Axes lie (ticket 0704, spec 0702): a Left–right Axis as a column, a Top–bottom one
- * as a row, in the Canvas's own positions, a whole number through a position's centre and a half through its boundary
- * with the next; a direction with none has no Axis yet. On the Canvas layer's record; Radial's centre (0705) joins. */
-export interface CanvasAxes {
-  leftRight?: number
-  topBottom?: number
-  /** Radial's centre on the open Canvas (ticket 0705): the handle's place; none until Radial is turned on. */
-  centre?: RadialCentre
-}
-
-/** Where Radial turns about (ticket 0705): a row and column of the layer, both whole (on a position's centre) or both
- * halves (a corner between four). The index rule turns about it, the geometric rule about its point; a Frame's is its
- * own centre, the Canvas's its handle, and an Area (ticket 0710) or a layout (0706) passes its own. */
-export interface RadialCentre {
-  row: number
-  column: number
-}
-
-/** A Canvas Axis snapped where a position's centre or a boundary is, the nearer. */
-export function snapAxis(at: number): number {
-  return Math.round(at * 2) / 2
-}
-
-/** A Radial centre snapped to the nearer of a position's centre and a corner between four; a tie takes the position. */
-export function snapCentre({ row, column }: RadialCentre): RadialCentre {
-  const whole = { row: Math.round(row), column: Math.round(column) }
-  const corner = { row: Math.round(row - 0.5) + 0.5, column: Math.round(column - 0.5) + 0.5 }
-  const apart = (to: RadialCentre) => (to.row - row) ** 2 + (to.column - column) ** 2
-  return apart(corner) < apart(whole) ? corner : whole
-}
-
-/** A rectangle's own centre (spec 0702), the Frame's or an Area's: on its middle position for an odd size, between
- * four for an even one. */
-function rectCentre(rect: Rect): RadialCentre {
-  return { row: rect.row + (rect.rows - 1) / 2, column: rect.column + (rect.columns - 1) / 2 }
-}
-
-// The Area (ticket 0710, spec 0702): a rectangle of a layer's cells the Axes run inside in place of the whole Frame or
-// Canvas, one per layer on its record, in its own positions. Saved with the Project; an older file reads as none.
-
-/** The layer the popover's Area row and count Steppers are for: the Frame when the Project has one, else the Canvas. */
-export function mirrorLayerOf(project: Layered): Layer {
-  return frameOf(project) ? 'frame' : 'canvas'
-}
-
-/** A layer's Area, or none. */
-export function mirrorAreaOf(project: Layered, layer: Layer): Rect | undefined {
-  return (layer === 'frame' ? frameOf(project) : canvasOf(project))?.mirrorArea
-}
-
-/** The Project with a layer's Area set, or cleared with none; stamped as a change, saved with the Project. The same
- * Project back for a Frame it does not have. */
-export function withMirrorArea(project: Project, layer: Layer, area: Rect | undefined): Project {
-  const [canvas, ...frames] = project.layers
-  const changed = <T extends LayerFields>(record: T): T => {
-    const { mirrorArea: _previous, ...rest } = record
-    return { ...rest, ...(area ? { mirrorArea: area } : {}) } as T
-  }
-  if (layer === 'canvas') return touch(project, { layers: [changed(canvas), ...frames] })
-  const [frame, ...rest] = frames
-  return frame ? touch(project, { layers: [canvas, changed(frame), ...rest] }) : project
+/** Where the first form's Mirror acted (ADR 0082): nowhere while Off; its Canvas Area; else a Frame's whole Frame. */
+function firstFormPlace(off: boolean, { canvasArea, framed }: { canvasArea?: Rect; framed: boolean }): MirrorPlace | null {
+  if (off) return null
+  if (canvasArea) return { layer: 'canvas', area: canvasArea }
+  return framed ? { layer: 'frame' } : null
 }
 
 /** A stored Area read back: a whole rectangle of at least one bead, else none. */
@@ -201,97 +144,76 @@ export function readMirrorArea(stored: unknown): Rect | undefined {
   return whole && (rows as number) >= 1 && (columns as number) >= 1 ? { row: row!, column: column!, rows: rows!, columns: columns! } : undefined
 }
 
-/** The rectangle a pick from one cell to another spans (MirrorPopover card: the rubber band from the press to the
- * pointer), either way round, each corner kept inside `within` (the Frame) where one is given. */
-export function areaBetween(from: GridPosition, to: GridPosition, within?: Rect): Rect {
-  const keep = (value: number, start: number | undefined, size: number | undefined) => (start === undefined || size === undefined ? value : Math.min(start + size - 1, Math.max(start, value)))
-  const rows = [from.row, to.row].map((row) => keep(row, within?.row, within?.rows))
-  const columns = [from.column, to.column].map((column) => keep(column, within?.column, within?.columns))
-  const row = Math.min(...rows)
-  const column = Math.min(...columns)
-  return { row, column, rows: Math.max(...rows) - row + 1, columns: Math.max(...columns) - column + 1 }
+/** A Fold within the Stepper's range, 2 to 8; the least for anything that is no whole number. */
+function clampFold(fold: unknown): number {
+  return Number.isInteger(fold) ? Math.min(MAX_FOLD, Math.max(MIN_FOLD, fold as number)) : MIN_FOLD
 }
 
-/** The region the Mirror rules run inside on a layer (spec 0702, ticket 0710): a Custom frame's layout (ticket 0706,
- * geometric about its own centre), else the Area where one is set, else the Frame's rectangle (strips from its edges,
- * Radial's centre at its middle), else the open Canvas with its placed Axes. */
-type MirrorRegion = { kind: 'layout'; layout: FrameLayout } | { kind: 'area'; rect: Rect } | { kind: 'frame'; rect: Rect } | { kind: 'canvas'; axes?: CanvasAxes }
+export function withMirrorMode(setting: MirrorSetting, mode: MirrorMode): MirrorSetting {
+  return { ...setting, mode }
+}
 
-function mirrorRegionOf(sheet: LayerSheet): MirrorRegion {
+/** An Axis chip pressed (ContextBar card, Mirror bar): Radial on turns the straight Axes off and remembers them; Radial
+ * off brings them back (Left–right if none were); a straight Axis on turns Radial off. At least one Axis stays on, so
+ * pressing the last one on changes nothing. */
+export function withAxisToggled(setting: MirrorSetting, axis: MirrorAxis): MirrorSetting {
+  const on = !setting.axes[axis]
+  if (axis === 'radial') {
+    const { leftRight, topBottom } = setting.axes
+    const { beforeRadial: before, ...rest } = setting
+    if (on) return { ...rest, axes: { leftRight: false, topBottom: false, radial: true }, beforeRadial: { leftRight, topBottom } }
+    const back = before && (before.leftRight || before.topBottom) ? before : { leftRight: true, topBottom: false }
+    return { ...rest, axes: { ...back, radial: false } }
+  }
+  const axes = { ...setting.axes, ...(on ? { radial: false } : {}), [axis]: on }
+  return MIRROR_AXES.some((each) => axes[each]) ? { ...setting, axes } : setting
+}
+
+/** A direction's Axis count as the Stepper sets it, never under one; the Area's own limit applies where it is used. */
+export function withMirrorCount(setting: MirrorSetting, direction: MirrorDirection, count: number): MirrorSetting {
+  return { ...setting, counts: { ...setting.counts, [direction]: Math.max(1, Math.round(count)) } }
+}
+
+/** Radial's Fold as the Stepper sets it, 2 to 8. */
+export function withMirrorFold(setting: MirrorSetting, fold: number): MirrorSetting {
+  return { ...setting, fold: clampFold(Math.round(fold)) }
+}
+
+/** Whether a Fold maps by index (2 and 4: a half or quarter turn of the grid, exact) or geometrically (3 and 5 to 8:
+ * each bead's centre turned and the nearest bead taking it). */
+function foldByIndex(fold: number): boolean {
+  return fold === 2 || fold === 4
+}
+
+/** A rectangle's own centre (spec 0702), the Area's: on its middle position for an odd size, between four for an even
+ * one. */
+function rectCentre(rect: Rect): GridPosition {
+  return { row: rect.row + (rect.rows - 1) / 2, column: rect.column + (rect.columns - 1) / 2 }
+}
+
+/** The region the Mirror rules run inside on a layer: a Custom frame's layout (ticket 0706, geometric about its own
+ * centre) or the Area's rectangle (the Frame's own for the whole Frame); none on a layer the Mirror is not on. */
+type MirrorRegion = { kind: 'layout'; layout: FrameLayout } | { kind: 'rect'; rect: Rect }
+
+function mirrorRegionOf(sheet: LayerSheet, setting: MirrorSetting): MirrorRegion | undefined {
+  const place = setting.place
+  if (!place) return undefined
+  if (place.layer === 'canvas') return sheet.edge ? undefined : { kind: 'rect', rect: place.area }
+  if (!sheet.edge) return undefined
   const layout = sheet.frame?.shape ? frameLayoutOf(sheet.frame) : undefined
-  if (layout) return { kind: 'layout', layout }
-  if (sheet.area) return { kind: 'area', rect: sheet.area }
-  if (sheet.edge) return { kind: 'frame', rect: sheet.edge }
-  return { kind: 'canvas', ...(sheet.axes ? { axes: sheet.axes } : {}) }
+  return layout ? { kind: 'layout', layout } : { kind: 'rect', rect: sheet.edge }
 }
 
-/** The rectangle a region is bounded by, or none on the open Canvas: a gesture outside it is not mirrored, and a
- * counterpart outside it is dropped. */
-function boundsOf(region: MirrorRegion): Rect | undefined {
-  return region.kind === 'canvas' || region.kind === 'layout' ? undefined : region.rect
-}
-
-/** The open Project's Canvas Axes; none placed for a Project saved without. */
-export function canvasAxesOf(project: Layered): CanvasAxes {
-  return canvasOf(project).mirrorAxes ?? {}
-}
-
-/** The Project with its Canvas Axes replaced, on the Canvas layer's record. */
-export function withCanvasAxes(project: Project, mirrorAxes: CanvasAxes): Project {
-  const [canvas, ...frames] = project.layers
-  return touch(project, { layers: [{ ...canvas, mirrorAxes }, ...frames] })
-}
-
-/** The Canvas Axes as the setting goes from `before` to `next` (spec 0702): a direction that goes on is placed through
- * the view's centre, snapped, as is one that is on with no Axis placed yet (an older file), at its last place, or the
- * origin, until the view is measured; the rest stay, on or off. The same record when nothing moved. */
-export function withAxesPlaced(axes: CanvasAxes, before: MirrorSetting, next: MirrorSetting, centre: Record<MirrorDirection, number> | undefined): CanvasAxes {
-  const placing = MIRROR_DIRECTIONS.filter((direction) => next.axes[direction] && (!before.axes[direction] || axes[direction] === undefined))
-  const placed = placing.map((direction): [MirrorDirection, number] => [direction, snapAxis(centre?.[direction] ?? axes[direction] ?? 0)])
-  const straight = placed.every(([direction, at]) => axes[direction] === at) ? axes : { ...axes, ...Object.fromEntries(placed) }
-  // Radial's centre (ticket 0705) is placed the same way, at the view's middle in both directions.
-  if (!next.axes.radial || (before.axes.radial && axes.centre !== undefined)) return straight
-  const at = snapCentre(centre ? { row: centre.topBottom, column: centre.leftRight } : (axes.centre ?? { row: 0, column: 0 }))
-  return axes.centre?.row === at.row && axes.centre?.column === at.column ? straight : { ...straight, centre: at }
-}
-
-/** Whether the open Canvas mirrors a gesture (ticket 0704): Mirror mode with a straight Axis on and placed, or Radial
- * on with its centre placed in either mode (ticket 0705: a turn needs no edge, as a Repeat's strip does); with an Area
- * (ticket 0710) any Axis on, in either mode, as inside a Frame. */
-export function canvasMirrors(project: Layered, setting: MirrorSetting): boolean {
-  const axes = canvasAxesOf(project)
-  if (!isMirrorOn(setting)) return false
-  if (mirrorAreaOf(project, 'canvas')) return setting.axes.radial || MIRROR_DIRECTIONS.some((direction) => setting.axes[direction])
-  if (setting.axes.radial) return axes.centre !== undefined
-  return setting.mode === 'mirror' && MIRROR_DIRECTIONS.some((direction) => setting.axes[direction] && axes[direction] !== undefined)
-}
-
-/** Stored Canvas Axes read back: each direction's number snapped as the handle snaps, one that is no finite number left
- * out, the centre likewise; none for a value that holds nothing readable. */
-export function readCanvasAxes(stored: unknown): CanvasAxes | undefined {
-  const value = stored as Partial<Record<MirrorDirection, unknown>> & { centre?: Partial<RadialCentre> | null } | null
-  if (typeof value !== 'object' || value === null) return undefined
-  const read = MIRROR_DIRECTIONS.filter((direction) => Number.isFinite(value[direction])).map((direction) => [direction, snapAxis(value[direction] as number)])
-  const centre = value.centre
-  const placed = typeof centre === 'object' && centre !== null && Number.isFinite(centre.row) && Number.isFinite(centre.column) ? snapCentre({ row: centre.row!, column: centre.column! }) : undefined
-  return read.length > 0 || placed ? { ...Object.fromEntries(read), ...(placed ? { centre: placed } : {}) } : undefined
+/** Whether the Mirror is on the Canvas (ticket 0750): a Canvas command then paints its counterparts, hidden, where the
+ * Frame covers them (spec 0702's Edges). */
+export function canvasMirrors(setting: MirrorSetting): boolean {
+  return setting.place?.layer === 'canvas'
 }
 
 /** The most axes a direction with this many beads across can take (ticket 0044): every axis has a bead on each side;
  * one for a direction of one bead. */
 function maxAxisCount(cellsAcross: number): number {
   return Math.max(1, cellsAcross - 1)
-}
-
-/** Each direction's Axis count limit (spec 0702: 1 to that direction's beads minus 1), the Area's where one is set on
- * the layer the popover is for (ticket 0710), else the Frame's; none without, where the counts do not apply (the open
- * Canvas with no Area, ticket 0704; a Custom frame, ticket 0706). */
-export function axisLimitsOf(project: Layered): Record<MirrorDirection, number> | undefined {
-  const area = mirrorAreaOf(project, mirrorLayerOf(project))
-  if (area) return { leftRight: maxAxisCount(area.columns), topBottom: maxAxisCount(area.rows) }
-  const frame = frameOf(project)
-  if (!frame || frame.shape) return undefined
-  return { leftRight: maxAxisCount(frame.columns), topBottom: maxAxisCount(frame.rows) }
 }
 
 /** The axis positions along a direction of `cellsAcross` beads cut by `count` axes, in bead widths from its first
@@ -341,56 +263,34 @@ function stripCounterparts(index: number, dimension: number, count: number, repe
   return images
 }
 
-/** Every index `index` maps to across one Axis at `at` in Mirror mode, itself included: its reflection, which is itself
- * when the Axis runs through its centre. */
-function reflected(index: number, at: number): number[] {
-  const image = 2 * at - index
-  return image === index ? [index] : [index, image]
-}
-
 type IndexImages = (index: number) => number[]
 const same: IndexImages = (index) => [index]
-
-/** How a region maps each direction's index under the setting, or nothing where it has no Axis to map by: a
- * rectangle's (the Frame's, ticket 0703, or the Area's, 0710) strips from its edges and the counts; the open Canvas's
- * single Axes from its record, in Mirror mode only (0704: with no edge there is no strip to repeat, spec 0702). */
-function imagesBy(region: MirrorRegion, setting: MirrorSetting): Record<MirrorDirection, IndexImages> | undefined {
-  if (!(setting.axes.leftRight || setting.axes.topBottom) || region.kind === 'layout') return undefined
-  if (region.kind !== 'canvas') {
-    const { rect } = region
-    const repeat = setting.mode === 'repeat'
-    const strips = (from: number, across: number, count: number): IndexImages => (index) => stripCounterparts(index - from, across, count, repeat).map((image) => image + from)
-    return {
-      leftRight: setting.axes.leftRight ? strips(rect.column, rect.columns, setting.counts.leftRight) : same,
-      topBottom: setting.axes.topBottom ? strips(rect.row, rect.rows, setting.counts.topBottom) : same,
-    }
-  }
-  const { axes } = region
-  if (setting.mode !== 'mirror' || !axes) return undefined
-  const across = (direction: MirrorDirection): IndexImages => {
-    const at = axes[direction]
-    return setting.axes[direction] && at !== undefined ? (index) => reflected(index, at) : same
-  }
-  return { leftRight: across('leftRight'), topBottom: across('topBottom') }
-}
 
 /** Every position a position maps to under the setting, itself first; none for an image that lands on no position (a
  * layout's Seam or Off-shape), which is dropped. */
 type PositionImages = (position: GridPosition) => (GridPosition | undefined)[]
 
-/** The straight Axes' images as one map: each row image with each column image. */
-function straightImages(by: Record<MirrorDirection, IndexImages>): PositionImages {
-  return (position) => by.topBottom(position.row).flatMap((row) => by.leftRight(position.column).map((column) => ({ row, column })))
+/** The straight Axes' images inside a rectangle: its strips from its edges and the counts, each row image with each
+ * column image. A direction one bead across has no Axis (ContextBar card: its chip is off), nor does one turned off. */
+function straightImages(rect: Rect, setting: MirrorSetting): PositionImages | undefined {
+  const leftRight = setting.axes.leftRight && rect.columns > 1
+  const topBottom = setting.axes.topBottom && rect.rows > 1
+  if (!(leftRight || topBottom)) return undefined
+  const repeat = setting.mode === 'repeat'
+  const strips = (from: number, across: number, count: number): IndexImages => (index) => stripCounterparts(index - from, across, count, repeat).map((image) => image + from)
+  const byColumn = leftRight ? strips(rect.column, rect.columns, setting.counts.leftRight) : same
+  const byRow = topBottom ? strips(rect.row, rect.rows, setting.counts.topBottom) : same
+  return (position) => byRow(position.row).flatMap((row) => byColumn(position.column).map((column) => ({ row, column })))
 }
 
-// Radial (ticket 0705, spec 0702): a turn about a centre, Fold images in all. At Fold 2 and 4 by index, as Rotate
-// turns a fragment (ADR 0052), so peyote and brick keep their index and take the grid's shift; at 3 and 5 to 8
+// Radial (ticket 0705, spec 0702): a turn about the Area's centre, Fold images in all. At Fold 2 and 4 by index, as
+// Rotate turns a fragment (ADR 0052), so peyote and brick keep their index and take the grid's shift; at 3 and 5 to 8
 // geometric, each image taken in one shot from the source bead's centre and the nearest bead taking it.
 
 /** The position a quarter turn clockwise about the centre sends a position to, by index: rows and columns swap about
  * the centre. Where it sits on a position one way and between two the other (rows and columns of different parity)
  * the turn lands between positions and rounds as Rotate rounds a fragment, so four turns still come back. */
-function quarterTurned({ row, column }: GridPosition, centre: RadialCentre): GridPosition {
+function quarterTurned({ row, column }: GridPosition, centre: GridPosition): GridPosition {
   const skew = centre.row - centre.column
   const turned = { row: column + skew, column: centre.row + centre.column - row }
   if (Number.isInteger(skew)) return turned
@@ -398,19 +298,19 @@ function quarterTurned({ row, column }: GridPosition, centre: RadialCentre): Gri
 }
 
 /** The position's reflection across the vertical through the centre, by index. */
-function reflectedAbout({ row, column }: GridPosition, centre: RadialCentre): GridPosition {
+function reflectedAbout({ row, column }: GridPosition, centre: GridPosition): GridPosition {
   return { row, column: 2 * centre.column - column }
 }
 
-/** The position a half turn about the centre sends a position to, by index: exact on any Frame. */
-function halfTurned({ row, column }: GridPosition, centre: RadialCentre): GridPosition {
+/** The position a half turn about the centre sends a position to, by index: exact on any rectangle. */
+function halfTurned({ row, column }: GridPosition, centre: GridPosition): GridPosition {
   return { row: 2 * centre.row - row, column: 2 * centre.column - column }
 }
 
 /** Fold 2 and 4 by index: the source and its turns (Fold 2 the exact half turn; Fold 4 three quarter turns, each from
- * the last, so a Frame of mixed parity keeps one closed orbit), and in Mirror mode the turns of its reflection too
+ * the last, so a rectangle of mixed parity keeps one closed orbit), and in Mirror mode the turns of its reflection too
  * (Fold 4 on a loom grid: the eightfold kaleidoscope, the diagonals as index swaps). */
-function indexTurns(setting: MirrorSetting, centre: RadialCentre): PositionImages {
+function indexTurns(setting: MirrorSetting, centre: GridPosition): PositionImages {
   const turn = setting.fold === 2 ? halfTurned : quarterTurned
   const turns = (from: GridPosition): GridPosition[] => {
     const images = [from]
@@ -420,28 +320,14 @@ function indexTurns(setting: MirrorSetting, centre: RadialCentre): PositionImage
   return (position) => [...turns(position), ...(setting.mode === 'mirror' ? turns(reflectedAbout(position, centre)) : [])]
 }
 
-/** A centre's point in the layer's bead widths from its first position's corner: a rectangle's (the Frame's or the
- * Area's) is the box round its beads' middle; the Canvas's is its handle's, on the lattice the straight Axes lie on (a
- * position's centre at a whole row or column, a boundary at a half). */
-function centrePoint(sheet: LayerSheet, region: MirrorRegion, centre: RadialCentre): { x: number; y: number } {
+/** The other Folds, geometric: the bead's centre turned about the middle of the rectangle's beads by 360° over the Fold,
+ * each image from the source (never chained, so snapping cannot drift), in Mirror mode its reflection's turns too; the
+ * nearest bead takes each, so near the centre images merge. */
+function geometricTurns(sheet: LayerSheet, rect: Rect, setting: MirrorSetting): PositionImages {
   const description = describeWeave(sheet.weave)
   const height = description.cellAspect
-  const rect = boundsOf(region)
-  if (rect) {
-    const box = description.blockBox(rect, 1, height)
-    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  }
-  const origin = description.center({ row: 0, column: 0 }, 1, height)
-  return { x: origin.x + centre.column, y: origin.y + centre.row * height }
-}
-
-/** The other Folds, geometric: the source bead's centre turned about the centre's point by 360° over the Fold, each
- * image from the source itself (never chained, so snapping cannot drift), and in Mirror mode every turn of its
- * reflection across the vertical through the centre too; the nearest bead takes each, so near the centre images merge. */
-function geometricTurns(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting, centre: RadialCentre): PositionImages {
-  const description = describeWeave(sheet.weave)
-  const height = description.cellAspect
-  const about = centrePoint(sheet, region, centre)
+  const box = description.blockBox(rect, 1, height)
+  const about = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
   const step = (2 * Math.PI) / setting.fold
   const turnsOf = (point: { x: number; y: number }, from: number): GridPosition[] => {
     const dx = point.x - about.x
@@ -462,21 +348,9 @@ function geometricTurns(sheet: LayerSheet, region: MirrorRegion, setting: Mirror
   }
 }
 
-/** Radial's images on a layer laid on a grid about a centre (the seam a layout, ticket 0706, passes its own centre
- * through): by index at Fold 2 and 4, geometric otherwise. */
-function radialImages(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting, centre: RadialCentre): PositionImages {
-  return foldByIndex(setting.fold) ? indexTurns(setting, centre) : geometricTurns(sheet, region, setting, centre)
-}
-
-/** Where Radial turns about in the region: a rectangle's own centre (the Frame's or the Area's), or the Canvas's placed
- * handle; none without (a layout turns about its own point, `layoutImages`). */
-function radialCentreOf(region: MirrorRegion): RadialCentre | undefined {
-  if (region.kind === 'layout') return undefined
-  return region.kind === 'canvas' ? region.axes?.centre : rectCentre(region.rect)
-}
-
 // A Custom frame (ticket 0706, spec 0702): every counterpart is geometric, through the shape's layout. Its symmetry
-// (`LayoutSymmetry`) says which Axes it offers and Radial's Fold, its side count, exact by construction.
+// (`LayoutSymmetry`) is the whole-Frame Mirror's Axes, fixed (ADR 0082), and Radial's Fold, its side count, exact by
+// construction.
 
 /** Whether a layout has a mirror line at an angle (clockwise from up): one of its fold's lines, read modulo a half turn. */
 function hasLine({ fold, line }: LayoutSymmetry, angle: number): boolean {
@@ -487,16 +361,17 @@ function hasLine({ fold, line }: LayoutSymmetry, angle: number): boolean {
 /** The least fold of a round shape (a Triangle's three sides): what Radial needs; a Kite or Fringe earring has one. */
 const ROUND_FOLD = 3
 
-/** The Axes a layout's symmetry offers (ticket 0706): a straight one where the shape has that mirror line (Left–right
- * a vertical one, Top–bottom a horizontal one), Radial on a round shape. */
-export function offeredAxes(symmetry: LayoutSymmetry): Record<MirrorAxis, boolean> {
-  return { leftRight: hasLine(symmetry, 0), topBottom: hasLine(symmetry, Math.PI / 2), radial: symmetry.fold >= ROUND_FOLD }
+/** A shape's own Axes (ADR 0082): Radial on a round shape, else its straight mirror lines (a Kite's Left–right, or
+ * Top–bottom once turned a quarter). */
+export function shapeOwnAxes(symmetry: LayoutSymmetry): Record<MirrorAxis, boolean> {
+  if (symmetry.fold >= ROUND_FOLD) return { leftRight: false, topBottom: false, radial: true }
+  return { leftRight: hasLine(symmetry, 0), topBottom: hasLine(symmetry, Math.PI / 2), radial: false }
 }
 
-/** How a Custom frame's shape bounds the Mirror popover (ticket 0706, MirrorPopover card): the Axes its symmetry
- * offers, the others disabled with the reason, and on a round shape `sides`, Radial's Fold, which is not changeable. */
+/** A Custom frame's fixed Axes as the Mirror bar notes them (ContextBar card): the shape's own, and on a round shape
+ * `sides`, Radial's Fold. */
 export interface ShapeAxes {
-  offered: Record<MirrorAxis, boolean>
+  axes: Record<MirrorAxis, boolean>
   sides?: number
 }
 
@@ -505,7 +380,7 @@ export function shapeAxesOf(project: Layered): ShapeAxes | undefined {
   const frame = frameOf(project)
   const symmetry = frame?.shape ? frameLayoutOf(frame)?.symmetry : undefined
   if (!symmetry) return undefined
-  return { offered: offeredAxes(symmetry), ...(symmetry.fold >= ROUND_FOLD ? { sides: symmetry.fold } : {}) }
+  return { axes: shapeOwnAxes(symmetry), ...(symmetry.fold >= ROUND_FOLD ? { sides: symmetry.fold } : {}) }
 }
 
 /** A point turned about a centre by an angle, clockwise on screen. */
@@ -521,25 +396,22 @@ function reflectedAcross({ x, y }: LayoutPoint, centre: LayoutPoint, angle: numb
   return { x: centre.x + 2 * along * Math.sin(angle) - dx, y: centre.y - 2 * along * Math.cos(angle) - dy }
 }
 
-/** A Custom frame's images (ticket 0706): the bead's centre reflected across a straight Axis through the layout's centre
- * or turned about it by the fold (in Mirror mode its reflection across the first mirror line turned too), the bead under
- * each point taking it as Paste lands one, none on a Seam. An unoffered Axis, or a straight one in Repeat, maps nothing. */
+/** A Custom frame's images (ticket 0706) under its own Axes: the bead's centre reflected across a straight line through
+ * the layout's centre or turned about it by the fold (in Mirror mode its reflection across the first mirror line turned
+ * too), the bead under each point taking it as Paste lands one, none on a Seam. A straight line in Repeat maps nothing. */
 function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImages | undefined {
   const { symmetry, centre } = layout
   if (!symmetry) return undefined
-  const offered = offeredAxes(symmetry)
+  const axes = shapeOwnAxes(symmetry)
   const mirror = setting.mode === 'mirror'
   let pointsOf: (point: LayoutPoint) => LayoutPoint[]
-  if (setting.axes.radial) {
-    if (!offered.radial) return undefined
+  if (axes.radial) {
     const step = (2 * Math.PI) / symmetry.fold
     const turns = Array.from({ length: symmetry.fold }, (_turn, turn) => turn * step)
     pointsOf = (point) => [point, ...(mirror ? [reflectedAcross(point, centre, symmetry.line)] : [])].flatMap((from) => turns.map((angle) => turnedAbout(from, centre, angle)))
   } else {
-    const leftRight = setting.axes.leftRight && offered.leftRight
-    const topBottom = setting.axes.topBottom && offered.topBottom
-    if (!mirror || !(leftRight || topBottom)) return undefined
-    pointsOf = ({ x, y }) => (topBottom ? [y, 2 * centre.y - y] : [y]).flatMap((imageY) => (leftRight ? [x, 2 * centre.x - x] : [x]).map((imageX) => ({ x: imageX, y: imageY })))
+    if (!mirror || !(axes.leftRight || axes.topBottom)) return undefined
+    pointsOf = ({ x, y }) => (axes.topBottom ? [y, 2 * centre.y - y] : [y]).flatMap((imageY) => (axes.leftRight ? [x, 2 * centre.x - x] : [x]).map((imageX) => ({ x: imageX, y: imageY })))
   }
   return (position) => {
     const from = layoutPosition(layout, position)
@@ -551,33 +423,27 @@ function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImag
   }
 }
 
-/** How the layer maps a position under the setting inside its region, or nothing where it has no Axis to map by: a
- * layout's geometry on a Custom frame; else Radial about the region's centre when that is on, else the straight Axes
- * by index. */
+/** How the layer maps a position inside its region, or nothing where it has no Axis to map by: a layout's geometry on a
+ * Custom frame; else Radial about the Area's centre when that is on, else the straight Axes by index. */
 function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting): PositionImages | undefined {
-  if (!isMirrorOn(setting)) return undefined
   if (region.kind === 'layout') return layoutImages(region.layout, setting)
   if (!sheet.geometry.grid) return undefined
-  if (setting.axes.radial) {
-    const centre = radialCentreOf(region)
-    return centre && radialImages(sheet, region, setting, centre)
-  }
-  const by = imagesBy(region, setting)
-  return by && straightImages(by)
+  if (setting.axes.radial) return foldByIndex(setting.fold) ? indexTurns(setting, rectCentre(region.rect)) : geometricTurns(sheet, region.rect, setting)
+  return straightImages(region.rect, setting)
 }
 
 /** The positions a gesture changes under Mirror, on one layer (spec 0702): the sources as given, then their counterparts
- * inside the layer's region (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a source outside
- * the region is not mirrored, `dropped` counts counterparts off the grid or outside it, or on a Seam or Off-shape (0706). */
+ * inside the Area (`imagesOf`), each once, a source keeping what rides on it (a Paste's color); a source outside the Area
+ * is not mirrored, `dropped` counts counterparts off the layer or outside the Area, or on a Seam or Off-shape (0706). */
 export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting: MirrorSetting, positions: readonly T[]): { positions: T[]; dropped: number } {
   const { geometry } = sheet
-  const region = mirrorRegionOf(sheet)
-  const images = imagesOf(sheet, region, setting)
+  const region = mirrorRegionOf(sheet, setting)
+  const images = region && imagesOf(sheet, region, setting)
   if (!images) {
     return { positions: [...positions], dropped: 0 }
   }
 
-  const bounds = boundsOf(region)
+  const bounds = region.kind === 'rect' ? region.rect : undefined
   const taken = new Set(positions.map(({ row, column }) => `${row}:${column}`))
   const result = [...positions]
   let dropped = 0
@@ -603,8 +469,8 @@ export function counterparts<T extends GridPosition>(sheet: LayerSheet, setting:
 }
 
 /** `counterparts` for Canvas positions (the hover preview, ticket 0703): those on the Frame are mapped through the
- * Frame's own positions and come back as Canvas positions naming their layer; the Canvas's own across the Canvas's
- * Axes (ticket 0704), a counterpart the keep-out margin or a finished row refuses left out, as the Edit drops it. */
+ * Frame's own positions and come back as Canvas positions naming their layer; the Canvas's own inside a Canvas Area, a
+ * counterpart the keep-out margin or a finished row refuses left out, as the Edit drops it. */
 export function mirroredOnCanvas<T extends GridPosition>(project: Project, setting: MirrorSetting, cells: readonly T[]): T[] {
   if (!isMirrorOn(setting)) return [...cells]
   const framed = frameOf(project) !== undefined
