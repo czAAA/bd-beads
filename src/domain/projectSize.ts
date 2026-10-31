@@ -92,12 +92,3 @@ export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: Siz
 export function formatSizeInMm({ widthMm, heightMm }: EstimatedSizeMm, mm: string, locale: Locale = 'en'): string {
   return `${formatMm(widthMm, locale)} × ${formatMm(heightMm, locale)} ${mm}`
 }
-
-/** The unit a Schema size is stated in (ticket 342): a count of beads, or mm. */
-export type SchemaSizeUnit = 'beads' | 'mm'
-
-/** Whether a stated width and height mean a size: both above zero, and whole numbers when counted in beads. */
-export function isSizeStated(width: number, height: number, unit: SchemaSizeUnit): boolean {
-  const stated = width > 0 && height > 0
-  return unit === 'beads' ? stated && Number.isInteger(width) && Number.isInteger(height) : stated
-}

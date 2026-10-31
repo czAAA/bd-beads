@@ -1,6 +1,6 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
 import { busyMs, startFrameCounter, stopFrameCounter, throttle } from './measure'
-import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, convertPicture } from '../support/app'
+import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, setConvertWidth, settle, convertPicture } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 import { frameOf } from '../../src/domain/layerRecord'
@@ -207,51 +207,7 @@ for (const slowdown of SLOWDOWNS) {
     })
   }
 
-  if (wanted('framing')) {
-    for (const [technique, size] of TECHNIQUES.flatMap((technique) => FRAMING_SIZES.map((size) => [technique, size] as const))) {
-      const name = TECHNIQUES.length > 1 ? `${label(size)} ${technique}` : label(size)
-
-      test(`framing ${name} at ${slowdown}× slowdown`, async ({ page }) => {
-        await openApp(page, [])
-        await openNewProjectForm(page)
-        await chooseNewProjectTechnique(page, technique)
-        await convertPicture(page, fixturePicture(480, 320), size)
-        const preview = page.getByTestId('convert-image-box')
-        try {
-          await preview.waitFor({ timeout: 10_000 })
-        } catch {
-          results.push({ slowdown, size: name, what: 'framing drag', ms: NaN, note: 'no framing step appeared' })
-          return
-        }
-        // The picture at 150%, so there is picture to drag under the Frame (By size).
-        await page.getByTestId('convert-picture-zoom').focus()
-        await page.keyboard.press('ArrowRight')
-        await page.keyboard.press('ArrowRight')
-        const cdp = await throttle(page, slowdown)
-        // The part of the preview that is on screen: a tall frame reaches far below the fold.
-        await preview.scrollIntoViewIfNeeded()
-        const box = (await preview.boundingBox())!
-        const viewport = page.viewportSize()!
-        const shown = {
-          x: Math.max(box.x, 0),
-          y: Math.max(box.y, 0),
-          width: Math.min(box.x + box.width, viewport.width) - Math.max(box.x, 0),
-          height: Math.min(box.y + box.height, viewport.height) - Math.max(box.y, 0),
-        }
-        await page.mouse.move(shown.x + shown.width * 0.5, shown.y + shown.height * 0.5)
-        await page.mouse.down()
-        const { fps, ms } = await burst(page, cdp, async (index) => {
-          const phase = index % 40
-          const t = phase < 20 ? phase / 20 : (40 - phase) / 20
-          await page.mouse.move(shown.x + shown.width * (0.35 + 0.3 * t), shown.y + shown.height * (0.4 + 0.2 * t))
-        })
-        await page.mouse.up()
-        results.push({ slowdown, size: name, what: 'framing drag', fps, ms })
-      })
-    }
-  }
-
-  // By Pixel to bead ratio (spec 0645): one pixel one bead, the bottom-right crop handle dragged back and forth.
+  // A part (spec 0645, ticket 0747): one pixel one bead, the bottom-right handle dragged back and forth.
   if (wanted('crop')) {
     for (const [technique, size] of TECHNIQUES.flatMap((technique) => FRAMING_SIZES.map((size) => [technique, size] as const))) {
       const name = TECHNIQUES.length > 1 ? `${label(size)} ${technique}` : label(size)
@@ -261,10 +217,8 @@ for (const slowdown of SLOWDOWNS) {
         await openNewProjectForm(page)
         await chooseNewProjectTechnique(page, technique)
         await convertPicture(page, fixturePicture(size.columns, size.rows))
-        if ((await page.getByTestId('convert-size-mode').locator('[aria-checked="true"]').getAttribute('data-value')) !== 'ratio') {
-          await page.getByTestId('convert-size-mode').locator('[data-value="ratio"]').click()
-        }
-        await page.getByTestId('ratio-1-1').click()
+        await setConvertWidth(page, size.columns)
+        await page.getByTestId('convert-weave').locator('[data-value="part"]').click()
         const handle = page.getByTestId('convert-crop-bottomRight')
         const box = (await handle.boundingBox())!
         const cdp = await throttle(page, slowdown)

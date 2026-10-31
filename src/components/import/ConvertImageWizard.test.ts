@@ -61,6 +61,8 @@ async function chooseFile(wrapper: VueWrapper, file: File, testid = 'convert-cho
 
 const sectionDisabled = (wrapper: VueWrapper, step: string) => wrapper.get(`[data-testid="convert-section-${step}"]`).attributes('aria-disabled') === 'true'
 const created = (wrapper: VueWrapper) => wrapper.emitted('create')?.[0]?.[0] as Project | undefined
+/** Color by color is closed when the popup opens (ticket 0747): the found-color rows are behind it. */
+const openColorByColor = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-color-by-color"]').trigger('click')
 
 describe('ConvertImageWizard before a picture is set', () => {
   it('disables every section after Picture, saying where to start, and has nothing to create', () => {
@@ -161,6 +163,7 @@ describe('ConvertImageWizard rejections', () => {
     })
     await chooseFile(wrapper, picture())
     expect(wrapper.get('[data-testid="convert-catalog-failed"]').text()).toBe(en.palette.beadColors.failed)
+    await openColorByColor(wrapper)
     expect(wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-source"]').text()).toBe(en.convertImage.wizard.defaultPalette)
   })
 
@@ -201,6 +204,7 @@ describe('ConvertImageWizard setup', () => {
   it('remaps a found color through the Bead colors list with its filter rows (ticket 0713)', async () => {
     const { wrapper } = open({ draft: delica })
     await chooseFile(wrapper, picture())
+    await openColorByColor(wrapper)
     const row = wrapper.get('[data-picture-hex="#e63746"]')
 
     await row.get('[data-testid="found-color-remap"]').trigger('click')
@@ -219,7 +223,7 @@ describe('ConvertImageWizard Create Project', () => {
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
 
     const project = created(wrapper)!
-    // 4 px on its long side starts By Pixel to bead ratio at 1:4: 16 × 8 beads.
+    // A 4 px wide picture goes up to 16 beads and starts there, on the ×4 mark: 16 × 8 beads.
     expect(frameOf(project)).toMatchObject({ columns: 16, rows: 8 })
     expect(frameGrid(project)[0]![0]!.color).toBe('#d02030')
     expect(project.paletteCodes).toEqual({ '#d02030': 'DB723' })
@@ -228,6 +232,7 @@ describe('ConvertImageWizard Create Project', () => {
   it('leaves a found color set to empty without beads', async () => {
     const { wrapper } = open()
     await chooseFile(wrapper, picture())
+    await openColorByColor(wrapper)
     const white = wrapper.findAll('[data-testid="found-color"]').find((row) => row.attributes('data-picture-hex') === '#ffffff')!
     await white.get('[data-testid="found-color-empty"]').trigger('click')
     expect(white.get('[data-testid="found-color-name"]').text()).toBe(en.convertImage.wizard.empty)
@@ -306,22 +311,6 @@ describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
     expect(wrapper.get('.convert-preview__top [role="tooltip"]').text()).toContain(en.tooltips.treatAsEmpty)
   })
 
-  it('keeps the ratio chips one radiogroup of radios named for the ratio, a press choosing one', async () => {
-    const { wrapper } = open()
-    await chooseFile(wrapper, picture())
-    const group = wrapper.get('[data-testid="pixel-ratio"] [role="radiogroup"]')
-    const radios = group.findAll('[role="radio"]')
-
-    expect(radios.map((radio) => radio.attributes('aria-label'))).toEqual([
-      ...['1:4', '1:2', '1:1', '2:1', '4:1', '8:1'].map((ratio) => `${ratio}, picture pixels : beads`),
-      en.convertImage.wizard.customRatio,
-    ])
-    // A 4 px picture starts at 1:4 (the Create Project test above).
-    expect(group.get('[aria-checked="true"]').attributes('data-testid')).toBe('ratio-1-4')
-    await group.get('[data-testid="ratio-2-1"]').trigger('click')
-    expect(group.get('[aria-checked="true"]').attributes('data-testid')).toBe('ratio-2-1')
-  })
-
   it('keeps the step rail one Tab stop named Steps, the arrows moving along it', async () => {
     const { wrapper } = open()
     const rail = wrapper.get('nav')
@@ -334,6 +323,67 @@ describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
     ;(steps[0]!.element as HTMLElement).focus()
     await steps[0]!.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(steps[1]!.element)
+  })
+})
+
+describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
+  const handles = (wrapper: VueWrapper) => wrapper.findAll('[data-testid^="convert-crop-"]')
+
+  it('weaves the whole picture at first, with no handles; A part shows them and says what follows it', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    expect(wrapper.get('[data-testid="convert-weave"] [aria-checked="true"]').attributes('data-value')).toBe('whole')
+    expect(handles(wrapper)).toHaveLength(0)
+
+    await wrapper.get('[data-testid="convert-weave"] [data-value="part"]').trigger('click')
+
+    expect(handles(wrapper)).toHaveLength(8)
+    expect(wrapper.get('[data-testid="convert-part-hint"]').text()).toBe(en.convertImage.wizard.partHint)
+    expect(wrapper.get('[data-testid="convert-part-follows"]').text()).toBe(en.convertImage.wizard.partFollows)
+  })
+
+  it('sizes with one Width slider over the picture’s range, read in both units, the height following', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const range = wrapper.get('[data-testid="convert-width-range"]')
+    const input = range.element as HTMLInputElement
+
+    // A 4 px wide picture goes from 8 to 16 beads and starts at the ×4 mark; a cube bead is 1.5 mm.
+    expect([input.min, input.max, input.value]).toEqual(['8', '16', '16'])
+    expect(wrapper.get('[data-testid="convert-width-value"]').text()).toBe('16 beads · 24 mm')
+    expect(range.attributes('aria-valuetext')).toBe('16 beads, 24 mm, 1 px = 4 × 4 beads')
+    expect(wrapper.findAll('[data-testid="convert-width-mark"]').map((mark) => mark.attributes('data-value'))).toEqual(['8', '16'])
+    expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('16×8 beads')
+
+    await range.setValue('12')
+    expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('12×6 beads')
+    expect(range.attributes('aria-valuetext')).toBe('12 beads, 18 mm')
+
+    await wrapper.get('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
+    expect(wrapper.get('[data-testid="convert-width-value"]').text()).toBe('18 mm · 12 beads')
+  })
+
+  it('offers a Colors slider up to every color the picture has, and keeps Color by color closed with its summary', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const range = wrapper.get('[data-testid="convert-colors-slider-range"]')
+    const summary = () => wrapper.get('[data-testid="convert-color-by-color-summary"]').text()
+
+    // Red and white: two colors, so the slider starts at its max of 2.
+    expect([(range.element as HTMLInputElement).max, (range.element as HTMLInputElement).value]).toEqual(['2', '2'])
+    expect(wrapper.get('[data-testid="convert-colors-slider-value"]').text()).toBe('2 colors')
+    expect(wrapper.find('[data-testid="convert-color-by-color-content"]').exists()).toBe(false)
+    expect(summary()).toBe('2 colors')
+
+    await range.setValue('1')
+    expect(wrapper.get('[data-testid="convert-footer-line"]').text()).toContain('1 color')
+
+    await range.setValue('2')
+    await openColorByColor(wrapper)
+    expect(wrapper.findAll('[data-testid="found-color"]')).toHaveLength(2)
+    const white = wrapper.findAll('[data-testid="found-color"]').find((row) => row.attributes('data-picture-hex') === '#ffffff')!
+    await white.get('[data-testid="found-color-empty"]').trigger('click')
+    expect(summary()).toBe('1 color · 1 empty')
   })
 })
 

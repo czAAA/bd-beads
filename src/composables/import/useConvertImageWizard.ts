@@ -1,6 +1,7 @@
 import { computed, inject, onBeforeUnmount, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
+import { clamp } from '../../domain/clamp'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import {
   beadColorTargets,
@@ -12,37 +13,23 @@ import {
   type FoundColorChoice,
 } from '../../domain/convertColors'
 import {
-  CUSTOM_RATIO_MAX,
-  CUSTOM_RATIO_MIN,
-  RATIO_PRESETS,
-  cropForView,
   flipPicture,
   fullCrop,
   isLargeSchema,
-  nearestRatio,
-  pixelsPerBead,
-  proportionalSide,
-  ratioGrid,
-  ratioOfSize,
-  sameRatio,
-  snapCrop,
-  startingProposal,
-  startingSize,
+  partInset,
+  sizingFor,
+  startingWidth,
   turnPicture,
-  viewForCrop,
   type PixelCrop,
-  type PixelToBeadRatio,
-  type SizeMode,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
-import type { GridDimensions } from '../../domain/grid'
 import { reducePictureColors } from '../../domain/imageColors'
 import {
   DEFAULT_MAX_IMAGE_COLORS,
   ImageConversionError,
+  MIN_IMAGE_COLORS,
   NO_COLOR,
-  clampMaxImageColors,
   frameColors,
   packedToHex,
   sampleLatticePacked,
@@ -51,21 +38,11 @@ import {
   type ImageRejection,
   type PixelData,
 } from '../../domain/imageConversion'
-import {
-  CENTERED_PAN,
-  CONVERT_ZOOM_STEP,
-  clampConvertZoom,
-  frameSizeMm,
-  framingView,
-  isSlowFramingSize,
-  previewLattice,
-  ratioLattice,
-  type PanFraction,
-} from '../../domain/imageFraming'
+import { partLattice } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
-import { estimatedSizeMm, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
+import { estimatedSizeMm } from '../../domain/projectSize'
 import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
@@ -76,20 +53,23 @@ export interface ConvertImageWizardDeps {
   loadCatalog: (id: string) => Promise<ColorCatalog>
 }
 
-/** The unit By size states the Frame in (ConvertImage card): beads, mm or cm. Not the device's Size unit: the wizard
- * remembers nothing (spec 0645). */
-export type ConvertSizeUnit = 'beads' | 'mm' | 'cm'
+/** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
+export type ConvertWeave = 'whole' | 'part'
+
+/** The unit the Width slider reads in (ConvertImage card, slide in): it moves in whole beads either way. Not the
+ * device's Size unit: the wizard remembers nothing (spec 0645). */
+export type ConvertSizeUnit = 'beads' | 'mm'
 
 /** The layout the wizard is a full-screen sheet in, under 1024 px wide or in portrait (PhoneForms card); the same
  * edge as the CSS of its components. */
 export const CONVERT_SHEET_QUERY = '(max-width: 63.99rem), (orientation: portrait)'
 
-/** How long a moved picture or crop handle has to stay still before the colors are worked out exactly (ticket 122). */
+/** How long a moved handle has to stay still before the colors are worked out exactly (ticket 122). */
 const PAUSE_MS = 150
 
-/** The Convert image wizard's state (spec 0645, ADR 0010): its own copy of the setup, the picture, the size, the colors,
- * and the preview and Project they make. Nothing is kept on the device and Cancel drops it all; Create reads
- * `createProject`. Mount it in the wizard's setup: it stops its timers on unmount. */
+/** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture and
+ * the part to weave, the Width, the colors, and the preview and Project they make. Nothing is kept on the device and
+ * Cancel drops it all; Create reads `createProject`. Mount it in the wizard's setup: it stops its timers on unmount. */
 export function useConvertImageWizard({ start, decodeImage, loadCatalog }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
@@ -108,45 +88,39 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
 
-  // Size.
-  const mode = ref<SizeMode>('ratio')
-  const ratio = ref<PixelToBeadRatio>({ pixels: 1, beads: 1 })
-  /** Whether the Custom chip is chosen, even when its ratio equals a preset's. */
-  const customRatio = ref(false)
-  const rawCrop = shallowRef<PixelCrop>()
-  const unit = ref<ConvertSizeUnit>('beads')
-  const widthText = ref<string | number>('')
-  const heightText = ref<string | number>('')
-  const keepProportions = ref(true)
-  const zoom = ref(1)
-  const pan = shallowRef<PanFraction>({ ...CENTERED_PAN })
-  /** The last size the fields stated, so the Frame stays put while a field is empty mid-retype. */
-  const sizeDimensions = shallowRef<GridDimensions>({ columns: 1, rows: 1 })
+  // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
+  const weaveChoice = ref<ConvertWeave>('whole')
+  const rawPart = shallowRef<PixelCrop>()
+  const widthBeads = ref(0)
+  const sizeUnit = ref<ConvertSizeUnit>('beads')
 
   // Colors.
   const catalogId = computed(() => colorCatalogOf(bead.value.id))
   const catalog = shallowRef<ColorCatalog>()
   const catalogState = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
   const chosenSource = ref<ColorSource>()
-  const maxColors = ref(DEFAULT_MAX_IMAGE_COLORS)
+  const chosenColors = ref(DEFAULT_MAX_IMAGE_COLORS)
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
 
-  const crop = computed(() => (image.value ? snapCrop(rawCrop.value ?? fullCrop(image.value), ratio.value, image.value) : fullCrop({ width: 1, height: 1 })))
+  /** The part of the picture to weave: the whole picture, or the part under the handles. */
+  const part = computed<PixelCrop>(() => {
+    const picture = image.value
+    if (!picture) return { x: 0, y: 0, width: 1, height: 1 }
+    return weaveChoice.value === 'part' && rawPart.value ? rawPart.value : fullCrop(picture)
+  })
 
-  // What is converted at rest: the live pan and crop, held while a drag moves them (until it ends or pauses), so the
-  // exact conversion is not redone on every move.
+  // What is converted at rest: the live part, held while a handle moves it (until it ends or pauses), so the exact
+  // conversion is not redone on every move.
   const moving = ref(false)
-  const restPan = shallowRef(pan.value)
-  const restCrop = shallowRef(crop.value)
+  const restPart = shallowRef(part.value)
   let pauseTimer: ReturnType<typeof setTimeout> | undefined
   function settle() {
     clearTimeout(pauseTimer)
     pauseTimer = undefined
-    restPan.value = pan.value
-    restCrop.value = crop.value
+    restPart.value = part.value
   }
   watch(
-    [pan, crop],
+    part,
     () => {
       if (!moving.value) return settle()
       clearTimeout(pauseTimer)
@@ -158,118 +132,29 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   // --- Size ---------------------------------------------------------------------------------------------------------
 
-  const stated = computed<StatedSize | undefined>(() => {
-    const width = Number(widthText.value)
-    const height = Number(heightText.value)
-    if (String(widthText.value).trim() === '' || String(heightText.value).trim() === '') return undefined
-    return isSizeStated(width, height, unit.value === 'beads' ? 'beads' : 'mm') ? { width, height, unit: unit.value } : undefined
-  })
-  watch(
-    [stated, bead, technique],
-    ([size]) => {
-      if (size) sizeDimensions.value = gridFromSize(size, bead.value, technique.value)
-    },
-    { immediate: true },
-  )
+  /** The one sizing rule over a part (convertSize's sizingFor), with the Width asked for. */
+  const sizingOf = (at: PixelCrop) =>
+    sizingFor({ part: at, width: widthBeads.value, bead: bead.value, technique: technique.value, techniqueSettings: techniqueSettings.value })
+  const sizing = computed(() => sizingOf(part.value))
+  const dimensions = computed(() => sizing.value.grid)
 
-  const dimensionsFor = (at: PixelCrop) => (mode.value === 'ratio' ? ratioGrid(at, ratio.value) : sizeDimensions.value)
-  const dimensions = computed(() => dimensionsFor(crop.value))
-  const frameMm = computed(() => frameSizeMm(technique.value, sizeDimensions.value, bead.value))
-
-  /** A grid's size in a unit, as the fields show it: beads, or mm and cm to one decimal. */
-  function sizeIn(grid: GridDimensions, to: ConvertSizeUnit): { width: number; height: number } {
-    if (to === 'beads') return { width: grid.columns, height: grid.rows }
-    const { widthMm, heightMm } = estimatedSizeMm(grid, bead.value, technique.value)
-    const scale = to === 'cm' ? 10 : 1
-    return { width: Math.round((widthMm / scale) * 10) / 10, height: Math.round((heightMm / scale) * 10) / 10 }
+  /** A Width in beads as the piece's width in mm through the Bead, for the slider's labels. */
+  function widthMmOf(beads: number): number {
+    return Math.round(estimatedSizeMm({ columns: beads, rows: 1 }, bead.value, technique.value).widthMm)
   }
 
-  function showSize(grid: GridDimensions) {
-    const { width, height } = sizeIn(grid, unit.value)
-    widthText.value = width
-    heightText.value = height
-    sizeDimensions.value = grid
-  }
-
-  /** Keep picture proportions: the other field from the one just set, through the Bead in beads, as a length in mm. */
-  function proportional(side: 'width' | 'height') {
+  function setWeave(next: ConvertWeave) {
     const picture = image.value
-    if (!picture || !keepProportions.value) return
-    const set = Number(side === 'width' ? widthText.value : heightText.value)
-    if (!(set > 0)) return
-    let other: number
-    if (unit.value === 'beads') {
-      if (!Number.isInteger(set)) return
-      other = proportionalSide(picture, bead.value, technique.value, side === 'width' ? { columns: set } : { rows: set }, techniqueSettings.value)
-    } else {
-      const aspect = side === 'width' ? picture.height / picture.width : picture.width / picture.height
-      other = Math.max(0.1, Math.round(set * aspect * 10) / 10)
-    }
-    if (side === 'width') heightText.value = other
-    else widthText.value = other
-  }
-
-  function setWidth(value: string | number | undefined) {
-    widthText.value = value ?? ''
-    proportional('width')
-  }
-  function setHeight(value: string | number | undefined) {
-    heightText.value = value ?? ''
-    proportional('height')
-  }
-  function setKeepProportions(on: boolean) {
-    keepProportions.value = on
-    proportional('width')
-  }
-  // A Bead or Technique with another shape changes the other side through the Bead.
-  watch([bead, technique], () => unit.value === 'beads' && proportional('width'))
-
-  function setUnit(next: ConvertSizeUnit) {
-    if (next === unit.value) return
-    const grid = sizeDimensions.value
-    unit.value = next
-    showSize(grid)
-  }
-
-  function setRatio(next: PixelToBeadRatio, custom = false) {
-    ratio.value = next
-    customRatio.value = custom
-  }
-
-  /** A switch of mode carries the result across (spec 0645): a ratio's Schema becomes the fields and its crop the view; a
-   * size's framed part becomes the crop, at the nearest ratio. */
-  function setMode(next: SizeMode) {
-    const picture = image.value
-    if (next === mode.value) return
-    if (!picture) {
-      mode.value = next
-      return
-    }
-    if (next === 'size') {
-      const grid = ratioGrid(crop.value, ratio.value)
-      mode.value = 'size'
-      showSize(grid)
-      const view = viewForCrop(picture, frameSizeMm(technique.value, grid, bead.value), crop.value)
-      zoom.value = view.zoom
-      pan.value = view.pan
-    } else {
-      const framed = cropForView(picture, frameMm.value, framingView(picture, frameMm.value, zoom.value, pan.value))
-      const { x, y } = ratioOfSize(framed, sizeDimensions.value)
-      const nearest = nearestRatio((x + y) / 2)
-      mode.value = 'ratio'
-      setRatio(nearest, !RATIO_PRESETS.some((preset) => sameRatio(preset, nearest)))
-      rawCrop.value = framed
-    }
-    settle()
+    if (next === 'part' && picture && !rawPart.value) rawPart.value = partInset(picture)
+    weaveChoice.value = next
   }
 
   // --- Picture ------------------------------------------------------------------------------------------------------
 
-  /** The crop or the pan starts over (a turn or a flip); a new picture starts its zoom over too. */
-  function restartFraming(newPicture = false) {
-    rawCrop.value = undefined
-    if (newPicture) zoom.value = 1
-    pan.value = { ...CENTERED_PAN }
+  /** Weave goes back to the whole picture (a new picture, a turn or a flip). */
+  function restartPart() {
+    rawPart.value = undefined
+    weaveChoice.value = 'whole'
     settle()
   }
 
@@ -285,13 +170,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       image.value = decoded
       fileName.value = file.name
       fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
-      if (first) {
-        const proposal = startingProposal(decoded)
-        mode.value = proposal.mode
-        setRatio(proposal.ratio)
-        showSize(startingSize(decoded, bead.value, technique.value))
-      }
-      restartFraming(true)
+      if (first) widthBeads.value = startingWidth(decoded)
+      restartPart()
     } catch (error) {
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
     } finally {
@@ -299,48 +179,30 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     }
   }
 
-  /** Turn 90°: the picture's sides swap, so By size a kept proportion is worked out again. */
+  /** Turn 90°: the picture's sides swap, before sampling. */
   function turn() {
     if (!image.value) return
     image.value = turnPicture(image.value)
-    restartFraming()
-    if (mode.value === 'size') proportional('width')
+    restartPart()
   }
 
   function flip() {
     if (!image.value) return
     image.value = flipPicture(image.value)
-    restartFraming()
+    restartPart()
   }
 
   // --- The preview's beads ------------------------------------------------------------------------------------------
 
-  function placementFor(at: { pan: PanFraction; crop: PixelCrop }, picture: PixelData) {
-    const grid = dimensionsFor(at.crop)
-    if (mode.value === 'size') {
-      const frame = frameSizeMm(technique.value, grid, bead.value)
-      const view = framingView(picture, frame, zoom.value, at.pan)
-      return {
-        grid,
-        placement: { view, bead: bead.value },
-        lattice: previewLattice({ view, frame, dimensions: grid, bead: bead.value, ...weave.value }),
-      }
-    }
-    return {
-      grid,
-      placement: { crop: at.crop, ratio: ratio.value },
-      lattice: ratioLattice({ image: picture, crop: at.crop, pixelsPerBead: pixelsPerBead(ratio.value), dimensions: grid, ...weave.value }),
-    }
-  }
-
-  function sample(at: { pan: PanFraction; crop: PixelCrop }) {
+  function sample(at: PixelCrop) {
     const picture = image.value
     if (!picture) return undefined
-    const { grid, placement, lattice } = placementFor(at, picture)
-    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, ...placement, lattice }) }
+    const { grid, pixelsPerBead } = sizingOf(at)
+    const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
+    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
   }
 
-  const rest = computed(() => sample({ pan: restPan.value, crop: restCrop.value }))
+  const rest = computed(() => sample(restPart.value))
 
   const hasCatalog = computed(() => !!catalogId.value)
   const source = computed<ColorSource>(() => {
@@ -359,16 +221,19 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   )
 
   const frameSampled = computed(() => rest.value && frameColors(rest.value.sampled, rest.value.lattice, rest.value.grid))
+  /** Every color the part has (the Colors slider's max, ConvertImage card): the distinct colors its beads sample. */
+  const colorsMax = computed(() => Math.max(MIN_IMAGE_COLORS, frameSampled.value?.counts.size ?? MIN_IMAGE_COLORS))
+  /** The Colors slider: 12 at first, or every color where that is fewer; a part with fewer colors pulls it down. */
+  const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
   const reduced = computed(() => reducePictureColors(frameSampled.value?.counts ?? new Map(), maxColors.value))
   const found = computed(() => matchFoundColors(reduced.value, targets.value, choices.value))
   const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(frameSampled.value.raw, reduced.value, found.value) : []))
   const held = computed(() => heldColorLookup(found.value))
   const palette = computed(() => newProjectPalette(builtIns.value, found.value))
 
-  /** Whether the picture or the crop is away from where the exact conversion was made: the only time beads are
-   * approximate. */
-  const approximate = computed(() => moving.value && (pan.value !== restPan.value || crop.value !== restCrop.value))
-  const live = computed(() => (approximate.value ? sample({ pan: pan.value, crop: crop.value }) : rest.value))
+  /** Whether the part is away from where the exact conversion was made: the only time beads are approximate. */
+  const approximate = computed(() => moving.value && part.value !== restPart.value)
+  const live = computed(() => (approximate.value ? sample(part.value) : rest.value))
 
   const beadColors = computed(() => {
     const shown = live.value
@@ -488,38 +353,17 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setFile,
     turn,
     flip,
+    weave: computed(() => weaveChoice.value),
+    setWeave,
+    part,
+    setPart: (next: PixelCrop) => (rawPart.value = next),
     // Size
-    mode,
-    setMode,
-    ratio,
-    customRatio,
-    setRatio,
-    customRatioRange: { min: CUSTOM_RATIO_MIN, max: CUSTOM_RATIO_MAX },
-    crop,
-    setCrop: (next: PixelCrop) => (rawCrop.value = next),
-    unit,
-    setUnit,
-    widthText,
-    heightText,
-    setWidth,
-    setHeight,
-    keepProportions,
-    setKeepProportions,
-    zoom,
-    zoomPercent: computed(() => Math.round(zoom.value * 100)),
-    setZoom: (next: number) => (zoom.value = clampConvertZoom(next)),
-    zoomIn: () => (zoom.value = clampConvertZoom(zoom.value + CONVERT_ZOOM_STEP)),
-    zoomOut: () => (zoom.value = clampConvertZoom(zoom.value - CONVERT_ZOOM_STEP)),
-    pan,
-    setPan: (next: PanFraction) => (pan.value = next),
-    frameMm,
+    sizing,
     dimensions,
-    /** What the result line reads (convertSize's convertResult): the ratio By Pixel to bead ratio, the framed crop By
-     * size. */
-    resultCrop: computed(() =>
-      image.value && mode.value === 'size' ? cropForView(image.value, frameMm.value, framingView(image.value, frameMm.value, zoom.value, pan.value)) : undefined,
-    ),
-    slowFraming: computed(() => isSlowFramingSize(technique.value, dimensions.value)),
+    setWidth: (beads: number) => (widthBeads.value = beads),
+    sizeUnit,
+    setSizeUnit: (next: ConvertSizeUnit) => (sizeUnit.value = next),
+    widthMmOf,
     largeSchema: computed(() => isLargeSchema(dimensions.value)),
     // The preview
     moving,
@@ -541,11 +385,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     source,
     setSource: (next: ColorSource) => (chosenSource.value = next),
     beadTargets,
+    colorsMax,
     maxColors,
-    setMaxColors: (next: number) => (maxColors.value = clampMaxImageColors(next)),
+    setMaxColors: (next: number) => (chosenColors.value = clamp(Math.round(next), MIN_IMAGE_COLORS, colorsMax.value)),
     found,
     /** How many colors the beads use: found colors not set to empty. */
     usedColorCount: computed(() => found.value.filter((color) => color.result).length),
+    /** How many found colors are set to empty (the Color by color summary). */
+    emptyColorCount: computed(() => found.value.filter((color) => !color.result).length),
     choices,
     setChoice,
     toggleEmpty,

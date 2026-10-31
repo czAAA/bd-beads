@@ -9,7 +9,7 @@ export function flatColorsPicture(): PixelData {
   return { width, height, data }
 }
 
-/** Waits for the picture the wizard was opened with to be read: its found colours are listed. */
+/** Waits for the picture the wizard was opened with to be read: its result line shows. */
 export async function pictureSet(root: HTMLElement): Promise<void> {
-  for (let tries = 0; tries < 50 && !root.querySelector('[data-testid="found-color"]'); tries += 1) await new Promise((done) => setTimeout(done, 20))
+  for (let tries = 0; tries < 50 && !root.querySelector('[data-testid="convert-result"]'); tries += 1) await new Promise((done) => setTimeout(done, 20))
 }

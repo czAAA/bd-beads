@@ -1,14 +1,9 @@
-import type { Bead } from './beads'
 import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
 import { describeWeave, type Technique, type TechniqueSettings } from './weave'
-import { pixelsPerBead, type PixelCrop, type PixelToBeadRatio } from './convertSize'
-import {
-  type FramingView,
-  type ImageSize,
-  type PreviewLattice,
-} from './imageFraming'
+import type { PixelCrop } from './convertSize'
+import { type ImageSize, type PreviewLattice } from './imageFraming'
 
 /** Convert image's conversion (ticket 58, ADR 0010): pixels to cells, and what a picture may be. Pure functions over
  * a decoded picture; file reading and decoding live in imageDecode.ts so tests can use hand-built pixel data. */
@@ -159,26 +154,16 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
   return width * height > IMAGE_MAX_PIXELS ? 'tooManyPixels' : undefined
 }
 
-/** How many colors a conversion may keep. Ceiling 14. Floor 1, down from 2 (ticket 177, ADR 0010):
- * quantization is unconditional. */
+/** How many colors a conversion keeps when the wizard opens (the Colors slider's start, ticket 0747), or every color
+ * the picture has where that is fewer. Floor 1, down from 2 (ticket 177, ADR 0010): quantization is unconditional. */
 export const MIN_IMAGE_COLORS = 1
-export const MAX_IMAGE_COLORS = 14
 export const DEFAULT_MAX_IMAGE_COLORS = 12
 
-export function clampMaxImageColors(value: number): number {
-  return Math.min(MAX_IMAGE_COLORS, Math.max(MIN_IMAGE_COLORS, Math.floor(value)))
-}
-
-/** Where the picture sits under the Frame By size (ticket 58): its view in the Frame's millimetres, through the Bead. */
-interface SizePlacement {
-  view: FramingView
-  bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
-}
-
-/** Where the picture sits under the Frame By Pixel to bead ratio (spec 0645): the crop, each bead one block of it. */
-interface RatioPlacement {
-  crop: PixelCrop
-  ratio: PixelToBeadRatio
+/** Where the picture sits under the Frame (ticket 0747): the part to weave, and the picture pixels each bead stands
+ * for along each side (convertSize's Sizing: whole and equal on a mark, the picture's shape between marks). */
+interface PartPlacement {
+  part: PixelCrop
+  pixelsPerBead: { x: number; y: number }
 }
 
 /** What the picture, its placement and the Technique's geometry are, for one pass of sampling. */
@@ -187,36 +172,26 @@ type SamplingInput = {
   technique: Technique
   /** The settings of the Project being made (ticket 0625): its Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
-} & (SizePlacement | RatioPlacement)
+} & PartPlacement
 
-/** A placement as cell sizes and the step from a bead centre to a picture pixel: pixel = (centre − corner − offset) /
- * scale. By ratio the cells are in pixels, a bead step one block; by size in millimetres. */
-function samplingGrid(input: SamplingInput) {
-  if ('view' in input) {
-    const { widthMm, heightMm } = describeWeave(input).beadMm(input.bead)
-    return { cellWidth: widthMm, cellHeight: heightMm, offsetX: input.view.offsetXMm, offsetY: input.view.offsetYMm, scale: input.view.scaleMm, slack: 0 }
-  }
-  const per = pixelsPerBead(input.ratio)
-  // A staggered line's last bead reaches half a bead past the crop: one block of slack keeps it on the picture.
-  return { cellWidth: per, cellHeight: per, offsetX: -input.crop.x, offsetY: -input.crop.y, scale: 1, slack: Math.max(1, per) }
-}
-
-/** The picture's raw colors at the centre of each bead of a framing preview's lattice (see previewLattice), row by row,
- * packed (see pixelPackedAt); NO_COLOR off the picture or on a too-transparent pixel. The Weave's description places
- * each bead (ticket 0622), By size or By Pixel to bead ratio (spec 0645). */
+/** The picture's raw colors at the centre of each bead of the preview's lattice (see partLattice), row by row, packed
+ * (see pixelPackedAt); NO_COLOR off the picture or on a too-transparent pixel. The cells are in picture pixels, a bead
+ * step one cell, and the Weave's description places each bead (ticket 0622). */
 export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice }): Int32Array {
-  const { image, lattice } = input
-  const { cellWidth, cellHeight, offsetX, offsetY, scale, slack } = samplingGrid(input)
+  const { image, lattice, part, pixelsPerBead } = input
   const description = describeWeave(input)
   // The frame's corner: its first row is never shifted.
-  const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, cellWidth, cellHeight)
+  const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, pixelsPerBead.x, pixelsPerBead.y)
   const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)
-  const onPicture = (at: number, length: number) => (at >= length && at < length + slack ? length - 1 : at)
+  // A staggered line's last bead reaches half a bead past the part: one cell of slack keeps it on the picture.
+  const onPicture = (at: number, length: number, slack: number) => (at >= length && at < length + slack ? length - 1 : at)
+  const slackX = Math.max(1, pixelsPerBead.x)
+  const slackY = Math.max(1, pixelsPerBead.y)
   for (let row = 0; row < lattice.rows; row += 1) {
     for (let column = 0; column < lattice.columns; column += 1) {
-      const { x, y } = description.center({ row, column }, cellWidth, cellHeight)
-      const sourceX = onPicture(Math.floor((x - originX - offsetX) / scale), image.width)
-      const sourceY = onPicture(Math.floor((y - originY - offsetY) / scale), image.height)
+      const { x, y } = description.center({ row, column }, pixelsPerBead.x, pixelsPerBead.y)
+      const sourceX = onPicture(Math.floor(x - originX + part.x), image.width, slackX)
+      const sourceY = onPicture(Math.floor(y - originY + part.y), image.height, slackY)
       if (sourceX >= 0 && sourceX < image.width && sourceY >= 0 && sourceY < image.height) {
         packed[row * lattice.columns + column] = pixelPackedAt(image, sourceX, sourceY)
       }

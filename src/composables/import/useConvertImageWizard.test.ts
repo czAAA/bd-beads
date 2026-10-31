@@ -8,11 +8,23 @@ function flat(width: number, height: number): PixelData {
   return { width, height, data: new Uint8ClampedArray(width * height * 4).fill(200) }
 }
 
-async function setup(picture: PixelData) {
+/** A picture of three colors in bands: red on the left third, blue in the middle, yellow on the right. */
+function bands(width: number, height: number): PixelData {
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const band = Math.floor((x * 3) / width)
+      data.set(band === 0 ? [230, 55, 70, 255] : band === 1 ? [47, 111, 219, 255] : [250, 220, 60, 255], (y * width + x) * 4)
+    }
+  }
+  return { width, height, data }
+}
+
+async function setup(picture: PixelData, beadId = 'toho/cube/1.5mm') {
   const scope = effectScope()
   const wizard = scope.run(() =>
     useConvertImageWizard({
-      start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
+      start: { technique: 'loom', beadId, name: '', makerName: '' },
       decodeImage: async () => picture,
       loadCatalog: () => Promise.reject(new Error('no catalog')),
     }),
@@ -22,34 +34,71 @@ async function setup(picture: PixelData) {
   return wizard
 }
 
-describe('useConvertImageWizard mode switch (spec 0645)', () => {
-  it('carries a ratio’s Schema across as the size, and the size back as its framed part at the nearest ratio', async () => {
-    const wizard = await setup(flat(120, 80))
-    expect(wizard.mode.value).toBe('ratio')
-    wizard.setRatio({ pixels: 4, beads: 1 })
-    expect(wizard.dimensions.value).toEqual({ columns: 30, rows: 20 })
-
-    wizard.setMode('size')
-    expect([wizard.widthText.value, wizard.heightText.value]).toEqual([30, 20])
-    expect(wizard.dimensions.value).toEqual({ columns: 30, rows: 20 })
-
-    wizard.setMode('ratio')
-    expect(wizard.ratio.value).toEqual({ pixels: 4, beads: 1 })
-    expect(wizard.dimensions.value).toEqual({ columns: 30, rows: 20 })
+describe('useConvertImageWizard sizing (ticket 0747)', () => {
+  it('starts on the whole picture at the largest mark up to 150 beads, the grid exact on it', async () => {
+    const wizard = await setup(flat(32, 32))
+    expect(wizard.weave.value).toBe('whole')
+    expect(wizard.sizing.value.width).toBe(128)
+    expect(wizard.sizing.value.mark).toEqual({ width: 128, pixelsPerBead: 0.25 })
+    expect(wizard.dimensions.value).toEqual({ columns: 128, rows: 128 })
   })
 
-  it('keeps picture proportions By size, through the Bead', async () => {
-    const wizard = await setup(flat(1000, 500))
-    expect(wizard.mode.value).toBe('size')
+  it('follows the picture’s physical shape through the Bead between marks', async () => {
+    const cube = await setup(flat(200, 100))
+    cube.setWidth(40)
+    expect(cube.dimensions.value).toEqual({ columns: 40, rows: 20 })
+
+    const delica = await setup(flat(200, 100), 'miyuki/delica/11-0')
+    delica.setWidth(40)
+    expect(delica.dimensions.value).toEqual({ columns: 40, rows: 16 })
+  })
+
+  it('reads the Width in mm through the Bead', async () => {
+    const wizard = await setup(flat(200, 100))
     wizard.setWidth(40)
-    expect(wizard.heightText.value).toBe(20)
+    expect(wizard.widthMmOf(40)).toBe(60)
   })
 
-  it('turns the picture with its sides swapped, starting the crop over and keeping the picture zoom', async () => {
-    const wizard = await setup(flat(1000, 500))
-    wizard.setZoom(2)
+  it('weaves A part from 10% in, the range, grid and colors following it', async () => {
+    const wizard = await setup(bands(60, 30))
+    expect(wizard.colorsMax.value).toBe(3)
+
+    wizard.setWeave('part')
+    expect(wizard.part.value).toEqual({ x: 6, y: 3, width: 48, height: 24 })
+    expect(wizard.sizing.value.range).toEqual({ min: 8, max: 192 })
+
+    // The left third of the part is 12 px of red out of 48: still three colors; a part inside the blue band has one.
+    wizard.setPart({ x: 22, y: 3, width: 16, height: 24 })
+    await nextTick()
+    expect(wizard.colorsMax.value).toBe(1)
+    expect(wizard.sizing.value.range.max).toBe(64)
+  })
+
+  it('goes back to the whole picture on a turn and a flip', async () => {
+    const wizard = await setup(flat(60, 30))
+    wizard.setWeave('part')
     wizard.turn()
-    expect([wizard.image.value!.width, wizard.image.value!.height]).toEqual([500, 1000])
-    expect(wizard.zoom.value).toBe(2)
+    expect(wizard.weave.value).toBe('whole')
+    expect([wizard.image.value!.width, wizard.image.value!.height]).toEqual([30, 60])
+
+    wizard.setWeave('part')
+    wizard.flip()
+    expect(wizard.weave.value).toBe('whole')
+  })
+})
+
+describe('useConvertImageWizard colors (ticket 0747)', () => {
+  it('starts the Colors slider at 12, or at every color the picture has where that is fewer', async () => {
+    const wizard = await setup(bands(60, 30))
+    expect(wizard.maxColors.value).toBe(3)
+    expect(wizard.found.value).toHaveLength(3)
+  })
+
+  it('reduces to the count the slider asks, inside the picture’s colors', async () => {
+    const wizard = await setup(bands(60, 30))
+    wizard.setMaxColors(1)
+    expect(wizard.found.value).toHaveLength(1)
+    wizard.setMaxColors(99)
+    expect(wizard.maxColors.value).toBe(3)
   })
 })
