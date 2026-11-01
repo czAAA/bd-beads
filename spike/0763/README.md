@@ -81,7 +81,9 @@ comparison doesn't depend on the device: run it once per photo on a desktop.
 
 ## Desktop runs from the command line
 
-With the dev server running, `node spike/0763/measure.mjs http://localhost:5763/spike/0763/ chromium` (or `webkit`)
-runs every photo in Playwright and prints the table and any request that left the origin (`--taps-only` for SlimSAM
-alone, `--compare` for the comparison, `--lean` for lean memory). Playwright's WebKit is not Safari, and headless
-Chromium is not Chrome; they check the page works and give a desktop baseline.
+With the page served, `node spike/0763/measure.mjs <page url> chromium` runs every photo and prints the table, the peak
+memory of the browser process that ran it (sampled with `ps` every 200 ms) and any request that left the origin.
+`safari` drives the real Safari through `safaridriver` (once: Safari Settings, Developer, Allow remote automation);
+`webkit` is Playwright's WebKit. Flags: `--headed`, `--device <name>`, `--taps-only`, `--compare`, `--lean`. Playwright's
+Chromium is Chrome for Testing, not the Chrome a maker installs, but the same engine. In Safari the request check sees
+the page's own requests, not its worker's.
