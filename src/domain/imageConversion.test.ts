@@ -219,6 +219,18 @@ describe('sampleLatticePacked', () => {
     expect(packed[0]).toBe(NO_COLOR)
     expect(packed[2 * 6 + 2]).not.toBe(NO_COLOR)
   })
+
+  it('reads a bead’s whole area at rest, and the centre pixel where a bead is a pixel or less (ticket 0762)', () => {
+    // Red, with one white pixel at each 4 × 4 bead's centre: the centre pixel says white, the area red.
+    const image = pixels(8, 4, Array.from({ length: 32 }, (_pixel, at) => (at % 8) % 4 === 2 && Math.floor(at / 8) === 2 ? [255, 255, 255, 255] : [200, 0, 0, 255]))
+    const input = { image, part: { x: 0, y: 0, width: 8, height: 4 }, technique: 'loom' as const, lattice: { columns: 2, rows: 1, frameColumn: 0, frameRow: 0 } }
+
+    expect(Array.from(sampleLatticePacked({ ...input, pixelsPerBead: { x: 4, y: 4 } }), packedToHex)).toEqual(['#ffffff', '#ffffff'])
+    expect(Array.from(sampleLatticePacked({ ...input, pixelsPerBead: { x: 4, y: 4 }, rule: 'area' }), packedToHex)).toEqual(['#c80000', '#c80000'])
+    // Enlarging, two beads to a pixel: each its centre pixel.
+    const enlarged = { ...input, pixelsPerBead: { x: 0.5, y: 0.5 }, lattice: { columns: 16, rows: 8, frameColumn: 0, frameRow: 0 } }
+    expect(sampleLatticePacked({ ...enlarged, rule: 'area' })).toEqual(sampleLatticePacked(enlarged))
+  })
 })
 
 describe('input limits', () => {
