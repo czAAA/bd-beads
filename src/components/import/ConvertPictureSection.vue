@@ -37,10 +37,12 @@ const weaveOptions = computed(() => [
 const weave = computed({ get: () => wizard.weave.value, set: (next: ConvertWeave) => wizard.setWeave(next) })
 
 const cutOutWords = computed(() => t.value.convertImage.wizard.cutOut)
+/** A run that stopped with the tab last time (ticket 0768): the AI chip's warning dot, its reason in its Tooltip. */
+const aiWarning = computed(() => (wizard.cutOutStopped.value ? cutOutWords.value.stopped : undefined))
 const cutOutOptions = computed(() => [
   { value: 'off' as const, label: cutOutWords.value.off },
   { value: 'simple' as const, label: cutOutWords.value.simple },
-  { value: 'ai' as const, label: cutOutWords.value.ai, icon: 'cut-out-ai' as const, iconOnly: true, tooltip: { name: cutOutWords.value.ai } },
+  { value: 'ai' as const, label: cutOutWords.value.ai, icon: 'cut-out-ai' as const, iconOnly: true, tooltip: { name: cutOutWords.value.ai, body: aiWarning.value }, warning: aiWarning.value },
 ])
 const cutOut = computed({ get: () => wizard.cutOut.value, set: (next: CutOut) => wizard.setCutOut(next) })
 const tapActions = { add: controlAction('cut-out-tap-add'), remove: controlAction('cut-out-tap-remove') } as const
@@ -201,7 +203,12 @@ watchPostEffect(() => {
         testid="convert-tolerance-slider"
         @update:model-value="wizard.setTolerance"
       />
-      <CutOutDownloadNote v-if="ai.kind === 'asking'" :bytes="ai.bytes" @download="wizard.downloadCutOutModel" @cancel="wizard.cancelAiCutOut" />
+      <CutOutDownloadNote
+        v-if="ai.kind === 'asking'"
+        :bytes="ai.bytes"
+        :low-memory="ai.lowMemory"
+        :low-space="ai.lowSpace"
+        @download="wizard.downloadCutOutModel" @cancel="wizard.cancelAiCutOut" />
       <LoadingState v-else-if="aiLoading" ai :text="aiLoading.text" :share="aiLoading.share" :spoken="aiLoading.spoken">
         <AppButton variant="text" size="sm" data-testid="cut-out-ai-cancel" @click="wizard.cancelAiCutOut">{{ cutOutWords.cancel }}</AppButton>
       </LoadingState>

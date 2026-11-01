@@ -3,6 +3,7 @@ import { effectScope, nextTick } from 'vue'
 import type { PixelData } from '../../domain/imageConversion'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
 import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
+import { fakeCutOutDevice } from '../../testUtils/fakeCutOutDevice'
 
 // Cut out's Simple and Fit to subject (ticket 0765, spec 0761), through the wizard's state: what the maker would see in
 // the preview's beads, the found colors and the part. Synthetic pictures only.
@@ -44,6 +45,7 @@ async function convert(...pictures: PixelData[]): Promise<ConvertImageWizard> {
       decodeImage: async () => pictures[Math.min(read++, pictures.length - 1)]!,
       loadCatalog: () => Promise.reject(new Error('no catalog')),
       cutOutService: unusedCutOutService,
+      cutOutDevice: fakeCutOutDevice().device,
     }),
   )!
   await wizard.setFile(new File(['x'], 'picture.png', { type: 'image/png' }))

@@ -1,4 +1,5 @@
-import type { CutOutService } from '../domain/cutOutModel'
+import type { CutOutDevice, CutOutService } from '../domain/cutOutModel'
+import { browserCutOutDevice } from './cutOutDevice'
 import type { DecodeImage } from '../domain/imageConversion'
 import { browserCutOut } from './cutOutService'
 import { downloadFile, type DownloadFile } from './fileDownload'
@@ -23,6 +24,8 @@ export interface Services {
   readClipboardImage: () => Promise<File | undefined>
   /** Convert image's Cut out with AI: the model on the device (ticket 0767, ADR 0087). */
   cutOutService: CutOutService
+  /** The device record and checks beside it (ticket 0768): a run-in-progress flag, the first run's time, memory and space. */
+  cutOutDevice: CutOutDevice
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
   persistentStorage: PersistentStorage
@@ -40,6 +43,7 @@ export const browserServices: Services = {
   decodeImage: decodeImageFile,
   readClipboardImage,
   cutOutService: browserCutOut,
+  cutOutDevice: browserCutOutDevice,
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,
