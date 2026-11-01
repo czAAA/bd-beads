@@ -27,11 +27,12 @@ import { armSelectionBar } from '../testUtils/pill'
 import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { fakeCutOutService } from '../testUtils/fakeCutOutService'
+import { fakeCutOutDevice } from '../testUtils/fakeCutOutDevice'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
 import { withLayers } from '../testUtils/layerFields'
-import type { CutOutService } from '../domain/cutOutModel'
+import type { CutOutDevice, CutOutService } from '../domain/cutOutModel'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
 // notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
@@ -130,9 +131,10 @@ const catalog: ColorCatalog = {
 }
 
 /** The wizard as the app opens it, with or without a picture set. */
-function wizardProps(withPicture: boolean, cutOutService?: CutOutService) {
+function wizardProps(withPicture: boolean, cutOutService?: CutOutService, cutOutDevice?: CutOutDevice) {
   return {
     ...(cutOutService ? { cutOutService } : {}),
+    ...(cutOutDevice ? { cutOutDevice } : {}),
     start: {
       draft: { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
       ...(withPicture ? { file: new File(['x'], 'sunflower-in-a-long-file-name.png', { type: 'image/png' }) } : {}),
@@ -324,8 +326,27 @@ function aiCutOutCases(): FitCase[] {
   const thinking = fakeCutOutService()
   const failing = fakeCutOutService()
   const tapping = fakeCutOutService()
+  const struggling = fakeCutOutDevice({ memoryGb: 2, freeBytes: 1_000_000 })
   return [
     ['Convert image page (cut out with AI, the download note)', ConvertPageHost, wizardProps(true, asking.service), chooseAi],
+    [
+      'Convert image page (cut out with AI, the download note warning of memory and space)',
+      ConvertPageHost,
+      wizardProps(true, fakeCutOutService({ toDownload: 59_200_000 }).service, struggling.device),
+      chooseAi,
+    ],
+    [
+      'Convert image page (cut out with AI, the warning dot after a stopped run)',
+      ConvertPageHost,
+      wizardProps(true, fakeCutOutService().service, fakeCutOutDevice({ record: { running: true } }).device),
+      pictureSet,
+    ],
+    [
+      'Convert image page (cut out with AI, asking once more after a stopped run)',
+      ConvertPageHost,
+      wizardProps(true, fakeCutOutService().service, fakeCutOutDevice({ record: { stopped: true } }).device),
+      chooseAi,
+    ],
     [
       'Convert image page (cut out with AI, downloading)',
       ConvertPageHost,

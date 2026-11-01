@@ -2,7 +2,7 @@ import { effectScope, shallowRef, watch, type EffectScope } from 'vue'
 import { DEFAULT_BEAD } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
-import type { CutOutService } from '../../domain/cutOutModel'
+import type { CutOutDevice, CutOutService } from '../../domain/cutOutModel'
 import type { DecodeImage } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
@@ -19,6 +19,7 @@ export interface ConvertImageFlowDeps {
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
   cutOutService: CutOutService
+  cutOutDevice: CutOutDevice
 }
 
 /** Convert image (spec 0645, ADR 0010, ADR 0086): an App page that makes a new Project, its setup its own. Open it from
@@ -36,7 +37,7 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
   function open(draft: CreateProjectInput = lastDraft.value, file?: File) {
     scope?.stop()
     scope = effectScope()
-    const wizard = scope.run(() => useConvertImageWizard({ start: draft, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, cutOutService: deps.cutOutService }))!
+    const wizard = scope.run(() => useConvertImageWizard({ start: draft, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, cutOutService: deps.cutOutService, cutOutDevice: deps.cutOutDevice }))!
     session.value = wizard
     if (file) void wizard.setFile(file)
     appPage.open('convert-image')

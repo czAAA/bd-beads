@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends string">
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 import AppIcon from '../AppIcon.vue'
 import AppTooltip from '../AppTooltip.vue'
 import type { IconName } from '../icons'
@@ -16,8 +16,9 @@ interface OptionTooltip {
 
 const props = withDefaults(
   defineProps<{
-    /** `iconOnly`: the label is the option's accessible name, not shown (the Cut out AI chip, ticket 0767). */
-    options: readonly { value: T; label: string; icon?: IconName; iconOnly?: boolean; tooltip?: OptionTooltip }[]
+    /** `iconOnly`: the label is the option's accessible name, not shown (the Cut out AI chip, ticket 0767). `warning`:
+     * a warning dot on the option, the sentence its accessible description (the AI chip after a stopped run, 0768). */
+    options: readonly { value: T; label: string; icon?: IconName; iconOnly?: boolean; tooltip?: OptionTooltip; warning?: string }[]
     labelledby?: string
     mono?: boolean
     small?: boolean
@@ -27,6 +28,7 @@ const props = withDefaults(
 )
 const value = defineModel<T>({ required: true })
 const rootEl = ref<HTMLElement>()
+const warningId = useId()
 
 /** What an option's Tooltip says: while the control is disabled and gives a reason, that reason in place of the body
  * (ADR 0035). */
@@ -84,6 +86,7 @@ function onKeydown(event: KeyboardEvent) {
           :tabindex="option.value === value ? 0 : -1"
           :data-value="option.value"
           :aria-label="option.iconOnly ? option.label : undefined"
+          :aria-describedby="option.warning ? `${warningId}-${option.value}` : undefined"
           :aria-disabled="disabled || undefined"
           @click="choose(option.value)"
         >
@@ -91,6 +94,7 @@ function onKeydown(event: KeyboardEvent) {
             <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
             <template v-if="!option.iconOnly">{{ option.label }}</template>
           </span>
+          <span v-if="option.warning" class="segmented__dot" data-testid="segmented-warning-dot" />
         </button>
       </AppTooltip>
       <button
@@ -102,6 +106,7 @@ function onKeydown(event: KeyboardEvent) {
         :tabindex="option.value === value ? 0 : -1"
         :data-value="option.value"
         :aria-label="option.iconOnly ? option.label : undefined"
+        :aria-describedby="option.warning ? `${warningId}-${option.value}` : undefined"
         :aria-disabled="disabled || undefined"
         @click="choose(option.value)"
       >
@@ -109,7 +114,10 @@ function onKeydown(event: KeyboardEvent) {
           <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
           <template v-if="!option.iconOnly">{{ option.label }}</template>
         </span>
+        <span v-if="option.warning" class="segmented__dot" data-testid="segmented-warning-dot" />
       </button>
+      <!-- A hidden element still describes what points at it, so the dot is never the only sign. -->
+      <span v-if="option.warning" :id="`${warningId}-${option.value}`" hidden>{{ option.warning }}</span>
     </template>
   </div>
 </template>
@@ -145,6 +153,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .segmented__option {
+  position: relative;
   display: grid;
   flex: 1 1 0;
   place-items: center;
@@ -162,6 +171,24 @@ function onKeydown(event: KeyboardEvent) {
   transition:
     background-color var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard);
+}
+
+/* The warning dot (ConvertImage card, the AI chip): in `warning`, ringed in the chip's own fill to stand off its edge, its
+   centre 6 px in from the top-right corner. */
+.segmented__dot {
+  position: absolute;
+  top: calc(var(--space-6) - var(--ai-warning-dot) / 2);
+  right: calc(var(--space-6) - var(--ai-warning-dot) / 2);
+  box-sizing: content-box;
+  width: var(--ai-warning-dot);
+  height: var(--ai-warning-dot);
+  background: var(--warning);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1.5px var(--dot-ring, var(--elevated));
+}
+
+.segmented__option[aria-checked='true'] .segmented__dot {
+  --dot-ring: var(--ink);
 }
 
 .segmented--small .segmented__option {

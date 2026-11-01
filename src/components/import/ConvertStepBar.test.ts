@@ -6,6 +6,7 @@ import { useConvertImageWizard } from '../../composables/import/useConvertImageW
 import type { PixelData } from '../../domain/imageConversion'
 import { en } from '../../i18n/en'
 import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
+import { fakeCutOutDevice } from '../../testUtils/fakeCutOutDevice'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
@@ -18,6 +19,7 @@ async function bar(withPicture = true) {
       decodeImage: async () => picture(),
       loadCatalog: () => Promise.reject(new Error('none')),
       cutOutService: unusedCutOutService,
+      cutOutDevice: fakeCutOutDevice().device,
     }),
   )!
   if (withPicture) await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))

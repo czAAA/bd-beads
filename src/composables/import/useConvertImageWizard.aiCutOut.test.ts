@@ -3,6 +3,7 @@ import { effectScope, nextTick, type EffectScope } from 'vue'
 import type { PixelData } from '../../domain/imageConversion'
 import type { SubjectMask } from '../../domain/subjectMask'
 import { fakeCutOutService } from '../../testUtils/fakeCutOutService'
+import { fakeCutOutDevice } from '../../testUtils/fakeCutOutDevice'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
 
 // Cut out with AI (ticket 0767, spec 0761), through the wizard's state with a fake cut-out service: the download asked
@@ -39,6 +40,7 @@ async function convert(options: { toDownload?: number } = {}) {
       decodeImage: async () => picture(),
       loadCatalog: () => Promise.reject(new Error('no catalog')),
       cutOutService: cutOut.service,
+      cutOutDevice: fakeCutOutDevice().device,
     }),
   )!
   await wizard.setFile(new File(['x'], 'picture.png', { type: 'image/png' }))
@@ -117,7 +119,7 @@ describe('Cut out with AI (ticket 0767)', () => {
     wizard.setCutOut('ai')
     await settle()
     expect(wizard.cutOut.value).toBe('ai')
-    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 59_000_000 })
+    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 59_000_000, lowMemory: false, lowSpace: false })
     expect(cutOut.pictures()).toHaveLength(0)
 
     wizard.downloadCutOutModel()
@@ -152,7 +154,7 @@ describe('Cut out with AI (ticket 0767)', () => {
 
     wizard.setCutOut('ai')
     await settle()
-    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 59_000_000 })
+    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 59_000_000, lowMemory: false, lowSpace: false })
     expect(cutOut.pictures()).toHaveLength(1)
   })
 
