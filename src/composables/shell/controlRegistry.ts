@@ -595,7 +595,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
   unkeyed('treat-as-empty', (t) => t.convertImage.wizard.treatAsEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.treatAsEmpty }),
-  unkeyed('remap-color', (t) => t.convertImage.wizard.remap, 'colors', { icon: 'paint', body: (t) => t.tooltips.remapColor }),
+  unkeyed('remap-color', (t) => t.convertImage.wizard.change, 'colors', { icon: 'palette', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
   ...CONVERT_STEPS.map((step) => unkeyed(`convert-step-${step}`, (t) => t.convertImage.wizard.rail[step], 'edit')),
   ...CROP_HANDLES.map((handle) => unkeyed(`crop-${handle}`, (t) => t.convertImage.wizard.crop[handle], 'edit')),
