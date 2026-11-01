@@ -83,6 +83,7 @@ export const ru: Translations = {
     moreFolds: 'Больше частей',
     oneBeadWide: 'Область шириной в одну бусину.',
     oneBeadTall: 'Область высотой в одну бусину.',
+    quarterNeedsSquare: 'Для поворота на четверть нужна квадратная область.',
     radialFromShape: 'По кругу · {count}, по форме',
     lineFromShape: '{axis}, по форме',
     repeatNeedsRadial: '{axis}, по форме: для повтора нужен круг.',

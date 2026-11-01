@@ -83,6 +83,7 @@ export const uk: Translations = {
     moreFolds: 'Більше частин',
     oneBeadWide: 'Область завширшки в одну намистину.',
     oneBeadTall: 'Область заввишки в одну намистину.',
+    quarterNeedsSquare: 'Для повороту на чверть потрібна квадратна область.',
     radialFromShape: 'По колу · {count}, за формою',
     lineFromShape: '{axis}, за формою',
     repeatNeedsRadial: '{axis}, за формою: для повтору потрібне коло.',

@@ -84,6 +84,7 @@ export const be: Translations = {
     moreFolds: 'Больш частак',
     oneBeadWide: 'Вобласць шырынёй у адну пацерку.',
     oneBeadTall: 'Вобласць вышынёй у адну пацерку.',
+    quarterNeedsSquare: 'Для павароту на чвэрць патрэбна квадратная вобласць.',
     radialFromShape: 'Па крузе · {count}, па форме',
     lineFromShape: '{axis}, па форме',
     repeatNeedsRadial: '{axis}, па форме: для паўтору патрэбны круг.',
