@@ -21,6 +21,8 @@ export const ICON_NAMES = [
   'contrast',
   'copy',
   'cut',
+  'cut-out',
+  'cut-out-ai',
   'delete',
   'device',
   'erase',
@@ -75,6 +77,10 @@ export const ICON_NAMES = [
   'sidebar',
   'size',
   'sun',
+  'tap-add',
+  'tap-add-ai',
+  'tap-remove',
+  'tap-remove-ai',
   'turn-row-direction',
   'undo',
   'unlink',
@@ -95,7 +101,11 @@ const files = import.meta.glob<string>('../../../docs/design/system/assets/Icons
   eager: true,
 })
 
-/** Every icon's drawing: the SVG file's children, without the outer <svg> and its fixed ink stroke. */
+/** The AI mark's fixed ink in the files (the light `ai`, so a file reads alone); inline, AppIcon draws the mark in the
+ * theme's `ai` instead (ticket 0764). */
+const AI_MARK_INK = /(<path class="ai-mark") stroke="#[0-9a-f]{6}"/gi
+
+/** Every icon's drawing: the SVG file's children, without the outer <svg>, its fixed ink stroke and the AI mark's. */
 export const ICON_BODIES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(files).map(([path, svg]) => [
     /([^/]+)\.svg$/.exec(path)![1],
@@ -103,6 +113,7 @@ export const ICON_BODIES: Readonly<Record<string, string>> = Object.fromEntries(
       .replace(/^[\s\S]*?<svg[^>]*>/, '')
       .replace(/<\/svg>\s*$/, '')
       .replace(/<metadata>[\s\S]*?<\/metadata>/, '') // the files' provenance blob is not drawing, and shows up as text
+      .replace(AI_MARK_INK, '$1')
       .trim(),
   ]),
 )

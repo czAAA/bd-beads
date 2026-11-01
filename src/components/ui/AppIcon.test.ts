@@ -7,6 +7,11 @@ import { ICON_BODIES, ICON_NAMES } from './icons'
 
 const folder = resolve(__dirname, '../../../docs/design/system/assets/Icons')
 const files = readdirSync(folder).filter((file) => file.endsWith('.svg'))
+const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../../docs/design/system/tokens.json'), 'utf8')) as {
+  color: { tokens: { name: string; value: { light: string } }[] }
+}
+const aiInk = tokens.color.tokens.find((token) => token.name === 'ai')!.value.light
+const aiForms = ICON_NAMES.filter((name) => name.endsWith('-ai'))
 
 describe('Icons v2', () => {
   it('names exactly the icons in the design system folder, so a missing or misspelled name fails', () => {
@@ -20,8 +25,24 @@ describe('Icons v2', () => {
   it.each(ICON_NAMES)('draws %s from its file, with no fixed color of its own', (name) => {
     const body = ICON_BODIES[name]
     expect(body.length).toBeGreaterThan(0)
-    expect(readFileSync(resolve(folder, `${name}.svg`), 'utf8')).toContain(body)
+    expect(readFileSync(resolve(folder, `${name}.svg`), 'utf8').replaceAll(` stroke="${aiInk}"`, '')).toContain(body)
     expect(body).not.toMatch(/#[0-9a-f]{3,6}/i)
+  })
+
+  it('has the AI forms of cut-out, tap-add and tap-remove (ticket 0764)', () => {
+    expect(aiForms.sort()).toEqual(['cut-out-ai', 'tap-add-ai', 'tap-remove-ai'])
+    for (const name of aiForms) expect(ICON_NAMES).toContain(name.replace(/-ai$/, ''))
+  })
+
+  it.each(aiForms)('draws the AI mark of %s as one part, in the light ai color as a file', (name) => {
+    const file = readFileSync(resolve(folder, `${name}.svg`), 'utf8')
+    expect(file.match(/class="ai-mark"/g)).toHaveLength(1)
+    expect(file).toMatch(new RegExp(`<path class="ai-mark" stroke="${aiInk}"`))
+    expect(ICON_BODIES[name]).toMatch(/<path class="ai-mark" d=/)
+  })
+
+  it('puts the AI mark on the AI forms only', () => {
+    for (const name of ICON_NAMES.filter((icon) => !icon.endsWith('-ai'))) expect(ICON_BODIES[name], name).not.toContain('ai-mark')
   })
 })
 

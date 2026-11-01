@@ -27,6 +27,7 @@
   --danger: #c23604; /* Delete all, error text, the error message edge, danger-filled confirm buttons (their label is on-danger). 4.9:1 on panel in light, 4.6:1 in dark. */
   --on-danger: #ffffff; /* Label on danger-filled buttons: white in light (5.5:1), near-black in dark (5.0:1 on #ef4444). */
   --warning: #ffa110; /* Warning message edge and the Estimated size warning (Derived). Never as text. */
+  --ai: #6e44ff; /* The AI mark (the sparkle on a control that runs or downloads a model) and the AI variant of Loading (its line, beads and shimmer). Nothing else. 5.3:1 on canvas in light, 8.7:1 in dark and high contrast. */
   --swatch-edge: rgba(0,0,0,.2); /* Inset 1px edge on every swatch so ivory and black swatches do not vanish. */
   --button: #ffffff; /* Secondary button fill on the page (header): EN / RU, theme toggle frame, keyboard shortcuts. */
   --button-line: #c7c7c7; /* Secondary button border on the page. */
@@ -87,6 +88,7 @@
   --danger: #ef4444;
   --on-danger: #0a0a0a;
   --warning: #f59e0b;
+  --ai: #b9a6ff;
   --swatch-edge: #3a3a3a;
   --button: #202020;
   --button-line: #202020;
@@ -147,6 +149,7 @@
   --danger: #a82c00;
   --on-danger: #ffffff;
   --warning: #9a5b00;
+  --ai: #4a1fd1;
   --swatch-edge: #595959;
   --button: #ffffff;
   --button-line: #595959;
