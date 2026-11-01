@@ -536,12 +536,13 @@ describe('stored-data compatibility', () => {
       expect(mirrorSettingOf(opened!)).toEqual({
         mode: 'mirror',
         axes: { leftRight: false, topBottom: true, radial: false },
-        fold: 3,
+        fold: 2,
         counts: { leftRight: 1, topBottom: 2 },
         beforeRadial: { leftRight: false, topBottom: true },
         place: { layer: 'canvas', area: { row: -2, column: 4, rows: 5, columns: 6 } },
       })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorPlace))
+      // The stored Fold 3 is a grid's now: 2 in this Area, which is not square (ticket 0751), and written back so.
+      expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorPlace.replace('"fold":3', '"fold":2')))
     })
 
     it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {

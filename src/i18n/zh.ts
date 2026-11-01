@@ -83,6 +83,7 @@ export const zh: Translations = {
     moreFolds: '增加份数',
     oneBeadWide: '该区域只有一颗珠子宽。',
     oneBeadTall: '该区域只有一颗珠子高。',
+    quarterNeedsSquare: '四分之一圈需要正方形的区域。',
     radialFromShape: '环绕 · {count}，按形状',
     lineFromShape: '{axis}，按形状',
     repeatNeedsRadial: '{axis}，按形状：重复需要环绕。',

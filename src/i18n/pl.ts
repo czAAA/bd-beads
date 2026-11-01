@@ -83,6 +83,7 @@ export const pl: Translations = {
     moreFolds: 'Więcej części',
     oneBeadWide: 'Obszar ma szerokość jednego koralika.',
     oneBeadTall: 'Obszar ma wysokość jednego koralika.',
+    quarterNeedsSquare: 'Obrót o ćwierć wymaga kwadratowego obszaru.',
     radialFromShape: 'Wokół środka · {count}, z kształtu',
     lineFromShape: '{axis}, z kształtu',
     repeatNeedsRadial: '{axis}, z kształtu: Powtórz potrzebuje osi Wokół środka.',
