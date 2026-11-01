@@ -10,3 +10,4 @@ Hand-written from the Phase C sign-off.
 
 - **The Tool pill's colour popover (ticket 0726):** the colour popover is drawn in the app shell, outside the canvas box, at `z-popover`: over the Progress bar and the margin sheet, under toasts and a dialog opened from it (Report a bead color).
 - **Menu and Project (spec 0440):** the dropdown is a popover at `z-popover`; Duplicate and Delete open at `z-modal` after the panel has closed.
+- **An App page is not a layer (ticket 0756, ADR 0085):** Convert image fills the canvas box in the Canvas's place, below every overlay in this list, with the editor's drawing area kept beneath it. Because it is not a modal, a confirmation ("Leave the converter?") opens over it at `z-modal`, and so can the Menu's dropdown at `z-popover`. Its Escape is the lowest layer: a panel or dialog open above it closes first.

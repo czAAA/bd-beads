@@ -1,25 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { ConvertImageStart } from '../../composables/import/useConvertImageFlow'
-import { CONVERT_SHEET_QUERY, provideConvertImageWizard, useConvertImageWizard } from '../../composables/import/useConvertImageWizard'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { provideConvertImageWizard, type ConvertImageWizard } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
-import { controlAction } from '../../composables/shell/controlRegistry'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { useRovingFocus } from '../../composables/ui/useRovingFocus'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { formFactorName, offeredBeads } from '../../domain/beads'
-import type { ColorCatalog } from '../../domain/colorCatalog'
-import { CONVERT_STEPS, type ConvertStep } from '../../domain/convertSize'
-import { formatImageLimits, type DecodeImage } from '../../domain/imageConversion'
-import type { Project } from '../../domain/project'
+import type { ConvertStep } from '../../domain/convertSize'
+import { formatImageLimits } from '../../domain/imageConversion'
 import { techniqueName } from '../../i18n/techniqueName'
-import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
-import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
-import AppModal from '../ui/AppModal.vue'
-import AppTooltip from '../ui/AppTooltip.vue'
-import IconButton from '../ui/IconButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import BeadSection from '../project/BeadSection.vue'
 import TechniqueSection from '../project/TechniqueSection.vue'
@@ -30,36 +20,33 @@ import ConvertReviewSection from './ConvertReviewSection.vue'
 import ConvertSection from './ConvertSection.vue'
 import ConvertSizeSection from './ConvertSizeSection.vue'
 
-// The Convert image wizard (spec 0645; ConvertImage, PhoneForms and Modal cards): the live preview beside five numbered
-// sections, all open; the large Modal from 1024 px in landscape, else a sheet under a sticky, shrinking preview. Its setup
-// is its own copy of the form's; Cancel, Close and Escape close it at once, a picture set or not (ticket 0679).
+// Convert image as an App page (ticket 0756, ADR 0086; ConvertImage and PhoneForms cards): the live preview beside the
+// step in hand (above it under 1024 px or in portrait), filling the canvas box. The steps themselves are on the Progress
+// bar (ConvertStepBar). Its setup is its own copy of the form's, held by the flow's session; Close and Escape ask to leave.
 const props = defineProps<{
-  start: ConvertImageStart
-  decodeImage: DecodeImage
-  loadCatalog: (id: string) => Promise<ColorCatalog>
+  wizard: ConvertImageWizard
   readClipboardImage: () => Promise<File | undefined>
 }>()
 
-const emit = defineEmits<{ create: [project: Project]; cancel: [] }>()
+const emit = defineEmits<{ close: [] }>()
 
 const { t, locale } = useI18n()
 const words = computed(() => t.value.convertImage.wizard)
-const wizard = useConvertImageWizard({ start: props.start.draft, decodeImage: props.decodeImage, loadCatalog: props.loadCatalog })
+const { wizard } = props
 provideConvertImageWizard(wizard)
 const result = useConvertResult(wizard)
-const sheet = useMediaQuery(CONVERT_SHEET_QUERY)
 
-onMounted(() => {
-  if (props.start.file) void wizard.setFile(props.start.file)
-})
+const rootEl = ref<HTMLElement>()
 
-// --- Ways in on the popup: Paste (the button and Ctrl/Cmd+V) and a drop ---------------------------------------------
+// The page is the top layer while it shows, so Escape asks to leave; a press elsewhere (the strip's Menu) goes through.
+useOverlayLayer({ isOpen: () => true, root: () => rootEl.value, close: () => emit('close'), outside: 'through', onOutsidePress: () => undefined })
 
-const pasteEmpty = ref(false)
+onMounted(() => rootEl.value?.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true }))
+
+// --- Ways in: Paste (the button and Ctrl/Cmd+V) and a drop ---------------------------------------------------------
 
 async function pasteFromClipboard() {
   const file = await props.readClipboardImage()
-  pasteEmpty.value = !file
   if (file) await wizard.setFile(file)
 }
 
@@ -68,12 +55,11 @@ function pictureIn(transfer: DataTransfer | null | undefined): File | undefined 
   return [...(transfer?.files ?? [])].find((file) => file.type.startsWith('image/') || file.type === '') ?? transfer?.files[0]
 }
 
-// Ctrl/Cmd+V anywhere in the popup: a picture on the clipboard is taken; text pastes into a field as usual.
+// Ctrl/Cmd+V anywhere on the page: a picture on the clipboard is taken; text pastes into a field as usual.
 function onPaste(event: ClipboardEvent) {
   const file = pictureIn(event.clipboardData)
   if (!file) return
   event.preventDefault()
-  pasteEmpty.value = false
   void wizard.setFile(file)
 }
 onMounted(() => document.addEventListener('paste', onPaste))
@@ -98,11 +84,7 @@ function onDrop(event: DragEvent) {
 }
 const dropLimits = computed(() => formatImageLimits(words.value.dropLimits))
 
-// --- Sections and the step rail -------------------------------------------------------------------------------------
-
-const closeAction = controlAction('close')
-/** Each step's name, its Tooltip on the compact rail, comes from the registry (ticket 0650). */
-const steps = CONVERT_STEPS.map((step) => ({ step, action: controlAction(`convert-step-${step}`) }))
+// --- The step in hand -------------------------------------------------------------------------------------------------
 
 const summaries = computed<Record<ConvertStep, string | undefined>>(() => {
   const bead = wizard.bead.value
@@ -119,199 +101,88 @@ const summaries = computed<Record<ConvertStep, string | undefined>>(() => {
   }
 })
 
-const scrollEl = ref<HTMLElement>()
-const railEl = ref<HTMLElement>()
-const roving = useRovingFocus(railEl, { selector: '.convert-wizard__step', axis: () => 'horizontal' })
-const current = ref<ConvertStep>('picture')
-const shrunk = ref(false)
-/** All five labels show on the rail when all five fit; otherwise numbers only, each label its Tooltip. */
-const railCompact = ref(false)
-const compact = computed(() => sheet.value || railCompact.value)
-
-function sectionEl(step: ConvertStep): HTMLElement | null | undefined {
-  return scrollEl.value?.querySelector<HTMLElement>(`[data-testid="convert-section-${step}"]`)
-}
-
-/** The section in view: the last one whose top has reached the rail. */
-function onScroll(event: Event) {
-  const scroller = event.currentTarget as HTMLElement
-  shrunk.value = sheet.value && scroller.scrollTop > 0
-  const railBottom = railEl.value?.getBoundingClientRect().bottom ?? 0
-  current.value = [...CONVERT_STEPS].reverse().find((step) => (sectionEl(step)?.getBoundingClientRect().top ?? Infinity) <= railBottom + 1) ?? 'picture'
-}
-
-async function goTo(step: ConvertStep) {
-  current.value = step
-  sectionEl(step)?.scrollIntoView?.({ block: 'start' })
-  await nextTick()
-  sectionEl(step)?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
-}
-
-let railObserver: ResizeObserver | undefined
-async function measureRail() {
-  railCompact.value = false
-  await nextTick()
-  const rail = railEl.value
-  railCompact.value = !!rail && rail.scrollWidth > rail.clientWidth + 1
-}
-onMounted(() => {
-  void measureRail()
-  railObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(() => void measureRail())
-  if (railEl.value) railObserver?.observe(railEl.value)
-})
-onBeforeUnmount(() => railObserver?.disconnect())
-
-// --- Footer: Cancel and Create -------------------------------------------------------------------------------------
-
-const footerLine = computed(() =>
-  result.value ? `${result.value.grid} · ${result.value.measured} · ${plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount)}` : words.value.noPicture,
+const stepEl = ref<HTMLElement>()
+/** A new step starts at its top, and focus moves to its heading so a screen reader says where it is. */
+watch(
+  () => wizard.step.value,
+  async () => {
+    await nextTick()
+    stepEl.value?.scrollTo?.({ top: 0 })
+    stepEl.value?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
+  },
 )
-
-function onCreate() {
-  const project = wizard.createProject()
-  if (project) emit('create', project)
-}
 </script>
 
 <template>
-  <AppModal :title="words.title" size="large" data-testid="convert-image-wizard" @cancel="emit('cancel')">
-    <template #header>
-      <IconButton variant="plain" :icon-size="18" :action="closeAction" data-testid="convert-close" @click="emit('cancel')" />
-    </template>
-
-    <div
-      ref="scrollEl"
-      class="convert-wizard"
-      :class="{ 'convert-wizard--shrunk': shrunk }"
-      @scroll="onScroll"
-      @dragover="onDragOver"
-      @dragleave="onDragLeave"
-      @drop="onDrop"
-    >
-      <div class="convert-wizard__preview-pane">
-        <div class="convert-wizard__preview">
-          <ConvertImagePreview :shrunk="shrunk" />
-        </div>
-      </div>
-
-      <div class="convert-wizard__sections" @scroll="onScroll">
-        <nav ref="railEl" class="convert-wizard__rail" :class="{ 'convert-wizard__rail--compact': compact }" :aria-label="words.railLabel" @keydown="roving.onKeydown">
-          <template v-for="({ step, action }, index) in steps" :key="step">
-            <span v-if="index > 0" class="convert-wizard__hairline" aria-hidden="true" />
-            <component :is="compact ? AppTooltip : 'span'" v-bind="compact ? { name: action.name(t), announce: false } : {}" class="convert-wizard__step-wrap">
-              <button
-                type="button"
-                class="convert-wizard__step"
-                :class="{ 'convert-wizard__step--current': current === step }"
-                :aria-current="current === step ? 'step' : undefined"
-                :aria-label="compact ? action.name(t) : undefined"
-                :tabindex="roving.tabIndexFor(current === step)"
-                :data-testid="`convert-step-${step}`"
-                @click="goTo(step)"
-              >
-                <span class="convert-wizard__disc">{{ index + 1 }}</span>
-                <span v-if="!compact" class="convert-wizard__step-label">{{ action.name(t) }}</span>
-              </button>
-            </component>
-          </template>
-        </nav>
-
-        <ConvertSection :step="1" :title="words.sections.picture" :done="wizard.hasPicture.value" testid="convert-section-picture">
-          <ConvertPictureSection @paste="pasteFromClipboard" />
-          <p v-if="pasteEmpty" class="convert-wizard__notice" role="status" data-testid="convert-nothing-to-paste">{{ words.nothingToPaste }}</p>
-        </ConvertSection>
-        <ConvertSection
-          :step="2"
-          :title="words.sections.bead"
-          :summary="summaries.bead"
-          :disabled="!wizard.hasPicture.value"
-          :disabled-summary="words.addPictureFirst"
-          testid="convert-section-bead"
-        >
-          <FormField :label="t.form.beadLabel">
-            <BeadSection :bead="wizard.bead.value" :candidates="offeredBeads()" @pick="wizard.beadId.value = $event" />
-          </FormField>
-          <TechniqueSection v-model:technique="wizard.technique.value" :settings="wizard.settings.value" testid="convert" @set-setting="wizard.setSetting" />
-        </ConvertSection>
-        <ConvertSection
-          :step="3"
-          :title="words.sections.size"
-          :summary="summaries.size"
-          :disabled="!wizard.hasPicture.value"
-          :disabled-summary="words.addPictureFirst"
-          testid="convert-section-size"
-        >
-          <ConvertSizeSection />
-        </ConvertSection>
-        <ConvertSection
-          :step="4"
-          :title="words.sections.colors"
-          :summary="summaries.colors"
-          :disabled="!wizard.hasPicture.value"
-          :disabled-summary="words.addPictureFirst"
-          testid="convert-section-colors"
-        >
-          <ConvertColorsSection />
-        </ConvertSection>
-        <ConvertSection
-          :step="5"
-          :title="words.sections.review"
-          :summary="summaries.review"
-          :disabled="!wizard.hasPicture.value"
-          :disabled-summary="words.addPictureFirst"
-          testid="convert-section-review"
-        >
-          <ConvertReviewSection />
-        </ConvertSection>
-      </div>
-
-      <div v-if="dropping" class="convert-wizard__dropping" data-testid="convert-dropping">
-        <AppIcon name="image" :size="34" />
-        <span class="convert-wizard__dropping-title">{{ words.dropToUse }}</span>
-        <span class="convert-wizard__dropping-limits">{{ dropLimits }}</span>
-      </div>
+  <div
+    ref="rootEl"
+    class="convert-page"
+    role="region"
+    :aria-label="words.title"
+    data-testid="convert-image-wizard"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
+    @drop="onDrop"
+  >
+    <div class="convert-page__preview">
+      <ConvertImagePreview />
     </div>
 
-    <template #actions>
-      <div class="convert-wizard__footer">
-        <AppButton class="convert-wizard__cancel" variant="secondary" data-testid="convert-image-cancel" @click="emit('cancel')">{{ t.convertImage.cancelButton }}</AppButton>
-        <span class="convert-wizard__line" :class="{ 'convert-wizard__line--empty': !result }" role="status" data-testid="convert-footer-line">{{ footerLine }}</span>
-        <AppButton
-          class="convert-wizard__create"
-          variant="primary"
-          :disabled="!wizard.hasPicture.value"
-          :label="t.convertImage.createButton"
-          :disabled-body="words.addPictureFirst"
-          data-testid="convert-image-create"
-          @click="onCreate"
-        >
-          {{ t.convertImage.createButton }}
-        </AppButton>
-      </div>
-    </template>
-  </AppModal>
+    <div ref="stepEl" class="convert-page__step" data-testid="convert-step-pane">
+      <ConvertSection
+        v-if="wizard.step.value === 'picture'"
+        :step="1"
+        :title="words.sections.picture"
+        :done="wizard.hasPicture.value"
+        testid="convert-section-picture"
+      >
+        <ConvertPictureSection @paste="pasteFromClipboard" />
+      </ConvertSection>
+      <ConvertSection v-else-if="wizard.step.value === 'bead'" :step="2" :title="words.sections.bead" :summary="summaries.bead" testid="convert-section-bead">
+        <FormField :label="t.form.beadLabel">
+          <BeadSection :bead="wizard.bead.value" :candidates="offeredBeads()" @pick="wizard.beadId.value = $event" />
+        </FormField>
+        <TechniqueSection v-model:technique="wizard.technique.value" :settings="wizard.settings.value" testid="convert" @set-setting="wizard.setSetting" />
+      </ConvertSection>
+      <ConvertSection v-else-if="wizard.step.value === 'size'" :step="3" :title="words.sections.size" :summary="summaries.size" testid="convert-section-size">
+        <ConvertSizeSection />
+      </ConvertSection>
+      <ConvertSection v-else-if="wizard.step.value === 'colors'" :step="4" :title="words.sections.colors" :summary="summaries.colors" testid="convert-section-colors">
+        <ConvertColorsSection />
+      </ConvertSection>
+      <ConvertSection v-else :step="5" :title="words.sections.review" :summary="summaries.review" testid="convert-section-review">
+        <ConvertReviewSection />
+      </ConvertSection>
+    </div>
+
+    <div v-if="dropping" class="convert-page__dropping" data-testid="convert-dropping">
+      <AppIcon name="image" :size="34" />
+      <span class="convert-page__dropping-title">{{ words.dropToUse }}</span>
+      <span class="convert-page__dropping-limits">{{ dropLimits }}</span>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-/* Two panes from 1024 px in landscape (ConvertImage card): the preview takes the rest, the sections their width. */
-.convert-wizard {
+/* Beside each other from 1024 px in landscape (ConvertImage card): the preview takes the rest, the step its width. It
+ * fills the canvas box between the strip and the Progress bar. */
+.convert-page {
   position: relative;
   display: flex;
-  flex: 1;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--box);
+}
+
+.convert-page__preview {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
 }
 
-.convert-wizard__preview-pane {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.convert-wizard__preview {
-  height: 100%;
-}
-
-.convert-wizard__sections {
-  position: relative;
+.convert-page__step {
   flex: none;
   width: var(--convert-sections-width);
   overflow-y: auto;
@@ -320,87 +191,13 @@ function onCreate() {
 }
 
 @media (max-width: 68.75rem) {
-  .convert-wizard__sections {
+  .convert-page__step {
     width: var(--convert-sections-width-narrow);
   }
 }
 
-.convert-wizard__rail {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  box-sizing: border-box;
-  height: var(--step-rail);
-  padding: 0 var(--space-16);
-  overflow: hidden;
-  background: var(--overlay-fill);
-  border-bottom: 1px solid var(--panel-rule);
-}
-
-.convert-wizard__hairline {
-  flex: 1 1 var(--space-8);
-  min-width: var(--space-4);
-  height: 1px;
-  background: var(--line);
-}
-
-.convert-wizard__step-wrap {
-  display: inline-flex;
-  flex: none;
-}
-
-.convert-wizard__step {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-6);
-  padding: var(--space-2);
-  font: var(--type-label);
-  color: var(--muted);
-  white-space: nowrap;
-  background: none;
-  border: 0;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.convert-wizard__step:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.convert-wizard__disc {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: var(--step-disc);
-  height: var(--step-disc);
-  font: var(--type-meta-small);
-  color: var(--ink);
-  background: var(--overlay-fill);
-  border: 1px solid var(--line-strong);
-  border-radius: 50%;
-}
-
-.convert-wizard__step--current {
-  color: var(--ink);
-}
-
-.convert-wizard__step--current .convert-wizard__disc {
-  box-shadow: 0 0 0 2px var(--overlay-fill), 0 0 0 4px var(--ink);
-}
-
-.convert-wizard__notice {
-  margin: 0;
-  font: var(--type-meta);
-  color: var(--muted);
-}
-
-/* A picture dragged over the popup: the drop look over all of it. */
-.convert-wizard__dropping {
+/* A picture dragged over the page: the drop look over all of it. */
+.convert-page__dropping {
   position: absolute;
   inset: var(--space-12);
   z-index: 5;
@@ -416,158 +213,45 @@ function onCreate() {
   border-radius: var(--radius-lg);
 }
 
-.convert-wizard__dropping-title {
+.convert-page__dropping-title {
   font: var(--type-control);
 }
 
-.convert-wizard__dropping-limits {
+.convert-page__dropping-limits {
   font: var(--type-meta);
   color: var(--muted);
 }
 
-.convert-wizard__footer {
-  --footer-gap: var(--space-12);
-
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: var(--footer-gap);
-  min-width: 0;
-}
-
-.convert-wizard__line {
-  flex: 1;
-  min-width: 0;
-  font: var(--type-meta);
-  color: var(--body);
-  text-align: center;
-}
-
-.convert-wizard__line--empty {
-  color: var(--muted);
-}
-
-/* Create Project's Tooltip wraps it (AppButton), so its class lands inside the wrapper, out of this file's scope (ticket
- * 0679). */
-.convert-wizard__cancel,
-.convert-wizard__footer :deep(.convert-wizard__create) {
-  flex: none;
-  height: var(--field-height);
-}
-
-/* Under 1024 px or in portrait (PhoneForms card): one long scroll, the preview sticky on top, shrinking (by transform,
- * so the sections never reflow) once they scroll under it, the rail under it. */
+/* Under 1024 px or in portrait (PhoneForms card): the preview above the step, the step scrolling under it. */
 @media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-wizard {
+  .convert-page {
     flex-direction: column;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    /* As the panels do (AppPanel): the sheet is scrolled by a finger, and a bar would take the sections' room. */
-    scrollbar-width: none;
-    --preview-height: var(--convert-preview-phone);
-    --preview-shrunk: var(--convert-preview-phone-shrunk);
-    /* The shrunk height over the full one (132 / 300): calc cannot divide one length by another. */
-    --preview-shrink: 0.44;
   }
 
-  .convert-wizard__preview-pane {
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    flex: none;
-    height: var(--preview-height);
-    pointer-events: none;
-  }
-
-  /* The band behind the preview, full width, at the height the preview takes now: the scaled preview is narrower than
-   * the sheet, and nothing may show through beside it. Absolutely placed, so its height changes nothing else. */
-  .convert-wizard__preview-pane::before {
-    position: absolute;
-    inset: 0 0 auto;
-    height: var(--preview-height);
-    content: '';
-    background: var(--box);
+  .convert-page__preview {
+    flex: 0 1 var(--convert-preview-phone);
+    min-height: var(--convert-preview-min);
     border-bottom: 1px solid var(--panel-rule);
-    transition: height var(--duration-base) var(--ease-out);
   }
 
-  .convert-wizard--shrunk .convert-wizard__preview-pane::before {
-    height: var(--preview-shrunk);
-  }
-
-  .convert-wizard__preview {
-    position: relative;
-    height: var(--preview-height);
-    pointer-events: auto;
-    transform-origin: top center;
-    transition: transform var(--duration-base) var(--ease-out);
-  }
-
-  .convert-wizard--shrunk .convert-wizard__preview {
-    transform: scale(var(--preview-shrink));
-  }
-
-  .convert-wizard__sections {
+  .convert-page__step {
+    flex: 1 1 0;
     width: auto;
-    overflow: visible;
+    min-height: 0;
     border-left: 0;
   }
 
-  .convert-wizard__sections > :not(.convert-wizard__rail) {
+  .convert-page__step > :deep(*) {
     box-sizing: border-box;
     width: 100%;
     max-width: 40rem;
     margin-inline: auto;
   }
-
-  .convert-wizard__rail {
-    top: var(--preview-height);
-    height: var(--step-rail-phone);
-  }
-
-  .convert-wizard--shrunk .convert-wizard__rail {
-    top: var(--preview-shrunk);
-  }
-
-  .convert-wizard__footer {
-    flex-wrap: wrap;
-  }
-
-  .convert-wizard__line {
-    flex-basis: 100%;
-    order: -1;
-  }
-
-  /* Half the row each. The basis is about a half, not 0, as Cancel has its own padding and Create Project's is inside its
-   * wrapper; less the gap, so the two stay on one row. */
-  .convert-wizard__cancel,
-  .convert-wizard__footer > :deep(.app-button-wrap) {
-    flex: 1 1 calc(50% - var(--footer-gap));
-  }
-
-  .convert-wizard__cancel,
-  .convert-wizard__footer :deep(.convert-wizard__create) {
-    height: var(--field-height-phone);
-  }
-
-  .convert-wizard__footer :deep(.convert-wizard__create) {
-    flex: 1;
-  }
 }
 
 @media (min-width: 40rem) and (orientation: portrait) {
-  .convert-wizard {
-    --preview-height: var(--convert-preview-tablet);
-    --preview-shrunk: var(--convert-preview-tablet-shrunk);
-    /* 200 / 440. */
-    --preview-shrink: 0.4545;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .convert-wizard__preview,
-  .convert-wizard__preview-pane::before {
-    transition: none;
+  .convert-page__preview {
+    flex-basis: var(--convert-preview-tablet);
   }
 }
 </style>

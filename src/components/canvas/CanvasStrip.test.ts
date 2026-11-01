@@ -197,4 +197,16 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     expect(wrapper.emitted('select-panel')).toEqual([['menu']])
     wrapper.unmount()
   })
+
+  it('shows Menu and a Close (×) on Convert image, with no Project, Frame, tools, zoom or Export, and a Brand that is no link (ticket 0756)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { page: 'convert-image' } })
+
+    const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('convert-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'convert-close', 'strip-coffee'])
+    expect(wrapper.get('[data-testid="convert-close"]').attributes('aria-label')).toBe(en.a11y.closeMessage)
+    expect(wrapper.get('[data-testid="canvas-brand"]').element.tagName).toBe('SPAN')
+
+    await wrapper.get('[data-testid="convert-close"]').trigger('click')
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
 })

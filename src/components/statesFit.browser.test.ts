@@ -11,7 +11,6 @@ import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import StarterGallery from './project/StarterGallery.vue'
 import StarterSetup from './project/StarterSetup.vue'
-import ConvertImageWizard from './import/ConvertImageWizard.vue'
 import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
@@ -25,6 +24,7 @@ import { createProject } from '../domain/createProject'
 import { paintAt } from '../testUtils/layers'
 import { marginSheetHost } from '../testUtils/marginSheetHost'
 import { armSelectionBar } from '../testUtils/pill'
+import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
@@ -238,26 +238,47 @@ const CASES: FitCase[] = [
   ['StarterSetup (Band)', StarterSetup, { starter: starterById('bandPlaid') }],
   ['BeadColorList', BeadColorList, { colors: beadColors('ready') }],
   ['BeadColorList failed', BeadColorList, { colors: beadColors('failed') }],
-  ['ConvertImageWizard (no picture)', ConvertImageWizard, wizardProps(false)],
+  ['Convert image page (no picture)', ConvertPageHost, wizardProps(false)],
   ['PictureDropOverlay', PictureDragged, {}],
   [
-    'ConvertImageWizard (remapping)',
-    ConvertImageWizard,
+    'Convert image page (remapping)',
+    ConvertPageHost,
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
+      press(root, 'convert-step-colors')
       press(root, 'convert-color-by-color')
       press(root, 'found-color-remap')
     },
   ],
   [
-    'ConvertImageWizard (a part, in mm)',
-    ConvertImageWizard,
+    'Convert image page (a part, in mm)',
+    ConvertPageHost,
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
       root.querySelector<HTMLElement>('[data-testid="convert-weave"] [data-value="part"]')?.click()
+      press(root, 'convert-step-size')
+      await new Promise((done) => setTimeout(done, 20))
       root.querySelector<HTMLElement>('[data-testid="convert-size-unit"] [data-value="mm"]')?.click()
+    },
+  ],
+  [
+    'Convert image page (Bead & Technique)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      press(root, 'convert-step-bead')
+    },
+  ],
+  [
+    'Convert image page (Review)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      press(root, 'convert-step-review')
     },
   ],
 ]

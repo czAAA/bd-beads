@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { chooseNewProjectTechnique, convertPicture, openApp, openNewProjectForm, setConvertWidth } from '../support/app'
+import { chooseNewProjectTechnique, convertPicture, openApp, openNewProjectForm, setConvertWidth, showConvertStep } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
-// The Convert image wizard (spec 0645, ticket 0747): the preview in each Technique at a Width on a mark, then A part
-// with its handles and the rest dimmed (as the framing step's check was, ticket 58), and each layout: two panes from
-// 1024 px in landscape, one long scroll under a sticky, shrinking preview on a phone. The tolerance covers anti-aliasing.
+// The Convert image page (spec 0645, tickets 0747, 0756): the preview in each Technique at a Width on a mark, then A part
+// with its handles and the rest dimmed (as the framing step's check was, ticket 58), and each layout: the preview beside
+// the step from 1024 px in landscape, above it on a phone. The tolerance covers anti-aliasing.
 
-async function openWizard(page: Page, technique?: string) {
+async function openPage(page: Page, technique?: string) {
   await openApp(page, [])
   await openNewProjectForm(page)
   if (technique) await chooseNewProjectTechnique(page, technique)
@@ -19,7 +19,7 @@ test.describe('Convert image preview', () => {
   for (const technique of ['loom', 'peyote', 'brick'] as const) {
     test(technique, async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 860 })
-      await openWizard(page, technique)
+      await openPage(page, technique)
       const preview = page.getByTestId('convert-image-box')
       const shot = (name: string) =>
         expect.soft(preview, name).toHaveScreenshot(`convert-${technique}-${name}.png`, { maxDiffPixelRatio: 0.008 })
@@ -30,6 +30,7 @@ test.describe('Convert image preview', () => {
       await shot('whole')
 
       // A part starts 10% in from each edge, the rest of the picture dimmed round it.
+      await showConvertStep(page, 'picture')
       await page.getByTestId('convert-weave').locator('[data-value="part"]').click()
       await expect(page.getByTestId('convert-crop-topLeft')).toBeVisible()
       await page.mouse.move(2, 2)
@@ -50,41 +51,37 @@ test.describe('Convert image layouts', () => {
     { width: 1280, height: 860 },
     { width: 1024, height: 768 },
   ]) {
-    test(`two panes at ${viewport.width} px`, async ({ page }) => {
+    test(`the preview beside the step at ${viewport.width} px`, async ({ page }) => {
       await page.setViewportSize(viewport)
-      await openWizard(page)
-      const dialog = page.getByTestId('convert-image-wizard')
-      const preview = (await page.locator('.convert-wizard__preview-pane').boundingBox())!
-      const sections = (await page.locator('.convert-wizard__sections').boundingBox())!
+      await openPage(page)
+      const wizard = page.getByTestId('convert-image-wizard')
+      const preview = (await page.locator('.convert-page__preview').boundingBox())!
+      const step = (await page.locator('.convert-page__step').boundingBox())!
 
-      expect(preview.x + preview.width).toBeLessThanOrEqual(sections.x + 1)
-      expect(Math.abs(preview.y - sections.y)).toBeLessThan(1)
-      // Never more than the viewport less 24 a side (Modal card), centred.
-      const box = (await dialog.boundingBox())!
-      expect(box.width).toBeLessThanOrEqual(viewport.width - 48 + 1)
-      expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThan(2)
-      if (viewport.width === 1280) await expect.soft(dialog).toHaveScreenshot('convert-wizard-desktop.png', { maxDiffPixelRatio: 0.01 })
+      expect(preview.x + preview.width).toBeLessThanOrEqual(step.x + 1)
+      expect(Math.abs(preview.y - step.y)).toBeLessThan(1)
+      // The page fills the canvas box between the strip and the Progress bar, edge to edge.
+      const box = (await page.getByTestId('app-canvas').boundingBox())!
+      const own = (await wizard.boundingBox())!
+      expect(Math.abs(own.width - box.width)).toBeLessThan(2)
+      if (viewport.width === 1280) await expect.soft(wizard).toHaveScreenshot('convert-page-desktop.png', { maxDiffPixelRatio: 0.01 })
     })
   }
 
-  test('one long scroll with a sticky preview that shrinks, on a phone', async ({ page }) => {
+  test('the preview above the step, which scrolls on its own, on a phone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await openWizard(page)
-    const dialog = page.getByTestId('convert-image-wizard')
-    const preview = page.locator('.convert-wizard__preview')
-    const before = (await preview.boundingBox())!
-    await expect.soft(dialog).toHaveScreenshot('convert-wizard-phone.png', { maxDiffPixelRatio: 0.01 })
+    await openPage(page)
+    const wizard = page.getByTestId('convert-image-wizard')
+    const preview = (await page.locator('.convert-page__preview').boundingBox())!
+    const step = (await page.locator('.convert-page__step').boundingBox())!
 
-    await page.locator('.convert-wizard').evaluate((scroller) => scroller.scrollTo({ top: 900 }))
-    await expect(page.locator('.convert-wizard--shrunk')).toHaveCount(1)
-    // The shrinking is a transform: wait for it to end before measuring.
-    await page.waitForFunction(() => document.getAnimations().length === 0)
-    const after = (await preview.boundingBox())!
+    expect(preview.y + preview.height).toBeLessThanOrEqual(step.y + 1)
+    expect(preview.height).toBeLessThanOrEqual(301)
+    await expect.soft(wizard).toHaveScreenshot('convert-page-phone.png', { maxDiffPixelRatio: 0.01 })
 
-    expect(Math.abs(after.y - before.y)).toBeLessThan(1)
-    expect(after.height).toBeLessThan(before.height * 0.6)
-    const rail = (await page.locator('.convert-wizard__rail').boundingBox())!
-    expect(rail.y).toBeGreaterThanOrEqual(after.y + after.height - 1)
-    await expect.soft(dialog).toHaveScreenshot('convert-wizard-phone-scrolled.png', { maxDiffPixelRatio: 0.01 })
+    await showConvertStep(page, 'colors')
+    await page.locator('.convert-page__step').evaluate((scroller) => scroller.scrollTo({ top: 900 }))
+    const after = (await page.locator('.convert-page__preview').boundingBox())!
+    expect(after).toEqual(preview)
   })
 })

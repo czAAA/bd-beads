@@ -12,12 +12,13 @@ import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
-// The canvas box's header strip on the editor and the Homepage (tickets 143, 540, ADR 0046, ADR 0073; CanvasStrip card):
-// three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo, the zoom and Export
-// on the right (tickets 543, 0652). Under 1024px the words and the wordmark hide; on an editor phone there is no Brand.
+// The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
+// Project · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Undo · Redo, zoom
+// and Export on the right (tickets 543, 0652). Under 1024px the words hide; on an editor phone there is no Brand.
 const props = defineProps<{
-  /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page. */
-  page?: 'editor' | 'homepage'
+  /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page, and
+   * Convert image's is plain, so leaving never happens by a link that asks nothing. */
+  page?: 'editor' | 'homepage' | 'convert-image'
   project?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openPanel?: OpenPanel | null
@@ -34,6 +35,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'select-panel': [sheet: 'menu' | 'project' | 'export']
   'toggle-frame': []
+  /** Close (×) on Convert image: the page's way out, which asks first once a picture is set. */
+  close: []
   'rotate-canvas': []
   'toggle-rulers': []
   undo: []
@@ -48,6 +51,7 @@ const { t } = useI18n()
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there (ADR 0035). */
 const actions = {
   menu: controlAction('strip-menu'),
+  close: controlAction('close'),
   coffee: controlAction('strip-coffee'),
   project: controlAction('strip-project'),
   frame: controlAction('strip-frame'),
@@ -62,6 +66,8 @@ const actions = {
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 const onHomepage = computed(() => props.page === 'homepage')
+/** The Brand is a link only on the editor. */
+const brandLinks = computed(() => props.page === undefined || props.page === 'editor')
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const homepageHref = homepageUrl(import.meta.env.BASE_URL)
@@ -100,6 +106,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
       >
         <span class="canvas-strip__label">{{ actions.menu.name(t) }}</span>
       </AppButton>
+      <IconButton v-if="page === 'convert-image'" variant="plain" :icon-size="18" :action="actions.close" data-testid="convert-close" @click="emit('close')" />
       <AppButton
         v-if="project"
         variant="text"
@@ -127,9 +134,9 @@ function onPanelsKeydown(event: KeyboardEvent) {
     <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Homepage, the Homepage's is the page itself. -->
     <div ref="centerEl" class="canvas-strip__center" @keydown="centerRoving.onKeydown" @focusin="centerRoving.onFocusin">
       <component
-        :is="onHomepage ? 'span' : 'a'"
+        :is="brandLinks ? 'a' : 'span'"
         class="canvas-strip__brand"
-        :href="onHomepage ? undefined : homepageHref"
+        :href="brandLinks ? homepageHref : undefined"
         :aria-current="onHomepage ? 'page' : undefined"
         data-testid="canvas-brand"
       >

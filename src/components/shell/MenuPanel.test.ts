@@ -32,12 +32,13 @@ describe('MenuPanel (ticket 443)', () => {
     expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
   })
 
-  it('lists New Project and the Projects library with its count, each opening a subpanel', () => {
+  it('lists New Project, Convert image and the Projects library with its count, New Project and the library opening a subpanel', () => {
     const wrapper = mountIn()
     const projects = wrapper.get('[data-testid="menu-panel"] section')
     const rows = projects.findAll('.panel-item').map((row) => row.text())
-    expect(rows).toEqual([en.projects.newProjectButton, `${en.projects.heading}1`])
+    expect(rows).toEqual([en.projects.newProjectButton, en.convertImage.fileLabel, `${en.projects.heading}1`])
     expect(projects.findAll('.panel-item__mark--sub')).toHaveLength(2)
+    expect(wrapper.get('[data-testid="menu-convert-image"] svg').attributes('data-icon')).toBe('image')
     // Its own library icon (ticket 188), not the Save Project icon it used to reuse.
     expect(wrapper.get('[data-testid="menu-saved-projects"] svg').attributes('data-icon')).toBe('library')
   })
@@ -159,5 +160,55 @@ describe('MenuPanel on the Homepage (ticket 540)', () => {
     expect(openSub).toHaveBeenCalledOnce()
 
     expect(mountIn({ page: 'homepage', projectCount: 0 }).find('[data-testid="menu-saved-projects"]').exists()).toBe(false)
+  })
+})
+
+describe('MenuPanel Convert image row and leaving (ticket 0756)', () => {
+  it('asks to convert, and shows the row as the current page while the converter is open, where it asks nothing', async () => {
+    const editor = mountIn()
+    expect(editor.get('[data-testid="menu-convert-image"]').attributes('aria-current')).toBeUndefined()
+    await editor.get('[data-testid="menu-convert-image"]').trigger('click')
+    const asked = (editor.findComponent(MenuPanel).emitted('convert-image') ?? []).length
+    expect(asked).toBe(1)
+
+    const converting = mountIn({ page: 'convert-image' })
+    expect(converting.get('[data-testid="menu-convert-image"]').attributes('aria-current')).toBe('page')
+    await converting.get('[data-testid="menu-convert-image"]').trigger('click')
+    expect(converting.findComponent(MenuPanel).emitted('convert-image')).toBeUndefined()
+    expect(converting.find('[data-testid="menu-new-project"]').exists()).toBe(true)
+  })
+
+  it('awaits the page’s leave before New Project opens its form, and stays when the person stays', async () => {
+    let answer = false
+    const openSub = vi.fn()
+    const leave = vi.fn(async () => answer)
+    const wrapper = mountIn({ page: 'convert-image', leave }, openSub)
+
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    await Promise.resolve()
+    expect(leave).toHaveBeenCalledOnce()
+    expect(openSub).not.toHaveBeenCalled()
+    expect(wrapper.findComponent(MenuPanel).emitted('new-project')).toBeUndefined()
+
+    answer = true
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    await vi.waitFor(() => expect(openSub).toHaveBeenCalledOnce())
+    expect(wrapper.findComponent(MenuPanel).emitted('new-project')).toHaveLength(1)
+  })
+
+  it('holds back a click on the Homepage item until the page lets go, and follows the link as usual on the editor', async () => {
+    const leave = vi.fn(async () => false)
+    const wrapper = mountIn({ page: 'convert-image', leave })
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+    wrapper.get('[data-testid="menu-item-homepage"]').element.dispatchEvent(click)
+    expect(click.defaultPrevented).toBe(true)
+    await Promise.resolve()
+    expect(leave).toHaveBeenCalledOnce()
+
+    const editor = mountIn({ leave })
+    const plain = new MouseEvent('click', { bubbles: true, cancelable: true })
+    editor.get('[data-testid="menu-item-homepage"]').element.addEventListener('click', (event) => event.preventDefault(), { once: true })
+    editor.get('[data-testid="menu-item-homepage"]').element.dispatchEvent(plain)
+    expect(leave).toHaveBeenCalledOnce()
   })
 })

@@ -8,6 +8,6 @@ A centered dialog for confirmations (Delete all?, Replace bead?) and the keyboar
 - **Actions:** right-aligned, 8 apart. Confirm is primary, or danger-filled (`danger`, white text) for destructive actions; cancel is secondary.
 - Escape and the scrim cancel. Focus is trapped inside and returns to the opener on close.
 
-**Large (ticket 0646):** the Convert image wizard's size, from 1024 px wide in landscape. `modal-large-width` × `modal-large-height` (1200 × 820), never more than the viewport less 24 (`space-24`) on each side, centred; padding 0, since a 56 header (title, Close icon button) and a pinned 64 footer, each with a 1px `panel-rule`, hold the edges and the body lays out its own panes (ConvertImage card). Under 1024 px or in portrait the same content is a full-screen sheet (PhoneForms card). Escape and Close close the wizard at once, a picture set or not (ticket 0679). Fill, edge, radius, shadow, scrim and focus as above.
+**Large (tickets 0646, 0756):** gone. The Convert image wizard was the only large Modal; it is an App page in the canvas box now (ConvertImage card, ADR 0086), so the Modal has three sizes, 420, 560 and the narrow one. A page can open a confirmation over itself, which a popup could not (StackingOrder card).
 
 Hand-written from DESIGN.md §5.13; static rendition. Preview copy is illustrative.

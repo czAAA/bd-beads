@@ -975,15 +975,26 @@ export interface Translations {
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
     createButton: string
-    cancelButton: string
+    /** The converter's leave confirmation (ADR 0086): asked once a picture is set. */
+    leave: {
+      title: string
+      message: string
+      confirmButton: string
+      cancelButton: string
+    }
     /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
       /** The five sections' titles, and their short labels on the step rail. */
       sections: Record<ConvertStep, string>
       rail: Record<ConvertStep, string>
-      /** The step rail's accessible name. */
+      /** The Progress bar's steps (ticket 0756): the track's accessible name, Back and Next, a dot's name (`{step}`) and
+       * why Back is off on the first step. */
       railLabel: string
+      stepBack: string
+      stepNext: string
+      goToStep: string
+      firstStepBody: string
       /** A disabled section's summary until a picture is set. */
       addPictureFirst: string
       chooseFile: string
@@ -997,8 +1008,6 @@ export interface Translations {
       pictureNoteTouch: string
       /** Under the file name: "256×192 px · png". */
       pictureSize: string
-      /** Paste found no picture on the clipboard, or the browser would not read it. */
-      nothingToPaste: string
       dropHere: string
       dropOrPaste: string
       dropOrChoose: string
@@ -1039,7 +1048,6 @@ export interface Translations {
       resultPerPixel: string
       /** The footer's color count after the size. */
       colorsCount: PluralForms
-      noPicture: string
       /** The preview's accessible name. */
       previewName: string
       previewEmpty: string
