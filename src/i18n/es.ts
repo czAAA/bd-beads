@@ -909,7 +909,6 @@ export const es: Translations = {
       resultApprox: '1 cuenta ≈ {x} × {y} px',
       resultPerPixel: '1 px = {n} × {n} cuentas',
       colorsCount: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },
-      noPicture: 'Aún no hay imagen',
       previewName: 'Vista previa: {size}, {colors}',
       previewEmpty: 'Vista previa: aún no hay imagen',
       zoomLevel: '{percent} %',

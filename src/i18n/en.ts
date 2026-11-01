@@ -900,7 +900,6 @@ export const en: Translations = {
       resultApprox: '1 bead ≈ {x} × {y} px',
       resultPerPixel: '1 px = {n} × {n} beads',
       colorsCount: { one: '{count} color', other: '{count} colors' },
-      noPicture: 'No picture yet',
       previewName: 'Preview: {size}, {colors}',
       previewEmpty: 'Preview: no picture yet',
       zoomLevel: '{percent}%',

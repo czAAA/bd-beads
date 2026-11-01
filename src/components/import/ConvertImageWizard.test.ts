@@ -75,7 +75,7 @@ async function chooseFile(wrapper: VueWrapper, file: File, testid = 'convert-cho
 
 const dotDisabled = (wrapper: VueWrapper, step: string) => wrapper.get(`[data-testid="convert-step-${step}"]`).attributes('aria-disabled') === 'true'
 const created = (wrapper: VueWrapper) => wrapper.emitted('create')?.[0]?.[0] as Project | undefined
-/** Color by color is closed when the popup opens (ticket 0747): the found-color rows are behind it. */
+/** Color by color is closed when the page opens (ticket 0747): the found-color rows are behind it. */
 const openColorByColor = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-color-by-color"]').trigger('click')
 
 describe('ConvertImageWizard before a picture is set', () => {
@@ -220,8 +220,9 @@ describe('ConvertImageWizard setup', () => {
   })
 
   it('names the bead a found color becomes by its code and name, with its hex in a Tooltip (ticket 0760)', async () => {
-    const { wrapper } = open({ draft: delica })
+    const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
     await openColorByColor(wrapper)
     const label = wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-name"]')
 

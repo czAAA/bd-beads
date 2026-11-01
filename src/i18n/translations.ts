@@ -1048,7 +1048,6 @@ export interface Translations {
       resultPerPixel: string
       /** The footer's color count after the size. */
       colorsCount: PluralForms
-      noPicture: string
       /** The preview's accessible name. */
       previewName: string
       previewEmpty: string

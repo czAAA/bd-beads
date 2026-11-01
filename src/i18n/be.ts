@@ -917,7 +917,6 @@ export const be: Translations = {
       resultApprox: '1 бісерына ≈ {x} × {y} px',
       resultPerPixel: '1 px = {n} × {n} бісерын',
       colorsCount: { other: 'колераў: {count}' },
-      noPicture: 'Выявы пакуль няма',
       previewName: 'Прэв’ю: {size}, {colors}',
       previewEmpty: 'Прэв’ю: выявы пакуль няма',
       zoomLevel: '{percent} %',
