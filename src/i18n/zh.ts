@@ -910,13 +910,6 @@ export const zh: Translations = {
       pictureColor: '图片颜色',
       newPalette: '新项目的调色板',
       rowName: { other: '{hex} 变为 {name}，{count} 颗' },
-      summarySize: '尺寸',
-      summaryColors: '颜色',
-      summaryBeadsNeeded: '所需珠子',
-      summaryWeight: '估计重量',
-      summaryToBuy: '需购买',
-      showDetails: '显示详情',
-      hideDetails: '隐藏详情',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

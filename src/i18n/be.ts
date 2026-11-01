@@ -939,13 +939,6 @@ export const be: Translations = {
       pictureColor: 'Колер выявы',
       newPalette: 'палітра новага праекта',
       rowName: { one: '{hex} на {name}, {count} бісерына', few: '{hex} на {name}, {count} бісерыны', many: '{hex} на {name}, {count} бісерын', other: '{hex} на {name}, {count} бісерыны' },
-      summarySize: 'памер',
-      summaryColors: 'колеры',
-      summaryBeadsNeeded: 'патрэбна бісеру',
-      summaryWeight: 'прыкладная вага',
-      summaryToBuy: 'купіць',
-      showDetails: 'Падрабязней',
-      hideDetails: 'Згарнуць',
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',
