@@ -1021,6 +1021,18 @@ export interface Translations {
       aPart: string
       partHint: string
       partFollows: string
+      /** Cut out (ticket 0765): the row's label and its chips, Simple's Tolerance slider and the hint under it, and Fit to
+       * subject's label, its Tooltip body and its reason when the cut out kept nothing. */
+      cutOut: {
+        label: string
+        off: string
+        simple: string
+        tolerance: string
+        toleranceHint: string
+        fitToSubject: string
+        fitToSubjectBody: string
+        fitToSubjectNothing: string
+      }
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
        * its marks (the width they stand for) and the hint under it. */
       slideIn: string

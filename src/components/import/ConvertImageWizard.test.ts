@@ -604,6 +604,50 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
   })
 })
 
+describe('ConvertImageWizard Cut out (ticket 0765)', () => {
+  /** A 12 × 12 picture: a red 4 × 4 square at (4, 4) on white. */
+  const squareOnWhite = (): PixelData => {
+    const data = new Uint8ClampedArray(12 * 12 * 4)
+    for (let i = 0; i < 144; i += 1) {
+      const [x, y] = [i % 12, Math.floor(i / 12)]
+      data.set(x >= 4 && x < 8 && y >= 4 && y < 8 ? [230, 55, 70, 255] : [255, 255, 255, 255], i * 4)
+    }
+    return { width: 12, height: 12, data }
+  }
+  const cutOut = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-cut-out"]')
+
+  it('offers Off and Simple, Off at first; Simple shows its Tolerance and Fit to subject, Off hides them', async () => {
+    const { wrapper, wizard } = open({ decodeImage: async () => squareOnWhite() })
+    expect(wrapper.find('[data-testid="convert-cut-out"]').exists()).toBe(false)
+    await chooseFile(wrapper, picture())
+
+    expect(cutOut(wrapper).findAll('[role="radio"]').map((chip) => chip.text())).toEqual(['Off', 'Simple'])
+    expect(cutOut(wrapper).get('[aria-checked="true"]').attributes('data-value')).toBe('off')
+    expect(wrapper.find('[data-testid="convert-tolerance-slider"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-fit-to-subject"]').exists()).toBe(false)
+
+    await cutOut(wrapper).get('[data-value="simple"]').trigger('click')
+    expect(wizard.cutOut.value).toBe('simple')
+    expect(wrapper.get('[data-testid="convert-tolerance-slider-value"]').text()).toBe('10')
+    await wrapper.get('[data-testid="convert-tolerance-slider-range"]').setValue('25')
+    expect(wizard.tolerance.value).toBe(25)
+
+    await cutOut(wrapper).get('[data-value="off"]').trigger('click')
+    expect(wrapper.find('[data-testid="convert-tolerance-slider"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-fit-to-subject"]').exists()).toBe(false)
+  })
+
+  it('fits A part to the subject with Fit to subject', async () => {
+    const { wrapper, wizard } = open({ decodeImage: async () => squareOnWhite() })
+    await chooseFile(wrapper, picture())
+    await cutOut(wrapper).get('[data-value="simple"]').trigger('click')
+
+    await wrapper.get('[data-testid="convert-fit-to-subject"]').trigger('click')
+    expect(wizard.weave.value).toBe('part')
+    expect(wizard.part.value).toEqual({ x: 2, y: 2, width: 8, height: 8 })
+  })
+})
+
 describe('ConvertImageWizard Close', () => {
   // Ticket 0756: the page only asks; the shell's leave guard decides whether to ask the person.
   it('asks to close on Escape, with a picture set or not', async () => {
