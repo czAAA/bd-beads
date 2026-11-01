@@ -81,6 +81,7 @@ export const en: Translations = {
     moreFolds: 'More folds',
     oneBeadWide: 'The area is one bead wide.',
     oneBeadTall: 'The area is one bead tall.',
+    quarterNeedsSquare: 'A quarter turn needs a square area.',
     radialFromShape: 'Radial · {count}, from the shape',
     lineFromShape: '{axis}, from the shape',
     repeatNeedsRadial: '{axis}, from the shape: Repeat needs Radial.',

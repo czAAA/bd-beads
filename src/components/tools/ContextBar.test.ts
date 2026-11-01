@@ -321,7 +321,7 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     ])
   })
 
-  it('carries a Stepper on a chip that is on, limited by the Area: an Axis count 1 to its beads across minus one, the Fold 2 to 8', async () => {
+  it('carries a Stepper on a chip that is on, limited by the Area: an Axis count 1 to its beads across minus one, the Fold 2 or 4', async () => {
     const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, counts: { leftRight: 5, topBottom: 1 } } } } })
     expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('5')
     expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').attributes('aria-label')).toBe('Left–right axes, 5')
@@ -331,9 +331,20 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     await wrapper.get('[data-testid="mirror-bar-leftRight-fewer"]').trigger('click')
     expect(wrapper.emitted('update:mirror')).toEqual([[{ ...setting, counts: { leftRight: 4, topBottom: 1 } }]])
 
-    const radial = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 8 } } } })
-    expect(radial.get('[data-testid="mirror-bar-radial-value"]').attributes('aria-label')).toBe('Fold, 8')
+    const radial = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 5, columns: 5 }, setting: { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 4 } } } })
+    expect(radial.get('[data-testid="mirror-bar-radial-value"]').attributes('aria-label')).toBe('Fold, 4')
     expect(radial.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('steps the Fold between 2 and 4, and turns the + off in an Area that is not square (ticket 0751)', async () => {
+    const radialSetting = { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 2 }
+    const square = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 5, columns: 5 } } } })
+    await square.get('[data-testid="mirror-bar-radial-more"]').trigger('click')
+    expect(square.emitted('update:mirror')).toEqual([[{ ...radialSetting, fold: 4 }]])
+    const wide = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 4, columns: 6 } } } })
+    expect(wide.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
+    await wide.get('[data-testid="mirror-bar-radial-more"]').trigger('click')
+    expect(wide.emitted('update:mirror')).toBeUndefined()
   })
 
   it('turns a direction one bead across off, saying why, and its press does nothing', async () => {
