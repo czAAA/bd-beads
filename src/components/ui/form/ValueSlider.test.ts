@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ValueSlider from './ValueSlider.vue'
+import { FakeResizeObserver } from '../../../testUtils/fakeResizeObserver'
 
 function slider(props: Partial<InstanceType<typeof ValueSlider>['$props']> = {}) {
   return mount(ValueSlider, {
@@ -59,5 +61,42 @@ describe('ValueSlider (ValueSlider card, ticket 0747)', () => {
     const wrapper = slider()
     expect(wrapper.findAll('[data-testid="width-mark"]').map((mark) => mark.attributes('data-value'))).toEqual(['16', '32', '256'])
     expect(wrapper.findAll('.vs-mark-label').map((label) => label.text())).toEqual(['16×16 px', '8×8 px'])
+  })
+
+  describe('a featured mark (ticket 0770)', () => {
+    afterEach(() => {
+      FakeResizeObserver.reset()
+      vi.unstubAllGlobals()
+    })
+
+    /** The slider at a track width, measured as a browser would. */
+    async function measured(width: number, marks: { value: number; label?: string; featured?: boolean }[]) {
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+      const wrapper = slider({ marks })
+      await nextTick()
+      for (const observer of FakeResizeObserver.instances) observer.trigger(width, 44)
+      await nextTick()
+      return wrapper
+    }
+    const labels = (wrapper: Awaited<ReturnType<typeof measured>>) => wrapper.findAll('.vs-mark-label').map((label) => label.text())
+
+    it('is drawn apart from the others, and its label shows where another mark’s would be left out', async () => {
+      const wrapper = await measured(300, [
+        { value: 30, label: '30 beads' },
+        { value: 34, label: 'suggested', featured: true },
+      ])
+
+      expect(wrapper.get('[data-testid="width-mark"][data-featured]').attributes('data-value')).toBe('34')
+      expect(wrapper.get('[data-testid="width-featured-label"]').text()).toBe('suggested')
+      expect(labels(wrapper)).toEqual(['suggested'])
+    })
+
+    it('stays inside the track at an end, the end’s own label giving way', async () => {
+      const wrapper = await measured(300, [{ value: 8, label: 'suggested', featured: true }])
+
+      expect(wrapper.get('.vs-min').classes()).toContain('vs-end--covered')
+      expect(wrapper.get('.vs-max').classes()).not.toContain('vs-end--covered')
+      expect(Number.parseFloat(wrapper.get('[data-testid="width-featured-label"]').attributes('style')!.replace(/^.*left:\s*/, ''))).toBeGreaterThan(20)
+    })
   })
 })
