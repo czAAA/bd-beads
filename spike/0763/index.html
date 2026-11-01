@@ -13,7 +13,10 @@
       button.main { font-weight: 600; }
       .row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
       .muted { color: #666; font-size: 13px; }
-      #status { min-height: 1.4em; font-weight: 600; }
+      #status { min-height: 1.4em; }
+      #progress { min-height: 1.4em; font-weight: 600; font-size: 18px; margin-top: 8px; }
+      button.big { font-size: 18px; padding: 12px 20px; }
+      summary { margin: 16px 0 4px; cursor: pointer; font-weight: 600; }
       .pics { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
       .pics figure { margin: 0; }
       .pics figcaption { font-size: 13px; color: #555; }
@@ -32,6 +35,21 @@
       <span class="muted" id="files"></span>
     </div>
 
+    <section>
+      <p>
+        <b>On a device:</b> press <b>Measure everything</b> and leave this page open with the screen on until it says
+        <i>All done</i> (a few minutes). The results go to the Mac by themselves; <b>Download results</b> keeps a copy.
+      </p>
+      <div class="row">
+        <button class="main big" id="everything">Measure everything</button>
+        <button class="big" id="download">Download results</button>
+      </div>
+      <div id="progress"></div>
+      <div id="status"></div>
+    </section>
+
+    <details>
+    <summary>Manual controls</summary>
     <section>
       <h2>1. Picture</h2>
       <div class="row">
@@ -56,7 +74,6 @@
         <button id="stop">Stop</button>
         <label title="Sessions without onnxruntime's memory arena and memory pattern (applies to models loaded after)"><input type="checkbox" id="lean" /> Lean memory</label>
       </div>
-      <div id="status"></div>
       <p class="muted">Tap the picture to cut out the part under your finger (loads SlimSAM if needed).</p>
       <div class="pics">
         <figure><canvas id="view"></canvas><figcaption>Picture and the last tap mask</figcaption></figure>
@@ -75,8 +92,10 @@
       </div>
     </section>
 
+    </details>
+
     <section>
-      <h2>4. Results</h2>
+      <h2>Results</h2>
       <div class="row">
         <button id="copy">Copy as Markdown</button>
         <button id="json">Download JSON</button>

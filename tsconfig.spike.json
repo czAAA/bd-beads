@@ -6,5 +6,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["spike/0763/*.ts"]
+  "include": ["spike/0763/*.ts"],
+  "exclude": ["spike/0763/resultsPlugin.ts"]
 }

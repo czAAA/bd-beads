@@ -41,21 +41,20 @@ Open `https://<mac-name>.<tailnet>.ts.net:5763/spike/0763/` on each device. `npm
 
 ## 3. Measure on each device
 
-On the iPad mini (A17 Pro), the iPad Air (M2), desktop Chrome and desktop Safari:
+On each iPad: open the page, type the device's name in **Device** (optional: the screen size in the results tells
+the mini from the Air), press **Measure everything**, and leave the page open with the screen on until it says
+*All done* (a few minutes). That's all. It runs every photo in a fresh worker (IS-Net twice, SlimSAM tapped twice),
+and after each photo sends the numbers and small pictures of the masks to the Mac, into `spike/0763/.work/results/`
+(gitignored), where an agent can read them. **Download results** keeps a copy on the device.
 
-1. Type the device's name in **Device**.
-2. Connect Safari's Web Inspector (Mac Safari, Develop menu, the iPad, the page). In **Timelines**, turn on Memory
-   (and JavaScript & Events), and start recording.
-3. Pick a photo, press **Run all**, wait for "Run all done", stop the recording. The Memory timeline's peak is the
-   number for the report (also note the largest "Page" figure). In desktop Chrome use the Task Manager's
-   "Memory footprint" of the tab and its dedicated worker instead.
-4. Repeat for each photo. Each run starts a fresh worker, so the download and load are measured each time
-   (the spike fetches with `cache: no-store`; the app will keep the files in Cache Storage).
-   The download times are the tailnet's, from the dev server, uncompressed: they say little about a maker's
-   connection. The download sizes are the ones that count.
-5. Tap a few parts of the picture: each tap after the first is the decoder alone.
-6. **Copy as Markdown** (or **Download JSON**) and paste the table into the report. The table is kept in the page
-   until **Clear**, across reloads.
+If the browser closes the page mid-run (Safari does when a tab takes too much memory), open the page again: it says
+so, records which photo it was on and sends that too. That is the memory answer for that device.
+
+The exact peak memory on an iPad only Safari's Web Inspector gives (optional): connect the iPad to the Mac, Safari,
+Develop, the iPad, the page; in **Timelines** turn on Memory and record while it measures. The desktops' peak is
+sampled by `measure.mjs` below. The download times are the tailnet's, from the dev server: only the sizes count.
+
+The manual controls (one photo at a time, taps by hand, the comparison) are under **Manual controls**.
 
 **Which time is which.** "first mask" and "second mask" run from the press to the mask drawn, after the model is
 loaded (download and load are rows of their own); the model's own time is in the note. "first tap mask" includes
