@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { defineComponent, effectScope, h } from 'vue'
 import ConvertImageWizard from './ConvertImageWizard.vue'
+import ConvertStepBar from './ConvertStepBar.vue'
+import { useConvertImageWizard, type ConvertImageWizard as Wizard } from '../../composables/import/useConvertImageWizard'
+import type { ConvertStep } from '../../domain/convertSize'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
 import { ImageConversionError, formatImageLimits, type PixelData } from '../../domain/imageConversion'
@@ -37,19 +41,29 @@ function picture(name = 'fox.png', type = 'image/png', size?: number): File {
   return file
 }
 
-function open(options: { draft?: CreateProjectInput; file?: File; decodeImage?: () => Promise<PixelData>; clipboard?: File } = {}) {
+/** The page and its Progress bar, as the canvas box mounts them for one converter session (ticket 0756). */
+const Page = defineComponent({
+  props: { wizard: { type: Object as () => Wizard, required: true }, readClipboardImage: { type: Function, required: true } },
+  emits: ['create', 'close'],
+  setup: (props, { emit }) => () => [
+    h(ConvertImageWizard, { wizard: props.wizard, readClipboardImage: props.readClipboardImage as () => Promise<File | undefined>, onClose: () => emit('close') }),
+    h(ConvertStepBar, { wizard: props.wizard, onCreate: () => emit('create', props.wizard.createProject()) }),
+  ],
+})
+
+function open(options: { draft?: CreateProjectInput; file?: File; decodeImage?: () => Promise<PixelData>; clipboard?: File; loadCatalog?: () => Promise<ColorCatalog> } = {}) {
   const decodeImage = vi.fn(options.decodeImage ?? (async () => redAndWhite()))
   const draft = options.draft ?? cube
-  const wrapper = mount(ConvertImageWizard, {
-    props: {
-      start: { draft, ...(options.file ? { file: options.file } : {}) },
-      decodeImage,
-      loadCatalog: async () => catalog,
-      readClipboardImage: async () => options.clipboard,
-    },
-    attachTo: document.body,
-  })
-  return { wrapper, decodeImage, draft }
+  const wizard = effectScope().run(() => useConvertImageWizard({ start: draft, decodeImage, loadCatalog: options.loadCatalog ?? (async () => catalog) }))!
+  if (options.file) void wizard.setFile(options.file)
+  const wrapper = mount(Page, { props: { wizard, readClipboardImage: async () => options.clipboard }, attachTo: document.body })
+  return { wrapper, decodeImage, draft, wizard }
+}
+
+/** Shows a step, as its dot or Next on the Progress bar does. */
+async function show(wizard: Wizard, step: ConvertStep) {
+  wizard.goTo(step)
+  await flushPromises()
 }
 
 async function chooseFile(wrapper: VueWrapper, file: File, testid = 'convert-choose-file') {
@@ -59,22 +73,24 @@ async function chooseFile(wrapper: VueWrapper, file: File, testid = 'convert-cho
   await flushPromises()
 }
 
-const sectionDisabled = (wrapper: VueWrapper, step: string) => wrapper.get(`[data-testid="convert-section-${step}"]`).attributes('aria-disabled') === 'true'
+const dotDisabled = (wrapper: VueWrapper, step: string) => wrapper.get(`[data-testid="convert-step-${step}"]`).attributes('aria-disabled') === 'true'
 const created = (wrapper: VueWrapper) => wrapper.emitted('create')?.[0]?.[0] as Project | undefined
 /** Color by color is closed when the popup opens (ticket 0747): the found-color rows are behind it. */
 const openColorByColor = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-color-by-color"]').trigger('click')
 
 describe('ConvertImageWizard before a picture is set', () => {
-  it('disables every section after Picture, saying where to start, and has nothing to create', () => {
-    const { wrapper } = open()
+  it('shows Picture alone, keeps every step after it shut on the Progress bar and has nothing to create', async () => {
+    const { wrapper, wizard } = open()
 
-    expect(sectionDisabled(wrapper, 'picture')).toBe(false)
-    for (const step of ['bead', 'size', 'colors', 'review']) {
-      expect(sectionDisabled(wrapper, step)).toBe(true)
-      expect(wrapper.get(`[data-testid="convert-section-${step}-summary"]`).text()).toBe(en.convertImage.wizard.addPictureFirst)
-    }
-    expect(wrapper.get('[data-testid="convert-footer-line"]').text()).toBe(en.convertImage.wizard.noPicture)
-    expect(wrapper.get('[data-testid="convert-image-create"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.findAll('[data-testid^="convert-section-"]:not([data-testid$="-header"]):not([data-testid$="-summary"])').map((section) => section.attributes('data-testid'))).toEqual([
+      'convert-section-picture',
+    ])
+    expect(dotDisabled(wrapper, 'picture')).toBe(false)
+    for (const step of ['bead', 'size', 'colors', 'review']) expect(dotDisabled(wrapper, step)).toBe(true)
+    expect(wrapper.get('[data-testid="convert-next"]').attributes('aria-disabled')).toBe('true')
+
+    await wrapper.get('[data-testid="convert-step-review"]').trigger('click')
+    expect(wizard.step.value).toBe('picture')
   })
 
   it('lists every way in and the limits in the Note, until the first picture', async () => {
@@ -84,7 +100,7 @@ describe('ConvertImageWizard before a picture is set', () => {
     await chooseFile(wrapper, picture())
 
     expect(wrapper.find('[data-testid="convert-picture-note"]').exists()).toBe(false)
-    expect(sectionDisabled(wrapper, 'size')).toBe(false)
+    expect(dotDisabled(wrapper, 'size')).toBe(false)
     expect(wrapper.get('[data-testid="convert-picture-size"]').text()).toBe('4×2 px · png')
   })
 })
@@ -98,19 +114,20 @@ describe('ConvertImageWizard ways in', () => {
     expect(wrapper.get('[data-testid="convert-file-name"]').text()).toBe('pasted.png')
   })
 
-  it('takes a picture dropped on the popup', async () => {
+  it('takes a picture dropped on the page', async () => {
     const { wrapper } = open()
-    await wrapper.get('.convert-wizard').trigger('drop', { dataTransfer: { files: [picture('dropped.png')], types: ['Files'] } })
+    await wrapper.get('.convert-page').trigger('drop', { dataTransfer: { files: [picture('dropped.png')], types: ['Files'] } })
     await flushPromises()
 
     expect(wrapper.get('[data-testid="convert-file-name"]').text()).toBe('dropped.png')
   })
 
-  it('takes a picture from Paste, and says so when the clipboard holds none', async () => {
+  it('takes a picture from Paste, and says nothing when the clipboard holds none', async () => {
     const empty = open()
     await empty.wrapper.get('[data-testid="convert-paste"]').trigger('click')
     await flushPromises()
-    expect(empty.wrapper.get('[data-testid="convert-nothing-to-paste"]').text()).toBe(en.convertImage.wizard.nothingToPaste)
+    expect(empty.wizard.hasPicture.value).toBe(false)
+    expect(empty.wrapper.find('[data-testid="convert-nothing-to-paste"]').exists()).toBe(false)
     empty.wrapper.unmount()
 
     const { wrapper } = open({ clipboard: picture('clipboard.png') })
@@ -119,7 +136,7 @@ describe('ConvertImageWizard ways in', () => {
     expect(wrapper.get('[data-testid="convert-file-name"]').text()).toBe('clipboard.png')
   })
 
-  it('takes a picture pasted with Ctrl+V anywhere in the popup', async () => {
+  it('takes a picture pasted with Ctrl+V anywhere on the page', async () => {
     const { wrapper } = open()
     const event = new Event('paste', { bubbles: true, cancelable: true })
     Object.defineProperty(event, 'clipboardData', { value: { files: [picture('keys.png')] } })
@@ -132,7 +149,7 @@ describe('ConvertImageWizard ways in', () => {
 
   it.each([
     ['dropped', async (wrapper: VueWrapper, file: File) => {
-      await wrapper.get('.convert-wizard').trigger('drop', { dataTransfer: { files: [file], types: ['Files'] } })
+      await wrapper.get('.convert-page').trigger('drop', { dataTransfer: { files: [file], types: ['Files'] } })
       await flushPromises()
     }],
     ['chosen', (wrapper: VueWrapper, file: File) => chooseFile(wrapper, file)],
@@ -157,11 +174,9 @@ describe('ConvertImageWizard rejections', () => {
   })
 
   it('shows the catalog could not be read, matching to the Default Palette meanwhile', async () => {
-    const wrapper = mount(ConvertImageWizard, {
-      props: { start: { draft: delica }, decodeImage: async () => redAndWhite(), loadCatalog: () => Promise.reject(new Error('offline')), readClipboardImage: async () => undefined },
-      attachTo: document.body,
-    })
+    const { wrapper, wizard } = open({ draft: delica, loadCatalog: () => Promise.reject(new Error('offline')) })
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
     expect(wrapper.get('[data-testid="convert-catalog-failed"]').text()).toBe(en.palette.beadColors.failed)
     await openColorByColor(wrapper)
     expect(wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-source"]').text()).toBe(en.convertImage.wizard.defaultPalette)
@@ -181,11 +196,13 @@ describe('ConvertImageWizard rejections', () => {
 })
 
 describe('ConvertImageWizard setup', () => {
-  it('works on its own copy of the form’s values: what it creates follows the popup, the form’s are untouched', async () => {
-    const { wrapper, draft } = open()
+  it('works on its own copy of the form’s values: what it creates follows the page, the form’s are untouched', async () => {
+    const { wrapper, wizard, draft } = open()
     const before = structuredClone(draft)
     await chooseFile(wrapper, picture())
+    await show(wizard, 'bead')
     await choosePanelOption(wrapper, 'convert-technique', 'peyote')
+    await show(wizard, 'review')
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
 
     expect(layersView(created(wrapper)!)).toMatchObject({ technique: 'peyote', name: 'fox' })
@@ -196,14 +213,16 @@ describe('ConvertImageWizard setup', () => {
   it('offers Bead colors for a Bead with a Color catalog, and starts on it', async () => {
     const withCatalog = open({ draft: delica })
     await chooseFile(withCatalog.wrapper, picture())
+    await show(withCatalog.wizard, 'colors')
     const options = (wrapper: VueWrapper) => wrapper.findAll('[data-testid="convert-color-source"] [data-value]').map((option) => option.attributes('data-value'))
     expect(options(withCatalog.wrapper)).toEqual(['bead-colors', 'default', 'exact'])
     expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
   })
 
   it('remaps a found color through the Bead colors list with its filter rows (ticket 0713)', async () => {
-    const { wrapper } = open({ draft: delica })
+    const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
     await openColorByColor(wrapper)
     const row = wrapper.get('[data-picture-hex="#e63746"]')
 
@@ -217,9 +236,9 @@ describe('ConvertImageWizard setup', () => {
 
 describe('ConvertImageWizard Create Project', () => {
   it('makes the Project of the picture, one pixel one bead for a small picture, in the Bead’s colors', async () => {
-    const { wrapper } = open({ draft: delica })
+    const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
-    await flushPromises()
+    await show(wizard, 'review')
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
 
     const project = created(wrapper)!
@@ -230,13 +249,15 @@ describe('ConvertImageWizard Create Project', () => {
   })
 
   it('leaves a found color set to empty without beads', async () => {
-    const { wrapper } = open()
+    const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
     await openColorByColor(wrapper)
     const white = wrapper.findAll('[data-testid="found-color"]').find((row) => row.attributes('data-picture-hex') === '#ffffff')!
     await white.get('[data-testid="found-color-empty"]').trigger('click')
     expect(white.get('[data-testid="found-color-name"]').text()).toBe(en.convertImage.wizard.empty)
 
+    await show(wizard, 'review')
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
     const grid = frameGrid(created(wrapper)!)
     expect(grid[0]!.at(-1)!.color).toBeNull()
@@ -289,7 +310,7 @@ describe('ConvertImageWizard preview zoom (ticket 0650)', () => {
     expect(zoomOut.attributes('aria-disabled')).toBeUndefined()
   })
 
-  it('leaves the keys alone once the popup is gone', async () => {
+  it('leaves the keys alone once the page is gone', async () => {
     const { wrapper } = open()
     await chooseFile(wrapper, picture())
     wrapper.unmount()
@@ -310,27 +331,13 @@ describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
     expect(wrapper.find('[data-testid="convert-eyedropper-banner"]').exists()).toBe(true)
     expect(wrapper.get('.convert-preview__top [role="tooltip"]').text()).toContain(en.tooltips.treatAsEmpty)
   })
-
-  it('keeps the step rail one Tab stop named Steps, the arrows moving along it', async () => {
-    const { wrapper } = open()
-    const rail = wrapper.get('nav')
-    const steps = rail.findAll('.convert-wizard__step')
-
-    expect(rail.attributes('aria-label')).toBe(en.convertImage.wizard.railLabel)
-    expect(steps.map((step) => step.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
-    expect(steps[0]!.attributes('aria-current')).toBe('step')
-    expect(steps.map((step) => step.text())).toEqual(['1picture', '2bead', '3size', '4colors', '5review'])
-    ;(steps[0]!.element as HTMLElement).focus()
-    await steps[0]!.trigger('keydown', { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(steps[1]!.element)
-  })
 })
 
 describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
   const handles = (wrapper: VueWrapper) => wrapper.findAll('[data-testid^="convert-crop-"]')
 
   it('weaves the whole picture at first, with no handles; A part shows them and says what follows it', async () => {
-    const { wrapper } = open()
+    const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
     expect(wrapper.get('[data-testid="convert-weave"] [aria-checked="true"]').attributes('data-value')).toBe('whole')
     expect(handles(wrapper)).toHaveLength(0)
@@ -339,12 +346,14 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
 
     expect(handles(wrapper)).toHaveLength(8)
     expect(wrapper.get('[data-testid="convert-part-hint"]').text()).toBe(en.convertImage.wizard.partHint)
+    await show(wizard, 'size')
     expect(wrapper.get('[data-testid="convert-part-follows"]').text()).toBe(en.convertImage.wizard.partFollows)
   })
 
   it('sizes with one Width slider over the picture’s range, read in both units, the height following', async () => {
-    const { wrapper } = open()
+    const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
+    await show(wizard, 'size')
     const range = wrapper.get('[data-testid="convert-width-range"]')
     const input = range.element as HTMLInputElement
 
@@ -364,8 +373,9 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
   })
 
   it('offers a Colors slider up to every color the picture has, and keeps Color by color closed with its summary', async () => {
-    const { wrapper } = open()
+    const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
     const range = wrapper.get('[data-testid="convert-colors-slider-range"]')
     const summary = () => wrapper.get('[data-testid="convert-color-by-color-summary"]').text()
 
@@ -376,7 +386,7 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     expect(summary()).toBe('2 colors')
 
     await range.setValue('1')
-    expect(wrapper.get('[data-testid="convert-footer-line"]').text()).toContain('1 color')
+    expect(wrapper.get('[data-testid="convert-section-colors-summary"]').text()).toMatch(/· 1$/)
 
     await range.setValue('2')
     await openColorByColor(wrapper)
@@ -387,26 +397,27 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
   })
 })
 
-describe('ConvertImageWizard Cancel', () => {
-  it('closes at once with no picture set', async () => {
+describe('ConvertImageWizard Close', () => {
+  // Ticket 0756: the page only asks; the shell's leave guard decides whether to ask the person.
+  it('asks to close on Escape, with a picture set or not', async () => {
     const { wrapper } = open()
-    await wrapper.get('[data-testid="convert-image-cancel"]').trigger('click')
-    expect(wrapper.emitted('cancel')).toHaveLength(1)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+
+    await chooseFile(wrapper, picture())
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.emitted('close')).toHaveLength(2)
   })
 
-  // Ticket 0679: nothing asks first; with a picture set, Cancel, Close and Escape each close at once.
-  for (const [way, close] of [
-    ['Cancel', (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-cancel"]').trigger('click')],
-    ['Close', (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-close"]').trigger('click')],
-    ['Escape', () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
-  ] as const) {
-    it(`closes at once from ${way} with a picture set`, async () => {
-      const { wrapper } = open()
-      await chooseFile(wrapper, picture())
-
-      await close(wrapper)
-      await flushPromises()
-      expect(wrapper.emitted('cancel')).toHaveLength(1)
-    })
-  }
+  it('lets a press outside it through, as on the strip’s Menu', async () => {
+    const { wrapper } = open()
+    const outside = document.createElement('button')
+    document.body.append(outside)
+    const press = new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    outside.dispatchEvent(press)
+    expect(press.defaultPrevented).toBe(false)
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
 })

@@ -9,21 +9,15 @@
   --starter-press-scale: 0.97; /* StarterGallery card: a card's picture while pressed. */
   --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
   --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
-  --convert-sections-width-narrow: 400px; /* ConvertImage card: the sections pane while the popup is under 1100px wide. */
-  --convert-preview-phone: 300px; /* PhoneForms card: the wizard's sticky preview at the top of the scroll on a phone. */
-  --convert-preview-phone-shrunk: 132px; /* PhoneForms card: the same preview once the sections scroll under it. */
-  --convert-preview-tablet: 440px; /* PhoneForms card: the sticky preview on a portrait tablet. */
-  --convert-preview-tablet-shrunk: 200px; /* PhoneForms card: the tablet preview once scrolled. */
-  --step-disc: 20px; /* ConvertImage card: a section's numbered disc and the step rail's. */
+  --convert-sections-width-narrow: 400px; /* ConvertImage card: the step pane while the page is under 1100px wide. */
+  --convert-preview-phone: 300px; /* PhoneForms card: the converter's preview above the step on a phone, at most (it gives way to the step). */
+  --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step. */
+  --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. */
+  --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
   --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
   --crop-bar-width: 8px; /* ConvertImage card: an edge handle's thickness. */
-  --modal-large-header: 56px; /* Modal card: the large Modal's header (title, Close); 52px as a phone sheet. */
-  --modal-large-header-phone: 52px; /* PhoneForms card: the wizard sheet's header on a phone. */
-  --modal-large-footer: 64px; /* Modal card: the large Modal's pinned footer. */
-  --step-rail: 44px; /* ConvertImage card: the sticky step rail atop the sections pane; 40px on a phone. */
-  --step-rail-phone: 40px; /* PhoneForms card: the step rail under the sticky preview. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter. */
   --filter-chip-height: 28px; /* BeadColors card: a line of the Finish filter list. */

@@ -111,3 +111,29 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     expect(wizard.colorsCapped.value).toBe(true)
   })
 })
+
+describe('useConvertImageWizard steps (ticket 0756)', () => {
+  it('waits on Picture until a picture is set, then steps one at a time and ends on Review', async () => {
+    const scope = effectScope()
+    const wizard = scope.run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
+        decodeImage: async () => flat(16, 16),
+        loadCatalog: () => Promise.reject(new Error('no catalog')),
+      }),
+    )!
+    wizard.goNext()
+    expect(wizard.step.value).toBe('picture')
+
+    await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
+    wizard.goNext()
+    expect(wizard.step.value).toBe('bead')
+    wizard.goTo('review')
+    expect(wizard.step.value).toBe('review')
+    expect(wizard.onLastStep.value).toBe(true)
+    wizard.goNext()
+    expect(wizard.step.value).toBe('review')
+    wizard.goBack()
+    expect(wizard.step.value).toBe('colors')
+  })
+})

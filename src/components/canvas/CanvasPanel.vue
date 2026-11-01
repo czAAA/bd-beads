@@ -7,6 +7,8 @@ import CanvasStrip from './CanvasStrip.vue'
 import ContextBar, { type MirrorBarState } from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
+import ConvertImageWizard from '../import/ConvertImageWizard.vue'
+import ConvertStepBar from '../import/ConvertStepBar.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
@@ -33,6 +35,11 @@ import { fillBlanks } from '../../domain/fillBlanks'
 
 const {
   t,
+  page,
+  convertSession,
+  readClipboardImage,
+  onCloseConvertImage,
+  onCreateConvertImage,
   openPanel,
   onSelectPanel,
   projects,
@@ -152,6 +159,10 @@ const {
 } = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
+
+/** The editor is the page unless Convert image fills the box (ADR 0085): the editor stays mounted behind it, so leaving
+ * lands on the Project as it was. */
+const onEditor = computed(() => page.value === 'editor')
 
 /** Whenever the empty canvas appears (nothing open), Menu opens on its New Project form. */
 watch(
@@ -286,14 +297,16 @@ const drawingStyle = computed(() => {
       -->
       <CanvasStrip
         class="app-shell__canvas-strip"
-        :project="activeProject"
+        :page="page"
+        :project="onEditor ? activeProject : undefined"
         :rulers="showRulers"
         :frame-open="framePanelOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
         :open-panel="openPanel === 'export' && exportOpener !== 'strip-export' ? null : openPanel"
-        :zoom-percent="stripZoomPercent"
+        :zoom-percent="onEditor ? stripZoomPercent : undefined"
         @select-panel="onSelectPanel"
+        @close="onCloseConvertImage"
         @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
@@ -305,7 +318,14 @@ const drawingStyle = computed(() => {
       />
 
       <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
-      <div :ref="bindDrawing" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
+      <div
+        :ref="bindDrawing"
+        class="app-shell__drawing"
+        :class="{ 'app-shell__drawing--behind': !onEditor }"
+        :style="drawingStyle"
+        :inert="!onEditor || undefined"
+        data-testid="app-drawing-area"
+      >
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
@@ -415,6 +435,15 @@ const drawingStyle = computed(() => {
         />
       </div>
 
+      <!-- Convert image fills the same cell as the drawing area, which stays laid out beneath it (ADR 0086). -->
+      <ConvertImageWizard
+        v-if="page === 'convert-image' && convertSession"
+        :wizard="convertSession"
+        :read-clipboard-image="readClipboardImage"
+        class="app-shell__page"
+        @close="onCloseConvertImage"
+      />
+
       <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
       <ToastRegion
         :toasts="toasts"
@@ -425,7 +454,10 @@ const drawingStyle = computed(() => {
         Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
         first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
       -->
+      <ConvertStepBar v-if="page === 'convert-image' && convertSession" class="app-shell__footer" :wizard="convertSession" @create="onCreateConvertImage" />
       <ProgressBar
+        v-else
+        class="app-shell__footer"
         :project="activeProject"
         :row-highlight="rowHighlight"
         :row-press="rowPress"
@@ -441,7 +473,7 @@ const drawingStyle = computed(() => {
         layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The margin sheet's
         tools ride in it after the bar: the order of ADR 0075 has no place for them.
       -->
-      <div v-if="activeProject" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
+      <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
           inside the canvas box, clear of the Tool pill; Select all is its first item. With no Selection and the Mirror
@@ -538,14 +570,16 @@ const drawingStyle = computed(() => {
   min-height: 0;
 }
 
-/* The canvas box (ticket 141): right of the left column, full body height, dot-grid texture; rows stack zoom cluster,
- * Progress bar, Project. The canvas moves under its own view (ADR 0026), so nothing scrolls natively; the zoom
- * cluster is a sibling of the scroller, so it never scrolls, zooms or rotates with the Project. */
+/* The canvas box (ticket 141, ADR 0085): right of the left column, full body height; three rows: the strip, the page's
+ * content, the Progress bar. The editor's drawing area and Convert image share the middle one. The canvas moves under its
+ * own view (ADR 0026), so nothing scrolls natively; the strip is a sibling of the scroller, so it never scrolls, zooms or
+ * rotates with the Project. */
 .app-shell__canvas {
   position: relative;
-  display: flex;
+  display: grid;
   flex: 1 1 auto;
-  flex-direction: column;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
   overflow: hidden;
   overflow: clip;
@@ -553,16 +587,35 @@ const drawingStyle = computed(() => {
   border-radius: var(--canvas-box-radius);
 }
 
-/* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, so it takes a share (flex-basis 0),
- * never the Project's size. Its children are positioned, so they stack in order. */
+.app-shell__canvas-strip {
+  grid-row: 1;
+}
+
+/* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, never the Project's size. Its
+ * children are positioned, so they stack in order. Behind Convert image it keeps its size, so the fit zoom holds. */
 .app-shell__drawing {
   position: relative;
   background: var(--canvas-bg, transparent);
   display: flex;
-  flex: 1 1 0;
+  grid-row: 2;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+.app-shell__drawing--behind {
+  visibility: hidden;
+}
+
+/* An App page other than the editor takes the drawing area's cell (ADR 0085). */
+.app-shell__page {
+  z-index: 1;
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.app-shell__footer {
+  grid-row: 3;
 }
 
 /* CanvasHint is excluded: it floats over the top-centre, and so are the first-run hints, the context bar and the Tool
