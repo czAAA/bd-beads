@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { megabytes } from '../../domain/cutOutModel'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -12,7 +13,7 @@ const emit = defineEmits<{ download: []; cancel: [] }>()
 
 const { t } = useI18n()
 const words = computed(() => t.value.convertImage.wizard.cutOut)
-const text = computed(() => fillBlanks(words.value.downloadNote, { size: fillBlanks(words.value.downloadSize, { n: Math.max(1, Math.round(props.bytes / 1e6)) }) }))
+const text = computed(() => fillBlanks(words.value.downloadNote, { size: fillBlanks(words.value.downloadSize, { n: megabytes(props.bytes) }) }))
 
 const noteEl = ref<HTMLElement>()
 onMounted(() => noteEl.value?.querySelector<HTMLButtonElement>('[data-testid="cut-out-download"]')?.focus())

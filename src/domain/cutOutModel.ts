@@ -5,8 +5,9 @@ import type { SubjectMask } from './subjectMask'
  * each side of the model, IS-Net general-use: the picture stretched to its square going in, its answer scaled back to
  * the picture and thresholded into the subject mask coming out. The model itself runs in the service's worker. */
 
-/** IS-Net general-use's input side: the picture is stretched to this square, whatever its shape. */
-const SUBJECT_MODEL_SIDE = 1024
+/** A download's size in whole MB, as the download note and the AI Loading say it (writing.md, Numbers and units):
+ * rounded, never 0 for a total; rounded down for the part done, so it reaches the total only when it is done. */
+export const megabytes = (bytes: number, done = false) => (done ? Math.floor(bytes / 1_000_000) : Math.max(1, Math.round(bytes / 1_000_000)))
 
 /** What the service says while it works: the bytes downloaded of those it needs, then the model at work. */
 export type CutOutProgress = { kind: 'downloading'; done: number; total: number } | { kind: 'thinking' }
@@ -33,9 +34,9 @@ function neighbours(index: number, from: number, to: number): [number, number, n
   return [low, Math.min(from - 1, low + 1), at - low]
 }
 
-/** The model's input: the picture stretched (bilinear) to `side` × `side`, each channel its own plane, each value
- * value / 255 - 0.5 (IS-Net's normalization: mean 0.5, deviation 1). */
-export function subjectModelInput(picture: PixelData, side = SUBJECT_MODEL_SIDE): Float32Array {
+/** The model's input: the picture stretched (bilinear) to `side` × `side` (IS-Net general-use reads 1024), each channel
+ * its own plane, each value value / 255 - 0.5 (IS-Net's normalization: mean 0.5, deviation 1). */
+export function subjectModelInput(picture: PixelData, side: number): Float32Array {
   const { width, height, data } = picture
   const plane = side * side
   const input = new Float32Array(3 * plane)

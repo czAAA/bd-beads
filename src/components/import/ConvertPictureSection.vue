@@ -2,6 +2,7 @@
 import { computed, ref, useId, watchPostEffect } from 'vue'
 import { useConvertImageWizardState, type ConvertWeave, type CutOut } from '../../composables/import/useConvertImageWizard'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { megabytes } from '../../domain/cutOutModel'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits, imageInputAccept } from '../../domain/imageConversion'
 import { MAX_TOLERANCE, MIN_TOLERANCE } from '../../domain/subjectMask'
@@ -44,13 +45,12 @@ const cutOut = computed({ get: () => wizard.cutOut.value, set: (next: CutOut) =>
 // The AI choice's wait (Loading card, AI variant): the MB downloaded, then the model at work; the count isn't read out
 // as it climbs, so a screen reader hears the line once, as it starts.
 const ai = computed(() => wizard.aiCutOut.value)
-const megabytes = (bytes: number) => Math.floor(bytes / 1e6)
 const aiLoading = computed(() => {
   const status = ai.value
   if (status.kind === 'downloading') {
-    const total = Math.max(1, Math.round(status.total / 1e6))
+    const total = megabytes(status.total)
     return {
-      text: fillBlanks(cutOutWords.value.downloading, { done: Math.min(total, megabytes(status.done)), total }),
+      text: fillBlanks(cutOutWords.value.downloading, { done: Math.min(total, megabytes(status.done, true)), total }),
       share: status.done / status.total,
       spoken: fillBlanks(cutOutWords.value.downloading, { done: 0, total }),
     }
