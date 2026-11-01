@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spike 0763: AI cut out on the device</title>
+    <style>
+      body { font: 15px/1.4 system-ui, sans-serif; margin: 16px; max-width: 1100px; color: #222; }
+      h1 { font-size: 20px; margin: 0 0 4px; }
+      h2 { font-size: 16px; margin: 20px 0 6px; }
+      section { border-top: 1px solid #ddd; padding-top: 4px; }
+      button, select, input { font: inherit; padding: 6px 10px; margin: 2px 4px 2px 0; }
+      button.main { font-weight: 600; }
+      .row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+      .muted { color: #666; font-size: 13px; }
+      #status { min-height: 1.4em; font-weight: 600; }
+      .pics { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+      .pics figure { margin: 0; }
+      .pics figcaption { font-size: 13px; color: #555; }
+      canvas { max-width: min(100%, 520px); height: auto; border: 1px solid #ccc; touch-action: manipulation; }
+      #view { cursor: crosshair; }
+      table { border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+      td, th { border: 1px solid #ddd; padding: 3px 6px; text-align: left; }
+      td.n { text-align: right; font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+    <h1>Spike 0763: AI cut out on the device</h1>
+    <p class="muted" id="env"></p>
+    <div class="row">
+      <label>Device <input id="device" placeholder="iPad mini (A17 Pro)" size="22" /></label>
+      <span class="muted" id="files"></span>
+    </div>
+
+    <section>
+      <h2>1. Picture</h2>
+      <div class="row">
+        <select id="photos"></select>
+        <input type="file" id="file" accept="image/*" />
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Measure</h2>
+      <p class="muted">
+        Run all: a fresh worker, IS-Net loaded and run twice, SlimSAM loaded and tapped twice (the picture's centre, then a
+        point beside it). Start Safari's Timelines recording (Memory) before pressing it.
+      </p>
+      <div class="row">
+        <button class="main" id="all">Run all</button>
+        <select id="isnet"></select>
+        <button id="loadIsnet">Load IS-Net</button>
+        <button id="subject">Find the subject</button>
+        <button id="loadSam">Load SlimSAM</button>
+        <button id="restart">New worker</button>
+        <button id="stop">Stop</button>
+        <label title="Sessions without onnxruntime's memory arena and memory pattern (applies to models loaded after)"><input type="checkbox" id="lean" /> Lean memory</label>
+      </div>
+      <div id="status"></div>
+      <p class="muted">Tap the picture to cut out the part under your finger (loads SlimSAM if needed).</p>
+      <div class="pics">
+        <figure><canvas id="view"></canvas><figcaption>Picture and the last tap mask</figcaption></figure>
+        <figure><canvas id="cut"></canvas><figcaption id="cutCaption">Subject</figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. Compressed against uncompressed IS-Net</h2>
+      <p class="muted">Loads the uncompressed model (176 MB) in a worker of its own. Best on a desktop.</p>
+      <div class="row"><button id="compare">Compare on this picture</button><span id="compareResult"></span></div>
+      <div class="pics">
+        <figure><canvas id="maskA"></canvas><figcaption id="maskACaption">Compressed</figcaption></figure>
+        <figure><canvas id="maskB"></canvas><figcaption>Uncompressed</figcaption></figure>
+        <figure><canvas id="maskDiff"></canvas><figcaption>Where they differ (red)</figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>4. Results</h2>
+      <div class="row">
+        <button id="copy">Copy as Markdown</button>
+        <button id="json">Download JSON</button>
+        <button id="savePng">Save the masks shown</button>
+        <button id="clear">Clear</button>
+      </div>
+      <table id="results"></table>
+    </section>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

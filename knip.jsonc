@@ -26,10 +26,15 @@
     "worker/test/fixtureWorker.ts!",
     "worker/src/guards.ts!",
     "worker/src/body.ts!",
-    "worker/src/blobs.ts!"
+    "worker/src/blobs.ts!",
+    // Spike 0763 (never merges): its page, and the scripts run by hand.
+    "spike/0763/main.ts",
+    "spike/0763/worker.ts",
+    "spike/0763/*.mjs",
+    "spike/0763/prepare/*.mjs"
   ],
   // `src/testSetup.ts` is the `page` tests' setup file, which the production run does not know as one.
-  "project": ["src/**/*.{ts,vue}!", "!src/testSetup.ts!", "e2e/**/*.ts", "worker/src/**/*.ts!", "worker/**/*.ts", "*.ts"],
+  "project": ["src/**/*.{ts,vue}!", "!src/testSetup.ts!", "e2e/**/*.ts", "worker/src/**/*.ts!", "worker/**/*.ts", "*.ts", "spike/**/*.{ts,mjs}"],
   "rules": {
     // Deliberate aliases: the three per-Technique slow-framing thresholds (imageFraming.ts), DEFAULT_THEME (beadLook.ts).
     "duplicates": "off"

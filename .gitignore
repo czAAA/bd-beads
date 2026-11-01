@@ -50,3 +50,7 @@ docs/personal/
 # The backend wizard's hand-off of ids and site keys to the agent (ticket 71; no secrets)
 backend-handoff.local
 .vitest/
+
+# Spike 0763 (never merges): its work files and the model files prepare.sh makes
+/spike/0763/.work/
+/public/spike-0763/
