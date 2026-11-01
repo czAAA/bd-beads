@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
@@ -75,6 +75,14 @@ describe('the Palette reaches its flows', () => {
     await wrapper.get('[data-testid="color-popover-remove-all"]').trigger('click')
     await confirm(wrapper)
     expect(storedPalette()).toEqual(defaultPaletteIds())
+    wrapper.unmount()
+  })
+
+  it('a swatch picked from the Bead\'s Color catalog is named by its code and name once the catalog loads (ticket 0760)', async () => {
+    const project = loadProjects()[0]!
+    saveProjects([{ ...project, paletteCodes: { '#123456': '49' } }])
+    const wrapper = await openApp()
+    await vi.waitFor(() => expect(wrapper.get(`[data-color-id="${A}"]`).attributes('aria-label')).toBe('49 Opaque Black'))
     wrapper.unmount()
   })
 

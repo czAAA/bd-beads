@@ -375,7 +375,7 @@ export const pl: Translations = {
     features: {
       techniques: { name: 'Techniki', text: 'Krosno, peyote i ścieg ceglasty, każda narysowana tak, jak układają się koraliki.', tabLine: 'Krosno, peyote, ścieg ceglasty, rysowane jak koraliki.' },
       projectEditing: { name: 'Edycja projektu', text: 'Maluj, wypełniaj i wymazuj, kopiuj i wklejaj, a każdy krok możesz cofnąć.', tabLine: 'Maluj, wypełniaj, wymazuj, kopiuj, wklejaj i cofaj.' },
-      convertImage: { name: 'Konwertuj obraz', text: 'Zamień zdjęcie w schemat w maksymalnie 14 kolorach.' },
+      convertImage: { name: 'Konwertuj obraz', text: 'Zamień zdjęcie w schemat w maksymalnie 256 kolorach.' },
       rowProgress: { name: 'Postęp rzędów', text: 'Zaznaczaj gotowe rzędy w trakcie plecenia i wracaj do miejsca, w którym skończono.', tabLine: 'Zaznaczaj gotowe rzędy i wracaj tam, gdzie skończono.' },
       beadsNeeded: { name: 'Potrzebne koraliki', text: 'Każdy kolor policzony, z szacunkową wagą w gramach.' },
       exports: { name: 'Eksporty', text: 'PDF do druku, obraz PNG i plik projektu.' },
@@ -417,6 +417,7 @@ export const pl: Translations = {
     redoButton: 'Ponów',
     rotateButton: 'Obróć',
     customColorLabel: 'Własny kolor',
+    catalogColorName: '{family} · {finish}',
     wheelLabel: 'Odcień i nasycenie',
     wheelValue: 'odcień {hue}°, nasycenie {saturation}%',
     brightnessLabel: 'Jasność',
