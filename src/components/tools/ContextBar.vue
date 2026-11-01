@@ -196,7 +196,7 @@ const readoutText = computed(() => (mirrorShown.value ? props.mirror!.summary : 
 const chipIconSize = computed(() => (touch.value ? 18 : 16))
 
 // The Mirror bar where it cannot fit the canvas box (ContextBar card, Too narrow): first the readout drops, then the bar
-// takes two rows; nothing folds away. Measured afresh whenever its content or the box changes.
+// scrolls sideways, still one row (ticket 0771); nothing folds away. Measured afresh whenever its content or the box changes.
 const mirrorFit = ref<0 | 1 | 2>(0)
 /** The box the bar is placed in (the canvas box's layer): its width is the room the bar has. */
 const hostEl = computed(() => rootEl.value?.parentElement ?? undefined)
@@ -240,7 +240,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
     ref="rootEl"
     v-show="!gesturing || compact"
     class="context-bar"
-    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below, 'context-bar--mirror': mirrorShown, 'context-bar--two-rows': mirrorShown && mirrorFit === 2 && !compact }"
+    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below, 'context-bar--mirror': mirrorShown, 'context-bar--scrolls': mirrorShown && mirrorFit === 2 && !compact }"
     :style="placedStyle"
     role="toolbar"
     :aria-label="mirrorShown ? t.mirror.title : t.contextBar.label"
@@ -326,31 +326,12 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   max-width: calc(100% - 2 * var(--space-8));
 }
 
-/* The Mirror bar too narrow for one row (ContextBar card): twice as tall, the readout, Mode and Close mirror on the
- * first row and the chips with their counts on the second. */
-.context-bar--two-rows {
-  flex-wrap: wrap;
-  justify-content: center;
-  height: auto;
-  min-height: calc(2 * var(--selbar-height));
-  padding-block: var(--space-2);
-  row-gap: var(--space-2);
-}
-
-.context-bar--two-rows :deep(.mirror-bar__chips),
-.context-bar--two-rows :deep(.mirror-bar__note) {
-  flex-basis: 100%;
-  justify-content: center;
-  order: 2;
-}
-
-.context-bar--two-rows :deep(.mirror-bar__chips-divider) {
-  display: none;
-}
-
-.context-bar--two-rows :deep(.mirror-bar__note) {
-  text-align: center;
-  white-space: normal;
+/* The Mirror bar too narrow for one row even without its readout (ContextBar card, Too narrow): still one row, it
+ * scrolls sideways with no scrollbar; a control focused off the edge scrolls into view. */
+.context-bar--scrolls {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
 }
 
 .context-bar__size {
