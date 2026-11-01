@@ -1,4 +1,4 @@
-import { computed, inject, provide, ref, shallowRef, type InjectionKey, type Ref } from 'vue'
+import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey, type Ref } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
@@ -23,7 +23,7 @@ export interface BeadColorsDeps {
 /** The Color catalog of the open Project's Bead as a list of swatches to add to its Palette (ticket 0537, ADR 0072).
  * The catalog is fetched on the first `load`, not when the Project opens. */
 export function useBeadColors({ currentProject, palette, addUsed, selectedColorId, report }: BeadColorsDeps) {
-  const catalog = shallowRef<ColorCatalog>()
+  const loaded = shallowRef<ColorCatalog>()
   const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
 
   // The woven layer's Bead, the Frame's when there is one (ADR 0079, ticket 0665), whose colors the Palette holds. Its
@@ -38,15 +38,17 @@ export function useBeadColors({ currentProject, palette, addUsed, selectedColorI
   })
   const catalogId = computed(() => colorCatalogOf(beadId.value))
   const size = computed(() => bead.value?.size)
+  /** The loaded catalog while it is the Bead's own; after Replace Bead, none until `load` fetches the new one. */
+  const catalog = computed(() => (loaded.value?.id === catalogId.value ? loaded.value : undefined))
 
   async function load() {
     const id = catalogId.value
-    if (!id || catalog.value?.id === id) return
+    if (!id || loaded.value?.id === id) return
     state.value = 'loading'
     try {
-      const loaded = await loadColorCatalog(id)
+      const fetched = await loadColorCatalog(id)
       if (catalogId.value !== id) return
-      catalog.value = loaded
+      loaded.value = fetched
       state.value = 'ready'
     } catch {
       state.value = 'failed'
@@ -55,7 +57,7 @@ export function useBeadColors({ currentProject, palette, addUsed, selectedColorI
 
   const swatches = computed(() => {
     const own = catalog.value
-    return own && own.id === catalogId.value && size.value
+    return own && size.value
       ? catalogSwatches(own, size.value, palette.value.colors.map((color) => color.hex), brandColors(bead.value?.brand.id))
       : []
   })
@@ -93,3 +95,8 @@ export function useBeadColorsList(): BeadColors | undefined {
   return inject(beadColorsKey, undefined)
 }
 
+
+/** Fetches the Bead's Color catalog once `coded` turns true, for a place that names a color by its code (ticket 0760). */
+export function loadCatalogWhen(beadColors: BeadColors | undefined, coded: () => boolean) {
+  watch(coded, (needed) => needed && void beadColors?.load(), { immediate: true })
+}
