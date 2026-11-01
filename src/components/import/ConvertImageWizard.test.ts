@@ -385,6 +385,8 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     await wrapper.get('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
     expect(ends()).toContain('mm (all the picture\'s detail)')
     expect(ends()).toMatch(/\d+ mm/)
+    // The Colors slider keeps its own "max n" end.
+    expect(wrapper.get('[data-testid="convert-colors-slider"] .vs-ends').text()).toMatch(/max \d+/)
   })
 
   it('offers a Colors slider up to every color the picture has, and keeps Color by color closed with its summary', async () => {

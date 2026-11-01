@@ -1016,6 +1016,8 @@ export interface Translations {
       widthBeads: string
       widthMm: string
       maxLabel: string
+      /** The Width slider's max end: the width in the chosen unit, `{value}`. */
+      widthMaxLabel: string
       widthHint: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string

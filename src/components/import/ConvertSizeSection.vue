@@ -32,7 +32,7 @@ const value = computed(() => (unit.value === 'beads' ? inBeads(sizing.value.widt
 const secondary = computed(() => (unit.value === 'beads' ? inMm(sizing.value.width) : inBeads(sizing.value.width)))
 const valuetext = computed(() => [value.value, secondary.value, ...(sizing.value.mark && result.value ? [result.value.ratio] : [])].join(', '))
 const minLabel = computed(() => (unit.value === 'beads' ? String(sizing.value.range.min) : String(wizard.widthMmOf(sizing.value.range.min))))
-const maxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: unit.value === 'beads' ? inBeads(sizing.value.range.max) : inMm(sizing.value.range.max) }))
+const maxLabel = computed(() => fillBlanks(words.value.widthMaxLabel, { value: unit.value === 'beads' ? inBeads(sizing.value.range.max) : inMm(sizing.value.range.max) }))
 
 /** The marks with the width they stand for in the chosen unit ("8 beads", "40 mm"); the one at an end has the end's label only. */
 const marks = computed(() =>
