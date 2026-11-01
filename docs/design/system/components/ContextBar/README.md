@@ -25,7 +25,7 @@ Design reference: the "Selection bar on the canvas" board of the design canvas (
 
 ## Mirror bar (ticket 0750, ADR 0082)
 
-The Mirror's own bar: the Selection bar's component (same look, sizes, hover and press, dividers, Tooltips, `role="toolbar"`), with Mirror's items. It replaces the Mirror popover, which is retired with its card. Approved from the claude.ai mockups "Mirror bar mockups", variant B (https://claude.ai/artifact/YDqoGhLJKvK1ZWjtiE2phV), 2026-10-31.
+The Mirror's own bar: the Selection bar's component (same look, sizes, hover and press, dividers, Tooltips, `role="toolbar"`), with Mirror's items. Every control on either bar has the same states: hover and press mix `canvas` into the bar at 12% and 20%, the focus ring is `canvas`, and an "on" control (an Axis chip that is on, the chosen Mode) is `canvas` with `ink` on it, which hover and press only dim (to 86% and 72%), so its icon or text stays readable. It replaces the Mirror popover, which is retired with its card. Approved from the claude.ai mockups "Mirror bar mockups", variant B (https://claude.ai/artifact/YDqoGhLJKvK1ZWjtiE2phV), 2026-10-31.
 
 ### The Mirror and its Area
 
