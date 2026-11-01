@@ -6,6 +6,10 @@ import type { Plugin } from 'vite'
 /** The worker as the build writes it, next to index.html (the scope is its folder, so it covers the whole app). */
 export const SERVICE_WORKER_FILE = 'sw.js'
 
+/** The folder of files fetched only when first needed and kept by their own code, never at install (ADR 0087): Cut out
+ * with AI's runtime and model, tens of MB most visits never use. */
+export const ON_DEMAND_FOLDER = 'ai/'
+
 /** Every file under `dir`, as `/`-separated paths from it, sorted. */
 export function filesBelow(dir: string): string[] {
   return readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -14,10 +18,11 @@ export function filesBelow(dir: string): string[] {
     .sort()
 }
 
-/** The worker's source with this build's file list (ticket 69, ADR 0045). The cache is named after the files'
- * content, so a changed build is a new cache and the old one is dropped when the new worker takes over. */
+/** The worker's source with this build's file list (ticket 69, ADR 0045), the on-demand files left out (ADR 0087). The
+ * cache is named after the files' content, so a changed build is a new cache and the old one is dropped when the new
+ * worker takes over. */
 export function renderServiceWorker(template: string, dir: string): { source: string; precache: string[] } {
-  const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE)
+  const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE && !path.startsWith(ON_DEMAND_FOLDER))
   const hash = createHash('sha256')
   for (const path of precache) hash.update(path).update('\0').update(readFileSync(join(dir, path)))
   const source = template

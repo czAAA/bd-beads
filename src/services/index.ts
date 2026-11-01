@@ -1,4 +1,6 @@
+import type { CutOutService } from '../domain/cutOutModel'
 import type { DecodeImage } from '../domain/imageConversion'
+import { browserCutOut } from './cutOutService'
 import { downloadFile, type DownloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
 import { readClipboardImage } from './clipboardImage'
@@ -19,6 +21,8 @@ export interface Services {
   decodeImage: DecodeImage
   /** The picture on the clipboard, for Convert image's Paste (spec 0645). */
   readClipboardImage: () => Promise<File | undefined>
+  /** Convert image's Cut out with AI: the model on the device (ticket 0767, ADR 0087). */
+  cutOutService: CutOutService
   devicePreferences: DevicePreferences
   appUpdates: AppUpdates
   persistentStorage: PersistentStorage
@@ -35,6 +39,7 @@ export const browserServices: Services = {
   downloadFile,
   decodeImage: decodeImageFile,
   readClipboardImage,
+  cutOutService: browserCutOut,
   devicePreferences: browserDevicePreferences,
   appUpdates: browserAppUpdates,
   persistentStorage: browserPersistentStorage,

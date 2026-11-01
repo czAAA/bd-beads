@@ -26,10 +26,12 @@ import { marginSheetHost } from '../testUtils/marginSheetHost'
 import { armSelectionBar } from '../testUtils/pill'
 import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
+import { fakeCutOutService } from '../testUtils/fakeCutOutService'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
 import { withLayers } from '../testUtils/layerFields'
+import type { CutOutService } from '../domain/cutOutModel'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
 // notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
@@ -128,8 +130,9 @@ const catalog: ColorCatalog = {
 }
 
 /** The wizard as the app opens it, with or without a picture set. */
-function wizardProps(withPicture: boolean) {
+function wizardProps(withPicture: boolean, cutOutService?: CutOutService) {
   return {
+    ...(cutOutService ? { cutOutService } : {}),
     start: {
       draft: { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
       ...(withPicture ? { file: new File(['x'], 'sunflower-in-a-long-file-name.png', { type: 'image/png' }) } : {}),
@@ -273,6 +276,7 @@ const CASES: FitCase[] = [
       await new Promise((done) => setTimeout(done, 20))
     },
   ],
+  ...aiCutOutCases(),
   [
     'Convert image page (Outline color)',
     ConvertPageHost,
@@ -306,5 +310,51 @@ const CASES: FitCase[] = [
     },
   ],
 ]
+
+/** Cut out with AI's note, download, model at work and failure (ticket 0767), each through a fake cut-out service. */
+function aiCutOutCases(): FitCase[] {
+  const chooseAi = async (root: HTMLElement) => {
+    await pictureSet(root)
+    root.querySelector<HTMLElement>('[data-testid="convert-cut-out"] [data-value="ai"]')?.click()
+    await new Promise((done) => setTimeout(done, 20))
+  }
+  const loadingShown = () => new Promise((done) => setTimeout(done, 350))
+  const asking = fakeCutOutService({ toDownload: 59_200_000 })
+  const downloading = fakeCutOutService()
+  const thinking = fakeCutOutService()
+  const failing = fakeCutOutService()
+  return [
+    ['Convert image page (cut out with AI, the download note)', ConvertPageHost, wizardProps(true, asking.service), chooseAi],
+    [
+      'Convert image page (cut out with AI, downloading)',
+      ConvertPageHost,
+      wizardProps(true, downloading.service),
+      async (root) => {
+        await chooseAi(root)
+        downloading.progress({ kind: 'downloading', done: 12_400_000, total: 59_200_000 })
+        await loadingShown()
+      },
+    ],
+    [
+      'Convert image page (cut out with AI, finding the subject)',
+      ConvertPageHost,
+      wizardProps(true, thinking.service),
+      async (root) => {
+        await chooseAi(root)
+        await loadingShown()
+      },
+    ],
+    [
+      'Convert image page (cut out with AI, failed)',
+      ConvertPageHost,
+      wizardProps(true, failing.service),
+      async (root) => {
+        await chooseAi(root)
+        failing.fail()
+        await new Promise((done) => setTimeout(done, 20))
+      },
+    ],
+  ]
+}
 
 describeFits(CASES)

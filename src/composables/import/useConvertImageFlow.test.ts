@@ -5,6 +5,7 @@ import type { PixelData } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { useAppPage } from '../shell/useAppPage'
 import { useDialogs } from '../shell/useDialogs'
+import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
 import { useConvertImageFlow } from './useConvertImageFlow'
 
 const formValues: CreateProjectInput = { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: 'Fox' }
@@ -15,7 +16,7 @@ function setup() {
   const dialogs = useDialogs()
   const appPage = useAppPage()
   const addProject = vi.fn<(project: Project) => void>()
-  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => pixels(), loadCatalog: () => Promise.reject(new Error('none')) })
+  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => pixels(), loadCatalog: () => Promise.reject(new Error('none')), cutOutService: unusedCutOutService })
   return { dialogs, appPage, addProject, flow }
 }
 

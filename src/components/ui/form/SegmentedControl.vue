@@ -16,7 +16,8 @@ interface OptionTooltip {
 
 const props = withDefaults(
   defineProps<{
-    options: readonly { value: T; label: string; icon?: IconName; tooltip?: OptionTooltip }[]
+    /** `iconOnly`: the label is the option's accessible name, not shown (the Cut out AI chip, ticket 0767). */
+    options: readonly { value: T; label: string; icon?: IconName; iconOnly?: boolean; tooltip?: OptionTooltip }[]
     labelledby?: string
     mono?: boolean
     small?: boolean
@@ -82,12 +83,13 @@ function onKeydown(event: KeyboardEvent) {
           :aria-checked="option.value === value"
           :tabindex="option.value === value ? 0 : -1"
           :data-value="option.value"
+          :aria-label="option.iconOnly ? option.label : undefined"
           :aria-disabled="disabled || undefined"
           @click="choose(option.value)"
         >
           <span class="segmented__face">
             <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
-            {{ option.label }}
+            <template v-if="!option.iconOnly">{{ option.label }}</template>
           </span>
         </button>
       </AppTooltip>
@@ -99,12 +101,13 @@ function onKeydown(event: KeyboardEvent) {
         :aria-checked="option.value === value"
         :tabindex="option.value === value ? 0 : -1"
         :data-value="option.value"
+        :aria-label="option.iconOnly ? option.label : undefined"
         :aria-disabled="disabled || undefined"
         @click="choose(option.value)"
       >
         <span class="segmented__face">
           <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
-          {{ option.label }}
+          <template v-if="!option.iconOnly">{{ option.label }}</template>
         </span>
       </button>
     </template>
@@ -178,6 +181,11 @@ function onKeydown(event: KeyboardEvent) {
 .segmented__option[aria-checked='true'] {
   color: var(--canvas);
   background: var(--ink);
+}
+
+/* A chosen chip draws its AI mark in its own ink too: `ai` falls under 3:1 on `ink` in dark and high contrast. */
+.segmented__option[aria-checked='true'] :deep(.ai-mark) {
+  stroke: currentColor;
 }
 
 .segmented__option:focus-visible {

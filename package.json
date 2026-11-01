@@ -23,6 +23,7 @@
     "perf": "playwright test -c playwright.perf.config.ts"
   },
   "dependencies": {
+    "onnxruntime-web": "1.31.1",
     "vue": "^3.5.42"
   },
   "devDependencies": {
