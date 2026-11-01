@@ -949,6 +949,12 @@ body {
 .bb-mirror-count button[aria-disabled="true"] { opacity: .38; cursor: default; }
 .bb-mirror-count output { min-width: 14px; text-align: center; font: 500 12px/1 var(--font-mono); color: var(--canvas); }
 .bb-mirror-note { padding: 0 6px; font: 400 11px/1 var(--font-mono); color: color-mix(in srgb, var(--canvas) 74%, transparent); }
+/* One set of states for every control on either bar (ticket 0753): hover and press mix `canvas` into the bar at 12% and 20%; "on" (a chip, the chosen Mode) is `canvas` with `ink`, dimmed to 86% and 72% on hover and press, never to a fill that hides its icon. */
+.bb-mirror-mode button:hover:not([aria-checked="true"]), .bb-mirror-chip > button:hover:not([aria-pressed="true"]), .bb-mirror-count button:hover:not([aria-disabled="true"]) { background: color-mix(in srgb, var(--canvas) 12%, transparent); }
+.bb-mirror-mode button[aria-checked="true"]:hover, .bb-mirror-chip > button[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--canvas) 86%, var(--ink)); }
+.bb-mirror-mode button:active:not([aria-checked="true"]), .bb-mirror-chip > button:active:not([aria-pressed="true"]), .bb-mirror-count button:active:not([aria-disabled="true"]) { background: color-mix(in srgb, var(--canvas) 20%, transparent); }
+.bb-mirror-mode button[aria-checked="true"]:active, .bb-mirror-chip > button[aria-pressed="true"]:active { background: color-mix(in srgb, var(--canvas) 72%, var(--ink)); }
+.bb-mirror-mode button:focus-visible, .bb-mirror-chip > button:focus-visible, .bb-mirror-count button:focus-visible { outline: var(--focus-width) solid var(--canvas); outline-offset: var(--focus-offset); }
 @media (pointer: coarse) {
   .bb-mirror-mode, .bb-mirror-chip { height: var(--mirror-bar-control-touch); }
   .bb-mirror-chip > button { width: calc(var(--mirror-bar-control-touch) - 2px); height: calc(var(--mirror-bar-control-touch) - 2px); }

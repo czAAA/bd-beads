@@ -178,7 +178,8 @@ function step(axis: MirrorAxis, by: number) {
 }
 
 /* The Mode switch (ContextBar card, Mirror bar): two segments in a 1px `canvas` 30% border, the chosen one filled
- * `canvas` with its text `ink` at 600. */
+ * `canvas` with its text `ink` at 600. Hover, press, focus and the filled look are the bar's, shared with the Selection
+ * bar's buttons (ContextBar.vue). */
 .mirror-bar__mode {
   display: inline-flex;
   flex: none;
@@ -203,8 +204,6 @@ function step(axis: MirrorAxis, by: number) {
 
 .mirror-bar__segment[aria-checked='true'] {
   font-weight: 600;
-  color: var(--ink);
-  background: var(--canvas);
 }
 
 .mirror-bar__chips {
@@ -241,11 +240,6 @@ function step(axis: MirrorAxis, by: number) {
   background: none;
   border: 0;
   border-radius: var(--radius-xs);
-}
-
-.mirror-bar__chip--on :deep(.mirror-bar__chip-button) {
-  color: var(--ink);
-  background: var(--canvas);
 }
 
 .mirror-bar__chip--off :deep(.mirror-bar__chip-button) {
@@ -306,19 +300,5 @@ function step(axis: MirrorAxis, by: number) {
     width: var(--mirror-bar-control-touch);
     height: calc(var(--mirror-bar-control-touch) - 2px);
   }
-}
-
-@media (hover: hover) {
-  .mirror-bar__segment:hover:not([aria-checked='true']),
-  .mirror-bar__step:hover:not([aria-disabled='true']) {
-    background: color-mix(in srgb, var(--canvas) 12%, transparent);
-  }
-}
-
-.mirror-bar__segment:focus-visible,
-.mirror-bar__step:focus-visible,
-.mirror-bar__chip :deep(.mirror-bar__chip-button:focus-visible) {
-  outline: var(--focus-width) solid var(--canvas);
-  outline-offset: var(--focus-offset);
 }
 </style>
