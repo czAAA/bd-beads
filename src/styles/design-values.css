@@ -134,6 +134,23 @@
   --selbar-danger: var(--danger);
 }
 
+/* AI (ticket 0764, ADR 0087): the shimmer over the Convert image preview while a model works (Loading card), the Cut
+   out chips and the dot on the AI chip of a device that struggled (ConvertImage card) */
+:root,
+:root[data-theme="light"],
+:root[data-theme="contrast"] {
+  --ai-shimmer-fill: color-mix(in srgb, var(--ai) 16%, transparent); /* Loading card, AI variant: the shimmer's band. */
+}
+:root[data-theme="dark"] {
+  --ai-shimmer-fill: color-mix(in srgb, var(--ai) 22%, transparent);
+}
+:root {
+  --ai-shimmer: 1600ms; /* Loading card, AI variant: one sweep of the band across the preview, then the next. */
+  --ai-shimmer-band: 40%; /* Loading card, AI variant: the band's width, of the preview's. */
+  --cut-out-chip: 76px; /* ConvertImage card: each Cut out chip (Off, Simple, the AI chip), all one width. */
+  --ai-warning-dot: 7px; /* ConvertImage card: the warning dot on the AI chip of a device that struggled. */
+}
+
 :root {
   /* Control geometry (Button, IconButton, Swatch, Tooltip cards): fixed sizes the spacing scale does not cover */
   --border-emphasis: 2px;
