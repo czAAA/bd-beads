@@ -141,6 +141,21 @@ describe('Cut out with AI (ticket 0767)', () => {
     expect(cutOut.pictures()).toHaveLength(0)
   })
 
+  it('asks again after a cancelled download', async () => {
+    const { wizard, cutOut } = await convert({ toDownload: 59_000_000 })
+    wizard.setCutOut('ai')
+    await settle()
+    wizard.downloadCutOutModel()
+    await settle()
+    wizard.cancelAiCutOut()
+    await settle()
+
+    wizard.setCutOut('ai')
+    await settle()
+    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 59_000_000 })
+    expect(cutOut.pictures()).toHaveLength(1)
+  })
+
   it('Cancel stops a download or a run at once and takes the choice back', async () => {
     const { wizard, cutOut } = await convert()
     wizard.setCutOut('ai')

@@ -45,10 +45,16 @@ function browserCutOutService(): CutOutService {
     async toDownload() {
       const { runtime, model } = filesFor()
       const parts = [...runtime.parts, ...model.parts]
-      if (!hasCacheStorage()) return parts.reduce((sum, part) => sum + part.bytes, 0)
-      const cache = await caches.open(CACHE)
-      const kept = await Promise.all(parts.map((part) => cache.match(part.url)))
-      return parts.reduce((sum, part, index) => sum + (kept[index] ? 0 : part.bytes), 0)
+      const all = parts.reduce((sum, part) => sum + part.bytes, 0)
+      if (!hasCacheStorage()) return all
+      try {
+        const cache = await caches.open(CACHE)
+        const kept = await Promise.all(parts.map((part) => cache.match(part.url)))
+        return parts.reduce((sum, part, index) => sum + (kept[index] ? 0 : part.bytes), 0)
+      } catch {
+        // A browser that refuses Cache Storage (a private window) keeps nothing: all of it is to download.
+        return all
+      }
     },
 
     subject(picture: PixelData, onProgress: (progress: CutOutProgress) => void) {

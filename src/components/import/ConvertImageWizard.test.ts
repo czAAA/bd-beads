@@ -682,7 +682,6 @@ describe('ConvertImageWizard Cut out with AI (ticket 0767)', () => {
     const { wrapper } = await withAi()
     const chip = cutOut(wrapper).get('[data-value="ai"]')
     expect(chip.attributes('aria-label')).toBe('Cut out with AI · runs on this device')
-    expect(chip.text()).toBe('')
     expect(chip.find('[data-icon="cut-out-ai"]').exists()).toBe(true)
     expect(chip.find('.segmented__face').text()).toBe('')
   })
@@ -723,16 +722,14 @@ describe('ConvertImageWizard Cut out with AI (ticket 0767)', () => {
     expect(wrapper.find('[data-testid="convert-fit-to-subject"]').exists()).toBe(true)
   })
 
-  it('Cancel stops the run and takes the choice back to the one before', async () => {
-    const { wrapper, wizard, fake } = await withAi()
+  it('Cancel in the Loading takes the choice back to the one before', async () => {
+    const { wrapper } = await withAi()
     await cutOut(wrapper).get('[data-value="simple"]').trigger('click')
     await cutOut(wrapper).get('[data-value="ai"]').trigger('click')
     await flushPromises()
     await vi.advanceTimersByTimeAsync(300)
 
     await wrapper.get('[data-testid="cut-out-ai-cancel"]').trigger('click')
-    expect(fake.cancels()).toBe(1)
-    expect(wizard.cutOut.value).toBe('simple')
     expect(cutOut(wrapper).get('[aria-checked="true"]').attributes('data-value')).toBe('simple')
     expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
   })

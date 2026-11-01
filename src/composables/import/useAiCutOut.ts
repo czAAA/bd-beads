@@ -119,6 +119,8 @@ export function useAiCutOut({ service, image }: { service: CutOutService; image:
     cancel() {
       if (choice.value !== 'ai') return
       stop()
+      // A cancelled download asks again next time, with what is left to download.
+      downloadAllowed = false
       choice.value = before
     },
   }

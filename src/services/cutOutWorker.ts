@@ -90,7 +90,8 @@ async function prune(cache: Cache | undefined, files: StaticFile[]) {
 }
 
 async function subject({ cache: cacheName, runtime, model, picture }: Extract<ToWorker, { kind: 'subject' }>) {
-  const cache = cacheName && typeof caches !== 'undefined' ? await caches.open(cacheName) : undefined
+  // A browser that refuses Cache Storage (a private window) still runs the model; it only keeps nothing.
+  const cache = cacheName && typeof caches !== 'undefined' ? await caches.open(cacheName).catch(() => undefined) : undefined
   const running = await session(cache, runtime, model)
   await prune(cache, [runtime, model])
   post({ kind: 'thinking' })
