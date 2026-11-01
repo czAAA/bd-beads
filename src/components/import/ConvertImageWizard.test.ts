@@ -9,7 +9,10 @@ import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import type { ConvertStep } from '../../domain/convertSize'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
+import type { CutOutService } from '../../domain/cutOutModel'
+import type { SubjectMask } from '../../domain/subjectMask'
 import { ImageConversionError, formatImageLimits, type PixelData } from '../../domain/imageConversion'
+import { fakeCutOutService, unusedCutOutService } from '../../testUtils/fakeCutOutService'
 import type { Project } from '../../domain/project'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
@@ -53,10 +56,12 @@ const Page = defineComponent({
   ],
 })
 
-function open(options: { draft?: CreateProjectInput; file?: File; decodeImage?: () => Promise<PixelData>; clipboard?: File; loadCatalog?: () => Promise<ColorCatalog> } = {}) {
+function open(
+  options: { draft?: CreateProjectInput; file?: File; decodeImage?: () => Promise<PixelData>; clipboard?: File; loadCatalog?: () => Promise<ColorCatalog>; cutOutService?: CutOutService } = {},
+) {
   const decodeImage = vi.fn(options.decodeImage ?? (async () => redAndWhite()))
   const draft = options.draft ?? cube
-  const wizard = effectScope().run(() => useConvertImageWizard({ start: draft, decodeImage, loadCatalog: options.loadCatalog ?? (async () => catalog) }))!
+  const wizard = effectScope().run(() => useConvertImageWizard({ start: draft, decodeImage, loadCatalog: options.loadCatalog ?? (async () => catalog), cutOutService: options.cutOutService ?? unusedCutOutService }))!
   if (options.file) void wizard.setFile(options.file)
   const wrapper = mount(Page, { props: { wizard, readClipboardImage: async () => options.clipboard }, attachTo: document.body })
   return { wrapper, decodeImage, draft, wizard }
@@ -617,12 +622,12 @@ describe('ConvertImageWizard Cut out (ticket 0765)', () => {
   }
   const cutOut = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-cut-out"]')
 
-  it('offers Off and Simple, Off at first; Simple shows its Tolerance and Fit to subject, Off hides them', async () => {
+  it('offers Off, Simple and the AI chip, Off at first; Simple shows its Tolerance and Fit to subject, Off hides them', async () => {
     const { wrapper, wizard } = open({ decodeImage: async () => squareOnWhite() })
     expect(wrapper.find('[data-testid="convert-cut-out"]').exists()).toBe(false)
     await chooseFile(wrapper, picture())
 
-    expect(cutOut(wrapper).findAll('[role="radio"]').map((chip) => chip.text())).toEqual(['Off', 'Simple'])
+    expect(cutOut(wrapper).findAll('[role="radio"]').map((chip) => chip.text())).toEqual(['Off', 'Simple', ''])
     expect(cutOut(wrapper).get('[aria-checked="true"]').attributes('data-value')).toBe('off')
     expect(wrapper.find('[data-testid="convert-tolerance-slider"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="convert-fit-to-subject"]').exists()).toBe(false)
@@ -657,6 +662,87 @@ describe('ConvertImageWizard Cut out (ticket 0765)', () => {
     expect(fit.attributes('aria-disabled')).toBe('true')
     await fit.trigger('click')
     expect(wizard.weave.value).toBe('whole')
+  })
+})
+
+describe('ConvertImageWizard Cut out with AI (ticket 0767)', () => {
+  const cutOut = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-cut-out"]')
+  const leftHalf = (): SubjectMask => ({ width: 4, height: 2, subject: Uint8Array.from([1, 1, 0, 0, 1, 1, 0, 0]) })
+
+  async function withAi(toDownload = 0) {
+    const fake = fakeCutOutService({ toDownload })
+    const opened = open({ cutOutService: fake.service })
+    await chooseFile(opened.wrapper, picture())
+    vi.useFakeTimers()
+    return { ...opened, fake }
+  }
+  afterEach(() => vi.useRealTimers())
+
+  it('shows the AI chip as its icon alone, named in its Tooltip and label', async () => {
+    const { wrapper } = await withAi()
+    const chip = cutOut(wrapper).get('[data-value="ai"]')
+    expect(chip.attributes('aria-label')).toBe('Cut out with AI · runs on this device')
+    expect(chip.find('[data-icon="cut-out-ai"]').exists()).toBe(true)
+    expect(chip.find('.segmented__face').text()).toBe('')
+  })
+
+  it('asks before the first download, then shows its progress in MB with Cancel, after the loading delay', async () => {
+    const { wrapper, fake } = await withAi(59_200_000)
+    await cutOut(wrapper).get('[data-value="ai"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="cut-out-download-note"]').text()).toContain('Downloads 59\u00a0MB once.')
+
+    await wrapper.get('[data-testid="cut-out-download"]').trigger('click')
+    await flushPromises()
+    fake.progress({ kind: 'downloading', done: 12_400_000, total: 59_200_000 })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(300)
+    const loading = wrapper.get('[data-testid="loading"]')
+    expect(loading.text()).toContain('Getting the cut-out model ready · 12 of 59\u00a0MB')
+    expect(loading.find('.loading__fill').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="cut-out-download-note"]').exists()).toBe(false)
+  })
+
+  it('while the model works shows the beads, "Finding the subject…" and the shimmer, until it is found', async () => {
+    const { wrapper, wizard, fake } = await withAi()
+    await cutOut(wrapper).get('[data-value="ai"]').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(wrapper.get('[data-testid="loading"]').text()).toContain('Finding the subject…')
+    expect(wrapper.findAll('.loading--ai .loading__bead')).toHaveLength(3)
+    expect(wrapper.find('[data-testid="convert-ai-shimmer"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="convert-fit-to-subject"]').exists()).toBe(false)
+
+    fake.finish(leftHalf())
+    await flushPromises()
+    expect(wizard.subjectMask.value).toEqual(leftHalf())
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-ai-shimmer"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-fit-to-subject"]').exists()).toBe(true)
+  })
+
+  it('Cancel in the Loading takes the choice back to the one before', async () => {
+    const { wrapper } = await withAi()
+    await cutOut(wrapper).get('[data-value="simple"]').trigger('click')
+    await cutOut(wrapper).get('[data-value="ai"]').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(300)
+
+    await wrapper.get('[data-testid="cut-out-ai-cancel"]').trigger('click')
+    expect(cutOut(wrapper).get('[aria-checked="true"]').attributes('data-value')).toBe('simple')
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+  })
+
+  it('says a failed run did not finish, back on the choice before', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { wrapper, fake } = await withAi()
+    await cutOut(wrapper).get('[data-value="ai"]').trigger('click')
+    await flushPromises()
+    fake.fail()
+    await flushPromises()
+    expect(wrapper.get('[data-testid="cut-out-ai-failed"]').text()).toContain('The cut out didn’t finish.')
+    expect(cutOut(wrapper).get('[aria-checked="true"]').attributes('data-value')).toBe('off')
   })
 })
 

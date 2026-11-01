@@ -5,6 +5,7 @@ import { addedColorId } from '../../domain/palette'
 import type { Technique } from '../../domain/weave'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
+import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
 
 // The Colors step's helpers (ticket 0766, spec 0761) through the wizard's state: Auto-fix lighting, Clean up stray
 // beads and the Outline, as the maker would see them in the found colors, the beads and the Schema. Synthetic pictures.
@@ -35,6 +36,7 @@ async function convert(picture: PixelData, technique: Technique = 'loom'): Promi
       start: { technique, beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
       decodeImage: async () => picture,
       loadCatalog: () => Promise.reject(new Error('no catalog')),
+      cutOutService: unusedCutOutService,
     }),
   )!
   await wizard.setFile(new File(['x'], 'picture.png', { type: 'image/png' }))

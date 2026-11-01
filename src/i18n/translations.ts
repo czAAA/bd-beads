@@ -1021,7 +1021,7 @@ export interface Translations {
       aPart: string
       partHint: string
       partFollows: string
-      /** Cut out (ticket 0765): the row's label and its chips, Simple's Tolerance slider and the hint under it, and Fit to
+      /** Cut out (tickets 0765, 0767): the row's label and its chips, Simple's Tolerance slider and the hint under it, and Fit to
        * subject's label, its Tooltip body and its reason when the cut out kept nothing. */
       cutOut: {
         label: string
@@ -1032,6 +1032,17 @@ export interface Translations {
         fitToSubject: string
         fitToSubjectBody: string
         fitToSubjectNothing: string
+        /** Cut out with AI (ticket 0767): the AI chip's Tooltip and label, the download note, its size in MB and its
+         * buttons, the AI Loading's lines and the message for a run that failed. */
+        ai: string
+        downloadNote: string
+        downloadSize: string
+        download: string
+        cancel: string
+        downloading: string
+        finding: string
+        takingLonger: string
+        failed: string
       }
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
        * its marks (the width they stand for) and the hint under it. */

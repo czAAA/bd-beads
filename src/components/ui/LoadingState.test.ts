@@ -36,4 +36,21 @@ describe('LoadingState (ticket 158)', () => {
     await vi.advanceTimersByTimeAsync(1000)
     expect(document.body.textContent).not.toContain('Reading the picture')
   })
+
+  it('draws the AI variant (ticket 0767): a line, its text and an action at the right, the count not read as it climbs', async () => {
+    const wrapper = mount(LoadingState, {
+      props: { text: 'Getting the cut-out model ready · 12 of 59 MB', share: 0.2, ai: true, spoken: 'Getting the cut-out model ready' },
+      slots: { default: '<button>Cancel</button>' },
+    })
+    await vi.advanceTimersByTimeAsync(299)
+    expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+
+    const loading = wrapper.find('[data-testid="loading"]')
+    expect(loading.classes()).toContain('loading--ai')
+    expect(loading.find('.loading__fill').attributes('style')).toContain('width: 20%')
+    expect(loading.find('.loading__text').attributes('aria-hidden')).toBe('true')
+    expect(loading.find('.loading__spoken').text()).toBe('Getting the cut-out model ready')
+    expect(loading.find('button').text()).toBe('Cancel')
+  })
 })

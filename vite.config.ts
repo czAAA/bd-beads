@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import { chromium } from 'playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
-import { offlineShell } from './vite.pwa.ts'
+import { offlineShell, ON_DEMAND_FOLDER } from './vite.pwa.ts'
 
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
 const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/homepage/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
@@ -36,6 +36,11 @@ const COLOR_CATALOG_CODES = Object.fromEntries(
     .map((file) => [file.slice(0, -'.json'.length), (JSON.parse(readFileSync(resolve(CATALOGS, file), 'utf8')) as { codes: unknown[] }).codes.length]),
 )
 
+/** Where the build puts an asset: Cut out with AI's runtime with its model, fetched on first use and never at install
+ * (ADR 0087); everything else in assets/. */
+const assetFileNames = (asset: { names: readonly string[] }) =>
+  asset.names.some((name) => name.endsWith('.wasm')) ? `${ON_DEMAND_FOLDER}[name]-[hash][extname]` : 'assets/[name]-[hash][extname]'
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   // Production builds (build and preview alike) resolve assets relative to the path the app is served from.
@@ -51,8 +56,14 @@ export default defineConfig(({ mode }) => ({
   build: {
     // Two pages: the editor and the Homepage (ticket 77), which is a folder with its own index.html so a static host
     // serves /homepage/ with no rewrite rules (ADR 0014).
-    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), homepage: resolve(import.meta.dirname, 'homepage/index.html') } },
+    rollupOptions: {
+      input: { main: resolve(import.meta.dirname, 'index.html'), homepage: resolve(import.meta.dirname, 'homepage/index.html') },
+      output: { assetFileNames },
+    },
   },
+  // The cut-out worker is a module worker (ticket 0767): onnxruntime-web is an ES module. Its runtime, which the
+  // library names too, goes where the app's own reference puts it, so the build holds it once.
+  worker: { format: 'es', rollupOptions: { output: { assetFileNames } } },
   test: {
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
     // finishes in milliseconds either way, so this only ever matters on a bad day.

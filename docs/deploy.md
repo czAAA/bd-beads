@@ -32,6 +32,8 @@ curl -s https://bd-beads-dev.bd4beads.workers.dev/api/health   # or https://dev.
 
 Production is the same with `--env production`, from a clean `main`. `npx wrangler deploy --dry-run --env <env>` checks the config and the bundle without touching Cloudflare.
 
+**Cut out with AI's model** (ticket 0767, ADR 0087) is static files of the app in `public/ai/`, each under the 25 MiB per-file cap, but not in git yet: `bash scripts/cut-out-model/prepare.sh` exports IS-Net general-use from its upstream weights (Apache-2.0) and splits it there (given an already exported `isnet-general-use-uint8.onnx`, it only splits it), and writes `src/data/cutOutFiles.json`, which is committed. A build without the parts ships an AI choice whose download fails. The runtime comes from the `onnxruntime-web` package and the build puts it in `ai/` itself. How the parts reach a deploy (committed, Git LFS, or made in the workflow) is still to decide.
+
 ## Deploying through GitHub
 
 `.github/workflows/deploy.yml` does the same as the steps above:

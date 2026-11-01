@@ -2,8 +2,9 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 /** A wait (ticket 158): nothing for the first `loading-delay` (300ms) so fast work never flashes, then beads or a
- * progress track. */
-defineProps<{ text: string; share?: number; compact?: boolean }>()
+ * progress track. `ai` is the Loading card's AI variant (ticket 0767): in `ai`, the line full width with the text and the
+ * default slot's action (Cancel) under it; `spoken` is read in place of a text whose count climbs. */
+defineProps<{ text: string; share?: number; compact?: boolean; ai?: boolean; spoken?: string }>()
 
 /** `--loading-delay` (tokens.json): read from the page when it has one, since a timer can't take a CSS value. */
 function loadingDelayMs(): number {
@@ -22,14 +23,16 @@ onBeforeUnmount(() => clearTimeout(timer))
 </script>
 
 <template>
-  <div v-if="shown" class="loading" :class="{ 'loading--compact': compact }" role="status" data-testid="loading">
+  <div v-if="shown" class="loading" :class="{ 'loading--compact': compact, 'loading--ai': ai }" role="status" data-testid="loading">
     <span v-if="share === undefined" class="loading__beads" aria-hidden="true">
       <i class="loading__bead" /><i class="loading__bead" /><i class="loading__bead" />
     </span>
     <span v-else class="loading__track" aria-hidden="true">
       <i class="loading__fill" :style="{ width: `${Math.round(share * 100)}%` }" />
     </span>
-    <span class="loading__text">{{ text }}</span>
+    <span class="loading__text" :aria-hidden="spoken ? 'true' : undefined">{{ text }}</span>
+    <span v-if="spoken" class="loading__spoken">{{ spoken }}</span>
+    <slot />
   </div>
 </template>
 
@@ -96,6 +99,49 @@ onBeforeUnmount(() => clearTimeout(timer))
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* The AI variant (Loading card): the beads and the line in `ai`; the line the full width over its text and action, the
+   beads, text and action on one row; the action at the right, wrapping under before it overflows. */
+.loading--ai {
+  flex-flow: row wrap;
+  align-items: center;
+  gap: var(--space-6) var(--space-8);
+  padding: 0;
+  text-align: left;
+}
+
+.loading--ai .loading__text {
+  flex: 1 1 0;
+  min-width: min-content;
+}
+
+.loading--ai .loading__beads {
+  gap: var(--space-4);
+}
+
+.loading--ai .loading__bead {
+  width: var(--space-8);
+  height: var(--space-8);
+  background: var(--ai);
+}
+
+.loading--ai .loading__track {
+  flex: 1 0 100%;
+  width: 100%;
+}
+
+.loading--ai .loading__fill {
+  background: var(--ai);
+}
+
+.loading__spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
 }
 
 /* Reduced motion: the beads stand still. */

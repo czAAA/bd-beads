@@ -2,6 +2,7 @@
 import { computed, ref, useId, watchPostEffect } from 'vue'
 import { useConvertImageWizardState, type ConvertWeave, type CutOut } from '../../composables/import/useConvertImageWizard'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { megabytes } from '../../domain/cutOutModel'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits, imageInputAccept } from '../../domain/imageConversion'
 import { MAX_TOLERANCE, MIN_TOLERANCE } from '../../domain/subjectMask'
@@ -13,10 +14,11 @@ import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
+import CutOutDownloadNote from './CutOutDownloadNote.vue'
 
-// Convert image's Picture step (ConvertImage card, 1 Picture): every way in through the wizard's one decode, the
-// thumbnail and facts with Turn 90° and Flip, weave (ticket 0747), Cut out with Simple's Tolerance and Fit to subject
-// (ticket 0765), the Note of every way in until the first picture, and the app's message for a refused file.
+// Convert image's Picture step (ConvertImage card, 1 Picture): every way in, the thumbnail and facts with Turn 90° and
+// Flip, weave (ticket 0747), Cut out with Simple's Tolerance, Fit to subject (ticket 0765) and the AI chip's note, Loading
+// and failure (ticket 0767), the Note of every way in until the first picture, and the message for a refused file.
 const emit = defineEmits<{ paste: [] }>()
 
 const { t } = useI18n()
@@ -36,8 +38,29 @@ const cutOutWords = computed(() => t.value.convertImage.wizard.cutOut)
 const cutOutOptions = computed(() => [
   { value: 'off' as const, label: cutOutWords.value.off },
   { value: 'simple' as const, label: cutOutWords.value.simple },
+  { value: 'ai' as const, label: cutOutWords.value.ai, icon: 'cut-out-ai' as const, iconOnly: true, tooltip: { name: cutOutWords.value.ai } },
 ])
 const cutOut = computed({ get: () => wizard.cutOut.value, set: (next: CutOut) => wizard.setCutOut(next) })
+
+// The AI choice's wait (Loading card, AI variant): the MB downloaded, then the model at work; the count isn't read out
+// as it climbs, so a screen reader hears the line once, as it starts.
+const ai = computed(() => wizard.aiCutOut.value)
+const aiLoading = computed(() => {
+  const status = ai.value
+  if (status.kind === 'downloading') {
+    const total = megabytes(status.total)
+    return {
+      text: fillBlanks(cutOutWords.value.downloading, { done: Math.min(total, megabytes(status.done, true)), total }),
+      share: status.done / status.total,
+      spoken: fillBlanks(cutOutWords.value.downloading, { done: 0, total }),
+    }
+  }
+  if (status.kind === 'thinking') return { text: status.longer ? cutOutWords.value.takingLonger : cutOutWords.value.finding }
+  return undefined
+})
+/** Fit to subject shows while Cut out has a subject to fit to, or is working one out with Simple. */
+const fitShown = computed(() => wizard.cutOut.value === 'simple' || (wizard.cutOut.value === 'ai' && ai.value.kind === 'idle'))
+
 const toleranceValue = computed(() => String(wizard.tolerance.value))
 const toleranceMaxLabel = computed(() => fillBlanks(t.value.convertImage.wizard.maxLabel, { value: String(MAX_TOLERANCE) }))
 
@@ -146,8 +169,13 @@ watchPostEffect(() => {
         testid="convert-tolerance-slider"
         @update:model-value="wizard.setTolerance"
       />
+      <CutOutDownloadNote v-if="ai.kind === 'asking'" :bytes="ai.bytes" @download="wizard.downloadCutOutModel" @cancel="wizard.cancelAiCutOut" />
+      <LoadingState v-else-if="aiLoading" ai :text="aiLoading.text" :share="aiLoading.share" :spoken="aiLoading.spoken">
+        <AppButton variant="text" size="sm" data-testid="cut-out-ai-cancel" @click="wizard.cancelAiCutOut">{{ cutOutWords.cancel }}</AppButton>
+      </LoadingState>
+      <AppMessage v-if="ai.kind === 'failed'" tone="danger" placement="notice" :closable="false" data-testid="cut-out-ai-failed">{{ cutOutWords.failed }}</AppMessage>
       <AppButton
-        v-if="wizard.cutOut.value !== 'off'"
+        v-if="fitShown"
         variant="in-box"
         size="sm"
         icon="cut-out"
