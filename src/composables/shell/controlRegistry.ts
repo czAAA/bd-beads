@@ -601,6 +601,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
   unkeyed('auto-fix-lighting', (t) => t.convertImage.wizard.helpers.autoFixLighting, 'edit', { body: (t) => t.tooltips.autoFixLighting }),
   unkeyed('subject-outline', (t) => t.convertImage.wizard.helpers.outline, 'edit', { body: (t) => t.tooltips.subjectOutline }),
+  unkeyed('convert-compare', (t) => t.convertImage.wizard.compare, 'edit', { icon: 'image', body: (t) => t.tooltips.compare }),
   ...CONVERT_STEPS.map((step) => unkeyed(`convert-step-${step}`, (t) => t.convertImage.wizard.rail[step], 'edit')),
   ...CROP_HANDLES.map((handle) => unkeyed(`crop-${handle}`, (t) => t.convertImage.wizard.crop[handle], 'edit')),
 ]

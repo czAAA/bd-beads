@@ -6,6 +6,9 @@ import { clamp } from '../../../domain/clamp'
 // A slider that picks one whole number over a range and writes the value above it (ValueSlider card, ticket 0747):
 // QualitySlider's track and thumb on a native range, so touch drag, arrows, Home and End work, moving through every
 // whole number rather than between stops, with optional marks a drag released near lands on.
+/** A mark on the track: its value, an optional label under it, and whether it is featured. */
+type SliderMark = { value: number; label?: string; featured?: boolean }
+
 const props = defineProps<{
   /** The accessible name and the head line. */
   label: string
@@ -20,8 +23,9 @@ const props = defineProps<{
   /** The ends under the track: the min as a reading, the max written as a limit ("max 256"). */
   minLabel: string
   maxLabel: string
-  /** Marks across the track, each at a value, with a label under it where there is room. */
-  marks?: readonly { value: number; label?: string }[]
+  /** Marks across the track, each at a value, with a label under it where there is room. A featured mark is drawn in
+   * ink and its label always shows, an end's label giving way to it (the Suggested Width, ticket 0770). */
+  marks?: readonly SliderMark[]
   /** One line under the ends. */
   hint?: string
   testid?: string
@@ -75,25 +79,43 @@ function onPointerUp() {
 /** About how wide a label is in meta-small, for keeping labels apart; a word a bit wider only moves it out sooner. */
 const LABEL_PX_PER_CHAR = 6.5
 
-/** The mark labels with room: one that would touch an end's label or a kept label is left out, the mark stays. With
- * no measured width yet, every label shows. */
-const shownLabels = computed(() => {
-  const marks = props.marks ?? []
+/** A label's span along the track in px, centred under its value; a featured one is kept inside the track. */
+function labelSpan(mark: SliderMark, width: number, thumb: number): [number, number] {
+  const half = ((mark.label ?? '').length * LABEL_PX_PER_CHAR) / 2
+  const centre = thumb / 2 + (width - thumb) * fraction(mark.value)
+  const kept = mark.featured ? clamp(centre, half, Math.max(half, width - half)) : centre
+  return [kept - half, kept + half]
+}
+
+/** The mark labels with room, and whether each end's label shows: featured labels first, then the ends unless a featured
+ * label covers one, then the rest, each left out where it would touch one already kept (the mark stays). With no
+ * measured width yet, every label shows. */
+const layout = computed(() => {
+  const marks = (props.marks ?? []).filter((mark) => mark.label)
   const width = trackWidth.value
-  if (width === 0) return marks.filter((mark) => mark.label)
-  const taken: [number, number][] = [
-    [0, props.minLabel.length * LABEL_PX_PER_CHAR],
-    [width - props.maxLabel.length * LABEL_PX_PER_CHAR, width],
-  ]
+  if (width === 0) return { labels: marks.map((mark) => ({ ...mark, style: markStyle(mark.value) })), minShown: true, maxShown: true }
   const thumb = pxValue('--slider-thumb', THUMB_PX)
-  return marks.filter((mark) => {
-    if (!mark.label) return false
-    const centre = thumb / 2 + (width - thumb) * fraction(mark.value)
-    const half = (mark.label.length * LABEL_PX_PER_CHAR) / 2
-    const free = taken.every(([from, to]) => centre + half < from || centre - half > to)
-    if (free) taken.push([centre - half, centre + half])
-    return free
+  const touches = (taken: [number, number][], [from, to]: [number, number]) => taken.some(([left, right]) => !(to < left || from > right))
+  const featured = marks.filter((mark) => mark.featured)
+  const taken = featured.map((mark) => labelSpan(mark, width, thumb))
+  const minEnd: [number, number] = [0, props.minLabel.length * LABEL_PX_PER_CHAR]
+  const maxEnd: [number, number] = [width - props.maxLabel.length * LABEL_PX_PER_CHAR, width]
+  const minShown = !touches(taken, minEnd)
+  const maxShown = !touches(taken, maxEnd)
+  if (minShown) taken.push(minEnd)
+  if (maxShown) taken.push(maxEnd)
+  const rest = marks.filter((mark) => {
+    if (mark.featured) return false
+    const span = labelSpan(mark, width, thumb)
+    if (touches(taken, span)) return false
+    taken.push(span)
+    return true
   })
+  const placed = featured.map((mark) => {
+    const [from, to] = labelSpan(mark, width, thumb)
+    return { ...mark, style: { left: `${(from + to) / 2}px` } }
+  })
+  return { labels: [...placed, ...rest.map((mark) => ({ ...mark, style: markStyle(mark.value) }))], minShown, maxShown }
 })
 
 const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * ${fraction(value)})` })
@@ -122,12 +144,29 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
         @keydown="onKeydown"
         @pointerup="onPointerUp"
       />
-      <span v-for="mark in marks" :key="mark.value" class="vs-mark" :style="markStyle(mark.value)" :data-testid="testid && `${testid}-mark`" :data-value="mark.value" aria-hidden="true" />
+      <span
+        v-for="mark in marks"
+        :key="mark.value"
+        class="vs-mark"
+        :class="{ 'vs-mark--featured': mark.featured }"
+        :style="markStyle(mark.value)"
+        :data-testid="testid && `${testid}-mark`"
+        :data-value="mark.value"
+        :data-featured="mark.featured || undefined"
+        aria-hidden="true"
+      />
     </div>
     <div class="vs-ends" aria-hidden="true">
-      <span class="vs-min">{{ minLabel }}</span>
-      <span v-for="mark in shownLabels" :key="mark.value" class="vs-mark-label" :style="markStyle(mark.value)">{{ mark.label }}</span>
-      <span class="vs-max">{{ maxLabel }}</span>
+      <span class="vs-min" :class="{ 'vs-end--covered': !layout.minShown }">{{ minLabel }}</span>
+      <span
+        v-for="mark in layout.labels"
+        :key="mark.value"
+        class="vs-mark-label"
+        :class="{ 'vs-mark-label--featured': mark.featured }"
+        :style="mark.style"
+        :data-testid="mark.featured && testid ? `${testid}-featured-label` : undefined"
+      >{{ mark.label }}</span>
+      <span class="vs-max" :class="{ 'vs-end--covered': !layout.maxShown }">{{ maxLabel }}</span>
     </div>
     <p v-if="hint" class="vs-hint">{{ hint }}</p>
   </div>
@@ -156,9 +195,12 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
   .vs-range:focus-visible::-moz-range-thumb { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
   /* A mark stands across the track, taller than it, under the thumb; the pointer goes through it to the range. */
   .vs-mark { position: absolute; top: 50%; width: var(--slider-mark-width); height: var(--slider-mark-height); background: var(--line-strong); border-radius: 1px; transform: translate(-50%, -50%); pointer-events: none; }
+  .vs-mark--featured { background: var(--ink); }
   .vs-ends { position: relative; display: flex; justify-content: space-between; min-height: var(--space-16); margin-top: calc(-1 * var(--space-8)); font: var(--type-meta-small); color: var(--muted); white-space: nowrap; }
   .vs-max { color: var(--ink); }
   .vs-mark-label { position: absolute; top: 0; transform: translateX(-50%); }
+  .vs-mark-label--featured { color: var(--ink); }
+  .vs-end--covered { visibility: hidden; }
   .vs-hint { margin: 0; font: var(--type-small); color: var(--muted); }
   [data-theme="contrast"] .vs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 </style>
