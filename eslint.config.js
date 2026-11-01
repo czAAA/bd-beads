@@ -87,7 +87,7 @@ const noHandFilledBlank = {
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
+    ignores: ['dist/**', 'test-results/**', 'playwright-report/**', 'spike/0763/.work/**'],
   },
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/essential'],

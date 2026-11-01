@@ -1,7 +1,6 @@
-// Spike 0763: drive the spike page in a desktop browser, every photo, and print its table, the peak memory of the
-// browser process that ran it (sampled with ps) and every request that left the page's own origin (there should be none).
+// Spike 0763: drive the spike page in a desktop browser (Playwright's chromium or webkit, or the real safari through
+// safaridriver), every photo; print its table, the browser process's peak memory and any request off the origin.
 //   node spike/0763/measure.mjs <page url> [chromium|webkit|safari] [--headed] [--device <name>] [--taps-only] [--compare] [--lean]
-// chromium and webkit are Playwright's; safari is the real Safari through safaridriver (once: `safaridriver --enable`).
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { chromium, webkit } from '@playwright/test'
