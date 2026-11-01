@@ -8,8 +8,9 @@ import { fillBlanks } from './fillBlanks'
 import type { Locale } from './locale'
 import { estimatedSizeMm, formatMm, formatSizeMm } from './projectSize'
 
-/** How the Convert image wizard sizes a Schema (spec 0645, ticket 0747): one Width in beads over the part of the
- * picture to weave; the height follows the picture, exactly on a mark and through the Bead between them. */
+/** How the Convert image wizard sizes a Schema (spec 0645, tickets 0747, 0757): a Width and a Height in beads over the
+ * part of the picture to weave, linked by default (one sets the other through the picture's shape, exactly on a mark
+ * and through the Bead between them) or set on their own, which stretches the picture. */
 
 /** The part of the picture to weave, in picture pixels from its top-left corner: the whole picture, or A part. */
 export interface PixelCrop {
@@ -90,6 +91,26 @@ export function partMoved(part: PixelCrop, handle: CropHandle, dx: number, dy: n
   )
 }
 
+/** The part moved as it is, by picture pixels (ConvertImage card, A part): dragging inside it. Whole pixels, kept on the
+ * picture. */
+export function partShifted(part: PixelCrop, dx: number, dy: number, image: ImageSize): PixelCrop {
+  return clampPart({ ...part, x: part.x + dx, y: part.y + dy }, image)
+}
+
+/** The part drawn from the pixel a drag began on to the pixel it is at (ConvertImage card, A part): any corner to the
+ * opposite one, kept on the picture, never under MIN_PART_PX a side (it grows the way the drag goes). */
+export function partDrawn(from: { x: number; y: number }, to: { x: number; y: number }, image: ImageSize): PixelCrop {
+  const axis = (start: number, end: number, length: number) => {
+    const a = clamp(start, 0, length)
+    const b = clamp(end, 0, length)
+    const extent = Math.max(Math.abs(b - a), MIN_PART_PX)
+    return [b >= a ? a : a - extent, extent] as const
+  }
+  const [x, width] = axis(from.x, to.x, image.width)
+  const [y, height] = axis(from.y, to.y, image.height)
+  return clampPart({ x, y, width, height }, image)
+}
+
 /** Beads on a side beyond which converting and drawing take longer: the Large Schema note, and where the Width slider
  * stops (ConvertImage card). */
 export const LARGE_SCHEMA_BEADS = 300
@@ -99,10 +120,10 @@ export function isLargeSchema({ columns, rows }: GridDimensions): boolean {
   return columns > LARGE_SCHEMA_BEADS || rows > LARGE_SCHEMA_BEADS
 }
 
-/** The least Width the slider offers. */
-const MIN_WIDTH_BEADS = 8
-/** Under this many pixels wide a part may be made up to ENLARGE_TIMES wider than its pixels, so small pixel art can
- * still be made bigger. */
+/** The least a slider offers, on either side. */
+const MIN_SIDE_BEADS = 8
+/** Under this many pixels on a side a part may be made up to ENLARGE_TIMES larger than its pixels, so small pixel art
+ * can still be made bigger. */
 const ENLARGE_UNDER_PX = 75
 const ENLARGE_TIMES = 4
 /** The blocks a mark may stand for: one bead for a whole n × n pixels. */
@@ -110,17 +131,29 @@ const BLOCKS_PX = [32, 16, 8, 4, 2, 1]
 /** The enlargements a mark may stand for: one pixel for a whole k × k beads. */
 const ENLARGEMENTS = [2, 4]
 
-interface WidthRange {
+interface SizeRange {
   min: number
   max: number
 }
 
+/** A slider's ends for a side of so many pixels (ConvertImage card): 8 beads to one bead per pixel, at most the Large
+ * Schema line; a side under 75 px goes up to 4× its pixels. */
+function sideRange(pixels: number): SizeRange {
+  const max = Math.max(1, Math.min(LARGE_SCHEMA_BEADS, pixels < ENLARGE_UNDER_PX ? pixels * ENLARGE_TIMES : pixels))
+  return { min: Math.min(MIN_SIDE_BEADS, max), max }
+}
+
 /** The Width slider's ends for a part (ConvertImage card): 8 beads to one bead per pixel, at most the Large Schema
  * line; a part under 75 px wide goes up to 4× its pixels.
- * @internal Reached through sizingFor; its test checks the cap and the 4× rule on their own. */
-export function widthRange(part: ImageSize): WidthRange {
-  const max = Math.max(1, Math.min(LARGE_SCHEMA_BEADS, part.width < ENLARGE_UNDER_PX ? part.width * ENLARGE_TIMES : part.width))
-  return { min: Math.min(MIN_WIDTH_BEADS, max), max }
+ * @internal Reached through sizingFor and startingSize; its test checks the cap and the 4× rule on their own. */
+export function widthRange(part: ImageSize): SizeRange {
+  return sideRange(part.width)
+}
+
+/** The Height slider's ends for a part: the same rule as Width's, over the part's height.
+ * @internal Reached through sizingFor and startingSize; its test checks the rule over the height on its own. */
+export function heightRange(part: ImageSize): SizeRange {
+  return sideRange(part.height)
 }
 
 /** A mark on the Width slider: a Width where one bead is a whole n × n pixels (pixelsPerBead n), or, enlarging, one
@@ -130,14 +163,25 @@ interface SizeMark {
   pixelsPerBead: number
 }
 
-/** The marks of a part, narrowest first: every block its width divides by and every enlargement, inside the range.
+/** A mark on the Height slider, the same way. */
+interface HeightMark {
+  height: number
+  pixelsPerBead: number
+}
+
+/** The marks along one side of so many pixels, fewest beads first: every block it divides by and every enlargement,
+ * inside the range. */
+function sideMarks(pixels: number): { beads: number; pixelsPerBead: number }[] {
+  const { min, max } = sideRange(pixels)
+  const blocks = BLOCKS_PX.filter((n) => pixels % n === 0).map((n) => ({ beads: pixels / n, pixelsPerBead: n }))
+  const enlarged = ENLARGEMENTS.map((k) => ({ beads: pixels * k, pixelsPerBead: 1 / k }))
+  return [...blocks, ...enlarged].filter((mark) => mark.beads >= min && mark.beads <= max)
+}
+
+/** The Width marks of a part, narrowest first: every block its width divides by and every enlargement, inside the range.
  * @internal Reached through sizingFor; its test checks which blocks and enlargements make a mark on their own. */
 export function sizeMarks(part: ImageSize): SizeMark[] {
-  const { min, max } = widthRange(part)
-  const inRange = (mark: SizeMark) => mark.width >= min && mark.width <= max
-  const blocks = BLOCKS_PX.filter((n) => part.width % n === 0).map((n) => ({ width: part.width / n, pixelsPerBead: n }))
-  const enlarged = ENLARGEMENTS.map((k) => ({ width: part.width * k, pixelsPerBead: 1 / k }))
-  return [...blocks, ...enlarged].filter(inRange)
+  return sideMarks(part.width).map((mark) => ({ width: mark.beads, pixelsPerBead: mark.pixelsPerBead }))
 }
 
 /** The beads a part makes on a mark: its pixels divided by the block both ways, a part block at the edge counting as
@@ -146,59 +190,96 @@ function markGrid(part: ImageSize, mark: SizeMark): GridDimensions {
   return { columns: mark.width, rows: Math.max(1, Math.ceil(part.height / mark.pixelsPerBead - 1e-9)) }
 }
 
-/** What the Size section asks the rule: the part, the Width in beads, and the Bead the height follows between marks. */
+/** The side of the piece a slider sets. */
+export type SizeSide = 'width' | 'height'
+
+/** What the Size section asks the rule: the part, the Width and the Height in beads, how they are linked, and the Bead
+ * the other side follows through. */
 export interface SizingInput {
   part: ImageSize
   width: number
+  /** Only read where Height is set: unlinked, or linked with Height leading. */
+  height?: number
+  /** The chain (ticket 0757): linked by default, one side leads and the other follows through the picture's shape;
+   * unlinked, each side is set on its own and the picture stretches. */
+  linked?: boolean
+  /** The side that leads while linked: the one the person moved last. Width by default. */
+  lead?: SizeSide
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
   technique: Technique
   techniqueSettings?: TechniqueSettings
 }
 
-/** What the rule gives: the slider's ends and marks, the Width kept inside them, the grid, the mark it sits on if
- * any, and the picture pixels each bead stands for along each side. */
+/** What the rule gives: each slider's ends and marks, each side kept inside its ends, the grid, the mark it sits on if
+ * any, and the picture pixels each bead stands for along each side. Linked, the Height marks are the Width marks'
+ * grids' heights; unlinked, each side keeps its own. */
 export interface Sizing {
-  range: WidthRange
+  range: SizeRange
   marks: SizeMark[]
+  heightRange: SizeRange
+  heightMarks: HeightMark[]
   width: number
+  height: number
   grid: GridDimensions
   mark?: SizeMark
   pixelsPerBead: { x: number; y: number }
 }
 
-/** The one sizing rule (ticket 0747): on a mark the grid is the pixel grid, exact; between marks the height follows the
- * picture's physical shape through the Bead (proportionalSide). */
-export function sizingFor({ part, width, bead, technique, techniqueSettings }: SizingInput): Sizing {
-  const range = widthRange(part)
+/** The one sizing rule (tickets 0747, 0757). Linked: on a mark the grid is the pixel grid, exact; between marks the led
+ * side is what was set and the other follows the picture's shape through the Bead (proportionalSide). Unlinked: each
+ * side is its own, so the picture stretches; it is on a mark only where both sides stand for the same block. */
+export function sizingFor({ part, width, height, linked = true, lead = 'width', bead, technique, techniqueSettings }: SizingInput): Sizing {
+  const widths = widthRange(part)
+  const heights = heightRange(part)
   const marks = sizeMarks(part)
-  const kept = clamp(Math.round(width), range.min, range.max)
-  const mark = marks.find((candidate) => candidate.width === kept)
-  if (mark) {
-    return { range, marks, width: kept, grid: markGrid(part, mark), mark, pixelsPerBead: { x: mark.pixelsPerBead, y: mark.pixelsPerBead } }
+  const shape = (side: { columns: number } | { rows: number }) => proportionalSide(part, bead, technique, side, techniqueSettings)
+  const onMark = (candidate: SizeMark) => ({
+    grid: markGrid(part, candidate),
+    mark: candidate,
+    pixelsPerBead: { x: candidate.pixelsPerBead, y: candidate.pixelsPerBead },
+  })
+  const between = (grid: GridDimensions) => ({ grid, pixelsPerBead: { x: part.width / grid.columns, y: part.height / grid.rows } })
+  const whole = (made: { grid: GridDimensions; mark?: SizeMark; pixelsPerBead: { x: number; y: number } }, heightMarks: HeightMark[]): Sizing => ({
+    range: widths,
+    marks,
+    heightRange: heights,
+    heightMarks,
+    width: made.grid.columns,
+    height: made.grid.rows,
+    ...made,
+  })
+
+  if (!linked) {
+    const columns = clamp(Math.round(width), widths.min, widths.max)
+    const rows = clamp(Math.round(height ?? heights.max), heights.min, heights.max)
+    const heightMarks = sideMarks(part.height).map((mark) => ({ height: mark.beads, pixelsPerBead: mark.pixelsPerBead }))
+    const across = marks.find((candidate) => candidate.width === columns)
+    const down = heightMarks.find((candidate) => candidate.height === rows)
+    const made = between({ columns, rows })
+    return whole(across && down && across.pixelsPerBead === down.pixelsPerBead ? { ...made, mark: across } : made, heightMarks)
   }
-  const grid = { columns: kept, rows: proportionalSide(part, bead, technique, { columns: kept }, techniqueSettings) }
-  return { range, marks, width: kept, grid, pixelsPerBead: { x: part.width / grid.columns, y: part.height / grid.rows } }
+
+  const paired = marks.map((candidate) => ({ candidate, grid: markGrid(part, candidate) }))
+  const heightMarks = paired
+    .filter(({ grid }) => grid.rows >= heights.min && grid.rows <= heights.max)
+    .map(({ candidate, grid }) => ({ height: grid.rows, pixelsPerBead: candidate.pixelsPerBead }))
+  if (lead === 'width') {
+    const columns = clamp(Math.round(width), widths.min, widths.max)
+    const mark = marks.find((candidate) => candidate.width === columns)
+    return whole(mark ? onMark(mark) : between({ columns, rows: shape({ columns }) }), heightMarks)
+  }
+  const rows = clamp(Math.round(height ?? heights.max), heights.min, heights.max)
+  const pair = paired.find(({ grid }) => grid.rows === rows)
+  if (pair) return whole(onMark(pair.candidate), heightMarks)
+  const followed = shape({ rows })
+  const columns = clamp(followed, widths.min, widths.max)
+  // A Width held at an end of its slider takes the Height with it, so the shape is kept.
+  return whole(between({ columns, rows: columns === followed ? rows : shape({ columns }) }), heightMarks)
 }
 
-/** The most beads the starting Width gives on the long side. */
-const STARTING_MAX_BEADS = 150
-
-/** The wizard's first proposal (ConvertImage card): one bead per pixel where that mark is in range and keeps inside
- * the Large Schema line both ways, as pixel art is drawn at the bead count it wants; else the largest mark giving at
- * most 150 beads on the long side; with no such mark, 150 beads on the long side, or the max where that is smaller. */
-export function startingWidth(part: ImageSize): number {
-  const { min, max } = widthRange(part)
-  const marks = sizeMarks(part)
-  const exact = marks.find((mark) => mark.pixelsPerBead === 1 && !isLargeSchema(markGrid(part, mark)))
-  if (exact) return exact.width
-  const fitting = marks.filter((mark) => {
-    const grid = markGrid(part, mark)
-    return Math.max(grid.columns, grid.rows) <= STARTING_MAX_BEADS
-  })
-  const best = fitting.at(-1)
-  if (best) return best.width
-  const longSide = part.width >= part.height ? STARTING_MAX_BEADS : Math.round((STARTING_MAX_BEADS * part.width) / part.height)
-  return clamp(longSide, min, max)
+/** What the converter opens at (ConvertImage card): the largest Width and Height for the picture or part. */
+export function startingSize(part: ImageSize): { width: number; height: number } {
+  return { width: widthRange(part).max, height: heightRange(part).max }
 }
 
 /** The other side, in whole beads, of a Frame with the picture's physical shape through the Bead and the Technique's

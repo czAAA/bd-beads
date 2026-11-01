@@ -19,10 +19,11 @@ import {
   isLargeSchema,
   partInset,
   sizingFor,
-  startingWidth,
+  startingSize,
   turnPicture,
   type ConvertStep,
   type PixelCrop,
+  type SizeSide,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
@@ -98,6 +99,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const weaveChoice = ref<ConvertWeave>('whole')
   const rawPart = shallowRef<PixelCrop>()
   const widthBeads = ref(0)
+  const heightBeads = ref(0)
+  // The chain (ticket 0757): linked, the side moved last leads and the other follows the picture's shape; unlinked,
+  // each is its own.
+  const linked = ref(true)
+  const lead = ref<SizeSide>('width')
   const sizeUnit = ref<ConvertSizeUnit>('beads')
 
   // Colors.
@@ -138,15 +144,49 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   // --- Size ---------------------------------------------------------------------------------------------------------
 
-  /** The one sizing rule over a part (convertSize's sizingFor), with the Width asked for. */
+  /** The one sizing rule over a part (convertSize's sizingFor), with the Width and Height asked for. The part only
+   * chooses what is woven: both stay as they were, held to the part's pixels. */
   const sizingOf = (at: PixelCrop) =>
-    sizingFor({ part: at, width: widthBeads.value, bead: bead.value, technique: technique.value, techniqueSettings: techniqueSettings.value })
+    sizingFor({
+      part: at,
+      width: widthBeads.value,
+      height: heightBeads.value,
+      linked: linked.value,
+      lead: lead.value,
+      bead: bead.value,
+      technique: technique.value,
+      techniqueSettings: techniqueSettings.value,
+    })
   const sizing = computed(() => sizingOf(part.value))
   const dimensions = computed(() => sizing.value.grid)
 
   /** A Width in beads as the piece's width in mm through the Bead, for the slider's labels. */
   function widthMmOf(beads: number): number {
     return Math.round(estimatedSizeMm({ columns: beads, rows: 1 }, bead.value, technique.value).widthMm)
+  }
+
+  /** A Height in beads as the piece's height in mm through the Bead, for the slider's labels. */
+  function heightMmOf(beads: number): number {
+    return Math.round(estimatedSizeMm({ columns: 1, rows: beads }, bead.value, technique.value).heightMm)
+  }
+
+  function setWidth(beads: number) {
+    widthBeads.value = beads
+    lead.value = 'width'
+  }
+
+  function setHeight(beads: number) {
+    heightBeads.value = beads
+    lead.value = 'height'
+  }
+
+  /** The chain: unlinking keeps the sizes on show, and linking again takes the shape back from the side moved last. */
+  function setLinked(next: boolean) {
+    if (!next && linked.value) {
+      widthBeads.value = sizing.value.width
+      heightBeads.value = sizing.value.height
+    }
+    linked.value = next
   }
 
   function setWeave(next: ConvertWeave) {
@@ -176,7 +216,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       image.value = decoded
       fileName.value = file.name
       fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
-      if (first) widthBeads.value = startingWidth(decoded)
+      if (first) {
+        const opening = startingSize(decoded)
+        widthBeads.value = opening.width
+        heightBeads.value = opening.height
+      }
       restartPart()
     } catch (error) {
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
@@ -385,7 +429,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     // Size
     sizing,
     dimensions,
-    setWidth: (beads: number) => (widthBeads.value = beads),
+    setWidth,
+    setHeight,
+    linked,
+    setLinked,
+    heightMmOf,
     sizeUnit,
     setSizeUnit: (next: ConvertSizeUnit) => (sizeUnit.value = next),
     widthMmOf,

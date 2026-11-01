@@ -78,6 +78,8 @@ describe('the control registry', () => {
   it('has the Convert image wizard\'s controls, none with a key of its own (ticket 0650)', () => {
     const ids = [
       'treat-as-empty',
+      'size-linked',
+      'size-unlinked',
       'remap-color',
       'empty-color',
       ...CONVERT_STEPS.map((step) => `convert-step-${step}`),
