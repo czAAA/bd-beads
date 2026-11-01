@@ -5,6 +5,7 @@ import { type GridDimensions } from './grid'
 import { describeWeave, type Technique, type TechniqueSettings } from './weave'
 import type { PixelCrop } from './convertSize'
 import { type ImageSize, type PreviewLattice } from './imageFraming'
+import type { SubjectMask } from './subjectMask'
 
 /** Convert image's conversion (ticket 58, ADR 0010): pixels to cells, and what a picture may be. Pure functions over
  * a decoded picture; file reading and decoding live in imageDecode.ts so tests can use hand-built pixel data. */
@@ -23,8 +24,8 @@ const ALPHA_THRESHOLD = 128
 export const NO_COLOR = -1
 
 /** A pixel's color as one number 0xRRGGBB, or NO_COLOR below half alpha (see ALPHA_THRESHOLD); partly transparent
- * pixels composite over white. A number, not a string, since a drag samples tens of thousands per move.
- * @internal Its test checks a pixel's color on its own. */
+ * pixels composite over white. A number, not a string, since a drag samples tens of thousands per move. Cut out's
+ * Simple reads the picture through it too (subjectMask). */
 export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   const at = (y * image.width + x) * 4
   const alpha = image.data[at + 3] ?? 0
@@ -187,10 +188,13 @@ type SamplingInput = {
 export type SamplingRule = 'centre' | 'area'
 
 /** The picture's raw colors for each bead of the preview's lattice (see partLattice), row by row, packed, by the rule
- * asked (centre by default); NO_COLOR off the picture or for a too-transparent bead. The cells are in picture pixels, a
- * bead step one cell round its centre, and the Weave's description places each bead (ticket 0622). */
-export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule }): Int32Array {
-  const { image, lattice, part, pixelsPerBead } = input
+ * asked (centre by default); NO_COLOR off the picture, for a too-transparent bead or outside Cut out's mask (ticket
+ * 0765). The cells are in picture pixels, a bead step one cell round its centre; the Weave places each bead (0622). */
+export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule; mask?: SubjectMask }): Int32Array {
+  const { image, lattice, part, pixelsPerBead, mask } = input
+  const pixelAt = mask
+    ? (x: number, y: number) => (mask.subject[y * image.width + x] ? pixelPackedAt(image, x, y) : NO_COLOR)
+    : (x: number, y: number) => pixelPackedAt(image, x, y)
   const description = describeWeave(input)
   // The frame's corner: its first row is never shifted.
   const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, pixelsPerBead.x, pixelsPerBead.y)
@@ -199,7 +203,7 @@ export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLat
   const onPicture = (at: number, length: number, slack: number) => (at >= length && at < length + slack ? length - 1 : at)
   const slackX = Math.max(1, pixelsPerBead.x)
   const slackY = Math.max(1, pixelsPerBead.y)
-  const readArea = input.rule === 'area' ? beadAreaReader(image, (x, y) => pixelPackedAt(image, x, y), NO_COLOR) : undefined
+  const readArea = input.rule === 'area' ? beadAreaReader(image, pixelAt, NO_COLOR) : undefined
   // A bead's area is the picture pixels whose middles fall in its cell round its true centre, cut to the picture; one
   // of a pixel or less (an enlarging Width) reads the centre pixel, as it always has.
   const colorOfArea = (read: NonNullable<typeof readArea>, centreX: number, centreY: number, sourceX: number, sourceY: number) => {
@@ -207,7 +211,7 @@ export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLat
     const x1 = Math.min(image.width, Math.ceil(centreX + pixelsPerBead.x / 2 - 0.5))
     const y0 = Math.max(0, Math.ceil(centreY - pixelsPerBead.y / 2 - 0.5))
     const y1 = Math.min(image.height, Math.ceil(centreY + pixelsPerBead.y / 2 - 0.5))
-    if (x1 <= x0 || y1 <= y0 || (x1 - x0) * (y1 - y0) === 1) return pixelPackedAt(image, sourceX, sourceY)
+    if (x1 <= x0 || y1 <= y0 || (x1 - x0) * (y1 - y0) === 1) return pixelAt(sourceX, sourceY)
     return read({ x0, y0, x1, y1 }, centreX, centreY)
   }
   for (let row = 0; row < lattice.rows; row += 1) {
@@ -218,7 +222,7 @@ export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLat
       if (sourceX >= 0 && sourceX < image.width && sourceY >= 0 && sourceY < image.height) {
         packed[row * lattice.columns + column] = readArea
           ? colorOfArea(readArea, x - originX + part.x, y - originY + part.y, sourceX, sourceY)
-          : pixelPackedAt(image, sourceX, sourceY)
+          : pixelAt(sourceX, sourceY)
       }
     }
   }

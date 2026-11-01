@@ -264,6 +264,16 @@ const CASES: FitCase[] = [
     },
   ],
   [
+    'Convert image page (cut out Simple)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      root.querySelector<HTMLElement>('[data-testid="convert-cut-out"] [data-value="simple"]')?.click()
+      await new Promise((done) => setTimeout(done, 20))
+    },
+  ],
+  [
     'Convert image page (Bead & Technique)',
     ConvertPageHost,
     wizardProps(true),

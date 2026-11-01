@@ -17,6 +17,7 @@ import {
   flipPicture,
   fullCrop,
   isLargeSchema,
+  partAround,
   partInset,
   sizingFor,
   startingSize,
@@ -48,6 +49,7 @@ import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
+import { backgroundFamilies, DEFAULT_TOLERANCE, simpleCutOut, subjectBox, type SubjectMask } from '../../domain/subjectMask'
 import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
@@ -60,6 +62,10 @@ export interface ConvertImageWizardDeps {
 
 /** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
 export type ConvertWeave = 'whole' | 'part'
+
+/** Cut out (ConvertImage card, 1 Picture; ticket 0765): nothing taken away, or Simple, the color round the picture's
+ * edges taken away as far as its Tolerance reaches. The AI choice joins with ticket 0767. */
+export type CutOut = 'off' | 'simple'
 
 /** The unit the Width slider reads in (ConvertImage card, slide in): it moves in whole beads either way. Not the
  * device's Size unit: the wizard remembers nothing (spec 0645). */
@@ -88,6 +94,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const fileFormat = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
+
+  // Cut out (ticket 0765): the choice, and Simple's Tolerance in hundredths of OKLab.
+  const cutOut = ref<CutOut>('off')
+  const tolerance = ref(DEFAULT_TOLERANCE)
 
   // The step shown (ticket 0756): the Progress bar's dots and the page's one section follow it.
   const step = ref<ConvertStep>('picture')
@@ -241,16 +251,43 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     restartPart()
   }
 
+  // --- Cut out ------------------------------------------------------------------------------------------------------
+
+  // The colors round the picture's edges, worked out once per picture: a turn, flip or new picture is a new one.
+  const families = computed(() => (image.value ? backgroundFamilies(image.value) : []))
+
+  /** The subject mask over the picture's pixels (spec 0761), none with Cut out Off. It is made from the picture as it is,
+   * so a turn, flip or new picture drops it and works it out again. Another choice's mask (the AI service, ticket 0767)
+   * goes in here; the sampler, Fit to subject and the Colors step's helpers (ticket 0766) read only this. */
+  const subjectMask = computed<SubjectMask | undefined>(() => {
+    const picture = image.value
+    if (!picture || cutOut.value === 'off') return undefined
+    return simpleCutOut(picture, families.value, tolerance.value)
+  })
+
+  /** The box round what Cut out kept, in whole pixels; none with Cut out Off or when it kept nothing. */
+  const subjectBounds = computed(() => (subjectMask.value ? subjectBox(subjectMask.value) : undefined))
+
+  /** Fit to subject (ticket 0765): A part set round what Cut out kept. The Width and Height stay, dropping only when the
+   * part has fewer pixels than they allow (ticket 0757). */
+  function fitToSubject() {
+    const picture = image.value
+    const box = subjectBounds.value
+    if (!picture || !box) return
+    rawPart.value = partAround(box, picture)
+    weaveChoice.value = 'part'
+  }
+
   // --- The preview's beads ------------------------------------------------------------------------------------------
 
   /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as
-   * the full rule is too slow per move (ticket 0762). */
+   * the full rule is too slow per move (ticket 0762); none outside Cut out's mask (ticket 0765). */
   function sample(at: PixelCrop, rule: SamplingRule) {
     const picture = image.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule }) }
+    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule, mask: subjectMask.value }) }
   }
 
   const rest = computed(() => sample(restPart.value, 'area'))
@@ -432,6 +469,13 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setWeave,
     part,
     setPart: (next: PixelCrop) => (rawPart.value = next),
+    cutOut,
+    setCutOut: (next: CutOut) => (cutOut.value = next),
+    tolerance,
+    setTolerance: (next: number) => (tolerance.value = next),
+    subjectMask,
+    subjectBounds,
+    fitToSubject,
     // Size
     sizing,
     dimensions,
