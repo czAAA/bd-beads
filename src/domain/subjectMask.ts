@@ -28,6 +28,9 @@ const MIN_FAMILY_SHARE = 0.02
 /** At most this many background families; a border with more colors than this has no plain background to take. */
 const MAX_FAMILIES = 16
 
+/** How many pixels the fill's queue holds at first; it doubles when a picture needs more. */
+const FIRST_QUEUE = 1 << 16
+
 /** Colors are judged at 6 bits a channel: a photo has too many colors to convert each, and the rounding (under 0.01 in
  * OKLab) is far finer than any Tolerance. */
 const binOf = (packed: number) => (((packed >> 18) & 63) << 12) | (((packed >> 10) & 63) << 6) | ((packed >> 2) & 63)
@@ -98,7 +101,7 @@ export function simpleCutOut(picture: PixelData, families: readonly Oklab[], tol
   }
   // 0 not looked at, 1 reached by the fill, 2 looked at and kept (a color the fill stops at).
   const state = new Uint8Array(total)
-  let queue = new Int32Array(Math.min(total, 1 << 16))
+  let queue = new Int32Array(Math.max(1, Math.min(total, FIRST_QUEUE)))
   let head = 0
   let size = 0
   const visit = (index: number) => {

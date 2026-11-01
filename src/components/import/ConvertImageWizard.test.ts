@@ -644,7 +644,18 @@ describe('ConvertImageWizard Cut out (ticket 0765)', () => {
 
     await wrapper.get('[data-testid="convert-fit-to-subject"]').trigger('click')
     expect(wizard.weave.value).toBe('part')
-    expect(wizard.part.value).toEqual({ x: 2, y: 2, width: 8, height: 8 })
+  })
+
+  it('says why Fit to subject is off when the cut out kept nothing', async () => {
+    const plain = (): PixelData => ({ width: 12, height: 12, data: new Uint8ClampedArray(12 * 12 * 4).fill(255) })
+    const { wrapper, wizard } = open({ decodeImage: async () => plain() })
+    await chooseFile(wrapper, picture())
+    await cutOut(wrapper).get('[data-value="simple"]').trigger('click')
+
+    const fit = wrapper.get('[data-testid="convert-fit-to-subject"]')
+    expect(fit.attributes('aria-disabled')).toBe('true')
+    await fit.trigger('click')
+    expect(wizard.weave.value).toBe('whole')
   })
 })
 

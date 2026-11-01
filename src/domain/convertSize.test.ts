@@ -8,6 +8,7 @@ import {
   fullCrop,
   heightRange,
   isLargeSchema,
+  partAround,
   partDrawn,
   partInset,
   partMoved,
@@ -266,6 +267,12 @@ describe('the part (weave: A part)', () => {
 
   it('is never drawn under 8 pixels a side: a click makes a small part, growing the way the drag goes', () => {
     expect(partDrawn({ x: 50, y: 30 }, { x: 52, y: 29 }, image)).toEqual({ x: 50, y: 22, width: 8, height: 8 })
+  })
+
+  it('is set round a box (Fit to subject), grown evenly to 8 pixels a side and kept on the picture (ticket 0765)', () => {
+    expect(partAround({ x: 50, y: 30, width: 40, height: 20 }, image)).toEqual({ x: 50, y: 30, width: 40, height: 20 })
+    expect(partAround({ x: 50, y: 30, width: 4, height: 2 }, image)).toEqual({ x: 48, y: 27, width: 8, height: 8 })
+    expect(partAround({ x: 198, y: 0, width: 2, height: 3 }, image)).toEqual({ x: 192, y: 0, width: 8, height: 8 })
   })
 
   it('is the whole picture when nothing is cropped', () => {
