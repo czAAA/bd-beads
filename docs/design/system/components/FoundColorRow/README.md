@@ -2,13 +2,13 @@
 
 One color Convert image found in the picture: what it became, how many beads, and the ways to change it. The rows make the Colors section's list, most beads first. (Ticket 0646, spec 0645.)
 
-- **Row:** `panel-row-two-line` (40; 48 on touch), padding 0 4 0 6, a 1px `line-soft` rule above. In order: the picture's color (20px swatch, radius 4, `swatch-edge`); the arrow (12px `arrow-down` turned, `muted`); the matched color (20px; a dashed 1px `field-line` outline 1px out while the Bead color's hex is generated, as in BeadColors); two lines, the code or name in `control` (a hex in DM Mono) over the source in `meta-small` `muted`, each wrapping when it is long (the build wraps rather than ellipsizes: a family and Finish such as Polish "Niebieski · Nieprzezroczysty" is wider than the row leaves it on a phone, and an ellipsis would hide the Finish); the bead count in `meta` `ink`, right-aligned; the actions.
+- **Row:** `panel-row-two-line` (40; 48 on touch), padding 0 4 0 6, a 1px `line-soft` rule above. In order: the picture's color (20px swatch, radius 4, `swatch-edge`); the arrow (12px `arrow-down` turned, `muted`); the matched color (20px; a dashed 1px `field-line` outline 1px out while the Bead color's hex is generated, as in BeadColors); two lines, the **color label** in `control` (ticket 0760: a catalog color is its code and the catalog's name, "DB723 Opaque Red", with the hex in a Tooltip on hover and long-press; a Custom color is its hex in DM Mono, with no Tooltip) over the source in `meta-small` `muted`, each wrapping when it is long (the build wraps rather than ellipsizes: a family and Finish such as Polish "Niebieski · Nieprzezroczysty" is wider than the row leaves it on a phone, and an ellipsis would hide the Finish); the bead count in `meta` `ink`, right-aligned; the actions.
 - **What the lines say:**
-  - a Bead color: "DB723" over "Red · Opaque";
+  - a Bead color: "DB723 Opaque Red" over "Bead colors";
   - a Default Palette color: "Red" over "Default Palette";
   - Exact: "#d8312b" over "Custom color";
   - kept exact: "#f2c230" over "Kept exact · Custom color";
-  - remapped: "Remapped · " before the source line ("Remapped · Green · Opaque");
+  - remapped: "Remapped · " before the source line ("Remapped · Bead colors");
   - empty: the matched swatch is an empty bead (`bead-empty`, a dashed `field-line` edge) and the lines read "Empty" over "No bead".
 - **Actions:** two 28px icon buttons, `aria-pressed`, an `ink` fill with a `canvas` icon when on: Remap (`paint`, also `aria-expanded`; on for a remapped or kept-exact row) and Empty (`erase`), each a control registry entry with a Tooltip (ticket 0650): "Pick the bead color this picture color becomes." and "Leave this color out, so its beads stay empty." Pressing the one that is on puts the row back to its match. Keep exact has no button of its own: it sits in the remap picker's head. Treat as empty on the preview (ConvertImage card) presses Empty on the row under the tap.
 - **Remap opens the row in place**, one row at a time: the row takes `surface` (`elevated` in dark; a 2px `line` edge in high contrast) and the picker hangs under it, padding 4 10 12. The picker is the colour popover's body (ToolPill card), built from the same components, so remapping and adding a color work as they do when painting:

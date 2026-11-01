@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { ref } from 'vue'
 import { beadCopy, DEFAULT_BEAD } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
-import { projectPalette } from '../../domain/palette'
+import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
 import { en } from '../../i18n/en'
 import { paintAt } from '../../testUtils/layers'
@@ -25,6 +26,17 @@ function setup(project = delica) {
 }
 
 describe('useBeadColors', () => {
+  it('offers a catalog only while it is the Bead\'s own, none after Replace Bead until it is loaded (ticket 0760)', async () => {
+    const current = ref(tohoRound)
+    const { catalog, load } = useBeadColors({ currentProject: () => current.value, palette: ref(createPalette(defaultPaletteIds())), addUsed: () => ({ outcome: 'known' }) })
+    await load()
+    expect(catalog.value?.id).toBe('toho')
+    current.value = delica
+    expect(catalog.value).toBeUndefined()
+    await load()
+    expect(catalog.value?.id).toBe('miyuki-delica')
+  })
+
   it('offers nothing for a Bead with no Color catalog', async () => {
     const { available, load, swatches } = setup(noCatalog)
     await load()

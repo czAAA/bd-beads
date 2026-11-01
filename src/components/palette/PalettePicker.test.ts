@@ -1,10 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
 import { BUILT_IN_COLORS, addedColorId, defaultPaletteIds } from '../../domain/palette'
 import { ru } from '../../i18n/ru'
 import { mountWithPalette } from '../../testUtils/paletteHost'
 import { fillBlanks } from '../../domain/fillBlanks'
+import type { BeadColors } from '../../composables/palette/useBeadColors'
+import type { ColorCatalog } from '../../domain/colorCatalog'
 
 const added = addedColorId('#123456')
 
@@ -66,6 +69,21 @@ describe('PalettePicker', () => {
 
     expect(tooltip.get('.app-tooltip__name').text()).toBe(ru.palette.colorLabel)
     expect(tooltip.get('.app-tooltip__body').text()).toBe(BUILT_IN_COLORS[0]!.hex)
+  })
+
+  it('names a swatch picked from the Color catalog by its code and name, the hex in its Tooltip (ticket 0760)', async () => {
+    const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
+    const beadColors = { catalog: ref(catalog), load: vi.fn() } as unknown as BeadColors
+    const { wrapper } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], {}, { codes: { '#123456': '49' }, beadColors })
+    const swatch = wrapper.get(`[data-color-id="${added}"]`)
+    const name = `49 ${ru.colorNames.black} · ${ru.palette.beadColors.finishes.opaque}`
+
+    expect(swatch.attributes('aria-label')).toBe(name)
+    expect(beadColors.load).toHaveBeenCalled()
+    const tooltip = wrapper.findAll('.app-tooltip')[defaultPaletteIds().length]!
+    await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(tooltip.get('.app-tooltip__name').text()).toBe(name)
+    expect(tooltip.get('.app-tooltip__body').text()).toBe('#123456')
   })
 
   describe('Edit palette (ticket 531)', () => {

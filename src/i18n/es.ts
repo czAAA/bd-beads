@@ -375,7 +375,7 @@ export const es: Translations = {
     features: {
       techniques: { name: 'Técnicas', text: 'Telar, peyote y punto ladrillo, cada una dibujada como se colocan sus cuentas.', tabLine: 'Telar, peyote y ladrillo, dibujados como se colocan.' },
       projectEditing: { name: 'Edición del proyecto', text: 'Pintar, rellenar y borrar, copiar y pegar, y deshacer cada paso.' },
-      convertImage: { name: 'Convertir imagen', text: 'Convierte una foto en un esquema de hasta 14 colores.' },
+      convertImage: { name: 'Convertir imagen', text: 'Convierte una foto en un esquema de hasta 256 colores.' },
       rowProgress: { name: 'Progreso por filas', text: 'Marca las filas terminadas mientras tejes y retoma donde lo dejaste.', tabLine: 'Marca las filas hechas y retoma donde lo dejaste.' },
       beadsNeeded: { name: 'Cuentas necesarias', text: 'Cada color contado, con el peso estimado en gramos.' },
       exports: { name: 'Exportaciones', text: 'PDF para imprimir, imagen PNG y el archivo del proyecto.' },
@@ -417,6 +417,7 @@ export const es: Translations = {
     redoButton: 'Rehacer',
     rotateButton: 'Girar',
     customColorLabel: 'Color personalizado',
+    catalogColorName: '{family} · {finish}',
     wheelLabel: 'Tono y saturación',
     wheelValue: 'tono {hue}°, saturación {saturation}%',
     brightnessLabel: 'Brillo',

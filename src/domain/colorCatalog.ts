@@ -78,3 +78,8 @@ export function parseColorCatalog(raw: unknown, expectedId: string): ColorCatalo
   }
   return { id: expectedId, codes }
 }
+
+/** The catalog's entry for a maker code; undefined for a code it does not list (ticket 0760). */
+export function catalogEntry(catalog: ColorCatalog, code: string): ColorCatalog['codes'][number] | undefined {
+  return catalog.codes.find((entry) => entry.code === code)
+}

@@ -375,7 +375,7 @@ export const ru: Translations = {
     features: {
       techniques: { name: 'Техники плетения', text: 'Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер.', tabLine: 'Ткачество, мозаика, кирпич: каждая рисуется как ложится бисер.' },
       projectEditing: { name: 'Правка проекта', text: 'Кисть, заливка и ластик, копирование и вставка, отмена любого шага.' },
-      convertImage: { name: 'Конвертировать изображение', text: 'Превращает картинку в схему, до 14 цветов.', tabName: 'Из картинки' },
+      convertImage: { name: 'Конвертировать изображение', text: 'Превращает картинку в схему, до 256 цветов.', tabName: 'Из картинки' },
       rowProgress: { name: 'Прогресс по рядам', text: 'Отмечайте готовые ряды и продолжайте с того места, где остановились.' },
       beadsNeeded: { name: 'Нужно бисера', text: 'Подсчёт по каждому цвету и примерный вес в граммах.' },
       exports: { name: 'Экспорт', text: 'PDF для печати, PNG и файл проекта.' },
@@ -417,6 +417,7 @@ export const ru: Translations = {
     redoButton: 'Повторить',
     rotateButton: 'Повернуть',
     customColorLabel: 'Свой цвет',
+    catalogColorName: '{family} · {finish}',
     wheelLabel: 'Тон и насыщенность',
     wheelValue: 'тон {hue}°, насыщенность {saturation}%',
     brightnessLabel: 'Яркость',

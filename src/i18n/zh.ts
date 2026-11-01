@@ -374,7 +374,7 @@ export const zh: Translations = {
     features: {
       techniques: { name: '编织技法', text: '织机、佩奥特编织和砖形，按珠子实际的排列方式绘制。' },
       projectEditing: { name: '项目编辑', text: '涂色、填充和擦除，复制和粘贴，每一步都能撤销。' },
-      convertImage: { name: '转换图片', text: '把图片变成最多 14 种颜色的图样。' },
+      convertImage: { name: '转换图片', text: '把图片变成最多 256 种颜色的图样。' },
       rowProgress: { name: '行进度', text: '边编织边标记已完成的行，下次从停下的地方继续。' },
       beadsNeeded: { name: '所需珠子', text: '每种颜色都已计数，并给出以克为单位的估算重量。' },
       exports: { name: '导出', text: '用于打印的 PDF、PNG 图片和项目文件。' },
@@ -416,6 +416,7 @@ export const zh: Translations = {
     redoButton: '重做',
     rotateButton: '旋转',
     customColorLabel: '自定义颜色',
+    catalogColorName: '{family} · {finish}',
     wheelLabel: '色相和饱和度',
     wheelValue: '色相 {hue}°，饱和度 {saturation}%',
     brightnessLabel: '亮度',
