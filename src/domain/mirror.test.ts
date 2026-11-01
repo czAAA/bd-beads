@@ -159,14 +159,14 @@ describe('counterparts inside a Canvas Area (tickets 0710, 0750, spec 0702)', ()
     expect(cells(counterparts(sheet, on({ topBottom: true }, {}, 'mirror', place), [at(1, 2)]))).toEqual([[1, 2], [4, 2]])
     expect(counterparts(sheet, on({ leftRight: true, topBottom: true }, {}, 'mirror', place), [at(0, 0)])).toEqual({ positions: [at(0, 0)], dropped: 0 })
     const wide = layerSheet(open('loom'), 'canvas')
-    expect(counterparts(wide, radial(4, 'repeat', onCanvas(area(2, 2, 2, 4))), [at(2, 2)])).toEqual({ positions: [at(2, 2), at(3, 5)], dropped: 2 })
+    expect(counterparts(wide, radial(4, 'repeat', onCanvas(area(2, 2, 2, 4))), [at(2, 2)])).toEqual({ positions: [at(2, 2), at(3, 5)], dropped: 0 })
   })
 
-  it('turns Radial about the Area\'s centre, by index at Fold 2 and 4 and geometrically at 3', () => {
+  it('turns Radial about the Area\'s centre, by index at Fold 2 and 4, and any other Fold as 4', () => {
     const sheet = layerSheet(open('loom'), 'canvas')
     expect(cells(counterparts(sheet, radial(2, 'repeat', onCanvas(area(0, 0, 3, 6))), [at(0, 0)]))).toEqual([[0, 0], [2, 5]])
     expect(cells(counterparts(sheet, radial(4, 'repeat', onCanvas(area(0, 0, 5, 5))), [at(0, 0)]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
-    expect(cells(counterparts(sheet, radial(3, 'repeat', onCanvas(area(0, 0, 7, 7))), [at(3, 1)]))).toEqual([[3, 1], [1, 4], [5, 4]])
+    expect(cells(counterparts(sheet, radial(3, 'repeat', onCanvas(area(0, 0, 7, 7))), [at(3, 1)]))).toEqual([[3, 1], [1, 3], [3, 5], [5, 3]])
   })
 
   it('has no Axis in a direction one bead across (its chip is off), the other direction still mirroring', () => {
@@ -259,6 +259,9 @@ describe('the one Mirror of a Project (ADR 0082, ticket 0750)', () => {
     expect(readMirrorSetting({ ...saved, place: { layer: 'canvas', area: 'x' } }, firstForm)?.place).toBeNull()
     expect(readMirrorSetting({ mode: 'sideways', axes: 3 }, firstForm)).toBeUndefined()
     expect(readMirrorSetting({ ...MIRROR_OFF, fold: 20, place: null }, firstForm)?.fold).toBe(8)
+    // On a Canvas Area the Fold is a grid's: 4 in a square one, 2 out of square (ticket 0751).
+    expect(readMirrorSetting({ ...MIRROR_OFF, fold: 3, place: { layer: 'canvas', area: area(0, 0, 5, 5) } }, firstForm)?.fold).toBe(4)
+    expect(readMirrorSetting({ ...MIRROR_OFF, fold: 6, place: { layer: 'canvas', area: area(0, 0, 5, 6) } }, firstForm)?.fold).toBe(2)
   })
 
   it('reads the first form\'s record as it acted: its Canvas Area as the Mirror, else a Frame\'s whole Frame, else off; its Off stays off', () => {
@@ -278,12 +281,14 @@ describe('the one Mirror of a Project (ADR 0082, ticket 0750)', () => {
 })
 
 describe('the Mirror bar\'s settings (ContextBar card, Mirror bar)', () => {
-  it('switches the Mode and steps a count, never under one, and the Fold within 2 to 8', () => {
+  it('switches the Mode and steps a count, never under one, and the Fold on a grid 2 or 4 (ticket 0751)', () => {
     expect(withMirrorMode(on({ leftRight: true }), 'repeat').mode).toBe('repeat')
     expect(withMirrorCount(MIRROR_OFF, 'topBottom', 0).counts.topBottom).toBe(1)
-    expect(withMirrorFold(MIRROR_OFF, 5).fold).toBe(5)
+    expect(withMirrorFold(MIRROR_OFF, 3).fold).toBe(4)
+    expect(withMirrorFold(MIRROR_OFF, 5).fold).toBe(4)
+    expect(withMirrorFold(MIRROR_OFF, 2).fold).toBe(2)
     expect(withMirrorFold(MIRROR_OFF, 1).fold).toBe(2)
-    expect(withMirrorFold(MIRROR_OFF, 9).fold).toBe(8)
+    expect(withMirrorFold(MIRROR_OFF, 9).fold).toBe(4)
   })
 
   it('Radial on turns the straight Axes off and remembers them, Radial off brings them back, and a straight Axis on turns Radial off', () => {
@@ -341,50 +346,55 @@ describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
     expect(cells(counterparts(layerSheet(framed('brick', 4, 4), 'frame'), radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
   })
 
-  it('on a Frame whose rows and columns differ in parity a quarter turn can land off the Frame, which is dropped, while the half turn stays exact', () => {
+  it('on a Frame that is not square a Fold 4 reads as the half turn, so nothing is dropped (ticket 0751)', () => {
     const sheet = layerSheet(framed('loom', 4, 5), 'frame')
-    expect(cells(counterparts(sheet, radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
-    expect(counterparts(sheet, radial(4), [at(4, 0)])).toEqual({ positions: [at(4, 0)], dropped: 3 })
+    expect(cells(counterparts(sheet, radial(4), [at(0, 0)]))).toEqual([[0, 0], [4, 3]])
+    expect(counterparts(sheet, radial(4), [at(4, 0)])).toEqual({ positions: [at(4, 0), at(0, 3)], dropped: 0 })
     expect(cells(counterparts(sheet, radial(2), [at(0, 0)]))).toEqual([[0, 0], [4, 3]])
     expect(cells(counterparts(sheet, radial(2, 'mirror'), [at(0, 0)]))).toEqual([[0, 0], [4, 3], [0, 3], [4, 0]])
     expect(cells(counterparts(sheet, radial(2), [at(4, 3)]))).toEqual([[4, 3], [0, 0]])
   })
 })
 
-describe('Radial counterparts by geometry, Fold 3 and 5 to 8 (ticket 0705, spec 0702)', () => {
+describe('Radial on a grid is always symmetric (ticket 0751, spec 0702)', () => {
+  const key = ({ row, column }: { row: number; column: number }) => `${row}:${column}`
 
-  it('at Fold 3 turns the bead\'s centre about the Frame\'s centre by 120° and the nearest bead takes each image; Mirror turns its reflection too, 2n images', () => {
+  it('reads any Fold but 2 as 4 on a square Area, and as 2 on one that is not', () => {
     const sheet = layerSheet(framed('loom', 7, 7), 'frame')
-    expect(cells(counterparts(sheet, radial(3), [at(3, 1)]))).toEqual([[3, 1], [1, 4], [5, 4]])
-    expect(cells(counterparts(sheet, radial(3, 'mirror'), [at(3, 1)]))).toEqual([[3, 1], [1, 4], [5, 4], [3, 5], [5, 2], [1, 2]])
+    for (const fold of [3, 5, 6, 8]) expect(cells(counterparts(sheet, radial(fold), [at(3, 1)])), `Fold ${fold}`).toEqual(cells(counterparts(sheet, radial(4), [at(3, 1)])))
+    const wide = layerSheet(framed('loom', 7, 5), 'frame')
+    for (const fold of [3, 4, 8]) expect(cells(counterparts(wide, radial(fold), [at(2, 1)])), `Fold ${fold}`).toEqual(cells(counterparts(wide, radial(2), [at(2, 1)])))
   })
 
-  it('takes every image in one shot from the source, never chained: at Fold 8 the images far out are exact and symmetric', () => {
-    const sheet = layerSheet(framed('loom', 15, 15), 'frame')
-    expect(cells(counterparts(sheet, radial(8), [at(7, 1)]))).toEqual([[7, 1], [3, 3], [1, 7], [3, 11], [7, 13], [11, 11], [13, 7], [11, 3]])
-  })
-
-  it('merges images near the centre rather than drifting: the centre bead has none, and a bead one out at Fold 7 has fewer than six', () => {
-    const sheet = layerSheet(framed('loom', 7, 7), 'frame')
-    expect(cells(counterparts(sheet, radial(7), [at(3, 3)]))).toEqual([[3, 3]])
-    const near = counterparts(sheet, radial(7), [at(3, 2)])
-    expect(near.positions.length).toBeLessThan(7)
-    expect(near.positions.length).toBeGreaterThan(1)
-    expect(new Set(near.positions.map(({ row, column }) => `${row}:${column}`)).size).toBe(near.positions.length)
-    expect(near.dropped).toBe(0)
-  })
-
-  it('lands on the Frame\'s own positions on peyote and brick too, at most the Fold in Repeat, and drops what turns off the Frame', () => {
-    for (const technique of ['peyote', 'brick'] as const) {
-      const sheet = layerSheet(framed(technique, 8, 8), 'frame')
-      const result = counterparts(sheet, radial(6), [at(2, 2)])
-      expect(result.positions.length, technique).toBeGreaterThan(1)
-      expect(result.positions.length, technique).toBeLessThanOrEqual(6)
-      expect(result.positions.every((position) => sheet.geometry.hasPosition(position)), technique).toBe(true)
+  it('has every bead\'s set equal to the set of each of its counterparts, so drawing A lands on B and B on A, and drops nothing in a square Area', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      for (const [columns, rows] of [[6, 6], [7, 7], [8, 5], [5, 8], [9, 4]]) {
+        const sheet = layerSheet(framed(technique, columns, rows), 'frame')
+        for (const fold of [2, 4]) {
+          for (const mode of ['repeat', 'mirror'] as const) {
+            for (let row = 0; row < rows; row++) {
+              for (let column = 0; column < columns; column++) {
+                const own = counterparts(sheet, radial(fold, mode), [at(row, column)])
+                const set = new Set(own.positions.map(key))
+                const label = `${technique} ${columns}×${rows} Fold ${fold} ${mode} from ${row}:${column}`
+                if (columns === rows && fold === 4) expect(own.dropped, label).toBe(0)
+                for (const image of own.positions) expect(new Set(counterparts(sheet, radial(fold, mode), [image]).positions.map(key)), label).toEqual(set)
+              }
+            }
+          }
+        }
+      }
     }
-    // A corner of a square turned 60° lies outside it.
-    const corner = counterparts(layerSheet(framed('loom', 9, 9), 'frame'), radial(6), [at(0, 0)])
-    expect(corner.dropped).toBeGreaterThan(0)
+  })
+})
+
+describe('the Fold of the whole-Frame Mirror (ticket 0751)', () => {
+  const stored = (project: Project, fold: number) => ({ ...project, mirror: radial(fold) })
+
+  it('is a grid\'s on a grid Frame: 4 in a square one, 2 out of square, and a made Mirror clamps it the same', () => {
+    expect(mirrorSettingOf(stored(framed('loom', 6, 6), 5)).fold).toBe(4)
+    expect(mirrorSettingOf(stored(framed('loom', 6, 4), 5)).fold).toBe(2)
+    expect(mirrorSettingOf(withMirrorPlace({ ...framed('loom', 6, 4), mirror: { ...radial(4), place: null } }, WHOLE_FRAME)).fold).toBe(2)
   })
 })
 
@@ -420,6 +430,11 @@ describe('the whole-Frame Mirror on a Custom frame, the shape\'s own Axes (ticke
       expect(repeat.dropped).toBe(0)
       expect(counterparts(sheet, inMode('mirror'), [at(position.row, position.column)]).dropped).toBe(0)
     }
+  })
+
+  it('keeps its side count as the Fold of the whole Frame, which a grid would narrow (ticket 0751)', () => {
+    const { project } = custom('kaleidocycle', 3)
+    expect(mirrorSettingOf({ ...project, mirror: { ...inMode('repeat'), fold: 6 } }).fold).toBe(6)
   })
 
   it('on a Triangle is Radial with its three sides, and on a Warped Square or a Kaleidocycle Radial with theirs', () => {

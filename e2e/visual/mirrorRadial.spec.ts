@@ -9,18 +9,18 @@ import { frameOf, withFrameSheet } from '../../src/domain/layerRecord'
 import type { Project } from '../../src/domain/project'
 
 /** Radial on the whole loom Frame (tickets 0705, 0750; ContextBar card's Mirror bar): Mirror at Fold 4 (the Frame's ring
- * with four mirror lines, the vertical full, the others soft, clipped to the Frame) and Repeat at Fold 3 (three rays, the
- * first straight up), set on the Mirror bar after the margin's Mirror the whole Frame. */
-for (const [mode, fold] of [['mirror', 4], ['repeat', 3]] as const) {
+ * with four mirror lines, the vertical full, the others soft, clipped to the Frame) and Repeat at Fold 2 (two rays, the
+ * first straight up), on a square Frame, since a quarter turn needs one (ticket 0751), set on the Mirror bar after the margin's Mirror the whole Frame. */
+for (const [mode, fold] of [['mirror', 4], ['repeat', 2]] as const) {
   test(`the Radial overlay on a loom Frame in ${mode} mode at Fold ${fold}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await openApp(page, [fixtureProject({ technique: 'loom' })])
+    await openApp(page, [fixtureProject({ technique: 'loom', columns: 16, rows: 16 })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, 100)
     await page.getByTestId('margin-mirror-frame').click()
     await page.getByTestId('mirror-bar-axis-radial').click()
-    for (let step = 2; step < fold; step++) await page.getByTestId('mirror-bar-radial-more').click()
+    if (fold === 4) await page.getByTestId('mirror-bar-radial-more').click()
     if (mode === 'repeat') await page.getByRole('radio', { name: 'Repeat' }).click()
     await page.keyboard.press('Escape')
     await page.mouse.move(5, 5)

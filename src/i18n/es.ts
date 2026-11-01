@@ -83,6 +83,7 @@ export const es: Translations = {
     moreFolds: 'Más partes',
     oneBeadWide: 'El área tiene una cuenta de ancho.',
     oneBeadTall: 'El área tiene una cuenta de alto.',
+    quarterNeedsSquare: 'Un cuarto de giro necesita un área cuadrada.',
     radialFromShape: 'Radial · {count}, de la forma',
     lineFromShape: '{axis}, de la forma',
     repeatNeedsRadial: '{axis}, de la forma: Repetir necesita Radial.',

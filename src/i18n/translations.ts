@@ -171,6 +171,7 @@ export interface Translations {
     /** Why a direction's chip is off: the Area is one bead across it. */
     oneBeadWide: string
     oneBeadTall: string
+    quarterNeedsSquare: string
     /** A Custom frame's fixed Axes, noted in place of the chips (ADR 0082): Radial with the side count `{count}`, or
      * the shape's one straight line `{axis}`, which in Repeat maps nothing. */
     radialFromShape: string
