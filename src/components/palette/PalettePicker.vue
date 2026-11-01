@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
+import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMoveColor, usePalette, useRecentColors, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
 import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId, type PaletteColor } from '../../domain/palette'
-import { colorName } from '../../i18n/colorName'
+import { colorLabel } from '../../i18n/colorLabel'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
@@ -28,6 +29,11 @@ const recents = useRecentColors()
  * (ticket 529) and comes back in its slot when it drops out. Shift+4…0 follow this order. */
 const shown = computed(() => palette.value.besideRecents(recents.value))
 const closePanel = useClosePopoverOnPick()
+
+// A swatch picked from the Bead's Color catalog is named from it (ticket 0760), so the catalog loads once one is held.
+const beadColors = useBeadColorsList()
+loadCatalogWhen(beadColors, () => shown.value.some(({ color }) => !!color.code))
+const labelOf = (color: PaletteColor) => colorLabel(t.value, color, beadColors?.catalog.value)
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
 const gridEl = ref<HTMLElement>()
@@ -80,8 +86,8 @@ function pick(colorId: string) {
 
 /** A swatch's name; in Edit palette an added one's is the removal it would ask for. */
 function swatchLabel(color: PaletteColor, slot: number): string {
-  if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${colorName(t.value, color)}`
-  return props.editing && removeAdded ? fillBlanks(t.value.palette.removeSwatch, { hex: color.hex }) : color.hex
+  if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${labelOf(color).text}`
+  return props.editing && removeAdded ? fillBlanks(t.value.palette.removeSwatch, { hex: color.hex }) : labelOf(color).text
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number) {
@@ -105,6 +111,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
       :key="color.id"
       :color="color.hex"
       :label="swatchLabel(color, slot)"
+      :tooltip-name="color.code ? labelOf(color).text : undefined"
       :selected="color.id === selectedColorId"
       :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
       :removable="editing && !!removeAdded && isAddedColorId(color.id)"

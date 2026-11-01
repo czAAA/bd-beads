@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, ref } from 'vue'
-import type { BeadColors } from '../../composables/palette/useBeadColors'
+import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { providePalette } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import type { FoundColor, TargetColor } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { familyColorId, isAddedColorId } from '../../domain/palette'
-import { colorName } from '../../i18n/colorName'
+import { isAddedColorId } from '../../domain/palette'
+import { colorLabel, type LabelledColor } from '../../i18n/colorLabel'
 import { pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { groupThousands } from '../../domain/formatNumber'
@@ -16,6 +16,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import BeadColorList from '../palette/BeadColorList.vue'
+import ColorLabel from '../palette/ColorLabel.vue'
 import BeadColorsEntry from '../palette/BeadColorsEntry.vue'
 import CustomColorPanel from '../palette/CustomColorPanel.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
@@ -39,32 +40,28 @@ const actions = { remap: controlAction('remap-color'), empty: controlAction('emp
 const rowEl = ref<HTMLElement>()
 const remapButton = ref<InstanceType<typeof IconButton>>()
 
-const familyName = (family: string) => colorName(t.value, { id: familyColorId(family), hex: '' })
-
-/** The two lines a color reads as (FoundColorRow card): its code or name over where it is from. */
-function linesOf(target: TargetColor): { name: string; source: string; mono: boolean } {
-  if (target.code) {
-    const source = target.family && target.finish ? `${familyName(target.family)} · ${t.value.palette.beadColors.finishes[target.finish]}` : words.value.beadColors
-    return { name: target.code, source, mono: false }
-  }
-  if (target.colorId && !isAddedColorId(target.colorId)) {
-    return { name: colorName(t.value, { id: target.colorId, hex: target.hex }), source: words.value.defaultPalette, mono: false }
-  }
-  return { name: target.hex, source: t.value.palette.customColorLabel, mono: true }
+/** The two lines a color reads as (FoundColorRow card): its label (code and name, or hex; ticket 0760) over where it is from. */
+function linesOf(target: TargetColor): { color: LabelledColor; source: string } {
+  const color = { hex: target.hex, ...(target.colorId ? { id: target.colorId } : {}), ...(target.code ? { code: target.code } : {}), ...(target.family ? { family: target.family } : {}), ...(target.finish ? { finish: target.finish } : {}) }
+  if (target.code) return { color, source: words.value.beadColors }
+  if (target.colorId && !isAddedColorId(target.colorId)) return { color, source: words.value.defaultPalette }
+  return { color, source: t.value.palette.customColorLabel }
 }
 
 const state = computed(() => props.color.choice?.kind)
-const lines = computed(() => {
+const lines = computed<{ color?: LabelledColor; source: string }>(() => {
   const result = props.color.result
-  if (!result) return { name: words.value.empty, source: words.value.noBead, mono: false }
+  if (!result) return { source: words.value.noBead }
   const own = linesOf(result)
   if (state.value === 'exact') return { ...own, source: `${words.value.keptExact} · ${own.source}` }
   if (state.value === 'remap') return { ...own, source: `${words.value.remapped} · ${own.source}` }
   return own
 })
 
+const nameText = computed(() => (lines.value.color ? colorLabel(t.value, lines.value.color, wizard.catalog.value).text : words.value.empty))
+
 const rowName = computed(() =>
-  fillBlanks(pluralForm(locale.value, props.color.count, words.value.rowName), { hex: props.color.pictureHex, name: lines.value.name }, { count: groupThousands(props.color.count, locale.value) }),
+  fillBlanks(pluralForm(locale.value, props.color.count, words.value.rowName), { hex: props.color.pictureHex, name: nameText.value }, { count: groupThousands(props.color.count, locale.value) }),
 )
 
 const remapOn = computed(() => state.value === 'remap' || state.value === 'exact')
@@ -111,7 +108,7 @@ const beadColors: BeadColors = {
   state: wizard.catalogState,
   swatches: wizard.remapSwatches,
   bead: wizard.bead,
-  catalog: wizard.catalog,
+  catalog: computed(() => wizard.catalog.value),
   load: async () => {},
   add: (hex: string, code?: string) => {
     const swatch = wizard.remapSwatches.value.find((entry) => entry.code === code)
@@ -132,6 +129,7 @@ async function close() {
 // page, so a press elsewhere goes through and leaves it open.
 provide(PICK_CLOSE, () => {})
 providePalette(wizard.remapPalette)
+provideBeadColors(beadColors)
 useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () => void close(), keepsPress: () => true })
 </script>
 
@@ -147,7 +145,8 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
         aria-hidden="true"
       />
       <span class="found-color__lines">
-        <span class="found-color__name" :class="{ 'found-color__name--mono': lines.mono }" data-testid="found-color-name">{{ lines.name }}</span>
+        <ColorLabel v-if="lines.color" class="found-color__name" :color="lines.color" :catalog="wizard.catalog.value" data-testid="found-color-name" />
+        <span v-else class="found-color__name" data-testid="found-color-name">{{ words.empty }}</span>
         <span class="found-color__source" data-testid="found-color-source">{{ lines.source }}</span>
       </span>
       <span class="found-color__count">{{ groupThousands(color.count, locale) }}</span>
