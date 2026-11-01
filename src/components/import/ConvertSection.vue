@@ -2,8 +2,8 @@
 import { useId } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
 
-// One numbered section of the Convert image wizard (ConvertImage card, Sections as steps): its step disc, title and a
-// summary of what it holds, then its body. Disabled, it draws only its header, saying why.
+// The step in hand on the Convert image page (ConvertImage card, Steps): its step disc, title and a summary of what it
+// holds, then its body.
 defineProps<{
   step: number
   title: string
@@ -11,9 +11,6 @@ defineProps<{
   summary?: string
   /** Picture's disc is a check once a picture is set. */
   done?: boolean
-  disabled?: boolean
-  /** Why it is disabled, in the summary's place. */
-  disabledSummary?: string
   testid: string
 }>()
 
@@ -23,10 +20,8 @@ const headingId = useId()
 <template>
   <section
     class="convert-section"
-    :class="{ 'convert-section--disabled': disabled }"
     role="region"
     :aria-labelledby="headingId"
-    :aria-disabled="disabled ? 'true' : undefined"
     :data-step="step"
     :data-testid="testid"
   >
@@ -38,11 +33,9 @@ const headingId = useId()
         </span>
         <span class="convert-section__title">{{ title }}</span>
       </h3>
-      <span v-if="disabled ? disabledSummary : summary" class="convert-section__summary" :data-testid="`${testid}-summary`">
-        {{ disabled ? disabledSummary : summary }}
-      </span>
+      <span v-if="summary" class="convert-section__summary" :data-testid="`${testid}-summary`">{{ summary }}</span>
     </div>
-    <div v-if="!disabled" class="convert-section__body">
+    <div class="convert-section__body">
       <slot />
     </div>
   </section>
@@ -55,7 +48,6 @@ const headingId = useId()
   gap: var(--space-12);
   padding: var(--space-14) var(--space-20) var(--space-16);
   border-bottom: 1px solid var(--panel-rule);
-  scroll-margin-top: var(--step-rail);
 }
 
 .convert-section__header {
@@ -125,20 +117,9 @@ const headingId = useId()
   min-width: 0;
 }
 
-.convert-section--disabled .convert-section__disc {
-  color: var(--faint);
-  border-color: var(--line);
-}
-
-.convert-section--disabled .convert-section__title,
-.convert-section--disabled .convert-section__summary {
-  color: var(--faint);
-}
-
 @media (max-width: 63.99rem), (orientation: portrait) {
   .convert-section {
     padding: var(--space-12) var(--space-16) var(--space-16);
-    scroll-margin-top: var(--step-rail-phone);
   }
 }
 </style>

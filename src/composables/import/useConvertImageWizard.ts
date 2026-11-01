@@ -1,4 +1,4 @@
-import { computed, inject, onBeforeUnmount, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
+import { computed, inject, onScopeDispose, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
@@ -13,6 +13,7 @@ import {
   type FoundColorChoice,
 } from '../../domain/convertColors'
 import {
+  CONVERT_STEPS,
   flipPicture,
   fullCrop,
   isLargeSchema,
@@ -20,6 +21,7 @@ import {
   sizingFor,
   startingWidth,
   turnPicture,
+  type ConvertStep,
   type PixelCrop,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
@@ -61,16 +63,16 @@ export type ConvertWeave = 'whole' | 'part'
  * device's Size unit: the wizard remembers nothing (spec 0645). */
 export type ConvertSizeUnit = 'beads' | 'mm'
 
-/** The layout the wizard is a full-screen sheet in, under 1024 px wide or in portrait (PhoneForms card); the same
- * edge as the CSS of its components. */
+/** The layout where the preview sits above the step instead of beside it, under 1024 px wide or in portrait
+ * (PhoneForms card); the same edge as the CSS of its components. */
 export const CONVERT_SHEET_QUERY = '(max-width: 63.99rem), (orientation: portrait)'
 
 /** How long a moved handle has to stay still before the colors are worked out exactly (ticket 122). */
 const PAUSE_MS = 150
 
-/** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture and
- * the part to weave, the Width, the colors, and the preview and Project they make. Nothing is kept on the device and
- * Cancel drops it all; Create reads `createProject`. Mount it in the wizard's setup: it stops its timers on unmount. */
+/** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
+ * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
+ * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
 export function useConvertImageWizard({ start, decodeImage, loadCatalog }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
@@ -88,6 +90,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const fileFormat = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
+
+  // The step shown (ticket 0756): the Progress bar's dots and the page's one section follow it.
+  const step = ref<ConvertStep>('picture')
 
   // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
   const weaveChoice = ref<ConvertWeave>('whole')
@@ -129,7 +134,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     },
     { flush: 'sync' },
   )
-  onBeforeUnmount(() => clearTimeout(pauseTimer))
+  onScopeDispose(() => clearTimeout(pauseTimer))
 
   // --- Size ---------------------------------------------------------------------------------------------------------
 
@@ -301,6 +306,13 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     if (pictureHex) setChoice(pictureHex, { kind: 'empty' })
   }
 
+  const stepIndex = computed(() => CONVERT_STEPS.indexOf(step.value))
+  /** Every step after Picture waits for a picture. */
+  const canGoTo = (next: ConvertStep) => next === 'picture' || !!image.value
+  function goTo(next: ConvertStep | undefined) {
+    if (next && canGoTo(next)) step.value = next
+  }
+
   /** The picture's file name without its extension: Name's placeholder, and the Name when it is left blank. */
   const fileStem = computed(() => fileName.value.replace(/\.[^.]*$/, ''))
 
@@ -347,6 +359,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     settings,
     techniqueSettings,
     setSetting: (id: string, value: number) => (settings.value = { ...settings.value, [id]: value }),
+    // The steps: Picture first, the rest once a picture is set; Next on the last is Create Project
+    step,
+    canGoTo,
+    goTo,
+    goBack: () => goTo(CONVERT_STEPS[stepIndex.value - 1]),
+    goNext: () => goTo(CONVERT_STEPS[stepIndex.value + 1]),
+    stepIndex,
+    onLastStep: computed(() => stepIndex.value === CONVERT_STEPS.length - 1),
     // Picture
     image,
     hasPicture: computed(() => !!image.value),

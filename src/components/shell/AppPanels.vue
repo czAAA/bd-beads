@@ -32,6 +32,8 @@ const {
   onPlaceFrameFromStarter,
   onSetFrameSettings,
   onOpenConvertImage,
+  page,
+  onLeavePage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
@@ -152,11 +154,14 @@ const chosenStarter = ref<StarterId>()
     <MenuPanel
       v-if="openPanel === 'menu'"
       v-model:tools-position="toolPillPosition"
+      :page="page"
+      :leave="onLeavePage"
       :project-count="projects.length + sealed.length"
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
       @new-project="phoneSavedProjectsOpen = false"
+      @convert-image="onOpenConvertImage()"
       @saved-projects="phoneSavedProjectsOpen = true"
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
