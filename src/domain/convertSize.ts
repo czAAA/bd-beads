@@ -48,6 +48,13 @@ function clampPart(part: PixelCrop, image: ImageSize): PixelCrop {
   return { x, y, width, height }
 }
 
+/** A part round a box of pixels (Fit to subject, ticket 0765): the box itself, grown evenly to MIN_PART_PX a side where
+ * it is smaller, kept on the picture. */
+export function partAround(box: PixelCrop, image: ImageSize): PixelCrop {
+  const start = (at: number, size: number) => at - Math.max(0, Math.floor((MIN_PART_PX - size) / 2))
+  return clampPart({ ...box, x: start(box.x, box.width), y: start(box.y, box.height) }, image)
+}
+
 /** Where A part starts (ConvertImage card): 10% in from each edge, so there is something to drag at once. */
 export function partInset(image: ImageSize): PixelCrop {
   const inX = Math.round(image.width * 0.1)
