@@ -6,7 +6,6 @@ import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet
 import { frameOf, type Layered } from './layerRecord'
 import { mayPlace } from './margin'
 import { touch, type Project } from './project'
-import { describeWeave } from './weave'
 
 // Mirror (ADR 0082, spec 0702; tickets 0703, 0750): the live mode that lands a drawing gesture at its counterparts,
 // one per Project, inside its Area. This module owns the record and the counterpart maths, positions in and positions
@@ -26,10 +25,12 @@ const MIRROR_DIRECTIONS: readonly MirrorDirection[] = ['leftRight', 'topBottom']
 export type MirrorAxis = MirrorDirection | 'radial'
 export const MIRROR_AXES: readonly MirrorAxis[] = [...MIRROR_DIRECTIONS, 'radial']
 
-/** Radial's image count (ticket 0705): a stepper from 2 to 8 on a grid. Past 8 the sectors are narrower than a bead a
- * few beads out and the images merge. */
+/** Radial's image count (ticket 0705): 2 to 8, of which a grid takes 2 and 4 (ticket 0751) and a round Custom frame its
+ * side count. */
 export const MIN_FOLD = 2
-export const MAX_FOLD = 8
+const MAX_FOLD = 8
+/** The most a grid takes: the quarter turn (ticket 0751). */
+export const MAX_GRID_FOLD = 4
 
 /** Where the Mirror is (glossary: Area): a rectangle of the Canvas, in its positions, or the whole Frame, never a
  * smaller part of it (ADR 0082). */
@@ -57,7 +58,11 @@ export const MIRROR_OFF: MirrorSetting = { mode: 'mirror', axes: { leftRight: fa
 /** The open Project's Mirror; off for one saved without, and for a whole-Frame one whose Frame is gone. */
 export function mirrorSettingOf(project: Layered & Pick<Project, 'mirror'>): MirrorSetting {
   const setting = project.mirror ?? MIRROR_OFF
-  return setting.place?.layer === 'frame' && !frameOf(project) ? { ...setting, place: null } : setting
+  if (setting.place?.layer !== 'frame') return setting
+  const frame = frameOf(project)
+  if (!frame) return { ...setting, place: null }
+  // A whole Frame that is a grid takes only the turns a grid does (ticket 0751); a Custom frame keeps its side count.
+  return shapeAxesOf(project) ? setting : { ...setting, fold: gridFold(setting.fold, { row: 0, column: 0, rows: frame.rows, columns: frame.columns }) }
 }
 
 /** The Project with the Mirror bar's settings (Mode, Axes, counts) taken, its place as it is. Not an Undo step: a
@@ -95,8 +100,10 @@ export function withMirrorPlace(project: Project, place: MirrorPlace | undefined
   const rect = placeRect(project, place)
   const limit = (direction: MirrorDirection) => (rect ? maxAxisCount(direction === 'leftRight' ? rect.columns : rect.rows) : Infinity)
   const counts = { leftRight: Math.min(before.counts.leftRight, limit('leftRight')), topBottom: Math.min(before.counts.topBottom, limit('topBottom')) }
+  const gridPlace = shape ? undefined : rect
+  const fold = shape ? (shape.sides ?? before.fold) : gridFold(before.fold, gridPlace)
   const kept = shape || offShape ? {} : beforeRadial ? { beforeRadial } : {}
-  return touch(project, { mirror: { ...rest, ...kept, axes, counts, fold: shape?.sides ?? before.fold, place } })
+  return touch(project, { mirror: { ...rest, ...kept, axes, counts, fold, place } })
 }
 
 /** A stored Mirror read back (ADR 0082): each field as a file may have left it, anything unreadable at its default; none
@@ -110,10 +117,13 @@ export function readMirrorSetting(stored: unknown, firstForm: { canvasArea?: Rec
   const count = (direction: MirrorDirection) => (Number.isInteger(counts[direction]) && (counts[direction] as number) >= 1 ? (counts[direction] as number) : 1)
   const before = value.beforeRadial as Partial<Record<MirrorDirection, unknown>> | undefined
   const place = 'place' in value ? readMirrorPlace(value.place) : firstFormPlace(value.mode === 'off', firstForm)
+  // On a Canvas Area the Fold is a grid's (ticket 0751); a whole-Frame one is narrowed by `mirrorSettingOf`, which knows
+  // whether the Frame is a Custom frame (its side count is the Fold).
+  const fold = place?.layer === 'canvas' ? gridFold(clampFold(value.fold), place.area) : clampFold(value.fold)
   return {
     mode: value.mode === 'repeat' ? 'repeat' : 'mirror',
     axes: { leftRight: axes.leftRight === true, topBottom: axes.topBottom === true, radial: axes.radial === true },
-    fold: clampFold(value.fold),
+    fold,
     counts: { leftRight: count('leftRight'), topBottom: count('topBottom') },
     ...(typeof before === 'object' && before !== null ? { beforeRadial: { leftRight: before.leftRight === true, topBottom: before.topBottom === true } } : {}),
     place,
@@ -174,15 +184,21 @@ export function withMirrorCount(setting: MirrorSetting, direction: MirrorDirecti
   return { ...setting, counts: { ...setting.counts, [direction]: Math.max(1, Math.round(count)) } }
 }
 
-/** Radial's Fold as the Stepper sets it, 2 to 8. */
-export function withMirrorFold(setting: MirrorSetting, fold: number): MirrorSetting {
-  return { ...setting, fold: clampFold(Math.round(fold)) }
+/** Whether a rectangle is as many beads across as down: what a quarter turn needs. */
+export function isSquare(rect: Rect): boolean {
+  return rect.rows === rect.columns
 }
 
-/** Whether a Fold maps by index (2 and 4: a half or quarter turn of the grid, exact) or geometrically (3 and 5 to 8:
- * each bead's centre turned and the nearest bead taking it). */
-function foldByIndex(fold: number): boolean {
-  return fold === 2 || fold === 4
+/** A Fold as a grid takes it (ticket 0751): a half turn or a quarter turn, the two a grid maps exactly. Fold 2 stays; any
+ * other reads as 4, which a rectangle that is not square clamps to 2. With no rectangle known, 4 stands. */
+function gridFold(fold: number, rect?: Rect): number {
+  if (fold === MIN_FOLD) return MIN_FOLD
+  return rect && !isSquare(rect) ? MIN_FOLD : MAX_GRID_FOLD
+}
+
+/** Radial's Fold as the Stepper sets it on a grid: 2 or 4 (a press from 2 goes to 4). */
+export function withMirrorFold(setting: MirrorSetting, fold: number): MirrorSetting {
+  return { ...setting, fold: gridFold(clampFold(Math.round(fold))) }
 }
 
 /** A rectangle's own centre (spec 0702), the Area's: on its middle position for an odd size, between four for an even
@@ -283,9 +299,8 @@ function straightImages(rect: Rect, setting: MirrorSetting): PositionImages | un
   return (position) => byRow(position.row).flatMap((row) => byColumn(position.column).map((column) => ({ row, column })))
 }
 
-// Radial (ticket 0705, spec 0702): a turn about the Area's centre, Fold images in all. At Fold 2 and 4 by index, as
-// Rotate turns a fragment (ADR 0052), so peyote and brick keep their index and take the grid's shift; at 3 and 5 to 8
-// geometric, each image taken in one shot from the source bead's centre and the nearest bead taking it.
+// Radial on a grid (tickets 0705, 0751, spec 0702): a turn about the Area's centre, Fold 2 or 4 by index, as Rotate
+// turns a fragment (ADR 0052), so peyote and brick keep their index and take the grid's shift. No other count maps back.
 
 /** The position a quarter turn clockwise about the centre sends a position to, by index: rows and columns swap about
  * the centre. Where it sits on a position one way and between two the other (rows and columns of different parity)
@@ -307,7 +322,7 @@ function halfTurned({ row, column }: GridPosition, centre: GridPosition): GridPo
   return { row: 2 * centre.row - row, column: 2 * centre.column - column }
 }
 
-/** Fold 2 and 4 by index: the source and its turns (Fold 2 the exact half turn; Fold 4 three quarter turns, each from
+/** The turns by index: the source and its turns (Fold 2 the exact half turn; Fold 4 three quarter turns, each from
  * the last, so a rectangle of mixed parity keeps one closed orbit), and in Mirror mode the turns of its reflection too
  * (Fold 4 on a loom grid: the eightfold kaleidoscope, the diagonals as index swaps). */
 function indexTurns(setting: MirrorSetting, centre: GridPosition): PositionImages {
@@ -318,34 +333,6 @@ function indexTurns(setting: MirrorSetting, centre: GridPosition): PositionImage
     return images
   }
   return (position) => [...turns(position), ...(setting.mode === 'mirror' ? turns(reflectedAbout(position, centre)) : [])]
-}
-
-/** The other Folds, geometric: the bead's centre turned about the middle of the rectangle's beads by 360° over the Fold,
- * each image from the source (never chained, so snapping cannot drift), in Mirror mode its reflection's turns too; the
- * nearest bead takes each, so near the centre images merge. */
-function geometricTurns(sheet: LayerSheet, rect: Rect, setting: MirrorSetting): PositionImages {
-  const description = describeWeave(sheet.weave)
-  const height = description.cellAspect
-  const box = description.blockBox(rect, 1, height)
-  const about = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  const step = (2 * Math.PI) / setting.fold
-  const turnsOf = (point: { x: number; y: number }, from: number): GridPosition[] => {
-    const dx = point.x - about.x
-    const dy = point.y - about.y
-    const images: GridPosition[] = []
-    for (let turn = from; turn < setting.fold; turn++) {
-      const angle = turn * step
-      const x = about.x + dx * Math.cos(angle) - dy * Math.sin(angle)
-      const y = about.y + dx * Math.sin(angle) + dy * Math.cos(angle)
-      images.push(description.nearestPosition(x, y, 1, height))
-    }
-    return images
-  }
-  return (position) => {
-    const point = description.center(position, 1, height)
-    const own = [position, ...turnsOf(point, 1)]
-    return setting.mode === 'mirror' ? [...own, ...turnsOf({ x: 2 * about.x - point.x, y: point.y }, 0)] : own
-  }
 }
 
 // A Custom frame (ticket 0706, spec 0702): every counterpart is geometric, through the shape's layout. Its symmetry
@@ -428,7 +415,7 @@ function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImag
 function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting): PositionImages | undefined {
   if (region.kind === 'layout') return layoutImages(region.layout, setting)
   if (!sheet.geometry.grid) return undefined
-  if (setting.axes.radial) return foldByIndex(setting.fold) ? indexTurns(setting, rectCentre(region.rect)) : geometricTurns(sheet, region.rect, setting)
+  if (setting.axes.radial) return indexTurns({ ...setting, fold: gridFold(setting.fold, region.rect) }, rectCentre(region.rect))
   return straightImages(region.rect, setting)
 }
 
