@@ -56,6 +56,11 @@ export interface PartLatticeInput {
   techniqueSettings?: TechniqueSettings
 }
 
+/** The rows a lattice's top edge moves by: whole cycles of the stagger, and at least two (see PreviewLattice.frameRow). */
+export function latticeRowStep(weave: { technique: Technique; techniqueSettings?: TechniqueSettings }): number {
+  return Math.max(2, rowCycle(weave))
+}
+
 /** The preview's lattice: the frame (the part's beads) and the rest of the picture round it, in whole beads each
  * side, capped at PREVIEW_MAX_CELLS. The rows above are whole cycles of the shift (see PreviewLattice.frameRow), so
  * the top may reach a row past the picture. */
@@ -66,7 +71,7 @@ export function partLattice({ image, part, pixelsPerBead, dimensions, technique,
   const bottom = Math.max(0, Math.ceil((image.height - part.y - part.height) / pixelsPerBead.y - 1e-9))
 
   const fit = marginFit(dimensions, (left + right) / 2, (top + bottom) / 2)
-  const cycle = Math.max(2, rowCycle({ technique, techniqueSettings }))
+  const cycle = latticeRowStep({ technique, techniqueSettings })
   const across = columnCycle({ technique, techniqueSettings })
   const frameColumn = across * Math.ceil(Math.floor(left * fit) / across)
   const frameRow = cycle * Math.ceil(Math.floor(top * fit) / cycle)

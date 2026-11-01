@@ -683,3 +683,54 @@ describe('ConvertImageWizard Close', () => {
     expect(wrapper.emitted('close')).toBeUndefined()
   })
 })
+
+describe('ConvertImageWizard Colors step helpers (ticket 0766)', () => {
+  it('turns Auto-fix lighting on with its switch, off at first, with a Tooltip saying what it does', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    const toggle = wrapper.get('[data-testid="convert-auto-fix-lighting"]')
+
+    expect(toggle.attributes('aria-label')).toBe(en.convertImage.wizard.helpers.autoFixLighting)
+    expect(toggle.attributes('aria-checked')).toBe('false')
+    await toggle.trigger('click')
+    expect(wizard.autoFixLighting.value).toBe(true)
+    expect(wrapper.get('[data-testid="convert-colors"]').text()).toContain(en.tooltips.autoFixLighting)
+  })
+
+  it('sets Clean up stray beads with its slider, from Off', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+
+    expect(wrapper.get('[data-testid="convert-clean-up-slider-value"]').text()).toBe(en.convertImage.wizard.helpers.off)
+    await wrapper.get('[data-testid="convert-clean-up-slider-range"]').setValue('2')
+    expect(wizard.cleanUp.value).toBe(2)
+    expect(wrapper.get('[data-testid="convert-clean-up-slider-value"]').text()).toBe('2')
+  })
+
+  it('shows the Outline only with empty beads round the subject; its swatch opens the colour popover’s body, Darkest goes back', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    expect(wrapper.find('[data-testid="convert-outline"]').exists()).toBe(false)
+
+    await openColorByColor(wrapper)
+    const white = wrapper.findAll('[data-testid="found-color"]').find((row) => row.attributes('data-picture-hex') === '#ffffff')!
+    await white.get('[data-testid="found-color-empty"]').trigger('click')
+    const outline = wrapper.get('[data-testid="convert-outline"]')
+
+    await outline.get('[data-testid="convert-outline-switch"]').trigger('click')
+    expect(wizard.outline.value).toBe(true)
+    expect(outline.get('[data-testid="convert-outline-color"]').attributes('style')).toContain('background-color')
+    await outline.get('[data-testid="convert-outline-color"]').trigger('click')
+    expect(outline.find('[data-testid="convert-outline-picker"]').exists()).toBe(true)
+
+    await outline.get('[data-color-id="black"]').trigger('click')
+    expect(wizard.outlineColor.value).toMatchObject({ colorId: 'black' })
+    await outline.get('[data-testid="convert-outline-darkest"]').trigger('click')
+    expect(wizard.outlineColorPicked.value).toBe(false)
+    await outline.get('[data-testid="color-popover-close"]').trigger('click')
+    expect(outline.find('[data-testid="convert-outline-picker"]').exists()).toBe(false)
+  })
+})

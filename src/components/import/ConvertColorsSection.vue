@@ -7,6 +7,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { beadLabel } from '../../domain/beads'
 import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
+import { MAX_CLEAN_UP } from '../../domain/strayBeads'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
@@ -14,17 +15,22 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertDisclosure from './ConvertDisclosure.vue'
+import ConvertOutlineRow from './ConvertOutlineRow.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
 
-// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758): the Colors slider, Treat as empty,
-// what the found colors are matched to (the Bead's palette only with a Color catalog; Exact at first, a Note on the
-// Bead's palette), and Color by color, closed at first: a heading and a row per found color, one Change open at a time.
+// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758, 0766): the Colors slider, Treat as
+// empty, Auto-fix lighting, Clean up stray beads, the Outline (with empty beads round the subject), what the found colors
+// are matched to (Exact at first), and Color by color, closed at first: a row per found color, one Change open at a time.
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const sourceLabelId = useId()
-const actions = { treatAsEmpty: controlAction('treat-as-empty') }
+const actions = { treatAsEmpty: controlAction('treat-as-empty'), autoFixLighting: controlAction('auto-fix-lighting') }
+const autoFixLighting = computed({ get: () => wizard.autoFixLighting.value, set: (next: boolean) => wizard.setAutoFixLighting(next) })
+/** Clean up stray beads' value: Off, then the passes it allows. */
+const cleanUpValue = computed(() => (wizard.cleanUp.value === 0 ? words.value.helpers.off : String(wizard.cleanUp.value)))
+const cleanUpMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: String(MAX_CLEAN_UP) }))
 
 /** The Bead as the palette's Bead colors entry names it: its maker, name and shape, with no finish. */
 const beadName = computed(() => beadLabel(wizard.bead.value))
@@ -77,6 +83,27 @@ const remapping = ref<string>()
       <span class="convert-colors__label convert-colors__label--ink">{{ words.treatAsEmpty }}</span>
       <AppSwitch v-model="wizard.treatAsEmpty.value" :action="actions.treatAsEmpty" data-testid="convert-treat-as-empty" />
     </div>
+
+    <div class="convert-colors__empty">
+      <span class="convert-colors__label convert-colors__label--ink">{{ words.helpers.autoFixLighting }}</span>
+      <AppSwitch v-model="autoFixLighting" :action="actions.autoFixLighting" data-testid="convert-auto-fix-lighting" />
+    </div>
+
+    <ValueSlider
+      :label="words.helpers.cleanUp"
+      :model-value="wizard.cleanUp.value"
+      :min="0"
+      :max="MAX_CLEAN_UP"
+      :value="cleanUpValue"
+      :valuetext="cleanUpValue"
+      :min-label="words.helpers.off"
+      :max-label="cleanUpMaxLabel"
+      :hint="words.helpers.cleanUpHint"
+      testid="convert-clean-up-slider"
+      @update:model-value="wizard.setCleanUp"
+    />
+
+    <ConvertOutlineRow v-if="wizard.outlineShown.value" />
 
     <div class="convert-colors__source">
       <span :id="sourceLabelId" class="convert-colors__label">{{ words.matchTo }}</span>
