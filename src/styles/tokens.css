@@ -31,6 +31,7 @@
   --danger: #c23604;
   --on-danger: #ffffff;
   --warning: #ffa110;
+  --ai: #6e44ff;
   --swatch-edge: rgba(0,0,0,.2);
   --button: #ffffff;
   --button-line: #c7c7c7;
@@ -93,6 +94,7 @@
   --danger: #ef4444;
   --on-danger: #0a0a0a;
   --warning: #f59e0b;
+  --ai: #b9a6ff;
   --swatch-edge: #3a3a3a;
   --button: #202020;
   --button-line: #202020;
@@ -155,6 +157,7 @@
   --danger: #a82c00;
   --on-danger: #ffffff;
   --warning: #9a5b00;
+  --ai: #4a1fd1;
   --swatch-edge: #595959;
   --button: #ffffff;
   --button-line: #595959;

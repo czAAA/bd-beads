@@ -642,6 +642,11 @@ body {
   --pattern-done-spark-1:var(--ink);--pattern-done-spark-2:var(--ink);--pattern-done-spark-3:var(--ink);--pattern-done-spark-4:var(--ink);
   --pattern-done-glow:transparent;--pattern-done-shimmer-fill:transparent;
 }
+/* AI (ticket 0764, ADR 0087): the shimmer over the Convert image preview while a model works (Loading card), the Cut out chips and the dot on the AI chip of a device that struggled (ConvertImage card). The mark itself is drawn in the `ai` token. */
+:root,[data-theme="light"],[data-theme="contrast"]{--ai-shimmer-fill:color-mix(in srgb,var(--ai) 16%,transparent)}
+[data-theme="dark"]{--ai-shimmer-fill:color-mix(in srgb,var(--ai) 22%,transparent)}
+:root{--ai-shimmer:1600ms;--ai-shimmer-band:40%;--cut-out-chip:76px;--ai-warning-dot:7px}
+.ai-mark{stroke:var(--ai)}
 /* The spark: inside the track's box (position:relative), translateX((done / total - 1) * 100%). The tail sits in a copy clipped to the track; the dot in one that is not. Restart the flare on each Row done by swapping is-flaring and is-flaring-alt. */
 .bb-spark{position:absolute;inset:0;pointer-events:none;transition:transform var(--duration-base) var(--ease-standard)}
 .bb-spark[hidden]{display:block;opacity:0}
