@@ -550,6 +550,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     downloadCutOutModel: ai.download,
     /** Cancel on the note or the AI Loading: back to the choice before. */
     cancelAiCutOut: ai.cancel,
+    /** The tap add and tap remove chips and Reset under the AI chip (ticket 0769): shown, which is on, the taps, a tap. */
+    cutOutTapsShown: ai.tapsShown,
+    cutOutTapMode: ai.tapMode,
+    toggleCutOutTap: ai.toggleTap,
+    cutOutTaps: ai.taps,
+    /** A tap on the preview at a picture pixel, while tap add or tap remove is on. */
+    tapCutOut: ai.tap,
+    resetCutOutTaps: ai.resetTaps,
     tolerance,
     setTolerance: (next: number) => (tolerance.value = next),
     subjectMask,

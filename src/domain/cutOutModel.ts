@@ -15,20 +15,35 @@ export type CutOutProgress = { kind: 'downloading'; done: number; total: number 
 /** How a run ended: the subject's mask, stopped by `cancel()`, or failed with the reason (for the console, not the screen). */
 export type CutOutOutcome = { kind: 'done'; mask: SubjectMask } | { kind: 'cancelled' } | { kind: 'failed'; reason: string }
 
+/** A tap on the preview while tap add or tap remove is on (ticket 0769): the picture pixel tapped and what it does to the
+ * region under it. */
+export interface CutOutTap {
+  readonly x: number
+  readonly y: number
+  readonly kind: 'add' | 'remove'
+}
+
+/** The two models: the one that finds the subject (IS-Net) and the one that finds a tapped region (SlimSAM, ticket 0769),
+ * downloaded on the first tap only. */
+export type CutOutModelName = 'subject' | 'taps'
+
 /** The cut-out service (spec 0761), handed to the Convert image wizard among its dependencies as `decodeImage` is. It
  * owns the worker, the runtime and model files and their cache; a test hands the wizard a fake one. One run at a time. */
 export interface CutOutService {
-  /** The bytes still to download before `subject` can run without the network: 0 once every file is on the device. */
-  toDownload(): Promise<number>
+  /** The bytes still to download before that model can run without the network: 0 once its files are on the device. */
+  toDownload(model: CutOutModelName): Promise<number>
   /** Finds the picture's subject, downloading what is missing first, telling its progress as it goes. */
   subject(picture: PixelData, onProgress: (progress: CutOutProgress) => void): Promise<CutOutOutcome>
+  /** The `automatic` mask `subject` found, with each tap's region joined (add) or taken away (remove), in order
+   * (ticket 0769); the tap model is downloaded first when it is missing. */
+  refine(picture: PixelData, automatic: SubjectMask, taps: readonly CutOutTap[], onProgress: (progress: CutOutProgress) => void): Promise<CutOutOutcome>
   /** Stops the download or run in hand at once; its `subject` ends `cancelled`. Nothing in hand: nothing happens. */
   cancel(): void
 }
 
 /** Linear interpolation's two neighbours and the far one's weight, for a target index scaled from `to` cells onto `from`
  * (half-pixel centres, as the upstream model's resize). */
-function neighbours(index: number, from: number, to: number): [number, number, number] {
+export function neighbours(index: number, from: number, to: number): [number, number, number] {
   const at = Math.min(from - 1, Math.max(0, ((index + 0.5) * from) / to - 0.5))
   const low = Math.floor(at)
   return [low, Math.min(from - 1, low + 1), at - low]

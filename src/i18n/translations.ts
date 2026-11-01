@@ -1043,6 +1043,13 @@ export interface Translations {
         finding: string
         takingLonger: string
         failed: string
+        /** Cut out's taps (ticket 0769): the tap add and tap remove chips' Tooltip names and labels, Reset, its Tooltip
+         * body and its reason when there are no taps. */
+        tapAdd: string
+        tapRemove: string
+        reset: string
+        resetBody: string
+        resetNothing: string
       }
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
        * its marks (the width they stand for) and the hint under it. */
@@ -1244,6 +1251,9 @@ export interface Translations {
     /** Use suggested's Tooltip body, `{width}` the Suggested Width in the chosen unit, and the Compare toggle's (ticket 0770). */
     useSuggested: string
     compare: string
+    /** The tap add and tap remove chips' Tooltip bodies (ticket 0769). */
+    cutOutTapAdd: string
+    cutOutTapRemove: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }
