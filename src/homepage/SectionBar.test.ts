@@ -65,9 +65,9 @@ describe('SectionBar', () => {
   it('marks the steps passed, current and ahead, the current one a ring lit once the fill has started', async () => {
     const wrapper = bar(0)
     const state = () => steps(wrapper).map((step) => step.classes().filter((name) => /--(passed|current)$|is-lit/.test(name)).join(' '))
-    expect(state()).toEqual(['section-step--current', '', ''])
+    expect(state()).toEqual(['step-dot--current', '', ''])
     await wrapper.setProps({ section: 1 })
-    expect(state()).toEqual(['section-step--passed', 'section-step--current is-lit', ''])
+    expect(state()).toEqual(['step-dot--passed', 'step-dot--current is-lit', ''])
     expect(steps(wrapper).map((step) => step.attributes('aria-current'))).toEqual([undefined, 'step', undefined])
   })
 
@@ -96,7 +96,7 @@ describe('SectionBar', () => {
 
   it('flares the ring and the spark’s tail on each step forward, a jump of several once, and not on a step back', async () => {
     const wrapper = bar(0)
-    const ring = () => wrapper.get('.section-step--current').classes().filter((name) => name.startsWith('is-flaring'))
+    const ring = () => wrapper.get('.step-dot--current').classes().filter((name) => name.startsWith('is-flaring'))
     expect(flaring(wrapper)).toEqual([])
     expect(ring()).toEqual([])
     await wrapper.setProps({ section: 2 })

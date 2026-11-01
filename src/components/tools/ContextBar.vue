@@ -401,17 +401,33 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   opacity: 0.5;
 }
 
+/* One set of states for every control in either bar, written to win over the icon button's own hover fill. Hover and
+ * press mix `canvas` into the bar at 12% and 20%; "on" (a chip, the chosen Mode) is `canvas` with `ink`, only dimmed
+ * by them, so its icon or text stays readable. */
 @media (hover: hover) {
-  .context-bar :deep(.context-bar__button:hover:not([aria-disabled='true'])) {
+  .context-bar :deep(:is(.context-bar__button, .context-bar__control):hover:not([aria-disabled='true'])) {
     background: color-mix(in srgb, var(--canvas) 12%, transparent);
+  }
+
+  .context-bar :deep(.context-bar__control:is([aria-pressed='true'], [aria-checked='true']):hover:not([aria-disabled='true'])) {
+    background: color-mix(in srgb, var(--canvas) 86%, var(--ink));
   }
 }
 
-.context-bar :deep(.context-bar__button:active:not([aria-disabled='true'])) {
+.context-bar :deep(:is(.context-bar__button, .context-bar__control):active:not([aria-disabled='true'])) {
   background: color-mix(in srgb, var(--canvas) 20%, transparent);
 }
 
-.context-bar :deep(.context-bar__button:focus-visible) {
+.context-bar :deep(.context-bar__control:is([aria-pressed='true'], [aria-checked='true'])) {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.context-bar :deep(.context-bar__control:is([aria-pressed='true'], [aria-checked='true']):active:not([aria-disabled='true'])) {
+  background: color-mix(in srgb, var(--canvas) 72%, var(--ink));
+}
+
+.context-bar :deep(:is(.context-bar__button, .context-bar__control):focus-visible) {
   outline: var(--focus-width) solid var(--canvas);
   outline-offset: var(--focus-offset);
 }

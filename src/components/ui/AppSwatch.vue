@@ -39,7 +39,7 @@ const mark = computed(() => markOn(props.color))
 const tooltip = computed(() => {
   const name = props.tooltipName ?? t.value.palette.colorLabel
   return props.lockedBody === undefined
-    ? { name, body: props.color, hotkey: props.hotkey, announce: !props.label.includes(props.color) }
+    ? { name, body: props.color, hotkey: props.hotkey, announce: !props.label.toLowerCase().includes(props.color.toLowerCase()) }
     : { name, disabled: true as const, disabledBody: props.lockedBody, announce: true }
 })
 </script>

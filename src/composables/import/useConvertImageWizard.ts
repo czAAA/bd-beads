@@ -1,4 +1,4 @@
-import { computed, inject, onBeforeUnmount, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
+import { computed, inject, onScopeDispose, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
@@ -13,14 +13,17 @@ import {
   type FoundColorChoice,
 } from '../../domain/convertColors'
 import {
+  CONVERT_STEPS,
   flipPicture,
   fullCrop,
   isLargeSchema,
   partInset,
   sizingFor,
-  startingWidth,
+  startingSize,
   turnPicture,
+  type ConvertStep,
   type PixelCrop,
+  type SizeSide,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
@@ -61,16 +64,12 @@ export type ConvertWeave = 'whole' | 'part'
  * device's Size unit: the wizard remembers nothing (spec 0645). */
 export type ConvertSizeUnit = 'beads' | 'mm'
 
-/** The layout the wizard is a full-screen sheet in, under 1024 px wide or in portrait (PhoneForms card); the same
- * edge as the CSS of its components. */
-export const CONVERT_SHEET_QUERY = '(max-width: 63.99rem), (orientation: portrait)'
-
 /** How long a moved handle has to stay still before the colors are worked out exactly (ticket 122). */
 const PAUSE_MS = 150
 
-/** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture and
- * the part to weave, the Width, the colors, and the preview and Project they make. Nothing is kept on the device and
- * Cancel drops it all; Create reads `createProject`. Mount it in the wizard's setup: it stops its timers on unmount. */
+/** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
+ * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
+ * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
 export function useConvertImageWizard({ start, decodeImage, loadCatalog }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
@@ -89,10 +88,18 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
 
+  // The step shown (ticket 0756): the Progress bar's dots and the page's one section follow it.
+  const step = ref<ConvertStep>('picture')
+
   // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
   const weaveChoice = ref<ConvertWeave>('whole')
   const rawPart = shallowRef<PixelCrop>()
   const widthBeads = ref(0)
+  const heightBeads = ref(0)
+  // The chain (ticket 0757): linked, the side moved last leads and the other follows the picture's shape; unlinked,
+  // each is its own.
+  const linked = ref(true)
+  const lead = ref<SizeSide>('width')
   const sizeUnit = ref<ConvertSizeUnit>('beads')
 
   // Colors.
@@ -102,6 +109,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const chosenSource = ref<ColorSource>()
   const chosenColors = ref(DEFAULT_MAX_IMAGE_COLORS)
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
+  /** Treat as empty (ConvertImage card, ticket 0758): on, the preview takes the eyedropper's taps. It is on the Colors step only. */
+  const treatAsEmpty = ref(false)
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
   const part = computed<PixelCrop>(() => {
@@ -129,19 +138,53 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     },
     { flush: 'sync' },
   )
-  onBeforeUnmount(() => clearTimeout(pauseTimer))
+  onScopeDispose(() => clearTimeout(pauseTimer))
 
   // --- Size ---------------------------------------------------------------------------------------------------------
 
-  /** The one sizing rule over a part (convertSize's sizingFor), with the Width asked for. */
+  /** The one sizing rule over a part (convertSize's sizingFor), with the Width and Height asked for. The part only
+   * chooses what is woven: both stay as they were, held to the part's pixels. */
   const sizingOf = (at: PixelCrop) =>
-    sizingFor({ part: at, width: widthBeads.value, bead: bead.value, technique: technique.value, techniqueSettings: techniqueSettings.value })
+    sizingFor({
+      part: at,
+      width: widthBeads.value,
+      height: heightBeads.value,
+      linked: linked.value,
+      lead: lead.value,
+      bead: bead.value,
+      technique: technique.value,
+      techniqueSettings: techniqueSettings.value,
+    })
   const sizing = computed(() => sizingOf(part.value))
   const dimensions = computed(() => sizing.value.grid)
 
   /** A Width in beads as the piece's width in mm through the Bead, for the slider's labels. */
   function widthMmOf(beads: number): number {
     return Math.round(estimatedSizeMm({ columns: beads, rows: 1 }, bead.value, technique.value).widthMm)
+  }
+
+  /** A Height in beads as the piece's height in mm through the Bead, for the slider's labels. */
+  function heightMmOf(beads: number): number {
+    return Math.round(estimatedSizeMm({ columns: 1, rows: beads }, bead.value, technique.value).heightMm)
+  }
+
+  function setWidth(beads: number) {
+    widthBeads.value = beads
+    lead.value = 'width'
+  }
+
+  function setHeight(beads: number) {
+    heightBeads.value = beads
+    lead.value = 'height'
+  }
+
+  /** The chain: unlinking keeps the sizes on show, and linking again takes the shape back from the side moved last. */
+  function setLinked(next: boolean) {
+    if (!next && linked.value) {
+      widthBeads.value = sizing.value.width
+      heightBeads.value = sizing.value.height
+    }
+    linked.value = next
   }
 
   function setWeave(next: ConvertWeave) {
@@ -171,7 +214,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       image.value = decoded
       fileName.value = file.name
       fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
-      if (first) widthBeads.value = startingWidth(decoded)
+      if (first) {
+        const opening = startingSize(decoded)
+        widthBeads.value = opening.width
+        heightBeads.value = opening.height
+      }
       restartPart()
     } catch (error) {
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
@@ -206,8 +253,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rest = computed(() => sample(restPart.value))
 
   const hasCatalog = computed(() => !!catalogId.value)
+  /** What the found colors are matched to: Exact until a source is chosen (ticket 0758). */
   const source = computed<ColorSource>(() => {
-    const wanted = chosenSource.value ?? (hasCatalog.value ? 'bead-colors' : 'default')
+    const wanted = chosenSource.value ?? 'exact'
     return wanted === 'bead-colors' && !hasCatalog.value ? 'default' : wanted
   })
   const builtIns = computed(() => defaultPalette(bead.value.id))
@@ -301,6 +349,17 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     if (pictureHex) setChoice(pictureHex, { kind: 'empty' })
   }
 
+  watch([step, () => !!image.value], ([at, hasPicture]) => {
+    if (at !== 'colors' || !hasPicture) treatAsEmpty.value = false
+  })
+
+  const stepIndex = computed(() => CONVERT_STEPS.indexOf(step.value))
+  /** Every step after Picture waits for a picture. */
+  const canGoTo = (next: ConvertStep) => next === 'picture' || !!image.value
+  function goTo(next: ConvertStep | undefined) {
+    if (next && canGoTo(next)) step.value = next
+  }
+
   /** The picture's file name without its extension: Name's placeholder, and the Name when it is left blank. */
   const fileStem = computed(() => fileName.value.replace(/\.[^.]*$/, ''))
 
@@ -313,7 +372,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       : [],
   )
 
-  /** The Project the converted grid at rest makes: the popup's own setup, the grid and its Palette (spec 0645). */
+  /** The Project the converted grid at rest makes: the page's own setup, the grid and its Palette (spec 0645). */
   function projectAtRest() {
     if (!image.value || !rest.value) return undefined
     return createProjectFromImage({
@@ -347,6 +406,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     settings,
     techniqueSettings,
     setSetting: (id: string, value: number) => (settings.value = { ...settings.value, [id]: value }),
+    // The steps: Picture first, the rest once a picture is set; Next on the last is Create Project
+    step,
+    canGoTo,
+    goTo,
+    goBack: () => goTo(CONVERT_STEPS[stepIndex.value - 1]),
+    goNext: () => goTo(CONVERT_STEPS[stepIndex.value + 1]),
+    stepIndex,
+    onLastStep: computed(() => stepIndex.value === CONVERT_STEPS.length - 1),
     // Picture
     image,
     hasPicture: computed(() => !!image.value),
@@ -365,7 +432,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     // Size
     sizing,
     dimensions,
-    setWidth: (beads: number) => (widthBeads.value = beads),
+    setWidth,
+    setHeight,
+    linked,
+    setLinked,
+    heightMmOf,
     sizeUnit,
     setSizeUnit: (next: ConvertSizeUnit) => (sizeUnit.value = next),
     widthMmOf,
@@ -387,6 +458,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     catalogState,
     /** The loaded catalog itself, for the remap picker's empty state to name a code's other sizes (ticket 0713). */
     catalog,
+    /** The Color catalog of the Bead in hand, none while another Bead's (or none) is loaded: names Review's coded colors (ticket 0759). */
+    beadCatalog: computed(() => (catalog.value?.id === catalogId.value ? catalog.value : undefined)),
     source,
     setSource: (next: ColorSource) => (chosenSource.value = next),
     beadTargets,
@@ -402,6 +475,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     choices,
     setChoice,
     toggleEmpty,
+    treatAsEmpty,
     emptyAtBead,
     palette,
     remapPalette,

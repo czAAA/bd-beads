@@ -11,22 +11,17 @@
   --starter-press-scale: 0.97; /* StarterGallery card: a card's picture while pressed. */
   --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
   --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
-  --convert-sections-width-narrow: 400px; /* ConvertImage card: the sections pane while the popup is under 1100px wide. */
-  --convert-preview-phone: 300px; /* PhoneForms card: the wizard's sticky preview at the top of the scroll on a phone. */
-  --convert-preview-phone-shrunk: 132px; /* PhoneForms card: the same preview once the sections scroll under it. */
-  --convert-preview-tablet: 440px; /* PhoneForms card: the sticky preview on a portrait tablet. */
-  --convert-preview-tablet-shrunk: 200px; /* PhoneForms card: the tablet preview once scrolled. */
-  --step-disc: 20px; /* ConvertImage card: a section's numbered disc and the step rail's. */
+  --convert-sections-width-narrow: 400px; /* ConvertImage card: the step pane while the page is under 1100px wide. */
+  --convert-preview-phone: 300px; /* PhoneForms card: the converter's preview above the step on a phone, at most (it gives way to the step). */
+  --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step. */
+  --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. */
+  --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
   --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
   --crop-bar-width: 8px; /* ConvertImage card: an edge handle's thickness. */
-  --modal-large-header: 56px; /* Modal card: the large Modal's header (title, Close); 52px as a phone sheet. */
-  --modal-large-header-phone: 52px; /* PhoneForms card: the wizard sheet's header on a phone. */
-  --modal-large-footer: 64px; /* Modal card: the large Modal's pinned footer. */
-  --step-rail: 44px; /* ConvertImage card: the sticky step rail atop the sections pane; 40px on a phone. */
-  --step-rail-phone: 40px; /* PhoneForms card: the step rail under the sticky preview. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
+  --found-columns: 64px minmax(0, 1fr) 56px 56px 56px; /* FoundColorRow card: the found-colors table's columns, in its heading row and every row. */
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter. */
   --filter-chip-height: 28px; /* BeadColors card: a line of the Finish filter list. */
   --filter-check: 14px; /* BeadColors card: a Finish line's check box. */
@@ -949,6 +944,12 @@ body {
 .bb-mirror-count button[aria-disabled="true"] { opacity: .38; cursor: default; }
 .bb-mirror-count output { min-width: 14px; text-align: center; font: 500 12px/1 var(--font-mono); color: var(--canvas); }
 .bb-mirror-note { padding: 0 6px; font: 400 11px/1 var(--font-mono); color: color-mix(in srgb, var(--canvas) 74%, transparent); }
+/* One set of states for every control on either bar (ticket 0753): hover and press mix `canvas` into the bar at 12% and 20%; "on" (a chip, the chosen Mode) is `canvas` with `ink`, dimmed to 86% and 72% on hover and press, never to a fill that hides its icon. */
+.bb-mirror-mode button:hover:not([aria-checked="true"]), .bb-mirror-chip > button:hover:not([aria-pressed="true"]), .bb-mirror-count button:hover:not([aria-disabled="true"]) { background: color-mix(in srgb, var(--canvas) 12%, transparent); }
+.bb-mirror-mode button[aria-checked="true"]:hover, .bb-mirror-chip > button[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--canvas) 86%, var(--ink)); }
+.bb-mirror-mode button:active:not([aria-checked="true"]), .bb-mirror-chip > button:active:not([aria-pressed="true"]), .bb-mirror-count button:active:not([aria-disabled="true"]) { background: color-mix(in srgb, var(--canvas) 20%, transparent); }
+.bb-mirror-mode button[aria-checked="true"]:active, .bb-mirror-chip > button[aria-pressed="true"]:active { background: color-mix(in srgb, var(--canvas) 72%, var(--ink)); }
+.bb-mirror-mode button:focus-visible, .bb-mirror-chip > button:focus-visible, .bb-mirror-count button:focus-visible { outline: var(--focus-width) solid var(--canvas); outline-offset: var(--focus-offset); }
 @media (pointer: coarse) {
   .bb-mirror-mode, .bb-mirror-chip { height: var(--mirror-bar-control-touch); }
   .bb-mirror-chip > button { width: calc(var(--mirror-bar-control-touch) - 2px); height: calc(var(--mirror-bar-control-touch) - 2px); }

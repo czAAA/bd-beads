@@ -61,6 +61,7 @@ import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
+import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
 
@@ -74,6 +75,9 @@ function wireAppShell(services: Services) {
 
   /** Which dialog shows (ticket 0618): every flow that asks a question opens it here, so the root holds one value. */
   const dialogs = useDialogs()
+
+  /** Which App page fills the canvas box, and the leave guard the page may register (ADR 0085, ticket 0756). */
+  const appPage = useAppPage()
 
   /** Asking the browser to keep the library, at a device's first save (ticket 399). */
   const storageAsk = useStorageAskFlow({
@@ -129,9 +133,22 @@ function wireAppShell(services: Services) {
   const backgrounds = useCanvasBackground(currentProject, services.devicePreferences)
   const addNewProject = (project: Parameters<typeof addProject>[0]) => addProject(withStartBackground(project, backgrounds.start.value))
 
-  // Convert image (spec 0645, ADR 0010): a dialog creating a new Project, independent of the open one, so nothing here
-  // touches replaceProject, undo or the Row lock.
-  const convertImage = useConvertImageFlow({ dialogs, addProject: addNewProject })
+  // Convert image (spec 0645, ADR 0010, ADR 0086): an App page creating a new Project, independent of the open one, so
+  // nothing here touches replaceProject, undo or the Row lock.
+  const convertImage = useConvertImageFlow({
+    dialogs,
+    appPage,
+    addProject: addNewProject,
+    decodeImage: services.decodeImage,
+    loadCatalog: loadColorCatalog,
+  })
+
+  /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
+  const afterLeaving =
+    <Args extends unknown[]>(action: (...args: Args) => void) =>
+    async (...args: Args) => {
+      if (await appPage.leave()) action(...args)
+    }
 
   /** New-Project creation, blank or from a Starter (tickets 196, 0596). */
   const { onCreateProject, onCreateFromStarter } = useNewProjectFlow({ addProject: addNewProject })
@@ -769,12 +786,19 @@ function wireAppShell(services: Services) {
       /** A picture dropped or pasted on the app opens Convert image with it set (spec 0645). */
       onPictureForConvert: convertImage.onPicture,
       dialogOpen: dialogs.open,
+      page: appPage.page,
     },
     /** The canvas box (CanvasPanel): its strip, the drawing surface, the Tool pill, the Context and Progress bars, the
      * toasts. */
     canvas: {
       t,
       locale,
+      // The App page in the box (ADR 0085): Convert image replaces the drawing area and the Progress bar
+      page: appPage.page,
+      convertSession: convertImage.session,
+      readClipboardImage: services.readClipboardImage,
+      onCloseConvertImage: convertImage.onClose,
+      onCreateConvertImage: convertImage.onCreate,
       // The library and the panels the strip opens
       projects,
       activeProject,
@@ -910,7 +934,10 @@ function wireAppShell(services: Services) {
       exportOpener: overlays.exportOpener,
       menuOpensOnForm: overlays.menuOpensOnForm,
       phoneSavedProjectsOpen: overlays.phoneSavedProjectsOpen,
-      onSelectProjectFromPhoneDrawer: overlays.onSelectProjectFromPhoneDrawer,
+      onSelectProjectFromPhoneDrawer: afterLeaving(overlays.onSelectProjectFromPhoneDrawer),
+      /** The page the box shows, and the Menu's way to leave it (the Menu knows nothing of which page asks). */
+      page: appPage.page,
+      onLeavePage: appPage.leave,
       onOpenShortcutsHelp,
       onOpenFeedback: feedback.onOpenFeedback,
       // Menu: the device and the library
@@ -924,7 +951,7 @@ function wireAppShell(services: Services) {
       sealed,
       activeProjectId,
       onRequestRemove: savedProjectConfirms.onRequestRemove,
-      onImportProjects: importSwitch.onImportProjects,
+      onImportProjects: afterLeaving(importSwitch.onImportProjects),
       onExportLibraryFile: exportFlow.onExportLibraryFile,
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
       // New Project
@@ -1029,12 +1056,8 @@ function wireAppShell(services: Services) {
       naming: namePiece.naming,
       onSavePieceName: namePiece.onSavePieceName,
       onCancelPieceName: namePiece.onCancelPieceName,
-      convertImageStart: convertImage.start,
-      decodeImage: services.decodeImage,
-      readClipboardImage: services.readClipboardImage,
-      loadColorCatalog,
-      onConvertImageCreate: convertImage.onCreate,
-      onConvertImageCancel: convertImage.onCancel,
+      onConfirmLeaveConverter: convertImage.onConfirmLeave,
+      onCancelLeaveConverter: convertImage.onCancelLeave,
     },
     /** The registry itself, for a test that opens a dialog the way its flow would. */
     dialogRegistry: dialogs,

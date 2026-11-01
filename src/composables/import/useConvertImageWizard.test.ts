@@ -35,12 +35,13 @@ async function setup(picture: PixelData, beadId = 'toho/cube/1.5mm') {
 }
 
 describe('useConvertImageWizard sizing (ticket 0747)', () => {
-  it('starts on the whole picture at one bead per pixel, the grid exact on that mark', async () => {
-    const wizard = await setup(flat(32, 32))
+  it('starts on the whole picture at the largest Width, linked', async () => {
+    const wizard = await setup(flat(240, 160))
     expect(wizard.weave.value).toBe('whole')
-    expect(wizard.sizing.value.width).toBe(32)
-    expect(wizard.sizing.value.mark).toEqual({ width: 32, pixelsPerBead: 1 })
-    expect(wizard.dimensions.value).toEqual({ columns: 32, rows: 32 })
+    expect(wizard.linked.value).toBe(true)
+    expect(wizard.sizing.value.width).toBe(240)
+    expect(wizard.sizing.value.mark).toEqual({ width: 240, pixelsPerBead: 1 })
+    expect(wizard.dimensions.value).toEqual({ columns: 240, rows: 160 })
   })
 
   it('follows the picture’s physical shape through the Bead between marks', async () => {
@@ -57,6 +58,42 @@ describe('useConvertImageWizard sizing (ticket 0747)', () => {
     const wizard = await setup(flat(200, 100))
     wizard.setWidth(40)
     expect(wizard.widthMmOf(40)).toBe(60)
+  })
+
+  it('lets either slider lead while linked, and the other follow the picture', async () => {
+    const wizard = await setup(flat(200, 100))
+    wizard.setWidth(40)
+    expect(wizard.dimensions.value).toEqual({ columns: 40, rows: 20 })
+    wizard.setHeight(30)
+    expect(wizard.dimensions.value).toEqual({ columns: 60, rows: 30 })
+  })
+
+  it('keeps the sizes on show when unlinked, sets them apart, and takes the shape back when linked again', async () => {
+    const wizard = await setup(flat(200, 100))
+    wizard.setWidth(40)
+    wizard.setLinked(false)
+    expect(wizard.dimensions.value).toEqual({ columns: 40, rows: 20 })
+    wizard.setHeight(50)
+    expect(wizard.dimensions.value).toEqual({ columns: 40, rows: 50 })
+    wizard.setWidth(80)
+    expect(wizard.dimensions.value).toEqual({ columns: 80, rows: 50 })
+    wizard.setLinked(true)
+    expect(wizard.dimensions.value).toEqual({ columns: 80, rows: 40 })
+  })
+
+  it('keeps the sizes when the part changes, dropping only to the part\'s pixels', async () => {
+    const wizard = await setup(flat(200, 100))
+    wizard.setWidth(120)
+    wizard.setLinked(false)
+    wizard.setHeight(60)
+    wizard.setWeave('part')
+    wizard.setPart({ x: 10, y: 10, width: 150, height: 80 })
+    expect(wizard.dimensions.value).toEqual({ columns: 120, rows: 60 })
+    wizard.setPart({ x: 40, y: 20, width: 100, height: 10 })
+    expect(wizard.dimensions.value).toEqual({ columns: 100, rows: 40 })
+    // Back to a bigger part: what was set comes back, nothing was lost by passing through a small one.
+    wizard.setPart({ x: 10, y: 10, width: 150, height: 80 })
+    expect(wizard.dimensions.value).toEqual({ columns: 120, rows: 60 })
   })
 
   it('weaves A part from 10% in, the range, grid and colors following it', async () => {
@@ -109,5 +146,31 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     const wizard = await setup({ width: 300, height: 1, data })
     expect(wizard.colorsMax.value).toBe(256)
     expect(wizard.colorsCapped.value).toBe(true)
+  })
+})
+
+describe('useConvertImageWizard steps (ticket 0756)', () => {
+  it('waits on Picture until a picture is set, then steps one at a time and ends on Review', async () => {
+    const scope = effectScope()
+    const wizard = scope.run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
+        decodeImage: async () => flat(16, 16),
+        loadCatalog: () => Promise.reject(new Error('no catalog')),
+      }),
+    )!
+    wizard.goNext()
+    expect(wizard.step.value).toBe('picture')
+
+    await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
+    wizard.goNext()
+    expect(wizard.step.value).toBe('bead')
+    wizard.goTo('review')
+    expect(wizard.step.value).toBe('review')
+    expect(wizard.onLastStep.value).toBe(true)
+    wizard.goNext()
+    expect(wizard.step.value).toBe('review')
+    wizard.goBack()
+    expect(wizard.step.value).toBe('colors')
   })
 })
