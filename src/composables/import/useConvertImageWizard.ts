@@ -325,7 +325,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       : [],
   )
 
-  /** The Project the converted grid at rest makes: the popup's own setup, the grid and its Palette (spec 0645). */
+  /** The Project the converted grid at rest makes: the page's own setup, the grid and its Palette (spec 0645). */
   function projectAtRest() {
     if (!image.value || !rest.value) return undefined
     return createProjectFromImage({

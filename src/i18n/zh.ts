@@ -888,7 +888,6 @@ export const zh: Translations = {
       resultApprox: '1 颗 ≈ {x} × {y} 像素',
       resultPerPixel: '1 像素 = {n} × {n} 颗',
       colorsCount: { other: '{count} 种颜色' },
-      noPicture: '还没有图片',
       previewName: '预览：{size}，{colors}',
       previewEmpty: '预览：还没有图片',
       zoomLevel: '{percent}%',

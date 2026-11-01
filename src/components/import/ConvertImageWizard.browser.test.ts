@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
-import { ConvertPageHost } from '../../testUtils/convertPage'
+import ConvertPageHost from '../../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../../testUtils/convertPicture'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 

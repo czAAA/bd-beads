@@ -916,7 +916,6 @@ export const ru: Translations = {
       resultApprox: '1 бисерина ≈ {x} × {y} px',
       resultPerPixel: '1 px = {n} × {n} бисерин',
       colorsCount: { other: 'цветов: {count}' },
-      noPicture: 'Изображения пока нет',
       previewName: 'Превью: {size}, {colors}',
       previewEmpty: 'Превью: изображения пока нет',
       zoomLevel: '{percent} %',

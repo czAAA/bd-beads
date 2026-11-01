@@ -916,7 +916,6 @@ export const pl: Translations = {
       resultApprox: '1 koralik ≈ {x} × {y} px',
       resultPerPixel: '1 px = {n} × {n} koralików',
       colorsCount: { other: 'kolorów: {count}' },
-      noPicture: 'Brak obrazu',
       previewName: 'Podgląd: {size}, {colors}',
       previewEmpty: 'Podgląd: brak obrazu',
       zoomLevel: '{percent}%',
