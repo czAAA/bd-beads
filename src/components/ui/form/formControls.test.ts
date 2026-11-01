@@ -117,6 +117,16 @@ describe('SegmentedControl', () => {
     return { wrapper, value }
   }
 
+  it('marks an option with a warning by a dot, the sentence its accessible description (ticket 0768)', () => {
+    const wrapper = mount(SegmentedControl, {
+      props: { options: [options[0], { ...options[1], warning: 'It stopped last time.' }, options[2]], modelValue: 'loom' },
+    })
+    const warned = wrapper.get('[data-value="peyote"]')
+    expect(warned.find('[data-testid="segmented-warning-dot"]').exists()).toBe(true)
+    expect(wrapper.get(`[id="${warned.attributes('aria-describedby')}"]`).text()).toBe('It stopped last time.')
+    expect(wrapper.get('[data-value="loom"]').attributes('aria-describedby')).toBeUndefined()
+  })
+
   it('keeps its choice when disabled, by click or arrow key, and says why on hover', async () => {
     const wrapper = mount(SegmentedControl, {
       props: {

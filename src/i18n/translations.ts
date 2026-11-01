@@ -1050,6 +1050,13 @@ export interface Translations {
         reset: string
         resetBody: string
         resetNothing: string
+        /** The struggling device (ticket 0768): the AI chip's warning Tooltip body after a stopped run, the note asking
+         * once more and its button, and the download note's memory and free-space lines. */
+        stopped: string
+        askAgain: string
+        tryAgain: string
+        lowMemory: string
+        lowSpace: string
       }
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
        * its marks (the width they stand for) and the hint under it. */

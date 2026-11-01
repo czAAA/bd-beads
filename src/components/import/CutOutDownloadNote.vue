@@ -5,15 +5,17 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 
-/** The download note (ConvertImage card, ticket 0767): before the cut-out model's first download, says it runs on the
- * device, uploads nothing and downloads its size once, with Download (the AI-marked button) and Cancel. It takes focus
- * on Download when it shows. */
-const props = defineProps<{ bytes: number }>()
+/** The download note (ConvertImage card, tickets 0767, 0768): says it runs on the device, uploads nothing and downloads
+ * its size once, with a line for low memory or free space, Download (AI-marked) and Cancel; with nothing to download,
+ * it asks once more after a stopped run, with Try again. Focus goes to its first button. */
+const props = defineProps<{ bytes: number; lowMemory: boolean; lowSpace: boolean }>()
 const emit = defineEmits<{ download: []; cancel: [] }>()
 
 const { t } = useI18n()
 const words = computed(() => t.value.convertImage.wizard.cutOut)
-const text = computed(() => fillBlanks(words.value.downloadNote, { size: fillBlanks(words.value.downloadSize, { n: megabytes(props.bytes) }) }))
+const text = computed(() =>
+  props.bytes > 0 ? fillBlanks(words.value.downloadNote, { size: fillBlanks(words.value.downloadSize, { n: megabytes(props.bytes) }) }) : words.value.askAgain,
+)
 
 const noteEl = ref<HTMLElement>()
 onMounted(() => noteEl.value?.querySelector<HTMLButtonElement>('[data-testid="cut-out-download"]')?.focus())
@@ -22,8 +24,12 @@ onMounted(() => noteEl.value?.querySelector<HTMLButtonElement>('[data-testid="cu
 <template>
   <div ref="noteEl" class="cut-out-note" data-testid="cut-out-download-note">
     <p class="cut-out-note__text">{{ text }}</p>
+    <p v-if="lowMemory" class="cut-out-note__text cut-out-note__warning" data-testid="cut-out-low-memory">{{ words.lowMemory }}</p>
+    <p v-if="lowSpace" class="cut-out-note__text cut-out-note__warning" data-testid="cut-out-low-space">{{ words.lowSpace }}</p>
     <div class="cut-out-note__buttons">
-      <AppButton variant="in-box" size="sm" icon="cut-out-ai" data-testid="cut-out-download" @click="emit('download')">{{ words.download }}</AppButton>
+      <AppButton variant="in-box" size="sm" icon="cut-out-ai" data-testid="cut-out-download" @click="emit('download')">{{
+        bytes > 0 ? words.download : words.tryAgain
+      }}</AppButton>
       <AppButton variant="text" size="sm" data-testid="cut-out-download-cancel" @click="emit('cancel')">{{ words.cancel }}</AppButton>
     </div>
   </div>
@@ -46,6 +52,11 @@ onMounted(() => noteEl.value?.querySelector<HTMLButtonElement>('[data-testid="cu
   font: var(--type-meta);
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+/* A check's warning reads a step stronger than the note (ConvertImage card, the download note). */
+.cut-out-note__warning {
+  color: var(--body);
 }
 
 .cut-out-note__buttons {

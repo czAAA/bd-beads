@@ -28,7 +28,7 @@ import {
   type SizeSide,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
-import type { CutOutService } from '../../domain/cutOutModel'
+import type { CutOutDevice, CutOutService } from '../../domain/cutOutModel'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
 import { reducePictureColors } from '../../domain/imageColors'
 import {
@@ -62,13 +62,14 @@ import { useAiCutOut, type CutOut } from './useAiCutOut'
 export type { CutOut } from './useAiCutOut'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
- * a picture is decoded, how a Bead's Color catalog is fetched and the cut-out service that runs the AI choice's model
- * (ticket 0767), all services handed in by the app shell. */
+ * a picture is decoded, how a Bead's Color catalog is fetched, the cut-out service that runs the AI choice's model
+ * (ticket 0767) and the device record beside it (ticket 0768), all services handed in by the app shell. */
 export interface ConvertImageWizardDeps {
   start: CreateProjectInput
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
   cutOutService: CutOutService
+  cutOutDevice: CutOutDevice
 }
 
 /** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
@@ -84,7 +85,7 @@ const PAUSE_MS = 150
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
  * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
  * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
-export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutService }: ConvertImageWizardDeps) {
+export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutService, cutOutDevice }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -103,7 +104,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
   const reading = ref(false)
 
   // Cut out (tickets 0765, 0767): the choice and the AI choice's run, and Simple's Tolerance in hundredths of OKLab.
-  const ai = useAiCutOut({ service: cutOutService, image })
+  const ai = useAiCutOut({ service: cutOutService, device: cutOutDevice, image })
   const cutOut = ai.choice
   const tolerance = ref(DEFAULT_TOLERANCE)
 
@@ -546,8 +547,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     setCutOut: (next: CutOut) => ai.choose(next),
     /** The AI choice's question, download, run or failure (ticket 0767): what shows under the Cut out row. */
     aiCutOut: ai.status,
-    /** Download on the download note. */
+    /** Download on the download note, or Try again on the question after a stopped run (ticket 0768). */
     downloadCutOutModel: ai.download,
+    /** The last run stopped with the tab (ticket 0768): the AI chip's warning dot and Tooltip body. */
+    cutOutStopped: ai.stopped,
     /** Cancel on the note or the AI Loading: back to the choice before. */
     cancelAiCutOut: ai.cancel,
     /** The tap add and tap remove chips and Reset under the AI chip (ticket 0769): shown, which is on, the taps, a tap. */

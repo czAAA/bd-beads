@@ -9,10 +9,11 @@ import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import type { ConvertStep } from '../../domain/convertSize'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
-import type { CutOutService } from '../../domain/cutOutModel'
+import type { CutOutDevice, CutOutService } from '../../domain/cutOutModel'
 import type { SubjectMask } from '../../domain/subjectMask'
 import { ImageConversionError, formatImageLimits, type PixelData } from '../../domain/imageConversion'
 import { fakeCutOutService, unusedCutOutService } from '../../testUtils/fakeCutOutService'
+import { fakeCutOutDevice } from '../../testUtils/fakeCutOutDevice'
 import type { Project } from '../../domain/project'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
@@ -57,11 +58,11 @@ const Page = defineComponent({
 })
 
 function open(
-  options: { draft?: CreateProjectInput; file?: File; decodeImage?: () => Promise<PixelData>; clipboard?: File; loadCatalog?: () => Promise<ColorCatalog>; cutOutService?: CutOutService } = {},
+  options: { draft?: CreateProjectInput; file?: File; decodeImage?: () => Promise<PixelData>; clipboard?: File; loadCatalog?: () => Promise<ColorCatalog>; cutOutService?: CutOutService; cutOutDevice?: CutOutDevice } = {},
 ) {
   const decodeImage = vi.fn(options.decodeImage ?? (async () => redAndWhite()))
   const draft = options.draft ?? cube
-  const wizard = effectScope().run(() => useConvertImageWizard({ start: draft, decodeImage, loadCatalog: options.loadCatalog ?? (async () => catalog), cutOutService: options.cutOutService ?? unusedCutOutService }))!
+  const wizard = effectScope().run(() => useConvertImageWizard({ start: draft, decodeImage, loadCatalog: options.loadCatalog ?? (async () => catalog), cutOutService: options.cutOutService ?? unusedCutOutService, cutOutDevice: options.cutOutDevice ?? fakeCutOutDevice().device }))!
   if (options.file) void wizard.setFile(options.file)
   const wrapper = mount(Page, { props: { wizard, readClipboardImage: async () => options.clipboard }, attachTo: document.body })
   return { wrapper, decodeImage, draft, wizard }
@@ -684,6 +685,21 @@ describe('ConvertImageWizard Cut out with AI (ticket 0767)', () => {
     expect(chip.attributes('aria-label')).toBe('Cut out with AI · runs on this device')
     expect(chip.find('[data-icon="cut-out-ai"]').exists()).toBe(true)
     expect(chip.find('.segmented__face').text()).toBe('')
+  })
+
+  it('after a run that stopped with the tab, gives the AI chip its warning dot and says why in its Tooltip, and asks once more', async () => {
+    const fake = fakeCutOutService()
+    const { wrapper } = open({ cutOutService: fake.service, cutOutDevice: fakeCutOutDevice({ record: { running: true } }).device })
+    await chooseFile(wrapper, picture())
+    const chip = cutOut(wrapper).get('[data-value="ai"]')
+    const why = en.convertImage.wizard.cutOut.stopped
+    expect(chip.find('[data-testid="segmented-warning-dot"]').exists()).toBe(true)
+    expect(cutOut(wrapper).get('[role="tooltip"]').text()).toContain(why)
+    expect(chip.attributes('aria-disabled')).toBeUndefined()
+
+    await chip.trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="cut-out-download"]').text()).toBe('Try again')
   })
 
   it('asks before the first download, then shows its progress in MB with Cancel, after the loading delay', async () => {
