@@ -22,9 +22,9 @@ import { EYEDROPPER_CURSOR } from '../canvas/eyedropperCursor'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// The Convert image wizard's preview (ConvertImage card, Preview pane): the picture as beads in the Frame's space, the
-// Frame over the part to weave, the rest dimmed, the part drawn, moved and pulled like a Selection (tickets 0747, 0757);
-// its own zoom, Treat as empty's eyedropper and Hold to compare with its Compare toggle (0770). Empty, the drop zone.
+// The Convert image wizard's preview (ConvertImage card, Preview pane): the picture as beads, the Frame over the part to
+// weave, the part drawn, moved and pulled like a Selection (tickets 0747, 0757); its zoom, Treat as empty's eyedropper,
+// Cut out's taps (0769) and Hold to compare with its Compare toggle (0770). Empty, the drop zone.
 
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -252,13 +252,12 @@ function startPartDrag(event: PointerEvent) {
 }
 
 /** A press on the beads: held still, it shows the picture (Hold to compare); otherwise the eyedropper's tap while Treat
- * as empty is on, made as it lets go, or the part's gesture. */
+ * as empty is on, or Cut out's tap while tap add or remove is on, each made as it lets go; or the part's gesture. */
 function onBoxDown(event: PointerEvent) {
   if (pinch.value || press.value) return
   if (event.pointerType === 'mouse' && event.button !== 0) return
-  const tap = eyedropper.value ? beadIndexAt(event) : undefined
-  startPress(event, tap)
-  if (eyedropper.value) event.preventDefault()
+  startPress(event, eyedropper.value ? beadIndexAt(event) : undefined, tapping.value ? pixelAt(event) : undefined)
+  if (eyedropper.value || tapping.value) event.preventDefault()
   else if (wizard.weave.value === 'part') startPartDrag(event)
 }
 
@@ -345,20 +344,39 @@ const ringStyle = computed(() => {
   return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
 })
 
+// --- Cut out's taps (ticket 0769) --------------------------------------------------------------------------------------
+
+/** Tap add or tap remove is on, in the Picture step where its chips are: a tap on the beads is a tap, never A part's. */
+const tapping = computed(() => !!wizard.cutOutTapMode.value && wizard.cutOutTapsShown.value && wizard.step.value === 'picture')
+
+/** The picture pixel under the pointer, the whole picture counting (it is drawn round the part); none off the picture. */
+function pixelAt(event: PointerEvent): { x: number; y: number } | undefined {
+  const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
+  const frame = frameBox.value
+  const picture = wizard.image.value
+  const size = grid.value
+  const per = wizard.sizing.value.pixelsPerBead
+  if (!box || !frame || !picture || !size || frame.width === 0 || frame.height === 0) return undefined
+  const part = wizard.part.value
+  const x = Math.floor(part.x + ((event.clientX - box.left - frame.x) * size.columns * per.x) / frame.width)
+  const y = Math.floor(part.y + ((event.clientY - box.top - frame.y) * size.rows * per.y) / frame.height)
+  return x >= 0 && x < picture.width && y >= 0 && y < picture.height ? { x, y } : undefined
+}
+
 // --- Hold to compare (ticket 0770) -------------------------------------------------------------------------------------
 
 /** The Compare toggle beside the preview: on, the picture shows until it is pressed again. */
 const compareOn = ref(false)
-/** A press on the beads not yet let go: where it began, the bead an eyedropper's tap takes, and whether it was held
- * still past the delay (the picture showing) or moved first (today's gestures). */
-type Press = { pointerId: number; x: number; y: number; tap?: number; moved: boolean }
+/** A press on the beads not yet let go: where it began, the bead an eyedropper's tap takes or the picture pixel Cut
+ * out's tap takes, and whether it was held still past the delay (the picture showing) or moved first (today's gestures). */
+type Press = { pointerId: number; x: number; y: number; tap?: number; pixel?: { x: number; y: number }; moved: boolean }
 const press = ref<Press | null>(null)
 const held = ref(false)
 let holdTimer: ReturnType<typeof setTimeout> | undefined
 const comparing = computed(() => compareOn.value || held.value)
 
-function startPress(event: PointerEvent, tap: number | undefined) {
-  press.value = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, tap, moved: false }
+function startPress(event: PointerEvent, tap: number | undefined, pixel: { x: number; y: number } | undefined) {
+  press.value = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, tap, pixel, moved: false }
   holdTimer = setTimeout(() => (held.value = !!press.value && !press.value.moved && !drag.value?.live), HOLD_DELAY_MS)
   window.addEventListener('pointermove', onPressMove)
   window.addEventListener('pointerup', onPressUp)
@@ -373,13 +391,16 @@ function onPressMove(event: PointerEvent) {
   clearTimeout(holdTimer)
 }
 
-/** Letting go: the beads again after a hold, else the eyedropper's tap on the bead the press began on. */
+/** Letting go: the beads again after a hold, else the eyedropper's tap on the bead the press began on, or Cut out's
+ * tap on the pixel it began on when it never moved. */
 function onPressUp(event: PointerEvent) {
   const started = press.value
   if (!started || event.pointerId !== started.pointerId) return
   const tap = held.value ? undefined : started.tap
+  const pixel = held.value || started.moved ? undefined : started.pixel
   endPress()
   if (tap !== undefined) wizard.emptyAtBead(tap)
+  if (pixel) wizard.tapCutOut(pixel)
 }
 
 function endPress(event?: PointerEvent) {
@@ -435,7 +456,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--part': wizard.weave.value === 'part' }" data-testid="convert-preview">
+  <div
+    ref="paneEl"
+    class="convert-preview"
+    :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--tapping': tapping, 'convert-preview--part': wizard.weave.value === 'part' }"
+    data-testid="convert-preview"
+  >
     <div v-if="!wizard.hasPicture.value" class="convert-preview__empty" data-testid="convert-drop-zone">
       <AppIcon name="image" :size="34" />
       <span class="convert-preview__empty-title">{{ words.dropHere }}</span>
@@ -482,7 +508,7 @@ onBeforeUnmount(() => {
             <span v-if="frameStyle && schemaSize" class="convert-preview__tag" :style="{ left: frameStyle.left, top: frameStyle.top }" aria-hidden="true">
               {{ schemaSize.columns }}×{{ schemaSize.rows }}
             </span>
-            <template v-if="wizard.weave.value === 'part' && !eyedropper">
+            <template v-if="wizard.weave.value === 'part' && !eyedropper && !tapping">
               <button
                 v-for="handle in CROP_HANDLES"
                 :key="handle"
@@ -591,12 +617,13 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
 }
 
-.convert-preview--part .convert-preview__box {
+.convert-preview--part .convert-preview__box,
+.convert-preview--tapping .convert-preview__box {
   cursor: crosshair;
 }
 
 /* A part is drawn by a drag, so a touch on the beads does not scroll the view. */
-.convert-preview--part:not(.convert-preview--eyedropper) .convert-preview__box {
+.convert-preview--part:not(.convert-preview--eyedropper, .convert-preview--tapping) .convert-preview__box {
   touch-action: none;
 }
 
@@ -656,8 +683,8 @@ onBeforeUnmount(() => {
     0 0 0 9999px var(--framing-dim);
 }
 
-/* With A part the Frame is the part's body: a press inside moves it. */
-.convert-preview--part:not(.convert-preview--eyedropper) .convert-preview__frame {
+/* With A part the Frame is the part's body: a press inside moves it (not while a tap is a tap). */
+.convert-preview--part:not(.convert-preview--eyedropper, .convert-preview--tapping) .convert-preview__frame {
   pointer-events: auto;
   cursor: move;
 }

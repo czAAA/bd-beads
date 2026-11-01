@@ -23,4 +23,17 @@ describe('cutOutFiles.json', () => {
     }
     expect(files.runtime.bytes).toBeLessThan(PER_FILE_CAP)
   })
+
+  it('names the tap model’s encoder and decoder (ticket 0769) the same way, by their content', () => {
+    for (const [stem, model] of [
+      ['slimsam-77-encoder-uint8', files.taps.encoder],
+      ['slimsam-77-decoder-uint8', files.taps.decoder],
+    ] as const) {
+      expect(model.parts.reduce((sum, part) => sum + part.bytes, 0)).toBe(model.bytes)
+      for (const [index, part] of model.parts.entries()) {
+        expect(part.bytes).toBeLessThan(PER_FILE_CAP)
+        expect(part.file).toBe(`${stem}-${model.sha256.slice(0, 8)}.onnx.part${index}`)
+      }
+    }
+  })
 })
