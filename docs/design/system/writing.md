@@ -68,6 +68,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | AI | ИИ | Only in a Tooltip and a screen-reader label, never on screen: Cut out with AI / Вырезка с ИИ (ticket 0764) |
 | Tolerance · Fit to subject | Допуск · Подогнать к объекту | Simple's slider; the button that sets A part round what Cut out kept, the subject being объект (ticket 0765) |
 | Auto-fix lighting · Clean up stray beads · Outline | Исправить освещение · Убрать одиночные бисерины · Контур | The Colors step's helpers (ticket 0766); Контур is the Subject outline, never a Selection's outline |
+| Suggested Width · Compare | предложенная ширина · Сравнить | The Size step's mark, "suggested" / «предложено», and its link Use suggested / «Взять предложенную»; the preview's toggle and Hold to compare (ticket 0770) |
 
 ## Ukrainian, Belarusian, Chinese, Spanish and Polish (ticket 368)
 
@@ -711,3 +712,15 @@ Convert image's Auto-fix lighting, Clean up stray beads and Outline (ConvertImag
 | Outline color · Darkest (the swatch's Tooltip name and label; the picker's way back to the darkest found color) | Цвет контура · Самый тёмный | Колір контуру · Найтемніший | Колер контуру · Самы цёмны | 轮廓颜色 · 最深色 | Color del contorno · El más oscuro | Kolor obrysu · Najciemniejszy |
 
 The rows are full-width in the step, so every label wraps there rather than overflow; the Tooltips wrap at their 15rem. English follows the spec's wording; the other languages are proposals for review with the build.
+
+## Suggested Width and Compare copy (ticket 0770)
+
+Convert image's Suggested Width (ConvertImage card, 3 Size) and the preview's Compare toggle (Preview pane; spec 0761). The mark's label is a past participle (impersonal in Russian, Ukrainian and Belarusian, agreeing with the width in Spanish and Polish); the link is a verb; the Tooltip bodies are one sentence ending in one, in the voice each language's other Tooltips use (Russian, Ukrainian and Belarusian describe, the rest ask). {width} is the Suggested Width in the chosen unit ("30 beads", "45 mm").
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| suggested · Use suggested (the Width mark's label, the link beside the result label) | предложено · Взять предложенную | запропоновано · Узяти запропоновану | прапанавана · Узяць прапанаваную | 建议 · 使用建议宽度 | sugerido · Usar el sugerido | sugerowana · Użyj sugerowanej |
+| Set the width to {width}, the narrowest that still keeps every small color area of the picture. (Use suggested's Tooltip body) | Ставит ширину {width}: самую узкую, при которой остаются все мелкие цветные участки изображения. | Ставить ширину {width}: найвужчу, за якої лишаються всі дрібні кольорові ділянки зображення. | Ставіць шырыню {width}: найвузейшую, пры якой застаюцца ўсе дробныя каляровыя ўчасткі выявы. | 把宽度设为 {width}：仍能保留图片中所有小色块的最窄宽度。 | Pon el ancho en {width}, el más estrecho que aún conserva cada pequeña zona de color de la imagen. | Ustaw szerokość na {width}, najwęższą, przy której zostają wszystkie małe obszary koloru obrazu. |
+| Compare · Show the original picture in place of the beads; pressing and holding still on the preview does the same. (the toggle's name, its Tooltip body) | Сравнить · Показывает исходное изображение вместо бисера; то же самое, если нажать на превью и подержать не двигая. | Порівняти · Показує початкове зображення замість бісеру; те саме, якщо натиснути на прев’ю й потримати не рухаючи. | Параўнаць · Паказвае зыходную выяву замест бісеру; тое ж самае, калі націснуць на прэв’ю і патрымаць не рухаючы. | 对比 · 显示原图而不是珠子；在预览上按住不动也一样。 | Comparar · Muestra la imagen original en lugar de las cuentas; mantener pulsada la vista previa sin moverla hace lo mismo. | Porównaj · Pokaż oryginalny obraz zamiast koralików; przytrzymanie podglądu bez ruchu robi to samo. |
+
+The mark's label sits under the track, kept inside it (ValueSlider card), the longest Ukrainian «запропоновано», about 85 px; the link is at the right of the result label's row; Compare is an icon with its name in the Tooltip. English follows the spec's wording; the other languages are proposals for review with the build.

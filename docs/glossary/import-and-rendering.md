@@ -61,3 +61,9 @@ _Avoid_: denoise, smoothing, despeckle
 
 **Subject outline**, shown as "Outline" on screen (ticket 0766, spec 0761): a ring of beads one bead thick, in one color, on every empty bead touching the cut-out subject (by the Technique's neighbours), so the Schema grows by one bead each way (on brick stitch the top, and on peyote the left, by a whole stagger cycle, so every bead keeps its offset). Its color starts as the darkest found color and is changed through the app's own colour popover. The switch shows only when there are empty beads round the subject: Cut out on, a transparent picture, or a found color set to empty.
 _Avoid_: border, rim, and plain "outline" in the docs, which means a drawn line round a Selection, a Piece or the margin
+
+**Suggested Width** (ticket 0770, spec 0761): the Size step's proposal for the Width: the narrowest Width in the slider's range at which every color region of the subject (the whole picture while Cut out is Off) that is at least 4 beads at the widest Width still has a bead, a mark preferred when one is at most a quarter wider. Regions are colors told apart by the Colors slider's count, through Cut out and Auto-fix lighting. It shows as a featured mark labelled "suggested" on the Width slider and a "Use suggested" link beside the result label, and moves the Width only when the maker picks it (linked, the Height follows). It is measured on the part at rest, from the picture sampled once at the widest Width.
+_Avoid_: auto width, recommended size
+
+**Hold to compare** (ticket 0770, spec 0761): in every step of Convert image, a press on the preview held still for a moment shows the original picture in the beads' place, and letting go shows the beads again; a press that moves first is the usual gesture (drawing or moving A part, Treat as empty's tap). The **Compare** toggle beside the preview does the same for a keyboard or screen reader, until it is pressed again.
+_Avoid_: before/after, preview toggle

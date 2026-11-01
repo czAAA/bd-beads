@@ -1045,6 +1045,9 @@ export interface Translations {
       /** The chain between Width and Height: its name in each state (ticket 0757). */
       sizeLinked: string
       sizeUnlinked: string
+      /** Suggested Width (ticket 0770): the label of its mark on the Width slider, and the link that moves the Width to it. */
+      suggested: string
+      useSuggested: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
       /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
@@ -1067,6 +1070,8 @@ export interface Translations {
       previewName: string
       previewEmpty: string
       zoomLevel: string
+      /** The preview's Compare toggle (ticket 0770): the original picture in place of the beads while it is on. */
+      compare: string
       /** The Colors section's source control and what each source does. */
       matchTo: string
       beadColors: string
@@ -1225,6 +1230,9 @@ export interface Translations {
     /** The Colors step's switches (ticket 0766). */
     autoFixLighting: string
     subjectOutline: string
+    /** Use suggested's Tooltip body, `{width}` the Suggested Width in the chosen unit, and the Compare toggle's (ticket 0770). */
+    useSuggested: string
+    compare: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }
