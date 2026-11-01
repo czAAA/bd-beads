@@ -71,8 +71,7 @@ The Convert image page: an App page (ADR 0085, ADR 0086) where a picture becomes
 ## 5 Review
 
 - Name and Maker's name, TextFields stacked (the build stacks them at every width: side by side, a long label such as Spanish "Nombre de quien lo hace" and its "optional" did not fit the 400px pane), each "optional"; Name's placeholder is the file's name, and a Name left blank is the file's name.
-- The summary box (`surface`, `radius-lg`, padding 4 12): size, colors, beads needed, estimated weight and to buy as rows, the `label` at the left and the value in `meta` `ink` at the right; under a 1px `line`, one row per color: a 14px swatch, the code or name, beads, grams and tubes ("1 × 5 g", PrintSpecification's rule). On a phone the per-color rows sit behind Show details / Hide details.
-- The grams Note: "≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares."
+- **Beads needed** (BeadsNeeded card), the app's own, for the Project Create Project would make: one box (`surface`, `radius-lg`, padding 4 0) holding the section row, collapsed every time Review is shown, with the total on the closed row ("128 · ≈ 0.64 g"). Pressed, it opens in place to the usual colors, counts and grams, five colors then "Show all", with the weight Note; a real catalog color reads "code name" (ColorLabel), named from the Bead's Color catalog the page already holds. There is no second buy list: no size, colors, weight or to-buy rows, no per-color tubes and no Show details.
 
 ## Keyboard and screen readers
 

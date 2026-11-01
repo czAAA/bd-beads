@@ -12,6 +12,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import PanelSection from '../shell/PanelSection.vue'
+import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { LabelledColor } from '../../i18n/colorLabel'
 import ColorLabel from './ColorLabel.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -22,6 +23,10 @@ import { fillBlanks } from '../../domain/fillBlanks'
 const props = defineProps<{
   /** The Project whose bead counts are shown; without one the box just asks for a Project to be opened. */
   project?: Project
+  /** The Color catalog that names a coded color, when the place already holds it (Convert image's Review); else the app shell's Bead colors. */
+  catalog?: ColorCatalog
+  /** Closed every time it opens, kept nowhere (Convert image's Review, ticket 0759). */
+  closedFirst?: boolean
 }>()
 
 const { t, locale } = useI18n()
@@ -63,7 +68,7 @@ const total = computed(() => {
 </script>
 
 <template>
-  <PanelSection id="frame:beads" :label="t.quantities.heading" keep-summary data-testid="bead-quantities">
+  <PanelSection id="frame:beads" :label="t.quantities.heading" keep-summary :closed-first="closedFirst" data-testid="bead-quantities">
     <template v-if="quantities.length > 0" #summary><span data-testid="quantity-total">{{ total }}</span></template>
     <div class="bead-quantities">
       <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
@@ -88,7 +93,7 @@ const total = computed(() => {
           <tr v-for="quantity in shown" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
             <td class="bead-quantities__color">
               <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
-              <ColorLabel :color="colorOf(quantity.colorId, quantity.hex)" :catalog="beadColors?.catalog.value" />
+              <ColorLabel :color="colorOf(quantity.colorId, quantity.hex)" :catalog="catalog ?? beadColors?.catalog.value" />
             </td>
             <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
               {{ groupThousands(quantity.count, locale) }}
