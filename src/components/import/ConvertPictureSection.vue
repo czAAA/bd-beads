@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, useId, watchPostEffect } from 'vue'
-import { useConvertImageWizardState, type ConvertWeave } from '../../composables/import/useConvertImageWizard'
+import { useConvertImageWizardState, type ConvertWeave, type CutOut } from '../../composables/import/useConvertImageWizard'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits, imageInputAccept } from '../../domain/imageConversion'
+import { MAX_TOLERANCE, MIN_TOLERANCE } from '../../domain/subjectMask'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppMessage from '../ui/AppMessage.vue'
@@ -11,10 +12,11 @@ import AppNote from '../ui/AppNote.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import ValueSlider from '../ui/form/ValueSlider.vue'
 
-// Convert image's Picture step (ConvertImage card, 1 Picture): every way in (Choose file, Paste, Take photo on touch)
-// through the wizard's one validation and decode, the thumbnail and facts with Turn 90° and Flip, weave (Whole picture
-// or A part, ticket 0747), the Note of every way in until the first picture, and the app's message for a refused file.
+// Convert image's Picture step (ConvertImage card, 1 Picture): every way in through the wizard's one decode, the
+// thumbnail and facts with Turn 90° and Flip, weave (ticket 0747), Cut out with Simple's Tolerance and Fit to subject
+// (ticket 0765), the Note of every way in until the first picture, and the app's message for a refused file.
 const emit = defineEmits<{ paste: [] }>()
 
 const { t } = useI18n()
@@ -22,12 +24,22 @@ const wizard = useConvertImageWizardState()
 const touch = useMediaQuery('(pointer: coarse)')
 const accept = imageInputAccept()
 const weaveLabelId = useId()
+const cutOutLabelId = useId()
 
 const weaveOptions = computed(() => [
   { value: 'whole' as const, label: t.value.convertImage.wizard.wholePicture },
   { value: 'part' as const, label: t.value.convertImage.wizard.aPart },
 ])
 const weave = computed({ get: () => wizard.weave.value, set: (next: ConvertWeave) => wizard.setWeave(next) })
+
+const cutOutWords = computed(() => t.value.convertImage.wizard.cutOut)
+const cutOutOptions = computed(() => [
+  { value: 'off' as const, label: cutOutWords.value.off },
+  { value: 'simple' as const, label: cutOutWords.value.simple },
+])
+const cutOut = computed({ get: () => wizard.cutOut.value, set: (next: CutOut) => wizard.setCutOut(next) })
+const toleranceValue = computed(() => String(wizard.tolerance.value))
+const toleranceMaxLabel = computed(() => fillBlanks(t.value.convertImage.wizard.maxLabel, { value: String(MAX_TOLERANCE) }))
 
 const note = computed(() => formatImageLimits(touch.value ? t.value.convertImage.wizard.pictureNoteTouch : t.value.convertImage.wizard.pictureNote))
 const error = computed(() => (wizard.rejection.value ? formatImageLimits(t.value.convertImage.errors[wizard.rejection.value]) : undefined))
@@ -116,6 +128,38 @@ watchPostEffect(() => {
         <SegmentedControl v-model="weave" :options="weaveOptions" small :labelledby="weaveLabelId" data-testid="convert-weave" />
       </div>
       <p v-if="wizard.weave.value === 'part'" class="convert-picture__hint" data-testid="convert-part-hint">{{ t.convertImage.wizard.partHint }}</p>
+      <div class="convert-picture__row convert-picture__row--wraps">
+        <span :id="cutOutLabelId" class="convert-picture__label">{{ cutOutWords.label }}</span>
+        <SegmentedControl v-model="cutOut" :options="cutOutOptions" small :labelledby="cutOutLabelId" class="convert-picture__cut-out" data-testid="convert-cut-out" />
+      </div>
+      <ValueSlider
+        v-if="wizard.cutOut.value === 'simple'"
+        :label="cutOutWords.tolerance"
+        :model-value="wizard.tolerance.value"
+        :min="MIN_TOLERANCE"
+        :max="MAX_TOLERANCE"
+        :value="toleranceValue"
+        :valuetext="toleranceValue"
+        :min-label="String(MIN_TOLERANCE)"
+        :max-label="toleranceMaxLabel"
+        :hint="cutOutWords.toleranceHint"
+        testid="convert-tolerance-slider"
+        @update:model-value="wizard.setTolerance"
+      />
+      <AppButton
+        v-if="wizard.cutOut.value !== 'off'"
+        variant="in-box"
+        size="sm"
+        icon="cut-out"
+        class="convert-picture__fit"
+        :label="cutOutWords.fitToSubject"
+        :tooltip="cutOutWords.fitToSubjectBody"
+        :disabled="!wizard.subjectBounds.value"
+        :disabled-body="cutOutWords.fitToSubjectNothing"
+        data-testid="convert-fit-to-subject"
+        @click="wizard.fitToSubject"
+        >{{ cutOutWords.fitToSubject }}</AppButton
+      >
     </template>
 
     <LoadingState v-if="wizard.reading.value" compact :text="t.convertImage.readingPicture" />
@@ -202,6 +246,25 @@ watchPostEffect(() => {
   justify-content: space-between;
   gap: var(--space-12);
   min-height: var(--panel-row);
+}
+
+.convert-picture__row--wraps {
+  flex-wrap: wrap;
+}
+
+/* Every chip one width, whatever its word, so the control is one width in every language (ConvertImage card). */
+.convert-picture__cut-out {
+  flex: none;
+  flex-wrap: nowrap;
+}
+
+.convert-picture__cut-out :deep(.segmented__option) {
+  flex: none;
+  width: var(--cut-out-chip);
+}
+
+.convert-picture__fit {
+  align-self: flex-start;
 }
 
 .convert-picture__label {
