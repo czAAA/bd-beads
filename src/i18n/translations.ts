@@ -1030,6 +1030,9 @@ export interface Translations {
       markPx: string
       markTimes: string
       widthHint: string
+      /** The chain between Width and Height: its name in each state (ticket 0757). */
+      sizeLinked: string
+      sizeUnlinked: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
       /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
@@ -1190,6 +1193,9 @@ export interface Translations {
     importFile: string
     changeName: string
     convertImage: string
+    /** The chain between Width and Height, in each state (ticket 0757). */
+    sizeLinked: string
+    sizeUnlinked: string
     treatAsEmpty: string
     remapColor: string
     emptyColor: string

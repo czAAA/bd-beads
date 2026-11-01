@@ -511,6 +511,46 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     expect(wrapper.get('[data-testid="convert-width-value"]').text()).toBe('18 mm · 12 beads')
   })
 
+  it('joins Width with a Height slider and a chain: linked they move together, unlinked each stretches the picture (ticket 0757)', async () => {
+    const wide = async (): Promise<PixelData> => ({ width: 40, height: 20, data: new Uint8ClampedArray(40 * 20 * 4).fill(200) })
+    const { wrapper, wizard } = open({ decodeImage: wide })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'size')
+    const input = (name: string) => wrapper.get(`[data-testid="convert-${name}-range"]`).element as HTMLInputElement
+    const chain = wrapper.get('[data-testid="convert-size-chain"]')
+
+    // Opens at the largest Width: 40 px goes up to 160 beads. Height has its own range over the picture's 20 px.
+    expect([input('width').max, input('width').value]).toEqual(['160', '160'])
+    expect([input('height').min, input('height').max, input('height').value]).toEqual(['8', '80', '80'])
+    expect(chain.attributes('aria-label')).toBe(en.convertImage.wizard.sizeLinked)
+
+    await wrapper.get('[data-testid="convert-height-range"]').setValue('40')
+    expect(input('width').value).toBe('80')
+    await wrapper.get('[data-testid="convert-width-range"]').setValue('100')
+    expect(input('height').value).toBe('50')
+
+    await chain.trigger('click')
+    expect(chain.attributes('aria-label')).toBe(en.convertImage.wizard.sizeUnlinked)
+    await wrapper.get('[data-testid="convert-height-range"]').setValue('20')
+    expect([input('width').value, input('height').value]).toEqual(['100', '20'])
+    expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('100×20 beads')
+
+    // Linked again, the side moved last holds and the other takes the picture's shape back.
+    await chain.trigger('click')
+    expect([input('width').value, input('height').value]).toEqual(['40', '20'])
+  })
+
+  it('gives the chain the tooltip of its state', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'size')
+    const chain = () => wrapper.get('[data-testid="convert-size-chain"]').element.closest('.app-tooltip')!
+
+    expect(chain().textContent).toContain(en.tooltips.sizeLinked)
+    await wrapper.get('[data-testid="convert-size-chain"]').trigger('click')
+    expect(chain().textContent).toContain(en.tooltips.sizeUnlinked)
+  })
+
   it('offers a Colors slider up to every color the picture has, and keeps Color by color closed with its summary', async () => {
     const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
