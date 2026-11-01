@@ -274,6 +274,20 @@ const CASES: FitCase[] = [
     },
   ],
   [
+    'Convert image page (Outline color)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      press(root, 'convert-step-colors')
+      press(root, 'convert-color-by-color')
+      press(root, 'found-color-empty')
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'convert-outline-switch')
+      press(root, 'convert-outline-color')
+    },
+  ],
+  [
     'Convert image page (Bead & Technique)',
     ConvertPageHost,
     wizardProps(true),

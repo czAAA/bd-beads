@@ -52,3 +52,12 @@ _Avoid_: remove background, background removal (a layer's Background is its boar
 
 **Fit to subject** (ticket 0765): the Picture step's button, shown while Cut out is on, that sets A part round what Cut out kept: the smallest box of whole pixels round the subject (at least 8 a side). The Width and Height stay, dropping only when the part has fewer pixels than they allow, as for any part.
 _Avoid_: auto-crop, trim
+
+**Auto-fix lighting** (ticket 0766, spec 0761): the Colors step's switch, and the one color correction Convert image makes to a photo: before the beads are sampled, it balances the picture's white (from the subject's pixels while Cut out is on, the whole picture's otherwise) and stretches its chroma so the most saturated few percent reach a set target. Off by default and never turned on by itself, so pixel art's exact colors are never changed behind the maker's back; the found colors follow it.
+_Avoid_: auto-enhance, filter, white balance
+
+**Clean up stray beads** (ticket 0766, spec 0761): the Colors step's slider, Off then up to three steps: a bead whose color none of its Technique neighbours share takes the color most of them have, each step allowing one more pass. It works on the colors after the Colors slider's reduction, before the match, so the found colors and their counts follow; empty beads stay empty, and a bead with no colored neighbour stays as it is.
+_Avoid_: denoise, smoothing, despeckle
+
+**Subject outline**, shown as "Outline" on screen (ticket 0766, spec 0761): a ring of beads one bead thick, in one color, on every empty bead touching the cut-out subject (by the Technique's neighbours), so the Schema grows by one bead each way (on brick stitch the top, and on peyote the left, by a whole stagger cycle, so every bead keeps its offset). Its color starts as the darkest found color and is changed through the app's own colour popover. The switch shows only when there are empty beads round the subject: Cut out on, a transparent picture, or a found color set to empty.
+_Avoid_: border, rim, and plain "outline" in the docs, which means a drawn line round a Selection, a Piece or the margin

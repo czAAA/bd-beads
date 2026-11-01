@@ -188,13 +188,14 @@ type SamplingInput = {
 export type SamplingRule = 'centre' | 'area'
 
 /** The picture's raw colors for each bead of the preview's lattice (see partLattice), row by row, packed, by the rule
- * asked (centre by default); NO_COLOR off the picture, for a too-transparent bead or outside Cut out's mask (ticket
- * 0765). The cells are in picture pixels, a bead step one cell round its centre; the Weave places each bead (0622). */
-export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule; mask?: SubjectMask }): Int32Array {
-  const { image, lattice, part, pixelsPerBead, mask } = input
-  const pixelAt = mask
-    ? (x: number, y: number) => (mask.subject[y * image.width + x] ? pixelPackedAt(image, x, y) : NO_COLOR)
-    : (x: number, y: number) => pixelPackedAt(image, x, y)
+ * asked (centre by default), each pixel through `adjust` (Auto-fix lighting, 0766); NO_COLOR off the picture, too
+ * transparent or outside Cut out's mask (0765). Cells are in picture pixels, a bead step round its centre (0622). */
+export function sampleLatticePacked(
+  input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule; mask?: SubjectMask; adjust?: (packed: number) => number },
+): Int32Array {
+  const { image, lattice, part, pixelsPerBead, mask, adjust } = input
+  const read = adjust ? (x: number, y: number) => adjust(pixelPackedAt(image, x, y)) : (x: number, y: number) => pixelPackedAt(image, x, y)
+  const pixelAt = mask ? (x: number, y: number) => (mask.subject[y * image.width + x] ? read(x, y) : NO_COLOR) : read
   const description = describeWeave(input)
   // The frame's corner: its first row is never shifted.
   const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, pixelsPerBead.x, pixelsPerBead.y)

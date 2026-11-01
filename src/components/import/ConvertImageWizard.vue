@@ -90,7 +90,7 @@ const summaries = computed<Record<ConvertStep, string | undefined>>(() => {
   const bead = wizard.bead.value
   const grid = wizard.dimensions.value
   const used = wizard.usedColorCount.value
-  const weight = wizard.draftProject.value && estimatedGrams(wizard.found.value.reduce((sum, color) => sum + (color.result ? color.count : 0), 0), bead)
+  const weight = wizard.draftProject.value && estimatedGrams(wizard.beadCount.value, bead)
   const source = { 'bead-colors': words.value.beadColors, default: words.value.defaultPalette, exact: words.value.exact }[wizard.source.value]
   return {
     picture: undefined,

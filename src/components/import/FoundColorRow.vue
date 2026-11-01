@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, provide, ref } from 'vue'
-import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
+import { provideBeadColors } from '../../composables/palette/useBeadColors'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { providePalette } from '../../composables/tools/usePalette'
@@ -18,6 +18,7 @@ import IconButton from '../ui/IconButton.vue'
 import ColorLabel from '../palette/ColorLabel.vue'
 import { PICK_CLOSE } from '../shell/pickContext'
 import ColorPopoverBody from '../tools/ColorPopoverBody.vue'
+import { labelledColorOf, paletteTarget, pickerBeadColors } from './convertPicker'
 
 // One color Convert image found (FoundColorRow card): picture color → what it became, its bead count, Change and Empty.
 // Change (the palette icon) opens the Tool pill's colour popover body (ColorPopoverBody) in the row, with Keep exact in
@@ -38,7 +39,7 @@ const changeButton = ref<InstanceType<typeof IconButton>>()
 
 /** The two lines a color reads as (FoundColorRow card): its label (code and name, or hex; ticket 0760) over where it is from. */
 function linesOf(target: TargetColor): { color: LabelledColor; source: string } {
-  const color = { hex: target.hex, ...(target.colorId ? { id: target.colorId } : {}), ...(target.code ? { code: target.code } : {}), ...(target.family ? { family: target.family } : {}), ...(target.finish ? { finish: target.finish } : {}) }
+  const color = labelledColorOf(target)
   if (target.code) return { color, source: words.value.beadColors }
   if (target.colorId && !isAddedColorId(target.colorId)) return { color, source: words.value.defaultPalette }
   return { color, source: t.value.palette.customColorLabel }
@@ -74,9 +75,8 @@ function choose(target: TargetColor) {
 
 /** A swatch of the new Palette picked: the found color remapped (or merged with another that uses it). */
 function pickSwatch(colorId: string) {
-  const swatch = wizard.remapPalette.value.byId(colorId)
-  if (!swatch) return
-  choose({ hex: swatch.hex, ...(swatch.code ? { code: swatch.code } : {}), ...(!isAddedColorId(swatch.id) ? { colorId: swatch.id } : {}) })
+  const target = paletteTarget(wizard, colorId)
+  if (target) choose(target)
 }
 
 function keepExact() {
@@ -91,21 +91,6 @@ const selectedColorId = computed(() => {
 /** The found color's hex, which the picker marks as the Custom color's when no Palette swatch holds it. */
 const customColor = computed(() => props.color.result?.hex)
 
-/** The Bead colors list, as the popover's own: picking a code remaps to it, and the code joins the grid. */
-const beadColors: BeadColors = {
-  available: computed(() => wizard.hasCatalog.value),
-  state: wizard.catalogState,
-  swatches: wizard.remapSwatches,
-  bead: wizard.bead,
-  catalog: computed(() => wizard.catalog.value),
-  load: async () => {},
-  add: (hex: string, code?: string) => {
-    const swatch = wizard.remapSwatches.value.find((entry) => entry.code === code)
-    choose({ hex, ...(code ? { code } : {}), ...(swatch ? { family: swatch.family, finish: swatch.finish } : {}) })
-    return 'added'
-  },
-}
-
 async function close() {
   if (!props.open) return
   emit('toggle-remap')
@@ -117,7 +102,8 @@ async function close() {
 // page, so a press elsewhere goes through and leaves it open.
 provide(PICK_CLOSE, () => {})
 providePalette(wizard.remapPalette)
-provideBeadColors(beadColors)
+// The Bead colors list, as the popover's own: picking a code remaps to it, and the code joins the grid.
+provideBeadColors(pickerBeadColors(wizard, choose))
 useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () => void close(), keepsPress: () => true })
 </script>
 
