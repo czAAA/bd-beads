@@ -19,7 +19,7 @@ type DialogId =
   | 'delete-project'
   | 'delete-all-projects'
   | 'name-piece'
-  | 'convert-image'
+  | 'leave-converter'
   | 'feedback'
   | 'open-large-project'
 

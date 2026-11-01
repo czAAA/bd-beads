@@ -5,7 +5,7 @@ import { PNG } from 'pngjs'
 import { BUILT_IN_COLORS } from '../../src/domain/palette'
 import { createProject } from '../../src/domain/createProject'
 import { parseProjectsFile } from '../../src/domain/projectFile'
-import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, savedProject, setConvertWidth, settle, convertPicture } from '../support/app'
+import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, savedProject, setConvertWidth, showConvertStep, settle, convertPicture } from '../support/app'
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 import { frameGrid } from '../../src/testUtils/frameGrid'
@@ -147,6 +147,7 @@ test('Convert image can frame a picture at 250 × 250, where it was once refused
 
   const preview = page.getByTestId('convert-image-box')
   await expect(preview).toBeVisible()
+  await showConvertStep(page, 'review')
   await page.getByTestId('convert-image-create').click()
 
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)

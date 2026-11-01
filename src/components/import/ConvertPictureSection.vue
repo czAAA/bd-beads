@@ -12,7 +12,7 @@ import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 
-// Convert image's Picture section (ConvertImage card, 1 Picture): every way in (Choose file, Paste, Take photo on touch)
+// Convert image's Picture step (ConvertImage card, 1 Picture): every way in (Choose file, Paste, Take photo on touch)
 // through the wizard's one validation and decode, the thumbnail and facts with Turn 90° and Flip, weave (Whole picture
 // or A part, ticket 0747), the Note of every way in until the first picture, and the app's message for a refused file.
 const emit = defineEmits<{ paste: [] }>()
@@ -99,14 +99,17 @@ watchPostEffect(() => {
           <span class="convert-picture__size" data-testid="convert-picture-size">{{ facts }}</span>
         </div>
       </div>
+      <!-- Two aligned rows, never wrapping sideways (ticket 0756): Turn and Flip, then replace with Choose file and Paste. -->
       <div class="convert-picture__actions">
         <AppButton variant="in-box" size="sm" icon="rotate" data-testid="convert-turn" @click="wizard.turn">{{ t.convertImage.wizard.turn }}</AppButton>
         <AppButton variant="in-box" size="sm" data-testid="convert-flip" @click="wizard.flip">{{ t.convertImage.wizard.flip }}</AppButton>
-        <span class="convert-picture__replace">
-          <span class="convert-picture__replace-label">{{ t.convertImage.wizard.replace }}</span>
+      </div>
+      <div class="convert-picture__replace">
+        <span class="convert-picture__replace-label">{{ t.convertImage.wizard.replace }}</span>
+        <div class="convert-picture__actions">
           <FileButton small :label="t.convertImage.wizard.chooseFile" :accept="accept" data-testid="convert-replace-file" @change="onFileChange" @drop-file="wizard.setFile" />
           <AppButton variant="in-box" size="sm" data-testid="convert-replace-paste" @click="emit('paste')">{{ t.convertImage.wizard.paste }}</AppButton>
-        </span>
+        </div>
       </div>
       <div class="convert-picture__row">
         <span :id="weaveLabelId" class="convert-picture__label">{{ t.convertImage.wizard.weave }}</span>
@@ -128,14 +131,21 @@ watchPostEffect(() => {
   gap: var(--space-12);
 }
 
-.convert-picture__ways {
-  display: flex;
-  flex-wrap: wrap;
+.convert-picture__ways,
+.convert-picture__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: var(--space-8);
 }
 
-.convert-picture__ways > * {
-  flex: 1 1 auto;
+/* A button fills its cell, so the rows line up whatever the label's width. */
+.convert-picture__ways > *,
+.convert-picture__actions > *,
+.convert-picture__ways :deep(.app-button),
+.convert-picture__actions :deep(.app-button) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 
 .convert-picture__set {
@@ -174,19 +184,10 @@ watchPostEffect(() => {
   color: var(--muted);
 }
 
-.convert-picture__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-6);
-}
-
 .convert-picture__replace {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-6);
-  margin-left: auto;
 }
 
 .convert-picture__replace-label {

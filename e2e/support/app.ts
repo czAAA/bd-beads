@@ -155,15 +155,21 @@ export async function gridBox(page: Page): Promise<Box> {
   return projectBox(page, box)
 }
 
-/** Opens the Convert image wizard from the New Project form with a picture (spec 0645), read and shown. */
+/** Opens the Convert image page from the New Project form with a picture (spec 0645), read and shown. */
 export async function convertPicture(page: Page, buffer: Buffer): Promise<void> {
   await page.getByTestId('convert-image').click()
   await page.getByTestId('convert-choose-file').setInputFiles({ name: 'fixture.png', mimeType: 'image/png', buffer })
-  await page.getByTestId('convert-result').waitFor()
+  await page.getByTestId('convert-file-name').waitFor()
 }
 
-/** Sets the wizard's Width slider to a number of beads (ticket 0747); the height follows the picture. */
+/** Shows a step of the Convert image page by its dot on the Progress bar (ticket 0756). */
+export async function showConvertStep(page: Page, step: 'picture' | 'bead' | 'size' | 'colors' | 'review'): Promise<void> {
+  await page.getByTestId(`convert-step-${step}`).click()
+}
+
+/** Sets the Width slider, on the Size step, to a number of beads (ticket 0747); the height follows the picture. */
 export async function setConvertWidth(page: Page, beads: number): Promise<void> {
+  await showConvertStep(page, 'size')
   await page.getByTestId('convert-width-range').fill(String(beads))
 }
 
