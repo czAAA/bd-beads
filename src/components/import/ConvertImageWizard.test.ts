@@ -78,6 +78,8 @@ const dotDisabled = (wrapper: VueWrapper, step: string) => wrapper.get(`[data-te
 const created = (wrapper: VueWrapper) => wrapper.emitted('create')?.[0]?.[0] as Project | undefined
 /** Color by color is closed when the page opens (ticket 0747): the found-color rows are behind it. */
 const openColorByColor = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-color-by-color"]').trigger('click')
+/** Match to a source, as its option does (the step opens on Exact, ticket 0758). */
+const matchTo = (wrapper: VueWrapper, value: string) => wrapper.get(`[data-testid="convert-color-source"] [data-value="${value}"]`).trigger('click')
 
 describe('ConvertImageWizard before a picture is set', () => {
   it('shows Picture alone, keeps every step after it shut on the Progress bar and has nothing to create', async () => {
@@ -178,6 +180,7 @@ describe('ConvertImageWizard rejections', () => {
     const { wrapper, wizard } = open({ draft: delica, loadCatalog: () => Promise.reject(new Error('offline')) })
     await chooseFile(wrapper, picture())
     await show(wizard, 'colors')
+    await matchTo(wrapper, 'bead-colors')
     expect(wrapper.get('[data-testid="convert-catalog-failed"]').text()).toBe(en.palette.beadColors.failed)
     await openColorByColor(wrapper)
     expect(wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-source"]').text()).toBe(en.convertImage.wizard.defaultPalette)
@@ -211,24 +214,77 @@ describe('ConvertImageWizard setup', () => {
   })
 
   // Every catalog Bead has a Color catalog since ticket 0694, so the sources without Bead colors have no Bead to show.
-  it('offers Bead colors for a Bead with a Color catalog, and starts on it', async () => {
+  it('offers the Bead’s palette, the Default Palette and Exact for a Bead with a Color catalog, and opens on Exact (ticket 0758)', async () => {
     const withCatalog = open({ draft: delica })
     await chooseFile(withCatalog.wrapper, picture())
     await show(withCatalog.wizard, 'colors')
-    const options = (wrapper: VueWrapper) => wrapper.findAll('[data-testid="convert-color-source"] [data-value]').map((option) => option.attributes('data-value'))
-    expect(options(withCatalog.wrapper)).toEqual(['bead-colors', 'default', 'exact'])
-    expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
+    const options = () => withCatalog.wrapper.findAll('[data-testid="convert-color-source"] [data-value]')
+
+    expect(options().map((option) => option.attributes('data-value'))).toEqual(['bead-colors', 'default', 'exact'])
+    expect(options().map((option) => option.text())).toEqual(['Miyuki Delica 11/0 palette', en.convertImage.wizard.defaultPalette, en.convertImage.wizard.exact])
+    expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('exact')
+  })
+
+  it('says each color is matched to the closest in the Bead’s catalog, under the Bead’s palette only (ticket 0758)', async () => {
+    const { wrapper, wizard } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+
+    await matchTo(wrapper, 'bead-colors')
+    expect(wrapper.get('[data-testid="convert-source-note"]').text()).toBe('Each color in the picture is matched to the closest color in Miyuki Delica 11/0’s catalog.')
+    await matchTo(wrapper, 'default')
+    expect(wrapper.find('[data-testid="convert-source-note"]').exists()).toBe(false)
+    await matchTo(wrapper, 'exact')
+    expect(wrapper.find('[data-testid="convert-source-note"]').exists()).toBe(false)
+  })
+
+  it('keeps the found colors exact at first, and heads their table From picture, Becomes, Beads, Change, Empty (ticket 0758)', async () => {
+    const { wrapper, wizard } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    await openColorByColor(wrapper)
+    const words = en.convertImage.wizard
+
+    expect(wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-source"]').text()).toBe(en.palette.customColorLabel)
+    expect(wrapper.findAll('[data-testid="found-colors-header"] span').map((cell) => cell.text())).toEqual([
+      words.fromPicture,
+      words.becomes,
+      words.beadsColumn,
+      words.change,
+      words.empty,
+    ])
   })
 
   it('names the bead a found color becomes by its code and name, with its hex in a Tooltip (ticket 0760)', async () => {
     const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
     await show(wizard, 'colors')
+    await matchTo(wrapper, 'bead-colors')
     await openColorByColor(wrapper)
     const label = wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-name"]')
 
     expect(label.get('[data-testid="color-label"]').text()).toBe('DB723 Opaque Red')
     expect(label.get('[role="tooltip"]').text()).toBe('#D02030')
+  })
+
+  it('changes a found color with the palette icon, which opens the colour popover’s body: Keep exact, the new Palette, Bead colors (ticket 0758)', async () => {
+    const { wrapper, wizard } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    await openColorByColor(wrapper)
+    const row = wrapper.get('[data-picture-hex="#e63746"]')
+    const change = row.get('[data-testid="found-color-remap"]')
+
+    expect(change.find('[data-icon="palette"]').exists()).toBe(true)
+    await change.trigger('click')
+
+    expect(row.find('[data-testid="found-color-picker"]').exists()).toBe(true)
+    expect(row.find('[data-testid="color-popover-close"]').exists()).toBe(true)
+    expect(row.find('[data-testid="found-color-keep-exact"]').exists()).toBe(true)
+    expect(row.text()).toContain(en.convertImage.wizard.newPalette)
+    expect(row.find('[data-testid="bead-colors-toggle"]').text()).toContain('Miyuki Delica 11/0')
+    await row.get('[data-testid="color-popover-close"]').trigger('click')
+    expect(row.find('[data-testid="found-color-picker"]').exists()).toBe(false)
   })
 
   it('remaps a found color through the Bead colors list with its filter rows (ticket 0713)', async () => {
@@ -239,7 +295,7 @@ describe('ConvertImageWizard setup', () => {
     const row = wrapper.get('[data-picture-hex="#e63746"]')
 
     await row.get('[data-testid="found-color-remap"]').trigger('click')
-    await row.get('[data-testid="found-color-bead-colors"]').trigger('click')
+    await row.get('[data-testid="bead-colors-toggle"]').trigger('click')
 
     expect(row.findAll('[data-testid="bead-colors-family"]').map((button) => button.attributes('aria-label'))).toEqual(['Red, 1'])
     expect(row.findAll('[data-testid="bead-colors-finish"]').map((button) => button.attributes('aria-label'))).toEqual(['Opaque, 1'])
@@ -250,6 +306,8 @@ describe('ConvertImageWizard Create Project', () => {
   it('makes the Project of the picture, one pixel one bead for a small picture, in the Bead’s colors', async () => {
     const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    await matchTo(wrapper, 'bead-colors')
     await show(wizard, 'review')
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
 
@@ -296,6 +354,8 @@ describe('ConvertImageWizard Review (ticket 0759)', () => {
   it('opens on a press with the same counts, grams and color names as the created Project’s Beads needed', async () => {
     const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    await matchTo(wrapper, 'bead-colors')
     await show(wizard, 'review')
     await header(wrapper).trigger('click')
     const rowsOf = (from: VueWrapper) => from.findAll('[data-testid="quantity-row"]').map((row) => row.text())
@@ -379,17 +439,36 @@ describe('ConvertImageWizard preview zoom (ticket 0650)', () => {
 })
 
 describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
-  it('names Treat as empty and gives it a Tooltip saying what it does, keeping its pressed state', async () => {
-    const { wrapper } = open()
+  it('names Treat as empty in the Colors step as a switch with a Tooltip saying what it does, and gives the preview the eyedropper while it is on (ticket 0758)', async () => {
+    const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
-    const button = wrapper.get('button[data-testid="convert-treat-as-empty"]')
+    expect(wrapper.find('[data-testid="convert-treat-as-empty"]').exists()).toBe(false)
+    await show(wizard, 'colors')
+    const toggle = wrapper.get('[data-testid="convert-treat-as-empty"]')
+    const box = () => wrapper.get('[data-testid="convert-image-box"]')
 
-    expect(button.text()).toBe(en.convertImage.wizard.treatAsEmpty)
-    expect(button.attributes('aria-pressed')).toBe('false')
-    await button.trigger('click')
-    expect(button.attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="convert-eyedropper-banner"]').exists()).toBe(true)
-    expect(wrapper.get('.convert-preview__top [role="tooltip"]').text()).toContain(en.tooltips.treatAsEmpty)
+    expect(toggle.attributes('role')).toBe('switch')
+    expect(toggle.attributes('aria-label')).toBe(en.convertImage.wizard.treatAsEmpty)
+    expect(toggle.attributes('aria-checked')).toBe('false')
+    expect(box().attributes('style')).not.toContain('cursor')
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-checked')).toBe('true')
+    expect(box().attributes('style')).toContain('cursor: url(')
+    expect(wrapper.find('.convert-preview [data-testid="convert-treat-as-empty"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="convert-colors"] [role="tooltip"]').text()).toContain(en.tooltips.treatAsEmpty)
+  })
+
+  it('ends Treat as empty when the Colors step is left, and counts what a tap made empty (ticket 0758)', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    await wrapper.get('[data-testid="convert-treat-as-empty"]').trigger('click')
+    wizard.emptyAtBead(0)
+    await flushPromises()
+
+    expect(wizard.emptyColorCount.value).toBe(1)
+    await show(wizard, 'review')
+    expect(wizard.treatAsEmpty.value).toBe(false)
   })
 })
 
