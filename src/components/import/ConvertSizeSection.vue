@@ -32,18 +32,16 @@ const value = computed(() => (unit.value === 'beads' ? inBeads(sizing.value.widt
 const secondary = computed(() => (unit.value === 'beads' ? inMm(sizing.value.width) : inBeads(sizing.value.width)))
 const valuetext = computed(() => [value.value, secondary.value, ...(sizing.value.mark && result.value ? [result.value.ratio] : [])].join(', '))
 const minLabel = computed(() => (unit.value === 'beads' ? String(sizing.value.range.min) : String(wizard.widthMmOf(sizing.value.range.min))))
-const maxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: unit.value === 'beads' ? sizing.value.range.max : inMm(sizing.value.range.max) }))
+const maxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: unit.value === 'beads' ? inBeads(sizing.value.range.max) : inMm(sizing.value.range.max) }))
 
-/** The marks with their labels ("8×8 px", "×2"); the one at an end has the end's label only. */
+/** The marks with the width they stand for in the chosen unit ("8 beads", "40 mm"); the one at an end has the end's label only. */
 const marks = computed(() =>
   sizing.value.marks.map((mark) => ({
     value: mark.width,
     label:
       mark.width === sizing.value.range.min || mark.width === sizing.value.range.max
         ? undefined
-        : mark.pixelsPerBead >= 1
-          ? fillBlanks(words.value.markPx, { n: mark.pixelsPerBead })
-          : fillBlanks(words.value.markTimes, { n: Math.round(1 / mark.pixelsPerBead) }),
+        : unit.value === 'beads' ? inBeads(mark.width) : inMm(mark.width),
   })),
 )
 </script>
@@ -74,8 +72,9 @@ const marks = computed(() =>
     <div v-if="result" class="convert-size__result" data-testid="convert-result">
       <span class="convert-size__label">{{ words.result }}</span>
       <p class="convert-size__line" role="status">
-        <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }} · {{ result.ratio }}
+        <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }}
       </p>
+      <p class="convert-size__ratio" data-testid="convert-ratio">{{ result.ratio }}</p>
     </div>
     <p v-if="wizard.weave.value === 'part'" class="convert-size__hint" data-testid="convert-part-follows">{{ words.partFollows }}</p>
 
@@ -130,6 +129,12 @@ const marks = computed(() =>
   margin: 0;
   font: var(--type-meta);
   color: var(--body);
+}
+
+.convert-size__ratio {
+  margin: 0;
+  font: var(--type-small);
+  color: var(--muted);
 }
 
 .convert-size__grid {
