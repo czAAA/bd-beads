@@ -20,6 +20,7 @@ const {
   onDismissMissed,
   onPictureForConvert,
   dialogOpen,
+  page,
 } = useShellFrame()
 </script>
 
@@ -63,8 +64,8 @@ const {
 
     <AppDialogs />
 
-    <!-- A picture dropped or pasted on the app opens Convert image (spec 0645). -->
-    <PictureDropOverlay :disabled="!!dialogOpen" @picture="onPictureForConvert" />
+    <!-- A picture dropped or pasted on the editor opens Convert image (spec 0645); on Convert image the page takes it. -->
+    <PictureDropOverlay :disabled="!!dialogOpen || page !== 'editor'" @picture="onPictureForConvert" />
 
   </div>
 </template>

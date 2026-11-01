@@ -6,7 +6,6 @@ import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 import FeedbackSheet from './FeedbackSheet.vue'
-import ConvertImageWizard from '../import/ConvertImageWizard.vue'
 import { projectNameOf } from '../../domain/layerRecord'
 import { inMillions } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
@@ -74,25 +73,23 @@ const {
   copyReport,
   onConfirmStorageNote,
   onCancelStorageNote,
-  convertImageStart,
-  decodeImage,
-  readClipboardImage,
-  loadColorCatalog,
-  onConvertImageCreate,
-  onConvertImageCancel,
+  onConfirmLeaveConverter,
+  onCancelLeaveConverter,
 } = useDialogsContext()
 const { locale } = useI18n()
 </script>
 
 <template>
-  <ConvertImageWizard
-    v-if="open === 'convert-image' && convertImageStart"
-    :start="convertImageStart"
-    :decode-image="decodeImage"
-    :load-catalog="loadColorCatalog"
-    :read-clipboard-image="readClipboardImage"
-    @create="onConvertImageCreate"
-    @cancel="onConvertImageCancel"
+  <!-- Leaving Convert image with a picture set (ADR 0086): Back to converter is the default, so Escape and a stray Enter keep the work. -->
+  <ConfirmModal
+    v-if="open === 'leave-converter'"
+    data-testid="leave-converter-modal"
+    :title="t.convertImage.leave.title"
+    :message="t.convertImage.leave.message"
+    :confirm-label="t.convertImage.leave.confirmButton"
+    :cancel-label="t.convertImage.leave.cancelButton"
+    @confirm="onConfirmLeaveConverter"
+    @cancel="onCancelLeaveConverter"
   />
 
   <ConfirmModal

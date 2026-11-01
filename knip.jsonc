@@ -20,7 +20,7 @@
     "index.html!",
     "homepage/index.html!",
     "src/browserSetup.ts",
-    "src/testUtils/*.ts",
+    "src/testUtils/*.{ts,vue}",
     "e2e/support/*.ts",
     "worker/src/feedback.ts!",
     "worker/test/fixtureWorker.ts!",

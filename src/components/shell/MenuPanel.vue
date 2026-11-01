@@ -17,13 +17,15 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
 
-// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections; Help's
-// Send feedback and the link under Language open the Feedback sheet (ticket 0700). It only asks: the app shell does the
-// work. On the Homepage (ticket 540, ADR 0073) the editor's parts are left out, Saved Projects kept (ticket 0716).
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections. It only
+// asks: the app shell does the work. On the Homepage (ticket 540) the editor's parts are left out, Saved Projects kept (ticket
+// 0716). A row that leaves the page awaits `leave` first and knows no page; Convert image is the current page while open (0756).
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
-    page?: 'editor' | 'homepage'
+    page?: 'editor' | 'homepage' | 'convert-image'
+    /** Leaves the current page: true once it has gone (or had nothing to ask), false when the person stayed. */
+    leave?: () => Promise<boolean>
     /** How many Projects the library holds, sealed ones too (ticket 0716). */
     projectCount?: number
     toolsPosition?: PillPosition
@@ -32,12 +34,14 @@ const props = withDefaults(
     /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
     penSeen?: boolean
   }>(),
-  { page: 'editor', projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
+  { page: 'editor', leave: () => Promise.resolve(true), projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
 )
-const inEditor = computed(() => props.page === 'editor')
+const inEditor = computed(() => props.page !== 'homepage')
+const converting = computed(() => props.page === 'convert-image')
 const emit = defineEmits<{
   'saved-projects': []
   'new-project': []
+  'convert-image': []
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
   'update:handedness': [hand: Handedness]
@@ -57,9 +61,24 @@ const homepageHref = homepageUrl(import.meta.env.BASE_URL)
 const actions = {
   newProject: controlAction('new-project'),
   savedProjects: controlAction('saved-projects'),
+  convertImage: controlAction('convert-image'),
   shortcuts: controlAction('shortcuts-help'),
 }
 const version = __APP_VERSION__
+
+/** New Project leaves the page, so it opens its form once the page has let go. */
+async function openNewProject() {
+  if (!(await props.leave())) return
+  emit('new-project')
+  context?.openSub()
+}
+
+/** The Homepage is another document: a link that leaves a page with something to lose waits for the page's answer. */
+async function openHomepage(event: MouseEvent) {
+  if (props.page === 'editor') return
+  event.preventDefault()
+  if (await props.leave()) location.assign(homepageHref)
+}
 
 const languageOptions = LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], shortLabel: localeCode(code), lang: code }))
 const themeOptions = computed<{ value: ThemePick; icon: IconName; label: string }[]>(() => [
@@ -89,7 +108,11 @@ const inputOptions = computed(() => [
     <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
     <PanelSection v-if="inEditor || projectCount > 0" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
-      <PanelItem v-if="inEditor" icon="plus" accent sub stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem v-if="inEditor" icon="plus" accent sub stays data-testid="menu-new-project" @select="openNewProject">{{ actions.newProject.name(t) }}</PanelItem>
+      <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
+      <PanelItem v-if="inEditor" icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
+        {{ actions.convertImage.name(t) }}
+      </PanelItem>
       <PanelItem icon="library" :value="String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
       </PanelItem>
@@ -145,7 +168,7 @@ const inputOptions = computed(() => [
     <PanelSection id="menu:help" :label="t.panels.menu.help">
       <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
-      <PanelItem icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage">{{ t.header.homepageItem }}</PanelItem>
+      <PanelItem icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection id="menu:about" :label="t.panels.menu.about">

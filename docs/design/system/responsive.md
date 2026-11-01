@@ -58,11 +58,11 @@ The canvas is open at every width: no board, no size to set first, pieces with t
 - **Wheel and keyboard:** the wheel moves the canvas, ⌘ or Ctrl + wheel zooms.
 - **Zoom floor:** 10%, with the Ruler step, for piece rulers and Frame rulers alike. Fit now fits the Frame, or every piece when there is no Frame.
 
-## Convert image wizard (ticket 0646)
+## Convert image page (tickets 0646, 0756)
 
-Unlike the editor, the wizard changes layout with the width (spec 0645), because it is a form beside a live picture:
+Unlike the editor, the page changes layout with the width (spec 0645), because it is a form beside a live picture; it is always the canvas box (ADR 0086), never a popup or a sheet:
 
-- **From 1024 px wide in landscape:** a large Modal, the preview pane and the sections pane side by side, everything on one screen; the sections pane scrolls under its step rail (ConvertImage card).
-- **Under 1024 px, or in portrait** (iPad portrait included): a full-screen sheet, one long scroll under a sticky preview that shrinks as the sections pass under it, the footer pinned in thumb reach (PhoneForms card).
-- Text wraps inside its section at every supported width and in every language; nothing scrolls sideways. The Text fit check covers the popup.
+- **From 1024 px wide in landscape:** the preview and the step side by side, one step at a time; the step scrolls on its own (ConvertImage card).
+- **Under 1024 px, or in portrait** (iPad portrait included): the preview above the step, the step scrolling under it, the Progress bar holding the steps and Back and Next in thumb reach (PhoneForms card).
+- Text wraps inside its step at every supported width and in every language; nothing scrolls sideways. The Text fit check covers the page.
 

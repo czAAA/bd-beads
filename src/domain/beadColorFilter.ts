@@ -1,7 +1,7 @@
 import { makerCodeOf } from './beadCodeSearch'
 import type { Bead } from './beads'
 import type { CatalogSwatch } from './beadSwatch'
-import type { ColorCatalog, Finish } from './colorCatalog'
+import { catalogEntry, type ColorCatalog, type Finish } from './colorCatalog'
 
 /** The values on in the Bead colors list's two filter rows (ticket 0713): families of the Bead's Brand and shared
  * Finishes. An empty row is off and keeps every code. */
@@ -60,6 +60,6 @@ export function beadColorFilterCounts(swatches: readonly CatalogSwatch[], filter
  * a Delica 15/0, whose own prefix is `DBS`). Undefined when the code is in the Bead's size or in no size. */
 export function codeInOtherSizes(catalog: ColorCatalog, typed: string, bead: Pick<Bead, 'formFactor' | 'size'>): { code: string; sizes: string[] } | undefined {
   const code = makerCodeOf(typed, bead) ?? typed.trim().toUpperCase().replace(/^#|[-\s]/g, '').replace(/^([A-Z]*)0+(?=\d)/, '$1')
-  const sizes = catalog.codes.find((entry) => entry.code === code)?.sizes
+  const sizes = catalogEntry(catalog, code)?.sizes
   return sizes && !sizes.includes(bead.size) ? { code, sizes } : undefined
 }

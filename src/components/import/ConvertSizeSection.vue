@@ -2,16 +2,18 @@
 import { computed, useId } from 'vue'
 import { useConvertImageWizardState, type ConvertSizeUnit } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
+import IconButton from '../ui/IconButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 
-// Convert image's Size section (ConvertImage card, 3 Size; ticket 0747): slide in (beads or mm), one Width slider with
-// its marks, the result line, the line under it while a part is woven, and the Large Schema note. The height follows
-// the picture through the wizard's one sizing rule; nothing here sets it.
+// Convert image's Size section (ConvertImage card, 3 Size; tickets 0747, 0757): slide in (beads or mm), the Width and
+// Height sliders with their marks and the chain between them, the result line, the line under it while a part is woven,
+// and the Large Schema note. Linked, the side not moved follows the picture through the wizard's one sizing rule.
 const { t } = useI18n()
 const wizard = useConvertImageWizardState()
 const result = useConvertResult(wizard)
@@ -26,24 +28,37 @@ const unit = computed({ get: () => wizard.sizeUnit.value, set: (next: ConvertSiz
 
 const sizing = computed(() => wizard.sizing.value)
 const inBeads = (beads: number) => fillBlanks(words.value.widthBeads, { n: beads })
-const inMm = (beads: number) => fillBlanks(words.value.widthMm, { n: wizard.widthMmOf(beads) })
-/** The head's value in the chosen unit first, the other after it (ValueSlider card). */
-const value = computed(() => (unit.value === 'beads' ? inBeads(sizing.value.width) : inMm(sizing.value.width)))
-const secondary = computed(() => (unit.value === 'beads' ? inMm(sizing.value.width) : inBeads(sizing.value.width)))
-const valuetext = computed(() => [value.value, secondary.value, ...(sizing.value.mark && result.value ? [result.value.ratio] : [])].join(', '))
-const minLabel = computed(() => (unit.value === 'beads' ? String(sizing.value.range.min) : String(wizard.widthMmOf(sizing.value.range.min))))
-const maxLabel = computed(() => fillBlanks(words.value.widthMaxLabel, { value: unit.value === 'beads' ? inBeads(sizing.value.range.max) : inMm(sizing.value.range.max) }))
+const inMm = (mm: number) => fillBlanks(words.value.widthMm, { n: mm })
 
-/** The marks with the width they stand for in the chosen unit ("8 beads", "40 mm"); the one at an end has the end's label only. */
-const marks = computed(() =>
-  sizing.value.marks.map((mark) => ({
-    value: mark.width,
+/** One slider's readings in the chosen unit (ValueSlider card): the head's value, the other unit after it, the ends. */
+function readings(beads: number, range: { min: number; max: number }, mmOf: (beads: number) => number, maxWords: string) {
+  const inUnit = (at: number) => (unit.value === 'beads' ? inBeads(at) : inMm(mmOf(at)))
+  const other = (at: number) => (unit.value === 'beads' ? inMm(mmOf(at)) : inBeads(at))
+  return {
+    value: inUnit(beads),
+    secondary: other(beads),
+    valuetext: [inUnit(beads), other(beads), ...(sizing.value.mark && result.value ? [result.value.ratio] : [])].join(', '),
+    minLabel: unit.value === 'beads' ? String(range.min) : String(mmOf(range.min)),
+    maxLabel: fillBlanks(maxWords, { value: unit.value === 'beads' ? inBeads(range.max) : inMm(mmOf(range.max)) }),
+  }
+}
+const widthReadings = computed(() => readings(sizing.value.width, sizing.value.range, wizard.widthMmOf, words.value.widthMaxLabel))
+const heightReadings = computed(() => readings(sizing.value.height, sizing.value.heightRange, wizard.heightMmOf, words.value.maxLabel))
+
+/** The marks with the size they stand for in the chosen unit ("8 beads", "40 mm"); the one at an end has the end's label only. */
+function markList(list: readonly { at: number }[], range: { min: number; max: number }, mmOf: (beads: number) => number) {
+  return list.map((mark) => ({
+    value: mark.at,
     label:
-      mark.width === sizing.value.range.min || mark.width === sizing.value.range.max
+      mark.at === range.min || mark.at === range.max
         ? undefined
-        : unit.value === 'beads' ? inBeads(mark.width) : inMm(mark.width),
-  })),
-)
+        : unit.value === 'beads' ? inBeads(mark.at) : inMm(mmOf(mark.at)),
+  }))
+}
+const widthMarks = computed(() => markList(sizing.value.marks.map((mark) => ({ at: mark.width })), sizing.value.range, wizard.widthMmOf))
+const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height })), sizing.value.heightRange, wizard.heightMmOf))
+
+const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' : 'size-unlinked'))
 </script>
 
 <template>
@@ -58,15 +73,34 @@ const marks = computed(() =>
       :model-value="sizing.width"
       :min="sizing.range.min"
       :max="sizing.range.max"
-      :value="value"
-      :secondary="secondary"
-      :valuetext="valuetext"
-      :min-label="minLabel"
-      :max-label="maxLabel"
-      :marks="marks"
+      :value="widthReadings.value"
+      :secondary="widthReadings.secondary"
+      :valuetext="widthReadings.valuetext"
+      :min-label="widthReadings.minLabel"
+      :max-label="widthReadings.maxLabel"
+      :marks="widthMarks"
       :hint="words.widthHint"
       testid="convert-width"
       @update:model-value="wizard.setWidth"
+    />
+
+    <div class="convert-size__chain">
+      <IconButton :action="chain" :icon-size="16" data-testid="convert-size-chain" :data-linked="wizard.linked.value" @click="wizard.setLinked(!wizard.linked.value)" />
+    </div>
+
+    <ValueSlider
+      :label="t.form.heightLabel"
+      :model-value="sizing.height"
+      :min="sizing.heightRange.min"
+      :max="sizing.heightRange.max"
+      :value="heightReadings.value"
+      :secondary="heightReadings.secondary"
+      :valuetext="heightReadings.valuetext"
+      :min-label="heightReadings.minLabel"
+      :max-label="heightReadings.maxLabel"
+      :marks="heightMarks"
+      testid="convert-height"
+      @update:model-value="wizard.setHeight"
     />
 
     <div v-if="result" class="convert-size__result" data-testid="convert-result">
@@ -100,6 +134,20 @@ const marks = computed(() =>
 .convert-size__label {
   font: var(--type-label);
   color: var(--muted);
+}
+
+.convert-size__chain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.convert-size__chain::before,
+.convert-size__chain::after {
+  flex: 1;
+  height: 1px;
+  content: '';
+  background: var(--line);
 }
 
 .convert-size__hint {

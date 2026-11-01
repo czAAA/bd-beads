@@ -1,6 +1,6 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
 import { busyMs, startFrameCounter, stopFrameCounter, throttle } from './measure'
-import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, setConvertWidth, settle, convertPicture } from '../support/app'
+import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, setConvertWidth, showConvertStep, settle, convertPicture } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 import { frameOf } from '../../src/domain/layerRecord'
@@ -218,6 +218,7 @@ for (const slowdown of SLOWDOWNS) {
         await chooseNewProjectTechnique(page, technique)
         await convertPicture(page, fixturePicture(size.columns, size.rows))
         await setConvertWidth(page, size.columns)
+        await showConvertStep(page, 'picture')
         await page.getByTestId('convert-weave').locator('[data-value="part"]').click()
         const handle = page.getByTestId('convert-crop-bottomRight')
         const box = (await handle.boundingBox())!

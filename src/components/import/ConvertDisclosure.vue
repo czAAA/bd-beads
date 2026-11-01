@@ -3,7 +3,7 @@ import { ref, useId } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
 
 // A full-width row that opens its content in place, below it (DisclosureRow card, without an icon): the Convert image
-// wizard's Color by color, closed every time the popup opens (ConvertImage card, ticket 0747).
+// wizard's Color by color, closed every time the page opens (ConvertImage card, ticket 0747).
 defineProps<{
   label: string
   /** The current values at the right, in meta ("8 colors · 1 empty"). */

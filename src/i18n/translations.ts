@@ -499,6 +499,8 @@ export interface Translations {
     /** CONTEXT.md's Custom color glossary entry: the button at the end of the Colors group that opens the color
      * picker. */
     customColorLabel: string
+    /** A catalog color's name from its Color catalog entry (ticket 0760): `{finish}` and `{family}` in the language's order. */
+    catalogColorName: string
     /** The picker's wheel (ticket 449): its name, and its value as heard, `{hue}` in degrees and `{saturation}` in
      * percent. */
     wheelLabel: string
@@ -973,15 +975,26 @@ export interface Translations {
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
     createButton: string
-    cancelButton: string
+    /** The converter's leave confirmation (ADR 0086): asked once a picture is set. */
+    leave: {
+      title: string
+      message: string
+      confirmButton: string
+      cancelButton: string
+    }
     /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
       /** The five sections' titles, and their short labels on the step rail. */
       sections: Record<ConvertStep, string>
       rail: Record<ConvertStep, string>
-      /** The step rail's accessible name. */
+      /** The Progress bar's steps (ticket 0756): the track's accessible name, Back and Next, a dot's name (`{step}`) and
+       * why Back is off on the first step. */
       railLabel: string
+      stepBack: string
+      stepNext: string
+      goToStep: string
+      firstStepBody: string
       /** A disabled section's summary until a picture is set. */
       addPictureFirst: string
       chooseFile: string
@@ -995,8 +1008,6 @@ export interface Translations {
       pictureNoteTouch: string
       /** Under the file name: "256×192 px · png". */
       pictureSize: string
-      /** Paste found no picture on the clipboard, or the browser would not read it. */
-      nothingToPaste: string
       dropHere: string
       dropOrPaste: string
       dropOrChoose: string
@@ -1019,6 +1030,9 @@ export interface Translations {
       /** The Width slider's max end: the width in the chosen unit, `{value}`. */
       widthMaxLabel: string
       widthHint: string
+      /** The chain between Width and Height: its name in each state (ticket 0757). */
+      sizeLinked: string
+      sizeUnlinked: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
       /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
@@ -1037,7 +1051,6 @@ export interface Translations {
       resultPerPixel: string
       /** The footer's color count after the size. */
       colorsCount: PluralForms
-      noPicture: string
       /** The preview's accessible name. */
       previewName: string
       previewEmpty: string
@@ -1045,17 +1058,21 @@ export interface Translations {
       /** The Colors section's source control and what each source does. */
       matchTo: string
       beadColors: string
+      /** Match to's first option: the Bead's palette, `{bead}` its maker, name and shape; and the Note under it. */
+      beadPalette: string
+      beadPaletteNote: string
       defaultPalette: string
       exact: string
-      defaultNote: string
-      exactNote: string
       codesInSize: string
       colorsFound: string
+      /** The found-colors table's headings (Empty and Change are the buttons' names). */
+      fromPicture: string
+      becomes: string
+      beadsColumn: string
       treatAsEmpty: string
-      treatAsEmptyBanner: string
       /** A found color's actions and states (FoundColorRow card). */
       keepExact: string
-      remap: string
+      change: string
       empty: string
       noBead: string
       keptExact: string
@@ -1065,13 +1082,6 @@ export interface Translations {
       /** A found color's row, as a screen reader names it. */
       rowName: PluralForms
       /** The Review summary's rows. */
-      summarySize: string
-      summaryColors: string
-      summaryBeadsNeeded: string
-      summaryWeight: string
-      summaryToBuy: string
-      showDetails: string
-      hideDetails: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
@@ -1183,6 +1193,9 @@ export interface Translations {
     importFile: string
     changeName: string
     convertImage: string
+    /** The chain between Width and Height, in each state (ticket 0757). */
+    sizeLinked: string
+    sizeUnlinked: string
     treatAsEmpty: string
     remapColor: string
     emptyColor: string
