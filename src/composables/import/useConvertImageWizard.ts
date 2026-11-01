@@ -107,6 +107,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const chosenSource = ref<ColorSource>()
   const chosenColors = ref(DEFAULT_MAX_IMAGE_COLORS)
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
+  /** Treat as empty (ConvertImage card, ticket 0758): on, the preview takes the eyedropper's taps. It is on the Colors step only. */
+  const treatAsEmpty = ref(false)
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
   const part = computed<PixelCrop>(() => {
@@ -211,8 +213,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rest = computed(() => sample(restPart.value))
 
   const hasCatalog = computed(() => !!catalogId.value)
+  /** What the found colors are matched to: Exact until a source is chosen (ticket 0758). */
   const source = computed<ColorSource>(() => {
-    const wanted = chosenSource.value ?? (hasCatalog.value ? 'bead-colors' : 'default')
+    const wanted = chosenSource.value ?? 'exact'
     return wanted === 'bead-colors' && !hasCatalog.value ? 'default' : wanted
   })
   const builtIns = computed(() => defaultPalette(bead.value.id))
@@ -305,6 +308,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     const pictureHex = reduced.value.byHex.get(packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
     if (pictureHex) setChoice(pictureHex, { kind: 'empty' })
   }
+
+  watch([step, () => !!image.value], ([at, hasPicture]) => {
+    if (at !== 'colors' || !hasPicture) treatAsEmpty.value = false
+  })
 
   const stepIndex = computed(() => CONVERT_STEPS.indexOf(step.value))
   /** Every step after Picture waits for a picture. */
@@ -422,6 +429,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     choices,
     setChoice,
     toggleEmpty,
+    treatAsEmpty,
     emptyAtBead,
     palette,
     remapPalette,
