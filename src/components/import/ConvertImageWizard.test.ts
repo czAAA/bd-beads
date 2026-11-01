@@ -3,6 +3,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, effectScope, h } from 'vue'
 import ConvertImageWizard from './ConvertImageWizard.vue'
 import ConvertStepBar from './ConvertStepBar.vue'
+import BeadQuantities from '../palette/BeadQuantities.vue'
 import { useConvertImageWizard, type ConvertImageWizard as Wizard } from '../../composables/import/useConvertImageWizard'
 import type { ConvertStep } from '../../domain/convertSize'
 import type { ColorCatalog } from '../../domain/colorCatalog'
@@ -273,6 +274,54 @@ describe('ConvertImageWizard Create Project', () => {
     const grid = frameGrid(created(wrapper)!)
     expect(grid[0]!.at(-1)!.color).toBeNull()
     expect(grid[0]![0]!.color).not.toBeNull()
+  })
+})
+
+describe('ConvertImageWizard Review (ticket 0759)', () => {
+  const header = (wrapper: VueWrapper) => wrapper.get('[data-testid="bead-quantities"] button[aria-expanded]')
+
+  it('shows the app’s Beads needed closed, with its total on the row, and no list of its own', async () => {
+    const { wrapper, wizard } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'review')
+
+    expect(header(wrapper).attributes('aria-expanded')).toBe('false')
+    expect(header(wrapper).text()).toContain(en.quantities.heading)
+    // 16 × 8 beads, and the Delica's weight, as the Frame panel writes them.
+    expect(wrapper.get('[data-testid="quantity-total"]').text()).toMatch(/^128 · ≈ [\d.]+ g$/)
+    expect(wrapper.find('[data-testid="quantity-row"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-summary-colors"]').exists()).toBe(false)
+  })
+
+  it('opens on a press with the same counts, grams and color names as the created Project’s Beads needed', async () => {
+    const { wrapper, wizard } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'review')
+    await header(wrapper).trigger('click')
+    const rowsOf = (from: VueWrapper) => from.findAll('[data-testid="quantity-row"]').map((row) => row.text())
+    const total = (from: VueWrapper) => from.get('[data-testid="quantity-total"]').text()
+
+    await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
+    const project = created(wrapper)!
+    // The Frame panel's section is open on a first visit.
+    const real = mount(BeadQuantities, { props: { project, catalog } })
+
+    expect(header(wrapper).attributes('aria-expanded')).toBe('true')
+    expect(rowsOf(wrapper)).toEqual(rowsOf(real))
+    expect(rowsOf(wrapper).length).toBeGreaterThan(0)
+    expect(rowsOf(wrapper).join(' ')).toContain('DB723 Opaque Red')
+    expect(total(wrapper)).toBe(total(real))
+  })
+
+  it('opens closed again each time the step is shown', async () => {
+    const { wrapper, wizard } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'review')
+    await header(wrapper).trigger('click')
+    await show(wizard, 'colors')
+    await show(wizard, 'review')
+
+    expect(header(wrapper).attributes('aria-expanded')).toBe('false')
   })
 })
 

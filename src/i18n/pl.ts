@@ -938,13 +938,6 @@ export const pl: Translations = {
       pictureColor: 'Kolor obrazu',
       newPalette: 'paleta nowego projektu',
       rowName: { one: '{hex} na {name}, {count} koralik', few: '{hex} na {name}, {count} koraliki', many: '{hex} na {name}, {count} koralików', other: '{hex} na {name}, {count} koralika' },
-      summarySize: 'rozmiar',
-      summaryColors: 'kolory',
-      summaryBeadsNeeded: 'potrzebne koraliki',
-      summaryWeight: 'szacunkowa waga',
-      summaryToBuy: 'do kupienia',
-      showDetails: 'Szczegóły',
-      hideDetails: 'Zwiń',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

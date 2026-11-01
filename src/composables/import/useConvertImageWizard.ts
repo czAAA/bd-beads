@@ -63,10 +63,6 @@ export type ConvertWeave = 'whole' | 'part'
  * device's Size unit: the wizard remembers nothing (spec 0645). */
 export type ConvertSizeUnit = 'beads' | 'mm'
 
-/** The layout where the preview sits above the step instead of beside it, under 1024 px wide or in portrait
- * (PhoneForms card); the same edge as the CSS of its components. */
-export const CONVERT_SHEET_QUERY = '(max-width: 63.99rem), (orientation: portrait)'
-
 /** How long a moved handle has to stay still before the colors are worked out exactly (ticket 122). */
 const PAUSE_MS = 150
 
@@ -407,6 +403,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     catalogState,
     /** The loaded catalog itself, for the remap picker's empty state to name a code's other sizes (ticket 0713). */
     catalog,
+    /** The Color catalog of the Bead in hand, none while another Bead's (or none) is loaded: names Review's coded colors (ticket 0759). */
+    beadCatalog: computed(() => (catalog.value?.id === catalogId.value ? catalog.value : undefined)),
     source,
     setSource: (next: ColorSource) => (chosenSource.value = next),
     beadTargets,

@@ -922,13 +922,6 @@ export const en: Translations = {
       pictureColor: 'Picture color',
       newPalette: 'palette of the new Project',
       rowName: { one: '{hex} to {name}, {count} bead', other: '{hex} to {name}, {count} beads' },
-      summarySize: 'size',
-      summaryColors: 'colors',
-      summaryBeadsNeeded: 'beads needed',
-      summaryWeight: 'estimated weight',
-      summaryToBuy: 'to buy',
-      showDetails: 'Show details',
-      hideDetails: 'Hide details',
     },
     errors: {
       heic: 'Browsers cannot read HEIC pictures. Save it as PNG or JPEG and try again.',
