@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import { fillBlanks } from '../../domain/fillBlanks'
 import {
-  MAX_FOLD,
+  isSquare,
+  MAX_GRID_FOLD,
   MIN_FOLD,
   MIRROR_AXES,
   MIRROR_MODES,
@@ -54,9 +55,15 @@ const offReason = (axis: MirrorAxis) => {
 }
 const isOn = (axis: MirrorAxis) => props.setting.axes[axis] && !offReason(axis)
 
-/** The Stepper a chip that is on carries: an Axis count, 1 to the beads across minus 1, or Radial's Fold, 2 to 8. */
+/** Why Radial's + is off: a quarter turn needs a square Area (ticket 0751); none in a square one, or with no Area. */
+const quarterReason = computed(() => (props.rect && !isSquare(props.rect) ? t.value.mirror.quarterNeedsSquare : undefined))
+
+/** The Stepper a chip that is on carries: an Axis count, 1 to the beads across minus 1, or Radial's Fold, 2 or 4. */
 function stepperFor(axis: MirrorAxis) {
-  if (axis === 'radial') return { value: props.setting.fold, min: MIN_FOLD, max: MAX_FOLD, fewer: t.value.mirror.fewerFolds, more: t.value.mirror.moreFolds, name: t.value.mirror.fold }
+  if (axis === 'radial') {
+    const max = quarterReason.value ? MIN_FOLD : MAX_GRID_FOLD
+    return { value: Math.min(props.setting.fold, max), min: MIN_FOLD, max, fewer: t.value.mirror.fewerFolds, more: t.value.mirror.moreFolds, name: t.value.mirror.fold }
+  }
   const max = Math.max(1, across(axis) - 1)
   const name = axis === 'leftRight' ? t.value.mirror.leftRightAxes : t.value.mirror.topBottomAxes
   return { value: Math.min(props.setting.counts[axis], max), min: 1, max, fewer: t.value.mirror.fewerAxes, more: t.value.mirror.moreAxes, name }
@@ -81,7 +88,8 @@ function toggle(axis: MirrorAxis) {
 }
 function step(axis: MirrorAxis, by: number) {
   const { value, min, max } = stepperOf(axis)
-  const next = Math.min(max, Math.max(min, value + by))
+  // A Fold steps between 2 and 4 (ticket 0751), so one press crosses the gap.
+  const next = Math.min(max, Math.max(min, value + (axis === 'radial' ? by * 2 : by)))
   if (next === value) return
   emit('update:setting', axis === 'radial' ? withMirrorFold(props.setting, next) : withMirrorCount(props.setting, axis, next))
 }
@@ -143,7 +151,7 @@ function step(axis: MirrorAxis, by: number) {
             </button>
           </AppTooltip>
           <output class="mirror-bar__value" :aria-label="`${stepperOf(axis).name}, ${stepperOf(axis).value}`" :data-testid="`mirror-bar-${axis}-value`">{{ stepperOf(axis).value }}</output>
-          <AppTooltip :name="stepperOf(axis).more" :announce="false" :disabled="stepperOf(axis).value >= stepperOf(axis).max">
+          <AppTooltip :name="stepperOf(axis).more" :announce="false" :disabled="stepperOf(axis).value >= stepperOf(axis).max" :disabled-body="axis === 'radial' ? quarterReason : undefined">
             <button
               type="button"
               class="context-bar__control mirror-bar__step"
