@@ -351,16 +351,40 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     // A 4 px wide picture goes from 8 to 16 beads and starts at the ×4 mark; a cube bead is 1.5 mm.
     expect([input.min, input.max, input.value]).toEqual(['8', '16', '16'])
     expect(wrapper.get('[data-testid="convert-width-value"]').text()).toBe('16 beads · 24 mm')
-    expect(range.attributes('aria-valuetext')).toBe('16 beads, 24 mm, 1 px = 4 × 4 beads')
+    expect(range.attributes('aria-valuetext')).toBe('16 beads, 24 mm, 1 px of your picture = 4 × 4 beads')
     expect(wrapper.findAll('[data-testid="convert-width-mark"]').map((mark) => mark.attributes('data-value'))).toEqual(['8', '16'])
     expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('16×8 beads')
+    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('1 px of your picture = 4 × 4 beads')
 
     await range.setValue('12')
     expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('12×6 beads')
+    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('About 0.3 × 0.3 px of your picture = 1 bead')
     expect(range.attributes('aria-valuetext')).toBe('12 beads, 18 mm')
 
     await wrapper.get('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
     expect(wrapper.get('[data-testid="convert-width-value"]').text()).toBe('18 mm · 12 beads')
+  })
+
+  it('labels the Width marks and max end in the chosen unit and says in pixels first what one bead takes', async () => {
+    const wide = (): PixelData => ({ width: 64, height: 32, data: new Uint8ClampedArray(64 * 32 * 4).fill(255) })
+    const { wrapper } = open({ decodeImage: async () => wide() })
+    await chooseFile(wrapper, picture())
+    const range = wrapper.get('[data-testid="convert-width-range"]')
+    const ends = () => wrapper.get('[data-testid="convert-width"] .vs-ends').text()
+
+    expect(ends()).toContain('16 beads')
+    expect(ends()).toContain('256 beads (all the picture\'s detail)')
+    expect(ends()).not.toContain('px')
+    await range.setValue('64')
+    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('Each 1×1 px square of your picture = 1 bead')
+    await range.setValue('16')
+    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('Each 4×4 px square of your picture = 1 bead')
+    await range.setValue('24')
+    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('About 2.7 × 2.7 px of your picture = 1 bead')
+
+    await wrapper.get('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
+    expect(ends()).toContain('mm (all the picture\'s detail)')
+    expect(ends()).toMatch(/\d+ mm/)
   })
 
   it('offers a Colors slider up to every color the picture has, and keeps Color by color closed with its summary', async () => {
