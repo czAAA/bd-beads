@@ -253,6 +253,65 @@ async function runAll() {
   status('Run all done. Stop the Timelines recording now.')
 }
 
+// --- Measure everything: every photo with Run all, unattended. Each photo's results go to the Mac as soon as it ends;
+// a flag set while it runs tells the next open that the browser closed the page mid-run, probably for memory.
+const RUNNING = 'spike-0763-running'
+const SHOTS = 'spike-0763-shots'
+const THUMB = 360
+interface Shot { photo: string; subject: string; tap: string }
+const shots: Shot[] = JSON.parse(localStorage.getItem(SHOTS) ?? '[]')
+const progress = (text: string) => ($('progress').textContent = text)
+
+function thumb(c: HTMLCanvasElement) {
+  const t = document.createElement('canvas')
+  const scale = Math.min(1, THUMB / Math.max(c.width, c.height, 1))
+  t.width = Math.round(c.width * scale)
+  t.height = Math.round(c.height * scale)
+  ctx(t).drawImage(c, 0, 0, t.width, t.height)
+  return t.toDataURL('image/jpeg', 0.8)
+}
+
+const results = () => ({
+  device: device.value, platform: platform(), userAgent: navigator.userAgent, date: new Date().toISOString(),
+  screen: { width: screen.width, height: screen.height, pixelRatio: devicePixelRatio }, cores: navigator.hardwareConcurrency,
+  deviceMemory: memory, rows, shots,
+})
+const resultsName = () => `${device.value || platform()}-${screen.width}x${screen.height}`.replace(/\W+/g, '-')
+
+async function sendResults() {
+  const res = await fetch(`${BASE}results?name=${encodeURIComponent(resultsName())}`, { method: 'POST', body: JSON.stringify(results()) })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+}
+const sendOrSay = () => sendResults().catch((e: Error) => progress(`Couldn't send the results to the Mac (${e.message}): press Download results.`))
+
+async function measureEverything() {
+  rows.length = 0
+  shots.length = 0
+  localStorage.removeItem('spike-0763-rows')
+  localStorage.removeItem(SHOTS)
+  renderRows()
+  const lock = 'wakeLock' in navigator ? await navigator.wakeLock.request('screen').catch(() => undefined) : undefined
+  try {
+    for (const [i, photo] of manifest.photos.entries()) {
+      progress(`Photo ${i + 1} of ${manifest.photos.length}…`)
+      localStorage.setItem(RUNNING, photo)
+      await usePicture(BASE + photo, photo.replace(/^photos\//, ''))
+      await runAll()
+      shots.push({ photo: photoName, subject: thumb($('cut')), tap: thumb(view) })
+      localStorage.setItem(SHOTS, JSON.stringify(shots))
+      await sendOrSay()
+    }
+    progress('All done. The results are on the Mac.')
+  } catch (e) {
+    log('failed', '', { note: (e as Error).message })
+    progress(`Stopped: ${(e as Error).message}. What ran is on the Mac.`)
+    await sendOrSay()
+  } finally {
+    localStorage.removeItem(RUNNING)
+    await lock?.release()
+  }
+}
+
 async function compare() {
   const id = isnetChoice.value as IsNetId
   if (id === 'isnet-fp32') throw new Error('choose a compressed IS-Net to compare')
@@ -303,6 +362,8 @@ const guard = (f: () => Promise<unknown>) => () => {
 }
 
 $('all').onclick = guard(runAll)
+$('everything').onclick = guard(measureEverything)
+$('download').onclick = () => download(`spike-0763-${resultsName()}.json`, new Blob([JSON.stringify(results(), null, 1)]))
 $('loadIsnet').onclick = guard(() => load(models, isnetChoice.value as IsNetId).then(() => status('Loaded')))
 $('subject').onclick = guard(() => findSubject(models, isnetChoice.value as IsNetId).then(() => status('Done')))
 $('loadSam').onclick = guard(async () => {
@@ -360,6 +421,14 @@ guard(async () => {
   const size = (ids: string[]) => manifest.models.filter((m) => ids.includes(m.id)).reduce((s, m) => s + m.bytes, 0) / MB
   $('files').textContent = `onnxruntime-web ${manifest.runtime.version}: runtime ${(manifest.runtime.bytes / MB).toFixed(1)} MB, IS-Net uint8 ${size(['isnet-uint8']).toFixed(1)} MB, SlimSAM ${size(['slimsam-encoder', 'slimsam-decoder']).toFixed(1)} MB`
   for (const p of manifest.photos) photos.add(new Option(p.replace(/^photos\//, ''), p))
+  const closed = localStorage.getItem(RUNNING)
+  if (closed) {
+    localStorage.removeItem(RUNNING)
+    photoName = closed.replace(/^photos\//, '')
+    log('page closed by the browser', '', { note: 'during this photo, probably out of memory' })
+    progress(`The browser closed this page while measuring ${photoName}, probably for lack of memory. That is recorded and sent to the Mac.`)
+    await sendOrSay()
+  }
   if (manifest.photos.length) await usePicture(BASE + manifest.photos[0], manifest.photos[0].replace(/^photos\//, ''))
   else status('Choose a picture')
 })()
