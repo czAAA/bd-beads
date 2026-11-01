@@ -933,13 +933,6 @@ export const es: Translations = {
       pictureColor: 'Color de la imagen',
       newPalette: 'paleta del nuevo proyecto',
       rowName: { one: '{hex} a {name}, {count} cuenta', many: '{hex} a {name}, {count} de cuentas', other: '{hex} a {name}, {count} cuentas' },
-      summarySize: 'tamaño',
-      summaryColors: 'colores',
-      summaryBeadsNeeded: 'cuentas necesarias',
-      summaryWeight: 'peso estimado',
-      summaryToBuy: 'a comprar',
-      showDetails: 'Ver detalles',
-      hideDetails: 'Ocultar detalles',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

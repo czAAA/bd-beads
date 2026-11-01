@@ -940,13 +940,6 @@ export const ru: Translations = {
       pictureColor: 'Цвет изображения',
       newPalette: 'палитра нового проекта',
       rowName: { one: '{hex} в {name}, {count} бисерина', few: '{hex} в {name}, {count} бисерины', many: '{hex} в {name}, {count} бисерин', other: '{hex} в {name}, {count} бисерины' },
-      summarySize: 'размер',
-      summaryColors: 'цвета',
-      summaryBeadsNeeded: 'нужно бисера',
-      summaryWeight: 'примерный вес',
-      summaryToBuy: 'купить',
-      showDetails: 'Подробнее',
-      hideDetails: 'Свернуть',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',
