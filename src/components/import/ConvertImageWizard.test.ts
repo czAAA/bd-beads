@@ -219,6 +219,16 @@ describe('ConvertImageWizard setup', () => {
     expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
   })
 
+  it('names the bead a found color becomes by its code and name, with its hex in a Tooltip (ticket 0760)', async () => {
+    const { wrapper } = open({ draft: delica })
+    await chooseFile(wrapper, picture())
+    await openColorByColor(wrapper)
+    const label = wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-name"]')
+
+    expect(label.get('[data-testid="color-label"]').text()).toBe('DB723 Opaque Red')
+    expect(label.get('[role="tooltip"]').text()).toBe('#D02030')
+  })
+
   it('remaps a found color through the Bead colors list with its filter rows (ticket 0713)', async () => {
     const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())

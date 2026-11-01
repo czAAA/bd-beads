@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
-import { listedColorName } from '../../i18n/colorName'
+import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { frameOf } from '../../domain/layerRecord'
@@ -12,6 +12,8 @@ import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import PanelSection from '../shell/PanelSection.vue'
+import type { LabelledColor } from '../../i18n/colorLabel'
+import ColorLabel from './ColorLabel.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's last section, with the total and the weight
@@ -45,12 +47,12 @@ function weightOf(count: number): string | undefined {
 
 const totalCount = computed(() => quantities.value.reduce((sum, quantity) => sum + quantity.count, 0))
 
-/** The maker's catalog code of the color, when it was picked from the Color catalog (ticket 538). */
-const codeOf = (colorId: string | null): string | undefined => palette.value.byId(colorId)?.code
+/** The palette color of a row, with its catalog code when it was picked from the Color catalog (ticket 538). */
+const colorOf = (colorId: string | null, hex: string): LabelledColor => palette.value.byId(colorId) ?? { hex }
 
-function nameOf(colorId: string | null, hex: string): string {
-  return listedColorName(t.value, palette.value.byId(colorId), hex)
-}
+// A coded color is named from the Bead's Color catalog (ticket 0760), so the catalog loads once a row has a code.
+const beadColors = useBeadColorsList()
+loadCatalogWhen(beadColors, () => quantities.value.some((quantity) => !!colorOf(quantity.colorId, quantity.hex).code))
 
 const expanded = ref(false)
 const shown = computed(() => (expanded.value ? quantities.value : quantities.value.slice(0, SUMMARY_ROWS)))
@@ -86,8 +88,7 @@ const total = computed(() => {
           <tr v-for="quantity in shown" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
             <td class="bead-quantities__color">
               <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
-              <span v-if="codeOf(quantity.colorId)" class="bead-quantities__code">{{ codeOf(quantity.colorId) }}</span>
-              <span class="bead-quantities__name">{{ nameOf(quantity.colorId, quantity.hex) }}</span>
+              <ColorLabel :color="colorOf(quantity.colorId, quantity.hex)" :catalog="beadColors?.catalog.value" />
             </td>
             <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
               {{ groupThousands(quantity.count, locale) }}
@@ -141,13 +142,13 @@ const total = computed(() => {
   padding: 0;
 }
 
-/* The color: a swatch, its catalog code, then its name, which gives way (ellipsis) before the count does. */
+/* The color: a swatch, then its label (code and name, or hex), which wraps before the count gives way. */
 .bead-quantities__color {
   display: flex;
   align-items: center;
   gap: var(--space-8);
   min-width: 0;
-  height: var(--panel-item-height);
+  min-height: var(--panel-item-height);
   font: var(--type-control);
   color: var(--ink);
 }
@@ -158,19 +159,6 @@ const total = computed(() => {
   height: var(--swatch-dot);
   border-radius: var(--swatch-dot-radius);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
-}
-
-.bead-quantities__code {
-  flex: none;
-  font: var(--type-meta-small);
-  color: var(--muted);
-}
-
-.bead-quantities__name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .bead-quantities__count,

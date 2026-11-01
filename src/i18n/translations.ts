@@ -499,6 +499,8 @@ export interface Translations {
     /** CONTEXT.md's Custom color glossary entry: the button at the end of the Colors group that opens the color
      * picker. */
     customColorLabel: string
+    /** A catalog color's name from its Color catalog entry (ticket 0760): `{finish}` and `{family}` in the language's order. */
+    catalogColorName: string
     /** The picker's wheel (ticket 449): its name, and its value as heard, `{hue}` in degrees and `{saturation}` in
      * percent. */
     wheelLabel: string
