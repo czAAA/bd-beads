@@ -16,6 +16,7 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 
 - Optional. Each mark is a `--slider-mark-width` (2px) × `--slider-mark-height` (14px) bar in `line-strong`, radius 1, standing across the track at its value. It is taller than the track, so it still shows over the filled part; the thumb covers it.
 - A mark may carry a label under the track, on the ends' line, in `meta-small` `muted`, centred under it ("8×8 px"). A label that would touch an end's label or another label is left out; the mark stays.
+- **A featured mark** (ticket 0770; the Convert image Suggested Width): the same bar in `ink`, its label in `meta-small` `ink`. Its label is laid out first and always shows, kept inside the track's width; an end's label it would touch is hidden (still in place, so nothing moves), and other labels give way to it as to an end's.
 - **Settling on a mark:** a pointer drag released within `--slider-mark-snap` (6px) of a mark lands on it. Keys never snap: they step by 1 and land on marks on their way.
 - Marks are drawn for the pointer and the eye; they are not separate stops for a screen reader, which hears the meaning in `aria-valuetext` when the value is on one.
 

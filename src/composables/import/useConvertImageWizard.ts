@@ -52,6 +52,7 @@ import { brandColors, createPalette, defaultPalette } from '../../domain/palette
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { cleanUpStrayBeads, MAX_CLEAN_UP } from '../../domain/strayBeads'
+import { suggestedWidth as suggestWidth } from '../../domain/suggestedWidth'
 import { backgroundFamilies, DEFAULT_TOLERANCE, simpleCutOut, subjectBox, type SubjectMask } from '../../domain/subjectMask'
 import { darkestColor, hasEmptyRound, outlinedGrid, outlinedPreview, outlinePad } from '../../domain/subjectOutline'
 import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
@@ -385,6 +386,33 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     return framedGrid(cells, { ...weave.value, beadId: bead.value.id, bead: bead.value })
   })
 
+  // --- Suggested Width ----------------------------------------------------------------------------------------------
+
+  /** Suggested Width (ticket 0770, spec 0761): measured on the part at rest, through Cut out and Auto-fix lighting, over
+   * the colors the Colors slider asks for. It never reads the Width, so moving the slider leaves it be, and as a computed
+   * it is worked out only while the Size step reads it. */
+  const suggestedWidth = computed(() => {
+    const picture = image.value
+    if (!picture) return undefined
+    const at = restPart.value
+    // Linked, the Height follows each Width tried; unlinked, it stays as set.
+    const height = linked.value ? undefined : heightBeads.value
+    const sizingAt = (width: number) =>
+      sizingFor({ part: at, width, height, linked: linked.value, lead: 'width', bead: bead.value, technique: technique.value, techniqueSettings: techniqueSettings.value })
+    // The slider's range and marks depend on the part alone, whatever Width is asked.
+    const { range, marks } = sizingAt(0)
+    return suggestWidth({
+      image: picture,
+      part: at,
+      mask: subjectMask.value,
+      adjust: lighting.value,
+      colors: clamp(chosenColors.value, MIN_IMAGE_COLORS, MAX_IMAGE_COLORS),
+      range,
+      marks: marks.map((mark) => mark.width),
+      sizingAt,
+    })
+  })
+
   // --- Colors -------------------------------------------------------------------------------------------------------
 
   watch(
@@ -529,6 +557,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setSizeUnit: (next: ConvertSizeUnit) => (sizeUnit.value = next),
     widthMmOf,
     largeSchema: computed(() => isLargeSchema(dimensions.value)),
+    /** The Suggested Width (ticket 0770); none without a picture. */
+    suggestedWidth,
+    /** Use suggested: the Width moves to the suggestion, the Height following while linked. */
+    useSuggestedWidth: () => {
+      if (suggestedWidth.value !== undefined) setWidth(suggestedWidth.value)
+    },
     // The preview
     moving,
     beginMove: () => (moving.value = true),

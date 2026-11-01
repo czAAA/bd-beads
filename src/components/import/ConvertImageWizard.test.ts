@@ -5,6 +5,7 @@ import ConvertImageWizard from './ConvertImageWizard.vue'
 import ConvertStepBar from './ConvertStepBar.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import { useConvertImageWizard, type ConvertImageWizard as Wizard } from '../../composables/import/useConvertImageWizard'
+import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import type { ConvertStep } from '../../domain/convertSize'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
@@ -419,7 +420,7 @@ describe('ConvertImageWizard preview zoom (ticket 0650)', () => {
 
     expect(zoomOut.attributes()).toMatchObject({ 'aria-label': en.canvas.zoomOutLabel, 'aria-disabled': 'true' })
     expect(wrapper.get('[data-testid="convert-zoom-in"]').attributes('aria-label')).toBe(en.canvas.zoomInLabel)
-    const tip = wrapper.findAll('[data-testid="convert-preview-zoom"] .app-tooltip')[0]!
+    const tip = wrapper.findAll('[data-testid="convert-preview-zoom"] .app-tooltip').find((each) => each.find('[data-testid="convert-zoom-out"]').exists())!
     await tip.trigger('pointerenter', { pointerType: 'mouse' })
     expect(tip.get('.app-tooltip__body').text()).toBe(en.tooltips.zoomOutLimit)
 
@@ -732,5 +733,118 @@ describe('ConvertImageWizard Colors step helpers (ticket 0766)', () => {
     expect(wizard.outlineColorPicked.value).toBe(false)
     await outline.get('[data-testid="color-popover-close"]').trigger('click')
     expect(outline.find('[data-testid="convert-outline-picker"]').exists()).toBe(false)
+  })
+})
+
+describe('ConvertImageWizard Suggested Width (ticket 0770)', () => {
+  it('marks the suggestion on the Width slider and moves the Width there only when Use suggested is pressed', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'size')
+    const suggested = wizard.suggestedWidth.value!
+    const range = wrapper.get('[data-testid="convert-width-range"]')
+    const link = () => wrapper.find('[data-testid="convert-use-suggested"]')
+
+    expect(suggested).toBeLessThan(16)
+    expect(wrapper.get('[data-testid="convert-width-mark"][data-featured]').attributes('data-value')).toBe(String(suggested))
+    expect(wrapper.get('[data-testid="convert-width-featured-label"]').text()).toBe(en.convertImage.wizard.suggested)
+    expect((range.element as HTMLInputElement).value).toBe('16')
+    expect(link().text()).toBe(en.convertImage.wizard.useSuggested)
+    expect(wrapper.get('[data-testid="convert-result"] [role="tooltip"]').text()).toContain(`${suggested} beads`)
+
+    await link().trigger('click')
+    expect((range.element as HTMLInputElement).value).toBe(String(suggested))
+    expect(range.attributes('aria-valuetext')).toContain(en.convertImage.wizard.suggested)
+    expect(link().exists()).toBe(false)
+  })
+})
+
+describe('ConvertImageWizard Hold to compare (ticket 0770)', () => {
+  afterEach(() => vi.useRealTimers())
+
+  const box = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-box"]')
+  const original = (wrapper: VueWrapper) => wrapper.find('[data-testid="convert-original"]')
+  const pointer = (type: string, x = 0, y = 0) => window.dispatchEvent(Object.assign(new MouseEvent(type, { clientX: x, clientY: y }), { pointerId: 1 }))
+
+  /** The page with a 64 × 32 picture set, its timers faked so a hold can be waited out. */
+  async function opened(step: ConvertStep = 'picture') {
+    const opening = open({ decodeImage: async () => ({ width: 64, height: 32, data: new Uint8ClampedArray(64 * 32 * 4).fill(200) }) })
+    await chooseFile(opening.wrapper, picture())
+    await show(opening.wizard, step)
+    vi.useFakeTimers()
+    return opening
+  }
+
+  it('shows the original picture over the beads while a press is held still, and the beads again on letting go', async () => {
+    const { wrapper } = await opened('size')
+    await box(wrapper).trigger('pointerdown', { clientX: 5, clientY: 5, pointerId: 1 })
+    expect(original(wrapper).exists()).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(HOLD_DELAY_MS)
+    expect(original(wrapper).exists()).toBe(true)
+    expect(box(wrapper).attributes('data-comparing')).toBe('true')
+
+    pointer('pointerup', 5, 5)
+    await flushPromises()
+    expect(original(wrapper).exists()).toBe(false)
+  })
+
+  it('keeps A part’s drag: a press that moves first draws the part and never shows the picture', async () => {
+    const { wrapper, wizard } = await opened()
+    await wrapper.get('[data-testid="convert-weave"] [data-value="part"]').trigger('click')
+    const before = { ...wizard.part.value }
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    pointer('pointermove', 40, 40)
+    await vi.advanceTimersByTimeAsync(HOLD_DELAY_MS)
+    expect(original(wrapper).exists()).toBe(false)
+    expect(wizard.part.value).not.toEqual(before)
+    pointer('pointerup', 40, 40)
+  })
+
+  it('holds A part still once the picture shows, whatever the pointer does after', async () => {
+    const { wrapper, wizard } = await opened()
+    await wrapper.get('[data-testid="convert-weave"] [data-value="part"]').trigger('click')
+    const before = { ...wizard.part.value }
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    await vi.advanceTimersByTimeAsync(HOLD_DELAY_MS)
+    pointer('pointermove', 40, 40)
+    await flushPromises()
+    expect(original(wrapper).exists()).toBe(true)
+    expect(wizard.part.value).toEqual(before)
+    pointer('pointerup', 40, 40)
+  })
+
+  it('keeps Treat as empty’s tap, made as it lets go; a hold shows the picture and empties nothing', async () => {
+    const { wrapper, wizard } = await opened('colors')
+    await wrapper.get('[data-testid="convert-treat-as-empty"]').trigger('click')
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    await vi.advanceTimersByTimeAsync(HOLD_DELAY_MS)
+    expect(original(wrapper).exists()).toBe(true)
+    pointer('pointerup')
+    await flushPromises()
+    expect(wizard.emptyColorCount.value).toBe(0)
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    pointer('pointerup')
+    await flushPromises()
+    expect(wizard.emptyColorCount.value).toBe(1)
+  })
+
+  it('does the same with the Compare toggle, its pressed state announced and its Tooltip saying what it does', async () => {
+    const { wrapper } = await opened()
+    const toggle = wrapper.get('[data-testid="convert-compare"]')
+
+    expect(toggle.attributes()).toMatchObject({ 'aria-label': en.convertImage.wizard.compare, 'aria-pressed': 'false' })
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+    expect(original(wrapper).exists()).toBe(true)
+    expect(wrapper.get('[data-testid="convert-preview-zoom"]').text()).toContain(en.tooltips.compare)
+
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-pressed')).toBe('false')
+    expect(original(wrapper).exists()).toBe(false)
   })
 })
