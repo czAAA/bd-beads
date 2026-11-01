@@ -171,13 +171,13 @@ export function beadAreaReader(
    * family is found among a few dozen colors, not every pixel; the commonest colors seed the families, each color
    * joining the first within FAMILY_DISTANCE or starting one, then each is placed again on the nearest centroid. */
   function groupFamilies(area: PixelArea): number {
-    const { colors, xs, ys, total } = cell
+    const { colors, xs, ys, total, stepX, stepY } = cell
     let distinct = 0
     transparentWeight = 0
     for (let at = 0; at < total; at += 1) {
       const x = xs[at]!
       const y = ys[at]!
-      const near = (x === area.x0 || x === area.x1 - 1 ? EDGE_WEIGHT : 1) * (y === area.y0 || y === area.y1 - 1 ? EDGE_WEIGHT : 1)
+      const near = (x === area.x0 || x + stepX >= area.x1 ? EDGE_WEIGHT : 1) * (y === area.y0 || y + stepY >= area.y1 ? EDGE_WEIGHT : 1)
       const packed = colors[at]!
       if (packed === empty) {
         transparentWeight += near
@@ -422,18 +422,22 @@ export function beadAreaReader(
     const { total } = cell
     const families = groupFamilies(area)
 
-    // The family covering most of the bead wins, its edge pixels counting less, transparent pixels as one family; a tie
-    // goes to the family of the centre pixel, the one a moving preview shows.
+    // The family covering most of the bead wins, its edge pixels counting less; a tie goes to the family of the centre
+    // pixel, the one a moving preview shows.
     const centrePixel = pixelAt(clamp(Math.floor(centreX), area.x0, area.x1 - 1), clamp(Math.floor(centreY), area.y0, area.y1 - 1))
     const centre = centrePixel === empty ? TRANSPARENT : nearest(tableIndex(centrePixel), families)
     let winner = TRANSPARENT
-    let most = transparentWeight
+    let most = 0
+    let opaque = 0
     for (let index = 0; index < families; index += 1) {
+      opaque += weight[index]!
       if (weight[index]! > most || (weight[index] === most && centre === index)) {
         winner = index
         most = weight[index]!
       }
     }
+    // No bead only where most of the area is transparent, as a pixel is past half transparent.
+    if (transparentWeight > opaque || (transparentWeight === opaque && centre === TRANSPARENT)) winner = TRANSPARENT
 
     // A thin, strongly contrasting line through the bead wins over it: the largest such.
     if (Math.min(area.x1 - area.x0, area.y1 - area.y0) >= MIN_LINE_BEAD) {

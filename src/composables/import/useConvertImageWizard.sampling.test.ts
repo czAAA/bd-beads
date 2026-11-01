@@ -272,3 +272,21 @@ describe('Convert image sampling: transparency (ticket 0762)', () => {
     }
   })
 })
+
+describe('Convert image sampling: a moving handle (ticket 0762)', () => {
+  it('shows each bead’s centre pixel while a handle moves, and its area at rest', async () => {
+    // Red on the left with a white pixel at each 4 px bead's centre, white on the right.
+    const picture = draw(40, 20, (x, y) => (x < 20 && (x % 4 !== 2 || y % 4 !== 2) ? [220, 30, 40] : [255, 255, 255]))
+    const wizard = await convert(picture, 10)
+    expect(beads(wizard)[0]![0]).toBe('#dc1e28')
+
+    wizard.setWeave('part')
+    wizard.beginMove()
+    wizard.setPart({ x: 0, y: 0, width: 40, height: 20 })
+
+    expect(wizard.approximate.value).toBe(true)
+    expect(beads(wizard)[0]![0]).toBe('#ffffff')
+    wizard.endMove()
+    expect(beads(wizard)[0]![0]).toBe('#dc1e28')
+  })
+})
