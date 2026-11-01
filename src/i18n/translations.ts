@@ -1055,17 +1055,21 @@ export interface Translations {
       /** The Colors section's source control and what each source does. */
       matchTo: string
       beadColors: string
+      /** Match to's first option: the Bead's palette, `{bead}` its maker, name and shape; and the Note under it. */
+      beadPalette: string
+      beadPaletteNote: string
       defaultPalette: string
       exact: string
-      defaultNote: string
-      exactNote: string
       codesInSize: string
       colorsFound: string
+      /** The found-colors table's headings (Empty and Change are the buttons' names). */
+      fromPicture: string
+      becomes: string
+      beadsColumn: string
       treatAsEmpty: string
-      treatAsEmptyBanner: string
       /** A found color's actions and states (FoundColorRow card). */
       keepExact: string
-      remap: string
+      change: string
       empty: string
       noBead: string
       keptExact: string
