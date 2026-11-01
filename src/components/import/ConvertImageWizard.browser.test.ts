@@ -108,7 +108,7 @@ describe('the Convert image found-colors table heading', () => {
     const pane = mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-pane"]')!
     const heading = () => mounted.root.querySelector<HTMLElement>('[data-testid="found-colors-header"]')!.getBoundingClientRect()
     // Scrolled until the heading would have left the pane, with the rows still under it.
-    const target = heading().top - pane.getBoundingClientRect().top + 24
+    const target = Math.round(heading().top - pane.getBoundingClientRect().top + 24)
     pane.scrollTop = target
     await settleForMeasuring()
 

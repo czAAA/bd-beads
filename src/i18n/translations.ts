@@ -1082,6 +1082,17 @@ export interface Translations {
       becomes: string
       beadsColumn: string
       treatAsEmpty: string
+      /** The Colors step's helpers (ticket 0766): Auto-fix lighting's switch, Clean up stray beads' slider with its hint
+       * and its first step, and the Outline's switch, its color swatch and the picker's way back to the darkest color. */
+      helpers: {
+        autoFixLighting: string
+        cleanUp: string
+        cleanUpHint: string
+        off: string
+        outline: string
+        outlineColor: string
+        darkest: string
+      }
       /** A found color's actions and states (FoundColorRow card). */
       keepExact: string
       change: string
@@ -1211,6 +1222,9 @@ export interface Translations {
     treatAsEmpty: string
     remapColor: string
     emptyColor: string
+    /** The Colors step's switches (ticket 0766). */
+    autoFixLighting: string
+    subjectOutline: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }

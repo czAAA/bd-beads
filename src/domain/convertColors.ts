@@ -82,8 +82,9 @@ export function convertFrame(raw: readonly (readonly (string | undefined)[])[], 
 }
 
 /** The new Project's Palette (spec 0645): its built-in colors, then every other color its beads use, most beads first,
- * each an ordinary added swatch; a Bead color brings its code, built-in hex or not. No Image colors are kept. */
-export function newProjectPalette(builtIns: readonly PaletteColor[], found: readonly FoundColor[]): { ids: string[]; codes: PaletteCodes } {
+ * each an ordinary added swatch; a Bead color brings its code, built-in hex or not. No Image colors are kept. The
+ * Outline's color (ticket 0766) comes last, as a result of its own. */
+export function newProjectPalette(builtIns: readonly PaletteColor[], found: readonly Pick<FoundColor, 'result'>[]): { ids: string[]; codes: PaletteCodes } {
   const ids = builtIns.map((color) => color.id)
   const held = new Set(builtIns.map((color) => color.hex))
   const codes: Record<string, string> = {}

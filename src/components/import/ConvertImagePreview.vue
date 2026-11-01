@@ -85,14 +85,35 @@ const frameBox = computed(() => {
   if (!view.value || !at || !size) return undefined
   return view.value.beadBox({ row: at.frameRow, column: at.frameColumn, rows: size.rows, columns: size.columns })
 })
+/** The Schema's beads in the box: the Frame, grown round it by the Outline while it is on (ticket 0766). The line,
+ * the dimming and the size tag go round it; the part's handles stay on the Frame. */
+const schemaBox = computed(() => {
+  const at = lattice.value
+  const size = grid.value
+  const pad = wizard.outlinePad.value
+  if (!pad) return frameBox.value
+  if (!view.value || !at || !size) return undefined
+  return view.value.beadBox({
+    row: at.frameRow - pad.top,
+    column: at.frameColumn - pad.left,
+    rows: size.rows + pad.top + pad.bottom,
+    columns: size.columns + pad.left + pad.right,
+  })
+})
 const frameStyle = computed(() => {
-  const box = frameBox.value
+  const box = schemaBox.value
   return box ? { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` } : undefined
+})
+/** The Schema's size the tag and the pane's name read, the Outline's ring included. */
+const schemaSize = computed(() => {
+  const size = grid.value
+  const pad = wizard.outlinePad.value
+  return size && pad ? { columns: size.columns + pad.left + pad.right, rows: size.rows + pad.top + pad.bottom } : size
 })
 
 const colorsText = computed(() => plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount))
 const previewName = computed(() => {
-  const size = grid.value
+  const size = schemaSize.value
   return wizard.hasPicture.value && size
     ? fillBlanks(words.value.previewName, { size: fillBlanks(words.value.resultGrid, { columns: size.columns, rows: size.rows }), colors: colorsText.value })
     : words.value.previewEmpty
@@ -356,8 +377,8 @@ onBeforeUnmount(() => endDrag())
               />
               <div v-if="frameStyle" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline" />
             </div>
-            <span v-if="frameStyle && grid" class="convert-preview__tag" :style="{ left: frameStyle.left, top: frameStyle.top }" aria-hidden="true">
-              {{ grid.columns }}×{{ grid.rows }}
+            <span v-if="frameStyle && schemaSize" class="convert-preview__tag" :style="{ left: frameStyle.left, top: frameStyle.top }" aria-hidden="true">
+              {{ schemaSize.columns }}×{{ schemaSize.rows }}
             </span>
             <template v-if="wizard.weave.value === 'part' && !eyedropper">
               <button
