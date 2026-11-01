@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId, watchPostEffect } from 'vue'
 import { useConvertImageWizardState, type ConvertWeave, type CutOut } from '../../composables/import/useConvertImageWizard'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { megabytes } from '../../domain/cutOutModel'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -10,15 +11,16 @@ import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppMessage from '../ui/AppMessage.vue'
 import AppNote from '../ui/AppNote.vue'
+import IconButton from '../ui/IconButton.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import CutOutDownloadNote from './CutOutDownloadNote.vue'
 
-// Convert image's Picture step (ConvertImage card, 1 Picture): every way in, the thumbnail and facts with Turn 90° and
-// Flip, weave (ticket 0747), Cut out with Simple's Tolerance, Fit to subject (ticket 0765) and the AI chip's note, Loading
-// and failure (ticket 0767), the Note of every way in until the first picture, and the message for a refused file.
+// Convert image's Picture step (ConvertImage card, 1 Picture): the ways in, the thumbnail, Turn 90° and Flip, weave (0747),
+// Cut out with Simple's Tolerance and Fit to subject (0765), the AI chip's note, Loading and failure (0767) and its tap
+// chips and Reset (0769), the Note of every way in until the first picture, and the message for a refused file.
 const emit = defineEmits<{ paste: [] }>()
 
 const { t } = useI18n()
@@ -41,6 +43,7 @@ const cutOutOptions = computed(() => [
   { value: 'ai' as const, label: cutOutWords.value.ai, icon: 'cut-out-ai' as const, iconOnly: true, tooltip: { name: cutOutWords.value.ai } },
 ])
 const cutOut = computed({ get: () => wizard.cutOut.value, set: (next: CutOut) => wizard.setCutOut(next) })
+const tapActions = { add: controlAction('cut-out-tap-add'), remove: controlAction('cut-out-tap-remove') } as const
 
 // The AI choice's wait (Loading card, AI variant): the MB downloaded, then the model at work; the count isn't read out
 // as it climbs, so a screen reader hears the line once, as it starts.
@@ -58,8 +61,9 @@ const aiLoading = computed(() => {
   if (status.kind === 'thinking') return { text: status.longer ? cutOutWords.value.takingLonger : cutOutWords.value.finding }
   return undefined
 })
-/** Fit to subject shows while Cut out has a subject to fit to, or is working one out with Simple. */
-const fitShown = computed(() => wizard.cutOut.value === 'simple' || (wizard.cutOut.value === 'ai' && ai.value.kind === 'idle'))
+/** Fit to subject shows while Cut out has a subject to fit to (the AI one while a tap is worked out too), or is working
+ * one out with Simple. */
+const fitShown = computed(() => wizard.cutOut.value === 'simple' || (wizard.cutOut.value === 'ai' && !!wizard.subjectMask.value))
 
 const toleranceValue = computed(() => String(wizard.tolerance.value))
 const toleranceMaxLabel = computed(() => fillBlanks(t.value.convertImage.wizard.maxLabel, { value: String(MAX_TOLERANCE) }))
@@ -151,9 +155,37 @@ watchPostEffect(() => {
         <SegmentedControl v-model="weave" :options="weaveOptions" small :labelledby="weaveLabelId" data-testid="convert-weave" />
       </div>
       <p v-if="wizard.weave.value === 'part'" class="convert-picture__hint" data-testid="convert-part-hint">{{ t.convertImage.wizard.partHint }}</p>
-      <div class="convert-picture__row convert-picture__row--wraps">
+      <div class="convert-picture__row convert-picture__row--wraps" :class="{ 'convert-picture__row--taps': wizard.cutOutTapsShown.value }">
         <span :id="cutOutLabelId" class="convert-picture__label">{{ cutOutWords.label }}</span>
-        <SegmentedControl v-model="cutOut" :options="cutOutOptions" small :labelledby="cutOutLabelId" class="convert-picture__cut-out" data-testid="convert-cut-out" />
+        <div class="convert-picture__cut-out-choice">
+          <SegmentedControl v-model="cutOut" :options="cutOutOptions" small :labelledby="cutOutLabelId" class="convert-picture__cut-out" data-testid="convert-cut-out" />
+          <!-- Under the AI chip once the subject is found (ticket 0769): tap add, tap remove, then Reset. -->
+          <div v-if="wizard.cutOutTapsShown.value" class="convert-picture__taps" data-testid="cut-out-taps">
+            <IconButton
+              v-for="kind in ['add', 'remove'] as const"
+              :key="kind"
+              variant="in-box"
+              :icon-size="16"
+              :action="tapActions[kind]"
+              :selected="wizard.cutOutTapMode.value === kind"
+              class="convert-picture__tap"
+              :data-testid="`cut-out-tap-${kind}`"
+              @click="wizard.toggleCutOutTap(kind)"
+            />
+            <AppButton
+              variant="in-box"
+              size="sm"
+              class="convert-picture__reset"
+              :label="cutOutWords.reset"
+              :tooltip="cutOutWords.resetBody"
+              :disabled="wizard.cutOutTaps.value.length === 0"
+              :disabled-body="cutOutWords.resetNothing"
+              data-testid="cut-out-reset"
+              @click="wizard.resetCutOutTaps"
+              >{{ cutOutWords.reset }}</AppButton
+            >
+          </div>
+        </div>
       </div>
       <ValueSlider
         v-if="wizard.cutOut.value === 'simple'"
@@ -278,6 +310,50 @@ watchPostEffect(() => {
 
 .convert-picture__row--wraps {
   flex-wrap: wrap;
+}
+
+/* With the tap row under the chips, the label stays level with the chips. */
+.convert-picture__row--taps {
+  align-items: flex-start;
+}
+
+.convert-picture__row--taps .convert-picture__label {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+}
+
+.convert-picture__cut-out-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+/* Tap add and tap remove 4 apart, then 8 to Reset (ConvertImage card, under the AI chip). */
+.convert-picture__taps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.convert-picture__taps :deep(.convert-picture__tap) {
+  width: var(--control-height-small);
+  height: var(--control-height-small);
+  border-radius: var(--radius-sm);
+}
+
+.convert-picture__taps :deep(.convert-picture__tap:not([aria-pressed='true'])) {
+  border-color: var(--line-strong);
+}
+
+/* On, the chip is `ink` and its whole icon `canvas`, mark included, as the chosen AI chip. */
+.convert-picture__taps :deep(.convert-picture__tap[aria-pressed='true'] .ai-mark) {
+  stroke: currentColor;
+}
+
+.convert-picture__reset {
+  margin-left: var(--space-4);
 }
 
 /* Every chip one width, whatever its word, so the control is one width in every language (ConvertImage card). */

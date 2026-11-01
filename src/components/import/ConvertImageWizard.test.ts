@@ -746,6 +746,81 @@ describe('ConvertImageWizard Cut out with AI (ticket 0767)', () => {
   })
 })
 
+describe('ConvertImageWizard Cut out’s taps (ticket 0769)', () => {
+  const leftHalf = (): SubjectMask => ({ width: 4, height: 2, subject: Uint8Array.from([1, 1, 0, 0, 1, 1, 0, 0]) })
+  const box = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-box"]')
+  const pointer = (type: string, x = 0, y = 0) => window.dispatchEvent(Object.assign(new MouseEvent(type, { clientX: x, clientY: y }), { pointerId: 1 }))
+
+  /** The page with the AI choice's subject found, its timers faked so a hold can be waited out. */
+  async function found() {
+    const fake = fakeCutOutService()
+    const opened = open({ cutOutService: fake.service })
+    await chooseFile(opened.wrapper, picture())
+    await opened.wrapper.get('[data-testid="convert-cut-out"] [data-value="ai"]').trigger('click')
+    await flushPromises()
+    fake.finish(leftHalf())
+    await flushPromises()
+    vi.useFakeTimers()
+    return { ...opened, fake }
+  }
+  afterEach(() => vi.useRealTimers())
+
+  it('offers tap add and tap remove, named with AI in their Tooltips, then Reset, off until there is a tap', async () => {
+    const { wrapper } = await found()
+    const add = wrapper.get('[data-testid="cut-out-tap-add"]')
+    const remove = wrapper.get('[data-testid="cut-out-tap-remove"]')
+    expect(add.attributes()).toMatchObject({ 'aria-label': 'Tap to add, with AI', 'aria-pressed': 'false' })
+    expect(remove.attributes()).toMatchObject({ 'aria-label': 'Tap to take away, with AI', 'aria-pressed': 'false' })
+    expect(wrapper.get('[data-testid="cut-out-reset"]').attributes('aria-disabled')).toBe('true')
+
+    await add.trigger('click')
+    expect(add.attributes('aria-pressed')).toBe('true')
+  })
+
+  it('with tap add on, a tap on the preview goes to the cut-out service as an add at the pixel tapped; Reset drops it', async () => {
+    const { wrapper, wizard, fake } = await found()
+    await wrapper.get('[data-testid="cut-out-tap-add"]').trigger('click')
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    pointer('pointerup')
+    await flushPromises()
+    expect(fake.refines().map((refine) => refine.taps)).toEqual([[{ x: 0, y: 0, kind: 'add' }]])
+
+    fake.finish({ width: 4, height: 2, subject: Uint8Array.from([1, 1, 1, 1, 1, 1, 0, 0]) })
+    await flushPromises()
+    const reset = wrapper.get('[data-testid="cut-out-reset"]')
+    expect(reset.attributes('aria-disabled')).toBeUndefined()
+    await reset.trigger('click')
+    expect(wizard.cutOutTaps.value).toEqual([])
+  })
+
+  it('a press held still on the preview shows the picture and taps nothing', async () => {
+    const { wrapper, fake } = await found()
+    await wrapper.get('[data-testid="cut-out-tap-remove"]').trigger('click')
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    await vi.advanceTimersByTimeAsync(HOLD_DELAY_MS)
+    expect(wrapper.find('[data-testid="convert-original"]').exists()).toBe(true)
+    pointer('pointerup')
+    await flushPromises()
+    expect(fake.refines()).toEqual([])
+  })
+
+  it('makes a tap a tap with A part: the part stays where it was and its handles hide', async () => {
+    const { wrapper, wizard, fake } = await found()
+    await wrapper.get('[data-testid="convert-weave"] [data-value="part"]').trigger('click')
+    const before = { ...wizard.part.value }
+    await wrapper.get('[data-testid="cut-out-tap-add"]').trigger('click')
+    expect(wrapper.find('[data-testid="convert-crop-topLeft"]').exists()).toBe(false)
+
+    await box(wrapper).trigger('pointerdown', { clientX: 0, clientY: 0, pointerId: 1 })
+    pointer('pointerup')
+    await flushPromises()
+    expect(wizard.part.value).toEqual(before)
+    expect(fake.refines()).toHaveLength(1)
+  })
+})
+
 describe('ConvertImageWizard Close', () => {
   // Ticket 0756: the page only asks; the shell's leave guard decides whether to ask the person.
   it('asks to close on Escape, with a picture set or not', async () => {
