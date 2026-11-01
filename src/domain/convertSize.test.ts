@@ -6,13 +6,16 @@ import {
   convertResult,
   flipPicture,
   fullCrop,
+  heightRange,
   isLargeSchema,
+  partDrawn,
   partInset,
   partMoved,
+  partShifted,
   proportionalSide,
   sizeMarks,
   sizingFor,
-  startingWidth,
+  startingSize,
   turnPicture,
   widthRange,
 } from './convertSize'
@@ -134,30 +137,100 @@ describe('sizingFor', () => {
   })
 })
 
-describe('startingWidth (the starting proposal)', () => {
-  it('is one bead per pixel where that mark is in range: pixel art opens exact', () => {
-    expect(startingWidth({ width: 32, height: 32 })).toBe(32)
-    expect(startingWidth({ width: 240, height: 160 })).toBe(240)
+describe('Height and the chain (ticket 0757)', () => {
+  const loom = { bead: cubeBead, technique: 'loom' as const }
+
+  it('gives Height the same range rule as Width, over the part\'s height', () => {
+    expect(heightRange({ width: 200, height: 100 })).toEqual({ min: 8, max: 100 })
+    expect(heightRange({ width: 100, height: 1920 })).toEqual({ min: 8, max: LARGE_SCHEMA_BEADS })
+    expect(heightRange({ width: 100, height: 74 })).toEqual({ min: 8, max: 296 })
   })
 
-  it('is the largest mark giving at most 150 beads on the long side for a picture too wide for one bead per pixel', () => {
-    expect(startingWidth({ width: 1920, height: 1080 })).toBe(120)
-    // 4 px wide goes from 8 to 16 beads: one bead per pixel is under the min, so the ×4 mark.
-    expect(startingWidth({ width: 4, height: 2 })).toBe(16)
+  it('opens at the largest Width and Height for the picture or part', () => {
+    expect(startingSize({ width: 240, height: 160 })).toEqual({ width: 240, height: 160 })
+    expect(startingSize({ width: 1920, height: 1080 })).toEqual({ width: LARGE_SCHEMA_BEADS, height: LARGE_SCHEMA_BEADS })
+    expect(startingSize({ width: 32, height: 16 })).toEqual({ width: 128, height: 64 })
   })
 
-  it('judges the long side by the height of a tall picture', () => {
-    // 1080 / 8 = 135 wide is 240 tall, too tall, and 1080 divides by no larger block: so 150 tall, 84 wide.
-    expect(startingWidth({ width: 1080, height: 1920 })).toBe(84)
+  describe('linked', () => {
+    it('lets Width lead and Height follow the picture\'s shape', () => {
+      const sizing = sizingFor({ part: { width: 200, height: 100 }, width: 40, ...loom })
+      expect(sizing.grid).toEqual({ columns: 40, rows: 20 })
+      expect(sizing.height).toBe(20)
+    })
+
+    it('lets Height lead and Width follow, through the Bead\'s shape', () => {
+      expect(sizingFor({ part: { width: 200, height: 100 }, width: 0, height: 20, lead: 'height', ...loom }).grid).toEqual({ columns: 40, rows: 20 })
+      // Delica beads are 1.3 wide and 1.6 tall: 20 rows are 32 mm, the picture is twice as wide, 64 mm, about 49 beads.
+      expect(sizingFor({ part: { width: 200, height: 100 }, width: 0, height: 20, lead: 'height', bead: delicaBead, technique: 'loom' }).grid).toEqual({
+        columns: 49,
+        rows: 20,
+      })
+    })
+
+    it('keeps the Height exactly where it was set, rather than the one the rounded Width would give', () => {
+      // A tall picture: a step of one row moves the Width by a fraction of a bead.
+      const part = { width: 100, height: 400 }
+      const rows = [60, 61, 62, 63].map((height) => sizingFor({ part, width: 0, height, lead: 'height', ...loom }).height)
+      expect(rows).toEqual([60, 61, 62, 63])
+    })
+
+    it('snaps to a mark from either slider, the grid the same', () => {
+      const part = { width: 256, height: 190 }
+      const fromWidth = sizingFor({ part, width: 32, bead: delicaBead, technique: 'loom' })
+      const fromHeight = sizingFor({ part, width: 0, height: 24, lead: 'height', bead: delicaBead, technique: 'loom' })
+      expect(fromHeight.mark).toEqual(fromWidth.mark)
+      expect(fromHeight.grid).toEqual({ columns: 32, rows: 24 })
+    })
+
+    it('shows the same marks on both sliders: the Width marks and the heights of their grids', () => {
+      const sizing = sizingFor({ part: { width: 256, height: 190 }, width: 32, ...loom })
+      expect(sizing.marks.map((mark) => mark.width)).toEqual([8, 16, 32, 64, 128, 256])
+      // The 32 × 32 px mark would be 6 rows, under the Height's least of 8.
+      expect(sizing.heightMarks).toEqual([
+        { height: 12, pixelsPerBead: 16 },
+        { height: 24, pixelsPerBead: 8 },
+        { height: 48, pixelsPerBead: 4 },
+        { height: 95, pixelsPerBead: 2 },
+        { height: 190, pixelsPerBead: 1 },
+      ])
+    })
+
+    it('holds a Height under what the Width\'s own end allows at that end, keeping the shape', () => {
+      // 100 × 1000 px: Height 8 would be under one Width bead per ten rows; Width stops at its min of 8, Height goes with it.
+      const sizing = sizingFor({ part: { width: 100, height: 1000 }, width: 0, height: 8, lead: 'height', ...loom })
+      expect(sizing.width).toBe(8)
+      expect(sizing.height).toBe(80)
+    })
   })
 
-  it('is 150 beads on the long side when no mark keeps to it', () => {
-    expect(startingWidth({ width: 5000, height: 2500 })).toBe(150)
-    expect(startingWidth({ width: 2500, height: 5000 })).toBe(75)
-  })
+  describe('unlinked', () => {
+    const stretched = (part: { width: number; height: number }, width: number, height: number) => sizingFor({ part, width, height, linked: false, ...loom })
 
-  it('is the max where that is smaller, one bead per pixel not being for a strip taller than the Large Schema line', () => {
-    expect(startingWidth({ width: 77, height: 1000 })).toBe(12)
+    it('sets each side on its own, which stretches the picture', () => {
+      const sizing = stretched({ width: 200, height: 100 }, 40, 40)
+      expect(sizing.grid).toEqual({ columns: 40, rows: 40 })
+      expect(sizing.pixelsPerBead).toEqual({ x: 5, y: 2.5 })
+      expect(sizing.mark).toBeUndefined()
+    })
+
+    it('keeps each side inside its own range', () => {
+      const sizing = stretched({ width: 200, height: 100 }, 999, 2)
+      expect(sizing.width).toBe(200)
+      expect(sizing.height).toBe(8)
+    })
+
+    it('gives each slider its own marks', () => {
+      const sizing = stretched({ width: 200, height: 150 }, 25, 150)
+      expect(sizing.marks.map((mark) => mark.width)).toEqual([25, 50, 100, 200])
+      expect(sizing.heightMarks.map((mark) => mark.height)).toEqual([75, 150])
+    })
+
+    it('is on a mark only where both sides stand for the same block', () => {
+      expect(stretched({ width: 256, height: 192 }, 32, 24).mark).toEqual({ width: 32, pixelsPerBead: 8 })
+      expect(stretched({ width: 256, height: 192 }, 32, 48).mark).toBeUndefined()
+      expect(stretched({ width: 256, height: 192 }, 32, 24).pixelsPerBead).toEqual({ x: 8, y: 8 })
+    })
   })
 })
 
@@ -177,6 +250,22 @@ describe('the part (weave: A part)', () => {
     expect(partMoved(part, 'topLeft', -5.4, 3.6, image)).toEqual({ x: 15, y: 14, width: 165, height: 76 })
     expect(partMoved(part, 'right', 50, 50, image)).toEqual({ x: 20, y: 10, width: 180, height: 80 })
     expect(partMoved(part, 'bottom', 0, -100, image)).toEqual({ x: 20, y: 10, width: 160, height: 8 })
+  })
+
+  it('moves whole, keeping its size and staying on the picture', () => {
+    const part = { x: 20, y: 10, width: 160, height: 80 }
+    expect(partShifted(part, -5.4, 7.6, image)).toEqual({ x: 15, y: 18, width: 160, height: 80 })
+    expect(partShifted(part, 100, -100, image)).toEqual({ x: 40, y: 0, width: 160, height: 80 })
+  })
+
+  it('is drawn from a pixel to another, in any direction, and kept on the picture', () => {
+    expect(partDrawn({ x: 50, y: 30 }, { x: 90, y: 70 }, image)).toEqual({ x: 50, y: 30, width: 40, height: 40 })
+    expect(partDrawn({ x: 90, y: 70 }, { x: 50, y: 30 }, image)).toEqual({ x: 50, y: 30, width: 40, height: 40 })
+    expect(partDrawn({ x: 150, y: 50 }, { x: 400, y: -30 }, image)).toEqual({ x: 150, y: 0, width: 50, height: 50 })
+  })
+
+  it('is never drawn under 8 pixels a side: a click makes a small part, growing the way the drag goes', () => {
+    expect(partDrawn({ x: 50, y: 30 }, { x: 52, y: 29 }, image)).toEqual({ x: 50, y: 22, width: 8, height: 8 })
   })
 
   it('is the whole picture when nothing is cropped', () => {
