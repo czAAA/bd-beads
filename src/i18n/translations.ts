@@ -1022,13 +1022,13 @@ export interface Translations {
       partHint: string
       partFollows: string
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
-       * its marks ("8×8 px", "×2") and the hint under it. */
+       * its marks (the width they stand for) and the hint under it. */
       slideIn: string
       widthBeads: string
       widthMm: string
       maxLabel: string
-      markPx: string
-      markTimes: string
+      /** The Width slider's max end: the width in the chosen unit, `{value}`. */
+      widthMaxLabel: string
       widthHint: string
       /** The chain between Width and Height: its name in each state (ticket 0757). */
       sizeLinked: string

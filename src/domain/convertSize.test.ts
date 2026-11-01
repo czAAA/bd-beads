@@ -326,9 +326,9 @@ describe('turn and flip', () => {
 describe('convertResult', () => {
   const labels = {
     grid: '{columns}×{rows} beads',
-    exact: '1 bead = {n} × {n} px',
-    approximate: '1 bead ≈ {x} × {y} px',
-    perPixel: '1 px = {n} × {n} beads',
+    exact: 'Each {n}×{n} px square of your picture = 1 bead',
+    approximate: 'About {x} × {y} px of your picture = 1 bead',
+    perPixel: '1 px of your picture = {n} × {n} beads',
     mm: 'mm',
     cm: 'cm',
   }
@@ -339,7 +339,7 @@ describe('convertResult', () => {
     expect(convertResult({ bead: delicaBead, technique: 'loom', sizing: on({ width: 256, height: 192 }, 32, delicaBead) }, labels)).toEqual({
       grid: '32×24 beads',
       measured: '4.2 × 3.8 cm',
-      ratio: '1 bead = 8 × 8 px',
+      ratio: 'Each 8×8 px square of your picture = 1 bead',
     })
   })
 
@@ -348,13 +348,13 @@ describe('convertResult', () => {
   })
 
   it('reads an enlarging mark as the beads one pixel is', () => {
-    expect(convertResult({ bead: cubeBead, technique: 'loom', sizing: on({ width: 16, height: 12 }, 64, cubeBead) }, labels).ratio).toBe('1 px = 4 × 4 beads')
+    expect(convertResult({ bead: cubeBead, technique: 'loom', sizing: on({ width: 16, height: 12 }, 64, cubeBead) }, labels).ratio).toBe('1 px of your picture = 4 × 4 beads')
   })
 
   it('reads a Width between marks as pixels per bead, about, in the language\'s decimal sign', () => {
     // 40 Delicas are 52 mm across, the picture 30 mm tall at that: 19 rows of 1.6 mm.
     const sizing = on({ width: 172, height: 100 }, 40, delicaBead)
-    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing }, labels).ratio).toBe('1 bead ≈ 4.3 × 5.3 px')
-    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing }, labels, 'ru').ratio).toBe('1 bead ≈ 4,3 × 5,3 px')
+    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing }, labels).ratio).toBe('About 4.3 × 5.3 px of your picture = 1 bead')
+    expect(convertResult({ bead: delicaBead, technique: 'loom', sizing }, labels, 'ru').ratio).toBe('About 4,3 × 5,3 px of your picture = 1 bead')
   })
 })
