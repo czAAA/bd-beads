@@ -41,6 +41,30 @@ export interface CutOutService {
   cancel(): void
 }
 
+/** What the device record keeps (ticket 0768, ADR 0087: the device is judged by what happened, not guessed). */
+export interface CutOutRecord {
+  /** Set while a model is at work, cleared after: still set when the converter next opens, the tab was closed mid-run. */
+  readonly running: boolean
+  /** The last run stopped with the tab: the AI chip warns until a run finishes. */
+  readonly stopped: boolean
+  /** How long the first finished run's model thought, in ms; none until one has. */
+  readonly firstRunMs?: number
+}
+
+/** The device beside the cut-out service (ticket 0768), handed to the wizard with it so a test can give it a fake: the
+ * record kept on the device, and the cheap checks before a first download. None of them ever blocks the AI choice. */
+export interface CutOutDevice {
+  read(): CutOutRecord
+  write(record: CutOutRecord): void
+  /** The memory the browser reports, in GB; none where it says nothing (Safari, Firefox). */
+  memoryGb(): number | undefined
+  /** The bytes the browser estimates the app may still store; none where it can't say. */
+  freeBytes(): Promise<number | undefined>
+}
+
+/** Under this much reported memory, the download note says the device may be slow (spec 0761). */
+export const LOW_MEMORY_GB = 4
+
 /** Linear interpolation's two neighbours and the far one's weight, for a target index scaled from `to` cells onto `from`
  * (half-pixel centres, as the upstream model's resize). */
 export function neighbours(index: number, from: number, to: number): [number, number, number] {
