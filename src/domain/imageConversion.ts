@@ -1,3 +1,4 @@
+import { beadAreaReader } from './beadAreaColor'
 import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
@@ -27,6 +28,10 @@ export const NO_COLOR = -1
 export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   const at = (y * image.width + x) * 4
   const alpha = image.data[at + 3] ?? 0
+  // Opaque, as most pixels are: nothing to composite, and this runs for every pixel of every bead's area.
+  if (alpha === 255) {
+    return ((image.data[at] ?? 0) << 16) | ((image.data[at + 1] ?? 0) << 8) | (image.data[at + 2] ?? 0)
+  }
   if (alpha < ALPHA_THRESHOLD) {
     return NO_COLOR
   }
@@ -177,10 +182,14 @@ type SamplingInput = {
   techniqueSettings?: TechniqueSettings
 } & PartPlacement
 
-/** The picture's raw colors at the centre of each bead of the preview's lattice (see partLattice), row by row, packed
- * (see pixelPackedAt); NO_COLOR off the picture or on a too-transparent pixel. The cells are in picture pixels, a bead
- * step one cell, and the Weave's description places each bead (ticket 0622). */
-export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice }): Int32Array {
+/** How a bead's color is read from the picture (ticket 0762): `area`, the color most of its area has unless a thin
+ * line crosses it (beadAreaColor), at rest; `centre`, the one pixel at its centre, fast enough for a moving preview. */
+export type SamplingRule = 'centre' | 'area'
+
+/** The picture's raw colors for each bead of the preview's lattice (see partLattice), row by row, packed, by the rule
+ * asked (centre by default); NO_COLOR off the picture or for a too-transparent bead. The cells are in picture pixels, a
+ * bead step one cell round its centre, and the Weave's description places each bead (ticket 0622). */
+export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule }): Int32Array {
   const { image, lattice, part, pixelsPerBead } = input
   const description = describeWeave(input)
   // The frame's corner: its first row is never shifted.
@@ -190,13 +199,26 @@ export function sampleLatticePacked(input: SamplingInput & { lattice: PreviewLat
   const onPicture = (at: number, length: number, slack: number) => (at >= length && at < length + slack ? length - 1 : at)
   const slackX = Math.max(1, pixelsPerBead.x)
   const slackY = Math.max(1, pixelsPerBead.y)
+  const readArea = input.rule === 'area' ? beadAreaReader(image, (x, y) => pixelPackedAt(image, x, y), NO_COLOR) : undefined
+  // A bead's area is the picture pixels whose middles fall in its cell round its true centre, cut to the picture; one
+  // of a pixel or less (an enlarging Width) reads the centre pixel, as it always has.
+  const colorOfArea = (read: NonNullable<typeof readArea>, centreX: number, centreY: number, sourceX: number, sourceY: number) => {
+    const x0 = Math.max(0, Math.ceil(centreX - pixelsPerBead.x / 2 - 0.5))
+    const x1 = Math.min(image.width, Math.ceil(centreX + pixelsPerBead.x / 2 - 0.5))
+    const y0 = Math.max(0, Math.ceil(centreY - pixelsPerBead.y / 2 - 0.5))
+    const y1 = Math.min(image.height, Math.ceil(centreY + pixelsPerBead.y / 2 - 0.5))
+    if (x1 <= x0 || y1 <= y0 || (x1 - x0) * (y1 - y0) === 1) return pixelPackedAt(image, sourceX, sourceY)
+    return read({ x0, y0, x1, y1 }, centreX, centreY)
+  }
   for (let row = 0; row < lattice.rows; row += 1) {
     for (let column = 0; column < lattice.columns; column += 1) {
       const { x, y } = description.center({ row, column }, pixelsPerBead.x, pixelsPerBead.y)
       const sourceX = onPicture(Math.floor(x - originX + part.x), image.width, slackX)
       const sourceY = onPicture(Math.floor(y - originY + part.y), image.height, slackY)
       if (sourceX >= 0 && sourceX < image.width && sourceY >= 0 && sourceY < image.height) {
-        packed[row * lattice.columns + column] = pixelPackedAt(image, sourceX, sourceY)
+        packed[row * lattice.columns + column] = readArea
+          ? colorOfArea(readArea, x - originX + part.x, y - originY + part.y, sourceX, sourceY)
+          : pixelPackedAt(image, sourceX, sourceY)
       }
     }
   }
