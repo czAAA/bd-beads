@@ -1079,13 +1079,6 @@ export interface Translations {
       /** A found color's row, as a screen reader names it. */
       rowName: PluralForms
       /** The Review summary's rows. */
-      summarySize: string
-      summaryColors: string
-      summaryBeadsNeeded: string
-      summaryWeight: string
-      summaryToBuy: string
-      showDetails: string
-      hideDetails: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {

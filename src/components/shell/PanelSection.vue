@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { usePanelSection } from '../../composables/shell/usePanelSection'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -12,10 +12,15 @@ const props = defineProps<{
   summary?: string
   /** Shows the summary while the section is open too (Beads needed's total, ticket 555). */
   keepSummary?: boolean
+  /** Closed every time it mounts and kept nowhere (Convert image's Review, ticket 0759), instead of per device by `id`. */
+  closedFirst?: boolean
 }>()
 const labelId = useId()
 const bodyId = useId()
-const { open, toggle } = usePanelSection(() => props.id)
+const kept = usePanelSection(() => props.id)
+const local = ref(false)
+const open = computed(() => (props.closedFirst ? local.value : kept.open.value))
+const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.toggle())
 </script>
 
 <template>
