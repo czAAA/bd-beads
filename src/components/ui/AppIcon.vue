@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { ICON_BODIES, type IconName, type IconSize } from './icons'
 
-// One Icons v2 icon, drawn inline in the current text color (ticket 137). Decorative (hidden from assistive tech)
-// unless given a `label`.
+// One Icons v2 icon, drawn inline in the current text color (ticket 137), but for an AI form's mark, in `ai`
+// (ticket 0764). Decorative (hidden from assistive tech) unless given a `label`.
 const props = withDefaults(defineProps<{ name: IconName; size?: IconSize; label?: string }>(), { size: 16, label: undefined })
 
 const body = computed(() => ICON_BODIES[props.name])
@@ -36,5 +36,16 @@ const dimension = computed(() => `${props.size / 16}rem`)
   display: inline-block;
   flex: none;
   vertical-align: middle;
+}
+
+/* The AI mark, the one part of an icon not in its text color (README, Iconography). */
+.icon :deep(.ai-mark) {
+  stroke: var(--ai);
+}
+
+@media (forced-colors: active) {
+  .icon :deep(.ai-mark) {
+    stroke: currentColor;
+  }
 }
 </style>
