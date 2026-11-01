@@ -354,6 +354,8 @@ describe('ConvertImageWizard Review (ticket 0759)', () => {
   it('opens on a press with the same counts, grams and color names as the created Project’s Beads needed', async () => {
     const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
+    await show(wizard, 'colors')
+    await matchTo(wrapper, 'bead-colors')
     await show(wizard, 'review')
     await header(wrapper).trigger('click')
     const rowsOf = (from: VueWrapper) => from.findAll('[data-testid="quantity-row"]').map((row) => row.text())
