@@ -329,11 +329,11 @@ export function flipPicture(image: PixelData): PixelData {
 export interface ResultLabels {
   /** "{columns}×{rows} beads" */
   grid: string
-  /** "1 bead = {n} × {n} px" */
+  /** "Each {n}×{n} px square of your picture = 1 bead" */
   exact: string
-  /** "1 bead ≈ {x} × {y} px" */
+  /** "About {x} × {y} px of your picture = 1 bead" */
   approximate: string
-  /** "1 px = {n} × {n} beads" */
+  /** "1 px of your picture = {n} × {n} beads" */
   perPixel: string
   mm: string
   cm: string
@@ -346,8 +346,8 @@ export interface ResultInput {
   sizing: Pick<Sizing, 'grid' | 'mark' | 'pixelsPerBead'>
 }
 
-/** The result line (ConvertImage card): "32×24 beads", "5.1 × 3.1 cm" and "1 bead = 8 × 8 px" on a mark, "1 px = 2 × 2
- * beads" on an enlarging one, "1 bead ≈ 4.3 × 3.5 px" between marks. */
+/** The result line (ConvertImage card): "32×24 beads", "5.1 × 3.1 cm" and "Each 8×8 px square of your picture = 1 bead" on a mark,
+ * "1 px of your picture = 2 × 2 beads" on an enlarging one, "About 4.3 × 3.5 px of your picture = 1 bead" between marks. */
 export function convertResult({ bead, technique, sizing }: ResultInput, labels: ResultLabels, locale: Locale = 'en'): { grid: string; measured: string; ratio: string } {
   const { grid, mark, pixelsPerBead } = sizing
   // Pixels per bead read as formatMm reads a length: one decimal at most, in the language's decimal sign.

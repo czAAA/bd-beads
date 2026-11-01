@@ -31,7 +31,7 @@ const inBeads = (beads: number) => fillBlanks(words.value.widthBeads, { n: beads
 const inMm = (mm: number) => fillBlanks(words.value.widthMm, { n: mm })
 
 /** One slider's readings in the chosen unit (ValueSlider card): the head's value, the other unit after it, the ends. */
-function readings(beads: number, range: { min: number; max: number }, mmOf: (beads: number) => number) {
+function readings(beads: number, range: { min: number; max: number }, mmOf: (beads: number) => number, maxWords: string) {
   const inUnit = (at: number) => (unit.value === 'beads' ? inBeads(at) : inMm(mmOf(at)))
   const other = (at: number) => (unit.value === 'beads' ? inMm(mmOf(at)) : inBeads(at))
   return {
@@ -39,26 +39,24 @@ function readings(beads: number, range: { min: number; max: number }, mmOf: (bea
     secondary: other(beads),
     valuetext: [inUnit(beads), other(beads), ...(sizing.value.mark && result.value ? [result.value.ratio] : [])].join(', '),
     minLabel: unit.value === 'beads' ? String(range.min) : String(mmOf(range.min)),
-    maxLabel: fillBlanks(words.value.maxLabel, { value: unit.value === 'beads' ? range.max : inMm(mmOf(range.max)) }),
+    maxLabel: fillBlanks(maxWords, { value: unit.value === 'beads' ? inBeads(range.max) : inMm(mmOf(range.max)) }),
   }
 }
-const widthReadings = computed(() => readings(sizing.value.width, sizing.value.range, wizard.widthMmOf))
-const heightReadings = computed(() => readings(sizing.value.height, sizing.value.heightRange, wizard.heightMmOf))
+const widthReadings = computed(() => readings(sizing.value.width, sizing.value.range, wizard.widthMmOf, words.value.widthMaxLabel))
+const heightReadings = computed(() => readings(sizing.value.height, sizing.value.heightRange, wizard.heightMmOf, words.value.maxLabel))
 
-/** The marks with their labels ("8×8 px", "×2"); the one at an end has the end's label only. */
-function markList(list: readonly { at: number; pixelsPerBead: number }[], range: { min: number; max: number }) {
+/** The marks with the size they stand for in the chosen unit ("8 beads", "40 mm"); the one at an end has the end's label only. */
+function markList(list: readonly { at: number }[], range: { min: number; max: number }, mmOf: (beads: number) => number) {
   return list.map((mark) => ({
     value: mark.at,
     label:
       mark.at === range.min || mark.at === range.max
         ? undefined
-        : mark.pixelsPerBead >= 1
-          ? fillBlanks(words.value.markPx, { n: mark.pixelsPerBead })
-          : fillBlanks(words.value.markTimes, { n: Math.round(1 / mark.pixelsPerBead) }),
+        : unit.value === 'beads' ? inBeads(mark.at) : inMm(mmOf(mark.at)),
   }))
 }
-const widthMarks = computed(() => markList(sizing.value.marks.map((mark) => ({ at: mark.width, pixelsPerBead: mark.pixelsPerBead })), sizing.value.range))
-const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height, pixelsPerBead: mark.pixelsPerBead })), sizing.value.heightRange))
+const widthMarks = computed(() => markList(sizing.value.marks.map((mark) => ({ at: mark.width })), sizing.value.range, wizard.widthMmOf))
+const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height })), sizing.value.heightRange, wizard.heightMmOf))
 
 const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' : 'size-unlinked'))
 </script>
@@ -108,8 +106,9 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
     <div v-if="result" class="convert-size__result" data-testid="convert-result">
       <span class="convert-size__label">{{ words.result }}</span>
       <p class="convert-size__line" role="status">
-        <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }} · {{ result.ratio }}
+        <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }}
       </p>
+      <p class="convert-size__ratio" data-testid="convert-ratio">{{ result.ratio }}</p>
     </div>
     <p v-if="wizard.weave.value === 'part'" class="convert-size__hint" data-testid="convert-part-follows">{{ words.partFollows }}</p>
 
@@ -178,6 +177,12 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
   margin: 0;
   font: var(--type-meta);
   color: var(--body);
+}
+
+.convert-size__ratio {
+  margin: 0;
+  font: var(--type-small);
+  color: var(--muted);
 }
 
 .convert-size__grid {
