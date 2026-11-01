@@ -5,6 +5,7 @@ import ConvertStepBar from './ConvertStepBar.vue'
 import { useConvertImageWizard } from '../../composables/import/useConvertImageWizard'
 import type { PixelData } from '../../domain/imageConversion'
 import { en } from '../../i18n/en'
+import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
@@ -16,6 +17,7 @@ async function bar(withPicture = true) {
       start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
       decodeImage: async () => picture(),
       loadCatalog: () => Promise.reject(new Error('none')),
+      cutOutService: unusedCutOutService,
     }),
   )!
   if (withPicture) await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))

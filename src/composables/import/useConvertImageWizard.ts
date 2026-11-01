@@ -28,6 +28,7 @@ import {
   type SizeSide,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
+import type { CutOutService } from '../../domain/cutOutModel'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
 import { reducePictureColors } from '../../domain/imageColors'
 import {
@@ -56,21 +57,22 @@ import { suggestedWidth as suggestWidth } from '../../domain/suggestedWidth'
 import { backgroundFamilies, DEFAULT_TOLERANCE, simpleCutOut, subjectBox, type SubjectMask } from '../../domain/subjectMask'
 import { darkestColor, hasEmptyRound, outlinedGrid, outlinedPreview, outlinePad } from '../../domain/subjectOutline'
 import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { useAiCutOut, type CutOut } from './useAiCutOut'
+
+export type { CutOut } from './useAiCutOut'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
- * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
+ * a picture is decoded, how a Bead's Color catalog is fetched and the cut-out service that runs the AI choice's model
+ * (ticket 0767), all services handed in by the app shell. */
 export interface ConvertImageWizardDeps {
   start: CreateProjectInput
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
+  cutOutService: CutOutService
 }
 
 /** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
 export type ConvertWeave = 'whole' | 'part'
-
-/** Cut out (ConvertImage card, 1 Picture; ticket 0765): nothing taken away, or Simple, the color round the picture's
- * edges taken away as far as its Tolerance reaches. The AI choice joins with ticket 0767. */
-export type CutOut = 'off' | 'simple'
 
 /** The unit the Width slider reads in (ConvertImage card, slide in): it moves in whole beads either way. Not the
  * device's Size unit: the wizard remembers nothing (spec 0645). */
@@ -82,7 +84,7 @@ const PAUSE_MS = 150
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
  * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
  * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
-export function useConvertImageWizard({ start, decodeImage, loadCatalog }: ConvertImageWizardDeps) {
+export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutService }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -100,8 +102,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
 
-  // Cut out (ticket 0765): the choice, and Simple's Tolerance in hundredths of OKLab.
-  const cutOut = ref<CutOut>('off')
+  // Cut out (tickets 0765, 0767): the choice and the AI choice's run, and Simple's Tolerance in hundredths of OKLab.
+  const ai = useAiCutOut({ service: cutOutService, image })
+  const cutOut = ai.choice
   const tolerance = ref(DEFAULT_TOLERANCE)
 
   // The step shown (ticket 0756): the Progress bar's dots and the page's one section follow it.
@@ -267,12 +270,13 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   // The colors round the picture's edges, worked out once per picture: a turn, flip or new picture is a new one.
   const families = computed(() => (image.value ? backgroundFamilies(image.value) : []))
 
-  /** The subject mask over the picture's pixels (spec 0761), none with Cut out Off. It is made from the picture as it is,
-   * so a turn, flip or new picture drops it and works it out again. Another choice's mask (the AI service, ticket 0767)
-   * goes in here; the sampler, Fit to subject and the Colors step's helpers (ticket 0766) read only this. */
+  /** The subject mask over the picture's pixels (spec 0761), none with Cut out Off, nor while the AI choice works. It is
+   * made from the picture as it is, so a turn, flip or new picture drops it and works it out again. The sampler, Fit to
+   * subject and the Colors step's helpers (ticket 0766) read only this. */
   const subjectMask = computed<SubjectMask | undefined>(() => {
     const picture = image.value
     if (!picture || cutOut.value === 'off') return undefined
+    if (cutOut.value === 'ai') return ai.mask.value
     return simpleCutOut(picture, families.value, tolerance.value)
   })
 
@@ -539,7 +543,13 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     part,
     setPart: (next: PixelCrop) => (rawPart.value = next),
     cutOut,
-    setCutOut: (next: CutOut) => (cutOut.value = next),
+    setCutOut: (next: CutOut) => ai.choose(next),
+    /** The AI choice's question, download, run or failure (ticket 0767): what shows under the Cut out row. */
+    aiCutOut: ai.status,
+    /** Download on the download note. */
+    downloadCutOutModel: ai.download,
+    /** Cancel on the note or the AI Loading: back to the choice before. */
+    cancelAiCutOut: ai.cancel,
     tolerance,
     setTolerance: (next: number) => (tolerance.value = next),
     subjectMask,

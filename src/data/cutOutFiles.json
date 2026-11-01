@@ -1,0 +1,24 @@
+{
+  "model": {
+    "name": "IS-Net general-use, uint8 (dynamic quantization)",
+    "license": "Apache-2.0",
+    "source": "xuebinqin/DIS isnet-general-use.pth, exported by scripts/cut-out-model/export_isnet.py",
+    "side": 1024,
+    "bytes": 44338146,
+    "sha256": "18964a704cde72eeec079e00e147a6c2764e9e87a3cb6d129d8d40f2ff20c72d",
+    "parts": [
+      {
+        "file": "isnet-general-use-uint8-18964a70.onnx.part0",
+        "bytes": 25165824
+      },
+      {
+        "file": "isnet-general-use-uint8-18964a70.onnx.part1",
+        "bytes": 19172322
+      }
+    ]
+  },
+  "runtime": {
+    "version": "1.31.1",
+    "bytes": 14848852
+  }
+}
