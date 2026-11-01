@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch, watchPostEffect } from 'vue'
+import { computed, onBeforeUnmount, ref, watchPostEffect } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useActionKeys } from '../../composables/shell/useActionKeys'
@@ -17,10 +17,9 @@ import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
-import AppButton from '../ui/AppButton.vue'
+import { EYEDROPPER_CURSOR } from '../canvas/eyedropperCursor'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
-import KeyChip from '../ui/KeyChip.vue'
 
 // The Convert image wizard's preview (ConvertImage card, Preview pane): the picture as beads in the Frame's space, the
 // Frame over the part to weave, the rest dimmed, the part drawn, moved and pulled like a Selection (tickets 0747, 0757);
@@ -31,7 +30,6 @@ const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const touch = useMediaQuery('(pointer: coarse)')
 const actions = {
-  treatAsEmpty: controlAction('treat-as-empty'),
   zoomOut: controlAction('zoom-out'),
   zoomIn: controlAction('zoom-in'),
   zoomFit: controlAction('zoom-fit'),
@@ -290,10 +288,11 @@ function onViewportUp(event: PointerEvent) {
 
 // --- Treat as empty ---------------------------------------------------------------------------------------------------
 
-const eyedropper = ref(false)
+/** Treat as empty is a toggle in the Colors step (ticket 0758): here it only gives the pointer and takes the taps. */
+const eyedropper = wizard.treatAsEmpty
 const hovered = ref<number>()
-useOverlayLayer({ isOpen: () => eyedropper.value, root: () => paneEl.value, close: () => (eyedropper.value = false) })
-watch(() => wizard.hasPicture.value, (has) => !has && (eyedropper.value = false))
+// Escape ends it first; a press elsewhere (the toggle in the step) goes through and leaves it as it is.
+useOverlayLayer({ isOpen: () => eyedropper.value, root: () => paneEl.value, close: () => (eyedropper.value = false), keepsPress: () => true })
 
 function beadIndexAt(event: PointerEvent): number | undefined {
   const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
@@ -332,27 +331,6 @@ onBeforeUnmount(() => endDrag())
     </div>
 
     <template v-else>
-      <div class="convert-preview__top">
-        <IconButton
-          v-if="touch"
-          variant="box"
-          :action="actions.treatAsEmpty"
-          :pressed="eyedropper"
-          class="convert-preview__eyedropper"
-          data-testid="convert-treat-as-empty"
-          @click="eyedropper = !eyedropper"
-        />
-        <AppButton
-          v-else
-          variant="box"
-          :action="actions.treatAsEmpty"
-          :aria-pressed="eyedropper"
-          class="convert-preview__eyedropper"
-          data-testid="convert-treat-as-empty"
-          @click="eyedropper = !eyedropper"
-        />
-      </div>
-
       <div
         ref="viewportEl"
         class="convert-preview__viewport"
@@ -363,7 +341,7 @@ onBeforeUnmount(() => endDrag())
         @pointercancel="onViewportUp"
       >
         <div class="convert-preview__stage" :style="stageStyle">
-          <div class="convert-preview__box" :style="boxStyle" data-testid="convert-image-box" @pointerdown="onBoxDown" @pointermove="onBoxHover" @pointerleave="hovered = undefined">
+          <div class="convert-preview__box" :style="eyedropper ? { ...boxStyle, cursor: EYEDROPPER_CURSOR } : boxStyle" data-testid="convert-image-box" @pointerdown="onBoxDown" @pointermove="onBoxHover" @pointerleave="hovered = undefined">
             <!-- The beads and the Frame's dimming are clipped to the box; the size tag and handles may stand past it. -->
             <div class="convert-preview__clip">
               <canvas
@@ -399,11 +377,6 @@ onBeforeUnmount(() => endDrag())
           </div>
         </div>
       </div>
-
-      <p v-if="eyedropper" class="convert-preview__banner" role="status" data-testid="convert-eyedropper-banner">
-        <span>{{ words.treatAsEmptyBanner }}</span>
-        <KeyChip v-if="!touch">esc</KeyChip>
-      </p>
 
       <div class="convert-preview__zoom" data-testid="convert-preview-zoom">
         <IconButton
@@ -467,18 +440,6 @@ onBeforeUnmount(() => endDrag())
   font: var(--type-meta);
 }
 
-.convert-preview__top {
-  position: absolute;
-  top: var(--space-12);
-  left: var(--space-12);
-  z-index: 3;
-}
-
-.convert-preview :deep(.convert-preview__eyedropper[aria-pressed='true']) {
-  color: var(--accent-strong);
-  box-shadow: inset 0 0 0 2px var(--accent-strong);
-}
-
 .convert-preview__viewport {
   flex: 1;
   min-height: 0;
@@ -502,7 +463,6 @@ onBeforeUnmount(() => endDrag())
   border-radius: var(--radius-sm);
 }
 
-.convert-preview--eyedropper .convert-preview__box,
 .convert-preview--part .convert-preview__box {
   cursor: crosshair;
 }
@@ -588,24 +548,6 @@ onBeforeUnmount(() => endDrag())
     0 0 0 2px var(--canvas);
 }
 
-.convert-preview__banner {
-  position: absolute;
-  bottom: var(--space-12);
-  left: var(--space-12);
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  max-width: calc(100% - var(--space-24));
-  margin: 0;
-  padding: var(--space-4) var(--space-8);
-  font: var(--type-small);
-  color: var(--canvas);
-  background: var(--ink);
-  border-radius: var(--radius-sm);
-  pointer-events: none;
-}
-
 .convert-preview__zoom {
   position: absolute;
   right: var(--space-12);
@@ -630,11 +572,6 @@ onBeforeUnmount(() => endDrag())
 
 /* On a phone (PhoneForms card) the controls sit in a row above the picture, so nothing covers a bead. */
 @media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-preview__top {
-    position: static;
-    padding: var(--space-8) var(--space-8) 0;
-  }
-
   .convert-preview__zoom {
     top: var(--space-8);
     right: var(--space-8);

@@ -109,10 +109,10 @@ describe('App Convert image as an App page (ADR 0086)', () => {
 
     expect(page(wrapper).exists()).toBe(false)
     // An 8 px picture opens at its largest Width (ticket 0757), 4× its pixels: 32 × 32 beads of 1.5 mm cubes, the left
-    // half red, the right half blue.
+    // half red, the right half blue, in the picture's own colors (Exact is where the page opens, ticket 0758).
     expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 32, columns: 32 } })
-    expect(beadColor(wrapper, 0)).toBe('#e63746')
-    expect(beadColor(wrapper, 31)).toBe('#2f6fed')
+    expect(beadColor(wrapper, 0)).toBe('#ff0000')
+    expect(beadColor(wrapper, 31)).toBe('#0000ff')
     wrapper.unmount()
   })
 

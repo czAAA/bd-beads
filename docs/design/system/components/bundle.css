@@ -21,6 +21,7 @@
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
   --crop-bar-width: 8px; /* ConvertImage card: an edge handle's thickness. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
+  --found-columns: 64px minmax(0, 1fr) 56px 56px 56px; /* FoundColorRow card: the found-colors table's columns, in its heading row and every row. */
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter. */
   --filter-chip-height: 28px; /* BeadColors card: a line of the Finish filter list. */
   --filter-check: 14px; /* BeadColors card: a Finish line's check box. */
