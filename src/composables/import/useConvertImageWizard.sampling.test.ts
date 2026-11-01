@@ -3,6 +3,7 @@ import { effectScope, nextTick } from 'vue'
 import { channelsOf, colorDistance, toHex, toOklab, type Rgb } from '../../domain/color'
 import type { PixelData } from '../../domain/imageConversion'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
+import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
 
 // The sampler's reference suite (ticket 0762, spec 0761): synthetic pictures only, each converted at rest through the
 // wizard's state and checked for what the maker would see. Thresholds in the sampler change only with this green.
@@ -36,6 +37,7 @@ async function convert(picture: PixelData, width: number): Promise<ConvertImageW
       start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
       decodeImage: async () => picture,
       loadCatalog: () => Promise.reject(new Error('no catalog')),
+      cutOutService: unusedCutOutService,
     }),
   )!
   await wizard.setFile(new File(['x'], 'picture.png', { type: 'image/png' }))

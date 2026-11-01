@@ -3,6 +3,7 @@ import { effectScope, nextTick } from 'vue'
 import type { PixelData } from '../../domain/imageConversion'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
+import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
 
 // Suggested Width (ticket 0770, spec 0761) through the wizard's state: the narrowest Width that still keeps the
 // subject's small color regions, shown but never set until the maker picks it. Synthetic pictures only.
@@ -36,6 +37,7 @@ async function convert(image: PixelData): Promise<ConvertImageWizard> {
       start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
       decodeImage: async () => image,
       loadCatalog: () => Promise.reject(new Error('no catalog')),
+      cutOutService: unusedCutOutService,
     }),
   )!
   await wizard.setFile(new File(['x'], 'picture.png', { type: 'image/png' }))

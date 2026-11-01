@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { filesBelow, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
+import { filesBelow, ON_DEMAND_FOLDER, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
 import { LOCALES } from './src/domain/locale.ts'
 
 const repo = import.meta.dirname
@@ -38,6 +38,11 @@ describe('renderServiceWorker', () => {
     expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['assets/app.js', 'homepage/index.html', 'index.html'])
   })
 
+  it('leaves the files fetched on first use out (ADR 0087)', () => {
+    const dir = folder({ 'index.html': 'a', 'ai/model.onnx.part0': 'b', 'ai/runtime.wasm': 'c' })
+    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['index.html'])
+  })
+
   it('names the cache after the content, so a changed file is a new cache', () => {
     const before = cacheNameOf(renderServiceWorker(template, folder({ 'index.html': 'one' })).source)
     const same = cacheNameOf(renderServiceWorker(template, folder({ 'index.html': 'one' })).source)
@@ -59,15 +64,19 @@ describe('the production build (ticket 69)', () => {
   }, 300_000)
   afterAll(() => rmSync(outDir, { recursive: true, force: true }))
 
-  it('has every built file in the worker\'s offline list, and nothing else', () => {
+  it('has every built file in the worker\'s offline list but those fetched on first use, and nothing else', () => {
     const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
-    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE))
+    expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE && !path.startsWith(ON_DEMAND_FOLDER)))
     // The pieces the offline use needs, by name, so an empty list can't pass.
     expect(precache).toEqual(
       expect.arrayContaining(['index.html', 'homepage/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
     )
     expect(precache.some((path) => path.startsWith('assets/') && path.endsWith('.js'))).toBe(true)
     expect(precache.some((path) => path.startsWith('fonts/') && path.endsWith('.woff2'))).toBe(true)
+  })
+
+  it('puts Cut out with AI\'s runtime with the files fetched on first use, once (ticket 0767, ADR 0087)', () => {
+    expect(files.filter((path) => path.endsWith('.wasm'))).toEqual([expect.stringMatching(/^ai\/ort-wasm-simd-threaded-[\w-]+\.wasm$/)])
   })
 
   it('puts each language in a file of its own, which no page fetches at start and the offline list keeps (ticket 0616)', () => {

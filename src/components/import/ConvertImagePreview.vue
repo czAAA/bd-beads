@@ -476,6 +476,7 @@ onBeforeUnmount(() => {
                 data-testid="convert-image-canvas"
               />
               <canvas v-if="comparing && originalStyle" ref="originalEl" class="convert-preview__original" :style="originalStyle" aria-hidden="true" data-testid="convert-original" />
+              <div v-if="wizard.aiCutOut.value.kind === 'thinking'" class="convert-preview__shimmer" aria-hidden="true" data-testid="convert-ai-shimmer" />
               <div v-if="frameStyle" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline" />
             </div>
             <span v-if="frameStyle && schemaSize" class="convert-preview__tag" :style="{ left: frameStyle.left, top: frameStyle.top }" aria-hidden="true">
@@ -607,6 +608,42 @@ onBeforeUnmount(() => {
 .convert-preview__original {
   position: absolute;
   pointer-events: none;
+}
+
+/* While the cut-out model works (Loading card, AI variant): a soft `ai` band sweeping left to right over the beads, under
+   the Frame, the handles and the zoom; nothing for the first `loading-delay`, and none with reduced motion. */
+.convert-preview__shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.convert-preview__shimmer::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--ai-shimmer-band);
+  content: '';
+  background: linear-gradient(90deg, transparent, var(--ai-shimmer-fill), transparent);
+  animation: convert-preview-shimmer var(--ai-shimmer) linear var(--loading-delay) infinite backwards;
+}
+
+@keyframes convert-preview-shimmer {
+  from {
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  to {
+    left: 100%;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .convert-preview__shimmer {
+    display: none;
+  }
 }
 
 /* The Frame: an ink line with a canvas halo, so it reads over any picture; its outward shadow dims everything else. */

@@ -50,3 +50,8 @@ docs/personal/
 # The backend wizard's hand-off of ids and site keys to the agent (ticket 71; no secrets)
 backend-handoff.local
 .vitest/
+
+# Cut out with AI's model parts and their work files (ticket 0767, ADR 0087): made by scripts/cut-out-model/prepare.sh.
+# How they reach a deploy (committed, or made in CI) is still to decide; until then they stay out of git.
+/public/ai/
+/scripts/cut-out-model/.work/
