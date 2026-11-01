@@ -270,7 +270,7 @@ describe('the features carousel', () => {
     await wrapper.find('[data-testid="feature-next"]').trigger('click')
     expect(wrapper.find('[data-testid="feature-count"]').text()).toBe('3 / 7')
     expect(list.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
-    expect(wrapper.get('#feature-panel-convertImage').text()).toContain('Turn a picture into a Schema in up to 14 colors.')
+    expect(wrapper.get('#feature-panel-convertImage').text()).toContain('Turn a picture into a Schema in up to 256 colors.')
   })
 
   it('has the Russian arrow labels', async () => {

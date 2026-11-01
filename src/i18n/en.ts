@@ -373,7 +373,7 @@ export const en: Translations = {
     features: {
       techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },
       projectEditing: { name: 'Project editing', text: 'Paint, Fill and Erase, copy and paste, and Undo for every step.' },
-      convertImage: { name: 'Convert image', text: 'Turn a picture into a Schema in up to 14 colors.' },
+      convertImage: { name: 'Convert image', text: 'Turn a picture into a Schema in up to 256 colors.' },
       rowProgress: { name: 'Row progress', text: 'Mark rows done as you weave and pick up where you stopped.' },
       beadsNeeded: { name: 'Beads needed', text: 'Every color counted, with Estimated weight in grams.' },
       exports: { name: 'Exports', text: 'PDF for printing, PNG image and the Project file.' },
@@ -415,6 +415,7 @@ export const en: Translations = {
     redoButton: 'Redo',
     rotateButton: 'Rotate',
     customColorLabel: 'Custom color',
+    catalogColorName: '{finish} {family}',
     wheelLabel: 'Hue and saturation',
     wheelValue: 'hue {hue}°, saturation {saturation}%',
     brightnessLabel: 'Brightness',

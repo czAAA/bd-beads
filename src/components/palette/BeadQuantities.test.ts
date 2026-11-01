@@ -1,9 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
+import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
+import type { ColorCatalog } from '../../domain/colorCatalog'
+import { addedColorId, defaultPaletteIds } from '../../domain/palette'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
@@ -53,6 +57,38 @@ describe('BeadQuantities', () => {
     const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#123456'))
 
     expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
+  })
+
+  describe('names a color by its code and name, its hex only in a Tooltip (ticket 0760)', () => {
+    const catalog: ColorCatalog = { id: 'toho', codes: [{ code: '49', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['1.5mm'] }] }
+    const added = addedColorId('#123456')
+    const coded = (codes?: Record<string, string>) => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], ...(codes ? { paletteCodes: codes } : {}) }, [{ row: 0, column: 0 }], '#123456')
+
+    const mountWith = (project: Project, beadColors?: BeadColors) =>
+      mount(defineComponent({ setup() { if (beadColors) provideBeadColors(beadColors); return () => h(BeadQuantities, { project }) } }))
+
+    it('shows a catalog color as "code name" with its hex in the Tooltip, and loads the catalog it needs', async () => {
+      const beadColors = { catalog: ref(catalog), load: vi.fn() } as unknown as BeadColors
+      const wrapper = mountWith(coded({ '#123456': '49' }), beadColors)
+      const label = wrapper.get('[data-testid="quantity-row"] .app-tooltip')
+
+      expect(label.get('[data-testid="color-label"]').text()).toBe('49 Opaque Black')
+      expect(label.get('[role="tooltip"]').text()).toBe('#123456')
+      expect(beadColors.load).toHaveBeenCalled()
+    })
+
+    it('shows just the code until the catalog has loaded', () => {
+      const wrapper = mountWith(coded({ '#123456': '49' }), { catalog: ref(undefined), load: vi.fn() } as unknown as BeadColors)
+
+      expect(wrapper.get('[data-testid="quantity-row"] [data-testid="color-label"]').text()).toBe('49')
+    })
+
+    it('shows a Custom color as its hex with no Tooltip', () => {
+      const wrapper = mountWith(coded())
+
+      expect(wrapper.get('[data-testid="quantity-row"] [data-testid="color-label"]').text()).toBe('#123456')
+      expect(wrapper.find('[data-testid="quantity-row"] .app-tooltip').exists()).toBe(false)
+    })
   })
 
   it('shows no bead pickers or bead names', () => {
@@ -151,7 +187,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(note.text()).toBe(
       'This is bead count × about 0.0095 g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
     )
-    expect(wrapper.find('button[aria-describedby], [role="tooltip"]').exists()).toBe(false)
+    expect(note.find('button[aria-describedby], [role="tooltip"]').exists()).toBe(false)
   })
 
   describe('Show all (ticket 555)', () => {
