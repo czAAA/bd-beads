@@ -16,6 +16,11 @@
   --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step. */
   --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. */
   --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
+  --convert-band-height: 48px; /* ConvertImage card (ticket 0778): the preview's band of facts above the picture. */
+  --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
+  --convert-bar-height: 64px; /* ProgressBar and ConvertImage cards (ticket 0778): the Progress bar on Convert image, the step names under the track. */
+  --convert-names-inset: 52px; /* ProgressBar card (ticket 0778): how far the first and last dots stand in from the track's ends, so their names stay inside it. */
+  --found-hatch: repeating-linear-gradient(135deg, color-mix(in srgb, var(--marker) 70%, transparent) 0 1.1px, color-mix(in srgb, var(--marker) 10%, transparent) 1.1px 4px); /* ConvertImage card (ticket 0778): the background Remove background found, on the beads and on its legend swatch. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
   --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
