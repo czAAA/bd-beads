@@ -83,6 +83,9 @@ export function captionColumns(targets: Partial<Record<HintId, BarBox>>): Partia
 export function placeFirstRunHints(layout: HintLayout): PlacedHint[] {
   const taken: BarBox[] = [...layout.obstacles]
   const placed: PlacedHint[] = []
+  /** The tile captions placed so far with their tiles, so a later one keeps the pill's order. */
+  const tiles: { target: BarBox; box: BarBox }[] = []
+  const alongPill = vertical(layout.pillPosition)
   for (const id of ORDER) {
     const target = layout.targets[id]
     const size = layout.notes[id]
@@ -90,13 +93,25 @@ export function placeFirstRunHints(layout: HintLayout): PlacedHint[] {
     const candidates = isStripHint(id)
       ? STRIP_DISTANCES.map((distance) => stripBox(id, target, size, distance, layout.area))
       : SHIFTS.flatMap((shift) => TILE_DISTANCES.map((distance) => tileBox(target, size, distance, shift, layout)))
-    const free = candidates.find((box) => inside(box, layout.area) && !taken.some((other) => overlaps(box, other)))
+    const keepsOrder = (box: BarBox) => isStripHint(id) || tiles.every((tile) => sameOrder(target, box, tile, alongPill))
+    const free = candidates.find((box) => inside(box, layout.area) && keepsOrder(box) && !taken.some((other) => overlaps(box, other)))
     const chosen = free ?? (isKept(id) ? candidates[0] : undefined)
     if (!chosen) continue
     taken.push(chosen)
+    if (!isStripHint(id)) tiles.push({ target, box: chosen })
     placed.push({ id, note: { left: chosen.left, top: chosen.top } })
   }
   return placed
+}
+
+/** Whether the pill runs top to bottom, so its tiles (and their captions) are ordered by `top` rather than `left`. */
+const vertical = (position: PillPosition): boolean => position === 'left' || position === 'right'
+
+/** Whether a tile's caption sits on the same side of another tile's caption as its tile does of the other tile, along
+ * the pill: Mirror's caption never ends up below Colour's when Mirror's tile is above Colour's. */
+function sameOrder(target: BarBox, box: BarBox, other: { target: BarBox; box: BarBox }, alongPill: boolean): boolean {
+  const centre = (b: BarBox) => (alongPill ? b.top + b.height / 2 : b.left + b.width / 2)
+  return Math.sign(centre(target) - centre(other.target)) * Math.sign(centre(box) - centre(other.box)) >= 0
 }
 
 /** A strip caption `distance` px under its button: Export's right-aligned under it, Menu's no nearer the edge than EDGE. */
