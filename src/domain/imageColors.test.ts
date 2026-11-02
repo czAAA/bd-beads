@@ -93,4 +93,26 @@ describe('reducePictureColors (ticket 177, ADR 0010)', () => {
 
     expect(reduced.colors).toEqual([{ hex: '#030303', count: 100 }])
   })
+
+  it('keeps a small distinct color at the count asked, in place of two near shades (ticket 0772)', () => {
+    // A cat's face: four browns and creams covering nearly all, and six blue beads for the eyes.
+    const face = counts({ '#e4dfd1': 160, '#c7b59e': 160, '#8f756b': 80, '#5c514f': 80, '#282730': 80, '#7f868f': 80, '#79aac6': 6 })
+
+    const reduced = reducePictureColors(face, 6)
+
+    expect(reduced.colors).toHaveLength(6)
+    expect(reduced.byHex.get('#79aac6')).toBe('#79aac6')
+    expect(reduced.colors.reduce((sum, color) => sum + color.count, 0)).toBe(646)
+  })
+
+  it('leaves a speck alone: too few beads of a distinct color take no slot (ticket 0772)', () => {
+    // Twelve shades of brown and cream, two to each of six slots, and one blue bead.
+    const shades = ['#e4dfd1', '#dcd6c6', '#c7b59e', '#bfae96', '#8f756b', '#877065', '#5c514f', '#544a48', '#282730', '#22212a', '#7f868f', '#777e87']
+    const face = counts({ ...Object.fromEntries(shades.map((hex) => [hex, 200])), '#79aac6': 1 })
+
+    const reduced = reducePictureColors(face, 6)
+
+    expect(reduced.colors).toHaveLength(6)
+    expect(reduced.byHex.get('#79aac6')).not.toBe('#79aac6')
+  })
 })

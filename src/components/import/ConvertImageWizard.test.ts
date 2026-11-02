@@ -20,6 +20,7 @@ import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { en } from '../../i18n/en'
 import { frameOf } from '../../domain/layerRecord'
 import { layersView } from '../../testUtils/layerFields'
+import { beadPhoto } from '../../testUtils/beadPhoto'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -1023,5 +1024,23 @@ describe('ConvertImageWizard Hold to compare (ticket 0770)', () => {
     await toggle.trigger('click')
     expect(toggle.attributes('aria-pressed')).toBe('false')
     expect(original(wrapper).exists()).toBe(false)
+  })
+})
+
+describe('ConvertImageWizard on a photo of beadwork (ticket 0772)', () => {
+  it('says the beads found, and only then', async () => {
+    const photo = beadPhoto(24, 20, 18, 15, () => [230, 230, 220])
+    const { wrapper, wizard } = open({ decodeImage: async () => photo })
+    await chooseFile(wrapper, picture())
+    await show(wizard, 'size')
+    const found = wizard.beadGrid.value!
+
+    expect(found).toBeDefined()
+    expect(wrapper.get('[data-testid="convert-bead-grid"]').text()).toBe(`Photo of beadwork: ${found.columns} × ${found.rows} beads found. Use suggested puts one bead on each.`)
+
+    const plain = open()
+    await chooseFile(plain.wrapper, picture())
+    await show(plain.wizard, 'size')
+    expect(plain.wrapper.find('[data-testid="convert-bead-grid"]').exists()).toBe(false)
   })
 })

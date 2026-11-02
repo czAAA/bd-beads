@@ -231,6 +231,26 @@ describe('sampleLatticePacked', () => {
     const enlarged = { ...input, pixelsPerBead: { x: 0.5, y: 0.5 }, lattice: { columns: 16, rows: 8, frameColumn: 0, frameRow: 0 } }
     expect(sampleLatticePacked({ ...enlarged, rule: 'area' })).toEqual(sampleLatticePacked(enlarged))
   })
+
+  it('reads a bead of a photo of beadwork from its ring: the hole and the rim left out (ticket 0772)', () => {
+    // One 12 × 12 bead: a dark 4 × 4 hole at its centre, a blue ring, a white gap in the corners, so the whole area's
+    // majority is white and the ring says blue.
+    const image = pixels(12, 12, Array.from({ length: 144 }, (_pixel, at) => {
+      const d = Math.hypot((at % 12) + 0.5 - 6, Math.floor(at / 12) + 0.5 - 6) / 6
+      return d < 0.3 ? [20, 20, 20, 255] : d < 0.85 ? [30, 60, 200, 255] : [255, 255, 255, 255]
+    }))
+    const input = { image, part: { x: 0, y: 0, width: 12, height: 12 }, technique: 'loom' as const, lattice: { columns: 1, rows: 1, frameColumn: 0, frameRow: 0 }, pixelsPerBead: { x: 12, y: 12 }, rule: 'area' as const }
+
+    expect(Array.from(sampleLatticePacked({ ...input, ring: { inner: 0.35, outer: 0.8 } }), packedToHex)).toEqual(['#1e3cc8'])
+    expect(Array.from(sampleLatticePacked(input), packedToHex)).not.toEqual(['#1e3cc8'])
+  })
+
+  it('reads the whole area of a bead too small for its ring to hold a pixel (ticket 0772)', () => {
+    const image = pixels(2, 2, [[200, 0, 0, 255], [200, 0, 0, 255], [200, 0, 0, 255], [200, 0, 0, 255]])
+    const input = { image, part: { x: 0, y: 0, width: 2, height: 2 }, technique: 'loom' as const, lattice: { columns: 1, rows: 1, frameColumn: 0, frameRow: 0 }, pixelsPerBead: { x: 2, y: 2 }, rule: 'area' as const }
+
+    expect(Array.from(sampleLatticePacked({ ...input, ring: { inner: 0.9, outer: 0.95 } }), packedToHex)).toEqual(['#c80000'])
+  })
 })
 
 describe('input limits', () => {

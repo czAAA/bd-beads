@@ -936,6 +936,7 @@ export const pl: Translations = {
       sizeUnlinked: 'Rozłączone',
       suggested: 'sugerowana',
       useSuggested: 'Użyj sugerowanej',
+      beadGridFound: 'Zdjęcie wyrobu z koralików: znaleziono {columns} × {rows} koralików. „Użyj sugerowanej” kładzie jeden koralik na każdym.',
       colorsHint: 'Każdy kolor to koraliki do kupienia. Maks. {n}: wszystkie kolory obrazu.',
       colorsHintCapped: 'Każdy kolor to koraliki do kupienia. Maks. {n}: obraz ma ich więcej, sprowadzone do tylu.',
       colorByColor: 'Kolor po kolorze',

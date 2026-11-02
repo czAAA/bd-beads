@@ -97,14 +97,16 @@ class Samples {
     this.member = new Uint8Array(size)
   }
 
-  /** Reads an area, at most `side` pixels along each side of it; whether every pixel read is the same color. */
-  read(area: PixelArea, side: number, pixelAt: (x: number, y: number) => number): boolean {
+  /** Reads an area, at most `side` pixels along each side of it, only the pixels `keep` allows when given; whether
+   * every pixel read is the same color. */
+  read(area: PixelArea, side: number, pixelAt: (x: number, y: number) => number, keep?: (x: number, y: number) => boolean): boolean {
     this.stepX = Math.max(1, Math.ceil((area.x1 - area.x0) / side))
     this.stepY = Math.max(1, Math.ceil((area.y1 - area.y0) / side))
     let total = 0
     let same = true
     for (let y = area.y0; y < area.y1; y += this.stepY) {
       for (let x = area.x0; x < area.x1; x += this.stepX) {
+        if (keep && !keep(x, y)) continue
         const packed = pixelAt(x, y)
         this.colors[total] = packed
         this.xs[total] = x
@@ -118,13 +120,21 @@ class Samples {
   }
 }
 
+/** The part of a bead's area read in a photo of beadwork (ticket 0772): the ring between its hole and its edge, as
+ * shares of the half-width from its centre. The hole shows what is behind, the edge the gap round the bead. */
+export interface BeadRing {
+  inner: number
+  outer: number
+}
+
 /** A reader of bead areas (see the module comment) over a picture's pixels, each a packed 0xRRGGBB or `empty` where
- * too transparent to weave, as imageConversion reads them; each call is one bead, its area and its true centre in
- * picture pixels. Its working space is made once for a whole lattice, since a Schema has tens of thousands of beads. */
+ * too transparent to weave; each call is one bead, its area and its true centre in picture pixels. Its working space
+ * is made once for a whole lattice. With a `ring`, only the ring's pixels take part and no line is looked for. */
 export function beadAreaReader(
   picture: { width: number; height: number },
   pixelAt: (x: number, y: number) => number,
   empty: number,
+  ring?: BeadRing,
 ): (area: PixelArea, centreX: number, centreY: number) => number {
   const lab = oklabOf()
   const cell = new Samples(MAX_SIDE * MAX_SIDE)
@@ -416,9 +426,22 @@ export function beadAreaReader(
     return filled >= LINE_CONTINUITY * steps
   }
 
+  /** The pixels of a bead's ring (its hole and rim left out), the bead a disc in its area round its true centre. */
+  const inRing = (area: PixelArea, centreX: number, centreY: number) => {
+    const halfX = (area.x1 - area.x0) / 2
+    const halfY = (area.y1 - area.y0) / 2
+    return (x: number, y: number) => {
+      const d = Math.hypot((x + 0.5 - centreX) / halfX, (y + 0.5 - centreY) / halfY)
+      return d >= ring!.inner && d <= ring!.outer
+    }
+  }
+
   return (area, centreX, centreY) => {
+    // The ring's pixels, or the whole area where the ring holds none (a bead a few pixels across) or there is no ring.
+    let flat = ring ? cell.read(area, MAX_SIDE, pixelAt, inRing(area, centreX, centreY)) : false
+    if (!ring || cell.total === 0) flat = cell.read(area, MAX_SIDE, pixelAt)
     // A flat area, as every bead of pixel art on a mark is: its one color, exactly.
-    if (cell.read(area, MAX_SIDE, pixelAt)) return cell.colors[0]!
+    if (flat) return cell.colors[0]!
     const { total } = cell
     const families = groupFamilies(area)
 
@@ -440,7 +463,7 @@ export function beadAreaReader(
     if (transparentWeight > opaque || (transparentWeight === opaque && centre === TRANSPARENT)) winner = TRANSPARENT
 
     // A thin, strongly contrasting line through the bead wins over it: the largest such.
-    if (Math.min(area.x1 - area.x0, area.y1 - area.y0) >= MIN_LINE_BEAD) {
+    if (!ring && Math.min(area.x1 - area.x0, area.y1 - area.y0) >= MIN_LINE_BEAD) {
       candidates.length = 0
       for (let index = 0; index < families; index += 1) {
         if (index === winner || count[index]! < (MIN_LINE_SHARE / 2) * total) continue

@@ -920,6 +920,7 @@ export const en: Translations = {
       sizeUnlinked: 'Unlinked',
       suggested: 'suggested',
       useSuggested: 'Use suggested',
+      beadGridFound: 'Photo of beadwork: {columns} × {rows} beads found. Use suggested puts one bead on each.',
       colorsHint: 'Each color is a bead to buy. Max {n}: every color the picture has.',
       colorsHintCapped: 'Each color is a bead to buy. Max {n}: the picture has more, reduced to as many.',
       colorByColor: 'Color by color',

@@ -929,6 +929,7 @@ export const es: Translations = {
       sizeUnlinked: 'Sin enlazar',
       suggested: 'sugerido',
       useSuggested: 'Usar el sugerido',
+      beadGridFound: 'Foto de un abalorio: se encontraron {columns} × {rows} cuentas. «Usar el sugerido» pone una cuenta en cada una.',
       colorsHint: 'Cada color es una cuenta que comprar. Máx. {n}: todos los colores de la imagen.',
       colorsHintCapped: 'Cada color es una cuenta que comprar. Máx. {n}: la imagen tiene más, reducidos a esos.',
       colorByColor: 'Color por color',

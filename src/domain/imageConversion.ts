@@ -1,4 +1,4 @@
-import { beadAreaReader } from './beadAreaColor'
+import { beadAreaReader, type BeadRing } from './beadAreaColor'
 import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
@@ -187,13 +187,15 @@ type SamplingInput = {
  * line crosses it (beadAreaColor), at rest; `centre`, the one pixel at its centre, fast enough for a moving preview. */
 export type SamplingRule = 'centre' | 'area'
 
+// Cells are in picture pixels, a bead step round its centre (0622). On a photo of beadwork (0772) `ring` has the area
+// rule read each bead from its ring alone.
 /** The picture's raw colors for each bead of the preview's lattice (see partLattice), row by row, packed, by the rule
  * asked (centre by default), each pixel through `adjust` (Auto-fix lighting, 0766); NO_COLOR off the picture, too
- * transparent or outside Cut out's mask (0765). Cells are in picture pixels, a bead step round its centre (0622). */
+ * transparent or outside Cut out's mask (0765). */
 export function sampleLatticePacked(
-  input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule; mask?: SubjectMask; adjust?: (packed: number) => number },
+  input: SamplingInput & { lattice: PreviewLattice; rule?: SamplingRule; mask?: SubjectMask; adjust?: (packed: number) => number; ring?: BeadRing },
 ): Int32Array {
-  const { image, lattice, part, pixelsPerBead, mask, adjust } = input
+  const { image, lattice, part, pixelsPerBead, mask, adjust, ring } = input
   const read = adjust ? (x: number, y: number) => adjust(pixelPackedAt(image, x, y)) : (x: number, y: number) => pixelPackedAt(image, x, y)
   const pixelAt = mask ? (x: number, y: number) => (mask.subject[y * image.width + x] ? read(x, y) : NO_COLOR) : read
   const description = describeWeave(input)
@@ -204,7 +206,7 @@ export function sampleLatticePacked(
   const onPicture = (at: number, length: number, slack: number) => (at >= length && at < length + slack ? length - 1 : at)
   const slackX = Math.max(1, pixelsPerBead.x)
   const slackY = Math.max(1, pixelsPerBead.y)
-  const readArea = input.rule === 'area' ? beadAreaReader(image, pixelAt, NO_COLOR) : undefined
+  const readArea = input.rule === 'area' ? beadAreaReader(image, pixelAt, NO_COLOR, ring) : undefined
   // A bead's area is the picture pixels whose middles fall in its cell round its true centre, cut to the picture; one
   // of a pixel or less (an enlarging Width) reads the centre pixel, as it always has.
   const colorOfArea = (read: NonNullable<typeof readArea>, centreX: number, centreY: number, sourceX: number, sourceY: number) => {
