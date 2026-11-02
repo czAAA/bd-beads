@@ -3,7 +3,6 @@ import { effectScope, nextTick, type EffectScope } from 'vue'
 import type { PixelData } from '../../domain/imageConversion'
 import type { SubjectMask } from '../../domain/subjectMask'
 import { fakeCutOutService } from '../../testUtils/fakeCutOutService'
-import { fakeCutOutDevice } from '../../testUtils/fakeCutOutDevice'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
 
 // Cut out's taps (ticket 0769, spec 0761), through the wizard's state with a fake cut-out service: tap add and tap remove,
@@ -45,7 +44,6 @@ async function found(options: { tapsToDownload?: number } = {}) {
       decodeImage: async () => picture(),
       loadCatalog: () => Promise.reject(new Error('no catalog')),
       cutOutService: cutOut.service,
-      cutOutDevice: fakeCutOutDevice().device,
     }),
   )!
   await wizard.setFile(new File(['x'], 'picture.png', { type: 'image/png' }))
@@ -139,7 +137,7 @@ describe('Cut out’s taps (ticket 0769)', () => {
     wizard.toggleCutOutTap('add')
     wizard.tapCutOut({ x: 6, y: 1 })
     await settle()
-    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 13_800_000, lowMemory: false, lowSpace: false })
+    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 13_800_000 })
     expect(cutOut.refines()).toEqual([])
 
     wizard.downloadCutOutModel()
@@ -184,7 +182,7 @@ describe('Cut out’s taps (ticket 0769)', () => {
     wizard.toggleCutOutTap('add')
     wizard.tapCutOut({ x: 6, y: 1 })
     await settle()
-    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 13_800_000, lowMemory: false, lowSpace: false })
+    expect(wizard.aiCutOut.value).toEqual({ kind: 'asking', bytes: 13_800_000 })
     expect(cutOut.refines()).toHaveLength(1)
   })
 
