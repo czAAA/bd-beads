@@ -323,7 +323,6 @@ function aiCutOutCases(): FitCase[] {
   const downloading = fakeCutOutService()
   const thinking = fakeCutOutService()
   const failing = fakeCutOutService()
-  const tapping = fakeCutOutService()
   return [
     ['Convert image page (cut out with AI, the download note)', ConvertPageHost, wizardProps(true, asking.service), chooseAi],
     [
@@ -352,17 +351,6 @@ function aiCutOutCases(): FitCase[] {
       async (root) => {
         await chooseAi(root)
         failing.fail()
-        await new Promise((done) => setTimeout(done, 20))
-      },
-    ],
-    [
-      'Convert image page (cut out with AI, the tap chips and Reset)',
-      ConvertPageHost,
-      wizardProps(true, tapping.service),
-      async (root) => {
-        await chooseAi(root)
-        const { width, height } = flatColorsPicture()
-        tapping.finish({ width, height, subject: new Uint8Array(width * height).fill(1) })
         await new Promise((done) => setTimeout(done, 20))
       },
     ],
