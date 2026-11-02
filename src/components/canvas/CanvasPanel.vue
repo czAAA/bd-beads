@@ -270,8 +270,9 @@ const selectionLayerStyle = computed(() => {
 })
 /** The canvas box, where the first-run hints find the controls they point at. */
 const canvasEl = ref<HTMLElement>()
-/** The open Project has no beads: the CanvasHint line and the first-run hints show (FirstRunHints card, ticket 0725). */
-const emptyProject = computed(() => !!activeProject.value && !hasProjectBeads(activeProject.value))
+/** The open Project has no beads and no Frame, not even an empty one: the CanvasHint line and the first-run hints show
+ * (FirstRunHints card, ticket 0725). A Frame is already a start on the Pattern. */
+const emptyProject = computed(() => !!activeProject.value && !frameOf(activeProject.value) && !hasProjectBeads(activeProject.value))
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
