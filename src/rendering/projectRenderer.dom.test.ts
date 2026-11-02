@@ -514,6 +514,26 @@ describe('drawing only some rows again', () => {
     expect(named('rect')[0]!.args).toEqual([0, 40, 90, 20])
   })
 
+  it('reaches a peyote band down to the half bead its shifted columns hang below its last row (ticket 0777)', () => {
+    const project = projectOf('peyote', 4, 6)
+    const { context, named } = recordingContext()
+
+    renderProject(context, { project, region: whole(project), zoom: 1, rows: { first: 2, last: 2 } })
+
+    // Row 2 is y 40 to 60 in an unshifted column and 50 to 70 in a shifted one: a bead painted there shows whole.
+    expect(named('rect')[0]!.args).toEqual([0, 40, 80, 30])
+  })
+
+  it('reaches a 2-drop peyote band down to its shifted pairs of columns too (ticket 0777)', () => {
+    const project = projectOf('peyote', 4, 6, { techniqueSettings: { peyoteDrop: 2 } })
+    const { context, named } = recordingContext()
+
+    renderProject(context, { project, region: whole(project), zoom: 1, rows: { first: 2, last: 2 } })
+
+    // Columns 0 and 1 are level, 2 and 3 half a bead down: row 2 is y 40 to 70 across them.
+    expect(named('rect')[0]!.args).toEqual([0, 40, 80, 30])
+  })
+
   it('turns the band with the Project: rows are columns of the surface when it is rotated', () => {
     const project = projectOf('loom', 4, 10, { orientation: 90 })
     const { context, named } = recordingContext()

@@ -33,7 +33,6 @@ import {
   gridToRegion,
   inGridPx,
   layerExtentPx,
-  positionsBoxPx,
   regionInGridSpace,
   setGridTransform,
   type Region,
@@ -223,7 +222,7 @@ function drawFrameGround(
 }
 
 // The band of the surface, in device pixels, that rows `first` to `last` occupy: the whole Project width, or the
-// viewport on the Canvas.
+// viewport on the Canvas. Down to the shift a staggered column hangs below the last row (ticket 0777).
 function bandOnSurface(
   space: Space,
   region: Region,
@@ -233,7 +232,7 @@ function bandOnSurface(
   weave: Weave,
   rows: { first: number; last: number },
 ): Region {
-  const band = positionsBoxPx(weave, rows.first, 0, rows.last - rows.first + 1, 1)
+  const band = gridBox(weave, { row: rows.first, column: 0, rows: rows.last - rows.first + 1, columns: 1 })
   const top = band.y
   const bottom = band.y + band.height
   const area = regionInGridSpace(space.extent, region, zoom, rotation)

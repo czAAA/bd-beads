@@ -503,16 +503,26 @@ describe('renderOverlay', () => {
       expect(stroke.strokeStyle).toBe(DEFAULT_THEME.marker)
     })
 
-    it('moves with the Frame on the open Canvas, across the box round a peyote Frame\'s beads', () => {
-      const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 6, rows: 4, columns: 4, beads: {} } })
+    it('moves with the Frame on the open Canvas, across the box round a peyote Frame\'s beads, each Axis where it maps from the unshifted columns\' corner', () => {
+      const project = withLayers(projectOf('peyote', 4, 4, { marks: false }), { frame: { technique: 'peyote' as const, row: 5, column: 6, rows: 4, columns: 5, beads: {} } })
       const { context, calls, named } = recordingContext()
 
-      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true }) })
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, mirror: on({ leftRight: true, topBottom: true }) })
 
       // Column 6 of a peyote Canvas is 120px in, and unshifted; row 5 sits at 5 × 20px (ticket 0734).
       expect(named('translate').map((call) => call.args)).toContainEqual([120, 100])
-      // The box round 4 peyote columns is 4 × 20px wide, 4 × 20 + 10px tall (the shifted columns).
-      expect(lines(calls)).toEqual([[[40, 0], [40, 90]]])
+      // The box round 5 peyote columns is 5 × 20px wide, 4 × 20 + 10px tall (the shifted columns). Top–bottom reflects
+      // about 2 beads down from the unshifted top, not halfway down that box (ticket 0775).
+      expect(lines(calls)).toEqual([[[50, 0], [50, 90]], [[0, 40], [100, 40]]])
+    })
+
+    it('draws no Left–right Axis on an even-width peyote Frame, which the half-bead shift has no mirror image across (ticket 0775)', () => {
+      const project = projectOf('peyote', 4, 4, { marks: false })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project, 1), zoom: 1, mirror: on({ leftRight: true }) })
+
+      expect(lines(calls)).toEqual([])
     })
 
     it('draws nothing while the Mirror is off or no Axis is on', () => {
@@ -576,37 +586,37 @@ describe('renderOverlay', () => {
     const strokes = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'stroke')
 
     it('in Mirror mode draws the ring at the Frame\'s centre and the Fold\'s mirror lines through it, the first vertical and full, the others soft, clipped to the Frame', () => {
-      const project = projectOf('loom', 6, 4, { marks: false })
+      const project = projectOf('loom', 6, 6, { marks: false })
       const { context, calls, named } = recordingContext()
       renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: radial(4, 'mirror') })
 
       const ring = named('arc')[0]!
-      expect(ring.args.slice(0, 3)).toEqual([60, 40, 3.5])
+      expect(ring.args.slice(0, 3)).toEqual([60, 60, 3.5])
       expect(ring.strokeStyle).toBe(DEFAULT_THEME.marker)
-      expect(named('rect').map((call) => call.args)).toContainEqual([0, 0, 120, 80])
+      expect(named('rect').map((call) => call.args)).toContainEqual([0, 0, 120, 120])
       expect(named('clip')).toHaveLength(1)
       const drawn = lines(calls)
       expect(drawn).toHaveLength(4)
       const [[from, to]] = drawn as [number[], number[]][]
       expect([from![0], to![0]]).toEqual([60, 60])
-      expect(from![1]).toBeLessThan(40)
-      expect(to![1]).toBeGreaterThan(40)
+      expect(from![1]).toBeLessThan(60)
+      expect(to![1]).toBeGreaterThan(60)
       // The second line leans 45°: as far across as down.
       const [[from2, to2]] = drawn.slice(1) as [number[], number[]][]
       expect(Math.abs((to2![0] - from2![0]) / (to2![1] - from2![1]))).toBeCloseTo(1, 6)
       expect(strokes(calls).map((call) => call.globalAlpha)).toEqual([1, 0.45, 0.45, 0.45, 1])
     })
 
-    it('in Repeat mode draws the Fold\'s sector rays from the centre, the first straight up, all full, and no straight Axis line', () => {
-      const project = projectOf('loom', 6, 4, { marks: false })
+    it('in Repeat mode draws the Fold\'s sector rays from the centre, the first straight up, all full, and no straight Axis line: a Fold 3 as the square Frame maps it, 4', () => {
+      const project = projectOf('loom', 6, 6, { marks: false })
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, region: whole(project, 2), zoom: 2, mirror: { ...radial(3, 'repeat'), axes: { leftRight: true, topBottom: false, radial: true } } })
 
       const drawn = lines(calls)
-      expect(drawn).toHaveLength(3)
-      expect(drawn.every(([from]) => from![0] === 60 && from![1] === 40)).toBe(true)
+      expect(drawn).toHaveLength(4)
+      expect(drawn.every(([from]) => from![0] === 60 && from![1] === 60)).toBe(true)
       expect(drawn[0]![1]![0]).toBe(60)
-      expect(drawn[0]![1]![1]).toBeLessThan(40)
+      expect(drawn[0]![1]![1]).toBeLessThan(60)
       expect(strokes(calls).every((call) => call.globalAlpha === 1)).toBe(true)
     })
 
