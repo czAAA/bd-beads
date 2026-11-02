@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Rect } from '../../domain/canvas'
 import { fillBlanks } from '../../domain/fillBlanks'
 import {
-  isSquare,
+  fittedCount,
   MAX_GRID_FOLD,
   MIN_FOLD,
   MIRROR_AXES,
@@ -13,7 +12,7 @@ import {
   withMirrorFold,
   withMirrorMode,
   type MirrorAxis,
-  type MirrorDirection,
+  type MirrorFit,
   type MirrorMode,
   type MirrorSetting,
   type ShapeAxes,
@@ -28,8 +27,9 @@ import type { IconName } from '../ui/icons'
 // control carries `context-bar__control`, so the bar's arrows walk them (ADR 0075).
 const props = defineProps<{
   setting: MirrorSetting
-  /** The Area in its layer's positions: the counts are limited by its beads across, minus one. */
-  rect?: Rect
+  /** What the Area offers (ticket 0775): each direction's Axis counts and Radial's Folds, none with the reason where a
+   * chip is off. Without it every count and both Folds are offered. */
+  fit?: MirrorFit
   /** A Custom frame's own Axes while the whole Frame is the Mirror: noted, with no chips. */
   shape?: ShapeAxes
   iconSize: 16 | 18
@@ -46,27 +46,42 @@ const AXIS_ICONS: Record<MirrorAxis, IconName> = { leftRight: 'axis-left-right',
 const axisName = (axis: MirrorAxis) => t.value.mirror[axis]
 const modeName = (mode: MirrorMode) => t.value.mirror[mode]
 
-/** A direction's beads across the Area: Left–right reflects columns, Top–bottom rows. */
-const across = (direction: MirrorDirection) => (props.rect ? (direction === 'leftRight' ? props.rect.columns : props.rect.rows) : Infinity)
-/** Why a chip is off: the Area is one bead across its direction (ContextBar card); none for one that can be on. */
+/** Why a chip is off (ContextBar card): the Area is one bead across its direction, or peyote's or brick's half-bead
+ * shift has no exact image there (ticket 0775); none for one that can be on. */
 const offReason = (axis: MirrorAxis) => {
-  if (axis === 'radial' || across(axis) > 1) return undefined
-  return axis === 'leftRight' ? t.value.mirror.oneBeadWide : t.value.mirror.oneBeadTall
+  const reason = props.fit?.off[axis]
+  if (!reason) return undefined
+  if (axis === 'radial') return t.value.mirror.shiftRadial
+  if (reason === 'oneBead') return axis === 'leftRight' ? t.value.mirror.oneBeadWide : t.value.mirror.oneBeadTall
+  return axis === 'leftRight' ? t.value.mirror.shiftWide : t.value.mirror.shiftTall
 }
 const isOn = (axis: MirrorAxis) => props.setting.axes[axis] && !offReason(axis)
 
-/** Why Radial's + is off: a quarter turn needs a square Area (ticket 0751); none in a square one, or with no Area. */
-const quarterReason = computed(() => (props.rect && !isSquare(props.rect) ? t.value.mirror.quarterNeedsSquare : undefined))
+/** Why Radial's + is off: a quarter turn needs a square Area (ticket 0751) with no half-bead shift (ticket 0775). */
+const quarterReason = computed(() => {
+  const off = props.fit?.quarterOff
+  return off === 'square' ? t.value.mirror.quarterNeedsSquare : off === 'shift' ? t.value.mirror.quarterNeedsStraight : undefined
+})
 
-/** The Stepper a chip that is on carries: an Axis count, 1 to the beads across minus 1, or Radial's Fold, 2 or 4. */
+/** The values a chip's Stepper steps through, ascending: an Axis count the Area offers, or Radial's Fold, 2 or 4. */
+function valuesOf(axis: MirrorAxis): readonly number[] | undefined {
+  if (axis === 'radial') return props.fit?.folds ?? [MIN_FOLD, MAX_GRID_FOLD]
+  return props.fit?.counts[axis]
+}
+
+/** The Stepper a chip that is on carries: its value as the Mirror uses it, and the values either side of it. */
 function stepperFor(axis: MirrorAxis) {
-  if (axis === 'radial') {
-    const max = quarterReason.value ? MIN_FOLD : MAX_GRID_FOLD
-    return { value: Math.min(props.setting.fold, max), min: MIN_FOLD, max, fewer: t.value.mirror.fewerFolds, more: t.value.mirror.moreFolds, name: t.value.mirror.fold }
-  }
-  const max = Math.max(1, across(axis) - 1)
-  const name = axis === 'leftRight' ? t.value.mirror.leftRightAxes : t.value.mirror.topBottomAxes
-  return { value: Math.min(props.setting.counts[axis], max), min: 1, max, fewer: t.value.mirror.fewerAxes, more: t.value.mirror.moreAxes, name }
+  const values = valuesOf(axis)
+  const names = axis === 'radial'
+    ? { fewer: t.value.mirror.fewerFolds, more: t.value.mirror.moreFolds, name: t.value.mirror.fold }
+    : { fewer: t.value.mirror.fewerAxes, more: t.value.mirror.moreAxes, name: axis === 'leftRight' ? t.value.mirror.leftRightAxes : t.value.mirror.topBottomAxes }
+  const wanted = axis === 'radial' ? props.setting.fold : props.setting.counts[axis]
+  const fitted = axis === 'radial' ? (values?.length ? Math.min(wanted, Math.max(...values)) : undefined) : props.fit && fittedCount(props.fit, axis, wanted)
+  const value = fitted ?? wanted
+  // Without a fit an Axis count steps one at a time, with no top.
+  const below = values ? [...values].reverse().find((each) => each < value) : value > 1 ? value - 1 : undefined
+  const above = values ? values.find((each) => each > value) : value + 1
+  return { value, below, above, ...names }
 }
 
 const steppers = computed(() => Object.fromEntries(MIRROR_AXES.map((axis) => [axis, stepperFor(axis)])) as Record<MirrorAxis, ReturnType<typeof stepperFor>>)
@@ -87,10 +102,11 @@ function toggle(axis: MirrorAxis) {
   if (!offReason(axis)) emit('update:setting', withAxisToggled(props.setting, axis))
 }
 function step(axis: MirrorAxis, by: number) {
-  const { value, min, max } = stepperOf(axis)
-  // A Fold steps between 2 and 4 (ticket 0751), so one press crosses the gap.
-  const next = Math.min(max, Math.max(min, value + (axis === 'radial' ? by * 2 : by)))
-  if (next === value) return
+  // The next value the Area offers: a Fold steps between 2 and 4 (ticket 0751), a count on peyote and brick skips the
+  // ones the half-bead shift has no exact image for (ticket 0775).
+  const { below, above } = stepperOf(axis)
+  const next = by < 0 ? below : above
+  if (next === undefined) return
   emit('update:setting', axis === 'radial' ? withMirrorFold(props.setting, next) : withMirrorCount(props.setting, axis, next))
 }
 </script>
@@ -138,12 +154,12 @@ function step(axis: MirrorAxis, by: number) {
           @click="toggle(axis)"
         />
         <span v-if="isOn(axis)" class="mirror-bar__count">
-          <AppTooltip :name="stepperOf(axis).fewer" :announce="false" :disabled="stepperOf(axis).value <= stepperOf(axis).min">
+          <AppTooltip :name="stepperOf(axis).fewer" :announce="false" :disabled="stepperOf(axis).below === undefined">
             <button
               type="button"
               class="context-bar__control mirror-bar__step"
               :aria-label="stepperOf(axis).fewer"
-              :aria-disabled="stepperOf(axis).value <= stepperOf(axis).min ? 'true' : undefined"
+              :aria-disabled="stepperOf(axis).below === undefined ? 'true' : undefined"
               :data-testid="`mirror-bar-${axis}-fewer`"
               @click="step(axis, -1)"
             >
@@ -151,12 +167,12 @@ function step(axis: MirrorAxis, by: number) {
             </button>
           </AppTooltip>
           <output class="mirror-bar__value" :aria-label="`${stepperOf(axis).name}, ${stepperOf(axis).value}`" :data-testid="`mirror-bar-${axis}-value`">{{ stepperOf(axis).value }}</output>
-          <AppTooltip :name="stepperOf(axis).more" :announce="false" :disabled="stepperOf(axis).value >= stepperOf(axis).max" :disabled-body="axis === 'radial' ? quarterReason : undefined">
+          <AppTooltip :name="stepperOf(axis).more" :announce="false" :disabled="stepperOf(axis).above === undefined" :disabled-body="axis === 'radial' ? quarterReason : undefined">
             <button
               type="button"
               class="context-bar__control mirror-bar__step"
               :aria-label="stepperOf(axis).more"
-              :aria-disabled="stepperOf(axis).value >= stepperOf(axis).max ? 'true' : undefined"
+              :aria-disabled="stepperOf(axis).above === undefined ? 'true' : undefined"
               :data-testid="`mirror-bar-${axis}-more`"
               @click="step(axis, 1)"
             >
