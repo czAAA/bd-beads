@@ -97,7 +97,7 @@ function step(axis: MirrorAxis, by: number) {
 
 <template>
   <!-- One root, so the bar can hide the items while it shows its size alone; `display: contents` keeps each a flex item
-    of the bar, which its two-row form reorders. -->
+    of the bar. -->
   <div class="mirror-bar__items">
     <span class="context-bar__divider" aria-hidden="true" />
     <div class="mirror-bar__mode" role="radiogroup" :aria-label="t.mirror.mode" data-testid="mirror-bar-mode">
