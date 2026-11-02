@@ -11,14 +11,12 @@ import {
   sourceTargets,
   type ColorSource,
   type FoundColorChoice,
-  type TargetColor,
 } from '../../domain/convertColors'
 import {
   CONVERT_STEPS,
   flipPicture,
   fullCrop,
   isLargeSchema,
-  partAround,
   partInset,
   sizingFor,
   startingSize,
@@ -28,7 +26,6 @@ import {
   type SizeSide,
 } from '../../domain/convertSize'
 import { createProjectFromImage, type CreateProjectInput } from '../../domain/createProject'
-import type { CutOutDevice, CutOutService } from '../../domain/cutOutModel'
 import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from '../../domain/framingPreview'
 import { reducePictureColors } from '../../domain/imageColors'
 import {
@@ -44,32 +41,20 @@ import {
   type DecodeImage,
   type ImageRejection,
   type PixelData,
-  type SamplingRule,
 } from '../../domain/imageConversion'
 import { partLattice } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
-import { lightingFix } from '../../domain/lightingFix'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
-import { cleanUpStrayBeads, MAX_CLEAN_UP } from '../../domain/strayBeads'
-import { suggestedWidth as suggestWidth } from '../../domain/suggestedWidth'
-import { backgroundFamilies, DEFAULT_TOLERANCE, simpleCutOut, subjectBox, type SubjectMask } from '../../domain/subjectMask'
-import { darkestColor, hasEmptyRound, outlinedGrid, outlinedPreview, outlinePad } from '../../domain/subjectOutline'
 import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
-import { useAiCutOut, type CutOut } from './useAiCutOut'
-
-export type { CutOut } from './useAiCutOut'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
- * a picture is decoded, how a Bead's Color catalog is fetched, the cut-out service that runs the AI choice's model
- * (ticket 0767) and the device record beside it (ticket 0768), all services handed in by the app shell. */
+ * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
 export interface ConvertImageWizardDeps {
   start: CreateProjectInput
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
-  cutOutService: CutOutService
-  cutOutDevice: CutOutDevice
 }
 
 /** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
@@ -85,7 +70,7 @@ const PAUSE_MS = 150
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
  * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
  * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
-export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutService, cutOutDevice }: ConvertImageWizardDeps) {
+export function useConvertImageWizard({ start, decodeImage, loadCatalog }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -102,11 +87,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
   const fileFormat = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
-
-  // Cut out (tickets 0765, 0767): the choice and the AI choice's run, and Simple's Tolerance in hundredths of OKLab.
-  const ai = useAiCutOut({ service: cutOutService, device: cutOutDevice, image })
-  const cutOut = ai.choice
-  const tolerance = ref(DEFAULT_TOLERANCE)
 
   // The step shown (ticket 0756): the Progress bar's dots and the page's one section follow it.
   const step = ref<ConvertStep>('picture')
@@ -131,12 +111,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
   /** Treat as empty (ConvertImage card, ticket 0758): on, the preview takes the eyedropper's taps. It is on the Colors step only. */
   const treatAsEmpty = ref(false)
-  // The Colors step's helpers (ticket 0766): Auto-fix lighting, off until the maker turns it on, so pixel art's colors
-  // are never changed behind their back; Clean up stray beads' passes, 0 for Off; the Outline and the color picked.
-  const autoFixLighting = ref(false)
-  const cleanUp = ref(0)
-  const outline = ref(false)
-  const chosenOutlineColor = shallowRef<TargetColor>()
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
   const part = computed<PixelCrop>(() => {
@@ -266,52 +240,17 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     restartPart()
   }
 
-  // --- Cut out ------------------------------------------------------------------------------------------------------
-
-  // The colors round the picture's edges, worked out once per picture: a turn, flip or new picture is a new one.
-  const families = computed(() => (image.value ? backgroundFamilies(image.value) : []))
-
-  /** The subject mask over the picture's pixels (spec 0761), none with Cut out Off, nor while the AI choice works. It is
-   * made from the picture as it is, so a turn, flip or new picture drops it and works it out again. The sampler, Fit to
-   * subject and the Colors step's helpers (ticket 0766) read only this. */
-  const subjectMask = computed<SubjectMask | undefined>(() => {
-    const picture = image.value
-    if (!picture || cutOut.value === 'off') return undefined
-    if (cutOut.value === 'ai') return ai.mask.value
-    return simpleCutOut(picture, families.value, tolerance.value)
-  })
-
-  /** The box round what Cut out kept, in whole pixels; none with Cut out Off or when it kept nothing. */
-  const subjectBounds = computed(() => (subjectMask.value ? subjectBox(subjectMask.value) : undefined))
-
-  /** Fit to subject (ticket 0765): A part set round what Cut out kept. The Width and Height stay, dropping only when the
-   * part has fewer pixels than they allow (ticket 0757). */
-  function fitToSubject() {
-    const picture = image.value
-    const box = subjectBounds.value
-    if (!picture || !box) return
-    rawPart.value = partAround(box, picture)
-    weaveChoice.value = 'part'
-  }
-
   // --- The preview's beads ------------------------------------------------------------------------------------------
 
-  /** Auto-fix lighting's correction, measured from the subject while Cut out has one (ticket 0766); none while off. */
-  const lighting = computed(() => (autoFixLighting.value && image.value ? lightingFix(image.value, subjectMask.value) : undefined))
-
-  /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as
-   * the full rule is too slow per move (ticket 0762); none outside Cut out's mask (ticket 0765); each pixel through
-   * Auto-fix lighting while it is on (ticket 0766). */
-  function sample(at: PixelCrop, rule: SamplingRule) {
+  function sample(at: PixelCrop) {
     const picture = image.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    const sampled = sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule, mask: subjectMask.value, adjust: lighting.value })
-    return { grid, lattice, sampled }
+    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
   }
 
-  const rest = computed(() => sample(restPart.value, 'area'))
+  const rest = computed(() => sample(restPart.value))
 
   const hasCatalog = computed(() => !!catalogId.value)
   /** What the found colors are matched to: Exact until a source is chosen (ticket 0758). */
@@ -339,27 +278,17 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
   const colorsCapped = computed(() => colorsFound.value > MAX_IMAGE_COLORS)
   /** The Colors slider: 12 at first, or every color where that is fewer; a part with fewer colors pulls it down. */
   const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
-  const reducedSampled = computed(() => reducePictureColors(frameSampled.value?.counts ?? new Map(), maxColors.value))
-  /** Clean up stray beads (ticket 0766) on the reduced grid, before the match: the found colors and counts follow. */
-  const cleaned = computed(() => cleanUpStrayBeads(frameSampled.value?.raw ?? [], reducedSampled.value, weave.value, cleanUp.value))
-  const reduced = computed(() => cleaned.value.reduced)
+  const reduced = computed(() => reducePictureColors(frameSampled.value?.counts ?? new Map(), maxColors.value))
   const found = computed(() => matchFoundColors(reduced.value, targets.value, choices.value))
-  const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(cleaned.value.raw, reduced.value, found.value) : []))
+  const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(frameSampled.value.raw, reduced.value, found.value) : []))
   const held = computed(() => heldColorLookup(found.value))
-
-  // The Outline (ticket 0766): in the darkest found color until the maker picks one, only with empty beads round the
-  // subject; on, the Schema is the grid grown round it.
-  const outlineColor = computed(() => chosenOutlineColor.value ?? darkestColor(found.value.flatMap((color) => (color.result ? [color.result] : []))))
-  const outlineShown = computed(() => hasEmptyRound(grid.value))
-  const outlineOn = computed(() => outline.value && outlineShown.value && !!outlineColor.value)
-  const schemaGrid = computed(() => (outlineOn.value ? outlinedGrid(grid.value, weave.value, outlineColor.value!.hex) : grid.value))
-  const palette = computed(() => newProjectPalette(builtIns.value, outlineOn.value ? [...found.value, { result: outlineColor.value }] : found.value))
+  const palette = computed(() => newProjectPalette(builtIns.value, found.value))
 
   /** Whether the part is away from where the exact conversion was made: the only time beads are approximate. */
   const approximate = computed(() => moving.value && part.value !== restPart.value)
-  const live = computed(() => (approximate.value ? sample(part.value, 'centre') : rest.value))
+  const live = computed(() => (approximate.value ? sample(part.value) : rest.value))
 
-  const sampledColors = computed(() => {
+  const beadColors = computed(() => {
     const shown = live.value
     const exact = rest.value
     if (!shown || !exact) return []
@@ -368,54 +297,16 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
       : exactPreviewColors(exact.sampled, exact.lattice, exact.grid, grid.value, held.value)
   })
 
-  /** The preview's lattice and beads, with room round the Frame for the Outline while it is on (ticket 0766): its
-   * ring at rest, none while a handle moves. A tap maps back to the sampled bead under it. */
-  const preview = computed(() => {
-    const shown = live.value
-    if (!shown) return undefined
-    const base = { lattice: shown.lattice, colors: sampledColors.value }
-    if (!outlineOn.value) return { ...base, sourceIndex: (index: number): number | undefined => index }
-    return outlinedPreview(base, shown.grid, weave.value, approximate.value ? undefined : schemaGrid.value)
-  })
-  const beadColors = computed(() => preview.value?.colors ?? [])
-
   /** The lattice as a block of beads for the Project renderer: shaped like a Project, upright, with no Row progress,
    * in its Bead's real cell. */
   const drawnProject = computed(() => {
-    const shown = preview.value
+    const shown = live.value
     if (!shown) return undefined
     const { columns, rows } = shown.lattice
     const cells: Grid = Array.from({ length: rows }, (_row, row) =>
       Array.from({ length: columns }, (_cell, column) => ({ color: beadColors.value[row * columns + column] ?? null })),
     )
     return framedGrid(cells, { ...weave.value, beadId: bead.value.id, bead: bead.value })
-  })
-
-  // --- Suggested Width ----------------------------------------------------------------------------------------------
-
-  /** Suggested Width (ticket 0770, spec 0761): measured on the part at rest, through Cut out and Auto-fix lighting, over
-   * the colors the Colors slider asks for. It never reads the Width, so moving the slider leaves it be, and as a computed
-   * it is worked out only while the Size step reads it. */
-  const suggestedWidth = computed(() => {
-    const picture = image.value
-    if (!picture) return undefined
-    const at = restPart.value
-    // Linked, the Height follows each Width tried; unlinked, it stays as set.
-    const height = linked.value ? undefined : heightBeads.value
-    const sizingAt = (width: number) =>
-      sizingFor({ part: at, width, height, linked: linked.value, lead: 'width', bead: bead.value, technique: technique.value, techniqueSettings: techniqueSettings.value })
-    // The slider's range and marks depend on the part alone, whatever Width is asked.
-    const { range, marks } = sizingAt(0)
-    return suggestWidth({
-      image: picture,
-      part: at,
-      mask: subjectMask.value,
-      adjust: lighting.value,
-      colors: clamp(chosenColors.value, MIN_IMAGE_COLORS, MAX_IMAGE_COLORS),
-      range,
-      marks: marks.map((mark) => mark.width),
-      sizingAt,
-    })
   })
 
   // --- Colors -------------------------------------------------------------------------------------------------------
@@ -449,17 +340,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     setChoice(pictureHex, choices.value.get(pictureHex)?.kind === 'empty' ? undefined : { kind: 'empty' })
   }
 
-  /** Treat as empty (ConvertImage card): the found color of the bead under a tap on the preview set to empty; in the
-   * Frame at rest, the color it shows after Clean up stray beads (ticket 0766). */
+  /** Treat as empty (ConvertImage card): the found color of the bead under a tap on the preview set to empty. */
   function emptyAtBead(index: number) {
     const shown = live.value
-    const at = preview.value?.sourceIndex(index)
-    const packed = at === undefined ? undefined : shown?.sampled[at]
-    if (!shown || at === undefined || packed === undefined || packed === NO_COLOR) return
-    const row = Math.floor(at / shown.lattice.columns) - shown.lattice.frameRow
-    const column = (at % shown.lattice.columns) - shown.lattice.frameColumn
-    const cleanedHex = approximate.value ? undefined : cleaned.value.raw[row]?.[column]
-    const pictureHex = reduced.value.byHex.get(cleanedHex ?? packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
+    const packed = shown?.sampled[index]
+    if (packed === undefined || packed === NO_COLOR) return
+    const pictureHex = reduced.value.byHex.get(packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
     if (pictureHex) setChoice(pictureHex, { kind: 'empty' })
   }
 
@@ -495,8 +381,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
       ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
       beadId: bead.value.id,
       makerName: makerName.value.trim(),
-      size: { width: schemaGrid.value[0]?.length ?? 0, height: schemaGrid.value.length, unit: 'beads' },
-      grid: schemaGrid.value,
+      size: { width: rest.value.grid.columns, height: rest.value.grid.rows, unit: 'beads' },
+      grid: grid.value,
       palette: palette.value,
     })
   }
@@ -543,29 +429,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     setWeave,
     part,
     setPart: (next: PixelCrop) => (rawPart.value = next),
-    cutOut,
-    setCutOut: (next: CutOut) => ai.choose(next),
-    /** The AI choice's question, download, run or failure (ticket 0767): what shows under the Cut out row. */
-    aiCutOut: ai.status,
-    /** Download on the download note, or Try again on the question after a stopped run (ticket 0768). */
-    downloadCutOutModel: ai.download,
-    /** The last run stopped with the tab (ticket 0768): the AI chip's warning dot and Tooltip body. */
-    cutOutStopped: ai.stopped,
-    /** Cancel on the note or the AI Loading: back to the choice before. */
-    cancelAiCutOut: ai.cancel,
-    /** The tap add and tap remove chips and Reset under the AI chip (ticket 0769): shown, which is on, the taps, a tap. */
-    cutOutTapsShown: ai.tapsShown,
-    cutOutTapMode: ai.tapMode,
-    toggleCutOutTap: ai.toggleTap,
-    cutOutTaps: ai.taps,
-    /** A tap on the preview at a picture pixel, while tap add or tap remove is on. */
-    tapCutOut: ai.tap,
-    resetCutOutTaps: ai.resetTaps,
-    tolerance,
-    setTolerance: (next: number) => (tolerance.value = next),
-    subjectMask,
-    subjectBounds,
-    fitToSubject,
     // Size
     sizing,
     dimensions,
@@ -578,12 +441,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     setSizeUnit: (next: ConvertSizeUnit) => (sizeUnit.value = next),
     widthMmOf,
     largeSchema: computed(() => isLargeSchema(dimensions.value)),
-    /** The Suggested Width (ticket 0770); none without a picture. */
-    suggestedWidth,
-    /** Use suggested: the Width moves to the suggestion, the Height following while linked. */
-    useSuggestedWidth: () => {
-      if (suggestedWidth.value !== undefined) setWidth(suggestedWidth.value)
-    },
     // The preview
     moving,
     beginMove: () => (moving.value = true),
@@ -592,7 +449,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
       settle()
     },
     approximate,
-    lattice: computed(() => preview.value?.lattice),
+    lattice: computed(() => live.value?.lattice),
     beadColors,
     previewGrid: computed(() => live.value?.grid),
     drawnProject,
@@ -623,26 +480,6 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     palette,
     remapPalette,
     remapSwatches,
-    // The Colors step's helpers (ticket 0766)
-    autoFixLighting,
-    setAutoFixLighting: (next: boolean) => (autoFixLighting.value = next),
-    cleanUp,
-    setCleanUp: (next: number) => (cleanUp.value = clamp(Math.round(next), 0, MAX_CLEAN_UP)),
-    outline,
-    setOutline: (next: boolean) => (outline.value = next),
-    outlineShown,
-    /** The Outline's color: the one picked, or the darkest found color; none with no colored bead. */
-    outlineColor,
-    /** Whether the maker picked the Outline's color, rather than the darkest found color. */
-    outlineColorPicked: computed(() => !!chosenOutlineColor.value),
-    /** A color picked for the Outline; none goes back to the darkest found color. */
-    setOutlineColor: (next: TargetColor | undefined) => (chosenOutlineColor.value = next),
-    /** How far the Schema grows past the Frame on each side for the Outline; none while it is off or not shown. */
-    outlinePad: computed(() => (outlineOn.value ? outlinePad(weave.value) : undefined)),
-    /** The Schema's size, the Outline's ring included: what Create Project makes. */
-    schemaSize: computed(() => ({ columns: schemaGrid.value[0]?.length ?? 0, rows: schemaGrid.value.length })),
-    /** How many beads the Schema holds, the Outline's included (Review's weight). */
-    beadCount: computed(() => schemaGrid.value.reduce((sum, row) => sum + row.filter((cell) => cell.color).length, 0)),
     // Review and Create
     draftProject,
     createProject,

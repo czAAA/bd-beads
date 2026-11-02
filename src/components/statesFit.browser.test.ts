@@ -26,13 +26,10 @@ import { marginSheetHost } from '../testUtils/marginSheetHost'
 import { armSelectionBar } from '../testUtils/pill'
 import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
-import { fakeCutOutService } from '../testUtils/fakeCutOutService'
-import { fakeCutOutDevice } from '../testUtils/fakeCutOutDevice'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
 import { withLayers } from '../testUtils/layerFields'
-import type { CutOutDevice, CutOutService } from '../domain/cutOutModel'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
 // notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
@@ -131,10 +128,8 @@ const catalog: ColorCatalog = {
 }
 
 /** The wizard as the app opens it, with or without a picture set. */
-function wizardProps(withPicture: boolean, cutOutService?: CutOutService, cutOutDevice?: CutOutDevice) {
+function wizardProps(withPicture: boolean) {
   return {
-    ...(cutOutService ? { cutOutService } : {}),
-    ...(cutOutDevice ? { cutOutDevice } : {}),
     start: {
       draft: { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
       ...(withPicture ? { file: new File(['x'], 'sunflower-in-a-long-file-name.png', { type: 'image/png' }) } : {}),
@@ -269,31 +264,6 @@ const CASES: FitCase[] = [
     },
   ],
   [
-    'Convert image page (cut out Simple)',
-    ConvertPageHost,
-    wizardProps(true),
-    async (root) => {
-      await pictureSet(root)
-      root.querySelector<HTMLElement>('[data-testid="convert-cut-out"] [data-value="simple"]')?.click()
-      await new Promise((done) => setTimeout(done, 20))
-    },
-  ],
-  ...aiCutOutCases(),
-  [
-    'Convert image page (Outline color)',
-    ConvertPageHost,
-    wizardProps(true),
-    async (root) => {
-      await pictureSet(root)
-      press(root, 'convert-step-colors')
-      press(root, 'convert-color-by-color')
-      press(root, 'found-color-empty')
-      await new Promise((done) => setTimeout(done, 20))
-      press(root, 'convert-outline-switch')
-      press(root, 'convert-outline-color')
-    },
-  ],
-  [
     'Convert image page (Bead & Technique)',
     ConvertPageHost,
     wizardProps(true),
@@ -312,82 +282,5 @@ const CASES: FitCase[] = [
     },
   ],
 ]
-
-/** Cut out with AI's note, download, model at work and failure (ticket 0767), each through a fake cut-out service. */
-function aiCutOutCases(): FitCase[] {
-  const chooseAi = async (root: HTMLElement) => {
-    await pictureSet(root)
-    root.querySelector<HTMLElement>('[data-testid="convert-cut-out"] [data-value="ai"]')?.click()
-    await new Promise((done) => setTimeout(done, 20))
-  }
-  const loadingShown = () => new Promise((done) => setTimeout(done, 350))
-  const asking = fakeCutOutService({ toDownload: 59_200_000 })
-  const downloading = fakeCutOutService()
-  const thinking = fakeCutOutService()
-  const failing = fakeCutOutService()
-  const tapping = fakeCutOutService()
-  const struggling = fakeCutOutDevice({ memoryGb: 2, freeBytes: 1_000_000 })
-  return [
-    ['Convert image page (cut out with AI, the download note)', ConvertPageHost, wizardProps(true, asking.service), chooseAi],
-    [
-      'Convert image page (cut out with AI, the download note warning of memory and space)',
-      ConvertPageHost,
-      wizardProps(true, fakeCutOutService({ toDownload: 59_200_000 }).service, struggling.device),
-      chooseAi,
-    ],
-    [
-      'Convert image page (cut out with AI, the warning dot after a stopped run)',
-      ConvertPageHost,
-      wizardProps(true, fakeCutOutService().service, fakeCutOutDevice({ record: { running: true } }).device),
-      pictureSet,
-    ],
-    [
-      'Convert image page (cut out with AI, asking once more after a stopped run)',
-      ConvertPageHost,
-      wizardProps(true, fakeCutOutService().service, fakeCutOutDevice({ record: { stopped: true } }).device),
-      chooseAi,
-    ],
-    [
-      'Convert image page (cut out with AI, downloading)',
-      ConvertPageHost,
-      wizardProps(true, downloading.service),
-      async (root) => {
-        await chooseAi(root)
-        downloading.progress({ kind: 'downloading', done: 12_400_000, total: 59_200_000 })
-        await loadingShown()
-      },
-    ],
-    [
-      'Convert image page (cut out with AI, finding the subject)',
-      ConvertPageHost,
-      wizardProps(true, thinking.service),
-      async (root) => {
-        await chooseAi(root)
-        await loadingShown()
-      },
-    ],
-    [
-      'Convert image page (cut out with AI, failed)',
-      ConvertPageHost,
-      wizardProps(true, failing.service),
-      async (root) => {
-        await chooseAi(root)
-        failing.fail()
-        await new Promise((done) => setTimeout(done, 20))
-      },
-    ],
-    [
-      'Convert image page (cut out with AI, the tap chips and Reset)',
-      ConvertPageHost,
-      wizardProps(true, tapping.service),
-      async (root) => {
-        await chooseAi(root)
-        const { width, height } = flatColorsPicture()
-        tapping.finish({ width, height, subject: new Uint8Array(width * height).fill(1) })
-        await new Promise((done) => setTimeout(done, 20))
-      },
-    ],
-  ]
-}
 
 describeFits(CASES)

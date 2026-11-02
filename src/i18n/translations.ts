@@ -1021,43 +1021,6 @@ export interface Translations {
       aPart: string
       partHint: string
       partFollows: string
-      /** Cut out (tickets 0765, 0767): the row's label and its chips, Simple's Tolerance slider and the hint under it, and Fit to
-       * subject's label, its Tooltip body and its reason when the cut out kept nothing. */
-      cutOut: {
-        label: string
-        off: string
-        simple: string
-        tolerance: string
-        toleranceHint: string
-        fitToSubject: string
-        fitToSubjectBody: string
-        fitToSubjectNothing: string
-        /** Cut out with AI (ticket 0767): the AI chip's Tooltip and label, the download note, its size in MB and its
-         * buttons, the AI Loading's lines and the message for a run that failed. */
-        ai: string
-        downloadNote: string
-        downloadSize: string
-        download: string
-        cancel: string
-        downloading: string
-        finding: string
-        takingLonger: string
-        failed: string
-        /** Cut out's taps (ticket 0769): the tap add and tap remove chips' Tooltip names and labels, Reset, its Tooltip
-         * body and its reason when there are no taps. */
-        tapAdd: string
-        tapRemove: string
-        reset: string
-        resetBody: string
-        resetNothing: string
-        /** The struggling device (ticket 0768): the AI chip's warning Tooltip body after a stopped run, the note asking
-         * once more and its button, and the download note's memory and free-space lines. */
-        stopped: string
-        askAgain: string
-        tryAgain: string
-        lowMemory: string
-        lowSpace: string
-      }
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
        * its marks (the width they stand for) and the hint under it. */
       slideIn: string
@@ -1070,9 +1033,6 @@ export interface Translations {
       /** The chain between Width and Height: its name in each state (ticket 0757). */
       sizeLinked: string
       sizeUnlinked: string
-      /** Suggested Width (ticket 0770): the label of its mark on the Width slider, and the link that moves the Width to it. */
-      suggested: string
-      useSuggested: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
       /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
@@ -1095,8 +1055,6 @@ export interface Translations {
       previewName: string
       previewEmpty: string
       zoomLevel: string
-      /** The preview's Compare toggle (ticket 0770): the original picture in place of the beads while it is on. */
-      compare: string
       /** The Colors section's source control and what each source does. */
       matchTo: string
       beadColors: string
@@ -1112,17 +1070,6 @@ export interface Translations {
       becomes: string
       beadsColumn: string
       treatAsEmpty: string
-      /** The Colors step's helpers (ticket 0766): Auto-fix lighting's switch, Clean up stray beads' slider with its hint
-       * and its first step, and the Outline's switch, its color swatch and the picker's way back to the darkest color. */
-      helpers: {
-        autoFixLighting: string
-        cleanUp: string
-        cleanUpHint: string
-        off: string
-        outline: string
-        outlineColor: string
-        darkest: string
-      }
       /** A found color's actions and states (FoundColorRow card). */
       keepExact: string
       change: string
@@ -1252,15 +1199,6 @@ export interface Translations {
     treatAsEmpty: string
     remapColor: string
     emptyColor: string
-    /** The Colors step's switches (ticket 0766). */
-    autoFixLighting: string
-    subjectOutline: string
-    /** Use suggested's Tooltip body, `{width}` the Suggested Width in the chosen unit, and the Compare toggle's (ticket 0770). */
-    useSuggested: string
-    compare: string
-    /** The tap add and tap remove chips' Tooltip bodies (ticket 0769). */
-    cutOutTapAdd: string
-    cutOutTapRemove: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }

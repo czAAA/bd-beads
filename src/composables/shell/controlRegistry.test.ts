@@ -82,9 +82,6 @@ describe('the control registry', () => {
       'size-unlinked',
       'remap-color',
       'empty-color',
-      'auto-fix-lighting',
-      'subject-outline',
-      'convert-compare',
       ...CONVERT_STEPS.map((step) => `convert-step-${step}`),
       ...CROP_HANDLES.map((handle) => `crop-${handle}`),
     ]
