@@ -141,8 +141,6 @@ function wireAppShell(services: Services) {
     addProject: addNewProject,
     decodeImage: services.decodeImage,
     loadCatalog: loadColorCatalog,
-    cutOutService: services.cutOutService,
-    cutOutDevice: services.cutOutDevice,
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
