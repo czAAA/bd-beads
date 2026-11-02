@@ -41,7 +41,6 @@ import {
   type DecodeImage,
   type ImageRejection,
   type PixelData,
-  type SamplingRule,
 } from '../../domain/imageConversion'
 import { partLattice } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
@@ -243,17 +242,15 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   // --- The preview's beads ------------------------------------------------------------------------------------------
 
-  /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as
-   * the full rule is too slow per move (ticket 0762). */
-  function sample(at: PixelCrop, rule: SamplingRule) {
+  function sample(at: PixelCrop) {
     const picture = image.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule }) }
+    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
   }
 
-  const rest = computed(() => sample(restPart.value, 'area'))
+  const rest = computed(() => sample(restPart.value))
 
   const hasCatalog = computed(() => !!catalogId.value)
   /** What the found colors are matched to: Exact until a source is chosen (ticket 0758). */
@@ -289,7 +286,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   /** Whether the part is away from where the exact conversion was made: the only time beads are approximate. */
   const approximate = computed(() => moving.value && part.value !== restPart.value)
-  const live = computed(() => (approximate.value ? sample(part.value, 'centre') : rest.value))
+  const live = computed(() => (approximate.value ? sample(part.value) : rest.value))
 
   const beadColors = computed(() => {
     const shown = live.value
