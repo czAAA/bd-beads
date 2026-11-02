@@ -109,6 +109,23 @@ describe('where the first-run captions sit (FirstRunHints card)', () => {
     }
   })
 
+  it('leaves out a tile caption that could only sit past the caption of the next tile on the pill', () => {
+    // Mirror's own place is covered by the welcome, so it would slide along the pill past Colour's caption.
+    const right = layout({
+      pillPosition: 'right',
+      obstacles: [{ left: 1370, top: 200, width: 48, height: 320 }, { left: 0, top: 0, width: 1360, height: 450 }],
+      targets: {
+        ...strip,
+        select: { left: 1374, top: 300, width: 40, height: 40 },
+        mirror: { left: 1374, top: 400, width: 40, height: 40 },
+        color: { left: 1374, top: 456, width: 40, height: 40 },
+      },
+    })
+
+    expect(placed(right, 'color')).toBeDefined()
+    expect(placed(right, 'mirror')).toBeUndefined()
+  })
+
   it('fits every caption at the reference size', () => {
     expect(placeFirstRunHints(layout()).map((hint) => hint.id)).toEqual(['select', 'frame', 'export', 'color', 'mirror', 'menu', 'project'])
   })
