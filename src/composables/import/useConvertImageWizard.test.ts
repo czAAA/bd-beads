@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { PixelData } from '../../domain/imageConversion'
 import { useConvertImageWizard } from './useConvertImageWizard'
-import { unusedCutOutService } from '../../testUtils/fakeCutOutService'
 
 /** A flat picture of this size, enough for the size arithmetic. */
 function flat(width: number, height: number): PixelData {
@@ -28,7 +27,6 @@ async function setup(picture: PixelData, beadId = 'toho/cube/1.5mm') {
       start: { technique: 'loom', beadId, name: '', makerName: '' },
       decodeImage: async () => picture,
       loadCatalog: () => Promise.reject(new Error('no catalog')),
-      cutOutService: unusedCutOutService,
     }),
   )!
   await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
@@ -159,7 +157,6 @@ describe('useConvertImageWizard steps (ticket 0756)', () => {
         start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
         decodeImage: async () => flat(16, 16),
         loadCatalog: () => Promise.reject(new Error('no catalog')),
-        cutOutService: unusedCutOutService,
       }),
     )!
     wizard.goNext()
