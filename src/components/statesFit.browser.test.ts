@@ -55,7 +55,7 @@ const ColorPopoverHost = defineComponent({
 })
 
 /** The Mirror bar (ticket 0750, ContextBar card): both straight Axes on with their counts, the widest it gets in one
- * row, over a Canvas Area; it takes two rows where the canvas box is too narrow for that. */
+ * row, over a Canvas Area; it scrolls sideways where the canvas box is too narrow for that (ticket 0771). */
 const mirrorBoth: MirrorSetting = { ...MIRROR_OFF, axes: { leftRight: true, topBottom: true, radial: false }, counts: { leftRight: 2, topBottom: 3 }, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 10, columns: 12 } } }
 const mirrorBar = (setting: MirrorSetting) => ({
   project: painted,

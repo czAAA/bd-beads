@@ -96,4 +96,20 @@ describe('ContextBar states', () => {
       expect(await hoveredFill(root, `[data-testid="${testid}"]`), testid).toBe(fade)
     }
   })
+
+  it('keeps the Mirror bar one row where it cannot fit, its readout dropped and the rest scrolled to (ticket 0771)', async () => {
+    const both: MirrorSetting = { ...setting, axes: { leftRight: true, topBottom: true, radial: false } }
+    const { root } = await mountAt(ContextBar, { ...mirrorProps, mirror: { ...mirrorProps.mirror, setting: both } }, { locale: 'en', width: 240 })
+    const bar = root.querySelector<HTMLElement>('[data-testid="mirror-bar"]')!
+    await vi.waitFor(() => expect(bar.classList).toContain('context-bar--scrolls'))
+    const close = root.querySelector<HTMLElement>('[data-testid="mirror-bar-close"]')!
+    const middle = (control: Element) => {
+      const box = control.getBoundingClientRect()
+      return box.top + box.height / 2
+    }
+    for (const testid of ['mirror-bar-mode-mirror', 'mirror-bar-axis-topBottom']) expect(middle(root.querySelector(`[data-testid="${testid}"]`)!), testid).toBeCloseTo(middle(close), 0)
+    expect(root.querySelector<HTMLElement>('[data-testid="context-bar-size"]')!.offsetParent).toBeNull()
+    close.focus()
+    expect(bar.scrollLeft).toBeGreaterThan(0)
+  })
 })

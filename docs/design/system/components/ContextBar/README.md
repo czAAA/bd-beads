@@ -60,7 +60,7 @@ The Mirror's own bar: the Selection bar's component (same look, sizes, hover and
 
 ### Too narrow
 
-About 380px in English on mouse with two straight Axes on. Where the bar cannot fit the canvas box, first the size readout drops, then the bar takes **two rows** (twice its height, the same radius): the readout (if any), Mode and Close mirror on the first, the chips with their counts on the second. Nothing folds into a "…" menu: every control stays one press away.
+About 380px in English on mouse with two straight Axes on. Where the bar cannot fit the canvas box, first the size readout drops, then the bar **scrolls sideways**, still one row at its own height, with no scrollbar (ticket 0771; it took two rows before). Arrows and Tab reach every control, which scrolls into view as it takes focus. Nothing folds into a "…" menu: every control stays one press away.
 
 ### Undo, keys, names
 
