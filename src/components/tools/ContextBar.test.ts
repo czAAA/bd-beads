@@ -12,7 +12,9 @@ import { en } from '../../i18n/en'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 import { frameOf } from '../../domain/layerRecord'
-import { MIRROR_OFF } from '../../domain/mirror'
+import { MIRROR_OFF, mirrorFit, type MirrorMode } from '../../domain/mirror'
+import type { Technique } from '../../domain/weave'
+import IconButton from '../ui/IconButton.vue'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
@@ -290,7 +292,9 @@ describe('ContextBar keyboard (ticket 563, ADR 0075)', () => {
 
 describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
   const setting = { ...MIRROR_OFF, axes: { ...MIRROR_OFF.axes, leftRight: true }, place: { layer: 'canvas' as const, area: { row: 0, column: 0, rows: 4, columns: 6 } } }
-  const mirror = { setting, summary: '6×4 ≈ 1 × 0.7 cm', rect: { row: 0, column: 0, rows: 4, columns: 6 } }
+  /** What an Area of rows by columns offers the bar on a Technique's grid (ticket 0775). */
+  const fitOf = (rows: number, columns: number, technique: Technique = 'loom', mode: MirrorMode = 'mirror') => mirrorFit({ technique }, { row: 0, column: 0, rows, columns }, mode)
+  const mirror = { setting, summary: '6×4 ≈ 1 × 0.7 cm', rect: { row: 0, column: 0, rows: 4, columns: 6 }, fit: fitOf(4, 6) }
   const base = { project, pasteArmed: false, canRemoveLine: false, mirror }
 
   it('is the bar with no Selection while the Mirror is on: a toolbar named Mirror with the size, the Mode, the Axis chips and Close mirror', async () => {
@@ -331,29 +335,58 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     await wrapper.get('[data-testid="mirror-bar-leftRight-fewer"]').trigger('click')
     expect(wrapper.emitted('update:mirror')).toEqual([[{ ...setting, counts: { leftRight: 4, topBottom: 1 } }]])
 
-    const radial = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 5, columns: 5 }, setting: { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 4 } } } })
+    const radial = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 5, columns: 5 }, fit: fitOf(5, 5), setting: { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 4 } } } })
     expect(radial.get('[data-testid="mirror-bar-radial-value"]').attributes('aria-label')).toBe('Fold, 4')
     expect(radial.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('steps the Fold between 2 and 4, and turns the + off in an Area that is not square (ticket 0751)', async () => {
     const radialSetting = { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 2 }
-    const square = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 5, columns: 5 } } } })
+    const square = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 5, columns: 5 }, fit: fitOf(5, 5) } } })
     await square.get('[data-testid="mirror-bar-radial-more"]').trigger('click')
     expect(square.emitted('update:mirror')).toEqual([[{ ...radialSetting, fold: 4 }]])
-    const wide = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 4, columns: 6 } } } })
+    const wide = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, rect: { row: 0, column: 0, rows: 4, columns: 6 }, fit: fitOf(4, 6) } } })
     expect(wide.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
     await wide.get('[data-testid="mirror-bar-radial-more"]').trigger('click')
     expect(wide.emitted('update:mirror')).toBeUndefined()
   })
 
   it('turns a direction one bead across off, saying why, and its press does nothing', async () => {
-    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 4, columns: 1 } } } })
+    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, rect: { row: 0, column: 0, rows: 4, columns: 1 }, fit: fitOf(4, 1) } } })
     const chip = wrapper.get('[data-testid="mirror-bar-axis-leftRight"]')
     expect(chip.attributes('aria-disabled')).toBe('true')
     expect(chip.attributes('aria-pressed')).toBe('false')
     await chip.trigger('click')
     expect(wrapper.emitted('update:mirror')).toBeUndefined()
+  })
+
+  /** The reason an Axis chip's Tooltip gives while it is off. */
+  const offBody = (wrapper: ReturnType<typeof mount>, label: string) => wrapper.findAllComponents(IconButton).find((button) => button.props('label') === label)?.props('disabledBody')
+
+  it('on peyote turns Left–right off on an even width, saying the half-bead shift does not match, and Fold 4 off for its shift (ticket 0775)', async () => {
+    const even = mount(ContextBar, { props: { ...base, mirror: { ...mirror, fit: fitOf(4, 6, 'peyote') } } })
+    const chip = even.get('[data-testid="mirror-bar-axis-leftRight"]')
+    expect(chip.attributes('aria-disabled')).toBe('true')
+    expect(offBody(even, 'Left–right')).toBe(en.mirror.shiftWide)
+    await chip.trigger('click')
+    expect(even.emitted('update:mirror')).toBeUndefined()
+
+    const radialSetting = { ...setting, axes: { leftRight: false, topBottom: false, radial: true }, fold: 4 }
+    const square = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(5, 5, 'peyote') } } })
+    expect(square.get('[data-testid="mirror-bar-radial-value"]').text()).toBe('2')
+    expect(square.get('[data-testid="mirror-bar-radial-more"]').attributes('aria-disabled')).toBe('true')
+    const radialOff = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: radialSetting, fit: fitOf(6, 6, 'peyote', 'mirror') } } })
+    expect(offBody(radialOff, 'Radial')).toBe(en.mirror.shiftRadial)
+  })
+
+  it('steps a peyote count past the ones the half-bead shift has no exact image for, and shows the count the Mirror uses (ticket 0775)', async () => {
+    const repeat = { ...setting, mode: 'repeat' as const, counts: { leftRight: 2, topBottom: 1 } }
+    const wrapper = mount(ContextBar, { props: { ...base, mirror: { ...mirror, setting: repeat, fit: fitOf(4, 16, 'peyote', 'repeat') } } })
+    // 16 columns in Repeat: 1, 3 or 7 axes leave strips of an even number of columns; 2 reads as 1.
+    expect(wrapper.get('[data-testid="mirror-bar-leftRight-value"]').text()).toBe('1')
+    expect(wrapper.get('[data-testid="mirror-bar-leftRight-fewer"]').attributes('aria-disabled')).toBe('true')
+    await wrapper.get('[data-testid="mirror-bar-leftRight-more"]').trigger('click')
+    expect(wrapper.emitted('update:mirror')).toEqual([[{ ...repeat, counts: { leftRight: 3, topBottom: 1 } }]])
   })
 
   it('on a Custom frame notes the shape\'s own Axes in place of the chips, the Mode still switching', () => {

@@ -6,6 +6,7 @@ import { layerAt, layerSheet, positionInLayer, positionOnCanvas, type LayerSheet
 import { frameOf, type Layered } from './layerRecord'
 import { mayPlace } from './margin'
 import { touch, type Project } from './project'
+import { describeWeave, type Weave } from './weave'
 
 // Mirror (ADR 0082, spec 0702; tickets 0703, 0750): the live mode that lands a drawing gesture at its counterparts,
 // one per Project, inside its Area. This module owns the record and the counterpart maths, positions in and positions
@@ -74,6 +75,16 @@ export function withMirror(project: Project, mirror: MirrorSetting): Project {
 /** Whether the Mirror is on: it has a place, so the tile is lit, the bar shows and a gesture inside it is mirrored. */
 export function isMirrorOn(setting: MirrorSetting): boolean {
   return !!setting.place
+}
+
+/** What the Mirror's place offers the bar (ticket 0775): its grid Area's `mirrorFit`; none while it is off, or on a Frame
+ * that is no grid (a Custom frame takes its shape's own Axes). */
+export function mirrorFitOf(project: Project, setting: MirrorSetting): MirrorFit | undefined {
+  const place = setting.place
+  const rect = place ? placeRect(project, place) : undefined
+  if (!place || !rect) return undefined
+  const sheet = layerSheet(project, place.layer)
+  return sheet.geometry.grid ? mirrorFit(sheet.weave, rect, setting.mode) : undefined
 }
 
 /** The Rect a Mirror place covers in its layer's own positions: the Canvas Area, or the Frame's rectangle from its first
@@ -185,7 +196,7 @@ export function withMirrorCount(setting: MirrorSetting, direction: MirrorDirecti
 }
 
 /** Whether a rectangle is as many beads across as down: what a quarter turn needs. */
-export function isSquare(rect: Rect): boolean {
+function isSquare(rect: Rect): boolean {
   return rect.rows === rect.columns
 }
 
@@ -233,10 +244,121 @@ function maxAxisCount(cellsAcross: number): number {
 }
 
 /** The axis positions along a direction of `cellsAcross` beads cut by `count` axes, in bead widths from its first
- * edge: where the overlay draws the lines (clamped to the direction's limit, as the counterparts are). */
-export function axisOffsets(cellsAcross: number, count: number): number[] {
+ * edge: where the overlay draws the lines. */
+function axisOffsets(cellsAcross: number, count: number): number[] {
   const strips = Math.min(count, maxAxisCount(cellsAcross)) + 1
   return Array.from({ length: strips - 1 }, (_axis, index) => (cellsAcross * (index + 1)) / strips)
+}
+
+// Peyote and brick (ticket 0775, spec 0702): every other line, or block of lines, sits half a bead along, peyote's
+// columns down and brick's rows across. A counterpart is found by the bead's centre, so a shifted line's bead keeps its
+// offset, and what the shift has no exact image for is off (`mirrorFit`). On loom this is the index rule.
+
+/** A grid's half-bead shift as Mirror reads it: the direction whose Axis moves a bead into another line (`along`:
+ * Left–right on peyote, whose columns shift; Top–bottom on brick), how far a line sits along, in beads, and after how
+ * many lines that repeats. None on loom. */
+interface Stagger {
+  along: MirrorDirection
+  offset: (line: number) => number
+  cycle: number
+}
+
+function staggerOf(weave: Weave): Stagger | undefined {
+  const description = describeWeave(weave)
+  if (!description.shifted) return undefined
+  return description.staggers === 'columns'
+    ? { along: 'leftRight', offset: (column) => description.columnOffset(column, 1), cycle: description.columnCycle }
+    : { along: 'topBottom', offset: (row) => description.rowOffset(row, 1), cycle: description.rowCycle }
+}
+
+/** A rectangle's lines across a direction (Left–right reflects columns): the first, and how many. */
+interface Lines {
+  first: number
+  count: number
+}
+
+function linesOf(rect: Rect, direction: MirrorDirection): Lines {
+  return direction === 'leftRight' ? { first: rect.column, count: rect.columns } : { first: rect.row, count: rect.rows }
+}
+
+/** Whether the shift mirrors onto itself across the line at `doubled` / 2 lines from line 0's leading edge, line `l`
+ * landing on `doubled - 1 - l`. One cycle tells, the shift repeating. */
+function shiftMirrors(stagger: Stagger, doubled: number): boolean {
+  for (let line = 0; line < stagger.cycle; line++) if (stagger.offset(line) !== stagger.offset(doubled - 1 - line)) return false
+  return true
+}
+
+/** Whether `count` Axes along the shift keep every line's offset: in Mirror mode each Axis on a line the shift mirrors
+ * onto itself (through the middle of a column on 1-drop peyote), in Repeat each strip a whole number of the shift's
+ * cycles. Either way the strips are whole, so nothing rounds. */
+function countKeepsShift(stagger: Stagger, lines: Lines, count: number, mode: MirrorMode): boolean {
+  const strips = count + 1
+  if (mode === 'repeat') return lines.count % strips === 0 && (lines.count / strips) % stagger.cycle === 0
+  if ((2 * lines.count) % strips !== 0) return false
+  for (let axis = 1; axis < strips; axis++) if (!shiftMirrors(stagger, 2 * lines.first + (2 * lines.count * axis) / strips)) return false
+  return true
+}
+
+/** Whether a half turn keeps every line's offset: every line and the one it turns onto sit alike, or every pair
+ * differently (the centre then a quarter bead along, `halfTurned`); in Mirror mode the reflection along the shift too. */
+function halfTurnKeepsShift(stagger: Stagger, lines: Lines, mode: MirrorMode): boolean {
+  if (mode === 'mirror' && !countKeepsShift(stagger, lines, 1, 'mirror')) return false
+  const pairs = new Set<number>()
+  for (let line = lines.first; line < lines.first + lines.count; line++) pairs.add((stagger.offset(line) + stagger.offset(2 * lines.first + lines.count - 1 - line)) % 1)
+  return pairs.size <= 1
+}
+
+/** Why an Axis chip is off on a grid: the Area is one bead across its direction, or the half-bead shift has no exact
+ * image there (ticket 0775). */
+type MirrorOffReason = 'oneBead' | 'shift'
+
+/** What a grid Area offers the Mirror (spec 0702, ticket 0775): each straight direction's Axis counts, ascending, and
+ * Radial's Folds; none, with the reason in `off`, for an Axis whose chip is off. */
+export interface MirrorFit {
+  counts: Record<MirrorDirection, readonly number[]>
+  off: Partial<Record<MirrorAxis, MirrorOffReason>>
+  folds: readonly number[]
+  /** Why Radial offers no quarter turn: an Area that is not square, or the half-bead shift, which a quarter turn would
+   * turn from columns to rows. */
+  quarterOff?: 'square' | 'shift'
+}
+
+/** What a rectangle of a Weave's grid offers the Mirror in a Mode: on loom every count to its beads across minus one,
+ * Fold 4 in a square; on peyote and brick only what lands every counterpart on a bead (ticket 0775).
+ * @internal The app asks `mirrorFitOf`; tests ask this with a bare Weave and rectangle. */
+export function mirrorFit(weave: Weave, rect: Rect, mode: MirrorMode): MirrorFit {
+  const stagger = staggerOf(weave)
+  const off: MirrorFit['off'] = {}
+  const countsOf = (direction: MirrorDirection): number[] => {
+    const lines = linesOf(rect, direction)
+    if (lines.count <= 1) {
+      off[direction] = 'oneBead'
+      return []
+    }
+    const all = Array.from({ length: maxAxisCount(lines.count) }, (_count, index) => index + 1)
+    if (stagger?.along !== direction) return all
+    const kept = all.filter((count) => countKeepsShift(stagger, lines, count, mode))
+    if (kept.length === 0) off[direction] = 'shift'
+    return kept
+  }
+  const counts = { leftRight: countsOf('leftRight'), topBottom: countsOf('topBottom') }
+  const halfTurn = !stagger || halfTurnKeepsShift(stagger, linesOf(rect, stagger.along), mode)
+  if (!halfTurn) off.radial = 'shift'
+  const quarterOff = stagger ? 'shift' : isSquare(rect) ? undefined : 'square'
+  const folds = !halfTurn ? [] : quarterOff ? [MIN_FOLD] : [MIN_FOLD, MAX_GRID_FOLD]
+  return { counts, off, folds, ...(quarterOff ? { quarterOff } : {}) }
+}
+
+/** The Axis count a direction uses: the setting's where the Area takes it, else the nearest below it that it takes,
+ * else the least; none where its chip is off. */
+export function fittedCount(fit: MirrorFit, direction: MirrorDirection, count: number): number | undefined {
+  const counts = fit.counts[direction]
+  return [...counts].reverse().find((each) => each <= count) ?? counts[0]
+}
+
+/** The Fold Radial uses: the setting's as a grid takes it, no more than the Area offers; none where Radial is off. */
+function fittedFold(fit: MirrorFit, fold: number, rect: Rect): number | undefined {
+  return fit.folds.length === 0 ? undefined : Math.min(gridFold(fold, rect), Math.max(...fit.folds))
 }
 
 // The strip maths (ticket 0044): N axes cut a direction into N + 1 strips as equal as possible, read as mirror images
@@ -264,43 +386,50 @@ function reversed(strip: number, repeat: boolean): boolean {
 }
 
 /** Every index of `dimension` that `index` mirrors onto under `count` axes, itself included, in strip order; an uneven
- * split rounds to the nearest cell. */
-function stripCounterparts(index: number, dimension: number, count: number, repeat: boolean): number[] {
+ * split rounds. `offset`: how far the bead's line sits along, so its centre is reflected (ticket 0775); a shifted line's
+ * last bead hangs half past the edge, its image maybe past the other one, which the caller drops. */
+function stripCounterparts(index: number, dimension: number, count: number, repeat: boolean, offset = 0): number[] {
   const space = stripSpace(dimension, Math.min(count, maxAxisCount(dimension)) + 1)
-  const position = index * space.scale + space.strips
+  const position = (index + offset) * space.scale + space.strips
   const source = stripAt(position, space)
   const local = reversed(source, repeat) ? (source + 1) * space.stripWidth - position : position - source * space.stripWidth
   const images: number[] = []
   for (let strip = 0; strip < space.strips; strip++) {
     const target = reversed(strip, repeat) ? (strip + 1) * space.stripWidth - local : strip * space.stripWidth + local
-    const at = Math.min(dimension - 1, Math.max(0, Math.round((target - space.strips) / space.scale)))
+    const along = Math.round((target - space.strips) / space.scale - offset)
+    const at = offset === 0 ? Math.min(dimension - 1, Math.max(0, along)) : along
     if (!images.includes(at)) images.push(at)
   }
   return images
 }
 
-type IndexImages = (index: number) => number[]
-const same: IndexImages = (index) => [index]
-
 /** Every position a position maps to under the setting, itself first; none for an image that lands on no position (a
  * layout's Seam or Off-shape), which is dropped. */
 type PositionImages = (position: GridPosition) => (GridPosition | undefined)[]
 
-/** The straight Axes' images inside a rectangle: its strips from its edges and the counts, each row image with each
- * column image. A direction one bead across has no Axis (ContextBar card: its chip is off), nor does one turned off. */
-function straightImages(rect: Rect, setting: MirrorSetting): PositionImages | undefined {
-  const leftRight = setting.axes.leftRight && rect.columns > 1
-  const topBottom = setting.axes.topBottom && rect.rows > 1
-  if (!(leftRight || topBottom)) return undefined
+/** The straight Axes' images inside a rectangle: its strips from its edges and the fitted counts, each row image with
+ * each column image. A direction whose chip is off (`mirrorFit`), or turned off, maps nothing. Across the shift a bead
+ * keeps its own line, so its strip maths takes that line's offset (a peyote column's for Top–bottom). */
+function straightImages(rect: Rect, setting: MirrorSetting, fit: MirrorFit, stagger: Stagger | undefined): PositionImages | undefined {
+  const countOf = (direction: MirrorDirection) => (setting.axes[direction] ? fittedCount(fit, direction, setting.counts[direction]) : undefined)
+  const leftRight = countOf('leftRight')
+  const topBottom = countOf('topBottom')
+  if (leftRight === undefined && topBottom === undefined) return undefined
   const repeat = setting.mode === 'repeat'
-  const strips = (from: number, across: number, count: number): IndexImages => (index) => stripCounterparts(index - from, across, count, repeat).map((image) => image + from)
-  const byColumn = leftRight ? strips(rect.column, rect.columns, setting.counts.leftRight) : same
-  const byRow = topBottom ? strips(rect.row, rect.rows, setting.counts.topBottom) : same
-  return (position) => byRow(position.row).flatMap((row) => byColumn(position.column).map((column) => ({ row, column })))
+  const indexOf = (direction: MirrorDirection, position: GridPosition) => (direction === 'leftRight' ? position.column : position.row)
+  const offsetOf = (direction: MirrorDirection, position: GridPosition) => (!stagger || stagger.along === direction ? 0 : stagger.offset(indexOf(stagger.along, position)))
+  const strips = (direction: MirrorDirection, count: number | undefined) => (position: GridPosition) => {
+    if (count === undefined) return [indexOf(direction, position)]
+    const { first, count: across } = linesOf(rect, direction)
+    return stripCounterparts(indexOf(direction, position) - first, across, count, repeat, offsetOf(direction, position)).map((image) => image + first)
+  }
+  const byColumn = strips('leftRight', leftRight)
+  const byRow = strips('topBottom', topBottom)
+  return (position) => byRow(position).flatMap((row) => byColumn(position).map((column) => ({ row, column })))
 }
 
-// Radial on a grid (tickets 0705, 0751, spec 0702): a turn about the Area's centre, Fold 2 or 4 by index, as Rotate
-// turns a fragment (ADR 0052), so peyote and brick keep their index and take the grid's shift. No other count maps back.
+// Radial on a grid (tickets 0705, 0751, 0775, spec 0702): a turn about the Area's centre, Fold 2 or 4, as Rotate turns
+// a fragment (ADR 0052) on loom. On peyote and brick only the half turn, of the bead's centre. No other count maps back.
 
 /** The position a quarter turn clockwise about the centre sends a position to, by index: rows and columns swap about
  * the centre. Where it sits on a position one way and between two the other (rows and columns of different parity)
@@ -312,27 +441,59 @@ function quarterTurned({ row, column }: GridPosition, centre: GridPosition): Gri
   return skew > 0 ? { row: Math.floor(turned.row), column: Math.floor(turned.column) } : { row: Math.ceil(turned.row), column: Math.ceil(turned.column) }
 }
 
-/** The position's reflection across the vertical through the centre, by index. */
-function reflectedAbout({ row, column }: GridPosition, centre: GridPosition): GridPosition {
-  return { row, column: 2 * centre.column - column }
+/** The position's reflection across the vertical through the centre: by index, but a shifted brick row's bead is
+ * reflected by its centre, a bead further along (ticket 0775). */
+function reflectedAbout({ row, column }: GridPosition, centre: GridPosition, stagger?: Stagger): GridPosition {
+  const shift = stagger?.along === 'topBottom' ? 2 * stagger.offset(row) : 0
+  return { row, column: 2 * centre.column - column - shift }
 }
 
-/** The position a half turn about the centre sends a position to, by index: exact on any rectangle. */
-function halfTurned({ row, column }: GridPosition, centre: GridPosition): GridPosition {
-  return { row: 2 * centre.row - row, column: 2 * centre.column - column }
+/** The position a half turn about the centre sends a position to: by index on loom. On peyote and brick the bead's
+ * centre is turned (ticket 0775): a line and the one it lands on both shifted sit a bead further back, and where they
+ * sit differently the centre is a quarter bead along, so the index stands. */
+function halfTurned({ row, column }: GridPosition, centre: GridPosition, stagger?: Stagger): GridPosition {
+  const turned = { row: 2 * centre.row - row, column: 2 * centre.column - column }
+  if (!stagger) return turned
+  const columns = stagger.along === 'leftRight'
+  const shift = Math.floor(stagger.offset(columns ? column : row) + stagger.offset(columns ? turned.column : turned.row))
+  return columns ? { row: turned.row - shift, column: turned.column } : { row: turned.row, column: turned.column - shift }
 }
 
-/** The turns by index: the source and its turns (Fold 2 the exact half turn; Fold 4 three quarter turns, each from
- * the last, so a rectangle of mixed parity keeps one closed orbit), and in Mirror mode the turns of its reflection too
- * (Fold 4 on a loom grid: the eightfold kaleidoscope, the diagonals as index swaps). */
-function indexTurns(setting: MirrorSetting, centre: GridPosition): PositionImages {
-  const turn = setting.fold === 2 ? halfTurned : quarterTurned
+/** The turns: the source and its turns (Fold 2 the exact half turn; Fold 4 three quarter turns, each from the last, so
+ * a rectangle of mixed parity keeps one closed orbit), and in Mirror mode the turns of its reflection too (Fold 4 on a
+ * loom grid: the eightfold kaleidoscope, the diagonals as index swaps). */
+function gridTurns(setting: MirrorSetting, centre: GridPosition, stagger: Stagger | undefined): PositionImages {
+  const turn = setting.fold === 2 ? (position: GridPosition) => halfTurned(position, centre, stagger) : (position: GridPosition) => quarterTurned(position, centre)
   const turns = (from: GridPosition): GridPosition[] => {
     const images = [from]
-    for (let image = 1; image < setting.fold; image++) images.push(turn(images[images.length - 1]!, centre))
+    for (let image = 1; image < setting.fold; image++) images.push(turn(images[images.length - 1]!))
     return images
   }
-  return (position) => [...turns(position), ...(setting.mode === 'mirror' ? turns(reflectedAbout(position, centre)) : [])]
+  return (position) => [...turns(position), ...(setting.mode === 'mirror' ? turns(reflectedAbout(position, centre, stagger)) : [])]
+}
+
+/** Where the overlay draws a grid Area's Mirror (spec 0702, ticket 0775), in beads from the corner of its unshifted
+ * lines: each straight Axis at its fitted count, or Radial's centre (a bead's and its half-turn image's middle) and
+ * Fold; none for what is off. */
+export function mirrorLines(weave: Weave, rect: Rect, setting: MirrorSetting): { leftRight: number[]; topBottom: number[]; radial?: { centre: LayoutPoint; fold: number } } {
+  const fit = mirrorFit(weave, rect, setting.mode)
+  if (setting.axes.radial) {
+    const fold = fittedFold(fit, setting.fold, rect)
+    if (fold === undefined) return { leftRight: [], topBottom: [] }
+    const stagger = staggerOf(weave)
+    const first = { row: rect.row, column: rect.column }
+    const centreOf = ({ row, column }: GridPosition): LayoutPoint => ({
+      x: column - rect.column + 0.5 + (stagger?.along === 'topBottom' ? stagger.offset(row) : 0),
+      y: row - rect.row + 0.5 + (stagger?.along === 'leftRight' ? stagger.offset(column) : 0),
+    })
+    const [from, to] = [centreOf(first), centreOf(halfTurned(first, rectCentre(rect), stagger))]
+    return { leftRight: [], topBottom: [], radial: { centre: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }, fold } }
+  }
+  const offsets = (direction: MirrorDirection) => {
+    const count = setting.axes[direction] ? fittedCount(fit, direction, setting.counts[direction]) : undefined
+    return count === undefined ? [] : axisOffsets(linesOf(rect, direction).count, count)
+  }
+  return { leftRight: offsets('leftRight'), topBottom: offsets('topBottom') }
 }
 
 // A Custom frame (ticket 0706, spec 0702): every counterpart is geometric, through the shape's layout. Its symmetry
@@ -411,12 +572,16 @@ function layoutImages(layout: FrameLayout, setting: MirrorSetting): PositionImag
 }
 
 /** How the layer maps a position inside its region, or nothing where it has no Axis to map by: a layout's geometry on a
- * Custom frame; else Radial about the Area's centre when that is on, else the straight Axes by index. */
+ * Custom frame; else Radial about the Area's centre when that is on, else the straight Axes, each as the Area offers it
+ * (`mirrorFit`). */
 function imagesOf(sheet: LayerSheet, region: MirrorRegion, setting: MirrorSetting): PositionImages | undefined {
   if (region.kind === 'layout') return layoutImages(region.layout, setting)
   if (!sheet.geometry.grid) return undefined
-  if (setting.axes.radial) return indexTurns({ ...setting, fold: gridFold(setting.fold, region.rect) }, rectCentre(region.rect))
-  return straightImages(region.rect, setting)
+  const fit = mirrorFit(sheet.weave, region.rect, setting.mode)
+  const stagger = staggerOf(sheet.weave)
+  if (!setting.axes.radial) return straightImages(region.rect, setting, fit, stagger)
+  const fold = fittedFold(fit, setting.fold, region.rect)
+  return fold === undefined ? undefined : gridTurns({ ...setting, fold }, rectCentre(region.rect), stagger)
 }
 
 /** The positions a gesture changes under Mirror, on one layer (spec 0702): the sources as given, then their counterparts

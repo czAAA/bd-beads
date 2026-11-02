@@ -107,8 +107,8 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),
   })),
-  // The whole-Frame Mirror's Axis lines across a peyote Frame (tickets 0703, 0750): two Left–right axes and one
-  // Top–bottom, dashed in the Selection colour, set on the Mirror bar, drawn with the Paint tool and the pointer away.
+  // The whole-Frame Mirror's Axis lines across a peyote Frame (tickets 0703, 0750): two Top–bottom axes, dashed in the
+  // Selection colour, set on the Mirror bar; no Left–right, which the 16-column Frame's shift has no image for (0775).
   {
     technique: 'peyote',
     name: 'peyote-mirror-axes',
@@ -121,7 +121,7 @@ export const SCENARIOS: Scenario[] = [
         await page.getByTestId('margin-frame-tools-mirror').click()
       }
       await page.getByTestId('mirror-bar-axis-topBottom').click()
-      await page.getByTestId('mirror-bar-leftRight-more').click()
+      await page.getByTestId('mirror-bar-topBottom-more').click()
       await page.keyboard.press('Escape')
       await settle(page)
     },
