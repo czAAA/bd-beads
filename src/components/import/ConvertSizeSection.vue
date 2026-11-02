@@ -72,6 +72,11 @@ const widthMarks = computed(() => {
 const useSuggestedBody = computed(() =>
   suggested.value === undefined ? '' : fillBlanks(t.value.tooltips.useSuggested, { width: unit.value === 'beads' ? inBeads(suggested.value) : inMm(wizard.widthMmOf(suggested.value)) }),
 )
+/** A photo of beadwork (ticket 0772): the beads its grid holds, so the maker knows what Use suggested will do. */
+const beadGridFound = computed(() => {
+  const found = wizard.beadGrid.value
+  return found && fillBlanks(words.value.beadGridFound, { columns: found.columns, rows: found.rows })
+})
 const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height })), sizing.value.heightRange, wizard.heightMmOf))
 
 const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' : 'size-unlinked'))
@@ -136,6 +141,7 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
       </p>
       <p class="convert-size__ratio" data-testid="convert-ratio">{{ result.ratio }}</p>
     </div>
+    <p v-if="beadGridFound" class="convert-size__hint" data-testid="convert-bead-grid">{{ beadGridFound }}</p>
     <p v-if="wizard.weave.value === 'part'" class="convert-size__hint" data-testid="convert-part-follows">{{ words.partFollows }}</p>
 
     <AppNote v-if="wizard.largeSchema.value" data-testid="convert-large-schema">{{ fillBlanks(words.largeSchema, { beads: LARGE_SCHEMA_BEADS }) }}</AppNote>

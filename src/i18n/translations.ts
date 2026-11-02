@@ -1073,6 +1073,8 @@ export interface Translations {
       /** Suggested Width (ticket 0770): the label of its mark on the Width slider, and the link that moves the Width to it. */
       suggested: string
       useSuggested: string
+      /** A photo of beadwork (ticket 0772): the beads its grid holds, `{columns}` × `{rows}`, and what Use suggested does. */
+      beadGridFound: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
       /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */

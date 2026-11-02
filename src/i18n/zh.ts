@@ -908,6 +908,7 @@ export const zh: Translations = {
       sizeUnlinked: '未关联',
       suggested: '建议',
       useSuggested: '使用建议宽度',
+      beadGridFound: '串珠作品照片：找到 {columns} × {rows} 颗珠子。“使用建议宽度”让每格正好一颗珠子。',
       colorsHint: '每种颜色都是要买的珠子。最大 {n}：图片的全部颜色。',
       colorsHintCapped: '每种颜色都是要买的珠子。最大 {n}：图片的颜色更多，已归并到这个数。',
       colorByColor: '逐色查看',

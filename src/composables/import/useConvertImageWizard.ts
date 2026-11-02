@@ -48,6 +48,7 @@ import {
 } from '../../domain/imageConversion'
 import { partLattice } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
+import { BEAD_RING, beadGridPart, detectBeadGrid, onBeadGrid } from '../../domain/beadGrid'
 import { lightingFix } from '../../domain/lightingFix'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
@@ -299,15 +300,20 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
   /** Auto-fix lighting's correction, measured from the subject while Cut out has one (ticket 0766); none while off. */
   const lighting = computed(() => (autoFixLighting.value && image.value ? lightingFix(image.value, subjectMask.value) : undefined))
 
-  /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as
-   * the full rule is too slow per move (ticket 0762); none outside Cut out's mask (ticket 0765); each pixel through
-   * Auto-fix lighting while it is on (ticket 0766). */
+  /** The bead grid of a photo of beadwork (ticket 0772), found once per picture; none in any other picture. */
+  const beadGrid = computed(() => (image.value ? detectBeadGrid(image.value) : undefined))
+
+  /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves (0762);
+   * none outside Cut out's mask (0765); each pixel through Auto-fix lighting while it is on (0766); on the bead grid
+   * of a photo of beadwork, each bead from its ring (0772). */
   function sample(at: PixelCrop, rule: SamplingRule) {
     const picture = image.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    const sampled = sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule, mask: subjectMask.value, adjust: lighting.value })
+    const found = beadGrid.value
+    const ring = rule === 'area' && found && onBeadGrid(found, at, grid, picture) ? BEAD_RING : undefined
+    const sampled = sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule, mask: subjectMask.value, adjust: lighting.value, ring })
     return { grid, lattice, sampled }
   }
 
@@ -393,9 +399,19 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
 
   // --- Suggested Width ----------------------------------------------------------------------------------------------
 
+  /** The bead grid of a photo of beadwork as the suggestion (ticket 0772): the grid found, while the Width slider
+   * reaches its beads across both on the part now and on the part snapped to it; none for any other picture. */
+  const suggestedGrid = computed(() => {
+    const picture = image.value
+    const found = beadGrid.value
+    if (!picture || !found) return undefined
+    const within = (range: { min: number; max: number }) => found.columns >= range.min && found.columns <= range.max
+    return within(sizing.value.range) && within(sizingOf(beadGridPart(found, picture)).range) ? found : undefined
+  })
+
   /** Suggested Width (ticket 0770, spec 0761): measured on the part at rest, through Cut out and Auto-fix lighting, over
-   * the colors the Colors slider asks for. It never reads the Width, so moving the slider leaves it be, and as a computed
-   * it is worked out only while the Size step reads it. */
+   * the colors asked for; it never reads the Width, and is worked out only while the Size step reads it. On a photo
+   * of beadwork (ticket 0772) it is the beads found across, one bead a cell, as long as the slider reaches it. */
   const suggestedWidth = computed(() => {
     const picture = image.value
     if (!picture) return undefined
@@ -406,6 +422,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
       sizingFor({ part: at, width, height, linked: linked.value, lead: 'width', bead: bead.value, technique: technique.value, techniqueSettings: techniqueSettings.value })
     // The slider's range and marks depend on the part alone, whatever Width is asked.
     const { range, marks } = sizingAt(0)
+    if (suggestedGrid.value) return suggestedGrid.value.columns
     return suggestWidth({
       image: picture,
       part: at,
@@ -580,9 +597,20 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, cutOutS
     largeSchema: computed(() => isLargeSchema(dimensions.value)),
     /** The Suggested Width (ticket 0770); none without a picture. */
     suggestedWidth,
-    /** Use suggested: the Width moves to the suggestion, the Height following while linked. */
+    /** The bead grid of a photo of beadwork that Use suggested will snap to (ticket 0772); none in any other picture,
+     * nor where the Width slider cannot reach its beads across. */
+    beadGrid: suggestedGrid,
+    /** Use suggested: the Width moves to the suggestion, the Height following while linked. On a photo of beadwork,
+     * A part snaps to the bead grid first, so each cell is one bead (ticket 0772). */
     useSuggestedWidth: () => {
-      if (suggestedWidth.value !== undefined) setWidth(suggestedWidth.value)
+      const picture = image.value
+      const found = suggestedGrid.value
+      if (suggestedWidth.value === undefined) return
+      if (picture && found) {
+        rawPart.value = beadGridPart(found, picture)
+        weaveChoice.value = 'part'
+      }
+      setWidth(suggestedWidth.value)
     },
     // The preview
     moving,
