@@ -123,6 +123,7 @@ In `index.html`:
 Current: **v19**: v18 (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system (ADR 0030); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed) (the claude.ai project was brought up to the repo on 2026-10-13, through ticket 398). The log of tickets 269 to 398 was dropped from here then; it stays in the claude.ai README and in git history.
+  - Repo, 2026-11-02, ticket 0776 (ADR 0088): Homepage and Motion cards: leaving the Homepage for the editor, its canvas box stays while its content fades away, then grows into the editor's canvas box while the editor fades in. New token `--homepage-opening` (450ms). No copy changed.
   - Repo, 2026-11-02, ticket 0774: the CanvasHint and FirstRunHints cards show only while the Project has no beads and no Frame; an empty Frame hides them. No token, value or copy changed.
   - Repo, 2026-11-01, ticket 0771: ContextBar's Mirror bar is always one row. Too narrow for the canvas box, it drops its size readout as before, then scrolls sideways with no scrollbar instead of taking two rows. No token, value or copy changed.
   - Repo, 2026-11-02, fix (no ticket): FirstRunHints card: a tile caption keeps its tile's order along the Tool pill; it never slides past the next tile's caption (Mirror's under the colour tile's), and is left out when no place keeps the order.
