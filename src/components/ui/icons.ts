@@ -4,6 +4,8 @@
 /** @internal Its test checks every name against the design system's icon files. */
 export const ICON_NAMES = [
   'arrow-down',
+  'arrow-left',
+  'arrow-right',
   'arrow-up',
   'axis-centre',
   'axis-left-right',
