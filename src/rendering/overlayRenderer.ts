@@ -22,7 +22,7 @@ import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGri
 import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads } from './draftRenderer'
 import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
-import { axisOffsets, isMirrorOn, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
+import { isMirrorOn, mirrorLines, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
 import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -557,39 +557,34 @@ function drawAreaRect(context: DrawingContext, weave: Weave, space: Space, rect:
   drawSelection(context, weave, space, { top: rect.row, left: rect.column, rows: rect.rows, columns: rect.columns }, theme, view, origin)
 }
 
-/** Draws Mirror's Axis lines across its Area on a grid (spec 0702), a Canvas rectangle or the whole Frame: N axes
- * cut it into N + 1 equal strips, the lines at the strip boundaries of the box round its beads, in the layer's own px;
- * with Radial on, its ring and lines about the rectangle's centre (ticket 0705). Widths are divided by the zoom. */
+/** Draws Mirror's Axis lines across its grid Area (spec 0702), or Radial's ring and lines (ticket 0705), where the Mirror
+ * maps by (`mirrorLines`, ticket 0775): in beads from its unshifted lines' corner, so the half bead a shift adds to the
+ * box moves none; one the Area does not offer is not drawn. In the layer's own px; widths are divided by the zoom. */
 function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, setting: MirrorSetting, zoom: number, theme: ProjectTheme): void {
   if (!isMirrorOn(setting)) return
   const box = gridBox(weave, frame)
-  if (setting.axes.radial) {
-    drawRadial(context, { x: box.x + box.width / 2, y: box.y + box.height / 2 }, setting, box, zoom, theme)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  const lines = mirrorLines(weave, frame, setting)
+  if (lines.radial) {
+    drawRadial(context, { x: box.x + lines.radial.centre.x * cell.width, y: box.y + lines.radial.centre.y * cell.height }, { ...setting, fold: lines.radial.fold }, box, zoom, theme)
     return
   }
-  // A direction one bead across has no Axis (ContextBar card: its chip is off).
-  const leftRight = setting.axes.leftRight && frame.columns > 1
-  const topBottom = setting.axes.topBottom && frame.rows > 1
-  if (!(leftRight || topBottom)) return
+  if (lines.leftRight.length === 0 && lines.topBottom.length === 0) return
   const { x, y, width, height } = box
   context.save()
   context.strokeStyle = theme.marker
   context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
   context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
   context.beginPath()
-  if (leftRight) {
-    for (const offset of axisOffsets(frame.columns, setting.counts.leftRight)) {
-      const at = x + (width * offset) / frame.columns
-      context.moveTo(at, y)
-      context.lineTo(at, y + height)
-    }
+  for (const offset of lines.leftRight) {
+    const at = x + offset * cell.width
+    context.moveTo(at, y)
+    context.lineTo(at, y + height)
   }
-  if (topBottom) {
-    for (const offset of axisOffsets(frame.rows, setting.counts.topBottom)) {
-      const at = y + (height * offset) / frame.rows
-      context.moveTo(x, at)
-      context.lineTo(x + width, at)
-    }
+  for (const offset of lines.topBottom) {
+    const at = y + offset * cell.height
+    context.moveTo(x, at)
+    context.lineTo(x + width, at)
   }
   context.stroke()
   context.restore()

@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import { isMirrorOn, MIRROR_OFF, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
+import { isMirrorOn, MIRROR_OFF, mirrorFitOf, mirrorSettingOf, placeRect, shapeAxesOf, withMirror, withMirrorPlace, type MirrorPlace, type MirrorSetting } from '../../domain/mirror'
 import type { Project } from '../../domain/project'
 import { movedSelection, selectionFrame, selectionWithEdges, type Selection } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -42,6 +42,12 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     const project = deps.currentProject()
     const place = setting.value.place
     return project && place ? placeRect(project, place) : undefined
+  })
+  /** What the Area offers the bar's chips and Steppers (ticket 0775): the counts and Folds peyote's and brick's half-bead
+   * shift has an exact image for, every one on loom. */
+  const fit = computed(() => {
+    const project = deps.currentProject()
+    return project ? mirrorFitOf(project, setting.value) : undefined
   })
   /** A Custom frame's own Axes while the whole Frame is the Mirror (ADR 0082): fixed, the bar notes them. */
   const shape = computed(() => {
@@ -105,5 +111,5 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     makeFrom(area)
   }
 
-  return { setting, on, onFrame, rect, shape, marking, areaSelection, adjusting: computed(() => draft.value !== undefined), update, makeFrom, placeWholeFrame, close, pressArea, dragArea, releaseArea }
+  return { setting, on, onFrame, rect, fit, shape, marking, areaSelection, adjusting: computed(() => draft.value !== undefined), update, makeFrom, placeWholeFrame, close, pressArea, dragArea, releaseArea }
 }

@@ -15,7 +15,7 @@ import type { Project } from '../../domain/project'
 import { selectionHasBeads, selectionInFinishedRows, selectionLayer, type Selection } from '../../domain/selection'
 import { frameOf } from '../../domain/layerRecord'
 import type { Rect } from '../../domain/canvas'
-import type { MirrorSetting, ShapeAxes } from '../../domain/mirror'
+import type { MirrorFit, MirrorSetting, ShapeAxes } from '../../domain/mirror'
 
 /** What the Mirror bar shows (ADR 0082): the Mirror, its size readout, the Area in its layer's positions, and a Custom
  * frame's own Axes while the whole Frame is the Mirror. */
@@ -23,6 +23,8 @@ export interface MirrorBarState {
   setting: MirrorSetting
   summary: string
   rect?: Rect
+  /** What the Area offers the chips and Steppers (ticket 0775); none on a Custom frame. */
+  fit?: MirrorFit
   shape?: ShapeAxes
 }
 
@@ -253,7 +255,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
       v-if="mirrorShown"
       v-show="!compact"
       :setting="mirror!.setting"
-      :rect="mirror!.rect"
+      :fit="mirror!.fit"
       :shape="mirror!.shape"
       :icon-size="chipIconSize"
       @update:setting="emit('update:mirror', $event)"
