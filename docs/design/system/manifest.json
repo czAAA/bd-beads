@@ -158,7 +158,7 @@
     {
       "name": "ConvertImage",
       "group": "Screens",
-      "summary": "The Convert image wizard: one large popup with a live bead preview beside five numbered sections, Picture, Bead & Technique, Size, Colors and Review."
+      "summary": "The Convert image page: a live bead preview with a floating tool bar beside one scrolling pane of five steps, Picture & bead, Background, Size, Colors and Review, which the Progress bar follows."
     },
     {
       "name": "DisclosureRow",
