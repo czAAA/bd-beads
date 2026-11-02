@@ -111,6 +111,7 @@ const {
   mirrorOn,
   mirrorOnFrame,
   mirrorRect,
+  mirrorFit,
   mirrorShape,
   mirrorMarking,
   mirrorAdjusting,
@@ -233,11 +234,11 @@ const mirrorBar = computed<MirrorBarState | undefined>(() => {
   if (!project || !mirrorOn.value || !rect) return undefined
   if (setting.place?.layer === 'frame') {
     const shape = frameOf(project)?.shape
-    return { setting, rect, shape: mirrorShape.value, summary: shape ? `${t.value.frame.shapes[shape]} · ${frameTooltip.value}` : frameTooltip.value }
+    return { setting, rect, fit: mirrorFit.value, shape: mirrorShape.value, summary: shape ? `${t.value.frame.shapes[shape]} · ${frameTooltip.value}` : frameTooltip.value }
   }
   const { bead } = beadOfLayer(project, 'canvas')
   const estimate = bead ? formatSizeMm(estimatedSizeMm(rect, bead, layerWeave(project, 'canvas').technique), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
-  return { setting, rect, summary: fillBlanks(t.value.frame.sizeTooltip, { columns: rect.columns, rows: rect.rows, estimate }) }
+  return { setting, rect, fit: mirrorFit.value, summary: fillBlanks(t.value.frame.sizeTooltip, { columns: rect.columns, rows: rect.rows, estimate }) }
 })
 
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps
