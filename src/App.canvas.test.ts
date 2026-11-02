@@ -234,4 +234,14 @@ describe('the first-run hints over an empty Project (ticket 0725, FirstRunHints 
 
     expect(hints(wrapper).exists()).toBe(true)
   })
+
+  it('stays away while the Project has a Frame, even an empty one', async () => {
+    saveProjects([unframedProject({ beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })])
+    const wrapper = mountApp()
+    await flushPromises()
+
+    expect(frameOf(loadProjects()[0]!)).toBeDefined()
+    expect(hints(wrapper).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="canvas-hint"]').exists()).toBe(false)
+  })
 })

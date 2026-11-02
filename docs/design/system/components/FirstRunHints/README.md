@@ -4,7 +4,7 @@ Quiet captions over an empty Project, each beside the control it names, and a we
 
 ## When they show
 
-- **Whenever the open Project has no beads**, on every empty Project (not only the first one, nothing remembered on the device), in every theme. The same rule as the CanvasHint, which shows with them.
+- **Whenever the open Project has no beads and no Frame, not even an empty one (ticket 0774)**, on every empty Project (not only the first one, nothing remembered on the device), in every theme. The same rule as the CanvasHint, which shows with them.
 - **They go with the first bead**, all at once, fading out over `--duration-fast` (at once under reduced motion). They come back whenever the Project is emptied again (Clear all beads, or the last bead erased).
 - After the first bead the only hint left is the Progress bar's existing no-Frame line, "Select to set a Frame" (ProgressBar card).
 - Not with no Project open (EmptyCanvas card), not inside Convert image, never on exports. There is no dismiss button.
