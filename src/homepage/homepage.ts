@@ -14,7 +14,6 @@ import { startOfflineShell } from '../services/offlineShell'
 import { browserOpeningNote } from '../services/openingNote'
 import { downloadFile } from '../services/fileDownload'
 import { packLibraryFile } from '../services/projectFileCodec'
-import { findLostLibrary } from '../services/lostLibrary'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
 import { libraryFileName } from '../domain/projectFile'
 import { projectAddress, savedProjectsAddress } from '../domain/openingAddress'
@@ -41,13 +40,6 @@ async function exportAll(projects: Project[], sealed: SealedProject[]) {
   await downloadFile(libraryFileName(), await packLibraryFile(projects, sealed.map((project) => project.stored)), 'application/json')
 }
 
-/** TEMPORARY (ticket 0781): every stored copy of the library, handed over raw as one file when there's any to hand. */
-function findLostProjects() {
-  const lost = findLostLibrary(localStorage, location.origin, new Date())
-  if (lost.file) void downloadFile(`openbeads-found-projects-${location.hostname}.json`, lost.file)
-  return lost.copies
-}
-
 // Only the language in use is fetched before the page starts (ticket 0616).
 void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
   createApp({
@@ -62,7 +54,6 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(base)),
         onOpenProject: (id: string) => goToEditor(projectAddress(base, id)),
         onExportAll: exportAll,
-        findLostProjects,
       }),
   }).mount('#app')
 
