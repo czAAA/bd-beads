@@ -5,8 +5,15 @@
   view-transition-name: canvas-box;
 }
 
-/* The editor's first paint: the empty box where the Homepage's stood, on the Homepage's ground, the app hidden under
-   it until it grows. */
+/* Leaving (ticket 0783): the content goes first, before the navigation; the Canvas strip and the marks under the
+   content stay, and the editor's first paint draws them again, so nothing is ever empty. */
+[data-handoff='leaving'] :is(.homepage__page, .homepage > :not(.canvas-strip, .homepage__body), .homepage-page__marks) {
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-in);
+}
+
+/* The editor's first paint: the Homepage's box where it stood, on the Homepage's ground, with the strip and the marks
+   the Homepage handed over; the app hidden under it until it grows. */
 #handoff {
   display: none;
 }
@@ -24,24 +31,44 @@
   left: var(--handoff-x);
   width: var(--handoff-width);
   height: var(--handoff-height);
+  overflow: hidden;
   background: var(--box);
   border-radius: var(--canvas-box-radius);
   view-transition-name: canvas-box;
+}
+
+/* The drawing area's marks, where the Homepage's content stood (ticket 0783); the strip sits above at its own height. */
+#handoff > div > i {
+  position: absolute;
+  top: var(--handoff-bodyY);
+  right: 0;
+  left: 0;
+  height: var(--handoff-bodyHeight);
+  background: var(--handoff-bg, transparent) var(--handoff-marks, none) 0 0 / var(--handoff-tile, auto) repeat;
 }
 
 [data-handoff='arriving'] :is(#app, #splash) {
   visibility: hidden;
 }
 
-/* The cross-fade from the Homepage: the box stays put while its content and the X1 marks fade away. */
-html[data-handoff='arriving']::view-transition-group(*),
-html[data-handoff='arriving']::view-transition-old(*),
+/* The browser's step across the page load: the Homepage's last frame, its content already gone, is held for
+   `duration-fast` while the box drawn here gets its fonts; nothing fades, so no frame is empty (ticket 0783). */
+html[data-handoff='arriving']::view-transition-group(*) {
+  animation-duration: var(--duration-fast);
+}
+
+html[data-handoff='arriving']::view-transition-old(*) {
+  animation: none;
+}
+
 html[data-handoff='arriving']::view-transition-new(*) {
-  animation-duration: var(--duration-base);
+  opacity: 0;
+  animation: none;
 }
 
 /* The growing: the box itself is drawn by the group, so its corners never stretch; the editor's content shows in it at
-   its own size, its strip along the top, fading in as the box grows, and the editor's other parts fade in around it. */
+   its own size, its strip along the top, cross-fading from the handed-over strip and marks as the box grows, and the
+   editor's other parts fade in around it. */
 [data-handoff='growing'] .app-shell__canvas {
   view-transition-name: canvas-box;
 }
@@ -62,15 +89,18 @@ html[data-handoff='growing']::view-transition-group(canvas-box) {
   border-radius: var(--canvas-box-radius);
 }
 
-html[data-handoff='growing']::view-transition-old(canvas-box) {
-  animation: none;
-  opacity: 0;
-}
-
+html[data-handoff='growing']::view-transition-old(canvas-box),
 html[data-handoff='growing']::view-transition-new(canvas-box) {
   height: 100%;
   object-fit: none;
-  object-position: 50% 0; /* The editor's Canvas strip rides the box's top edge. */
+  object-position: 50% 0; /* The Canvas strip rides the box's top edge. */
+}
+
+html[data-handoff='growing']::view-transition-old(canvas-box) {
+  animation: handoff-leave var(--duration-slow) var(--ease-in) both;
+}
+
+html[data-handoff='growing']::view-transition-new(canvas-box) {
   animation: handoff-arrive var(--duration-slow) var(--ease-out) both;
 }
 
