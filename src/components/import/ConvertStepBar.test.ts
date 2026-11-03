@@ -48,6 +48,11 @@ describe('ConvertStepBar', () => {
     expect(dots(wrapper)[2]!.attributes('aria-current')).toBe('step')
   })
 
+  it('marks the track as following the scroll, whose fill then moves with no ease, so Safari does not flicker it (ticket 0786)', async () => {
+    const { wrapper } = await bar()
+    expect(wrapper.get('[data-testid="convert-track"]').classes()).toContain('progress-track--following')
+  })
+
   it('asks the pane to scroll to a dot’s step, and Back and Next to the steps either side of the one in view', async () => {
     const { wrapper, wizard } = await bar()
     await wrapper.get('[data-testid="convert-step-colors"]').trigger('click')
