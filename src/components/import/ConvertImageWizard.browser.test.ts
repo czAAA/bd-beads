@@ -71,7 +71,8 @@ describe('A part on the preview', () => {
 
     // Drag inside it to move it: the part keeps its size and goes where it is dropped, as far as the picture allows.
     const before = onPicture()
-    await userEvent.dragAndDrop(find('convert-image-frame-outline'), find('convert-zoom-in'))
+    // The Progress bar's Next stands below and right of the picture.
+    await userEvent.dragAndDrop(find('convert-image-frame-outline'), find('convert-next'))
     const moved = onPicture()
     expect(moved.left).toBeGreaterThan(before.left + 0.05)
     near(moved.right - moved.left, before.right - before.left)
@@ -86,7 +87,7 @@ describe('A part on the preview', () => {
     expect(width()).toBe('20')
 
     // Drag outside it to draw a new one, from where the drag began to where it ended.
-    await userEvent.dragAndDrop(find('convert-image-canvas'), find('convert-zoom-in'))
+    await userEvent.dragAndDrop(find('convert-image-canvas'), find('convert-next'))
     const drawn = onPicture()
     near(drawn.left, 0.5)
     near(drawn.right, 1)
@@ -107,13 +108,14 @@ describe('the Convert image found-colors table heading', () => {
     await settleForMeasuring()
     const pane = mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-pane"]')!
     const heading = () => mounted.root.querySelector<HTMLElement>('[data-testid="found-colors-header"]')!.getBoundingClientRect()
-    // Scrolled until the heading would have left the pane, with the rows still under it.
-    const target = heading().top - pane.getBoundingClientRect().top + 24
+    // Scrolled until the heading would have gone under the step's pinned header, with the rows still under it.
+    const pinned = mounted.root.querySelector<HTMLElement>('[data-testid="convert-section-colors-header"]')!.parentElement!.getBoundingClientRect().height
+    const target = pane.scrollTop + heading().top - pane.getBoundingClientRect().top - pinned + 24
     pane.scrollTop = target
     await settleForMeasuring()
 
     expect(pane.scrollTop).toBeCloseTo(target, 0)
-    expect(heading().top).toBeCloseTo(pane.getBoundingClientRect().top, 0)
+    expect(heading().top).toBeCloseTo(pane.getBoundingClientRect().top + pinned, 0)
 
     const cells = [...mounted.root.querySelectorAll<HTMLElement>('[data-testid="found-colors-header"] > span')].map((cell) => cell.getBoundingClientRect())
     const row = mounted.root.querySelector('[data-testid="found-color"]')!

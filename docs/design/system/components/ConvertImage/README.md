@@ -2,7 +2,7 @@
 
 The Convert image page: an App page (ADR 0085, ADR 0086) where a picture becomes a new Project, a live bead preview beside the steps, every change shown at once (spec 0645, ADR 0010). Designed in ticket 0646 as a large popup, made an App page in ticket 0756, and **redesigned for desktop in ticket 0778** (design canvas "Convert image, desktop redesign", https://claude.ai/artifact/7YWhy6JfdHCwbf8cM3x322): one scrolling pane of steps that the Progress bar follows, Picture and Bead & Technique as one step, Background in place of Cut out, a floating bar of tools under the picture, Keep the picture's shape in place of the chain, Make empty as a tool in place of Treat as empty, and a part of the beads kept with Select.
 
-**Not built yet (ticket 0778 is design only).** Until the build tickets land, the app is the page of ticket 0756: five steps one at a time, Turn 90° and Flip in the Picture step, the chain between Width and Height, Treat as empty as a switch, and Back ↑ and Next ↓. The phone and tablet layout of the redesign are still to be designed; until then the rules under 1024 px below are 0756's, applied to the one pane.
+Built in ticket 0780 (As built, below). The phone and tablet layout of the redesign are still to be designed; until then the rules under 1024 px below are 0756's, applied to the one pane.
 
 ## Frame
 
@@ -114,3 +114,16 @@ Takes away what is round the subject, in two stages, so the person sees what was
 No choice on the page is kept on the device. Every opening starts from the New Project form and the starting proposal.
 
 Hand-written from the ticket 0646 design session, the ticket 0747 canvas (Picture, Size and Colors), the App page of ticket 0756 (ADR 0085, ADR 0086), and the ticket 0778 canvas "Convert image, desktop redesign" (1280 × 800, light; the other widths, themes and languages follow the rules above until they are designed).
+
+## As built (ticket 0780)
+
+What the build had to settle or change from the 0778 canvas:
+
+- **Summaries and the band wrap rather than cut.** The fit checks allow no text cut by an ellipsis in any language, so a step's summary too long for its title's row wraps under it (the header grows past `--convert-step-head`), and the band's facts and its context line wrap where the preview is too narrow for one line (it grows past `--convert-band-height`). Each fact keeps its own line.
+- **Picture & bead's summary** is the Bead and Technique ("Cube 1.5mm · Loom") before a picture too: they can be chosen first. The later steps read "add a picture first".
+- **Bead and Technique** are the New Project form's own sections as they are (FormField and BeadSection, TechniqueSection), not yet the 88-wide panel rows.
+- **Background is found in the woven beads:** the Frame's beads, so the crop's with A part of the picture, by their sampled colors before the color count. The distance is RGB (Tolerance 0 to 60, starting at 20; 0 takes only the edge's own colors), a place with no color is gone through but not counted, and the share is of the beads that have a color. While a crop handle moves, the approximate preview finds it again on the moving sample.
+- **Select is a tool:** with A part of the picture the crop's handles always show (not while Make empty is on or Compare is held), but a drag on the beads draws or moves the crop only while Select is on. A kept part of the beads starts on a whole cycle of the Weave's stagger (`rowCycle`, `columnCycle`), so peyote and brick stitch keep the shifts the preview shows. A kept part also goes when another Bead or Technique leaves it outside the beads.
+- **With A part of the picture,** outside the crop the beads stay drawn and dimmed by `--framing-dim`, as in ticket 0757, rather than the original picture.
+- **The found-colors heading** pins under the Colors step's pinned header (`top: --convert-step-head`). On a 320 px phone the table's From picture column is too narrow for its text (ticket 0782).
+- **New values:** `--convert-step-end` (28, the room under a step's body), `--convert-stage-height` (30) and `--convert-stage-disc` (18) for the Background stages, `--convert-tools-lift` (18) for the floating bar. `--convert-bar-height` and `--convert-names-inset` became `--step-bar-height` and `--step-names-inset`, with `--step-bar-gap` (28), as the Homepage's bar has them too (ProgressBar card).
