@@ -217,15 +217,29 @@ watch(
   { immediate: true, deep: true, flush: 'post' },
 )
 
+const placedAnchor = computed(() => (mirrorShown.value ? props.mirrorAnchor : props.anchor))
 const placement = computed(() => {
-  const anchor = mirrorShown.value ? props.mirrorAnchor : props.anchor
+  const anchor = placedAnchor.value
   if (!anchor) return undefined
   // Above the whole Frame's sheet, or below it with no room there, never flipped back over the band's tools (ContextBar
   // card, Placement).
   const keepSide = mirrorShown.value && props.mirror!.setting.place?.layer === 'frame'
   return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle, { keepSide })
 })
-const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
+/** The bar gone out of view with its Area (ticket 0779): wholly outside the canvas box, hidden so Tab never reaches it. */
+const away = computed(() => {
+  const at = placement.value
+  const viewport = placedAnchor.value?.viewport
+  if (!at || !viewport) return false
+  const right = at.left + bar.width.value
+  const bottom = at.top + bar.height.value
+  return right <= 0 || at.left >= viewport.width || bottom <= 0 || at.top >= viewport.height
+})
+const placedStyle = computed(() => {
+  const at = placement.value
+  if (!at) return undefined
+  return { left: `${at.left}px`, top: `${at.top}px`, ...(away.value ? { visibility: 'hidden' as const } : {}) }
+})
 
 /** A folded item is disabled by the same rule as its button would be, and says why on hover. */
 const isDisabled = (item: BarItem) => !armed.value || (item.action.enabled ? !item.action.enabled(deps.value) : false)

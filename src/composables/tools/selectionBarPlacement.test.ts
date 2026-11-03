@@ -23,8 +23,16 @@ describe('selectionBarPlacement (ticket 415)', () => {
     expect(placed.top + bar.height).toBeLessThanOrEqual(viewport.height - 8)
   })
 
-  it('follows a Selection scrolled out of sight by hugging the box edge', () => {
-    expect(selectionBarPlacement({ left: -500, top: -500, width: 100, height: 60 }, bar, viewport)).toEqual({ left: 8, top: 8, below: true })
+  it('stays beside a Selection that runs off the box while part of it is still in view', () => {
+    expect(selectionBarPlacement({ left: -60, top: -40, width: 100, height: 60 }, bar, viewport)).toEqual({ left: 8, top: 26, below: true })
+  })
+
+  it('goes out of view with a Selection scrolled away, rather than hugging the box edge (ticket 0779)', () => {
+    // Across, it keeps 24px over the Selection's edge; above and below, it touches the Selection.
+    expect(selectionBarPlacement({ left: -500, top: 100, width: 100, height: 60 }, bar, viewport).left).toBe(-424)
+    expect(selectionBarPlacement({ left: 900, top: 100, width: 100, height: 60 }, bar, viewport).left).toBe(824)
+    expect(selectionBarPlacement({ left: 150, top: -500, width: 100, height: 60 }, bar, viewport)).toEqual({ left: 150, top: -434, below: true })
+    expect(selectionBarPlacement({ left: 150, top: 900, width: 100, height: 60 }, bar, viewport)).toEqual({ left: 150, top: 866, below: false })
   })
 })
 
@@ -69,6 +77,12 @@ describe('selectionBarPlacement around the Tool pill (ticket 439)', () => {
     expect(overlaps(placed, pill)).toBe(false)
     expect(placed.left).toBeGreaterThanOrEqual(8)
     expect(placed.left + bar.width).toBeLessThanOrEqual(viewport.width - 8)
+  })
+
+  it('does not dodge the pill once it is going out of view with its Selection (ticket 0779)', () => {
+    const selection = { left: 100, top: 310, width: 100, height: 60 }
+    const pill = { left: 60, top: 246, width: 280, height: 48 }
+    expect(selectionBarPlacement(selection, bar, viewport, pill)).toEqual({ left: 50, top: 276, below: false })
   })
 
   it('keeps to its side when told to (the whole-Frame Mirror bar, ticket 0750): with no room above the sheet it slides clear of the pill below rather than flip back over the band', () => {

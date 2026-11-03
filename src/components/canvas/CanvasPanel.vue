@@ -478,8 +478,8 @@ const drawingStyle = computed(() => {
       <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box, clear of the Tool pill; Select all is its first item. With no Selection and the Mirror
-          on it is the Mirror bar, above the Mirror's Area (ticket 0750).
+          inside the canvas box while it stays beside it (ticket 0779), clear of the Tool pill; Select all is its first
+          item. With no Selection and the Mirror on it is the Mirror bar, above the Mirror's Area (ticket 0750).
         -->
         <ContextBar
           :selection-summary="selectionSummary"
@@ -641,10 +641,11 @@ const drawingStyle = computed(() => {
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing
- * area's. */
+ * area's, and never scrolls to show a bar partly out of view with its Area (ticket 0779) when focus lands in it. */
 .app-shell__selection-layer {
   position: absolute;
   overflow: hidden;
+  overflow: clip;
   pointer-events: none;
 }
 
