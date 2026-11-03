@@ -23,6 +23,8 @@ import RollingSlogan from './RollingSlogan.vue'
 import SectionBar from './SectionBar.vue'
 import { sectionAt, type HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
+import { useScrollNudge } from './useScrollNudge'
+import { useWheelTurn } from './useWheelTurn'
 import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
@@ -125,6 +127,7 @@ let jumpingTo: number | undefined
 
 function onPageScroll() {
   const page = pageEl.value!
+  nudge.scrolled()
   scrolled.value = page.scrollTop / Math.max(1, page.clientHeight)
   if (plansIndex.value >= 0) freeGrowth.scrolledPast(page.scrollTop - plansIndex.value * page.clientHeight)
   if (freeGrowth.growing.value) snapOff.value = true
@@ -152,6 +155,45 @@ function endJump() {
   jumpingTo = undefined
 }
 
+// The wheel and trackpad turn the box one section a gesture, once it has gone some way (ticket 0784); keys and swipes
+// scroll the page, snapping at every section. The page's own scroll past the plans grows the free list.
+const wheel = useWheelTurn({
+  section,
+  count: () => sections.value.length,
+  viewport: () => pageEl.value?.clientHeight ?? window.innerHeight,
+  scrollsFreely: (event) => {
+    const page = pageEl.value
+    if (!page || plansIndex.value < 0) return false
+    if (page.scrollTop > plansIndex.value * page.clientHeight + 1) return true
+    return section.value === plansIndex.value && event.deltaY > 0 && freeGrowth.room.value > 0
+  },
+  turn: goTo,
+})
+const nudge = useScrollNudge({ onFirst: () => section.value === 0, reducedMotion })
+
+function onWheel(event: WheelEvent) {
+  nudge.scrolled()
+  wheel.onWheel(event)
+  // A held wheel moves nothing, so it leaves a jump on its way: only the page's own scroll takes it over.
+  if (!event.defaultPrevented) endJump()
+}
+
+function onTouchStart() {
+  nudge.acted()
+  endJump()
+}
+
+/** Home and End go straight to the first and last section, the box turning once, as the steps do. */
+function onKeydown(event: KeyboardEvent) {
+  nudge.acted()
+  endJump()
+  if (event.target !== pageEl.value) return
+  const to = event.key === 'Home' ? 0 : event.key === 'End' ? sections.value.length - 1 : undefined
+  if (to === undefined || to === section.value) return
+  event.preventDefault()
+  goTo(to)
+}
+
 /** Back, Next and the steps: the page scrolls to the section and the box turns to it at once, however far it is. */
 function goTo(index: number) {
   const page = pageEl.value
@@ -166,6 +208,11 @@ function goTo(index: number) {
 /** Where a section is drawn: the one shown, or the side it slid out to. */
 function sectionState(index: number) {
   return index === section.value ? 'shown' : index < section.value ? 'before' : 'after'
+}
+
+/** The shown section leaning with a wheel gesture short of a turn. */
+function sectionLean(index: number) {
+  return index === section.value && wheel.lean.value ? { transform: `translateY(${wheel.lean.value}px)` } : undefined
 }
 
 // Keys scroll the page itself (Page Down, Space, the arrows), so it holds the focus until something in it takes it.
@@ -224,9 +271,10 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
     data-testid="homepage-page"
     @scroll.passive="onPageScroll"
     @scrollend="onScrollEnd"
-    @wheel.passive="endJump"
-    @touchstart.passive="endJump"
-    @keydown="endJump"
+    @wheel="onWheel"
+    @touchstart.passive="onTouchStart"
+    @pointerdown="nudge.acted"
+    @keydown="onKeydown"
   >
     <div class="homepage-page__track" :style="{ '--free-room': `${freeGrowth.room.value}px`, '--sections': sections.length }">
       <div class="homepage-page__stage">
@@ -320,7 +368,16 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
                   :key="entry.id"
                   :ref="(el) => el ? sectionEls.set(entry.id, el as HTMLElement) : sectionEls.delete(entry.id)"
                   class="homepage__section"
-                  :class="[`homepage__section--${sectionState(index)}`, `homepage__section--${entry.id}`, { 'homepage__section--centred': entry.centred }]"
+                  :class="[
+                    `homepage__section--${sectionState(index)}`,
+                    `homepage__section--${entry.id}`,
+                    {
+                      'homepage__section--centred': entry.centred,
+                      'homepage__section--leaning': !!sectionLean(index),
+                      'homepage__section--nudge': index === 0 && section === 0 && nudge.nudging.value,
+                    },
+                  ]"
+                  :style="sectionLean(index)"
                   :aria-labelledby="entry.title === 'above' ? `homepage-${entry.id}` : undefined"
                   :aria-label="entry.title === 'hidden' ? entry.heading : undefined"
                   :data-testid="`homepage-section-${entry.id}`"
@@ -335,7 +392,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
               </div>
             </main>
           </div>
-          <SectionBar :section="section" :position="scrolled" :sections="sections" @go="goTo" />
+          <SectionBar :section="section" :position="scrolled" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
         </div>
       </div>
       <span
@@ -380,6 +437,8 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
 .homepage-page__snap {
   position: absolute;
+  /* A swipe's fling stops at every section, never carrying past the middle one (ticket 0784). */
+  scroll-snap-stop: always;
   left: 0;
   width: 1px;
   height: calc((100% - var(--free-room)) / var(--sections));
@@ -660,6 +719,36 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   transition-delay: 0s;
 }
 
+/* Leaning with a wheel gesture follows it closely; letting go settles back at the turn's own pace (ticket 0784). */
+.homepage__section--leaning {
+  transition-duration: var(--section-turn), var(--duration-fast), 0s;
+  transition-timing-function: var(--ease-standard), var(--ease-out), linear;
+}
+
+/* The nudge (ticket 0784): the first section lifts and settles once, the way it starts to turn. */
+.homepage__section--nudge {
+  animation: homepage-nudge var(--nudge-length) both;
+}
+
+@keyframes homepage-nudge {
+  0% {
+    transform: none;
+    opacity: 1;
+    animation-timing-function: var(--ease-out);
+  }
+
+  40% {
+    transform: translateY(calc(var(--nudge-lift) * -1));
+    opacity: 0.82;
+    animation-timing-function: var(--ease-standard);
+  }
+
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
 .homepage__section--before,
 .homepage__section--after {
   visibility: hidden;
@@ -701,6 +790,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   .homepage__section {
     transform: none !important;
     transition: none;
+    animation: none;
   }
 
   .homepage-page__mark {

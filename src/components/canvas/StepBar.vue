@@ -145,6 +145,7 @@ function go(index: number) {
       </AppButton>
       <AppButton
         v-else
+        class="step-bar__next"
         variant="primary"
         size="sm"
         :trailing-icon="icons.next"
