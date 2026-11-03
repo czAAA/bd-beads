@@ -25,13 +25,16 @@ export interface BarPlacement {
  * 415). */
 const BAR_GAP_PX = 6
 export const BAR_EDGE_PX = 8
+/** How far across the bar keeps over its Selection while the clamp holds it on screen (ticket 0779): past that it goes
+ * out of view with the Selection. */
+const BAR_STICK_PX = 24
 
 /** Whether two boxes of the canvas box overlap: the Selection bar against the Tool pill. */
 const boxesOverlap = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height
 
-// Where the Selection bar sits (ticket 415): centred above the Selection's top edge, clamped inside the canvas box,
-// flipped below when there is no room above. The Tool pill's rectangle (`obstacle`, ticket 439) acts like a canvas
-// edge: the bar flips sides or slides clear of the pill the way it overlaps least; with `keepSide` it only slides.
+// Where the Selection bar sits (tickets 415, 0779): centred above the Selection, flipped below with no room above, held
+// inside the canvas box only while it stays beside the Selection. The Tool pill (`obstacle`, ticket 439) acts as an edge
+// while the bar is wholly in the box: it flips or slides clear the way it overlaps least (with `keepSide` only slides).
 export function selectionBarPlacement(
   selection: BarBox,
   bar: { width: number; height: number },
@@ -39,18 +42,27 @@ export function selectionBarPlacement(
   obstacle?: BarBox,
   { keepSide = false }: { keepSide?: boolean } = {},
 ): BarPlacement {
-  const onScreen = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
-  const left = onScreen(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width)
+  const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
+  const onScreen = (value: number, size: number, limit: number) => clamp(value, BAR_EDGE_PX, limit - size - BAR_EDGE_PX)
+  const stick = Math.min(BAR_STICK_PX, selection.width / 2)
   const above = selection.top - BAR_GAP_PX - bar.height
+  const left = clamp(
+    onScreen(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width),
+    selection.left + stick - bar.width,
+    selection.left + selection.width - stick,
+  )
+  const underneath = selection.top + selection.height + BAR_GAP_PX
   const below = above < BAR_EDGE_PX
   const at = (isBelow: boolean): BarPlacement => ({
     left,
-    top: onScreen(isBelow ? selection.top + selection.height + BAR_GAP_PX : above, bar.height, viewport.height),
+    top: clamp(onScreen(isBelow ? underneath : above, bar.height, viewport.height), above, underneath),
     below: isBelow,
   })
   const preferred = at(below)
   const hits = (placement: BarPlacement) => !!obstacle && boxesOverlap({ ...placement, ...bar }, obstacle)
-  if (!hits(preferred)) return preferred
+  // A bar going out of view with its Selection goes, under the pill if need be, rather than hop clear of it on screen.
+  const leaving = preferred.left < 0 || preferred.top < 0 || preferred.left + bar.width > viewport.width || preferred.top + bar.height > viewport.height
+  if (leaving || !hits(preferred)) return preferred
   const flipped = at(!below)
   if (!keepSide && !hits(flipped)) return flipped
   // Neither side is clear: slide the preferred spot off the pill, the shorter way, and keep it inside the box.

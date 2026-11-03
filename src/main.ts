@@ -5,6 +5,7 @@ import './styles/design-values.css'
 import './styles/controls.css'
 import './styles/contrast.css'
 import './style.css'
+import './styles/boxHandoff.css'
 import { followDeviceTheme } from './theme/theme'
 import { currentThemePick } from './theme/useThemePick'
 import App from './App.vue'
@@ -13,6 +14,7 @@ import { browserDevicePreferences } from './services/devicePreferences'
 import { storedProjectCount } from './services/libraryStore'
 import { startOfflineShell } from './services/offlineShell'
 import { installTouchFocusGuard } from './services/touchFocusGuard'
+import { growIntoEditor } from './homepage/boxHandoff'
 import { isEditorChosen, homepageUrl, shouldOpenHomepage } from './homepage/homepageRoute'
 
 installTouchFocusGuard()
@@ -28,6 +30,7 @@ if (shouldOpenHomepage(storedProjectCount() === 0, isEditorChosen())) {
     createApp(App).mount('#app')
     // The splash in index.html (ticket 69) has done its job once the app is on screen.
     document.getElementById('splash')?.remove()
+    void growIntoEditor()
     startOfflineShell(import.meta.env.BASE_URL)
   })
 }

@@ -11,6 +11,7 @@ How things move: four durations, three easings, and the rules that keep motion o
 
 Hand-written from the Phase B sign-off; the tokens and classes live in `components/bundle.css`.
 
+- **Homepage into the editor (ticket 0776):** the one motion between pages: the Homepage's canvas box grows into the editor's over `--homepage-opening` (450ms, `--ease-standard`), after its content has faded away (`duration-base`). The Homepage card says how. Its snapshots move, not the drawing surface, so the rule above holds. None under reduced motion.
 - **Menu and Project (spec 0440):** the dropdown fades in over `duration-base` with a 4px move and out in 150ms, on every screen size. Under reduced motion it only fades.
 
 ## As built (ticket 0730)
