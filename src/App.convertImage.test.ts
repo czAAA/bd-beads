@@ -10,6 +10,7 @@ import { openNewProject, openPanel, pickColor } from './testUtils/pill'
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseBeadInSection } from './testUtils/beadPicker'
 import { layersView } from './testUtils/layerFields'
+import { layOutConvertPane } from './testUtils/convertPicture'
 
 // Convert image end to end through the app shell (spec 0645, ADRs 0085, 0086): New Project's button, the Menu's row or a
 // dropped picture opens the page, the Progress bar steps it, Create adds the Project; leaving asks once a picture is set. Only the decode is stubbed (jsdom decodes no image bytes, see
@@ -96,13 +97,15 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     expect(wrapper.find('.app-modal').exists()).toBe(false)
 
     await chooseImage(wrapper)
-    // One step at a time: Next goes from Picture to Bead & Technique, where the form's Bead was carried over.
-    expect(wrapper.find('[data-testid="convert-section-size"]').exists()).toBe(false)
+    // Every step in one pane (ticket 0780): Next scrolls it to Background, the form's Bead carried over in Picture & bead.
+    layOutConvertPane(wrapper.element)
+    expect(wrapper.get('[data-testid="convert-section-picture-summary"]').text()).toContain(cubeBead.size)
     await wrapper.get('[data-testid="convert-next"]').trigger('click')
-    expect(wrapper.find('[data-testid="convert-section-picture"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="convert-section-bead-summary"]').exists()).toBe(true)
-    // A dot jumps to its step; Review ends in Create Project.
+    await flushPromises()
+    expect(wrapper.get('[data-testid="convert-counter"]').text()).toBe('2/5')
+    // A dot scrolls to its step; Review ends in Create Project.
     await wrapper.get('[data-testid="convert-step-review"]').trigger('click')
+    await flushPromises()
     expect(wrapper.find('[data-testid="convert-next"]').exists()).toBe(false)
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
     await flushPromises()
@@ -233,7 +236,9 @@ describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     await openFromMenu(wrapper)
     await chooseImage(wrapper)
+    layOutConvertPane(wrapper.element)
     await wrapper.get('[data-testid="convert-step-review"]').trigger('click')
+    await flushPromises()
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
     await flushPromises()
 

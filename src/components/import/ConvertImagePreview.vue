@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watchPostEffect } from 'vue'
-import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { useConvertImageWizardState, type ConvertTool } from '../../composables/import/useConvertImageWizard'
+import { useConvertResult } from '../../composables/import/useConvertResult'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useActionKeys } from '../../composables/shell/useActionKeys'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
+import { keptDrawn, keptMoved, type KeptPart } from '../../domain/convertKeep'
 import { CROP_HANDLES, partDrawn, partMoved, partShifted, type CropHandle, type PixelCrop } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { beadCell } from '../../domain/weave'
@@ -18,12 +20,13 @@ import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from '../canvas/eyedropperCursor'
+import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// The Convert image wizard's preview (ConvertImage card, Preview pane): the picture as beads in the Frame's space, the
-// Frame over the part to weave, the rest dimmed, the part drawn, moved and pulled like a Selection (tickets 0747, 0757);
-// its own zoom (the view only) and Treat as empty's eyedropper. Empty, it is the drop zone.
+// Convert image's preview (ConvertImage card, Preview pane; tickets 0747, 0757, 0780): the band of facts, the beads in the
+// Frame's space with what was found hatched, and the floating bar: Turn 90°, Flip, Select (a kept part, or the crop),
+// Make empty, Compare and its own zoom. Empty, it is the drop zone.
 
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -33,15 +36,23 @@ const actions = {
   zoomOut: controlAction('zoom-out'),
   zoomIn: controlAction('zoom-in'),
   zoomFit: controlAction('zoom-fit'),
+  turn: controlAction('convert-turn'),
+  flip: controlAction('convert-flip'),
+  selectBeads: controlAction('convert-select-beads'),
+  selectCrop: controlAction('convert-select-crop'),
+  makeEmpty: controlAction('make-empty'),
+  compare: controlAction('convert-compare'),
 }
+const result = useConvertResult(wizard)
 const cropName = (handle: CropHandle) => controlAction(`crop-${handle}`).name(t.value)
 
 const paneEl = ref<HTMLElement>()
 const viewportEl = ref<HTMLElement>()
 const { width: viewportWidth, height: viewportHeight } = useElementSize(viewportEl)
 
-/** Room kept round the beads inside the pane, in px. */
-const PAD_PX = 16
+/** Room kept round the beads at Fit, in px (ConvertImage card): 20 above, 32 at the sides and 76 below, so the floating
+ * bar never covers them. */
+const ROOM = { top: 20, side: 32, bottom: 76 }
 /** The view's own zoom steps, a multiple of the fit. */
 const VIEW_ZOOMS = [1, 1.5, 2, 3, 4, 6, 8]
 const viewZoom = ref(1)
@@ -56,8 +67,8 @@ const space = computed(() => project.value && spaceOf(project.value, false))
 const fitScale = computed(() => {
   const extent = space.value?.extent
   if (!extent || extent.width === 0 || extent.height === 0) return 1
-  const width = Math.max(1, viewportWidth.value - PAD_PX * 2)
-  const height = Math.max(1, viewportHeight.value - PAD_PX * 2)
+  const width = Math.max(1, viewportWidth.value - ROOM.side * 2)
+  const height = Math.max(1, viewportHeight.value - ROOM.top - ROOM.bottom)
   return Math.min(width / extent.width, height / extent.height)
 })
 const scale = computed(() => fitScale.value * viewZoom.value)
@@ -74,8 +85,9 @@ const displayed = computed(() => {
 })
 const boxStyle = computed(() => ({ width: `${displayed.value.width}px`, height: `${displayed.value.height}px` }))
 const stageStyle = computed(() => ({
-  width: `${Math.max(viewportWidth.value, displayed.value.width + PAD_PX * 2)}px`,
-  height: `${Math.max(viewportHeight.value, displayed.value.height + PAD_PX * 2)}px`,
+  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.side * 2)}px`,
+  height: `${Math.max(viewportHeight.value, displayed.value.height + ROOM.top + ROOM.bottom)}px`,
+  padding: `${ROOM.top}px ${ROOM.side}px ${ROOM.bottom}px`,
 }))
 
 /** The Frame's beads in the box, in px: the line goes round them and everything else is dimmed. */
@@ -85,9 +97,15 @@ const frameBox = computed(() => {
   if (!view.value || !at || !size) return undefined
   return view.value.beadBox({ row: at.frameRow, column: at.frameColumn, rows: size.rows, columns: size.columns })
 })
-const frameStyle = computed(() => {
-  const box = frameBox.value
-  return box ? { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` } : undefined
+const boxPlace = (box: { x: number; y: number; width: number; height: number }) => ({ left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` })
+const frameStyle = computed(() => (frameBox.value ? boxPlace(frameBox.value) : undefined))
+
+/** The kept part of the beads (Whole picture with Select), drawn as the editor draws a Selection. */
+const keptStyle = computed(() => {
+  const part = wizard.kept.value
+  const at = lattice.value
+  if (!part || !at || !view.value) return undefined
+  return boxPlace(view.value.beadBox({ row: at.frameRow + part.row, column: at.frameColumn + part.column, rows: part.rows, columns: part.columns }))
 })
 
 const colorsText = computed(() => plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount))
@@ -131,11 +149,81 @@ watchPostEffect(() => {
       bitmapWidth,
       bitmapHeight,
     })
+    if (wizard.background.value === 'find') drawFound(context, pixelRatio)
     return
   }
+  if (wizard.comparing.value) return drawOriginal(context, pixelRatio)
   // The board look in light whatever the app's theme (ticket 150), as the Project will print.
   renderProject(context, { project: drawn, space: at, region: { x: 0, y: 0, width, height }, zoom: scale.value, pixelRatio, theme: LIGHT_THEME, rowMarks: false })
+  if (wizard.background.value === 'find') drawFound(context, pixelRatio)
 })
+
+/** The picture's own pixels as a canvas, made once per picture: what Compare shows in the beads' place. */
+const original = computed(() => {
+  const image = wizard.image.value
+  if (!image || typeof document === 'undefined' || typeof ImageData === 'undefined') return undefined
+  const canvas = document.createElement('canvas')
+  canvas.width = image.width
+  canvas.height = image.height
+  canvas.getContext('2d')?.putImageData(new ImageData(Uint8ClampedArray.from(image.data), image.width, image.height), 0, 0)
+  return canvas
+})
+
+/** Compare (ConvertImage card): the original picture, smoothed, laid so the part woven covers the Frame's beads. */
+function drawOriginal(context: CanvasRenderingContext2D, pixelRatio: number) {
+  const picture = original.value
+  const frame = frameBox.value
+  const part = wizard.part.value
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+  if (!picture || !frame) return
+  const scaleX = frame.width / part.width
+  const scaleY = frame.height / part.height
+  context.imageSmoothingEnabled = true
+  context.drawImage(
+    picture,
+    (frame.x - part.x * scaleX) * pixelRatio,
+    (frame.y - part.y * scaleY) * pixelRatio,
+    picture.width * scaleX * pixelRatio,
+    picture.height * scaleY * pixelRatio,
+  )
+}
+
+/** Background found (1 Find): every bead it takes hatched over its own color with `--found-hatch`'s lines. */
+function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
+  const found = wizard.backgroundFound.value?.found
+  const at = lattice.value
+  const size = grid.value
+  if (!found || !at || !size || !view.value || !paneEl.value) return
+  // The canvas draws `--found-hatch` from its parts, so the preview and the step's swatch are one look.
+  const style = getComputedStyle(paneEl.value)
+  const value = (name: string) => style.getPropertyValue(name).trim()
+  const step = parseFloat(value('--found-hatch-step')) * pixelRatio
+  const tile = document.createElement('canvas')
+  tile.width = step
+  tile.height = step
+  const pen = tile.getContext('2d')
+  if (!pen || !step) return
+  pen.fillStyle = value('--found-hatch-wash')
+  pen.fillRect(0, 0, tile.width, tile.height)
+  pen.strokeStyle = value('--found-hatch-ink')
+  pen.lineWidth = parseFloat(value('--found-hatch-line')) * pixelRatio
+  pen.beginPath()
+  for (const shift of [-tile.width, 0, tile.width]) {
+    pen.moveTo(shift, tile.height)
+    pen.lineTo(shift + tile.width, 0)
+  }
+  pen.stroke()
+  const hatch = context.createPattern(tile, 'repeat')
+  if (!hatch) return
+  context.fillStyle = hatch
+  for (let row = 0; row < size.rows; row += 1) {
+    for (let column = 0; column < size.columns; column += 1) {
+      if (!found[row * size.columns + column]) continue
+      const box = view.value.beadBox({ row: at.frameRow + row, column: at.frameColumn + column, rows: 1, columns: 1 })
+      context.fillRect(box.x * pixelRatio, box.y * pixelRatio, box.width * pixelRatio, box.height * pixelRatio)
+    }
+  }
+}
 
 // --- Drawing, moving and pulling the part ------------------------------------------------------------------------------
 
@@ -223,13 +311,70 @@ function startPartDrag(event: PointerEvent) {
   beginDrag(event, { kind: 'draw', anchor: { x: part.x + (at.x - frame.x) * per.x, y: part.y + (at.y - frame.y) * per.y } }, part)
 }
 
-/** A press on the beads: the eyedropper's tap while Treat as empty is on, else the part's gesture. */
+// --- Keeping a part of the beads (Whole picture with Select) ----------------------------------------------------------
+
+/** A drag on the beads with Select and Whole picture: inside the kept part it moves it, outside it draws a new one from
+ * the bead it began on; a plain tap draws nothing. Snapped to whole beads, on whole cycles of the stagger. */
+type KeepDrag = { pointerId: number; x: number; y: number; from: { row: number; column: number }; moves?: KeptPart; drawn: boolean }
+let keepDrag: KeepDrag | undefined
+const boxEl = ref<HTMLElement>()
+
+/** The Frame's bead under a point on screen, held to the Frame. */
+function frameBeadAt(clientX: number, clientY: number) {
+  const box = boxEl.value?.getBoundingClientRect()
+  const at = lattice.value
+  if (!box || !view.value || !at) return undefined
+  const { row, column } = view.value.pointToCell({ x: clientX - box.left, y: clientY - box.top })
+  return { row: row - at.frameRow, column: column - at.frameColumn }
+}
+
+function onKeepMove(event: PointerEvent) {
+  const started = keepDrag
+  const size = grid.value
+  if (!started || event.pointerId !== started.pointerId || !size) return
+  const now = frameBeadAt(event.clientX, event.clientY)
+  if (!now) return
+  if (started.moves) {
+    wizard.setKept(keptMoved(started.moves, now.column - started.from.column, now.row - started.from.row, size, wizard.cycles.value))
+  } else if (started.drawn || Math.hypot(event.clientX - started.x, event.clientY - started.y) >= DRAW_AFTER_PX) {
+    started.drawn = true
+    wizard.setKept(keptDrawn(started.from, now, size, wizard.cycles.value))
+  }
+}
+
+function endKeep(event?: PointerEvent) {
+  if (event && keepDrag && event.pointerId !== keepDrag.pointerId) return
+  keepDrag = undefined
+  window.removeEventListener('pointermove', onKeepMove)
+  window.removeEventListener('pointerup', endKeep)
+  window.removeEventListener('pointercancel', endKeep)
+}
+
+function startKeep(event: PointerEvent) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  const from = frameBeadAt(event.clientX, event.clientY)
+  const size = grid.value
+  if (!from || !size || from.row < 0 || from.column < 0 || from.row >= size.rows || from.column >= size.columns) return
+  event.preventDefault()
+  const part = wizard.kept.value
+  const inside = part && from.row >= part.row && from.row < part.row + part.rows && from.column >= part.column && from.column < part.column + part.columns
+  keepDrag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, from, moves: inside ? { ...part } : undefined, drawn: false }
+  window.addEventListener('pointermove', onKeepMove)
+  window.addEventListener('pointerup', endKeep)
+  window.addEventListener('pointercancel', endKeep)
+}
+
+/** A press on the beads: Make empty's tap, or Select's drag (the crop with A part of the picture, a kept part with Whole
+ * picture). With no tool on a press does nothing; the crop's handles still pull. */
 function onBoxDown(event: PointerEvent) {
   if (pinch.value) return
-  if (eyedropper.value) {
+  if (tool.value === 'make-empty') {
     event.preventDefault()
     emptyAt(event)
-  } else if (wizard.weave.value === 'part') startPartDrag(event)
+  } else if (tool.value === 'select') {
+    if (wizard.weave.value === 'part') startPartDrag(event)
+    else startKeep(event)
+  }
 }
 
 /** A focused handle moves one pixel per arrow, ten with Shift (ConvertImage card). */
@@ -286,13 +431,29 @@ function onViewportUp(event: PointerEvent) {
   if (touches.size < 2) pinch.value = null
 }
 
-// --- Treat as empty ---------------------------------------------------------------------------------------------------
+// --- The tools and Compare --------------------------------------------------------------------------------------------
 
-/** Treat as empty is a toggle in the Colors step (ticket 0758): here it only gives the pointer and takes the taps. */
-const eyedropper = wizard.treatAsEmpty
+const tool = wizard.tool
+const eyedropper = computed(() => tool.value === 'make-empty')
 const hovered = ref<number>()
-// Escape ends it first; a press elsewhere (the toggle in the step) goes through and leaves it as it is.
-useOverlayLayer({ isOpen: () => eyedropper.value, root: () => paneEl.value, close: () => (eyedropper.value = false), keepsPress: () => true })
+// Escape turns a tool off first; a press elsewhere (a step's control) goes through and leaves it as it is.
+useOverlayLayer({ isOpen: () => tool.value !== undefined, root: () => paneEl.value, close: () => wizard.setTool(undefined), keepsPress: () => true })
+
+const selectAction = computed(() => (wizard.weave.value === 'part' ? actions.selectCrop : actions.selectBeads))
+const pickTool = (next: ConvertTool) => wizard.setTool(next)
+
+/** Compare is held (ConvertImage card): by a pointer until it lets go, or by Space or Enter until the key is up. */
+function compareOn(event?: KeyboardEvent) {
+  if (event) {
+    if ((event.key !== ' ' && event.key !== 'Enter') || event.repeat) return
+    event.preventDefault()
+  }
+  wizard.comparing.value = true
+}
+function compareOff(event?: KeyboardEvent) {
+  if (event && event.key !== ' ' && event.key !== 'Enter') return
+  wizard.comparing.value = false
+}
 
 function beadIndexAt(event: PointerEvent): number | undefined {
   const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
@@ -304,7 +465,7 @@ function beadIndexAt(event: PointerEvent): number | undefined {
 
 function emptyAt(event: PointerEvent) {
   const index = beadIndexAt(event)
-  if (index !== undefined) wizard.emptyAtBead(index)
+  if (index !== undefined) wizard.toggleEmptyAtBead(index)
 }
 
 function onBoxHover(event: PointerEvent) {
@@ -319,18 +480,74 @@ const ringStyle = computed(() => {
   return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
 })
 
-onBeforeUnmount(() => endDrag())
+// --- The band of facts ------------------------------------------------------------------------------------------------
+
+/** The band's facts (ConvertImage card): the grid, its measure and colors, then a kept part or the crop in pixels. */
+const facts = computed(() => {
+  const size = wizard.dimensions.value
+  const kept = wizard.kept.value
+  const part = wizard.part.value
+  return {
+    grid: fillBlanks(words.value.resultGrid, { columns: size.columns, rows: size.rows }),
+    measured: result.value?.measured ?? '',
+    colors: colorsText.value,
+    keeping: kept && fillBlanks(words.value.keeping, { columns: kept.columns, rows: kept.rows }),
+    crop: wizard.weave.value === 'part' ? fillBlanks(words.value.partOfPicture, { width: Math.round(part.width), height: Math.round(part.height) }) : undefined,
+  }
+})
+
+/** What the preview is showing now, if anything: one line at the band's right. */
+const nowShowing = computed<{ icon?: 'eyedropper' | 'select'; hatch?: boolean; text: string } | undefined>(() => {
+  if (wizard.comparing.value) return { text: words.value.bandCompare }
+  if (tool.value === 'make-empty') return { icon: 'eyedropper', text: words.value.bandMakeEmpty }
+  const found = wizard.backgroundFound.value
+  if (wizard.background.value === 'find' && found) return { hatch: true, text: fillBlanks(words.value.bandFound, { n: found.percent }) }
+  if (wizard.background.value === 'removed') return { text: words.value.bandRemoved }
+  if (tool.value === 'select') return { icon: 'select', text: wizard.weave.value === 'part' ? words.value.bandSelectCrop : words.value.bandSelectBeads }
+  return undefined
+})
+
+onBeforeUnmount(() => {
+  endDrag()
+  endKeep()
+  wizard.comparing.value = false
+})
 </script>
 
 <template>
-  <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--part': wizard.weave.value === 'part' }" data-testid="convert-preview">
+  <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--select': tool === 'select', 'convert-preview--part': wizard.weave.value === 'part' }" data-testid="convert-preview">
+    <div class="convert-preview__band" data-testid="convert-band">
+      <span v-if="!wizard.hasPicture.value" class="convert-preview__facts">{{ words.bandEmpty }}</span>
+      <span v-else class="convert-preview__facts" data-testid="convert-band-facts">
+        <b>{{ facts.grid }}</b>
+        <span class="convert-preview__dot" aria-hidden="true">·</span>
+        <span>{{ facts.measured }}</span>
+        <span class="convert-preview__dot" aria-hidden="true">·</span>
+        <span>{{ facts.colors }}</span>
+        <template v-if="facts.keeping">
+          <span class="convert-preview__dot" aria-hidden="true">·</span>
+          <span data-testid="convert-band-keeping">{{ facts.keeping }}</span>
+          <AppButton size="sm" class="convert-preview__keep-all" data-testid="convert-keep-all" @click="wizard.keepAll">{{ words.keepAll }}</AppButton>
+        </template>
+        <template v-else-if="facts.crop">
+          <span class="convert-preview__dot" aria-hidden="true">·</span>
+          <span data-testid="convert-band-crop">{{ facts.crop }}</span>
+        </template>
+      </span>
+      <span v-if="nowShowing" class="convert-preview__context" data-testid="convert-band-context">
+        <AppIcon v-if="nowShowing.icon" :name="nowShowing.icon" :size="16" />
+        <span v-if="nowShowing.hatch" class="convert-preview__hatch" aria-hidden="true" />
+        {{ nowShowing.text }}
+      </span>
+    </div>
+
     <div v-if="!wizard.hasPicture.value" class="convert-preview__empty" data-testid="convert-drop-zone">
       <AppIcon name="image" :size="34" />
       <span class="convert-preview__empty-title">{{ words.dropHere }}</span>
       <span class="convert-preview__empty-line">{{ touch ? words.dropOrChoose : words.dropOrPaste }}</span>
     </div>
 
-    <template v-else>
+    <div v-else class="convert-preview__room">
       <div
         ref="viewportEl"
         class="convert-preview__viewport"
@@ -341,8 +558,8 @@ onBeforeUnmount(() => endDrag())
         @pointercancel="onViewportUp"
       >
         <div class="convert-preview__stage" :style="stageStyle">
-          <div class="convert-preview__box" :style="eyedropper ? { ...boxStyle, cursor: EYEDROPPER_CURSOR } : boxStyle" data-testid="convert-image-box" @pointerdown="onBoxDown" @pointermove="onBoxHover" @pointerleave="hovered = undefined">
-            <!-- The beads and the Frame's dimming are clipped to the box; the size tag and handles may stand past it. -->
+          <div ref="boxEl" class="convert-preview__box" :style="eyedropper ? { ...boxStyle, cursor: EYEDROPPER_CURSOR } : boxStyle" data-testid="convert-image-box" @pointerdown="onBoxDown" @pointermove="onBoxHover" @pointerleave="hovered = undefined">
+            <!-- The beads, the Frame's dimming and a kept part's are clipped to the box; the handles may stand past it. -->
             <div class="convert-preview__clip">
               <canvas
                 ref="canvasEl"
@@ -352,14 +569,13 @@ onBeforeUnmount(() => endDrag())
                 :style="boxStyle"
                 :data-columns="lattice?.columns"
                 :data-rows="lattice?.rows"
+                :data-comparing="wizard.comparing.value || undefined"
                 data-testid="convert-image-canvas"
               />
-              <div v-if="frameStyle" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline" />
+              <div v-if="frameStyle && wizard.weave.value === 'part'" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline" />
+              <div v-if="keptStyle && !wizard.comparing.value" class="convert-preview__kept" :style="keptStyle" data-testid="convert-kept" />
             </div>
-            <span v-if="frameStyle && grid" class="convert-preview__tag" :style="{ left: frameStyle.left, top: frameStyle.top }" aria-hidden="true">
-              {{ grid.columns }}×{{ grid.rows }}
-            </span>
-            <template v-if="wizard.weave.value === 'part' && !eyedropper">
+            <template v-if="wizard.weave.value === 'part' && !eyedropper && !wizard.comparing.value">
               <button
                 v-for="handle in CROP_HANDLES"
                 :key="handle"
@@ -378,7 +594,27 @@ onBeforeUnmount(() => endDrag())
         </div>
       </div>
 
-      <div class="convert-preview__zoom" data-testid="convert-preview-zoom">
+      <div class="convert-preview__tools" data-testid="convert-preview-tools">
+        <AppButton variant="text" :action="actions.turn" data-testid="convert-turn" @click="wizard.turn" />
+        <AppButton variant="text" :action="actions.flip" data-testid="convert-flip" @click="wizard.flip" />
+        <span class="convert-preview__divider" aria-hidden="true" />
+        <AppButton variant="text" :action="selectAction" :selected="tool === 'select'" data-testid="convert-tool-select" @click="pickTool('select')" />
+        <AppButton variant="text" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
+        <span class="convert-preview__divider" aria-hidden="true" />
+        <AppButton
+          variant="text"
+          :action="actions.compare"
+          :selected="wizard.comparing.value"
+          data-testid="convert-compare"
+          @pointerdown="compareOn()"
+          @pointerup="compareOff()"
+          @pointercancel="compareOff()"
+          @pointerleave="compareOff()"
+          @keydown="compareOn($event)"
+          @keyup="compareOff($event)"
+          @blur="compareOff()"
+        />
+        <span class="convert-preview__divider" aria-hidden="true" />
         <IconButton
           variant="plain"
           :icon-size="16"
@@ -400,7 +636,7 @@ onBeforeUnmount(() => endDrag())
         />
         <IconButton variant="plain" :icon-size="16" :action="actions.zoomFit" data-testid="convert-zoom-fit" @click="fit" />
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -415,6 +651,71 @@ onBeforeUnmount(() => endDrag())
   min-height: 0;
   overflow: hidden;
   background: var(--box);
+}
+
+/* The band of facts (ConvertImage card): above the picture, so nothing on it is cut off. Where the preview is too narrow
+ * for one line, its facts and the context line wrap and the band grows (the build's change to the card). */
+.convert-preview__band {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-16);
+  box-sizing: border-box;
+  min-height: var(--convert-band-height);
+  padding: var(--space-6) var(--space-24);
+  font: var(--type-meta);
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.convert-preview__facts,
+.convert-preview__context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-6);
+  min-width: 0;
+}
+
+.convert-preview__facts > * {
+  white-space: nowrap;
+}
+
+.convert-preview__context {
+  gap: var(--space-8);
+}
+
+.convert-preview__facts > b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.convert-preview__dot {
+  color: var(--faint);
+}
+
+.convert-preview__keep-all {
+  margin-left: var(--space-4);
+}
+
+.convert-preview__hatch {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--space-16);
+  height: var(--space-16);
+  background: var(--found-hatch);
+  border: 1px solid var(--marker);
+  border-radius: var(--radius-xs);
+}
+
+.convert-preview__room {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .convert-preview__empty {
@@ -449,6 +750,7 @@ onBeforeUnmount(() => endDrag())
 
 .convert-preview__stage {
   display: grid;
+  box-sizing: border-box;
   place-items: center;
 }
 
@@ -463,12 +765,12 @@ onBeforeUnmount(() => endDrag())
   border-radius: var(--radius-sm);
 }
 
-.convert-preview--part .convert-preview__box {
+.convert-preview--select .convert-preview__box {
   cursor: crosshair;
 }
 
-/* A part is drawn by a drag, so a touch on the beads does not scroll the view. */
-.convert-preview--part:not(.convert-preview--eyedropper) .convert-preview__box {
+/* Select draws by a drag, so a touch on the beads does not scroll the view. */
+.convert-preview--select .convert-preview__box {
   touch-action: none;
 }
 
@@ -486,22 +788,23 @@ onBeforeUnmount(() => endDrag())
     0 0 0 9999px var(--framing-dim);
 }
 
-/* With A part the Frame is the part's body: a press inside moves it. */
-.convert-preview--part:not(.convert-preview--eyedropper) .convert-preview__frame {
+/* With Select on, the crop is the part's body: a press inside moves it. */
+.convert-preview--select .convert-preview__frame {
   pointer-events: auto;
   cursor: move;
 }
 
-.convert-preview__tag {
+/* A kept part of the beads, as the editor draws a Selection: a marker line round them, the beads outside dimmed. */
+.convert-preview__kept {
   position: absolute;
-  z-index: 1;
-  transform: translateY(calc(-100% - var(--space-4)));
-  padding: 0 var(--space-4);
-  font: var(--type-meta-small);
-  color: var(--canvas);
-  white-space: nowrap;
-  background: var(--ink);
-  border-radius: var(--radius-sm);
+  pointer-events: none;
+  outline: 1.5px solid var(--marker);
+  box-shadow: 0 0 0 9999px color-mix(in srgb, var(--canvas) 60%, transparent);
+}
+
+.convert-preview--select .convert-preview__kept {
+  pointer-events: auto;
+  cursor: move;
 }
 
 .convert-preview__handle {
@@ -548,18 +851,37 @@ onBeforeUnmount(() => endDrag())
     0 0 0 2px var(--canvas);
 }
 
-.convert-preview__zoom {
+/* The floating bar (ConvertImage card): centred 18 above the preview's bottom edge, its groups split by dividers. */
+.convert-preview__tools {
   position: absolute;
-  right: var(--space-12);
-  bottom: var(--space-12);
+  bottom: var(--convert-tools-lift);
+  left: 50%;
   z-index: 3;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2);
-  background: var(--overlay-fill);
-  border-radius: var(--radius-md);
+  max-width: calc(100% - var(--space-16));
+  padding: var(--space-4);
+  overflow-x: auto;
+  background: var(--elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
   box-shadow: var(--elevation-3);
+  transform: translateX(-50%);
+}
+
+.convert-preview__tools :deep(.app-button) {
+  gap: var(--space-6);
+  padding: 0 var(--space-10);
+  font: var(--type-tab);
+}
+
+.convert-preview__divider {
+  flex: none;
+  width: 1px;
+  height: var(--space-20);
+  margin: 0 var(--space-4);
+  background: var(--line);
 }
 
 .convert-preview__level {
@@ -570,13 +892,15 @@ onBeforeUnmount(() => endDrag())
   font-variant-numeric: tabular-nums;
 }
 
-/* On a phone (PhoneForms card) the controls sit in a row above the picture, so nothing covers a bead. */
 @media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-preview__zoom {
-    top: var(--space-8);
-    right: var(--space-8);
-    bottom: auto;
-    box-shadow: none;
+  .convert-preview__band {
+    padding-inline: var(--space-16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .convert-preview__tools :deep(.app-button) {
+    transition: none;
   }
 }
 </style>

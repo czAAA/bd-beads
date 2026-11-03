@@ -1,5 +1,7 @@
 import { computed, inject, onScopeDispose, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
+import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground } from '../../domain/convertBackground'
+import { keptGrid, type KeptPart } from '../../domain/convertKeep'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
 import type { ColorCatalog } from '../../domain/colorCatalog'
@@ -47,7 +49,7 @@ import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
-import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
  * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
@@ -59,6 +61,14 @@ export interface ConvertImageWizardDeps {
 
 /** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
 export type ConvertWeave = 'whole' | 'part'
+
+/** The preview's tools (ConvertImage card, the floating bar): one or none is on. Select keeps a part of the beads, or
+ * draws the crop with A part of the picture; Make empty leaves a color out with a tap. */
+export type ConvertTool = 'select' | 'make-empty'
+
+/** Background (ConvertImage card, 2 Background; ticket 0780): off, found and hatched (1 Find), or made empty places
+ * (2 Remove). */
+export type BackgroundStage = 'off' | 'find' | 'removed'
 
 /** The unit the Width slider reads in (ConvertImage card, slide in): it moves in whole beads either way. Not the
  * device's Size unit: the wizard remembers nothing (spec 0645). */
@@ -88,16 +98,19 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
 
-  // The step shown (ticket 0756): the Progress bar's dots and the page's one section follow it.
+  // The step in view (ticket 0780): the pane's scroll sets it and its place between the steps, which the Progress bar
+  // follows; a dot, Back or Next asks the pane to scroll to a step.
   const step = ref<ConvertStep>('picture')
+  const position = ref(0)
+  const scrollRequest = shallowRef<{ step: ConvertStep }>()
 
   // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
   const weaveChoice = ref<ConvertWeave>('whole')
   const rawPart = shallowRef<PixelCrop>()
   const widthBeads = ref(0)
   const heightBeads = ref(0)
-  // The chain (ticket 0757): linked, the side moved last leads and the other follows the picture's shape; unlinked,
-  // each is its own.
+  // Keep the picture's shape (ticket 0780, was the chain of 0757): on, the side moved last leads and the other follows the
+  // picture's shape; off, each is its own.
   const linked = ref(true)
   const lead = ref<SizeSide>('width')
   const sizeUnit = ref<ConvertSizeUnit>('beads')
@@ -109,8 +122,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const chosenSource = ref<ColorSource>()
   const chosenColors = ref(DEFAULT_MAX_IMAGE_COLORS)
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
-  /** Treat as empty (ConvertImage card, ticket 0758): on, the preview takes the eyedropper's taps. It is on the Colors step only. */
-  const treatAsEmpty = ref(false)
+
+  // The preview's tools and Compare (ConvertImage card, the floating bar).
+  const tool = ref<ConvertTool>()
+  const comparing = ref(false)
+  // Background and the kept part of the beads (ticket 0780).
+  const background = ref<BackgroundStage>('off')
+  const tolerance = ref<number>(BACKGROUND_TOLERANCE.start)
+  const kept = shallowRef<KeptPart>()
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
   const part = computed<PixelCrop>(() => {
@@ -157,6 +176,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     })
   const sizing = computed(() => sizingOf(part.value))
   const dimensions = computed(() => sizing.value.grid)
+  // A kept part that no longer fits the beads (another Bead or Technique) goes.
+  watch(dimensions, (size) => {
+    const at = kept.value
+    if (at && (at.row + at.rows > size.rows || at.column + at.columns > size.columns)) kept.value = undefined
+  })
 
   /** A Width in beads as the piece's width in mm through the Bead, for the slider's labels. */
   function widthMmOf(beads: number): number {
@@ -171,14 +195,16 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   function setWidth(beads: number) {
     widthBeads.value = beads
     lead.value = 'width'
+    kept.value = undefined
   }
 
   function setHeight(beads: number) {
     heightBeads.value = beads
     lead.value = 'height'
+    kept.value = undefined
   }
 
-  /** The chain: unlinking keeps the sizes on show, and linking again takes the shape back from the side moved last. */
+  /** Keep the picture's shape: turning it off keeps the sizes on show, and linking again takes the shape back from the side moved last. */
   function setLinked(next: boolean) {
     if (!next && linked.value) {
       widthBeads.value = sizing.value.width
@@ -187,10 +213,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     linked.value = next
   }
 
+  /** A part of the picture draws its crop 10% in and turns Select on to move it; either way a kept part of the beads
+   * goes, as the crop now chooses what is woven. */
   function setWeave(next: ConvertWeave) {
     const picture = image.value
     if (next === 'part' && picture && !rawPart.value) rawPart.value = partInset(picture)
+    if (next === 'part' && weaveChoice.value !== 'part') tool.value = 'select'
     weaveChoice.value = next
+    kept.value = undefined
   }
 
   // --- Picture ------------------------------------------------------------------------------------------------------
@@ -199,6 +229,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   function restartPart() {
     rawPart.value = undefined
     weaveChoice.value = 'whole'
+    kept.value = undefined
     settle()
   }
 
@@ -250,7 +281,41 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
   }
 
-  const rest = computed(() => sample(restPart.value))
+  /** The Frame's own beads of a sample, row by row: what the background is found in. */
+  function frameBlock(at: NonNullable<ReturnType<typeof sample>>): Int32Array {
+    const { lattice, grid: size, sampled } = at
+    const block = new Int32Array(size.columns * size.rows)
+    for (let row = 0; row < size.rows; row += 1) {
+      const from = (row + lattice.frameRow) * lattice.columns + lattice.frameColumn
+      block.set(sampled.subarray(from, from + size.columns), row * size.columns)
+    }
+    return block
+  }
+
+  /** The background found in a sample's Frame (1 Find), none while Remove background is off. */
+  function foundIn(at: ReturnType<typeof sample>) {
+    if (!at || background.value === 'off') return undefined
+    const colors = frameBlock(at)
+    const found = findBackground({ colors, columns: at.grid.columns, rows: at.grid.rows, tolerance: tolerance.value })
+    return { found, ...backgroundShare(colors, found) }
+  }
+
+  /** A sample with the background's beads made empty places once it is removed (2 Remove), so the colors are counted
+   * from what is left. */
+  function removedFrom(at: ReturnType<typeof sample>, found: Uint8Array | undefined) {
+    if (!at || !found || background.value !== 'removed') return at
+    const { lattice, grid: size } = at
+    const sampled = at.sampled.slice()
+    for (let row = 0; row < size.rows; row += 1) {
+      const from = (row + lattice.frameRow) * lattice.columns + lattice.frameColumn
+      sampled.set(withoutBackground(sampled.subarray(from, from + size.columns), found.subarray(row * size.columns, (row + 1) * size.columns)), from)
+    }
+    return { ...at, sampled }
+  }
+
+  const rawRest = computed(() => sample(restPart.value))
+  const restBackground = computed(() => foundIn(rawRest.value))
+  const rest = computed(() => removedFrom(rawRest.value, restBackground.value?.found))
 
   const hasCatalog = computed(() => !!catalogId.value)
   /** What the found colors are matched to: Exact until a source is chosen (ticket 0758). */
@@ -286,7 +351,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   /** Whether the part is away from where the exact conversion was made: the only time beads are approximate. */
   const approximate = computed(() => moving.value && part.value !== restPart.value)
-  const live = computed(() => (approximate.value ? sample(part.value) : rest.value))
+  const live = computed(() => {
+    if (!approximate.value) return rest.value
+    const moved = sample(part.value)
+    return removedFrom(moved, foundIn(moved)?.found)
+  })
 
   const beadColors = computed(() => {
     const shown = live.value
@@ -340,24 +409,40 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setChoice(pictureHex, choices.value.get(pictureHex)?.kind === 'empty' ? undefined : { kind: 'empty' })
   }
 
-  /** Treat as empty (ConvertImage card): the found color of the bead under a tap on the preview set to empty. */
-  function emptyAtBead(index: number) {
+  /** Make empty (ConvertImage card): a tap on a bead makes its found color empty everywhere, and a tap on an empty place
+   * of that color brings it back. A place the background left is not a color to tap. */
+  function toggleEmptyAtBead(index: number) {
     const shown = live.value
     const packed = shown?.sampled[index]
     if (packed === undefined || packed === NO_COLOR) return
     const pictureHex = reduced.value.byHex.get(packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
-    if (pictureHex) setChoice(pictureHex, { kind: 'empty' })
+    if (pictureHex) toggleEmpty(pictureHex)
   }
 
-  watch([step, () => !!image.value], ([at, hasPicture]) => {
-    if (at !== 'colors' || !hasPicture) treatAsEmpty.value = false
+  /** Pressing the tool that is on turns it off; the tools wait for a picture. */
+  function setTool(next: ConvertTool | undefined) {
+    tool.value = next === tool.value || !image.value ? undefined : next
+  }
+  watch(image, (picture) => {
+    if (!picture) tool.value = undefined
   })
 
+  /** Remove background's switch: on, the background is found (1 Find); off, everything is back. */
+  function setRemoveBackground(on: boolean) {
+    background.value = on ? 'find' : 'off'
+  }
+
   const stepIndex = computed(() => CONVERT_STEPS.indexOf(step.value))
-  /** Every step after Picture waits for a picture. */
+  /** Every step after Picture & bead waits for a picture. */
   const canGoTo = (next: ConvertStep) => next === 'picture' || !!image.value
+  /** A dot, Back or Next: the pane scrolls to that step, and the scroll then makes it the one in view. */
   function goTo(next: ConvertStep | undefined) {
-    if (next && canGoTo(next)) step.value = next
+    if (next && canGoTo(next)) scrollRequest.value = { step: next }
+  }
+  /** The pane's scroll, in steps (scrollSteps' scrollPosition): the step in view is the nearest. */
+  function setScroll(at: number) {
+    position.value = at
+    step.value = CONVERT_STEPS[clamp(Math.round(at), 0, CONVERT_STEPS.length - 1)]!
   }
 
   /** The picture's file name without its extension: Name's placeholder, and the Name when it is left blank. */
@@ -375,14 +460,16 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   /** The Project the converted grid at rest makes: the page's own setup, the grid and its Palette (spec 0645). */
   function projectAtRest() {
     if (!image.value || !rest.value) return undefined
+    const part = kept.value
+    const size = part ? { columns: part.columns, rows: part.rows } : rest.value.grid
     return createProjectFromImage({
       name: name.value.trim() || fileStem.value,
       technique: technique.value,
       ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
       beadId: bead.value.id,
       makerName: makerName.value.trim(),
-      size: { width: rest.value.grid.columns, height: rest.value.grid.rows, unit: 'beads' },
-      grid: grid.value,
+      size: { width: size.columns, height: size.rows, unit: 'beads' },
+      grid: part ? keptGrid(grid.value, part) : grid.value,
       palette: palette.value,
     })
   }
@@ -395,6 +482,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   /** The Project as it would be created now, for Review's counts; none without a picture. */
   const draftProject = computed(() => projectAtRest())
+  /** How many beads the Project will hold: the kept part's, with no empty place counted (Review's summary). */
+  const beadCount = computed(() => {
+    const part = kept.value
+    const cells = part ? keptGrid(grid.value, part) : grid.value
+    return cells.reduce((sum, row) => sum + row.filter((cell) => cell.color !== null).length, 0)
+  })
 
   return {
     // Setup
@@ -406,8 +499,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     settings,
     techniqueSettings,
     setSetting: (id: string, value: number) => (settings.value = { ...settings.value, [id]: value }),
-    // The steps: Picture first, the rest once a picture is set; Next on the last is Create Project
+    // The steps: Picture & bead first, the rest once a picture is set; Next on the last is Create Project
     step,
+    position,
+    scrollRequest,
+    setScroll,
     canGoTo,
     goTo,
     goBack: () => goTo(CONVERT_STEPS[stepIndex.value - 1]),
@@ -429,9 +525,26 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setWeave,
     part,
     setPart: (next: PixelCrop) => (rawPart.value = next),
+    // Background
+    background,
+    setRemoveBackground,
+    removeFound: () => (background.value = 'removed'),
+    showFound: () => (background.value = 'find'),
+    tolerance,
+    setTolerance: (next: number) => (tolerance.value = clamp(Math.round(next), BACKGROUND_TOLERANCE.min, BACKGROUND_TOLERANCE.max)),
+    /** The background found in the Frame at rest, row by row (1 marks a bead), and how much of the picture it takes. */
+    backgroundFound: restBackground,
     // Size
     sizing,
     dimensions,
+    /** The part of the beads kept with Select, if any (ticket 0780): only these become the Project. */
+    kept,
+    setKept: (next: KeptPart | undefined) => (kept.value = weaveChoice.value === 'whole' ? next : undefined),
+    keepAll: () => (kept.value = undefined),
+    /** The size the Project will have: the kept part's, or the whole grid's. */
+    keptDimensions: computed(() => (kept.value ? { columns: kept.value.columns, rows: kept.value.rows } : dimensions.value)),
+    /** The Weave's stagger cycles, which a kept part starts on. */
+    cycles: computed(() => ({ rowCycle: rowCycle(weave.value), columnCycle: columnCycle(weave.value) })),
     setWidth,
     setHeight,
     linked,
@@ -442,6 +555,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     widthMmOf,
     largeSchema: computed(() => isLargeSchema(dimensions.value)),
     // The preview
+    tool,
+    setTool,
+    comparing,
     moving,
     beginMove: () => (moving.value = true),
     endMove: () => {
@@ -475,13 +591,13 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     choices,
     setChoice,
     toggleEmpty,
-    treatAsEmpty,
-    emptyAtBead,
+    toggleEmptyAtBead,
     palette,
     remapPalette,
     remapSwatches,
     // Review and Create
     draftProject,
+    beadCount,
     createProject,
   }
 }

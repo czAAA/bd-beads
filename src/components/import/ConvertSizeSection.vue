@@ -2,18 +2,17 @@
 import { computed, useId } from 'vue'
 import { useConvertImageWizardState, type ConvertSizeUnit } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
-import { controlAction } from '../../composables/shell/controlRegistry'
 import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
-import IconButton from '../ui/IconButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
+import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
-// Convert image's Size section (ConvertImage card, 3 Size; tickets 0747, 0757): slide in (beads or mm), the Width and
-// Height sliders with their marks and the chain between them, the result line, the line under it while a part is woven,
-// and the Large Schema note. Linked, the side not moved follows the picture through the wizard's one sizing rule.
+// Convert image's Size section (ConvertImage card, 3 Size; tickets 0747, 0757, 0780): slide in, Width and Height with Keep
+// the picture's shape between them (on, the side not moved follows the picture's shape), the result line (a kept part's
+// size beside the whole), the line under it while a crop is woven, and the Large Schema note.
 const { t } = useI18n()
 const wizard = useConvertImageWizardState()
 const result = useConvertResult(wizard)
@@ -58,7 +57,13 @@ function markList(list: readonly { at: number }[], range: { min: number; max: nu
 const widthMarks = computed(() => markList(sizing.value.marks.map((mark) => ({ at: mark.width })), sizing.value.range, wizard.widthMmOf))
 const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height })), sizing.value.heightRange, wizard.heightMmOf))
 
-const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' : 'size-unlinked'))
+const keepShape = computed({ get: () => wizard.linked.value, set: (next: boolean) => wizard.setLinked(next) })
+
+/** With a part of the beads kept, the result is its size and measure, then the whole it was kept from. */
+const keptResult = computed(() => {
+  const kept = result.value?.kept
+  return kept && { ...kept, from: fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows }) }
+})
 </script>
 
 <template>
@@ -84,9 +89,12 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
       @update:model-value="wizard.setWidth"
     />
 
-    <div class="convert-size__chain">
-      <IconButton :action="chain" :icon-size="16" data-testid="convert-size-chain" :data-linked="wizard.linked.value" @click="wizard.setLinked(!wizard.linked.value)" />
-    </div>
+    <ConvertSwitchRow
+      v-model="keepShape"
+      :label="words.keepShape"
+      :line="keepShape ? words.keepShapeOn : words.keepShapeOff"
+      testid="convert-keep-shape"
+    />
 
     <ValueSlider
       :label="t.form.heightLabel"
@@ -105,7 +113,10 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
 
     <div v-if="result" class="convert-size__result" data-testid="convert-result">
       <span class="convert-size__label">{{ words.result }}</span>
-      <p class="convert-size__line" role="status">
+      <p v-if="keptResult" class="convert-size__line" role="status">
+        <span class="convert-size__grid">{{ keptResult.grid }}</span> · {{ keptResult.measured }} · {{ keptResult.from }}
+      </p>
+      <p v-else class="convert-size__line" role="status">
         <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }}
       </p>
       <p class="convert-size__ratio" data-testid="convert-ratio">{{ result.ratio }}</p>
@@ -120,7 +131,7 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
 .convert-size {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: var(--space-16);
 }
 
 .convert-size__row {
@@ -134,20 +145,6 @@ const chain = computed(() => controlAction(wizard.linked.value ? 'size-linked' :
 .convert-size__label {
   font: var(--type-label);
   color: var(--muted);
-}
-
-.convert-size__chain {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-}
-
-.convert-size__chain::before,
-.convert-size__chain::after {
-  flex: 1;
-  height: 1px;
-  content: '';
-  background: var(--line);
 }
 
 .convert-size__hint {

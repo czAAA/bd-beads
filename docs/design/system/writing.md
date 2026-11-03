@@ -493,6 +493,19 @@ The redesigned page (ConvertImage and ProgressBar cards): one scrolling pane, Ba
 
 Russian, Ukrainian and Polish here are proposals for review with the build; Belarusian, Spanish and Chinese come with it.
 
+Built by ticket 0780. The Russian, Ukrainian and Polish proposals were reviewed with the build and kept, with these changes: the found line has no dash ("Заштрихованные бисерины: найденный фон, {n}% изображения.", "Заштриховані бісерини: знайдене тло, {n}% зображення."), as the Russian copy uses no em dash; Remove's count leads with its word ("Убрано бисерин: {n}"), so it needs no counted forms; and the line under the result box while a crop is woven says the crop ("по обрезке", "за обрізанням", "przycięciem"). Belarusian, Spanish and Chinese:
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Picture & bead · Background · Size · Colors · Review | Выява і бісер · Фон · Памер · Колеры · Праверка | Imagen y cuenta · Fondo · Tamaño · Colores · Revisión | 图片与珠子 · 背景 · 尺寸 · 颜色 · 检查 |
+| Replace | Замяніць | Cambiar | 替换 |
+| Whole picture · A part of the picture | Уся выява · Частка выявы | Toda la imagen · Una parte de la imagen | 整张图片 · 图片的一部分 |
+| Remove background · Find · Remove · Tolerance | Прыбраць фон · Знайсці · Прыбраць · Допуск | Quitar el fondo · Buscar · Quitar · Tolerancia | 去除背景 · 查找 · 去除 · 容差 |
+| Remove what was found · Background removed · Show what was found | Прыбраць знойдзенае · Фон прыбраны · Паказаць знойдзенае | Quitar lo encontrado · Fondo quitado · Mostrar lo encontrado | 去除找到的部分 · 背景已去除 · 显示找到的部分 |
+| Keep the picture's shape | Захоўваць форму выявы | Mantener la forma de la imagen | 保持图片形状 |
+| Make empty · Compare (Select is the editor's) | Зрабіць пустым · Параўнаць | Dejar vacío · Comparar | 设为空 · 对比 |
+| keeping {w}×{h} · Keep all | пакідаем {w}×{h} · Пакінуць усё | te quedas con {w}×{h} · Quedarse con todo | 保留 {w}×{h} · 全部保留 |
+
 ## Margin sheet copy (ticket 0655)
 
 The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).

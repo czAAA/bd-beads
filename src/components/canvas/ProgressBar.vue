@@ -101,9 +101,10 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
   gap: var(--space-12);
   box-sizing: border-box;
   /* As tall as its tallest item plus 1px above and below (ticket 544); --progress-height is the same rule for the
-   * Homepage's empty footer. The bottom corners follow the canvas box's curve. */
+   * Homepage's empty footer. The bottom corners follow the canvas box's curve; 24 at both ends keeps what it holds off
+   * the box's edge (ticket 0780). */
   min-height: var(--progress-height);
-  padding: var(--bar-pad) var(--space-12) var(--bar-pad) var(--space-16);
+  padding: var(--bar-pad) var(--space-24);
   border: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
   border-bottom: 0;
   border-radius: 0 0 var(--canvas-box-radius) var(--canvas-box-radius);
