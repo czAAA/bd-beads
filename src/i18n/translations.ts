@@ -989,9 +989,11 @@ export interface Translations {
     /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
-      /** The five sections' titles, and their short labels on the step rail. */
+      /** The five steps' titles in the pane, and their names under the Progress bar's dots (ticket 0780). */
       sections: Record<ConvertStep, string>
       rail: Record<ConvertStep, string>
+      /** A shut step's summary until a picture is set. */
+      shutSummary: string
       /** The Progress bar's steps (ticket 0756): the track's accessible name, Back and Next, a dot's name (`{step}`) and
        * why Back is off on the first step. */
       railLabel: string
@@ -1006,6 +1008,7 @@ export interface Translations {
       takePhoto: string
       turn: string
       flip: string
+      /** The menu beside the picture's file name: Choose file and Paste. */
       replace: string
       /** The Picture section's Note until the first picture: every way in and the limits (formatImageLimits). */
       pictureNote: string
@@ -1018,13 +1021,59 @@ export interface Translations {
       dropToUse: string
       dropToConvert: string
       dropLimits: string
-      /** What to weave (ticket 0747): the row's label, its two choices, the hint under A part and the line under the
-       * result box while a part is woven. */
+      /** What to weave (tickets 0747, 0780): the label, its two choices and the line under each, and the line under the
+       * result box while a crop is woven. */
       weave: string
       wholePicture: string
+      wholePictureLine: string
       aPart: string
-      partHint: string
+      aPartLine: string
       partFollows: string
+      /** Keep the picture's shape (ticket 0780): the switch between Width and Height and its line in each state. */
+      keepShape: string
+      keepShapeOn: string
+      keepShapeOff: string
+      /** The preview's floating bar (ticket 0780; Select is the editor's tool name): its tools and the Colors step's line
+       * pointing at Make empty, `{tool}` its name. */
+      makeEmpty: string
+      compare: string
+      makeEmptyLine: string
+      /** The Background step (ticket 0780): the switch and its line off and on, the two stages, what was found, Tolerance and
+       * its ends, and what was removed (`{count}` beads). */
+      removeBackground: string
+      removeBackgroundOff: string
+      removeBackgroundOn: string
+      stagesLabel: string
+      stageFind: string
+      stageRemove: string
+      foundLine: string
+      tolerance: string
+      toleranceMin: string
+      toleranceMax: string
+      removeFound: string
+      removed: string
+      removedLine: PluralForms
+      showFound: string
+      /** The band of facts above the preview (ticket 0780): no picture, the kept part and Keep all, the crop in pixels, and
+       * the line on what the preview shows now. */
+      bandEmpty: string
+      keeping: string
+      keepAll: string
+      partOfPicture: string
+      bandFound: string
+      bandRemoved: string
+      bandMakeEmpty: string
+      bandSelectBeads: string
+      bandSelectCrop: string
+      bandCompare: string
+      /** The step headers' summaries (ticket 0780): Background off, found or removed, a kept part, and Review's bead count. */
+      summaryOff: string
+      summaryFound: string
+      summaryRemoved: string
+      summaryKept: string
+      beadsCount: PluralForms
+      /** The result box's line after a kept part's size: the whole grid it was kept from. */
+      resultKeptFrom: string
       /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
        * its marks (the width they stand for) and the hint under it. */
       slideIn: string
@@ -1034,9 +1083,6 @@ export interface Translations {
       /** The Width slider's max end: the width in the chosen unit, `{value}`. */
       widthMaxLabel: string
       widthHint: string
-      /** The chain between Width and Height: its name in each state (ticket 0757). */
-      sizeLinked: string
-      sizeUnlinked: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
       /** The hint while the picture has more colors than the slider offers (MAX_IMAGE_COLORS). */
@@ -1073,7 +1119,6 @@ export interface Translations {
       fromPicture: string
       becomes: string
       beadsColumn: string
-      treatAsEmpty: string
       /** A found color's actions and states (FoundColorRow card). */
       keepExact: string
       change: string
@@ -1197,10 +1242,14 @@ export interface Translations {
     importFile: string
     changeName: string
     convertImage: string
-    /** The chain between Width and Height, in each state (ticket 0757). */
-    sizeLinked: string
-    sizeUnlinked: string
-    treatAsEmpty: string
+    /** Convert image's floating bar (ticket 0780): Turn 90°, Flip, Select (keeping a part of the beads, or cropping the
+     * picture), Make empty and Compare. */
+    convertTurn: string
+    convertFlip: string
+    selectBeads: string
+    selectCrop: string
+    makeEmpty: string
+    compare: string
     remapColor: string
     emptyColor: string
     /** "A, B, C." from the item names. */

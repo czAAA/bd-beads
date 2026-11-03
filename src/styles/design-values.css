@@ -15,10 +15,19 @@
   --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. */
   --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
   --convert-band-height: 48px; /* ConvertImage card (ticket 0778): the preview's band of facts above the picture. */
+  --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
   --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
-  --convert-bar-height: 64px; /* ProgressBar and ConvertImage cards (ticket 0778): the Progress bar on Convert image, the step names under the track. */
-  --convert-names-inset: 52px; /* ProgressBar card (ticket 0778): how far the first and last dots stand in from the track's ends, so their names stay inside it. */
-  --found-hatch: repeating-linear-gradient(135deg, color-mix(in srgb, var(--marker) 70%, transparent) 0 1.1px, color-mix(in srgb, var(--marker) 10%, transparent) 1.1px 4px); /* ConvertImage card (ticket 0778): what Remove background found, hatched over the beads and on its legend swatch. */
+  --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
+  --convert-stage-height: 30px; /* ConvertImage card (ticket 0780): a Background stage chip, 1 Find or 2 Remove. */
+  --convert-stage-disc: 18px; /* ConvertImage card (ticket 0780): a stage chip's numbered disc. */
+  --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
+  --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
+  --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
+  --found-hatch-ink: color-mix(in srgb, var(--marker) 70%, transparent); /* ConvertImage card (ticket 0780): the hatch's lines. */
+  --found-hatch-wash: color-mix(in srgb, var(--marker) 10%, transparent); /* ConvertImage card (ticket 0780): under the hatch's lines. */
+  --found-hatch-line: 1.1px; /* ConvertImage card (ticket 0780): a hatch line's width. */
+  --found-hatch-step: 4px; /* ConvertImage card (ticket 0780): from one hatch line to the next. */
+  --found-hatch: repeating-linear-gradient(135deg, var(--found-hatch-ink) 0 var(--found-hatch-line), var(--found-hatch-wash) var(--found-hatch-line) var(--found-hatch-step)); /* ConvertImage card (ticket 0778): what Remove background found, hatched over the beads and on its legend swatch; the preview's canvas draws it from its four parts. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
   --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */

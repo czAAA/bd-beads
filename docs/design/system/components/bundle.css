@@ -17,10 +17,19 @@
   --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. */
   --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
   --convert-band-height: 48px; /* ConvertImage card (ticket 0778): the preview's band of facts above the picture. */
+  --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
   --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
-  --convert-bar-height: 64px; /* ProgressBar and ConvertImage cards (ticket 0778): the Progress bar on Convert image, the step names under the track. */
-  --convert-names-inset: 52px; /* ProgressBar card (ticket 0778): how far the first and last dots stand in from the track's ends, so their names stay inside it. */
-  --found-hatch: repeating-linear-gradient(135deg, color-mix(in srgb, var(--marker) 70%, transparent) 0 1.1px, color-mix(in srgb, var(--marker) 10%, transparent) 1.1px 4px); /* ConvertImage card (ticket 0778): what Remove background found, hatched over the beads and on its legend swatch. */
+  --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
+  --convert-stage-height: 30px; /* ConvertImage card (ticket 0780): a Background stage chip, 1 Find or 2 Remove. */
+  --convert-stage-disc: 18px; /* ConvertImage card (ticket 0780): a stage chip's numbered disc. */
+  --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
+  --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
+  --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
+  --found-hatch-ink: color-mix(in srgb, var(--marker) 70%, transparent); /* ConvertImage card (ticket 0780): the hatch's lines. */
+  --found-hatch-wash: color-mix(in srgb, var(--marker) 10%, transparent); /* ConvertImage card (ticket 0780): under the hatch's lines. */
+  --found-hatch-line: 1.1px; /* ConvertImage card (ticket 0780): a hatch line's width. */
+  --found-hatch-step: 4px; /* ConvertImage card (ticket 0780): from one hatch line to the next. */
+  --found-hatch: repeating-linear-gradient(135deg, var(--found-hatch-ink) 0 var(--found-hatch-line), var(--found-hatch-wash) var(--found-hatch-line) var(--found-hatch-step)); /* ConvertImage card (ticket 0778): what Remove background found, hatched over the beads and on its legend swatch; the preview's canvas draws it from its four parts. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
   --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
@@ -1055,24 +1064,27 @@ body {
 @media (prefers-reduced-motion:reduce){.bb-homepage-section{transform:none!important;transition:none}}
 
 /* The Homepage's Progress bar steps (ticket 0743; Homepage card): one per section, in the sections' order, the step at i of n at (i / (n - 1)) of the track, the first at its start, the last at its end; the fill is (section / (n - 1)), empty on the first. Each step is a button: a dot centred on the 4px track 8px down, its name under it. Give the current step is-lit once the fill has started (the ring takes the spark's glow), and swap is-flaring and is-flaring-alt on each step forward as the spark does; the spark's tail runs into it and its own dot is not drawn. */
-.bb-section-steps{position:relative;flex:1 1 auto;min-width:8rem;height:2.375rem;margin-inline:var(--space-8)}
+/* Ticket 0780: every bar of steps (the Homepage's and Convert image's) is --step-bar-height tall with --step-bar-gap between its parts, its first and last dots --step-names-inset in from the track's ends and every name centred under its dot; the current name is ink at 500. */
+.bb-step-bar{min-height:var(--step-bar-height);gap:var(--step-bar-gap)}
+.bb-section-steps{position:relative;flex:1 1 auto;min-width:8rem;height:2.375rem;margin-inline:var(--step-names-inset)}
 .bb-section-steps>.bb-track{position:absolute;inset-inline:0;top:var(--space-8);min-width:0}
 .bb-section-step{--d:var(--step-dot);position:absolute;top:0;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%);padding:0;margin:0;border:0;background:none;color:var(--muted);font:var(--type-meta-small);text-transform:lowercase;cursor:pointer}
 .bb-section-step::before{content:"";box-sizing:border-box;width:var(--d);height:var(--d);border-radius:50%;background:var(--track);border:2px solid var(--box)}
 .bb-section-step::before,.bb-section-step>span{margin-top:calc(var(--space-10) - var(--d) / 2)}
 .bb-section-step>span{white-space:nowrap}
-.bb-section-step--first{align-items:flex-start;transform:none;text-align:left}
-.bb-section-step--last{align-items:flex-end;transform:translateX(-100%);text-align:right}
 .bb-section-step--passed{color:var(--body)}
 .bb-section-step--passed::before{background:var(--accent)}
-.bb-section-step--current{--d:var(--step-dot-current);color:var(--ink)}
+.bb-section-step--current{--d:var(--step-dot-current);color:var(--ink);font-weight:500}
 .bb-section-step--current::before{background:var(--box);border:var(--step-ring) solid var(--accent-strong);transition:box-shadow var(--duration-base) var(--ease-standard)}
 .bb-section-step--current.is-lit::before{box-shadow:0 0 8px 3px var(--spark-glow)}
 .bb-section-step--current.is-flaring::before{animation:bb-spark-flare var(--spark-flare-duration) var(--ease-out) both}
 .bb-section-step--current.is-flaring-alt::before{animation:bb-spark-flare-alt var(--spark-flare-duration) var(--ease-out) both}
 .bb-section-step:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px;border-radius:var(--radius-xs)}
 @media (max-width:30rem){
+  .bb-step-bar{gap:var(--space-4)}
   .bb-section-steps{height:3.25rem;margin-inline:var(--space-6)}
+  .bb-section-step--first{align-items:flex-start;transform:none;text-align:left}
+  .bb-section-step--last{align-items:flex-end;transform:translateX(-100%);text-align:right}
   .bb-section-step{font:var(--type-meta-tiny)}
   .bb-section-step>span{white-space:normal;width:max-content;max-width:var(--step-name-max)}
 }

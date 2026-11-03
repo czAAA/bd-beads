@@ -34,7 +34,8 @@ describe('SectionBar', () => {
     expect(track.attributes('aria-valuetext')).toBe('2/3 · Made by one family')
     expect(steps(wrapper).map((step) => step.text())).toEqual(["What's inside", 'Made by one family', 'Three ways to use it'])
     expect(wrapper.get('[data-testid="section-back"]').text()).toBe('Back')
-    expect(wrapper.get('[data-testid="section-back"]').classes()).toContain('app-button--box')
+    // Back and Next point up and down, as the sections turn (ticket 0780 keeps them so).
+    expect(wrapper.get('[data-testid="section-back"] [data-icon]').attributes('data-icon')).toBe('arrow-up')
     expect(wrapper.get('[data-testid="section-next"]').text()).toBe('Next')
     expect(wrapper.get('[data-testid="section-next"]').classes()).toContain('app-button--primary')
   })
@@ -43,6 +44,18 @@ describe('SectionBar', () => {
     expect(fill(bar(0))).toContain('translateX(-100%)')
     expect(fill(bar(1))).toContain('translateX(-50%)')
     expect(fill(bar(2))).toContain('translateX(0%)')
+  })
+
+  it('follows the page’s scroll between the steps, the spark’s dot showing only between two of them (ticket 0780)', async () => {
+    const wrapper = mount(SectionBar, { props: { section: 0, position: 0.5, sections: SECTIONS } })
+    const spark = () => wrapper.get('[data-testid="section-spark"]').classes()
+    expect(fill(wrapper)).toContain('translateX(-75%)')
+    expect(spark()).not.toContain('progress-track__spark--ringed')
+    await wrapper.setProps({ section: 1, position: 1 })
+    expect(fill(wrapper)).toContain('translateX(-50%)')
+    expect(spark()).toContain('progress-track__spark--ringed')
+    await wrapper.setProps({ section: 2, position: 2.6 })
+    expect(fill(wrapper)).toContain('translateX(0%)')
   })
 
   it('sets the steps the first at the track’s start, the last at its end, the rest evenly between', () => {

@@ -264,12 +264,23 @@ const CASES: FitCase[] = [
     },
   ],
   [
-    'Convert image page (Bead & Technique)',
+    'Convert image page (Background found)',
     ConvertPageHost,
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
-      press(root, 'convert-step-bead')
+      press(root, 'convert-remove-background')
+    },
+  ],
+  [
+    'Convert image page (Background removed, Make empty)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      press(root, 'convert-remove-background')
+      press(root, 'convert-remove-found')
+      press(root, 'convert-tool-make-empty')
     },
   ],
   [

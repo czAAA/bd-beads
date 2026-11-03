@@ -2,17 +2,18 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { provideConvertImageWizard, type ConvertImageWizard } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
-import { estimatedGrams, formatGrams } from '../../domain/beadQuantities'
-import { formFactorName, offeredBeads } from '../../domain/beads'
-import type { ConvertStep } from '../../domain/convertSize'
+import { formFactorName } from '../../domain/beads'
+import { CONVERT_STEPS, type ConvertStep } from '../../domain/convertSize'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits } from '../../domain/imageConversion'
+import { scrollPosition, stepAnchors } from '../../domain/scrollSteps'
+import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
-import FormField from '../ui/form/FormField.vue'
-import BeadSection from '../project/BeadSection.vue'
-import TechniqueSection from '../project/TechniqueSection.vue'
+import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
 import ConvertColorsSection from './ConvertColorsSection.vue'
 import ConvertImagePreview from './ConvertImagePreview.vue'
 import ConvertPictureSection from './ConvertPictureSection.vue'
@@ -20,9 +21,9 @@ import ConvertReviewSection from './ConvertReviewSection.vue'
 import ConvertSection from './ConvertSection.vue'
 import ConvertSizeSection from './ConvertSizeSection.vue'
 
-// Convert image as an App page (ticket 0756, ADR 0086; ConvertImage and PhoneForms cards): the live preview beside the
-// step in hand (above it under 1024 px or in portrait), filling the canvas box. The steps themselves are on the Progress
-// bar (ConvertStepBar). Its setup is its own copy of the form's, held by the flow's session; Close and Escape ask to leave.
+// Convert image as an App page (tickets 0756, 0780; ADR 0086; ConvertImage and PhoneForms cards): the live preview beside
+// one scrolling pane of every step (above it under 1024 px or in portrait), filling the canvas box. The pane's scroll is
+// what the Progress bar (ConvertStepBar) follows, and a dot, Back or Next scrolls it. Close and Escape ask to leave.
 const props = defineProps<{
   wizard: ConvertImageWizard
   readClipboardImage: () => Promise<File | undefined>
@@ -35,6 +36,7 @@ const words = computed(() => t.value.convertImage.wizard)
 const { wizard } = props
 provideConvertImageWizard(wizard)
 const result = useConvertResult(wizard)
+const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
 const rootEl = ref<HTMLElement>()
 
@@ -84,33 +86,72 @@ function onDrop(event: DragEvent) {
 }
 const dropLimits = computed(() => formatImageLimits(words.value.dropLimits))
 
-// --- The step in hand -------------------------------------------------------------------------------------------------
+// --- The steps' headers ------------------------------------------------------------------------------------------------
 
-const summaries = computed<Record<ConvertStep, string | undefined>>(() => {
-  const bead = wizard.bead.value
-  const grid = wizard.dimensions.value
-  const used = wizard.usedColorCount.value
-  const weight = wizard.draftProject.value && estimatedGrams(wizard.found.value.reduce((sum, color) => sum + (color.result ? color.count : 0), 0), bead)
-  const source = { 'bead-colors': words.value.beadColors, default: words.value.defaultPalette, exact: words.value.exact }[wizard.source.value]
+const summaries = computed<Record<ConvertStep, string>>(() => {
+  if (!wizard.hasPicture.value) {
+    const shut = words.value.shutSummary
+    return { picture: beadSummary.value, background: shut, size: shut, colors: shut, review: shut }
+  }
+  const whole = wizard.dimensions.value
+  const kept = wizard.kept.value
+  const found = wizard.backgroundFound.value
+  const empty = wizard.emptyColorCount.value
+  const backgroundStage = wizard.background.value
   return {
-    picture: undefined,
-    bead: `${formFactorName(bead.formFactor)} ${bead.size} · ${techniqueName(t.value, wizard.technique.value)}`,
-    size: `${grid.columns}×${grid.rows}${result.value ? ` · ${result.value.measured}` : ''}`,
-    colors: `${source} · ${used}`,
-    review: weight === undefined ? undefined : `≈ ${formatGrams(weight, t.value.quantities.gramsUnit, locale.value)}`,
+    picture: beadSummary.value,
+    background:
+      backgroundStage === 'off' || !found
+        ? words.value.summaryOff
+        : fillBlanks(backgroundStage === 'removed' ? words.value.summaryRemoved : words.value.summaryFound, { n: found.percent }),
+    size: kept
+      ? fillBlanks(words.value.summaryKept, { columns: kept.columns, rows: kept.rows, wholeColumns: whole.columns, wholeRows: whole.rows })
+      : `${whole.columns}×${whole.rows}${result.value ? ` · ${result.value.measured}` : ''}`,
+    colors: [plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount), ...(empty > 0 ? [fillBlanks(words.value.emptyCount, { n: empty })] : [])].join(' · '),
+    review: plural(locale.value, wizard.beadCount.value, words.value.beadsCount),
   }
 })
+const beadSummary = computed(() => {
+  const bead = wizard.bead.value
+  return `${formFactorName(bead.formFactor)} ${bead.size} · ${techniqueName(t.value, wizard.technique.value)}`
+})
 
-const stepEl = ref<HTMLElement>()
-/** A new step starts at its top, and focus moves to its heading so a screen reader says where it is. */
-watch(
-  () => wizard.step.value,
-  async () => {
-    await nextTick()
-    stepEl.value?.scrollTo?.({ top: 0 })
-    stepEl.value?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
-  },
-)
+// --- The one scrolling pane --------------------------------------------------------------------------------------------
+
+const paneEl = ref<HTMLElement>()
+/** Which step's header is pinned at the pane's top now, so it shows its edge. */
+const stuck = ref(-1)
+
+const sectionsIn = (pane: HTMLElement) => [...pane.querySelectorAll<HTMLElement>(':scope > .convert-section')]
+function anchorsOf(pane: HTMLElement) {
+  return stepAnchors(sectionsIn(pane).map((section) => section.offsetTop), pane.scrollHeight - pane.clientHeight)
+}
+
+/** The pane scrolled: the Progress bar follows it between the steps, and the step nearest the top is current. */
+function onPaneScroll() {
+  const pane = paneEl.value
+  if (!pane) return
+  wizard.setScroll(wizard.hasPicture.value ? scrollPosition(anchorsOf(pane), pane.scrollTop) : 0)
+  const top = pane.scrollTop
+  stuck.value = top <= 0 ? -1 : sectionsIn(pane).findIndex((section) => section.offsetTop <= top && section.offsetTop + section.offsetHeight > top)
+}
+
+/** A dot, Back or Next: the pane scrolls to the step (smooth, a jump under reduced motion) and focus moves to its heading. */
+watch(wizard.scrollRequest, async (request) => {
+  const pane = paneEl.value
+  if (!request || !pane) return
+  await nextTick()
+  const index = CONVERT_STEPS.indexOf(request.step)
+  const top = anchorsOf(pane)[index] ?? 0
+  if (pane.scrollTo && !reducedMotion.value) pane.scrollTo({ top, behavior: 'smooth' })
+  else {
+    pane.scrollTop = top
+    onPaneScroll()
+  }
+  sectionsIn(pane)[index]?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
+})
+// A picture set opens the later steps: the bar and the pinned header follow the new layout.
+watch(wizard.hasPicture, () => nextTick(onPaneScroll))
 </script>
 
 <template>
@@ -128,29 +169,48 @@ watch(
       <ConvertImagePreview />
     </div>
 
-    <div ref="stepEl" class="convert-page__step" data-testid="convert-step-pane">
+    <div ref="paneEl" class="convert-page__step" data-testid="convert-step-pane" @scroll.passive="onPaneScroll">
       <ConvertSection
-        v-if="wizard.step.value === 'picture'"
         :step="1"
         :title="words.sections.picture"
+        :summary="summaries.picture"
         :done="wizard.hasPicture.value"
+        :stuck="stuck === 0"
         testid="convert-section-picture"
       >
         <ConvertPictureSection @paste="pasteFromClipboard" />
       </ConvertSection>
-      <ConvertSection v-else-if="wizard.step.value === 'bead'" :step="2" :title="words.sections.bead" :summary="summaries.bead" testid="convert-section-bead">
-        <FormField :label="t.form.beadLabel">
-          <BeadSection :bead="wizard.bead.value" :candidates="offeredBeads()" @pick="wizard.beadId.value = $event" />
-        </FormField>
-        <TechniqueSection v-model:technique="wizard.technique.value" :settings="wizard.settings.value" testid="convert" @set-setting="wizard.setSetting" />
+      <ConvertSection
+        :step="2"
+        :title="words.sections.background"
+        :summary="summaries.background"
+        :shut="!wizard.hasPicture.value"
+        :stuck="stuck === 1"
+        testid="convert-section-background"
+      >
+        <ConvertBackgroundSection />
       </ConvertSection>
-      <ConvertSection v-else-if="wizard.step.value === 'size'" :step="3" :title="words.sections.size" :summary="summaries.size" testid="convert-section-size">
+      <ConvertSection :step="3" :title="words.sections.size" :summary="summaries.size" :shut="!wizard.hasPicture.value" :stuck="stuck === 2" testid="convert-section-size">
         <ConvertSizeSection />
       </ConvertSection>
-      <ConvertSection v-else-if="wizard.step.value === 'colors'" :step="4" :title="words.sections.colors" :summary="summaries.colors" testid="convert-section-colors">
+      <ConvertSection
+        :step="4"
+        :title="words.sections.colors"
+        :summary="summaries.colors"
+        :shut="!wizard.hasPicture.value"
+        :stuck="stuck === 3"
+        testid="convert-section-colors"
+      >
         <ConvertColorsSection />
       </ConvertSection>
-      <ConvertSection v-else :step="5" :title="words.sections.review" :summary="summaries.review" testid="convert-section-review">
+      <ConvertSection
+        :step="5"
+        :title="words.sections.review"
+        :summary="summaries.review"
+        :shut="!wizard.hasPicture.value"
+        :stuck="stuck === 4"
+        testid="convert-section-review"
+      >
         <ConvertReviewSection />
       </ConvertSection>
     </div>
@@ -183,10 +243,13 @@ watch(
 }
 
 .convert-page__step {
+  position: relative;
   flex: none;
   width: var(--convert-sections-width);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: var(--canvas);
   border-left: 1px solid var(--panel-rule);
 }
 

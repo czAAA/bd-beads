@@ -117,12 +117,15 @@ const sections = computed<HomepageSection[]>(() => [
 const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id === 'plans'))
 const pageEl = ref<HTMLElement>()
 const section = ref(0)
+/** The page's scroll in sections, for the Progress bar's fill to follow (ticket 0780). */
+const scrolled = ref(0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 /** The section a step's jump is on its way to: the box turns to it at once, not through each one the scroll passes. */
 let jumpingTo: number | undefined
 
 function onPageScroll() {
   const page = pageEl.value!
+  scrolled.value = page.scrollTop / Math.max(1, page.clientHeight)
   if (plansIndex.value >= 0) freeGrowth.scrolledPast(page.scrollTop - plansIndex.value * page.clientHeight)
   if (freeGrowth.growing.value) snapOff.value = true
   const shown = sectionAt(page.scrollTop, page.clientHeight, sections.value.length)
@@ -155,6 +158,8 @@ function goTo(index: number) {
   if (!page || index === section.value) return
   if (!reducedMotion.value) jumpingTo = index
   page.scrollTo?.({ top: index * page.clientHeight, behavior: reducedMotion.value ? 'auto' : 'smooth' })
+  // A page that cannot scroll smoothly gets there at once, and so does the fill.
+  if (reducedMotion.value || !page.scrollTo) scrolled.value = index
   show(index)
 }
 
@@ -330,7 +335,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
               </div>
             </main>
           </div>
-          <SectionBar :section="section" :sections="sections" @go="goTo" />
+          <SectionBar :section="section" :position="scrolled" :sections="sections" @go="goTo" />
         </div>
       </div>
       <span

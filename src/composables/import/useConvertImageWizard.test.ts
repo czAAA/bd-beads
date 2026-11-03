@@ -149,8 +149,8 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
   })
 })
 
-describe('useConvertImageWizard steps (ticket 0756)', () => {
-  it('waits on Picture until a picture is set, then steps one at a time and ends on Review', async () => {
+describe('useConvertImageWizard steps (tickets 0756, 0780)', () => {
+  it('waits on Picture & bead until a picture is set, then asks the pane to scroll a step at a time, the scroll setting the step', async () => {
     const scope = effectScope()
     const wizard = scope.run(() =>
       useConvertImageWizard({
@@ -160,17 +160,15 @@ describe('useConvertImageWizard steps (ticket 0756)', () => {
       }),
     )!
     wizard.goNext()
-    expect(wizard.step.value).toBe('picture')
+    expect(wizard.scrollRequest.value).toBeUndefined()
 
     await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
     wizard.goNext()
-    expect(wizard.step.value).toBe('bead')
-    wizard.goTo('review')
-    expect(wizard.step.value).toBe('review')
-    expect(wizard.onLastStep.value).toBe(true)
-    wizard.goNext()
-    expect(wizard.step.value).toBe('review')
+    expect(wizard.scrollRequest.value).toEqual({ step: 'background' })
+    wizard.setScroll(3.6)
+    expect([wizard.step.value, wizard.position.value, wizard.onLastStep.value]).toEqual(['review', 3.6, true])
     wizard.goBack()
-    expect(wizard.step.value).toBe('colors')
+    expect(wizard.scrollRequest.value).toEqual({ step: 'colors' })
+    scope.stop()
   })
 })
