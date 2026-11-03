@@ -336,6 +336,13 @@ export const es: Translations = {
     tagline: 'guarda. cuenta. exporta',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
+    findLost: {
+      button: 'Buscar proyectos perdidos',
+      found: 'Encontrado en este navegador: {names}. Se está guardando una copia en este dispositivo.',
+      unreadable: 'una copia que la app no puede leer',
+      untitled: 'sin nombre',
+      nothing: 'Este navegador no guarda proyectos de este sitio.',
+    },
     whatsInside: 'Qué incluye',
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
