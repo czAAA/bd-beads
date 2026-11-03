@@ -11,6 +11,10 @@ import {
   MIRROR_OFF,
   canvasMirrors,
   counterparts,
+  fittedCount,
+  mirrorFit,
+  mirrorFitOf,
+  mirrorLines,
   isMirrorOn,
   mirrorSettingOf,
   mirroredOnCanvas,
@@ -101,11 +105,11 @@ describe('counterparts on the whole Frame by index (tickets 0703, 0750, spec 070
     ])
   })
 
-  it('maps peyote by index too, the half-bead shift being the grid\'s own', () => {
+  it('maps peyote by the bead\'s place: a shifted column\'s bead reflects to a row higher than its index would, and no Left–right on an even width (ticket 0775)', () => {
     const sheet = layerSheet(framed('peyote', 6, 3), 'frame')
     expect(counterparts(sheet, on({ leftRight: true, topBottom: true }), [{ row: 1, column: 1 }]).positions).toEqual([
       { row: 1, column: 1 },
-      { row: 1, column: 4 },
+      { row: 0, column: 1 },
     ])
   })
 
@@ -331,7 +335,7 @@ describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
     expect(cells(counterparts(sheet, radial(4, 'mirror'), [at(0, 0)]))).toEqual([[0, 0], [0, 4], [4, 4], [4, 0]])
   })
 
-  it('on peyote and brick keeps the index and takes the grid\'s half-bead shift, and four quarter turns come back to the start: every image has the same images', () => {
+  it('four quarter turns come back to the start on loom, and on peyote and brick, where Fold 4 reads as the half turn (ticket 0775): every image has the same images', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
       for (const [columns, rows] of [[6, 6], [7, 7], [5, 4]]) {
         const sheet = layerSheet(framed(technique, columns, rows), 'frame')
@@ -343,7 +347,7 @@ describe('Radial counterparts on a grid (ticket 0705, spec 0702)', () => {
         }
       }
     }
-    expect(cells(counterparts(layerSheet(framed('brick', 4, 4), 'frame'), radial(4), [at(0, 0)]))).toEqual([[0, 0], [0, 3], [3, 3], [3, 0]])
+    expect(cells(counterparts(layerSheet(framed('brick', 4, 4), 'frame'), radial(4), [at(0, 0)]))).toEqual([[0, 0], [3, 3]])
   })
 
   it('on a Frame that is not square a Fold 4 reads as the half turn, so nothing is dropped (ticket 0751)', () => {
@@ -377,7 +381,8 @@ describe('Radial on a grid is always symmetric (ticket 0751, spec 0702)', () => 
                 const own = counterparts(sheet, radial(fold, mode), [at(row, column)])
                 const set = new Set(own.positions.map(key))
                 const label = `${technique} ${columns}×${rows} Fold ${fold} ${mode} from ${row}:${column}`
-                if (columns === rows && fold === 4) expect(own.dropped, label).toBe(0)
+                // Peyote's and brick's shifted line hangs half a bead past the edge, and its last bead's image with it (ticket 0775).
+                if (columns === rows && fold === 4 && technique === 'loom') expect(own.dropped, label).toBe(0)
                 for (const image of own.positions) expect(new Set(counterparts(sheet, radial(fold, mode), [image]).positions.map(key)), label).toEqual(set)
               }
             }
@@ -385,6 +390,168 @@ describe('Radial on a grid is always symmetric (ticket 0751, spec 0702)', () => 
         }
       }
     }
+  })
+})
+
+describe('Mirror on peyote and brick, by the bead\'s place (ticket 0775, spec 0702)', () => {
+  /** Peyote or brick on the open Canvas, its Drop given; a Mirror in an Area of it. */
+  const canvas = (technique: Technique, drop = 1) => {
+    const sheet = layerSheet(open(technique), 'canvas')
+    return drop === 1 ? sheet : { ...sheet, weave: { ...sheet.weave, techniqueSettings: { peyoteDrop: drop } } }
+  }
+  const inArea = (rect: Rect, axes: Partial<MirrorSetting['axes']>, mode: MirrorSetting['mode'] = 'mirror', counts: Partial<MirrorSetting['counts']> = {}) => on(axes, counts, mode, onCanvas(rect))
+  /** A bead's centre on a 1-drop peyote grid: odd columns sit half a bead down. */
+  const peyoteY = ({ row, column }: { row: number; column: number }) => row + (column % 2 === 1 ? 0.5 : 0)
+
+  it('reflects an "M" drawn above a Top–bottom Axis on peyote into an "M" below it: every bead\'s centre the same distance the other side', () => {
+    const sheet = canvas('peyote')
+    const rect = area(0, 0, 13, 17)
+    // Rows 0 to 12: the Axis runs through the middle of row 6 of the unshifted columns.
+    const drawn = [at(2, 3), at(3, 3), at(2, 4), at(2, 5), at(3, 5)]
+    const { positions } = counterparts(sheet, inArea(rect, { topBottom: true }), drawn)
+    expect(positions.slice(drawn.length)).toEqual([at(9, 3), at(8, 3), at(10, 4), at(9, 5), at(8, 5)])
+    for (const [index, source] of drawn.entries()) expect(peyoteY(source) + peyoteY(positions[drawn.length + index]!)).toBe(12)
+  })
+
+  it('drops the image of the bead a shifted column hangs half past the Area\'s edge, and repeats by whole rows as loom does', () => {
+    const sheet = canvas('peyote')
+    expect(counterparts(sheet, inArea(area(0, 0, 13, 17), { topBottom: true }), [at(12, 3)])).toEqual({ positions: [at(12, 3)], dropped: 1 })
+    expect(cells(counterparts(sheet, inArea(area(0, 0, 12, 17), { topBottom: true }, 'repeat'), [at(1, 3)]))).toEqual([[1, 3], [7, 3]])
+  })
+
+  it('reflects a shifted brick row\'s bead Left–right by its centre, a bead further than its index would', () => {
+    const sheet = canvas('brick')
+    const rect = area(0, 0, 4, 7)
+    expect(cells(counterparts(sheet, inArea(rect, { leftRight: true }), [at(0, 0)]))).toEqual([[0, 0], [0, 6]])
+    expect(cells(counterparts(sheet, inArea(rect, { leftRight: true }), [at(1, 0)]))).toEqual([[1, 0], [1, 5]])
+    expect(counterparts(sheet, inArea(rect, { leftRight: true }), [at(1, 6)]).dropped).toBe(1)
+  })
+
+  it('offers Left–right on 1-drop peyote only where every Axis runs through a column\'s middle: one Axis on an odd width; in Repeat, strips of an even number of columns', () => {
+    const { weave } = canvas('peyote')
+    expect(mirrorFit(weave, area(0, 0, 13, 17), 'mirror')).toMatchObject({ counts: { leftRight: [1] }, off: {} })
+    expect(mirrorFit(weave, area(0, 0, 13, 16), 'mirror')).toMatchObject({ counts: { leftRight: [] }, off: { leftRight: 'shift' } })
+    expect(mirrorFit(weave, area(0, 0, 13, 16), 'repeat').counts.leftRight).toEqual([1, 3, 7])
+    // Top–bottom keeps a bead in its column: every count, as on loom.
+    expect(mirrorFit(weave, area(0, 0, 13, 16), 'mirror').counts.topBottom).toHaveLength(12)
+    expect(counterparts(canvas('peyote'), inArea(area(0, 0, 13, 16), { leftRight: true }), [at(2, 3)])).toEqual({ positions: [at(2, 3)], dropped: 0 })
+  })
+
+  it('on brick offers Top–bottom as peyote offers Left–right, and on 2-drop peyote an Axis through the middle of a block of two columns', () => {
+    expect(mirrorFit(canvas('brick').weave, area(0, 0, 8, 8), 'mirror')).toMatchObject({ counts: { topBottom: [] }, off: { topBottom: 'shift' } })
+    expect(mirrorFit(canvas('brick').weave, area(0, 0, 7, 8), 'mirror').counts.topBottom).toEqual([1])
+    const twoDrop = canvas('peyote', 2).weave
+    expect(mirrorFit(twoDrop, area(0, 0, 9, 18), 'mirror').counts.leftRight).toEqual([1])
+    expect(mirrorFit(twoDrop, area(0, 0, 9, 16), 'mirror').off.leftRight).toBe('shift')
+  })
+
+  it('uses the nearest count the Area offers below the setting, else the least, and none where the chip is off', () => {
+    const fit = mirrorFit(canvas('peyote').weave, area(0, 0, 13, 16), 'repeat')
+    expect([1, 2, 3, 6, 9].map((count) => fittedCount(fit, 'leftRight', count))).toEqual([1, 1, 3, 3, 7])
+    expect(fittedCount(mirrorFit(canvas('peyote').weave, area(0, 0, 13, 16), 'mirror'), 'leftRight', 1)).toBeUndefined()
+  })
+
+  it('turns a half about the centre by the bead\'s place: on an odd width a shifted column\'s bead a row further, on an even one by index about a centre a quarter bead down', () => {
+    const sheet = canvas('peyote')
+    expect(cells(counterparts(sheet, inArea(area(0, 0, 13, 17), { radial: true }, 'repeat'), [at(0, 0), at(0, 1)]))).toEqual([[0, 0], [0, 1], [12, 16], [11, 15]])
+    expect(cells(counterparts(sheet, inArea(area(0, 0, 13, 16), { radial: true }, 'repeat'), [at(0, 0)]))).toEqual([[0, 0], [12, 15]])
+    expect(mirrorLines(sheet.weave, area(0, 0, 13, 16), inArea(area(0, 0, 13, 16), { radial: true }, 'repeat')).radial).toEqual({ centre: { x: 8, y: 6.75 }, fold: 2 })
+    expect(mirrorLines(sheet.weave, area(0, 0, 13, 17), inArea(area(0, 0, 13, 17), { radial: true }, 'repeat')).radial?.centre).toEqual({ x: 8.5, y: 6.5 })
+  })
+
+  it('offers no quarter turn on peyote or brick, a Fold 4 turning a half; Radial in Mirror mode only where Left–right is offered; none where no half turn is exact', () => {
+    for (const technique of ['peyote', 'brick'] as const) expect(mirrorFit(canvas(technique).weave, area(0, 0, 9, 9), 'repeat')).toMatchObject({ folds: [2], quarterOff: 'shift' })
+    const sheet = canvas('peyote')
+    expect(cells(counterparts(sheet, inArea(area(0, 0, 9, 9), { radial: true }, 'repeat'), [at(0, 0)]))).toEqual(cells(counterparts(sheet, { ...inArea(area(0, 0, 9, 9), { radial: true }, 'repeat'), fold: 4 }, [at(0, 0)])))
+    expect(mirrorFit(sheet.weave, area(0, 0, 8, 8), 'mirror')).toMatchObject({ folds: [], off: { radial: 'shift' } })
+    expect(counterparts(sheet, inArea(area(0, 0, 8, 8), { radial: true }), [at(0, 0)]).positions).toEqual([at(0, 0)])
+    // 2-drop with an odd width: a column and the one it turns onto sit alike in some pairs and differently in others.
+    expect(mirrorFit(canvas('peyote', 2).weave, area(0, 0, 9, 9), 'repeat').off.radial).toBe('shift')
+    expect(mirrorFit(canvas('loom').weave, area(0, 0, 9, 9), 'mirror')).toEqual({ counts: { leftRight: [1, 2, 3, 4, 5, 6, 7, 8], topBottom: [1, 2, 3, 4, 5, 6, 7, 8] }, off: {}, folds: [2, 4] })
+  })
+
+  /** A bead's centre on peyote (columns a block of `drop` shifted down) or brick (rows shifted across). */
+  const centreOf = (technique: Technique, drop: number, { row, column }: { row: number; column: number }) => {
+    const shifted = (line: number) => (Math.abs(Math.floor(line / drop)) % 2 === 1 ? 0.5 : 0)
+    return technique === 'peyote' ? { x: column + 0.5, y: row + 0.5 + shifted(column) } : { x: column + 0.5 + shifted(row), y: row + 0.5 }
+  }
+
+  it('turns every bead a half about one point wherever Radial is offered, and in Mirror mode reflects it across that point\'s lines too, on 1-drop and 2-drop peyote and on brick', () => {
+    for (const [technique, drop] of [['peyote', 1], ['peyote', 2], ['brick', 1]] as const) {
+      const sheet = canvas(technique, drop)
+      for (const [rows, columns] of [[13, 17], [12, 16], [9, 18], [10, 10], [7, 9]]) {
+        const rect = area(0, 0, rows, columns)
+        const label = `${technique} ${drop}-drop ${rows}×${columns}`
+        if (mirrorFit(sheet.weave, rect, 'repeat').folds.length === 0) continue
+        const middles = new Set<string>()
+        for (let row = 0; row < rows; row++) {
+          for (let column = 0; column < columns; column++) {
+            const source = centreOf(technique, drop, at(row, column))
+            const [, turned] = counterparts(sheet, { ...inArea(rect, { radial: true }, 'repeat'), fold: 2 }, [at(row, column)]).positions
+            if (turned) middles.add(`${(source.x + centreOf(technique, drop, turned).x) / 2}:${(source.y + centreOf(technique, drop, turned).y) / 2}`)
+          }
+        }
+        expect(middles.size, label).toBe(1)
+        if (mirrorFit(sheet.weave, rect, 'mirror').folds.length === 0) continue
+        const [cx, cy] = [...middles][0]!.split(':').map(Number) as [number, number]
+        for (let row = 0; row < rows; row++) {
+          for (let column = 0; column < columns; column++) {
+            const { x, y } = centreOf(technique, drop, at(row, column))
+            const exact = new Set([`${x}:${y}`, `${2 * cx - x}:${2 * cy - y}`, `${2 * cx - x}:${y}`, `${x}:${2 * cy - y}`])
+            for (const image of counterparts(sheet, { ...inArea(rect, { radial: true }), fold: 2 }, [at(row, column)]).positions) {
+              const centre = centreOf(technique, drop, image)
+              expect(exact.has(`${centre.x}:${centre.y}`), `${label} mirror from ${row}:${column}`).toBe(true)
+            }
+          }
+        }
+      }
+    }
+  })
+
+  it('lands every counterpart on a bead whose centre is the source\'s mirror image, for every count the Area offers', () => {
+    for (const [technique, drop] of [['peyote', 1], ['peyote', 2], ['brick', 1]] as const) {
+      const sheet = canvas(technique, drop)
+      for (const [rows, columns] of [[13, 17], [12, 16], [9, 18], [10, 10]]) {
+        const rect = area(0, 0, rows, columns)
+        for (const mode of ['mirror', 'repeat'] as const) {
+          const fit = mirrorFit(sheet.weave, rect, mode)
+          for (const direction of ['leftRight', 'topBottom'] as const) {
+            for (const count of fit.counts[direction]) {
+              const setting = inArea(rect, { [direction]: true }, mode, { [direction]: count })
+              const width = direction === 'leftRight' ? columns : rows
+              if (mode === 'mirror' ? (2 * width) % (count + 1) !== 0 : width % (count + 1) !== 0) continue
+              for (let row = 0; row < rows; row++) {
+                for (let column = 0; column < columns; column++) {
+                  const source = centreOf(technique, drop, at(row, column))
+                  for (const image of counterparts(sheet, setting, [at(row, column)]).positions) {
+                    const centre = centreOf(technique, drop, image)
+                    const label = `${technique} ${drop}-drop ${rows}×${columns} ${mode} ${direction} ${count} from ${row}:${column}`
+                    // Off the reflected line a bead keeps its place; along it the image is a strip's reflection or move.
+                    if (direction === 'leftRight') expect(centre.y, label).toBe(source.y)
+                    else expect(centre.x, label).toBe(source.x)
+                    const along = (point: { x: number; y: number }) => (direction === 'leftRight' ? point.x : point.y)
+                    const strip = width / (count + 1)
+                    const fold = (value: number) => (mode === 'repeat' ? ((value % strip) + strip) % strip : Math.min(((value % (2 * strip)) + 2 * strip) % (2 * strip), 2 * strip - (((value % (2 * strip)) + 2 * strip) % (2 * strip))))
+                    expect(fold(along(centre)), label).toBeCloseTo(fold(along(source)), 9)
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+})
+
+describe('what the Mirror\'s place offers the bar (ticket 0775)', () => {
+  it('is its grid Area\'s fit, the whole Frame\'s on a peyote Frame, and none while the Mirror is off or on a Custom frame', () => {
+    const peyote = framed('peyote', 6, 4)
+    expect(mirrorFitOf(peyote, on({ leftRight: true }))?.off).toEqual({ leftRight: 'shift', radial: 'shift' })
+    expect(mirrorFitOf(peyote, MIRROR_OFF)).toBeUndefined()
+    const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const star = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 30 } } }) as { project: Project }
+    expect(mirrorFitOf(star.project, on({ radial: true }))).toBeUndefined()
   })
 })
 

@@ -862,6 +862,7 @@ function wireAppShell(services: Services) {
       mirrorOn: mirror.on,
       mirrorOnFrame: mirror.onFrame,
       mirrorRect: mirror.rect,
+      mirrorFit: mirror.fit,
       mirrorShape: mirror.shape,
       mirrorMarking: mirror.marking,
       mirrorAdjusting: mirror.adjusting,
