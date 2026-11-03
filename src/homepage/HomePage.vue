@@ -8,7 +8,6 @@ import type { ProjectLibrary } from '../composables/project/useProjectLibrary'
 import type { LibraryEntry } from '../composables/project/useSavedProjectConfirms'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
-import type { FoundCopy } from '../services/lostLibrary'
 import CanvasStrip from '../components/canvas/CanvasStrip.vue'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 import PanelHost from '../components/shell/PanelHost.vue'
@@ -46,8 +45,6 @@ const props = defineProps<{
   feedback: FeedbackService
   /** The library, opened only once its Saved Projects are shown in the Menu (ticket 0716). */
   openLibrary?: () => HomepageLibrary
-  /** TEMPORARY (ticket 0781): every stored copy of the library, each one handed over as a file by the entry. */
-  findLostProjects?: () => FoundCopy[]
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
@@ -211,15 +208,6 @@ const isNew = computed(() => count.value === 0)
 const savedProjects = controlAction('saved-projects')
 /** "Saved Projects · 3": the Menu row's name with the count (ticket 0716). */
 const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${count.value}`)
-
-// TEMPORARY (ticket 0781): what Find lost Projects found, named; undefined until it's tapped.
-const lostCopies = ref<FoundCopy[]>()
-const lostReport = computed(() => {
-  if (!lostCopies.value) return undefined
-  const words = t.value.homepage.findLost
-  const names = lostCopies.value.flatMap((copy) => copy.names?.map((name) => name || words.untitled) ?? [words.unreadable])
-  return names.length === 0 ? words.nothing : fillBlanks(words.found, { names: names.join(', ') })
-})
 </script>
 
 <template>
@@ -318,10 +306,6 @@ const lostReport = computed(() => {
                       {{ savedProjectsLabel }}
                     </AppButton>
                   </span>
-                  <AppButton v-if="findLostProjects" variant="link" data-testid="homepage-find-lost" @click="lostCopies = findLostProjects()">
-                    {{ t.homepage.findLost.button }}
-                  </AppButton>
-                  <p v-if="lostReport" class="homepage__lost" role="status" data-testid="homepage-lost-report">{{ lostReport }}</p>
                 </div>
               </section>
 
@@ -616,18 +600,8 @@ const lostReport = computed(() => {
 
 .homepage__actions {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-8);
+  justify-content: center;
   margin-top: var(--space-16);
-}
-
-.homepage__lost {
-  max-width: 32rem;
-  margin: 0;
-  font: var(--type-body);
-  color: var(--muted);
-  text-align: center;
 }
 
 .homepage__buttons {
