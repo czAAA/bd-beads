@@ -47,36 +47,6 @@ describe('HomePage', () => {
     })
   })
 
-  describe('Find lost Projects (ticket 0781, temporary)', () => {
-    function withSearch(found: { key: string; names: string[] | undefined }[]) {
-      const findLostProjects = vi.fn(() => found)
-      return { findLostProjects, wrapper: mount(HomePage, { props: { projectCount: 0, feedback: fakeFeedback(), findLostProjects }, attachTo: document.body }) }
-    }
-
-    it('names every Project of every stored copy, and a copy it cannot read', async () => {
-      const { findLostProjects, wrapper } = withSearch([
-        { key: 'openbeads:patterns:unreadable', names: undefined },
-        { key: 'bd-beads:patterns', names: ['Rose', ''] },
-      ])
-      expect(wrapper.find('[data-testid="homepage-lost-report"]').exists()).toBe(false)
-
-      await wrapper.find('[data-testid="homepage-find-lost"]').trigger('click')
-
-      expect(findLostProjects).toHaveBeenCalledOnce()
-      expect(wrapper.find('[data-testid="homepage-lost-report"]').text()).toBe(
-        "Found in this browser: a copy the app can't read, Rose, untitled. A copy of them is being saved to this device.",
-      )
-    })
-
-    it('says so when this browser keeps no Projects, an emptied library included', async () => {
-      const { wrapper } = withSearch([{ key: 'openbeads:patterns', names: [] }])
-
-      await wrapper.find('[data-testid="homepage-find-lost"]').trigger('click')
-
-      expect(wrapper.find('[data-testid="homepage-lost-report"]').text()).toBe('This browser keeps no Projects for this site.')
-    })
-  })
-
   describe('the hero band and notes', () => {
     it('shows the notes, hidden from screen readers', () => {
       const wrapper = page()
