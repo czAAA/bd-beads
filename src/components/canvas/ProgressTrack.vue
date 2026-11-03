@@ -13,12 +13,15 @@ const props = withDefaults(defineProps<{
   compact?: boolean
   /** Only the spark's tail is drawn: the Homepage's current step is its dot (ticket 0744). */
   ringed?: boolean
+  /** The share follows a scroll, set on every scroll event: the fill and the spark move with no transition, since
+   * Safari restarts an interrupted one from a stale place and flickers (ticket 0786). Off, they ease a step at a time. */
+  following?: boolean
   label: string
   min: number
   max: number
   now: number
   testid: string
-}>(), { flares: 0, compact: false, ringed: false })
+}>(), { flares: 0, compact: false, ringed: false, following: false })
 
 /** The fill and the spark at its edge are the track's width moved left by the share still to go: they grow by
  * `transform`. */
@@ -38,7 +41,7 @@ watch(
 </script>
 
 <template>
-  <div class="progress-track" role="progressbar" :aria-label="label" :aria-valuemin="min" :aria-valuemax="max" :aria-valuenow="now" :data-testid="`${testid}-track`">
+  <div class="progress-track" :class="{ 'progress-track--following': following }" role="progressbar" :aria-label="label" :aria-valuemin="min" :aria-valuemax="max" :aria-valuenow="now" :data-testid="`${testid}-track`">
     <!-- Its tail inside the clipped groove, its dot outside so its flare and halo show (ticket 0730). -->
     <span class="progress-track__groove">
       <span class="progress-track__fill" :style="fillShift" />
@@ -92,6 +95,12 @@ watch(
 .progress-track__spark[hidden] {
   display: block;
   opacity: 0;
+}
+
+/* Following a scroll, the fill and the spark stand where the scroll is, with no ease to catch up on (ticket 0786). */
+.progress-track--following .progress-track__fill,
+.progress-track--following .progress-track__spark {
+  transition: none;
 }
 
 .progress-track__spark > b {
