@@ -263,6 +263,11 @@
   --section-scale: 0.985; /* A section shrinks this little as it turns. */
   --homepage-mark-large: 26.25rem; /* The faint X1 mark beside the box, 420px, at 7%. */
   --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
+  /* Homepage card, the nudge (ticket 0784). */
+  --nudge-lift: 0.75rem; /* How far the first section lifts to show the page scrolls, 12px. */
+  --nudge-fade: 0.82; /* The first section's opacity at the top of its lift. */
+  --nudge-dip: 0.25rem; /* How far Next's arrow dips with it, 4px. */
+  --nudge-length: 1100ms; /* The lift and settle, once. */
   /* Homepage card, plan tiles (tickets 0740, 0742). */
   --free-start-rows: 4; /* The free list's rows shown before the page is scrolled. */
   --free-growth: 2.5; /* The tile grows this many times as fast as the page scrolls, until it reaches the screen's foot. */
