@@ -31,11 +31,11 @@ followDeviceTheme(window, document.documentElement, currentThemePick)
 const base = import.meta.env.BASE_URL
 
 /** Every way in leaves for the editor, at its plain address or one asking for Saved Projects or a Project (ticket
- * 0716); the tab remembers it, so the main address doesn't send the visitor back here. Its canvas box grows into the editor's
- * (ticket 0776). */
-function goToEditor(address = base) {
+ * 0716); the tab remembers it, so the main address doesn't send the visitor back here. Its content leaves first and its
+ * canvas box grows into the editor's (tickets 0776, 0783). */
+async function goToEditor(address = base) {
   markEditorChosen()
-  leaveWithBox(document.querySelector('.homepage'))
+  await leaveWithBox(document.querySelector('.homepage'))
   location.assign(address)
 }
 

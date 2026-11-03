@@ -40,41 +40,6 @@
       })()
     </script>
     <!--
-      Arriving from the Homepage (ticket 0776, ADR 0088): its canvas box was left at a place src/homepage/boxHandoff.ts
-      remembered. The first paint draws an empty box (#handoff) there for the browser to cross-fade into; boxHandoff.ts
-      grows it into the editor's once the app mounts. Read once, so a reload or any other way in is a plain one.
-    -->
-    <script data-handoff>
-      (function () {
-        var stored = null
-        try {
-          stored = sessionStorage.getItem('openbeads:homepage-box')
-          sessionStorage.removeItem('openbeads:homepage-box')
-        } catch (e) {}
-        var box = null
-        try {
-          box = JSON.parse(stored)
-        } catch (e) {}
-        var sides = ['x', 'y', 'width', 'height']
-        if (!box || !('startViewTransition' in document) || matchMedia('(prefers-reduced-motion: reduce)').matches) return
-        for (var i = 0; i < sides.length; i++) if (typeof box[sides[i]] !== 'number') return
-        var root = document.documentElement
-        for (var j = 0; j < sides.length; j++) root.style.setProperty('--handoff-' + sides[j], box[sides[j]] + 'px')
-        root.dataset.handoff = 'arriving'
-        var optIn = document.createElement('style')
-        optIn.dataset.handoff = ''
-        optIn.textContent = '@view-transition { navigation: auto; }'
-        document.head.appendChild(optIn)
-        addEventListener('pagereveal', function (event) {
-          window.openbeadsHandoff = event.viewTransition
-        })
-        // An app that never mounts mustn't stay hidden under the empty box: the splash comes back.
-        setTimeout(function () {
-          if (root.dataset.handoff === 'arriving') delete root.dataset.handoff
-        }, 4000)
-      })()
-    </script>
-    <!--
       The splash (ticket 69; Loading card): three beads in `accent` on the page background (`surface`) of the theme the
       script above picked, for a visit that has to wait for the code. Inline, so it needs no request; shown only after
       `loading-delay` (300ms) so a quick load never flashes; main.ts removes it when the app mounts. The values are
@@ -118,7 +83,50 @@
   </head>
   <body>
     <div id="splash" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div id="handoff" aria-hidden="true"><div></div></div>
+    <!--
+      Arriving from the Homepage (tickets 0776, 0783; ADR 0088): its canvas box was left where src/homepage/boxHandoff.ts
+      remembered, with its Canvas strip's markup and its canvas marks. The first paint draws that box here (#handoff),
+      the strip as the Homepage drew it a moment ago in this tab (its styles are in the stylesheet above), so the
+      browser's step across the page load lands on the same picture; boxHandoff.ts grows it into the editor's once the
+      app mounts. Read once, so a reload or any other way in is a plain one.
+    -->
+    <div id="handoff" aria-hidden="true" inert><div><i></i></div></div>
+    <script data-handoff>
+      (function () {
+        var stored = null
+        try {
+          stored = sessionStorage.getItem('openbeads:homepage-box')
+          sessionStorage.removeItem('openbeads:homepage-box')
+        } catch (e) {}
+        var box = null
+        try {
+          box = JSON.parse(stored)
+        } catch (e) {}
+        var sides = ['x', 'y', 'width', 'height', 'bodyY', 'bodyHeight']
+        var look = ['marks', 'tile', 'bg']
+        var placeholder = document.getElementById('handoff')
+        if (!box || !placeholder || !('startViewTransition' in document) || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+        for (var i = 0; i < sides.length; i++) if (typeof box[sides[i]] !== 'number') return
+        for (var k = 0; k < look.length; k++) if (typeof box[look[k]] !== 'string') return
+        if (typeof box.strip !== 'string') return
+        var root = document.documentElement
+        for (var j = 0; j < sides.length; j++) root.style.setProperty('--handoff-' + sides[j], box[sides[j]] + 'px')
+        for (var l = 0; l < look.length; l++) root.style.setProperty('--handoff-' + look[l], box[look[l]])
+        placeholder.firstElementChild.insertAdjacentHTML('afterbegin', box.strip)
+        root.dataset.handoff = 'arriving'
+        var optIn = document.createElement('style')
+        optIn.dataset.handoff = ''
+        optIn.textContent = '@view-transition { navigation: auto; }'
+        document.head.appendChild(optIn)
+        addEventListener('pagereveal', function (event) {
+          window.openbeadsHandoff = event.viewTransition
+        })
+        // An app that never mounts mustn't stay hidden under the box: the splash comes back.
+        setTimeout(function () {
+          if (root.dataset.handoff === 'arriving') delete root.dataset.handoff
+        }, 4000)
+      })()
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
