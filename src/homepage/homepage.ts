@@ -5,6 +5,7 @@ import '../styles/design-values.css'
 import '../styles/controls.css'
 import '../styles/contrast.css'
 import '../style.css'
+import '../styles/boxHandoff.css'
 import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadLocale } from '../i18n/useI18n'
@@ -20,6 +21,7 @@ import { projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import { browserFeedback } from '../services/feedback'
+import { leaveWithBox } from './boxHandoff'
 import { markEditorChosen } from './homepageRoute'
 import HomePage from './HomePage.vue'
 
@@ -29,9 +31,11 @@ followDeviceTheme(window, document.documentElement, currentThemePick)
 const base = import.meta.env.BASE_URL
 
 /** Every way in leaves for the editor, at its plain address or one asking for Saved Projects or a Project (ticket
- * 0716); the tab remembers it, so the main address doesn't send the visitor back here. */
+ * 0716); the tab remembers it, so the main address doesn't send the visitor back here. Its canvas box grows into the editor's
+ * (ticket 0776). */
 function goToEditor(address = base) {
   markEditorChosen()
+  leaveWithBox(document.querySelector('.homepage'))
   location.assign(address)
 }
 
