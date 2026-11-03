@@ -84,8 +84,8 @@ export function stepZoom(zoom: number, direction: 1 | -1): number {
   return clampZoom(nextPercent / 100)
 }
 
-/** Keeps a zoom inside the usable range (MIN_ZOOM to MAX_ZOOM), at whole-percent precision so the displayed level
- * and the applied scale agree. */
+/** Keeps a zoom inside the usable range (MIN_ZOOM to MAX_ZOOM), exactly as asked, so a pinch or the wheel follows
+ * smoothly (ticket 0789). Only the level label rounds to a whole percent; the buttons and Fit pick whole percents. */
 export function clampZoom(value: number): number {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
 }
