@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
-import { controlAction } from '../../composables/shell/controlRegistry'
 import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
@@ -9,22 +8,26 @@ import { beadLabel } from '../../domain/beads'
 import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
+import AppIcon from '../ui/AppIcon.vue'
 import AppNote from '../ui/AppNote.vue'
-import AppSwitch from '../ui/AppSwitch.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertDisclosure from './ConvertDisclosure.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
 
-// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758): the Colors slider, Treat as empty,
-// what the found colors are matched to (the Bead's palette only with a Color catalog; Exact at first, a Note on the
+// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758, 0780): the Colors slider, the line
+// pointing at the preview's Make empty, what the found colors are matched to (the Bead's palette only with a Color catalog; Exact at first, a Note on the
 // Bead's palette), and Color by color, closed at first: a heading and a row per found color, one Change open at a time.
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const sourceLabelId = useId()
-const actions = { treatAsEmpty: controlAction('treat-as-empty') }
+/** The line pointing at Make empty round the tool's name, which is set in bold. */
+const makeEmptyLine = computed(() => {
+  const [before = '', after = ''] = words.value.makeEmptyLine.split('{tool}')
+  return { before, after }
+})
 
 /** The Bead as the palette's Bead colors entry names it: its maker, name and shape, with no finish. */
 const beadName = computed(() => beadLabel(wizard.bead.value))
@@ -73,10 +76,10 @@ const remapping = ref<string>()
       @update:model-value="wizard.setMaxColors"
     />
 
-    <div class="convert-colors__empty">
-      <span class="convert-colors__label convert-colors__label--ink">{{ words.treatAsEmpty }}</span>
-      <AppSwitch v-model="wizard.treatAsEmpty.value" :action="actions.treatAsEmpty" data-testid="convert-treat-as-empty" />
-    </div>
+    <p class="convert-colors__empty" data-testid="convert-make-empty-line">
+      <AppIcon name="eyedropper" :size="16" />
+      <span>{{ makeEmptyLine.before }}<b>{{ words.makeEmpty }}</b>{{ makeEmptyLine.after }}</span>
+    </p>
 
     <div class="convert-colors__source">
       <span :id="sourceLabelId" class="convert-colors__label">{{ words.matchTo }}</span>
@@ -113,7 +116,7 @@ const remapping = ref<string>()
 .convert-colors {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
+  gap: var(--space-16);
 }
 
 .convert-colors__source {
@@ -127,16 +130,18 @@ const remapping = ref<string>()
   color: var(--muted);
 }
 
-.convert-colors__label--ink {
-  font: var(--type-control);
-  color: var(--ink);
-}
-
 .convert-colors__empty {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
+  align-items: flex-start;
+  gap: var(--space-10);
+  margin: 0;
+  font: var(--type-body);
+  color: var(--body);
+}
+
+.convert-colors__empty > :first-child {
+  flex: none;
+  margin-top: var(--space-2);
 }
 
 /* The Bead's palette is named in full, so the options share the row by their text, not equally (ticket 0758). */

@@ -4,12 +4,18 @@ import AppButton from '../ui/AppButton.vue'
 import ProgressBar from './ProgressBar.vue'
 import ProgressTrack from './ProgressTrack.vue'
 
-// The Progress bar of a page that goes by steps (tickets 0739, 0744, 0756; ProgressBar card): a counter, the track with a
-// named dot per step, Back where Row not done sits and Next where Row done sits. The Homepage's sections and Convert
+// The Progress bar of a page that goes by steps (tickets 0739, 0744, 0756, 0780; ProgressBar card): a counter, the track
+// with a named dot per step, Back where Row not done sits and Next where Row done sits. The Homepage's sections and Convert
 // image's steps both fill it, knowing only the list given. A page ending in an act gives `finish`: Next on the last reads so.
 const props = defineProps<{
   /** The step shown, from 0. */
   step: number
+  /** Where the page's scroll is, in steps (1.4 is four tenths from the second to the third): the fill and the spark
+   * follow it between the dots (ticket 0780). The step itself when not given. */
+  position?: number
+  /** The way Back and Next point: down for a page whose steps turn vertically (the Homepage), across for one whose
+   * steps run along the bar (Convert image). */
+  arrows?: 'down' | 'across'
   /** In order; each one's `label` names its dot. A `disabled` one cannot be jumped to yet. */
   steps: readonly { id: string; label: string; disabled?: boolean; testid?: string }[]
   /** The track's accessible name. */
@@ -30,10 +36,19 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ go: [step: number]; finish: [] }>()
 
+const icons = computed(() => (props.arrows === 'across' ? { back: 'arrow-left', next: 'arrow-right' } as const : { back: 'arrow-up', next: 'arrow-down' } as const))
+
 const last = computed(() => props.steps.length - 1)
 /** Where a step's dot sits on the track, 0 to 1; the fill reaches the shown one's, so it starts empty. */
 const at = (index: number) => (last.value > 0 ? index / last.value : 1)
 const current = computed(() => props.steps[props.step]?.label ?? '')
+/** How near a dot, in steps, the scroll counts as on it. */
+const ON_DOT = 0.04
+/** The scroll's place between the dots, held to the track: the fill's share. */
+const shown = computed(() => Math.min(last.value, Math.max(0, props.position ?? props.step)))
+const share = computed(() => at(shown.value))
+/** The spark's dot shows only between two dots; on one, the current ring is its place (ProgressBar card). */
+const onDot = computed(() => Math.abs(shown.value - Math.round(shown.value)) < ON_DOT)
 const nextStep = computed(() => props.steps[props.step + 1])
 const finishing = computed(() => !!props.finish && props.step === last.value)
 
@@ -73,9 +88,9 @@ function go(index: number) {
     <span class="step-dots">
       <ProgressTrack
         class="step-bar__track"
-        :share="at(step)"
+        :share="share"
         :flares="flares"
-        ringed
+        :ringed="onDot"
         :label="trackLabel"
         :min="1"
         :max="steps.length"
@@ -105,9 +120,9 @@ function go(index: number) {
     </span>
     <span class="step-bar__moves">
       <AppButton
-        variant="box"
-        size="lg"
-        icon="arrow-up"
+        variant="text"
+        size="sm"
+        :icon="icons.back"
         :label="backLabel"
         :disabled="step === 0"
         :disabled-body="firstBody"
@@ -119,7 +134,7 @@ function go(index: number) {
       <AppButton
         v-if="finishing && finish"
         variant="primary"
-        size="lg"
+        size="sm"
         :label="finish.label"
         :disabled="finish.disabled"
         :disabled-body="finish.disabledBody"
@@ -131,8 +146,8 @@ function go(index: number) {
       <AppButton
         v-else
         variant="primary"
-        size="lg"
-        trailing-icon="arrow-down"
+        size="sm"
+        :trailing-icon="icons.next"
         :label="nextLabel"
         :disabled="step === last || !!nextStep?.disabled"
         :disabled-body="nextStep?.disabled ? nextDisabledBody : lastBody"
@@ -146,6 +161,13 @@ function go(index: number) {
 </template>
 
 <style scoped>
+/* A bar of steps has room at both ends and between its parts (ticket 0780): 64 tall, 28 between the counter, the track
+ * and the buttons. */
+.step-bar {
+  min-height: var(--step-bar-height);
+  gap: var(--step-bar-gap);
+}
+
 /* The counter is Row progress's ("5/30", `control`). */
 .step-bar__counter {
   margin: 0 0 0 var(--space-2);
@@ -155,13 +177,13 @@ function go(index: number) {
 }
 
 /* The steps (`.bb-section-steps` in bundle.css): the track 8px down, each step's dot centred on it at its share of the
- * track, its name under it; the first name starts at the track's start, the last ends at its end. */
+ * track and its name centred under it; the first and last dots stand in from the ends, so no name runs past them. */
 .step-dots {
   position: relative;
   flex: 1 1 auto;
   min-width: 8rem;
   height: 2.375rem;
-  margin-inline: var(--space-8);
+  margin-inline: var(--step-names-inset);
 }
 
 .step-bar__track {
@@ -208,18 +230,6 @@ function go(index: number) {
   white-space: nowrap;
 }
 
-.step-dot--first {
-  align-items: flex-start;
-  text-align: left;
-  transform: none;
-}
-
-.step-dot--last {
-  align-items: flex-end;
-  text-align: right;
-  transform: translateX(-100%);
-}
-
 .step-dot--passed {
   color: var(--body);
 }
@@ -232,6 +242,7 @@ function go(index: number) {
  * flare on each step forward. */
 .step-dot--current {
   --d: var(--step-dot-current);
+  font-weight: 500;
   color: var(--ink);
 }
 
@@ -286,9 +297,26 @@ function go(index: number) {
 /* Phone widths: the names are `meta-tiny` and wrap to two lines, and Back and Next take the second row, half the bar
  * each, as Row not done and Row done do (ProgressBar card). */
 @media (max-width: 30rem) {
+  .step-bar {
+    gap: var(--space-4);
+  }
+
   .step-dots {
     height: 3.25rem;
     margin-inline: var(--space-6);
+  }
+
+  /* No room for the inset here: the first name starts at the track's start and the last ends at its end. */
+  .step-dot--first {
+    align-items: flex-start;
+    text-align: left;
+    transform: none;
+  }
+
+  .step-dot--last {
+    align-items: flex-end;
+    text-align: right;
+    transform: translateX(-100%);
   }
 
   .step-dot {

@@ -7,8 +7,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import StepBar from '../canvas/StepBar.vue'
 
-// Convert image's Progress bar (ticket 0756; ConvertImage and ProgressBar cards): the five steps as named dots with Back
-// and Next, and Create Project in Next's place on Review. Every step after Picture waits for a picture.
+// Convert image's Progress bar (tickets 0756, 0780; ConvertImage and ProgressBar cards): the five steps as named dots with
+// ← Back and Next →, and Create Project in Next's place on Review. Its fill follows the pane's scroll between the dots;
+// every step after Picture & bead waits for a picture.
 const props = defineProps<{ wizard: ConvertImageWizard }>()
 const emit = defineEmits<{ create: [] }>()
 
@@ -35,6 +36,8 @@ const finish = computed(() => ({
 <template>
   <StepBar
     :step="wizard.stepIndex.value"
+    :position="wizard.position.value"
+    arrows="across"
     :steps="steps"
     :track-label="words.railLabel"
     :go-to="(label) => fillBlanks(words.goToStep, { step: label })"

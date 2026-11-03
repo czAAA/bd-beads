@@ -22,7 +22,8 @@ const words = computed(() => t.value.convertImage.wizard)
 <style scoped>
 .found-colors-header {
   position: sticky;
-  top: 0;
+  /* Under the Colors step's pinned header (ticket 0780). */
+  top: var(--convert-step-head);
   z-index: 1;
   display: grid;
   grid-template-columns: var(--found-columns);

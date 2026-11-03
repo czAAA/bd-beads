@@ -594,9 +594,13 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
-  unkeyed('treat-as-empty', (t) => t.convertImage.wizard.treatAsEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.treatAsEmpty }),
-  unkeyed('size-linked', (t) => t.convertImage.wizard.sizeLinked, 'edit', { icon: 'link', body: (t) => t.tooltips.sizeLinked }),
-  unkeyed('size-unlinked', (t) => t.convertImage.wizard.sizeUnlinked, 'edit', { icon: 'unlink', body: (t) => t.tooltips.sizeUnlinked }),
+  // Its floating bar (ticket 0780): Select keeps a part of the beads, or crops the picture with A part of the picture.
+  unkeyed('convert-turn', (t) => t.convertImage.wizard.turn, 'edit', { icon: 'rotate', body: (t) => t.tooltips.convertTurn }),
+  unkeyed('convert-flip', (t) => t.convertImage.wizard.flip, 'edit', { body: (t) => t.tooltips.convertFlip }),
+  unkeyed('convert-select-beads', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectBeads }),
+  unkeyed('convert-select-crop', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectCrop }),
+  unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
+  unkeyed('convert-compare', (t) => t.convertImage.wizard.compare, 'edit', { icon: 'contrast', body: (t) => t.tooltips.compare }),
   unkeyed('remap-color', (t) => t.convertImage.wizard.change, 'colors', { icon: 'palette', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
   ...CONVERT_STEPS.map((step) => unkeyed(`convert-step-${step}`, (t) => t.convertImage.wizard.rail[step], 'edit')),

@@ -20,8 +20,8 @@ export interface PixelCrop {
   height: number
 }
 
-/** The Convert image wizard's five numbered sections, in the step rail's order (ConvertImage card). */
-export const CONVERT_STEPS = ['picture', 'bead', 'size', 'colors', 'review'] as const
+/** The Convert image page's five steps, in the pane's and the Progress bar's order (ConvertImage card; ticket 0780). */
+export const CONVERT_STEPS = ['picture', 'background', 'size', 'colors', 'review'] as const
 export type ConvertStep = (typeof CONVERT_STEPS)[number]
 
 /** The part's handles on the preview, in Tab order round it (ConvertImage card): four corners, four edge bars. */
