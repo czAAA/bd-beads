@@ -81,6 +81,33 @@ export function findBackground({ colors, columns, rows, tolerance }: BackgroundI
   return found
 }
 
+/** A row's neighbouring found beads, as one piece: where it starts and how many beads it covers. */
+export interface FoundRun {
+  row: number
+  column: number
+  columns: number
+}
+
+/** The found beads as runs, row by row (ticket 0785): what the preview hatches in one fill. A fill per bead is tens of
+ * thousands on a large picture, which Safari rasterizes so slowly the page stalls for seconds. */
+export function foundRuns({ found, columns, rows }: { found: Uint8Array; columns: number; rows: number }): FoundRun[] {
+  const runs: FoundRun[] = []
+  for (let row = 0; row < rows; row += 1) {
+    const from = row * columns
+    for (let column = 0; column < columns; ) {
+      if (!found[from + column]) {
+        column += 1
+        continue
+      }
+      let run = 1
+      while (column + run < columns && found[from + column + run]) run += 1
+      runs.push({ row, column, columns: run })
+      column += run
+    }
+  }
+  return runs
+}
+
 /** How much of the picture's beads the background takes: the count and its whole percent (the band's and the step's). */
 export function backgroundShare(colors: Int32Array, found: Uint8Array): { beads: number; percent: number } {
   let beads = 0
