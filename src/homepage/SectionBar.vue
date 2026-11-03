@@ -15,6 +15,8 @@ const props = defineProps<{
   position?: number
   /** The Homepage's sections in order; each one's heading names its step. */
   sections: readonly { id: string; heading: string }[]
+  /** The Homepage's nudge is playing (ticket 0784): Next's arrow dips with it. */
+  nudging?: boolean
 }>()
 const emit = defineEmits<{ go: [section: number] }>()
 const { t } = useI18n()
@@ -48,6 +50,7 @@ const BURST_SPAN = { x: 100, y: 160, width: 120, height: 0 }
 
 <template>
   <StepBar
+    :class="{ 'section-bar--nudging': nudging }"
     :step="section"
     :position="position"
     :steps="steps"
@@ -69,6 +72,24 @@ const BURST_SPAN = { x: 100, y: 160, width: 120, height: 0 }
 </template>
 
 <style scoped>
+/* The nudge (ticket 0784): Next's arrow points the way down, twice. */
+.section-bar--nudging :deep(.step-bar__next .app-button__trailing) {
+  animation: section-bar-dip var(--nudge-length) var(--ease-standard) both;
+}
+
+@keyframes section-bar-dip {
+  0%,
+  50%,
+  100% {
+    transform: none;
+  }
+
+  25%,
+  75% {
+    transform: translateY(var(--nudge-dip));
+  }
+}
+
 .section-bar__burst {
   position: absolute;
   top: 50%;

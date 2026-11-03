@@ -367,6 +367,59 @@ describe('HomePage sections (ticket 0739)', () => {
     expect(shown(wrapper)).toEqual(['coffee'])
   })
 
+  it('goes straight to the last section with End and back to the first with Home (ticket 0784)', async () => {
+    const { wrapper, el } = pageWithHeight()
+    await wrapper.get('[data-testid="homepage-page"]').trigger('keydown', { key: 'End' })
+    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 2 * VIEWPORT, behavior: 'smooth' })
+    expect(shown(wrapper)).toEqual(['plans'])
+    await wrapper.get('[data-testid="homepage-page"]').trigger('keydown', { key: 'Home' })
+    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+    expect(shown(wrapper)).toEqual(['inside'])
+  })
+
+  describe('by wheel and trackpad (ticket 0784)', () => {
+    beforeEach(() => void vi.useFakeTimers())
+    afterEach(() => void vi.useRealTimers())
+
+    /** A wheel event on the page, `delta` px down, as the browser sends it. */
+    function wheel(el: HTMLElement, delta: number) {
+      const event = new WheelEvent('wheel', { deltaY: delta, bubbles: true, cancelable: true })
+      el.dispatchEvent(event)
+      return event
+    }
+
+    it('turns the box and scrolls the page a section once a gesture has gone far enough', async () => {
+      const { wrapper, el } = pageWithHeight()
+      wheel(el, 100)
+      vi.advanceTimersByTime(30)
+      wheel(el, 100)
+      vi.advanceTimersByTime(90)
+      await nextTick()
+      expect(shown(wrapper)).toEqual(['coffee'])
+      expect(el.scrollTo).toHaveBeenLastCalledWith({ top: VIEWPORT, behavior: 'smooth' })
+    })
+
+    it('leans the shown section with a gesture short of a turn, and stands it straight once the gesture stops', async () => {
+      const { wrapper, el } = pageWithHeight()
+      const inside = wrapper.get('[data-testid="homepage-section-inside"]')
+      wheel(el, 75)
+      await nextTick()
+      expect((inside.element as HTMLElement).style.transform).toBe('translateY(-8px)')
+      vi.advanceTimersByTime(300)
+      await nextTick()
+      expect((inside.element as HTMLElement).style.transform).toBe('')
+      expect(shown(wrapper)).toEqual(['inside'])
+    })
+
+    it('lifts What\'s inside and dips Next\'s arrow with the nudge', async () => {
+      const { wrapper } = pageWithHeight()
+      vi.advanceTimersByTime(1500)
+      await nextTick()
+      expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--nudge')
+      expect(wrapper.get('[data-testid="section-bar"]').classes()).toContain('section-bar--nudging')
+    })
+  })
+
   it('takes the focus, so the keys scroll the page', () => {
     const { wrapper } = pageWithHeight()
     expect(document.activeElement).toBe(wrapper.get('[data-testid="homepage-page"]').element)
