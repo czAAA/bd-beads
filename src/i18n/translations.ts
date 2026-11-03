@@ -426,6 +426,15 @@ export interface Translations {
     tagline: string
     makeFirstProject: string
     openEditor: string
+    /** TEMPORARY (ticket 0781): the Homepage's search for a lost library, removed with it. */
+    findLost: {
+      button: string
+      /** {names}: the Projects found, one list. */
+      found: string
+      unreadable: string
+      untitled: string
+      nothing: string
+    }
     whatsInside: string
     /** The carousel's ‹ › buttons. */
     previousFeature: string
