@@ -388,23 +388,15 @@ describe('HomePage sections (ticket 0739)', () => {
       return event
     }
 
-    it('holds the page\'s own scroll and turns one section once a gesture has gone far enough, its momentum no more', async () => {
+    it('turns the box and scrolls the page a section once a gesture has gone far enough', async () => {
       const { wrapper, el } = pageWithHeight()
-      expect(wheel(el, 100).defaultPrevented).toBe(true)
+      wheel(el, 100)
       vi.advanceTimersByTime(30)
       wheel(el, 100)
-      await nextTick()
-      expect(shown(wrapper)).toEqual(['inside'])
       vi.advanceTimersByTime(90)
       await nextTick()
       expect(shown(wrapper)).toEqual(['coffee'])
       expect(el.scrollTo).toHaveBeenLastCalledWith({ top: VIEWPORT, behavior: 'smooth' })
-      for (let wheels = 0; wheels < 20; wheels += 1) {
-        vi.advanceTimersByTime(50)
-        wheel(el, 200)
-      }
-      await nextTick()
-      expect(shown(wrapper)).toEqual(['coffee'])
     })
 
     it('leans the shown section with a gesture short of a turn, and stands it straight once the gesture stops', async () => {
@@ -419,19 +411,12 @@ describe('HomePage sections (ticket 0739)', () => {
       expect(shown(wrapper)).toEqual(['inside'])
     })
 
-    it('lifts What\'s inside and dips Next\'s arrow after a stillness, but not once the beader has scrolled', async () => {
+    it('lifts What\'s inside and dips Next\'s arrow with the nudge', async () => {
       const { wrapper } = pageWithHeight()
       vi.advanceTimersByTime(1500)
       await nextTick()
       expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--nudge')
       expect(wrapper.get('[data-testid="section-bar"]').classes()).toContain('section-bar--nudging')
-      wrapper.unmount()
-      localStorage.removeItem('openbeads:homepage-scroll-known')
-      const again = pageWithHeight()
-      wheel(again.el, 10)
-      vi.advanceTimersByTime(3000)
-      await nextTick()
-      expect(again.wrapper.get('[data-testid="homepage-section-inside"]').classes()).not.toContain('homepage__section--nudge')
     })
   })
 

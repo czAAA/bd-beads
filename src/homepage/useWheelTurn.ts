@@ -1,4 +1,4 @@
-import { onScopeDispose, readonly, ref, type Ref } from 'vue'
+import { onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { GESTURE_GAP, addWheel, leanOf, spend, turnDue, wheelPixels, type WheelGesture } from './wheelTurn'
 
 /** What turning the Homepage by wheel needs of the page. */
@@ -35,9 +35,9 @@ export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: 
   const lean = ref(0)
   let gesture: WheelGesture | undefined
   let lastTurn = -Infinity
-  /** The gesture has turned the box: the rest of it is held, never scrolling the page itself, so a flick that reaches
-   * the plans does not grow the free list too. */
-  let holding = false
+  /** When the gesture that turned the box began: the rest of it is held, never scrolling the page itself, so a flick
+   * that reaches the plans does not grow the free list too. */
+  let turnedStart: number | undefined
   let quiet: ReturnType<typeof setTimeout> | undefined
   let due: ReturnType<typeof setTimeout> | undefined
 
@@ -56,7 +56,7 @@ export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: 
     else if (next && index !== undefined) {
       gesture = spend(gesture!)
       lastTurn = now
-      holding = true
+      turnedStart = gesture!.start
       turn(index)
     }
     lean.value = gesture && towards(gesture.distance) !== undefined ? leanOf(gesture) : 0
@@ -66,22 +66,21 @@ export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: 
     if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return
     const wheel = { delta: wheelPixels(event, viewport()), time: Date.now() }
     clearTimeout(quiet)
+    // A gesture far enough to turn, waiting out the last turn, still turns once it goes quiet.
     quiet = setTimeout(() => {
-      gesture = undefined
-      holding = false
+      if (!turnDue(gesture, lastTurn)) gesture = undefined
       settle()
     }, GESTURE_GAP)
     // A gesture that scrolled anything itself turns nothing, even once it reaches the end of what it scrolled.
-    if (!holding && (scrollsInside(event, event.currentTarget) || scrollsFreely(event))) {
-      gesture = spend(addWheel(gesture, wheel))
-      settle()
-      return
-    }
-    event.preventDefault()
     gesture = addWheel(gesture, wheel)
+    const holding = gesture.start === turnedStart
+    if (!holding && (scrollsInside(event, event.currentTarget) || scrollsFreely(event))) gesture = spend(gesture)
+    else event.preventDefault()
     settle()
   }
 
+  // A turn by Next, a step, a key or a swipe stands its while too.
+  watch(section, () => (lastTurn = Date.now()))
   onScopeDispose(() => {
     clearTimeout(quiet)
     clearTimeout(due)

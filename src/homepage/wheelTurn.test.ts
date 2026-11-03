@@ -18,6 +18,7 @@ describe('a wheel gesture turning the Homepage (ticket 0784)', () => {
   it('turns up the same way', () => {
     expect(turnDue(gesture([-80, 1000], [-80, 1016], [-80, 1200]), -Infinity)).toEqual({ way: -1, at: 1120 })
   })
+
   it('starts afresh after 300ms of quiet, so notches far apart never add up', () => {
     expect(turnDue(gesture([100, 0], [100, 300]), -Infinity)).toBeUndefined()
     expect(turnDue(gesture([100, 0], [100, 299]), -Infinity)).toEqual({ way: 1, at: 120 })
