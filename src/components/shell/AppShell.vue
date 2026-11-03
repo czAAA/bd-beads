@@ -115,14 +115,17 @@ const {
 }
 
 /* Body (tickets 383, 439, 513, ADR 0046): the canvas box is the screen, flush with every edge except where the device's
- * safe-area inset (notch, rounded corners, home indicator) takes room. */
+ * safe-area inset (notch, rounded corners, home indicator) takes room. Not at the bottom (ticket 0788): the box runs to
+ * the screen's edge there and the Progress bar along its foot takes the inset inside itself (`--bar-bottom-inset`), so
+ * no dead band shows under it on an iPad. */
 .app-shell__body {
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   position: relative;
-  --body-inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  --body-inset: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  --bar-bottom-inset: env(safe-area-inset-bottom);
   padding: var(--body-inset);
 }
 

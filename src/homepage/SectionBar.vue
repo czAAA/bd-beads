@@ -73,7 +73,7 @@ const BURST_SPAN = { x: 100, y: 160, width: 120, height: 0 }
 
 <style scoped>
 /* The nudge (ticket 0784): Next's arrow points the way down, twice. */
-.section-bar--nudging :deep(.step-bar__next .app-button__trailing) {
+.section-bar--nudging :deep(.progress-moves__forward .app-button__trailing) {
   animation: section-bar-dip var(--nudge-length) var(--ease-standard) both;
 }
 
