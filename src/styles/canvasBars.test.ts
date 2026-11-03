@@ -14,7 +14,7 @@ describe('Canvas strip and Canvas footer height (ticket 544)', () => {
   })
 
   it('has the phone footer be two rows and the strip follow the touch target', () => {
-    expect(controls).toMatch(/--progress-height: calc\(var\(--control-height\) \+ var\(--footer-row-gap\) \+ var\(--footer-item-height\)/)
+    expect(controls).toMatch(/--progress-height: calc\(var\(--footer-item-height\) \+ var\(--footer-row-gap\) \+ var\(--footer-move-height\)/)
     expect(controls).toMatch(/pointer: coarse\)[^}]*\{\s*:root \{\s*--strip-item-height: var\(--touch-target\)/)
   })
 

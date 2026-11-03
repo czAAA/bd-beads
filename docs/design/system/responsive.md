@@ -35,7 +35,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Screen edges and height
 
-- `viewport-fit=cover`: the canvas pads by `env(safe-area-inset-top)`, the Dock by `env(safe-area-inset-bottom)`, and the canvas by the side insets.
+- `viewport-fit=cover`: the canvas pads by `env(safe-area-inset-top)`, the Dock by `env(safe-area-inset-bottom)`, and the canvas by the side insets. The canvas box runs to the bottom edge; the Progress bar along its foot grows by `env(safe-area-inset-bottom)` and keeps its controls above it (ticket 0788).
 - The shell is `position: fixed; inset: 0`, so the mobile address bar never hides the Progress bar or the Dock and no band of page shows under it (`100dvh` can fall short of the screen on iOS).
 - The page never scrolls at any width; only sheets and the Pattern scroll.
 

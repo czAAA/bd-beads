@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import AppButton from '../ui/AppButton.vue'
+import ProgressMoves from './ProgressMoves.vue'
 import ProgressBar from './ProgressBar.vue'
 import ProgressTrack from './ProgressTrack.vue'
 
@@ -51,6 +51,23 @@ const share = computed(() => at(shown.value))
 const onDot = computed(() => Math.abs(shown.value - Math.round(shown.value)) < ON_DOT)
 const nextStep = computed(() => props.steps[props.step + 1])
 const finishing = computed(() => !!props.finish && props.step === last.value)
+/** Next, or on the last step of a page ending in an act, that act in its place with no arrow. */
+const forward = computed(() => {
+  const finish = props.finish
+  if (finishing.value && finish) return { label: finish.label, disabled: finish.disabled, disabledBody: finish.disabledBody, testid: finish.testid }
+  return {
+    label: props.nextLabel,
+    trailingIcon: icons.value.next,
+    disabled: props.step === last.value || !!nextStep.value?.disabled,
+    disabledBody: nextStep.value?.disabled ? props.nextDisabledBody : props.lastBody,
+    testid: `${props.testid}-next`,
+  }
+})
+
+function onForward() {
+  if (finishing.value) emit('finish')
+  else emit('go', props.step + 1)
+}
 
 const flares = ref(0)
 /** The current ring's flare, swapped on each step forward so the next one restarts it, as the spark's is. */
@@ -119,46 +136,13 @@ function go(index: number) {
         <span>{{ entry.label }}</span>
       </button>
     </span>
-    <span class="step-bar__moves">
-      <AppButton
-        variant="text"
-        size="sm"
-        :icon="icons.back"
-        :label="backLabel"
-        :disabled="step === 0"
-        :disabled-body="firstBody"
-        :data-testid="`${testid}-back`"
-        @click="emit('go', step - 1)"
-      >
-        {{ backLabel }}
-      </AppButton>
-      <AppButton
-        v-if="finishing && finish"
-        variant="primary"
-        size="sm"
-        :label="finish.label"
-        :disabled="finish.disabled"
-        :disabled-body="finish.disabledBody"
-        :data-testid="finish.testid"
-        @click="emit('finish')"
-      >
-        {{ finish.label }}
-      </AppButton>
-      <AppButton
-        v-else
-        class="step-bar__next"
-        variant="primary"
-        size="sm"
-        :trailing-icon="icons.next"
-        :label="nextLabel"
-        :disabled="step === last || !!nextStep?.disabled"
-        :disabled-body="nextStep?.disabled ? nextDisabledBody : lastBody"
-        :data-testid="`${testid}-next`"
-        @click="emit('go', step + 1)"
-      >
-        {{ nextLabel }}
-      </AppButton>
-    </span>
+    <!-- Back and Next are the Progress bar's one pair, the same as Row not done and Row done (ticket 0788). -->
+    <ProgressMoves
+      :back="{ label: backLabel, icon: icons.back, disabled: step === 0, disabledBody: firstBody, testid: `${testid}-back` }"
+      :forward="forward"
+      @back="emit('go', step - 1)"
+      @forward="onForward"
+    />
   </ProgressBar>
 </template>
 
@@ -166,7 +150,7 @@ function go(index: number) {
 /* A bar of steps has room at both ends and between its parts (ticket 0780): 64 tall, 28 between the counter, the track
  * and the buttons. */
 .step-bar {
-  min-height: var(--step-bar-height);
+  min-height: calc(var(--step-bar-height) + var(--bar-bottom-inset, 0px));
   gap: var(--step-bar-gap);
 }
 
@@ -289,15 +273,8 @@ function go(index: number) {
   }
 }
 
-.step-bar__moves {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-8);
-}
-
 /* Phone widths: the names are `meta-tiny` and wrap to two lines, and Back and Next take the second row, half the bar
- * each, as Row not done and Row done do (ProgressBar card). */
+ * each (ProgressMoves), as Row not done and Row done do (ProgressBar card). */
 @media (max-width: 30rem) {
   .step-bar {
     gap: var(--space-4);
@@ -329,27 +306,6 @@ function go(index: number) {
     width: max-content;
     max-width: var(--step-name-max);
     white-space: normal;
-  }
-
-  .step-bar__moves {
-    flex: 1 1 100%;
-    min-width: 0;
-    gap: var(--space-4);
-  }
-
-  .step-bar__moves > .app-button,
-  .step-bar__moves :deep(.app-button-wrap) {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .step-bar__moves :deep(.app-button) {
-    width: 100%;
-    min-width: 0;
-    padding-inline: var(--space-6);
-    gap: var(--space-2);
-    justify-content: center;
-    font: var(--type-small);
   }
 }
 
