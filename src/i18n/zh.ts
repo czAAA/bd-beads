@@ -335,6 +335,13 @@ export const zh: Translations = {
     tagline: '保存。计数。导出',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
+    findLost: {
+      button: '查找丢失的项目',
+      found: '在此浏览器中找到：{names}。正在把副本保存到此设备。',
+      unreadable: '应用无法读取的副本',
+      untitled: '未命名',
+      nothing: '此浏览器中没有本网站的项目。',
+    },
     whatsInside: '功能一览',
     previousFeature: '上一个功能',
     nextFeature: '下一个功能',

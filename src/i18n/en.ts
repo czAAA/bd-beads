@@ -334,6 +334,13 @@ export const en: Translations = {
     tagline: 'save. count. export',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
+    findLost: {
+      button: 'Find lost Projects',
+      found: 'Found in this browser: {names}. A copy of them is being saved to this device.',
+      unreadable: 'a copy the app can\'t read',
+      untitled: 'untitled',
+      nothing: 'This browser keeps no Projects for this site.',
+    },
     whatsInside: "What's inside",
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',

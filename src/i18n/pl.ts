@@ -336,6 +336,13 @@ export const pl: Translations = {
     tagline: 'zapisz. policz. wyeksportuj',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
+    findLost: {
+      button: 'Znajdź zaginione projekty',
+      found: 'Znaleziono w tej przeglądarce: {names}. Kopia jest zapisywana na tym urządzeniu.',
+      unreadable: 'kopia, której aplikacja nie może odczytać',
+      untitled: 'bez nazwy',
+      nothing: 'Ta przeglądarka nie przechowuje projektów tej strony.',
+    },
     whatsInside: 'Co jest w środku',
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
