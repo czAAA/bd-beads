@@ -1,6 +1,6 @@
 import { computed, inject, onScopeDispose, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
-import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground } from '../../domain/convertBackground'
+import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground, type BackgroundMark } from '../../domain/convertBackground'
 import { keptGrid, type KeptPart } from '../../domain/convertKeep'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
@@ -63,12 +63,20 @@ export interface ConvertImageWizardDeps {
 export type ConvertWeave = 'whole' | 'part'
 
 /** The preview's tools (ConvertImage card, the floating bar): one or none is on. Select keeps a part of the beads, or
- * draws the crop with A part of the picture; Make empty leaves a color out with a tap. */
-export type ConvertTool = 'select' | 'make-empty'
+ * draws the crop with A part of the picture; Make empty leaves a color out with a tap; Background keeps or removes the
+ * patch under a tap or a drag (ticket 0787). */
+export type ConvertTool = 'select' | 'make-empty' | 'background'
 
 /** Background (ConvertImage card, 2 Background; ticket 0780): off, found and hatched (1 Find), or made empty places
  * (2 Remove). */
 export type BackgroundStage = 'off' | 'find' | 'removed'
+
+/** One step of the Background tool (ticket 0787) as the wizard keeps it: in picture pixels, so a new Width, Height or
+ * crop replays it on the beads that then stand there. */
+interface PixelMark {
+  kind: BackgroundMark['kind']
+  points: readonly { x: number; y: number }[]
+}
 
 /** The unit the Width slider reads in (ConvertImage card, slide in): it moves in whole beads either way. Not the
  * device's Size unit: the wizard remembers nothing (spec 0645). */
@@ -130,6 +138,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const background = ref<BackgroundStage>('off')
   const tolerance = ref<number>(BACKGROUND_TOLERANCE.start)
   const kept = shallowRef<KeptPart>()
+  // The Background tool's steps (ticket 0787), oldest first, and those undone, the last undone first.
+  const marks = shallowRef<readonly PixelMark[]>([])
+  const undoneMarks = shallowRef<readonly PixelMark[]>([])
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
   const part = computed<PixelCrop>(() => {
@@ -225,11 +236,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   // --- Picture ------------------------------------------------------------------------------------------------------
 
-  /** Weave goes back to the whole picture (a new picture, a turn or a flip). */
+  /** Weave goes back to the whole picture (a new picture, a turn or a flip), and the Background tool's steps go: their
+   * pixels no longer stand where they were. */
   function restartPart() {
     rawPart.value = undefined
     weaveChoice.value = 'whole'
     kept.value = undefined
+    marks.value = []
+    undoneMarks.value = []
     settle()
   }
 
@@ -278,7 +292,29 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    return { grid, lattice, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
+    return { grid, lattice, part: at, pixelsPerBead, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
+  }
+  type Sample = NonNullable<ReturnType<typeof sample>>
+
+  /** The Frame's bead a picture pixel falls on (by its cell, the stagger left aside: a mark seeds a patch, so a bead off
+   * hardly tells), as an index into the Frame's block; none off the Frame. */
+  function frameBeadAtPixel({ part: at, pixelsPerBead, grid: size }: Sample, point: { x: number; y: number }): number | undefined {
+    const column = Math.floor((point.x - at.x) / pixelsPerBead.x)
+    const row = Math.floor((point.y - at.y) / pixelsPerBead.y)
+    return column >= 0 && column < size.columns && row >= 0 && row < size.rows ? row * size.columns + column : undefined
+  }
+
+  /** The picture pixel at the middle of a Frame bead's cell: how a mark remembers the bead. */
+  function pixelAtFrameBead({ part: at, pixelsPerBead, grid: size }: Sample, index: number) {
+    return { x: at.x + ((index % size.columns) + 0.5) * pixelsPerBead.x, y: at.y + (Math.floor(index / size.columns) + 0.5) * pixelsPerBead.y }
+  }
+
+  /** The marks on a sample's Frame, each point on the bead that now stands at its pixel. */
+  function marksOn(at: Sample): BackgroundMark[] {
+    return marks.value.map((mark) => ({
+      kind: mark.kind,
+      beads: mark.points.map((point) => frameBeadAtPixel(at, point)).filter((index): index is number => index !== undefined),
+    }))
   }
 
   /** The Frame's own beads of a sample, row by row: what the background is found in. */
@@ -292,11 +328,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     return block
   }
 
-  /** The background found in a sample's Frame (1 Find), none while Remove background is off. */
+  /** The background found in a sample's Frame (1 Find) with the Background tool's marks over it, none while Remove
+   * background is off. */
   function foundIn(at: ReturnType<typeof sample>) {
     if (!at || background.value === 'off') return undefined
     const colors = frameBlock(at)
-    const found = findBackground({ colors, columns: at.grid.columns, rows: at.grid.rows, tolerance: tolerance.value })
+    const found = findBackground({ colors, columns: at.grid.columns, rows: at.grid.rows, tolerance: tolerance.value }, marksOn(at))
     return { found, ...backgroundShare(colors, found) }
   }
 
@@ -419,17 +456,82 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     if (pictureHex) toggleEmpty(pictureHex)
   }
 
-  /** Pressing the tool that is on turns it off; the tools wait for a picture. */
+  /** Pressing the tool that is on turns it off; the tools wait for a picture. Picking Background turns Remove background
+   * on, so the tool has something to mark (ticket 0787). */
   function setTool(next: ConvertTool | undefined) {
     tool.value = next === tool.value || !image.value ? undefined : next
+    if (tool.value === 'background' && background.value === 'off') background.value = 'find'
+  }
+
+  // --- The Background tool's marks (ticket 0787) ----------------------------------------------------------------------
+
+  /** The Frame's block index of a lattice bead (the preview's index), none outside the Frame. */
+  function frameIndexOf(at: Sample, latticeIndex: number): number | undefined {
+    const { lattice, grid: size } = at
+    const row = Math.floor(latticeIndex / lattice.columns) - lattice.frameRow
+    const column = (latticeIndex % lattice.columns) - lattice.frameColumn
+    return row >= 0 && row < size.rows && column >= 0 && column < size.columns ? row * size.columns + column : undefined
+  }
+
+  /** The stroke being made, if any: the mark at the end of `marks`, and the last bead it took, so a pointer resting on a
+   * bead adds it once. */
+  let stroke: { lastBead: number } | undefined
+
+  /** A press of the Background tool on a lattice bead (ticket 0787): a new step, keep if the bead is found and remove if
+   * not, that the drag then extends. A new step drops what was undone. */
+  function beginMark(latticeIndex: number) {
+    const at = rawRest.value
+    const index = at && frameIndexOf(at, latticeIndex)
+    // A place with no color is nothing to keep or remove: no step.
+    if (!at || index === undefined || at.sampled[latticeIndex] === NO_COLOR) return
+    if (background.value === 'off') background.value = 'find'
+    const kind = restBackground.value?.found[index] ? 'keep' : 'remove'
+    marks.value = [...marks.value, { kind, points: [pixelAtFrameBead(at, index)] }]
+    undoneMarks.value = []
+    stroke = { lastBead: index }
+  }
+
+  /** The drag going on over another bead: the step takes it too, in its own sense. */
+  function extendMark(latticeIndex: number) {
+    const at = rawRest.value
+    const index = at && frameIndexOf(at, latticeIndex)
+    const last = marks.value.at(-1)
+    if (!stroke || !at || index === undefined || index === stroke.lastBead || !last) return
+    stroke.lastBead = index
+    marks.value = [...marks.value.slice(0, -1), { ...last, points: [...last.points, pixelAtFrameBead(at, index)] }]
+  }
+
+  function endMark() {
+    stroke = undefined
+  }
+
+  /** Undo takes the last step back; Redo puts the last undone one back; Start over takes every step back, each one
+   * still there for Redo. */
+  function undoMark() {
+    const last = marks.value.at(-1)
+    if (!last) return
+    marks.value = marks.value.slice(0, -1)
+    undoneMarks.value = [last, ...undoneMarks.value]
+  }
+  function redoMark() {
+    const [next, ...rest] = undoneMarks.value
+    if (!next) return
+    marks.value = [...marks.value, next]
+    undoneMarks.value = rest
+  }
+  function resetMarks() {
+    undoneMarks.value = [...marks.value].reverse().concat(undoneMarks.value)
+    marks.value = []
   }
   watch(image, (picture) => {
     if (!picture) tool.value = undefined
   })
 
-  /** Remove background's switch: on, the background is found (1 Find); off, everything is back. */
+  /** Remove background's switch: on, the background is found (1 Find); off, everything is back and the Background tool
+   * goes with it (its steps stay for the next time). */
   function setRemoveBackground(on: boolean) {
     background.value = on ? 'find' : 'off'
+    if (!on && tool.value === 'background') tool.value = undefined
   }
 
   const stepIndex = computed(() => CONVERT_STEPS.indexOf(step.value))
@@ -534,6 +636,16 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     setTolerance: (next: number) => (tolerance.value = clamp(Math.round(next), BACKGROUND_TOLERANCE.min, BACKGROUND_TOLERANCE.max)),
     /** The background found in the Frame at rest, row by row (1 marks a bead), and how much of the picture it takes. */
     backgroundFound: restBackground,
+    /** The Background tool's steps (ticket 0787): a press on a lattice bead begins one, the drag extends it, letting go
+     * ends it; Undo, Redo and Start over, with whether each has anything to do. */
+    beginMark,
+    extendMark,
+    endMark,
+    undoMark,
+    redoMark,
+    resetMarks,
+    canUndoMark: computed(() => marks.value.length > 0),
+    canRedoMark: computed(() => undoneMarks.value.length > 0),
     // Size
     sizing,
     dimensions,

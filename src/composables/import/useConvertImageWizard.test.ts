@@ -172,3 +172,96 @@ describe('useConvertImageWizard steps (tickets 0756, 0780)', () => {
     scope.stop()
   })
 })
+
+describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', () => {
+  /** A 12 × 12 white wall round a 4 × 4 red square: the wall is 128 of 144 beads, 89%. */
+  function onAWall(): PixelData {
+    const data: number[] = []
+    for (let y = 0; y < 12; y += 1) for (let x = 0; x < 12; x += 1) data.push(...(x >= 4 && x < 8 && y >= 4 && y < 8 ? [230, 55, 70, 255] : [255, 255, 255, 255]))
+    return { width: 12, height: 12, data: new Uint8ClampedArray(data) }
+  }
+  /** The lattice index of a Frame bead, as the preview hands it to the wizard. */
+  const latticeIndex = (wizard: Awaited<ReturnType<typeof setup>>, row: number, column: number) => {
+    const at = wizard.lattice.value!
+    return (at.frameRow + row) * at.columns + at.frameColumn + column
+  }
+  const percent = (wizard: Awaited<ReturnType<typeof setup>>) => wizard.backgroundFound.value?.percent
+  /** The wall at one bead a pixel (the starting Width of a small picture is larger), with Remove background on. */
+  async function wall() {
+    const wizard = await setup(onAWall())
+    wizard.setWidth(12)
+    expect(wizard.dimensions.value).toEqual({ columns: 12, rows: 12 })
+    return wizard
+  }
+
+  it('keeps the patch under a step on a found bead, and takes it back and forth with Undo, Redo and Start over', async () => {
+    const wizard = await wall()
+    wizard.setRemoveBackground(true)
+    expect(percent(wizard)).toBe(89)
+    expect(wizard.canUndoMark.value).toBe(false)
+
+    wizard.beginMark(latticeIndex(wizard, 0, 0))
+    wizard.endMark()
+    expect(percent(wizard)).toBe(0)
+    expect(wizard.canUndoMark.value).toBe(true)
+    expect(wizard.canRedoMark.value).toBe(false)
+
+    wizard.undoMark()
+    expect(percent(wizard)).toBe(89)
+    expect(wizard.canRedoMark.value).toBe(true)
+    wizard.redoMark()
+    expect(percent(wizard)).toBe(0)
+    wizard.resetMarks()
+    expect(percent(wizard)).toBe(89)
+    expect(wizard.canUndoMark.value).toBe(false)
+    expect(wizard.canRedoMark.value).toBe(true)
+  })
+
+  it('makes the patch under a step on a kept bead background, a drag one step, and replays it on a new Width', async () => {
+    const wizard = await wall()
+    wizard.setRemoveBackground(true)
+    wizard.beginMark(latticeIndex(wizard, 5, 5))
+    wizard.extendMark(latticeIndex(wizard, 6, 6))
+    wizard.endMark()
+    expect(percent(wizard)).toBe(100)
+    expect(wizard.canUndoMark.value).toBe(true)
+
+    // A smaller Width: the step's pixels now fall on the red square's beads of the 8 × 8 grid, so it is still removed.
+    wizard.setWidth(8)
+    expect(wizard.dimensions.value).toEqual({ columns: 8, rows: 8 })
+    expect(percent(wizard)).toBe(100)
+    wizard.undoMark()
+    expect(percent(wizard)).toBe(94)
+  })
+
+  it('drops the steps on a turn, a flip or a new picture, and keeps them while Remove background is off', async () => {
+    const wizard = await wall()
+    wizard.setRemoveBackground(true)
+    wizard.beginMark(latticeIndex(wizard, 5, 5))
+    wizard.endMark()
+    expect(percent(wizard)).toBe(100)
+
+    wizard.setRemoveBackground(false)
+    expect(wizard.backgroundFound.value).toBeUndefined()
+    wizard.setRemoveBackground(true)
+    expect(percent(wizard)).toBe(100)
+
+    wizard.turn()
+    expect(wizard.canUndoMark.value).toBe(false)
+    expect(percent(wizard)).toBe(89)
+  })
+
+  it('turns Remove background on with the tool, and a step on an off background too', async () => {
+    const wizard = await wall()
+    wizard.setTool('background')
+    expect(wizard.tool.value).toBe('background')
+    expect(wizard.background.value).toBe('find')
+    wizard.setRemoveBackground(false)
+    expect(wizard.tool.value).toBeUndefined()
+
+    wizard.beginMark(latticeIndex(wizard, 0, 0))
+    wizard.endMark()
+    expect(wizard.background.value).toBe('find')
+    expect(percent(wizard)).toBe(0)
+  })
+})

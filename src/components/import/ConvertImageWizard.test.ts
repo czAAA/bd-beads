@@ -449,15 +449,16 @@ describe('ConvertImageWizard the floating bar (ticket 0780)', () => {
   const box = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-box"]')
   const context = (wrapper: VueWrapper) => wrapper.find('[data-testid="convert-band-context"]')
 
-  it('holds Turn 90°, Flip, Select, Make empty, Compare and zoom, named from the registry, once a picture is set', async () => {
+  it('holds Turn 90°, Flip, Select, Make empty, Background, Compare and zoom, named from the registry, once a picture is set', async () => {
     const { wrapper } = open()
     expect(wrapper.find('[data-testid="convert-preview-tools"]').exists()).toBe(false)
     await chooseFile(wrapper, picture())
 
-    const names = ['convert-turn', 'convert-flip', 'convert-tool-select', 'convert-tool-make-empty', 'convert-compare'].map((id) =>
+    const names = ['convert-turn', 'convert-flip', 'convert-tool-select', 'convert-tool-make-empty', 'convert-tool-background', 'convert-compare'].map((id) =>
       wrapper.get(`[data-testid="${id}"]`).text(),
     )
-    expect(names).toEqual([en.convertImage.wizard.turn, en.convertImage.wizard.flip, en.tools.selectLabel, en.convertImage.wizard.makeEmpty, en.convertImage.wizard.compare])
+    const words = en.convertImage.wizard
+    expect(names).toEqual([words.turn, words.flip, en.tools.selectLabel, words.makeEmpty, words.backgroundTool, words.compare])
     expect(wrapper.get('[data-testid="convert-preview-tools"]').text()).toContain('100%')
   })
 
@@ -490,6 +491,43 @@ describe('ConvertImageWizard the floating bar (ticket 0780)', () => {
     // Pressed again, or Escape, the tool is off.
     await tool(wrapper, 'make-empty').trigger('click')
     expect(tool(wrapper, 'make-empty').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('turns Remove background on with the Background tool, says what a tap does, and shows Undo, Redo and Start over for its steps (ticket 0787)', async () => {
+    const { wrapper, wizard } = open()
+    await chooseFile(wrapper, picture())
+    const summary = () => wrapper.get('[data-testid="convert-section-background-summary"]').text()
+    expect(summary()).toBe(en.convertImage.wizard.summaryOff)
+
+    await tool(wrapper, 'background').trigger('click')
+    expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('true')
+    expect(wizard.background.value).toBe('find')
+    expect(context(wrapper).text()).toBe(en.convertImage.wizard.bandBackground)
+    expect(wrapper.get('[data-testid="convert-background-tool-line"]').text()).toBe(
+      fillBlanks(en.convertImage.wizard.backgroundToolLine, { tool: en.convertImage.wizard.backgroundTool }),
+    )
+    expect(wrapper.find('[data-testid="convert-background-steps"]').exists()).toBe(false)
+    expect(summary()).toBe('found · 100%')
+
+    // Both halves touch the edge, so all is found; a step on the white half keeps it.
+    const at = wizard.lattice.value!
+    wizard.beginMark((at.frameRow + 1) * at.columns + at.frameColumn + 3)
+    wizard.endMark()
+    await flushPromises()
+    expect(summary()).toBe('found · 50%')
+    const steps = wrapper.get('[data-testid="convert-background-steps"]')
+    expect(steps.get('[data-testid="convert-redo-mark"]').attributes('aria-disabled')).toBe('true')
+    await steps.get('[data-testid="convert-undo-mark"]').trigger('click')
+    expect(summary()).toBe('found · 100%')
+    await steps.get('[data-testid="convert-redo-mark"]').trigger('click')
+    expect(summary()).toBe('found · 50%')
+    await steps.get('[data-testid="convert-reset-marks"]').trigger('click')
+    expect(summary()).toBe('found · 100%')
+
+    // Turning Remove background off turns the tool off with it.
+    await wrapper.get('[data-testid="convert-remove-background"]').trigger('click')
+    expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('false')
+    expect(summary()).toBe(en.convertImage.wizard.summaryOff)
   })
 
   it('points at Make empty from the Colors step, where Treat as empty’s switch was', async () => {
