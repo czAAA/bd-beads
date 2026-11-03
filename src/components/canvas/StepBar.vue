@@ -91,6 +91,7 @@ function go(index: number) {
         :share="share"
         :flares="flares"
         :ringed="onDot"
+        :following="position !== undefined"
         :label="trackLabel"
         :min="1"
         :max="steps.length"
