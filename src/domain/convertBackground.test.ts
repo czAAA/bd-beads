@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NO_COLOR } from './imageConversion'
-import { backgroundShare, findBackground, withoutBackground } from './convertBackground'
+import { backgroundShare, findBackground, foundRuns, withoutBackground } from './convertBackground'
 
 const pack = (r: number, g: number, b: number) => (r << 16) | (g << 8) | b
 const WALL = pack(230, 220, 200)
@@ -45,5 +45,28 @@ describe('backgroundShare and withoutBackground', () => {
     const mask = findBackground({ ...at, tolerance: 0 })
     expect(backgroundShare(at.colors, mask)).toEqual({ beads: 8, percent: 80 })
     expect(Array.from(withoutBackground(at.colors, mask).slice(4, 8))).toEqual([NO_COLOR, RED, RED, NO_COLOR])
+  })
+})
+
+describe('foundRuns', () => {
+  const mask = (...rows: string[]) => ({ found: Uint8Array.from(rows.join('').split('').map((on) => (on === 'x' ? 1 : 0))), columns: rows[0]!.length, rows: rows.length })
+
+  it('joins a row’s neighbouring found beads into one run, row by row', () => {
+    expect(foundRuns(mask('xxxxx', 'x---x', 'xx-xx', '-----'))).toEqual([
+      { row: 0, column: 0, columns: 5 },
+      { row: 1, column: 0, columns: 1 },
+      { row: 1, column: 4, columns: 1 },
+      { row: 2, column: 0, columns: 2 },
+      { row: 2, column: 3, columns: 2 },
+    ])
+  })
+
+  it('gives one run for one stretch of found beads inside a row', () => {
+    expect(foundRuns(mask('-xxx-'))).toEqual([{ row: 0, column: 1, columns: 3 }])
+  })
+
+  it('gives no run where nothing is found', () => {
+    expect(foundRuns(mask('---', '---'))).toEqual([])
+    expect(foundRuns({ found: new Uint8Array(0), columns: 0, rows: 0 })).toEqual([])
   })
 })

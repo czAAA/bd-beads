@@ -8,6 +8,7 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
+import { foundRuns } from '../../domain/convertBackground'
 import { keptDrawn, keptMoved, type KeptPart } from '../../domain/convertKeep'
 import { CROP_HANDLES, partDrawn, partMoved, partShifted, type CropHandle, type PixelCrop } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -215,14 +216,14 @@ function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
   pen.stroke()
   const hatch = context.createPattern(tile, 'repeat')
   if (!hatch) return
-  context.fillStyle = hatch
-  for (let row = 0; row < size.rows; row += 1) {
-    for (let column = 0; column < size.columns; column += 1) {
-      if (!found[row * size.columns + column]) continue
-      const box = view.value.beadBox({ row: at.frameRow + row, column: at.frameColumn + column, rows: 1, columns: 1 })
-      context.fillRect(box.x * pixelRatio, box.y * pixelRatio, box.width * pixelRatio, box.height * pixelRatio)
-    }
+  // The found beads' runs as one path, filled once (ticket 0785): a fill per bead stalls Safari for seconds.
+  const path = new Path2D()
+  for (const run of foundRuns({ found, ...size })) {
+    const box = view.value.beadBox({ row: at.frameRow + run.row, column: at.frameColumn + run.column, rows: 1, columns: run.columns })
+    path.rect(box.x * pixelRatio, box.y * pixelRatio, box.width * pixelRatio, box.height * pixelRatio)
   }
+  context.fillStyle = hatch
+  context.fill(path)
 }
 
 // --- Drawing, moving and pulling the part ------------------------------------------------------------------------------
