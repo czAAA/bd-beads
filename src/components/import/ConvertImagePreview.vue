@@ -25,9 +25,9 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 
-// Convert image's preview (ConvertImage card, Preview pane; tickets 0747, 0757, 0780): the band of facts, the beads in the
-// Frame's space with what was found hatched, and the floating bar: Turn 90°, Flip, Select (a kept part, or the crop),
-// Make empty, Compare and its own zoom. Empty, it is the drop zone.
+// Convert image's preview (ConvertImage card, Preview pane; tickets 0747, 0757, 0780, 0787): the band of facts, the beads
+// in the Frame's space with what was found faded and hatched, and the floating bar: Turn 90°, Flip, Select (a kept part,
+// or the crop), Make empty, Background (a tap or a drag keeps or removes a patch), Compare and zoom. Empty, the drop zone.
 
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -42,6 +42,7 @@ const actions = {
   selectBeads: controlAction('convert-select-beads'),
   selectCrop: controlAction('convert-select-crop'),
   makeEmpty: controlAction('make-empty'),
+  background: controlAction('convert-background'),
   compare: controlAction('convert-compare'),
 }
 const result = useConvertResult(wizard)
@@ -195,6 +196,8 @@ function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
   const at = lattice.value
   const size = grid.value
   if (!found || !at || !size || !view.value || !paneEl.value) return
+  // The Project renderer leaves its grid transform on the context (ticket 0787): the boxes are in CSS px, so draw plain.
+  context.setTransform(1, 0, 0, 1, 0, 0)
   // The canvas draws `--found-hatch` from its parts, so the preview and the step's swatch are one look.
   const style = getComputedStyle(paneEl.value)
   const value = (name: string) => style.getPropertyValue(name).trim()
@@ -222,6 +225,9 @@ function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
     const box = view.value.beadBox({ row: at.frameRow + run.row, column: at.frameColumn + run.column, rows: 1, columns: run.columns })
     path.rect(box.x * pixelRatio, box.y * pixelRatio, box.width * pixelRatio, box.height * pixelRatio)
   }
+  // Faded first (ticket 0787), then hatched: the background reads as gone whatever the bead's color.
+  context.fillStyle = value('--found-dim')
+  context.fill(path)
   context.fillStyle = hatch
   context.fill(path)
 }
@@ -372,6 +378,8 @@ function onBoxDown(event: PointerEvent) {
   if (tool.value === 'make-empty') {
     event.preventDefault()
     emptyAt(event)
+  } else if (tool.value === 'background') {
+    startMark(event)
   } else if (tool.value === 'select') {
     if (wizard.weave.value === 'part') startPartDrag(event)
     else startKeep(event)
@@ -436,6 +444,8 @@ function onViewportUp(event: PointerEvent) {
 
 const tool = wizard.tool
 const eyedropper = computed(() => tool.value === 'make-empty')
+/** The tools that ring the bead under the pointer: Make empty and Background (ticket 0787). */
+const ringed = computed(() => tool.value === 'make-empty' || tool.value === 'background')
 const hovered = ref<number>()
 // Escape turns a tool off first; a press elsewhere (a step's control) goes through and leaves it as it is.
 useOverlayLayer({ isOpen: () => tool.value !== undefined, root: () => paneEl.value, close: () => wizard.setTool(undefined), keepsPress: () => true })
@@ -456,27 +466,57 @@ function compareOff(event?: KeyboardEvent) {
   wizard.comparing.value = false
 }
 
-function beadIndexAt(event: PointerEvent): number | undefined {
-  const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
+/** The lattice bead under a point on screen, none off the beads. */
+function beadIndexAt(clientX: number, clientY: number): number | undefined {
+  const box = boxEl.value?.getBoundingClientRect()
   const at = lattice.value
   if (!box || !view.value || !at) return undefined
-  const { row, column } = view.value.pointToCell({ x: event.clientX - box.left, y: event.clientY - box.top })
+  const { row, column } = view.value.pointToCell({ x: clientX - box.left, y: clientY - box.top })
   return row >= 0 && row < at.rows && column >= 0 && column < at.columns ? row * at.columns + column : undefined
 }
 
 function emptyAt(event: PointerEvent) {
-  const index = beadIndexAt(event)
+  const index = beadIndexAt(event.clientX, event.clientY)
   if (index !== undefined) wizard.toggleEmptyAtBead(index)
 }
 
 function onBoxHover(event: PointerEvent) {
-  hovered.value = eyedropper.value ? beadIndexAt(event) : undefined
+  hovered.value = ringed.value ? beadIndexAt(event.clientX, event.clientY) : undefined
+}
+
+// --- The Background tool's tap and drag (ticket 0787) -----------------------------------------------------------------
+
+/** A press begins a step on the bead under it, the drag extends it bead by bead, and letting go ends it. */
+let markPointer: number | undefined
+function onMarkMove(event: PointerEvent) {
+  if (event.pointerId !== markPointer) return
+  const index = beadIndexAt(event.clientX, event.clientY)
+  if (index !== undefined) wizard.extendMark(index)
+}
+function endMark(event?: PointerEvent) {
+  if (markPointer === undefined || (event && event.pointerId !== markPointer)) return
+  markPointer = undefined
+  wizard.endMark()
+  window.removeEventListener('pointermove', onMarkMove)
+  window.removeEventListener('pointerup', endMark)
+  window.removeEventListener('pointercancel', endMark)
+}
+function startMark(event: PointerEvent) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  const index = beadIndexAt(event.clientX, event.clientY)
+  if (index === undefined || markPointer !== undefined) return
+  event.preventDefault()
+  markPointer = event.pointerId
+  wizard.beginMark(index)
+  window.addEventListener('pointermove', onMarkMove)
+  window.addEventListener('pointerup', endMark)
+  window.addEventListener('pointercancel', endMark)
 }
 
 const ringStyle = computed(() => {
   const at = lattice.value
   const index = hovered.value
-  if (!eyedropper.value || index === undefined || !at || !view.value) return undefined
+  if (!ringed.value || index === undefined || !at || !view.value) return undefined
   const box = view.value.beadBox({ row: Math.floor(index / at.columns), column: index % at.columns, rows: 1, columns: 1 })
   return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
 })
@@ -498,9 +538,10 @@ const facts = computed(() => {
 })
 
 /** What the preview is showing now, if anything: one line at the band's right. */
-const nowShowing = computed<{ icon?: 'eyedropper' | 'select'; hatch?: boolean; text: string } | undefined>(() => {
+const nowShowing = computed<{ icon?: 'eyedropper' | 'select' | 'erase'; hatch?: boolean; text: string } | undefined>(() => {
   if (wizard.comparing.value) return { text: words.value.bandCompare }
   if (tool.value === 'make-empty') return { icon: 'eyedropper', text: words.value.bandMakeEmpty }
+  if (tool.value === 'background') return { icon: 'erase', text: words.value.bandBackground }
   const found = wizard.backgroundFound.value
   if (wizard.background.value === 'find' && found) return { hatch: true, text: fillBlanks(words.value.bandFound, { n: found.percent }) }
   if (wizard.background.value === 'removed') return { text: words.value.bandRemoved }
@@ -511,12 +552,13 @@ const nowShowing = computed<{ icon?: 'eyedropper' | 'select'; hatch?: boolean; t
 onBeforeUnmount(() => {
   endDrag()
   endKeep()
+  endMark()
   wizard.comparing.value = false
 })
 </script>
 
 <template>
-  <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--select': tool === 'select', 'convert-preview--part': wizard.weave.value === 'part' }" data-testid="convert-preview">
+  <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--select': tool === 'select', 'convert-preview--background': tool === 'background', 'convert-preview--part': wizard.weave.value === 'part' }" data-testid="convert-preview">
     <div class="convert-preview__band" data-testid="convert-band">
       <span v-if="!wizard.hasPicture.value" class="convert-preview__facts">{{ words.bandEmpty }}</span>
       <span v-else class="convert-preview__facts" data-testid="convert-band-facts">
@@ -576,7 +618,7 @@ onBeforeUnmount(() => {
               <div v-if="frameStyle && wizard.weave.value === 'part'" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline" />
               <div v-if="keptStyle && !wizard.comparing.value" class="convert-preview__kept" :style="keptStyle" data-testid="convert-kept" />
             </div>
-            <template v-if="wizard.weave.value === 'part' && !eyedropper && !wizard.comparing.value">
+            <template v-if="wizard.weave.value === 'part' && !ringed && !wizard.comparing.value">
               <button
                 v-for="handle in CROP_HANDLES"
                 :key="handle"
@@ -601,6 +643,7 @@ onBeforeUnmount(() => {
         <span class="convert-preview__divider" aria-hidden="true" />
         <AppButton variant="text" :action="selectAction" :selected="tool === 'select'" data-testid="convert-tool-select" @click="pickTool('select')" />
         <AppButton variant="text" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
+        <AppButton variant="text" :action="actions.background" :selected="tool === 'background'" data-testid="convert-tool-background" @click="pickTool('background')" />
         <span class="convert-preview__divider" aria-hidden="true" />
         <AppButton
           variant="text"
@@ -766,12 +809,14 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
 }
 
-.convert-preview--select .convert-preview__box {
+.convert-preview--select .convert-preview__box,
+.convert-preview--background .convert-preview__box {
   cursor: crosshair;
 }
 
-/* Select draws by a drag, so a touch on the beads does not scroll the view. */
-.convert-preview--select .convert-preview__box {
+/* Select and Background draw by a drag, so a touch on the beads does not scroll the view. */
+.convert-preview--select .convert-preview__box,
+.convert-preview--background .convert-preview__box {
   touch-action: none;
 }
 
@@ -800,7 +845,7 @@ onBeforeUnmount(() => {
   position: absolute;
   pointer-events: none;
   outline: 1.5px solid var(--marker);
-  box-shadow: 0 0 0 9999px color-mix(in srgb, var(--canvas) 60%, transparent);
+  box-shadow: 0 0 0 9999px var(--found-dim);
 }
 
 .convert-preview--select .convert-preview__kept {

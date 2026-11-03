@@ -30,6 +30,7 @@
   --found-hatch-line: 1.1px; /* ConvertImage card (ticket 0780): a hatch line's width. */
   --found-hatch-step: 4px; /* ConvertImage card (ticket 0780): from one hatch line to the next. */
   --found-hatch: repeating-linear-gradient(135deg, var(--found-hatch-ink) 0 var(--found-hatch-line), var(--found-hatch-wash) var(--found-hatch-line) var(--found-hatch-step)); /* ConvertImage card (ticket 0778): what Remove background found, hatched over the beads and on its legend swatch; the preview's canvas draws it from its four parts. */
+  --found-dim: color-mix(in srgb, var(--canvas) 60%, transparent); /* ConvertImage card (ticket 0787): the found beads faded under the hatch, as beads outside a kept part are, so the background reads as gone whatever the bead's color. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
   --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
   --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */

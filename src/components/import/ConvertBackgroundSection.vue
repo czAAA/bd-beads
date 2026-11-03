@@ -9,9 +9,9 @@ import AppIcon from '../ui/AppIcon.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
-// Convert image's Background step (ConvertImage card, 2 Background; ticket 0780): the Remove background switch, then two
-// stages. 1 Find hatches what the edges inward take on the preview, with Tolerance to widen or narrow it; nothing goes until
-// Remove what was found. 2 Remove makes them empty places, and Show what was found goes back.
+// Convert image's Background step (ConvertImage card, 2 Background; tickets 0780, 0787): the Remove background switch, then
+// 1 Find (the preview hatches what the edges inward take, Tolerance, the line pointing at the Background tool, whose steps
+// Undo, Redo and Start over take back, and Remove what was found) and 2 Remove (empty places; Show what was found goes back).
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
@@ -24,6 +24,13 @@ const foundLine = computed(() => {
   const [before = '', after = ''] = words.value.foundLine.split('{n}')
   return { before, after }
 })
+/** The line pointing at the Background tool round the tool's name, which is set in bold. */
+const toolLine = computed(() => {
+  const [before = '', after = ''] = words.value.backgroundToolLine.split('{tool}')
+  return { before, after }
+})
+/** Undo, Redo and Start over show once the tool has made a step, and stay while one is there to put back. */
+const hasSteps = computed(() => wizard.canUndoMark.value || wizard.canRedoMark.value)
 </script>
 
 <template>
@@ -62,9 +69,10 @@ const foundLine = computed(() => {
           testid="convert-tolerance"
           @update:model-value="wizard.setTolerance"
         />
-        <div>
-          <AppButton variant="primary" data-testid="convert-remove-found" @click="wizard.removeFound">{{ words.removeFound }}</AppButton>
-        </div>
+        <p class="convert-background__tool" data-testid="convert-background-tool-line">
+          <AppIcon name="erase" :size="16" />
+          <span>{{ toolLine.before }}<b>{{ words.backgroundTool }}</b>{{ toolLine.after }}</span>
+        </p>
       </template>
 
       <template v-else>
@@ -75,10 +83,20 @@ const foundLine = computed(() => {
             <p class="convert-background__done-line">{{ plural(locale, found?.beads ?? 0, words.removedLine) }}</p>
           </div>
         </div>
-        <div>
-          <AppButton size="sm" data-testid="convert-show-found" @click="wizard.showFound">{{ words.showFound }}</AppButton>
-        </div>
       </template>
+
+      <div v-if="hasSteps" class="convert-background__steps" data-testid="convert-background-steps">
+        <AppButton size="sm" :disabled="!wizard.canUndoMark.value" data-testid="convert-undo-mark" @click="wizard.undoMark">{{ words.undoMark }}</AppButton>
+        <AppButton size="sm" :disabled="!wizard.canRedoMark.value" data-testid="convert-redo-mark" @click="wizard.redoMark">{{ words.redoMark }}</AppButton>
+        <AppButton size="sm" :disabled="!wizard.canUndoMark.value" data-testid="convert-reset-marks" @click="wizard.resetMarks">{{ words.startOver }}</AppButton>
+      </div>
+
+      <div v-if="stage === 'find'">
+        <AppButton variant="primary" data-testid="convert-remove-found" @click="wizard.removeFound">{{ words.removeFound }}</AppButton>
+      </div>
+      <div v-else>
+        <AppButton size="sm" data-testid="convert-show-found" @click="wizard.showFound">{{ words.showFound }}</AppButton>
+      </div>
     </template>
   </div>
 </template>
@@ -137,13 +155,19 @@ const foundLine = computed(() => {
   border-color: var(--ink);
 }
 
-.convert-background__legend {
+.convert-background__legend,
+.convert-background__tool {
   display: flex;
   align-items: flex-start;
   gap: var(--space-10);
   margin: 0;
   font: var(--type-body);
   color: var(--body);
+}
+
+.convert-background__tool > :first-child {
+  flex: none;
+  margin-top: var(--space-2);
 }
 
 .convert-background__hatch {
@@ -154,6 +178,12 @@ const foundLine = computed(() => {
   background: var(--found-hatch);
   border: 1px solid var(--marker);
   border-radius: var(--radius-xs);
+}
+
+.convert-background__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
 }
 
 .convert-background__done {

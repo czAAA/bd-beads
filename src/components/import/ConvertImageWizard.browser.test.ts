@@ -126,3 +126,70 @@ describe('the Convert image found-colors table heading', () => {
     expect(beadsCell.right).toBeCloseTo(count.right, 0)
   })
 })
+
+// The found beads and Compare's picture are drawn on the canvas after the Project renderer, which leaves its grid
+// transform on the context (ticket 0787): both must land on the beads as they are on screen, not scaled by the zoom.
+describe('the preview’s overlays on the canvas', () => {
+  /** A black wall round a red square, with a green patch in the top-right corner: wall and patch are the background. */
+  const cornered = async () => {
+    const data = new Uint8ClampedArray(40 * 40 * 4)
+    for (let y = 0; y < 40; y += 1) {
+      for (let x = 0; x < 40; x += 1) {
+        const red = x >= 15 && x < 25 && y >= 15 && y < 25
+        const green = x >= 32 && y < 8
+        data.set(red ? [255, 0, 0, 255] : green ? [0, 255, 0, 255] : [0, 0, 0, 255], (y * 40 + x) * 4)
+      }
+    }
+    return { width: 40, height: 40, data }
+  }
+  const topRightPixel = (root: HTMLElement) => {
+    const canvas = root.querySelector<HTMLCanvasElement>('[data-testid="convert-image-canvas"]')!
+    return Array.from(canvas.getContext('2d')!.getImageData(canvas.width - 4, 4, 1, 1).data)
+  }
+
+  it('fades and hatches the found beads where they are, to the picture’s far corner', async () => {
+    const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
+    await pictureSet(mounted.root)
+    mounted.root.querySelector<HTMLElement>('[data-testid="convert-remove-background"]')!.click()
+    await settleForMeasuring()
+    const [r, g, b] = topRightPixel(mounted.root)
+    // Pure green is the bead as drawn; faded, or under a hatch line, it is not.
+    expect(g).toBeGreaterThan(100)
+    expect(r! + b!).toBeGreaterThan(80)
+  })
+
+  it('keeps the patch under a tap of the Background tool, through the pointer, with Undo then on show', async () => {
+    const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
+    await pictureSet(mounted.root)
+    const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)
+    find('convert-tool-background')!.click()
+    await settleForMeasuring()
+    expect(find('convert-background-steps')).toBeNull()
+    const share = () => find('convert-section-background-summary')!.textContent
+    const before = share()
+    // A tap on the green patch in the top-right corner, found with the wall: its patch is kept.
+    const box = find('convert-image-box')!.getBoundingClientRect()
+    const at = { clientX: box.right - 4, clientY: box.top + 4, bubbles: true, pointerId: 1 }
+    find('convert-image-box')!.dispatchEvent(new PointerEvent('pointerdown', at))
+    window.dispatchEvent(new PointerEvent('pointerup', at))
+    await settleForMeasuring()
+    expect(share()).not.toBe(before)
+    expect(find('convert-background-steps')).not.toBeNull()
+    const [r, g, b] = topRightPixel(mounted.root)
+    expect(g).toBeGreaterThan(200)
+    expect(r! + b!).toBeLessThan(80)
+  })
+
+  it('shows the original picture where the beads are while Compare is held', async () => {
+    const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
+    await pictureSet(mounted.root)
+    const compare = mounted.root.querySelector<HTMLElement>('[data-testid="convert-compare"]')!
+    await userEvent.hover(compare)
+    compare.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await settleForMeasuring()
+    const [r, g, b] = topRightPixel(mounted.root)
+    expect(g).toBeGreaterThan(200)
+    expect(r! + b!).toBeLessThan(80)
+    compare.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+  })
+})
