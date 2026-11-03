@@ -30,12 +30,12 @@ export interface ScrollNudgeDeps {
 
 /** The Homepage showing a first-time visitor it scrolls (ticket 0784; Homepage card, the nudge): after a stillness on the
  * first section its section lifts and settles once, and Next's arrow dips. Once per device, and never for a beader who
- * scrolled first; a press or a key starts the wait again. Never under reduced motion. */
+ * scrolled first; a press or a key first holds it off for the visit. Never under reduced motion. */
 export function useScrollNudge({ onFirst, reducedMotion }: ScrollNudgeDeps): {
   nudging: Readonly<Ref<boolean>>
   /** The page moved, or the beader tried to move it: they know it scrolls. */
   scrolled: () => void
-  /** A press or a key: not a sign they know, but not stillness either. */
+  /** A press or a key: not a sign they know it scrolls, so not remembered, but the visit is not still. */
   acted: () => void
 } {
   const nudging = ref(false)
@@ -43,7 +43,6 @@ export function useScrollNudge({ onFirst, reducedMotion }: ScrollNudgeDeps): {
   let timer: ReturnType<typeof setTimeout> | undefined
 
   function wait() {
-    clearTimeout(timer)
     if (known) return
     timer = setTimeout(play, NUDGE_WAIT)
   }
@@ -66,7 +65,7 @@ export function useScrollNudge({ onFirst, reducedMotion }: ScrollNudgeDeps): {
 
   function acted() {
     nudging.value = false
-    wait()
+    clearTimeout(timer)
   }
 
   wait()

@@ -739,7 +739,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
   40% {
     transform: translateY(calc(var(--nudge-lift) * -1));
-    opacity: 0.82;
+    opacity: var(--nudge-fade);
     animation-timing-function: var(--ease-standard);
   }
 

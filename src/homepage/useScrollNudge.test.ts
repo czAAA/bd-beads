@@ -51,14 +51,15 @@ describe('the Homepage nudging that it scrolls (ticket 0784)', () => {
     expect(next.nudging.value).toBe(false)
   })
 
-  it('waits afresh after a press or a key, which do not tell the page scrolls', () => {
+  it('does not play on a visit with a press or a key first, but may on the next, as those do not tell the page scrolls', () => {
     const { nudging, acted } = nudge()
     vi.advanceTimersByTime(1000)
     acted()
-    vi.advanceTimersByTime(1499)
+    vi.advanceTimersByTime(3000)
     expect(nudging.value).toBe(false)
-    vi.advanceTimersByTime(1)
-    expect(nudging.value).toBe(true)
+    const next = nudge()
+    vi.advanceTimersByTime(1500)
+    expect(next.nudging.value).toBe(true)
   })
 
   it('stops at once when the beader acts mid-lift', () => {
