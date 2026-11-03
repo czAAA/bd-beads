@@ -625,7 +625,7 @@ body {
   --hover-fill:var(--surface);--press-fill:var(--line);
   --framing-dim:rgba(0,0,0,.45);
   --slogan-hold:2200ms;--slogan-roll:650ms;
-  --homepage-box-width:70rem;--homepage-box-height:55rem;--section-turn:600ms;--section-shift:3.5rem;--section-scale:.985;
+  --homepage-box-width:70rem;--homepage-box-height:55rem;--homepage-opening:450ms;--section-turn:600ms;--section-shift:3.5rem;--section-scale:.985;
   --homepage-mark-large:26.25rem;--homepage-mark-small:7.5rem;--free-start-rows:4;--free-growth:2.5;--free-fade:1.75rem;--coming-soon-width:14.75rem;--coming-soon-tilt:-8deg;
   --step-dot:.5rem;--step-dot-current:.875rem;--step-ring:3px;--step-name-max:5.75rem;
 }

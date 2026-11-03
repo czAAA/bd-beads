@@ -1,0 +1,95 @@
+/* Leaving the Homepage, its canvas box grows into the editor's (ticket 0776, ADR 0088; Homepage card). The names are
+   set only for the handoff (`data-handoff` on the root, src/homepage/boxHandoff.ts), so nothing else animates. */
+
+[data-handoff='leaving'] .homepage {
+  view-transition-name: canvas-box;
+}
+
+/* The editor's first paint: the empty box where the Homepage's stood, on the Homepage's ground, the app hidden under
+   it until it grows. */
+#handoff {
+  display: none;
+}
+
+[data-handoff='arriving'] #handoff {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: var(--page-ground);
+}
+
+#handoff > div {
+  position: absolute;
+  top: var(--handoff-y);
+  left: var(--handoff-x);
+  width: var(--handoff-width);
+  height: var(--handoff-height);
+  background: var(--box);
+  border-radius: var(--canvas-box-radius);
+  view-transition-name: canvas-box;
+}
+
+[data-handoff='arriving'] :is(#app, #splash) {
+  visibility: hidden;
+}
+
+/* The cross-fade from the Homepage: the box stays put while its content and the X1 marks fade away. */
+html[data-handoff='arriving']::view-transition-group(*),
+html[data-handoff='arriving']::view-transition-old(*),
+html[data-handoff='arriving']::view-transition-new(*) {
+  animation-duration: var(--duration-base);
+}
+
+/* The growing: the box itself is drawn by the group, so its corners never stretch; the editor's content shows in it at
+   its own size, its strip along the top, fading in as the box grows, and the editor's other parts fade in around it. */
+[data-handoff='growing'] .app-shell__canvas {
+  view-transition-name: canvas-box;
+}
+
+/* A panel the way in opens (New Project, the Menu's Saved Projects) fades in above the growing box, not under it. */
+[data-handoff='growing'] .app-panel {
+  view-transition-name: handoff-panel;
+}
+
+html[data-handoff='growing']::view-transition-group(*) {
+  animation-duration: var(--homepage-opening);
+  animation-timing-function: var(--ease-standard);
+}
+
+html[data-handoff='growing']::view-transition-group(canvas-box) {
+  overflow: clip;
+  background: var(--box);
+  border-radius: var(--canvas-box-radius);
+}
+
+html[data-handoff='growing']::view-transition-old(canvas-box) {
+  animation: none;
+  opacity: 0;
+}
+
+html[data-handoff='growing']::view-transition-new(canvas-box) {
+  height: 100%;
+  object-fit: none;
+  object-position: 50% 0; /* The editor's Canvas strip rides the box's top edge. */
+  animation: handoff-arrive var(--duration-slow) var(--ease-out) both;
+}
+
+html[data-handoff='growing']::view-transition-old(root) {
+  animation: handoff-leave var(--duration-base) var(--ease-in) both;
+}
+
+html[data-handoff='growing']::view-transition-new(root) {
+  animation: handoff-arrive var(--homepage-opening) var(--ease-out) both;
+}
+
+@keyframes handoff-arrive {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes handoff-leave {
+  to {
+    opacity: 0;
+  }
+}

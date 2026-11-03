@@ -163,6 +163,16 @@ describe('ContextBar', () => {
     expect(root.attributes('style')).toMatch(/top:/)
   })
 
+  it('goes out of view with a Selection scrolled away from the canvas box, out of reach of Tab (ticket 0779)', async () => {
+    const viewport = { width: 600, height: 400 }
+    const props = { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, anchor: { box: { left: 100, top: 200, width: 80, height: 60 }, viewport } }
+    const wrapper = mount(ContextBar, { props })
+    const root = () => wrapper.get('[data-testid="context-bar"]')
+    expect(root().attributes('style')).not.toContain('visibility')
+    await wrapper.setProps({ anchor: { box: { left: -900, top: 200, width: 80, height: 60 }, viewport } })
+    expect(root().attributes('style')).toContain('visibility: hidden')
+  })
+
   it('steps aside while a gesture runs', () => {
     const wrapper = mount(ContextBar, { props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, gesturing: true } })
     expect(wrapper.get('[data-testid="context-bar"]').attributes('style')).toContain('display: none')
@@ -311,6 +321,15 @@ describe('the Mirror bar (ADR 0082, ticket 0750)', () => {
     expect(wrapper.get('[data-testid="mirror-bar-close"]').attributes('aria-label')).toBe('Close mirror')
     await wrapper.get('[data-testid="mirror-bar-close"]').trigger('click')
     expect(wrapper.emitted('close-mirror')).toHaveLength(1)
+  })
+
+  it('goes out of view with its Area scrolled away from the canvas box (ticket 0779)', async () => {
+    const viewport = { width: 600, height: 400 }
+    const wrapper = mount(ContextBar, { props: { ...base, mirrorAnchor: { box: { left: 100, top: 200, width: 80, height: 60 }, viewport } } })
+    const root = () => wrapper.get('[data-testid="mirror-bar"]')
+    expect(root().attributes('style')).not.toContain('visibility')
+    await wrapper.setProps({ mirrorAnchor: { box: { left: 100, top: 900, width: 80, height: 60 }, viewport } })
+    expect(root().attributes('style')).toContain('visibility: hidden')
   })
 
   it('switches the Mode and turns Axes on and off, with no Undo step of its own: it says what the Mirror becomes', async () => {
