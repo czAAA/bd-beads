@@ -129,6 +129,19 @@ describe('useCanvasView', () => {
     expect(view.zoom.value).toBe(0.1)
   })
 
+  it('zooms exactly as far as the fingers or the wheel ask, keeps it when they lift, and labels the nearest whole percent (ticket 0789)', () => {
+    const { view } = setup(projectOf(20, 10))
+    view.fit()
+    const anchor = { x: 200, y: 100 }
+    view.pinchStep({ zoom: 0.1234, anchor })
+    expect(view.zoom.value).toBe(0.1234)
+    expect(view.zoomPercent.value).toBe(12)
+    view.endTwist(anchor)
+    expect(view.zoom.value).toBe(0.1234)
+    view.setZoom(0.4567)
+    expect(view.zoom.value).toBe(0.4567)
+  })
+
   it('walks the 10% rungs with the buttons, from a level between two as well, and the label agrees', () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()

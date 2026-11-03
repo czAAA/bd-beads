@@ -86,9 +86,9 @@ describe('computeGridDimensions', () => {
 })
 
 describe('clampZoom', () => {
-  it('leaves a zoom inside the range alone, rounded to whole percent', () => {
+  it('leaves a zoom inside the range alone, exactly, so a pinch or the wheel zooms smoothly (ticket 0789)', () => {
     expect(clampZoom(0.8)).toBe(0.8)
-    expect(clampZoom(0.7916)).toBe(0.79)
+    expect(clampZoom(0.7916)).toBe(0.7916)
   })
 
   it('never goes below the minimum or above the maximum', () => {
