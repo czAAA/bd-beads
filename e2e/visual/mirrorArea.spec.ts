@@ -15,7 +15,8 @@ test.describe('the Mirror and its Area', () => {
     await page.getByTestId('pill-tool-mirror').click()
     const box = await gridBox(page)
     const from = beadCentre({ technique: 'peyote', rotation: 0 }, box, 1, { row: 2, column: -14 })
-    const to = beadCentre({ technique: 'peyote', rotation: 0 }, box, 1, { row: 7, column: -7 })
+    // Seven columns: Left–right on peyote needs an odd width, its Axis through the middle column (ticket 0775).
+    const to = beadCentre({ technique: 'peyote', rotation: 0 }, box, 1, { row: 7, column: -8 })
     await page.mouse.move(from.x, from.y)
     await page.mouse.down()
     await page.mouse.move(to.x, to.y, { steps: 6 })
