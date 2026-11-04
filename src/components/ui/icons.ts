@@ -64,6 +64,7 @@ export const ICON_NAMES = [
   'position-right',
   'position-top',
   'redo',
+  'reference-image',
   'reset',
   'remove-line',
   'rotate',
