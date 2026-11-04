@@ -22,6 +22,7 @@ type DialogId =
   | 'leave-converter'
   | 'feedback'
   | 'open-large-project'
+  | 'remove-reference-image'
 
 interface Asked {
   id: DialogId

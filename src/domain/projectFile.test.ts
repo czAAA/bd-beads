@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadCopy, findBead } from './beads'
 import { paintAt } from '../testUtils/layers'
 import {
+  importedPictures,
   importProjects,
   libraryFileName,
   parseProjectsFile,
@@ -28,6 +29,7 @@ import { frameGrid } from '../testUtils/frameGrid'
 import { backgroundOf, canvasOf, frameOf, withBackground, withLayer } from './layerRecord'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 import { legacyFile } from '../testUtils/legacyFile'
+import { newReferenceImage, withReferenceImage } from './referenceImage'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -191,11 +193,11 @@ describe('single-Project roundtrip', () => {
     expect(rowProgressOf(restored)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 13 with the layer list, each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
+  it('writes version 14 with the layer list, each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(13)
+    expect(file.version).toBe(14)
     expect(file.patterns).toBeUndefined()
     expect(Object.keys(file.projects[0]).sort()).toEqual(['createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].layers[0].beads).toBeUndefined()
@@ -214,8 +216,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 14
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 14')
+    file.version = 15
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 15')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as its Bead\'s built-in colors', () => {
@@ -356,7 +358,7 @@ describe('whole-library roundtrip', () => {
   it('restores every saved Project from one exported file', () => {
     const library = [decoratedProject(), makeProject('Owl')]
 
-    expect(parseProjectsFile(serializeLibrary(library))).toEqual({ projects: library })
+    expect(parseProjectsFile(serializeLibrary(library))).toEqual({ projects: library, pictures: {} })
   })
 
   it('exports to one predictable file name', () => {
@@ -510,5 +512,37 @@ describe('a Project file made from the stored form (ticket 0716)', () => {
 
   it('is named from the Project\'s name and maker alone', () => {
     expect(projectFileNameOf('My scarf', 'Ada')).toBe('my-scarf-ada.openbeads')
+  })
+})
+
+describe('a reference image in the file (ticket 0790, ADR 0089)', () => {
+  const picture = { name: 'rose.webp', type: 'image/webp', width: 40, height: 20, bytes: 3 }
+  const traced = (): Project => withReferenceImage(makeProject('Rose'), newReferenceImage(picture, { x: 0, y: 0, width: 100, height: 100 }))
+
+  it('carries the settings with the Project and the picture beside it, by Project id', () => {
+    const project = traced()
+    const contents = parseProjectsFile(serializeProject(project, { [project.id]: 'AAEC' }))
+    expect(contents.projects[0]!.referenceImage).toEqual(project.referenceImage)
+    expect(contents.pictures).toEqual({ [project.id]: 'AAEC' })
+  })
+
+  it('carries every Project\'s picture in a library file', () => {
+    const [first, second] = [traced(), makeProject('Plain')]
+    const contents = parseProjectsFile(serializeLibrary([first, second], [], { [first.id]: 'AAEC' }))
+    expect(contents.pictures).toEqual({ [first.id]: 'AAEC' })
+    expect(contents.projects[1]!.referenceImage).toBeUndefined()
+  })
+
+  it('still opens a version 13 file, which has no pictures', () => {
+    const file = JSON.parse(serializeProject(makeProject())) as { version: number }
+    const contents = parseProjectsFile(JSON.stringify({ ...file, version: 13 }))
+    expect(contents.projects).toHaveLength(1)
+    expect(contents.pictures).toEqual({})
+  })
+
+  it('keeps an imported picture with its Project when the Project comes in under a fresh id', () => {
+    const project = traced()
+    const added = importProjects([project], [{ id: project.id }], () => 'fresh')
+    expect(importedPictures([project], added, new Map([[project.id, 'AAEC']]))).toEqual(new Map([['fresh', 'AAEC']]))
   })
 })

@@ -5,7 +5,7 @@ import { ImageConversionError, validateImagePixelCount, type DecodeImage } from 
 // `DecodeImage` so a test can pass synthetic pixels.
 
 /** What both decode paths hand back: something drawable, with the size it decoded to. */
-interface DecodedSource {
+export interface DecodedSource {
   drawable: CanvasImageSource
   width: number
   height: number
@@ -37,8 +37,9 @@ function decodeViaImageElement(file: Blob): Promise<DecodedSource> {
   })
 }
 
-/** An animated GIF decodes as its first frame on either path; deliberate, since a Project is a still picture. */
-async function decodeSource(file: Blob): Promise<DecodedSource> {
+/** An animated GIF decodes as its first frame on either path; deliberate, since a Project is a still picture. Also what
+ * a reference image is read through (ticket 0790). */
+export async function decodeSource(file: Blob): Promise<DecodedSource> {
   if (typeof createImageBitmap === 'function') {
     const bitmap = await createImageBitmap(file)
     return { drawable: bitmap, width: bitmap.width, height: bitmap.height, release: () => bitmap.close() }

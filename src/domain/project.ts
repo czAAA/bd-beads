@@ -6,6 +6,7 @@ import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
 import type { PieceName } from './pieceNames'
 import type { MirrorSetting } from './mirror'
+import type { ReferenceImage } from './referenceImage'
 
 // The Project record and `touch`, which stamps a change (ticket 0620); it imports types alone. The operations live by
 // concern: createProject, storedProject (old files), layerWeave, weaveSwitch, rowProgress, layerBeads, drawing, fill,
@@ -104,6 +105,9 @@ export interface Project {
   /** The Mirror (ADR 0082, ticket 0750): one per Project, its place (a Canvas Area or the whole Frame), Mode, Axes and
    * counts. Absent on a Project saved before Mirror, which reads as off (domain/mirror.ts). */
   mirror?: MirrorSetting
+  /** The reference image (ticket 0790, ADR 0089): the settings of the one picture laid on the Canvas, a view saved with
+   * the Project; its bytes are kept beside the library. Absent when it has none (domain/referenceImage.ts). */
+  referenceImage?: ReferenceImage
   createdAt: number
   updatedAt: number
   /** When the Project last reached this device's storage (ticket 145): orders the library, newest first. Absent on

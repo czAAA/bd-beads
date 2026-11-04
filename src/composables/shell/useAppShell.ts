@@ -38,6 +38,7 @@ import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import type { OpenPanel } from './openPanel'
+import type { Project } from '../../domain/project'
 import { useOverlayVisibility } from './useOverlayVisibility'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
@@ -64,6 +65,7 @@ import { useUndoHistory } from '../project/useUndoHistory'
 import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
+import { useReferenceImageFlow } from '../project/useReferenceImageFlow'
 
 // The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
@@ -583,6 +585,26 @@ function wireAppShell(services: Services) {
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0054). */
   const editFrame = frameFlow.toggleHandles
 
+  /** The reference image (ticket 0790, ADR 0089): its picture kept on the device, shown, hidden and adjusted as a view. */
+  const referenceImage = useReferenceImageFlow({
+    currentProject,
+    replaceProject,
+    libraryIds: () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)],
+    store: services.pictureStore,
+    prepare: services.preparePicture,
+    decode: services.drawablePicture,
+    inView: () => canvasOnScreen(),
+    announce,
+    openProjectPanel: () => void (openPanel.value = 'project'),
+    closePanel: () => void (openPanel.value = null),
+    dialogs,
+  })
+  /** Imported Projects bring their reference images' pictures, kept under the ids they came in under. */
+  const onImportProjects = (imported: Project[], pictures?: ReadonlyMap<string, Blob>) => {
+    if (pictures?.size) void referenceImage.keepImported(pictures)
+    importSwitch.onImportProjects(imported)
+  }
+
   /** Rotate: the Selection a quarter turn, with a Message saying when it covered beads (ticket 416, ADR 0052). */
   const rotateFlow = useRotateSelectionFlow({
     edit,
@@ -644,6 +666,7 @@ function wireAppShell(services: Services) {
     downloadFile: services.downloadFile,
     replaceProject,
     showToast,
+    picturesOf: referenceImage.picturesOf,
   })
 
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
@@ -678,7 +701,12 @@ function wireAppShell(services: Services) {
     currentProject,
     projects: () => projects.value,
     replaceProject,
-    addProject,
+    // Duplicate copies the reference image's picture with the settings (ticket 0790).
+    addProject: (copy) => {
+      const source = currentProject()
+      if (source?.referenceImage) void referenceImage.copyPicture(source.id, copy.id)
+      addProject(copy)
+    },
     removeProject,
     removeAllProjects,
     closeProject: onNewProject,
@@ -729,6 +757,7 @@ function wireAppShell(services: Services) {
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
+    onToggleReferenceImage: referenceImage.toggleShown,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
     onToggleFramePanel: frameFlow.toggleBar,
@@ -806,7 +835,7 @@ function wireAppShell(services: Services) {
       openPanel,
       onSelectPanel: overlays.onSelectPanel,
       openMenuOnForm: overlays.openMenuOnForm,
-      onImportProjects: importSwitch.onImportProjects,
+      onImportProjects,
       toasts,
       dismissToast,
       /** The surface drew every bead in view: the safe start's first drawn frame (ticket 0716). */
@@ -824,6 +853,8 @@ function wireAppShell(services: Services) {
       /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
       stroking: computed(() => strokeMode.value !== null),
       toggleRulers,
+      /** The reference image (ticket 0790): what the surface draws, the strip button, Adjust and its bar. */
+      referenceImage,
       rowHighlight,
       toggleRowHighlight,
       /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
@@ -952,7 +983,7 @@ function wireAppShell(services: Services) {
       sealed,
       activeProjectId,
       onRequestRemove: savedProjectConfirms.onRequestRemove,
-      onImportProjects: afterLeaving(importSwitch.onImportProjects),
+      onImportProjects: afterLeaving(onImportProjects),
       onExportLibraryFile: exportFlow.onExportLibraryFile,
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
       // New Project
@@ -973,6 +1004,7 @@ function wireAppShell(services: Services) {
       onSetTechnique: frameFlow.setLayerTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
       onSetBackground: backgroundFlow.setBackground,
+      referenceImage,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,
       onSaveMakerName: exportFlow.onSaveMakerName,
@@ -1058,6 +1090,8 @@ function wireAppShell(services: Services) {
       onSavePieceName: namePiece.onSavePieceName,
       onCancelPieceName: namePiece.onCancelPieceName,
       onConfirmLeaveConverter: convertImage.onConfirmLeave,
+      onConfirmRemoveReferenceImage: referenceImage.confirmRemove,
+      onCancelRemoveReferenceImage: referenceImage.cancelRemove,
       onCancelLeaveConverter: convertImage.onCancelLeave,
     },
     /** The registry itself, for a test that opens a dialog the way its flow would. */

@@ -10,7 +10,7 @@ import AppButton from '../ui/AppButton.vue'
 import ProjectsLibrary from '../project/ProjectsLibrary.vue'
 import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { usePanelsContext } from '../../composables/shell/useAppShell'
 import { frameOf } from '../../domain/layerRecord'
@@ -38,6 +38,7 @@ const {
   onRequestDeleteAllProjects,
   onSetTechnique,
   onSetWeaveSetting,
+  referenceImage,
   onSetBackground,
   onFitFrame,
   onSelectFrame,
@@ -76,6 +77,14 @@ const {
   onOpenShortcutsHelp,
   onOpenFeedback,
 } = usePanelsContext()
+
+/** The reference image's state the Project panel shows (ticket 0790). */
+const referencePanel = computed(() => ({
+  thumbnail: referenceImage.thumbnail.value,
+  preparing: referenceImage.preparing.value,
+  refusal: referenceImage.refusal.value,
+  notSaved: referenceImage.notSaved.value,
+}))
 
 /** The Starter gallery's category and Starter open (ticket 0596): a card sets its own as it pushes the next level. */
 const chosenCategory = ref<StarterCategoryId>()
@@ -173,7 +182,12 @@ const chosenStarter = ref<StarterId>()
       :project="activeProject"
       :save-failed="saveFailed"
       :unsaved="unsaved"
+      :reference="referencePanel"
       @rename="onRenameProject"
+      @pick-reference-image="referenceImage.pick($event, 'panel')"
+      @set-reference-opacity="referenceImage.setOpacity"
+      @adjust-reference-image="referenceImage.startAdjust"
+      @remove-reference-image="referenceImage.requestRemove"
       @set-technique="onSetTechnique"
       @set-weave-setting="onSetWeaveSetting"
       @set-background="onSetBackground"

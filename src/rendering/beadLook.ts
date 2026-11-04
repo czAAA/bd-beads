@@ -401,6 +401,25 @@ export const drawFlatBead: BeadDrawer = (context, bead) => {
   drawBeadShapes(context, bead, ink)
 }
 
+/** An empty bead over a reference image (ReferenceImage card, ticket 0790): its rim kept opaque so the grid stays
+ * readable, its fill (the empty bead's) at `opacity`, so the picture reads through it. Square or rounded as any bead. */
+export function drawSeeThroughBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius, theme }: BeadShape, opacity: number): void {
+  const outerWidth = width - GAP_PX * 2
+  const outerHeight = height - GAP_PX * 2
+  const outerRadius = Math.min(Math.max(0, cornerRadius - GAP_PX), outerWidth / 2, outerHeight / 2)
+  const inner = [x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerWidth - RIM_PX * 2, outerHeight - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX)] as const
+  context.beginPath()
+  roundedRectPath(context, x + GAP_PX, y + GAP_PX, outerWidth, outerHeight, outerRadius)
+  roundedRectPath(context, ...inner)
+  context.fillStyle = blendOver(theme.rim, theme.emptyBead)
+  context.fill('evenodd')
+  const alpha = context.globalAlpha
+  context.globalAlpha = alpha * opacity
+  context.fillStyle = theme.emptyBead
+  fillShape(context, ...inner)
+  context.globalAlpha = alpha
+}
+
 /** A letter on a dark bead (ticket 0573; printed-output.md, Color + letters).
  * @internal Tests check the letter drawn on a dark bead. */
 export const LETTER_ON_DARK = '#ffffff'

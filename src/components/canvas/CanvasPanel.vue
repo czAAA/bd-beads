@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import CanvasHint from './CanvasHint.vue'
 import FirstRunHints from './FirstRunHints.vue'
@@ -13,6 +13,8 @@ import ToolPill from '../tools/ToolPill.vue'
 import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
+import ReferenceAdjust from './ReferenceAdjust.vue'
+import ReferenceAdjustBar from './ReferenceAdjustBar.vue'
 import ProgressBar from './ProgressBar.vue'
 import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
@@ -28,7 +30,9 @@ import { hasGuides, selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
 import { beadOfLayer, frameOf, layerOf } from '../../domain/layerRecord'
-import { layerWeave } from '../../domain/layerWeave'
+import { canvasWeave, layerWeave } from '../../domain/layerWeave'
+import { cellSizePx } from '../../rendering/cellSize'
+import type { SurfaceView } from '../../rendering/surfaceView'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -62,6 +66,7 @@ const {
   showRulers,
   stroking,
   toggleRulers,
+  referenceImage,
   rowHighlight,
   toggleRowHighlight,
   rowPress,
@@ -194,8 +199,28 @@ const colorPick = useColorPick()
  * release. */
 /** What the tool in hand and the modes on let the Drawing surface do (ticket 0619): one value, worked out once. */
 const surfaceTools = computed(() =>
-  toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value, markingArea: mirrorMarking.value }),
+  // While the reference image is adjusted the tools rest (ticket 0790): a drag beside it moves the view.
+  referenceImage.adjusting.value
+    ? toolCapabilities('hand')
+    : toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value, markingArea: mirrorMarking.value }),
 )
+
+/** The strip's Reference image button (ticket 0790): none yet, shown or hidden. */
+const referenceState = computed(() => {
+  const image = referenceImage.image.value
+  return image ? (image.shown ? 'shown' : 'hidden') : 'none'
+})
+/** The surface's view, which Adjust lays the picture's outline and handles through. */
+const surfaceView = shallowRef<SurfaceView>()
+/** What Adjust handles: the picture as it is saved, its shape and limits, and one bead's width. */
+const adjusted = computed(() => {
+  const image = referenceImage.image.value
+  const limits = referenceImage.limits.value
+  const project = activeProject.value
+  if (!referenceImage.adjusting.value || !image || !limits || !project || !surfaceView.value) return undefined
+  const weave = canvasWeave(project)
+  return { image, limits, aspect: image.picture.height / image.picture.width, bead: cellSizePx(weave.technique, weave.cell).width, view: surfaceView.value }
+})
 
 const shownProject = frameDraftProject
 
@@ -302,6 +327,7 @@ const drawingStyle = computed(() => {
         :page="page"
         :project="onEditor ? activeProject : undefined"
         :rulers="showRulers"
+        :reference-image="onEditor && activeProject ? referenceState : undefined"
         :frame-open="framePanelOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
@@ -312,6 +338,8 @@ const drawingStyle = computed(() => {
         @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
+        @toggle-reference-image="referenceImage.toggleShown"
+        @pick-reference-image="referenceImage.pick($event, 'strip')"
         @undo="onUndo"
         @redo="onRedo"
         @zoom-in="zoomIn"
@@ -371,6 +399,8 @@ const drawingStyle = computed(() => {
               :selection-refusals="selectionRefusals"
               :fill-refusals="fillRefusals"
               :label="projectLabel"
+              :reference="referenceImage.drawn.value"
+              @surface-view="surfaceView = $event"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
               @cells-primary-move="onCellsPrimaryMove"
@@ -393,7 +423,20 @@ const drawingStyle = computed(() => {
               @pressing="surfacePressing = $event"
               @drawn="onSurfaceDrawn"
             />
-            <EmptyCanvas v-else>
+            <!-- Adjust (ticket 0790): the reference image's outline and handles over the drawing, outside its image role. -->
+            <ReferenceAdjust
+              v-if="adjusted"
+              :place="adjusted.image.place"
+              :aspect="adjusted.aspect"
+              :limits="adjusted.limits"
+              :opacity="adjusted.image.opacity"
+              :view="adjusted.view"
+              :bead="adjusted.bead"
+              @preview="referenceImage.preview"
+              @commit="referenceImage.commit"
+              @done="referenceImage.endAdjust"
+            />
+            <EmptyCanvas v-else-if="!activeProject">
               <div class="app-shell__empty-actions" data-testid="phone-project-bar">
                 <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
                 <ProjectImport compact :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" />
@@ -413,8 +456,10 @@ const drawingStyle = computed(() => {
         </div>
 
         <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
+        <!-- The Adjust bar takes the Tool pill's place while the reference image is adjusted (ticket 0790). -->
+        <ReferenceAdjustBar v-if="adjusted" @fit="referenceImage.fit" @done="referenceImage.endAdjust" />
         <ToolPill
-          v-if="activeProject"
+          v-else-if="activeProject"
           v-model:position="toolPillPosition"
           v-model:popover-open="toolPillPopoverOpen"
           :mirror-on="mirrorOn"

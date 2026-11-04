@@ -16,6 +16,8 @@ const {
   t,
   open,
   activeProject,
+  onConfirmRemoveReferenceImage,
+  onCancelRemoveReferenceImage,
   saveFailed,
   onCancelDeleteAll,
   onConfirmDeleteAll,
@@ -90,6 +92,18 @@ const { locale } = useI18n()
     :cancel-label="t.convertImage.leave.cancelButton"
     @confirm="onConfirmLeaveConverter"
     @cancel="onCancelLeaveConverter"
+  />
+
+  <!-- Remove image asks first (ReferenceImage card, ticket 0790): the picture goes, the beads stay. -->
+  <ConfirmModal
+    v-if="open === 'remove-reference-image'"
+    data-testid="remove-reference-image-modal"
+    :title="t.referenceImage.removeTitle"
+    :message="t.referenceImage.removeMessage"
+    :confirm-label="t.referenceImage.removeButton"
+    :cancel-label="t.referenceImage.cancelButton"
+    @confirm="onConfirmRemoveReferenceImage"
+    @cancel="onCancelRemoveReferenceImage"
   />
 
   <ConfirmModal
