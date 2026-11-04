@@ -30,6 +30,7 @@ const OPT_IN = '@view-transition { navigation: auto; }'
 const LEAVE_GRACE_MS = 100
 /** The fade's length where the token can't be read (a test page). */
 const LEAVE_FALLBACK_MS = 200
+const MS_PER_S = 1000
 
 /** The box's place, its strip and its marks; nothing where the box lacks either part, so the navigation stays plain. */
 function handoffOf(box: Element): BoxHandoff | undefined {
@@ -53,11 +54,19 @@ function handoffOf(box: Element): BoxHandoff | undefined {
   }
 }
 
+/** A CSS time in ms, written in `ms` or in `s`: the build's minifier writes `200ms` as `.2s` (ticket 0792). */
+function timeMs(value: string): number {
+  const time = value.trim()
+  if (time.endsWith('ms')) return parseFloat(time)
+  if (time.endsWith('s')) return parseFloat(time) * MS_PER_S
+  return parseFloat(time)
+}
+
 /** Resolves once the content's own fade has ended (a button's transition ends sooner and bubbles up too), or after the
  * fade's length plus a grace, should the browser fire no transitionend. */
 function contentLeft(page: Element | null): Promise<void> {
   return new Promise((left) => {
-    const fadeMs = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--duration-base')) || LEAVE_FALLBACK_MS
+    const fadeMs = timeMs(getComputedStyle(document.documentElement).getPropertyValue('--duration-base')) || LEAVE_FALLBACK_MS
     const done = () => {
       clearTimeout(limit)
       page?.removeEventListener('transitionend', onEnd)
