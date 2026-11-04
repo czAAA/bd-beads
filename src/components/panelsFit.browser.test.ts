@@ -8,6 +8,8 @@ import ExportPanel from './canvas/ExportPanel.vue'
 import FramePanel from './canvas/FramePanel.vue'
 import { rotateFrame } from '../domain/rotate'
 import ProjectPanel from './project/ProjectPanel.vue'
+import ReferenceAdjustBar from './canvas/ReferenceAdjustBar.vue'
+import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
 import { BEAD_CATALOG, offeredBeads } from '../domain/beads'
@@ -51,7 +53,7 @@ const inPanel = (component: Component, props: Record<string, unknown>, width?: s
 const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
 
 const CASES: FitCase[] = [
-  ['CanvasStrip', CanvasStrip, { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 }],
+  ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
   ['ShortcutsHelp', ShortcutsHelp, {}],
   ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true }), {}],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
@@ -70,6 +72,19 @@ const CASES: FitCase[] = [
   ['ProjectPanel (brick)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (peyote, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (brick, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
+  // The reference image section with a picture (ticket 0790): its row, the four opacities, a refusal and the not-saved icon.
+  [
+    'ProjectPanel (reference image)',
+    ProjectPanel,
+    {
+      project: withReferenceImage(project, { ...newReferenceImage({ name: 'a-very-long-photo-name-from-a-phone-camera.jpg', type: 'image/webp', width: 2048, height: 1536, bytes: 421888 }, { x: 0, y: 0, width: 240, height: 240 }), shown: false }),
+      replaceCandidates: BEAD_CATALOG.slice(0, 2),
+      saveFailed: false,
+      unsaved: false,
+      reference: { preparing: false, refusal: 'tooManyPixels', notSaved: true },
+    },
+  ],
+  ['ReferenceAdjustBar', ReferenceAdjustBar, {}],
   ['NewProjectForm', NewProjectForm, {}],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
 ]

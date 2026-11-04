@@ -13,6 +13,7 @@ import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { newReferenceImage, withReferenceImage } from '../../domain/referenceImage'
 
 /** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
  * test per control → flow. What the panels hold is in MenuPanel and ProjectPanel, Back, Escape and focus in AppPanel
@@ -168,6 +169,18 @@ describe('Project', () => {
     mounted.canvas.onUndo()
     mounted.canvas.onUndo()
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' } })
+  })
+
+  it('removes the reference image after a confirmation, saved with no Undo step (ticket 0790)', async () => {
+    saveProjects([withReferenceImage(moth(), newReferenceImage({ name: 'rose.webp', type: 'image/webp', width: 40, height: 20, bytes: 9 }, { x: 0, y: 0, width: 100, height: 100 }))])
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await click(mounted, 'reference-image-remove')
+    expect(mounted.wrapper.find('[data-testid="remove-reference-image-modal"]').exists()).toBe(true)
+    await click(mounted, 'confirm-modal-confirm')
+    await flushPromises()
+    expect(loadProjects()[0]!.referenceImage).toBeUndefined()
+    expect(mounted.canvas.canUndo.value).toBe(false)
   })
 
   it('renames from the pencil, and Try again saves what a full storage refused', async () => {

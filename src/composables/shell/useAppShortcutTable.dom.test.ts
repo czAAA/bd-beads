@@ -175,8 +175,8 @@ describe('useAppShortcutTable', () => {
     refused.wrapper.unmount()
   })
 
-  it('I shows or hides the reference image (ticket 0790)', () => {
-    const { deps, wrapper } = mountTable()
+  it('I shows or hides the reference image with a Project open (ticket 0790)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
     press({ key: 'i' })
     expect(deps.onToggleReferenceImage).toHaveBeenCalledTimes(1)
     wrapper.unmount()
