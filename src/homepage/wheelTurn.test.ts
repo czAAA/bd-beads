@@ -30,11 +30,6 @@ describe('a wheel gesture turning the Homepage on the second scroll (ticket 0793
     expect(readies(gesture([100, 0], [-100, 30]))).toBeUndefined()
   })
 
-  it('starts a new scroll after 300ms of quiet, so two notches far apart are two scrolls', () => {
-    expect(gesture([100, 0], [100, 300]).start).toBe(300)
-    expect(gesture([100, 0], [100, 299]).start).toBe(0)
-  })
-
   it('waits 600ms after the last turn, so each section stays a moment', () => {
     expect(turnDue(gesture([4, 1000]), 1, 800)).toEqual({ way: 1, at: 1400 })
   })

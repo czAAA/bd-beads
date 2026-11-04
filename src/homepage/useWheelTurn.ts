@@ -1,5 +1,6 @@
 import { onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
-import { GESTURE_GAP, addWheel, leanOf, readies, scrolling, spend, turnDue, wheelPixels, type Way, type WheelGesture } from './wheelTurn'
+import { GESTURE_GAP, addWheel, leanOf, readies, scrolling, spend, turnDue, wheelPixels } from './wheelTurn'
+import type { Way, WheelGesture } from './wheelTurn'
 
 /** What turning the Homepage by wheel needs of the page. */
 export interface WheelTurnDeps {
@@ -66,7 +67,8 @@ export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: 
 
   /** A scroll has ended: unless it is waiting out the last turn to turn, it readies the next, and the section settles. */
   function ended() {
-    if (gesture && !turnDue(gesture, ready, lastTurn)) {
+    const next = turnDue(gesture, ready, lastTurn)
+    if (gesture && !(next && towards(next.way) !== undefined)) {
       ready = readies(gesture)
       gesture = undefined
     }
