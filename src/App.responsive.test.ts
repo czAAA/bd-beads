@@ -33,13 +33,17 @@ describe('one layout at every width (ticket 412, ADR 0046)', () => {
     }
   })
 
-  it('puts the canvas box flush with every screen edge, the safe-area inset the only gap (ticket 513)', () => {
+  it('puts the canvas box flush with every screen edge, the safe-area inset the only gap but at the foot (tickets 513, 0788)', () => {
     expect(layoutPx('float-edge')).toBe(12)
     const rule = shell.match(/\.app-shell__body \{[^}]*\}/)?.[0] ?? ''
-    for (const side of ['top', 'right', 'bottom', 'left']) {
-      expect(rule).toContain(`env(safe-area-inset-${side})`)
-      expect(rule).not.toContain('max(var')
-    }
+    expect(rule).toContain('--body-inset: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);')
+    expect(rule).not.toContain('max(var')
+    // The box runs to the screen's bottom edge; the Progress bar along its foot takes the inset inside itself.
+    expect(rule).toContain('--bar-bottom-inset: env(safe-area-inset-bottom);')
+    const bar = source('canvas/ProgressBar')
+    expect(bar).toContain('min-height: calc(var(--progress-height) + var(--bar-bottom-inset, 0px));')
+    expect(bar).toContain('padding: var(--bar-pad) var(--space-24) calc(var(--bar-pad) + var(--bar-bottom-inset, 0px));')
+    expect(source('canvas/StepBar')).toContain('min-height: calc(var(--step-bar-height) + var(--bar-bottom-inset, 0px));')
     const gap = shell.match(/\.app-shell__body::before \{[^}]*\}/)?.[0] ?? ''
     expect(gap).toContain('touch-action: none;')
     expect(rule).not.toContain('touch-action')

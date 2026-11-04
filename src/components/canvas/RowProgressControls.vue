@@ -7,6 +7,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import type { RowPress } from '../../composables/project/useRowOps'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import ProgressMoves from './ProgressMoves.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -174,11 +175,20 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
       :testid="testid"
     />
     <span v-else-if="item === 'divider'" class="row-progress__divider" aria-hidden="true" />
-    <!-- Row not done and Row done follow Row direction with their label and arrow (ticket 411); on the margin Row not
-      done is its arrow alone, named by the label, and the smaller forms leave it to the Progress bar. -->
-    <div v-else-if="item === 'steps'" class="row-progress__steps" :class="[`row-progress__steps--${arrowTurn}`, { 'row-progress__steps--margin': margin }]">
+    <!-- Row not done and Row done follow Row direction with their label and arrow (ticket 411). In the bar they are the
+      Progress bar's one pair, the same as Back and Next on a bar of steps (ticket 0788); on the margin Row not done is
+      its arrow alone, named by the label, and the smaller forms leave it to the Progress bar. -->
+    <ProgressMoves
+      v-else-if="item === 'steps' && !margin"
+      :class="`row-progress__steps--${arrowTurn}`"
+      :back="{ action: actions.notDone, label: notDoneLabel, icon: 'arrow-up', disabled: position.current === 0, testid: `${testid}-previous` }"
+      :forward="{ action: actions.done, label: doneLabel, trailingIcon: 'arrow-down', disabled: position.current >= position.total, testid: `${testid}-next` }"
+      @back="emit('move-row', -1)"
+      @forward="emit('move-row', 1)"
+    />
+    <div v-else-if="item === 'steps'" class="row-progress__steps" :class="`row-progress__steps--${arrowTurn}`">
       <IconButton
-        v-if="margin && !small"
+        v-if="!small"
         variant="plain"
         :action="actions.notDone"
         :label="notDoneLabel"
@@ -188,19 +198,8 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         @click="emit('move-row', -1)"
       />
       <AppButton
-        v-else-if="!margin"
-        variant="box"
-        size="lg"
-        :action="actions.notDone"
-        :label="notDoneLabel"
-        icon="arrow-up"
-        :disabled="position.current === 0"
-        :data-testid="`${testid}-previous`"
-        @click="emit('move-row', -1)"
-      />
-      <AppButton
         variant="primary"
-        :size="margin ? 'sm' : 'lg'"
+        size="sm"
         :action="actions.done"
         :label="doneLabel"
         trailing-icon="arrow-down"
@@ -257,15 +256,11 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   display: none;
 }
 
-/* Row not done and Row done (ticket 411): large text buttons, set well apart from Turn row direction. */
+/* On the margin, Row not done's arrow and Row done sit 4px apart; in the bar they are ProgressMoves. */
 .row-progress__steps {
   display: flex;
   flex: none;
   align-items: center;
-  gap: var(--space-8);
-}
-
-.row-progress__steps--margin {
   gap: var(--space-4);
 }
 
@@ -328,33 +323,10 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   width: var(--margin-track-compact);
 }
 
-/* Phone widths (ticket 411): the bar's large buttons can't share a row with Turn row direction and the track at 360px
- * in every language, so they take a second row, half the bar each (the bar wraps). */
+/* Phone widths (ticket 411): Row not done and Row done take a second row (ProgressMoves), so the bar wraps. */
 @media (max-width: 30rem) {
   .row-progress--bar .row-progress__track {
     min-width: var(--space-32);
-  }
-
-  .row-progress--bar .row-progress__steps {
-    flex: 1 1 100%;
-    min-width: 0;
-    gap: var(--space-4);
-  }
-
-  /* A button is wrapped (for its Tooltip) only while it has one, so a lone button is a flex item too. */
-  .row-progress--bar .row-progress__steps > .app-button,
-  .row-progress--bar .row-progress__steps :deep(.app-button-wrap) {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .row-progress--bar .row-progress__steps :deep(.app-button) {
-    width: 100%;
-    min-width: 0;
-    padding-inline: var(--space-6);
-    gap: var(--space-2);
-    justify-content: center;
-    font: var(--type-small);
   }
 }
 </style>

@@ -90,15 +90,15 @@ describe('ProgressBar', () => {
     expect(track.classes()).not.toContain('progress-track--following')
   })
 
-  it('shows a compact "current/total" counter and large text Previous/Next with their hotkeys (tickets 188, 411)', async () => {
+  it('shows a compact "current/total" counter and Previous/Next as the bar of steps\' quiet 32px pair (tickets 188, 411, 0788)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
     expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('5/20')
 
     const previous = wrapper.find('[data-testid="progress-bar-previous"]')
     const next = wrapper.find('[data-testid="progress-bar-next"]')
-    expect(previous.classes()).toContain('app-button--lg')
-    expect(next.classes()).toContain('app-button--lg')
+    expect(previous.classes()).toEqual(expect.arrayContaining(['app-button--text', 'app-button--sm']))
+    expect(next.classes()).toEqual(expect.arrayContaining(['app-button--primary', 'app-button--sm']))
     expect(previous.find('svg').exists()).toBe(true)
     expect(next.find('svg').exists()).toBe(true)
     // No compact, icon-only twin any more.
