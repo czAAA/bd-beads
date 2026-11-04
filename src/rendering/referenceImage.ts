@@ -2,7 +2,7 @@ import { beadBounds, type Rect } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
 import { beadsOfLayer, type Layered } from '../domain/layerRecord'
 import { canvasWeave } from '../domain/layerWeave'
-import type { OpacityStep, ReferenceBox, ReferencePlace, WidthLimits } from '../domain/referenceImage'
+import { radians, type OpacityStep, type ReferenceBox, type ReferencePlace, type WidthLimits } from '../domain/referenceImage'
 import type { DrawingContext } from './beadLook'
 import { cellSizePx } from './cellSize'
 import { gridBox } from './surfaceView'
@@ -27,7 +27,7 @@ export const EMPTY_BEAD_OPACITY: Readonly<Record<OpacityStep, number>> = { 25: 0
 export function drawReference(context: DrawingContext, { image, place, height, opacity }: DrawnReference): void {
   context.save()
   context.translate(place.x, place.y)
-  context.rotate((place.angle * Math.PI) / 180)
+  context.rotate(radians(place.angle))
   context.globalAlpha = opacity / 100
   // A picture is resampled as it is laid down, unlike the bead bitmaps.
   context.imageSmoothingEnabled = true
@@ -88,8 +88,8 @@ export function screenToGrid(view: ReferenceView, point: ScreenPoint): ScreenPoi
  * Canvas's). */
 export function placeOnScreen(view: ReferenceView, place: ReferencePlace, height: number): { centre: ScreenPoint; width: number; height: number; angle: number } {
   const centre = view.gridToPoint(place.x, place.y)
-  const radians = (place.angle * Math.PI) / 180
-  const across = view.gridToPoint(place.x + Math.cos(radians) * place.width, place.y + Math.sin(radians) * place.width)
+  const turn = radians(place.angle)
+  const across = view.gridToPoint(place.x + Math.cos(turn) * place.width, place.y + Math.sin(turn) * place.width)
   const width = Math.hypot(across.x - centre.x, across.y - centre.y)
   return { centre, width, height: (width * height) / place.width, angle: (Math.atan2(across.y - centre.y, across.x - centre.x) * 180) / Math.PI }
 }

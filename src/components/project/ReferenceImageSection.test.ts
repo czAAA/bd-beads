@@ -6,6 +6,7 @@ import ReferenceImageSection from './ReferenceImageSection.vue'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
+  localStorage.removeItem('openbeads:panel-sections-closed')
 })
 
 const image: ReferenceImage = newReferenceImage({ name: 'rose.webp', type: 'image/webp', width: 2048, height: 1536, bytes: 421888 }, { x: 0, y: 0, width: 100, height: 100 })
@@ -57,7 +58,6 @@ describe('ReferenceImageSection (ReferenceImage card, ticket 0790)', () => {
     const wrapper = mount(ReferenceImageSection, { props: { image: { ...image, shown: false } } })
     await wrapper.get('.panel-section__header').trigger('click')
     expect(wrapper.get('.panel-section__summary').text()).toBe('50% · hidden')
-    await wrapper.get('.panel-section__header').trigger('click')
   })
 
   it('says why a file was refused, and shows the picture being made ready', () => {

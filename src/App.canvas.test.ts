@@ -247,8 +247,9 @@ describe('the first-run hints over an empty Project (ticket 0725, FirstRunHints 
 })
 
 describe('Reference image (ticket 0790)', () => {
-  it('a file the strip button\'s picker refuses opens the Project panel on the reason', async () => {
+  it('a file the strip button\'s picker refuses opens the Project panel on the reason, its section folded or not', async () => {
     saveProjects([unframedProject()])
+    localStorage.setItem('openbeads:panel-sections-closed', 'project:reference')
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
 

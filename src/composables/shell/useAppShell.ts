@@ -65,7 +65,7 @@ import { useUndoHistory } from '../project/useUndoHistory'
 import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
-import { useReferenceImageFlow } from '../project/useReferenceImageFlow'
+import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useReferenceImageFlow'
 
 // The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
@@ -595,13 +595,18 @@ function wireAppShell(services: Services) {
     decode: services.drawablePicture,
     inView: () => canvasOnScreen(),
     announce,
-    openProjectPanel: () => void (openPanel.value = 'project'),
+    // The refusal is told in the reference image section, so a folded one opens for it.
+    openProjectPanel: () => {
+      const closed = services.devicePreferences.get('panelSectionsClosed')
+      closed.value = closed.value.filter((id) => id !== REFERENCE_SECTION_ID)
+      openPanel.value = 'project'
+    },
     closePanel: () => void (openPanel.value = null),
     dialogs,
   })
   /** Imported Projects bring their reference images' pictures, kept under the ids they came in under. */
-  const onImportProjects = (imported: Project[], pictures?: ReadonlyMap<string, Blob>) => {
-    if (pictures?.size) void referenceImage.keepImported(pictures)
+  const onImportProjects = (imported: Project[], pictures: ReadonlyMap<string, Blob> = new Map()) => {
+    void referenceImage.keepImported(pictures)
     importSwitch.onImportProjects(imported)
   }
 
@@ -703,8 +708,7 @@ function wireAppShell(services: Services) {
     replaceProject,
     // Duplicate copies the reference image's picture with the settings (ticket 0790).
     addProject: (copy) => {
-      const source = currentProject()
-      if (source?.referenceImage) void referenceImage.copyPicture(source.id, copy.id)
+      void referenceImage.copyToDuplicate(copy)
       addProject(copy)
     },
     removeProject,

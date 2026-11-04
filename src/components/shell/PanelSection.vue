@@ -84,7 +84,8 @@ const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.to
   pointer-events: none;
 }
 
-.panel-section__label--short {
+/* Only as wide as its words, so the Info button stands right after it. */
+.panel-section__row .panel-section__label--short {
   flex: 0 1 auto;
 }
 

@@ -283,6 +283,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'reference-image',
     icon: 'reference-image',
     name: (t) => t.referenceImage.name,
+    // With a picture the strip button's Tooltip says Show or Hide instead (CanvasStrip).
+    body: (t) => t.referenceImage.addTooltip,
     group: 'canvas',
     chords: [{ key: 'i', label: 'I' }],
     needsProject: true,
