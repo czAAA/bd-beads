@@ -155,7 +155,7 @@ function endJump() {
   jumpingTo = undefined
 }
 
-// The wheel and trackpad turn the box one section a gesture, once it has gone some way (ticket 0784); keys and swipes
+// The wheel and trackpad turn the box on a section's second scroll, one section a gesture (tickets 0784, 0793); keys and swipes
 // scroll the page, snapping at every section. The page's own scroll past the plans grows the free list.
 const wheel = useWheelTurn({
   section,

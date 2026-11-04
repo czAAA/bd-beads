@@ -1,5 +1,5 @@
 import { onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
-import { GESTURE_GAP, addWheel, leanOf, spend, turnDue, wheelPixels, type WheelGesture } from './wheelTurn'
+import { GESTURE_GAP, addWheel, leanOf, readies, scrolling, spend, turnDue, wheelPixels, type Way, type WheelGesture } from './wheelTurn'
 
 /** What turning the Homepage by wheel needs of the page. */
 export interface WheelTurnDeps {
@@ -24,9 +24,9 @@ function scrollsInside(event: WheelEvent, page: EventTarget | null): boolean {
   return false
 }
 
-/** The Homepage turned by wheel and trackpad (ticket 0784; Homepage card, the scroll story): the page's own scroll is
- * held, and a gesture turns the box one section once it has scrolled some way and lasted a moment (`wheelTurn`); short
- * of that the shown section leans with it. Keys and swipes scroll the page as ever. */
+/** The Homepage turned by wheel and trackpad (tickets 0784, 0793; Homepage card, the scroll story): the page's own
+ * scroll is held, and a section turns on its second scroll (`wheelTurn`), the first scrolling it to its end or leaning
+ * it. Keys and swipes scroll the page as ever. */
 export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: WheelTurnDeps): {
   /** How far the shown section leans, in px, up negative. */
   lean: Readonly<Ref<number>>
@@ -34,6 +34,8 @@ export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: 
 } {
   const lean = ref(0)
   let gesture: WheelGesture | undefined
+  /** The way an ended scroll on the section shown readied it to turn on the next. */
+  let ready: Way | undefined
   let lastTurn = -Infinity
   /** When the gesture that turned the box began: the rest of it is held, never scrolling the page itself, so a flick
    * that reaches the plans does not grow the free list too. */
@@ -50,37 +52,47 @@ export function useWheelTurn({ section, count, scrollsFreely, viewport, turn }: 
   function settle() {
     clearTimeout(due)
     const now = Date.now()
-    const next = turnDue(gesture, lastTurn)
+    const next = turnDue(gesture, ready, lastTurn)
     const index = next && towards(next.way)
     if (next && index !== undefined && next.at > now) due = setTimeout(settle, next.at - now)
     else if (next && index !== undefined) {
       gesture = spend(gesture!)
       lastTurn = now
-      turnedStart = gesture!.start
+      turnedStart = gesture.start
       turn(index)
     }
     lean.value = gesture && towards(gesture.distance) !== undefined ? leanOf(gesture) : 0
+  }
+
+  /** A scroll has ended: unless it is waiting out the last turn to turn, it readies the next, and the section settles. */
+  function ended() {
+    if (gesture && !turnDue(gesture, ready, lastTurn)) {
+      ready = readies(gesture)
+      gesture = undefined
+    }
+    settle()
   }
 
   function onWheel(event: WheelEvent) {
     if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return
     const wheel = { delta: wheelPixels(event, viewport()), time: Date.now() }
     clearTimeout(quiet)
-    // A gesture far enough to turn, waiting out the last turn, still turns once it goes quiet.
-    quiet = setTimeout(() => {
-      if (!turnDue(gesture, lastTurn)) gesture = undefined
-      settle()
-    }, GESTURE_GAP)
+    quiet = setTimeout(ended, GESTURE_GAP)
     // A gesture that scrolled anything itself turns nothing, even once it reaches the end of what it scrolled.
     gesture = addWheel(gesture, wheel)
     const holding = gesture.start === turnedStart
-    if (!holding && (scrollsInside(event, event.currentTarget) || scrollsFreely(event))) gesture = spend(gesture)
+    if (!holding && (scrollsInside(event, event.currentTarget) || scrollsFreely(event))) gesture = scrolling(gesture)
     else event.preventDefault()
     settle()
   }
 
-  // A turn by Next, a step, a key or a swipe stands its while too.
-  watch(section, () => (lastTurn = Date.now()))
+  // A turn by Next, a step, a key or a swipe stands its while too, and its section counts its scrolls afresh: a gesture
+  // going on through the turn readies nothing.
+  watch(section, () => {
+    lastTurn = Date.now()
+    ready = undefined
+    if (gesture) gesture = spend(gesture)
+  })
   onScopeDispose(() => {
     clearTimeout(quiet)
     clearTimeout(due)
