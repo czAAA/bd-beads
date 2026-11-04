@@ -20,7 +20,7 @@ const emit = defineEmits<{ select: [] }>()
     >
       <span class="panel-list-row__thumb"><slot name="thumb" /></span>
       <span class="panel-list-row__text">
-        <span class="panel-list-row__name">{{ name }}</span>
+        <span class="panel-list-row__name" data-user-text>{{ name }}</span>
         <span v-if="sub" class="panel-list-row__sub">{{ sub }}</span>
       </span>
     </component>

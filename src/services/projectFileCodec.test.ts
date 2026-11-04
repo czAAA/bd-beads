@@ -9,6 +9,7 @@ import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
 import { canvasOf, frameOf } from '../domain/layerRecord'
+import { newReferenceImage, withReferenceImage } from '../domain/referenceImage'
 import { layersView, withLayers } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 
@@ -121,16 +122,38 @@ describe('a plain .json file from before ADR 0048 (deprecated)', () => {
   })
 })
 
-describe('the size limits (ticket 469)', () => {
-  it('refuses a file over 25 MB without reading it', async () => {
+describe('the size limits (ticket 469, raised for reference images by ADR 0089)', () => {
+  it('refuses a file over 100 MB without reading it', async () => {
     const big = { size: MAX_FILE_BYTES + 1, arrayBuffer: () => Promise.reject(new Error('read')) } as unknown as Blob
     await expect(readProjectsFile(big)).rejects.toThrow('size limit')
   })
 
-  it('aborts a gzip that unpacks past 100 MB', async () => {
-    const zeros = new Uint8Array(MAX_UNPACKED_BYTES + 1024 * 1024)
-    const bomb = new Uint8Array(await new Response(new Blob([zeros]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer())
+  it('aborts a gzip that unpacks past 150 MB', async () => {
+    // Zeros streamed a megabyte at a time, so the test never holds the unpacked size at once.
+    const chunk = new Uint8Array(1024 * 1024)
+    let left = Math.ceil(MAX_UNPACKED_BYTES / chunk.length) + 1
+    const zeros = new ReadableStream<Uint8Array>({ pull: (controller) => (left-- > 0 ? controller.enqueue(chunk) : controller.close()) })
+    const bomb = new Uint8Array(await new Response(zeros.pipeThrough(new CompressionStream('gzip'))).arrayBuffer())
     expect(bomb.length).toBeLessThan(MAX_FILE_BYTES)
     await expect(readProjectsFile(asFile(bomb))).rejects.toThrow('size limit')
+  })
+})
+
+describe('a reference image in the file (ticket 0790, ADR 0089)', () => {
+  const picture = { name: 'rose.webp', type: 'image/webp', width: 4, height: 2, bytes: 5 }
+
+  it('carries the picture\'s bytes and gives them back with its type', async () => {
+    const project = withReferenceImage(makeProject(), newReferenceImage(picture, { x: 0, y: 0, width: 80, height: 80 }))
+    const bytes = new Uint8Array([0, 1, 2, 254, 255])
+    const contents = await readProjectsFile(asFile(await packProjectFile(project, new Map([[project.id, new Blob([bytes])]]))))
+    const blob = contents.pictures.get(project.id)!
+    expect(blob.type).toBe('image/webp')
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(bytes)
+  })
+
+  it('carries every Project\'s picture in a library file', async () => {
+    const [first, second] = [withReferenceImage(makeProject('Fox'), newReferenceImage(picture, { x: 0, y: 0, width: 80, height: 80 })), makeProject('Owl')]
+    const contents = await readProjectsFile(asFile(await packLibraryFile([first, second], [], new Map([[first.id, new Blob(['x'])]]))))
+    expect([...contents.pictures.keys()]).toEqual([first.id])
   })
 })

@@ -49,13 +49,13 @@ export async function packStoredProjectFile(stored: string, pictures: PictureBlo
 }
 
 // Limits on a picked file (ticket 469), against a crafted "gzip bomb" (ADR 0048), raised for reference images (ADR
-// 0089): over 200 MB is refused unread, and unpacking aborts, counting streamed bytes, past 300 MB.
+// 0089): over 100 MB is refused unread, and unpacking aborts, counting streamed bytes, past 150 MB.
 /** The largest picked file read at all.
  * @internal Its test tries a file just over the cap. */
-export const MAX_FILE_BYTES = 200 * 1024 * 1024
+export const MAX_FILE_BYTES = 100 * 1024 * 1024
 /** The most a gzip may unpack to before reading aborts.
  * @internal Its test tries a gzip that unpacks just over the cap. */
-export const MAX_UNPACKED_BYTES = 300 * 1024 * 1024
+export const MAX_UNPACKED_BYTES = 150 * 1024 * 1024
 
 async function unpack(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
   const reader = new Response(bytes).body!.pipeThrough(new DecompressionStream('gzip')).getReader()

@@ -47,7 +47,7 @@ describe('ProjectImport import', () => {
 
     await pickFile(wrapper, serializeProject(project))
 
-    expect(wrapper.emitted('import')).toEqual([[[project]]])
+    expect(wrapper.emitted('import')).toEqual([[[project], new Map()]])
     expect(wrapper.find('[data-testid="import-result"]').text()).toContain('1')
   })
 
@@ -57,7 +57,7 @@ describe('ProjectImport import', () => {
 
     await pickFile(wrapper, serializeLibrary(library))
 
-    expect(wrapper.emitted('import')).toEqual([[library]])
+    expect(wrapper.emitted('import')).toEqual([[library, new Map()]])
   })
 
   it('brings in a Project that clashes with a local one under a new identity, keeping both', async () => {
