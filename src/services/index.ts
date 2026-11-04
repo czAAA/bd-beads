@@ -9,6 +9,8 @@ import { browserPersistentStorage, type PersistentStorage } from './persistentSt
 import { browserFeedback, type FeedbackService } from './feedback'
 import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
 import { takeOpeningAddress } from './openingAddress'
+import { browserPictureStore, type PictureStore } from './pictureStore'
+import { drawablePicture, preparePicture, type DrawablePicture, type PreparedPicture } from './referencePicture'
 import type { OpeningAddress } from '../domain/openingAddress'
 
 // Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
@@ -28,6 +30,10 @@ export interface Services {
   openingNote: OpeningNoteStore
   /** What the address the editor opened at asks for, read once (ticket 0716). */
   openingAddress: () => OpeningAddress
+  /** Where reference images' pictures are kept, and how a picked one is made ready and a kept one read (ADR 0089). */
+  pictureStore: PictureStore
+  preparePicture: (file: File) => Promise<PreparedPicture>
+  drawablePicture: (blob: Blob) => Promise<DrawablePicture>
 }
 
 export const browserServices: Services = {
@@ -41,4 +47,7 @@ export const browserServices: Services = {
   feedback: browserFeedback,
   openingNote: browserOpeningNote,
   openingAddress: takeOpeningAddress,
+  pictureStore: browserPictureStore,
+  preparePicture,
+  drawablePicture,
 }

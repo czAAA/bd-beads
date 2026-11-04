@@ -1351,4 +1351,68 @@ export interface Translations {
     openAnyway: string
     cancelButton: string
   }
+  /** The reference image (ReferenceImage card, ticket 0790): the strip button, the Project panel's section, Adjust. */
+  referenceImage: {
+    /** The strip button's name. */
+    name: string
+    /** The strip button's Tooltip body with no picture yet, and while it is shown or hidden. */
+    addTooltip: string
+    showTooltip: string
+    hideTooltip: string
+    /** The Project panel section's label, also the Adjust bar's. */
+    section: string
+    /** The folded section's summary: "50% · shown", with {opacity} and {state}. */
+    summary: string
+    shown: string
+    hidden: string
+    /** The Info Tooltip, with {maxSizeMb}. */
+    info: string
+    add: string
+    /** The stored picture's facts: "2048 × 1536 · 412 KB", with {width}, {height} and {size}. */
+    facts: string
+    /** A stored size in kilobytes, with {count}. */
+    kilobytes: string
+    opacity: string
+    /** One opacity choice, "50%", with {count}. */
+    percent: string
+    adjust: string
+    adjustValue: string
+    replace: string
+    remove: string
+    removeTitle: string
+    removeMessage: string
+    removeButton: string
+    cancelButton: string
+    /** A refused file, with {reason}, one of `reasons`. */
+    refused: string
+    /** Why a file is refused, one per ImageRejection, each to follow `refused`'s colon. */
+    reasons: {
+      heic: string
+      svg: string
+      unsupportedFormat: string
+      tooLarge: string
+      tooManyPixels: string
+      decodeFailed: string
+    }
+    preparing: string
+    fit: string
+    /** Fit on a phone. */
+    fitShort: string
+    done: string
+    /** The picture's name in Adjust for a screen reader, with {opacity} and {angle}. */
+    groupName: string
+    corners: {
+      'top-left': string
+      'top-right': string
+      'bottom-right': string
+      'bottom-left': string
+    }
+    turn: string
+    /** Announced after a turn, with {angle}. */
+    turned: string
+    moved: string
+    resized: string
+    /** The Project panel's save icon while the picture is not kept on this device. */
+    notSaved: string
+  }
 }

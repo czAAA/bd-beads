@@ -15,6 +15,8 @@ const props = defineProps<{
   project: Project
   saveFailed: boolean
   unsaved: boolean
+  /** The Project is saved but its reference image's picture is not kept on this device (ticket 0790). */
+  referenceNotSaved?: boolean
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -24,12 +26,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'unsaved' : 'saved'))
+const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved || props.referenceNotSaved ? 'unsaved' : 'saved'))
 const stateText = computed(() =>
   state.value === 'saved'
     ? t.value.panels.project.savedLocal
     : state.value === 'unsaved'
-      ? t.value.panels.project.notSavedYet
+      ? props.unsaved
+        ? t.value.panels.project.notSavedYet
+        : t.value.referenceImage.notSaved
       : fillBlanks(t.value.panels.project.notSaved, { reason: t.value.panels.project.saveRefused }),
 )
 

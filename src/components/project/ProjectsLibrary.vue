@@ -37,7 +37,7 @@ const emit = defineEmits<{
   select: [id: string]
   remove: [id: string]
   /** The Projects a file held, ready to be saved. */
-  import: [projects: Project[]]
+  import: [projects: Project[], pictures: ReadonlyMap<string, Blob>]
   exportAll: []
 }>()
 
@@ -110,7 +110,7 @@ function sealedDates(project: SealedProject): string {
 <template>
   <div class="projects-library" data-testid="project-list">
     <div class="projects-library__import" data-testid="menu-import">
-      <ProjectImport :projects="[...projects, ...sealed]" testid-prefix="menu-" value=".openbeads" @import="emit('import', $event)" />
+      <ProjectImport :projects="[...projects, ...sealed]" testid-prefix="menu-" value=".openbeads" @import="(imported, pictures) => emit('import', imported, pictures)" />
     </div>
     <PanelItem
       icon="export"

@@ -10,6 +10,8 @@ import { homepageUrl } from '../../homepage/homepageRoute'
 import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
+import FileButton from '../ui/form/FileButton.vue'
+import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
@@ -23,6 +25,8 @@ const props = defineProps<{
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openPanel?: OpenPanel | null
   rulers?: boolean
+  /** The reference image (ticket 0790): none yet, or shown or hidden; left out off the editor. */
+  referenceImage?: 'none' | 'shown' | 'hidden'
   /** Whether the Frame panel is open, so the Frame button shows lit. */
   frameOpen?: boolean
   canUndo?: boolean
@@ -39,6 +43,10 @@ const emit = defineEmits<{
   close: []
   'rotate-canvas': []
   'toggle-rulers': []
+  /** The Reference image button with a picture: show or hide it. */
+  'toggle-reference-image': []
+  /** The Reference image button with none: the file picked in the picker it opened. */
+  'pick-reference-image': [file: File]
   undo: []
   redo: []
   'zoom-in': []
@@ -58,6 +66,7 @@ const actions = {
   export: controlAction('strip-export'),
   rotateCanvas: controlAction('rotate-canvas'),
   rulers: controlAction('rulers'),
+  referenceImage: controlAction('reference-image'),
   undo: controlAction('undo'),
   redo: controlAction('redo'),
   zoomOut: controlAction('zoom-out'),
@@ -71,6 +80,25 @@ const brandLinks = computed(() => props.page === undefined || props.page === 'ed
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const homepageHref = homepageUrl(import.meta.env.BASE_URL)
+
+// The Reference image button (ReferenceImage card): with no picture a plain button opening the Convert image picker,
+// with one a toggle whose Tooltip says what a press does, with the `I` chip.
+const referenceAccept = imageInputAccept()
+const referencePickerEl = ref<HTMLElement>()
+const referenceTooltip = computed(() => ({
+  body: props.referenceImage === 'shown' ? t.value.referenceImage.hideTooltip : props.referenceImage === 'hidden' ? t.value.referenceImage.showTooltip : t.value.referenceImage.addTooltip,
+}))
+function onReferenceImage() {
+  if (props.referenceImage === 'none') referencePickerEl.value?.querySelector<HTMLInputElement>('input[type="file"]')?.click()
+  else emit('toggle-reference-image')
+}
+function onReferenceFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) emit('pick-reference-image', file)
+  // Picking the same file again still counts as a change.
+  input.value = ''
+}
 
 // One Tab stop per section (ADR 0075): the panels, the Brand with the coffee link and the right-hand tools. ←/→ step inside
 // a section and stop at its ends; ↓ on a panel button opens its panel, like Enter.
@@ -152,6 +180,21 @@ function onPanelsKeydown(event: KeyboardEvent) {
       <div v-if="project" class="canvas-strip__tools">
         <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+        <template v-if="referenceImage">
+          <IconButton
+            variant="plain"
+            :icon-size="18"
+            :action="actions.referenceImage"
+            :selected="referenceImage === 'none' ? undefined : referenceImage === 'shown'"
+            :shortcut="referenceImage === 'none' ? '' : undefined"
+            :tooltip="referenceTooltip"
+            data-testid="strip-reference-image"
+            @click="onReferenceImage"
+          />
+          <span ref="referencePickerEl" hidden>
+            <FileButton :label="actions.referenceImage.name(t)" :accept="referenceAccept" tabindex="-1" data-testid="strip-reference-image-input" @change="onReferenceFile" />
+          </span>
+        </template>
         <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" @click="emit('undo')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
       </div>
