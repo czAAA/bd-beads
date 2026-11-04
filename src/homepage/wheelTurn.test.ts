@@ -1,56 +1,68 @@
 import { describe, expect, it } from 'vitest'
-import { addWheel, leanOf, spend, turnDue, wheelPixels, type WheelGesture } from './wheelTurn'
+import { addWheel, leanOf, readies, scrolling, spend, turnDue, wheelPixels, type WheelGesture } from './wheelTurn'
 
 /** A gesture of wheel events, each `[delta, time]`. */
-function gesture(...wheels: [number, number][]): WheelGesture | undefined {
-  return wheels.reduce<WheelGesture | undefined>((so, [delta, time]) => addWheel(so, { delta, time }), undefined)
+function gesture(...wheels: [number, number][]): WheelGesture {
+  return wheels.reduce<WheelGesture | undefined>((so, [delta, time]) => addWheel(so, { delta, time }), undefined)!
 }
 
-describe('a wheel gesture turning the Homepage (ticket 0784)', () => {
-  it('does not turn on a single notch', () => {
-    expect(turnDue(gesture([100, 0]), -Infinity)).toBeUndefined()
+describe('a wheel gesture turning the Homepage on the second scroll (ticket 0793)', () => {
+  it('does not turn a section on its first scroll, however far it goes', () => {
+    expect(turnDue(gesture([400, 0], [400, 20]), undefined, -Infinity)).toBeUndefined()
   })
 
-  it('turns down once it has scrolled 150px, but not before it has lasted 120ms', () => {
-    expect(turnDue(gesture([100, 0], [100, 30]), -Infinity)).toEqual({ way: 1, at: 120 })
+  it('readies the section to turn the way a scroll went, once it ends', () => {
+    expect(readies(gesture([4, 0]))).toBe(1)
+    expect(readies(gesture([-4, 0]))).toBe(-1)
   })
 
-  it('turns up the same way', () => {
-    expect(turnDue(gesture([-80, 1000], [-80, 1016], [-80, 1200]), -Infinity)).toEqual({ way: -1, at: 1120 })
+  it('turns on the next scroll the same way at once, however short it is', () => {
+    expect(turnDue(gesture([4, 1000]), 1, -Infinity)).toEqual({ way: 1, at: 1000 })
+    expect(turnDue(gesture([-4, 1000]), -1, -Infinity)).toEqual({ way: -1, at: 1000 })
   })
 
-  it('starts afresh after 300ms of quiet, so notches far apart never add up', () => {
-    expect(turnDue(gesture([100, 0], [100, 300]), -Infinity)).toBeUndefined()
-    expect(turnDue(gesture([100, 0], [100, 299]), -Infinity)).toEqual({ way: 1, at: 120 })
+  it('does not turn on a scroll the other way: that one readies its own way instead', () => {
+    expect(turnDue(gesture([-100, 1000]), 1, -Infinity)).toBeUndefined()
+    expect(readies(gesture([-100, 1000]))).toBe(-1)
   })
 
   it('weighs a scroll back against the way it went', () => {
-    expect(turnDue(gesture([100, 0], [100, 30], [-100, 60]), -Infinity)).toBeUndefined()
+    expect(readies(gesture([100, 0], [-100, 30]))).toBeUndefined()
+  })
+
+  it('starts a new scroll after 300ms of quiet, so two notches far apart are two scrolls', () => {
+    expect(gesture([100, 0], [100, 300]).start).toBe(300)
+    expect(gesture([100, 0], [100, 299]).start).toBe(0)
   })
 
   it('waits 600ms after the last turn, so each section stays a moment', () => {
-    expect(turnDue(gesture([200, 1000]), 800)).toEqual({ way: 1, at: 1400 })
+    expect(turnDue(gesture([4, 1000]), 1, 800)).toEqual({ way: 1, at: 1400 })
   })
 
-  it('turns once: the rest of a spent gesture, its momentum too, never turns again', () => {
-    // Momentum: a wheel every 100ms for most of a second after the turn at 120.
-    let momentum = spend(gesture([200, 0])!)
+  it('never turns on a scroll that scrolled something itself, but that scroll readies the next', () => {
+    const inside = scrolling(gesture([100, 0]))
+    expect(turnDue(inside, 1, -Infinity)).toBeUndefined()
+    expect(readies(inside)).toBe(1)
+  })
+
+  it('turns once: the rest of a spent gesture, its momentum too, never turns again nor readies the next', () => {
+    let momentum = spend(gesture([4, 0]))
     for (let time = 100; time <= 900; time += 100) momentum = addWheel(momentum, { delta: 400, time })
-    expect(turnDue(momentum, 120)).toBeUndefined()
-    // A new gesture after the quiet turns again.
-    expect(turnDue(addWheel(momentum, { delta: 400, time: 1200 }), 120)).toEqual({ way: 1, at: 1320 })
+    expect(turnDue(momentum, 1, 0)).toBeUndefined()
+    expect(readies(momentum)).toBeUndefined()
   })
 })
 
-describe('the section leaning with a wheel gesture (ticket 0784)', () => {
-  it('leans with the scroll, 16px at most, up as the page goes down', () => {
-    expect(leanOf(gesture([75, 0]))).toBe(-8)
-    expect(leanOf(gesture([-75, 0]))).toBe(8)
+describe('the section leaning with its first scroll (ticket 0793)', () => {
+  it('leans 8px on the slightest scroll, up to 16px over a notch, up as the page goes down', () => {
+    expect(leanOf(gesture([4, 0]))).toBe(-8)
+    expect(leanOf(gesture([-75, 0]))).toBe(12)
     expect(leanOf(gesture([900, 0]))).toBe(-16)
   })
 
-  it('stands straight once the gesture has turned the box, or with none', () => {
-    expect(leanOf(spend(gesture([75, 0])!))).toBe(0)
+  it('stands straight once the gesture has turned the box or scrolled something itself, or with none', () => {
+    expect(leanOf(spend(gesture([75, 0])))).toBe(0)
+    expect(leanOf(scrolling(gesture([75, 0])))).toBe(0)
     expect(leanOf(undefined)).toBe(0)
   })
 })
