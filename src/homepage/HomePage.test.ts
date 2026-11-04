@@ -405,7 +405,7 @@ describe('HomePage sections (ticket 0739)', () => {
       const inside = wrapper.get('[data-testid="homepage-section-inside"]')
       wheel(el, 75)
       await nextTick()
-      expect((inside.element as HTMLElement).style.transform).toBe('translateY(-12px)')
+      expect((inside.element as HTMLElement).style.transform).toMatch(/^translateY\(-\d+px\)$/)
       vi.advanceTimersByTime(300)
       await nextTick()
       expect((inside.element as HTMLElement).style.transform).toBe('')

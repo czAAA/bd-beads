@@ -6,7 +6,8 @@
 const TURN_REST = 600
 /** The quiet that ends a gesture, in ms: a trackpad's momentum keeps one going, a pause between notches ends it. */
 export const GESTURE_GAP = 300
-/** How far the section leans with its first scroll, in px: half of it at once, all of it over a notch. */
+/** How far the section leans with its first scroll, in px: the least at once, the most over a notch. */
+const LEAN_LEAST = 8
 const LEAN_MAX = 16
 /** A notch, in px, in most browsers. */
 const NOTCH = 100
@@ -73,14 +74,20 @@ export function readies(gesture: WheelGesture): Way | undefined {
 
 /** Which way the gesture turns the box and when, if it does: once a scroll before it readied the section that way, and
  * the section turned to at `lastTurn` has stood its while. */
-export function turnDue(gesture: WheelGesture | undefined, ready: Way | undefined, lastTurn: number): { way: Way; at: number } | undefined {
+export function turnDue(
+  gesture: WheelGesture | undefined,
+  ready: Way | undefined,
+  lastTurn: number,
+): { way: Way; at: number } | undefined {
   if (!gesture || gesture.spent || gesture.scrolled || !ready || wayOf(gesture) !== ready) return undefined
   return { way: ready, at: Math.max(gesture.start, lastTurn + TURN_REST) }
 }
 
-/** How far the shown section leans with a gesture short of a turn, in px, up negative: it goes the page's way. */
+/** How far the shown section leans with a scroll that does not turn it, in px, up negative: it goes the page's way. */
 export function leanOf(gesture: WheelGesture | undefined): number {
   if (!gesture || gesture.spent || gesture.scrolled) return 0
   const way = wayOf(gesture)
-  return way ? -way * LEAN_MAX * Math.min(1, Math.max(0.5, Math.abs(gesture.distance) / NOTCH)) : 0
+  if (!way) return 0
+  const lean = (LEAN_MAX * Math.abs(gesture.distance)) / NOTCH
+  return -way * Math.min(LEAN_MAX, Math.max(LEAN_LEAST, lean))
 }
