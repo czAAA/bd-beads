@@ -600,6 +600,8 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('convert-select-beads', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectBeads }),
   unkeyed('convert-select-crop', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectCrop }),
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
+  // The Background tool (ticket 0787): a tap or a drag keeps or removes the patch of background under it.
+  unkeyed('convert-background', (t) => t.convertImage.wizard.backgroundTool, 'edit', { icon: 'erase', body: (t) => t.tooltips.backgroundTool }),
   unkeyed('convert-compare', (t) => t.convertImage.wizard.compare, 'edit', { icon: 'contrast', body: (t) => t.tooltips.compare }),
   unkeyed('remap-color', (t) => t.convertImage.wizard.change, 'colors', { icon: 'palette', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
