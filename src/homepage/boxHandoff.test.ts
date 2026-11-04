@@ -53,6 +53,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
   delete root.dataset.handoff
+  root.style.removeProperty('--duration-base')
   document.head.querySelectorAll('style[data-handoff]').forEach((style) => style.remove())
   document.body.replaceChildren()
 })
@@ -96,10 +97,11 @@ describe('leaving the Homepage for the editor (tickets 0776, 0783)', () => {
     expect(left).toBe(true)
   })
 
-  it('leaves anyway, a grace after the fade, when the browser fires no transitionend', async () => {
+  // The production build's minifier writes the token in seconds (ticket 0792).
+  it.each(['200ms', '.2s'])('leaves anyway, a grace after the fade, when the browser fires no transitionend (fade %s)', async (fade) => {
     vi.useFakeTimers()
     withTransitions()
-    root.style.setProperty('--duration-base', '200ms')
+    root.style.setProperty('--duration-base', fade)
     let left = false
     void leaveWithBox(homepageBox()).then(() => (left = true))
     await vi.advanceTimersByTimeAsync(299)
@@ -107,7 +109,6 @@ describe('leaving the Homepage for the editor (tickets 0776, 0783)', () => {
 
     await vi.advanceTimersByTimeAsync(1)
     expect(left).toBe(true)
-    root.style.removeProperty('--duration-base')
   })
 
   it('joins a leave already under way instead of handing over twice', async () => {
@@ -162,14 +163,29 @@ const HANDOFF: BoxHandoff = {
   bg: 'rgb(20, 20, 20)',
 }
 
-/** The editor's arrival script, as index.html runs it after the placeholder, before the first paint. */
+const INDEX_HTML = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
+
+/** The script with this attribute in this part of index.html. */
+function scriptIn(part: string, attribute: string): string {
+  const code = new RegExp(`<script ${attribute}>([\\s\\S]*?)</script>`).exec(part)
+  if (!code) throw new Error(`index.html has no <script ${attribute}> where the arrival needs it`)
+  return code[1]
+}
+
+/** The editor's arrival as its head runs it, before any of the body is parsed. */
+function runArrivalHead() {
+  new Function(scriptIn(INDEX_HTML.slice(0, INDEX_HTML.indexOf('</head>')), 'data-handoff'))()
+}
+
+/** The editor's arrival, as index.html runs it: its head, then the placeholder and the script that draws the
+ * handed-over strip in it, before the first paint. */
 function runArrivalScript() {
-  const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
-  const code = /<script data-handoff>([\s\S]*?)<\/script>/.exec(html)
-  const placeholder = /<div id="handoff"[^>]*>[\s\S]*?<\/div><\/div>/.exec(html)
-  if (!code || !placeholder) throw new Error('index.html has no <script data-handoff> after its #handoff')
+  runArrivalHead()
+  const body = INDEX_HTML.slice(INDEX_HTML.indexOf('<body>'))
+  const placeholder = /<div id="handoff"[^>]*>[\s\S]*?<\/div><\/div>/.exec(body)
+  if (!placeholder) throw new Error('index.html has no #handoff')
   document.body.insertAdjacentHTML('afterbegin', placeholder[0])
-  new Function(code[1])()
+  new Function(scriptIn(body.slice(body.indexOf(placeholder[0])), 'data-handoff-strip'))()
 }
 
 describe('arriving in the editor from the Homepage (tickets 0776, 0783)', () => {
@@ -192,6 +208,16 @@ describe('arriving in the editor from the Homepage (tickets 0776, 0783)', () => 
     expect(document.getElementById('handoff')?.hasAttribute('inert')).toBe(true)
     expect(document.head.querySelector('style[data-handoff]')?.textContent).toContain('@view-transition')
     expect(sessionStorage.getItem(BOX_HANDOFF_KEY)).toBeNull()
+  })
+
+  // Opted in from the body, the browser had already let the step go (ticket 0792).
+  it('opts this page into the transition from its head, before the body is parsed, so the browser takes the step', () => {
+    withTransitions()
+    sessionStorage.setItem(BOX_HANDOFF_KEY, JSON.stringify(HANDOFF))
+    runArrivalHead()
+
+    expect(root.dataset.handoff).toBe('arriving')
+    expect(document.head.querySelector('style[data-handoff]')?.textContent).toContain('@view-transition')
   })
 
   it("keeps the browser's step across the page load for the box to wait on", () => {
