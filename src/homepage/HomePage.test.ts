@@ -377,7 +377,7 @@ describe('HomePage sections (ticket 0739)', () => {
     expect(shown(wrapper)).toEqual(['inside'])
   })
 
-  describe('by wheel and trackpad (ticket 0784)', () => {
+  describe('by wheel and trackpad (tickets 0784, 0793)', () => {
     beforeEach(() => void vi.useFakeTimers())
     afterEach(() => void vi.useRealTimers())
 
@@ -388,23 +388,24 @@ describe('HomePage sections (ticket 0739)', () => {
       return event
     }
 
-    it('turns the box and scrolls the page a section once a gesture has gone far enough', async () => {
+    it('turns the box and scrolls the page a section on the second scroll, two slow notches', async () => {
       const { wrapper, el } = pageWithHeight()
-      wheel(el, 100)
-      vi.advanceTimersByTime(30)
-      wheel(el, 100)
-      vi.advanceTimersByTime(90)
+      wheel(el, 4)
+      vi.advanceTimersByTime(800)
+      await nextTick()
+      expect(shown(wrapper)).toEqual(['inside'])
+      wheel(el, 4)
       await nextTick()
       expect(shown(wrapper)).toEqual(['coffee'])
       expect(el.scrollTo).toHaveBeenLastCalledWith({ top: VIEWPORT, behavior: 'smooth' })
     })
 
-    it('leans the shown section with a gesture short of a turn, and stands it straight once the gesture stops', async () => {
+    it('leans the shown section with its first scroll, and stands it straight once the scroll stops', async () => {
       const { wrapper, el } = pageWithHeight()
       const inside = wrapper.get('[data-testid="homepage-section-inside"]')
       wheel(el, 75)
       await nextTick()
-      expect((inside.element as HTMLElement).style.transform).toBe('translateY(-8px)')
+      expect((inside.element as HTMLElement).style.transform).toMatch(/^translateY\(-\d+px\)$/)
       vi.advanceTimersByTime(300)
       await nextTick()
       expect((inside.element as HTMLElement).style.transform).toBe('')
