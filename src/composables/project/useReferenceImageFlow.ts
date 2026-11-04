@@ -41,6 +41,9 @@ export interface ReferenceImageFlowDeps {
   dialogs?: Dialogs
 }
 
+/** The Project panel's reference image section, by its fold id (usePanelSection). */
+export const REFERENCE_SECTION_ID = 'project:reference'
+
 /** Where a file was picked: the strip button, or the Project panel's section. */
 export type PickedFrom = 'strip' | 'panel'
 
@@ -238,10 +241,12 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     if (project?.referenceImage) commit(fittedPlace(project.referenceImage.picture, box(project)))
   }
 
-  /** Duplicate: the copy gets the picture too. */
-  async function copyPicture(fromId: string, toId: string): Promise<void> {
-    const blob = await pictureOf(fromId)
-    if (blob) await keep(toId, blob)
+  /** Duplicate: the copy of the open Project gets its picture too, where it has one. */
+  async function copyToDuplicate(copy: Project): Promise<void> {
+    const source = deps.currentProject()
+    if (!source?.referenceImage || source.id === copy.id) return
+    const blob = await pictureOf(source.id)
+    if (blob) await keep(copy.id, blob)
   }
 
   /** The pictures an export carries, of those Projects that have one. */
@@ -308,7 +313,7 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     preview,
     commit,
     fit,
-    copyPicture,
+    copyToDuplicate,
     picturesOf,
     keepImported,
   }

@@ -132,7 +132,7 @@ describe('the size limits (ticket 469, raised for reference images by ADR 0089)'
     // Zeros streamed a megabyte at a time, so the test never holds the unpacked size at once.
     const chunk = new Uint8Array(1024 * 1024)
     let left = Math.ceil(MAX_UNPACKED_BYTES / chunk.length) + 1
-    const zeros = new ReadableStream<Uint8Array>({ pull: (controller) => (left-- > 0 ? controller.enqueue(chunk) : controller.close()) })
+    const zeros = new ReadableStream<BufferSource>({ pull: (controller) => (left-- > 0 ? controller.enqueue(chunk) : controller.close()) })
     const bomb = new Uint8Array(await new Response(zeros.pipeThrough(new CompressionStream('gzip'))).arrayBuffer())
     expect(bomb.length).toBeLessThan(MAX_FILE_BYTES)
     await expect(readProjectsFile(asFile(bomb))).rejects.toThrow('size limit')

@@ -88,7 +88,8 @@ function normalized(angle: number): number {
   return turned < 0 ? turned + 360 : turned === 0 ? 0 : turned
 }
 
-const radians = (degrees: number) => (degrees * Math.PI) / 180
+/** Degrees as radians, which the canvas and Math turn by. */
+export const radians = (degrees: number) => (degrees * Math.PI) / 180
 const clampWidth = (width: number, { min, max }: WidthLimits) => Math.min(max, Math.max(min, width))
 
 /** A vector turned clockwise by `angle` degrees (grid px run right and down). */

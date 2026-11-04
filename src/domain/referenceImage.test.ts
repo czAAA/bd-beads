@@ -68,6 +68,11 @@ describe('resizing from a corner', () => {
     expect(place.y).toBeCloseTo(150)
   })
 
+  it('keeps the bottom-right corner put when resized from the top-left', () => {
+    // The bottom-right corner is at (200, 150); dragging the top-left from (0, 50) to (100, 100) halves the picture.
+    expect(resizedFromCorner(upright, 0.5, 'top-left', { x: 100, y: 100 }, limits)).toEqual({ x: 150, y: 125, width: 100, angle: 0 })
+  })
+
   it('stops at the smallest and largest width', () => {
     expect(resizedFromCorner(upright, 0.5, 'bottom-right', { x: 1, y: 51 }, limits).width).toBe(20)
     expect(resizedFromCorner(upright, 0.5, 'bottom-right', { x: 9000, y: 9000 }, limits).width).toBe(2000)

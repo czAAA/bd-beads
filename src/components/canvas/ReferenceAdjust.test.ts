@@ -15,7 +15,7 @@ function mountAdjust() {
   return mount(ReferenceAdjust, { props: { place, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, bead: 20 }, attachTo: document.body })
 }
 
-const pointer = (_type: string, x: number, y: number, extra: Record<string, unknown> = {}) => ({ clientX: x, clientY: y, button: 0, pointerId: 1, ...extra })
+const pointer = (x: number, y: number, extra: Record<string, unknown> = {}) => ({ clientX: x, clientY: y, button: 0, pointerId: 1, ...extra })
 
 describe('ReferenceAdjust (ReferenceImage card, ticket 0790)', () => {
   it('is a named group, focused as it opens, with four corner handles and a Turn handle', () => {
@@ -56,22 +56,22 @@ describe('ReferenceAdjust (ReferenceImage card, ticket 0790)', () => {
   it('draws a drag as it goes and saves it once on release', async () => {
     const wrapper = mountAdjust()
     const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
-    await picture.trigger('pointerdown', pointer('pointerdown', 110, 120))
-    await picture.trigger('pointermove', pointer('pointermove', 130, 120))
+    await picture.trigger('pointerdown', pointer(110, 120))
+    await picture.trigger('pointermove', pointer(130, 120))
     expect(wrapper.emitted('preview')).toEqual([[{ ...place, x: 60 }]])
     expect(wrapper.emitted('commit')).toBeUndefined()
-    await picture.trigger('pointerup', pointer('pointerup', 130, 120))
+    await picture.trigger('pointerup', pointer(130, 120))
     expect(wrapper.emitted('commit')).toEqual([[{ ...place, x: 60 }, 'Moved']])
     wrapper.unmount()
   })
 
   it('turns from the Turn handle toward the pointer, snapping to a quarter turn', async () => {
     const wrapper = mountAdjust()
-    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer('pointerdown', 110, 40))
+    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(110, 40))
     const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
-    await picture.trigger('pointermove', pointer('pointermove', 210, 122))
+    await picture.trigger('pointermove', pointer(210, 122))
     expect(wrapper.get('[data-testid="reference-adjust-angle"]').text()).toBe('90°')
-    await picture.trigger('pointerup', pointer('pointerup', 210, 122))
+    await picture.trigger('pointerup', pointer(210, 122))
     expect(wrapper.emitted('commit')).toEqual([[{ ...place, angle: 90 }, 'Turned 90°']])
     wrapper.unmount()
   })
@@ -79,11 +79,11 @@ describe('ReferenceAdjust (ReferenceImage card, ticket 0790)', () => {
   it('gives a drag up to a second finger, which pinches the view', async () => {
     const wrapper = mountAdjust()
     const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
-    await picture.trigger('pointerdown', pointer('pointerdown', 110, 120))
-    await picture.trigger('pointermove', pointer('pointermove', 130, 120))
-    await picture.trigger('pointerdown', pointer('pointerdown', 150, 150, { pointerId: 2 }))
+    await picture.trigger('pointerdown', pointer(110, 120))
+    await picture.trigger('pointermove', pointer(130, 120))
+    await picture.trigger('pointerdown', pointer(150, 150, { pointerId: 2 }))
     expect(wrapper.emitted('preview')!.at(-1)).toEqual([place])
-    await picture.trigger('pointerup', pointer('pointerup', 130, 120))
+    await picture.trigger('pointerup', pointer(130, 120))
     expect(wrapper.emitted('commit')).toBeUndefined()
     wrapper.unmount()
   })

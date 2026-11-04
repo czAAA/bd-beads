@@ -5,6 +5,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import {
   FINE_TURN_STEP,
   movedBy,
+  radians,
   REFERENCE_CORNERS,
   resizedFromCorner,
   scaledBy,
@@ -55,8 +56,8 @@ const onScreen = computed(() => placeOnScreen(props.view, shown.value, shown.val
 const turnBelow = computed(() => {
   const { centre, height, angle } = onScreen.value
   const reach = height / 2 + REFERENCE_TURN_OFFSET_PX
-  const radians = (angle * Math.PI) / 180
-  const above = { x: centre.x + Math.sin(radians) * reach, y: centre.y - Math.cos(radians) * reach }
+  const turn = radians(angle)
+  const above = { x: centre.x + Math.sin(turn) * reach, y: centre.y - Math.cos(turn) * reach }
   const { width, height: tall } = props.view.viewport
   return above.x < 0 || above.y < 0 || above.x > width || above.y > tall
 })

@@ -129,7 +129,7 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
   it('copies the picture to a duplicate, and gives every Project\'s picture to an export', async () => {
     const { harness, store, flow } = setup()
     await flow.pick(file(), 'panel')
-    await flow.copyPicture(harness.project.id, 'copy')
+    await flow.copyToDuplicate({ ...harness.project, id: 'copy' })
     expect(store.kept.get('copy')).toBe(store.kept.get(harness.project.id))
     expect([...(await flow.picturesOf([harness.project.id, 'copy', 'none'])).keys()]).toEqual([harness.project.id, 'copy'])
   })

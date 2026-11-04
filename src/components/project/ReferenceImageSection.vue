@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits, imageInputAccept, type ImageRejection } from '../../domain/imageConversion'
 import { OPACITY_STEPS, type OpacityStep, type ReferenceImage } from '../../domain/referenceImage'
+import { REFERENCE_SECTION_ID } from '../../composables/project/useReferenceImageFlow'
 import { useI18n } from '../../i18n/useI18n'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelListRow from '../shell/PanelListRow.vue'
@@ -47,6 +48,9 @@ const facts = computed(() => {
   return fillBlanks(words.value.facts, { width: picture.width, height: picture.height, size })
 })
 const refused = computed(() => (props.refusal ? fillBlanks(words.value.refused, { reason: formatImageLimits(words.value.reasons[props.refusal]) }) : undefined))
+// A refusal is scrolled into view, so one told after a pick from the strip button is seen in the panel it opened.
+const refusedEl = ref<HTMLElement>()
+watch(refusedEl, (line) => line?.scrollIntoView?.({ block: 'nearest' }), { flush: 'post' })
 const opacityOptions = computed(() => OPACITY_STEPS.map((step) => ({ value: String(step) as `${OpacityStep}`, label: fillBlanks(words.value.percent, { count: step }) })))
 
 /** Add reference image and Replace image open the picker of the file input kept in the section. */
@@ -62,7 +66,7 @@ function onFile(event: Event) {
 </script>
 
 <template>
-  <PanelSection id="project:reference" :label="words.section" :summary="summary">
+  <PanelSection :id="REFERENCE_SECTION_ID" :label="words.section" :summary="summary">
     <template #info>
       <InfoButton :label="words.name" :body="info" data-testid="reference-image-info" />
     </template>
@@ -77,7 +81,7 @@ function onFile(event: Event) {
         </span>
       </template>
     </PanelListRow>
-    <p v-if="refused" class="reference-section__refused" role="alert" data-testid="reference-image-refused">{{ refused }}</p>
+    <p v-if="refused" ref="refusedEl" class="reference-section__refused" role="alert" data-testid="reference-image-refused">{{ refused }}</p>
     <template v-if="image">
       <div class="reference-section__opacity">
         <span :id="opacityId" class="reference-section__opacity-label">{{ words.opacity }}</span>
