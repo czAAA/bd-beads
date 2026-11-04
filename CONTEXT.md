@@ -37,7 +37,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 
 | Area | Terms |
 |---|---|
-| [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, App page, Canvas, Layer, Grid, Position marks, Piece, Piece area, Layer settings, Frame, Custom frame, Frame shape, Seam, Off-shape, Folded beads, Keep-out margin, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Background |
+| [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, App page, Canvas, Layer, Grid, Position marks, Piece, Piece area, Layer settings, Frame, Custom frame, Frame shape, Seam, Off-shape, Folded beads, Keep-out margin, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Background, Reference image |
 | [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Safe start, Maker's name, Palette, Edit palette, Bead, Bead color, Color catalog, Finish, Brand, Form factor, Bead size, Technique, Thread direction, Weave, Swatch letter |
 | [Row progress](docs/glossary/row-progress.md) | Row progress, Pass, Row direction, Progress bar |
 | [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Panel, Menu, Subpanel, Canvas strip, Wordmark, Canvas footer, First-run hints, Tool button, Tooltip, Note, Tab stop, Feedback sheet, Report kind, Report |
