@@ -63,6 +63,7 @@
     "components/ProgressBar/README.md",
     "components/ProjectPanel/README.md",
     "components/QualitySlider/README.md",
+    "components/ReferenceImage/README.md",
     "components/Rulers/README.md",
     "components/SaveBox/README.md",
     "components/SaveStates/README.md",
@@ -384,6 +385,11 @@
       "name": "MarginSheet",
       "group": "Canvas",
       "summary": "The Frame's keep-out margin as a drafting sheet: 4 beads in its own color, the Frame's tools and Row progress in its top band, a title block in its corner, and its zoom forms."
+    },
+    {
+      "name": "ReferenceImage",
+      "group": "Canvas",
+      "summary": "One picture per Project under the beads, to trace or copy from: the Canvas strip toggle, the Project panel section with four opacity steps, and Adjust's move, resize and turn handles."
     },
     {
       "name": "Rulers",
