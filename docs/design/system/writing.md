@@ -712,3 +712,24 @@ The notice row after a load that found the safe start's note still set (Message 
 | made {created} · saved {saved} | создан {created} · сохранён {saved} | створено {created} · збережено {saved} | створаны {created} · захаваны {saved} | 创建于 {created} · 保存于 {saved} | creado {created} · guardado {saved} | utworzono {created} · zapisano {saved} |
 
 Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for review with the build.
+
+## Reference image copy (ticket 0790)
+
+The Project's one picture to bead over (ReferenceImage card). Russian and Ukrainian call it the underlay a tracer puts under the paper, «подложка» and «підкладка»; Polish «obraz pomocniczy». The Canvas is «полотно» / «полотно» / «płótno» (ADR 0050). Belarusian, Spanish and Chinese are written with the build; all are draft words, to be checked by a speaker of each.
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| Reference image (strip button name) | Подложка | Підкладка | Obraz pomocniczy |
+| Add a reference image (Tooltip) · Add reference image (Project row) | Добавить подложку | Додати підкладку | Dodaj obraz pomocniczy |
+| Show reference image · Hide reference image | Показать подложку · Скрыть подложку | Показати підкладку · Сховати підкладку | Pokaż obraz pomocniczy · Ukryj obraz pomocniczy |
+| reference image (section) · shown · hidden (its summary) | подложка · видна · скрыта | підкладка · видно · сховано | obraz pomocniczy · widoczny · ukryty |
+| PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF или WebP, до 10 МБ. Хранится с этим проектом и в его файле .openbeads, не печатается. Большие картинки уменьшаются. | PNG, JPEG, GIF або WebP, до 10 МБ. Зберігається з цим проєктом і в його файлі .openbeads, не друкується. Великі зображення зменшуються. | PNG, JPEG, GIF lub WebP, do 10 MB. Zapisany z tym projektem i w jego pliku .openbeads, nigdy nie drukowany. Duże obrazy są zmniejszane. |
+| Opacity | Непрозрачность | Непрозорість | Krycie |
+| Adjust on canvas · move · resize · turn | Настроить на полотне · сдвиг · размер · поворот | Налаштувати на полотні · зсув · розмір · поворот | Dopasuj na płótnie · przesuń · rozmiar · obróć |
+| Replace image · Remove image | Заменить картинку · Убрать картинку | Замінити зображення · Прибрати зображення | Zamień obraz · Usuń obraz |
+| Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Убрать подложку? · Картинка будет убрана из проекта. Бусины останутся как есть. · Убрать | Прибрати підкладку? · Зображення буде прибрано з проєкту. Бісеринки залишаться як є. · Прибрати | Usunąć obraz pomocniczy? · Obraz zostanie usunięty z projektu. Koraliki zostaną bez zmian. · Usuń |
+| This file can't be used: {reason} | Этот файл не подходит: {reason} | Цей файл не підходить: {reason} | Tego pliku nie można użyć: {reason} |
+| Preparing the picture… | Готовим картинку… | Готуємо зображення… | Przygotowujemy obraz… |
+| Fit to Canvas · Fit (phone) · Done | Вписать в полотно · Вписать · Готово | Вписати в полотно · Вписати · Готово | Dopasuj do płótna · Dopasuj · Gotowe |
+| Resize from the top-left corner (and the other three) · Turn · Turned {n}° | Изменить размер за левый верхний угол · Повернуть · Повёрнуто на {n}° | Змінити розмір за лівий верхній кут · Повернути · Повернуто на {n}° | Zmień rozmiar z lewego górnego rogu · Obróć · Obrócono o {n}° |
+| Reference image not saved on this device | Подложка не сохранена на этом устройстве | Підкладку не збережено на цьому пристрої | Obraz pomocniczy nie jest zapisany na tym urządzeniu |
