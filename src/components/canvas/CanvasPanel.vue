@@ -380,7 +380,7 @@ const drawingStyle = computed(() => {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="emptyProject" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="emptyProject" />
 
         <!-- Where Projects are kept (tickets 0725, 0798, FirstRunHints card): over an empty Project, gone with
           the first bead. -->
@@ -689,12 +689,6 @@ const drawingStyle = computed(() => {
   grid-row: 3;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run welcome, the context bar, the Tool
- * pill's layer and the save ring, which float over the beads. */
-.app-shell__drawing > :not(.app-shell__canvas-hint):not(.first-run-hints):not(.context-bar):not(.tool-pill-layer):not(.save-ring) {
-  position: relative;
-}
-
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing
  * area's, and never scrolls to show a bar partly out of view with its Area (ticket 0779) when focus lands in it. */
 .app-shell__selection-layer {
@@ -722,6 +716,9 @@ const drawingStyle = computed(() => {
 
 /*
  * The row takes the whole drawing area; the surface inside it fills it, so the Canvas has no box of its own to centre.
+ * It is the drawing area's one child in the flow and positions itself (relative, the canvas scroll laid over it): what
+ * floats over the drawing (the save ring, the hints, the Tool pill, the Adjust bar) sets its own `position: absolute`,
+ * so a new overlay touches only its own component (ticket 0800).
  */
 .app-shell__canvas-row {
   position: relative;
