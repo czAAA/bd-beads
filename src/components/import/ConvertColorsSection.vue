@@ -98,16 +98,18 @@ const remapping = ref<string>()
         <span class="convert-colors__label">{{ words.colorsFound }}</span>
         <span class="convert-colors__count" role="status" data-testid="convert-found-count">{{ wizard.found.value.length }}</span>
       </div>
-      <FoundColorsHeader />
-      <ul class="convert-colors__list" data-testid="convert-found-colors">
-        <FoundColorRow
-          v-for="color in wizard.found.value"
-          :key="color.pictureHex"
-          :color="color"
-          :open="remapping === color.pictureHex"
-          @toggle-remap="remapping = remapping === color.pictureHex ? undefined : color.pictureHex"
-        />
-      </ul>
+      <div class="convert-colors__table">
+        <FoundColorsHeader />
+        <ul class="convert-colors__list" data-testid="convert-found-colors">
+          <FoundColorRow
+            v-for="color in wizard.found.value"
+            :key="color.pictureHex"
+            :color="color"
+            :open="remapping === color.pictureHex"
+            @toggle-remap="remapping = remapping === color.pictureHex ? undefined : color.pictureHex"
+          />
+        </ul>
+      </div>
     </ConvertDisclosure>
   </div>
 </template>
@@ -163,6 +165,15 @@ const remapping = ref<string>()
 .convert-colors__count {
   font: var(--type-meta);
   color: var(--muted);
+}
+
+/* The found-colors table: its heading row and rows take their narrow columns by its width (FoundColorRow card,
+ * ticket 0782), so a phone and the step's 400px pane read alike. */
+.convert-colors__table {
+  container: found-colors / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
 }
 
 .convert-colors__list {

@@ -19,8 +19,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'HomePage', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Без аккаунта'], at: { longest: [844, 820, 320] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Три способа работать'], at: { longest: [390, 360, 320] }, fixedBy: '231' },
-  { case: 'Convert image page (remapping)', texts: ['Becomes', '#2F6FDB', '#E63746', '#FADC3C', 'Custom color'], at: { en: [320] }, fixedBy: '0782' },
-  { case: 'Convert image page (remapping)', texts: ['Resultado', '#2F6FDB', '#E63746', '#FADC3C', 'Color personalizado'], at: { longest: [320] }, fixedBy: '0782' },
 ]
 
 const quoted = (text: string) => `"${text}"`
