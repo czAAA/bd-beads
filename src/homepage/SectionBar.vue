@@ -11,8 +11,6 @@ import { useI18n } from '../i18n/useI18n'
 const props = defineProps<{
   /** The section shown, from 0. */
   section: number
-  /** Where the page's scroll is, in sections: the fill and its spark follow it between the steps (ticket 0780). */
-  position?: number
   /** The Homepage's sections in order; each one's heading names its step. */
   sections: readonly { id: string; heading: string }[]
   /** The Homepage's nudge is playing (ticket 0784): Next's arrow dips with it. */
@@ -52,7 +50,6 @@ const BURST_SPAN = { x: 100, y: 160, width: 120, height: 0 }
   <StepBar
     :class="{ 'section-bar--nudging': nudging }"
     :step="section"
-    :position="position"
     :steps="steps"
     :track-label="t.homepage.sections.label"
     :go-to="(heading) => fillBlanks(t.homepage.sections.goTo, { section: heading })"

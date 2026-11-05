@@ -6,7 +6,7 @@ export interface FreeGrowthDeps {
   section: Ref<HTMLElement | undefined>
   freeWindow: () => HTMLElement | undefined
   freeTile: () => HTMLElement | undefined
-  /** The Homepage's zoom: the page scrolls in screen px, the tile is drawn in its own. */
+  /** The Homepage's zoom: the tile is measured in screen px and drawn in its own. */
   zoom: () => number
 }
 
@@ -22,22 +22,18 @@ function turnScale(el: HTMLElement): number {
   return scale ? Number.parseFloat(scale) : 1
 }
 
-/** No account's free list growing as the page scrolls past the plans (ticket 0742; Homepage card, the free list): the
- * page says how far past it is; this measures the tile and says how tall the list is, how far the plans have scrolled
- * up and how much further the page must reach. */
+/** No account's free list growing as the plans section scrolls (tickets 0742, 0801; Homepage card, the free list): the
+ * section says how far it has scrolled; this measures the tile and says how tall the list is and how far the section
+ * must reach. */
 export function useFreeGrowth({ section, freeWindow, freeTile, zoom }: FreeGrowthDeps) {
   const measure = shallowRef<FreeListMeasure>()
   let growth = FREE_GROWTH
-  /** How far the page is scrolled past the plans, in screen px. */
-  const past = ref(0)
-  /** How far the plans have scrolled up in their section, in their own px: as far as the page has. */
-  const offset = computed(() => past.value / zoom())
-  /** Whether the page is past the plans, so the list is growing. */
-  const growing = computed(() => past.value > 0)
+  /** How far the plans have scrolled up in their section, in its own px. */
+  const offset = ref(0)
   const height = computed(() => measure.value && freeListHeight(measure.value, offset.value, growth))
   const open = computed(() => !!measure.value && height.value! >= measure.value.full - 0.5)
-  /** How much further than the plans the page scrolls, in screen px. */
-  const room = computed(() => (measure.value ? Math.ceil(freeListRoom(measure.value) * zoom()) : 0))
+  /** How much further than its room the plans section scrolls, in its own px. */
+  const room = computed(() => (measure.value ? Math.ceil(freeListRoom(measure.value)) : 0))
 
   /** Measures the list and its tile; its height and the plans' scroll are left out, so it can be measured at any time. */
   function remeasure() {
@@ -63,10 +59,10 @@ export function useFreeGrowth({ section, freeWindow, freeTile, zoom }: FreeGrowt
     }
   }
 
-  /** The page's scroll: how far it is past the plans, in screen px. */
-  function scrolledPast(px: number) {
-    past.value = Math.max(0, px)
+  /** The plans section's own scroll, in its own px. */
+  function scrolled(px: number) {
+    offset.value = Math.max(0, px)
   }
 
-  return { offset, growing, height, open, room, remeasure, scrolledPast }
+  return { height, open, room, remeasure, scrolled }
 }
