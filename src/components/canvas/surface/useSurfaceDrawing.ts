@@ -130,15 +130,17 @@ const MOST_ROWS_WORTH_A_BAND = 40
 // Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
-  // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665):
-  // draw it all again.
+  // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665),
+  // nor rows on the screen where it has a Frame shape, whose layout places each bead (a Fringe earring's top is counted
+  // up from its base row, its strands from row 1000): draw it all again.
   const frame = layerOf(after, 'frame')
-  if (frame && !layersAlike(after) && layerOf(before, 'frame')?.beads !== frame.beads) {
+  const sheet = frameOf(after)
+  if (frame && (!layersAlike(after) || sheet?.shape) && layerOf(before, 'frame')?.beads !== frame.beads) {
     return undefined
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
   const framed = (project: Project) => layerOf(project, 'frame')?.beads ?? {}
-  const frameTop = frameOf(after)?.row ?? 0
+  const frameTop = sheet?.row ?? 0
   const changed = [
     ...new Set([
       ...changedRows(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads),
