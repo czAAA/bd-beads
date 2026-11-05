@@ -1123,7 +1123,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
 }
 
 /** What the drawing surface tells of where it draws (ticket 0797). */
-export interface SurfaceProbe {
+interface SurfaceProbe {
   /** A bead's middle on screen, in client pixels. */
   beadOnScreen(position: GridPosition): { x: number; y: number } | undefined
 }

@@ -2,10 +2,9 @@ import { onBeforeUnmount, watch } from 'vue'
 import { swallowNextClick } from './swallowNextClick'
 import { inScope, PAGE_SCOPE, useShellScope, type ShellScope } from './shellScope'
 
-// The overlay registry (ticket 76 Escape; ticket 449, ADR 0061 press outside). Every open overlay is a layer on one
-// stack; two capture listeners act on the top-most only: Escape closes it, a press outside closes it (click swallowed).
-// Exempt: the opener, a dialog raised from it. A layer of a boxed shell (ticket 0797) hears only keys and presses inside its
-// box; the page's own layers hear them everywhere.
+// The overlay registry (ticket 76 Escape; ticket 449, ADR 0061 press outside): every open overlay is a layer on one stack;
+// Escape and a press outside (click swallowed) close the top-most, its opener and a dialog raised from it exempt. A boxed
+// shell's layer (ticket 0797) hears only what happens in its box, the page's layers everything.
 export interface OverlayLayerOptions {
   /** Whether the overlay is open; it is a layer only while this holds. */
   isOpen: () => boolean
