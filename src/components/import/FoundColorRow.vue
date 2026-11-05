@@ -223,7 +223,6 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
   }
 }
 
-
 .found-color__action {
   display: flex;
   justify-content: center;
