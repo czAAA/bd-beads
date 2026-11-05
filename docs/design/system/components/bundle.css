@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600;700&display=swap');
 
-/* bd-beads component styles, hand-written from DESIGN.md §5 (static renditions; the app's Vue components are the implementation). */
+/* openbeads component styles, hand-written from DESIGN.md §5 (static renditions; the app's Vue components are the implementation). */
 
 /* Values DESIGN.md defines that are not plain color tokens */
 :root, [data-theme="light"], [data-theme="dark"], [data-theme="contrast"] {

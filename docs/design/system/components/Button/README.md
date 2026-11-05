@@ -1,6 +1,6 @@
 # Button
 
-Every clickable action in bd-beads: primary, primary select, secondary, secondary in a box, text, link, icon, round icon and expand variants.
+Every clickable action in openbeads: primary, primary select, secondary, secondary in a box, text, link, icon, round icon and expand variants.
 
 ## When to use
 - **Primary** (`bb-btn bb-btn--primary`): the single most likely next action in a region: New Pattern, Replace bead (as a select), Save Pattern, Row done. `accent` fill and border, `on-accent` text; hover and pressed use `accent-hover`; disabled uses `accent-disabled-bg` / `accent-disabled-fg`. **Two primary buttons never sit next to each other.**

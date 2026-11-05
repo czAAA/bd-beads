@@ -8,7 +8,7 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 - **The canvas, on paper.** On the Cover page the Schema sits on a pale rounded board (`print-board`) like the app's canvas. A chart page has no board fill, only a thin rounded outline (`print-pad-line`, `print-pad-radius`), so only beads take toner. The technique word is set in Instrument Serif italic in `accent` next to the title (the Frame's name, else the Project's).
 - **Open, with no watermarks.** Nothing is drawn behind or over the chart or the text: no background maker's name, no X1 marks, no accent line, no signature on the beads. The PDF and PNG are meant to be shared. The maker's name is still printed as information (Made by, the header, "by {maker}").
 - **Accent marks structure only**: the technique word, the lines where the chart parts meet, the part labels and the current part on the mini map. Text is `ink` or `muted`. A black-and-white printer turns the accent gray and loses no information: every bead on a chart page carries its letter.
-- **On every page**: the X1 mark and "bd-beads" (small, in the header or footer, never as a background), technique and name, the maker's name, the export date and time, "page 2 / 9".
+- **On every page**: the X1 mark and "openbeads" (small, in the header or footer, never as a background), technique and name, the maker's name, the export date and time, "page 2 / 9".
 - Inter for text, DM Mono for numbers and meta, Instrument Serif italic for the technique word and the maker's name, loaded before drawing. A4 portrait, 10 mm margins (`print-margin`); nothing under 6.5 pt; Row progress fades never print.
 
 ## The order of the pages
