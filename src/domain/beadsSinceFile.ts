@@ -14,6 +14,8 @@ export interface SinceFile {
   lastFileAt?: number
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
 /** The ring shows from this many beads, or from {@link PERSISTED_THRESHOLD} where the browser keeps storage. */
 export const SAVE_THRESHOLD = 50
 /** Storage pressure can't clear a persisted library (ticket 399), so the ring waits twice as long. */
@@ -21,7 +23,7 @@ const PERSISTED_THRESHOLD = 100
 /** After the threshold, the label opens again every this many beads. */
 const LABEL_EVERY = 100
 /** A Project opening at the threshold with its last file this old opens the label once. @internal Tests date files by it. */
-export const STALE_FILE_MS = 7 * 24 * 60 * 60 * 1000
+export const STALE_FILE_MS = 7 * DAY_MS
 
 /** How many positions hold a different value in two bead maps; rows both share by reference cost nothing (ADR 0036). */
 function changedPositions(before: BeadMap, after: BeadMap): number {
@@ -76,14 +78,13 @@ export function staleOnOpen(since: SinceFile, createdAt: number, threshold: numb
   return since.beads >= threshold && now - (since.lastFileAt ?? createdAt) >= STALE_FILE_MS
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000
 
 /** How long ago a last file was, in whole calendar days, weeks, months or years, for `Intl.RelativeTimeFormat` with
  * `numeric: "auto"` (today, yesterday, 2 days ago): the save ring's Tooltip's "Last file: {when}". */
 export function lastFileAgo(then: number, now: number): { value: number; unit: 'day' | 'week' | 'month' | 'year' } {
   const midnight = (time: number) => new Date(time).setHours(0, 0, 0, 0)
   const days = Math.round((midnight(now) - midnight(then)) / DAY_MS)
-  if (days < 7) return { value: -days, unit: 'day' }
+  if (days < 7) return { value: days === 0 ? 0 : -days, unit: 'day' }
   if (days < 30) return { value: -Math.floor(days / 7), unit: 'week' }
   if (days < 365) return { value: -Math.floor(days / 30), unit: 'month' }
   return { value: -Math.floor(days / 365), unit: 'year' }

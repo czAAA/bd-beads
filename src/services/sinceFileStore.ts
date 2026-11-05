@@ -26,7 +26,10 @@ export const browserSinceFileStore: SinceFileStore = {
   read() {
     try {
       const parsed = JSON.parse(localStorage.getItem(SINCE_FILE_KEY) ?? '{}') as Record<string, unknown>
-      return Object.fromEntries(Object.entries(parsed ?? {}).flatMap(([id, value]) => (recordOf(value) ? [[id, recordOf(value)!]] : [])))
+      return Object.fromEntries(Object.entries(parsed ?? {}).flatMap(([id, value]) => {
+        const record = recordOf(value)
+        return record ? [[id, record]] : []
+      }))
     } catch {
       return {}
     }
