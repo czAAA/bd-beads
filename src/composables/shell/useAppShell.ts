@@ -30,6 +30,9 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
+import { useShellScope } from '../ui/shellScope'
+import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
+import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { projectNameOf, withStartBackground } from '../../domain/layerRecord'
@@ -71,6 +74,8 @@ import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useRefer
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
 // Call once from the root setup (see provideAppShell).
 function wireAppShell(services: Services) {
+  /** Where this shell lives: the whole page for the editor, a box for the Homepage's demo (ticket 0797). */
+  const scope = useShellScope()
   const { t, locale } = provideI18n(services.devicePreferences)
   // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
   useThemePick(services.devicePreferences)
@@ -746,7 +751,7 @@ function wireAppShell(services: Services) {
       return was
     },
     leaveMirrorMode,
-    hasOpenLayer,
+    hasOpenLayer: () => hasOpenLayer(scope),
     anyDialogOpen: () => dialogs.open.value !== undefined,
     backOutOfSelect: backOutOfSelectOrFraming,
     onUndo,
@@ -1129,6 +1134,9 @@ export function provideAppShell(services: Services = browserServices): Wired {
   provide(panelsKey, wired.panels)
   provide(dialogsKey, wired.dialogs)
   provide(devicePreferencesKey, services.devicePreferences)
+  // What the editor kept for the page is this shell's own, so the Homepage's demo never shares it (ticket 0797).
+  provideTitleBlockFold()
+  provideIdlePieces()
   return wired
 }
 

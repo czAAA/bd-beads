@@ -16,7 +16,7 @@ import { marginSheetPx } from '../../rendering/projectRenderer'
 import type { DrawnReference } from '../../rendering/referenceImage'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
-import { piecesWhenIdle } from '../../composables/canvas/idlePieces'
+import { useIdlePieces } from '../../composables/canvas/idlePieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
@@ -117,6 +117,8 @@ const emit = defineEmits<SurfacePointerEvents & {
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
  * redraws both layers. */
 const canvasBackground = useCanvasBackground(() => props.project)
+/** This shell's idle Piece walks (ticket 0797). */
+const piecesWhenIdle = useIdlePieces()
 const theme = canvasBackground.projectTheme
 const frameTheme = canvasBackground.frameTheme
 
