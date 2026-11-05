@@ -103,6 +103,7 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     wrapper.get('[data-testid="strip-menu"]').element.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true }))
     expect(wired.dialogRegistry.open.value).toBe('shortcuts')
   })
+
   it('is a region named "What\'s inside: the editor", its ghost hidden from screen readers', () => {
     const wrapper = mount(InsideEditor, { attachTo: document.body })
     mounted.push(wrapper)

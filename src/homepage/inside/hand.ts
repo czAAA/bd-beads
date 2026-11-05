@@ -49,6 +49,8 @@ export type Target = string | (() => Element | null | undefined)
 const FIND_MS = 3000
 /** A bead's move along a stroke, quicker than a move between controls. */
 const STROKE_MS = 70
+/** How far up from a control its Tooltip's trigger may sit. */
+const TOOLTIP_DEPTH = 4
 /** The quickest hop, and how a hop's time grows with its length, up to `--ghost-move`. */
 const HOP_MS = 140
 const HOP_MS_PER_PX = 2.4
@@ -188,8 +190,9 @@ export function createHand(deps: HandDeps) {
     bringIntoView(element, at)
     await moveTo(middleOf(element))
     if (instant) return
+    // The Tooltip's own element is the control or one of its nearest wrappers.
     const chain: Element[] = []
-    for (let at: Element | null = element; at && at !== root && chain.length < 4; at = at.parentElement) chain.push(at)
+    for (let up: Element | null = element; up && up !== root && chain.length < TOOLTIP_DEPTH; up = up.parentElement) chain.push(up)
     for (const each of chain) each.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }))
     await wait(ms)
     for (const each of chain) each.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }))

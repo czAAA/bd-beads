@@ -35,8 +35,8 @@ interface Budget {
  * padding each side, an 18px icon and a 10px gap before the name. */
 const INSIDE_ROW_ROOM = 272 - 2 * 10 - 18 - 10
 /** A What's inside card from 1024: a quarter of the 1080px section less its three 12px gaps, 14px padding each side, a
- * 20px icon and a 10px gap. */
-const INSIDE_CARD_ROOM = (1080 - 3 * 12) / 4 - 2 * 14 - 20 - 10
+ * 18px icon (the icon sizes have no 20) and a 10px gap. */
+const INSIDE_CARD_ROOM = (1080 - 3 * 12) / 4 - 2 * 14 - 18 - 10
 
 const BUDGETS: Budget[] = [
   {
