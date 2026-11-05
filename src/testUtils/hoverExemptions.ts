@@ -16,5 +16,4 @@ export const INFO_POPOVERS: InfoPopover[] = []
  * accept (ticket 552); delete the entry when moot. */
 export const NOT_MOUNTED: Record<string, string> = {
   AppShell: 'the whole app: it only places the parts that are tried one by one',
-  AppPanels: 'only mounts the panels of panels.ts through PanelHost; each panel is tried on its own',
 }
