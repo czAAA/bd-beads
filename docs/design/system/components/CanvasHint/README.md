@@ -7,7 +7,7 @@ The one line at the top-centre of the drawing area, under the strip, that says h
 - **Shown only while the Project has no beads and no Frame (an empty Frame hides it, ticket 0774)**, at every size except a phone (30rem and under, which has no wheel and no keyboard). It goes with the first bead and returns if the Project is emptied (ticket 429).
 - On Windows and Linux the `⌘` chip reads "Ctrl".
 - aria-hidden: the same shortcuts are listed in Keyboard shortcuts (ShortcutsHelp).
-- **Shown with the first-run hints** (FirstRunHints card, tickets 0725, 0738), by the same rule: the captions and the welcome sit under this line and go with the first bead too.
+- **Shown with the first-run welcome** (FirstRunHints card, tickets 0725, 0798), by the same rule: the welcome sits under this line and goes with the first bead too.
 - **Mirror's Area pick** had a line of its own here (ticket 0710); it is retired with the Mirror popover (ticket 0750): Mirror mode says itself by the lit Mirror tile and the Select tool's cursor (ContextBar card, Mirror bar).
 
 Hand-written from the v16 sign-off (open canvas mockups); static rendition.

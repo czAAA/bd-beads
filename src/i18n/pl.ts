@@ -297,13 +297,6 @@ export const pl: Translations = {
       rulers: 'Linijki',
     },
     firstRun: {
-      select: 'zaznacz, by zmierzyć, wypełnić, ustawić ramkę,\nkopiować, wkleić, obrócić lub odbić',
-      frame: 'ramka wokół rysunku: nazwa, rozmiar i koralik',
-      export: 'wyeksportuj obrazek\nlub schemat do druku',
-      menu: 'nowy projekt, biblioteka projektów, język, motyw i preferencje',
-      project: 'ustaw ten projekt: nazwa, autor, technika, koralik i tło',
-      mirror: 'Odbicie: lewo–prawo, góra–dół lub wokół środka',
-      color: 'kolory i twoja paleta',
       storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
       storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi. Zapisz do pliku te, których nie chcesz stracić:',
     },
