@@ -1046,8 +1046,8 @@ body {
 .bb-hint-path { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; font: var(--hint-storage); }
 @media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }
 
-/* Homepage scroll story (tickets 0739, 0740; Homepage card): the page's ground, a section turning, the growing free list, the switched-off plans and their stamp. */
-.bb-homepage-page{background:var(--page-ground);scroll-snap-type:y mandatory}
+/* Homepage scroll story (tickets 0739, 0740, 0801; Homepage card): the page's ground, a section turning, the growing free list, the switched-off plans and their stamp. */
+.bb-homepage-page{background:var(--page-ground);overflow:hidden}
 .bb-homepage-section{transition:opacity var(--section-turn) var(--ease-standard),transform var(--section-turn) var(--ease-standard),visibility 0s linear var(--section-turn)}
 .bb-homepage-section--before,.bb-homepage-section--after{visibility:hidden;opacity:0}
 .bb-homepage-section--before{transform:translateY(calc(var(--section-shift) * -1)) scale(var(--section-scale))}

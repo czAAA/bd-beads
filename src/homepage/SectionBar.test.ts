@@ -46,18 +46,6 @@ describe('SectionBar', () => {
     expect(fill(bar(2))).toContain('translateX(0%)')
   })
 
-  it('follows the page’s scroll between the steps, the spark’s dot showing only between two of them (ticket 0780)', async () => {
-    const wrapper = mount(SectionBar, { props: { section: 0, position: 0.5, sections: SECTIONS } })
-    const spark = () => wrapper.get('[data-testid="section-spark"]').classes()
-    expect(fill(wrapper)).toContain('translateX(-75%)')
-    expect(spark()).not.toContain('progress-track__spark--ringed')
-    await wrapper.setProps({ section: 1, position: 1 })
-    expect(fill(wrapper)).toContain('translateX(-50%)')
-    expect(spark()).toContain('progress-track__spark--ringed')
-    await wrapper.setProps({ section: 2, position: 2.6 })
-    expect(fill(wrapper)).toContain('translateX(0%)')
-  })
-
   it('sets the steps the first at the track’s start, the last at its end, the rest evenly between', () => {
     expect(where(bar(0))).toEqual(['left: 0%;', 'left: 50%;', 'left: 100%;'])
     const five = bar(0, [...SECTIONS, { id: 'a', heading: 'A' }, { id: 'b', heading: 'B' }])

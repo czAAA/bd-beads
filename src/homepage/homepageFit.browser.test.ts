@@ -9,11 +9,9 @@ import { fakeFeedback } from '../testUtils/fakeFeedback'
 // The Homepage has its own tiers, so it is tried at more widths than the rest (ticket 552).
 const WIDTHS = [1900, 1280, 1024, 844, 820, 768, 390, 360, 320]
 
-/** Turns the page to a section; the browser tests run under reduced motion, so it swaps without sliding. */
+/** Turns the page to a section by its step; the browser tests run under reduced motion, so it swaps without sliding. */
 async function turnTo(root: Element, section: number) {
-  const page = root.querySelector<HTMLElement>('[data-testid="homepage-page"]')!
-  page.scrollTo({ top: section * page.clientHeight })
-  page.dispatchEvent(new Event('scroll'))
+  root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')[section]!.click()
   await settleForMeasuring()
 }
 

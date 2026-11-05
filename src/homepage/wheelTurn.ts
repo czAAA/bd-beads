@@ -1,14 +1,16 @@
-// A wheel or trackpad turning the Homepage's box (tickets 0784, 0793; Homepage card, the scroll story): a section turns
-// on its second scroll the same way, however short; the first reaches its end. Counted in scrolls, not distance, so a
-// slow notch (a few px on macOS) counts as much as a long swipe.
+// A wheel or trackpad turning the Homepage's box (tickets 0784, 0801; Homepage card, the scroll story): one scroll turns
+// one section, on its first event; the rest of it, momentum and all, turns nothing. Counted in scrolls, not distance,
+// so a slow notch (a few px on macOS) turns as surely as a long swipe.
 
 /** How long a section stays before the next turn, in ms: the turn's own length, `--section-turn`. */
-const TURN_REST = 600
+export const TURN_REST = 600
 /** The quiet that ends a gesture, in ms: a trackpad's momentum keeps one going, a pause between notches ends it. */
 export const GESTURE_GAP = 300
-/** How far the section leans with its first scroll, in px: the least at once, the most over a notch. */
-const LEAN_LEAST = 8
-const LEAN_MAX = 16
+/** A push this many times as strong as the event before it, in a gesture that turned, is a new scroll riding on the
+ * old one's momentum (which only ever fades). */
+const NEW_PUSH = 2
+/** The least push, in px, that can start a new scroll inside a turned one's momentum. */
+const NEW_PUSH_LEAST = 20
 /** A notch, in px, in most browsers. */
 const NOTCH = 100
 /** A wheel's line, in px: a notch is three in Firefox. */
@@ -20,10 +22,11 @@ export interface WheelGesture {
   last: number
   /** How far it has scrolled, in px, down positive. */
   distance: number
-  /** It has turned the box: the rest of it, momentum and all, turns nothing and readies nothing. */
+  /** Its last event's scroll, in px: momentum only fades, so a much stronger one is a new push. */
+  lastDelta: number
+  /** It has turned the box: the rest of it turns nothing and scrolls nothing. */
   spent: boolean
-  /** It scrolled something itself, a section taller than its room or the page past the plans: it turns nothing, but
-   * it readies the next. */
+  /** It scrolled something itself, a section taller than its room: it turns nothing, even once that reaches its end. */
   scrolled: boolean
 }
 
@@ -43,12 +46,21 @@ export function wheelPixels(event: { deltaY: number; deltaMode: number }, viewpo
   return event.deltaY
 }
 
-/** Adds a wheel event to its gesture, or starts a new one after a quiet gap. */
+/** Whether a wheel event starts a new scroll inside a gesture that turned: the other way, or a fresh push once the turn
+ * has stood its while. */
+function pushesAgain(gesture: WheelGesture, wheel: Wheel): boolean {
+  if (!gesture.spent || !wheel.delta) return false
+  if (Math.sign(wheel.delta) !== Math.sign(gesture.distance)) return true
+  const strength = Math.abs(wheel.delta)
+  return wheel.time - gesture.start >= TURN_REST && strength >= NEW_PUSH_LEAST && strength > NEW_PUSH * Math.abs(gesture.lastDelta)
+}
+
+/** Adds a wheel event to its gesture, or starts a new one after a quiet gap or a new push. */
 export function addWheel(gesture: WheelGesture | undefined, wheel: Wheel): WheelGesture {
-  if (!gesture || wheel.time - gesture.last >= GESTURE_GAP) {
-    return { start: wheel.time, last: wheel.time, distance: wheel.delta, spent: false, scrolled: false }
+  if (!gesture || wheel.time - gesture.last >= GESTURE_GAP || pushesAgain(gesture, wheel)) {
+    return { start: wheel.time, last: wheel.time, distance: wheel.delta, lastDelta: wheel.delta, spent: false, scrolled: false }
   }
-  return { ...gesture, last: wheel.time, distance: gesture.distance + wheel.delta }
+  return { ...gesture, last: wheel.time, distance: gesture.distance + wheel.delta, lastDelta: wheel.delta }
 }
 
 /** The gesture once it has turned the box. */
@@ -61,33 +73,9 @@ export function scrolling(gesture: WheelGesture): WheelGesture {
   return { ...gesture, scrolled: true }
 }
 
-/** The way a gesture went, if it went anywhere. */
-function wayOf(gesture: WheelGesture): Way | undefined {
-  return gesture.distance > 0 ? 1 : gesture.distance < 0 ? -1 : undefined
-}
-
-/** The way an ended gesture readies the section to turn on the next scroll, if it does: any scroll that did not turn
- * the box, at its end or on the way there. */
-export function readies(gesture: WheelGesture): Way | undefined {
-  return gesture.spent ? undefined : wayOf(gesture)
-}
-
-/** Which way the gesture turns the box and when, if it does: once a scroll before it readied the section that way, and
- * the section turned to at `lastTurn` has stood its while. */
-export function turnDue(
-  gesture: WheelGesture | undefined,
-  ready: Way | undefined,
-  lastTurn: number,
-): { way: Way; at: number } | undefined {
-  if (!gesture || gesture.spent || gesture.scrolled || !ready || wayOf(gesture) !== ready) return undefined
-  return { way: ready, at: Math.max(gesture.start, lastTurn + TURN_REST) }
-}
-
-/** How far the shown section leans with a scroll that does not turn it, in px, up negative: it goes the page's way. */
-export function leanOf(gesture: WheelGesture | undefined): number {
-  if (!gesture || gesture.spent || gesture.scrolled) return 0
-  const way = wayOf(gesture)
-  if (!way) return 0
-  const lean = (LEAN_MAX * Math.abs(gesture.distance)) / NOTCH
-  return -way * Math.min(LEAN_MAX, Math.max(LEAN_LEAST, lean))
+/** Which way the gesture turns the box and when, if it does: at once, or once the section turned to at `lastTurn` has
+ * stood its while. */
+export function turnDue(gesture: WheelGesture | undefined, lastTurn: number): { way: Way; at: number } | undefined {
+  if (!gesture || gesture.spent || gesture.scrolled || !gesture.distance) return undefined
+  return { way: gesture.distance > 0 ? 1 : -1, at: Math.max(gesture.start, lastTurn + TURN_REST) }
 }
