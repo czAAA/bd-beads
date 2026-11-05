@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import AppButton from '../components/ui/AppButton.vue'
 import { COFFEE_URL } from '../data/coffeeLink'
+import { SOURCE_URL } from '../data/sourceLink'
 import { useI18n } from '../i18n/useI18n'
 
-// The coffee tile (ticket 219; Homepage card): a decorative beaded cup, who made the app, one line and a button opening the
-// Coffee link in a new tab (ticket 560), inert while it is empty. The whole tile is the link (ticket 0718): the button's
-// `::after` covers it, so keyboards and screen readers still meet one link. No donation-service name, logo or colours.
+// The coffee tile (ticket 219; Homepage card): a decorative beaded cup, who made the app, a few lines and a button opening the
+// Coffee link in a new tab (ticket 560), inert while it is empty. The tile is the Coffee link (ticket 0718): the button's
+// `::after` covers it. The one other link, to the source, sits above that cover in the small line under the button.
+// No donation-service name, logo or colours.
 const { t } = useI18n()
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */
@@ -51,6 +53,10 @@ const steam = [
       <p class="coffee__text">{{ t.homepage.coffee.text }}</p>
     </div>
     <AppButton :href="COFFEE_URL || undefined" :class="{ coffee__link: COFFEE_URL }" data-testid="homepage-coffee-button">{{ t.homepage.coffee.button }}</AppButton>
+    <p class="coffee__star">
+      {{ t.homepage.coffee.star }}
+      <a class="coffee__source" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="homepage-coffee-source">{{ t.homepage.coffee.source }}</a>
+    </p>
   </section>
 </template>
 
@@ -144,6 +150,20 @@ const steam = [
   line-height: 2.125rem;
   letter-spacing: var(--tracking-serif-heading);
   color: var(--ink);
+}
+
+.coffee__star {
+  margin: calc(-1 * var(--space-6)) 0 0;
+  font: var(--type-small);
+  color: var(--muted);
+}
+
+/* Above the tile's cover, so it takes its own click. */
+.coffee__source {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  text-decoration: underline;
 }
 
 .coffee__text {
