@@ -381,8 +381,8 @@ export interface Translations {
       hand: string
       rulers: string
     }
-    /** The captions over an empty Project, one beside each control (FirstRunHints card, ticket 0738), the welcome's
-     * steps line and its storage line, which the Project file's path follows. A line break is `\n`. */
+    /** The captions over an empty Project, one beside each control (FirstRunHints card, ticket 0738), and the welcome
+     * (ticket 0795): its lead line and its storage line, which the Project file's path follows. A line break is `\n`. */
     firstRun: {
       select: string
       frame: string
@@ -391,7 +391,7 @@ export interface Translations {
       project: string
       mirror: string
       color: string
-      steps: string
+      storageLead: string
       storage: string
     }
   }

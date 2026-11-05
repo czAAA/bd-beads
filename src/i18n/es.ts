@@ -303,8 +303,8 @@ export const es: Translations = {
       project: 'configura este proyecto: nombre, autor, técnica, cuenta y fondo',
       mirror: 'Espejo: izquierda–derecha, arriba–abajo o radial',
       color: 'colores y tu paleta',
-      steps: 'dibujar → seleccionar → marco → exportar',
-      storage: 'Tus proyectos se guardan en este navegador, en este dispositivo.\nEl navegador puede borrarlos sin avisar, así que guarda un archivo de los que más quieras:',
+      storageLead: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
+      storage: 'Si se borran los datos del navegador, se van con ellos. Guarda un archivo de cada uno que no quieras perder:',
     },
   },
   shell: {
