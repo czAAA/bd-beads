@@ -7,7 +7,7 @@ import { useI18n } from '../../i18n/useI18n'
 // press on the canvas paints the first bead.
 const { t } = useI18n()
 /** The welcome's last line: where in the Project panel a Project file is made. */
-const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.project.exportHeading, t.value.panels.project.exportFile])
+const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.project.exportHeading, t.value.panels.project.saveFile])
 </script>
 
 <template>

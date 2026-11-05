@@ -3,6 +3,8 @@ import { shallowRef } from 'vue'
 import type { Project } from '../domain/project'
 import { useEdit } from '../composables/project/useEdit'
 import { useUndoHistory } from '../composables/project/useUndoHistory'
+import { changedBeadCount } from '../domain/beadsSinceFile'
+import type { Layered } from '../domain/layerRecord'
 
 /** A real Edit and Undo history over one in-memory Project, so a flow's test asserts what a person would see.
  * Only the app's own seams are spies. */
@@ -15,11 +17,17 @@ export function editHarness(initial: Project | undefined) {
   const resetAfterFrameChange = vi.fn()
   const flushPendingSave = vi.fn()
   const currentProject = () => project.value
+  /** Beads since last file as the shell counts it (ticket 0796), from what Edit, Undo and Redo report. */
+  const counted = { beads: 0 }
+  const countChange = (before: Layered, after: Layered, sign: 1 | -1) => {
+    counted.beads += sign * changedBeadCount(before, after)
+  }
 
   const history: ReturnType<typeof useUndoHistory> = useUndoHistory({
     currentProject,
     restore: (snapshot) => editing.restore(snapshot),
     settle: () => editing.settle(),
+    countChange,
   })
   const editing = useEdit({
     currentProject,
@@ -27,6 +35,7 @@ export function editHarness(initial: Project | undefined) {
     recordHistory: history.record,
     resetAfterFrameChange,
     flushPendingSave,
+    countChange,
   })
 
   return {
@@ -37,6 +46,7 @@ export function editHarness(initial: Project | undefined) {
     replaceProject,
     resetAfterFrameChange,
     flushPendingSave,
+    counted,
     get project() {
       return project.value!
     },

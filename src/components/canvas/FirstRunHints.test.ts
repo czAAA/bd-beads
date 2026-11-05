@@ -21,7 +21,7 @@ describe('FirstRunHints (FirstRunHints card)', () => {
     expect(wrapper.attributes('aria-hidden')).toBe('true')
   })
 
-  it('welcomes with only where Projects are kept and how to keep a file of one: Project › Export › Project file', () => {
+  it('welcomes with only where Projects are kept and how to keep a file of one: Project › Export › Save Project file', () => {
     const wrapper = mountHints()
     const welcome = wrapper.get('[data-testid="first-run-welcome"]')
 
@@ -35,6 +35,6 @@ describe('FirstRunHints (FirstRunHints card)', () => {
     expect(welcome.get('[data-testid="first-run-storage"]').text()).toBe(
       "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:",
     )
-    expect(wrapper.findAll('[data-testid="first-run-path"] .hint-chip').map((chip) => chip.text())).toEqual(['Project', 'Export', 'Project file'])
+    expect(wrapper.findAll('[data-testid="first-run-path"] .hint-chip').map((chip) => chip.text())).toEqual(['Project', 'Export', 'Save Project file'])
   })
 })

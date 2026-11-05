@@ -30,7 +30,7 @@ function mountPanel(props: Record<string, unknown> = {}) {
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   it('has the head, then the Canvas\'s Layer settings, the reference image, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-duplicate', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -38,7 +38,17 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'reference image', 'Export', 'This project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
-    expect(wrapper.get('[data-testid="export-project-file"]').text()).toContain('.openbeads')
+    expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
+  })
+
+  it('names the Linked file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {
+    const wrapper = mountPanel()
+    expect(wrapper.find('[data-testid="save-project-file-as"]').exists()).toBe(false)
+
+    await wrapper.setProps({ linkedFileName: 'Moth.openbeads', canSaveAs: true })
+    expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}Moth.openbeads`)
+    await wrapper.get('[data-testid="save-project-file-as"]').trigger('click')
+    expect(wrapper.emitted('save-project-file-as')).toHaveLength(1)
   })
 
   it('has none of what moved to the Frame panel or went away', () => {
@@ -180,13 +190,13 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     }
   })
 
-  it('emits Duplicate, Clear, Delete and the Project file export', async () => {
+  it('emits Duplicate, Clear, Delete and Save', async () => {
     const wrapper = mountPanel()
     await wrapper.get('[data-testid="project-duplicate"]').trigger('click')
     await wrapper.get('[data-testid="project-clear"]').trigger('click')
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
-    await wrapper.get('[data-testid="export-project-file"]').trigger('click')
-    expect(['duplicate', 'clear', 'delete', 'export-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1, 1])
+    await wrapper.get('[data-testid="save-project-file"]').trigger('click')
+    expect(['duplicate', 'clear', 'delete', 'save-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1, 1])
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
   })
 
