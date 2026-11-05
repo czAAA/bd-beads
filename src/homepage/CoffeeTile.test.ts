@@ -23,13 +23,13 @@ describe('CoffeeTile', () => {
   it('says who made it, in one line, in English', () => {
     const wrapper = tile()
     expect(wrapper.find('h3').text()).toBe('Made by one family')
-    expect(wrapper.find('p').text()).toContain('If it saved you time')
+    expect(wrapper.find('p').text()).toContain('stays free and fully local')
   })
 
   it('says it in Russian too', () => {
     const wrapper = tile('ru')
     expect(wrapper.find('h3').text()).toBe('Делает одна семья')
-    expect(wrapper.find('p').text()).toContain('Если приложение сэкономило вам время')
+    expect(wrapper.find('p').text()).toContain('остаётся бесплатным и полностью локальным')
     expect(wrapper.get('[data-testid="homepage-coffee-button"]').text()).toBe('Угостить кофе')
   })
 
@@ -41,6 +41,16 @@ describe('CoffeeTile', () => {
     expect(link.attributes('href')).toBe('https://buymeacoffee.com/openbeads')
     expect(link.attributes('target')).toBe('_blank')
     expect(link.attributes('rel')).toBe('noopener')
+  })
+
+  it('links to the source in a small line under the button', () => {
+    const wrapper = tile()
+    const link = wrapper.get('[data-testid="homepage-coffee-source"]')
+    expect(link.element.tagName).toBe('A')
+    expect(link.text()).toBe('View the source')
+    expect(link.attributes('href')).toBe('https://github.com/czAAA/bd-beads')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(wrapper.get('.coffee__star').text()).toContain('A star on GitHub helps too.')
   })
 
   it('does nothing while the Coffee link is empty', async () => {

@@ -13,7 +13,7 @@ describe('CoffeeTile, clicked anywhere', () => {
     it(`opens the Coffee link from the cup, the title, the text and the tile's edge at ${width}px`, async () => {
       const { root } = await mountAt(CoffeeTile, {}, { locale: 'en', width })
       const link = root.querySelector('[data-testid="homepage-coffee-button"]')
-      expect(root.querySelectorAll('a')).toHaveLength(1)
+      expect(root.querySelectorAll('a')).toHaveLength(2)
       expect(link?.tagName).toBe('A')
       const tile = root.querySelector('[data-testid="homepage-coffee"]')!.getBoundingClientRect()
       const points = [
@@ -24,6 +24,9 @@ describe('CoffeeTile, clicked anywhere', () => {
         [tile.right - 24, tile.bottom - 24] as const,
       ]
       for (const [x, y] of points) expect(document.elementFromPoint(x, y)?.closest('a'), `the point ${x}, ${y}`).toBe(link)
+      // The source link keeps its own click.
+      const source = root.querySelector('[data-testid="homepage-coffee-source"]')!
+      expect(document.elementFromPoint(...middle(source))?.closest('a')).toBe(source)
     })
   }
 })

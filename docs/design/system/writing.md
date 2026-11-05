@@ -214,7 +214,8 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Patterns saved: 3 | Схем сохранено: 3 |
 | What's inside | Что внутри |
 | Made by one family | Делает одна семья |
-| openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks. | openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо. |
+| openbeads stays free and fully local, with no ads and no tracking. If it helps your work, you can support its development through Buy Me a Coffee. | openbeads остаётся бесплатным и полностью локальным, без рекламы и отслеживания. Если приложение вам помогает, поддержать его развитие можно через Buy Me a Coffee. |
+| A star on GitHub helps too. · View the source | Звезда на GitHub тоже помогает. · Исходный код |
 | Buy me a coffee | Угостить кофе |
 | Three ways to use it (the "plans" label is gone, ticket 0739) | Три способа работать |
 | Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
