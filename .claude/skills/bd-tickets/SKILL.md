@@ -13,6 +13,7 @@ Break a plan, spec or conversation into **tickets**: tracer-bullet vertical slic
 2. **Draft vertical slices.**
    - Each slice cuts a narrow but COMPLETE path through every layer (not one horizontal layer), is demoable or verifiable alone, and fits one fresh context window.
    - Prefactoring goes first. List each ticket's blockers; no blockers means it can start now.
+   - Blockers include work already in flight: open tickets (`ls .scratch/`) and open PRs (`gh pr list`) that change the same screen, component or module block the slice that touches it too.
    - **Wide refactors are the exception** (one mechanical change whose blast radius spans the codebase, so no slice lands green): sequence as expand–contract. Expand (new form beside the old), then migrate call sites in batches by blast radius (each its own ticket, blocked by the expand), then contract (delete the old form, blocked by every batch). If batches can't stay green alone, let them share an integration branch that blocks a final integrate-and-verify ticket; only that one must be green.
 
 3. **Quiz the user.** Show a numbered list: title, blocked by, what it delivers. Ask whether granularity is right, whether each blocker really gates its ticket, and whether any should merge or split. Iterate until approved.

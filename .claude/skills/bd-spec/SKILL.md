@@ -10,7 +10,7 @@ Synthesize a spec from the conversation and codebase understanding. Do NOT inter
 
 2. Sketch the seams you'll test at: prefer existing seams, the highest possible, ideally one. Check them with the user.
 
-3. Write the spec with the template below and save it as the tracker doc says (`docs/specs/NNNN-slug.md`, the next number in the shared ticket/spec space, committed and pushed to the docs repo). Specs aren't tickets, so no triage label. Next step: `/bd-tickets`.
+3. Write the spec with the template below and save it as the tracker doc says (`docs/specs/NNNN-slug.md`, number reserved with `bash scripts/next-ticket.sh --spec <slug>`, committed and pushed to the docs repo). Specs aren't tickets, so no triage label. Next step: `/bd-tickets`.
 
 ```
 # NNNN: Title
