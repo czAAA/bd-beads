@@ -3,6 +3,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
+import { changeFrame } from '../../domain/changeFrame'
 import type { Project, RowProgress } from '../../domain/project'
 import { rotateFrame } from '../../domain/rotate'
 import type { GridPosition } from '../../domain/grid'
@@ -347,6 +348,28 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: painted(painted(project, 3, 4), 26, 4) })
 
       expect(context.named('rect').map((call) => call.args[1])).toEqual([60, 520])
+    })
+
+    // A shaped Frame's rows are its layout's, not rows on the screen: a Fringe earring's top is counted up from its base
+    // row and its strands from row 1000. A band of them would clear and draw the wrong strip, leaving the bead painted
+    // as it was or blended with its old color.
+    it.each([
+      ['a bead of its top', 4, 1],
+      ['a bead of a strand', 1002, 3],
+    ])('draws everything again when %s of a shaped Frame is painted', async (_name, row, column) => {
+      viewport = { width: 400, height: 600 }
+      // Woven alike, as a Project from a Starter is: brick stitch in both layers, so the surface draws bands at all.
+      const open = withFrameSheet(projectOf(60, 60, {}, 'brick'), undefined)
+      const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 15, column: 10 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
+      const { wrapper } = await mountSurface(placed.project)
+      context.calls.length = 0
+
+      const beads = frameOf(placed.project)!.beads
+      await wrapper.setProps({ project: withLayer(placed.project, 'frame', { beads: { ...beads, [row]: { ...beads[row], [column]: '#e63746' } } }) })
+
+      expect(context.named('rect')).toHaveLength(0)
+      expect(draws()).toBe(1)
     })
 
     it('draws no beads at all when nothing in view changed, and only redraws the overlay', async () => {
