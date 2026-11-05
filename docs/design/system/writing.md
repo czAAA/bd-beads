@@ -772,6 +772,7 @@ The ring at the drawing area's top-right that offers to save a Project file (Sav
 | Last file: {when} · No Project file yet | Последний файл: {when} · Файла проекта ещё нет | Останній файл: {when} · Файлу проєкту ще немає | Ostatni plik: {when} · Nie ma jeszcze pliku projektu |
 | Beads since last file: {count}. Save a copy to keep them. (live region) | Бисеринок с последнего файла: {count}. Сохраните копию, чтобы они остались. | Бісеринок з останнього файлу: {count}. Збережіть копію, щоб вони залишилися. | Koralików od ostatniego pliku: {count}. Zapisz kopię, żeby je zachować. |
 | Saved: {file} (toast) | Сохранено: {file} | Збережено: {file} | Zapisano: {file} |
+| Save Project file · Save Project file as… (Project panel rows, the Save and Save as actions; they replace the row "Project file") | Сохранить файл проекта · Сохранить файл проекта как… | Зберегти файл проєкту · Зберегти файл проєкту як… | Zapisz plik projektu · Zapisz plik projektu jako… |
 
 | English | Беларуская | Español | 中文 |
 |---|---|---|---|
@@ -781,3 +782,4 @@ The ring at the drawing area's top-right that offers to save a Project file (Sav
 | Last file: {when} · No Project file yet | Апошні файл: {when} · Файла праекта яшчэ няма | Último archivo: {when} · Aún no hay archivo de proyecto | 上次文件：{when} · 还没有项目文件 |
 | Beads since last file: {count}. Save a copy to keep them. | Бісерын з апошняга файла: {count}. Захавайце копію, каб яны засталіся. | Cuentas desde el último archivo: {count}. Guarda una copia para conservarlas. | 自上次保存文件后的珠子：{count}。保存副本以留住它们。 |
 | Saved: {file} | Захавана: {file} | Guardado: {file} | 已保存：{file} |
+| Save Project file · Save Project file as… | Захаваць файл праекта · Захаваць файл праекта як… | Guardar archivo de proyecto · Guardar archivo de proyecto como… | 保存项目文件 · 项目文件另存为… |
