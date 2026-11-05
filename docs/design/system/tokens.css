@@ -1,4 +1,4 @@
-/* bd-beads — generated from tokens.json */
+/* openbeads — generated from tokens.json */
 :root, [data-theme="light"] {
   --canvas: #ffffff; /* Page background and header. The darkest dark surface step. */
   --surface: #fafafa; /* Quiet fills: hover on a text button, table stripes, menu item hover (light). */
@@ -262,7 +262,7 @@
   --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
   --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
-  --text-brand: 700 18px/1 var(--font-sans); /* "bd-beads" in the header, beside the accent bead glyph. */
+  --text-brand: 700 18px/1 var(--font-sans); /* "openbeads" in the header, beside the accent bead glyph. */
   --text-title: 600 16px/24px var(--font-sans); /* Modal titles (Derived). */
   --text-control: 500 14px/20px var(--font-sans); /* Buttons, selects, row labels (Mirror, Size), box titles, "Row 12", "Pattern". */
   --text-body: 400 14px/20px var(--font-sans); /* Text, Beads needed rows, modal and message body. */
