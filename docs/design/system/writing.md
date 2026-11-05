@@ -759,3 +759,25 @@ Belarusian, Spanish and Chinese, written with the build (ticket 0790):
 | Resize from the top-left corner · Turn · Turned {n}° | Змяніць памер за левы верхні кут · Павярнуць · Павернута на {n}° | Cambiar el tamaño desde la esquina superior izquierda · Girar · Girada {n}° | 从左上角调整大小 · 旋转 · 已旋转 {n}° |
 | Reference image, {opacity}%, turned {angle}° · Moved · Resized | Падкладка, {opacity}%, павернута на {angle}° · Зрушана · Памер зменены | Imagen de referencia, {opacity}%, girada {angle}° · Movida · Tamaño cambiado | 参考图，{opacity}%，旋转 {angle}° · 已移动 · 已调整大小 |
 | Reference image not saved on this device | Падкладка не захавана на гэтай прыладзе | Imagen de referencia no guardada en este dispositivo | 参考图未保存在此设备上 |
+
+## Save reminder copy (ticket 0796)
+
+The ring at the drawing area's top-right that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save a copy" with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| Save a copy (label, Tooltip name, accessible name) | Сохранить копию | Зберегти копію | Zapisz kopię |
+| The browser keeps your work but can clear it. A Project file stays. (Tooltip body) | Браузер хранит работу, но может её очистить. Файл проекта останется. | Браузер зберігає роботу, але може її очистити. Файл проєкту залишиться. | Przeglądarka przechowuje twoją pracę, ale może ją wyczyścić. Plik projektu zostanie. |
+| Beads since last file: {count} | Бисеринок с последнего файла: {count} | Бісеринок з останнього файлу: {count} | Koralików od ostatniego pliku: {count} |
+| Last file: {when} · No Project file yet | Последний файл: {when} · Файла проекта ещё нет | Останній файл: {when} · Файлу проєкту ще немає | Ostatni plik: {when} · Nie ma jeszcze pliku projektu |
+| Beads since last file: {count}. Save a copy to keep them. (live region) | Бисеринок с последнего файла: {count}. Сохраните копию, чтобы они остались. | Бісеринок з останнього файлу: {count}. Збережіть копію, щоб вони залишилися. | Koralików od ostatniego pliku: {count}. Zapisz kopię, żeby je zachować. |
+| Saved: {file} (toast) | Сохранено: {file} | Збережено: {file} | Zapisano: {file} |
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Save a copy | Захаваць копію | Guardar una copia | 保存副本 |
+| The browser keeps your work but can clear it. A Project file stays. | Браўзер захоўвае працу, але можа яе ачысціць. Файл праекта застанецца. | El navegador guarda tu trabajo, pero puede borrarlo. Un archivo de proyecto se queda. | 浏览器会保存你的作品，但可能会清除它。项目文件会一直保留。 |
+| Beads since last file: {count} | Бісерын з апошняга файла: {count} | Cuentas desde el último archivo: {count} | 自上次保存文件后的珠子：{count} |
+| Last file: {when} · No Project file yet | Апошні файл: {when} · Файла праекта яшчэ няма | Último archivo: {when} · Aún no hay archivo de proyecto | 上次文件：{when} · 还没有项目文件 |
+| Beads since last file: {count}. Save a copy to keep them. | Бісерын з апошняга файла: {count}. Захавайце копію, каб яны засталіся. | Cuentas desde el último archivo: {count}. Guarda una copia para conservarlas. | 自上次保存文件后的珠子：{count}。保存副本以留住它们。 |
+| Saved: {file} | Захавана: {file} | Guardado: {file} | 已保存：{file} |
