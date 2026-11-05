@@ -57,19 +57,22 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
     }
     apply()
     void nextTick(() => {
-      const placed = popup.value?.getBoundingClientRect()
-      if (!placed) return
+      const shown = popup.value
+      const placed = shown?.getBoundingClientRect()
+      if (!shown || !placed) return
       // Once `fixed`, the list may take a different width than it had inside its button's box (ticket 368: a narrow
       // button in a sheet), which moves an end-aligned popup: place it again with the real width before measuring.
       if (!settled && Math.abs(placed.width - width) > 0.5) {
         place(true)
         return
       }
-      const dx = placed.left - left
-      const dy = placed.top - top
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return
-      offsetX += dx
-      offsetY += dy
+      // Where `fixed` puts its origin, from the place it shows at and the place it was given, so placing again before
+      // a correction shows never corrects twice (a boxed shell's box is that origin, ticket 0797).
+      const originX = placed.left - (Number.parseFloat(shown.style.left) || 0)
+      const originY = placed.top - (Number.parseFloat(shown.style.top) || 0)
+      if (Math.abs(originX - offsetX) < 0.5 && Math.abs(originY - offsetY) < 0.5) return
+      offsetX = originX
+      offsetY = originY
       apply()
     })
   }
