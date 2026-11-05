@@ -250,7 +250,7 @@
     {
       "name": "FirstRunHints",
       "group": "Canvas",
-      "summary": "Quiet captions over an empty Project beside the controls they name, Select, Mirror and Export ringed in accent, and a welcome saying where Projects are kept and how to keep a file; gone with the first bead."
+      "summary": "The welcome over an empty Project, saying where Projects are kept and how to keep a file, and nothing else; gone with the first bead."
     },
     {
       "name": "MenuPanel",

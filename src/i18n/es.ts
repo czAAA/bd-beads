@@ -297,13 +297,6 @@ export const es: Translations = {
       rulers: 'Reglas',
     },
     firstRun: {
-      select: 'selecciona para medir, rellenar, poner un marco,\ncopiar, pegar, girar o reflejar',
-      frame: 'enmarca tu dibujo: nombre, tamaño y cuenta',
-      export: 'exporta una imagen\no un esquema para imprimir',
-      menu: 'nuevo proyecto, biblioteca de proyectos, idioma, tema y preferencias',
-      project: 'configura este proyecto: nombre, autor, técnica, cuenta y fondo',
-      mirror: 'Espejo: izquierda–derecha, arriba–abajo o radial',
-      color: 'colores y tu paleta',
       storageLead: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
       storage: 'Si se borran los datos del navegador, se van con ellos. Guarda un archivo de cada uno que no quieras perder:',
     },

@@ -302,11 +302,9 @@ const selectionLayerStyle = computed(() => {
   if (!el) return undefined
   return { left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${drawingSize.width.value}px`, height: `${drawingSize.height.value}px` }
 })
-/** The canvas box, where the first-run hints find the controls they point at. */
-const canvasEl = ref<HTMLElement>()
-/** The open Project has no beads and no Frame, not even an empty one: the CanvasHint line and the first-run hints show
- * (FirstRunHints card, ticket 0725). A Frame is already a start on the Pattern. The Homepage's demo has none: nothing
- * shows there that the tour didn't make (ticket 0797). */
+/** The open Project has no beads and no Frame, not even an empty one: the CanvasHint line and the first-run welcome show
+ * (FirstRunHints card, tickets 0725, 0798). A Frame is already a start on the Pattern. The Homepage's demo has none:
+ * nothing shows there that the tour didn't make (ticket 0797). */
 const emptyProject = computed(() => !demo && !!activeProject.value && !frameOf(activeProject.value) && !hasProjectBeads(activeProject.value))
 /** The save ring shows over the editor's drawing area only (SaveReminder card), and the toasts start under it; never in
  * the Homepage's demo, which saves nothing (ticket 0797). */
@@ -325,9 +323,8 @@ const drawingStyle = computed(() => {
   -->
   <main class="app-shell__canvas-column">
     <div
-      ref="canvasEl"
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--first-run': emptyProject }"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning }"
       data-testid="app-canvas"
     >
       <!--
@@ -383,16 +380,10 @@ const drawingStyle = computed(() => {
           not on a phone (CanvasHint card). -->
         <CanvasHint v-if="emptyProject" class="app-shell__canvas-hint" />
 
-        <!-- The hand-drawn way to a first Pattern (ticket 0725, FirstRunHints card): over an empty Project, gone with
-          the first bead, under the Tool pill. -->
+        <!-- Where Projects are kept (tickets 0725, 0798, FirstRunHints card): over an empty Project, gone with
+          the first bead. -->
         <Transition name="first-run-hints">
-          <FirstRunHints
-            v-if="emptyProject"
-            :scope="canvasEl"
-            :pill-position="toolPillPosition"
-            :pill-rect="pillRect"
-            :background="canvasBackground.background.value?.color"
-          />
+          <FirstRunHints v-if="emptyProject" />
         </Transition>
 
         <div class="app-shell__canvas-row">
@@ -689,24 +680,10 @@ const drawingStyle = computed(() => {
   grid-row: 3;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run hints, the context bar, the Tool
+/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run welcome, the context bar, the Tool
  * pill's layer and the save ring, which float over the beads. */
 .app-shell__drawing > :not(.app-shell__canvas-hint):not(.first-run-hints):not(.context-bar):not(.tool-pill-layer):not(.save-ring) {
   position: relative;
-}
-
-/* Select, Mirror and Export ringed in accent over what is behind them, the controls a newcomer wouldn't guess at
- * (FirstRunHints card); Export is lifted over the drawing area so the ring's foot shows. */
-.app-shell__canvas--first-run :deep(:is([data-hint='select'], [data-hint='mirror'], [data-hint='export'])) {
-  position: relative;
-  z-index: var(--z-canvas-overlay);
-  box-shadow:
-    0 0 0 var(--hint-ring-gap) var(--hint-ring-behind, var(--box)),
-    0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent);
-}
-
-.app-shell__canvas--first-run :deep(:is([data-hint='select'], [data-hint='mirror'])) {
-  --hint-ring-behind: var(--elevated);
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing

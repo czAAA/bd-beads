@@ -173,7 +173,6 @@ watch(
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       data-tool-pill
       data-testid="tool-pill"
-      data-hint-obstacle
       :data-position="position"
       @pointerdown="drag.onPointerDown"
       @keydown="roving.onKeydown"
@@ -202,7 +201,6 @@ watch(
         :accent="isActive(tile.tool)"
         :tabindex="roving.tabIndexFor(isActive(tile.tool))"
         :data-testid="`pill-tool-${tile.tool}`"
-        :data-hint="tile.tool === 'select' ? tile.tool : undefined"
         @click="emit('select-tool', tile.tool)"
       />
 
@@ -218,7 +216,6 @@ watch(
         :pressed="mirrorLit"
         :tabindex="-1"
         data-testid="pill-tool-mirror"
-        data-hint="mirror"
         @click="emit('mirror-tile')"
       />
 
@@ -252,7 +249,6 @@ watch(
         :aria-expanded="popoverOpen"
         :tabindex="-1"
         data-testid="pill-color"
-        data-hint="color"
         @click="toggleColor"
       >
         <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }">

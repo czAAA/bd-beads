@@ -132,7 +132,6 @@ function onPanelsKeydown(event: KeyboardEvent) {
         :action="actions.menu"
         :selected="openPanel === 'menu' ? true : undefined"
         data-testid="strip-menu"
-        data-hint="menu"
         @click="emit('select-panel', 'menu')"
       >
         <span class="canvas-strip__label">{{ actions.menu.name(t) }}</span>
@@ -144,7 +143,6 @@ function onPanelsKeydown(event: KeyboardEvent) {
         :action="actions.project"
         :selected="openPanel === 'project' ? true : undefined"
         data-testid="strip-project"
-        data-hint="project"
         @click="emit('select-panel', 'project')"
       >
         <span class="canvas-strip__label">{{ actions.project.name(t) }}</span>
@@ -156,7 +154,6 @@ function onPanelsKeydown(event: KeyboardEvent) {
         :deps="deps"
         :selected="frameOpen"
         data-testid="strip-frame"
-        data-hint="frame"
         @click="emit('toggle-frame')"
       >
         <span class="canvas-strip__label">{{ actions.frame.name(t) }}</span>
@@ -216,7 +213,6 @@ function onPanelsKeydown(event: KeyboardEvent) {
         :action="actions.export"
         :selected="openPanel === 'export'"
         data-testid="strip-export"
-        data-hint="export"
         @click="emit('select-panel', 'export')"
       />
     </div>
@@ -287,10 +283,6 @@ function onPanelsKeydown(event: KeyboardEvent) {
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
-  /* Room inside the scroller for Export's first-run ring (FirstRunHints card), given back outside it. */
-  --ring-room: calc(var(--hint-ring-gap) + var(--hint-ring-width));
-  padding: var(--ring-room) var(--ring-room) var(--ring-room) 0;
-  margin: calc(-1 * var(--ring-room)) calc(-1 * var(--ring-room)) calc(-1 * var(--ring-room)) 0;
 }
 
 .canvas-strip__controls::-webkit-scrollbar {
