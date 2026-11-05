@@ -1,19 +1,20 @@
 import { onBeforeUnmount, readonly, ref, watch } from 'vue'
 
-// What's inside's tour (Homepage card, ticket 0797): the rows in order, each shown by doing it in the demo editor, its
-// row lit while it plays, then a rest and the loop again on a fresh demo. A row pressed plays from there, the rows
-// before it applied at once. It plays only while the section is seen; a press in the editor takes it over for the visit.
+// What's inside's tour (Homepage card, tickets 0797, 0802): the rows in order, each done in the demo editor, lit while it
+// plays, then a rest and the loop again. A row pressed, earlier or later, plays from there on a fresh demo, the rows
+// before it applied at once; one that can't be done is skipped. It plays only while seen, until the beader takes over.
 
-/** The tour's timing, in ms (Homepage card). */
-const TOUR_TIMING = {
+/** The tour's timing, in ms (Homepage card): 1.2 times its first pace (ticket 0802).
+ * @internal Its test steps the clock by it. */
+export const TOUR_TIMING = {
   /** A row is lit this long before its hand moves… */
-  before: 350,
+  before: 420,
   /** …and stays lit this long after. */
-  after: 450,
+  after: 540,
   /** After the last row, before the loop starts again. */
-  rest: 1800,
+  rest: 2160,
   /** After the section first shows, before the tour starts by itself. */
-  start: 900,
+  start: 1080,
 }
 
 /** A run of the tour stopping, which every step of it hears. */
@@ -47,6 +48,8 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
   let run: AbortController | undefined
   let startTimer: ReturnType<typeof setTimeout> | undefined
   let everShown = false
+  /** The rows that failed once: each is warned of once, however often the loop comes back to it. */
+  const warned = new Set<Row>()
 
   function pause(ms: number, signal: AbortSignal): Promise<void> {
     if (signal.aborted) return Promise.reject(new Stopped())
@@ -60,11 +63,23 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
     if (signal.aborted) throw new Stopped()
   }
 
+  /** Does a row, played or applied at once. A step that can't be done (a control gone from this layout) skips the rest of
+   * the row, so the tour goes on to the next instead of stopping on a fresh demo; a stop goes through. */
+  async function attempt(row: Row, instant: boolean, signal: AbortSignal): Promise<void> {
+    try {
+      await deps.play(row, deps.hand(instant, signal))
+    } catch (error) {
+      if (error instanceof Stopped || deps.isStop(error) || signal.aborted) throw error
+      if (!warned.has(row)) console.warn(error)
+      warned.add(row)
+    }
+  }
+
   /** Applies rows at once, with no ghost. */
   async function apply(rows: readonly Row[], signal: AbortSignal): Promise<void> {
     for (const row of rows) {
       check(signal)
-      await deps.play(row, deps.hand(true, signal))
+      await attempt(row, true, signal)
     }
   }
 
@@ -82,7 +97,7 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
       const row = deps.rows[index]
       playing.value = row
       await pause(timing.before, signal)
-      await deps.play(row, deps.hand(false, signal))
+      await attempt(row, false, signal)
       await pause(timing.after, signal)
       index += 1
       if (index < deps.rows.length) continue
@@ -108,15 +123,16 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
     deps.hideGhost()
   }
 
-  /** Plays from a row: a fresh demo, the rows before it applied at once. */
+  /** Plays from a row, lit at once: a fresh demo, the rows before it applied at once. */
   function choose(row: Row): void {
     stop()
     takenOver.value = false
+    playing.value = row
     const current = new AbortController()
     run = current
     void playFrom(row, current.signal).catch((error: unknown) => {
       if (error instanceof Stopped || deps.isStop(error)) return
-      // A step that could not be done stops the tour and leaves the editor to the beader.
+      // The demo itself could not start afresh: the tour stops, the row lit and the editor left to the beader.
       console.warn(error)
       if (run === current) stop()
     })
