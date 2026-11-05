@@ -66,6 +66,7 @@
     "components/ReferenceImage/README.md",
     "components/Rulers/README.md",
     "components/SaveBox/README.md",
+    "components/SaveReminder/README.md",
     "components/SaveStates/README.md",
     "components/SavedPatterns/README.md",
     "components/SavedPatternsExpanded/README.md",
@@ -400,6 +401,11 @@
       "name": "SaveBox",
       "group": "Left column",
       "summary": "The second box of the left column: the library's save state, Save Pattern and the Export menu."
+    },
+    {
+      "name": "SaveReminder",
+      "group": "Canvas",
+      "summary": "The save ring at the drawing area's top-right: fills as beads are added since the last Project file, opens to \"Save a copy\" at 50, and saves the file in one press."
     },
     {
       "name": "SaveStates",

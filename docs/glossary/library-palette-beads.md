@@ -11,6 +11,10 @@ _Avoid_: collection, gallery, saved list, workspace
 The guard that keeps one Project from locking the person out of the editor (ticket 0716). Before the editor opens a Project it notes "opening Project X" on the device (in localStorage, which outlives a frozen tab closed by hand), and clears the note a frame after the Project's first drawn frame, or when the page goes away normally. A load that finds the note still set opens no Project, keeps that one sealed, and says in the notice row "“X” didn't open last time." with Remove (which asks, as the list's does) and Export (the Project file written from the stored form, never decoded). The note is cleared then, so the next load tries again.
 _Avoid_: crash recovery, safe mode
 
+**Save reminder** (ticket 0796):
+The round save button at the drawing area's top-right (the **save ring**; SaveReminder card), which offers to save a Project file of the open Project. Its ring fills with **Beads since last file**: the bead positions changed since this Project's file was last saved on this device. Undo takes them off, and any Project file save (the ring, Project file in the Project panel, Export all) sets them back to 0. At 50 (100 with persistent storage) the ring turns accent and opens to "Save a copy" for a few seconds. It never blocks or warns. A press is the Project file action itself, not a second save. Where the browser can write to a picked file (Chromium on desktop), the Project's **remembered file** is written again in place; elsewhere each save is a new download.
+_Avoid_: backup, autosave (the library already saves itself), unsaved changes (the library has none: it is the file that is behind)
+
 **Offline copy**:
 The app itself, kept on the device by the service worker after the first visit, so it opens with no internet or while our hosting is down (ticket 69, ADR 0045). It downloads silently; a newer one waits behind the open page until the person presses Reload in "Update ready", or the app is next opened. It holds no Projects: those are the Project library.
 _Avoid_: cache, offline mode, downloaded app
