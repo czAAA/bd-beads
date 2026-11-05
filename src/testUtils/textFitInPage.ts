@@ -19,10 +19,10 @@ export interface TextMisfit {
 /** Controls that are meant to be one line; running paragraphs are exempt from the wrap check. */
 const ONE_LINE = 'button, a, label, th, h1, h2, h3, h4, h5, h6, summary, legend, [role="tab"], [role="menuitem"], [role="button"], .ui-pill, [data-one-line]'
 
-/** One-line controls that are designed to take more lines than one, with how many: the Homepage's tab line, the
- * segmented control's two-line options, a dialog's title. */
+/** One-line controls that are designed to take more lines than one, with how many: the line under What's inside's
+ * playing row (ticket 0797), the segmented control's two-line options, a dialog's title. */
 const MORE_LINES: [string, number][] = [
-  ['.carousel__tab-line', 2],
+  ['.inside__row-text', 4],
   ['.segmented__option', 2],
   ['.app-modal__title', 2],
   ['.bead-quantities__tooltip', 99],
@@ -30,7 +30,7 @@ const MORE_LINES: [string, number][] = [
 ]
 
 /** Boxes that hold artwork or the scrolling drawing, whose content is meant to be wider than the box. */
-const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"], [data-testid="example-paper"]'
+const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"]'
 
 /** Words that roll through a one-line window (the Homepage's slogan, ticket 550), and the Homepage's plans, which the
  * page's scroll moves up through their section while it grows the free list (ticket 0742): cut vertically on purpose,

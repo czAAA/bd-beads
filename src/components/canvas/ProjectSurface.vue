@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue'
-import type { PreviewCell } from '../../domain/grid'
+import type { GridPosition, PreviewCell } from '../../domain/grid'
+import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
 import { nearestQuarterTurn, tiltOf } from '../../domain/canvasOrientation'
@@ -16,7 +17,7 @@ import { marginSheetPx } from '../../rendering/projectRenderer'
 import type { DrawnReference } from '../../rendering/referenceImage'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
-import { piecesWhenIdle } from '../../composables/canvas/idlePieces'
+import { useIdlePieces } from '../../composables/canvas/idlePieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
@@ -117,6 +118,8 @@ const emit = defineEmits<SurfacePointerEvents & {
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
  * redraws both layers. */
 const canvasBackground = useCanvasBackground(() => props.project)
+/** This shell's idle Piece walks (ticket 0797). */
+const piecesWhenIdle = useIdlePieces()
 const theme = canvasBackground.projectTheme
 const frameTheme = canvasBackground.frameTheme
 
@@ -379,7 +382,17 @@ const patternDoneAt = computed(() => {
 const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
 
 // Tests read what was drawn from the layout the surface built.
-defineExpose({ rulerLayout: rulers, pressMoveHandle })
+/** Where a bead's middle is on screen, in client pixels: the Homepage's tour points its ghost there (ticket 0797). */
+function beadOnScreen(position: GridPosition): { x: number; y: number } | undefined {
+  const box = rootEl.value?.getBoundingClientRect()
+  if (!box) return undefined
+  const layer = layerAt(props.project, position)
+  const bead = surface.value.beadBox({ row: position.row, column: position.column, rows: 1, columns: 1 }, layer)
+  const shown = leaning.value.toScreen({ x: bead.x + bead.width / 2, y: bead.y + bead.height / 2 })
+  return { x: box.left + shown.x, y: box.top + shown.y }
+}
+
+defineExpose({ rulerLayout: rulers, pressMoveHandle, beadOnScreen })
 
 onMounted(() => {
   measure()

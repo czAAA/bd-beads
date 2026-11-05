@@ -1,4 +1,5 @@
 import { onBeforeUnmount, onMounted } from 'vue'
+import { inScope, useShellScope } from '../ui/shellScope'
 
 /** One table entry per shortcut (ticket 86): `matches` picks the keydown, `guard` can withhold it,
  * `allowWhileTyping` opts out of suppression in form fields (like Escape). */
@@ -20,9 +21,11 @@ export function isTypingInFormField(target: EventTarget | null): boolean {
 
 // Binds one window `keydown` listener firing the first entry whose `matches` and `guard` pass; on the window since the
 // canvas takes no focus (ticket 24). Shortcuts without `allowWhileTyping` are suppressed in form fields, leaving e.g.
-// native text-undo to the field.
+// native text-undo to the field. A boxed shell (ticket 0797) takes only the keys pressed while the focus is in its box.
 export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
+  const scope = useShellScope()
   function onKeyDown(event: KeyboardEvent) {
+    if (!inScope(scope, event.target)) return
     for (const shortcut of shortcuts) {
       if (!shortcut.matches(event)) {
         continue

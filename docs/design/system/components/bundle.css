@@ -188,8 +188,6 @@
   --save-ring-halo: 30px;
   --save-ring-stroke: 2px;
   --save-ring-inset: 16px;
-  --save-ring-size-touch: 44px;
-  --save-ring-inset-phone: 8px;
   --save-ring-label-time: 4s;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
@@ -631,7 +629,7 @@ body {
   --hover-fill:var(--surface);--press-fill:var(--line);
   --framing-dim:rgba(0,0,0,.45);
   --slogan-hold:2200ms;--slogan-roll:650ms;
-  --homepage-box-width:70rem;--homepage-box-height:55rem;--homepage-opening:450ms;--section-turn:600ms;--section-shift:3.5rem;--section-scale:.985;--nudge-lift:.75rem;--nudge-fade:.82;--nudge-dip:.25rem;--nudge-length:1.1s;--inside-card-height:5.75rem;--inside-list-width:17rem;--ghost-move:420ms;--ghost-ripple:.7s;
+  --homepage-box-width:70rem;--homepage-box-height:55rem;--homepage-opening:450ms;--section-turn:600ms;--section-shift:3.5rem;--section-scale:.985;--nudge-lift:.75rem;--nudge-fade:.82;--nudge-dip:.25rem;--nudge-length:1.1s;--inside-card-height:5.75rem;--inside-list-width:17rem;--ghost-move:420ms;--ghost-ripple:.7s;--ghost-fill:#fff;--ghost-edge:#1a1a1a;--type-inside-name:600 .875rem/1.25rem var(--font-sans);--type-inside-text:400 .75rem/1rem var(--font-sans);--type-inside-line:400 .8125rem/1.125rem var(--font-sans);
   --homepage-mark-large:26.25rem;--homepage-mark-small:7.5rem;--free-start-rows:4;--free-growth:2.5;--free-fade:1.75rem;--coming-soon-width:14.75rem;--coming-soon-tilt:-8deg;
   --step-dot:.5rem;--step-dot-current:.875rem;--step-ring:3px;--step-name-max:5.75rem;
 }
@@ -1095,16 +1093,19 @@ body {
 }
 @media (prefers-reduced-motion:reduce){.bb-section-step--current::before{animation:none!important;transition:none}}
 
-/* SaveReminder card (ticket 0796): the save ring at the drawing area's top-right, shown once the Project file is behind. */
-.bb-save-ring { position: absolute; top: var(--save-ring-inset); right: var(--save-ring-inset); z-index: var(--z-chrome); display: inline-flex; align-items: center; min-width: var(--save-ring-size); height: var(--save-ring-size); padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); box-shadow: var(--elevation-2); color: var(--accent-strong); animation: bb-save-ring-in var(--duration-slow) var(--ease-standard); }
+/* SaveReminder card (ticket 0796): the save ring at the drawing area's top-right. */
+.bb-save-ring { position: absolute; top: var(--save-ring-inset); right: var(--save-ring-inset); z-index: var(--z-chrome); display: inline-flex; align-items: center; min-width: var(--save-ring-size); height: var(--save-ring-size); padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); box-shadow: var(--elevation-2); color: var(--body); }
 .bb-save-ring:hover { background-image: linear-gradient(var(--hover-fill), var(--hover-fill)); }
-.bb-save-ring-halo { display: grid; place-items: center; width: var(--save-ring-halo); height: var(--save-ring-halo); flex: none; border: var(--save-ring-stroke) solid currentColor; border-radius: var(--radius-full); box-sizing: border-box; }
+.bb-save-ring-halo { position: relative; display: grid; place-items: center; width: var(--save-ring-halo); height: var(--save-ring-halo); flex: none; }
+.bb-save-ring-halo svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.bb-save-ring-track { fill: none; stroke: var(--line-strong); stroke-width: var(--save-ring-stroke); }
+.bb-save-ring-arc { fill: none; stroke: var(--muted); stroke-width: var(--save-ring-stroke); stroke-linecap: round; transition: stroke-dashoffset var(--duration-slow) var(--ease-standard); }
+.bb-save-ring.is-due .bb-save-ring-arc { stroke: var(--accent-strong); }
+.bb-save-ring.is-due .bb-save-ring-halo { color: var(--accent-strong); }
 .bb-save-ring-label { display: inline-flex; gap: 6px; align-items: center; max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; font: var(--type-tab); color: var(--ink); transition: max-width var(--duration-slow) var(--ease-standard), opacity var(--duration-base) var(--ease-standard); }
 .bb-save-ring.is-open .bb-save-ring-label { max-width: 20rem; opacity: 1; padding: 0 12px 0 4px; }
 .bb-save-ring-count { font: var(--type-meta-small); color: var(--muted); }
-@keyframes bb-save-ring-in { from { opacity: 0; transform: scale(0.6); } }
-@media (pointer: coarse) { .bb-save-ring { min-width: var(--save-ring-size-touch); height: var(--save-ring-size-touch); padding: 6px; } }
-@media (max-width: 743px) { .bb-save-ring { top: var(--save-ring-inset-phone); right: var(--save-ring-inset-phone); min-width: var(--save-ring-size-touch); height: var(--save-ring-size-touch); padding: 6px; } .bb-save-ring.is-open .bb-save-ring-label { max-width: calc(100vw - 2 * var(--save-ring-inset-phone) - var(--save-ring-size-touch)); } }
-[data-theme="contrast"] .bb-save-ring { border-width: 2px; border-color: var(--line-strong); color: var(--ink); }
-@media (prefers-reduced-motion: reduce) { .bb-save-ring { animation-name: bb-fade-in; } .bb-save-ring-label { transition: opacity var(--duration-base) linear; } }
-@keyframes bb-fade-in { from { opacity: 0; } }
+[data-theme="contrast"] .bb-save-ring { border-width: 2px; border-color: var(--line-strong); }
+[data-theme="contrast"] .bb-save-ring-arc, [data-theme="contrast"] .bb-save-ring.is-due .bb-save-ring-arc { stroke: var(--ink); }
+[data-theme="contrast"] .bb-save-ring-halo, [data-theme="contrast"] .bb-save-ring.is-due .bb-save-ring-halo { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .bb-save-ring-label, .bb-save-ring-arc { transition: opacity var(--duration-base) linear; } }

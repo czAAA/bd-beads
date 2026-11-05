@@ -9,6 +9,10 @@ import { useI18n } from '../../i18n/useI18n'
 import SettingStepper from '../project/SettingStepper.vue'
 import IconButton from '../ui/IconButton.vue'
 import { settingTestid } from '../project/settingTestid'
+import { useShellScope } from '../../composables/ui/shellScope'
+
+/** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
+const teleportTo = useShellScope().teleportTo
 
 // One Technique setting in the margin's title block (ticket 0698), drawn from its description like the panels' steppers,
 // never named per Technique: its value in short ("2-drop") and a pencil that opens the panels' stepper in a popover,
@@ -74,7 +78,7 @@ useOverlayLayer({
       @click="open ? close() : show()"
     />
     <!-- In the app shell: inside the sheet's scale, Safari keeps a top-layer popup where it first showed. -->
-    <Teleport v-if="open" to=".app-shell">
+    <Teleport v-if="open" :to="teleportTo">
       <div ref="popupEl" class="margin-setting__popover anchored-popup" popover="manual" :style="anchored.style.value" role="dialog" :aria-label="words.label" :data-testid="`${testid}-popover`">
         <SettingStepper :setting="setting" :model-value="value" :testid="`${testid}-stepper`" @update:model-value="emit('set', $event)" />
       </div>

@@ -249,10 +249,8 @@
   --hint-ring-width: 2px; /* FirstRunHints card: the accent ring round Select, Mirror and Export. */
   --save-ring-size: 40px; /* SaveReminder card: the round button at the drawing area's top-right (44px to hit on touch). */
   --save-ring-halo: 30px; /* SaveReminder card: the ring's box inside the button, inside its 1px edge and 4px padding. */
-  --save-ring-stroke: 2px; /* SaveReminder card: the ring round the save icon. */
+  --save-ring-stroke: 2px; /* SaveReminder card: the ring's track and arc. */
   --save-ring-inset: 16px; /* SaveReminder card: in from the drawing area's right edge and under the Canvas strip. */
-  --save-ring-size-touch: 44px; /* SaveReminder card: the button on a coarse pointer and on a phone (6px padding round the halo). */
-  --save-ring-inset-phone: 8px; /* SaveReminder card: the inset under 744px. */
   --save-ring-label-time: 4s; /* SaveReminder card: how long the label stays open at the threshold. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
@@ -281,6 +279,11 @@
   --inside-list-width: 17rem; /* What's inside's list beside the editor, 272px. */
   --ghost-move: 420ms; /* The tour's ghost pointer moving to its next press. */
   --ghost-ripple: 700ms; /* The ripple a ghost press leaves, growing and fading. */
+  --ghost-fill: #ffffff; /* The ghost pointer, the system arrow in white, and its ripple. */
+  --ghost-edge: #1a1a1a; /* The ghost pointer's 1.5px edge. */
+  --type-inside-name: 600 0.875rem/1.25rem var(--font-sans); /* A card's name, Inter 600 14. */
+  --type-inside-text: 400 0.75rem/1rem var(--font-sans); /* A card's text, Inter 12/16. */
+  --type-inside-line: 400 0.8125rem/1.125rem var(--font-sans); /* The playing row's line, Inter 13/18. */
   /* Homepage card, the nudge (ticket 0784). */
   --nudge-lift: 0.75rem; /* How far the first section lifts to show the page scrolls, 12px. */
   --nudge-fade: 0.82; /* The first section's opacity at the top of its lift. */

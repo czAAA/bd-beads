@@ -5,6 +5,10 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 import TextField from '../ui/form/TextField.vue'
+import { useShellScope } from '../../composables/ui/shellScope'
+
+/** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
+const teleportTo = useShellScope().teleportTo
 
 // One line of the Project panel's head that is edited in place (ProjectPanel card): a label, the value (or a line
 // inviting one) and a pencil that swaps in a TextField with Save, Cancel and a counter. Enter saves, Escape cancels. A
@@ -91,7 +95,7 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
         {{ emptyText }}
       </button>
     </div>
-    <Teleport v-else to=".app-shell" :disabled="!bare">
+    <Teleport v-else :to="teleportTo" :disabled="!bare">
       <form
         ref="form"
         class="editable-line__form"

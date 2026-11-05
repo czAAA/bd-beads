@@ -71,3 +71,11 @@ describe('the track’s spark (ProgressBar card, ticket 0730)', () => {
     expect(spark(wrapper).classes()).toContain('progress-track__spark--compact')
   })
 })
+
+describe("the band of What's inside's demo Frame (ticket 0797, MarginSheet card)", () => {
+  it('has no Row not done; Row done and the rest stay', () => {
+    const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1), form: 'margin', testid: 'margin-progress', withoutNotDone: true } })
+    expect(wrapper.find('[data-testid="margin-progress-previous"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="margin-progress-next"]').exists()).toBe(true)
+  })
+})

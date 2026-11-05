@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, toRaw } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { piecesWhenIdle } from '../../composables/canvas/idlePieces'
+import { useIdlePieces } from '../../composables/canvas/idlePieces'
 import type { Project } from '../../domain/project'
 import { shownDimensions } from '../../domain/projectExtent'
 import { inSavedOrder, summarizeProject } from '../../domain/projectLibrary'
@@ -42,6 +42,8 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+/** This shell's idle Piece walks (ticket 0797). */
+const piecesWhenIdle = useIdlePieces()
 const exportAll = controlAction('export-all')
 
 /** Every row: the Projects in the order they arrive, each sealed one put in by last save. */

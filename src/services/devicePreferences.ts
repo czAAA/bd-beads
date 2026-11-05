@@ -38,7 +38,7 @@ function onUntilOff(key: string): Preference<boolean> {
 /** How many backgrounds the first Canvas color list held, the highest number an earlier build stored. */
 const FIRST_LIST_SIZE = 6
 
-/** @internal Tests read and seed a preference's storage key by its name. */
+/** Every preference by its name: its storage key, its default and how it reads and writes. */
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('openbeads:rulers'),
@@ -184,11 +184,11 @@ function themeShown(storage: PreferenceStorage): 'light' | 'dark' {
   return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-/** @internal Its test names each preference with it. */
+/** A preference's name. */
 export type PreferenceName = keyof typeof PREFERENCES
 type PreferenceValue<N extends PreferenceName> = (typeof PREFERENCES)[N] extends Preference<infer T> ? T : never
 
-/** @internal Tests type the stand-in storage they hand createDevicePreferences. */
+/** Where preferences are kept: this browser's localStorage, or a map in memory (the Homepage's demo, 0797). */
 export type PreferenceStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 /** The on-device preferences: each is a ref that holds what was saved and saves itself when set. */
@@ -199,7 +199,7 @@ export interface DevicePreferences {
   forget: () => void
 }
 
-/** @internal Tests make preferences over a storage of their own. */
+/** Preferences over a storage of their own: the Homepage's demo keeps its in memory (ticket 0797). */
 export function createDevicePreferences(storage: PreferenceStorage): DevicePreferences {
   const refs = new Map<PreferenceName, Ref<unknown>>()
 
