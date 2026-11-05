@@ -52,6 +52,8 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onZoomIn: vi.fn(),
     onZoomOut: vi.fn(),
     onFit: vi.fn(),
+    onSaveProjectFile: vi.fn(),
+    onSaveProjectFileAs: vi.fn(),
     ...overrides,
   }
   const wrapper = mount(
@@ -90,6 +92,30 @@ describe('useAppShortcutTable', () => {
     expect(deps.onFit).toHaveBeenCalledTimes(1)
     input.remove()
     wrapper.unmount()
+  })
+
+  it('Ctrl/Cmd+S saves and Ctrl/Cmd+Shift+S saves as with a Project open, never opening the browser\'s Save page (ticket 0796)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
+    const keys = [{ key: 's', ctrlKey: true }, { key: 'S', metaKey: true, shiftKey: true }]
+    const events = keys.map((init) => new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+    events.forEach((event) => window.dispatchEvent(event))
+
+    expect(events.map((event) => event.defaultPrevented)).toEqual([true, true])
+    expect([deps.onSaveProjectFile, deps.onSaveProjectFileAs].map((spy) => vi.mocked(spy).mock.calls.length)).toEqual([1, 1])
+    wrapper.unmount()
+  })
+
+  it('claims Ctrl/Cmd+S but saves nothing with no Project open, and saves under an open panel or dialog', () => {
+    const none = mountTable()
+    const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true })
+    window.dispatchEvent(event)
+    none.wrapper.unmount()
+    const open = mountTable({ activeProject: () => bareProject({}), hasOpenLayer: () => true, anyDialogOpen: () => true })
+    press({ key: 's', ctrlKey: true })
+    open.wrapper.unmount()
+
+    expect(event.defaultPrevented).toBe(true)
+    expect([none.deps.onSaveProjectFile, open.deps.onSaveProjectFile].map((spy) => vi.mocked(spy).mock.calls.length)).toEqual([0, 1])
   })
 
   it('swallows Ctrl/⌘ + plus without zooming while a dialog is open', () => {

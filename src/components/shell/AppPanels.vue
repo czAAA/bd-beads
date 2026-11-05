@@ -49,7 +49,10 @@ const {
   exporting,
   onExportPng,
   onExportPdf,
-  onExportProjectFile,
+  onSaveProjectFile,
+  onSaveProjectFileAs,
+  canSaveAs,
+  linkedFileName,
   onExportLibraryFile,
   saveNow,
   onSaveMakerName,
@@ -186,6 +189,8 @@ const chosenStarter = ref<StarterId>()
       :save-failed="saveFailed"
       :unsaved="unsaved"
       :reference="referencePanel"
+      :linked-file-name="linkedFileName"
+      :can-save-as="canSaveAs"
       @rename="onRenameProject"
       @pick-reference-image="referenceImage.pick($event, 'panel')"
       @set-reference-opacity="referenceImage.setOpacity"
@@ -196,7 +201,8 @@ const chosenStarter = ref<StarterId>()
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"
-      @export-project-file="onExportProjectFile"
+      @save-project-file="onSaveProjectFile"
+      @save-project-file-as="onSaveProjectFileAs"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"

@@ -113,3 +113,16 @@ describe('App empty, loading and failed states (ticket 158)', () => {
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
   })
 })
+
+describe('App save ring (ticket 0796)', () => {
+  it('shows over a Project well behind its file, and its press runs Save, which hides it', async () => {
+    localStorage.setItem('openbeads:since-file', JSON.stringify({ [project.id]: { beads: 64, lastFileAt: Date.now() } }))
+    const wrapper = mountApp()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="save-ring"]').trigger('click')
+
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
+    await vi.waitFor(() => expect(wrapper.find('[data-testid="save-ring"]').exists()).toBe(false))
+  })
+})

@@ -246,7 +246,9 @@ export interface Translations {
       exportHeading: string
       exportPng: string
       exportPdf: string
-      exportFile: string
+      /** Save and Save as (ADR 0090, ticket 0796): the Project panel rows and the actions' names. */
+      saveFile: string
+      saveFileAs: string
       duplicate: string
       duplicateTitle: string
       duplicateNote: string
@@ -755,6 +757,8 @@ export interface Translations {
     readyPng: string
     readyPdf: string
     readyFile: string
+    /** The toast once Save wrote a Project file into a picked file (ticket 0796). */
+    savedFile: string
     readySave: string
     /** The way out when a save fails: the Project as a file. */
     exportProjectFile: string
@@ -766,6 +770,15 @@ export interface Translations {
     nameHint: string
     saveName: string
     cancelName: string
+  }
+  /** The save ring (SaveReminder card, ticket 0796): its label and Tooltip, and what a screen reader hears. */
+  saveReminder: {
+    label: string
+    body: string
+    count: string
+    lastFile: string
+    noFile: string
+    announce: string
   }
   transfer: {
     exportProjectButton: string

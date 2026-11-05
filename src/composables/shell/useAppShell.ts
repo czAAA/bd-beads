@@ -65,6 +65,10 @@ import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useMirrorFlow } from '../tools/useMirrorFlow'
 import { useUndoHistory } from '../project/useUndoHistory'
+import { useBeadsSinceFile } from '../project/useBeadsSinceFile'
+import { useSaveReminder } from '../project/useSaveReminder'
+import { fillBlanks } from '../../domain/fillBlanks'
+import { groupThousands } from '../../domain/formatNumber'
 import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
@@ -175,6 +179,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
+  /** Every Project in the library, sealed ones too: what a Project's records beside the library are kept for. */
+  const libraryIds = () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)]
+
+  /** Beads since last file (ticket 0796): Edit, Undo and Redo count, any Project file save puts it back to 0. */
+  const sinceFile = useBeadsSinceFile({ currentProject, libraryIds, store: services.sinceFiles })
+
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
    * state declared below, through lazy arrows only called at runtime. */
   const {
@@ -192,6 +202,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       editing.restore(snapshot)
     },
     settle: () => editing.settle(),
+    countChange: sinceFile.count,
   })
 
   /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Selection
@@ -204,6 +215,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       clearSelectionAndHover()
     },
     flushPendingSave,
+    countChange: sinceFile.count,
   })
   const { edit } = editing
 
@@ -596,7 +608,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const referenceImage = useReferenceImageFlow({
     currentProject,
     replaceProject,
-    libraryIds: () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)],
+    libraryIds,
     store: services.pictureStore,
     prepare: services.preparePicture,
     decode: services.drawablePicture,
@@ -614,6 +626,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Imported Projects bring their reference images' pictures, kept under the ids they came in under. */
   const onImportProjects = (imported: Project[], pictures: ReadonlyMap<string, Blob> = new Map()) => {
     void referenceImage.keepImported(pictures)
+    sinceFile.imported(imported.map((project) => project.id))
     importSwitch.onImportProjects(imported)
   }
 
@@ -679,6 +692,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     replaceProject,
     showToast,
     picturesOf: referenceImage.picturesOf,
+    fileWriter: services.fileWriter,
+    linkedFiles: services.linkedFiles,
+    libraryIds,
+    onFileSaved: sinceFile.fileSaved,
   })
 
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
@@ -716,6 +733,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     // Duplicate copies the reference image's picture with the settings (ticket 0790).
     addProject: (copy) => {
       void referenceImage.copyToDuplicate(copy)
+      const source = currentProject()
+      if (source) sinceFile.duplicated(source.id, copy.id)
       addProject(copy)
     },
     removeProject,
@@ -735,6 +754,15 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const shortcutsHelpOpen = dialogs.flag('shortcuts')
   const onOpenShortcutsHelp = () => void (shortcutsHelpOpen.value = true)
   const onCloseShortcutsHelp = () => void (shortcutsHelpOpen.value = false)
+
+  /** The save ring (SaveReminder card, ticket 0796): once the Project file is well behind; it waits for a quiet moment. */
+  const saveReminder = useSaveReminder({
+    project: () => activeProject.value && { id: activeProject.value.id, createdAt: activeProject.value.createdAt },
+    since: () => sinceFile.current.value,
+    persistentStorage: services.persistentStorage,
+    busy: () => strokeMode.value !== null || hasOpenLayer(scope) || dialogs.open.value !== undefined || openPanel.value !== null || referenceImage.adjusting.value,
+    announce: (beads) => announce(fillBlanks(t.value.saveReminder.announce, { count: groupThousands(beads, locale.value) })),
+  })
 
   if (!demo) {
     usePageZoomLock()
@@ -791,6 +819,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onZoomOut: () => zoomOut(),
     onFit: resetZoom,
     openShortcutsHelp: onOpenShortcutsHelp,
+    onSaveProjectFile: exportFlow.onSave,
+    onSaveProjectFileAs: exportFlow.onSaveAs,
   })
 
   watch(activeProjectId, () => {
@@ -820,7 +850,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       saveFailed,
       announcement,
       endStroke,
-      onExportProjectFile: exportFlow.onExportProjectFile,
+      onSaveProjectFile: exportFlow.onSave,
       /** The notice of a Project that didn't open last time (ticket 0716), with its Remove and Export. */
       missedProject,
       onRemoveMissed: () => missedProject.value && savedProjectConfirms.onRequestRemove(missedProject.value.id),
@@ -854,6 +884,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onImportProjects,
       toasts,
       dismissToast,
+      /** The save ring (ticket 0796): shown, its label, the count and last file it tells, and Save. */
+      saveRing: computed(() => ({ shown: saveReminder.shown.value, labelOpen: saveReminder.labelOpen.value, ...sinceFile.current.value })),
+      onSaveProjectFile: exportFlow.onSave,
+      onHoldSaveRing: saveReminder.hold,
       /** The surface drew every bead in view: the safe start's first drawn frame (ticket 0716). */
       onSurfaceDrawn: safeStart.onDrawn,
       // The view
@@ -1029,7 +1063,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSetBackground: backgroundFlow.setBackground,
       referenceImage,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
-      onExportProjectFile: exportFlow.onExportProjectFile,
+      onSaveProjectFile: exportFlow.onSave,
+      onSaveProjectFileAs: exportFlow.onSaveAs,
+      canSaveAs: exportFlow.canSaveAs,
+      linkedFileName: exportFlow.linkedFileName,
       onSaveMakerName: exportFlow.onSaveMakerName,
       // The Frame panel
       settledProject,

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import { lettersOn, withLetters } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
@@ -9,6 +9,9 @@ import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
+import type { FileWriter, PickedFile } from '../../services/fileWriter'
+import type { LinkedFileStore } from '../../services/linkedFileStore'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -30,6 +33,14 @@ export interface ExportFlowDeps {
   showToast?: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   /** The reference images' pictures of these Projects, for the file to carry (ticket 0790); none when not given. */
   picturesOf?: (projectIds: readonly string[]) => Promise<ReadonlyMap<string, Blob>>
+  /** Writing into a picked file (ADR 0090); without it, or where the browser can't, every save hands the file over. */
+  fileWriter?: FileWriter
+  /** Each Project's Linked file (ADR 0090); needed with `fileWriter`. */
+  linkedFiles?: LinkedFileStore
+  /** Every Project in the library, sealed ones too: a Linked file of none is dropped (Delete, Delete all, start-up). */
+  libraryIds?: () => readonly string[]
+  /** A Project file of these Projects reached the device (ticket 0796): their Beads since last file go back to 0. */
+  onFileSaved?: (projectIds: readonly string[]) => void
 }
 
 /** Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020) as a Project file, PNG or PDF, printing the
@@ -64,13 +75,18 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** Makes a file and hands it over inside the tap, then says it is ready (ticket 523). Safari shares only from a
    * fresh tap, so when it refuses because the build took too long the toast's action is the new tap (ticket 306). */
-  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string): Promise<boolean> {
+  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string, handed?: () => void): Promise<boolean> {
     const contents = await make()
     const outcome = await downloadFile(fileName, contents, type)
     if (outcome === 'cancelled') {
       return false
     }
-    const retry = outcome === 'refused' ? { label: deps.messages().saveBox.readySave, run: () => void downloadFile(fileName, contents, type) } : undefined
+    // A refused share hands nothing over until its action does (SaveReminder card: the count stays till then).
+    const again = async () => {
+      if ((await downloadFile(fileName, contents, type)) !== 'refused') handed?.()
+    }
+    const retry = outcome === 'refused' ? { label: deps.messages().saveBox.readySave, run: () => void again() } : undefined
+    if (outcome !== 'refused') handed?.()
     deps.showToast?.(toastId, ready, 'success', retry)
     return true
   }
@@ -105,32 +121,86 @@ export function useExportFlow(deps: ExportFlowDeps) {
    * (ADR 0048). */
   const FILE_TYPE = 'application/json'
 
-  function handOverFile(fileName: string, make: () => Promise<BlobPart>) {
-    return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile)
+  /** Hands a Project file over, and counts the Projects it holds from 0 again once it is handed (ticket 0796). */
+  function handOverFile(fileName: string, make: () => Promise<BlobPart>, projectIds: readonly string[]) {
+    return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile, () => deps.onFileSaved?.(projectIds))
   }
 
-  /** Export Project as the way out (ticket 158): offered when a save fails; with no Project open, it offers the
-   * whole library. */
-  function onExportProjectFile() {
+  const linking = computed(() => !!deps.fileWriter?.available && !!deps.linkedFiles)
+  /** Whether Save as is offered: only where a file can be linked (ADR 0090); elsewhere it is Save. */
+  const canSaveAs = linking
+
+  /** The open Project's Linked file's name, for the Project panel's Save row; none without one. */
+  const linkedFileName = ref<string>()
+  async function readLinkedName(projectId: string | undefined) {
+    const file = projectId && linking.value ? await deps.linkedFiles!.get(projectId) : undefined
+    if (deps.currentProject()?.id === projectId) linkedFileName.value = file?.name
+  }
+  watch(() => deps.currentProject()?.id, (id) => void readLinkedName(id), { immediate: true })
+
+  /** The file a Save writes into: the Linked file while it may be written, else one picked in the Save dialog;
+   * 'cancelled' when the dialog was closed, 'unavailable' when the browser wouldn't open it. Asked before the file is
+   * made, inside the press, as the browser allows a prompt only there. */
+  async function fileToWrite(project: Project, again: boolean): Promise<PickedFile | 'cancelled' | 'unavailable'> {
+    const current = again ? undefined : await deps.linkedFiles!.get(project.id)
+    if (current && (await deps.fileWriter!.ready(current))) return current
+    const picked = await deps.fileWriter!.pick(projectFileName(project))
+    return picked.kind === 'picked' ? picked.file : picked.kind === 'failed' ? 'unavailable' : 'cancelled'
+  }
+
+  /** Save, or with `again` Save as (ADR 0090, ticket 0796), which the Project panel, the save ring and the keys run:
+   * into the Linked file where the browser can, else (or if the dialog or write fails) handed over as before. With no
+   * Project open it offers the whole library, the way out when a save fails (ticket 158). */
+  async function save(again: boolean): Promise<boolean> {
     const project = deps.currentProject()
-    if (project) {
-      return handOverFile(projectFileName(project), async () => packProjectFile(project, await picturesOf([project.id])))
+    if (!project) {
+      return onExportLibraryFile()
     }
-    return onExportLibraryFile()
+    const make = async () => packProjectFile(project, await picturesOf([project.id]))
+    const target = linking.value ? await fileToWrite(project, again) : 'unavailable'
+    if (target === 'cancelled') {
+      return false
+    }
+    if (target !== 'unavailable') {
+      const contents = await make()
+      if (await deps.fileWriter!.write(target, contents)) {
+        await deps.linkedFiles!.put(project.id, target)
+        if (deps.currentProject()?.id === project.id) linkedFileName.value = target.name
+        deps.onFileSaved?.([project.id])
+        deps.showToast?.('export-file', fillBlanks(deps.messages().saveBox.savedFile, { file: target.name }), 'success')
+        return true
+      }
+      return handOverFile(projectFileName(project), async () => contents, [project.id])
+    }
+    return handOverFile(projectFileName(project), make, [project.id])
   }
 
-  /** Export library: every saved Project in one file, a sealed one from its stored form (ticket 0716). */
+  const onSave = () => save(false)
+  const onSaveAs = () => save(true)
+
+  // A Project gone from the library takes its Linked file with it; at start, every link of no Project is dropped.
+  if (deps.libraryIds && deps.linkedFiles) {
+    const store = deps.linkedFiles
+    void store.keepOnly(new Set(deps.libraryIds()))
+    watch(deps.libraryIds, (now, before) => {
+      const kept = new Set(now)
+      for (const id of before ?? []) if (!kept.has(id)) void store.remove(id)
+    })
+  }
+
+  /** Export library: every saved Project in one file, a sealed one from its stored form (ticket 0716). Never linked:
+   * it is handed over, and counts every Project from 0 again (ADR 0090). */
   function onExportLibraryFile() {
     const projects = deps.projects()
     const stored = (deps.sealed?.() ?? []).map((project) => project.stored)
     const ids = [...projects.map((project) => project.id), ...(deps.sealed?.() ?? []).map((project) => project.id)]
-    return handOverFile(libraryFileName(), async () => packLibraryFile(projects, stored, await picturesOf(ids)))
+    return handOverFile(libraryFileName(), async () => packLibraryFile(projects, stored, await picturesOf(ids)), ids)
   }
 
   /** Export of a sealed Project (the notice's, for the one that didn't open): the file written from its stored form,
    * never decoded (ticket 0716). */
   function onExportSealed(project: SealedProject) {
-    return handOverFile(projectFileNameOf(project.name, project.makerName), async () => packStoredProjectFile(project.stored, await picturesOf([project.id])))
+    return handOverFile(projectFileNameOf(project.name, project.makerName), async () => packStoredProjectFile(project.stored, await picturesOf([project.id])), [project.id])
   }
 
   function onExportPng() {
@@ -162,5 +232,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { makerName, onSaveMakerName, onSetLetters, exporting, onExportProjectFile, onExportLibraryFile, onExportSealed, onExportPng, onExportPdf }
+  return { makerName, onSaveMakerName, onSetLetters, exporting, onSave, onSaveAs, canSaveAs, linkedFileName, onExportLibraryFile, onExportSealed, onExportPng, onExportPdf }
 }
