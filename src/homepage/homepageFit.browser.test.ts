@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FIT_LOCALES, misfitsNow, mountAt } from '../testUtils/browserFit'
 import { unexplainedFit } from '../testUtils/fitPending'
+import { page } from 'vitest/browser'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
@@ -18,18 +19,12 @@ async function turnTo(root: Element, section: number) {
 
 describe('HomePage text fit', () => {
   for (const width of WIDTHS) {
-    // Mounted fresh at each width: the carousel's list stands beside its stage or above it by width.
+    // Mounted fresh at each width: What's inside's list stands beside its editor, above it as tabs, or alone by width.
     for (const locale of FIT_LOCALES) {
-      it(`${locale} at ${width}px, every section and every feature of the carousel`, async () => {
+      it(`${locale} at ${width}px, every section`, async () => {
         const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale, width })
+        await settleForMeasuring()
         const found = await misfitsNow()
-        const tabs = [...mounted.root.querySelectorAll<HTMLElement>('[role="tab"]')]
-        expect(tabs.length, 'the carousel shows its features').toBeGreaterThan(1)
-        for (const tab of tabs.slice(1)) {
-          tab.click()
-          await settleForMeasuring()
-          found.push(...(await misfitsNow()))
-        }
         // The coffee tile, then the plans with the free list.
         for (const section of [1, 2]) {
           await turnTo(mounted.root, section)
@@ -38,6 +33,44 @@ describe('HomePage text fit', () => {
         expect(unexplainedFit('HomePage', locale, width, [...new Set(found)])).toEqual([])
       })
     }
+  }
+})
+
+/** Where an element is, in whole px. */
+function boxOf(root: Element, selector: string): DOMRect {
+  return root.querySelector(selector)!.getBoundingClientRect()
+}
+
+// What's inside (ticket 0797): its cards, its list and its editor in the section's room, nothing cut and nothing wider
+// than the box; under reduced motion the editor shows the first row's end.
+describe("What's inside fits its room", () => {
+  for (const [width, height, tier] of [[1440, 900, 'desktop'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
+    it(`at ${width} × ${height} (${tier})`, async () => {
+      const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
+      await page.viewport(width, height)
+      await settleForMeasuring()
+      const section = mounted.root.querySelector<HTMLElement>('[data-testid="homepage-section-inside"]')!
+      expect(section.scrollWidth, 'nothing wider than the section').toBeLessThanOrEqual(section.clientWidth + 1)
+      const cards = [...mounted.root.querySelectorAll('[data-testid^="inside-card-"]')].map((card) => card.getBoundingClientRect())
+      expect(cards).toHaveLength(4)
+      const columns = new Set(cards.map((card) => Math.round(card.left))).size
+      expect(columns).toBe(tier === 'desktop' ? 4 : tier === 'tablet' ? 2 : 1)
+      if (tier === 'phone') {
+        expect(mounted.root.querySelector('[data-testid="inside-editor"]')).toBeNull()
+      } else {
+        const editor = boxOf(mounted.root, '[data-testid="inside-editor"]')
+        expect(editor.height, 'the editor has room').toBeGreaterThan(300)
+        await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
+      }
+      if (tier === 'desktop') {
+        expect(section.scrollHeight, 'the section fits whole at 1440 × 900').toBeLessThanOrEqual(section.clientHeight + 1)
+        const list = boxOf(mounted.root, '[data-testid="inside-list"]')
+        const playing = boxOf(mounted.root, '[aria-current="step"]')
+        expect(playing.top).toBeGreaterThanOrEqual(list.top - 1)
+        expect(playing.bottom).toBeLessThanOrEqual(list.bottom + 1)
+      }
+      expect(await misfitsNow()).toEqual([])
+    })
   }
 })
 
