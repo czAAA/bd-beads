@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, provide, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { ExportOpener } from '../../composables/shell/openPanel'
 import { overlapsSelectionHandles, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
-import { sheetMovedKey } from '../../composables/ui/useAnchoredPosition'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -97,7 +96,6 @@ const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgre
 
 const canvas = useCanvasBackground(() => props.project)
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
-provide(sheetMovedKey, () => props.anchor)
 const fold = useTitleBlockFold()
 /** The sheet's place, and its lines in the tint that reads on the margin color it is drawn in. */
 const sheetStyle = computed(() => {
