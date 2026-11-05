@@ -272,6 +272,7 @@
   --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
   /* Homepage card, What's inside (ticket 0797). */
   --inside-card-height: 5.75rem; /* A What's inside card, 92px: a name over three lines of text. */
+  --inside-main-min-height: 20rem; /* The list and editor's least height, 320px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns. */
   --inside-list-width: 17rem; /* What's inside's list beside the editor, 272px. */
   --ghost-move: 420ms; /* The tour's ghost pointer moving to its next press. */
   --ghost-ripple: 700ms; /* The ripple a ghost press leaves, growing and fading. */
