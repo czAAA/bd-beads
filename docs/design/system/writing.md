@@ -201,7 +201,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 
 ## Copy added in v15
 
-The Homepage and the header menu, as signed off. The same rules: plain and short, sentence case, product nouns capitalized, no exclamation marks, emoji, em dashes or "please". The Homepage's slogan, its "save. count. export" line and its handwritten notes are the one place with a lighter, drawn voice; the Russian line uses "we" so it reads as "on us".
+The Homepage and the header menu, as signed off. The same rules: plain and short, sentence case, product nouns capitalized, no exclamation marks, emoji, em dashes or "please". The Homepage's slogan and its handwritten note are the one place with a lighter, drawn voice.
 
 ### Header menu and Homepage
 
@@ -210,19 +210,9 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Menu | Меню |
 | Homepage (menu link) | Главная |
 | open + beads · draw · joy · weave · create · art · canvas · possibility · play · wonder · pattern · ideas (the rolling slogan, ticket 550) | the same, not translated: it is the brand |
-| save. count. export | сохраним. посчитаем. экспортируем |
-| on us (note) | это мы |
 | Make your first Pattern · Open the editor | Сделать первую схему · Открыть редактор |
 | Patterns saved: 3 | Схем сохранено: 3 |
 | What's inside | Что внутри |
-| Techniques: Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения: Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
-| Pattern editing: Paint, Fill and Eraser, copy and paste, and Undo for every step. | Редактирование схемы: Кисть, заливка и ластик, копирование и вставка, отмена любого шага. |
-| Convert image: Turn a picture, or a part of it, into a Pattern. | Конвертировать изображение: Превращает картинку или её часть в схему. |
-| Row progress: Mark rows done as you weave and pick up where you stopped. | Прогресс по рядам: Отмечайте готовые ряды и продолжайте с того места, где остановились. |
-| Beads needed: Every color counted, with Estimated weight in grams. | Нужно бисера: Подсчёт по каждому цвету и примерный вес в граммах. |
-| Exports: PDF for printing, PNG image and the Pattern file. | Экспорт: PDF для печати, PNG и файл схемы. |
-| Saved Patterns: Kept on this device. No account needed. | Сохранённые схемы: Хранятся на этом устройстве. Аккаунт не нужен. |
-| Previous feature · Next feature (arrow labels) | Предыдущая возможность · Следующая возможность |
 | Made by one family | Делает одна семья |
 | openbeads is made by one family, bead by bead, and it's free. If it saved you time, a coffee says thanks. | openbeads делает одна семья, бисеринка за бисеринкой, и приложение бесплатное. Если приложение сэкономило вам время, кофе будет лучшим спасибо. |
 | Buy me a coffee | Угостить кофе |
@@ -236,6 +226,34 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | forever free: (No account's list; "what you get" and the two "everything in …, plus" lines are gone, ticket 0740) | бесплатно навсегда: |
 
 Free account and Pro list nothing until their features are known: the stamp stands where the list was.
+
+The "save. count. export" line with its "on us" note, and the carousel's seven lines and its arrow labels, went with ticket 0796.
+
+### What's inside (ticket 0796)
+
+The cards and the list of What's inside (Homepage card). Every shipped language has them. The names in braces come from the app, never typed in: `{menu}`, `{help}` and `{shortcuts}` the Menu's own labels (the Canvas strip's Menu, the Menu's Help section, its Keyboard shortcuts row), `{brands}` the Color catalogs' brands joined as a list, `{max}` the most colors Convert image makes.
+
+| English | Russian |
+| --- | --- |
+| Yours, on this device · Runs in your browser and offline. No account, nothing to install. | Ваше, на вашем устройстве · Работает в браузере и офлайн. Без аккаунта и установки. |
+| For iPad and Pencil · Pen mode, Pencil hover and big buttons for your finger. | Для iPad и Pencil · Режим пера, наведение Pencil и крупные кнопки под палец. |
+| Free forever · All you need is free, and nothing is paid for now. Professional extras will come later. | Бесплатно навсегда · Всё нужное бесплатно, платного сейчас нет. Позже появятся профессиональные дополнения. |
+| Keyboard shortcuts · Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}. | Горячие клавиши · У каждой правки есть своя клавиша. Все они в {menu} → {help} → {shortcuts}. |
+| Canvas and Frame · Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count. | Полотно и рамка · Рисуйте где угодно: у полотна нет краёв. Рамка задаёт размер, экспорт и количество бисерин. |
+| Techniques · Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения · Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
+| Project editing · Paint, fill, erase, select, copy, paste, undo. | Правка проекта · Кисть, заливка, ластик, выделение, копирование, вставка, отмена. |
+| Mirror · Draw one side, the other follows. | Отражение · Рисуете одну сторону, вторая повторяет. |
+| Reference image · A picture under the beads: draw a new piece over it. | Подложка · Картинка под бисером: рисуйте по ней новую работу. |
+| Convert image · A picture into a Schema, in up to {max} colors. | Из картинки · Превращает картинку в схему, до {max} цветов. |
+| Colors built in · {brands}, and a Palette of your own. | Цвета внутри · {brands} и ваша собственная палитра. |
+| Letters · Each color its letter, on the beads and on the chart. | Буквы · У каждого цвета своя буква, на бисере и на схеме. |
+| Starters · From the Frame panel: a ready design becomes your Frame. | Стартеры · Из панели «Рамка»: готовый дизайн становится вашей рамкой. |
+| Row progress · Mark rows done as you weave. | Прогресс по рядам · Отмечайте готовые ряды, пока плетёте. |
+| Beads needed · Every color counted, in grams too. | Нужно бисера · По каждому цвету и в граммах. |
+| Exports · PDF ready to print, PNG ready to share, and the Project file. | Экспорт · PDF для печати, PNG, чтобы поделиться, и файл проекта. |
+| Saved Projects · Kept in this browser, on this device. | Сохранённые проекты · Хранятся в этом браузере, на этом устройстве. |
+| What's inside: the editor (the editor's region, for screen readers) | Что внутри: редактор |
+| Kaleidoscope · Heart · Bracelet (the demo's Projects) | Калейдоскоп · Сердце · Браслет |
 
 The scroll story (ticket 0739): the Progress bar's words.
 

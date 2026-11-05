@@ -33,6 +33,8 @@ Left to right, 14px in from the sheet's top-left corner (10px compact), 4px apar
 
 The edit pencil, Remove Frame chip and Move handle no longer stand in the gutter: nothing of the Frame is drawn outside its sheet except the size Tooltip.
 
+The one exception: on the Homepage's What's inside, the demo Frame's band has no Row not done; the Progress bar under it keeps its own (Homepage card, ticket 0796).
+
 ### Mirror the whole Frame (ticket 0750, ADR 0082)
 
 - **The button:** the first of the tools, left of Rotate Frame, the `mirror` icon. While the whole Frame is the Mirror's Area it is **selected**: filled `accent` (yellow in dark, orange in light) with its icon in `on-accent`, `aria-pressed="true"`, in every theme (high contrast too); off, the band's plain look. This is the band's own selected look, not the IconButton `selected` (`ink` fill) that Edit Frame uses: Edit Frame is a mode of the Frame, the Mirror a setting that stays on.
