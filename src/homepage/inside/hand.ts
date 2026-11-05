@@ -47,13 +47,14 @@ export type Target = string | (() => Element | null | undefined)
 
 /** How long the hand looks for a control that its last press is still bringing in. */
 const FIND_MS = 3000
-/** A bead's move along a stroke, quicker than a move between controls. */
-const STROKE_MS = 70
+/** A bead's move along a stroke, quicker than a move between controls. The ghost's pace is twice its first (ticket 0802),
+ * as `--ghost-move` is. */
+const STROKE_MS = 140
 /** How far up from a control its Tooltip's trigger may sit. */
 const TOOLTIP_DEPTH = 4
 /** The quickest hop, and how a hop's time grows with its length, up to `--ghost-move`. */
-const HOP_MS = 140
-const HOP_MS_PER_PX = 2.4
+const HOP_MS = 280
+const HOP_MS_PER_PX = 4.8
 
 /** A hand in the demo; every step throws `TourStopped` once the run is stopped. */
 export function createHand(deps: HandDeps) {
@@ -86,6 +87,15 @@ export function createHand(deps: HandDeps) {
     alive()
   }
 
+  /** After a press or a stroke: a frame while the ghost plays, so the beader sees each change; applied at once only the
+   * render, since a control that needs time to appear is waited for where it is looked for (ticket 0802). */
+  async function settle(): Promise<void> {
+    if (!instant) return frame()
+    alive()
+    await nextTick()
+    alive()
+  }
+
   /** The control, once it is there and enabled: a bar that arms itself a moment after a Selection (ticket 499) is
    * waited for, as a hand would. */
   async function find(target: Target): Promise<HTMLElement> {
@@ -96,6 +106,16 @@ export function createHand(deps: HandDeps) {
       if (found instanceof HTMLElement && found.getAttribute('aria-disabled') !== 'true') return found
       if (performance.now() - started > FIND_MS) throw new Error(`The tour found no ${typeof target === 'string' ? target : 'control'}`)
       await frame()
+    }
+  }
+
+  /** Lets the clock pass the millisecond the control was found in. Vue drops an event stamped no later than its
+   * listener was attached (in whole ms), so the press that opened a dialog doesn't also press its button; applied at
+   * once, the hand would press a dialog's button in the very millisecond it appeared, and the press would be lost. */
+  function pastTheMillisecond(): void {
+    const found = Date.now()
+    while (Date.now() <= found) {
+      // At most a millisecond.
     }
   }
 
@@ -153,8 +173,9 @@ export function createHand(deps: HandDeps) {
     bringIntoView(element)
     await moveTo(middleOf(element))
     ripple()
+    if (instant) pastTheMillisecond()
     element.click()
-    await frame()
+    await settle()
     return element
   }
 
@@ -165,7 +186,7 @@ export function createHand(deps: HandDeps) {
     await moveTo(middleOf(element))
     ripple()
     await action()
-    await frame()
+    await settle()
   }
 
   /** Scrolls a scroller by `by` px, as a beader's wheel would, over `ms`. */
@@ -186,10 +207,11 @@ export function createHand(deps: HandDeps) {
   /** Moves to a control, brought into view (at its scroller's top with `at`), and rests on it, its Tooltip shown, for
    * `ms`. */
   async function hover(target: Target, ms: number, at: 'start' | 'nearest' = 'nearest'): Promise<void> {
+    // Applied at once a rest shows nothing, so nothing is waited for.
+    if (instant) return alive()
     const element = await find(target)
     bringIntoView(element, at)
     await moveTo(middleOf(element))
-    if (instant) return
     // The Tooltip's own element is the control or one of its nearest wrappers.
     const chain: Element[] = []
     for (let up: Element | null = element; up && up !== root && chain.length < TOOLTIP_DEPTH; up = up.parentElement) chain.push(up)
@@ -207,30 +229,36 @@ export function createHand(deps: HandDeps) {
     }
   }
 
+  /** Moves the ghost over a bead; applied at once there is no ghost, so the bead isn't looked for. */
+  async function moveToBead(position: GridPosition, ms?: number): Promise<void> {
+    alive()
+    if (!instant) await moveTo(await beadAt(position), ms)
+  }
+
   /** One stroke of the active tool through `cells`, in order: Paint, Fill or Erase as a beader's drag does. */
   async function stroke(cells: readonly GridPosition[]): Promise<void> {
     const [first, ...rest] = cells
     if (!first) return
-    await moveTo(await beadAt(first))
+    await moveToBead(first)
     ripple()
     deps.canvas.onCellPrimaryDown(first.row, first.column, first.layer)
     for (const cell of rest) {
-      await moveTo(await beadAt(cell), STROKE_MS)
+      await moveToBead(cell, STROKE_MS)
       deps.canvas.onCellPrimaryMove(cell.row, cell.column, cell.layer)
     }
     deps.shell.endStroke()
-    await frame()
+    await settle()
   }
 
   /** A drag from one bead to another, as the Select tool's: a Selection, or the Mirror's Area. */
   async function drag(from: GridPosition, to: GridPosition): Promise<void> {
-    await moveTo(await beadAt(from))
+    await moveToBead(from)
     ripple()
     deps.canvas.onCellPrimaryDown(from.row, from.column, from.layer)
-    await moveTo(await beadAt(to))
+    await moveToBead(to)
     deps.canvas.onCellPrimaryMove(to.row, to.column, to.layer)
     deps.shell.endStroke()
-    await frame()
+    await settle()
   }
 
   /** Drags the Frame by its Move bar from one bead to another, as a beader moves it. */
@@ -239,12 +267,14 @@ export function createHand(deps: HandDeps) {
     const start = middleOf(bar)
     await moveTo(start)
     ripple()
-    const [a, b] = [await beadAt(from), await beadAt(to)]
     deps.canvas.onFramePress({ kind: 'move' }, from)
-    await moveTo({ x: start.x + b.x - a.x, y: start.y + b.y - a.y })
+    if (!instant) {
+      const [a, b] = [await beadAt(from), await beadAt(to)]
+      await moveTo({ x: start.x + b.x - a.x, y: start.y + b.y - a.y })
+    }
     deps.canvas.onFrameDrag(to)
     deps.canvas.onFrameRelease()
-    await frame()
+    await settle()
   }
 
   /** Hides the ghost. */

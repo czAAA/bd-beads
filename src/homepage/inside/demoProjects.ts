@@ -70,28 +70,34 @@ export interface DemoDrawing {
 /** The Frame the tour sets from a Selection, an 11 × 11 loom Frame: where its first bead lies on the Canvas. */
 export const DEMO_FRAME = { row: 6, column: 30, rows: 11, columns: 11 } as const
 
-/** One eighth of a kaleidoscope, its rings by their distance from the middle (from the signed-off prototype), spun round
- * eight ways. */
-function kaleidoscope(size: number): string[] {
-  const middle = (size - 1) / 2
-  const grid = Array.from({ length: size }, () => Array<string>(size).fill('.'))
-  for (let across = 0; across <= middle; across++) {
-    for (let down = 0; down <= across; down++) {
-      const ring = across
-      const letter =
-        ring === 0 ? 'W' : ring === 1 ? 'Y' : ring === 2 && down !== 1 ? 'O' : ring === 3 && (down === 0 || down === 3) ? 'R' : ring === 4 && down % 2 === 0 ? 'B' : ring === 5 && down === 2 ? 'G' : undefined
-      if (!letter) continue
-      for (const [x, y] of [[across, down], [down, across]]) {
-        for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) grid[middle + sy * y][middle + sx * x] = letter
-      }
-    }
-  }
-  return grid.map((row) => row.join(''))
+/** The first row's drawing (ticket 0802): one simple kaleidoscope the size of the Frame, in three colors, the same
+ * turned any quarter or mirrored. A Selection round it becomes the Frame. */
+export const DEMO_DRAWING: DemoDrawing = {
+  row: DEMO_FRAME.row,
+  column: DEMO_FRAME.column,
+  rows: [
+    '...........',
+    '...........',
+    '.....R.....',
+    '....RYR....',
+    '...RBYBR...',
+    '..RYYBYYR..',
+    '...RBYBR...',
+    '....RYR....',
+    '.....R.....',
+    '...........',
+    '...........',
+  ],
 }
 
-/** The middle drawing, which becomes the Frame, then the rhombus on its left and the flower on its right (ticket 0797). */
-export const DEMO_DRAWINGS: readonly DemoDrawing[] = [
-  { row: DEMO_FRAME.row, column: DEMO_FRAME.column, rows: kaleidoscope(DEMO_FRAME.columns) },
-  { row: DEMO_FRAME.row + 3, column: DEMO_FRAME.column - 21, rows: ['..P..', '.PPP.', 'PPYPP', '.PPP.', '..P..'] },
-  { row: DEMO_FRAME.row + 1, column: DEMO_FRAME.column + 27, rows: ['.RRR.', 'RRYRR', '.RRR.', '..G..', 'G.G..', '.GG.G', '..GG.', '..G..'] },
+/** The beads the Mirror row paints round the drawing, by their place in the Frame, each color in turn (ticket 0802):
+ * none on a fold's line, so Radial's four folds on the loom Frame repeat each eightfold round the middle (its quarter
+ * turns and its reflection's), completing the kaleidoscope. */
+export const DEMO_MIRROR_BEADS: readonly { color: DemoColor; beads: readonly (readonly [number, number])[] }[] = [
+  { color: 'P', beads: [[1, 4], [2, 3]] },
+  { color: 'G', beads: [[0, 4], [3, 1]] },
 ]
+
+/** The Canvas the tour's view shows across (ticket 0797): the Frame in its middle, with room on its left for the
+ * Starter's Frame to be moved beside the landscape. */
+export const DEMO_VIEW = { left: DEMO_FRAME.column - 21, right: DEMO_FRAME.column + 31 } as const

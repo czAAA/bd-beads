@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { FIT_LOCALES, misfitsNow, mountAt } from '../testUtils/browserFit'
 import { unexplainedFit } from '../testUtils/fitPending'
 import { page } from 'vitest/browser'
@@ -42,7 +43,8 @@ function boxOf(root: Element, selector: string): DOMRect {
 // What's inside (ticket 0797): its cards, its list and its editor in the section's room, nothing cut and nothing wider
 // than the box; under reduced motion the editor shows the first row's end.
 describe("What's inside fits its room", () => {
-  for (const [width, height, tier] of [[1440, 900, 'desktop'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
+  // 1366 × 768 and 1280 × 720 are laptop windows too short for the cards over the editor (ticket 0802).
+  for (const [width, height, tier] of [[1440, 900, 'desktop'], [1366, 768, 'short'], [1280, 720, 'short'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
     it(`at ${width} × ${height} (${tier})`, async () => {
       const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
       await page.viewport(width, height)
@@ -52,13 +54,19 @@ describe("What's inside fits its room", () => {
       const cards = [...mounted.root.querySelectorAll('[data-testid^="inside-card-"]')].map((card) => card.getBoundingClientRect())
       expect(cards).toHaveLength(4)
       const columns = new Set(cards.map((card) => Math.round(card.left))).size
-      expect(columns).toBe(tier === 'desktop' ? 4 : tier === 'tablet' ? 2 : 1)
+      expect(columns).toBe(tier === 'tablet' ? 2 : tier === 'phone' ? 1 : 4)
       if (tier === 'phone') {
         expect(mounted.root.querySelector('[data-testid="inside-editor"]')).toBeNull()
       } else {
         const editor = boxOf(mounted.root, '[data-testid="inside-editor"]')
-        expect(editor.height, 'the editor has room').toBeGreaterThan(300)
+        expect(editor.height, 'the editor has room').toBeGreaterThan(tier === 'short' ? 230 : 300)
+        expect(editor.bottom, 'the editor seen whole before the section scrolls').toBeLessThanOrEqual(section.getBoundingClientRect().bottom + 1)
         await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
+        // The first row's end: its Frame on a Margin sheet whose band the later rows reach for.
+        await expect.poll(() => mounted.root.querySelector('[data-testid="inside-editor"] [data-testid="margin-band"]'), { timeout: 8000 }).not.toBeNull()
+      }
+      if (tier === 'short') {
+        expect(cards[0].top, 'the cards step under the editor').toBeGreaterThanOrEqual(boxOf(mounted.root, '[data-testid="inside-editor"]').bottom)
       }
       if (tier === 'desktop') {
         expect(section.scrollHeight, 'the section fits whole at 1440 × 900').toBeLessThanOrEqual(section.clientHeight + 1)
@@ -95,10 +103,13 @@ describe("What's inside's tour on the real editor", () => {
     await page.viewport(1440, 900)
     await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
     mounted.root.querySelector<HTMLElement>('[data-testid="inside-row-savedProjects"]')!.click()
-    await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 30000 }).toBe('inside-row-savedProjects')
+    // The row pressed lights at once, on the next render (ticket 0802); the rows are applied by the time the earring is
+    // done.
+    await nextTick()
+    expect(mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid')).toBe('inside-row-savedProjects')
     const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
+    await expect.poll(() => editor.querySelector('[data-testid="progress-bar-next"]')?.getAttribute('aria-disabled'), { timeout: 30000 }).toBe('true')
     expect(editor.querySelector('[data-testid="margin-sheet"]')).not.toBeNull()
-    expect(editor.querySelector('[data-testid="progress-bar-next"]')!.getAttribute('aria-disabled')).toBe('true')
     expect(warned).not.toHaveBeenCalled()
     warned.mockRestore()
   }, 45000)

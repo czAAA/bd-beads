@@ -3,7 +3,7 @@ import type { InsideRowId } from '../../i18n/translations'
 import type { Hand } from './hand'
 import { frameOf } from '../../domain/layerRecord'
 import { TECHNIQUES } from '../../domain/weave'
-import { DEMO_COLORS, DEMO_DRAWINGS, DEMO_FRAME, type DemoColor, type DemoDrawing } from './demoProjects'
+import { DEMO_COLORS, DEMO_DRAWING, DEMO_FRAME, DEMO_MIRROR_BEADS, type DemoColor, type DemoDrawing } from './demoProjects'
 import { landscapeFile } from './landscape'
 
 // What the ghost does for each row of What's inside (Homepage card, ticket 0797), in the demo editor, each row picking
@@ -91,10 +91,33 @@ const LANDSCAPE = {
   flowers: [inFrame(8, 2), inFrame(7, 5), inFrame(8, 8)],
 }
 
-/** How long a row holds what it shows (Homepage card, the tour). */
-const HOLD = { technique: 1150, convert: 3400, beadsNeeded: 3000, exports: 3800, savedProjects: 3200 }
-/** Row done's pace: the first three passes slower, then quicker. */
-const ROW_DONE = { slow: 3, slowMs: 700, quickMs: 240 }
+/** How long a row holds what it shows, in ms (Homepage card, the tour): 1.2 times its first pace (ticket 0802). Every
+ * wait of a script is one of these.
+ * @internal Its test checks the scripts wait by these alone. */
+export const HOLD = {
+  /** Set Frame, its Tooltip shown, before it is pressed. */
+  setFrame: 1440,
+  /** Each Technique, the panel shut. */
+  technique: 1380,
+  /** Project editing's three beads, before Undo. */
+  undo: 600,
+  /** Convert image's picture converted, then its found colors. */
+  convertPicture: 1800,
+  convertColors: 2400,
+  /** Letters on the beads. */
+  letters: 1440,
+  /** Scrolling through the Starter's setup. */
+  starterScroll: 1680,
+  /** Row done's passes: the first three slower, then quicker; Pattern done at the end. */
+  rowDoneSlow: 840,
+  rowDoneQuick: 288,
+  patternDone: 1440,
+  beadsNeeded: 3600,
+  exports: 4560,
+  savedProjects: 3840,
+} as const
+/** How many of Row done's passes are slower. */
+const ROW_DONE_SLOW = 3
 
 /** The swatch the sky is filled with: Miyuki's Iridescent, a pale blue. */
 const SKY_SWATCH = 'iridescent'
@@ -123,14 +146,14 @@ function techniqueOption(hand: Hand, technique: string) {
 
 /** Each row's script. */
 export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = {
-  /** The open Canvas: three drawings with Paint, then a Selection round the middle one becomes the Frame. */
+  /** The open Canvas: a kaleidoscope with Paint, then a Selection round it becomes the Frame. */
   async canvas(hand) {
     await hand.press('pill-tool-paint')
-    for (const drawing of DEMO_DRAWINGS) await draw(hand, drawing)
+    await draw(hand, DEMO_DRAWING)
     await hand.press('pill-tool-select')
     await hand.drag(FRAME_FIRST, FRAME_LAST)
-    await hand.hover('context-bar-frame', 1200)
-    await hand.press('context-bar-frame')
+    await hand.hover('context-bar-frame', HOLD.setFrame)
+    await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
   },
   /** The Frame's Technique, each of the others in turn and back to the first, each held a moment with the panel shut so
    * the beads show how they sit. */
@@ -143,25 +166,25 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       await hand.wait(HOLD.technique)
     }
   },
-  /** Paint, three beads, then Undo. */
+  /** Paint, three beads under the kaleidoscope, then Undo. */
   async editing(hand) {
     await hand.press('pill-tool-paint')
     await pickColor(hand, 'P')
-    await hand.stroke([inFrame(5, 0), inFrame(5, 1), inFrame(5, 2)])
-    await hand.wait(500)
+    await hand.stroke([inFrame(9, 4), inFrame(9, 5), inFrame(9, 6)])
+    await hand.wait(HOLD.undo)
     await hand.press('strip-undo')
   },
-  /** Mirror over the whole Frame, Radial with 4 folds: a few beads, each followed by its counterparts, then blue. */
+  /** Mirror over the whole Frame, Radial with 4 folds: a few beads round the kaleidoscope, each followed by its
+   * counterparts, then another color and a few more, completing it. */
   async mirror(hand) {
-    await hand.press('margin-frame-tools')
-    await hand.press('margin-frame-tools-mirror')
+    await mirrorWholeFrame(hand)
     await hand.press(() => hand.root.querySelector('[data-testid="mirror-bar-axis-radial"]') ?? hand.root.querySelector('[data-testid="mirror-bar-chip-radial"] button'))
     for (let presses = 0; presses < 2 && !foldIs(hand, 4); presses++) await hand.press('mirror-bar-radial-more')
     await hand.press('pill-tool-paint')
-    await pickColor(hand, 'P')
-    for (const bead of [inFrame(0, 4), inFrame(2, 2)]) await hand.stroke([bead])
-    await pickColor(hand, 'B')
-    for (const bead of [inFrame(1, 5), inFrame(4, 4)]) await hand.stroke([bead])
+    for (const { color, beads } of DEMO_MIRROR_BEADS) {
+      await pickColor(hand, color)
+      for (const [row, column] of beads) await hand.stroke([inFrame(row, column)])
+    }
   },
   /** The Frame emptied, a picture laid under the beads, made a little smaller from its corner, then traced. */
   async reference(hand) {
@@ -169,7 +192,9 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('mirror-bar-close')
     await hand.press('pill-tool-select')
     await hand.drag(FRAME_FIRST, FRAME_LAST)
-    await hand.press('context-bar-clear')
+    await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
+    // The kaleidoscope is all there is on the Canvas, so Delete asks first.
+    if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
     const picture = await landscapeFile()
     await hand.pressWith('strip-reference-image', () => hand.canvas.referenceImage.pick(picture, 'strip'))
     await shrinkReference(hand)
@@ -187,12 +212,21 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await pickColor(hand, 'G')
     await hand.stroke([LANDSCAPE.grass])
   },
-  /** Convert image from the Menu, at its first step, then closed. */
+  /** Convert image from the Menu: the landscape chosen as its file picker would hand it over, the picture converted, its
+   * found colors, then left, nothing made. */
   async convert(hand) {
     await hand.press('strip-menu')
     await hand.press('menu-convert-image')
-    await hand.wait(HOLD.convert)
+    const picture = await landscapeFile()
+    await hand.pressWith('convert-choose-file', () => hand.canvas.convertSession.value?.setFile(picture))
+    await hand.find('convert-image-canvas')
+    await hand.wait(HOLD.convertPicture)
+    await hand.press('convert-step-colors')
+    const colorByColor = await hand.find('convert-color-by-color')
+    if (colorByColor.getAttribute('aria-expanded') !== 'true') await hand.press('convert-color-by-color')
+    await hand.hover('convert-found-colors', HOLD.convertColors)
     await hand.press('convert-close')
+    if (await present(hand, 'leave-converter-modal')) await hand.press('confirm-modal-confirm')
   },
   /** The color popover's Miyuki Delica palette, a catalog color picked, a few flowers in the meadow. */
   async colors(hand) {
@@ -207,7 +241,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   async letters(hand) {
     await inFramePanel(hand, async () => {
       await hand.press('frame-letters')
-      await hand.wait(1200)
+      await hand.wait(HOLD.letters)
     })
   },
   /** Replace Frame from the Starter gallery: Earrings, V fringe, its setup looked through, Replace. */
@@ -216,7 +250,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('frame-replace-from-starter')
     await hand.press('starter-category-earrings')
     await hand.press('starter-card-vFringe')
-    await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, 1400)
+    await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, HOLD.starterScroll)
     await hand.press('create-starter-project')
     if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
     await moveFrameAside(hand)
@@ -227,9 +261,9 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       const next = hand.root.querySelector('[data-testid="progress-bar-next"]')
       if (!next || next.getAttribute('aria-disabled') === 'true' || (next as HTMLButtonElement).disabled) break
       await hand.press('progress-bar-next')
-      await hand.wait(step < ROW_DONE.slow ? ROW_DONE.slowMs : ROW_DONE.quickMs)
+      await hand.wait(step < ROW_DONE_SLOW ? HOLD.rowDoneSlow : HOLD.rowDoneQuick)
     }
-    await hand.wait(1200)
+    await hand.wait(HOLD.patternDone)
   },
   /** The Frame panel opened on Beads needed. */
   async beadsNeeded(hand) {
@@ -255,18 +289,42 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
 /** The beads kept clear between the Frame's sheet and a drawing beside it. */
 const SHEET_ROOM = 4
 
-/** The new Frame lands where the old one was, in the view's middle: the ghost moves it left, between the rhombus and the
- * landscape, so the landscape stays on the Canvas beside it. */
+/** The Canvas columns left of the landscape the Starter's Frame is moved into, its sheet clear of the landscape. */
+const ASIDE = { left: DEMO_FRAME.column - 12, right: DEMO_FRAME.column - SHEET_ROOM }
+
+/** The new Frame lands where the old one was, in the view's middle: the ghost moves it left, so the landscape stays on
+ * the Canvas beside it. */
 async function moveFrameAside(hand: Hand): Promise<void> {
   const project = hand.canvas.activeProject.value
   const frame = project && frameOf(project)
   if (!frame) return
-  const [rhombus] = DEMO_DRAWINGS.slice(1)
-  const room = DEMO_FRAME.column - SHEET_ROOM - (rhombus.column + rhombus.rows[0].length + SHEET_ROOM)
-  const column = rhombus.column + rhombus.rows[0].length + SHEET_ROOM + Math.max(0, Math.floor((room - frame.columns) / 2))
+  const column = ASIDE.left + Math.max(0, Math.floor((ASIDE.right - ASIDE.left - frame.columns) / 2))
   if (column === frame.column) return
   const from = { row: frame.row, column: frame.column }
   await hand.dragFrame('frame-move-handle', from, { row: frame.row, column })
+}
+
+/** A Selection bar button. The bar arms itself a moment after a Selection (ticket 499), so a stylus tap that selects
+ * doesn't press it too; applied at once there is no tap to guard against, so the hand does what the button does through
+ * the handler it reaches, rather than wait for it to arm (ticket 0802). */
+async function pressSelectionBar(hand: Hand, id: 'frame' | 'clear', run: () => void): Promise<void> {
+  if (!hand.instant) {
+    await hand.press(`context-bar-${id}`)
+    return
+  }
+  run()
+  await hand.wait(0)
+}
+
+/** Mirror over the whole Frame from the Margin sheet's band: its own button where the band has room for it (`full`,
+ * `compact`), else the Frame tools menu that holds it (`folded`, `narrow`; MarginSheet card, Zoom forms). */
+async function mirrorWholeFrame(hand: Hand): Promise<void> {
+  if (hand.root.querySelector('[data-testid="margin-mirror-frame"]')) {
+    await hand.press('margin-mirror-frame')
+    return
+  }
+  await hand.press('margin-frame-tools')
+  await hand.press('margin-frame-tools-mirror')
 }
 
 /** Whether the Fold of the radial Mirror is `fold`. */
