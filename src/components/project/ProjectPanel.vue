@@ -25,6 +25,10 @@ const props = defineProps<{
   /** The reference image's picture as the app holds it (ticket 0790): its thumbnail, whether one is being made ready,
    * why the last file was refused, and whether the device keeps it. */
   reference?: { thumbnail?: string; preparing: boolean; refusal?: ImageRejection; notSaved: boolean }
+  /** The Project's Linked file's name (ADR 0090), the Save row's value; none without one. */
+  linkedFileName?: string
+  /** Save as is offered only where the browser can link a file (ADR 0090). */
+  canSaveAs?: boolean
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -38,7 +42,9 @@ const emit = defineEmits<{
   'adjust-reference-image': []
   'remove-reference-image': []
   save: []
-  'export-project-file': []
+  /** Save and Save as (ADR 0090, ticket 0796), the actions the save ring and the keys also run. */
+  'save-project-file': []
+  'save-project-file-as': []
   'save-maker-name': [name: string]
   duplicate: []
   clear: []
@@ -50,7 +56,8 @@ const backgrounds = useCanvasBackground(() => props.project)
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
-const file = controlAction('export-project-file')
+const save = controlAction('save-project-file')
+const saveAs = controlAction('save-project-file-as')
 
 const canvas = computed(() => layerSettingsOf(props.project, 'canvas'))
 /** The folded Canvas section's summary: its Technique and Bead. */
@@ -93,7 +100,8 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
     />
 
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
-      <PanelItem icon="export" value=".openbeads" stays data-testid="export-project-file" @select="emit('export-project-file')">{{ file.name(t) }}</PanelItem>
+      <PanelItem :icon="save.icon" :value="linkedFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
+      <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
     </PanelSection>
 
     <PanelSection id="project:this" :label="t.panels.project.thisProject">

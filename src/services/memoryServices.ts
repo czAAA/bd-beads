@@ -6,7 +6,9 @@ import { downloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
 import { readClipboardImage } from './clipboardImage'
 import type { LibraryStore } from './libraryStore'
-import type { PictureStore } from './pictureStore'
+import type { ProjectKeyedStore } from './deviceDatabase'
+import { browserFileWriter } from './fileWriter'
+import type { SinceFiles } from './sinceFileStore'
 import type { Services } from './index'
 
 /** The page's own choices the demo shows live and never changes: it has no Language or Theme of its own. */
@@ -60,13 +62,13 @@ function memoryLibrary(projects: readonly Project[]): LibraryStore {
   }
 }
 
-/** Reference images' pictures kept in memory. */
-function memoryPictures(): PictureStore {
-  const kept = new Map<string, Blob>()
+/** Values kept per Project in memory: reference images' pictures, Linked files. */
+function memoryKeyed<T>(): ProjectKeyedStore<T> {
+  const kept = new Map<string, T>()
   return {
     get: async (id) => kept.get(id),
-    put: async (id, picture) => {
-      kept.set(id, picture)
+    put: async (id, value) => {
+      kept.set(id, value)
       return true
     },
     remove: async (id) => void kept.delete(id),
@@ -74,6 +76,12 @@ function memoryPictures(): PictureStore {
       for (const id of [...kept.keys()]) if (!ids.has(id)) kept.delete(id)
     },
   }
+}
+
+/** How far each Project is behind its file, in memory. */
+function memorySinceFiles() {
+  let kept: SinceFiles = {}
+  return { read: () => kept, write: (records: SinceFiles) => void (kept = records) }
 }
 
 /** Where the demo's preferences come from. */
@@ -87,8 +95,8 @@ interface MemoryServicesOptions {
 }
 
 /** The services of the Homepage's demo editor (ticket 0797): its library, pictures and preferences live in memory only,
- * so nothing done in it is saved or reaches the beader's Projects, preferences or pictures. A file it exports is a real
- * file of it, and a picture it converts or lays under the beads is read as the editor reads one. */
+ * so nothing done in it is saved or reaches the beader's Projects, preferences, pictures or Linked files. A file it
+ * exports or saves is a real file of it, and a picture it converts or lays under the beads is read as the editor does. */
 export function memoryServices(projects: readonly Project[], options: MemoryServicesOptions = {}): Services {
   const { page = browserDevicePreferences, pageStorage = () => localStorage, start = {} } = options
   return {
@@ -103,7 +111,10 @@ export function memoryServices(projects: readonly Project[], options: MemoryServ
     feedback: browserFeedback,
     openingNote: { read: () => undefined, write: () => undefined, clear: () => undefined },
     openingAddress: () => ({ savedProjects: false }),
-    pictureStore: memoryPictures(),
+    pictureStore: memoryKeyed<Blob>(),
+    fileWriter: browserFileWriter,
+    linkedFiles: memoryKeyed(),
+    sinceFiles: memorySinceFiles(),
     preparePicture,
     drawablePicture,
   }
