@@ -89,6 +89,8 @@ const actions = {
 
 const frame = computed(() => frameOf(props.project))
 const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
+/** The name the tab reads and is named by, or "Name this frame". */
+const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 /** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
 const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))
@@ -413,7 +415,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           icon="chevron-up"
           :icon-size="12"
           :action="actions.show"
-          :label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: t.frame.nameEmpty })"
+          :label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
           data-testid="margin-title-unfold"
           @click="fold.unfold()"
         />
@@ -423,15 +425,15 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         variant="text"
         class="margin-sheet__tab"
         :action="actions.show"
-        :aria-label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: frame?.name || t.frame.nameEmpty })"
+        :aria-label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: tabName })"
         trailing-icon="chevron-up"
         data-testid="margin-title-tab"
         @click="fold.unfold()"
       >
-        <span class="margin-sheet__tab-name">{{ frame?.name || t.frame.nameEmpty }}</span>
+        <span class="margin-sheet__tab-name">{{ tabName }}</span>
       </AppButton>
       <span v-else class="margin-sheet__tab" data-testid="margin-title-tab">
-        <span class="margin-sheet__tab-name">{{ frame?.name || t.frame.nameEmpty }}</span>
+        <span class="margin-sheet__tab-name">{{ tabName }}</span>
       </span>
     </div>
 
@@ -581,7 +583,8 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   border-radius: var(--radius-sm);
 }
 
-.margin-sheet__title :deep(.margin-sheet__tab:hover) {
+/* Only the tab that unfolds as a whole fills on hover; the span forms are not pressed (ticket 0803). */
+.margin-sheet__title :deep(button.margin-sheet__tab:hover) {
   background: color-mix(in srgb, var(--ink) 10%, var(--margin-title));
 }
 

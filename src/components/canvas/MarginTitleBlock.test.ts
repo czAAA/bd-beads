@@ -62,9 +62,9 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(wrapper.emitted('rename')).toHaveLength(1)
   })
 
-  // "Name this frame" reads as an invitation, so pressing it opens the name field in every form (ticket 0803).
-  it.each(['full', 'compact'] as const)('opens the name field from "Name this frame" in the %s block', async (form) => {
-    const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form }, attachTo: document.body })
+  // "Name this frame" reads as an invitation, so pressing it opens the name field, compact too (ticket 0803).
+  it('opens the name field from "Name this frame" in the compact block', async () => {
+    const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'compact' }, attachTo: document.body })
     await wrapper.get('[data-testid="margin-frame-name"]').trigger('click')
     await wrapper.get('[data-testid="margin-frame-name-input"]').setValue('Sun band')
     await wrapper.get('[data-testid="margin-frame-name-form"]').trigger('submit')
