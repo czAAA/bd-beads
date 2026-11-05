@@ -117,7 +117,7 @@ describe('the Convert image found-colors table heading', () => {
     expect(pane.scrollTop).toBeCloseTo(target, 0)
     expect(heading().top).toBeCloseTo(pane.getBoundingClientRect().top + pinned, 0)
 
-    const cells = [...mounted.root.querySelectorAll<HTMLElement>('[data-testid="found-colors-header"] > span')].map((cell) => cell.getBoundingClientRect())
+    const cells = [...mounted.root.querySelectorAll<HTMLElement>('[data-testid="found-colors-header"] span')].map((cell) => cell.getBoundingClientRect())
     const row = mounted.root.querySelector('[data-testid="found-color"]')!
     const change = row.querySelector('[data-testid="found-color-remap"]')!.getBoundingClientRect()
     const count = row.querySelector('.found-color__count')!.getBoundingClientRect()
@@ -125,6 +125,31 @@ describe('the Convert image found-colors table heading', () => {
     expect(changeCell.left + changeCell.width / 2).toBeCloseTo(change.left + change.width / 2, 0)
     expect(beadsCell.right).toBeCloseTo(count.right, 0)
   })
+
+  // A phone's table (ticket 0782): the text fit check passes a word broken across lines, so this checks what it cannot,
+  // that a found color's hex stays whole, and that the heading's "From picture → Becomes" sits over its two columns.
+  for (const locale of ['en', 'longest'] as const) {
+    it(`keeps each found color's hex on one line at 320px, under "From picture → Becomes", in ${locale}`, async () => {
+      const mounted = await mountAt(ConvertPageHost, props, { locale, width: 1366 })
+      await pictureSet(mounted.root)
+      mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-colors"]')?.click()
+      await settleForMeasuring()
+      mounted.root.querySelector<HTMLElement>('[data-testid="convert-color-by-color"]')?.click()
+      await page.viewport(320, 640)
+      await settleForMeasuring()
+
+      const names = [...mounted.root.querySelectorAll<HTMLElement>('[data-testid="found-color-name"]')]
+      expect(names.length).toBeGreaterThan(0)
+      for (const name of names) expect(name.getBoundingClientRect().height, name.textContent ?? '').toBeLessThanOrEqual(parseFloat(getComputedStyle(name).lineHeight) + 0.5)
+
+      const pair = mounted.root.querySelector('.found-colors-header__pair')!.getBoundingClientRect()
+      const row = mounted.root.querySelector('[data-testid="found-color"]')!
+      const swatches = [...row.querySelectorAll('.found-color__swatch')].map((swatch) => swatch.getBoundingClientRect())
+      expect(pair.left).toBeCloseTo(swatches[0]!.left, 0)
+      expect(pair.right).toBeGreaterThan(swatches[1]!.right)
+      expect(mounted.root.querySelector('.found-colors-header__action')!.getBoundingClientRect().width).toBe(0)
+    })
+  }
 })
 
 // The found beads and Compare's picture are drawn on the canvas after the Project renderer, which leaves its grid

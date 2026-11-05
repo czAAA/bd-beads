@@ -223,6 +223,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
   }
 }
 
+
 .found-color__action {
   display: flex;
   justify-content: center;
@@ -260,6 +261,19 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
   flex: none;
   color: var(--muted);
   transform: rotate(-90deg);
+}
+
+/* A table under 360px wide (FoundColorRow card, ticket 0782): the narrow columns, so a hex stays whole on one line. The
+ * arrow is left to the heading's "From picture → Becomes". */
+@container found-colors (width < 360px) {
+  .found-color__row {
+    grid-template-columns: var(--found-columns-narrow);
+    column-gap: var(--space-4);
+  }
+
+  .found-color__arrow {
+    display: none;
+  }
 }
 
 .found-color__lines {
