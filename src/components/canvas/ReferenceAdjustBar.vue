@@ -1,21 +1,47 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { imageInputAccept } from '../../domain/imageConversion'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import FileButton from '../ui/form/FileButton.vue'
+import IconButton from '../ui/IconButton.vue'
 
-// The Adjust bar (ReferenceImage card, ticket 0790): over the Tool pill's place while the reference image is adjusted,
-// the label, Fit to Canvas and Done; on a phone just Fit and Done, 44px tall.
-const emit = defineEmits<{ fit: []; done: [] }>()
+// The Adjust bar (ReferenceImage card, tickets 0790, 0799): over the Tool pill's place while the reference image is
+// adjusted, the label, Replace image, Fit to Canvas and Done; on a phone Replace image as an icon, Fit and Done, 44px tall.
+const emit = defineEmits<{
+  /** A file picked by Replace image, the Project panel's pick. */
+  replace: [file: File]
+  fit: []
+  done: []
+}>()
 
 const { t } = useI18n()
 const words = computed(() => t.value.referenceImage)
 const phone = useMediaQuery('(max-width: 743px)')
+
+const accept = imageInputAccept()
+const pickerEl = ref<HTMLElement>()
+/** Replace image opens the picker of the file input kept in the bar. */
+const choose = () => pickerEl.value?.querySelector<HTMLInputElement>('input[type="file"]')?.click()
+
+function onFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) emit('replace', file)
+  // Picking the same file again still counts as a change.
+  input.value = ''
+}
 </script>
 
 <template>
   <div class="reference-adjust-bar" data-testid="reference-adjust-bar">
     <span v-if="!phone" class="reference-adjust-bar__label">{{ words.section }}</span>
+    <IconButton v-if="phone" icon="image" variant="secondary" size="lg" shape="round" :label="words.replace" tooltip data-testid="reference-adjust-replace" @click="choose" />
+    <AppButton v-else icon="image" data-testid="reference-adjust-replace" @click="choose">{{ words.replace }}</AppButton>
+    <span ref="pickerEl" hidden>
+      <FileButton :label="words.replace" :accept="accept" tabindex="-1" data-testid="reference-adjust-replace-input" @change="onFile" />
+    </span>
     <AppButton icon="reset" data-testid="reference-adjust-fit" @click="emit('fit')">{{ phone ? words.fitShort : words.fit }}</AppButton>
     <AppButton variant="primary" icon="check" data-testid="reference-adjust-done" @click="emit('done')">{{ words.done }}</AppButton>
   </div>

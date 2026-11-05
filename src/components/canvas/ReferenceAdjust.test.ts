@@ -11,8 +11,8 @@ beforeEach(() => {
 const view = { gridToPoint: (x: number, y: number) => ({ x: x * 2 + 10, y: y * 2 + 20 }), viewport: { width: 400, height: 400 } }
 const place = { x: 50, y: 50, width: 40, angle: 0 }
 
-function mountAdjust() {
-  return mount(ReferenceAdjust, { props: { place, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, bead: 20 }, attachTo: document.body })
+function mountAdjust({ adjusting = true } = {}) {
+  return mount(ReferenceAdjust, { props: { place, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, bead: 20, adjusting }, attachTo: document.body })
 }
 
 const pointer = (x: number, y: number, extra: Record<string, unknown> = {}) => ({ clientX: x, clientY: y, button: 0, pointerId: 1, ...extra })
@@ -92,6 +92,57 @@ describe('ReferenceAdjust (ReferenceImage card, ticket 0790)', () => {
     const wrapper = mountAdjust()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(wrapper.emitted('done')).toHaveLength(1)
+    wrapper.unmount()
+  })
+})
+
+describe('The handles outside Adjust (ticket 0799)', () => {
+  it('stand on a shown picture, which is not focused, takes no Tab stop and no outline', () => {
+    const wrapper = mountAdjust({ adjusting: false })
+    const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
+    expect(wrapper.findAll('.reference-adjust__corner')).toHaveLength(4)
+    expect(wrapper.find('[data-testid="reference-adjust-turn"]').exists()).toBe(true)
+    expect(document.activeElement).not.toBe(picture.element)
+    expect(picture.attributes('tabindex')).toBeUndefined()
+    expect(picture.classes()).toContain('reference-adjust__picture--handles-only')
+    wrapper.unmount()
+  })
+
+  it('take the outline and the focus once Adjust opens on them', async () => {
+    const wrapper = mountAdjust({ adjusting: false })
+    await wrapper.setProps({ adjusting: true })
+    const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
+    expect(document.activeElement).toBe(picture.element)
+    expect(picture.classes()).not.toContain('reference-adjust__picture--handles-only')
+    wrapper.unmount()
+  })
+
+  it('resize from a corner and turn from the Turn handle', async () => {
+    const wrapper = mountAdjust({ adjusting: false })
+    const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
+    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(110, 40))
+    await picture.trigger('pointermove', pointer(210, 122))
+    await picture.trigger('pointerup', pointer(210, 122))
+    await wrapper.get('[data-testid="reference-adjust-bottom-right"]').trigger('pointerdown', pointer(150, 140))
+    await picture.trigger('pointermove', pointer(190, 160))
+    await picture.trigger('pointerup', pointer(190, 160))
+    const commits = wrapper.emitted('commit')!
+    expect(commits[0]).toEqual([{ ...place, angle: 90 }, 'Turned 90°'])
+    expect(commits[1]![1]).toBe('Resized')
+    wrapper.unmount()
+  })
+
+  it('leave a press on the picture itself, its keys and Escape to the tools', async () => {
+    const wrapper = mountAdjust({ adjusting: false })
+    const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
+    await picture.trigger('pointerdown', pointer(110, 120))
+    await picture.trigger('pointermove', pointer(130, 120))
+    await picture.trigger('pointerup', pointer(130, 120))
+    await picture.trigger('keydown', { key: 'ArrowRight' })
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(wrapper.emitted('preview')).toBeUndefined()
+    expect(wrapper.emitted('commit')).toBeUndefined()
+    expect(wrapper.emitted('done')).toBeUndefined()
     wrapper.unmount()
   })
 })

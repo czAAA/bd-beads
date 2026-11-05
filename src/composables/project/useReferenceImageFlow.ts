@@ -44,8 +44,8 @@ export interface ReferenceImageFlowDeps {
 /** The Project panel's reference image section, by its fold id (usePanelSection). */
 export const REFERENCE_SECTION_ID = 'project:reference'
 
-/** Where a file was picked: the strip button, or the Project panel's section. */
-export type PickedFrom = 'strip' | 'panel'
+/** Where a file was picked: the strip button, the Project panel's section, or the Adjust bar's Replace image. */
+export type PickedFrom = 'strip' | 'panel' | 'adjust'
 
 /** The open Project's picture as the flow holds it: its bytes, and once decoded, what draws it. */
 interface LoadedPicture {
@@ -141,9 +141,9 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     return session.get(projectId) ?? (loaded.value?.projectId === projectId ? loaded.value.blob : undefined) ?? (await deps.store.get(projectId))
   }
 
-  /** A picked file (the strip button's picker, Add reference image, Replace image): made ready and kept; a new picture is
-   * fitted inside the Canvas's box and opens in Adjust, a replacement keeps the place. A refused file changes nothing
-   * and says why in the Project panel's section, which opens for it when the strip button picked it. */
+  /** A picked file (the strip button, Add reference image, Replace image in the panel or on the Adjust bar): made ready
+   * and kept; a new picture is fitted and opens in Adjust, a replacement keeps the place. A refused file changes nothing
+   * and says why in the Project panel's section, which opens for it, ending Adjust, when picked outside the panel. */
   async function pick(file: File, from: PickedFrom): Promise<void> {
     const started = deps.currentProject()
     if (!started) return
@@ -154,7 +154,10 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
       prepared = await deps.prepare(file)
     } catch (error) {
       refusal.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
-      if (from === 'strip') deps.openProjectPanel()
+      if (from !== 'panel') {
+        adjusting.value = false
+        deps.openProjectPanel()
+      }
       return
     } finally {
       preparing.value = false
