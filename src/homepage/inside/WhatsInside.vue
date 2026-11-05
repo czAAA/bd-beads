@@ -168,12 +168,18 @@ function choose(row: InsideRowId) {
 }
 
 .inside__card-text {
-  display: -webkit-box;
-  overflow: hidden;
   font: var(--type-inside-text);
   color: var(--body);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+}
+
+/* From 481 a card is `--inside-card-height` tall: its text up to three lines. On a phone it is as tall as its text. */
+@container homepage (min-width: 481px) {
+  .inside__card-text {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
 }
 
 /* The list beside the editor, which fills the section's height. */

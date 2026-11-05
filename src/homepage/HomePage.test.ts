@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { nextTick, shallowRef } from 'vue'
+import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import HomePage from './HomePage.vue'
 import { createProject } from '../domain/createProject'
 import { en } from '../i18n/en'
@@ -9,13 +9,19 @@ import { findBead } from '../domain/beads'
 import { beadCell } from '../domain/weave'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 
-const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
+// What's inside stands in for itself here, saying what the page asks of it: its own tests mount the demo editor.
+vi.mock('./inside/WhatsInside.vue', () => ({
+  default: defineComponent({
+    props: { withEditor: Boolean, shown: Boolean },
+    setup: (props) => () => h('div', { 'data-testid': 'whats-inside', 'data-with-editor': String(props.withEditor), 'data-shown': String(props.shown) }),
+  }),
+}))
 
 function page(projectCount = 0) {
   return mount(HomePage, { props: { projectCount, feedback: fakeFeedback() }, attachTo: document.body })
 }
 
-/** The page's width as the carousel's tier reads it before the first resize report. */
+/** The page's width as What's inside reads it before the first resize report. */
 function setScreenWidth(width: number) {
   Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
 }
@@ -47,16 +53,13 @@ describe('HomePage', () => {
     })
   })
 
-  describe('the hero band and notes', () => {
-    it('shows the notes, hidden from screen readers', () => {
-      const wrapper = page()
-      for (const [id, text] of [
-        ['on-us', 'on us'],
-      ]) {
-        const note = wrapper.find(`[data-testid="homepage-note-${id}"]`)
-        expect(note.text()).toBe(text)
-        expect(note.attributes('aria-hidden')).toBe('true')
-      }
+  describe('the hero (ticket 0797)', () => {
+    it('is the rolling slogan and its two buttons, with no line or note between them', () => {
+      const hero = page().get('.homepage__hero')
+      expect(hero.element.children).toHaveLength(2)
+      expect(hero.find('[data-testid="homepage-slogan"]').exists()).toBe(true)
+      expect(hero.find('[data-testid^="homepage-note"]').exists()).toBe(false)
+      expect(hero.text()).not.toContain('save. count. export')
     })
 
     it('shows the slogan as the one stable label "openbeads"', () => {
@@ -65,9 +68,6 @@ describe('HomePage', () => {
       expect(slogan.find('[data-testid="homepage-note-you"]').exists()).toBe(false)
     })
 
-    it('shows "on us" once Projects are saved too', () => {
-      expect(page(2).find('[data-testid="homepage-note-on-us"]').text()).toBe('on us')
-    })
   })
 
   describe('with Projects saved', () => {
@@ -108,7 +108,7 @@ describe('HomePage', () => {
   it('is one canvas box: the Canvas strip on top, the hero and the sections between, the Progress bar below, and no header of its own', () => {
     const wrapper = page()
     const box = wrapper.get('[data-testid="homepage"]')
-    expect(box.element.children[0]).toBe(wrapper.get('[data-testid="canvas-strip"]').element)
+    expect(box.element.children[0].firstElementChild).toBe(wrapper.get('[data-testid="canvas-strip"]').element)
     expect(box.get('[data-testid="homepage-body"]').find('[data-testid="homepage-slogan"]').exists()).toBe(true)
     expect(box.element.lastElementChild).toBe(wrapper.get('[data-testid="section-bar"]').element)
     expect(wrapper.find('[data-testid="canvas-footer"]').exists()).toBe(false)
@@ -164,7 +164,7 @@ describe('HomePage', () => {
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="homepage-make-first"]').text()).toBe('Сделать первый проект')
-    expect(wrapper.find('[data-testid="feature-carousel"]').text()).toContain('Техники плетения')
+    expect(wrapper.get('#homepage-inside').text()).toBe('Что внутри')
     expect(localStorage.getItem('openbeads:locale')).toBe('ru')
   })
 
@@ -196,89 +196,18 @@ describe('HomePage', () => {
       expect(zoomOf(page())).toBe('1.1')
     })
 
-    it('decides the carousel\'s tier from the zoomed width, not the screen\'s', async () => {
-      setScreenWidth(1200)
+    it('gives What\'s inside its editor from the zoomed width, not the screen\'s (ticket 0797)', async () => {
       const wrapper = page()
-      expect(wrapper.get('[role="tablist"]').attributes('aria-orientation')).toBe('vertical')
+      expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-with-editor')).toBe('true')
 
-      for (let i = 0; i < 3; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
-      expect(wrapper.get('[role="tablist"]').attributes('aria-orientation')).toBe('horizontal')
+      for (let i = 0; i < 4; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-with-editor')).toBe('false')
     })
   })
 
   it('starts in English on a device with no saved language', () => {
     localStorage.clear()
     expect(page().find('[data-testid="homepage-make-first"]').text()).toBe('Make your first Project')
-  })
-})
-
-describe('the features carousel', () => {
-  const mountWide = () => {
-    setScreenWidth(1200)
-    return mount(HomePage, { props: { projectCount: 0, feedback: fakeFeedback() }, attachTo: document.body })
-  }
-
-  it('is a named tablist of the seven features in order, each with an icon, and no Mirror (from 1024)', () => {
-    const wrapper = mountWide()
-    const list = wrapper.find('[role="tablist"]')
-    expect(list.attributes('aria-label')).toBe("What's inside")
-    const tabs = list.findAll('[role="tab"]')
-    expect(tabs.map((tab) => tab.attributes('data-feature'))).toEqual(FEATURES)
-    for (const tab of tabs) expect(tab.find('svg[data-icon]').exists()).toBe(true)
-    expect(tabs[0]!.text()).toContain('Loom, peyote and brick stitch')
-    expect(wrapper.find('[data-testid="feature-carousel"]').text()).not.toMatch(/mirror/i)
-    wrapper.unmount()
-  })
-
-  it('labels each panel by its tab and shows only the selected one', () => {
-    const wrapper = mountWide()
-    const panels = wrapper.findAll('[role="tabpanel"]')
-    expect(panels).toHaveLength(7)
-    panels.forEach((panel, i) => {
-      const tab = wrapper.findAll('[role="tab"]')[i]!
-      expect(panel.attributes('aria-labelledby')).toBe(tab.attributes('id'))
-      expect(tab.attributes('aria-controls')).toBe(panel.attributes('id'))
-    })
-    expect(panels.map((p) => (p.element as HTMLElement).style.display)).toEqual(['', ...Array(6).fill('none')])
-    wrapper.unmount()
-  })
-
-  it('moves with the arrow keys and keeps ‹ › and the count in step', async () => {
-    const wrapper = mountWide()
-    const count = () => wrapper.find('[data-testid="feature-count"]').text()
-    expect(count()).toBe('1 / 7')
-    await wrapper.findAll('[role="tab"]')[0]!.trigger('keydown', { key: 'ArrowDown' })
-    expect(count()).toBe('2 / 7')
-    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
-    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('tabindex')).toBe('0')
-    await wrapper.find('[data-testid="feature-next"]').trigger('click')
-    expect(count()).toBe('3 / 7')
-    await wrapper.find('[data-testid="feature-prev"]').trigger('click')
-    await wrapper.find('[data-testid="feature-prev"]').trigger('click')
-    await wrapper.find('[data-testid="feature-prev"]').trigger('click')
-    expect(count()).toBe('7 / 7')
-    expect(wrapper.findAll('[role="tab"]')[6]!.attributes('aria-selected')).toBe('true')
-    wrapper.unmount()
-  })
-
-  it('is a row of tabs above the stage below 1024 (ticket 0739), the selected one\'s line under it', async () => {
-    const wrapper = page()
-    const list = wrapper.get('[role="tablist"]')
-    expect(list.attributes('aria-orientation')).toBe('horizontal')
-    expect(list.findAll('[role="tab"]').map((tab) => tab.attributes('data-feature'))).toEqual(FEATURES)
-    await wrapper.find('[data-testid="feature-next"]').trigger('click')
-    await wrapper.find('[data-testid="feature-next"]').trigger('click')
-    expect(wrapper.find('[data-testid="feature-count"]').text()).toBe('3 / 7')
-    expect(list.findAll('[role="tab"]')[2]!.attributes('aria-selected')).toBe('true')
-    expect(wrapper.get('#feature-panel-convertImage').text()).toContain('Turn a picture into a Schema in up to 256 colors.')
-  })
-
-  it('has the Russian arrow labels', async () => {
-    const wrapper = page()
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
-    await chooseLanguage(wrapper, 'ru')
-    expect(wrapper.find('[data-testid="feature-prev"]').attributes('aria-label')).toBe('Предыдущая возможность')
-    expect(wrapper.find('[data-testid="feature-next"]').attributes('aria-label')).toBe('Следующая возможность')
   })
 })
 
@@ -303,6 +232,7 @@ describe('HomePage sections (ticket 0739)', () => {
   it('shows one section at a time under the hero, What\'s inside first, the others slid away', () => {
     const { wrapper } = pageWithHeight()
     expect(shown(wrapper)).toEqual(['inside'])
+    expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('true')
     expect(wrapper.get('[data-testid="homepage-section-plans"]').classes()).toContain('homepage__section--after')
     expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/3')
   })
@@ -314,6 +244,8 @@ describe('HomePage sections (ticket 0739)', () => {
     expect(shown(wrapper)).toEqual(['coffee'])
     expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--before')
     expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('2/3 · Made by one family')
+    // What's inside plays its tour only while it is the section shown (ticket 0797).
+    expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('false')
     scrollPage(el, 2 * VIEWPORT)
     await wrapper.vm.$nextTick()
     expect(shown(wrapper)).toEqual(['plans'])
@@ -497,10 +429,10 @@ describe('HomePage sections (ticket 0739)', () => {
 })
 
 describe('HomePage coffee tile', () => {
-  it('sits below the feature carousel, for new and returning visitors alike', () => {
+  it('sits below What\'s inside, for new and returning visitors alike', () => {
     for (const count of [0, 3]) {
       const html = page(count).html()
-      expect(html.indexOf('data-testid="homepage-coffee"')).toBeGreaterThan(html.indexOf('feature-carousel'))
+      expect(html.indexOf('data-testid="homepage-coffee"')).toBeGreaterThan(html.indexOf('data-testid="whats-inside"'))
     }
   })
 })

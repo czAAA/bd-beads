@@ -340,7 +340,7 @@ export const pl: Translations = {
       cards: {
         device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce i offline. Bez konta i bez instalacji.' },
         pencil: { name: 'Dla iPada i Pencil', text: 'Tryb pióra, najechanie Pencil i duże przyciski pod palec.' },
-        free: { name: 'Za darmo na zawsze', text: 'Wszystko, czego potrzebujesz, jest za darmo, teraz nic nie jest płatne. Profesjonalne dodatki pojawią się później.' },
+        free: { name: 'Za darmo na zawsze', text: 'Wszystko potrzebne jest darmowe, nic nie jest płatne. Dodatki dla zawodowców przyjdą później.' },
         shortcuts: { name: 'Skróty klawiszowe', text: 'Każda edycja ma swój klawisz. Wszystkie znajdziesz w {menu} → {help} → {shortcuts}.' },
       },
       rows: {

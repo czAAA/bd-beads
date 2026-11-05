@@ -340,7 +340,7 @@ export const es: Translations = {
       cards: {
         device: { name: 'Tuyo, en este dispositivo', text: 'Funciona en tu navegador y sin conexión. Sin cuenta, nada que instalar.' },
         pencil: { name: 'Para iPad y Pencil', text: 'Modo lápiz, Pencil al pasar por encima y botones grandes para el dedo.' },
-        free: { name: 'Gratis para siempre', text: 'Todo lo que necesitas es gratis y ahora no hay nada de pago. Los extras profesionales llegarán más adelante.' },
+        free: { name: 'Gratis para siempre', text: 'Todo lo necesario es gratis y nada es de pago. Los extras profesionales llegarán después.' },
         shortcuts: { name: 'Atajos de teclado', text: 'Cada edición tiene su propia tecla. Están todas en {menu} → {help} → {shortcuts}.' },
       },
       rows: {
