@@ -113,7 +113,7 @@ defineExpose({ fresh, hand, hideGhost: () => void (ghost.shown = false), giveFoc
 </script>
 
 <template>
-  <div ref="rootEl" class="inside-editor" role="region" :aria-label="t.homepage.inside.editor" data-testid="inside-editor" @focusin="onFocusIn">
+  <div ref="rootEl" class="inside-editor" role="region" :aria-label="t.homepage.inside.editor" data-testid="inside-editor" :data-taken-over="takenOver || undefined" @focusin="onFocusIn">
     <InsideShell :key="session" ref="shell" :projects="library" @start-afresh="fresh" />
     <GhostPointer :ghost="ghost" />
   </div>
