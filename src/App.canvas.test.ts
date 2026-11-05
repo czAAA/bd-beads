@@ -210,10 +210,10 @@ describe('an unframed Schema\'s tag (tickets 0721, 0733)', () => {
   })
 })
 
-describe('the first-run hints over an empty Project (ticket 0725, FirstRunHints card)', () => {
+describe('the first-run welcome over an empty Project (tickets 0725, 0798, FirstRunHints card)', () => {
   const hints = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid="first-run-hints"]')
 
-  it('shows them while the Project has no beads, takes them away with the first bead and brings them back when it is emptied', async () => {
+  it('shows it while the Project has no beads, takes it away with the first bead and brings them back when it is emptied', async () => {
     saveProjects([unframedProject({ beads: {} })])
     const wrapper = mountApp()
     await flushPromises()

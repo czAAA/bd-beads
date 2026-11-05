@@ -294,13 +294,6 @@ export const en: Translations = {
       rulers: 'Rulers',
     },
     firstRun: {
-      select: 'select to measure, fill, set a Frame,\ncopy, paste, rotate or mirror',
-      frame: 'frame your drawing: name, size and Bead',
-      export: 'export a picture\nor a printable chart',
-      menu: 'new Project, Projects library, language, theme and preferences',
-      project: 'set up this Project: its name, maker, Technique, Bead and background',
-      mirror: 'Mirror: left–right, top–bottom or radial',
-      color: 'colors and your Palette',
       storageLead: 'Your Projects are saved only in this browser, on this device.',
       storage: "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:",
     },
