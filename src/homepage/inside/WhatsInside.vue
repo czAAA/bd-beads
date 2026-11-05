@@ -110,6 +110,11 @@ function choose(row: InsideRowId) {
   min-height: 0;
 }
 
+/* With the editor, the section's room is a container its height is asked of (ticket 0802). */
+.inside:not(.inside--plain) {
+  container: inside / size;
+}
+
 .inside__cards,
 .inside__list,
 .inside__plain {
@@ -271,6 +276,29 @@ function choose(row: InsideRowId) {
 
 .inside__editor {
   min-height: 0;
+}
+
+/* A short screen (ticket 0802): where the room is less than the cards over `--inside-main-min-height` (5.75rem + 1rem +
+ * 19rem; two rows of cards on a tablet, 12.25rem + 1rem + 19rem), the cards step under the editor: the list and the
+ * editor fill the room, at least `--inside-main-least-height`, and the cards are a scroll away. */
+@container inside (max-height: 25.75rem) {
+  .inside__main {
+    flex: none;
+    order: -1;
+    height: max(100cqh, var(--inside-main-least-height));
+    min-height: 0;
+  }
+}
+
+@container homepage (max-width: 1023.98px) {
+  @container inside (max-height: 32.25rem) {
+    .inside__main {
+      flex: none;
+      order: -1;
+      height: max(100cqh, var(--inside-main-least-height));
+      min-height: 0;
+    }
+  }
 }
 
 /* On a tablet the list is a row of tabs above the editor: the names alone, scrolling sideways. */

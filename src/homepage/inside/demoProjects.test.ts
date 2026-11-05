@@ -3,7 +3,7 @@ import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { DEMO_DRAWINGS, DEMO_FRAME, demoLibrary } from './demoProjects'
+import { DEMO_DRAWING, DEMO_FRAME, DEMO_MIRROR_BEADS, demoLibrary } from './demoProjects'
 
 describe("What's inside's demo Projects (ticket 0797)", () => {
   it('are Kaleidoscope, the newest, an open Canvas with nothing drawn and no Frame, and Heart and Bracelet', () => {
@@ -21,22 +21,49 @@ describe("What's inside's demo Projects (ticket 0797)", () => {
     expect(demoLibrary(ru).map(projectNameOf)).toEqual(['Браслет', 'Сердце', 'Калейдоскоп'])
   })
 
-  it('draw a kaleidoscope the size of the 11 × 11 Frame, the same turned any quarter or mirrored', () => {
-    const [middle] = DEMO_DRAWINGS
-    expect(middle.rows).toHaveLength(DEMO_FRAME.rows)
-    expect(middle.rows.every((row) => row.length === DEMO_FRAME.columns)).toBe(true)
-    expect([middle.row, middle.column]).toEqual([DEMO_FRAME.row, DEMO_FRAME.column])
-    const mirrored = middle.rows.map((row) => [...row].reverse().join(''))
-    const turned = middle.rows.map((_, down) => middle.rows.map((row) => row[down]).join(''))
-    expect(mirrored).toEqual(middle.rows)
-    expect(turned).toEqual(middle.rows)
+  it('draw one kaleidoscope the size of the 11 × 11 Frame in three colors, the same turned any quarter or mirrored', () => {
+    const { rows } = DEMO_DRAWING
+    expect(rows).toHaveLength(DEMO_FRAME.rows)
+    expect(rows.every((row) => row.length === DEMO_FRAME.columns)).toBe(true)
+    expect([DEMO_DRAWING.row, DEMO_DRAWING.column]).toEqual([DEMO_FRAME.row, DEMO_FRAME.column])
+    expect(new Set(rows.join('').replaceAll('.', ''))).toEqual(new Set(['R', 'Y', 'B']))
+    expect(mirrored(rows)).toEqual(rows)
+    expect(turned(rows)).toEqual(rows)
   })
 
-  it('put the rhombus on its left and the flower on its right, from the Frame\'s first bead', () => {
-    const [, rhombus, flower] = DEMO_DRAWINGS
-    expect([rhombus.row - DEMO_FRAME.row, rhombus.column - DEMO_FRAME.column]).toEqual([3, -21])
-    expect(rhombus.rows).toEqual(['..P..', '.PPP.', 'PPYPP', '.PPP.', '..P..'])
-    expect([flower.row - DEMO_FRAME.row, flower.column - DEMO_FRAME.column]).toEqual([1, 27])
-    expect(flower.rows).toEqual(['.RRR.', 'RRYRR', '.RRR.', '..G..', 'G.G..', '.GG.G', '..GG.', '..G..'])
+  it("complete it with Mirror: Radial's four folds on a loom Frame repeat each bead eightfold onto empty beads, still a kaleidoscope", () => {
+    const last = DEMO_FRAME.columns - 1
+    const grid = DEMO_DRAWING.rows.map((row) => [...row])
+    for (const { color, beads } of DEMO_MIRROR_BEADS) {
+      for (const [row, column] of beads) {
+        // Its quarter turns, and its reflection's (mirror.ts, the eightfold kaleidoscope).
+        const images = new Set<string>()
+        for (let [down, across] of [[row, column], [row, last - column]]) {
+          for (let fold = 0; fold < 4; fold++) {
+            images.add(`${down},${across}`)
+            ;[down, across] = [across, last - down]
+          }
+        }
+        expect(images.size, `${color} at ${row},${column} is on no fold's line`).toBe(8)
+        for (const image of images) {
+          const [down, across] = image.split(',').map(Number)
+          expect(grid[down][across], `${color} at ${image}`).toBe('.')
+          grid[down][across] = color
+        }
+      }
+    }
+    const done = grid.map((row) => row.join(''))
+    expect(mirrored(done)).toEqual(done)
+    expect(turned(done)).toEqual(done)
   })
 })
+
+/** The drawing mirrored left to right. */
+function mirrored(rows: readonly string[]): string[] {
+  return rows.map((row) => [...row].reverse().join(''))
+}
+
+/** The drawing flipped over its diagonal. */
+function turned(rows: readonly string[]): string[] {
+  return rows.map((_, down) => rows.map((row) => row[down]).join(''))
+}

@@ -5,6 +5,7 @@ import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 import { browserDevicePreferences } from '../../services/devicePreferences'
 import WhatsInside from './WhatsInside.vue'
+import { TOUR_TIMING } from './useInsideTour'
 
 // The editor and what the ghost does in it have tests of their own: here they stand in, the rows doing nothing.
 vi.mock('./InsideEditor.vue', () => ({
@@ -62,9 +63,9 @@ describe("What's inside (ticket 0797)", () => {
     expect(playing.text()).toBe(`${en.homepage.inside.rows.mirror.name}${en.homepage.inside.rows.mirror.text}`)
   })
 
-  it('starts the tour by itself 900ms after it first shows', async () => {
+  it('starts the tour by itself a moment after it first shows', async () => {
     const wrapper = section({ withEditor: true, shown: true })
-    await vi.advanceTimersByTimeAsync(899)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start - 1)
     expect(wrapper.find('[aria-current="step"]').exists()).toBe(false)
     await vi.advanceTimersByTimeAsync(1)
     await flushPromises()
