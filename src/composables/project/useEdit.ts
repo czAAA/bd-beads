@@ -3,7 +3,7 @@ import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
-import { frameOf, layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, type Layered } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -47,6 +47,8 @@ export interface EditDeps {
   resetAfterFrameChange: () => void
   /** Writes the save every stroke step deferred. */
   flushPendingSave: () => void
+  /** Hears each Undo step taken with the state it led to: Beads since last file counts it (ticket 0796). */
+  countChange?: (before: Layered, after: Layered, sign: 1) => void
 }
 
 // Edit (ADR 0036): every undoable change to the open Project goes through here, which applies the rules (row lock,
@@ -58,8 +60,10 @@ export function useEdit(deps: EditDeps) {
   /** What a held Frame change started from, and the Project it belongs to; undefined while none is held. */
   let held: { id: string; baseline: UndoEntry } | undefined
 
-  function record(project: Project) {
-    deps.recordHistory(snapshotOf(project))
+  /** One Undo step, `before` the state it goes back to and `after` the state it led to. */
+  function step(before: UndoEntry, after: Layered) {
+    deps.recordHistory(before)
+    deps.countChange?.(before, after, 1)
   }
 
   const edit: EditFn = (kind, command) => {
@@ -70,7 +74,8 @@ export function useEdit(deps: EditDeps) {
     }
 
     if (kind === 'frame') {
-      return applyFrame((command as EditCommands['frame'])(project), () => record(project))
+      const result = (command as EditCommands['frame'])(project)
+      return applyFrame(result, () => step(snapshotOf(project), result.kind === 'changed' ? result.project : project))
     }
 
     const made = (command as EditCommands['drawing'])(project)
@@ -78,7 +83,7 @@ export function useEdit(deps: EditDeps) {
     if (updated === project) {
       return { kind: 'unchanged' }
     }
-    record(project)
+    step(snapshotOf(project), updated)
     deps.replaceProject(updated)
     // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
     if (!sameFrame(frameOf(project), frameOf(updated)) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
@@ -123,7 +128,7 @@ export function useEdit(deps: EditDeps) {
     held = undefined
     const project = deps.currentProject()
     if (was && project?.id === was.id && !sameLayers(project, was.baseline)) {
-      deps.recordHistory(was.baseline)
+      step(was.baseline, project)
     }
   }
 
@@ -153,7 +158,7 @@ export function useEdit(deps: EditDeps) {
   function endStroke() {
     const project = deps.currentProject()
     if (strokeBaseline && project && !sameBeads(project, strokeBaseline)) {
-      deps.recordHistory(strokeBaseline)
+      step(strokeBaseline, project)
     }
     strokeBaseline = undefined
     deps.flushPendingSave()

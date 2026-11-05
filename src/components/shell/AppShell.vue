@@ -13,7 +13,7 @@ const {
   saveFailed,
   announcement,
   endStroke,
-  onExportProjectFile,
+  onSaveProjectFile,
   missedProject,
   onRemoveMissed,
   onExportMissed,
@@ -49,7 +49,7 @@ const {
       <AppMessage v-if="saveFailed" tone="danger" placement="notice" :closable="false">
         <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
         <template #actions>
-          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportProjectFile">
+          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onSaveProjectFile">
             {{ t.saveBox.exportProjectFile }}
           </AppButton>
         </template>
