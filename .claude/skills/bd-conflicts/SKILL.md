@@ -3,9 +3,10 @@ name: bd-conflicts
 description: "Use when a branch or its PR conflicts with main, or a git merge/rebase conflict is in progress. Resolves without losing functionality, verifies with checks and tests, then updates the PR."
 ---
 
-1. **Start from a safe state.** Work in the branch's worktree (`git worktree list`; a ticket's is `../bd-beads-worktrees/bd-beads-<ticket>/`). On `main`, stop: there is nothing to resolve. If a merge/rebase is already in progress, skip to step 2. Otherwise check that the work is committed and pushed: `git status` is clean and `git log @{u}..HEAD` is empty (no upstream: stop and say so). If not, stop and tell the user what is uncommitted or unpushed. Then `git fetch origin main` and `git merge origin/main` into the current branch, so the conflicts land on this branch's PR (`gh pr view`). Merge, don't rebase: no force-push.
+1. **Start from a safe state.** Work in the branch's worktree (`git worktree list`; a ticket's is `../bd-beads-worktrees/bd-beads-<ticket>/`). On `main`, stop: there is nothing to resolve. If a merge/rebase is already in progress, skip to step 2. Otherwise check that the work is committed and pushed: `git status` is clean and `git log @{u}..HEAD` is empty (no upstream: stop and say so). If not, stop and tell the user what is uncommitted or unpushed. Then `git fetch origin main` and `git merge origin/main` into the current branch, so the conflicts land on this branch's PR (`gh pr view`). Merge, don't rebase: no force-push. Exception: if the branch was cut from another branch that has since been squash-merged, `git rebase --onto origin/main <that branch's last commit>` instead (ask before the force-push).
 
-2. **See the conflicts.** List the conflicting files and read the history on both sides.
+2. **See the conflicts.** List the conflicting files and read the history on both sides. A hunk `git rerere` resolved from an earlier merge is already staged; check it like the rest.
+   **Fast path:** if only `.md` files conflict and every hunk is lines both sides added at the same spot (a list or an index), keep both, newest first, and skip step 3 and step 5's tests (run `npm run check` only).
 
 3. **Find the primary sources** for each conflict: why each change was made and its original intent. Read the commit messages, the PRs, the tickets (`.scratch/`, and `.scratch/.archive/` by `ls`). Note whether this branch's goal is to **refactor, replace, remove or rework** the code in conflict.
 

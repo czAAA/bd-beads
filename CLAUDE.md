@@ -22,7 +22,7 @@ Headline format `type:[ticketNumber] Description`, with type `feat`, `fix` or `r
 
 Standing orders for every implementation (incl. `bd-implement` skill); don't ask between steps:
 1. Update local main `origin/main` first.
-2. create a worktree at `../bd-beads-worktrees/bd-beads-<ticket>/` (never inside the repo, never directly beside it, so the folder can be wiped without touching the docs repo) from fresh main, run `bash scripts/link-docs.sh` there, and work there
+2. create a worktree at `../bd-beads-worktrees/bd-beads-<ticket>/` (never inside the repo, never directly beside it, so the folder can be wiped without touching the docs repo) from fresh main (never from another unmerged branch: its squash merge conflicts with your copy of its commits), run `bash scripts/link-docs.sh` there, and work there
 3. Archive the ticket in the docs repo and push (not in the code PR) as soon as the PR that completes it is open and ready for review, without waiting for the merge: tick the boxes, say what was left out, set `**Status:** done`, move it to `.scratch/.archive/`. If review finds something wrong or missing, move it back out of `.archive/` and set its status to `ready-for-agent`. A PR that is only one step of a larger ticket doesn't archive it.
 4. When finish: run `/bd-review` (it fixes what it can), then commit, push, open PR.
 5. Serving the branch on the tailnet is opt-in: don't start it unless the user asks. When asked, from the worktree run `npm run tailnet:start [port]` (vite plus `tailscale serve`, tailnet only, never `funnel`) and give the user the printed `https://<mac-name>.<tailnet>.ts.net:<port>` URL. Leave it running for them to verify; `npm run tailnet:stop` once they confirm or the PR merges (`tailnet:status` shows the URL).

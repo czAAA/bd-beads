@@ -216,14 +216,16 @@ const referenceState = computed(() => {
   const image = referenceImage.image.value
   return image ? (image.shown ? 'shown' : 'hidden') : 'none'
 })
-/** The surface's view, which Adjust lays the picture's outline and handles through. */
+/** The surface's view, which the picture's handles are laid through. */
 const surfaceView = shallowRef<SurfaceView>()
-/** What Adjust handles: the picture as it is saved, its shape and limits, and one bead's width. */
-const adjusted = computed(() => {
+/** What the handles work, whenever the picture is drawn (ticket 0799) and in Adjust: the picture as it is saved, its
+ * shape and limits, and one bead's width. */
+const handled = computed(() => {
   const image = referenceImage.image.value
   const limits = referenceImage.limits.value
   const project = activeProject.value
-  if (!referenceImage.adjusting.value || !image || !limits || !project || !surfaceView.value) return undefined
+  const standing = referenceImage.adjusting.value || (onEditor.value && referenceImage.drawn.value !== undefined)
+  if (!standing || !image || !limits || !project || !surfaceView.value) return undefined
   const weave = canvasWeave(project)
   return { image, limits, aspect: image.picture.height / image.picture.width, bead: cellSizePx(weave.technique, weave.cell).width, view: surfaceView.value }
 })
@@ -436,15 +438,17 @@ const drawingStyle = computed(() => {
               @pressing="surfacePressing = $event"
               @drawn="onSurfaceDrawn"
             />
-            <!-- Adjust (ticket 0790): the reference image's outline and handles over the drawing, outside its image role. -->
+            <!-- The reference image's handles over the drawing whenever it is shown, its outline in Adjust (tickets 0790,
+              0799), outside its image role. -->
             <ReferenceAdjust
-              v-if="adjusted"
-              :place="adjusted.image.place"
-              :aspect="adjusted.aspect"
-              :limits="adjusted.limits"
-              :opacity="adjusted.image.opacity"
-              :view="adjusted.view"
-              :bead="adjusted.bead"
+              v-if="handled"
+              :place="handled.image.place"
+              :aspect="handled.aspect"
+              :limits="handled.limits"
+              :opacity="handled.image.opacity"
+              :view="handled.view"
+              :bead="handled.bead"
+              :adjusting="referenceImage.adjusting.value"
               @preview="referenceImage.preview"
               @commit="referenceImage.commit"
               @done="referenceImage.endAdjust"
@@ -470,7 +474,12 @@ const drawingStyle = computed(() => {
 
         <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
         <!-- The Adjust bar takes the Tool pill's place while the reference image is adjusted (ticket 0790). -->
-        <ReferenceAdjustBar v-if="adjusted" @fit="referenceImage.fit" @done="referenceImage.endAdjust" />
+        <ReferenceAdjustBar
+          v-if="handled && referenceImage.adjusting.value"
+          @replace="referenceImage.pick($event, 'adjust')"
+          @fit="referenceImage.fit"
+          @done="referenceImage.endAdjust"
+        />
         <ToolPill
           v-else-if="activeProject"
           v-model:position="toolPillPosition"
