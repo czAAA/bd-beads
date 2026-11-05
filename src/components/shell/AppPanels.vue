@@ -34,6 +34,8 @@ const {
   onOpenConvertImage,
   page,
   onLeavePage,
+  demo,
+  onStartDemoAfresh,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
@@ -169,7 +171,8 @@ const chosenStarter = ref<StarterId>()
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
-      @new-project="phoneSavedProjectsOpen = false"
+      :demo="demo"
+      @new-project="demo ? onStartDemoAfresh() : (phoneSavedProjectsOpen = false)"
       @convert-image="onOpenConvertImage()"
       @saved-projects="phoneSavedProjectsOpen = true"
       @update:input-mode="setInputMode"

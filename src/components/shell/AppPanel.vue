@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useId, watch } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { useShellScope } from '../../composables/ui/shellScope'
 import { PANEL_CONTEXT } from './panelContext'
 import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
@@ -71,6 +72,9 @@ const anchorEl = ref<HTMLElement>()
 const OPENERS = PANEL_OPENERS
 
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
+/** Where the strip button it hangs from is looked for: its own shell's, not another on the page (ticket 0797). */
+const scope = useShellScope()
+const findInShell = (selector: string) => (scope.root() ?? document).querySelector<HTMLElement>(selector)
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
  * past that. */
 const placed = anchored.style
@@ -84,7 +88,7 @@ const dropdownStyle = computed(() => ({
 }))
 
 function place() {
-  anchorEl.value = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? undefined
+  anchorEl.value = findInShell(`[data-testid="${props.anchor}"]`) ?? undefined
   anchored.follow()
 }
 watch(() => props.anchor, () => {
@@ -171,15 +175,15 @@ defineExpose({ place, el: panelEl, box: dropdownStyle })
 let opener: HTMLElement | null = null
 const pressClosed = usePressClosed()
 onMounted(() => {
-  opener = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`)
+  opener = findInShell(`[data-testid="${props.anchor}"]`)
   place()
   void nextTick(focusEntry)
 })
 onBeforeUnmount(() => {
   anchored.stop()
-  const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener
+  const target = findInShell(`[data-testid="${props.anchor}"]`) ?? opener
   // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
-  if (!pressClosed.wasPressClosed() && !document.querySelector('.app-modal')) void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
+  if (!pressClosed.wasPressClosed() && !findInShell('.app-modal')) void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
 })
 </script>
 

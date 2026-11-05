@@ -1,0 +1,109 @@
+<script setup lang="ts">
+import { nextTick, ref, shallowRef } from 'vue'
+import { provideShellScope } from '../../composables/ui/shellScope'
+import { useI18n } from '../../i18n/useI18n'
+import GhostPointer from './GhostPointer.vue'
+import InsideShell from './InsideShell.vue'
+import { DEMO_DRAWINGS, DEMO_FRAME, demoLibrary } from './demoProjects'
+import { createHand, ghostState, type Hand } from './hand'
+import { useTakeOver } from './useTakeOver'
+
+// The box What's inside's editor lives in (Homepage card, ticket 0797): its shell takes keys and presses only inside
+// it, and its panels, popovers and dialogs stay in it, so the page around it works as before. Starting afresh mounts
+// a new shell on a fresh demo library. The ghost's hand works in it; a press, drag or key of the beader's takes it over.
+const emit = defineEmits<{
+  /** The beader pressed, dragged or typed in the editor. */
+  takeOver: []
+}>()
+
+const { t } = useI18n()
+const rootEl = ref<HTMLElement>()
+provideShellScope({ root: () => rootEl.value, teleportTo: '.inside-editor' })
+
+/** Each fresh demo is a new shell, keyed by its session. */
+const session = ref(0)
+const shell = shallowRef<InstanceType<typeof InsideShell>>()
+const ghost = ghostState()
+
+useTakeOver(() => rootEl.value, () => emit('takeOver'))
+
+/** A CSS time on the root, in ms. */
+function cssMs(name: string): number {
+  const value = rootEl.value ? getComputedStyle(rootEl.value).getPropertyValue(name).trim() : ''
+  const amount = Number.parseFloat(value)
+  return Number.isNaN(amount) ? 0 : value.endsWith('ms') ? amount : amount * 1000
+}
+
+/** Lets the shell draw: a frame or two once it is mounted. */
+async function settle(): Promise<void> {
+  await nextTick()
+  for (let frames = 0; frames < 60 && !shell.value?.wired.canvas.surfaceProbe.value; frames++) await new Promise((resolve) => requestAnimationFrame(resolve))
+  await new Promise((resolve) => requestAnimationFrame(resolve))
+}
+
+/** How much taller the Frame's margin sheet is than the Frame, at the demo's size: its band and title block. */
+const SHEET_TO_FRAME = 1.8
+
+/** The view the tour plays in: the three drawings across the middle of the drawing area, at a zoom
+ * that shows them all and the Frame's sheet whole above the Tool pill; set once before anything is drawn, so nothing zooms or moves after. */
+async function frameDrawings(): Promise<void> {
+  const canvas = shell.value?.wired.canvas
+  const area = rootEl.value?.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
+  if (!canvas || !area) return
+  const pill = rootEl.value?.querySelector('[data-testid="tool-pill"]')?.getBoundingClientRect().height ?? 0
+  const left = Math.min(...DEMO_DRAWINGS.map((drawing) => drawing.column))
+  const right = Math.max(...DEMO_DRAWINGS.map((drawing) => drawing.column + drawing.rows[0].length - 1))
+  const at = (row: number, column: number) => canvas.surfaceProbe.value?.beadOnScreen({ row, column })
+  const first = at(DEMO_FRAME.row, left)
+  const across = at(DEMO_FRAME.row, right)
+  const down = at(DEMO_FRAME.row + DEMO_FRAME.rows - 1, left)
+  if (first && across && down && across.x > first.x && down.y > first.y) {
+    const wide = (area.width * 0.9) / (across.x - first.x)
+    const tall = (area.height - pill - 16) / SHEET_TO_FRAME / (down.y - first.y)
+    canvas.setZoom(canvas.zoom.value * Math.min(wide, tall, 3))
+  }
+  await settle()
+  const corner = at(DEMO_FRAME.row, left)
+  const opposite = at(DEMO_FRAME.row + DEMO_FRAME.rows - 1, right)
+  if (corner && opposite) canvas.panBy(area.left + area.width / 2 - (corner.x + opposite.x) / 2, area.top + (area.height - pill - 16) / 2 - (corner.y + opposite.y) / 2)
+}
+
+/** A fresh demo: Kaleidoscope with nothing drawn, the Menu's Saved Projects listing the demo's own three. */
+async function fresh(): Promise<void> {
+  ghost.shown = false
+  session.value += 1
+  await settle()
+  await frameDrawings()
+  await settle()
+}
+
+/** The ghost's hand for a run of the tour. */
+function hand(instant: boolean, signal: AbortSignal): Hand {
+  const wired = shell.value!.wired
+  return createHand({ root: rootEl.value!, shell: wired.shell, canvas: wired.canvas, ghost, instant, signal, moveMs: cssMs('--ghost-move'), rippleMs: cssMs('--ghost-ripple') })
+}
+
+defineExpose({ fresh, hand, hideGhost: () => void (ghost.shown = false) })
+</script>
+
+<template>
+  <div ref="rootEl" class="inside-editor" role="region" :aria-label="t.homepage.inside.editor" data-testid="inside-editor">
+    <InsideShell :key="session" ref="shell" :projects="demoLibrary(t)" @start-afresh="fresh" />
+    <GhostPointer :ghost="ghost" />
+  </div>
+</template>
+
+<style scoped>
+/* The box holds every overlay of its shell: `contain` makes it the room of their `fixed` place, and it clips them. Its
+ * shell's parts size themselves by its width, as the editor's by the screen's. */
+.inside-editor {
+  container: shell / inline-size;
+  position: relative;
+  contain: layout paint;
+  overflow: hidden;
+  overflow: clip;
+  min-width: 0;
+  min-height: 0;
+  border-radius: var(--canvas-box-radius);
+}
+</style>

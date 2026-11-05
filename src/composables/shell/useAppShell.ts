@@ -1,4 +1,4 @@
-import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
@@ -73,7 +73,9 @@ import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useRefer
 // The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
 // Call once from the root setup (see provideAppShell).
-function wireAppShell(services: Services) {
+function wireAppShell(services: Services, options: ShellOptions) {
+  /** The Homepage's demo (ticket 0797) leaves out what belongs to the page, and its New Project starts it afresh. */
+  const demo = options.demo
   /** Where this shell lives: the whole page for the editor, a box for the Homepage's demo (ticket 0797). */
   const scope = useShellScope()
   const { t, locale } = provideI18n(services.devicePreferences)
@@ -95,7 +97,7 @@ function wireAppShell(services: Services) {
 
   // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes
   // it.
-  migrateLegacyMakerName(services.libraryStore)
+  if (!demo) migrateLegacyMakerName(services.libraryStore)
 
   // The Project library and persistence (ticket 55, ADR 0012): replaceProject is the single commit point for the open
   // Project and saves as it lands; a dragged stroke defers its save per cell and writes once at the end (see
@@ -134,7 +136,7 @@ function wireAppShell(services: Services) {
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
-  useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
+  if (!demo) useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
 
   /** The device's last Background pick (ticket 0666): a new Project's layers start on it, and keep it on every device. */
   const backgrounds = useCanvasBackground(currentProject, services.devicePreferences)
@@ -686,7 +688,7 @@ function wireAppShell(services: Services) {
   const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
-  useSaveOnPageHide(flushPendingSave)
+  if (!demo) useSaveOnPageHide(flushPendingSave)
 
   function onSelectProject(id: string) {
     openProject(id)
@@ -734,8 +736,10 @@ function wireAppShell(services: Services) {
   const onOpenShortcutsHelp = () => void (shortcutsHelpOpen.value = true)
   const onCloseShortcutsHelp = () => void (shortcutsHelpOpen.value = false)
 
-  usePageZoomLock()
-  useViewportGuard()
+  if (!demo) {
+    usePageZoomLock()
+    useViewportGuard()
+  }
   useAppShortcutTable({
     activeProject: currentProject,
     activeTool: () => activeTool.value,
@@ -805,6 +809,9 @@ function wireAppShell(services: Services) {
   const onFrameKey = (event: KeyboardEvent) => {
     if (frameFlow.onKey(event)) event.preventDefault()
   }
+
+  /** Where the drawing surface shows a bead, once it is drawn: the Homepage's tour points at beads with it (0797). */
+  const surfaceProbe = shallowRef<SurfaceProbe>()
 
   return {
     /** The shell's own frame (AppShell): the announcer, the save-failed notice, and a stroke ending anywhere on it. */
@@ -966,6 +973,9 @@ function wireAppShell(services: Services) {
       onSetLetters: exportFlow.onSetLetters,
       exportOpener: overlays.exportOpener,
       onOpenExport: overlays.onOpenExport,
+      /** The Homepage's demo (ticket 0797): its margin sheet's band has no Row not done. */
+      demo: !!demo,
+      surfaceProbe,
     },
     /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
      * Frame panel. Each control only asks; the flows do the work. */
@@ -979,6 +989,10 @@ function wireAppShell(services: Services) {
       /** The page the box shows, and the Menu's way to leave it (the Menu knows nothing of which page asks). */
       page: appPage.page,
       onLeavePage: appPage.leave,
+      /** The Homepage's demo (ticket 0797): its Menu holds only the Projects and Keyboard shortcuts, and New Project
+       * empties its Canvas. */
+      demo: !!demo,
+      onStartDemoAfresh: () => demo?.startAfresh(),
       onOpenShortcutsHelp,
       onOpenFeedback: feedback.onOpenFeedback,
       // Menu: the device and the library
@@ -1108,6 +1122,19 @@ function wireAppShell(services: Services) {
   }
 }
 
+/** What the drawing surface tells of where it draws (ticket 0797). */
+export interface SurfaceProbe {
+  /** A bead's middle on screen, in client pixels. */
+  beadOnScreen(position: GridPosition): { x: number; y: number } | undefined
+}
+
+/** How a shell differs from the editor's own. */
+export interface ShellOptions {
+  /** The Homepage's demo editor (ticket 0797), on services of its own in memory: what belongs to the page (its zoom
+   * lock, the update prompt, the save on leaving) stays the page's, and New Project asks the demo to start afresh. */
+  demo?: { startAfresh: () => void }
+}
+
 type Wired = ReturnType<typeof wireAppShell>
 /** What AppShell draws on. */
 export type ShellFrameContext = Wired['shell']
@@ -1127,8 +1154,8 @@ const dialogsKey: InjectionKey<DialogsContext> = Symbol('dialogsContext')
 
 /** Wires the app and shares each part's context with the components below the caller; call once, from the root
  * component's setup. */
-export function provideAppShell(services: Services = browserServices): Wired {
-  const wired = wireAppShell(services)
+export function provideAppShell(services: Services = browserServices, options: ShellOptions = {}): Wired {
+  const wired = wireAppShell(services, options)
   provide(shellKey, wired.shell)
   provide(canvasKey, wired.canvas)
   provide(panelsKey, wired.panels)

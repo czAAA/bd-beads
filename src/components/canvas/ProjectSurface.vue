@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue'
-import type { PreviewCell } from '../../domain/grid'
+import type { GridPosition, PreviewCell } from '../../domain/grid'
+import { layerAt } from '../../domain/layers'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
 import { nearestQuarterTurn, tiltOf } from '../../domain/canvasOrientation'
@@ -381,7 +382,17 @@ const patternDoneAt = computed(() => {
 const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
 
 // Tests read what was drawn from the layout the surface built.
-defineExpose({ rulerLayout: rulers, pressMoveHandle })
+/** Where a bead's middle is on screen, in client pixels: the Homepage's tour points its ghost there (ticket 0797). */
+function beadOnScreen(position: GridPosition): { x: number; y: number } | undefined {
+  const box = rootEl.value?.getBoundingClientRect()
+  if (!box) return undefined
+  const layer = layerAt(props.project, position)
+  const bead = surface.value.beadBox({ row: position.row, column: position.column, rows: 1, columns: 1 }, layer)
+  const shown = leaning.value.toScreen({ x: bead.x + bead.width / 2, y: bead.y + bead.height / 2 })
+  return { x: box.left + shown.x, y: box.top + shown.y }
+}
+
+defineExpose({ rulerLayout: rulers, pressMoveHandle, beadOnScreen })
 
 onMounted(() => {
   measure()

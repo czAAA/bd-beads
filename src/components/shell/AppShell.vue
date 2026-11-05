@@ -87,6 +87,9 @@ const {
   overflow: hidden;
   overflow: clip;
   background: var(--canvas);
+  /* The shell's parts size themselves by its width, the screen's here (ticket 0797): a container the screen's size,
+   * fixed at it, so nothing `fixed` inside it moves. */
+  container: shell / inline-size;
 }
 
 /* Heard, not seen. */
