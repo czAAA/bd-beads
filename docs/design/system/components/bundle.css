@@ -187,6 +187,8 @@
   --save-ring-halo: 30px;
   --save-ring-stroke: 2px;
   --save-ring-inset: 16px;
+  --save-ring-size-touch: 44px;
+  --save-ring-inset-phone: 8px;
   --save-ring-label-time: 4s;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
@@ -1092,19 +1094,16 @@ body {
 }
 @media (prefers-reduced-motion:reduce){.bb-section-step--current::before{animation:none!important;transition:none}}
 
-/* SaveReminder card (ticket 0796): the save ring at the drawing area's top-right. */
-.bb-save-ring { position: absolute; top: var(--save-ring-inset); right: var(--save-ring-inset); z-index: var(--z-chrome); display: inline-flex; align-items: center; min-width: var(--save-ring-size); height: var(--save-ring-size); padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); box-shadow: var(--elevation-2); color: var(--body); }
+/* SaveReminder card (ticket 0796): the save ring at the drawing area's top-right, shown once the Project file is behind. */
+.bb-save-ring { position: absolute; top: var(--save-ring-inset); right: var(--save-ring-inset); z-index: var(--z-chrome); display: inline-flex; align-items: center; min-width: var(--save-ring-size); height: var(--save-ring-size); padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--elevated); box-shadow: var(--elevation-2); color: var(--accent-strong); animation: bb-save-ring-in var(--duration-slow) var(--ease-standard); }
 .bb-save-ring:hover { background-image: linear-gradient(var(--hover-fill), var(--hover-fill)); }
-.bb-save-ring-halo { position: relative; display: grid; place-items: center; width: var(--save-ring-halo); height: var(--save-ring-halo); flex: none; }
-.bb-save-ring-halo svg { position: absolute; inset: 0; transform: rotate(-90deg); }
-.bb-save-ring-track { fill: none; stroke: var(--line-strong); stroke-width: var(--save-ring-stroke); }
-.bb-save-ring-arc { fill: none; stroke: var(--muted); stroke-width: var(--save-ring-stroke); stroke-linecap: round; transition: stroke-dashoffset var(--duration-slow) var(--ease-standard); }
-.bb-save-ring.is-due .bb-save-ring-arc { stroke: var(--accent-strong); }
-.bb-save-ring.is-due .bb-save-ring-halo { color: var(--accent-strong); }
+.bb-save-ring-halo { display: grid; place-items: center; width: var(--save-ring-halo); height: var(--save-ring-halo); flex: none; border: var(--save-ring-stroke) solid currentColor; border-radius: var(--radius-full); box-sizing: border-box; }
 .bb-save-ring-label { display: inline-flex; gap: 6px; align-items: center; max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; font: var(--type-tab); color: var(--ink); transition: max-width var(--duration-slow) var(--ease-standard), opacity var(--duration-base) var(--ease-standard); }
 .bb-save-ring.is-open .bb-save-ring-label { max-width: 20rem; opacity: 1; padding: 0 12px 0 4px; }
 .bb-save-ring-count { font: var(--type-meta-small); color: var(--muted); }
-[data-theme="contrast"] .bb-save-ring { border-width: 2px; border-color: var(--line-strong); }
-[data-theme="contrast"] .bb-save-ring-arc, [data-theme="contrast"] .bb-save-ring.is-due .bb-save-ring-arc { stroke: var(--ink); }
-[data-theme="contrast"] .bb-save-ring-halo, [data-theme="contrast"] .bb-save-ring.is-due .bb-save-ring-halo { color: var(--ink); }
-@media (prefers-reduced-motion: reduce) { .bb-save-ring-label, .bb-save-ring-arc { transition: opacity var(--duration-base) linear; } }
+@keyframes bb-save-ring-in { from { opacity: 0; transform: scale(0.6); } }
+@media (pointer: coarse) { .bb-save-ring { min-width: var(--save-ring-size-touch); height: var(--save-ring-size-touch); padding: 6px; } }
+@media (max-width: 743px) { .bb-save-ring { top: var(--save-ring-inset-phone); right: var(--save-ring-inset-phone); min-width: var(--save-ring-size-touch); height: var(--save-ring-size-touch); padding: 6px; } .bb-save-ring.is-open .bb-save-ring-label { max-width: calc(100vw - 2 * var(--save-ring-inset-phone) - var(--save-ring-size-touch)); } }
+[data-theme="contrast"] .bb-save-ring { border-width: 2px; border-color: var(--line-strong); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .bb-save-ring { animation-name: bb-fade-in; } .bb-save-ring-label { transition: opacity var(--duration-base) linear; } }
+@keyframes bb-fade-in { from { opacity: 0; } }

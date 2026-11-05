@@ -248,8 +248,10 @@
   --hint-ring-width: 2px; /* FirstRunHints card: the accent ring round Select, Mirror and Export. */
   --save-ring-size: 40px; /* SaveReminder card: the round button at the drawing area's top-right (44px to hit on touch). */
   --save-ring-halo: 30px; /* SaveReminder card: the ring's box inside the button, inside its 1px edge and 4px padding. */
-  --save-ring-stroke: 2px; /* SaveReminder card: the ring's track and arc. */
+  --save-ring-stroke: 2px; /* SaveReminder card: the ring round the save icon. */
   --save-ring-inset: 16px; /* SaveReminder card: in from the drawing area's right edge and under the Canvas strip. */
+  --save-ring-size-touch: 44px; /* SaveReminder card: the button on a coarse pointer and on a phone (6px padding round the halo). */
+  --save-ring-inset-phone: 8px; /* SaveReminder card: the inset under 744px. */
   --save-ring-label-time: 4s; /* SaveReminder card: how long the label stays open at the threshold. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
