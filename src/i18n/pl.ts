@@ -303,8 +303,8 @@ export const pl: Translations = {
       project: 'ustaw ten projekt: nazwa, autor, technika, koralik i tło',
       mirror: 'Odbicie: lewo–prawo, góra–dół lub wokół środka',
       color: 'kolory i twoja paleta',
-      steps: 'rysunek → zaznaczenie → ramka → eksport',
-      storage: 'Twoje projekty są zapisane w tej przeglądarce, na tym urządzeniu.\nPrzeglądarka może je usunąć bez ostrzeżenia, więc zapisz plik tych, na których ci zależy:',
+      storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
+      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi. Zapisz do pliku te, których nie chcesz stracić:',
     },
   },
   shell: {
