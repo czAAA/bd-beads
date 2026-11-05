@@ -191,7 +191,7 @@ function choose(row: InsideRowId) {
   flex: 1 1 auto;
   grid-template-columns: var(--inside-list-width) minmax(0, 1fr);
   gap: var(--space-16);
-  min-height: 0;
+  min-height: var(--inside-main-min-height);
 }
 
 .inside__list {

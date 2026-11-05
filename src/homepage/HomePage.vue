@@ -17,6 +17,7 @@ import AppLogo from '../components/ui/AppLogo.vue'
 import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeTile from './CoffeeTile.vue'
+import { wheelPixels } from './wheelTurn'
 import WhatsInside from './inside/WhatsInside.vue'
 import PlanTiles from './PlanTiles.vue'
 import RollingSlogan from './RollingSlogan.vue'
@@ -177,6 +178,20 @@ const wheel = useWheelTurn({
 })
 const nudge = useScrollNudge({ onFirst: () => section.value === 0, reducedMotion })
 
+/** The demo editor in What's inside pans on a wheel and holds it from the page; until the beader takes it over the wheel
+ * is the page's own, so a section taller than its room scrolls (and turns) over the editor too. */
+function onWheelFirst(event: WheelEvent) {
+  if (!(event.target instanceof Element) || !event.target.closest('.inside-editor:not([data-taken-over])')) return
+  event.stopPropagation()
+  onWheel(event)
+  // The editor's panel lets no scroll chain past it, so the section is scrolled by hand.
+  const room = event.target.closest('.homepage__section')
+  if (!event.defaultPrevented && room) {
+    event.preventDefault()
+    room.scrollTop += wheelPixels(event, pageEl.value?.clientHeight ?? window.innerHeight)
+  }
+}
+
 function onWheel(event: WheelEvent) {
   nudge.scrolled()
   wheel.onWheel(event)
@@ -222,7 +237,11 @@ function sectionLean(index: number) {
 }
 
 // Keys scroll the page itself (Page Down, Space, the arrows), so it holds the focus until something in it takes it.
-onMounted(() => pageEl.value?.focus({ preventScroll: true }))
+onMounted(() => {
+  pageEl.value?.focus({ preventScroll: true })
+  // Capturing, to come before the editor's own wheel; the listener goes with the page element.
+  pageEl.value?.addEventListener('wheel', onWheelFirst, { capture: true })
+})
 
 // The free list (ticket 0742): scrolling past the plans grows No account's list, the plans scrolling up in their section
 // as the page does, and the page reaches as far as the whole list needs. The page stops snapping once it grows, until
