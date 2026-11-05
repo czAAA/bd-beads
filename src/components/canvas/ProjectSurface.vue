@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, toRef, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
@@ -13,6 +13,7 @@ import type { Size } from '../../rendering/cellSize'
 import { SETTLE_MS, twistTransform } from '../../rendering/gestureView'
 import { marginForm, marginScale, titleBlockCorner } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
+import type { DrawnReference } from '../../rendering/referenceImage'
 import { rulerLayout, type RulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
 import { piecesWhenIdle } from '../../composables/canvas/idlePieces'
@@ -90,6 +91,8 @@ const props = withDefaults(defineProps<{
   /** The last press of Row done or Row not done (ticket 0730): the Pattern's motion plays from it, never from the
    * pointer changing. */
   rowPress?: RowPress
+  /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
+  reference?: DrawnReference
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -107,6 +110,8 @@ const emit = defineEmits<SurfacePointerEvents & {
   'schema-anchors': [anchors: SchemaAnchors | undefined]
   /** Every bead in view was drawn (ticket 0716's safe start). */
   drawn: []
+  /** The view the layers are drawn through, for what stands over the drawing in its px (Adjust, ticket 0790). */
+  'surface-view': [view: SurfaceView]
 }>()
 
 /** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
@@ -348,7 +353,8 @@ const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
-useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn') })
+useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference) })
+watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,

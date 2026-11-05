@@ -35,5 +35,5 @@ export function parseLegacyProjectsFile(text: string): ProjectFileContents {
     throw new Error('This openbeads file does not contain readable Projects')
   }
 
-  return { projects: file.patterns.map(normalizeProject) }
+  return { projects: file.patterns.map(normalizeProject), pictures: {} }
 }

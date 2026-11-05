@@ -11,6 +11,7 @@ import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePalette
 import { lettersOfPalette } from './paletteEdits'
 import { readMirrorArea, readMirrorSetting } from './mirror'
 import { readPieceNames } from './pieceNames'
+import { readReferenceImage } from './referenceImage'
 import type { CanvasLayer, FrameLayer, Grid, LayerFields, Project, RowProgress } from './project'
 import { readRowProgress } from './rowProgress'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
@@ -85,7 +86,7 @@ function legacyRotation(project: ProjectWithLegacyFields): Rotation {
  * wrote it, and never re-saves them. One saved before its layers opens looking as it did (`layeredOf`). */
 export function normalizeProject(stored: StoredProject): Project {
   const layered = isLayered(stored) ? stored : layeredOf(stored)
-  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, ...rest } = layered
+  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, ...rest } = layered
   const [storedCanvas, ...storedFrames] = storedLayers as [StoredLayer, ...StoredLayer[]]
   const canvas = readCanvas(storedCanvas, layered.id)
   // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
@@ -101,6 +102,7 @@ export function normalizeProject(stored: StoredProject): Project {
   const paletteCodes = codesInPalette(normalizePaletteCodes(storedCodes), palette, builtIns)
 
   const mirror = readMirrorSetting(storedMirror, { canvasArea: readMirrorArea(storedCanvas.mirrorArea), framed: frames.length > 0 })
+  const referenceImage = readReferenceImage(storedReference)
   return {
     ...rest,
     layers: [canvas, ...frames],
@@ -110,6 +112,8 @@ export function normalizeProject(stored: StoredProject): Project {
     paletteLetters: lettersOfPalette(palette, wovenBeadId, storedLetters),
     // Mirror (tickets 0703, 0750): a file from before it, or an unreadable record, opens with Mirror off.
     ...(mirror ? { mirror } : {}),
+    // The reference image (ticket 0790): an unreadable record opens with none.
+    ...(referenceImage ? { referenceImage } : {}),
   }
 }
 

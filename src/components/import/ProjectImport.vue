@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 import type { Project } from '../../domain/project'
-import { importProjects } from '../../domain/projectFile'
+import { importedPictures, importProjects } from '../../domain/projectFile'
 import { readImportedFile } from '../../composables/import/readImportedFile'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
@@ -29,8 +29,9 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  /** The Projects a file turned out to hold, ready to be saved locally, already given fresh ids where they collided. */
-  import: [projects: Project[]]
+  /** The Projects a file turned out to hold, ready to be saved locally, already given fresh ids where they collided,
+   * and their reference images' pictures by those ids (ticket 0790). */
+  import: [projects: Project[], pictures: ReadonlyMap<string, Blob>]
 }>()
 
 const fileInputId = useId()
@@ -55,7 +56,7 @@ async function onImportFile(event: Event): Promise<void> {
     const contents = await readImportedFile(file)
     const added = importProjects(contents.projects, props.projects)
     importedCount.value = added.length
-    emit('import', added)
+    emit('import', added, importedPictures(contents.projects, added, contents.pictures))
   } catch {
     importFailed.value = true
   } finally {

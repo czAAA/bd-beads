@@ -26,6 +26,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onSelectColor: vi.fn(),
     onClearSelection: vi.fn(),
     onToggleRulers: vi.fn(),
+    onToggleReferenceImage: vi.fn(),
     onEditFrame: vi.fn(),
     onToggleFramePanel: vi.fn(),
     onCopy: vi.fn(),
@@ -172,6 +173,13 @@ describe('useAppShortcutTable', () => {
     press({ key, shiftKey: true })
     expect(refused.deps.onRemoveSelectedLine).not.toHaveBeenCalled()
     refused.wrapper.unmount()
+  })
+
+  it('I shows or hides the reference image with a Project open (ticket 0790)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
+    press({ key: 'i' })
+    expect(deps.onToggleReferenceImage).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 
   it('Shift+R rotates and plain R still toggles the rulers', () => {

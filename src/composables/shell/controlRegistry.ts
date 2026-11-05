@@ -53,6 +53,8 @@ export interface ControlDeps {
   onFillSelection: () => void
   onFrameFromSelection: () => void
   onToggleRulers: () => void
+  /** The strip's Reference image button and `I` (ticket 0790): shows or hides the reference image. */
+  onToggleReferenceImage: () => void
   /** The edit pencil: shows or hides the Frame's handles (tickets 417, 510). */
   onEditFrame: () => void
   /** The strip's Frame button: opens or closes the Frame panel (ticket 510). */
@@ -275,6 +277,18 @@ export const CONTROLS: readonly ControlAction[] = [
     group: 'canvas',
     chords: [{ key: 'r', label: 'R' }],
     run: (deps) => deps.onToggleRulers(),
+  },
+  {
+    // The Reference image (ticket 0790): with no picture its button opens the file picker; the key only shows and hides.
+    id: 'reference-image',
+    icon: 'reference-image',
+    name: (t) => t.referenceImage.name,
+    // With a picture the strip button's Tooltip says Show or Hide instead (CanvasStrip).
+    body: (t) => t.referenceImage.addTooltip,
+    group: 'canvas',
+    chords: [{ key: 'i', label: 'I' }],
+    needsProject: true,
+    run: (deps) => deps.onToggleReferenceImage(),
   },
   {
     id: 'zoom-in',

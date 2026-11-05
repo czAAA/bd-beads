@@ -28,14 +28,14 @@ function mountPanel(props: Record<string, unknown> = {}) {
 }
 
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
-  it('has the head, then the Canvas\'s Layer settings, export and this project sections, in that order', () => {
+  it('has the head, then the Canvas\'s Layer settings, the reference image, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'Export', 'This project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'reference image', 'Export', 'This project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="export-project-file"]').text()).toContain('.openbeads')
@@ -94,6 +94,21 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(state().text()).toContain('Not saved. ')
     await wrapper.get('[data-testid="save-try-again"]').trigger('click')
     expect(wrapper.emitted('save')).toHaveLength(1)
+  })
+
+  it('says the reference image is not saved on this device while the device won\'t keep its picture (ticket 0790)', () => {
+    const wrapper = mountPanel({ reference: { preparing: false, notSaved: true } })
+    expect(wrapper.get('[data-testid="save-state"]').text()).toBe(en.referenceImage.notSaved)
+    expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')
+  })
+
+  it('passes the reference image section\'s asks on (ticket 0790)', async () => {
+    const wrapper = mountPanel()
+    const input = wrapper.get<HTMLInputElement>('[data-testid="reference-image-input"]')
+    const file = new File(['x'], 'rose.png', { type: 'image/png' })
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+    expect(wrapper.emitted('pick-reference-image')).toEqual([[file]])
   })
 
   it('opens the keyboard when the pencil is tapped on a touch device (ticket 520)', async () => {

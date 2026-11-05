@@ -43,6 +43,7 @@ import projectFileV13Mirror from './fixtures/project-file-v13-mirror.json?raw'
 import projectFileV13MirrorAxes from './fixtures/project-file-v13-mirror-axes.json?raw'
 import projectFileV13MirrorArea from './fixtures/project-file-v13-mirror-area.json?raw'
 import projectFileV13MirrorPlace from './fixtures/project-file-v13-mirror-place.json?raw'
+import projectFileV14Reference from './fixtures/project-file-v14-reference.json?raw'
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
@@ -91,6 +92,8 @@ const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => co
  * and a Delica 11/0 copy with its sizes the right way round (ticket 0722). */
 function writtenBack(stored: string): unknown {
   return JSON.parse(stored, (key, value) => {
+    // Written back as this build writes: file version 14 (ticket 0790).
+    if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: 14 }
     if (key === 'beadShape') return undefined
     const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
     return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
@@ -412,20 +415,20 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV11Turned).projects
       expect(frameSheetOf(opened)).toEqual({ row: 8, column: 6, rows: 5, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 3, beads: { 0: { 0: '#e63746' }, 4: { 3: '#e63746' } } })
       expect(rowProgressOf(opened)).toMatchObject({ direction: 'rows', currentRow: 2 })
-      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 13, projects: [{ layers: [{}, { orientation: 270 }] }] })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 14, projects: [{ layers: [{}, { orientation: 270 }] }] })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
     it('opens a version 10 file with the Frame\'s Folded beads beyond its edge, and writes it back the same (ticket 0638)', () => {
       const [opened] = parseProjectsFile(projectFileV10Folded).projects
       expect(frameSheetOf(opened)).toEqual({ row: 7, column: 7, rows: 6, columns: 2, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, beads: { 0: { 0: '#e63746' } }, folded: { 1: { 3: '#2f6fed' }, 4: { [-2]: '#27ae60', [-1]: '#27ae60' } } })
-      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 13 })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 14 })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
     it('reads a version 4 file and writes it back as version 13 with the built-in Palette (tickets 0525, 0664)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 13, projects: [{ palette: defaultIds }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 14, projects: [{ palette: defaultIds }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })
@@ -458,7 +461,7 @@ describe('stored-data compatibility', () => {
       expect(layersView(opened!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 }, beads: { 0: { 0: '#2fb6ae' } } })
       expect(frameSheetOf(opened!)).toEqual({ row: 7, column: 7, rows: 2, columns: 3, technique: 'peyote', techniqueSettings: { brickDrop: 2, peyoteDrop: 1 }, beads: { 1: { 2: '#e63746' } } })
       const written = JSON.parse(serializeProject(opened!))
-      expect(written).toMatchObject({ version: 13, projects: [{ layers: [{ techniqueSettings: { brickDrop: 3 } }, { technique: 'peyote', techniqueSettings: { brickDrop: 2 } }] }] })
+      expect(written).toMatchObject({ version: 14, projects: [{ layers: [{ techniqueSettings: { brickDrop: 3 } }, { technique: 'peyote', techniqueSettings: { brickDrop: 2 } }] }] })
       expect(parseProjectsFile(JSON.stringify(written)).projects).toEqual([opened])
     })
 
@@ -470,7 +473,7 @@ describe('stored-data compatibility', () => {
       expect(beadsOfLayer(opened!, 'canvas')).toEqual({ 0: { 0: '#2fb6ae' }, 30: { 30: '#e63746', 31: '#e63746' } })
       expect(frameSheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', techniqueSettings: { peyoteDrop: 1 }, quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
       expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, 13))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12, 14))
     })
 
     it('opens a file whose layers saved a Bead shape, Real, Symmetric or none, drawn in each Bead\'s real cell, and writes no Bead shape back (ticket 0724)', () => {
@@ -545,11 +548,23 @@ describe('stored-data compatibility', () => {
       expect(JSON.parse(serializeProject(opened!))).toEqual(writtenBack(projectFileV13MirrorPlace.replace('"fold":3', '"fold":2')))
     })
 
+    it('opens a version 14 file with a reference image and its picture, and writes it back the same (ticket 0790, ADR 0089)', () => {
+      const { projects: [opened], pictures } = parseProjectsFile(projectFileV14Reference)
+      expect(opened!.referenceImage).toEqual({
+        picture: { name: 'rose.webp', type: 'image/webp', width: 2048, height: 1536, bytes: 421888 },
+        place: { x: 310, y: -40, width: 640, angle: 12 },
+        opacity: 25,
+        shown: false,
+      })
+      expect(Object.keys(pictures)).toEqual(['v14-reference'])
+      expect(JSON.parse(serializeProject(opened!, pictures))).toEqual(writtenBack(projectFileV14Reference))
+    })
+
     it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {
       const [opened] = parseProjectsFile(projectFileV12Backgrounds).projects
       expect(backgroundOf(opened!, 'canvas')).toBe(3)
       expect(backgroundOf(opened!, 'frame')).toBe('#336699')
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds, 13))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds, 14))
     })
 
     it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {
@@ -560,7 +575,7 @@ describe('stored-data compatibility', () => {
     it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {
       const [opened] = parseProjectsFile(projectFileV12Twisted).projects
       expect(canvasOf(opened!)).toMatchObject({ name: 'Twisted fox', orientation: 37.5 })
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Twisted, 13))
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Twisted, 14))
     })
 
     it('keeps every Frame a version 12 file holds, and a Frame\'s own Piece names, though the app shows one (ticket 0664)', () => {
