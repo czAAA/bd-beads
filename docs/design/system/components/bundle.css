@@ -179,11 +179,8 @@
   --schema-card-name-inset: 46px;
   --hint-note: italic 400 1rem/1.15 var(--font-serif);
   --hint-step: italic 400 1.1875rem/1.15 var(--font-serif);
-  --hint-welcome: italic 400 1.375rem/1.2 var(--font-serif);
-  --hint-wordmark: italic 400 2.875rem/1 var(--font-serif);
+  --hint-storage-lead: 500 1rem/1.5 var(--font-sans);
   --hint-storage: 400 0.875rem/1.6 var(--font-sans);
-  --hint-welcome-phone: italic 400 1.125rem/1.2 var(--font-serif);
-  --hint-wordmark-phone: italic 400 2.25rem/1 var(--font-serif);
   --hint-ring-gap: 2px;
   --hint-ring-width: 2px;
 }
@@ -1045,9 +1042,8 @@ body {
 .bb-hint-note--step { font: var(--hint-step); color: var(--body); }
 .bb-hint-ring { box-shadow: 0 0 0 var(--hint-ring-gap) var(--hint-ring-behind, var(--box)), 0 0 0 calc(var(--hint-ring-gap) + var(--hint-ring-width)) var(--accent); }
 .bb-hint-welcome { display: flex; flex-direction: column; align-items: center; text-align: center; color: var(--muted); }
-.bb-hint-wordmark { margin-top: 12px; font: var(--hint-wordmark); letter-spacing: -0.6px; }
-.bb-hint-steps { margin: 16px 0 0; font: var(--hint-welcome); color: var(--accent-strong); }
-.bb-hint-storage { margin: 24px 0 0; font: var(--hint-storage); white-space: pre-line; }
+.bb-hint-lead { margin: 0; font: var(--hint-storage-lead); color: var(--body); }
+.bb-hint-storage { margin: 6px 0 0; font: var(--hint-storage); }
 .bb-hint-path { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; font: var(--hint-storage); }
 @media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }
 

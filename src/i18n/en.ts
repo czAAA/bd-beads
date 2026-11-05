@@ -301,8 +301,8 @@ export const en: Translations = {
       project: 'set up this Project: its name, maker, Technique, Bead and background',
       mirror: 'Mirror: left–right, top–bottom or radial',
       color: 'colors and your Palette',
-      steps: 'draw → select → frame → export',
-      storage: 'Your Projects are kept in this browser, on this device.\nThe browser can clear them without warning, so keep a file of the ones you love:',
+      storageLead: 'Your Projects are saved only in this browser, on this device.',
+      storage: "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:",
     },
   },
   shell: {
