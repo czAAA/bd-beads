@@ -5,9 +5,8 @@ import { SOURCE_URL } from '../data/sourceLink'
 import { useI18n } from '../i18n/useI18n'
 
 // The coffee tile (ticket 219; Homepage card): a decorative beaded cup, who made the app, a few lines and a button opening the
-// Coffee link in a new tab (ticket 560), inert while it is empty. The tile is the Coffee link (ticket 0718): the button's
-// `::after` covers it. The one other link, to the source, sits above that cover in the small line under the button.
-// No donation-service name, logo or colours.
+// Coffee link in a new tab (ticket 560), inert while empty. The button's `::after` covers the tile (ticket 0718); the source
+// link under it sits above that cover. No donation-service name, logo or colours.
 const { t } = useI18n()
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */
