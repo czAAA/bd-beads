@@ -7,15 +7,9 @@ Issues are tracked as markdown files under `.scratch/`, one flat file per ticket
 
 ## Ticket numbers
 
-A new ticket or spec takes the highest number in use plus one, counted across `.scratch/`, `.scratch/.archive/` and `docs/specs/` (one number space). They are committed straight to the docs repo's `main` (no branch), so these folders hold every number in use:
+A new ticket or spec takes the highest number in use plus one, counted across `.scratch/`, `.scratch/.archive/` and `docs/specs/` (one number space). Reserve it with `bash scripts/next-ticket.sh [--spec] <slug>...`: it pulls the docs repo, pushes a stub per slug at once (so a parallel session can't take the same number) and prints the paths; overwrite each stub with the ticket and commit and push as below. Never pick a number by hand.
 
-```sh
-ls .scratch .scratch/.archive docs/specs | grep -oE '^[0-9]+-' | grep -oE '[0-9]+' | sort -n | tail -1
-```
-
-Write the next number with four digits (`printf '%04d'`). Numbers in text ("ticket 0071", "Blocked by: 0071") are padded the same way.
-
-Pull the docs repo first (`git -C ../bd-beads-docs pull`).
+Numbers are written with four digits, in file names and in text ("ticket 0071", "Blocked by: 0071").
 
 A number is never reused, and a ticket keeps its number when it moves to `.archive/`.
 
