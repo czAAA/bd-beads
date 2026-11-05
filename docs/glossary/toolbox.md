@@ -77,7 +77,7 @@ The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom �
 _Avoid_: tip, tutorial
 
 **First-run welcome**:
-The one message over an empty Project, centred on the drawing area: that Projects are saved only in this browser on this device, that clearing the browser's data takes them, and the way to keep a Project file (`Project › Export › Project file`). Nothing else is written over an empty Project: no caption beside a control, no ring. Shown, with the Canvas hint, whenever the Project has no beads and no Frame; it goes with the first bead (tickets 0725, 0795, 0798, FirstRunHints card).
+The one message over an empty Project, centred on the drawing area: that Projects are saved only in this browser on this device, that clearing the browser's data takes them, and the way to keep a Project file (`Project › Export › Save Project file`). Nothing else is written over an empty Project: no caption beside a control, no ring. Shown, with the Canvas hint, whenever the Project has no beads and no Frame; it goes with the first bead (tickets 0725, 0795, 0798, FirstRunHints card).
 _Avoid_: first-run hints, onboarding, tour, coach marks, tutorial
 
 **Message**:

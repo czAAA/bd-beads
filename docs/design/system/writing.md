@@ -697,7 +697,7 @@ The two toasts (Message card, info tone) after a Fill tool press on the Canvas t
 
 ## First-run welcome copy (tickets 0725, 0738, 0795, 0798)
 
-The welcome over an empty Project (FirstRunHints card): two lines, and the path after them. It is not new copy for the path: it is the Project panel's own labels, `Project › Export › Project file`, in chips. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings. Ticket 0798 took the captions beside the controls away, so nothing else is written over an empty Project.
+The welcome over an empty Project (FirstRunHints card): two lines, and the path after them. It is not new copy for the path: it is the Project panel's own labels, `Project › Export › Save Project file`, in chips. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings. Ticket 0798 took the captions beside the controls away, so nothing else is written over an empty Project.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
