@@ -54,7 +54,8 @@ export function defaultPalette(beadId: string): readonly PaletteColor[] {
   return brandColors(findBead(beadId)?.brand.id)
 }
 
-/** A built-in color by id, for the fixed artwork (Starters, the homepage) that names the colors it draws with. */
+/** A built-in color by id.
+ * @internal Tests name the built-in colors they check by id; the Homepage's drawn examples that did went with 0797. */
 export function findBuiltInColor(id: string): PaletteColor | undefined {
   return BUILT_IN_COLORS.find((color) => color.id === id)
 }

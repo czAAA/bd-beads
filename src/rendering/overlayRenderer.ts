@@ -41,7 +41,7 @@ const PREVIEW_OPACITY = 0.6
 const PREVIEW_OUTLINE_PX = 2
 
 /** The hover preview (ticket 23): where paint would land, or a pasted block under the cursor. */
-export interface HoverPreview {
+interface HoverPreview {
   /** The beads it is on: the hovered one, or every bead of a block about to be pasted on a Custom frame. */
   cells: readonly PreviewCell[]
   /** A block about to be pasted on a grid (ticket 0675): read only where the view reaches, so a big one costs what is on

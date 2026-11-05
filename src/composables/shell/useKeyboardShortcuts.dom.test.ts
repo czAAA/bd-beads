@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './useKeyboardShortcuts'
+import { provideShellScope } from '../ui/shellScope'
 
 /** A minimal host component: useKeyboardShortcuts is a composable, so it needs a live component instance
  *  (lifecycle hooks) to run inside, same as it will in App.vue. */
@@ -87,5 +88,38 @@ describe('useKeyboardShortcuts', () => {
     press({ key: 'a' })
 
     expect(action).not.toHaveBeenCalled()
+  })
+})
+
+describe('useKeyboardShortcuts in a boxed shell (ticket 0797)', () => {
+  it('takes only the keys pressed while the focus is in its box', () => {
+    const box = document.body.appendChild(document.createElement('div'))
+    const inside = box.appendChild(document.createElement('button'))
+    const outside = document.body.appendChild(document.createElement('button'))
+    const action = vi.fn()
+    const child = defineComponent({
+      setup() {
+        useKeyboardShortcuts([{ matches: (e) => e.key === 'z', action }])
+        return () => h('div')
+      },
+    })
+    const host = mount(
+      defineComponent({
+        setup() {
+          provideShellScope({ root: () => box, teleportTo: 'body' })
+          return () => h(child)
+        },
+      }),
+    )
+
+    press({ key: 'z' }, outside)
+    press({ key: 'z' }, document.body)
+    expect(action).not.toHaveBeenCalled()
+    press({ key: 'z' }, inside)
+    expect(action).toHaveBeenCalledOnce()
+
+    host.unmount()
+    box.remove()
+    outside.remove()
   })
 })

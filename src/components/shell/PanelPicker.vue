@@ -5,6 +5,10 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
+import { useShellScope } from '../../composables/ui/shellScope'
+
+/** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
+const teleportTo = useShellScope().teleportTo
 
 // A preference shown as its current value (MenuPanel card): the label on the row, a small button holding the value, and
 // a menu under it, right-aligned, with a check on the chosen one. It applies at once; Enter, Space or Down opens it,
@@ -153,7 +157,7 @@ function onListKeydown(event: KeyboardEvent) {
         </template>
       </button>
     </component>
-    <Teleport v-if="open" to=".app-shell" :disabled="!inShell">
+    <Teleport v-if="open" :to="teleportTo" :disabled="!inShell">
       <div :id="listId" ref="listEl" class="panel-picker__list anchored-popup" popover="manual" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
         <button
           v-for="option in options"

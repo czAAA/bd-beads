@@ -1,5 +1,6 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { isTypingInFormField } from '../shell/useKeyboardShortcuts'
+import { inScope, useShellScope } from '../ui/shellScope'
 
 /** The Space key, by its physical code, so it means the same whatever the keyboard layout. */
 function isSpaceKey(event: KeyboardEvent): boolean {
@@ -18,8 +19,9 @@ function closestButton(target: EventTarget | null): EventTarget | null {
 
 // Holding Space and dragging pans the Canvas (tickets 95, 233), whatever the tool; callers guard their cell handlers
 // with `spaceHeld`. Bound to the window like useKeyboardShortcuts: the canvas takes no keyboard focus and a drag can
-// wander anywhere; the page never scrolls (ticket 141).
+// wander anywhere; the page never scrolls (ticket 141). A boxed shell's Space is only the one pressed inside its box.
 export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
+  const scope = useShellScope()
   /** Space is currently held down (not while typing) -- shows the grab cursor and arms panning on the next
    * pointerdown. */
   const spaceHeld = ref(false)
@@ -32,7 +34,7 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   let pointerIsDown = false
 
   function onKeyDown(event: KeyboardEvent) {
-    if (!isSpaceKey(event) || isTypingInFormField(event.target) || activatesOnSpace(event.target)) {
+    if (!isSpaceKey(event) || !inScope(scope, event.target) || isTypingInFormField(event.target) || activatesOnSpace(event.target)) {
       return
     }
     // Without this, holding Space also triggers the browser's own page-down scroll wherever focus happens to be.
@@ -54,6 +56,7 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   }
 
   function onPointerDown(event: PointerEvent) {
+    if (!inScope(scope, event.target)) return
     pointerIsDown = true
     // A button the user clicked keeps focus after they move on to the canvas, and would swallow Space (ticket 424).
     // Pressing anywhere but a button hands that focus back; a button reached with Tab keeps it until then.

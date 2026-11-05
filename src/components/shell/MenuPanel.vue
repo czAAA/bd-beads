@@ -17,9 +17,9 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
 
-// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections. It only
-// asks: the app shell does the work. On the Homepage (ticket 540) the editor's parts are left out, Saved Projects kept (ticket
-// 0716). A row that leaves the page awaits `leave` first and knows no page; Convert image is the current page while open (0756).
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections, only
+// asking. The Homepage (540) leaves out the editor's parts but Saved Projects (0716), its demo all but the Projects and the
+// shortcuts (0797). A row that leaves the page awaits `leave` first; Convert image is the current page while open (0756).
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
@@ -33,8 +33,11 @@ const props = withDefaults(
     handedness?: Handedness
     /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
     penSeen?: boolean
+    /** The Homepage's demo editor (ticket 0797): only the Projects and Keyboard shortcuts, so nothing in the demo
+     * changes the app; its New Project empties the demo, with no form. */
+    demo?: boolean
   }>(),
-  { page: 'editor', leave: () => Promise.resolve(true), projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
+  { page: 'editor', demo: false, leave: () => Promise.resolve(true), projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
 )
 const inEditor = computed(() => props.page !== 'homepage')
 const converting = computed(() => props.page === 'convert-image')
@@ -108,7 +111,7 @@ const inputOptions = computed(() => [
     <!-- On the Homepage only Saved Projects, while the library is not empty (ticket 0716). -->
     <PanelSection v-if="inEditor || projectCount > 0" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
-      <PanelItem v-if="inEditor" icon="plus" accent sub stays data-testid="menu-new-project" @select="openNewProject">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem v-if="inEditor" icon="plus" accent :sub="!demo" :stays="!demo" data-testid="menu-new-project" @select="demo ? emit('new-project') : openNewProject()">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Convert image is an App page (ADR 0086): while it is open, its row is the current page. -->
       <PanelItem v-if="inEditor" icon="image" :aria-current="converting ? 'page' : undefined" data-testid="menu-convert-image" @select="converting || emit('convert-image')">
         {{ actions.convertImage.name(t) }}
@@ -118,7 +121,7 @@ const inputOptions = computed(() => [
       </PanelItem>
     </PanelSection>
 
-    <PanelSection id="menu:preferences" :label="t.panels.menu.preferences">
+    <PanelSection v-if="!demo" id="menu:preferences" :label="t.panels.menu.preferences">
       <PanelPicker
         :model-value="locale"
         :label="t.languageSwitcher.ariaLabel"
@@ -167,11 +170,11 @@ const inputOptions = computed(() => [
 
     <PanelSection id="menu:help" :label="t.panels.menu.help">
       <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
-      <PanelItem icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
-      <PanelItem icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
+      <PanelItem v-if="!demo" icon="message" data-testid="menu-item-feedback" @select="emit('feedback', 'general')">{{ t.panels.menu.sendFeedback }}</PanelItem>
+      <PanelItem v-if="!demo" icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage" @click="openHomepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 
-    <PanelSection id="menu:about" :label="t.panels.menu.about">
+    <PanelSection v-if="!demo" id="menu:about" :label="t.panels.menu.about">
       <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
       <PanelItem icon="code" :href="SOURCE_URL" external data-testid="menu-item-source">{{ t.header.sourceItem }}</PanelItem>
       <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee">{{ t.panels.menu.coffee }}</PanelItem>

@@ -35,6 +35,9 @@ const props = defineProps<{
   /** The zoom range the buttons stop at, when it isn't the Project canvas's (the Homepage has its own). */
   zoomMinPercent?: number
   zoomMaxPercent?: number
+  /** The Homepage's demo editor (ticket 0797): Menu, Project and Frame; Reference image, Undo and Redo, and the Brand,
+   * which links nowhere. */
+  demo?: boolean
 }>()
 const emit = defineEmits<{
   'select-panel': [sheet: 'menu' | 'project' | 'export']
@@ -76,7 +79,7 @@ const actions = {
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 const onHomepage = computed(() => props.page === 'homepage')
 /** The Brand is a link only on the editor. */
-const brandLinks = computed(() => props.page === undefined || props.page === 'editor')
+const brandLinks = computed(() => !props.demo && (props.page === undefined || props.page === 'editor'))
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const homepageHref = homepageUrl(import.meta.env.BASE_URL)
@@ -169,14 +172,16 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
       </component>
       <!-- Buy me a coffee (ticket 560): after the wordmark; only where the strip has room (1024px and up), under it the Menu row is the way in. -->
-      <span v-if="COFFEE_URL" class="canvas-strip__coffee">
+      <span v-if="COFFEE_URL && !demo" class="canvas-strip__coffee">
         <IconButton variant="plain" :icon-size="18" :action="actions.coffee" :href="COFFEE_URL" data-testid="strip-coffee" />
       </span>
     </div>
     <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
       <div v-if="project" class="canvas-strip__tools">
-        <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
-        <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+        <template v-if="!demo">
+          <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
+          <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+        </template>
         <template v-if="referenceImage">
           <IconButton
             variant="plain"
@@ -195,14 +200,14 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" @click="emit('undo')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
       </div>
-      <div v-if="zoomPercent !== undefined" class="canvas-strip__zoom" :data-zoom-percent="zoomPercent" data-testid="canvas-strip-zoom">
+      <div v-if="zoomPercent !== undefined && !demo" class="canvas-strip__zoom" :data-zoom-percent="zoomPercent" data-testid="canvas-strip-zoom">
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
       </div>
       <!-- Export (ticket 0652): the strip's last button, in its right corner; lit while the Export panel is open. -->
       <IconButton
-        v-if="project"
+        v-if="project && !demo"
         variant="plain"
         :icon-size="18"
         :action="actions.export"
@@ -234,8 +239,9 @@ function onPanelsKeydown(event: KeyboardEvent) {
   border-radius: var(--canvas-box-radius) var(--canvas-box-radius) 0 0;
 }
 
-/* Menu, Project and Frame all fit in a 320px window in the longest language (ticket 473). */
-@media (max-width: 340px) {
+/* The strip's widths are its shell's (ticket 0797): the screen for the editor, the Homepage's box for its strip, the
+ * demo's own box in What's inside. Menu, Project and Frame all fit in a 320px window in the longest language (473). */
+@container shell (max-width: 340px) {
   .canvas-strip {
     gap: var(--space-4);
     padding-left: var(--space-8);
@@ -250,7 +256,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
 }
 
 /* Under 1024px the words go and the icons stay; the label stays in the page for a screen reader. */
-@media (max-width: 1023px) {
+@container shell (max-width: 1023px) {
   .canvas-strip__label {
     position: absolute;
     width: 1px;
@@ -261,7 +267,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
   }
 }
 
-@media (max-width: 1023px) {
+@container shell (max-width: 1023px) {
   .canvas-strip__coffee {
     display: none;
   }
@@ -315,7 +321,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
   letter-spacing: var(--tracking-brand);
 }
 
-@media (min-width: 1024px) {
+@container shell (min-width: 1024px) {
   .canvas-strip__wordmark {
     display: inline;
   }
@@ -328,7 +334,7 @@ a.canvas-strip__brand:focus-visible {
 }
 
 /* The editor's phone strip has no Brand and gives the room to the controls; the Homepage's keeps the logo. */
-@media (max-width: 743px) {
+@container shell (max-width: 743px) {
   .canvas-strip:not(.canvas-strip--homepage) {
     grid-template-columns: auto minmax(0, 1fr);
   }
