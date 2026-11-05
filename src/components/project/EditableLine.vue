@@ -32,6 +32,9 @@ const props = defineProps<{
   /** A cell of the margin's title block (ticket 0657): no label, the value or the empty text always with its pencil,
    * and the field floated over the sheet, since the cell is one row of text. */
   bare?: boolean
+  /** Bare and with no pencil: only the empty text starts the edit, a value reads as text (the margin's compact row and
+   * its folded tab, where there is no room for pencils, ticket 0803). */
+  inviteOnly?: boolean
   testid: string
 }>()
 const emit = defineEmits<{ save: [value: string] }>()
@@ -88,8 +91,9 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
     <span v-if="!bare" class="editable-line__label">{{ label }}</span>
     <div v-if="!editing" class="editable-line__body">
       <template v-if="value || bare">
-        <span class="editable-line__value" :class="{ 'editable-line__value--empty': !value }" :data-user-text="value ? '' : undefined" :data-testid="testid">{{ value || emptyText }}</span>
-        <IconButton variant="plain" icon="pencil" :icon-size="bare ? 12 : undefined" :label="editLabel" :tooltip="{ body: editTooltip }" :data-testid="`${testid}-edit`" @click="start" />
+        <span v-if="value" class="editable-line__value" data-user-text :data-testid="testid">{{ value }}</span>
+        <button v-else class="ui-control editable-line__invite" type="button" :data-testid="testid" @click="start">{{ emptyText }}</button>
+        <IconButton v-if="!inviteOnly" variant="plain" icon="pencil" :icon-size="bare ? 12 : undefined" :label="editLabel" :tooltip="{ body: editTooltip }" :data-testid="`${testid}-edit`" @click="start" />
       </template>
       <button v-else class="ui-control editable-line__empty" type="button" :data-testid="`${testid}-add`" @click="start">
         {{ emptyText }}
@@ -223,8 +227,30 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
   color: var(--muted);
 }
 
-.editable-line__value--empty {
+/* Bare, the empty text invites a value: pressing it starts the edit, as the pencil does (ticket 0803). */
+.editable-line__invite {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  font: inherit;
   color: var(--muted);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.editable-line__invite:hover {
+  color: var(--ink);
+}
+
+.editable-line__invite:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 /* The title block's cell (ticket 0657): one line, the pencil 18px; the field floats over the sheet above the cell, on
