@@ -71,6 +71,19 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     expect(flow.adjusting.value).toBe(false)
   })
 
+  it('replaces the picture from the Adjust bar, staying in Adjust; a refusal there ends Adjust and opens the Project panel on it (ticket 0799)', async () => {
+    const placed = withReferenceImage(framed(), { ...newReferenceImage(picture, { x: 0, y: 0, width: 80, height: 80 }), place: { x: 5, y: 6, width: 30, angle: 45 } })
+    const { harness, flow, deps } = setup(placed, { prepared: tall })
+    flow.startAdjust()
+    await flow.pick(file('tall.png'), 'adjust')
+    expect(harness.project.referenceImage).toMatchObject({ picture: tall, place: { x: 5, y: 6, width: 30, angle: 45 } })
+    expect(flow.adjusting.value).toBe(true)
+    await flow.pick(file('photo.heic'), 'adjust')
+    expect(flow.refusal.value).toBe('heic')
+    expect(flow.adjusting.value).toBe(false)
+    expect(deps.openProjectPanel).toHaveBeenCalled()
+  })
+
   it('shows, hides and sets the opacity as views saved with the Project', async () => {
     const { harness, flow } = setup()
     await flow.pick(file(), 'panel')

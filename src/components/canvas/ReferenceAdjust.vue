@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { fillBlanks } from '../../domain/fillBlanks'
 import {
@@ -20,9 +20,9 @@ import { useI18n } from '../../i18n/useI18n'
 import { placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
 import AppIcon from '../ui/AppIcon.vue'
 
-// Adjust (ReferenceImage card, ticket 0790): the reference image's outline and handles over the drawing, in screen px
-// so they keep their size at every zoom. A drag inside moves it, a corner resizes it keeping its shape, the Turn handle
-// turns it; the keys move, resize and turn it too. Escape or a press outside ends it, as an overlay layer does.
+// The reference image's handles (ReferenceImage card, tickets 0790, 0799), in screen px: whenever it is shown a corner
+// resizes it and the Turn handle turns it, any tool in hand; the picture itself takes no press. In Adjust the outline
+// joins them: a drag inside moves it, the keys work, and Escape or a press outside ends it, as an overlay layer does.
 const props = defineProps<{
   place: ReferencePlace
   /** The picture's height over its width. */
@@ -33,6 +33,8 @@ const props = defineProps<{
   view: ReferenceView & { viewport: { width: number; height: number } }
   /** One bead across, in grid px: what an arrow key moves it. */
   bead: number
+  /** Adjust is on: the outline, the move, the keys, and Escape or a press outside to end it. */
+  adjusting: boolean
 }>()
 const emit = defineEmits<{
   /** A drag as it goes, drawn but not saved. */
@@ -82,7 +84,7 @@ function local(event: PointerEvent): { x: number; y: number } {
 }
 
 function begin(event: PointerEvent, kind: 'move' | 'turn' | ReferenceCorner) {
-  if (event.button !== 0) return
+  if (event.button !== 0 || (kind === 'move' && !props.adjusting)) return
   // A second finger is a pinch, which moves the view: the drag gives way and the picture goes back.
   if (press.value) {
     if (event.pointerId !== press.value.pointer) cancel()
@@ -132,6 +134,7 @@ function announcementOf(change: 'move' | 'resize' | 'turn', place: ReferencePlac
 /** An arrow moves the picture a bead the way it points on screen (Shift: ten); `+`/`−` resize it by a tenth, `[`/`]`
  * turn it 15°. */
 function onKeydown(event: KeyboardEvent) {
+  if (!props.adjusting) return
   const steps: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
   const step = steps[event.key]
   let change: { place: ReferencePlace; kind: 'move' | 'resize' | 'turn' } | undefined
@@ -155,14 +158,20 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 useOverlayLayer({
-  isOpen: () => true,
+  isOpen: () => props.adjusting,
   root: () => groupEl.value,
   close: () => emit('done'),
   // Fit to Canvas and Done are the Adjust bar's, which is part of Adjust.
   keepsPress: (event) => event.target instanceof Element && event.target.closest('[data-testid="reference-adjust-bar"]') !== null,
 })
 
-onMounted(() => groupEl.value?.focus({ preventScroll: true }))
+const focus = () => groupEl.value?.focus({ preventScroll: true })
+onMounted(() => props.adjusting && focus())
+watch(
+  () => props.adjusting,
+  (adjusting) => adjusting && focus(),
+  { flush: 'post' },
+)
 </script>
 
 <template>
@@ -170,11 +179,11 @@ onMounted(() => groupEl.value?.focus({ preventScroll: true }))
     <div
       ref="groupEl"
       class="reference-adjust__picture"
-      :class="{ 'reference-adjust__picture--moving': press?.kind === 'move' }"
+      :class="{ 'reference-adjust__picture--moving': press?.kind === 'move', 'reference-adjust__picture--handles-only': !adjusting }"
       :style="pictureStyle"
       role="group"
       :aria-label="groupName"
-      tabindex="0"
+      :tabindex="adjusting ? 0 : undefined"
       data-testid="reference-adjust-picture"
       @pointerdown="begin($event, 'move')"
       @pointermove="drag"
@@ -229,6 +238,17 @@ onMounted(() => groupEl.value?.focus({ preventScroll: true }))
   cursor: grab;
   pointer-events: auto;
   touch-action: none;
+}
+
+/* Outside Adjust only the handles stand on the picture: no outline over the beads, and a press on it is the tool's. */
+.reference-adjust__picture--handles-only {
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.reference-adjust__corner,
+.reference-adjust__turn-handle {
+  pointer-events: auto;
 }
 
 .reference-adjust__picture--moving {
