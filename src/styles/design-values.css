@@ -35,6 +35,7 @@
   --crop-bar-width: 8px; /* ConvertImage card: an edge handle's thickness. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
   --found-columns: 64px minmax(0, 1fr) 56px 56px 56px; /* FoundColorRow card: the found-colors table's columns, in its heading row and every row. */
+  --found-columns-narrow: 20px minmax(0, 1fr) 56px 1.875rem 1.875rem; /* FoundColorRow card (ticket 0782): the columns while the table is under 360px wide: the picture's swatch alone (the arrow is the heading's), then Becomes, Beads, and Change and Empty as wide as their buttons. */
   --filter-swatch: 24px; /* BeadColors card: a family swatch in the Color filter. */
   --filter-chip-height: 28px; /* BeadColors card: a line of the Finish filter list. */
   --filter-check: 14px; /* BeadColors card: a Finish line's check box. */
