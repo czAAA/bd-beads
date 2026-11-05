@@ -275,6 +275,11 @@
   --section-scale: 0.985; /* A section shrinks this little as it turns. */
   --homepage-mark-large: 26.25rem; /* The faint X1 mark beside the box, 420px, at 7%. */
   --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
+  /* Homepage card, What's inside (ticket 0797). */
+  --inside-card-height: 5.75rem; /* A What's inside card, 92px: a name over three lines of text. */
+  --inside-list-width: 17rem; /* What's inside's list beside the editor, 272px. */
+  --ghost-move: 420ms; /* The tour's ghost pointer moving to its next press. */
+  --ghost-ripple: 700ms; /* The ripple a ghost press leaves, growing and fading. */
   /* Homepage card, the nudge (ticket 0784). */
   --nudge-lift: 0.75rem; /* How far the first section lifts to show the page scrolls, 12px. */
   --nudge-fade: 0.82; /* The first section's opacity at the top of its lift. */
