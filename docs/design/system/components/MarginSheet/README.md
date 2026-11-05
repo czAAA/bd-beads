@@ -33,7 +33,7 @@ Left to right, 14px in from the sheet's top-left corner (10px compact), 4px apar
 
 The edit pencil, Remove Frame chip and Move handle no longer stand in the gutter: nothing of the Frame is drawn outside its sheet except the size Tooltip.
 
-The one exception: on the Homepage's What's inside, the demo Frame's band has no Row not done; the Progress bar under it keeps its own (Homepage card, ticket 0796).
+The one exception: on the Homepage's What's inside, the demo Frame's band has no Row not done; the Progress bar under it keeps its own (Homepage card, ticket 0797).
 
 ### Mirror the whole Frame (ticket 0750, ADR 0082)
 
