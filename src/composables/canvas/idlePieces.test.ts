@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
-import { piecesWhenIdle } from './idlePieces'
+import { useIdlePieces } from './idlePieces'
+
+const piecesWhenIdle = useIdlePieces()
 
 /** A solid block over the walk limit's step, so a walk takes several idle moments. */
 function block(rows: number, columns: number) {

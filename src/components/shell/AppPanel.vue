@@ -76,7 +76,10 @@ const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'st
 const placed = anchored.style
 const dropdownStyle = computed(() => ({
   ...placed.value,
-  maxHeight: `calc(100dvh - ${Number.parseFloat(placed.value.top ?? '0') || 0}px - ${16}px)`,
+  maxHeight:
+    anchored.roomBelow.value === undefined
+      ? `calc(100dvh - ${Number.parseFloat(placed.value.top ?? '0') || 0}px - ${16}px)`
+      : `${anchored.roomBelow.value}px`,
   ...(props.width ? { width: props.width } : {}),
 }))
 
