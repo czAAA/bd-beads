@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import AppLogo from '../ui/AppLogo.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { contrastRatio, fromHex } from '../../domain/color'
@@ -20,7 +19,7 @@ import {
 } from '../../composables/canvas/firstRunHintPlacement'
 
 // The quiet captions over an empty Project (FirstRunHints card, ticket 0738): one beside each control it names
-// (`data-hint` on it), no arrows, and a welcome that says where Projects are kept and how to keep a file of one.
+// (`data-hint` on it), no arrows, and a welcome that says only where Projects are kept and how to keep a file of one.
 // Decoration only: hidden from screen readers and pointers, so the first press on the canvas paints the first bead.
 const props = defineProps<{
   /** The canvas box: holds the strip and the Tool pill whose controls the captions sit beside. */
@@ -144,9 +143,7 @@ function noteStyle(id: HintId) {
       :data-testid="`first-run-hint-${id}`"
     >{{ t.canvas.firstRun[id] }}</p>
     <div ref="welcomeEl" class="first-run-hints__welcome" data-testid="first-run-welcome">
-      <AppLogo class="first-run-hints__mark" :size="phone ? 36 : 44" />
-      <span class="first-run-hints__wordmark">{{ t.app.title }}</span>
-      <p class="first-run-hints__steps">{{ t.canvas.firstRun.steps }}</p>
+      <p class="first-run-hints__lead" data-testid="first-run-storage-lead">{{ t.canvas.firstRun.storageLead }}</p>
       <p class="first-run-hints__storage" data-testid="first-run-storage">{{ t.canvas.firstRun.storage }}</p>
       <p class="first-run-hints__path" data-testid="first-run-path">
         <template v-for="(step, index) in path" :key="step">
@@ -209,8 +206,8 @@ function noteStyle(id: HintId) {
   text-align: right;
 }
 
-/* Centred on the drawing area, under the CanvasHint line: the mark, the wordmark 12px under it, then the steps line,
- * the storage line and the Project file's path. */
+/* Centred on the drawing area, under the CanvasHint line: the lead line, the storage line 6px under it and the
+ * Project file's path, nothing else (ticket 0795). */
 .first-run-hints__welcome {
   position: absolute;
   top: 50%;
@@ -224,28 +221,18 @@ function noteStyle(id: HintId) {
   transform: translate(-50%, -50%);
 }
 
-.first-run-hints__mark {
-  color: var(--accent);
-}
-
-.first-run-hints__wordmark {
-  margin-top: var(--space-12);
-  font: var(--hint-wordmark);
-  /* The card's -0.6px, twice the Brand's tracking at more than twice its size. */
-  letter-spacing: calc(2 * var(--tracking-brand));
-}
-
-.first-run-hints__steps {
-  margin: var(--space-16) 0 0;
-  font: var(--hint-welcome);
-  color: var(--accent-strong);
+/* What a newcomer must not miss, a size up and in `body`, over the calmer `muted` line. */
+.first-run-hints__lead {
+  max-width: 36rem;
+  margin: 0;
+  font: var(--hint-storage-lead);
+  color: var(--body);
 }
 
 .first-run-hints__storage {
   max-width: 36rem;
-  margin: var(--space-24) 0 0;
+  margin: var(--space-6) 0 0;
   font: var(--hint-storage);
-  white-space: pre-line;
 }
 
 .first-run-hints__path {
@@ -261,20 +248,5 @@ function noteStyle(id: HintId) {
 /* The CanvasHint's chip (controls.css), holding a label instead of a key. */
 .first-run-hints__chip {
   font: var(--type-meta-small);
-}
-
-/* The width is controls.css's phone width. */
-@media (max-width: 30rem) {
-  .first-run-hints__wordmark {
-    font: var(--hint-wordmark-phone);
-  }
-
-  .first-run-hints__steps {
-    font: var(--hint-welcome-phone);
-  }
-
-  .first-run-hints__storage {
-    margin-top: var(--space-20);
-  }
 }
 </style>
