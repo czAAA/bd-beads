@@ -1,6 +1,6 @@
 # ReferenceImage
 
-One picture per Project, laid on the Canvas so the person can bead over it (tracing) or keep it beside the pattern as an example to copy from. Shown and hidden from the Canvas strip, set up in the Project panel's **reference image** section, and moved, resized and turned on the canvas in **Adjust**. Saved with the Project. Built by ticket 0790 (the picture, the strip button, the section and Adjust; ADR 0089 for where the picture is kept); mockups https://claude.ai/artifact/5x3g8P5eutFtqhh3Kox6Li.
+One picture per Project, laid on the Canvas so the person can bead over it (tracing) or keep it beside the pattern as an example to copy from. Shown and hidden from the Canvas strip, set up in the Project panel's **reference image** section, resized and turned from its handles whenever it is shown, and moved on the canvas in **Adjust**. Saved with the Project. Built by ticket 0790, its handles outside Adjust and Replace on the Adjust bar by ticket 0799 (the picture, the strip button, the section and Adjust; ADR 0089 for where the picture is kept); mockups https://claude.ai/artifact/5x3g8P5eutFtqhh3Kox6Li.
 
 The word is **Reference image** everywhere (glossary, Canvas and Frame). Not "background image": **Background** is a layer's color (CanvasBackground card).
 
@@ -13,7 +13,18 @@ The word is **Reference image** everywhere (glossary, Canvas and Frame). Not "ba
 - **A new picture** is fitted inside the Canvas's beads (the box round them; a new Canvas's whole grid), centred, turn 0°, and lands in Adjust when it was picked from the strip button.
 - **Never printed:** PNG, PDF, the Projects library thumbnail and the Homepage examples leave it out.
 - **High contrast:** shown as in light; the empty-bead fill follows the same steps on the white canvas.
-- Every tool works over it as usual. Outside Adjust nothing on the canvas can grab it, so a stroke, a Fill or a Selection never moves it.
+- Every tool works over it as usual. Outside Adjust only its handles can grab it (below), so a stroke, a Fill or a Selection over the picture never moves it.
+
+## Handles while shown (ticket 0799)
+
+Whenever the picture is shown and the editor is in view, its four corner handles and its Turn handle stand on it, as Adjust draws them (below), so the person resizes and turns it at any time, whatever tool is in hand. A drag on one works as in Adjust (shape kept, opposite corner put; snapping, Shift, the angle chip) and is saved on release, no Undo step, announced as in Adjust. Outside Adjust:
+
+- no outline round the picture, so no line sits over the beads being traced;
+- the picture itself takes no press: a press on it is the tool's, so moving it, the keys and Fit to Canvas stay Adjust's;
+- no Tab stop, no Escape and no press outside to end anything; the handles are buttons named as in Adjust;
+- hidden with the picture, and while Convert image fills the drawing area.
+
+Where a handle lies over the Frame's own resize handle (Edit Frame on, the picture's corner on the Frame's), the picture's handle takes the press.
 
 ## Canvas strip button
 
@@ -46,7 +57,7 @@ A state of the canvas, not a mode of a tool: the tools rest, pinch, two-finger p
 - **Move:** drag anywhere inside the picture. Cursor `grab`, `grabbing` while dragged.
 - **Resize:** four corner handles, the Frame's resize handle (9px, 1.5px `ink`, radius 2, filled with the canvas background, standing 7.5px off the corner, 11px on touch), grabbed within 14px, 44px to hit on a coarse pointer. The picture keeps its shape and the opposite corner stays put. Diagonal resize cursors, turned with the picture. No smaller than 4 beads across; no larger than ten times the Canvas's box.
 - **Turn:** one handle, a 28px circle (1.5px `ink`, canvas fill, a 12px turning arrow inside; `accent` fill while dragged) on a 1.5px dashed `ink` stem, `--frame-control-offset` (48px) above the top edge's middle, turned with the picture; below the bottom edge when there is no room above, kept inside the canvas box. Free turn, snapping to 0°, 90°, 180° and 270° within 4°; Shift snaps to every 15°. While dragged, a Tooltip-look chip beside it shows the angle in DM Mono ("12°").
-- **Adjust bar:** a pill on `canvas`, 1px `box-line`, `elevation-3`, centred 14px above the drawing area's bottom (over the Tool pill's place: the pill hides while adjusting): the `label` "reference image", **Fit to Canvas** (`reset`, secondary) and **Done** (`check`, primary). On a phone the label goes and the buttons read "Fit" and "Done", 44px tall.
+- **Adjust bar:** a pill on `canvas`, 1px `box-line`, `elevation-3`, centred 14px above the drawing area's bottom (over the Tool pill's place: the pill hides while adjusting): the `label` "reference image", **Replace image** (`image`, secondary; ticket 0799), **Fit to Canvas** (`reset`, secondary) and **Done** (`check`, primary). On a phone the label goes, Replace image is a round 44px icon button (`image`, named "Replace image", with its Tooltip) and the others read "Fit" and "Done", 44px tall. Replace image is the Project panel's pick: the new picture keeps the place, the turn and the width, and Adjust stays on; a file it refuses ends Adjust and opens the Project panel on the reason, as a refusal from the strip button does.
 - **Ends** on Done, Escape, or a press outside the picture and its handles (that press only ends it). Fit to Canvas puts the picture back to the new picture's fit, turn 0°, and stays in Adjust.
 - **Keyboard:** the picture is focused when Adjust opens; arrows move it one bead the way they point on screen (Shift: ten), `+` and `−` resize it by a tenth, `[` and `]` turn it 15°. The handles take no Tab stop (the keys do what they do); Tab moves on toward Fit to Canvas and Done. The app's own shortcuts wait while Adjust is on, as under any overlay.
 - **Screen readers:** the picture is a `group` named "Reference image, 50%, turned 12°", the handles buttons named "Resize from the top-left corner" (and the other three) and "Turn"; each change is announced politely: "Moved", "Resized", "Turned 15°". Adjust stands beside the drawing, not in it, as the drawing is one image to a screen reader.
