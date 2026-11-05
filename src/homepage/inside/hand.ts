@@ -2,10 +2,9 @@ import { nextTick, reactive } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import type { CanvasContext, ShellFrameContext } from '../../composables/shell/useAppShell'
 
-// The ghost's hand (Homepage card, What's inside, ticket 0797): it does what a beader's hand would in the demo editor.
-// It presses the editor's own controls, found by their test ids, and draws through the same handlers a press on the
-// Canvas reaches, while the ghost pointer moves where that hand would be. Applied at once (a row pressed further
-// down, reduced motion) it does the same with no ghost and no waits.
+// The ghost's hand (Homepage card, What's inside, ticket 0797): it presses the demo editor's own controls and draws
+// through the handlers a press on the Canvas reaches, the ghost pointer moving where a beader's hand would. Applied at
+// once (a row pressed further down, reduced motion) it does the same with no ghost and no waits.
 
 /** The tour stopped mid-row: the run that was playing gives up. */
 export class TourStopped extends Error {

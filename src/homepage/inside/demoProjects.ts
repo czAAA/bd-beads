@@ -8,7 +8,7 @@ import type { Translations } from '../../i18n/translations'
 // open Canvas with no Frame on Delica 11/0, and "Heart" and "Bracelet", which only its Saved Projects lists.
 
 /** The Bead every demo Project is on. */
-export const DEMO_BEAD = 'miyuki/delica/11-0'
+const DEMO_BEAD = 'miyuki/delica/11-0'
 
 /** The colors the tour draws with: Miyuki's own color families, so each is a swatch of the demo's Palette. */
 export const DEMO_COLORS = {

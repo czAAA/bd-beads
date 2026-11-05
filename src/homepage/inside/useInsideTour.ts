@@ -5,7 +5,7 @@ import { onBeforeUnmount, readonly, ref, watch } from 'vue'
 // before it applied at once. It plays only while the section is seen; a press in the editor takes it over for the visit.
 
 /** The tour's timing, in ms (Homepage card). */
-export const TOUR_TIMING = {
+const TOUR_TIMING = {
   /** A row is lit this long before its hand moves… */
   before: 350,
   /** …and stays lit this long after. */

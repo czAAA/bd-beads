@@ -170,9 +170,9 @@ export default tseslint.config(
       'src/composables/shell/usePageZoomLock.ts',
       'src/composables/shell/usePenInputMode.ts',
       'src/composables/tools/useToolPillDrag.ts',
-      // What's inside's take-over hears a press into the demo before the overlay registry may swallow it (ticket 0797).
-      'src/homepage/inside/useTakeOver.ts',
     ];
+    // What's inside's take-over hears a press into the demo before the overlay registry may swallow it (ticket 0797).
+    const takeOver = ['src/homepage/inside/useTakeOver.ts'];
     const registries = ['src/domain/frameShape.ts', 'src/domain/starters.ts', 'src/homepage/**'];
     const block = (files, selectors) => ({
       files,
@@ -184,6 +184,7 @@ export default tseslint.config(
       block(gestures, [techniqueValue, techniqueKey]),
       block(['src/domain/weave.ts', 'src/i18n/**'], [press]),
       block(registries, [press, namedTechnique, techniqueKey]),
+      block(takeOver, [namedTechnique, techniqueKey]),
     ];
   })(),
   // The backend Worker (ticket 71) is its own module with its own runtime: the app reaches it over /api, never by

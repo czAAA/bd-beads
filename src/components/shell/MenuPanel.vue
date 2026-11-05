@@ -17,10 +17,9 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
 
-// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections. It only
-// asks: the app shell does the work. On the Homepage (ticket 540) the editor's parts are left out, Saved Projects kept (ticket
-// 0716). A row that leaves the page awaits `leave` first and knows no page; Convert image is the current page while open (0756).
-// The Homepage's demo editor keeps only its Projects and Keyboard shortcuts (ticket 0797).
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections, only
+// asking. The Homepage (540) leaves out the editor's parts but Saved Projects (0716), its demo all but the Projects and the
+// shortcuts (0797). A row that leaves the page awaits `leave` first; Convert image is the current page while open (0756).
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */

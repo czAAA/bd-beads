@@ -32,8 +32,12 @@ function strokesOf(drawing: DemoDrawing, color: DemoColor): GridPosition[][] {
     const runs: GridPosition[][] = []
     let run: GridPosition[] = []
     ;[...letters].forEach((letter, across) => {
-      if (letter === color) run.push({ row: drawing.row + down, column: drawing.column + across })
-      else if (run.length) (runs.push(run), (run = []))
+      if (letter === color) {
+        run.push({ row: drawing.row + down, column: drawing.column + across })
+      } else if (run.length) {
+        runs.push(run)
+        run = []
+      }
     })
     if (run.length) runs.push(run)
     const turned = down % 2 === 1
