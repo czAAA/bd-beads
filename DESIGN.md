@@ -269,15 +269,14 @@ When a change touches how something looks, reads or behaves, edit `docs/design/s
    (§4.6).
 4. Guideline files (`accessibility.md`, `responsive.md`, `interaction-and-motion.md`, `forms-and-states.md`,
    `printed-output.md`, `writing.md`) when a rule changes, and `writing.md` for any new or changed copy.
-5. A line in the Version section of `docs/design/system/README.md`: "Repo, YYYY-MM-DD, ticket N: what changed".
-6. The `ProjectTheme` check (§4.2) fails if a canvas token changed without the renderer; run the tests related to the
+5. The `ProjectTheme` check (§4.2) fails if a canvas token changed without the renderer; run the tests related to the
    change.
 
 If the app deliberately differs from a card, fix the card to say what the app does (and why, in one line), not the
 other way round.
 
-**Version in the repo:** design system **v19** is the baseline. Changes since are in the Version section of
-[`docs/design/system/README.md`](docs/design/system/README.md). v17 is vocabulary only (Project and Pattern); v18 adds
+**Version in the repo:** design system **v19** is the baseline. Changes since are in git history (the Version section of
+[`docs/design/system/README.md`](docs/design/system/README.md) gives the command); there is no hand-written changelog. v17 is vocabulary only (Project and Pattern); v18 adds
 the Frame margin and the icon-tile Toolbox; v19 is vocabulary only again (Piece, Schema, Project and Canvas in
 every language, ticket 405).
 The `CanvasStrip` card still carries the "pieces outside the Frame" count (§4.2).
