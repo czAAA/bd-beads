@@ -306,6 +306,28 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('full')
   })
 
+  // An unnamed Frame's tab invites a name: "Name this frame" opens the name field, the chevron unfolds (ticket 0803).
+  it('opens the name field from an unnamed Frame\'s tab, and its chevron unfolds the block', async () => {
+    const wrapper = mountSheet()
+    await control(wrapper, 'margin-title-fold').trigger('click')
+    await control(wrapper, 'margin-frame-name').trigger('click')
+    await control(wrapper, 'margin-frame-name-input').setValue('Sun band')
+    await control(wrapper, 'margin-frame-name-form').trigger('submit')
+    expect(wrapper.emitted('rename')).toEqual([['Sun band']])
+    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
+    const unfold = control(wrapper, 'margin-title-unfold')
+    expect(unfold.attributes('aria-label')).toBe('Show the title block: Name this frame')
+    await unfold.trigger('click')
+    expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('full')
+  })
+
+  it('opens the name field from an unnamed Frame\'s tab folded by the zoom too, with no chevron', async () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.25) })
+    await control(wrapper, 'margin-frame-name').trigger('click')
+    expect(wrapper.find('[data-testid="margin-frame-name-form"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="margin-title-unfold"]').exists()).toBe(false)
+  })
+
   it('keeps the fold for the session, on the next sheet too, and folds from the compact title block', async () => {
     const compact = mountSheet({ anchor: anchorAt(0.4) })
     await control(compact, 'margin-title-fold').trigger('click')

@@ -62,6 +62,24 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(wrapper.emitted('rename')).toHaveLength(1)
   })
 
+  // "Name this frame" reads as an invitation, so pressing it opens the name field, compact too (ticket 0803).
+  it('opens the name field from "Name this frame" in the compact block', async () => {
+    const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'compact' }, attachTo: document.body })
+    await wrapper.get('[data-testid="margin-frame-name"]').trigger('click')
+    await wrapper.get('[data-testid="margin-frame-name-input"]').setValue('Sun band')
+    await wrapper.get('[data-testid="margin-frame-name-form"]').trigger('submit')
+    expect(wrapper.emitted('rename')).toEqual([['Sun band']])
+  })
+
+  it('keeps a named Frame\'s name read only in the compact block', async () => {
+    const project = framed({ frame: { ...frameOf(framed())!, name: 'Sun band' } })
+    const wrapper = mount(MarginTitleBlock, { props: { project, form: 'compact' }, attachTo: document.body })
+    expect(text(wrapper, 'margin-frame-name')).toBe('Sun band')
+    await wrapper.get('[data-testid="margin-frame-name"]').trigger('click')
+    expect(wrapper.find('[data-testid="margin-frame-name-form"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="margin-frame-name-edit"]').exists()).toBe(false)
+  })
+
   it('saves the maker\'s name, the Project\'s Name on exports', async () => {
     const wrapper = mountBlock(framed())
     await wrapper.get('[data-testid="margin-maker-edit"]').trigger('click')
