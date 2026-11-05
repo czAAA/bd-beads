@@ -36,7 +36,10 @@ const tour = useInsideTour({
   rows: INSIDE_ROWS.map((row) => row.id),
   fresh: async () => editor.value?.fresh(),
   hand: (instant, signal) => editor.value!.hand(instant, signal),
-  play: (row, hand) => TOUR_SCRIPTS[row](hand),
+  play: async (row, hand) => {
+    await TOUR_SCRIPTS[row](hand)
+    editor.value?.giveFocusBack()
+  },
   hideGhost: () => editor.value?.hideGhost(),
   reducedMotion: () => reducedMotion.value,
   isStop: (error) => error instanceof TourStopped,
@@ -84,7 +87,7 @@ function choose(row: InsideRowId) {
           </button>
         </li>
       </ul>
-      <InsideEditor ref="editor" class="inside__editor" @take-over="tour.takeOver" />
+      <InsideEditor ref="editor" class="inside__editor" :taken-over="tour.takenOver.value" @take-over="tour.takeOver" />
     </div>
 
     <ul v-else class="inside__plain" data-testid="inside-list">

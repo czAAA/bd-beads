@@ -11,11 +11,9 @@ export function useTakeOver(root: () => HTMLElement | undefined, takeOver: () =>
   onMounted(() => {
     window.addEventListener('pointerdown', onInput, true)
     window.addEventListener('keydown', onInput, true)
-    window.addEventListener('wheel', onInput, { capture: true, passive: true })
   })
   onBeforeUnmount(() => {
     window.removeEventListener('pointerdown', onInput, true)
     window.removeEventListener('keydown', onInput, true)
-    window.removeEventListener('wheel', onInput, { capture: true })
   })
 }

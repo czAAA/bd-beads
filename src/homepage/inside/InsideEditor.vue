@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, shallowRef } from 'vue'
+import { computed, nextTick, ref, shallowRef } from 'vue'
 import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
 import GhostPointer from './GhostPointer.vue'
@@ -11,6 +11,10 @@ import { useTakeOver } from './useTakeOver'
 // The box What's inside's editor lives in (Homepage card, ticket 0797): its shell takes keys and presses only inside
 // it, and its panels, popovers and dialogs stay in it, so the page around it works as before. Starting afresh mounts
 // a new shell on a fresh demo library. The ghost's hand works in it; a press, drag or key of the beader's takes it over.
+const props = defineProps<{
+  /** The beader took the editor over: the focus may come into it. */
+  takenOver?: boolean
+}>()
 const emit = defineEmits<{
   /** The beader pressed, dragged or typed in the editor. */
   takeOver: []
@@ -23,9 +27,31 @@ provideShellScope({ root: () => rootEl.value, teleportTo: '.inside-editor' })
 /** Each fresh demo is a new shell, keyed by its session. */
 const session = ref(0)
 const shell = shallowRef<InstanceType<typeof InsideShell>>()
+/** The library each fresh demo starts on, made once a session. */
+const library = computed(() => (void session.value, demoLibrary(t.value)))
 const ghost = ghostState()
 
 useTakeOver(() => rootEl.value, () => emit('takeOver'))
+
+/** Where the focus was when something the ghost opened took it. */
+let focusBefore: HTMLElement | undefined
+
+/** The ghost never takes the focus from the page (Homepage card, Screen readers): a panel it opens focuses itself, so
+ * until the beader takes over (their press or key comes first) it lets go, which closes nothing, and the focus goes
+ * back where it was once the row is done. */
+function onFocusIn(event: FocusEvent) {
+  if (props.takenOver) return
+  const from = event.relatedTarget
+  if (from instanceof HTMLElement && !rootEl.value?.contains(from)) focusBefore = from
+  if (event.target instanceof HTMLElement) event.target.blur()
+}
+
+/** The focus back where it was before the ghost's row, unless the beader has put it somewhere since. */
+function giveFocusBack(): void {
+  const was = focusBefore
+  focusBefore = undefined
+  if (was?.isConnected && (!document.activeElement || document.activeElement === document.body)) was.focus({ preventScroll: true })
+}
 
 /** A CSS time on the root, in ms. */
 function cssMs(name: string): number {
@@ -83,12 +109,12 @@ function hand(instant: boolean, signal: AbortSignal): Hand {
   return createHand({ root: rootEl.value!, shell: wired.shell, canvas: wired.canvas, ghost, instant, signal, moveMs: cssMs('--ghost-move'), rippleMs: cssMs('--ghost-ripple') })
 }
 
-defineExpose({ fresh, hand, hideGhost: () => void (ghost.shown = false) })
+defineExpose({ fresh, hand, hideGhost: () => void (ghost.shown = false), giveFocusBack })
 </script>
 
 <template>
-  <div ref="rootEl" class="inside-editor" role="region" :aria-label="t.homepage.inside.editor" data-testid="inside-editor">
-    <InsideShell :key="session" ref="shell" :projects="demoLibrary(t)" @start-afresh="fresh" />
+  <div ref="rootEl" class="inside-editor" role="region" :aria-label="t.homepage.inside.editor" data-testid="inside-editor" @focusin="onFocusIn">
+    <InsideShell :key="session" ref="shell" :projects="library" @start-afresh="fresh" />
     <GhostPointer :ghost="ghost" />
   </div>
 </template>

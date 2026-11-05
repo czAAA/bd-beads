@@ -10,7 +10,7 @@ import WhatsInside from './WhatsInside.vue'
 vi.mock('./InsideEditor.vue', () => ({
   default: defineComponent({
     setup(_, { expose }) {
-      expose({ fresh: async () => undefined, hand: () => ({}), hideGhost: () => undefined })
+      expose({ fresh: async () => undefined, hand: () => ({}), hideGhost: () => undefined, giveFocusBack: () => undefined })
       return () => h('div', { 'data-testid': 'inside-editor' })
     },
   }),

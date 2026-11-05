@@ -12,17 +12,19 @@ import { landscapeFile } from './landscape'
 /** The Palette swatch of each color the tour draws with: Miyuki's color families. */
 const SWATCH_IDS: Record<DemoColor, string> = { W: 'white', Y: 'yellow', O: 'orange', R: 'red', B: 'blue', G: 'green', P: 'pink' }
 
+/** Picks a Palette swatch by its id through the color popover. */
+async function pickSwatch(hand: Hand, id: string): Promise<void> {
+  await hand.press('pill-color')
+  await hand.press(() => hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${id}"]`))
+  if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
+}
+
 /** Picks a color on the Tool pill: a recent swatch, or the color popover for one that isn't recent. */
 async function pickColor(hand: Hand, color: DemoColor): Promise<void> {
   const hex = DEMO_COLORS[color]
   const recent = () => [...hand.root.querySelectorAll('[data-testid="pill-recent"]')].find((button) => button.getAttribute('aria-label')?.toLowerCase().includes(hex))
-  if (recent()) {
-    await hand.press(recent)
-    return
-  }
-  await hand.press('pill-color')
-  await hand.press(() => hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${SWATCH_IDS[color]}"]`))
-  if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
+  if (recent()) await hand.press(recent)
+  else await pickSwatch(hand, SWATCH_IDS[color])
 }
 
 /** The beads of one color in a drawing, as strokes: each run along a row, every other row turning back. */
@@ -47,7 +49,7 @@ function strokesOf(drawing: DemoDrawing, color: DemoColor): GridPosition[][] {
 }
 
 /** A drawing's colors from its middle out: the order the ghost draws them in. */
-function colorsOf(drawing: DemoDrawing): DemoColor[] {
+function drawingOrder(drawing: DemoDrawing): DemoColor[] {
   const middle = { down: (drawing.rows.length - 1) / 2, across: (drawing.rows[0].length - 1) / 2 }
   const nearest = new Map<DemoColor, number>()
   drawing.rows.forEach((letters, down) =>
@@ -62,7 +64,7 @@ function colorsOf(drawing: DemoDrawing): DemoColor[] {
 
 /** Draws a drawing with Paint, one color at a time, from its middle out. */
 async function draw(hand: Hand, drawing: DemoDrawing): Promise<void> {
-  const colors = colorsOf(drawing)
+  const colors = drawingOrder(drawing)
   for (const color of colors) {
     await pickColor(hand, color)
     for (const cells of strokesOf(drawing, color)) await hand.stroke(cells)
@@ -89,6 +91,11 @@ const LANDSCAPE = {
   flowers: [inFrame(8, 2), inFrame(7, 5), inFrame(8, 8)],
 }
 
+/** How long a row holds what it shows (Homepage card, the tour). */
+const HOLD = { technique: 1150, convert: 3400, beadsNeeded: 3000, exports: 3800, savedProjects: 3200 }
+/** Row done's pace: the first three passes slower, then quicker. */
+const ROW_DONE = { slow: 3, slowMs: 700, quickMs: 240 }
+
 /** The swatch the sky is filled with: Miyuki's Iridescent, a pale blue. */
 const SKY_SWATCH = 'iridescent'
 /** The ground's swatch. */
@@ -96,12 +103,6 @@ const GROUND_SWATCH = 'brown'
 /** The catalog color the meadow's flowers are painted in (Homepage card, Colors built in). */
 const FLOWER_CODE = 'DB55'
 
-/** Picks a Palette swatch by its id through the color popover, as `pickColor` does a demo color. */
-async function pickSwatch(hand: Hand, id: string): Promise<void> {
-  await hand.press('pill-color')
-  await hand.press(() => hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${id}"]`))
-  if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
-}
 
 /** Opens the Frame panel, if it isn't open, and closes it after `work`. */
 async function inFramePanel(hand: Hand, work: () => Promise<void>): Promise<void> {
@@ -139,7 +140,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
         await hand.press(pickerButton(hand, 'frame-technique'))
         await hand.press(techniqueOption(hand, technique))
       })
-      await hand.wait(1150)
+      await hand.wait(HOLD.technique)
     }
   },
   /** Paint, three beads, then Undo. */
@@ -190,7 +191,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   async convert(hand) {
     await hand.press('strip-menu')
     await hand.press('menu-convert-image')
-    await hand.wait(3400)
+    await hand.wait(HOLD.convert)
     await hand.press('convert-close')
   },
   /** The color popover's Miyuki Delica palette, a catalog color picked, a few flowers in the meadow. */
@@ -226,27 +227,27 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       const next = hand.root.querySelector('[data-testid="progress-bar-next"]')
       if (!next || next.getAttribute('aria-disabled') === 'true' || (next as HTMLButtonElement).disabled) break
       await hand.press('progress-bar-next')
-      await hand.wait(step < 3 ? 700 : 240)
+      await hand.wait(step < ROW_DONE.slow ? ROW_DONE.slowMs : ROW_DONE.quickMs)
     }
     await hand.wait(1200)
   },
   /** The Frame panel opened on Beads needed. */
   async beadsNeeded(hand) {
     await inFramePanel(hand, async () => {
-      await hand.hover('bead-quantities', 3000, 'start')
+      await hand.hover('bead-quantities', HOLD.beadsNeeded, 'start')
     })
   },
   /** The Frame panel's Export: the printable chart, shown and not downloaded. */
   async exports(hand) {
     await inFramePanel(hand, async () => {
-      await hand.hover('export-pdf', 3800)
+      await hand.hover('export-pdf', HOLD.exports)
     })
   },
   /** Saved Projects in the Menu: the demo's own three. */
   async savedProjects(hand) {
     await hand.press('strip-menu')
     await hand.press('menu-saved-projects')
-    await hand.wait(3200)
+    await hand.wait(HOLD.savedProjects)
     await hand.press('strip-menu')
   },
 }
@@ -283,6 +284,9 @@ async function present(hand: Hand, testid: string): Promise<boolean> {
   return false
 }
 
+/** How much of its width the reference image keeps when the ghost makes it a little smaller. */
+const REFERENCE_SHRINK = 0.86
+
 /** The reference image made a little smaller from its bottom-right corner, its top-left staying, as a drag would. */
 async function shrinkReference(hand: Hand): Promise<void> {
   const flow = hand.canvas.referenceImage
@@ -293,9 +297,9 @@ async function shrinkReference(hand: Hand): Promise<void> {
   const from = hand.middleOf(corner)
   await hand.moveTo(from)
   const { place, picture } = image
-  const width = place.width * 0.86
+  const width = place.width * REFERENCE_SHRINK
   const shrunk = { ...place, width, x: place.x - (place.width - width) / 2, y: place.y - ((place.width - width) * (picture.height / picture.width)) / 2 }
   const box = corner.closest('[data-testid="reference-adjust"]')!.getBoundingClientRect()
-  await hand.moveTo({ x: from.x - box.width * 0.14, y: from.y - box.height * 0.14 })
+  await hand.moveTo({ x: from.x - box.width * (1 - REFERENCE_SHRINK), y: from.y - box.height * (1 - REFERENCE_SHRINK) })
   flow.commit(shrunk)
 }

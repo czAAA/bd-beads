@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { FIT_LOCALES, misfitsNow, mountAt } from '../testUtils/browserFit'
 import { unexplainedFit } from '../testUtils/fitPending'
 import { page } from 'vitest/browser'
@@ -86,4 +86,22 @@ describe('HomePage text fit with Projects saved', () => {
       })
     }
   }
+})
+
+// The tour's own steps on the real editor (ticket 0797): a press on the last row applies all 13 at once (reduced motion,
+// as these tests run), so a control a row reaches for that has moved or gone fails here, not only in a browser by eye.
+describe("What's inside's tour on the real editor", () => {
+  it('applies all 13 rows, ending on the earring with every row done', async () => {
+    const warned = vi.spyOn(console, 'warn')
+    const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
+    await page.viewport(1440, 900)
+    await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
+    mounted.root.querySelector<HTMLElement>('[data-testid="inside-row-savedProjects"]')!.click()
+    await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 30000 }).toBe('inside-row-savedProjects')
+    const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
+    expect(editor.querySelector('[data-testid="margin-sheet"]')).not.toBeNull()
+    expect(editor.querySelector('[data-testid="progress-bar-next"]')!.getAttribute('aria-disabled')).toBe('true')
+    expect(warned).not.toHaveBeenCalled()
+    warned.mockRestore()
+  }, 45000)
 })
