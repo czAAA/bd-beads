@@ -1,7 +1,7 @@
 {
   "manifestVersion": 3,
-  "name": "bd-beads",
-  "namespace": "BdBeads",
+  "name": "openbeads",
+  "namespace": "OpenBeads",
   "files": [
     "accessibility.md",
     "assets/Icons/README.md",
@@ -129,7 +129,7 @@
     {
       "name": "Button",
       "group": "Actions",
-      "summary": "Every clickable action in bd-beads: primary, primary select, secondary, secondary in a box, text, link, icon, round icon and expand variants."
+      "summary": "Every clickable action in openbeads: primary, primary select, secondary, secondary in a box, text, link, icon, round icon and expand variants."
     },
     {
       "name": "CanvasStrip",

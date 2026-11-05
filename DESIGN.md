@@ -1,6 +1,6 @@
-# DESIGN.md: bd-beads visual language
+# DESIGN.md: openbeads visual language
 
-The entry point to how bd-beads looks and behaves. The design itself lives in the **bd-beads design system,
+The entry point to how openbeads looks and behaves. The design itself lives in the **openbeads design system,
 version 19 as its baseline**, owned by this repo in [`docs/design/system/`](docs/design/system/README.md) (ADR 0030). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it (ADR 0021).
 
 **Before building or changing UI:** read the design system's [README](docs/design/system/README.md), then the card

@@ -459,7 +459,7 @@
   },
   "layout": "files",
   "libraries": [],
-  "namespace": "BdBeads",
+  "namespace": "OpenBeads",
   "sections": {},
-  "title": "bd-beads"
+  "title": "openbeads"
 }
