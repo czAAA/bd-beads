@@ -9,11 +9,11 @@ Every Project lives in the browser's own storage (ADR 0001, ADR 0012), and a bro
 ## Beads since last file
 
 - **What counts:** for each Project, the bead positions that drawing changes since its Project file was last saved on this device: Paint, Fill, Eraser, Paste, the Mirror's copies and Clear all beads. A Fill that changes 300 beads counts 300, and painting a bead then erasing it counts 2.
-- **What doesn't count:** changing a layer's Technique or Bead (Replace bead). Also excluded are moving the Frame or the reference image, Rotate canvas, Row progress, renames and settings.
+- **What doesn't count:** changing a layer's Technique or Bead (Replace bead). Also excluded are moving the Frame or the reference image, Rotate canvas, Row progress, renames and settings. As built (ticket 0796), an Edit that moves, resizes or turns the Frame (Rotate Frame included) counts nothing on the Frame, since its beads are counted from its own corner; the Canvas's beads it changes still count.
 - **Undo** takes off the count its Edit added and **Redo** puts it back. The count never goes below 0.
 - **What resets it to 0:** any Project file save of this Project: Save or Save as (from the ring, the Project panel or the keys), Export all in the Menu (it writes every Project), or the Export in the notice row about a Project that didn't open (ticket 0716). PNG and PDF don't reset it.
 - **Where it starts:** a new Project counts from its first bead. An imported Project starts at 0, since it came from a file. A duplicate starts with its original's count and last-file time.
-- **Where it is kept:** with the Project on the device, beside its library entry, so a reload keeps it. It is never written into the Project file.
+- **Where it is kept:** with the Project on the device, beside its library entry, so a reload keeps it. It is never written into the Project file. As built: the localStorage key `openbeads:since-file`, one record per Project id (`beads`, `lastFileAt`), which older builds never read; Delete, Delete all and the start-up sweep drop a record.
 - **Threshold:** 50 beads. If the browser has granted persistent storage (`navigator.storage.persisted()`, ticket 399), it is 100: storage pressure can't clear the library then, though Clear site data still can.
 
 ## The ring
@@ -38,15 +38,15 @@ Every Project lives in the browser's own storage (ADR 0001, ADR 0012), and a bro
 
 ## Press: Save
 
-- **One action, any trigger.** A press runs **Save**, the Project file action that Save Project file in the Project panel and Ctrl/Cmd+S also run (ADR 0090). The ring adds no save path of its own. **Save as** is the sibling action: Save Project file as… in the Project panel, or Ctrl/Cmd+Shift+S. The ring never runs it.
+- **One action, any trigger.** A press runs **Save**, the Project file action that Save Project file in the Project panel and Ctrl/Cmd+S also run (ADR 0090). The ring adds no save path of its own, and the save-failed notice's Export runs Save too. **Save as** is the sibling action: Save Project file as… in the Project panel, or Ctrl/Cmd+Shift+S. The ring never runs it.
 - **Linked file** (where the browser can write to a picked file, ADR 0090: Chrome, Edge and other Chromium browsers on desktop): a Project's first Save opens the system Save dialog, suggesting `{Project name}.openbeads`, and the file picked becomes the Project's Linked file. Every later Save writes into it with no dialog. If the browser has dropped its permission, the press asks again with the browser's own prompt. If that is refused, or the file was moved or deleted, Save opens the Save dialog and links the file picked, with no error. Save as always opens the dialog and links the new file.
 - **Elsewhere** (Safari, Firefox, iPhone and iPad): there is no Linked file. Every Save is a new download or share sheet, as before, and Save as is hidden.
-- **Feedback:** writing into the Linked file, or into a file picked in the dialog, shows the short toast "Saved: {file}" (`accent` edge, 5 s, Message card). A download keeps the existing "File ready". Either way it shows in the corner the ring just left.
+- **Feedback:** writing into the Linked file, or into a file picked in the dialog, shows the short toast "Saved: {file}" (`accent` edge, the `success` tone, 5 s, Message card). A download keeps the existing "File ready". Either way it shows in the corner the ring just left. If the dialog won't open or the write fails, Save hands the file over as a download instead, with "File ready" and no error.
 - Once the file is written or the download handed over, the count goes to 0 and the ring hides. A cancelled dialog changes nothing. A refused download keeps the count and shows the action's existing error toast.
 
 ## Tooltip
 
-The Menu card's Tooltip, under the ring, right edges aligned:
+The Menu card's Tooltip, under the ring, right edges aligned (the Tooltip's `align: end`), its meta lines being the Tooltip's `meta`:
 - **Name:** "Save a copy", with the key chip `Ctrl/Cmd+S` (the control registry's chord for Save).
 - **Body:** "The browser keeps your work but can clear it. A Project file stays."
 - **Meta lines** (`meta-tiny`, `tooltip-muted`): "Beads since last file: {count}", then "Last file: {when}", or "No Project file yet" if it never had one. `{when}` uses `Intl.RelativeTimeFormat` with `numeric: "auto"` (today, yesterday, 2 days ago) in the app's language.
@@ -55,16 +55,16 @@ The Menu card's Tooltip, under the ring, right edges aligned:
 
 - A `button` named "Save a copy", with `aria-describedby` pointing at the count line, so the count is read with the name ("Save a copy, Beads since last file: 64"). This avoids a plural inside a sentence.
 - In the tab order it comes after the Canvas strip's controls and before the drawing area. Enter or Space runs Save.
-- Ctrl/Cmd+S (Save) and Ctrl/Cmd+Shift+S (Save as) work with a Project open, whether or not the ring shows, and never fall through to the browser's Save page. Where Save as is hidden, Ctrl/Cmd+Shift+S runs Save.
+- Ctrl/Cmd+S (Save) and Ctrl/Cmd+Shift+S (Save as) work with a Project open, whether or not the ring shows, and never fall through to the browser's Save page: they run from a text field and under an open panel or dialog (the Project panel holds the Save row), and are claimed but do nothing with no Project open. Where Save as is hidden, Ctrl/Cmd+Shift+S runs Save.
 
 ## Sizes
 
 - **Desktop** (1024px and up, fine pointer): 40px, inset 16px, as above.
 - **Coarse pointer** (tablets, touch laptops): 44px (`--save-ring-size-touch`): the 1px edge, 6px of padding, then the same 30px halo. Inset 16px.
-- **Phone** (under 744px): 44px, inset 8px (`--save-ring-inset-phone`). The label opens leftwards as on desktop and is at most the drawing area's width minus 16px; if the count wouldn't fit, only "Save a copy" shows. Toasts start 8px under the ring, as on desktop.
+- **Phone** (under 744px): 44px, inset 8px (`--save-ring-inset-phone`). The label opens leftwards as on desktop and is at most the drawing area's width minus 16px; if the count wouldn't fit, only "Save a copy" shows (the count wraps onto a hidden second line). Toasts start 8px under the ring, as on desktop.
 
 ## Copy
 
 English, with the other languages in `writing.md` (Save reminder copy): Save a copy · The browser keeps your work but can clear it. A Project file stays. · Beads since last file: {count} · Last file: {when} · No Project file yet · Beads since last file: {count}. Save a copy to keep them. · Saved: {file} · Save Project file · Save Project file as….
 
-Hand-written from the Save reminders design canvas and the ticket 0796 grilling; static rendition.
+Built in ticket 0796: `src/components/canvas/SaveReminder.vue`, its timing in `useSaveReminder`, the count in `useBeadsSinceFile` and `domain/beadsSinceFile.ts`, Save and Save as in `useExportFlow`.

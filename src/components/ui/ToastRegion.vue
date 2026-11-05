@@ -4,14 +4,18 @@ import AppMessage from './AppMessage.vue'
 
 /** Where toasts show (ticket 76): top-right of the canvas box on the toast layer (above sheets, below modals);
  * results go after 5s unless hovered or focused, errors stay. */
-defineProps<{ toasts: Toast[] }>()
+defineProps<{
+  toasts: Toast[]
+  /** The save ring shows (SaveReminder card, ticket 0796): toasts start 8px under it, so none covers it. */
+  underRing?: boolean
+}>()
 const emit = defineEmits<{ dismiss: [id: string] }>()
 
 const TOAST_MS = 5000
 </script>
 
 <template>
-  <TransitionGroup tag="div" name="toast" class="toast-region" data-testid="toast-region">
+  <TransitionGroup tag="div" name="toast" class="toast-region" :class="{ 'toast-region--under-ring': underRing }" data-testid="toast-region">
     <AppMessage
       v-for="toast in toasts"
       :key="toast.stamp"
@@ -51,6 +55,22 @@ const TOAST_MS = 5000
 
 .toast-region > * {
   pointer-events: auto;
+}
+
+.toast-region--under-ring {
+  top: calc(var(--strip-height) + var(--save-ring-inset) + var(--save-ring-size) + var(--space-8));
+}
+
+@media (pointer: coarse) {
+  .toast-region--under-ring {
+    top: calc(var(--strip-height) + var(--save-ring-inset) + var(--save-ring-size-touch) + var(--space-8));
+  }
+}
+
+@media (max-width: 743px) {
+  .toast-region--under-ring {
+    top: calc(var(--strip-height) + var(--save-ring-inset-phone) + var(--save-ring-size-touch) + var(--space-8));
+  }
 }
 
 /* The text-button action (Message card, `bb-link`): underlined link text. */
