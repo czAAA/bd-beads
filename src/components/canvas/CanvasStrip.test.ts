@@ -210,3 +210,46 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })
+
+describe('CanvasStrip\'s Reference image button (ReferenceImage card, ticket 0790)', () => {
+  const project = bareProject({ technique: 'loom' })
+  const button = (referenceImage: 'none' | 'shown' | 'hidden') => mount(CanvasStrip, { props: { project, rulers: true, referenceImage } })
+
+  it('stands right after Rulers, named Reference image', () => {
+    const wrapper = button('none')
+    const order = wrapper.findAll('[data-testid^="strip-"]').map((element) => element.attributes('data-testid'))
+    expect(order.indexOf('strip-reference-image')).toBe(order.indexOf('strip-rulers') + 1)
+    expect(wrapper.get('[data-testid="strip-reference-image"]').attributes('aria-label')).toBe(en.referenceImage.name)
+  })
+
+  it('with no picture is a plain button that opens the picker and hands on the picked file', async () => {
+    const wrapper = button('none')
+    const strip = wrapper.get('[data-testid="strip-reference-image"]')
+    expect(strip.attributes('aria-pressed')).toBeUndefined()
+    const input = wrapper.get<HTMLInputElement>('[data-testid="strip-reference-image-input"]')
+    let opened = 0
+    input.element.addEventListener('click', (event) => {
+      opened += 1
+      event.preventDefault()
+    })
+    await strip.trigger('click')
+    expect(opened).toBe(1)
+    expect(wrapper.emitted('toggle-reference-image')).toBeUndefined()
+    const file = new File(['x'], 'rose.png', { type: 'image/png' })
+    Object.defineProperty(input.element, 'files', { value: [file], configurable: true })
+    await input.trigger('change')
+    expect(wrapper.emitted('pick-reference-image')).toEqual([[file]])
+  })
+
+  it('with a picture is a toggle, pressed while it is shown', async () => {
+    expect(button('shown').get('[data-testid="strip-reference-image"]').attributes('aria-pressed')).toBe('true')
+    const hidden = button('hidden')
+    expect(hidden.get('[data-testid="strip-reference-image"]').attributes('aria-pressed')).toBe('false')
+    await hidden.get('[data-testid="strip-reference-image"]').trigger('click')
+    expect(hidden.emitted('toggle-reference-image')).toHaveLength(1)
+  })
+
+  it('is left out off the editor', () => {
+    expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-reference-image"]').exists()).toBe(false)
+  })
+})

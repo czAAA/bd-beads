@@ -11,16 +11,21 @@ import { frameOf, projectNameOf } from './layerRecord'
 // `projectFileCodec`'s.
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
-/** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5 (0525) the Palette, 6 (0528)
- * removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame, 10 (0638) Folded beads, 11
- * (0636) layer settings maps, 12 (0664) the layer list, 13 (0691) brick stitch's Drop under its new id; a build knowing only the one before refuses, not misreads. */
-const FILE_VERSION = 13
+/** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's beads, 5 (0525) the Palette, 6 (0528) removed
+ * defaults, 7 (534) the Bead's copy, 8 (0538) codes, 9 (0592) Custom frame, 10 (0638) Folded beads, 11 (0636) settings maps,
+ * 12 (0664) layers, 13 (0691) brick's Drop id, 14 (0790) reference pictures; an older build refuses, never misreads. */
+const FILE_VERSION = 14
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
   version: number
   projects: (EncodedProject | EncodedFlatProject)[]
+  /** Each reference image's picture (ADR 0089), base64, by the id of the Project whose settings it goes with. */
+  pictures?: Record<string, string>
 }
+
+/** Reference image pictures by Project id, each its stored bytes in base64 (ADR 0089). */
+export type FilePictures = Readonly<Record<string, string>>
 
 /** Versions 4 to 10 differ only in fields normalizeProject reads when present; each stores a layer's Brick block flat. */
 const FLAT_WEAVE_VERSIONS = [4, 5, 6, 7, 8, 9, 10]
@@ -33,36 +38,47 @@ const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedFlatProject[]).map(decodeFlatProject)])),
   11: (projects) => (projects as EncodedFlatProject[]).map(decodeVersionElevenProject),
   12: (projects) => (projects as EncodedProject[]).map(decodeVersionTwelveProject),
+  13: (projects) => (projects as EncodedProject[]).map(decodeProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
 /** What an exported file holds once read back. */
 export interface ProjectFileContents {
   projects: Project[]
+  /** The pictures of their reference images, by the ids the file gave them (none before version 14). */
+  pictures: FilePictures
 }
 
 /** A file's JSON from Projects and Projects already in their stored form (the library's version 6 encodes a Project as
  * file version 13 does, ticket 0716), joined as strings so a sealed Project is never decoded. */
-function serialize(kind: ProjectFile['kind'], projects: Project[], stored: readonly string[] = []): string {
+function serialize(kind: ProjectFile['kind'], projects: Project[], stored: readonly string[] = [], pictures: FilePictures = {}): string {
   const encoded = [...projects.map((project) => JSON.stringify(encodeProject(project))), ...stored]
-  return `{"kind":${JSON.stringify(kind)},"version":${FILE_VERSION},"projects":[${encoded.join(',')}]}`
+  const pictured = Object.keys(pictures).length > 0 ? `,"pictures":${JSON.stringify(pictures)}` : ''
+  return `{"kind":${JSON.stringify(kind)},"version":${FILE_VERSION},"projects":[${encoded.join(',')}]${pictured}}`
 }
 
-/** The open Project on its own, for sharing or backing it up (ticket 12), as the JSON a file wraps. */
-export function serializeProject(project: Project): string {
-  return serialize(PROJECT_FILE_KIND, [project])
+/** The open Project on its own, for sharing or backing it up (ticket 12), as the JSON a file wraps, with its reference
+ * image's picture. */
+export function serializeProject(project: Project, pictures: FilePictures = {}): string {
+  return serialize(PROJECT_FILE_KIND, [project], [], pictures)
 }
 
 /** Every saved Project in one file, for moving a whole library to another device (ticket 15), as the JSON a file
- * wraps. */
-export function serializeLibrary(projects: Project[], stored: readonly string[] = []): string {
-  return serialize(LIBRARY_FILE_KIND, projects, stored)
+ * wraps, with every reference image's picture. */
+export function serializeLibrary(projects: Project[], stored: readonly string[] = [], pictures: FilePictures = {}): string {
+  return serialize(LIBRARY_FILE_KIND, projects, stored, pictures)
 }
 
 /** A Project file made from a Project as the library stores it, without decoding it: the Export of a Project that
  * didn't open, or a sealed one (ticket 0716). */
-export function serializeStoredProject(stored: string): string {
-  return serialize(PROJECT_FILE_KIND, [], [stored])
+export function serializeStoredProject(stored: string, pictures: FilePictures = {}): string {
+  return serialize(PROJECT_FILE_KIND, [], [stored], pictures)
+}
+
+/** The pictures a file holds that are strings, by Project id; anything else is dropped. */
+function readPictures(stored: unknown): FilePictures {
+  if (typeof stored !== 'object' || stored === null) return {}
+  return Object.fromEntries(Object.entries(stored).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
 }
 
 /** Project names are free text (and may be Russian), so keep the letters that survive a filename and drop the rest. */
@@ -167,7 +183,15 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     throw new Error('This openbeads file does not contain readable Projects')
   }
 
-  return { projects: read(known).map(normalizeProject) }
+  return { projects: read(known).map(normalizeProject), pictures: file.version === FILE_VERSION ? readPictures(file.pictures) : {} }
+}
+
+/** The imported pictures under the ids their Projects came in under (`importProjects` keeps the order). */
+export function importedPictures<T>(incoming: readonly Project[], added: readonly Project[], pictures: ReadonlyMap<string, T>): Map<string, T> {
+  return new Map(incoming.flatMap((project, index) => {
+    const picture = pictures.get(project.id)
+    return picture !== undefined && added[index] ? [[added[index].id, picture] as const] : []
+  }))
 }
 
 /** Picks which imported Projects to add. Importing never overwrites: a taken id comes in under a fresh id (ticket

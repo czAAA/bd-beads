@@ -1,20 +1,29 @@
 <script setup lang="ts">
 // A two-line row of a panel list (MenuPanel card): a thumbnail, the name (one line, ellipsis) over a second line in
 // `muted`, then facts at the right, and an `actions` slot shown on hover or keyboard focus (the library's × Remove).
-// The row is one button; `active` rings the thumbnail and colors the name (the open project).
-defineProps<{ name: string; sub?: string; active?: boolean; label?: string; selectTestid?: string }>()
+// The row is one button, `active` ringing the thumbnail (the open project); a `still` one only shows (ticket 0790).
+defineProps<{ name: string; sub?: string; active?: boolean; label?: string; selectTestid?: string; still?: boolean }>()
 const emit = defineEmits<{ select: [] }>()
 </script>
 
 <template>
-  <div class="panel-list-row" :class="{ 'panel-list-row--active': active }">
-    <button class="ui-control panel-list-row__select" type="button" :aria-label="label" :aria-pressed="active" :data-testid="selectTestid" @click="emit('select')">
+  <div class="panel-list-row" :class="{ 'panel-list-row--active': active, 'panel-list-row--still': still }">
+    <component
+      :is="still ? 'div' : 'button'"
+      class="panel-list-row__select"
+      :class="{ 'ui-control': !still }"
+      :type="still ? undefined : 'button'"
+      :aria-label="label"
+      :aria-pressed="still ? undefined : active"
+      :data-testid="selectTestid"
+      @click="still || emit('select')"
+    >
       <span class="panel-list-row__thumb"><slot name="thumb" /></span>
       <span class="panel-list-row__text">
-        <span class="panel-list-row__name">{{ name }}</span>
+        <span class="panel-list-row__name" data-user-text>{{ name }}</span>
         <span v-if="sub" class="panel-list-row__sub">{{ sub }}</span>
       </span>
-    </button>
+    </component>
     <span class="panel-list-row__facts"><slot name="facts" /></span>
     <span class="panel-list-row__actions"><slot name="actions" /></span>
   </div>
@@ -39,7 +48,7 @@ const emit = defineEmits<{ select: [] }>()
 }
 
 @media (hover: hover) {
-  .panel-list-row:hover {
+  .panel-list-row:not(.panel-list-row--still):hover {
     background: var(--hover-fill);
   }
 }
@@ -60,6 +69,10 @@ const emit = defineEmits<{ select: [] }>()
   border: 0;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.panel-list-row--still .panel-list-row__select {
+  cursor: default;
 }
 
 .panel-list-row__select:focus-visible {

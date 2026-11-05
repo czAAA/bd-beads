@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import type { Layer } from '../../domain/grid'
 import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
+import type { ImageRejection } from '../../domain/imageConversion'
+import type { OpacityStep } from '../../domain/referenceImage'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -10,15 +12,19 @@ import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import LayerSettings from './LayerSettings.vue'
 import ProjectHead from './ProjectHead.vue'
+import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
 // The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): everything about the open Project that no
-// tool already does. A head (title with the save state, name, maker), then three sections that fold shut: the Canvas's
-// Layer settings, export and this project. It only asks; the app shell does the work (the Frame's: Frame panel).
+// tool already does. A head (title with the save state, name, maker), then four sections that fold shut: the Canvas's
+// Layer settings, the reference image (ticket 0790), export and this project. It only asks; the app shell does the work (the Frame's: Frame panel).
 const props = defineProps<{
   project: Project
   saveFailed: boolean
   unsaved: boolean
+  /** The reference image's picture as the app holds it (ticket 0790): its thumbnail, whether one is being made ready,
+   * why the last file was refused, and whether the device keeps it. */
+  reference?: { thumbnail?: string; preparing: boolean; refusal?: ImageRejection; notSaved: boolean }
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -27,6 +33,10 @@ const emit = defineEmits<{
   'set-weave-setting': [layer: Layer, id: string, value: number]
   'set-background': [layer: Layer, background: Background]
   'replace-bead': [layer: Layer, beadId: string]
+  'pick-reference-image': [file: File]
+  'set-reference-opacity': [opacity: OpacityStep]
+  'adjust-reference-image': []
+  'remove-reference-image': []
   save: []
   'export-project-file': []
   'save-maker-name': [name: string]
@@ -53,6 +63,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       :project="project"
       :save-failed="saveFailed"
       :unsaved="unsaved"
+      :reference-not-saved="reference?.notSaved"
       @rename="emit('rename', $event)"
       @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"
@@ -69,6 +80,17 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
         @set-background="emit('set-background', 'canvas', $event)"
       />
     </PanelSection>
+
+    <ReferenceImageSection
+      :image="project.referenceImage"
+      :thumbnail="reference?.thumbnail"
+      :preparing="reference?.preparing"
+      :refusal="reference?.refusal"
+      @pick="emit('pick-reference-image', $event)"
+      @set-opacity="emit('set-reference-opacity', $event)"
+      @adjust="emit('adjust-reference-image')"
+      @remove="emit('remove-reference-image')"
+    />
 
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
       <PanelItem icon="export" value=".openbeads" stays data-testid="export-project-file" @select="emit('export-project-file')">{{ file.name(t) }}</PanelItem>

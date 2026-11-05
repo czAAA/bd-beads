@@ -715,7 +715,7 @@ Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for re
 
 ## Reference image copy (ticket 0790)
 
-The Project's one picture to bead over (ReferenceImage card). Russian and Ukrainian call it the underlay a tracer puts under the paper, «подложка» and «підкладка»; Polish «obraz pomocniczy». The Canvas is «полотно» / «полотно» / «płótno» (ADR 0050). Belarusian, Spanish and Chinese are written with the build; all are draft words, to be checked by a speaker of each.
+The Project's one picture to bead over (ReferenceImage card). Russian and Ukrainian call it the underlay a tracer puts under the paper, «подложка» and «підкладка»; Polish «obraz pomocniczy». The Canvas is «полотно» / «полотно» / «płótno» (ADR 0050). Belarusian, Spanish and Chinese were written with the build, below the first table; all are draft words, to be checked by a speaker of each.
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
@@ -733,3 +733,29 @@ The Project's one picture to bead over (ReferenceImage card). Russian and Ukrain
 | Fit to Canvas · Fit (phone) · Done | Вписать в полотно · Вписать · Готово | Вписати в полотно · Вписати · Готово | Dopasuj do płótna · Dopasuj · Gotowe |
 | Resize from the top-left corner (and the other three) · Turn · Turned {n}° | Изменить размер за левый верхний угол · Повернуть · Повёрнуто на {n}° | Змінити розмір за лівий верхній кут · Повернути · Повернуто на {n}° | Zmień rozmiar z lewego górnego rogu · Obróć · Obrócono o {n}° |
 | Reference image not saved on this device | Подложка не сохранена на этом устройстве | Підкладку не збережено на цьому пристрої | Obraz pomocniczy nie jest zapisany na tym urządzeniu |
+| not a picture · over {maxSizeMb} MB · over {maxMegapixels} megapixels · it couldn't be read (the refusal's reasons) | это не картинка · больше {maxSizeMb} МБ · больше {maxMegapixels} мегапикселей · его не удалось прочитать | це не зображення · більше {maxSizeMb} МБ · більше {maxMegapixels} мегапікселів · його не вдалося прочитати | to nie jest obraz · ponad {maxSizeMb} MB · ponad {maxMegapixels} megapikseli · nie udało się go odczytać |
+| browsers can't read HEIC pictures · SVG pictures can't be used | картинки HEIC браузер не читает · картинки SVG не подходят | зображення HEIC браузер не читає · зображення SVG не підходять | przeglądarki nie odczytują obrazów HEIC · obrazów SVG nie można użyć |
+| Reference image, {opacity}%, turned {angle}° (Adjust, to a screen reader) · Moved · Resized | Подложка, {opacity}%, повёрнута на {angle}° · Сдвинуто · Размер изменён | Підкладка, {opacity}%, повернута на {angle}° · Зсунуто · Розмір змінено | Obraz pomocniczy, {opacity}%, obrócony o {angle}° · Przesunięto · Zmieniono rozmiar |
+| {count} KB (the stored size) | {count} КБ | {count} КБ | {count} KB |
+
+Belarusian, Spanish and Chinese, written with the build (ticket 0790):
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Reference image | Падкладка | Imagen de referencia | 参考图 |
+| Add a reference image · Add reference image | Дадаць падкладку | Añadir una imagen de referencia · Añadir imagen de referencia | 添加参考图 |
+| Show reference image · Hide reference image | Паказаць падкладку · Схаваць падкладку | Mostrar la imagen de referencia · Ocultar la imagen de referencia | 显示参考图 · 隐藏参考图 |
+| reference image · shown · hidden | падкладка · бачная · схаваная | imagen de referencia · visible · oculta | 参考图 · 显示中 · 已隐藏 |
+| PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF або WebP, да 10 МБ. Захоўваецца з гэтым праектам і ў яго файле .openbeads, не друкуецца. Вялікія выявы памяншаюцца. | PNG, JPEG, GIF o WebP, hasta 10 MB. Se guarda con este proyecto y en su archivo .openbeads, nunca se imprime. Las imágenes grandes se reducen. | PNG、JPEG、GIF 或 WebP，最大 10 MB。随此项目保存，也存在其 .openbeads 文件中，不会打印。较大的图片会被缩小。 |
+| Opacity | Непразрыстасць | Opacidad | 不透明度 |
+| Adjust on canvas · move · resize · turn | Наладзіць на палатне · зрух · памер · паварот | Ajustar en el lienzo · mover · tamaño · girar | 在画布上调整 · 移动 · 缩放 · 旋转 |
+| Replace image · Remove image | Замяніць выяву · Прыбраць выяву | Reemplazar imagen · Quitar imagen | 替换图片 · 移除图片 |
+| Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Прыбраць падкладку? · Выява будзе прыбрана з праекта. Бісерыны застануцца як ёсць. · Прыбраць | ¿Quitar la imagen de referencia? · La imagen se quita de este proyecto. Tus cuentas quedan como están. · Quitar | 移除参考图？ · 图片将从此项目中移除。你的珠子保持不变。 · 移除 |
+| This file can't be used: {reason} | Гэты файл не падыходзіць: {reason} | Este archivo no se puede usar: {reason} | 此文件无法使用：{reason} |
+| not a picture · over {maxSizeMb} MB · over {maxMegapixels} megapixels · it couldn't be read | гэта не выява · больш за {maxSizeMb} МБ · больш за {maxMegapixels} мегапікселяў · яго не ўдалося прачытаць | no es una imagen · más de {maxSizeMb} MB · más de {maxMegapixels} megapíxeles · no se pudo leer | 不是图片 · 超过 {maxSizeMb} MB · 超过 {maxMegapixels} 百万像素 · 无法读取 |
+| browsers can't read HEIC pictures · SVG pictures can't be used | выявы HEIC браўзер не чытае · выявы SVG не падыходзяць | los navegadores no leen imágenes HEIC · las imágenes SVG no se pueden usar | 浏览器无法读取 HEIC 图片 · SVG 图片无法使用 |
+| Preparing the picture… | Рыхтуем выяву… | Preparando la imagen… | 正在准备图片… |
+| Fit to Canvas · Fit · Done | Упісаць у палатно · Упісаць · Гатова | Ajustar al lienzo · Ajustar · Listo | 适合画布 · 适合 · 完成 |
+| Resize from the top-left corner · Turn · Turned {n}° | Змяніць памер за левы верхні кут · Павярнуць · Павернута на {n}° | Cambiar el tamaño desde la esquina superior izquierda · Girar · Girada {n}° | 从左上角调整大小 · 旋转 · 已旋转 {n}° |
+| Reference image, {opacity}%, turned {angle}° · Moved · Resized | Падкладка, {opacity}%, павернута на {angle}° · Зрушана · Памер зменены | Imagen de referencia, {opacity}%, girada {angle}° · Movida · Tamaño cambiado | 参考图，{opacity}%，旋转 {angle}° · 已移动 · 已调整大小 |
+| Reference image not saved on this device | Падкладка не захавана на гэтай прыладзе | Imagen de referencia no guardada en este dispositivo | 参考图未保存在此设备上 |

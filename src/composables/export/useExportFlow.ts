@@ -28,12 +28,15 @@ export interface ExportFlowDeps {
   downloadFile?: DownloadFile
   /** Shows a toast with an action (useToasts). */
   showToast?: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
+  /** The reference images' pictures of these Projects, for the file to carry (ticket 0790); none when not given. */
+  picturesOf?: (projectIds: readonly string[]) => Promise<ReadonlyMap<string, Blob>>
 }
 
 /** Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020) as a Project file, PNG or PDF, printing the
  * maker's name (ADR 0060). Deps are lazy. */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
+  const picturesOf = (ids: readonly string[]): Promise<ReadonlyMap<string, Blob>> => deps.picturesOf?.(ids) ?? Promise.resolve(new Map())
   const quality = useExportQuality()
 
   /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
@@ -111,7 +114,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportProjectFile() {
     const project = deps.currentProject()
     if (project) {
-      return handOverFile(projectFileName(project), () => packProjectFile(project))
+      return handOverFile(projectFileName(project), async () => packProjectFile(project, await picturesOf([project.id])))
     }
     return onExportLibraryFile()
   }
@@ -120,13 +123,14 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportLibraryFile() {
     const projects = deps.projects()
     const stored = (deps.sealed?.() ?? []).map((project) => project.stored)
-    return handOverFile(libraryFileName(), () => packLibraryFile(projects, stored))
+    const ids = [...projects.map((project) => project.id), ...(deps.sealed?.() ?? []).map((project) => project.id)]
+    return handOverFile(libraryFileName(), async () => packLibraryFile(projects, stored, await picturesOf(ids)))
   }
 
   /** Export of a sealed Project (the notice's, for the one that didn't open): the file written from its stored form,
    * never decoded (ticket 0716). */
   function onExportSealed(project: SealedProject) {
-    return handOverFile(projectFileNameOf(project.name, project.makerName), () => packStoredProjectFile(project.stored))
+    return handOverFile(projectFileNameOf(project.name, project.makerName), async () => packStoredProjectFile(project.stored, await picturesOf([project.id])))
   }
 
   function onExportPng() {

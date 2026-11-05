@@ -245,3 +245,21 @@ describe('the first-run hints over an empty Project (ticket 0725, FirstRunHints 
     expect(wrapper.find('[data-testid="canvas-hint"]').exists()).toBe(false)
   })
 })
+
+describe('Reference image (ticket 0790)', () => {
+  it('a file the strip button\'s picker refuses opens the Project panel on the reason, its section folded or not', async () => {
+    saveProjects([unframedProject()])
+    localStorage.setItem('openbeads:panel-sections-closed', 'project:reference')
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+
+    const input = wrapper.get<HTMLInputElement>('[data-testid="strip-reference-image-input"]')
+    Object.defineProperty(input.element, 'files', { value: [new File(['x'], 'photo.heic', { type: 'image/heic' })], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="reference-image-refused"]').text()).toContain("This file can't be used")
+    expect(loadProjects()[0]!.referenceImage).toBeUndefined()
+    wrapper.unmount()
+  })
+})
