@@ -227,9 +227,9 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 
 Free account and Pro list nothing until their features are known: the stamp stands where the list was.
 
-The "save. count. export" line with its "on us" note, and the carousel's seven lines and its arrow labels, went with ticket 0796.
+The "save. count. export" line with its "on us" note, and the carousel's seven lines and its arrow labels, went with ticket 0797.
 
-### What's inside (ticket 0796)
+### What's inside (ticket 0797)
 
 The cards and the list of What's inside (Homepage card). Every shipped language has them. The names in braces come from the app, never typed in: `{menu}`, `{help}` and `{shortcuts}` the Menu's own labels (the Canvas strip's Menu, the Menu's Help section, its Keyboard shortcuts row), `{brands}` the Color catalogs' brands joined as a list, `{max}` the most colors Convert image makes.
 
