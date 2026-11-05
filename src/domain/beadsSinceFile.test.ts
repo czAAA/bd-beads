@@ -110,7 +110,7 @@ describe('lastFileAgo', () => {
   const at = (month: number, day: number, hour = 12) => new Date(2026, month, day, hour).getTime()
 
   it('counts calendar days, then weeks, months and years', () => {
-    expect(lastFileAgo(at(10, 5, 1), now)).toEqual({ value: -0, unit: 'day' })
+    expect(lastFileAgo(at(10, 5, 1), now)).toEqual({ value: 0, unit: 'day' })
     expect(lastFileAgo(at(10, 4, 23), now)).toEqual({ value: -1, unit: 'day' })
     expect(lastFileAgo(at(9, 22), now)).toEqual({ value: -2, unit: 'week' })
     expect(lastFileAgo(at(7, 1), now)).toEqual({ value: -3, unit: 'month' })

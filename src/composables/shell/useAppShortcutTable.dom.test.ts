@@ -105,17 +105,17 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('claims Ctrl/Cmd+S but saves nothing with no Project open or a dialog open', () => {
+  it('claims Ctrl/Cmd+S but saves nothing with no Project open, and saves under an open panel or dialog', () => {
     const none = mountTable()
     const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, cancelable: true })
     window.dispatchEvent(event)
     none.wrapper.unmount()
-    const dialog = mountTable({ activeProject: () => bareProject({}), anyDialogOpen: () => true })
+    const open = mountTable({ activeProject: () => bareProject({}), hasOpenLayer: () => true, anyDialogOpen: () => true })
     press({ key: 's', ctrlKey: true })
-    dialog.wrapper.unmount()
+    open.wrapper.unmount()
 
     expect(event.defaultPrevented).toBe(true)
-    expect([none.deps.onSaveProjectFile, dialog.deps.onSaveProjectFile].map((spy) => vi.mocked(spy).mock.calls.length)).toEqual([0, 0])
+    expect([none.deps.onSaveProjectFile, open.deps.onSaveProjectFile].map((spy) => vi.mocked(spy).mock.calls.length)).toEqual([0, 1])
   })
 
   it('swallows Ctrl/⌘ + plus without zooming while a dialog is open', () => {

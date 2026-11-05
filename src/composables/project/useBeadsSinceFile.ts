@@ -71,7 +71,8 @@ export function useBeadsSinceFile(deps: BeadsSinceFileDeps) {
   // At start every record of no Project is dropped; then a Project gone from the library takes its record with it.
   keepOnly(deps.libraryIds())
   watch(deps.libraryIds, (now, before) => {
-    if (before?.some((id) => !now.includes(id))) keepOnly(now)
+    const kept = new Set(now)
+    if (before?.some((id) => !kept.has(id))) keepOnly(now)
   })
 
   return { current, count, fileSaved, duplicated, imported }

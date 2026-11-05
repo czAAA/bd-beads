@@ -403,8 +403,8 @@ export const CONTROLS: readonly ControlAction[] = [
     preventDefault: true,
     run: (deps) => deps.onCut(),
   },
-  // Save and Save as (ADR 0090, ticket 0796): never the browser's Save page, even from a field or under a panel; with no
-  // Project open they do nothing.
+  // Save and Save as (ADR 0090, ticket 0796): never the browser's Save page; they run from a field and under a panel or
+  // dialog too (the Project panel holds the Save row), and do nothing with no Project open.
   {
     id: 'save-project-file',
     icon: 'save',
@@ -413,7 +413,7 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 's', mod: true, label: 'S' }],
     preventDefault: true,
     allowWhileTyping: true,
-    modals: 'claim',
+    modals: 'ignore',
     run: (deps) => {
       if (deps.activeProject()) deps.onSaveProjectFile()
     },
@@ -426,7 +426,7 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 's', mod: true, shift: true, label: 'S' }],
     preventDefault: true,
     allowWhileTyping: true,
-    modals: 'claim',
+    modals: 'ignore',
     run: (deps) => {
       if (deps.activeProject()) deps.onSaveProjectFileAs()
     },

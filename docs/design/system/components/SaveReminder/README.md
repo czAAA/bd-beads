@@ -41,7 +41,7 @@ Every Project lives in the browser's own storage (ADR 0001, ADR 0012), and a bro
 - **One action, any trigger.** A press runs **Save**, the Project file action that Save Project file in the Project panel and Ctrl/Cmd+S also run (ADR 0090). The ring adds no save path of its own, and the save-failed notice's Export runs Save too. **Save as** is the sibling action: Save Project file as… in the Project panel, or Ctrl/Cmd+Shift+S. The ring never runs it.
 - **Linked file** (where the browser can write to a picked file, ADR 0090: Chrome, Edge and other Chromium browsers on desktop): a Project's first Save opens the system Save dialog, suggesting `{Project name}.openbeads`, and the file picked becomes the Project's Linked file. Every later Save writes into it with no dialog. If the browser has dropped its permission, the press asks again with the browser's own prompt. If that is refused, or the file was moved or deleted, Save opens the Save dialog and links the file picked, with no error. Save as always opens the dialog and links the new file.
 - **Elsewhere** (Safari, Firefox, iPhone and iPad): there is no Linked file. Every Save is a new download or share sheet, as before, and Save as is hidden.
-- **Feedback:** writing into the Linked file, or into a file picked in the dialog, shows the short toast "Saved: {file}" (`success`, 5 s, Message card). A download keeps the existing "File ready". Either way it shows in the corner the ring just left. If the dialog won't open or the write fails, Save hands the file over as a download instead, with "File ready" and no error.
+- **Feedback:** writing into the Linked file, or into a file picked in the dialog, shows the short toast "Saved: {file}" (`accent` edge, the `success` tone, 5 s, Message card). A download keeps the existing "File ready". Either way it shows in the corner the ring just left. If the dialog won't open or the write fails, Save hands the file over as a download instead, with "File ready" and no error.
 - Once the file is written or the download handed over, the count goes to 0 and the ring hides. A cancelled dialog changes nothing. A refused download keeps the count and shows the action's existing error toast.
 
 ## Tooltip
@@ -55,7 +55,7 @@ The Menu card's Tooltip, under the ring, right edges aligned (the Tooltip's `ali
 
 - A `button` named "Save a copy", with `aria-describedby` pointing at the count line, so the count is read with the name ("Save a copy, Beads since last file: 64"). This avoids a plural inside a sentence.
 - In the tab order it comes after the Canvas strip's controls and before the drawing area. Enter or Space runs Save.
-- Ctrl/Cmd+S (Save) and Ctrl/Cmd+Shift+S (Save as) work with a Project open, whether or not the ring shows, and never fall through to the browser's Save page: they are claimed from a text field, under an open panel or dialog (where they run nothing) and with no Project open (where they do nothing). Where Save as is hidden, Ctrl/Cmd+Shift+S runs Save.
+- Ctrl/Cmd+S (Save) and Ctrl/Cmd+Shift+S (Save as) work with a Project open, whether or not the ring shows, and never fall through to the browser's Save page: they run from a text field and under an open panel or dialog (the Project panel holds the Save row), and are claimed but do nothing with no Project open. Where Save as is hidden, Ctrl/Cmd+Shift+S runs Save.
 
 ## Sizes
 
