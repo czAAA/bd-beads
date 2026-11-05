@@ -6,14 +6,27 @@ import type { PluralForms } from './plural'
 
 export type { Locale }
 
-/** One Homepage feature; `tabName` and `tabLine` are shorter wordings for the carousel tab where the full ones don't
- * fit. */
-interface FeatureCopy {
+/** A card or a row of What's inside (ticket 0797): its name and its line. */
+interface InsideCopy {
   name: string
   text: string
-  tabName?: string
-  tabLine?: string
 }
+
+/** What's inside's 13 rows, in the order the tour plays them (homepage/inside/insideRows.ts). */
+export type InsideRowId =
+  | 'canvas'
+  | 'techniques'
+  | 'editing'
+  | 'mirror'
+  | 'reference'
+  | 'convert'
+  | 'colors'
+  | 'letters'
+  | 'starters'
+  | 'rowProgress'
+  | 'beadsNeeded'
+  | 'exports'
+  | 'savedProjects'
 
 /** One Homepage plan tile's words (ticket 220): its name, its price, its one line and its button. */
 interface PlanCopy {
@@ -418,17 +431,20 @@ export interface Translations {
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
   homepage: {
     pageTitle: string
-    tagline: string
     makeFirstProject: string
     openEditor: string
     whatsInside: string
-    /** The carousel's ‹ › buttons. */
-    previousFeature: string
-    nextFeature: string
+    /** What's inside (ticket 0797; Homepage card): the four cards, the 13 rows the tour plays, the editor's region, and
+     * the demo's Projects. The shortcuts card's {menu}, {help} and {shortcuts}, the colors row's {brands} and Convert
+     * image's {max} come from the app. */
+    inside: {
+      cards: Record<'device' | 'pencil' | 'free' | 'shortcuts', InsideCopy>
+      rows: Record<InsideRowId, InsideCopy>
+      editor: string
+      demo: { kaleidoscope: string; heart: string; bracelet: string }
+    }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
     sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }
-    /** The hand-written notes of the hero (Homepage card); decorative, hidden from screen readers. */
-    notes: { onUs: string }
     /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string }
     /** The plan tiles (ticket 220; Homepage card). */
@@ -443,36 +459,6 @@ export interface Translations {
       comingSoon: string
       /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them. */
       free: { heading: string; rows: FreeRows; more: string }
-    }
-    features: {
-      techniques: FeatureCopy
-      projectEditing: FeatureCopy
-      convertImage: FeatureCopy
-      rowProgress: FeatureCopy
-      beadsNeeded: FeatureCopy
-      exports: FeatureCopy
-      savedProjects: FeatureCopy
-    }
-    /** The words inside the carousel's examples (ticket 218; Homepage card): decorative, so hidden from screen
-     * readers with them. */
-    examples: {
-      loom: string
-      peyote: string
-      brick: string
-      picture: string
-      sixColors: string
-      /** "Row 6" and "of 18" on the mini Progress bar. */
-      row: string
-      ofRows: string
-      brickRed: string
-      ivory: string
-      /** The PDF page's own small print. */
-      page: string
-      by: string
-      maker: string
-      projectFile: string
-      /** The Saved Projects gallery's six names: Gold strip, Poppy, Heart, Hills, Stripes, Checks. */
-      names: [string, string, string, string, string, string]
     }
   }
   /** The Name Piece dialog (ticket 406). */

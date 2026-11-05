@@ -1,9 +1,10 @@
 import { onBeforeUnmount, watch } from 'vue'
 import { swallowNextClick } from './swallowNextClick'
+import { inScope, PAGE_SCOPE, useShellScope, type ShellScope } from './shellScope'
 
-// The overlay registry (ticket 76 Escape; ticket 449, ADR 0061 press outside). Every open overlay is a layer on one
-// stack; two capture listeners act on the top-most only: Escape closes it, a press outside closes it (click swallowed).
-// Exempt: the opener, a dialog raised from it.
+// The overlay registry (ticket 76 Escape; ticket 449, ADR 0061 press outside): every open overlay is a layer on one stack;
+// Escape and a press outside (click swallowed) close the top-most, its opener and a dialog raised from it exempt. A boxed
+// shell's layer (ticket 0797) hears only what happens in its box, the page's layers everything.
 export interface OverlayLayerOptions {
   /** Whether the overlay is open; it is a layer only while this holds. */
   isOpen: () => boolean
@@ -23,20 +24,29 @@ export interface OverlayLayerOptions {
   keepsPress?: (event: PointerEvent) => boolean
 }
 
-const layers: OverlayLayerOptions[] = []
+type Layer = OverlayLayerOptions & { scope: ShellScope }
+
+const layers: Layer[] = []
+
+/** The top-most layer an event's target is the business of. */
+function topFor(target: EventTarget | null): Layer | undefined {
+  for (let index = layers.length - 1; index >= 0; index--) if (inScope(layers[index].scope, target)) return layers[index]
+  return undefined
+}
 
 const DIALOG = '[role="dialog"], [role="alertdialog"]'
 
 function onKeyDown(event: KeyboardEvent) {
-  const top = layers.at(-1)
-  if (event.key !== 'Escape' || !top) return
+  if (event.key !== 'Escape') return
+  const top = topFor(event.target)
+  if (!top) return
   event.preventDefault()
   event.stopImmediatePropagation()
   top.close()
 }
 
 /** Whether the press lands in something the layer must leave alone. */
-function isExempt(top: OverlayLayerOptions, target: Element): boolean {
+function isExempt(top: Layer, target: Element): boolean {
   if (top.isOpener?.(target)) return true
   // A dialog raised from the layer is its own business, unless it is one of the layers beneath (then it is outside).
   const dialog = target.closest(DIALOG)
@@ -44,8 +54,8 @@ function isExempt(top: OverlayLayerOptions, target: Element): boolean {
 }
 
 function onPointerDown(event: PointerEvent) {
-  const top = layers.at(-1)
   const target = event.target
+  const top = topFor(target)
   // A pinch's second finger is not a press.
   if (!top || (event.pointerType === 'touch' && !event.isPrimary) || !(target instanceof Element)) return
   const root = top.root()
@@ -58,7 +68,7 @@ function onPointerDown(event: PointerEvent) {
   ;(top.onOutsidePress ?? top.close)()
 }
 
-function push(layer: OverlayLayerOptions) {
+function push(layer: Layer) {
   if (layers.length === 0) {
     window.addEventListener('keydown', onKeyDown, true)
     window.addEventListener('pointerdown', onPointerDown, true)
@@ -66,7 +76,7 @@ function push(layer: OverlayLayerOptions) {
   layers.push(layer)
 }
 
-function remove(layer: OverlayLayerOptions) {
+function remove(layer: Layer) {
   const index = layers.lastIndexOf(layer)
   if (index < 0) return
   layers.splice(index, 1)
@@ -76,16 +86,17 @@ function remove(layer: OverlayLayerOptions) {
   }
 }
 
-/** Whether a modal, sheet, drawer or menu is open: the app's own Escape and hotkeys wait until none is. */
-export function hasOpenLayer(): boolean {
-  return layers.length > 0
+/** Whether a modal, sheet, drawer or menu of a shell is open, the page's by default: its own Escape and hotkeys wait until
+ * none is. */
+export function hasOpenLayer(scope: ShellScope = PAGE_SCOPE): boolean {
+  return layers.some((layer) => layer.scope === scope)
 }
 
 /** Makes this component a layer while `isOpen()` holds; Escape and a press outside then act on it once it is the
  * top-most one. */
 export function useOverlayLayer(options: OverlayLayerOptions) {
   // A fresh object per component, so two layers sharing a handler still come off the stack one at a time.
-  const layer = { ...options }
+  const layer = { ...options, scope: useShellScope() }
   watch(options.isOpen, (open) => (open ? push(layer) : remove(layer)), { immediate: true, flush: 'sync' })
   onBeforeUnmount(() => remove(layer))
 }

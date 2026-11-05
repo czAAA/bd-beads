@@ -29,7 +29,10 @@ const props = withDefaults(defineProps<{
   testid: string
   /** The last press of Row done or Row not done, wherever it was made (ticket 0730): Row done flares the spark. */
   rowPress?: RowPress
-}>(), { rowHighlight: true, drop: 0 })
+  /** On the margin, no Row not done: the Homepage demo's band (ticket 0797, MarginSheet card), the Progress bar keeping
+   * its own. */
+  withoutNotDone?: boolean
+}>(), { rowHighlight: true, drop: 0, withoutNotDone: false })
 
 const emit = defineEmits<{
   'move-row': [delta: number]
@@ -188,7 +191,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
     />
     <div v-else-if="item === 'steps'" class="row-progress__steps" :class="`row-progress__steps--${arrowTurn}`">
       <IconButton
-        v-if="!small"
+        v-if="!small && !withoutNotDone"
         variant="plain"
         :action="actions.notDone"
         :label="notDoneLabel"

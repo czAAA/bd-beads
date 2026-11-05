@@ -17,7 +17,7 @@ import AppLogo from '../components/ui/AppLogo.vue'
 import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeTile from './CoffeeTile.vue'
-import FeatureCarousel from './FeatureCarousel.vue'
+import WhatsInside from './inside/WhatsInside.vue'
 import PlanTiles from './PlanTiles.vue'
 import RollingSlogan from './RollingSlogan.vue'
 import SectionBar from './SectionBar.vue'
@@ -73,8 +73,8 @@ const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
 const zoom = useHomepageZoom()
 /** The content's own width once zoomed: the width its layout is made for (the CSS asks the container the same). */
-/** The width from which the carousel is a tablist, as in the CSS (1024px). */
-const WIDE_FROM = 1024
+/** The width from which What's inside has its editor, as in the CSS (481px): a phone has the plain list (ticket 0797). */
+const EDITOR_FROM = 481
 const bodyEl = ref<HTMLElement>()
 const bodySize = useElementSize(bodyEl)
 const pageWidth = computed(() => (bodySize.width.value || window.innerWidth) / (zoom.percent.value / 100))
@@ -106,7 +106,13 @@ const boxStyle = computed(() => {
 // nearest one; the box stays put on a sticky stage while it scrolls. This list is the one place they are named and
 // ordered: the page draws them, their snap points and their turning from it, and the Progress bar its steps.
 const sections = computed<HomepageSection[]>(() => [
-  { id: 'inside', heading: t.value.homepage.whatsInside, title: 'above', shows: FeatureCarousel, with: () => ({ class: 'homepage__fill', wide: pageWidth.value >= WIDE_FROM }) },
+  {
+    id: 'inside',
+    heading: t.value.homepage.whatsInside,
+    title: 'above',
+    shows: WhatsInside,
+    with: (): Record<string, unknown> => ({ class: 'homepage__fill', withEditor: pageWidth.value >= EDITOR_FROM, shown: sections.value[section.value]?.id === 'inside' }),
+  },
   { id: 'coffee', heading: t.value.homepage.coffee.title, title: 'hidden', centred: true, shows: CoffeeTile },
   {
     id: 'plans',
@@ -285,17 +291,19 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
         </span>
 
         <div class="homepage" :style="boxStyle" data-testid="homepage">
-          <CanvasStrip
-            page="homepage"
-            :open-panel="menuOpen ? 'menu' : null"
-            :zoom-percent="zoom.percent.value"
-            :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
-            :zoom-max-percent="HOMEPAGE_MAX_ZOOM_PERCENT"
-            @select-panel="menuOpen = !menuOpen"
-            @zoom-in="zoom.zoomIn"
-            @zoom-out="zoom.zoomOut"
-            @reset="zoom.reset"
-          />
+          <div class="homepage__strip">
+            <CanvasStrip
+              page="homepage"
+              :open-panel="menuOpen ? 'menu' : null"
+              :zoom-percent="zoom.percent.value"
+              :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
+              :zoom-max-percent="HOMEPAGE_MAX_ZOOM_PERCENT"
+              @select-panel="menuOpen = !menuOpen"
+              @zoom-in="zoom.zoomIn"
+              @zoom-out="zoom.zoomOut"
+              @reset="zoom.reset"
+            />
+          </div>
           <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
             <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
             <template #sub="{ depth }">
@@ -334,13 +342,6 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
             <main class="homepage__page" :style="{ zoom: zoom.percent.value / 100 }">
               <section class="homepage__hero">
                 <RollingSlogan />
-                <p class="homepage__tagline">
-                  <span class="homepage__tagline-text">{{ t.homepage.tagline }}</span>
-                  <span class="homepage__aside homepage__aside--us" aria-hidden="true" data-testid="homepage-note-on-us">
-                    <svg class="homepage__arrow" width="18" height="8" viewBox="0 0 18 8"><path d="M17 4 H2 M6 1 L2 4 L6 7" /></svg>
-                    <span class="homepage__note homepage__note--accent">{{ t.homepage.notes.onUs }}</span>
-                  </span>
-                </p>
                 <div class="homepage__actions">
                   <span v-if="isNew" class="homepage__buttons">
                     <AppButton variant="primary" size="lg" data-testid="homepage-make-first" @click="emit('makeFirstProject')">
@@ -563,6 +564,11 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
 /* The zoom scales the content; the layout is made for the width it ends up with, so the text reflows and the page never
  * scrolls sideways. */
+/* The strip sizes itself by the box's width, as the editor's by its shell's (ticket 0797). */
+.homepage__strip {
+  container: shell / inline-size;
+}
+
 .homepage__page {
   container: homepage / inline-size;
   display: flex;
@@ -585,80 +591,6 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 @container homepage (min-width: 744px) {
   .homepage__hero {
     padding: var(--space-24) var(--space-24) var(--space-16);
-  }
-}
-
-.homepage__tagline {
-  position: relative;
-  margin: var(--space-14) 0 0;
-  font: var(--type-meta);
-  color: var(--muted);
-}
-
-.homepage__tagline-text {
-  display: inline-block;
-}
-
-/* The hand-written notes (Homepage card): decorative, never over text, muted unless they say otherwise. */
-.homepage__note {
-  position: absolute;
-  font: var(--type-note);
-  color: var(--muted);
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.homepage__note--accent {
-  color: var(--accent-strong);
-}
-
-.homepage__aside {
-  pointer-events: none;
-}
-
-.homepage__arrow {
-  overflow: visible;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 1.25;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* "on us": above the line's right end on a phone, beside it from 744. */
-.homepage__aside--us {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: auto;
-}
-
-.homepage__aside--us .homepage__note {
-  top: -1.125rem;
-  right: -0.25rem;
-  transform: rotate(-6deg);
-}
-
-.homepage__aside--us .homepage__arrow {
-  display: none;
-}
-
-@container homepage (min-width: 744px) {
-  .homepage__aside--us {
-    top: 0.0625rem;
-    left: calc(100% + 0.25rem);
-    right: auto;
-  }
-
-  .homepage__aside--us .homepage__note {
-    top: 0;
-    right: auto;
-    left: 1.375rem;
-  }
-
-  .homepage__aside--us .homepage__arrow {
-    display: block;
-    margin-top: 0.4375rem;
   }
 }
 

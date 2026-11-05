@@ -212,3 +212,26 @@ describe('MenuPanel Convert image row and leaving (ticket 0756)', () => {
     expect(leave).toHaveBeenCalledOnce()
   })
 })
+
+describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
+  it('holds only the Projects section and Help\'s Keyboard shortcuts, so nothing in the demo changes the app', () => {
+    const wrapper = mountIn({ demo: true, projectCount: 3 })
+    const groups = wrapper.findAll('[role="group"]').filter((group) => group.find('h3').exists())
+    expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.help])
+    expect(wrapper.findAll('[data-testid^="menu-"]').map((row) => row.attributes('data-testid'))).toEqual(
+      expect.arrayContaining(['menu-new-project', 'menu-convert-image', 'menu-saved-projects', 'menu-item-shortcuts']),
+    )
+    for (const gone of ['language-switcher', 'theme-picker', 'menu-item-feedback', 'menu-item-homepage', 'menu-item-source']) {
+      expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
+    }
+  })
+
+  it('empties the demo from New Project, with no form to open', async () => {
+    const openSub = vi.fn()
+    const wrapper = mountIn({ demo: true }, openSub)
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    expect(wrapper.findComponent(MenuPanel).emitted('new-project')).toHaveLength(1)
+    expect(openSub).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="menu-new-project"]').find('.panel-item__mark--sub').exists()).toBe(false)
+  })
+})

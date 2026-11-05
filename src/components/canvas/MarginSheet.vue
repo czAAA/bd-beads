@@ -47,6 +47,8 @@ const props = defineProps<{
   selection?: BarBox
   /** Whether the whole Frame is the Mirror's Area (ADR 0082): its Mirror the whole Frame is pressed, in the accent. */
   mirrorOnFrame?: boolean
+  /** The band has no Row not done: the Homepage demo's sheet, its one exception (MarginSheet card, ticket 0797). */
+  withoutNotDone?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -305,6 +307,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           :row-press="rowPress"
           :form="progressForm"
           :drop="progressDrop"
+          :without-not-done="withoutNotDone"
           testid="margin-progress"
           @move-row="emit('move-row', $event)"
           @reset-progress="emit('reset-progress')"

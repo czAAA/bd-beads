@@ -166,6 +166,8 @@ const {
   onSelectionPress,
   onSelectionDrag,
   onSelectionRelease,
+  demo,
+  surfaceProbe,
 } = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
@@ -281,6 +283,8 @@ const frameAnchor = ref<FrameAnchor>()
 const schemaAnchors = ref<SchemaAnchors>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
+// The surface tells the shell where it draws a bead (ticket 0797).
+watch(surfaceRef, (shown) => (surfaceProbe.value = shown ?? undefined))
 const surfacePressing = ref(false)
 
 /** The Canvas's Background (tickets 252, 0666) as the drawing area's fill; the device's last pick with no Project open. */
@@ -299,10 +303,12 @@ const selectionLayerStyle = computed(() => {
   return { left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${drawingSize.width.value}px`, height: `${drawingSize.height.value}px` }
 })
 /** The open Project has no beads and no Frame, not even an empty one: the CanvasHint line and the first-run welcome show
- * (FirstRunHints card, tickets 0725, 0798). A Frame is already a start on the Pattern. */
-const emptyProject = computed(() => !!activeProject.value && !frameOf(activeProject.value) && !hasProjectBeads(activeProject.value))
-/** The save ring shows over the editor's drawing area only (SaveReminder card), and the toasts start under it. */
-const ringShown = computed(() => onEditor.value && !!activeProject.value && saveRing.value.shown)
+ * (FirstRunHints card, tickets 0725, 0798). A Frame is already a start on the Pattern. The Homepage's demo has none:
+ * nothing shows there that the tour didn't make (ticket 0797). */
+const emptyProject = computed(() => !demo && !!activeProject.value && !frameOf(activeProject.value) && !hasProjectBeads(activeProject.value))
+/** The save ring shows over the editor's drawing area only (SaveReminder card), and the toasts start under it; never in
+ * the Homepage's demo, which saves nothing (ticket 0797). */
+const ringShown = computed(() => !demo && onEditor.value && !!activeProject.value && saveRing.value.shown)
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
@@ -328,6 +334,7 @@ const drawingStyle = computed(() => {
       <CanvasStrip
         class="app-shell__canvas-strip"
         :page="page"
+        :demo="demo"
         :project="onEditor ? activeProject : undefined"
         :rulers="showRulers"
         :reference-image="onEditor && activeProject ? referenceState : undefined"
@@ -578,6 +585,7 @@ const drawingStyle = computed(() => {
           :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
           :mirror-on-frame="mirrorOnFrame"
+          :without-not-done="demo"
           @mirror="onMirrorWholeFrame"
           @rotate="onRotateFrame"
           @toggle-edit="onEditFrame"
