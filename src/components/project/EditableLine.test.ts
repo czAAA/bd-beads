@@ -80,4 +80,18 @@ describe('EditableLine in the margin\'s title block (ticket 0685)', () => {
     pressOutside()
     expect(wrapper.emitted('save')).toBeUndefined()
   })
+
+  // The empty text is an invitation: pressing it starts the edit, as the pencil does (ticket 0803).
+  it('starts the edit from its empty text', async () => {
+    const wrapper = mountLine({ bare: true })
+    await wrapper.get('[data-testid="line"]').trigger('click')
+    expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(true)
+  })
+
+  it('invite only, has no pencil and keeps a value read only', async () => {
+    const wrapper = mountLine({ value: 'Ada', bare: true, inviteOnly: true })
+    expect(wrapper.find('[data-testid="line-edit"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="line"]').trigger('click')
+    expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(false)
+  })
 })

@@ -5,7 +5,6 @@ import { computeColorQuantities } from '../../domain/beadQuantities'
 import { frameWeave } from '../../domain/layerWeave'
 import { MAX_MAKER_NAME } from '../../domain/makerName'
 import { projectPalette } from '../../domain/palette'
-import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import type { Project } from '../../domain/project'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -20,6 +19,7 @@ import PanelPicker from '../shell/PanelPicker.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import MarginSettingCell from './MarginSettingCell.vue'
+import { frameNameLine } from './marginFrameName'
 import { frameOf, lettersOn } from '../../domain/layerRecord'
 
 // The margin sheet's title block (MarginSheet card, tickets 0657, 0658, 0698), in its bottom-right corner like a
@@ -42,6 +42,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const techniqueAction = controlAction('change-technique')
 const foldAction = controlAction('fold-title-block')
 const frame = computed(() => frameOf(props.project)!)
+const nameLine = computed(() => frameNameLine(t.value, frame.value.name))
 
 /** The Frame's Technique, the one its rows are woven in; locked with its reason once a pass is done. */
 const technique = computed(() => frameWeave(props.project).technique)
@@ -110,18 +111,7 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
   <div class="margin-title" :class="form === 'full' ? 'margin-title--full' : 'margin-title--compact'" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
     <template v-if="form === 'full'">
       <div class="margin-title__cell margin-title__top margin-title__name">
-        <EditableLine
-          bare
-          :label="t.panels.project.nameLabel"
-          :value="frame.name ?? ''"
-          :edit-label="t.frame.nameEdit"
-          :edit-tooltip="t.frame.nameTooltip"
-          :empty-text="t.frame.nameEmpty"
-          :maxlength="MAX_PIECE_NAME"
-          :normalize="(raw) => raw.trim()"
-          testid="margin-frame-name"
-          @save="emit('rename', $event)"
-        />
+        <EditableLine v-bind="nameLine" @save="emit('rename', $event)" />
       </div>
       <div class="margin-title__cell margin-title__top margin-title__value">
         <span class="margin-title__text" data-testid="margin-technique">{{ techniqueName(t, technique) }}</span>
@@ -158,10 +148,11 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
         <span v-if="by.after" class="margin-title__meta">{{ by.after }}</span>
       </div>
     </template>
-    <!-- Compact, the name and the Technique are read only: the Frame panel and the full form edit them. -->
+    <!-- Compact, the name and the Technique are read only: the Frame panel and the full form edit them. Only an empty
+         name opens its field, from "Name this frame" (ticket 0803). -->
     <template v-else>
-      <div class="margin-title__cell margin-title__name" data-testid="margin-frame-name">
-        <span class="margin-title__ellipsis" :class="{ 'margin-title__empty': !frame.name }">{{ frame.name || t.frame.nameEmpty }}</span>
+      <div class="margin-title__cell margin-title__name">
+        <EditableLine v-bind="nameLine" invite-only @save="emit('rename', $event)" />
       </div>
       <div class="margin-title__cell margin-title__value" data-testid="margin-technique">{{ techniqueName(t, technique) }}</div>
       <div v-for="{ setting, value } in settings" :key="setting.id" class="margin-title__cell margin-title__value">
@@ -247,15 +238,6 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 /* Compact, the name is 11px, as on its tab (MarginSheet card, Zoom forms). */
 .margin-title--compact .margin-title__name {
   font: var(--margin-tab-name);
-}
-
-.margin-title__ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.margin-title__empty {
-  color: var(--muted);
 }
 
 /* The fold button: 18px, a 12px icon, no fill, hover `ink` at 10%. */
