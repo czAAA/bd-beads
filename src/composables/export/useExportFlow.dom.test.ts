@@ -1,3 +1,4 @@
+import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
@@ -7,6 +8,9 @@ import { readProjectsFile } from '../../services/projectFileCodec'
 import { encodeProject } from '../../domain/projectEncoding'
 import { projectSummaryOf } from '../../domain/sealedProject'
 import { useExportFlow } from './useExportFlow'
+import type { FileWriter, PickedFile } from '../../services/fileWriter'
+import type { LinkedFileStore } from '../../services/linkedFileStore'
+import type { SealedProject } from '../../domain/sealedProject'
 
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
@@ -96,7 +100,7 @@ describe('useExportFlow', () => {
     })
 
     it('hands over the open Project as a Project file', async () => {
-      await setup().onExportProjectFile()
+      await setup().onSave()
       expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
     })
 
@@ -114,7 +118,7 @@ describe('useExportFlow', () => {
     })
 
     it('hands over the whole library when no Project is open', async () => {
-      await setup({ open: false }).onExportProjectFile()
+      await setup({ open: false }).onSave()
       expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(Uint8Array), 'application/json')
     })
   })
@@ -240,7 +244,7 @@ describe('useExportFlow toasts (ticket 523)', () => {
   it('names the PDF and the file in their toasts', async () => {
     const { flow, toasts } = setupToasts()
     await flow.onExportPdf()
-    await flow.onExportProjectFile()
+    await flow.onSave()
 
     expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyPdf, en.saveBox.readyFile])
   })
@@ -261,5 +265,160 @@ describe('useExportFlow toasts (ticket 523)', () => {
     downloadFile.mockClear()
     toasts[0]!.action!.run()
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+  })
+})
+
+describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
+  const linked = (name: string) => ({ name }) as PickedFile
+
+  function setupSave(options: { writer?: Partial<FileWriter>; links?: Record<string, PickedFile>; handOver?: 'handed' | 'refused' | 'cancelled'; projects?: Project[]; sealed?: SealedProject[] } = {}) {
+    const toasts: { id: string; text: string; action?: { label: string; run: () => void } }[] = []
+    const links = new Map(Object.entries(options.links ?? {}))
+    const saved: (readonly string[])[] = []
+    downloadFile.mockReturnValue(options.handOver ?? 'handed')
+    const writer: FileWriter = {
+      available: true,
+      pick: vi.fn(async (name: string) => ({ kind: 'picked' as const, file: linked(name) })),
+      ready: vi.fn(async () => true),
+      write: vi.fn(async () => true),
+      ...options.writer,
+    }
+    const linkedFiles: LinkedFileStore = {
+      get: async (id) => links.get(id),
+      put: async (id, file) => !!links.set(id, file),
+      remove: async (id) => void links.delete(id),
+      keepOnly: async () => {},
+    }
+    const flow = useExportFlow({
+      currentProject: () => project,
+      projects: () => options.projects ?? [project],
+      sealed: () => options.sealed ?? [],
+      messages: () => en,
+      locale: () => 'en' as const,
+      replaceProject: () => {},
+      downloadFile,
+      fileWriter: writer,
+      linkedFiles,
+      onFileSaved: (ids) => saved.push(ids),
+      showToast: (id, text, _tone, action) => toasts.push({ id, text, action }),
+    })
+    return { flow, writer, links, saved, toasts }
+  }
+
+  it('without File System Access, Save hands the file over as before, says File ready and counts from 0 again', async () => {
+    const { flow, saved, toasts } = setupSave({ writer: { available: false } })
+    await flow.onSave()
+
+    expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
+    expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyFile])
+    expect(saved).toEqual([[project.id]])
+    expect(flow.canSaveAs.value).toBe(false)
+  })
+
+  it('without File System Access, Save as is Save', async () => {
+    const { flow, writer } = setupSave({ writer: { available: false } })
+    await flow.onSaveAs()
+
+    expect(writer.pick).not.toHaveBeenCalled()
+    expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
+  })
+
+  it('keeps the count when the share sheet is closed, or refused until its action hands the file over', async () => {
+    expect((await run('cancelled')).saved).toEqual([])
+    const refused = await run('refused')
+    expect(refused.saved).toEqual([])
+    downloadFile.mockReturnValue('handed')
+    refused.toasts[0]!.action!.run()
+    await vi.waitFor(() => expect(refused.saved).toEqual([[project.id]]))
+
+    async function run(handOver: 'refused' | 'cancelled') {
+      const setup = setupSave({ writer: { available: false }, handOver })
+      await setup.flow.onSave()
+      return setup
+    }
+  })
+
+  it('the first Save asks where to save, writes the file, links it and says Saved: {file}', async () => {
+    const { flow, writer, links, saved, toasts } = setupSave()
+    await flow.onSave()
+
+    expect(writer.pick).toHaveBeenCalledWith(projectFileName(project))
+    expect(writer.write).toHaveBeenCalledWith(linked(projectFileName(project)), expect.any(Uint8Array))
+    expect(links.get(project.id)).toEqual(linked(projectFileName(project)))
+    expect(downloadFile).not.toHaveBeenCalled()
+    expect(toasts.map((toast) => toast.text)).toEqual([`Saved: ${projectFileName(project)}`])
+    expect(saved).toEqual([[project.id]])
+    await vi.waitFor(() => expect(flow.linkedFileName.value).toBe(projectFileName(project)))
+  })
+
+  it('a later Save writes into the Linked file with no dialog', async () => {
+    const { flow, writer } = setupSave({ links: { [project.id]: linked('Moth.openbeads') } })
+    await flow.onSave()
+
+    expect(writer.ready).toHaveBeenCalledWith(linked('Moth.openbeads'))
+    expect(writer.pick).not.toHaveBeenCalled()
+    expect(writer.write).toHaveBeenCalledWith(linked('Moth.openbeads'), expect.any(Uint8Array))
+  })
+
+  it('a refused permission or a moved file opens the dialog and links the file picked, with no error', async () => {
+    const { flow, writer, links, toasts } = setupSave({ links: { [project.id]: linked('Moth.openbeads') }, writer: { ready: vi.fn(async () => false) } })
+    await flow.onSave()
+
+    expect(writer.pick).toHaveBeenCalled()
+    expect(links.get(project.id)).toEqual(linked(projectFileName(project)))
+    expect(toasts.map((toast) => toast.text)).toEqual([`Saved: ${projectFileName(project)}`])
+  })
+
+  it('a cancelled dialog changes nothing', async () => {
+    const { flow, writer, links, saved, toasts } = setupSave({ writer: { pick: vi.fn(async () => ({ kind: 'cancelled' as const })) } })
+    await flow.onSave()
+
+    expect(writer.write).not.toHaveBeenCalled()
+    expect(downloadFile).not.toHaveBeenCalled()
+    expect([links.size, saved, toasts]).toEqual([0, [], []])
+  })
+
+  it('a dialog the browser refuses to open, or a write that fails, hands the file over instead', async () => {
+    const refused = setupSave({ writer: { pick: vi.fn(async () => ({ kind: 'failed' as const })) } })
+    await refused.flow.onSave()
+    const failed = setupSave({ writer: { write: vi.fn(async () => false) } })
+    await failed.flow.onSave()
+
+    expect(downloadFile).toHaveBeenCalledTimes(2)
+    expect(failed.links.size).toBe(0)
+    expect(failed.toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyFile])
+  })
+
+  it('Save as always asks and links the new file', async () => {
+    const { flow, writer, links } = setupSave({ links: { [project.id]: linked('Moth.openbeads') }, writer: { pick: vi.fn(async () => ({ kind: 'picked' as const, file: linked('Moth 2.openbeads') })) } })
+    await flow.onSaveAs()
+
+    expect(writer.ready).not.toHaveBeenCalled()
+    expect(links.get(project.id)).toEqual(linked('Moth 2.openbeads'))
+    expect(flow.canSaveAs.value).toBe(true)
+  })
+
+  it('Export all and a sealed Project\'s Export hand over, never link, and count every Project they wrote from 0 again', async () => {
+    const kept = { ...projectSummaryOf(encodeProject(project))!, id: 'sealed', stored: JSON.stringify(encodeProject(project)) }
+    const { flow, writer, saved } = setupSave({ sealed: [kept] })
+    await flow.onExportLibraryFile()
+    await flow.onExportSealed(kept)
+
+    expect(writer.pick).not.toHaveBeenCalled()
+    expect(downloadFile).toHaveBeenCalledTimes(2)
+    expect(saved).toEqual([[project.id, 'sealed'], ['sealed']])
+  })
+})
+
+describe('useExportFlow Linked files kept (ADR 0090)', () => {
+  it('drops the links of no Project at start, and a Project\'s link when it leaves the library', async () => {
+    const ids = ref(['a', 'b'])
+    const linkedFiles = { get: vi.fn(async () => undefined), put: vi.fn(), remove: vi.fn(async () => {}), keepOnly: vi.fn(async () => {}) }
+    useExportFlow({ currentProject: () => undefined, projects: () => [], messages: () => en, locale: () => 'en', replaceProject: () => {}, linkedFiles, libraryIds: () => ids.value })
+
+    expect(linkedFiles.keepOnly).toHaveBeenCalledWith(new Set(['a', 'b']))
+    ids.value = ['b']
+    await nextTick()
+    expect(linkedFiles.remove).toHaveBeenCalledWith('a')
   })
 })
