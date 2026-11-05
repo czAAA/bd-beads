@@ -21,9 +21,11 @@ import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
+import EditableLine from '../project/EditableLine.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
 import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
+import { frameNameLine } from './marginFrameName'
 import RowProgressControls from './RowProgressControls.vue'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
@@ -86,6 +88,7 @@ const actions = {
 }
 
 const frame = computed(() => frameOf(props.project))
+const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 /** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
 const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))
@@ -400,7 +403,21 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         @set-letters="emit('set-letters', $event)"
         @fold="fold.fold()"
       />
-      <!-- Folded, the title block is its name on a tab; where the sheet has room, the tab unfolds it. -->
+      <!-- Folded, the title block is its name on a tab; where the sheet has room, the tab unfolds it. Unnamed, the tab
+           invites a name: "Name this frame" opens the name field and its chevron unfolds (ticket 0803). -->
+      <span v-else-if="!frame?.name" class="margin-sheet__tab margin-sheet__tab--unnamed" data-testid="margin-title-tab">
+        <EditableLine v-bind="nameLine" invite-only class="margin-sheet__tab-name" @save="emit('rename', $event)" />
+        <IconButton
+          v-if="unfoldable"
+          variant="plain"
+          icon="chevron-up"
+          :icon-size="12"
+          :action="actions.show"
+          :label="fillBlanks(t.frame.margin.showTitleBlockOf, { name: t.frame.nameEmpty })"
+          data-testid="margin-title-unfold"
+          @click="fold.unfold()"
+        />
+      </span>
       <AppButton
         v-else-if="unfoldable"
         variant="text"
@@ -566,6 +583,14 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 
 .margin-sheet__title :deep(.margin-sheet__tab:hover) {
   background: color-mix(in srgb, var(--ink) 10%, var(--margin-title));
+}
+
+/* Unnamed, the tab holds "Name this frame" and, where it unfolds, an 18px chevron button (ticket 0803). */
+.margin-sheet__tab--unnamed :deep(.icon-btn) {
+  width: var(--margin-pencil);
+  height: var(--margin-pencil);
+  color: var(--body);
+  border-radius: var(--radius-sm);
 }
 
 .margin-sheet__tab-name {

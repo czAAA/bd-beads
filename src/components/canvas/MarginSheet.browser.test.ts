@@ -9,6 +9,7 @@ import { frameOutsetPx } from '../../rendering/rulerScale'
 import { FIT_LOCALES, mountAt } from '../../testUtils/browserFit'
 import { paintAt } from '../../testUtils/layers'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
+import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import MarginSheet from './MarginSheet.vue'
 import { withLayers } from '../../testUtils/layerFields'
 
@@ -21,6 +22,8 @@ const columns = ref(40)
 /** Brick stitch gives the title block a Drop cell (ticket 0698). */
 const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
+/** The Frame's name: empty, its tab invites one (ticket 0803). */
+const frameName = ref('Sun band')
 /** The sheet's corner the title block is in: the Frame's own bottom-right on a turned Canvas (ticket 0728). */
 const corner = ref({ top: false, left: false })
 
@@ -42,7 +45,7 @@ function anchorAt(at: number, across: number): FrameAnchor {
 function projectOf(across: number): Project {
   const bare: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), {
 makerName: 'Ada',
-    frame: { row: 0, column: 0, rows: 11, columns: across, technique: technique.value, techniqueSettings: { brickDrop: 2 }, beads: {}, name: 'Sun band' },
+    frame: { row: 0, column: 0, rows: 11, columns: across, technique: technique.value, techniqueSettings: { brickDrop: 2 }, beads: {}, name: frameName.value },
 })
   const painted = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).slice(0, across).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
   return moveToRow(painted, 0)
@@ -107,6 +110,24 @@ describe('the margin sheet at each zoom (tickets 0658, 0698)', () => {
         expect(formOf(root), `${at}`).toBe(form)
         expect(problems(root), `${at}`).toEqual([])
         expect(root.querySelector('[data-testid="frame-move-handle"]'), `${at}`).not.toBeNull()
+      }
+    })
+
+    it(`fits an unnamed Frame's tab, "Name this frame" and its chevron, folded by hand at 100% and 40%, in ${locale}`, async () => {
+      zoom.value = 1
+      columns.value = 40
+      frameName.value = ''
+      useTitleBlockFold().fold()
+      onTestFinished(() => {
+        frameName.value = 'Sun band'
+        useTitleBlockFold().unfold()
+      })
+      const { root } = await mountAt(Host, {}, { locale, width: 1280 })
+      for (const at of [1, 0.4]) {
+        zoom.value = at
+        await settled(root)
+        expect(problems(root), `${at}`).toEqual([])
+        expect(root.querySelector('[data-testid="margin-title-unfold"]'), `${at}`).not.toBeNull()
       }
     })
 
