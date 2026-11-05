@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
-import { useInsideTour } from './useInsideTour'
+import { TOUR_TIMING, useInsideTour } from './useInsideTour'
 
 const ROWS = ['canvas', 'techniques', 'editing', 'mirror'] as const
 type Row = (typeof ROWS)[number]
@@ -12,7 +12,7 @@ interface FakeHand {
 }
 
 /** The tour on fake rows, each taking `rowMs` when played and nothing when applied, and everything it did, in order. */
-function tourHost(options: { reducedMotion?: boolean; rowMs?: number; seen?: boolean } = {}) {
+function tourHost(options: { reducedMotion?: boolean; rowMs?: number; seen?: boolean; failing?: Row } = {}) {
   const done: string[] = []
   const seen = ref(options.seen ?? true)
   const reduced = ref(options.reducedMotion ?? false)
@@ -26,6 +26,7 @@ function tourHost(options: { reducedMotion?: boolean; rowMs?: number; seen?: boo
           hand: (instant) => ({ instant }),
           play: async (row, hand) => {
             done.push(hand.instant ? `apply ${row}` : `play ${row}`)
+            if (row === options.failing) throw new Error(`The tour found no ${row}`)
             if (!hand.instant) await new Promise((resolve) => setTimeout(resolve, options.rowMs ?? 1000))
           },
           hideGhost: () => void done.push('hide'),
@@ -46,29 +47,29 @@ beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
 
 describe("What's inside's tour (ticket 0797)", () => {
-  it('starts by itself 900ms after the section first shows, then plays the rows in order, each lit while it plays', async () => {
+  it('starts by itself a moment after the section first shows, then plays the rows in order, each lit while it plays', async () => {
     const { done, steps, tour } = tourHost()
-    await vi.advanceTimersByTimeAsync(899)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start - 1)
     expect(steps()).toEqual([])
     await vi.advanceTimersByTimeAsync(1)
     expect(steps()).toEqual(['fresh'])
     expect(tour.playing.value).toBe('canvas')
 
-    await vi.advanceTimersByTimeAsync(350)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
     expect(done.at(-1)).toBe('play canvas')
-    await vi.advanceTimersByTimeAsync(1000 + 450 + 350)
+    await vi.advanceTimersByTimeAsync(1000 + TOUR_TIMING.after + TOUR_TIMING.before)
     expect(tour.playing.value).toBe('techniques')
     expect(done.at(-1)).toBe('play techniques')
   })
 
-  it('rests 1.8s after the last row, the list unlit and the ghost hidden, then starts again on a fresh demo', async () => {
+  it('rests after the last row, the list unlit and the ghost hidden, then starts again on a fresh demo', async () => {
     const { done, tour } = tourHost()
-    await vi.advanceTimersByTimeAsync(900 + ROWS.length * (350 + 1000 + 450))
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + ROWS.length * (TOUR_TIMING.before + 1000 + TOUR_TIMING.after))
     expect(done.filter((step) => step.startsWith('play'))).toEqual(ROWS.map((row) => `play ${row}`))
     expect(tour.playing.value).toBeUndefined()
     expect(done.at(-1)).toBe('hide')
 
-    await vi.advanceTimersByTimeAsync(1800)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.rest)
     expect(done.slice(-1)).toEqual(['fresh'])
     expect(tour.playing.value).toBe('canvas')
   })
@@ -80,13 +81,48 @@ describe("What's inside's tour (ticket 0797)", () => {
     expect(steps()).toEqual(['fresh', 'apply canvas', 'apply techniques'])
     expect(tour.playing.value).toBe('editing')
 
-    await vi.advanceTimersByTimeAsync(350 + 1000 + 450 + 350)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before + 1000 + TOUR_TIMING.after + TOUR_TIMING.before)
     expect(steps().slice(3)).toEqual(['play editing', 'play mirror'])
+  })
+
+  it('lights a row pressed at once, before the demo is fresh', () => {
+    const { tour } = tourHost({ seen: false })
+    tour.choose('mirror')
+    expect(tour.playing.value).toBe('mirror')
+  })
+
+  it('jumps back to an earlier row as well as forward', async () => {
+    const { steps, tour } = tourHost({ seen: false })
+    tour.choose('mirror')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(steps()).toEqual(['fresh', 'apply canvas', 'apply techniques', 'apply editing', 'play mirror'])
+
+    tour.choose('techniques')
+    expect(tour.playing.value).toBe('techniques')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(steps().slice(5)).toEqual(['fresh', 'apply canvas', 'play techniques'])
+  })
+
+  it('skips a row that cannot be done to the next, warning once however often the loop comes to it', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { steps, tour } = tourHost({ seen: false, failing: 'techniques' })
+    tour.choose('techniques')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before + TOUR_TIMING.after)
+    expect(tour.playing.value).toBe('editing')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(steps().filter((step) => step.startsWith('play'))).toEqual(['play techniques', 'play editing'])
+
+    // Round the loop again: applied or played, the same row warns no more.
+    tour.choose('mirror')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(tour.playing.value).toBe('mirror')
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
   })
 
   it('takes a row pressed before it starts by itself over the start', async () => {
     const { done, tour } = tourHost()
-    await vi.advanceTimersByTimeAsync(400)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start / 2)
     tour.choose('mirror')
     await vi.advanceTimersByTimeAsync(2000)
     expect(done.filter((step) => step === 'fresh')).toHaveLength(1)
@@ -96,7 +132,7 @@ describe("What's inside's tour (ticket 0797)", () => {
 
   it('stops for the visit once the beader takes the editor over, the list unlit, until a row is pressed', async () => {
     const { done, seen, tour } = tourHost()
-    await vi.advanceTimersByTimeAsync(900 + 350)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before)
     tour.takeOver()
     expect(tour.playing.value).toBeUndefined()
     expect(tour.takenOver.value).toBe(true)
@@ -119,7 +155,7 @@ describe("What's inside's tour (ticket 0797)", () => {
 
   it('plays only while seen, and starts again from the first row when seen again', async () => {
     const { steps, seen, tour } = tourHost()
-    await vi.advanceTimersByTimeAsync(900 + 350 + 1000 + 450 + 350)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before + 1000 + TOUR_TIMING.after + TOUR_TIMING.before)
     expect(tour.playing.value).toBe('techniques')
 
     seen.value = false

@@ -4,7 +4,7 @@ import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
 import GhostPointer from './GhostPointer.vue'
 import InsideShell from './InsideShell.vue'
-import { DEMO_DRAWINGS, DEMO_FRAME, demoLibrary } from './demoProjects'
+import { DEMO_FRAME, DEMO_VIEW, demoLibrary } from './demoProjects'
 import { createHand, ghostState, type Hand } from './hand'
 import { useTakeOver } from './useTakeOver'
 
@@ -67,18 +67,18 @@ async function settle(): Promise<void> {
   await new Promise((resolve) => requestAnimationFrame(resolve))
 }
 
-/** How much taller the Frame's margin sheet is than the Frame, at the demo's size: its band and title block. */
-const SHEET_TO_FRAME = 1.8
+/** How much taller the Frame's margin sheet is than the Frame, at the demo's size: its band and title block, which shrink
+ * no further than their least scale, so on a short screen the sheet is taller for its Frame (ticket 0802). */
+const SHEET_TO_FRAME = 2
 
-/** The view the tour plays in: the three drawings across the middle of the drawing area, at a zoom
- * that shows them all and the Frame's sheet whole above the Tool pill; set once before anything is drawn, so nothing zooms or moves after. */
+/** The view the tour plays in: `DEMO_VIEW` across the middle of the drawing area, at a zoom that shows it and the Frame's
+ * sheet whole above the Tool pill; set once before anything is drawn, so nothing zooms or moves after. */
 async function frameDrawings(): Promise<void> {
   const canvas = shell.value?.wired.canvas
   const area = rootEl.value?.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
   if (!canvas || !area) return
   const pill = rootEl.value?.querySelector('[data-testid="tool-pill"]')?.getBoundingClientRect().height ?? 0
-  const left = Math.min(...DEMO_DRAWINGS.map((drawing) => drawing.column))
-  const right = Math.max(...DEMO_DRAWINGS.map((drawing) => drawing.column + drawing.rows[0].length - 1))
+  const { left, right } = DEMO_VIEW
   const at = (row: number, column: number) => canvas.surfaceProbe.value?.beadOnScreen({ row, column })
   const first = at(DEMO_FRAME.row, left)
   const across = at(DEMO_FRAME.row, right)
