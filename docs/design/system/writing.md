@@ -697,7 +697,7 @@ The two toasts (Message card, info tone) after a Fill tool press on the Canvas t
 
 ## First-run hints copy (tickets 0725, 0738, 0795)
 
-The captions over an empty Project (FirstRunHints card), each beside the control in brackets. "/" marks a line break; in a language where a line runs longer, the caption wraps in its column rather than overflows. A tool quoted in a sentence takes the language's quotes («», “”), as Russian does for buttons. The words in a caption are the app's own names for what it lists (the Selection bar's actions, the Mirror popover's modes, the Menu's items). The welcome's last line is not new copy: it is the Project panel's own labels, `Project › Export › Project file`, in chips. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings. A phone shows no captions, only the welcome.
+The captions over an empty Project (FirstRunHints card), each beside the control in brackets. "/" marks a line break; in a language where a line runs longer, the caption wraps in its column rather than overflows. A tool quoted in a sentence takes the language's quotes («», “”), as Russian does for buttons. The words in a caption are the app's own names for what it lists (the Selection bar's actions, the Mirror popover's modes, the Menu's items). The welcome's last line is not new copy: it is the Project panel's own labels, `Project › Export › Save Project file`, in chips. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings. A phone shows no captions, only the welcome.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

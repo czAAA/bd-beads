@@ -43,7 +43,7 @@ Centred on the drawing area, under the CanvasHint line. It says one thing, where
 
 - The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: "Your Projects are saved only in this browser, on this device."
 - 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide: "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:".
-- 10px under it the way to a Project file, the Project panel's own labels in the CanvasHint's chips (DM Mono on `.hint-chip`) joined by "›": `Project › Export › Project file`.
+- 10px under it the way to a Project file, the Project panel's own labels in the CanvasHint's chips (DM Mono on `.hint-chip`) joined by "›": `Project › Export › Save Project file`.
 - No buttons: opening a file, Convert image and Keyboard shortcuts stay in Menu.
 
 ## Phone (30rem and under)

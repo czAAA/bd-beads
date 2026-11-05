@@ -11,6 +11,7 @@ import {
 } from '../../domain/history'
 import { snapshotOf, UNDO_CAP, type UndoEntry } from '../../domain/undoSnapshot'
 import type { Project } from '../../domain/project'
+import type { Layered } from '../../domain/layerRecord'
 
 /** What the history needs from the app shell: the open Project and Edit's way of putting a snapshot back. */
 export interface UndoHistoryDeps {
@@ -19,6 +20,8 @@ export interface UndoHistoryDeps {
   restore: (snapshot: UndoEntry) => void
   /** Edit's settle: a held Frame change (ticket 0640) takes its step before Undo or Redo reads the stack. */
   settle: () => void
+  /** Hears Undo (-1) and Redo (1) with the states they go from and to: Beads since last file counts them (ticket 0796). */
+  countChange?: (from: Layered, to: Layered, sign: 1 | -1) => void
 }
 
 // Undo/redo (tickets 34, 48; ADRs 0020, 0036): stacks of full snapshots (domain/history.ts) pushed by Edit through
@@ -40,8 +43,9 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
     history.value = emptyHistory()
   }
 
-  function applyHistoryStep(step: HistoryStep<UndoEntry>) {
+  function applyHistoryStep(project: Project, step: HistoryStep<UndoEntry>, sign: 1 | -1) {
     history.value = step.history
+    deps.countChange?.(project, step.snapshot, sign)
     deps.restore(step.snapshot)
   }
 
@@ -50,7 +54,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
     const project = deps.currentProject()
     const step = project && undoStep(history.value, snapshotOf(project))
     if (step) {
-      applyHistoryStep(step)
+      applyHistoryStep(project, step, -1)
     }
   }
 
@@ -61,7 +65,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
     const project = deps.currentProject()
     const step = project && redoStep(history.value, snapshotOf(project), UNDO_CAP)
     if (step) {
-      applyHistoryStep(step)
+      applyHistoryStep(project, step, 1)
     }
   }
 

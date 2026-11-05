@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils'
+import SaveReminder from './SaveReminder.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
+import { en } from '../../i18n/en'
+import type { TooltipProps } from '../ui/tooltipProps'
+
+function mountRing(props: Partial<InstanceType<typeof SaveReminder>['$props']> = {}) {
+  return mount(SaveReminder, { props: { beads: 64, labelOpen: false, ...props }, attachTo: document.body })
+}
+
+describe('SaveReminder (ticket 0796)', () => {
+  it('is a button named Save a copy, described by its count line', () => {
+    const wrapper = mountRing()
+    const button = wrapper.get('[data-testid="save-ring"]')
+    const described = document.getElementById(button.attributes('aria-describedby')!)
+
+    expect(button.attributes('aria-label')).toBe('Save a copy')
+    expect(described?.textContent).toBe('Beads since last file: 64')
+  })
+
+  it('shows its label only when open: Save a copy and the count', async () => {
+    const wrapper = mountRing()
+    expect(wrapper.classes()).not.toContain('save-ring--open')
+
+    await wrapper.setProps({ labelOpen: true })
+    expect(wrapper.classes()).toContain('save-ring--open')
+    expect(wrapper.get('[data-testid="save-ring-label"]').text()).toBe('Save a copy+64')
+  })
+
+  it('has a Tooltip with the Save key, the body, the count and when the last file was', async () => {
+    const wrapper = mountRing({ lastFileAt: Date.now() })
+    const tooltip = wrapper.getComponent(AppTooltip)
+
+    expect(tooltip.props()).toMatchObject({ name: 'Save a copy', hotkey: 'Ctrl/Cmd+S', body: en.saveReminder.body, meta: ['Beads since last file: 64', 'Last file: today'], align: 'end' })
+    await wrapper.setProps({ lastFileAt: undefined })
+    expect((tooltip.props() as TooltipProps).meta).toEqual(['Beads since last file: 64', 'No Project file yet'])
+  })
+
+  it('asks to save when pressed, and says when the pointer or focus is on it', async () => {
+    const wrapper = mountRing()
+    const button = wrapper.get('[data-testid="save-ring"]')
+    await button.trigger('click')
+    await button.trigger('pointerenter')
+    await button.trigger('pointerleave')
+    await button.trigger('focus')
+
+    expect(wrapper.emitted('save')).toHaveLength(1)
+    expect(wrapper.emitted('hold')).toEqual([[true], [false], [true]])
+  })
+})

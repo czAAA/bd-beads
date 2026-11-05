@@ -12,6 +12,8 @@ import type { TooltipProps } from './tooltipProps'
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
+  align: 'center',
+  meta: undefined,
   announce: true,
 })
 
@@ -19,7 +21,7 @@ const props = withDefaults(defineProps<TooltipProps>(), {
 const detail = computed(() => (props.disabled ? props.disabledBody : props.body))
 const { shown: hintsShown } = useKeyHints()
 const shownKey = computed(() => (props.disabled || !hintsShown.value ? undefined : props.hotkey))
-const rich = computed(() => !!detail.value || !!shownKey.value)
+const rich = computed(() => !!detail.value || !!shownKey.value || !!props.meta?.length)
 
 /** The bubble's clearance from the screen's edges (ticket 169). */
 const VIEWPORT_MARGIN_PX = 8
@@ -71,7 +73,7 @@ async function place() {
   const other = props.placement === 'top' ? 'bottom' : 'top'
   const side = room[props.placement] >= bubble.height || room[props.placement] >= room[other] ? props.placement : other
   const top = side === 'bottom' ? trigger.bottom + TRIGGER_GAP_PX : trigger.top - TRIGGER_GAP_PX - bubble.height
-  const left = trigger.left + trigger.width / 2 - bubble.width / 2
+  const left = props.align === 'end' ? trigger.right - bubble.width : trigger.left + trigger.width / 2 - bubble.width / 2
   const fit = (value: number, size: number, screen: number) => Math.max(VIEWPORT_MARGIN_PX, Math.min(value, screen - VIEWPORT_MARGIN_PX - size))
   position.value = { left: fit(left, bubble.width, window.innerWidth), top: fit(top, bubble.height, window.innerHeight) }
 }
@@ -226,6 +228,7 @@ onBeforeUnmount(hide)
             <KeyChip v-if="shownKey" class="app-tooltip__key">{{ shownKey }}</KeyChip>
           </span>
           <span v-if="detail" class="app-tooltip__body" :class="{ 'app-tooltip__body--disabled': disabled }">{{ detail }}</span>
+          <span v-for="line in meta" :key="line" class="app-tooltip__meta">{{ line }}</span>
         </template>
         <template v-else>{{ name }}</template>
       </span>
@@ -266,6 +269,12 @@ onBeforeUnmount(hide)
 }
 
 .app-tooltip__body--disabled {
+  color: var(--tooltip-muted);
+}
+
+.app-tooltip__meta {
+  font: var(--type-meta-tiny);
+  line-height: var(--tooltip-line);
   color: var(--tooltip-muted);
 }
 
