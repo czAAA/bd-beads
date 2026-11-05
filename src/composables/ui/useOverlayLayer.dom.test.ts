@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { hasOpenLayer, useOverlayLayer } from './useOverlayLayer'
+import { provideShellScope, type ShellScope } from './shellScope'
 
 function layer(open: () => boolean, close: () => void) {
   return defineComponent({
@@ -167,5 +168,62 @@ describe('a press outside', () => {
     pressOn(page(), { pointerType: 'touch', isPrimary: false })
 
     expect(close).not.toHaveBeenCalled()
+  })
+})
+
+describe('useOverlayLayer in a boxed shell (ticket 0797)', () => {
+  /** A layer of a shell living in `box`, as the Homepage's demo editor is. */
+  /** An open layer with an element of its own, in `scope` when given. */
+  function rootedLayer(close: () => void, scope?: ShellScope) {
+    const own = document.body.appendChild(document.createElement('div'))
+    const child = defineComponent({
+      setup() {
+        useOverlayLayer({ isOpen: () => true, root: () => own, close })
+        return () => h('div')
+      },
+    })
+    return defineComponent({
+      setup() {
+        if (scope) provideShellScope(scope)
+        return () => h(child)
+      },
+    })
+  }
+
+  function press(target: Element): PointerEvent {
+    const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    target.dispatchEvent(event)
+    return event
+  }
+
+  it('hears presses and Escape only inside its box, and the page layer beneath hears the rest', () => {
+    const box = document.body.appendChild(document.createElement('div'))
+    const inside = box.appendChild(document.createElement('button'))
+    const outside = document.body.appendChild(document.createElement('button'))
+    const scope: ShellScope = { root: () => box, teleportTo: 'body' }
+    const closePage = vi.fn()
+    const closeBoxed = vi.fn()
+    const page = mount(rootedLayer(closePage))
+    const boxed = mount(rootedLayer(closeBoxed, scope))
+
+    const outsidePress = press(outside)
+    expect(closePage).toHaveBeenCalledTimes(1)
+    expect(closeBoxed).not.toHaveBeenCalled()
+    expect(outsidePress.defaultPrevented).toBe(true)
+
+    press(inside)
+    expect(closeBoxed).toHaveBeenCalledTimes(1)
+    inside.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(closeBoxed).toHaveBeenCalledTimes(2)
+    expect(closePage).toHaveBeenCalledTimes(1)
+
+    expect(hasOpenLayer()).toBe(true)
+    expect(hasOpenLayer(scope)).toBe(true)
+    page.unmount()
+    expect(hasOpenLayer()).toBe(false)
+    expect(hasOpenLayer(scope)).toBe(true)
+    boxed.unmount()
+    box.remove()
+    outside.remove()
   })
 })

@@ -1,4 +1,5 @@
 import { inject, nextTick, onBeforeUnmount, ref, watch, type InjectionKey, type Ref } from 'vue'
+import { PAGE_SCOPE, scopeRoom, useShellScope } from './shellScope'
 
 /** Where the margin sheet is on screen, provided by `MarginSheet`: a canvas pan or zoom moves the popups' cells without a
  * window `scroll`, so every popup placed here places itself again when this changes (ticket 0736). */
@@ -26,6 +27,9 @@ function raise(popup: HTMLElement): void {
 // own, stays inside the window, follows the button. A `transform` ancestor (open Drawer) shifts `fixed`: corrected (246).
 export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup: Ref<HTMLElement | undefined>, align: () => 'start' | 'end', side: () => 'below' | 'above' = () => 'below') {
   const style = ref<Record<string, string>>(fixedAt(0, 0))
+  /** How tall the popup may be below its top, inside a boxed shell's box (ticket 0797); none on the page. */
+  const roomBelow = ref<number>()
+  const scope = useShellScope()
   const GAP = 4
   const EDGE = 8
   let offsetX = 0
@@ -37,33 +41,38 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
     if (!button || !list) return
     raise(list)
     const height = list.offsetHeight
-    const below = window.innerHeight - button.bottom
-    const above = button.top
+    const room = scopeRoom(scope)
+    const below = room.bottom - button.bottom
+    const above = button.top - room.top
     const up = side() === 'above' ? above >= height + GAP || above > below : below < height + GAP && above > below
     const top = up ? button.top - GAP - height : button.bottom + GAP
     // At least as wide as the button it hangs from.
     const minWidth = `${button.width}px`
     const width = Math.max(list.offsetWidth, button.width)
     const wanted = align() === 'end' ? button.right - width : button.left
-    const left = Math.max(EDGE, Math.min(wanted, window.innerWidth - width - EDGE))
+    const left = Math.max(room.left + EDGE, Math.min(wanted, room.right - width - EDGE))
+    roomBelow.value = scope === PAGE_SCOPE ? undefined : room.bottom - top - EDGE
     const apply = () => {
       style.value = { ...fixedAt(top - offsetY, left - offsetX), minWidth }
     }
     apply()
     void nextTick(() => {
-      const placed = popup.value?.getBoundingClientRect()
-      if (!placed) return
+      const shown = popup.value
+      const placed = shown?.getBoundingClientRect()
+      if (!shown || !placed) return
       // Once `fixed`, the list may take a different width than it had inside its button's box (ticket 368: a narrow
       // button in a sheet), which moves an end-aligned popup: place it again with the real width before measuring.
       if (!settled && Math.abs(placed.width - width) > 0.5) {
         place(true)
         return
       }
-      const dx = placed.left - left
-      const dy = placed.top - top
-      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return
-      offsetX += dx
-      offsetY += dy
+      // Where `fixed` puts its origin, from the place it shows at and the place it was given, so placing again before
+      // a correction shows never corrects twice (a boxed shell's box is that origin, ticket 0797).
+      const originX = placed.left - (Number.parseFloat(shown.style.left) || 0)
+      const originY = placed.top - (Number.parseFloat(shown.style.top) || 0)
+      if (Math.abs(originX - offsetX) < 0.5 && Math.abs(originY - offsetY) < 0.5) return
+      offsetX = originX
+      offsetY = originY
       apply()
     })
   }
@@ -92,5 +101,5 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
 
   onBeforeUnmount(stop)
   /** `place` again where the button moves without a scroll, as on the canvas when it is panned (ticket 0698). */
-  return { style, follow, stop, place: () => place() }
+  return { style, roomBelow, follow, stop, place: () => place() }
 }

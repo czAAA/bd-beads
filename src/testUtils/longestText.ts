@@ -16,14 +16,8 @@ export type FitLocale = Locale | 'longest'
 
 /** Russian as it ships, kept before `showLongestText` writes over it. */
 const RUSSIAN: Translations = { ...ru }
-/** Each language as its carousel tab shows it: a feature with no shorter wording for the tab shows its full one. */
-const asShown = (translations: Translations): Translations => {
-  const features = Object.entries(translations.homepage.features)
-    .map(([key, copy]) => [key, { ...copy, tabName: copy.tabName ?? copy.name, tabLine: copy.tabLine ?? copy.text }])
-  return { ...translations, homepage: { ...translations.homepage, features: Object.fromEntries(features) } }
-}
 const BY_LOCALE: Record<Locale, Translations> = { en, ru: RUSSIAN, uk, be, zh, es, pl }
-const DICTIONARIES: Translations[] = Object.values(BY_LOCALE).map(asShown)
+const DICTIONARIES: Translations[] = Object.values(BY_LOCALE)
 const PLURAL_RULES: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
 /** The UI's own font, in which the translations are compared. */
 const FONT = '500 13px Inter'

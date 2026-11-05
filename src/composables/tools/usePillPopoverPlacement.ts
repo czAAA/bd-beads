@@ -1,5 +1,6 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
+import { scopeRoom, useShellScope } from '../ui/shellScope'
 
 /** What a popover beside the Tool pill is placed against: the tile that opened it, the pill, and the pill's edge. */
 export interface PillPopoverAnchor {
@@ -13,6 +14,7 @@ export interface PillPopoverAnchor {
  * style to bind on the popover's root, hidden until placed. */
 export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anchor: () => PillPopoverAnchor): Ref<Record<string, string>> {
   const style = ref<Record<string, string>>({ visibility: 'hidden' })
+  const scope = useShellScope()
 
   function place() {
     const el = root.value
@@ -22,12 +24,15 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
     if (!el || !tileBox || !pillBox) return
     const css = getComputedStyle(document.documentElement)
     const px = (name: string) => parseFloat(css.getPropertyValue(name)) * (css.getPropertyValue(name).endsWith('rem') ? parseFloat(css.fontSize) : 1)
+    // In a boxed shell (ticket 0797) the box is the screen, and the popover, teleported into it, is placed from its corner.
+    const room = scopeRoom(scope)
+    const inRoom = (box: DOMRect) => ({ left: box.left - room.left, top: box.top - room.top, width: box.width, height: box.height })
     const { left, top } = popoverPlacement(
-      tileBox,
-      pillBox,
+      inRoom(tileBox),
+      inRoom(pillBox),
       { width: el.offsetWidth, height: el.offsetHeight },
       position,
-      { width: window.innerWidth, height: window.innerHeight },
+      { width: room.right - room.left, height: room.bottom - room.top },
       px('--pill-gap'),
       px('--float-edge'),
     )

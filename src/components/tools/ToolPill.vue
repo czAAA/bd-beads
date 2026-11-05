@@ -14,6 +14,10 @@ import IconButton from '../ui/IconButton.vue'
 import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { useShellScope } from '../../composables/ui/shellScope'
+
+/** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
+const teleportTo = useShellScope().teleportTo
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): grip, six tool tiles, the Mirror tile (ADR 0082), the Paste tile,
 // a divider, the colour control, each tile keyed by its place (ADR 0084), docked to one of four edges. This layer takes
@@ -286,7 +290,7 @@ watch(
     <!-- The popovers sit in the app shell, not in the canvas box (ToolPill card): the box clips what it holds and stacks
       it under its bars, so an iPad held sideways hid the Custom color picker under the Progress bar (ticket 0726). In
       the shell they stack by StackingOrder: over the bars, under a dialog opened from them. -->
-    <Teleport defer to=".app-shell">
+    <Teleport defer :to="teleportTo">
       <ColorPopover
         v-if="popoverOpen"
         :tile="colorTileEl"
