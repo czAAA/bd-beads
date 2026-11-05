@@ -242,11 +242,8 @@
   /* FirstRunHints card (tickets 0725, 0738): captions beside their controls over an empty Project, the note face. */
   --hint-note: italic 400 1rem/1.15 var(--font-serif); /* FirstRunHints card: a quiet caption (Menu, Project, Frame, Mirror, colour), 16px, muted. */
   --hint-step: italic 400 1.1875rem/1.15 var(--font-serif); /* FirstRunHints card: Select's and Export's captions, 19px, body. */
-  --hint-welcome: italic 400 1.375rem/1.2 var(--font-serif); /* FirstRunHints card: the welcome's steps line, 22px; 18px on a phone. */
-  --hint-wordmark: italic 400 2.875rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark, 46px, -0.6px tracking; 36px on a phone. */
+  --hint-storage-lead: 500 1rem/1.5 var(--font-sans); /* FirstRunHints card: the welcome's lead line, 16px, body (ticket 0795). */
   --hint-storage: 400 0.875rem/1.6 var(--font-sans); /* FirstRunHints card: the welcome's storage line and the Project file's path, 14px. */
-  --hint-welcome-phone: italic 400 1.125rem/1.2 var(--font-serif); /* FirstRunHints card: the steps line on a phone, 18px. */
-  --hint-wordmark-phone: italic 400 2.25rem/1 var(--font-serif); /* FirstRunHints card: the welcome's wordmark on a phone, 36px. */
   --hint-ring-gap: 2px; /* FirstRunHints card: the gap between a ringed control and its accent ring. */
   --hint-ring-width: 2px; /* FirstRunHints card: the accent ring round Select, Mirror and Export. */
   /* Motion (interaction-and-motion.md) */

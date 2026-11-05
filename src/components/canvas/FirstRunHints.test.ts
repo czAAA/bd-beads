@@ -38,13 +38,22 @@ describe('FirstRunHints (FirstRunHints card)', () => {
       'new Project, Projects library, language, theme and preferences',
       'set up this Project: its name, maker, Technique, Bead and background',
     ])
-    expect(wrapper.get('[data-testid="first-run-welcome"]').text()).toContain('draw → select → frame → export')
   })
 
-  it('says where Projects are kept and how to keep a file of one: Project › Export › Project file', () => {
+  it('welcomes with only where Projects are kept and how to keep a file of one: Project › Export › Project file', () => {
     const wrapper = mountHints()
+    const welcome = wrapper.get('[data-testid="first-run-welcome"]')
 
-    expect(wrapper.get('[data-testid="first-run-storage"]').text()).toContain('Your Projects are kept in this browser')
+    expect(welcome.findAll('p').map((line) => line.attributes('data-testid'))).toEqual([
+      'first-run-storage-lead',
+      'first-run-storage',
+      'first-run-path',
+    ])
+    expect(welcome.find('svg').exists()).toBe(false)
+    expect(welcome.get('[data-testid="first-run-storage-lead"]').text()).toBe('Your Projects are saved only in this browser, on this device.')
+    expect(welcome.get('[data-testid="first-run-storage"]').text()).toBe(
+      "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:",
+    )
     expect(wrapper.findAll('[data-testid="first-run-path"] .hint-chip').map((chip) => chip.text())).toEqual(['Project', 'Export', 'Project file'])
   })
 

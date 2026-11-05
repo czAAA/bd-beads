@@ -1,6 +1,6 @@
 # FirstRunHints
 
-Quiet captions over an empty Project, each beside the control it names, and a welcome that says where Projects are kept. They teach the way to a first Pattern (**draw, select, frame, export**) without arrows: no tip points across the screen, so a first-time user isn't met by a crowd of notes. Approved on the claude.ai canvas "openbeads first-run: decluttered welcome" (variant A, "Captions, not arrows"), https://claude.ai/artifact/WryGs4Rocro7kpRPkDxm6R (ticket 0738). It replaces the hand-drawn notes and arrows of ticket 0725 (canvas "First-run canvas hints", https://claude.ai/artifact/AzASFSn3Fri1K1Jsr9SsMp).
+Quiet captions over an empty Project, each beside the control it names, and a welcome that says only where Projects are kept. They teach the way to a first Pattern (**draw, select, frame, export**) without arrows: no tip points across the screen, so a first-time user isn't met by a crowd of notes. Approved on the claude.ai canvas "openbeads first-run: decluttered welcome" (variant A, "Captions, not arrows"), https://claude.ai/artifact/WryGs4Rocro7kpRPkDxm6R (ticket 0738). It replaces the hand-drawn notes and arrows of ticket 0725 (canvas "First-run canvas hints", https://claude.ai/artifact/AzASFSn3Fri1K1Jsr9SsMp).
 
 ## When they show
 
@@ -39,17 +39,16 @@ Reference: MacBook Air (1440 × 900).
 
 ## Welcome
 
-Centred on the drawing area, under the CanvasHint line:
+Centred on the drawing area, under the CanvasHint line. It says one thing, where Projects are kept and how not to lose them (ticket 0795): no mark, no wordmark, no steps line, which were noise in front of it. The risk is plain but calm: a fact and what to do, no alarm words, no warning colour or icon.
 
-- The X1 mark (44px, `accent`, the logo's rules), and 12px under it "openbeads" in Instrument Serif italic 46px (`--hint-wordmark`, -0.6px tracking), `muted`: part of the quiet layer, not the Brand (deliberate difference).
-- 16px under it "draw → select → frame → export" in Instrument Serif italic 22px (`--hint-welcome`), `accent-strong`, the one piece of accent text in the layer.
-- 24px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide: "Your Projects are kept in this browser, on this device. / The browser can clear them without warning, so keep a file of the ones you love:".
+- The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: "Your Projects are saved only in this browser, on this device."
+- 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide: "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:".
 - 10px under it the way to a Project file, the Project panel's own labels in the CanvasHint's chips (DM Mono on `.hint-chip`) joined by "›": `Project › Export › Project file`.
 - No buttons: opening a file, Convert image and Keyboard shortcuts stay in Menu.
 
 ## Phone (30rem and under)
 
-- No captions: only the welcome (mark 36px, wordmark 36px, the steps line 18px, the storage line and the path) and the three rings. No CanvasHint line.
+- No captions: only the welcome (the lead line, the storage line and the path, at the desktop sizes) and the three rings. No CanvasHint line.
 - Export sits off the end of the strip, which scrolls sideways (CanvasStrip card); its ring shows once Export is scrolled into view.
 
 ## Accessibility
@@ -59,4 +58,4 @@ Centred on the drawing area, under the CanvasHint line:
 
 The copy in every language is in `writing.md`, "First-run hints copy".
 
-Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition.
+Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition. The welcome cut down to the storage lines in the repo (2026-11-05, ticket 0795).
