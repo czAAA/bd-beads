@@ -18,6 +18,7 @@ import ReferenceAdjustBar from './ReferenceAdjustBar.vue'
 import ProgressBar from './ProgressBar.vue'
 import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
+import SaveReminder from './SaveReminder.vue'
 import { useCanvasContext } from '../../composables/shell/useAppShell'
 import { useColorPick, usePalette } from '../../composables/tools/usePalette'
 import { colorName } from '../../i18n/colorName'
@@ -53,6 +54,9 @@ const {
   projectLabel,
   toasts,
   dismissToast,
+  saveRing,
+  onSaveProjectFile,
+  onHoldSaveRing,
   onSurfaceDrawn,
   bindCanvasArea,
   bindCanvasScroll,
@@ -299,6 +303,8 @@ const canvasEl = ref<HTMLElement>()
 /** The open Project has no beads and no Frame, not even an empty one: the CanvasHint line and the first-run hints show
  * (FirstRunHints card, ticket 0725). A Frame is already a start on the Pattern. */
 const emptyProject = computed(() => !!activeProject.value && !frameOf(activeProject.value) && !hasProjectBeads(activeProject.value))
+/** The save ring shows over the editor's drawing area only (SaveReminder card), and the toasts start under it. */
+const ringShown = computed(() => onEditor.value && !!activeProject.value && saveRing.value.shown)
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
@@ -356,6 +362,15 @@ const drawingStyle = computed(() => {
         :inert="!onEditor || undefined"
         data-testid="app-drawing-area"
       >
+        <!-- The save ring (ticket 0796, SaveReminder card): top-right, after the strip and before the drawing in Tab order. -->
+        <SaveReminder
+          v-if="ringShown"
+          :beads="saveRing.beads"
+          :last-file-at="saveRing.lastFileAt"
+          :label-open="saveRing.labelOpen"
+          @save="onSaveProjectFile"
+          @hold="onHoldSaveRing"
+        />
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
@@ -494,6 +509,7 @@ const drawingStyle = computed(() => {
       <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
       <ToastRegion
         :toasts="toasts"
+        :under-ring="ringShown"
         @dismiss="dismissToast"
       />
 
@@ -665,9 +681,9 @@ const drawingStyle = computed(() => {
   grid-row: 3;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run hints, the context bar and the Tool
- * pill's layer, which float over the beads. */
-.app-shell__drawing > :not(.app-shell__canvas-hint):not(.first-run-hints):not(.context-bar):not(.tool-pill-layer) {
+/* CanvasHint is excluded: it floats over the top-centre, and so are the first-run hints, the context bar, the Tool
+ * pill's layer and the save ring, which float over the beads. */
+.app-shell__drawing > :not(.app-shell__canvas-hint):not(.first-run-hints):not(.context-bar):not(.tool-pill-layer):not(.save-ring) {
   position: relative;
 }
 

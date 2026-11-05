@@ -10,6 +10,9 @@ import { browserFeedback, type FeedbackService } from './feedback'
 import { browserOpeningNote, type OpeningNoteStore } from './openingNote'
 import { takeOpeningAddress } from './openingAddress'
 import { browserPictureStore, type PictureStore } from './pictureStore'
+import { browserFileWriter, type FileWriter } from './fileWriter'
+import { browserLinkedFileStore, type LinkedFileStore } from './linkedFileStore'
+import { browserSinceFileStore, type SinceFileStore } from './sinceFileStore'
 import { drawablePicture, preparePicture, type DrawablePicture, type PreparedPicture } from './referencePicture'
 import type { OpeningAddress } from '../domain/openingAddress'
 
@@ -34,6 +37,11 @@ export interface Services {
   pictureStore: PictureStore
   preparePicture: (file: File) => Promise<PreparedPicture>
   drawablePicture: (blob: Blob) => Promise<DrawablePicture>
+  /** Writing a Project file into a picked file, and each Project's Linked file (ADR 0090). */
+  fileWriter: FileWriter
+  linkedFiles: LinkedFileStore
+  /** Each Project's Beads since last file and last-file time (ticket 0796). */
+  sinceFiles: SinceFileStore
 }
 
 export const browserServices: Services = {
@@ -50,4 +58,7 @@ export const browserServices: Services = {
   pictureStore: browserPictureStore,
   preparePicture,
   drawablePicture,
+  fileWriter: browserFileWriter,
+  linkedFiles: browserLinkedFileStore,
+  sinceFiles: browserSinceFileStore,
 }

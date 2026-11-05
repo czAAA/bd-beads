@@ -87,6 +87,9 @@ export interface ControlDeps {
   onZoomIn: () => void
   onZoomOut: () => void
   onFit: () => void
+  /** Save and Save as (ADR 0090, ticket 0796): the Project file action the Project panel and the save ring also run. */
+  onSaveProjectFile: () => void
+  onSaveProjectFileAs: () => void
 }
 
 /** Every group of the Keyboard shortcuts dialog. */
@@ -400,6 +403,34 @@ export const CONTROLS: readonly ControlAction[] = [
     preventDefault: true,
     run: (deps) => deps.onCut(),
   },
+  // Save and Save as (ADR 0090, ticket 0796): never the browser's Save page; they run from a field and under a panel or
+  // dialog too (the Project panel holds the Save row), and do nothing with no Project open.
+  {
+    id: 'save-project-file',
+    icon: 'save',
+    name: (t) => t.panels.project.saveFile,
+    group: 'edit',
+    chords: [{ key: 's', mod: true, label: 'S' }],
+    preventDefault: true,
+    allowWhileTyping: true,
+    modals: 'ignore',
+    run: (deps) => {
+      if (deps.activeProject()) deps.onSaveProjectFile()
+    },
+  },
+  {
+    id: 'save-project-file-as',
+    icon: 'export',
+    name: (t) => t.panels.project.saveFileAs,
+    group: 'edit',
+    chords: [{ key: 's', mod: true, shift: true, label: 'S' }],
+    preventDefault: true,
+    allowWhileTyping: true,
+    modals: 'ignore',
+    run: (deps) => {
+      if (deps.activeProject()) deps.onSaveProjectFileAs()
+    },
+  },
   unkeyed('fill-selection', (t) => t.tools.fillLabel, 'edit', {
     icon: 'fill-selection',
     body: (t) => t.tooltips.fillSelection,
@@ -603,7 +634,6 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('export-all', (t) => t.transfer.exportLibraryButton, 'edit', { icon: 'export' }),
   unkeyed('export-png', (t) => t.panels.project.exportPng, 'edit', { icon: 'image' }),
   unkeyed('export-pdf', (t) => t.panels.project.exportPdf, 'edit', { icon: 'pdf' }),
-  unkeyed('export-project-file', (t) => t.panels.project.exportFile, 'edit', { icon: 'export' }),
   unkeyed('tools-position', (t) => t.toolPill.position, 'canvas'),
   unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),

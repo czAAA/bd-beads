@@ -303,3 +303,32 @@ describe('useEdit', () => {
     expect(frameOf(ctx.project)!.beads).toEqual(frameOf(base)!.beads)
   })
 })
+
+describe('useEdit and Beads since last file (ticket 0796)', () => {
+  it('reports each Undo step with the state it led to: an Edit and a stroke add, Undo takes off, Redo puts back', () => {
+    const ctx = editHarness(base)
+    ctx.edit('drawing', (project) => paintAt(project, [inside(0, 0), inside(0, 1)], '#ff0000'))
+    ctx.editing.beginStroke()
+    ctx.editing.strokeStep((project) => paint(project, inside(1, 0)))
+    ctx.editing.strokeStep((project) => paint(project, inside(1, 1)))
+    ctx.editing.endStroke()
+    expect(ctx.counted.beads).toBe(4)
+
+    ctx.history.onUndo()
+    expect(ctx.counted.beads).toBe(2)
+    ctx.history.onRedo()
+    expect(ctx.counted.beads).toBe(4)
+  })
+
+  it('counts Clear all beads, but not Replace bead or a cancelled stroke', () => {
+    const ctx = editHarness(paint(base, inside(0, 0)))
+    ctx.editing.beginStroke()
+    ctx.editing.strokeStep((project) => paint(project, inside(2, 2)))
+    ctx.editing.cancelStroke()
+    ctx.edit('exempt', (project) => replaceBead(project, BEAD_CATALOG.find((bead) => bead.id !== canvasOf(project).beadId)!))
+    expect(ctx.counted.beads).toBe(0)
+
+    ctx.edit('exempt', deleteAll)
+    expect(ctx.counted.beads).toBe(1)
+  })
+})

@@ -3,6 +3,7 @@ import { describeFits } from '../testUtils/browserFit'
 import MenuPanel from './shell/MenuPanel.vue'
 import ProgressBar from './canvas/ProgressBar.vue'
 import ToolPill from './tools/ToolPill.vue'
+import SaveReminder from './canvas/SaveReminder.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { toggleRowDirection } from '../domain/rowProgress'
@@ -17,6 +18,8 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['ToolPill', ToolPill, { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false, hasClipboard: true, colorHex: '#e63746', colorName: 'Red' }],
   ['ProgressBar by rows', ProgressBar, { project }],
   ['ProgressBar by columns', ProgressBar, { project: toggleRowDirection(project) }],
+  // The save ring with its label open (ticket 0796): on a phone a count with no room drops out, leaving the words.
+  ['SaveReminder', SaveReminder, { beads: 12345, lastFileAt: Date.now() - 3 * 24 * 60 * 60 * 1000, labelOpen: true }],
 ]
 
 describeFits(CASES)

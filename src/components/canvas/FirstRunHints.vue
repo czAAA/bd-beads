@@ -37,7 +37,7 @@ const phone = useMediaQuery('(max-width: 30rem)')
 
 const shownIds = computed<HintId[]>(() => (phone.value ? [] : [...KEPT_HINTS, ...QUIET_HINTS]))
 /** The welcome's last line: where in the Project panel a Project file is made. */
-const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.project.exportHeading, t.value.panels.project.exportFile])
+const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.project.exportHeading, t.value.panels.project.saveFile])
 
 const layerEl = ref<HTMLElement>()
 const welcomeEl = ref<HTMLElement>()
