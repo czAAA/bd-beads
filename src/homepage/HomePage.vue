@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import ConfirmModal from '../components/ui/ConfirmModal.vue'
 import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
@@ -22,10 +22,10 @@ import WhatsInside from './inside/WhatsInside.vue'
 import PlanTiles from './PlanTiles.vue'
 import RollingSlogan from './RollingSlogan.vue'
 import SectionBar from './SectionBar.vue'
-import { sectionAt, type HomepageSection } from './sections'
+import type { HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
 import { useScrollNudge } from './useScrollNudge'
-import { useWheelTurn } from './useWheelTurn'
+import { useSectionInput } from './useSectionInput'
 import { provideI18n } from '../i18n/useI18n'
 import { HOMEPAGE_MAX_ZOOM_PERCENT, HOMEPAGE_MIN_ZOOM_PERCENT, useHomepageZoom } from './homepageZoom'
 import { fillBlanks } from '../domain/fillBlanks'
@@ -103,9 +103,9 @@ const boxStyle = computed(() => {
   }
 })
 
-// The sections (tickets 0739, 0744): the page is a viewport of scroll per section, snapping, and the section shown is the
-// nearest one; the box stays put on a sticky stage while it scrolls. This list is the one place they are named and
-// ordered: the page draws them, their snap points and their turning from it, and the Progress bar its steps.
+// The sections (tickets 0739, 0744, 0801): one at a time in the box, which never moves; the page itself never scrolls.
+// This list is the one place they are named and ordered: the page draws them and turns between them, the Progress bar
+// its steps.
 const sections = computed<HomepageSection[]>(() => [
   {
     id: 'inside',
@@ -120,60 +120,30 @@ const sections = computed<HomepageSection[]>(() => [
     heading: t.value.homepage.plans.heading,
     title: 'inside',
     shows: PlanTiles,
-    with: () => ({ style: plansStyle.value, freeHeight: freeGrowth.height.value, freeOpen: freeGrowth.open.value, onOpenEditor: () => emit('openEditor') }),
+    with: () => ({ freeHeight: freeGrowth.height.value, freeOpen: freeGrowth.open.value, onOpenEditor: () => emit('openEditor') }),
   },
 ])
 const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id === 'plans'))
 const pageEl = ref<HTMLElement>()
+/** The section shown: the one truth of where the Homepage is, which every way of turning it sets (ticket 0801). */
 const section = ref(0)
-/** The page's scroll in sections, for the Progress bar's fill to follow (ticket 0780). */
-const scrolled = ref(0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-/** The section a step's jump is on its way to: the box turns to it at once, not through each one the scroll passes. */
-let jumpingTo: number | undefined
 
-function onPageScroll() {
-  const page = pageEl.value!
-  nudge.scrolled()
-  scrolled.value = page.scrollTop / Math.max(1, page.clientHeight)
-  if (plansIndex.value >= 0) freeGrowth.scrolledPast(page.scrollTop - plansIndex.value * page.clientHeight)
-  if (freeGrowth.growing.value) snapOff.value = true
-  const shown = sectionAt(page.scrollTop, page.clientHeight, sections.value.length)
-  if (jumpingTo !== undefined && shown !== jumpingTo) return
-  jumpingTo = undefined
-  show(shown)
-}
-
-function show(index: number) {
-  if (index === section.value) return
+/** Back, Next, the steps and every scroll and key: the box turns to the section at once, however far it is. */
+function goTo(index: number) {
+  if (index === section.value || index < 0 || index >= sections.value.length) return
   section.value = index
-  if (index !== plansIndex.value) snapOff.value = false
 }
 
-/** A jump's scroll has stopped, where it was going or wherever the beader took it: the box follows the page again. */
-function onScrollEnd() {
-  if (jumpingTo === undefined) return
-  jumpingTo = undefined
-  onPageScroll()
-}
-
-/** The beader takes the page over mid-jump (where a browser has no `scrollend`): the next scroll turns the box. */
-function endJump() {
-  jumpingTo = undefined
-}
-
-// The wheel and trackpad turn the box on a section's second scroll, one section a gesture (tickets 0784, 0793); keys and swipes
-// scroll the page, snapping at every section. The page's own scroll past the plans grows the free list.
-const wheel = useWheelTurn({
+// Wheel, trackpad, swipe and keys turn the box one section at a time; a section taller than its room scrolls inside
+// itself first, the plans' scroll growing the free list.
+const input = useSectionInput({
   section,
   count: () => sections.value.length,
-  viewport: () => pageEl.value?.clientHeight ?? window.innerHeight,
-  scrollsFreely: (event) => {
-    const page = pageEl.value
-    if (!page || plansIndex.value < 0) return false
-    if (page.scrollTop > plansIndex.value * page.clientHeight + 1) return true
-    return section.value === plansIndex.value && event.deltaY > 0 && freeGrowth.room.value > 0
-  },
+  page: () => pageEl.value,
+  shown: () => sectionEls.get(sections.value[section.value]!.id),
+  held: () => menuOpen.value || !!dialogs.open.value || !!pendingRemove.value,
+  reducedMotion,
   turn: goTo,
 })
 const nudge = useScrollNudge({ onFirst: () => section.value === 0, reducedMotion })
@@ -194,36 +164,23 @@ function onWheelFirst(event: WheelEvent) {
 
 function onWheel(event: WheelEvent) {
   nudge.scrolled()
-  wheel.onWheel(event)
-  // A held wheel moves nothing, so it leaves a jump on its way: only the page's own scroll takes it over.
-  if (!event.defaultPrevented) endJump()
+  input.onWheel(event)
 }
 
-function onTouchStart() {
+function onTouchStart(event: TouchEvent) {
   nudge.acted()
-  endJump()
+  input.onTouchStart(event)
 }
 
-/** Home and End go straight to the first and last section, the box turning once, as the steps do. */
+function onTouchEnd(event: TouchEvent) {
+  if (input.onTouchEnd(event)) nudge.scrolled()
+}
+
+/** A key that scrolls or turns the page means the beader knows it scrolls; any other only holds the nudge off. */
 function onKeydown(event: KeyboardEvent) {
-  nudge.acted()
-  endJump()
-  if (event.target !== pageEl.value) return
-  const to = event.key === 'Home' ? 0 : event.key === 'End' ? sections.value.length - 1 : undefined
-  if (to === undefined || to === section.value) return
-  event.preventDefault()
-  goTo(to)
-}
-
-/** Back, Next and the steps: the page scrolls to the section and the box turns to it at once, however far it is. */
-function goTo(index: number) {
-  const page = pageEl.value
-  if (!page || index === section.value) return
-  if (!reducedMotion.value) jumpingTo = index
-  page.scrollTo?.({ top: index * page.clientHeight, behavior: reducedMotion.value ? 'auto' : 'smooth' })
-  // A page that cannot scroll smoothly gets there at once, and so does the fill.
-  if (reducedMotion.value || !page.scrollTo) scrolled.value = index
-  show(index)
+  input.onKeydown(event)
+  if (event.defaultPrevented) nudge.scrolled()
+  else nudge.acted()
 }
 
 /** Where a section is drawn: the one shown, or the side it slid out to. */
@@ -231,40 +188,39 @@ function sectionState(index: number) {
   return index === section.value ? 'shown' : index < section.value ? 'before' : 'after'
 }
 
-/** The shown section leaning with a wheel gesture short of a turn. */
-function sectionLean(index: number) {
-  return index === section.value && wheel.lean.value ? { transform: `translateY(${wheel.lean.value}px)` } : undefined
-}
-
-// Keys scroll the page itself (Page Down, Space, the arrows), so it holds the focus until something in it takes it.
+// The page holds the focus when it opens, so a screen reader starts in it; the keys turn it from anywhere.
 onMounted(() => {
   pageEl.value?.focus({ preventScroll: true })
   // Capturing, to come before the editor's own wheel; the listener goes with the page element.
   pageEl.value?.addEventListener('wheel', onWheelFirst, { capture: true })
+  window.addEventListener('keydown', onKeydown)
 })
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
-// The free list (ticket 0742): scrolling past the plans grows No account's list, the plans scrolling up in their section
-// as the page does, and the page reaches as far as the whole list needs. The page stops snapping once it grows, until
-// it is back at the coffee.
+// The free list (tickets 0742, 0801): scrolling the plans section grows No account's list, the plans scrolling up as it
+// grows, and the section reaches as far as the whole list needs.
 const sectionEls = shallowReactive(new Map<string, HTMLElement>())
 /** What each section shows, by its id: the plans' tiles are what the free list is measured in. */
 const shownIn = shallowReactive(new Map<string, unknown>())
 const plans = computed(() => shownIn.get('plans') as InstanceType<typeof PlanTiles> | undefined)
 const plansSection = computed(() => sectionEls.get('plans'))
-const snapOff = ref(false)
 const freeGrowth = useFreeGrowth({
   section: plansSection,
   freeWindow: () => plans.value?.freeWindow,
   freeTile: () => plans.value?.freeTile,
   zoom: () => zoom.percent.value / 100,
 })
-const plansStyle = computed(() => (freeGrowth.offset.value ? { transform: `translateY(${-freeGrowth.offset.value}px)` } : undefined))
 const remeasureFree = () => void nextTick(freeGrowth.remeasure)
 onMounted(() => {
   remeasureFree()
   void document.fonts?.ready.then(remeasureFree)
 })
 watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
+
+/** A section's own scroll: the plans' grows the free list. */
+function onSectionScroll(id: string, event: Event) {
+  if (id === 'plans') freeGrowth.scrolled((event.target as HTMLElement).scrollTop)
+}
 
 // The Menu's Saved Projects (ticket 0716): the editor's list, its Remove asking first, a pick opening the editor on it.
 const library = shallowRef<HomepageLibrary>()
@@ -291,195 +247,156 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   <div
     ref="pageEl"
     class="homepage-page"
-    :class="{ 'homepage-page--growing': snapOff }"
     tabindex="-1"
     data-testid="homepage-page"
-    @scroll.passive="onPageScroll"
-    @scrollend="onScrollEnd"
     @wheel="onWheel"
     @touchstart.passive="onTouchStart"
+    @touchend.passive="onTouchEnd"
+    @touchcancel.passive="input.onTouchCancel"
     @pointerdown="nudge.acted"
-    @keydown="onKeydown"
   >
-    <div class="homepage-page__track" :style="{ '--free-room': `${freeGrowth.room.value}px`, '--sections': sections.length }">
-      <div class="homepage-page__stage">
-        <!-- The two faint X1 marks beside the box, drifting a little as the page scrolls. -->
-        <span class="homepage-page__marks">
-          <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
-          <AppLogo class="homepage-page__mark homepage-page__mark--small" :size="120" data-testid="homepage-mark" />
-        </span>
+    <div class="homepage-page__stage" :style="{ '--progress': section / Math.max(1, sections.length - 1) }">
+      <!-- The two faint X1 marks beside the box, drifting a little as the box turns. -->
+      <span class="homepage-page__marks">
+        <AppLogo class="homepage-page__mark homepage-page__mark--large" :size="420" data-testid="homepage-mark" />
+        <AppLogo class="homepage-page__mark homepage-page__mark--small" :size="120" data-testid="homepage-mark" />
+      </span>
 
-        <div class="homepage" :style="boxStyle" data-testid="homepage">
-          <div class="homepage__strip">
-            <CanvasStrip
-              page="homepage"
-              :open-panel="menuOpen ? 'menu' : null"
-              :zoom-percent="zoom.percent.value"
-              :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
-              :zoom-max-percent="HOMEPAGE_MAX_ZOOM_PERCENT"
-              @select-panel="menuOpen = !menuOpen"
-              @zoom-in="zoom.zoomIn"
-              @zoom-out="zoom.zoomOut"
-              @reset="zoom.reset"
-            />
-          </div>
-          <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
-            <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
-            <template #sub="{ depth }">
-              <ProjectsLibrary
-                v-if="depth === 1 && library"
-                :projects="library.projects.value"
-                :sealed="library.sealed.value"
-                @select="emit('openProject', $event)"
-                @remove="pendingRemove = library.entryOf($event)"
-                @import="library.addProjects"
-                @export-all="emit('exportAll', library.projects.value, library.sealed.value)"
-              />
-            </template>
-          </PanelHost>
-          <ConfirmModal
-            v-if="pendingRemove"
-            data-testid="remove-project-modal"
-            :title="t.removeProject.title"
-            :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
-            :confirm-label="t.removeProject.confirmButton"
-            :cancel-label="t.removeProject.cancelButton"
-            @confirm="confirmRemove"
-            @cancel="pendingRemove = undefined"
+      <div class="homepage" :style="boxStyle" data-testid="homepage">
+        <div class="homepage__strip">
+          <CanvasStrip
+            page="homepage"
+            :open-panel="menuOpen ? 'menu' : null"
+            :zoom-percent="zoom.percent.value"
+            :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
+            :zoom-max-percent="HOMEPAGE_MAX_ZOOM_PERCENT"
+            @select-panel="menuOpen = !menuOpen"
+            @zoom-in="zoom.zoomIn"
+            @zoom-out="zoom.zoomOut"
+            @reset="zoom.reset"
           />
-          <FeedbackSheet
-            v-if="dialogs.open.value === 'feedback' && feedback.feedbackRequest.value"
-            :request="feedback.feedbackRequest.value"
-            :verify="feedback.verifyFeedback"
-            :send="feedback.sendReport"
-            :copy="feedback.copyReport"
-            @cancel="feedback.onCloseFeedback"
-          />
-          <ToastRegion :toasts="toasts" @dismiss="dismissToast" />
-
-          <div ref="bodyEl" class="homepage__body" data-testid="homepage-body">
-            <main class="homepage__page" :style="{ zoom: zoom.percent.value / 100 }">
-              <section class="homepage__hero">
-                <RollingSlogan />
-                <div class="homepage__actions">
-                  <span v-if="isNew" class="homepage__buttons">
-                    <AppButton variant="primary" size="lg" data-testid="homepage-make-first" @click="emit('makeFirstProject')">
-                      {{ t.homepage.makeFirstProject }}
-                    </AppButton>
-                    <AppButton size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
-                      {{ t.homepage.openEditor }}
-                    </AppButton>
-                  </span>
-                  <span v-else class="homepage__buttons">
-                    <AppButton variant="primary" size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
-                      {{ t.homepage.openEditor }}
-                    </AppButton>
-                    <!-- Saved Projects (ticket 0716): the editor with no Project open and the Menu on its list. -->
-                    <AppButton size="lg" icon="library" data-testid="homepage-saved-projects" @click="emit('openSavedProjects')">
-                      {{ savedProjectsLabel }}
-                    </AppButton>
-                  </span>
-                </div>
-              </section>
-
-              <div class="homepage__sections">
-                <section
-                  v-for="(entry, index) in sections"
-                  :key="entry.id"
-                  :ref="(el) => el ? sectionEls.set(entry.id, el as HTMLElement) : sectionEls.delete(entry.id)"
-                  class="homepage__section"
-                  :class="[
-                    `homepage__section--${sectionState(index)}`,
-                    `homepage__section--${entry.id}`,
-                    {
-                      'homepage__section--centred': entry.centred,
-                      'homepage__section--leaning': !!sectionLean(index),
-                      'homepage__section--nudge': index === 0 && section === 0 && nudge.nudging.value,
-                    },
-                  ]"
-                  :style="sectionLean(index)"
-                  :aria-labelledby="entry.title === 'above' ? `homepage-${entry.id}` : undefined"
-                  :aria-label="entry.title === 'hidden' ? entry.heading : undefined"
-                  :data-testid="`homepage-section-${entry.id}`"
-                >
-                  <h2 v-if="entry.title === 'above'" :id="`homepage-${entry.id}`" class="homepage__heading">{{ entry.heading }}</h2>
-                  <component
-                    :is="entry.shows"
-                    v-bind="entry.with?.()"
-                    :ref="(shown: unknown) => (shown ? shownIn.set(entry.id, shown) : shownIn.delete(entry.id))"
-                  />
-                </section>
-              </div>
-            </main>
-          </div>
-          <SectionBar :section="section" :position="scrolled" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
         </div>
+        <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
+          <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
+          <template #sub="{ depth }">
+            <ProjectsLibrary
+              v-if="depth === 1 && library"
+              :projects="library.projects.value"
+              :sealed="library.sealed.value"
+              @select="emit('openProject', $event)"
+              @remove="pendingRemove = library.entryOf($event)"
+              @import="library.addProjects"
+              @export-all="emit('exportAll', library.projects.value, library.sealed.value)"
+            />
+          </template>
+        </PanelHost>
+        <ConfirmModal
+          v-if="pendingRemove"
+          data-testid="remove-project-modal"
+          :title="t.removeProject.title"
+          :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
+          :confirm-label="t.removeProject.confirmButton"
+          :cancel-label="t.removeProject.cancelButton"
+          @confirm="confirmRemove"
+          @cancel="pendingRemove = undefined"
+        />
+        <FeedbackSheet
+          v-if="dialogs.open.value === 'feedback' && feedback.feedbackRequest.value"
+          :request="feedback.feedbackRequest.value"
+          :verify="feedback.verifyFeedback"
+          :send="feedback.sendReport"
+          :copy="feedback.copyReport"
+          @cancel="feedback.onCloseFeedback"
+        />
+        <ToastRegion :toasts="toasts" @dismiss="dismissToast" />
+
+        <div ref="bodyEl" class="homepage__body" data-testid="homepage-body">
+          <main class="homepage__page" :style="{ zoom: zoom.percent.value / 100 }">
+            <section class="homepage__hero">
+              <RollingSlogan />
+              <div class="homepage__actions">
+                <span v-if="isNew" class="homepage__buttons">
+                  <AppButton variant="primary" size="lg" data-testid="homepage-make-first" @click="emit('makeFirstProject')">
+                    {{ t.homepage.makeFirstProject }}
+                  </AppButton>
+                  <AppButton size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
+                    {{ t.homepage.openEditor }}
+                  </AppButton>
+                </span>
+                <span v-else class="homepage__buttons">
+                  <AppButton variant="primary" size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
+                    {{ t.homepage.openEditor }}
+                  </AppButton>
+                  <!-- Saved Projects (ticket 0716): the editor with no Project open and the Menu on its list. -->
+                  <AppButton size="lg" icon="library" data-testid="homepage-saved-projects" @click="emit('openSavedProjects')">
+                    {{ savedProjectsLabel }}
+                  </AppButton>
+                </span>
+              </div>
+            </section>
+
+            <div class="homepage__sections">
+              <section
+                v-for="(entry, index) in sections"
+                :key="entry.id"
+                :ref="(el) => el ? sectionEls.set(entry.id, el as HTMLElement) : sectionEls.delete(entry.id)"
+                class="homepage__section"
+                :class="[
+                  `homepage__section--${sectionState(index)}`,
+                  `homepage__section--${entry.id}`,
+                  {
+                    'homepage__section--centred': entry.centred,
+                    'homepage__section--nudge': index === 0 && section === 0 && nudge.nudging.value,
+                  },
+                ]"
+                :aria-labelledby="entry.title === 'above' ? `homepage-${entry.id}` : undefined"
+                :aria-label="entry.title === 'hidden' ? entry.heading : undefined"
+                :data-testid="`homepage-section-${entry.id}`"
+                @scroll.passive="onSectionScroll(entry.id, $event)"
+              >
+                <h2 v-if="entry.title === 'above'" :id="`homepage-${entry.id}`" class="homepage__heading">{{ entry.heading }}</h2>
+                <component
+                  :is="entry.shows"
+                  v-bind="entry.with?.()"
+                  :ref="(shown: unknown) => (shown ? shownIn.set(entry.id, shown) : shownIn.delete(entry.id))"
+                />
+                <!-- The plans section reaches on as far as the free list grows (ticket 0742). -->
+                <span
+                  v-if="entry.id === 'plans'"
+                  class="homepage__free-room"
+                  :style="{ height: `calc(100% + ${freeGrowth.room.value}px)` }"
+                  aria-hidden="true"
+                />
+              </section>
+            </div>
+          </main>
+        </div>
+        <SectionBar :section="section" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
       </div>
-      <span
-        v-for="(entry, index) in sections"
-        :key="entry.id"
-        class="homepage-page__snap"
-        :class="{ 'homepage-page__snap--last': index === sections.length - 1 }"
-        :style="{ top: `calc(${index} * (100% - var(--free-room)) / var(--sections))` }"
-        aria-hidden="true"
-      />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* The page (ticket 0739): the theme's own ground, a viewport of scroll per section, snapping to each; the stage holding
- * the box stays on screen while it scrolls. Past the plans the page reaches on as far as the free list grows (ticket
- * 0742), the stage still on screen, and stops snapping while it grows. */
+/* The page (tickets 0739, 0801): the theme's own ground, never scrolling itself; the stage holds the box in its middle,
+ * and a section turns in it by every way of scrolling. */
 .homepage-page {
   position: fixed;
   inset: 0;
-  overflow: hidden auto;
+  overflow: hidden;
+  overscroll-behavior: none;
   color: var(--ink);
   background: var(--page-ground);
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
   outline: none;
 }
 
-.homepage-page::-webkit-scrollbar {
-  display: none;
-}
-
-.homepage-page--growing {
-  scroll-snap-type: none;
-}
-
-.homepage-page__track {
-  position: relative;
-  height: calc(var(--sections) * 100% + var(--free-room));
-}
-
-.homepage-page__snap {
-  position: absolute;
-  /* A swipe's fling stops at every section, never carrying past the middle one (ticket 0784). */
-  scroll-snap-stop: always;
-  left: 0;
-  width: 1px;
-  height: calc((100% - var(--free-room)) / var(--sections));
-  scroll-snap-align: start;
-  pointer-events: none;
-}
-
-/* The plans' snap area reaches as far as the free list grows: taller than the screen, so the page scrolls freely in it
- * from the first wheel turn on, before it stops snapping. */
-.homepage-page__snap--last {
-  height: calc((100% - var(--free-room)) / var(--sections) + var(--free-room));
-}
-
 .homepage-page__stage {
-  position: sticky;
-  top: 0;
+  position: relative;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: calc((100% - var(--free-room)) / var(--sections));
+  height: 100%;
   padding: max(var(--space-8), env(safe-area-inset-top)) max(var(--space-8), env(safe-area-inset-right))
     max(var(--space-8), env(safe-area-inset-bottom)) max(var(--space-8), env(safe-area-inset-left));
 }
@@ -490,8 +407,8 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   }
 }
 
-/* Two faint X1 marks outside the box (the drawn layer is gone): `accent`, behind it, drifting with the page's scroll
- * where the browser can tie an animation to it; cut at the screen's edge. */
+/* Two faint X1 marks outside the box (the drawn layer is gone): `accent`, behind it, drifting as the box turns from the
+ * first section (`--progress` 0) to the last (1); cut at the screen's edge. */
 .homepage-page__marks {
   position: absolute;
   inset: 0;
@@ -504,7 +421,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   z-index: 0;
   color: var(--accent);
   pointer-events: none;
-  will-change: transform;
+  transition: transform var(--section-turn) var(--ease-standard);
 }
 
 .homepage-page__mark--large {
@@ -512,6 +429,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   left: calc(50% - var(--homepage-box-width) / 2 - var(--homepage-mark-large) / 2 - var(--space-24));
   stroke-width: 1.4;
   opacity: 0.07;
+  transform: translateY(calc(5rem - 13.75rem * var(--progress)));
 }
 
 .homepage-page__mark--small {
@@ -519,38 +437,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   bottom: 10%;
   stroke-width: 2.6;
   opacity: 0.16;
-}
-
-@supports (animation-timeline: scroll()) {
-  .homepage-page__mark--large {
-    animation: homepage-drift-large linear both;
-    animation-timeline: scroll(nearest block);
-  }
-
-  .homepage-page__mark--small {
-    animation: homepage-drift-small linear both;
-    animation-timeline: scroll(nearest block);
-  }
-}
-
-@keyframes homepage-drift-large {
-  from {
-    transform: translateY(5rem);
-  }
-
-  to {
-    transform: translateY(-8.75rem);
-  }
-}
-
-@keyframes homepage-drift-small {
-  from {
-    transform: translateY(-3.75rem);
-  }
-
-  to {
-    transform: translateY(6.875rem);
-  }
+  transform: translateY(calc(-3.75rem + 10.625rem * var(--progress)));
 }
 
 /* The canvas box (ticket 540, ADR 0073): the Canvas strip on top, the hero and one section between, the Progress bar
@@ -646,7 +533,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   margin: 0 auto;
   padding: var(--space-4) var(--space-8) var(--space-12);
   overflow-y: auto;
-  overscroll-behavior-x: contain;
+  overscroll-behavior: contain;
   transition:
     opacity var(--section-turn) var(--ease-standard),
     transform var(--section-turn) var(--ease-standard),
@@ -668,12 +555,6 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
 .homepage__section--shown {
   transition-delay: 0s;
-}
-
-/* Leaning with a wheel gesture follows it closely; letting go settles back at the turn's own pace (ticket 0784). */
-.homepage__section--leaning {
-  transition-duration: var(--section-turn), var(--duration-fast), 0s;
-  transition-timing-function: var(--ease-standard), var(--ease-out), linear;
 }
 
 /* The nudge (ticket 0784): the first section lifts and settles once, the way it starts to turn. */
@@ -714,9 +595,14 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   transform: translateY(var(--section-shift)) scale(var(--section-scale));
 }
 
-/* The plans scroll with the page, never by themselves (ticket 0742). */
-.homepage__section--plans {
-  overflow: clip;
+/* The room the plans section scrolls on into as the free list grows (tickets 0742, 0801): its own scroll grows the list. */
+.homepage__free-room {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .homepage__section--centred {
@@ -745,7 +631,7 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   }
 
   .homepage-page__mark {
-    animation: none !important;
+    transition: none;
   }
 }
 </style>

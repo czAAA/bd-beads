@@ -198,16 +198,17 @@ checks them against `tokens.json`. The splash in `index.html` is held to the sam
 
 The Homepage card describes the page (ticket 0739); how the app builds it:
 
-- The page is its own scroller (`position: fixed`), three viewports tall with a snap point at each, around a sticky
-  stage that holds the canvas box, so the box never moves while the page scrolls. The section shown is the nearest
-  viewport's (`homepage/sections.ts`); Back and Next scroll the page, never set the section. The page takes the focus
-  when it opens, so the keys scroll it.
+- The page (`position: fixed`, `overflow: hidden`) never scrolls: the stage holds the canvas box in its middle, and
+  the section shown is a ref that every way of turning sets (ticket 0801). `homepage/useSectionInput.ts` turns wheel,
+  trackpad, swipe and keys into turns, a section taller than its room scrolling inside itself first; the wheel's
+  gestures are `homepage/wheelTurn.ts`, the keys `homepage/sectionKeys.ts`. It was a snapping scroller with a sticky
+  stage until ticket 0801, but Chrome re-snaps a snap container whenever layout inside it changes, and What's inside's
+  playing editor changes it many times a second, so scrolls were pulled back; don't bring native snapping back.
 - Its bottom bar is the editor's `ProgressBar` with the sections in its slot, and `ProgressTrack`, the track and spark
   Row progress draws, with Pattern done's burst at its end: one component, not a copy.
-- The free list grows with the page (ticket 0742). Past the plans the page reaches on by the room the whole list needs
-  (`--free-room` on the track; the stage keeps a viewport's height and stays sticky, and the plans' snap area covers
-  the room, so the first wheel turn past them isn't snapped back). The plans section is the card's "screen": its
-  content moves up with the page (a transform; it never scrolls by itself) and the list is as tall as
+- The free list grows with the plans section's own scroll (tickets 0742, 0801). The section scrolls on by the room the
+  whole list needs (an absolute spacer, `.homepage__free-room`, so the growing list doesn't change the scroll range),
+  its content scrolling up natively, and the list is as tall as
   `homepage/freeGrowth.ts` says, measured by `useFreeGrowth` from the section, the list and the tile in the section's
   own px (the zoom and the section's turn scale divided out). The rows come from `homepage/freeList.ts`: the
   Techniques from `TECHNIQUES`, the brands from the offered Beads' catalogs, the codes counted from the catalog files

@@ -211,141 +211,67 @@ describe('HomePage', () => {
   })
 })
 
-describe('HomePage sections (ticket 0739)', () => {
-  const VIEWPORT = 800
-
-  /** The page with a viewport's height, its scrollTo moving it at once and saying so, as a browser's does. */
-  function pageWithHeight(projectCount = 0) {
-    const wrapper = page(projectCount)
-    const el = wrapper.get('[data-testid="homepage-page"]').element as HTMLElement
-    Object.defineProperty(el, 'clientHeight', { configurable: true, value: VIEWPORT })
-    el.scrollTo = vi.fn(({ top }: ScrollToOptions) => scrollPage(el, top!)) as typeof el.scrollTo
-    return { wrapper, el }
-  }
-  function scrollPage(el: HTMLElement, top: number) {
-    el.scrollTop = top
-    el.dispatchEvent(new Event('scroll'))
-  }
+describe('HomePage sections (tickets 0739, 0801)', () => {
   const shown = (wrapper: ReturnType<typeof page>) =>
     ['inside', 'coffee', 'plans'].filter((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
+  const step = (wrapper: ReturnType<typeof page>, index: number) => wrapper.findAll('[data-testid="section-step"]')[index]!.trigger('click')
 
   it('shows one section at a time under the hero, What\'s inside first, the others slid away', () => {
-    const { wrapper } = pageWithHeight()
+    const wrapper = page()
     expect(shown(wrapper)).toEqual(['inside'])
     expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('true')
     expect(wrapper.get('[data-testid="homepage-section-plans"]').classes()).toContain('homepage__section--after')
     expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/3')
   })
 
-  it('turns to the section a scroll of the page comes to, and the bar follows', async () => {
-    const { wrapper, el } = pageWithHeight()
-    scrollPage(el, VIEWPORT)
-    await wrapper.vm.$nextTick()
+  it('turns with Next and Back, the bar following, the page itself never scrolled', async () => {
+    const wrapper = page()
+    const el = wrapper.get('[data-testid="homepage-page"]').element as HTMLElement
+    el.scrollTo = vi.fn() as typeof el.scrollTo
+    await wrapper.get('[data-testid="section-next"]').trigger('click')
     expect(shown(wrapper)).toEqual(['coffee'])
     expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--before')
     expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('2/3 · Made by one family')
     // What's inside plays its tour only while it is the section shown (ticket 0797).
     expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('false')
-    scrollPage(el, 2 * VIEWPORT)
-    await wrapper.vm.$nextTick()
-    expect(shown(wrapper)).toEqual(['plans'])
-    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('3/3')
-  })
-
-  it('scrolls the page a section\'s worth with Next and Back', async () => {
-    const { wrapper, el } = pageWithHeight()
-    await wrapper.get('[data-testid="section-next"]').trigger('click')
-    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: VIEWPORT, behavior: 'smooth' })
-    expect(shown(wrapper)).toEqual(['coffee'])
     await wrapper.get('[data-testid="section-back"]').trigger('click')
-    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
+    expect(shown(wrapper)).toEqual(['inside'])
+    expect(el.scrollTo).not.toHaveBeenCalled()
   })
 
-  it('turns straight to the section a step asks for, once, not through the ones between', async () => {
-    const { wrapper, el } = pageWithHeight()
-    // A smooth scroll passes the coffee on its way to the plans, then ends; what the page shows is noted at each stop.
-    const turns: string[][] = []
-    el.scrollTo = vi.fn(({ top }: ScrollToOptions) => {
-      void (async () => {
-        for (const at of [VIEWPORT, top!]) {
-          await nextTick()
-          scrollPage(el, at)
-          await nextTick()
-          turns.push(shown(wrapper))
-        }
-        el.dispatchEvent(new Event('scrollend'))
-      })()
-    }) as typeof el.scrollTo
-    await wrapper.findAll('[data-testid="section-step"]')[2]!.trigger('click')
-    await flushPromises()
-    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 2 * VIEWPORT, behavior: 'smooth' })
-    expect(turns).toEqual([['plans'], ['plans']])
+  it('turns straight to the section a step asks for', async () => {
+    const wrapper = page()
+    await step(wrapper, 2)
+    expect(shown(wrapper)).toEqual(['plans'])
     expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('3/3')
   })
 
-  it('follows the page again once a jump is over, wherever the beader scrolled it to', async () => {
-    const { wrapper, el } = pageWithHeight()
-    // The beader takes over mid-jump: the scroll stops at the coffee.
-    el.scrollTo = vi.fn(() => {
-      void (async () => {
-        await nextTick()
-        scrollPage(el, VIEWPORT)
-        await nextTick()
-        el.dispatchEvent(new Event('scrollend'))
-      })()
-    }) as typeof el.scrollTo
-    await wrapper.findAll('[data-testid="section-step"]')[2]!.trigger('click')
-    await flushPromises()
+  it('turns with the keys from anywhere on the page, but not while the Menu is open', async () => {
+    const wrapper = page()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', cancelable: true }))
+    await nextTick()
+    expect(shown(wrapper)).toEqual(['plans'])
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', cancelable: true }))
+    await nextTick()
+    expect(shown(wrapper)).toEqual(['plans'])
+  })
+
+  it('turns by the wheel on its first scroll', async () => {
+    const wrapper = page()
+    const event = new WheelEvent('wheel', { deltaY: 4, bubbles: true, cancelable: true })
+    wrapper.get('.homepage__hero').element.dispatchEvent(event)
+    await nextTick()
+    expect(event.defaultPrevented).toBe(true)
     expect(shown(wrapper)).toEqual(['coffee'])
   })
 
-  it('goes straight to the last section with End and back to the first with Home (ticket 0784)', async () => {
-    const { wrapper, el } = pageWithHeight()
-    await wrapper.get('[data-testid="homepage-page"]').trigger('keydown', { key: 'End' })
-    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 2 * VIEWPORT, behavior: 'smooth' })
-    expect(shown(wrapper)).toEqual(['plans'])
-    await wrapper.get('[data-testid="homepage-page"]').trigger('keydown', { key: 'Home' })
-    expect(el.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'smooth' })
-    expect(shown(wrapper)).toEqual(['inside'])
-  })
-
-  describe('by wheel and trackpad (tickets 0784, 0793)', () => {
+  describe('the nudge (ticket 0784)', () => {
     beforeEach(() => void vi.useFakeTimers())
     afterEach(() => void vi.useRealTimers())
 
-    /** A wheel event on the page, `delta` px down, as the browser sends it. */
-    function wheel(el: HTMLElement, delta: number) {
-      const event = new WheelEvent('wheel', { deltaY: delta, bubbles: true, cancelable: true })
-      el.dispatchEvent(event)
-      return event
-    }
-
-    it('turns the box and scrolls the page a section on the second scroll, two slow notches', async () => {
-      const { wrapper, el } = pageWithHeight()
-      wheel(el, 4)
-      vi.advanceTimersByTime(800)
-      await nextTick()
-      expect(shown(wrapper)).toEqual(['inside'])
-      wheel(el, 4)
-      await nextTick()
-      expect(shown(wrapper)).toEqual(['coffee'])
-      expect(el.scrollTo).toHaveBeenLastCalledWith({ top: VIEWPORT, behavior: 'smooth' })
-    })
-
-    it('leans the shown section with its first scroll, and stands it straight once the scroll stops', async () => {
-      const { wrapper, el } = pageWithHeight()
-      const inside = wrapper.get('[data-testid="homepage-section-inside"]')
-      wheel(el, 75)
-      await nextTick()
-      expect((inside.element as HTMLElement).style.transform).toMatch(/^translateY\(-\d+px\)$/)
-      vi.advanceTimersByTime(300)
-      await nextTick()
-      expect((inside.element as HTMLElement).style.transform).toBe('')
-      expect(shown(wrapper)).toEqual(['inside'])
-    })
-
-    it('lifts What\'s inside and dips Next\'s arrow with the nudge', async () => {
-      const { wrapper } = pageWithHeight()
+    it('lifts What\'s inside and dips Next\'s arrow', async () => {
+      const wrapper = page()
       vi.advanceTimersByTime(1500)
       await nextTick()
       expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--nudge')
@@ -353,8 +279,8 @@ describe('HomePage sections (ticket 0739)', () => {
     })
   })
 
-  it('takes the focus, so the keys scroll the page', () => {
-    const { wrapper } = pageWithHeight()
+  it('takes the focus when it opens', () => {
+    const wrapper = page()
     expect(document.activeElement).toBe(wrapper.get('[data-testid="homepage-page"]').element)
   })
 
@@ -369,7 +295,7 @@ describe('HomePage sections (ticket 0739)', () => {
     expect(wrapper.find('.drawn-layer').exists()).toBe(false)
   })
 
-  describe('the free list (ticket 0742)', () => {
+  describe('the free list (tickets 0742, 0801)', () => {
     /** A layout for the plans: a section 500 tall, the list 300 down it, its four rows 100 tall, the whole list 700, the
      * tile's padding 20 under it. The tile's foot may run 40 further down before it reaches the section's. */
     function laidOut(wrapper: ReturnType<typeof page>) {
@@ -384,46 +310,37 @@ describe('HomePage sections (ticket 0739)', () => {
       rect(wrapper.get('[data-testid="plan-no-account"]').element, 0, 420)
     }
     async function atThePlans() {
-      const { wrapper, el } = pageWithHeight()
+      const wrapper = page()
       laidOut(wrapper)
-      scrollPage(el, 2 * VIEWPORT)
+      await step(wrapper, 2)
       await flushPromises()
-      return { wrapper, el }
+      return wrapper
+    }
+    /** The plans section scrolled `top` down in its own px. */
+    async function scrollPlans(wrapper: ReturnType<typeof page>, top: number) {
+      const el = wrapper.get('[data-testid="homepage-section-plans"]').element
+      el.scrollTop = top
+      el.dispatchEvent(new Event('scroll'))
+      await flushPromises()
     }
     const list = (wrapper: ReturnType<typeof page>) => wrapper.get('[data-testid="free-window"]')
-    const snapping = (wrapper: ReturnType<typeof page>) => !wrapper.get('[data-testid="homepage-page"]').classes().includes('homepage-page--growing')
 
-    it('shows four rows at the plans, and the page reaches on as far as the whole list needs', async () => {
-      const { wrapper } = await atThePlans()
+    it('shows four rows at the plans, and the section reaches on as far as the whole list needs', async () => {
+      const wrapper = await atThePlans()
       expect(list(wrapper).attributes('style')).toContain('height: 100px')
       expect(list(wrapper).classes()).toContain('plan__free--fading')
-      expect(wrapper.get('.homepage-page__track').attributes('style')).toContain('--free-room: 560px')
-      expect(snapping(wrapper)).toBe(true)
+      expect(wrapper.get('.homepage__free-room').attributes('style')).toContain('calc(100% + 560px)')
     })
 
-    it('grows as the page scrolls past the plans, the plans scrolling up with it and the page snapping no more', async () => {
-      const { wrapper, el } = await atThePlans()
-      scrollPage(el, 2 * VIEWPORT + 10)
-      await flushPromises()
+    it('grows as the plans section scrolls, and shrinks back as it scrolls back', async () => {
+      const wrapper = await atThePlans()
+      await scrollPlans(wrapper, 10)
       expect(list(wrapper).attributes('style')).toContain('height: 125px')
-      expect(wrapper.get('[data-testid="homepage-plans"]').attributes('style')).toContain('translateY(-10px)')
-      expect(snapping(wrapper)).toBe(false)
-      scrollPage(el, 2 * VIEWPORT + 560)
-      await flushPromises()
+      await scrollPlans(wrapper, 560)
       expect(list(wrapper).attributes('style')).toContain('height: 700px')
       expect(list(wrapper).classes()).not.toContain('plan__free--fading')
-    })
-
-    it('shrinks back as the page scrolls back, and snaps again once back at the coffee', async () => {
-      const { wrapper, el } = await atThePlans()
-      scrollPage(el, 2 * VIEWPORT + 100)
-      scrollPage(el, 2 * VIEWPORT)
-      await flushPromises()
+      await scrollPlans(wrapper, 0)
       expect(list(wrapper).attributes('style')).toContain('height: 100px')
-      expect(snapping(wrapper)).toBe(false)
-      scrollPage(el, VIEWPORT)
-      await flushPromises()
-      expect(snapping(wrapper)).toBe(true)
     })
   })
 })
