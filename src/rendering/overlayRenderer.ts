@@ -40,6 +40,15 @@ const PREVIEW_OPACITY = 0.6
  * shares it. */
 const PREVIEW_OUTLINE_PX = 2
 
+/** How thick the hover preview's `mirror` outline is on a bead inside the Mirror's Area (ContextBar card's Mirror bar,
+ * ticket 0806): round every counterpart, over its color or alone. */
+const MIRROR_PREVIEW_OUTLINE_PX = 1.5
+
+/** Which of a layer's preview beads lie inside the Mirror's Area, and so take its `mirror` outline (ticket 0806). */
+type InArea = (cell: GridPosition) => boolean
+const NOWHERE: InArea = () => false
+const ALL_IN_AREA: InArea = () => true
+
 /** The hover preview (ticket 23): where paint would land, or a pasted block under the cursor. */
 interface HoverPreview {
   /** The beads it is on: the hovered one, or every bead of a block about to be pasted on a Custom frame. */
@@ -86,6 +95,9 @@ export interface OverlayInput {
   pointer?: BeadPointer
   /** The rectangle the Select, Piece or Select all marked out (tickets 31, 414): drawn as its outer border. */
   selection?: Selection
+  /** Whether the Selection is Mirror mode's rubber band (ADR 0082, ticket 0806): drawn in `mirror`, as the Area it makes,
+   * not `marker`. */
+  marksArea?: boolean
   /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four
    * larger ones. Without it the Selection has no handles. */
   selectionHandles?: { surface: SurfaceView; touch: boolean }
@@ -261,7 +273,7 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 
 // The hover preview on each bead it names, inside the rim: its color at a faint opacity over what the bead holds (a
 // pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape.
-function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
+function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea): void {
   const { technique } = weave
   const inset = BEAD_GAP_PX / 2
   const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
@@ -276,14 +288,16 @@ function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells:
     const y = box.y + inset
     const width = box.width - BEAD_GAP_PX
     const height = box.height - BEAD_GAP_PX
-    const color = cell.color ?? preview.color
-
-    if (color) {
-      fillFaintly(context, { x, y, width, height, radius: Math.max(0, roundness) }, color)
-    } else {
-      outlineBead(context, { x, y, width, height, radius: roundness }, theme)
-    }
+    drawPreviewBead(context, { x, y, width, height, radius: roundness }, cell.color ?? preview.color, theme, inArea(cell))
   }
+}
+
+/** One bead of the hover preview: its color faintly, or the neutral outline with none; inside the Mirror's Area a
+ * `mirror` outline round it either way (ticket 0806), so the counterparts read as the Mirror's. */
+function drawPreviewBead(context: DrawingContext, bead: BeadRect, color: string | null, theme: ProjectTheme, inArea: boolean): void {
+  if (color) fillFaintly(context, { ...bead, radius: Math.max(0, bead.radius) }, color)
+  if (inArea) outlineBead(context, bead, theme.mirror, MIRROR_PREVIEW_OUTLINE_PX)
+  else if (!color) outlineBead(context, bead, theme.outline, PREVIEW_OUTLINE_PX)
 }
 
 /** How small a bead is on the screen, in device px, below which a pasted block's preview is drawn in the draft look
@@ -292,9 +306,9 @@ const DRAFT_PREVIEW_BEAD_PX = 10
 
 /** A pasted block's preview on a layer laid on a grid: as beads, or zoomed out as one draft image at the preview's
  * opacity. */
-function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PastedCell[], preview: HoverPreview, theme: ProjectTheme, deviceScale: number): void {
+function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PastedCell[], preview: HoverPreview, theme: ProjectTheme, deviceScale: number, inArea: InArea): void {
   if (CELL_SIZE_PX * deviceScale >= DRAFT_PREVIEW_BEAD_PX) {
-    drawPreview(context, weave, space, cells, preview, theme)
+    drawPreview(context, weave, space, cells, preview, theme, inArea)
     return
   }
   context.globalAlpha = PREVIEW_OPACITY
@@ -304,7 +318,7 @@ function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, c
 
 /** The hover preview on beads that lie at their panels' angles (ticket 0592): the same look, each bead turned to its
  * angle at the place the Layer geometry gives it. */
-function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, roundness: number, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
+function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, roundness: number, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme, inArea: InArea): void {
   for (const cell of cells) {
     const place = geometry.place(cell)
     if (!place) {
@@ -312,15 +326,10 @@ function drawTurnedPreview(context: DrawingContext, geometry: LayerGeometry, rou
     }
     const box = inGridPx(place.box)
     const bead = { x: -box.width / 2 + BEAD_GAP_PX / 2, y: -box.height / 2 + BEAD_GAP_PX / 2, width: box.width - BEAD_GAP_PX, height: box.height - BEAD_GAP_PX, radius: Math.max(0, roundness * box.width - BEAD_GAP_PX / 2) }
-    const color = cell.color ?? preview.color
     context.save()
     context.translate(box.x + box.width / 2, box.y + box.height / 2)
     context.rotate(place.angle)
-    if (color) {
-      fillFaintly(context, bead, color)
-    } else {
-      outlineBead(context, bead, theme)
-    }
+    drawPreviewBead(context, bead, cell.color ?? preview.color, theme, inArea(cell))
     context.restore()
   }
 }
@@ -358,11 +367,10 @@ function fillFaintly(context: DrawingContext, { x, y, width, height, radius }: B
   context.globalAlpha = 1
 }
 
-/** The hover preview's neutral look: a ring in the dark ink, as thick as PREVIEW_OUTLINE_PX, inside the bead's
- * rounded corners. */
-function outlineBead(context: DrawingContext, { x, y, width, height, radius }: BeadRect, theme: ProjectTheme): void {
-  const inset = PREVIEW_OUTLINE_PX
-  context.fillStyle = theme.outline
+/** A ring `inset` thick inside the bead's rounded corners: the hover preview's neutral look in the dark ink, or its
+ * `mirror` outline inside the Mirror's Area. */
+function outlineBead(context: DrawingContext, { x, y, width, height, radius }: BeadRect, color: string, inset: number): void {
+  context.fillStyle = color
   context.beginPath()
   roundedRect(context, x, y, width, height, Math.max(0, radius))
   roundedRect(context, x + inset, y + inset, width - 2 * inset, height - 2 * inset, Math.max(0, radius - inset))
@@ -382,26 +390,26 @@ function drawPointer(context: DrawingContext, technique: Technique, cell: BeadCe
   if (pointer.color) {
     fillFaintly(context, { x, y, width: size, height: size, radius }, pointer.color)
   } else {
-    outlineBead(context, { x, y, width: size, height: size, radius }, theme)
+    outlineBead(context, { x, y, width: size, height: size, radius }, theme.outline, PREVIEW_OUTLINE_PX)
   }
 }
 
 /** How thick, in the Project's own px, the Selection's border is, inside the edge of the rectangle. */
 const OUTLINE_PX = 2
 
-// The Selection (ticket 414): the rectangle's outer border in the Selection colour, no wash. One rectangle round the
-// beads, so on peyote and brick stitch (alternate rows half a bead over) it spans the furthest any row reaches. Handles
-// are drawn later in the viewport's px.
-function drawSelection(context: DrawingContext, weave: Weave, space: Space, selection: Selection, theme: ProjectTheme, view: () => VisiblePositions, origin: GridPosition): void {
+// The Selection (ticket 414): the rectangle's outer border in its area's colour (`marker`, or `mirror` for the Mirror's
+// Area and its rubber band, ticket 0806), no wash. One rectangle round the beads, so on peyote and brick stitch
+// (alternate rows half a bead over) it spans the furthest any row reaches. Handles are drawn later in the viewport's px.
+function drawSelection(context: DrawingContext, weave: Weave, space: Space, selection: Selection, color: string, view: () => VisiblePositions, origin: GridPosition): void {
   if (selection.cells) {
-    drawShapeOutline(context, weave, selection.cells, view(), origin, theme)
+    drawShapeOutline(context, weave, selection.cells, view(), origin, color)
     return
   }
   const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
   const { x, y, width, height } = positionsBoxPx(weave, selection.top, selection.left, bottom - selection.top + 1, right - selection.left + 1)
 
-  context.fillStyle = theme.marker
+  context.fillStyle = color
   context.fillRect(x, y, width, OUTLINE_PX)
   context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
   context.fillRect(x, y, OUTLINE_PX, height)
@@ -442,9 +450,9 @@ function outlineOf(cells: readonly GridPosition[]): Outline {
 // A shaped Selection (ticket 547): each cell's side that no other cell of the shape lies across is part of the outline,
 // so it runs round the outside and round each hole. Only the part in view is drawn (ticket 0675); `origin` is the layer's
 // first position on the Canvas, the cells being Canvas positions.
-function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly GridPosition[], view: VisiblePositions, origin: GridPosition, theme: ProjectTheme): void {
+function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly GridPosition[], view: VisiblePositions, origin: GridPosition, color: string): void {
   const boxOf = boxesOf(weave)
-  context.fillStyle = theme.marker
+  context.fillStyle = color
   for (const [canvasRow, beads] of outlineOf(cells)) {
     const row = canvasRow - origin.row
     if (row < view.firstRow || row > view.lastRow) continue
@@ -502,12 +510,12 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, z
   context.restore()
 }
 
-/** An Axis line (ContextBar card's Mirror bar, `--mirror-axis-width` and `--mirror-axis-dash`): 1.25px `marker`, dash 5 4, in
+/** An Axis line (ContextBar card's Mirror bar, `--mirror-axis-width` and `--mirror-axis-dash`): 1.25px `mirror`, dash 5 4, in
  * screen px at any zoom. */
 const MIRROR_AXIS_WIDTH_PX = 1.25
 const MIRROR_AXIS_DASH_PX = [5, 4]
 
-/** Radial's centre ring (ContextBar card's Mirror bar, `--mirror-ring-radius`): 7px radius, 2px `marker`; the mirror lines after
+/** Radial's centre ring (ContextBar card's Mirror bar, `--mirror-ring-radius`): 7px radius, 2px `mirror`; the mirror lines after
  * the first at `--mirror-axis-soft`. */
 const MIRROR_RING_RADIUS_PX = 7
 const MIRROR_RING_WIDTH_PX = 2
@@ -525,7 +533,7 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
   context.beginPath()
   context.rect(box.x, box.y, box.width, box.height)
   context.clip()
-  context.strokeStyle = theme.marker
+  context.strokeStyle = theme.mirror
   context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
   context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
   for (let turn = 0; turn < setting.fold; turn++) {
@@ -552,9 +560,10 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
   context.restore()
 }
 
-/** A Canvas Area as the Selection is drawn (ADR 0082): the marker rectangle round its cells. */
-function drawAreaRect(context: DrawingContext, weave: Weave, space: Space, rect: Rect, theme: ProjectTheme, view: () => VisiblePositions, origin: GridPosition): void {
-  drawSelection(context, weave, space, { top: rect.row, left: rect.column, rows: rect.rows, columns: rect.columns }, theme, view, origin)
+/** A Canvas Area as the Selection is drawn (ADR 0082), in its own colour (ticket 0806): the `mirror` rectangle round its
+ * cells. */
+function drawAreaRect(context: DrawingContext, weave: Weave, space: Space, rect: Rect, color: string, view: () => VisiblePositions, origin: GridPosition): void {
+  drawSelection(context, weave, space, { top: rect.row, left: rect.column, rows: rect.rows, columns: rect.columns }, color, view, origin)
 }
 
 /** Draws Mirror's Axis lines across its grid Area (spec 0702), or Radial's ring and lines (ticket 0705), where the Mirror
@@ -572,7 +581,7 @@ function drawMirrorAxes(context: DrawingContext, weave: Weave, frame: Rect, sett
   if (lines.leftRight.length === 0 && lines.topBottom.length === 0) return
   const { x, y, width, height } = box
   context.save()
-  context.strokeStyle = theme.marker
+  context.strokeStyle = theme.mirror
   context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
   context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
   context.beginPath()
@@ -603,7 +612,7 @@ function drawLayoutAxes(context: DrawingContext, symmetry: LayoutSymmetry & { ce
   }
   if (setting.mode !== 'mirror' || !(leftRight || topBottom)) return
   context.save()
-  context.strokeStyle = theme.marker
+  context.strokeStyle = theme.mirror
   context.lineWidth = MIRROR_AXIS_WIDTH_PX / zoom
   context.setLineDash(MIRROR_AXIS_DASH_PX.map((length) => length / zoom))
   context.beginPath()
@@ -637,7 +646,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, rowMotion } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, rowMotion } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -674,15 +683,18 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // whole Frame's Axes.
   const canvasArea = mirror?.place?.layer === 'canvas' ? mirror.place.area : undefined
   const wholeFrame = mirror?.place?.layer === 'frame' ? mirror : undefined
+  // The hover preview's beads inside the Area, outlined in `mirror` (ticket 0806): a Canvas Area's, or all the Frame's.
+  const inCanvasArea: InArea = canvasArea ? (cell) => frameContains(canvasArea, cell) : NOWHERE
+  const selectionColor = marksArea ? theme.mirror : theme.marker
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, and the marker lifted above its row.
   if (space.open) {
-    if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme, canvasView, { row: 0, column: 0 })
-    if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme)
-    if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio)
+    if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 })
+    if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme, inCanvasArea)
+    if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio, inCanvasArea)
     if (canvasArea) {
-      drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme, canvasView, { row: 0, column: 0 })
+      drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme.mirror, canvasView, { row: 0, column: 0 })
       drawMirrorAxes(context, canvasWeaveOf, canvasArea, mirror!, zoom, theme)
     }
   }
@@ -719,7 +731,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (showRows) {
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
-    if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme, sheetView, layerOrigin)
+    if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, selectionColor, sheetView, layerOrigin)
     // The whole-Frame Mirror, in the Frame's own positions from its first, drawn alone too: the Axes across a Frame on a
     // grid; a Custom frame's through its layout's centre (ticket 0706).
     const mirrored = wholeFrame && geometry!.grid ? frameOf(project) : undefined
@@ -728,11 +740,12 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (symmetry) drawLayoutAxes(context, symmetry, gridBox(sheetWeave, { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns }), wholeFrame!, zoom * scale, theme)
     const sheetCells = preview ? onSheet(preview.cells) : []
     const sheetStamp = preview?.stamp ? onSheetStamp(preview.stamp) : []
+    const inFrameArea = wholeFrame ? ALL_IN_AREA : NOWHERE
     if (preview && sheetCells.length + sheetStamp.length > 0) {
-      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme)
+      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), [...sheetCells, ...sheetStamp], preview, theme, inFrameArea)
       else {
-        if (sheetCells.length) drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme)
-        if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * scale * pixelRatio)
+        if (sheetCells.length) drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme, inFrameArea)
+        if (sheetStamp.length) drawStampPreview(context, sheetWeave, sheetSpace, sheetStamp, preview, theme, zoom * scale * pixelRatio, inFrameArea)
       }
     }
     if (inPass.length > 0) {

@@ -139,6 +139,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `emptyBead` | `bead-empty` |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
+| `mirror` | `mirror` (the Mirror's Area, its Axes, ring and hover outline, ticket 0806) |
 | `accent` | `accent` (Edit Frame's hot corners, ticket 0657) |
 | `outline` | `bead-outline` |
 

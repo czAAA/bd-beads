@@ -1732,6 +1732,17 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ selection: undefined })
       expect(context.named('fillRect')).toHaveLength(0)
     })
+
+    it('draws the Selection in Mirror mode as the rubber band marking out the Area, in `mirror` (ticket 0806)', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10))
+      context.calls.length = 0
+      await wrapper.setProps({ selection: { top: 1, left: 1, rows: 2, columns: 3 } })
+      expect(context.named('fillRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.marker))
+
+      context.calls.length = 0
+      await wrapper.setProps({ tools: can({ tool: 'select', selects: true, marksArea: true }) })
+      await vi.waitFor(() => expect(context.named('fillRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.mirror)))
+    })
   })
 })
 
