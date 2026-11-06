@@ -104,13 +104,16 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
     const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
+      // The Mirror's Canvas Area is a border on the Canvas: the frame's own edge already bounds a Fill there.
+      const place = deps.mirror().place
+      const border = layer === 'canvas' && place?.layer === 'canvas' ? place.area : undefined
       let refused: FillRefusal | undefined
       deps.edit.edit('drawing', (current) => {
         /** What the flood itself changed: the sources, which stay clear of the Frame. */
         let flooded: GridPosition[] = []
         return onLayer(current, layer, (sheet, local) => {
           const at = local({ row, column })
-          const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen() })
+          const filled = fillArea(sheet, at.row, at.column, color, { onScreen: deps.onScreen(), border })
           if (isFillRefusal(filled)) {
             // Refused, it lands nowhere, counterparts included: the beads as they were leave no Undo step, nothing saved.
             refused = filled

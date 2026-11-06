@@ -450,10 +450,59 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
 
   drawCutHalves(context, weave, { top: selection.top, left: selection.left, bottom, right }, { x, y, width, height }, view(), theme)
   context.fillStyle = color
+  if (describeWeave(weave).shifted) {
+    drawStaircase(context, weave, { top: selection.top, left: selection.left, bottom, right }, view())
+    return
+  }
   context.fillRect(x, y, width, OUTLINE_PX)
   context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
   context.fillRect(x, y, OUTLINE_PX, height)
   context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
+}
+
+// On brick and peyote the outline runs round the whole beads the area holds, stepping in and out with the lines, so
+// the dimmed half positions its edge cuts (`drawCutHalves`) lie plainly outside it (ContextBar card, Area sheet,
+// mockup C). In the fill style the caller set. Only the lines in view.
+function drawStaircase(context: DrawingContext, weave: Weave, lines: { top: number; left: number; bottom: number; right: number }, view: VisiblePositions): void {
+  const description = describeWeave(weave)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  const beadAt = (row: number, column: number) => description.box({ row, column }, cell.width, cell.height)
+  const t = OUTLINE_PX
+  if (description.staggers === 'rows') {
+    let before: { first: number; end: number } | undefined
+    for (let row = Math.max(lines.top, view.firstRow); row <= Math.min(lines.bottom, view.lastRow); row++) {
+      const first = beadAt(row, lines.left)
+      const last = beadAt(row, lines.right)
+      const end = last.x + last.width
+      context.fillRect(first.x, first.y, t, first.height)
+      context.fillRect(end - t, first.y, t, first.height)
+      if (row === lines.top) context.fillRect(first.x, first.y, end - first.x, t)
+      if (row === lines.bottom) context.fillRect(first.x, first.y + first.height - t, end - first.x, t)
+      if (before) {
+        context.fillRect(Math.min(before.first, first.x), first.y - t / 2, Math.abs(before.first - first.x) + t, t)
+        context.fillRect(Math.min(before.end, end) - t, first.y - t / 2, Math.abs(before.end - end) + t, t)
+      }
+      before = { first: first.x, end }
+    }
+    return
+  }
+  const firstShown = Math.min(view.columnsOf(view.firstRow).first, view.columnsOf(view.lastRow).first)
+  const lastShown = Math.max(view.columnsOf(view.firstRow).last, view.columnsOf(view.lastRow).last)
+  let before: { first: number; end: number } | undefined
+  for (let column = Math.max(lines.left, firstShown); column <= Math.min(lines.right, lastShown); column++) {
+    const first = beadAt(lines.top, column)
+    const last = beadAt(lines.bottom, column)
+    const end = last.y + last.height
+    context.fillRect(first.x, first.y, first.width, t)
+    context.fillRect(first.x, end - t, first.width, t)
+    if (column === lines.left) context.fillRect(first.x, first.y, t, end - first.y)
+    if (column === lines.right) context.fillRect(first.x + first.width - t, first.y, t, end - first.y)
+    if (before) {
+      context.fillRect(first.x - t / 2, Math.min(before.first, first.y), t, Math.abs(before.first - first.y) + t)
+      context.fillRect(first.x - t / 2, Math.min(before.end, end) - t, t, Math.abs(before.end - end) + t)
+    }
+    before = { first: first.y, end }
+  }
 }
 
 /** No band round an area: an export's, or a test's that gives none. */

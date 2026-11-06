@@ -26,6 +26,9 @@ export interface FillReach {
   onScreen?: Rect
   /** The most positions the press may paint: the Fill cap unless a test needs fewer. */
   cap?: number
+  /** A border the Fill does not cross, either way (the Mirror's Canvas Area): a flood begun inside stays inside, one
+   * begun outside stays outside. Inside it the space is enclosed, so it is never refused as open. */
+  border?: Rect
 }
 
 /** The beads a Fill paints into as it floods (ticket 0677): a row is copied the first time it changes, the rest shared
@@ -44,7 +47,9 @@ interface Flood {
 function flood({ beads, geometry, edge, frame }: LayerSheet, start: GridPosition, color: string | null, reach: FillReach): Flood {
   const target = colorAt(beads, start.row, start.column)
   // On the open Canvas empty space is filled only where the screen holds it whole; beads are finite, so not bounded.
-  const screen = edge || target !== null ? undefined : (reach.onScreen ?? { row: start.row, column: start.column, rows: 0, columns: 0 })
+  const inside = (row: number, column: number) => !!reach.border && frameContains(reach.border, { row, column })
+  const startsInside = inside(start.row, start.column)
+  const screen = edge || target !== null || startsInside ? undefined : (reach.onScreen ?? { row: start.row, column: start.column, rows: 0, columns: 0 })
   const cap = edge ? Infinity : (reach.cap ?? FILL_CAP)
   let painted = 0
   let offScreen = false
@@ -68,7 +73,7 @@ function flood({ beads, geometry, edge, frame }: LayerSheet, start: GridPosition
   }
   return {
     takes: (row, column) => {
-      if ((beadsOf(row)?.[column] ?? null) !== target || !holds(row, column)) return false
+      if ((beadsOf(row)?.[column] ?? null) !== target || !holds(row, column) || (reach.border && inside(row, column) !== startsInside)) return false
       if (!screen || frameContains(screen, { row, column })) return true
       offScreen = true
       return false
