@@ -397,6 +397,8 @@ const drawingStyle = computed(() => {
               :project="shownProject!"
               :tools="surfaceTools"
               :frame-tooltip="frameTooltip"
+              :selection-tooltip="selectionSummary"
+              :area-tooltip="mirrorBar?.summary"
               :zoom="zoom"
               :scroll="scroll"
               :orientation="canvasOrientation"

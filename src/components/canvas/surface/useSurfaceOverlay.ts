@@ -88,6 +88,9 @@ export interface SurfaceOverlayDeps {
     selection?: Selection
     showRulers?: boolean
     frameTooltip?: string
+    /** The sizes beside a hot corner of the Selection and of the Mirror's Canvas Area ("12 × 7 ≈ 1.9 × 1.1 cm"). */
+    selectionTooltip?: string
+    areaTooltip?: string
     tools: ToolCapabilities
     /** The Mirror (ADR 0082): its Area and Axis lines are drawn while it is on. */
     mirror?: MirrorSetting
@@ -107,6 +110,8 @@ export interface SurfaceOverlayDeps {
   touchInput: Ref<boolean>
   /** The Frame's handle under the pointer or being dragged: drawn grown, its corner with the size Tooltip (ticket 0657). */
   hotHandle: Ref<HandleId | undefined>
+  /** The handle of the Selection, or else of the Mirror's Canvas Area, under the pointer or dragged (ticket 0807). */
+  hotAreaHandle: Ref<HandleId | undefined>
   marginOpacity: Ref<number>
   /** Row done's glints and the marker's glide (ticket 0730), while they play. */
   rowMotion: Ref<RowMotion | undefined>
@@ -116,7 +121,7 @@ export interface SurfaceOverlayDeps {
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity, rowMotion } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -135,6 +140,13 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       sizeTimer = setTimeout(() => (sizeFlash.value = false), SIZE_FLASH_MS)
     },
   )
+
+  /** The hot corner an area shows, with its size beside it: the Selection's while there is one, else the Area's, as
+   * the Select tool's handles grab (MarginSheet card, hot corners). */
+  function hotArea(tooltip: string | undefined, grabbed: boolean): { hot?: HandleId; tooltip: string } {
+    const hot = grabbed ? hotAreaHandle.value : undefined
+    return { hot, tooltip: hot?.includes('-') ? (tooltip ?? '') : '' }
+  }
 
   /** Draws the overlay: everything over the beads that comes and goes with a tool or the pointer. */
   function drawOverlay(): void {
@@ -165,10 +177,10 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         marksArea: tools.marksArea,
         marginOutline: marginOpacity.value,
         frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '', hot: hotHandle.value } : undefined,
-        selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value } : undefined,
+        selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value, ...hotArea(props.selectionTooltip, !!props.selection) } : undefined,
         rulers: { layout: rulers.value, surface: surface.value },
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
-        mirrorArea: { surface: surface.value, touch: touchInput.value },
+        mirrorArea: { surface: surface.value, touch: touchInput.value, ...hotArea(props.areaTooltip, !props.selection) },
         rowMotion: rowMotion.value,
       })
     }
@@ -195,11 +207,14 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.tools.marksArea,
       () => props.tools.picking,
       () => props.frameTooltip,
+      () => props.selectionTooltip,
+      () => props.areaTooltip,
       () => props.mirror,
       marginOpacity,
       rowMotion,
       touchInput,
       hotHandle,
+      hotAreaHandle,
       theme,
     ],
     deps.oncePerFrame(drawOverlay),

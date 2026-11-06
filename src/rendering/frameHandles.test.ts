@@ -1,23 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, hitRadius, HANDLE_PX, TOUCH_HANDLE_PX } from './frameHandles'
+import { areaHandles, boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, hitRadius } from './frameHandles'
 
 const box = { x: 100, y: 50, width: 200, height: 100 }
 
 describe('frame handles', () => {
-  it('are eight 9px squares round the rectangle with a pointer: corners and the middles of the sides', () => {
+  it('are eight round the rectangle with a pointer: corners and the middles of the sides', () => {
     const handles = frameHandles(box, false)
 
     expect(handles.map((h) => h.id)).toEqual(['top-left', 'top', 'top-right', 'right', 'bottom-right', 'bottom', 'bottom-left', 'left'])
-    expect(handles.every((h) => h.size === HANDLE_PX)).toBe(true)
     expect(handles.find((h) => h.id === 'top')).toMatchObject({ x: 200, y: 50 })
     expect(handles.find((h) => h.id === 'bottom-right')).toMatchObject({ x: 300, y: 150 })
   })
 
-  it('are four 16px corner handles on touch', () => {
+  it('are the four corners on touch', () => {
     const handles = frameHandles(box, true)
 
     expect(handles.map((h) => h.id)).toEqual(['top-left', 'top-right', 'bottom-right', 'bottom-left'])
-    expect(handles.every((h) => h.size === TOUCH_HANDLE_PX)).toBe(true)
+  })
+
+  it('stand on an area\'s edge, as the Frame\'s on its line, unless set out from it (tickets 0807, 0808)', () => {
+    expect(areaHandles(box, false)).toEqual(frameHandles(box, false))
+    const out = areaHandles(box, false, { top: 40, right: 10, bottom: 10, left: 10 })
+    expect(out.find((h) => h.id === 'top-left')).toMatchObject({ x: 90, y: 10 })
+    expect(out.find((h) => h.id === 'bottom-right')).toMatchObject({ x: 310, y: 160 })
   })
 
   it('are grabbed within 14px of their centre with a pointer and 24px with a finger, and not away from them', () => {

@@ -4,10 +4,10 @@ import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
 import { MARGIN_PX } from './marginSizes'
-import type { SurfaceView } from './surfaceView'
+import type { Region, SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
-import { frameHandles, type Handle, type HandleId } from './frameHandles'
+import { areaHandles, frameHandles, type Handle, type HandleId } from './frameHandles'
 import { frameOf } from '../domain/layerRecord'
 import { ROW_MOTION, easeIn, easeStandard } from './rowMotion'
 
@@ -238,26 +238,6 @@ const TOOLTIP_PAD_X = 8
 const TOOLTIP_HEIGHT = 24
 const TOOLTIP_GAP = 10
 
-/** The handles given, in the viewport's px: squares with a 1.5px `frameLine` edge, filled with the canvas. */
-function drawHandles(context: DrawingContext, handles: readonly Handle[], theme: ProjectTheme): void {
-  context.setLineDash([])
-  context.lineWidth = FRAME_LINE_PX
-  context.strokeStyle = theme.frameLine
-  context.fillStyle = theme.canvas
-  for (const handle of handles) {
-    context.beginPath()
-    context.roundRect(handle.x - handle.size / 2, handle.y - handle.size / 2, handle.size, handle.size, 2)
-    context.fill()
-    context.stroke()
-  }
-}
-
-/** The Selection's handles (ticket 414): the Frame's own squares, over a Selection's box in the viewport's px. */
-export function drawBoxHandles(context: DrawingContext, box: { x: number; y: number; width: number; height: number }, pixelRatio: number, theme: ProjectTheme, touch: boolean): void {
-  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
-  drawHandles(context, frameHandles(box, touch), theme)
-}
-
 // Edit Frame's hot corners (MarginSheet card, ticket 0657), in screen px: an `accent` bracket at each corner of the
 // Frame's line, a bar at each edge's middle, and the corner under the pointer grown on a faint disc.
 const BRACKET_ARM_PX = 14
@@ -277,11 +257,11 @@ function inward(id: HandleId): { x: number; y: number } {
   return { x: id.includes('left') ? 1 : id.includes('right') ? -1 : 0, y: id.startsWith('top') ? 1 : id.startsWith('bottom') ? -1 : 0 }
 }
 
-/** One handle: a bracket round a corner, a bar along an edge's middle; `hot`, grown on its disc. */
-function drawHotHandle(context: DrawingContext, handle: Handle, hot: boolean, theme: ProjectTheme): void {
+/** One handle: a bracket round a corner, a bar along an edge's middle, in `color`; `hot`, grown on its disc. */
+function drawHotHandle(context: DrawingContext, handle: Handle, hot: boolean, color: string): void {
   const into = inward(handle.id)
-  context.fillStyle = theme.accent
-  context.strokeStyle = theme.accent
+  context.fillStyle = color
+  context.strokeStyle = color
   if (into.x === 0 || into.y === 0) {
     // An edge's bar, just outside the line, along it.
     const along = into.x === 0
@@ -316,16 +296,27 @@ function drawHotHandle(context: DrawingContext, handle: Handle, hot: boolean, th
   context.stroke()
 }
 
-// What the Frame carries while being set (Frame and MarginSheet cards): its hot corners on its line, and the size
-// Tooltip beside the corner under the pointer, else at the bottom-right, in viewport px over all else.
+/** What the Frame carries while being set (Frame and MarginSheet cards): its hot corners on its line in `accent`, and
+ * the size Tooltip. */
 export function drawFrameEditing(context: DrawingContext, input: { frame: Rect; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string; hot?: HandleId }): void {
-  const { frame, surface, pixelRatio, theme, touch, tooltip, hot } = input
+  const box = input.surface.frameBox(input.frame)
+  drawHotCorners(context, { ...input, box, handles: frameHandles(box, input.touch), color: input.theme.accent })
+}
+
+/** A rectangle Selection's or a Canvas Area's handles (ContextBar card, Area sheet, ticket 0807): the Frame's hot
+ * corners round its box on screen, in the area's own colour, with its size Tooltip beside the hot corner. */
+export function drawAreaCorners(context: DrawingContext, input: { box: Region; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; color: string; touch: boolean; tooltip: string; hot?: HandleId }): void {
+  drawHotCorners(context, { ...input, handles: areaHandles(input.box, input.touch) })
+}
+
+// Hot corners (MarginSheet card) in viewport px over all else, and the size Tooltip beside the corner under the
+// pointer, else under the box's bottom-right corner.
+function drawHotCorners(context: DrawingContext, input: { box: Region; handles: readonly Handle[]; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; color: string; tooltip: string; hot?: HandleId }): void {
+  const { box, handles, surface, pixelRatio, theme, color, tooltip, hot } = input
   const { viewport } = surface
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
-  const box = surface.frameBox(frame)
-  const handles = frameHandles(box, touch)
   for (const handle of handles) {
-    drawHotHandle(context, handle, handle.id === hot, theme)
+    drawHotHandle(context, handle, handle.id === hot, color)
   }
 
   if (tooltip === '') {
