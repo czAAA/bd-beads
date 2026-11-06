@@ -402,12 +402,23 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return surface.value.pointToCell(pointInDrawing(event), layer)
   }
 
-  /** What the Select tool's handles grab: the Selection, or in Mirror mode the Mirror's Canvas Area (ADR 0082). */
+  /** Whether the Mirror's Canvas Area's handles take a press (no Selection holds them): under any tool that draws, so
+   * a Paint or Fill press on one moves the Area, places no bead. Inside it is the tool's, but in Mirror mode (Select)
+   * the whole Area grabs (ADR 0082). */
+  const areaGrab = computed(() => {
+    const { moves, picking, settingFrame } = props.tools
+    return !props.selection && props.mirror?.place?.layer === 'canvas' && !moves && !picking && !settingFrame
+  })
+
+  /** What the handles grab: the Selection, or else the Mirror's Canvas Area. */
   const grabbed = computed<Selection | undefined>(() => {
-    if (props.selection || !props.tools.marksArea || props.mirror?.place?.layer !== 'canvas') return props.selection
+    if (props.selection || !areaGrab.value || props.mirror?.place?.layer !== 'canvas') return props.selection
     const { row, column, rows, columns } = props.mirror.place.area
     return { top: row, left: column, rows, columns, layer: 'canvas' }
   })
+
+  /** Whether the held handles are the Mirror's Area's, outside Mirror mode: only its handles take a press. */
+  const areaHandlesOnly = computed(() => areaGrab.value && !props.tools.marksArea)
 
   // A Selection cleared or an Area closed takes its hot corner with it, so the next one starts plain.
   watch(() => grabbed.value === undefined, (gone) => {
@@ -601,16 +612,17 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       }
     }
     const held = grabbed.value
-    if (props.tools.selects && held && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
+    if ((props.tools.selects || areaGrab.value) && held && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
       // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it. A shape
       // (ticket 547) can't be grabbed at all.
       const box = surface.value.beadBox(selectionFrame(held), selectionViewLayer())
       const point = pointInDrawing(event)
-      const target: FramePress = held.cells
+      const found: FramePress = held.cells
         ? { kind: 'outside' }
         : selectionHasHandles(held)
           ? areaPressAt(box, quarterTurnOf(props.project), point, touchInput.value, areaOutset.value)
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
+      const target: FramePress = areaHandlesOnly.value && found.kind !== 'handle' ? { kind: 'outside' } : found
       if (target.kind !== 'outside') {
         adjusting.value = true
         resizing = target.kind === 'handle'
@@ -618,7 +630,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
-        emit('selection-press', target, cellUnder(event))
+        emit('selection-press', target, cellUnder(event), ...(areaHandlesOnly.value ? ['mirror' as const] : []))
         event.preventDefault()
         return
       }
@@ -703,7 +715,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       return
     }
     const held = grabbed.value
-    if (props.tools.selects && held && event.pointerType !== 'touch' && selectionHasHandles(held)) {
+    if ((props.tools.selects || areaGrab.value) && held && event.pointerType !== 'touch' && selectionHasHandles(held)) {
       const id = handleIdAt(surface.value.beadBox(selectionFrame(held), selectionViewLayer()), pointInDrawing(event), false, areaOutset.value)
       hotAreaHandle.value = id
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
