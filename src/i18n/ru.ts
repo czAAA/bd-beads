@@ -899,8 +899,6 @@ export const ru: Translations = {
       showFound: 'Показать найденное',
       backgroundTool: 'Фон',
       backgroundToolLine: 'Чтобы поправить найденное, выберите {tool} под предпросмотром: нажмите или проведите по заштрихованному бисеру, чтобы оставить его, или по оставленному, чтобы убрать.',
-      undoMark: 'Отменить',
-      redoMark: 'Повторить',
       startOver: 'Начать заново',
       bandEmpty: 'изображения пока нет',
       keeping: 'оставляем {columns}×{rows}',

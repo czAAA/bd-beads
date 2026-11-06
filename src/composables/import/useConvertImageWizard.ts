@@ -138,9 +138,34 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const background = ref<BackgroundStage>('off')
   const tolerance = ref<number>(BACKGROUND_TOLERANCE.start)
   const kept = shallowRef<KeptPart>()
-  // The Background tool's steps (ticket 0787), oldest first, and those undone, the last undone first.
+  // The Background tool's steps (ticket 0787), oldest first.
   const marks = shallowRef<readonly PixelMark[]>([])
-  const undoneMarks = shallowRef<readonly PixelMark[]>([])
+  // Every background decision (the switch, Tolerance, Remove, Show what was found, a step, Start over) is one step of the
+  // history the Tool pill's Undo and Redo walk: what stood before each one, and what was undone, the last undone first.
+  interface BackgroundDecision {
+    background: BackgroundStage
+    tolerance: number
+    marks: readonly PixelMark[]
+  }
+  const past = shallowRef<readonly BackgroundDecision[]>([])
+  const undone = shallowRef<readonly BackgroundDecision[]>([])
+  /** Whether the last step was a Tolerance change: the next one joins it, so a slider drag is one step. */
+  let lastWasTolerance = false
+  const decided = (): BackgroundDecision => ({ background: background.value, tolerance: tolerance.value, marks: marks.value })
+  /** Records what stands now as the step a decision is about to change; a new decision drops what was undone. */
+  function decide(isTolerance = false) {
+    if (!(isTolerance && lastWasTolerance)) past.value = [...past.value, decided()]
+    lastWasTolerance = isTolerance
+    undone.value = []
+  }
+  function restore(state: BackgroundDecision) {
+    background.value = state.background
+    tolerance.value = state.tolerance
+    marks.value = state.marks
+    stroke = undefined
+    lastWasTolerance = false
+    if (state.background === 'off' && tool.value === 'background') tool.value = undefined
+  }
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
   const part = computed<PixelCrop>(() => {
@@ -243,7 +268,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     weaveChoice.value = 'whole'
     kept.value = undefined
     marks.value = []
-    undoneMarks.value = []
+    past.value = []
+    undone.value = []
     settle()
   }
 
@@ -460,7 +486,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
    * on, so the tool has something to mark (ticket 0787). */
   function setTool(next: ConvertTool | undefined) {
     tool.value = next === tool.value || !image.value ? undefined : next
-    if (tool.value === 'background' && background.value === 'off') background.value = 'find'
+    if (tool.value === 'background' && background.value === 'off') {
+      decide()
+      background.value = 'find'
+    }
   }
 
   // --- The Background tool's marks (ticket 0787) ----------------------------------------------------------------------
@@ -484,10 +513,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     const index = at && frameIndexOf(at, latticeIndex)
     // A place with no color is nothing to keep or remove: no step.
     if (!at || index === undefined || at.sampled[latticeIndex] === NO_COLOR) return
+    decide()
     if (background.value === 'off') background.value = 'find'
     const kind = restBackground.value?.found[index] ? 'keep' : 'remove'
     marks.value = [...marks.value, { kind, points: [pixelAtFrameBead(at, index)] }]
-    undoneMarks.value = []
     stroke = { lastBead: index }
   }
 
@@ -505,22 +534,25 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     stroke = undefined
   }
 
-  /** Undo takes the last step back; Redo puts the last undone one back; Start over takes every step back, each one
-   * still there for Redo. */
-  function undoMark() {
-    const last = marks.value.at(-1)
+  /** Undo takes the last background decision back; Redo puts the last undone one back; Start over takes every Background
+   * tool step back as one decision, so Undo puts them all back. */
+  function undo() {
+    const last = past.value.at(-1)
     if (!last) return
-    marks.value = marks.value.slice(0, -1)
-    undoneMarks.value = [last, ...undoneMarks.value]
+    undone.value = [decided(), ...undone.value]
+    past.value = past.value.slice(0, -1)
+    restore(last)
   }
-  function redoMark() {
-    const [next, ...rest] = undoneMarks.value
+  function redo() {
+    const [next, ...rest] = undone.value
     if (!next) return
-    marks.value = [...marks.value, next]
-    undoneMarks.value = rest
+    past.value = [...past.value, decided()]
+    undone.value = rest
+    restore(next)
   }
   function resetMarks() {
-    undoneMarks.value = [...marks.value].reverse().concat(undoneMarks.value)
+    if (marks.value.length === 0) return
+    decide()
     marks.value = []
   }
   watch(image, (picture) => {
@@ -530,6 +562,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   /** Remove background's switch: on, the background is found (1 Find); off, everything is back and the Background tool
    * goes with it (its steps stay for the next time). */
   function setRemoveBackground(on: boolean) {
+    if (on !== (background.value !== 'off')) decide()
     background.value = on ? 'find' : 'off'
     if (!on && tool.value === 'background') tool.value = undefined
   }
@@ -630,22 +663,38 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     // Background
     background,
     setRemoveBackground,
-    removeFound: () => (background.value = 'removed'),
-    showFound: () => (background.value = 'find'),
+    removeFound: () => {
+      if (background.value === 'removed') return
+      decide()
+      background.value = 'removed'
+    },
+    showFound: () => {
+      if (background.value === 'find') return
+      decide()
+      background.value = 'find'
+    },
     tolerance,
-    setTolerance: (next: number) => (tolerance.value = clamp(Math.round(next), BACKGROUND_TOLERANCE.min, BACKGROUND_TOLERANCE.max)),
+    setTolerance: (next: number) => {
+      const value = clamp(Math.round(next), BACKGROUND_TOLERANCE.min, BACKGROUND_TOLERANCE.max)
+      if (value === tolerance.value) return
+      decide(true)
+      tolerance.value = value
+    },
     /** The background found in the Frame at rest, row by row (1 marks a bead), and how much of the picture it takes. */
     backgroundFound: restBackground,
     /** The Background tool's steps (ticket 0787): a press on a lattice bead begins one, the drag extends it, letting go
-     * ends it; Undo, Redo and Start over, with whether each has anything to do. */
+     * ends it; Start over takes them all back. */
     beginMark,
     extendMark,
     endMark,
-    undoMark,
-    redoMark,
     resetMarks,
-    canUndoMark: computed(() => marks.value.length > 0),
-    canRedoMark: computed(() => undoneMarks.value.length > 0),
+    hasMarks: computed(() => marks.value.length > 0),
+    /** Undo and Redo walk the background decisions (the switch, Tolerance, Remove, Show what was found, the tool's steps),
+     * with whether each has anything to do; the Tool pill under the picture holds them. */
+    undo,
+    redo,
+    canUndo: computed(() => past.value.length > 0),
+    canRedo: computed(() => undone.value.length > 0),
     // Size
     sizing,
     dimensions,

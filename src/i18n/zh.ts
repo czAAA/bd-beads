@@ -871,8 +871,6 @@ export const zh: Translations = {
       showFound: '显示找到的部分',
       backgroundTool: '背景',
       backgroundToolLine: '要修正找到的部分，请在预览下方选择{tool}：点按或划过有阴影线的珠子以保留它们，或划过已保留的珠子以去掉它们。',
-      undoMark: '撤销',
-      redoMark: '重做',
       startOver: '重新开始',
       bandEmpty: '还没有图片',
       keeping: '保留 {columns}×{rows}',
