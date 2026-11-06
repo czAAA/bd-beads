@@ -12,7 +12,7 @@ import { renderProject as renderInSpace, visibleBeads, type RenderInput } from '
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../domain/layerRecord'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withCanvas, withLayer } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
@@ -34,7 +34,8 @@ function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = f
 function projectOf(technique: Technique, columns: number, rows: number, extra: LayersChange & { grid?: Grid } = {}): Project {
   const { grid, ...rest } = extra
   // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
-  const made = withLayers(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), rest)
+  // Upright, whatever the Technique's own starting turn is (a new peyote Canvas starts turned).
+  const made = withLayers(withCanvas(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), { orientation: 0 }), rest)
   // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
   const project = frameOf(made) && !rest.frame ? withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project
