@@ -883,8 +883,6 @@ export const en: Translations = {
       showFound: 'Show what was found',
       backgroundTool: 'Background',
       backgroundToolLine: 'To fix what was found, pick {tool} under the preview: tap or drag over hatched beads to keep them, or over kept beads to take them away.',
-      undoMark: 'Undo',
-      redoMark: 'Redo',
       startOver: 'Start over',
       bandEmpty: 'no picture yet',
       keeping: 'keeping {columns}×{rows}',

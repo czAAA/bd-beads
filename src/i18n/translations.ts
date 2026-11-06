@@ -1050,8 +1050,6 @@ export interface Translations {
        * name), and the step's Undo, Redo and Start over for its steps. */
       backgroundTool: string
       backgroundToolLine: string
-      undoMark: string
-      redoMark: string
       startOver: string
       /** The band of facts above the preview (ticket 0780): no picture, the kept part and Keep all, the crop in pixels, and
        * the line on what the preview shows now. */

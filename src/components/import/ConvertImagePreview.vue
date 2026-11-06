@@ -44,6 +44,8 @@ const actions = {
   makeEmpty: controlAction('make-empty'),
   background: controlAction('convert-background'),
   compare: controlAction('convert-compare'),
+  undo: controlAction('convert-undo'),
+  redo: controlAction('convert-redo'),
 }
 const result = useConvertResult(wizard)
 const cropName = (handle: CropHandle) => controlAction(`crop-${handle}`).name(t.value)
@@ -640,6 +642,9 @@ onBeforeUnmount(() => {
       <div class="convert-preview__tools" data-testid="convert-preview-tools">
         <AppButton variant="text" :action="actions.turn" data-testid="convert-turn" @click="wizard.turn" />
         <AppButton variant="text" :action="actions.flip" data-testid="convert-flip" @click="wizard.flip" />
+        <span class="convert-preview__divider" aria-hidden="true" />
+        <IconButton variant="plain" :icon-size="16" :action="actions.undo" :disabled="!wizard.canUndo.value" :disabled-body="t.tooltips.nothingToUndo" data-testid="convert-undo" @click="wizard.undo" />
+        <IconButton variant="plain" :icon-size="16" :action="actions.redo" :disabled="!wizard.canRedo.value" :disabled-body="t.tooltips.nothingToRedo" data-testid="convert-redo" @click="wizard.redo" />
         <span class="convert-preview__divider" aria-hidden="true" />
         <AppButton variant="text" :action="selectAction" :selected="tool === 'select'" data-testid="convert-tool-select" @click="pickTool('select')" />
         <AppButton variant="text" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
