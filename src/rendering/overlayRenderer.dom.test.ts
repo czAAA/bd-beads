@@ -394,15 +394,16 @@ describe('renderOverlay', () => {
       expect(named('drawImage')).toHaveLength(0)
     })
 
-    it('spans the furthest left and right its rows reach on brick stitch, so it reads as one rectangle', () => {
+    it('runs round the whole beads on brick stitch, stepping with its rows, so the cut halves lie outside it', () => {
       const brick = projectOf('brick', 6, 5, noProgress)
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1, selection: { top: 1, left: 0, rows: 2, columns: 2 } })
 
-      // Row 1 is half a bead across, row 2 is back at the left: the box runs from 0 to 10 + 40.
-      const [top] = named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.marker)
-      expect(top!.args).toEqual([0, 20, 50, 2])
+      // Row 1 is half a bead across, row 2 is back at the left: the top edge starts at 10, the bottom edge at 0.
+      const edges = named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.marker).map((call) => call.args)
+      expect(edges).toContainEqual([10, 20, 40, 2])
+      expect(edges).toContainEqual([0, 58, 40, 2])
     })
 
     it('covers the half positions its edge cuts with `canvas` at 45%: brick\'s rows (ContextBar card, ticket 0807)', () => {
@@ -444,7 +445,7 @@ describe('renderOverlay', () => {
       expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas)).toHaveLength(0)
     })
 
-    it('is one border on peyote too, with no per-bead work however big the Selection is: its cut halves only in view', () => {
+    it('is a staircase on peyote too, with work only for the columns in view however big the Selection is', () => {
       const project = projectOf('peyote', 250, 250, noProgress)
       const { context, named } = recordingContext()
 
@@ -455,7 +456,7 @@ describe('renderOverlay', () => {
         selection: { top: 0, left: 0, rows: 250, columns: 250 },
       })
 
-      expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.marker)).toHaveLength(4)
+      expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.marker).length).toBeLessThan(60)
       // A column's cut half at the top or the bottom, for the few columns 100px shows.
       expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas).length).toBeLessThan(10)
     })

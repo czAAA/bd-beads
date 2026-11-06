@@ -354,3 +354,30 @@ describe('Fill reach on the open Canvas', () => {
     expect(beadCount(layerOf(filled, 'canvas').beads)).toBe(59)
   })
 })
+
+describe('Fill against a border (the Mirror\'s Canvas Area)', () => {
+  const sheet = (): LayerSheet => {
+    const weave: Weave = { technique: 'loom' }
+    return { beads: withColors({}, [{ row: 0, column: 0, color: '#111111' }]), weave, geometry: gridGeometry(weave) }
+  }
+  const border: Rect = { row: 5, column: 5, rows: 3, columns: 4 }
+
+  it('stays inside the border when it begins inside, and never refuses the space as open', () => {
+    const filled = fillArea(sheet(), 6, 6, '#333333', { onScreen: { row: 5, column: 5, rows: 1, columns: 1 }, border })
+
+    expect(filled).toEqual(withColors(sheet().beads, Array.from({ length: 12 }, (_c, index) => ({ row: 5 + Math.floor(index / 4), column: 5 + (index % 4), color: '#333333' }))))
+  })
+
+  it('stays outside the border when it begins outside', () => {
+    const wall: BeadChange[] = []
+    for (let at = 3; at <= 10; at += 1) wall.push({ row: 4, column: at, color: '#111111' }, { row: 9, column: at, color: '#111111' })
+    for (let at = 5; at <= 8; at += 1) wall.push({ row: at, column: 3, color: '#111111' }, { row: at, column: 10, color: '#111111' })
+    const walled: LayerSheet = { ...sheet(), beads: withColors({}, wall) }
+
+    const beads = fillArea(walled, 5, 4, '#333333', { onScreen: { row: 0, column: 0, rows: 12, columns: 12 }, border }) as BeadMap
+
+    expect(colorAt(beads, 5, 4)).toBe('#333333')
+    expect(colorAt(beads, 8, 9)).toBe('#333333')
+    expect(colorAt(beads, 6, 6)).toBeNull()
+  })
+})

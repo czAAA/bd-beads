@@ -1809,6 +1809,21 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(context.named('fillText').map((call) => call.args[0])).not.toContain('3 × 2')
   })
 
+  it('grabs the Mirror\'s Area by its handles under Paint too, and leaves a press inside it to the tool', async () => {
+    const place = { layer: 'canvas' as const, area: { row: 1, column: 1, rows: 2, columns: 3 } }
+    const mirror = { ...MIRROR_OFF, mode: 'mirror' as const, axes: { ...MIRROR_OFF.axes, leftRight: true }, place }
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), mirror })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+
+    await surface.trigger('pointerdown', { button: 0, clientX: 13, clientY: 67, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+    await surface.trigger('pointerdown', { button: 0, clientX: 50, clientY: 40, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+
+    expect(wrapper.emitted('selection-press')!.map(([target, , area]) => [target, area])).toEqual([[{ kind: 'handle', edges: ['bottom', 'left'] }, 'mirror']])
+    expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+  })
+
   it('takes a press on a docked bar\'s move grip as a drag of its area, whatever the tool, naming the area (ticket 0808)', async () => {
     const place = { layer: 'canvas' as const, area: { row: 5, column: 5, rows: 2, columns: 2 } }
     const mirror = { ...MIRROR_OFF, mode: 'mirror' as const, axes: { ...MIRROR_OFF.axes, leftRight: true }, place }
