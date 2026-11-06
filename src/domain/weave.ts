@@ -69,6 +69,9 @@ interface TechniqueRules<G extends GeometryRef = GeometryRef> {
   nameKey: string
   /** Which way its thread runs: left to right on loom and peyote, top to bottom on brick stitch. */
   threadDirection: ThreadDirection
+  /** The turn a new Canvas of it starts at, in degrees clockwise: peyote's columns are staggered, so it starts turned a
+   * quarter and shows its stagger along the rows, the way a weaver pictures it. */
+  startOrientation: number
   /** How its beads are laid out: a kind of geometry and the values that kind reads. */
   geometry: G
   /** Its settings (ticket 0624), in the order they are offered: the Weave holds their values in `techniqueSettings`, and
@@ -92,6 +95,7 @@ const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'loom',
     threadDirection: 'leftToRight',
+    startOrientation: 0,
     geometry: { kind: 'rows', shifted: false, shift: 0, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_LINE_BLOCK },
     settings: [],
     wordChart: { marked: false },
@@ -100,6 +104,7 @@ const TECHNIQUE_RULES = {
   peyote: {
     nameKey: 'peyote',
     threadDirection: 'leftToRight',
+    startOrientation: 90,
     geometry: { kind: 'columns', shift: 0.5, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst', block: ONE_LINE_BLOCK },
     settings: [PEYOTE_DROP_SETTING],
     wordChart: { marked: true },
@@ -108,6 +113,7 @@ const TECHNIQUE_RULES = {
   brick: {
     nameKey: 'brick',
     threadDirection: 'topToBottom',
+    startOrientation: 0,
     geometry: { kind: 'rows', shifted: true, shift: 0.5, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_LINE_BLOCK },
     settings: [BRICK_DROP_SETTING],
     wordChart: { marked: true },
@@ -277,6 +283,11 @@ export function touchKey(weave: Weave): number {
 /** A Technique's name key in the `techniques` translations. */
 export function techniqueNameKey(technique: Technique): string {
   return RULES[technique].nameKey
+}
+
+/** The turn a new Canvas of the Technique starts at, in degrees clockwise. */
+export function startOrientation(technique: Technique): number {
+  return RULES[technique].startOrientation
 }
 
 /** What one of the Technique's beads costs to draw on every move of a drag, in square beads. */
