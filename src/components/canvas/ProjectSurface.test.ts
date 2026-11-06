@@ -76,6 +76,11 @@ async function mountSurface(project: Project, zoom = 1, scroll = { x: 0, y: 0 },
 /** What the surface may do with no tool in hand, with the capabilities a test turns on. */
 const can = (on: Partial<ToolCapabilities> = {}): ToolCapabilities => ({ ...toolCapabilities(undefined), ...on })
 
+/** The pointers a press may come from: a finger and a Pencil, which cannot go past the glass (ticket 0805), and a mouse. */
+const TOUCH = { pointerType: 'touch', isPrimary: true }
+const PEN = { pointerType: 'pen', isPrimary: true }
+const MOUSE = { pointerType: 'mouse', isPrimary: true }
+
 /** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
 const draws = () => context.named('clearRect').length / 2
 
@@ -895,6 +900,20 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointerup')
       frames.splice(0).forEach((frame) => frame())
       expect(wrapper.emitted('pan')).toHaveLength(1)
+    })
+
+    it('scrolls at full speed for a finger held at the very edge of the glass, which it cannot go past (ticket 0805)', async () => {
+      const frames: Array<() => void> = []
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => {})
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }) })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { ...TOUCH, clientX: 50, clientY: 50, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { ...TOUCH, clientX: 996, clientY: 400, buttons: 1 })
+      frames.splice(0).forEach((frame) => frame())
+
+      expect((wrapper.emitted('pan')!.at(-1) as number[])[0]).toBe(-16)
     })
   })
 
@@ -2032,5 +2051,118 @@ describe('ProjectSurface with a Frame', () => {
       await at(ROW_MOTION.patternDoneDelay)
       expect(patternDone(wrapper).exists()).toBe(false)
     })
+  })
+})
+
+describe('ProjectSurface: a Select drag that slides off the glass and back (ticket 0805)', () => {
+  /** What the shell has drawn once the marquee below reached the right edge: rows 20..25, columns 25..49. */
+  const marked = { top: 20, left: 25, rows: 6, columns: 25 }
+  let now = 0
+
+  beforeEach(() => {
+    now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** Marks out a Selection from (500, 400) to (x, 500), by default the right edge of the glass, where iPadOS ends the
+   * touch. */
+  async function markTo(pointer: Record<string, unknown> = TOUCH, x = 998) {
+    const { wrapper } = await mountSurface(projectOf(60, 50), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }) })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    await surface.trigger('pointerdown', { ...pointer, pointerId: 1, button: 0, buttons: 1, clientX: 500, clientY: 400 })
+    await surface.trigger('pointermove', { ...pointer, pointerId: 1, buttons: 1, clientX: x, clientY: 500 })
+    // The shell draws the Selection as the drag goes.
+    await wrapper.setProps({ selection: marked })
+    await surface.trigger('pointerup', { ...pointer, pointerId: 1, clientX: x, clientY: 500 })
+    await surface.trigger('lostpointercapture', { ...pointer, pointerId: 1 })
+    return { wrapper, surface }
+  }
+
+  /** The finger slides back onto the glass at (x, 470) `later` ms on, and on inward. */
+  async function comeBack(surface: ReturnType<VueWrapper['find']>, { later = 300, x = 996, pointer = TOUCH }: { later?: number; x?: number; pointer?: Record<string, unknown> } = {}) {
+    now += later
+    await surface.trigger('pointerdown', { ...pointer, pointerId: 2, button: 0, buttons: 1, clientX: x, clientY: 470 })
+    await surface.trigger('pointermove', { ...pointer, pointerId: 2, buttons: 1, clientX: 800, clientY: 470 })
+  }
+
+  it.each([['a finger', TOUCH], ['a Pencil', PEN]])('keeps marking out the same Selection when %s comes back at the same edge a moment later', async (_, pointer) => {
+    const { wrapper, surface } = await markTo(pointer)
+    const moves = wrapper.emitted('cell-primary-move')!.length
+
+    await comeBack(surface, { pointer })
+
+    expect(wrapper.emitted('selection-resume')).toEqual([['mark']])
+    expect(wrapper.emitted('selection-press')).toBeUndefined()
+    expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+    expect(wrapper.emitted('cell-primary-move')!.slice(moves).at(-1)).toEqual([23, 40])
+  })
+
+  it('keeps resizing the Selection by the same handle', async () => {
+    const selection = { top: 10, left: 10, rows: 5, columns: 5 }
+    const { wrapper } = await mountSurface(projectOf(60, 50), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }), selection })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    // The box is (200, 200) to (300, 300): its bottom-right handle, dragged to the right edge.
+    await surface.trigger('pointerdown', { ...TOUCH, pointerId: 1, button: 0, buttons: 1, clientX: 300, clientY: 300 })
+    await surface.trigger('pointermove', { ...TOUCH, pointerId: 1, buttons: 1, clientX: 998, clientY: 500 })
+    await wrapper.setProps({ selection: { top: 10, left: 10, rows: 16, columns: 40 } })
+    await surface.trigger('pointerup', { ...TOUCH, pointerId: 1, clientX: 998, clientY: 500 })
+
+    await comeBack(surface)
+
+    expect(wrapper.emitted('selection-press')).toHaveLength(1)
+    expect(wrapper.emitted('selection-resume')).toEqual([['resize']])
+    expect(wrapper.emitted('selection-drag')!.at(-1)).toEqual([{ row: 23, column: 40 }])
+  })
+
+  /** The press inside the Selection moves it, as before ticket 0805. */
+  it.each<[string, () => Promise<{ wrapper: VueWrapper; surface: ReturnType<VueWrapper['find']> }>]>([
+    ['too late', async () => {
+      const made = await markTo()
+      await comeBack(made.surface, { later: 2000 })
+      return made
+    }],
+    ['away from the edge it left by', async () => {
+      const made = await markTo()
+      await comeBack(made.surface, { x: 900 })
+      return made
+    }],
+    ['after a drag that ended on the glass, away from its edges', async () => {
+      const made = await markTo(TOUCH, 900)
+      await comeBack(made.surface)
+      return made
+    }],
+    ['from a mouse', async () => {
+      const made = await markTo(MOUSE)
+      await comeBack(made.surface, { pointer: MOUSE })
+      return made
+    }],
+    ['from a Pencil after a finger', async () => {
+      const made = await markTo()
+      await comeBack(made.surface, { pointer: PEN })
+      return made
+    }],
+    ['after a drag that left the Selection as it was, as a stamp in paste mode does', async () => {
+      const { wrapper } = await mountSurface(projectOf(60, 50), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }), selection: marked })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      await surface.trigger('pointerdown', { ...TOUCH, pointerId: 1, button: 0, buttons: 1, clientX: 100, clientY: 100 })
+      await surface.trigger('pointermove', { ...TOUCH, pointerId: 1, buttons: 1, clientX: 998, clientY: 500 })
+      await surface.trigger('pointerup', { ...TOUCH, pointerId: 1, clientX: 998, clientY: 500 })
+      await comeBack(surface)
+      return { wrapper, surface }
+    }],
+    ['after the Selection changed', async () => {
+      const made = await markTo()
+      await made.wrapper.setProps({ selection: { ...marked } })
+      await comeBack(made.surface)
+      return made
+    }],
+  ])('takes a press %s as a new one', async (_, act) => {
+    const { wrapper } = await act()
+
+    expect(wrapper.emitted('selection-resume')).toBeUndefined()
+    expect(wrapper.emitted('selection-press')).toHaveLength(1)
   })
 })

@@ -20,6 +20,14 @@ import { toolPointer, toolPointerImage } from '../toolCursors'
 import { REFUSED_PRESS_MS } from './useSurfaceOverlay'
 import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
 import type { MirrorSetting } from '../../../domain/mirror'
+import type { FrameEdge } from '../../../domain/frame'
+import type { SelectionDragKind } from '../../../composables/tools/useSelectionGesture'
+
+/** How near the canvas box's edge a Select drag by a finger or a Pencil must end to have slid off the glass, and how
+ * near it, and how soon, the finger coming back must land to pick the drag back up (ticket 0805). */
+const OFF_THE_GLASS_PX = 24
+const BACK_ON_THE_GLASS_PX = 48
+const BACK_ON_THE_GLASS_MS = 1000
 
 /** What a press, a drag, the hover and the wheel on the Drawing surface tell the canvas panel. */
 export interface SurfacePointerEvents {
@@ -48,6 +56,9 @@ export interface SurfacePointerEvents {
   'selection-drag': [cell: GridPosition]
   /** That press ended. */
   'selection-release': []
+  /** A finger or a Pencil that comes back onto the glass picks up the drag that slid off it (ticket 0805): marking out the
+   * Selection, or resizing it. A release ends it again as usual. */
+  'selection-resume': [kind: SelectionDragKind]
   /** Edit Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
@@ -420,9 +431,75 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     }
   }
 
+  /** Whether a pointer is a finger or a Pencil: on a tablet it cannot go past the canvas box's edge, the glass's
+   * (ticket 0805). */
+  function onGlass(pointerType: string): boolean {
+    return pointerType === 'touch' || pointerType === 'pen'
+  }
+
+  /** A Select drag by a finger or a Pencil that ended at the edge of the glass (ticket 0805): iPadOS ends a touch that
+   * slides onto the bezel, and one sliding back on is a new press, which would land inside the Selection and move it.
+   * A press of the same pointer kind at the same edge soon after picks the drag back up instead. */
+  let offTheGlass: { kind: SelectionDragKind; pointerType: string; edges: FrameEdge[]; at: number; layer: ViewLayer; selection: Selection } | undefined
+  /** Whether the Selection press in progress grabbed a handle: a resize, which can be picked back up. */
+  let resizing = false
+  /** The Selection when the press in progress began: a drag that leaves it as it was made nothing (a stamp in paste
+   * mode, a refused one) and is not picked back up. */
+  let selectionAtPress: Selection | undefined
+
+  /** The edges of the canvas box a point is within `px` of. */
+  function edgesNear(event: Pick<PointerEvent, 'clientX' | 'clientY'>, px: number): FrameEdge[] {
+    const { x, y } = pointOnScreen(event)
+    const { width, height } = size.value
+    const distances: Record<FrameEdge, number> = { left: x, top: y, right: width - x, bottom: height - y }
+    return (Object.keys(distances) as FrameEdge[]).filter((edge) => distances[edge] <= px)
+  }
+
+  /** Notes a Select drag ending where the finger left the glass; anything else forgets one. */
+  function noteOffTheGlass(): void {
+    const kind: SelectionDragKind | undefined = selectDrag ? 'mark' : adjusting.value && resizing ? 'resize' : undefined
+    const edges = heldPointer && onGlass(heldPointer.pointerType) ? edgesNear(heldPointer, OFF_THE_GLASS_PX) : []
+    offTheGlass =
+      kind && heldPointer && edges.length > 0 && props.selection && props.selection !== selectionAtPress
+        ? { kind, pointerType: heldPointer.pointerType, edges, at: performance.now(), layer: kind === 'mark' ? selectLayer : gestureLayer, selection: props.selection }
+        : undefined
+  }
+
+  /** Picks the drag that slid off the glass back up, if this press is its finger coming back; returns whether it did. */
+  function resumeOffTheGlass(event: PointerEvent): boolean {
+    const left = offTheGlass
+    offTheGlass = undefined
+    const back =
+      left !== undefined &&
+      event.button === 0 &&
+      event.isPrimary &&
+      event.pointerType === left.pointerType &&
+      performance.now() - left.at <= BACK_ON_THE_GLASS_MS &&
+      props.selection === left.selection &&
+      props.tools.selects &&
+      (left.kind === 'resize' || props.tools.selectsAnywhere) &&
+      !startsDrag(event) &&
+      edgesNear(event, BACK_ON_THE_GLASS_PX).some((edge) => left.edges.includes(edge))
+    if (!back) return false
+    if (left.kind === 'mark') {
+      selectDrag = true
+      selectLayer = left.layer
+    } else {
+      adjusting.value = true
+      resizing = true
+      gestureLayer = left.layer
+    }
+    hideMarker()
+    rootEl.value?.setPointerCapture?.(event.pointerId)
+    emit('selection-resume', left.kind)
+    dragTo(event)
+    event.preventDefault()
+    return true
+  }
+
   /** While a Frame or a Selection is dragged with the pointer at the edge (ticket 0660), the view scrolls toward it
    * each frame and the drag follows (the pointer is still, so no move event would say so). */
-  let heldPointer: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
+  let heldPointer: Pick<PointerEvent, 'clientX' | 'clientY' | 'pointerType'> | undefined
   let edgeScrollFrame = 0
   function edgeScrollTick(): void {
     edgeScrollFrame = 0
@@ -432,7 +509,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     }
     if (!heldPointer) return
     const point = pointInDrawing(heldPointer)
-    const { dx, dy } = edgeScrollStep(pointOnScreen(heldPointer), size.value)
+    const { dx, dy } = edgeScrollStep(pointOnScreen(heldPointer), size.value, onGlass(heldPointer.pointerType))
     if (dx !== 0 || dy !== 0) {
       emit('pan', -dx, -dy)
       // After the parent has applied the pan, so the cell under the still pointer is the new one.
@@ -443,8 +520,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
 
   /** Moves a held drag to the pointer and keeps the edge scroll following it, starting the frame loop if it isn't
    * running. */
-  function dragTo(event: Pick<PointerEvent, 'clientX' | 'clientY'>): void {
-    heldPointer = { clientX: event.clientX, clientY: event.clientY }
+  function dragTo(event: Pick<PointerEvent, 'clientX' | 'clientY' | 'pointerType'>): void {
+    heldPointer = { clientX: event.clientX, clientY: event.clientY, pointerType: event.pointerType }
     if (!edgeScrollFrame && typeof requestAnimationFrame === 'function') edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
     followHeldDrag(pointInDrawing(event))
   }
@@ -478,6 +555,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       }
       return
     }
+    if (resumeOffTheGlass(event)) return
+    selectionAtPress = props.selection
     if (frameOf(props.project) && !startsDrag(event) && event.button === 0) {
       const target = framePress(event)
       if (target) {
@@ -504,6 +583,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
       if (target.kind !== 'outside') {
         adjusting.value = true
+        resizing = target.kind === 'handle'
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
@@ -676,6 +756,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   }
 
   function onPointerEnd(event?: PointerEvent): void {
+    if (selectDrag || adjusting.value) noteOffTheGlass()
+    heldPointer = undefined
+    resizing = false
     stroke = undefined
     selectDrag = false
     releasePointer(event)

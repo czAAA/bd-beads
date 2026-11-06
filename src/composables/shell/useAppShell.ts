@@ -245,6 +245,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     beginAdjust,
     dragAdjust,
     endAdjust,
+    resume: resumeSelectionDrag,
     pastePreviewCells,
     pastePreviewStamp,
     clearSelection: resetSelection,
@@ -965,6 +966,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSelectionPress,
       onSelectionDrag,
       onSelectionRelease,
+      /** A finger that comes back onto the glass picks up the Select drag that slid off it (ticket 0805). */
+      onSelectionResume: resumeSelectionDrag,
       pasteProjectionActive,
       hasClipboard,
       onCopy,
