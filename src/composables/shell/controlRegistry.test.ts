@@ -82,6 +82,8 @@ describe('the control registry', () => {
       'convert-select-beads',
       'convert-select-crop',
       'make-empty',
+      'convert-undo',
+      'convert-redo',
       'convert-compare',
       'remap-color',
       'empty-color',

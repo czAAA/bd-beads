@@ -899,8 +899,6 @@ export const uk: Translations = {
       showFound: 'Показати знайдене',
       backgroundTool: 'Тло',
       backgroundToolLine: 'Щоб виправити знайдене, виберіть {tool} під попереднім переглядом: торкніться або проведіть по заштрихованому бісеру, щоб залишити його, або по залишеному, щоб прибрати.',
-      undoMark: 'Скасувати',
-      redoMark: 'Повторити',
       startOver: 'Почати спочатку',
       bandEmpty: 'зображення ще немає',
       keeping: 'лишаємо {columns}×{rows}',

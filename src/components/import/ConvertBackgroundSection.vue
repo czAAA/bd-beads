@@ -11,7 +11,7 @@ import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
 // Convert image's Background step (ConvertImage card, 2 Background; tickets 0780, 0787): the Remove background switch, then
 // 1 Find (the preview hatches what the edges inward take, Tolerance, the line pointing at the Background tool, whose steps
-// Undo, Redo and Start over take back, and Remove what was found) and 2 Remove (empty places; Show what was found goes back).
+// Start over takes back, and Remove what was found; Undo and Redo are on the Tool pill under the picture) and 2 Remove (empty places; Show what was found goes back).
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
@@ -29,8 +29,6 @@ const toolLine = computed(() => {
   const [before = '', after = ''] = words.value.backgroundToolLine.split('{tool}')
   return { before, after }
 })
-/** Undo, Redo and Start over show once the tool has made a step, and stay while one is there to put back. */
-const hasSteps = computed(() => wizard.canUndoMark.value || wizard.canRedoMark.value)
 </script>
 
 <template>
@@ -85,10 +83,8 @@ const hasSteps = computed(() => wizard.canUndoMark.value || wizard.canRedoMark.v
         </div>
       </template>
 
-      <div v-if="hasSteps" class="convert-background__steps" data-testid="convert-background-steps">
-        <AppButton size="sm" :disabled="!wizard.canUndoMark.value" data-testid="convert-undo-mark" @click="wizard.undoMark">{{ words.undoMark }}</AppButton>
-        <AppButton size="sm" :disabled="!wizard.canRedoMark.value" data-testid="convert-redo-mark" @click="wizard.redoMark">{{ words.redoMark }}</AppButton>
-        <AppButton size="sm" :disabled="!wizard.canUndoMark.value" data-testid="convert-reset-marks" @click="wizard.resetMarks">{{ words.startOver }}</AppButton>
+      <div v-if="wizard.hasMarks.value" class="convert-background__steps" data-testid="convert-background-steps">
+        <AppButton size="sm" data-testid="convert-reset-marks" @click="wizard.resetMarks">{{ words.startOver }}</AppButton>
       </div>
 
       <div v-if="stage === 'find'">

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick } from 'vue'
+import { BACKGROUND_TOLERANCE } from '../../domain/convertBackground'
 import type { PixelData } from '../../domain/imageConversion'
 import { useConvertImageWizard } from './useConvertImageWizard'
 
@@ -198,23 +199,63 @@ describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', ()
     const wizard = await wall()
     wizard.setRemoveBackground(true)
     expect(percent(wizard)).toBe(89)
-    expect(wizard.canUndoMark.value).toBe(false)
-
     wizard.beginMark(latticeIndex(wizard, 0, 0))
     wizard.endMark()
     expect(percent(wizard)).toBe(0)
-    expect(wizard.canUndoMark.value).toBe(true)
-    expect(wizard.canRedoMark.value).toBe(false)
+    expect(wizard.hasMarks.value).toBe(true)
+    expect(wizard.canRedo.value).toBe(false)
 
-    wizard.undoMark()
+    wizard.undo()
     expect(percent(wizard)).toBe(89)
-    expect(wizard.canRedoMark.value).toBe(true)
-    wizard.redoMark()
+    expect(wizard.canRedo.value).toBe(true)
+    wizard.redo()
     expect(percent(wizard)).toBe(0)
     wizard.resetMarks()
     expect(percent(wizard)).toBe(89)
-    expect(wizard.canUndoMark.value).toBe(false)
-    expect(wizard.canRedoMark.value).toBe(true)
+    expect(wizard.hasMarks.value).toBe(false)
+    wizard.undo()
+    expect(percent(wizard)).toBe(0)
+  })
+
+  it('rolls back every background decision: the switch, Tolerance as one step, Remove and Show what was found', async () => {
+    const wizard = await wall()
+    expect(wizard.canUndo.value).toBe(false)
+    wizard.setRemoveBackground(true)
+    wizard.setTolerance(10)
+    wizard.setTolerance(11)
+    wizard.setTolerance(12)
+    wizard.removeFound()
+    expect(wizard.background.value).toBe('removed')
+
+    wizard.undo()
+    expect(wizard.background.value).toBe('find')
+    expect(wizard.tolerance.value).toBe(12)
+    wizard.undo()
+    expect(wizard.tolerance.value).toBe(BACKGROUND_TOLERANCE.start)
+    wizard.undo()
+    expect(wizard.background.value).toBe('off')
+    expect(wizard.canUndo.value).toBe(false)
+
+    wizard.redo()
+    wizard.redo()
+    wizard.redo()
+    expect(wizard.background.value).toBe('removed')
+    expect(wizard.tolerance.value).toBe(12)
+    expect(wizard.canRedo.value).toBe(false)
+
+    // A new decision drops what was undone.
+    wizard.undo()
+    wizard.setTolerance(20)
+    expect(wizard.canRedo.value).toBe(false)
+  })
+
+  it('turns the Background tool off with the switch when Undo takes the switch back', async () => {
+    const wizard = await wall()
+    wizard.setTool('background')
+    expect(wizard.background.value).toBe('find')
+    wizard.undo()
+    expect(wizard.background.value).toBe('off')
+    expect(wizard.tool.value).toBeUndefined()
   })
 
   it('makes the patch under a step on a kept bead background, a drag one step, and replays it on a new Width', async () => {
@@ -224,13 +265,13 @@ describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', ()
     wizard.extendMark(latticeIndex(wizard, 6, 6))
     wizard.endMark()
     expect(percent(wizard)).toBe(100)
-    expect(wizard.canUndoMark.value).toBe(true)
+    expect(wizard.hasMarks.value).toBe(true)
 
     // A smaller Width: the step's pixels now fall on the red square's beads of the 8 × 8 grid, so it is still removed.
     wizard.setWidth(8)
     expect(wizard.dimensions.value).toEqual({ columns: 8, rows: 8 })
     expect(percent(wizard)).toBe(100)
-    wizard.undoMark()
+    wizard.undo()
     expect(percent(wizard)).toBe(94)
   })
 
@@ -247,7 +288,7 @@ describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', ()
     expect(percent(wizard)).toBe(100)
 
     wizard.turn()
-    expect(wizard.canUndoMark.value).toBe(false)
+    expect(wizard.canUndo.value).toBe(false)
     expect(percent(wizard)).toBe(89)
   })
 

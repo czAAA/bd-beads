@@ -493,7 +493,7 @@ describe('ConvertImageWizard the floating bar (ticket 0780)', () => {
     expect(tool(wrapper, 'make-empty').attributes('aria-pressed')).toBe('false')
   })
 
-  it('turns Remove background on with the Background tool, says what a tap does, and shows Undo, Redo and Start over for its steps (ticket 0787)', async () => {
+  it('turns Remove background on with the Background tool, says what a tap does, and takes its steps back with the Tool pill Undo and Redo and Start over (ticket 0787)', async () => {
     const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
     const summary = () => wrapper.get('[data-testid="convert-section-background-summary"]').text()
@@ -515,14 +515,16 @@ describe('ConvertImageWizard the floating bar (ticket 0780)', () => {
     wizard.endMark()
     await flushPromises()
     expect(summary()).toBe('found · 50%')
-    const steps = wrapper.get('[data-testid="convert-background-steps"]')
-    expect(steps.get('[data-testid="convert-redo-mark"]').attributes('aria-disabled')).toBe('true')
-    await steps.get('[data-testid="convert-undo-mark"]').trigger('click')
+    const pill = wrapper.get('[data-testid="convert-preview-tools"]')
+    expect(pill.get('[data-testid="convert-redo"]').attributes('aria-disabled')).toBe('true')
+    await pill.get('[data-testid="convert-undo"]').trigger('click')
     expect(summary()).toBe('found · 100%')
-    await steps.get('[data-testid="convert-redo-mark"]').trigger('click')
+    await pill.get('[data-testid="convert-redo"]').trigger('click')
     expect(summary()).toBe('found · 50%')
-    await steps.get('[data-testid="convert-reset-marks"]').trigger('click')
+    await wrapper.get('[data-testid="convert-reset-marks"]').trigger('click')
     expect(summary()).toBe('found · 100%')
+    await pill.get('[data-testid="convert-undo"]').trigger('click')
+    expect(summary()).toBe('found · 50%')
 
     // Turning Remove background off turns the tool off with it.
     await wrapper.get('[data-testid="convert-remove-background"]').trigger('click')
