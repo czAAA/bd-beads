@@ -16,6 +16,7 @@ import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
+import { SOURCE_URL } from '../../data/sourceLink'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): the app and the device in four folding sections, only
 // asking. The Homepage (540) leaves out the editor's parts but Saved Projects (0716), its demo all but the Projects and the
@@ -58,7 +59,6 @@ const { pick, setPick } = useThemePick()
 const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
-const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 const homepageHref = homepageUrl(import.meta.env.BASE_URL)
 
 const actions = {

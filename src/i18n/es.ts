@@ -356,7 +356,7 @@ export const es: Translations = {
       demo: { kaleidoscope: 'Caleidoscopio', heart: 'Corazón', bracelet: 'Pulsera' },
     },
     sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}' },
-    coffee: { title: 'Hecho por una familia', text: 'openbeads lo hace una sola familia, cuenta a cuenta, y es gratis. Si te ahorró tiempo, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
+    coffee: { title: 'Hecho por una familia', text: 'openbeads sigue siendo gratis y totalmente local, sin anuncios ni seguimiento. Si te ayuda en tu trabajo, puedes apoyar su desarrollo a través de Buy Me a Coffee.', button: 'Invítame a un café', star: 'Una estrella en GitHub también ayuda.', source: 'Ver el código fuente' },
     plans: {
       heading: 'Tres formas de usarlo',
       why: 'Las cuentas de usuario y Pro aún no están abiertas. Todo funciona sin ellas.',
