@@ -34,9 +34,9 @@ const { t, locale } = useI18n()
 const frame = computed(() => frameOf(props.project))
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
-/** What an export is made of, for its File size estimate (ticket 0588): read once for the buttons and every stop. */
+/** What an export is made of, for its File size estimate (ticket 0588): read once for the buttons. */
 const exportFactsNow = computed(() => exportFacts(props.project, printText(props.project, t.value, locale.value, new Date())))
-/** A size as the buttons and stops show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
+/** A size as the buttons show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
 function sizeText(bytes: number): string {
   const megabytes = shownMegabytes(bytes)
   if (megabytes === undefined) return t.value.frame.qualitySizeUnder
@@ -51,16 +51,15 @@ function exportValue(format: 'PNG' | 'PDF', estimate: SizeEstimate | undefined):
 }
 const pngValue = computed(() => exportValue('PNG', exportFactsNow.value && estimatePng(exportFactsNow.value, pngDpiFor(quality.value))))
 const pdfValue = computed(() => exportValue('PDF', exportFactsNow.value && estimatePdf(exportFactsNow.value, pdfPageDpi())))
-/** Each stop's words, its dpi and the PNG size it would make for the open Frame (tickets 571, 572, 0583, 0588). */
+/** Each stop's words and its dpi (tickets 571, 572, 0583). */
 const qualityStops = computed(() => {
   const facts = exportFactsNow.value
   return EXPORT_QUALITIES.map((id) => {
     const word = t.value.frame[QUALITY_WORDS[id]]
     if (!facts) return { id, word }
     const dpi = pngDpiFor(id)
-    const size = sizeText(estimatePng(facts, dpi).bytes)
     const detail = fillBlanks(t.value.frame.qualityDpi, { n: dpi })
-    return { id, word, detail, lines: [size], spoken: `${word}, ${detail}, ${size}` }
+    return { id, word, detail, spoken: `${word}, ${detail}` }
   })
 })
 /** The dpi High draws the PNG at when the device cannot allocate a page that large, else nothing. */
