@@ -899,8 +899,6 @@ export const pl: Translations = {
       showFound: 'Pokaż znalezione',
       backgroundTool: 'Tło',
       backgroundToolLine: 'Aby poprawić to, co znaleziono, wybierz {tool} pod podglądem: dotknij lub przeciągnij po zakreskowanych koralikach, by je zachować, albo po zachowanych, by je usunąć.',
-      undoMark: 'Cofnij',
-      redoMark: 'Ponów',
       startOver: 'Zacznij od nowa',
       bandEmpty: 'jeszcze bez obrazu',
       keeping: 'zostaje {columns}×{rows}',

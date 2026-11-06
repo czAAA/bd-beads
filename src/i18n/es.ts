@@ -892,8 +892,6 @@ export const es: Translations = {
       showFound: 'Mostrar lo encontrado',
       backgroundTool: 'Fondo',
       backgroundToolLine: 'Para corregir lo encontrado, elige {tool} bajo la vista previa: toca o arrastra sobre las cuentas rayadas para conservarlas, o sobre las conservadas para quitarlas.',
-      undoMark: 'Deshacer',
-      redoMark: 'Rehacer',
       startOver: 'Empezar de nuevo',
       bandEmpty: 'aún no hay imagen',
       keeping: 'te quedas con {columns}×{rows}',

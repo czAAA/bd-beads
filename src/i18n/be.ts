@@ -900,8 +900,6 @@ export const be: Translations = {
       showFound: 'Паказаць знойдзенае',
       backgroundTool: 'Фон',
       backgroundToolLine: 'Каб паправіць знойдзенае, абярыце {tool} пад папярэднім праглядам: націсніце або правядзіце па заштрыхаваным бісеры, каб пакінуць яго, або па пакінутым, каб прыбраць.',
-      undoMark: 'Адмяніць',
-      redoMark: 'Паўтарыць',
       startOver: 'Пачаць нанава',
       bandEmpty: 'выявы пакуль няма',
       keeping: 'пакідаем {columns}×{rows}',

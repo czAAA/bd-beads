@@ -646,6 +646,9 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
   // The Background tool (ticket 0787): a tap or a drag keeps or removes the patch of background under it.
   unkeyed('convert-background', (t) => t.convertImage.wizard.backgroundTool, 'edit', { icon: 'erase', body: (t) => t.tooltips.backgroundTool }),
+  // Undo and Redo on the wizard's Tool pill (background decisions); the editor's own keys are ignored in a modal.
+  unkeyed('convert-undo', (t) => t.palette.undoButton, 'edit', { icon: 'undo', disabledBody: (t) => t.tooltips.nothingToUndo }),
+  unkeyed('convert-redo', (t) => t.palette.redoButton, 'edit', { icon: 'redo', disabledBody: (t) => t.tooltips.nothingToRedo }),
   unkeyed('convert-compare', (t) => t.convertImage.wizard.compare, 'edit', { icon: 'contrast', body: (t) => t.tooltips.compare }),
   unkeyed('remap-color', (t) => t.convertImage.wizard.change, 'colors', { icon: 'palette', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
