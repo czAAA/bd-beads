@@ -180,6 +180,17 @@ describe('usePaintStroke', () => {
       fill.beginOrCommitPress('paint', '#00ff00', 20, 2)
       expect(beadsOfLayer(filled.project, 'canvas')[20]).toEqual({ 2: '#00ff00', 3: '#00ff00', 9: '#00ff00', 10: '#00ff00' })
     })
+
+    it('stops a Fill at the edge of the Mirror\'s Canvas Area, as a border', () => {
+      const framed = withLayers(fourWide(), { frame: { ...frameOf(fourWide())!, row: 10, column: 10 } })
+      const area: MirrorSetting = { ...MIRROR_OFF, place: { layer: 'canvas', area: { row: 0, column: 0, rows: 25, columns: 13 } } }
+      const { stroke, harness } = setup('fill', framed, area)
+      harness.edit('drawing', (project) => paintAt(project, [{ row: 20, column: 12 }, { row: 20, column: 13 }], '#0000ff'))
+
+      stroke.beginOrCommitPress('paint', '#00ff00', 20, 12)
+
+      expect(beadsOfLayer(harness.project, 'canvas')[20]).toEqual({ 12: '#00ff00', 13: '#0000ff' })
+    })
   })
 
   it('ends a Select press and flushes even when no stroke was running', () => {
@@ -335,7 +346,7 @@ describe('usePaintStroke', () => {
     })
 
     it('lands a refused Fill nowhere under Mirror, no counterparts either (ADR 0082)', () => {
-      const mirrored: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'canvas', area: { row: -10, column: -10, rows: 30, columns: 30 } } }
+      const mirrored: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true, topBottom: true }, place: { layer: 'canvas', area: { row: -30, column: -30, rows: 30, columns: 30 } } }
       const { stroke, harness } = setup('fill', open(ring(5)), mirrored, { row: -10, column: -10, rows: 30, columns: 30 })
       const before = harness.project
 
