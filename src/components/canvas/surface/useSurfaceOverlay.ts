@@ -161,6 +161,8 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
         preview: !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,
         selection: props.selection,
+        // In Mirror mode the Selection is the rubber band marking out the Area (ticket 0806).
+        marksArea: tools.marksArea,
         marginOutline: marginOpacity.value,
         frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '', hot: hotHandle.value } : undefined,
         selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value } : undefined,
@@ -190,6 +192,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.tools.moves,
       () => props.tools.markerHidden,
       () => props.tools.selects,
+      () => props.tools.marksArea,
       () => props.tools.picking,
       () => props.frameTooltip,
       () => props.mirror,
