@@ -20,6 +20,7 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finishe
   rulerStrong: 'body',
   emptyBead: 'bead-empty',
   marker: 'marker',
+  mirror: 'mirror',
   accent: 'accent',
   outline: 'bead-outline',
 }
@@ -32,6 +33,10 @@ describe('ProjectTheme', () => {
     }
     expect(values.rim).toBe(token('bead-rim', theme))
     expect(values.margin.line, 'margin line').toBe(token('margin-line', theme))
+  })
+
+  it.each(['light', 'dark', 'contrast'] as const)('draws the Mirror\'s Area in a colour of its own in %s, never the Selection\'s (ticket 0806)', (theme) => {
+    expect(PROJECT_THEMES[theme].mirror).not.toBe(PROJECT_THEMES[theme].marker)
   })
 
   it('rims a near-black bead in the dark rim token (white) in light and dark, in its own rim in high contrast', () => {

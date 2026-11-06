@@ -82,6 +82,9 @@ export interface ProjectTheme {
   emptyBead: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
   marker: string
+  /** The Mirror's Area (`mirror`, ContextBar card, ticket 0806): Mirror mode's rubber band, a Canvas Area's line, the
+   * Axis lines, Radial's ring and the hover preview's outline inside the Area, so it is never taken for a Selection. */
+  mirror: string
   /** Edit Frame's hot corners and edge bars on the Frame's line (`accent`, MarginSheet card, ticket 0657). */
   accent: string
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
@@ -114,6 +117,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
+  mirror: '#c026d3',
   accent: '#fa520f',
   outline: '#1f1f1f',
   finished: { grey: false, opacity: FINISHED_OPACITY },
@@ -133,6 +137,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
+  mirror: '#b79cff',
   accent: '#faff69',
   outline: '#ffffff',
   finished: { grey: false, opacity: FINISHED_OPACITY },
@@ -151,6 +156,7 @@ const CONTRAST_THEME: ProjectTheme = {
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
+  mirror: '#6d28d9',
   accent: '#a82c00',
   outline: '#000000',
   finished: { grey: false, opacity: FINISHED_OPACITY },

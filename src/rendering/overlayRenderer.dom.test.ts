@@ -487,7 +487,7 @@ describe('renderOverlay', () => {
   describe('the whole-Frame Mirror\'s Axis lines (tickets 0703, 0750)', () => {
     const on = (axes: Partial<MirrorSetting['axes']>, counts: Partial<MirrorSetting['counts']> = {}): MirrorSetting => ({ ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, ...axes }, counts: { ...MIRROR_OFF.counts, ...counts }, place: WHOLE_FRAME })
 
-    it('draws N dashed marker lines cutting the Frame into N + 1 equal strips, in screen px at any zoom, with the Frame alone', () => {
+    it('draws N dashed mirror lines cutting the Frame into N + 1 equal strips, in screen px at any zoom, with the Frame alone', () => {
       const project = projectOf('loom', 6, 4, { marks: false })
       const { context, calls, named } = recordingContext()
 
@@ -500,7 +500,7 @@ describe('renderOverlay', () => {
       ])
       expect(named('setLineDash')[0]!.args[0]).toEqual([2.5, 2])
       const stroke = calls.find((call) => call.name === 'stroke')!
-      expect(stroke.strokeStyle).toBe(DEFAULT_THEME.marker)
+      expect(stroke.strokeStyle).toBe(DEFAULT_THEME.mirror)
     })
 
     it('moves with the Frame on the open Canvas, across the box round a peyote Frame\'s beads, each Axis where it maps from the unshifted columns\' corner', () => {
@@ -551,8 +551,52 @@ describe('renderOverlay', () => {
 
       expect(lines(calls)).toEqual([[[80, 40], [80, 80]]])
       expect(fills(calls)).toEqual([[60, 40, 40, 2], [60, 78, 40, 2], [60, 40, 2, 40], [98, 40, 2, 40]])
-      expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.marker)
+      expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.mirror)
+      expect(calls.find((call) => call.name === 'stroke')!.strokeStyle).toBe(DEFAULT_THEME.mirror)
       expect(named('roundRect')).toHaveLength(8)
+    })
+
+    it('reads apart from a Selection on screen with it: the Selection\'s line `marker`, the Area\'s `mirror` (ticket 0806)', () => {
+      const project = open()
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: { top: 0, left: 0, rows: 1, columns: 2 }, mirror: on({ leftRight: true }) })
+
+      const strips = calls.filter((call) => call.name === 'fillRect')
+      expect(strips.slice(0, 4).every((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
+      expect(strips.slice(4).every((call) => call.fillStyle === DEFAULT_THEME.mirror)).toBe(true)
+      expect(strips).toHaveLength(8)
+    })
+
+    it('draws Mirror mode\'s rubber band in `mirror`, the Area it makes, and a Selection otherwise in `marker` (ticket 0806)', () => {
+      const project = open()
+      const band = { top: 1, left: 1, rows: 2, columns: 3 }
+      const marking = recordingContext()
+      renderOverlay(marking.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: band, marksArea: true })
+      expect(marking.named('fillRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.mirror))
+
+      const selecting = recordingContext()
+      renderOverlay(selecting.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, selection: band })
+      expect(selecting.named('fillRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.marker))
+    })
+
+    it('outlines the hover preview\'s beads inside the Area in `mirror`, 1.5px, over their color, and leaves one outside it as it was (ticket 0806)', () => {
+      const project = open()
+      const inside = { row: 2, column: 3 }
+      const outside = { row: 0, column: 0 }
+      const painting = recordingContext()
+      renderOverlay(painting.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: '#e63746' } })
+
+      // The fill of each bead, then the one ring, round the bead inside the Area, its inner edge 1.5px in.
+      const rings = painting.named('fill').filter((call) => call.args[0] === 'evenodd')
+      expect(rings).toHaveLength(1)
+      expect(rings[0]!.fillStyle).toBe(DEFAULT_THEME.mirror)
+      expect(painting.named('fillRect').filter((call) => call.fillStyle === '#e63746')).toHaveLength(2)
+      const [outer, inner] = painting.named('roundRect').map((call) => call.args as number[])
+      expect(inner![0]! - outer![0]!).toBe(1.5)
+
+      const erasing = recordingContext()
+      renderOverlay(erasing.context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), preview: { cells: [inside, outside], color: null } })
+      expect(erasing.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror, DEFAULT_THEME.outline])
     })
 
     it('draws no line in a direction one bead across, its chip being off', () => {
@@ -592,7 +636,7 @@ describe('renderOverlay', () => {
 
       const ring = named('arc')[0]!
       expect(ring.args.slice(0, 3)).toEqual([60, 60, 3.5])
-      expect(ring.strokeStyle).toBe(DEFAULT_THEME.marker)
+      expect(ring.strokeStyle).toBe(DEFAULT_THEME.mirror)
       expect(named('rect').map((call) => call.args)).toContainEqual([0, 0, 120, 120])
       expect(named('clip')).toHaveLength(1)
       const drawn = lines(calls)
@@ -636,6 +680,8 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror') })
 
       const ring = named('arc')[0]!
+      expect(ring.strokeStyle).toBe(DEFAULT_THEME.mirror)
+      expect(strokes(calls).every((call) => call.strokeStyle === DEFAULT_THEME.mirror)).toBe(true)
       expect(ring.args[0]).toBeCloseTo(centre.x, 6)
       expect(ring.args[1]).toBeCloseTo(centre.y, 6)
       const drawn = lines(calls) as [number[], number[]][]
@@ -663,6 +709,19 @@ describe('renderOverlay', () => {
       renderOverlay(straight.context, { project, region: whole(project), zoom: 1, mirror: { ...MIRROR_OFF, mode: 'mirror', axes: { leftRight: true, topBottom: true, radial: false }, place: WHOLE_FRAME } })
       expect(lines(straight.calls)).toHaveLength(5)
       expect(straight.named('arc')).toHaveLength(1)
+    })
+
+    it('outlines the hover preview on the whole-Frame Area in `mirror`, a Custom frame\'s turned beads too (ticket 0806)', () => {
+      const square = projectOf('loom', 6, 6, { marks: false })
+      const grid = recordingContext()
+      renderOverlay(grid.context, { project: square, region: whole(square), zoom: 1, mirror: radial(4, 'mirror'), preview: { cells: [{ row: 0, column: 0 }], color: null } })
+      expect(grid.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror])
+
+      const { project } = star()
+      const { row, column } = frameLayoutOf(frameOf(project)!)!.positions[0]!
+      const turned = recordingContext()
+      renderOverlay(turned.context, { project, region: whole(project), zoom: 1, mirror: radial(2, 'mirror'), preview: { cells: [{ row, column, layer: 'frame' }], color: null } })
+      expect(turned.named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.mirror])
     })
   })
 
