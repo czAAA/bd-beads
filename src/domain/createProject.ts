@@ -8,9 +8,10 @@ import { lettersOfPalette } from './paletteEdits'
 import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
-import type { Technique, TechniqueSettings } from './weave'
+import { startOrientation, type Technique, type TechniqueSettings } from './weave'
 
-// Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture.
+// Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture. A peyote Canvas
+// starts turned a quarter, so its staggered columns lie as staggered rows, the way a weaver pictures it.
 
 export interface CreateProjectInput {
   /** User-chosen name; blank or omitted defaults to the bead's label. */
@@ -53,7 +54,7 @@ export function createProject(input: CreateProjectInput): Project {
     id: crypto.randomUUID(),
     // Both layers take the form's settings (ADR 0079).
     layers: [
-      { id: newLayerId(), name, ...layer, orientation: 0 },
+      { id: newLayerId(), name, ...layer, orientation: startOrientation(created.technique) },
       ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, rowProgress: { ...INITIAL_ROW_PROGRESS } }] : []),
     ],
     palette,

@@ -201,7 +201,7 @@ describe('single-Project roundtrip', () => {
     expect(file.patterns).toBeUndefined()
     expect(Object.keys(file.projects[0]).sort()).toEqual(['createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].layers[0].beads).toBeUndefined()
-    expect(file.projects[0].layers[0]).toMatchObject({ name: 'Fox', technique: 'peyote', orientation: 0, encodedBeads: { colors: [], rows: {} } })
+    expect(file.projects[0].layers[0]).toMatchObject({ name: 'Fox', technique: 'peyote', orientation: 90, encodedBeads: { colors: [], rows: {} } })
     expect(file.projects[0].layers[1].encodedBeads.rows).toEqual({ 2: '3:1' })
     expect(file.projects[0].layers[1].beads).toBeUndefined()
     expect(JSON.parse(serializeLibrary([decoratedProject()])).kind).toBe('openbeads/library')

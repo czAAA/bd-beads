@@ -21,6 +21,13 @@ describe('createProject Drop (ticket 477)', () => {
   })
 })
 
+describe('createProject Canvas orientation', () => {
+  it('starts a peyote Canvas turned a quarter, so its staggered columns show as staggered rows, and every other Technique upright', () => {
+    const orientationOf = (technique: 'peyote' | 'loom' | 'brick') => canvasOf(createProject({ technique, beadId: cubeBead.id })).orientation
+    expect([orientationOf('peyote'), orientationOf('loom'), orientationOf('brick')]).toEqual([90, 0, 0])
+  })
+})
+
 describe('createProject from the form\'s Layer settings (ADR 0079, ticket 0670)', () => {
   it('gives both layers the form\'s Background, and none for a Background left to the device', () => {
     const project = createProject({ technique: 'loom', beadId: cubeBead.id, background: '#336699', size: { width: 4, height: 4, unit: 'beads' } })
