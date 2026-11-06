@@ -44,6 +44,7 @@
   --board: #e8e3df;
   --ruler: #6a6a6a;
   --marker: #1d4ed8;
+  --mirror: #c026d3;
   --track: #e5e5e5;
   --word: #f1eadd;
   --print-board: #f7f3ec;
@@ -106,6 +107,7 @@
   --board: #202020;
   --ruler: #8c8c8c;
   --marker: #faff69;
+  --mirror: #b79cff;
   --track: #333333;
   --word: #202020;
   --print-board: #f7f3ec;
@@ -168,6 +170,7 @@
   --board: #e8e3df;
   --ruler: #3d3d3d;
   --marker: #000000;
+  --mirror: #6d28d9;
   --track: #d0d0d0;
   --word: #f5f5f5;
   --print-board: #f7f3ec;
