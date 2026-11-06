@@ -166,7 +166,13 @@
   --mirror-axis-dash: 5 4; /* ContextBar card, Mirror bar: the Axis line's dash. */
   --mirror-axis-soft: 0.45; /* ContextBar card, Mirror bar: the Radial mirror lines after the first. */
   --mirror-ring-radius: 7px; /* ContextBar card, Mirror bar: the Radial centre's ring. */
-  --mirror-area-handle: 9px; /* ContextBar card, Mirror bar: a handle square on the Area's rectangle, the Selection's. */
+  --area-band: 10px; /* ContextBar card, Area sheet: the band on the sides and bottom of a Selection or the Mirror's Canvas Area. */
+  --area-band-top: 40px; /* ContextBar card, Area sheet: the top band, the docked bar (28px) with 6px above and below. */
+  --area-band-radius: 8px; /* ContextBar card, Area sheet: the band's outer corners. */
+  --area-band-fill: 0.16; /* ContextBar card, Area sheet: the band's fill, the area's colour at this opacity. */
+  --area-band-edge: 0.55; /* ContextBar card, Area sheet: the band's 1px outer edge, the area's colour at this opacity. */
+  --area-cut: 0.45; /* ContextBar card, Area sheet: a half position the area's edge cuts, canvas at this opacity over it. */
+  --area-move-grip: 18px; /* ContextBar card, Area sheet: the docked bar's move grip, an 18 x 4 pill in a 28px cell. */
   --mirror-area-line: 1.5px; /* ContextBar card, Mirror bar: the Area's rectangle. */
   --mirror-ghost-opacity: 0.45; /* ContextBar card, Mirror bar: a counterpart in the hover preview. */
   --color-wheel-size: 200px;
