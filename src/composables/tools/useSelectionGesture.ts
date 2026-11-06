@@ -28,6 +28,10 @@ import type { EditFn } from '../project/useEdit'
 import { canvasMirrors, isMirrorOn, MIRROR_OFF, mirroredOnCanvas, type MirrorSetting } from '../../domain/mirror'
 import type { FramePress } from '../../rendering/frameHandles'
 
+/** The drags a finger that comes back from the bezel can pick back up (ticket 0805): marking out a Selection, resizing one
+ * by a handle. */
+export type SelectionDragKind = 'mark' | 'resize'
+
 // The Select tool's whole gesture (ticket 63): the Selection, in-session clipboard, the in-progress press (click vs
 // drag) and the live paste preview. It never reads the active tool (see
 // leaveSelectTool); Escape precedence stays in the shell, which calls cancel() last.
@@ -70,6 +74,13 @@ export function useSelectionGesture(
   // stamps the copy, so the press only records its anchor here and endPress decides which it was.
   const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean; marking: boolean } | null>(null)
 
+  /** The last drag that marked out or resized the Selection, kept while the Selection is still the one it made, so a
+   * finger that comes back from the tablet's bezel can pick it up (ticket 0805, see resume). */
+  let lastDrag:
+    | { kind: 'mark'; press: NonNullable<typeof selectPress.value>; made: Selection }
+    | { kind: 'resize'; adjust: Extract<NonNullable<typeof adjust>, { kind: 'resize' }>; made: Selection }
+    | undefined
+
   /** Whether a Selection may not start here: on a Frame whose kind offers none (a Custom frame, ticket 0592), or on any
    * Frame for a Mirror-mode drag, the Frame mirroring whole (ADR 0082). The margin is the Canvas's, where a drag may
    * start (ticket 0659). */
@@ -85,6 +96,7 @@ export function useSelectionGesture(
       return
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
+    lastDrag = undefined
 
     // A Selection cannot start on a Frame whose kind offers none (ticket 0592): nothing begins (the pointer shows the
     // cue itself, a key asks extendPress's caller to).
@@ -128,6 +140,7 @@ export function useSelectionGesture(
     const project = currentProject()
     const press = selectPress.value
     selectPress.value = null
+    if (press) lastDrag = press.moved && !pasteProjectionActive.value && selection.value ? { kind: 'mark', press, made: selection.value } : undefined
 
     if (!project || !press || !pasteProjectionActive.value) {
       return
@@ -183,6 +196,7 @@ export function useSelectionGesture(
    * the press. */
   function beginAdjust(target: FramePress, cell: GridPosition, tool: 'select' | 'piece') {
     const start = selection.value
+    lastDrag = undefined
     if (!start) {
       return
     }
@@ -213,6 +227,7 @@ export function useSelectionGesture(
   function endAdjust() {
     const done = adjust
     adjust = undefined
+    if (done) lastDrag = done.kind === 'resize' && selection.value ? { kind: 'resize', adjust: done, made: selection.value } : undefined
     if (done?.kind !== 'move' || done.moved) {
       return
     }
@@ -223,6 +238,17 @@ export function useSelectionGesture(
       const project = currentProject()
       selection.value = selectionBetween(done.origin, done.origin, project && layerAt(project, done.origin))
     }
+  }
+
+  /** Picks the last drag of this kind back up, as if it had never ended (ticket 0805): iPadOS ends a touch that slides
+   * off the glass, and one sliding back on is a new press. Only while the Selection is still the one that drag made;
+   * returns whether it was picked up. */
+  function resume(kind: SelectionDragKind): boolean {
+    const last = lastDrag
+    if (last?.kind !== kind || selection.value !== last.made) return false
+    if (last.kind === 'mark') selectPress.value = { ...last.press }
+    else adjust = last.adjust
+    return true
   }
 
   /** A new Selection (drag or ruler click) is one of the two things that clear the clipboard (ADR 0016), the other
@@ -392,6 +418,7 @@ export function useSelectionGesture(
     beginAdjust,
     dragAdjust,
     endAdjust,
+    resume,
     pastePreviewCells,
     pastePreviewStamp,
     clearSelection,

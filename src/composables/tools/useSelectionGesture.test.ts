@@ -802,6 +802,63 @@ describe('useSelectionGesture', () => {
       expect(piece.selection.value).toBeUndefined()
     })
   })
+
+  describe('picking a drag back up, a finger come back from the bezel (ticket 0805)', () => {
+    function marked(project = makeProject()) {
+      const { gesture } = setup(project)
+      gesture.beginPress(1, 1)
+      gesture.extendPress(2, 2)
+      gesture.endPress()
+      return gesture
+    }
+
+    it('a marquee picked back up keeps its anchor', () => {
+      const gesture = marked()
+
+      expect(gesture.resume('mark')).toBe(true)
+      gesture.extendPress(3, 3)
+      gesture.endPress()
+
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 3, columns: 3 })
+    })
+
+    it('a resize picked back up keeps the handle it had', () => {
+      const gesture = marked()
+      gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 2 }, 'select')
+      gesture.dragAdjust({ row: 3, column: 3 })
+      gesture.endAdjust()
+
+      expect(gesture.resume('resize')).toBe(true)
+      gesture.dragAdjust({ row: 3, column: 2 })
+      gesture.endAdjust()
+
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 3, columns: 2 })
+    })
+
+    it('picks up nothing once the Selection has changed, after a tap or a move, or of the other kind', () => {
+      const cancelled = marked()
+      cancelled.cancel()
+      expect(cancelled.resume('mark')).toBe(false)
+
+      const copied = marked(paintAt(makeProject(), [{ row: 1, column: 1 }], RED))
+      expect(copied.copy()).toBe(true)
+      expect(copied.resume('mark')).toBe(false)
+
+      expect(marked().resume('resize')).toBe(false)
+
+      const { gesture: tapped } = setup()
+      tapped.beginPress(1, 1)
+      tapped.endPress()
+      expect(tapped.resume('mark')).toBe(false)
+
+      const moved = marked()
+      moved.beginAdjust({ kind: 'inside' }, { row: 1, column: 1 }, 'select')
+      moved.dragAdjust({ row: 2, column: 2 })
+      moved.endAdjust()
+      expect(moved.resume('resize')).toBe(false)
+      expect(moved.resume('mark')).toBe(false)
+    })
+  })
 })
 
 describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
