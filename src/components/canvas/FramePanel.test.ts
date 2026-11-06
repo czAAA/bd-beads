@@ -270,14 +270,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
   })
 
-  it('shows each stop’s dpi and the PNG and PDF sizes for the open Frame (tickets 571, 0583)', () => {
+  it('shows each stop’s dpi, with no size under it (tickets 571, 0583)', () => {
     const small = mountBar()
     expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('150 DPI')
     expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
-    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium300 DPI(≈ \d+\.\d MB|< 0\.1 MB)$/)
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe('Medium300 DPI')
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
-    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 300 DPI, (≈ \d+\.\d MB|< 0\.1 MB)$/)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe('Medium, 300 DPI')
 
     // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
     const large = mountBar(withLayers(framed(), { frame: { ...frameOf(framed())!, columns: 200, rows: 200 } }))

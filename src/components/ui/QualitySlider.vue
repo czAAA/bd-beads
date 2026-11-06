@@ -10,13 +10,11 @@ const props = defineProps<{
   stops: readonly {
     id: string
     word: string
-    /** Read after the word by a screen reader, e.g. the bead size and the estimates. */
+    /** Read after the word by a screen reader, e.g. the dpi. */
     spoken?: string
     /** The size under the word; with `from` it reads "from → detail" (the stop was reduced for this Frame). */
     detail?: string
     from?: string
-    /** The estimates under the size, one per format. */
-    lines?: readonly string[]
   }[]
   /** The info button beside the label: what the lowest stop is for ("Low saves memory"). */
   hint?: { label: string; body: string }
@@ -81,7 +79,6 @@ function pick(next: number): void {
           <template v-if="stop.from">{{ stop.from }} → <span class="qs-was">{{ stop.detail }}</span></template>
           <template v-else>{{ stop.detail }}</template>
         </small>
-        <small v-for="line in stop.lines" :key="line">{{ line }}</small>
       </button>
     </div>
   </div>
