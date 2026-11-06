@@ -166,6 +166,7 @@ const {
   onSelectionPress,
   onSelectionDrag,
   onSelectionRelease,
+  onSelectionResume,
   demo,
   surfaceProbe,
 } = useCanvasContext()
@@ -431,6 +432,7 @@ const drawingStyle = computed(() => {
               @selection-press="onSelectionPress"
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
+              @selection-resume="onSelectionResume"
               @selection-anchor="selectionAnchor = $event"
               @mirror-anchor="mirrorAnchor = $event"
               @frame-anchor="frameAnchor = $event"

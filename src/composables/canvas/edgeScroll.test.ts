@@ -28,4 +28,21 @@ describe('edgeScrollStep', () => {
     expect(step.dx).toBeLessThan(0)
     expect(step.dy).toBeGreaterThan(0)
   })
+
+  describe('for a finger or a Pencil, which cannot go past the glass (ticket 0805)', () => {
+    const top = edgeScrollStep({ x: 4000, y: 150 }, size).dx
+
+    it('starts further in from the edge than a mouse', () => {
+      expect(edgeScrollStep({ x: 370, y: 150 }, size).dx).toBe(0)
+      expect(edgeScrollStep({ x: 370, y: 150 }, size, true).dx).toBeGreaterThan(0)
+      expect(edgeScrollStep({ x: 30, y: 150 }, size, true).dx).toBeLessThan(0)
+      expect(edgeScrollStep({ x: 200, y: 150 }, size, true)).toEqual({ dx: 0, dy: 0 })
+    })
+
+    it('reaches full speed while still on the glass', () => {
+      expect(edgeScrollStep({ x: 396, y: 150 }, size, true).dx).toBe(top)
+      expect(edgeScrollStep({ x: 4, y: 150 }, size, true).dx).toBe(-top)
+      expect(edgeScrollStep({ x: 396, y: 150 }, size).dx).toBeLessThan(top)
+    })
+  })
 })

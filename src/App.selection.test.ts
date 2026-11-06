@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
+import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
@@ -91,6 +92,21 @@ describe('App select, copy and paste', () => {
     await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1)
 
     expect(selectedCount(wrapper)).toBe(4)
+  })
+
+  it('picks a drag back up when the surface says a finger came back onto the glass (ticket 0805)', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1), then the finger leaves the glass
+
+    // The surface's own test covers where and when a press counts as the finger coming back.
+    const surface = wrapper.findComponent(ProjectSurface)
+    surface.vm.$emit('selection-resume', 'mark')
+    surface.vm.$emit('cell-primary-move', 2, 2)
+    await flushPromises()
+    await wrapper.find('.app-shell').trigger('mouseup')
+
+    expect(wrapper.findComponent(ProjectSurface).props('selection')).toMatchObject({ top: 0, left: 0, rows: 3, columns: 3 })
   })
 
   it('moves the Selection by a drag from inside it, and a press there that never moves selects that bead (ticket 414)', async () => {
