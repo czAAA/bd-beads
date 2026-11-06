@@ -62,8 +62,9 @@ const props = withDefaults(defineProps<{
   selectActive?: boolean
   /** The Tool pill's rectangle in the same pixels: the bar keeps clear of it (ticket 439). */
   obstacle?: BarBox
-  /** The Mirror while it is on (ADR 0082): with no Selection the bar is the Mirror bar, anchored to `mirrorAnchor` and
-   * shrunk to its readout while `mirrorSizeOnly` (the Area resized) and a gesture runs. */
+  /** The Mirror while it is on (ADR 0082): given with no Selection, the bar is the Mirror bar, anchored to `mirrorAnchor`
+   * and shrunk to its readout while `mirrorSizeOnly` (the Area resized) and a gesture runs. The canvas shows it as a
+   * second bar beside the Selection bar (ticket 0809). */
   mirror?: MirrorBarState
   mirrorAnchor?: SelectionAnchor
   mirrorSizeOnly?: boolean
@@ -197,7 +198,7 @@ const overflowing = computed(() => items.value.length > capacity.value)
 const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
 const folded = computed(() => (overflowing.value ? items.value.slice(shown.value.length) : []))
 
-/** The Mirror bar: the Mirror is on and no Selection takes the bar (ContextBar card, only one bar on screen). */
+/** This bar is the Mirror bar: it is given the Mirror and no Selection (the Selection bar is another ContextBar). */
 const mirrorShown = computed(() => props.selectionSummary === undefined && !!props.mirror)
 /** The area whose sheet the bar is docked in (ContextBar card, Area sheet): a rectangle Selection, or the Mirror's
  * Canvas Area; none for a Piece's shape and the whole Frame, whose bars float. */
@@ -356,6 +357,12 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
   position: absolute;
   z-index: var(--z-context-bar);
   max-width: calc(100% - 2 * var(--space-8));
+}
+
+/* The Mirror bar lies under the Selection bar where the two meet, as its sheet under the Selection's (ticket 0809),
+ * until it takes focus: then it comes up, so a bar reached by Tab is never hidden. */
+.context-bar--placed.context-bar--mirror:not(:focus-within) {
+  z-index: calc(var(--z-context-bar) - 1);
 }
 
 /* The Mirror bar too narrow for one row even without its readout (ContextBar card, Too narrow): still one row, it
