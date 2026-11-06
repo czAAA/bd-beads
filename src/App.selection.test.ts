@@ -262,4 +262,27 @@ describe('App select, copy and paste', () => {
     expect(selectedBeadCount(wrapper)).toBe(0)
     expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(true)
   })
+
+  it('The Mirror bar stays with a Selection, after the Selection bar in Tab order, and both work (ticket 0809)', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4
+    await projectWithMotif(wrapper)
+    const frame = frameOf(loadProjects()[0]!)!
+    const top = { row: frame.row - 10, column: frame.column }
+    await pressBead(wrapper, top)
+    await hoverBead(wrapper, { row: top.row + 1, column: top.column + 2 }, { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await pressBar(wrapper, 'mirror-selection')
+    await flushPromises()
+
+    await drag(wrapper, [0, 1])
+    await flushPromises()
+
+    const bars = wrapper.findAll('[role="toolbar"]').map((bar) => bar.attributes('data-testid'))
+    expect(bars.filter((id) => id === 'context-bar' || id === 'mirror-bar')).toEqual(['context-bar', 'mirror-bar'])
+    await wrapper.get('[data-testid="mirror-bar-mode-repeat"]').trigger('click')
+    expect(loadProjects()[0]!.mirror?.mode).toBe('repeat')
+    await pressBar(wrapper, 'clear')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
+    expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(true)
+  })
 })

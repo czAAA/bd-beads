@@ -552,15 +552,15 @@ const drawingStyle = computed(() => {
         <!--
           The Selection bar (tickets 168, 415, 0808; ContextBar card): docked in a rectangle Selection's Area sheet, its
           move grip handing a press on to the canvas; above a Piece's shape it floats, clamped inside the canvas box while
-          it stays beside it (ticket 0779), clear of the Tool pill. With no Selection and the Mirror on it is the Mirror
-          bar, docked in a Canvas Area's sheet or above the whole Frame's (ticket 0750).
+          it stays beside it (ticket 0779), clear of the Tool pill. It shrinks to its readout in a gesture only while
+          the Mirror's Area isn't the one resized or moved.
         -->
         <ContextBar
           :selection-summary="selectionSummary"
           :selection="selection"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
-          :size-only="selectionGuided"
+          :size-only="selectionGuided && !mirrorAdjusting"
           :paste-armed="pasteProjectionActive"
           :has-clipboard="hasClipboard()"
           :project="activeProject"
@@ -569,9 +569,6 @@ const drawingStyle = computed(() => {
           :has-paint-color="hasPaintColor()"
           :select-active="activeTool === 'select'"
           :obstacle="pillRect"
-          :mirror="mirrorBar"
-          :mirror-anchor="mirrorAnchor"
-          :mirror-size-only="mirrorAdjusting"
           @copy="onCopy"
           @cut="onCut"
           @paste="onPasteMode"
@@ -580,11 +577,28 @@ const drawingStyle = computed(() => {
           @clear-selection="onClearSelection"
           @rotate="onRotate"
           @mirror-selection="onMirrorSelection"
-          @update:mirror="onMirrorChange"
-          @close-mirror="onCloseMirror"
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
+          @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
+          @move-key="onAreaKey"
+        />
+        <!--
+          The Mirror bar (tickets 0750, 0809; ContextBar card): shown whenever the Mirror is on, a Selection or not,
+          docked in a Canvas Area's sheet or above the whole Frame's. Right after the Selection bar in the page order, so
+          Tab reaches it next (ADR 0075); drawn under the Selection bar where the two meet, as its sheet is.
+        -->
+        <ContextBar
+          :gesturing="surfacePressing"
+          :paste-armed="pasteProjectionActive"
+          :project="activeProject"
+          :can-remove-line="false"
+          :obstacle="pillRect"
+          :mirror="mirrorBar"
+          :mirror-anchor="mirrorAnchor"
+          :mirror-size-only="mirrorAdjusting"
+          @update:mirror="onMirrorChange"
+          @close-mirror="onCloseMirror"
           @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
           @move-key="onAreaKey"
         />
