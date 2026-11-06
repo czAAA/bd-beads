@@ -16,6 +16,7 @@ import { GLINT_COLOR, ROW_MOTION } from './rowMotion'
 import { beadRoundness, type Technique } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay as renderOverlayWith } from './overlayRenderer'
+import { AREA_SHEET_OUTSET } from './frameHandles'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
@@ -685,7 +686,7 @@ describe('renderOverlay', () => {
   describe('the Area sheet round a Selection and a Canvas Area (ContextBar card, ticket 0808)', () => {
     const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
     const region = { x: 0, y: 0, width: 200, height: 160 }
-    const outset = { top: 40, right: 10, bottom: 10, left: 10 }
+    const outset = AREA_SHEET_OUTSET
     const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: inArea(2, 3, 2, 2) }
     /** The bands: an even-odd fill round each box, in its colour. */
     const bands = (named: ReturnType<typeof recordingContext>['named']) => named('fill').filter((call) => call.args[0] === 'evenodd')
@@ -697,8 +698,8 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror, areaSheet: { surface, outset } })
 
       expect(bands(named).map((call) => [call.fillStyle, call.globalAlpha])).toEqual([[DEFAULT_THEME.mirror, 0.16], [DEFAULT_THEME.marker, 0.16]])
-      // The Area's 2 × 2 beads at (60, 40), 20px each: its sheet from 10px left of it and 40px over it, radius 8.
-      expect(named('roundRect')[0]!.args).toEqual([50, 0, 60, 90, 8])
+      // The Area's 2 × 2 beads at (60, 40), 20px each: its sheet from 10px left of it and 10px over it, radius 8.
+      expect(named('roundRect')[0]!.args).toEqual([50, 30, 60, 60, 8])
       expect(named('stroke').filter((call) => call.globalAlpha === 0.55)).toHaveLength(2)
     })
 
@@ -710,7 +711,7 @@ describe('renderOverlay', () => {
 
       const [x, y, width, height] = named('roundRect')[0]!.args as number[]
       const box = surface.beadBox(mirror.place!.layer === 'canvas' ? mirror.place!.area : { row: 0, column: 0, rows: 0, columns: 0 }, 'canvas')
-      expect([box.x - x!, box.y - y!, width! - box.width, height! - box.height]).toEqual([10, 40, 20, 50])
+      expect([box.x - x!, box.y - y!, width! - box.width, height! - box.height]).toEqual([10, 10, 20, 20])
     })
 
     it('is drawn round a rectangle Selection whatever the tool, not round a Piece\'s shape, and never without the surface (an export)', () => {
@@ -730,9 +731,9 @@ describe('renderOverlay', () => {
       const { context, named } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 1, mirror, mirrorArea: { surface, touch: false }, areaSheet: { surface, outset } })
 
-      // The top and bottom edges' bars, 12 × 4, centred on the sheet's edges at (80, 0) and (80, 90), just outside them.
+      // The top and bottom edges' bars, 12 × 4, centred on the sheet's edges at (80, 30) and (80, 90), just outside them.
       const edgeBars = named('roundRect').slice(1).map((call) => call.args as number[])
-      expect(edgeBars).toContainEqual([74, -4, 12, 4, 2])
+      expect(edgeBars).toContainEqual([74, 26, 12, 4, 2])
       expect(edgeBars).toContainEqual([74, 90, 12, 4, 2])
     })
   })

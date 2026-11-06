@@ -550,8 +550,8 @@ const drawingStyle = computed(() => {
       -->
       <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
-          The Selection bar (tickets 168, 415, 0808; ContextBar card): docked in a rectangle Selection's Area sheet, its
-          move grip handing a press on to the canvas; above a Piece's shape it floats, clamped inside the canvas box while
+          The Selection bar (tickets 168, 415, 0808, 0812; ContextBar card): above a rectangle Selection's Area sheet, its
+          move grip handing a press on to the canvas; above a Piece's shape it floats too, clamped inside the canvas box while
           it stays beside it (ticket 0779), clear of the Tool pill. It shrinks to its readout in a gesture only while
           the Mirror's Area isn't the one resized or moved.
         -->
@@ -585,7 +585,7 @@ const drawingStyle = computed(() => {
         />
         <!--
           The Mirror bar (tickets 0750, 0809; ContextBar card): shown whenever the Mirror is on, a Selection or not,
-          docked in a Canvas Area's sheet or above the whole Frame's. Right after the Selection bar in the page order, so
+          above a Canvas Area's sheet or above the whole Frame's. Right after the Selection bar in the page order, so
           Tab reaches it next (ADR 0075); drawn under the Selection bar where the two meet, as its sheet is.
         -->
         <ContextBar

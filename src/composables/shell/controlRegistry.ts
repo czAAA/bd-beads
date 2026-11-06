@@ -575,7 +575,7 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations) => t.tooltips.noBeadsToRotate,
   }),
   unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
-  // The docked bars' move grips (ContextBar card, Area sheet, ticket 0808): a drag moves the area, arrows a bead.
+  // The area bars' move grips (ContextBar card, Area sheet, ticket 0808): a drag moves the area, arrows a bead.
   unkeyed('move-selection', (t) => t.contextBar.moveSelection, 'canvas', { body: (t) => t.contextBar.moveSelectionBody }),
   unkeyed('move-mirror-area', (t) => t.mirror.moveArea, 'canvas', { body: (t) => t.mirror.moveAreaBody }),
   // The margin sheet's Margin color button (ticket 0657, MarginSheet card): opens the margin color's picker under it.

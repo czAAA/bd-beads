@@ -4,8 +4,7 @@ import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { BAR_EDGE_PX, dockedBarPlacement, selectionBarPlacement, type BarBox, type DockedArea, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
-import { areaSheetOutset } from '../../rendering/frameHandles'
+import { areaBarPlacement, BAR_EDGE_PX, selectionBarPlacement, type BarBox, type SheetArea, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
@@ -30,9 +29,9 @@ export interface MirrorBarState {
   shape?: ShapeAxes
 }
 
-// The design system's ContextBar (tickets 168, 415, 0750, 0808): an icon-only bar, move grip first, docked in the Area
-// sheet of a rectangle Selection or (as the Mirror bar) a Canvas Area; over a Piece's shape or the whole Frame it floats,
-// clamped in the canvas box. Actions that don't fit fold into "..."; none in paste mode (437) or Edit Frame (427).
+// The design system's ContextBar (tickets 168, 415, 0750, 0808, 0812): an icon-only bar floating above its area, clamped
+// in the canvas box; above the Area sheet of a rectangle Selection or (as the Mirror bar) a Canvas Area, clear of its
+// band, with a move grip first. Actions that don't fit fold into "..."; none in paste mode (437) or Edit Frame (427).
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
@@ -85,9 +84,9 @@ const emit = defineEmits<{
   'remove-line': []
   'name-piece': []
   /** The move grip was pressed (ticket 0808): the canvas takes the press on as a drag of that area. */
-  'move-press': [event: PointerEvent, area: DockedArea]
+  'move-press': [event: PointerEvent, area: SheetArea]
   /** An arrow on the move grip: the area moves a bead. */
-  'move-key': [event: KeyboardEvent, area: DockedArea]
+  'move-key': [event: KeyboardEvent, area: SheetArea]
 }>()
 
 const { t } = useI18n()
@@ -192,7 +191,7 @@ const capacity = computed(() => {
   const viewport = props.anchor?.viewport.width
   if (!viewport || !readout.width.value || !bar.height.value) return Infinity
   const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (BAR_SIDE_PADDING_PX + BAR_DIVIDER_PX)
-  return Math.max(1, Math.floor(room / (bar.height.value + BAR_ITEM_GAP_PX)) - (docked.value ? 1 : 0))
+  return Math.max(1, Math.floor(room / (bar.height.value + BAR_ITEM_GAP_PX)) - (sheetArea.value ? 1 : 0))
 })
 const overflowing = computed(() => items.value.length > capacity.value)
 const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
@@ -200,9 +199,9 @@ const folded = computed(() => (overflowing.value ? items.value.slice(shown.value
 
 /** This bar is the Mirror bar: it is given the Mirror and no Selection (the Selection bar is another ContextBar). */
 const mirrorShown = computed(() => props.selectionSummary === undefined && !!props.mirror)
-/** The area whose sheet the bar is docked in (ContextBar card, Area sheet): a rectangle Selection, or the Mirror's
+/** The area whose Area sheet the bar sits above, its move grip's (ContextBar card, Area sheet): a rectangle Selection, or the Mirror's
  * Canvas Area; none for a Piece's shape and the whole Frame, whose bars float. */
-const docked = computed<DockedArea | undefined>(() => {
+const sheetArea = computed<SheetArea | undefined>(() => {
   if (mirrorShown.value) return props.mirror!.setting.place?.layer === 'canvas' ? 'mirror' : undefined
   return props.selection && !props.selection.cells ? 'selection' : undefined
 })
@@ -217,7 +216,7 @@ const mirrorFit = ref<0 | 1 | 2>(0)
 const hostEl = computed(() => rootEl.value?.parentElement ?? undefined)
 const host = useElementSize(hostEl)
 watch(
-  () => [mirrorShown.value, docked.value, host.width.value, props.mirrorAnchor?.viewport.width, props.mirror?.setting.axes, props.mirror?.setting.mode, props.mirror?.shape] as const,
+  () => [mirrorShown.value, sheetArea.value, host.width.value, props.mirrorAnchor?.viewport.width, props.mirror?.setting.axes, props.mirror?.setting.mode, props.mirror?.shape] as const,
   async () => {
     mirrorFit.value = 0
     for (const next of [1, 2] as const) {
@@ -231,14 +230,15 @@ watch(
 )
 
 const placedAnchor = computed(() => (mirrorShown.value ? props.mirrorAnchor : props.anchor))
-const placement = computed<{ left: number; top: number; below?: boolean; minWidth?: number } | undefined>(() => {
+const placement = computed<{ left: number; top: number; below: boolean } | undefined>(() => {
   const anchor = placedAnchor.value
   if (!anchor) return undefined
-  if (docked.value) return dockedBarPlacement(anchor.box, { width: bar.width.value }, anchor.viewport, areaSheetOutset(touch.value))
+  const size = { width: bar.width.value, height: bar.height.value }
+  if (sheetArea.value) return areaBarPlacement(anchor.box, size, anchor.viewport, props.obstacle)
   // Above the whole Frame's sheet, or below it with no room there, never flipped back over the band's tools (ContextBar
   // card, Placement).
   const keepSide = mirrorShown.value && props.mirror!.setting.place?.layer === 'frame'
-  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle, { keepSide })
+  return selectionBarPlacement(anchor.box, size, anchor.viewport, props.obstacle, { keepSide })
 })
 /** The bar gone out of view with its Area (ticket 0779): wholly outside the canvas box, hidden so Tab never reaches it. */
 const away = computed(() => {
@@ -252,9 +252,7 @@ const away = computed(() => {
 const placedStyle = computed(() => {
   const at = placement.value
   if (!at) return undefined
-  // Shrunk to its readout while its area is dragged, the docked bar stays at the band's left, in place.
-  const wide = at.minWidth !== undefined && !compact.value ? { minWidth: `${at.minWidth}px` } : {}
-  return { left: `${at.left}px`, top: `${at.top}px`, ...wide, ...(away.value ? { visibility: 'hidden' as const } : {}) }
+  return { left: `${at.left}px`, top: `${at.top}px`, ...(away.value ? { visibility: 'hidden' as const } : {}) }
 })
 
 /** A folded item is disabled by the same rule as its button would be, and says why on hover. */
@@ -272,7 +270,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
     ref="rootEl"
     v-show="!gesturing || compact"
     class="context-bar"
-    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below, 'context-bar--docked': docked, 'context-bar--mirror': mirrorShown, 'context-bar--scrolls': mirrorShown && mirrorFit === 2 && !compact }"
+    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below, 'context-bar--area': sheetArea, 'context-bar--mirror': mirrorShown, 'context-bar--scrolls': mirrorShown && mirrorFit === 2 && !compact }"
     :style="placedStyle"
     role="toolbar"
     :aria-label="mirrorShown ? t.mirror.title : t.contextBar.label"
@@ -280,7 +278,7 @@ const showing = computed(() => props.selectionSummary !== undefined || mirrorSho
     @keydown="roving.onKeydown"
     @focusin="roving.onFocusin"
   >
-    <AreaMoveGrip v-if="docked" v-show="!compact" :area="docked" @press="emit('move-press', $event, docked)" @key="emit('move-key', $event, docked)" />
+    <AreaMoveGrip v-if="sheetArea" v-show="!compact" :area="sheetArea" @press="emit('move-press', $event, sheetArea)" @key="emit('move-key', $event, sheetArea)" />
     <span v-show="!mirrorShown || mirrorFit === 0 || compact" ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ readoutText }}</span>
     <MirrorBarItems
       v-if="mirrorShown"

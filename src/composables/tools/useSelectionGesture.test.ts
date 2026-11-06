@@ -802,7 +802,7 @@ describe('useSelectionGesture', () => {
       expect(piece.selection.value).toBeUndefined()
     })
 
-    it('a press of the docked bar\'s move grip names no tool: it moves the Selection, and never taps (ticket 0808)', () => {
+    it('a press of the area bar\'s move grip names no tool: it moves the Selection, and never taps (ticket 0808)', () => {
       const gesture = selected()
       const before = gesture.selection.value
       gesture.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 })

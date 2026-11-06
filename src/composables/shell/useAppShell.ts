@@ -10,7 +10,7 @@ import { useMediaQuery } from '../ui/useMediaQuery'
 import type { Layer } from '../../domain/layers'
 import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
-import type { DockedArea } from '../tools/selectionBarPlacement'
+import type { SheetArea } from '../tools/selectionBarPlacement'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
@@ -466,9 +466,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Selection's handles or inside were pressed (ticket 414): the active tool decides what a tap inside does. With
-   * no Selection in Mirror mode they are the Mirror's Area's (ADR 0082), resized and moved the same way. A docked bar's
+   * no Selection in Mirror mode they are the Mirror's Area's (ADR 0082), resized and moved the same way. An area's bar's
    * move grip names its area (ticket 0808) and moves it whatever the tool, with no tap. */
-  function onSelectionPress(target: FramePress, cell: GridPosition, area?: DockedArea) {
+  function onSelectionPress(target: FramePress, cell: GridPosition, area?: SheetArea) {
     if (area === 'mirror' || (!area && !selection.value && mirror.marking.value)) mirror.pressArea(target, cell)
     else beginAdjust(target, cell, area ? undefined : activeTool.value === 'piece' ? 'piece' : 'select')
   }
@@ -478,8 +478,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     else dragAdjust(cell)
   }
 
-  /** An arrow on a docked bar's move grip (ticket 0808): its area moves a bead that way, and the page doesn't scroll. */
-  function onAreaKey(event: KeyboardEvent, area: DockedArea) {
+  /** An arrow on an area's bar's move grip (ticket 0808): its area moves a bead that way, and the page doesn't scroll. */
+  function onAreaKey(event: KeyboardEvent, area: SheetArea) {
     const step = ARROW_STEPS[event.key]
     if (!step) return
     event.preventDefault()
