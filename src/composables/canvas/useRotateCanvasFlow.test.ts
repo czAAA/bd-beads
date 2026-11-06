@@ -6,10 +6,10 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateCanvasFlow } from './useRotateCanvasFlow'
-import { beadsOfLayer, canvasOf, orientationOf } from '../../domain/layerRecord'
+import { beadsOfLayer, canvasOf, orientationOf, withCanvas } from '../../domain/layerRecord'
 import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
-const base = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+const base = withCanvas(createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }), { orientation: 0 })
 const framed: Project = withLayers(base, {
 frame: { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 6, beads: {} },
   beads: withColors({}, [{ row: 21, column: 22, color: '#e63746' }]),
