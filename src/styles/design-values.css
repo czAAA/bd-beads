@@ -168,6 +168,7 @@
   --mirror-ring-radius: 7px; /* ContextBar card, Mirror bar: the Radial centre's ring. */
   --area-band: 10px; /* ContextBar card, Area sheet: the band on the sides and bottom of a Selection or the Mirror's Canvas Area. */
   --area-band-top: 40px; /* ContextBar card, Area sheet: the top band, the docked bar (28px) with 6px above and below. */
+  --area-band-top-touch: 48px; /* ContextBar card, Area sheet: the top band on touch, the 36px touch bar with 6px above and below. */
   --area-band-radius: 8px; /* ContextBar card, Area sheet: the band's outer corners. */
   --area-band-fill: 0.16; /* ContextBar card, Area sheet: the band's fill, the area's colour at this opacity. */
   --area-band-edge: 0.55; /* ContextBar card, Area sheet: the band's 1px outer edge, the area's colour at this opacity. */

@@ -10,6 +10,7 @@ import { useMediaQuery } from '../ui/useMediaQuery'
 import type { Layer } from '../../domain/layers'
 import { selectionFrame, selectionHasBeads, selectionHoldsAllBeads, selectionLayer } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
+import type { DockedArea } from '../tools/selectionBarPlacement'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
@@ -73,6 +74,9 @@ import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
 import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useReferenceImageFlow'
+
+/** The rows and columns an arrow moves an area by (ticket 0808). */
+const ARROW_STEPS: Readonly<Record<string, readonly [number, number]>> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
 
 // The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
@@ -249,6 +253,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     pastePreviewCells,
     pastePreviewStamp,
     clearSelection: resetSelection,
+    moveSelectionBy,
     pasteProjectionActive,
     hasClipboard,
   } = useSelectionGesture(
@@ -461,15 +466,25 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The Selection's handles or inside were pressed (ticket 414): the active tool decides what a tap inside does. With
-   * no Selection in Mirror mode they are the Mirror's Area's (ADR 0082), resized and moved the same way. */
-  function onSelectionPress(target: FramePress, cell: GridPosition) {
-    if (!selection.value && mirror.marking.value) mirror.pressArea(target, cell)
-    else beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
+   * no Selection in Mirror mode they are the Mirror's Area's (ADR 0082), resized and moved the same way. A docked bar's
+   * move grip names its area (ticket 0808) and moves it whatever the tool, with no tap. */
+  function onSelectionPress(target: FramePress, cell: GridPosition, area?: DockedArea) {
+    if (area === 'mirror' || (!area && !selection.value && mirror.marking.value)) mirror.pressArea(target, cell)
+    else beginAdjust(target, cell, area ? undefined : activeTool.value === 'piece' ? 'piece' : 'select')
   }
 
   function onSelectionDrag(cell: GridPosition) {
-    if (mirror.adjusting.value || (!selection.value && mirror.marking.value)) mirror.dragArea(cell)
+    if (mirror.holding()) mirror.dragArea(cell)
     else dragAdjust(cell)
+  }
+
+  /** An arrow on a docked bar's move grip (ticket 0808): its area moves a bead that way, and the page doesn't scroll. */
+  function onAreaKey(event: KeyboardEvent, area: DockedArea) {
+    const step = ARROW_STEPS[event.key]
+    if (!step) return
+    event.preventDefault()
+    if (area === 'mirror') mirror.moveAreaBy(...step)
+    else moveSelectionBy(...step)
   }
 
   function onSelectionRelease() {
@@ -965,6 +980,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       fillRefusals,
       onSelectionPress,
       onSelectionDrag,
+      onAreaKey,
       onSelectionRelease,
       /** A finger that comes back onto the glass picks up the Select drag that slid off it (ticket 0805). */
       onSelectionResume: resumeSelectionDrag,

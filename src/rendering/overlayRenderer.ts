@@ -14,7 +14,7 @@ import { GLINT_COLOR, ROW_MOTION, glintMs, glintWash } from './rowMotion'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawAreaCorners, drawFrameEditing, drawRulers } from './rulerRenderer'
-import type { HandleId } from './frameHandles'
+import { outsetBox, type HandleId, type Outset } from './frameHandles'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -126,6 +126,9 @@ export interface OverlayInput {
   mirror?: MirrorSetting
   /** How a Canvas Area's eight hot corners are drawn (ticket 0807), as the Selection's. */
   mirrorArea?: AreaHandles
+  /** The Area sheet's band round a rectangle Selection and the Mirror's Canvas Area (ContextBar card, ticket 0808), and
+   * the view their boxes are measured in; their hot corners stand on its edge. Never given by an export. */
+  areaSheet?: { surface: SurfaceView; outset: Outset }
   /** Row done's motion (ticket 0730), each with the ms since its press: the passes just finished, glinting and held at
    * full color for the dim delay, and the pass the marker left, its ruler pill gliding on. Never given by an export. */
   rowMotion?: RowMotion
@@ -137,6 +140,33 @@ interface AreaHandles {
   touch: boolean
   hot?: HandleId
   tooltip?: string
+}
+
+/** The Area sheet's look (ContextBar card): `--area-band-fill`, `--area-band-edge` and `--area-band-radius`. */
+const AREA_BAND_FILL = 0.16
+const AREA_BAND_EDGE = 0.55
+const AREA_BAND_RADIUS_PX = 8
+
+/** An Area sheet (ContextBar card, ticket 0808): the band round an area's box on screen in its colour, its outer edge a
+ * 1px line; nothing on it but the docked bar, which the DOM draws. In viewport px, the same at every zoom. */
+function drawAreaSheet(context: DrawingContext, box: Region, outset: Outset, color: string, pixelRatio: number): void {
+  const sheet = outsetBox(box, outset)
+  context.save()
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+  context.fillStyle = color
+  context.globalAlpha = AREA_BAND_FILL
+  context.beginPath()
+  context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, AREA_BAND_RADIUS_PX)
+  context.rect(box.x, box.y, box.width, box.height)
+  context.fill('evenodd')
+  context.globalAlpha = AREA_BAND_EDGE
+  context.strokeStyle = color
+  context.lineWidth = 1
+  context.setLineDash([])
+  context.beginPath()
+  context.roundRect(sheet.x + 0.5, sheet.y + 0.5, sheet.width - 1, sheet.height - 1, AREA_BAND_RADIUS_PX)
+  context.stroke()
+  context.restore()
 }
 
 /** Row done's motion on the Pattern as the overlay draws it (ticket 0730). */
@@ -426,6 +456,9 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
   context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
 }
 
+/** No band round an area: an export's, or a test's that gives none. */
+const NO_OUTSET: Outset = { top: 0, right: 0, bottom: 0, left: 0 }
+
 /** How much of the canvas covers a half position an area's edge cuts: `--area-cut` (ContextBar card, Area sheet). */
 const AREA_CUT_OPACITY = 0.45
 
@@ -691,7 +724,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, rowMotion } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, marksArea = false, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters, mirror, mirrorArea, areaSheet, rowMotion } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -799,6 +832,13 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     context.restore()
   }
 
+  // The Area sheets, the Mirror's first so a Selection's lies over it where the two meet (ContextBar card), under the
+  // rulers and the hot corners.
+  const outset = areaSheet?.outset ?? NO_OUTSET
+  const selectionBox = selection && space.open && !selection.cells && areaSheet ? areaSheet.surface.beadBox(selectionFrame(selection), ownLayer) : undefined
+  if (areaSheet && space.open && canvasArea) drawAreaSheet(context, areaSheet.surface.beadBox(canvasArea, 'canvas'), outset, theme.mirror, pixelRatio)
+  if (areaSheet && selectionBox) drawAreaSheet(context, selectionBox, outset, selectionColor, pixelRatio)
+
   // The rulers are laid out in the viewport's own px, over everything the grid-space drawing above made.
   if (ruled && rulers) {
     drawRulers(context, {
@@ -827,10 +867,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // A size is a number too: the Rulers toggle hides its Tooltip with the rest.
   const sized = (handles: AreaHandles) => (rulers?.layout.numbers === false ? '' : (handles.tooltip ?? ''))
   if (mirrorArea && space.open && canvasArea) {
-    drawAreaCorners(context, { ...mirrorArea, box: mirrorArea.surface.beadBox(canvasArea, 'canvas'), pixelRatio, theme, color: theme.mirror, tooltip: sized(mirrorArea) })
+    drawAreaCorners(context, { ...mirrorArea, box: mirrorArea.surface.beadBox(canvasArea, 'canvas'), outset, pixelRatio, theme, color: theme.mirror, tooltip: sized(mirrorArea) })
   }
   if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
-    drawAreaCorners(context, { ...selectionHandles, box: selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), pixelRatio, theme, color: selectionColor, tooltip: sized(selectionHandles) })
+    drawAreaCorners(context, { ...selectionHandles, box: selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), outset, pixelRatio, theme, color: selectionColor, tooltip: sized(selectionHandles) })
   }
   if (pointer) {
     const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf

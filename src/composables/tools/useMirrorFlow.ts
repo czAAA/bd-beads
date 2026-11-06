@@ -101,6 +101,13 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     draft.value = selectionFrame(moved)
   }
 
+  /** An arrow on the Mirror bar's move grip (ticket 0808): the Canvas Area moves by that many beads, one Undo step, as a
+   * drag of it does. */
+  function moveAreaBy(rows: number, columns: number) {
+    const start = areaSelection.value
+    if (start) makeFrom(selectionFrame(movedSelection(start, rows, columns)))
+  }
+
   /** Let go: the Area is saved where the drag left it, one Undo step; nothing when it did not change. */
   function releaseArea() {
     const area = draft.value
@@ -111,5 +118,25 @@ export function useMirrorFlow(deps: MirrorFlowDeps) {
     makeFrom(area)
   }
 
-  return { setting, on, onFrame, rect, fit, shape, marking, areaSelection, adjusting: computed(() => draft.value !== undefined), update, makeFrom, placeWholeFrame, close, pressArea, dragArea, releaseArea }
+  return {
+    setting,
+    on,
+    onFrame,
+    rect,
+    fit,
+    shape,
+    marking,
+    areaSelection,
+    adjusting: computed(() => draft.value !== undefined),
+    /** Whether a press holds the Area's handle, inside or move grip: its drags are the Area's. */
+    holding: () => adjust !== undefined,
+    update,
+    makeFrom,
+    placeWholeFrame,
+    close,
+    pressArea,
+    dragArea,
+    releaseArea,
+    moveAreaBy,
+  }
 }

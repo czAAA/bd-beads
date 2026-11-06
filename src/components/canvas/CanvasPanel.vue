@@ -165,6 +165,7 @@ const {
   onFrameCancel,
   onSelectionPress,
   onSelectionDrag,
+  onAreaKey,
   onSelectionRelease,
   onSelectionResume,
   demo,
@@ -549,9 +550,10 @@ const drawingStyle = computed(() => {
       -->
       <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
-          The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box while it stays beside it (ticket 0779), clear of the Tool pill; Select all is its first
-          item. With no Selection and the Mirror on it is the Mirror bar, above the Mirror's Area (ticket 0750).
+          The Selection bar (tickets 168, 415, 0808; ContextBar card): docked in a rectangle Selection's Area sheet, its
+          move grip handing a press on to the canvas; above a Piece's shape it floats, clamped inside the canvas box while
+          it stays beside it (ticket 0779), clear of the Tool pill. With no Selection and the Mirror on it is the Mirror
+          bar, docked in a Canvas Area's sheet or above the whole Frame's (ticket 0750).
         -->
         <ContextBar
           :selection-summary="selectionSummary"
@@ -583,6 +585,8 @@ const drawingStyle = computed(() => {
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
+          @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
+          @move-key="onAreaKey"
         />
 
         <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the

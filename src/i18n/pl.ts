@@ -93,6 +93,8 @@ export const pl: Translations = {
     repeatNeedsRadial: '{axis}, z kształtu: Powtórz potrzebuje osi Wokół środka.',
     closeMirror: 'Zamknij odbicie',
     insideArea: 'Odbijaj wewnątrz tego obszaru.',
+    moveArea: 'Przesuń obszar odbicia',
+    moveAreaBody: 'Przeciągnij, aby przesunąć obszar odbicia, lub naciśnij strzałkę, aby przesunąć go o jeden koralik.',
     frameMirrorsWhole: 'Ramka odbija się w całości: użyj odbicia na jej marginesie.',
     wholeFrame: 'Odbijaj całą ramkę',
     mirrorOff: 'Wyłącz odbicie',
@@ -403,6 +405,8 @@ export const pl: Translations = {
     label: 'Działania na zaznaczeniu',
     clearButton: 'Wyczyść zaznaczenie',
     moreLabel: 'Więcej',
+    moveSelection: 'Przesuń zaznaczenie',
+    moveSelectionBody: 'Przeciągnij, aby przesunąć zaznaczenie, lub naciśnij strzałkę, aby przesunąć je o jeden koralik.',
   },
   palette: {
     pickerLabel: 'Kolory palety',

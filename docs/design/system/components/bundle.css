@@ -117,6 +117,7 @@
   --mirror-ring-radius: 7px;
   --area-band: 10px;
   --area-band-top: 40px;
+  --area-band-top-touch: 48px;
   --area-band-radius: 8px;
   --area-band-fill: 0.16;
   --area-band-edge: 0.55;

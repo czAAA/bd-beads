@@ -93,6 +93,8 @@ export const es: Translations = {
     repeatNeedsRadial: '{axis}, de la forma: Repetir necesita Radial.',
     closeMirror: 'Cerrar espejo',
     insideArea: 'Reflejar dentro de esta área.',
+    moveArea: 'Mover área del espejo',
+    moveAreaBody: 'Arrastra para mover el área del espejo, o pulsa una flecha para moverla una cuenta.',
     frameMirrorsWhole: 'El marco se refleja entero: usa el Espejo de su margen.',
     wholeFrame: 'Reflejar todo el marco',
     mirrorOff: 'Desactivar espejo',
@@ -403,6 +405,8 @@ export const es: Translations = {
     label: 'Acciones de la selección',
     clearButton: 'Borrar selección',
     moreLabel: 'Más',
+    moveSelection: 'Mover selección',
+    moveSelectionBody: 'Arrastra para mover la selección, o pulsa una flecha para moverla una cuenta.',
   },
   palette: {
     pickerLabel: 'Colores de la paleta',

@@ -7,6 +7,7 @@ import { armSelectionBar, pressBar, pickColor, pickTool, rotate } from './testUt
 import { loadProjects } from './services/libraryStore'
 import { frameGrid } from './testUtils/frameGrid'
 import { frameOf } from './domain/layerRecord'
+import ProjectSurface from './components/canvas/ProjectSurface.vue'
 
 beforeEach(() => {
   localStorage.clear()
@@ -86,7 +87,19 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[1]![1]!.color]).toEqual([null, '#e63746', '#e63746'])
   })
 
-  it('sits inside the drawing area, above the Selection when there is room', async () => {
+  it('moves the Selection a bead with an arrow on its move grip (ticket 0808)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1])
+    const surface = wrapper.findComponent(ProjectSurface)
+    const before = surface.props('selection')!
+
+    await wrapper.get('[data-testid="context-bar-move"]').trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(surface.props('selection')).toMatchObject({ top: before.top + 1, left: before.left, rows: before.rows, columns: before.columns })
+  })
+
+  it('sits inside the drawing area, docked over the Selection when there is room', async () => {
     const wrapper = await mountWithProject(6, 6)
     await pickTool(wrapper, 'select')
     await drag(wrapper, [14, 15]) // a row well below the top

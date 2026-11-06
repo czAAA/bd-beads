@@ -91,6 +91,8 @@ export const en: Translations = {
     repeatNeedsRadial: '{axis}, from the shape: Repeat needs Radial.',
     closeMirror: 'Close mirror',
     insideArea: 'Mirror inside this area.',
+    moveArea: 'Move mirror area',
+    moveAreaBody: 'Drag to move the mirror area, or press an arrow key to move it by a bead.',
     frameMirrorsWhole: 'The Frame mirrors whole: use the Mirror on its margin.',
     wholeFrame: 'Mirror the whole Frame',
     mirrorOff: 'Mirror off',
@@ -401,6 +403,8 @@ export const en: Translations = {
     label: 'Selection actions',
     clearButton: 'Clear selection',
     moreLabel: 'More',
+    moveSelection: 'Move selection',
+    moveSelectionBody: 'Drag to move the selection, or press an arrow key to move it by a bead.',
   },
   palette: {
     pickerLabel: 'Palette colors',

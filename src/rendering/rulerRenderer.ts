@@ -7,7 +7,7 @@ import { MARGIN_PX } from './marginSizes'
 import type { Region, SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
-import { areaHandles, frameHandles, type Handle, type HandleId } from './frameHandles'
+import { areaHandles, frameHandles, outsetBox, type Handle, type HandleId, type Outset } from './frameHandles'
 import { frameOf } from '../domain/layerRecord'
 import { ROW_MOTION, easeIn, easeStandard } from './rowMotion'
 
@@ -303,10 +303,10 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Rect; 
   drawHotCorners(context, { ...input, box, handles: frameHandles(box, input.touch), color: input.theme.accent })
 }
 
-/** A rectangle Selection's or a Canvas Area's handles (ContextBar card, Area sheet, ticket 0807): the Frame's hot
- * corners round its box on screen, in the area's own colour, with its size Tooltip beside the hot corner. */
-export function drawAreaCorners(context: DrawingContext, input: { box: Region; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; color: string; touch: boolean; tooltip: string; hot?: HandleId }): void {
-  drawHotCorners(context, { ...input, handles: areaHandles(input.box, input.touch) })
+/** A rectangle Selection's or a Canvas Area's handles (ContextBar card, Area sheet, tickets 0807, 0808): the Frame's
+ * hot corners on its sheet's outer edge, in the area's own colour, with its size Tooltip beside the hot corner. */
+export function drawAreaCorners(context: DrawingContext, input: { box: Region; outset: Outset; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; color: string; touch: boolean; tooltip: string; hot?: HandleId }): void {
+  drawHotCorners(context, { ...input, box: outsetBox(input.box, input.outset), handles: areaHandles(input.box, input.touch, input.outset) })
 }
 
 // Hot corners (MarginSheet card) in viewport px over all else, and the size Tooltip beside the corner under the
