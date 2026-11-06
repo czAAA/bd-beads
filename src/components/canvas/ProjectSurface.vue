@@ -81,6 +81,9 @@ const props = withDefaults(defineProps<{
   rowMarks?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 ≈ 2.1 × 2.1 cm"). */
   frameTooltip?: string
+  /** The size beside a hot corner of the Selection and of the Mirror's Canvas Area (ticket 0807), as their bars read. */
+  selectionTooltip?: string
+  areaTooltip?: string
   /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
    * 433): each one shows the not-allowed cue, the margin outline for 1s. */
   selectionRefusals?: number
@@ -360,7 +363,7 @@ useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: laye
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
-  markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
+  markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, hotAreaHandle: pointer.hotAreaHandle, marginOpacity: marginCue.opacity,
   rowMotion: rowMotion.rowMotion,
 })
 

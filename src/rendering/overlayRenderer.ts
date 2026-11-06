@@ -13,7 +13,7 @@ import type { VisiblePositions } from '../domain/weaveGeometry'
 import { GLINT_COLOR, ROW_MOTION, glintMs, glintWash } from './rowMotion'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
-import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
+import { drawAreaCorners, drawFrameEditing, drawRulers } from './rulerRenderer'
 import type { HandleId } from './frameHandles'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
@@ -98,9 +98,10 @@ export interface OverlayInput {
   /** Whether the Selection is Mirror mode's rubber band (ADR 0082, ticket 0806): drawn in `mirror`, as the Area it makes,
    * not `marker`. */
   marksArea?: boolean
-  /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four
-   * larger ones. Without it the Selection has no handles. */
-  selectionHandles?: { surface: SurfaceView; touch: boolean }
+  /** Where the Selection's eight hot corners stand (tickets 414, 0807): the view the box is measured in, `touch` for the
+   * four corners alone, `hot` the one under the pointer or dragged, grown with the size `tooltip` beside it. Without it
+   * the Selection has no handles. */
+  selectionHandles?: AreaHandles
   // Where positions live, from `spaceOf`, as the base layer was drawn. On the Canvas (ADR 0026) any position can carry
   // a preview or Selection; in Frame-only space (default) the Project is the Frame alone, drawn from its first
   // bead.
@@ -123,11 +124,19 @@ export interface OverlayInput {
   /** The Mirror while it is on (ADR 0082, ContextBar card's Mirror bar): its Area and the Axis lines inside it, with
    * every tool, whatever the Rulers toggle says. Never given by an export. */
   mirror?: MirrorSetting
-  /** How a Canvas Area's eight handles are drawn: the view they are measured in and `touch` for the larger ones. */
-  mirrorArea?: { surface: SurfaceView; touch: boolean }
+  /** How a Canvas Area's eight hot corners are drawn (ticket 0807), as the Selection's. */
+  mirrorArea?: AreaHandles
   /** Row done's motion (ticket 0730), each with the ms since its press: the passes just finished, glinting and held at
    * full color for the dim delay, and the pass the marker left, its ruler pill gliding on. Never given by an export. */
   rowMotion?: RowMotion
+}
+
+/** How an area's hot corners are drawn (ContextBar card, Area sheet, ticket 0807). */
+interface AreaHandles {
+  surface: SurfaceView
+  touch: boolean
+  hot?: HandleId
+  tooltip?: string
 }
 
 /** Row done's motion on the Pattern as the overlay draws it (ticket 0730). */
@@ -400,7 +409,7 @@ const OUTLINE_PX = 2
 // The Selection (ticket 414): the rectangle's outer border in its area's colour (`marker`, or `mirror` for the Mirror's
 // Area and its rubber band, ticket 0806), no wash. One rectangle round the beads, so on peyote and brick stitch
 // (alternate rows half a bead over) it spans the furthest any row reaches. Handles are drawn later in the viewport's px.
-function drawSelection(context: DrawingContext, weave: Weave, space: Space, selection: Selection, color: string, view: () => VisiblePositions, origin: GridPosition): void {
+function drawSelection(context: DrawingContext, weave: Weave, space: Space, selection: Selection, color: string, view: () => VisiblePositions, origin: GridPosition, theme: ProjectTheme): void {
   if (selection.cells) {
     drawShapeOutline(context, weave, selection.cells, view(), origin, color)
     return
@@ -409,11 +418,47 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
   const { x, y, width, height } = positionsBoxPx(weave, selection.top, selection.left, bottom - selection.top + 1, right - selection.left + 1)
 
+  drawCutHalves(context, weave, { top: selection.top, left: selection.left, bottom, right }, { x, y, width, height }, view(), theme)
   context.fillStyle = color
   context.fillRect(x, y, width, OUTLINE_PX)
   context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
   context.fillRect(x, y, OUTLINE_PX, height)
   context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
+}
+
+/** How much of the canvas covers a half position an area's edge cuts: `--area-cut` (ContextBar card, Area sheet). */
+const AREA_CUT_OPACITY = 0.45
+
+// Where the half-bead shift leaves a position half inside the rectangle (brick's rows, peyote's columns), that half is
+// covered with `canvas` (ticket 0807): Select, Fill, Paste and Mirror skip it, and now it shows. Only the lines in view.
+function drawCutHalves(context: DrawingContext, weave: Weave, lines: { top: number; left: number; bottom: number; right: number }, box: Region, view: VisiblePositions, theme: ProjectTheme): void {
+  const description = describeWeave(weave)
+  if (!description.shifted) return
+  const cell = cellSizePx(weave.technique, weave.cell)
+  const beadAt = (row: number, column: number) => description.box({ row, column }, cell.width, cell.height)
+  context.save()
+  context.globalAlpha = AREA_CUT_OPACITY
+  context.fillStyle = theme.canvas
+  if (description.staggers === 'rows') {
+    for (let row = Math.max(lines.top, view.firstRow); row <= Math.min(lines.bottom, view.lastRow); row++) {
+      const first = beadAt(row, lines.left)
+      const last = beadAt(row, lines.right)
+      if (first.x > box.x) context.fillRect(box.x, first.y, first.x - box.x, first.height)
+      const end = last.x + last.width
+      if (end < box.x + box.width) context.fillRect(end, last.y, box.x + box.width - end, last.height)
+    }
+  } else {
+    const firstShown = Math.min(view.columnsOf(view.firstRow).first, view.columnsOf(view.lastRow).first)
+    const lastShown = Math.max(view.columnsOf(view.firstRow).last, view.columnsOf(view.lastRow).last)
+    for (let column = Math.max(lines.left, firstShown); column <= Math.min(lines.right, lastShown); column++) {
+      const first = beadAt(lines.top, column)
+      const last = beadAt(lines.bottom, column)
+      if (first.y > box.y) context.fillRect(first.x, box.y, first.width, first.y - box.y)
+      const end = last.y + last.height
+      if (end < box.y + box.height) context.fillRect(last.x, end, last.width, box.y + box.height - end)
+    }
+  }
+  context.restore()
 }
 
 /** The sides of a bead on a shape's outline, as bits. */
@@ -562,8 +607,8 @@ function drawRadial(context: DrawingContext, centre: { x: number; y: number }, s
 
 /** A Canvas Area as the Selection is drawn (ADR 0082), in its own colour (ticket 0806): the `mirror` rectangle round its
  * cells. */
-function drawAreaRect(context: DrawingContext, weave: Weave, space: Space, rect: Rect, color: string, view: () => VisiblePositions, origin: GridPosition): void {
-  drawSelection(context, weave, space, { top: rect.row, left: rect.column, rows: rect.rows, columns: rect.columns }, color, view, origin)
+function drawAreaRect(context: DrawingContext, weave: Weave, space: Space, rect: Rect, color: string, view: () => VisiblePositions, origin: GridPosition, theme: ProjectTheme): void {
+  drawSelection(context, weave, space, { top: rect.row, left: rect.column, rows: rect.rows, columns: rect.columns }, color, view, origin, theme)
 }
 
 /** Draws Mirror's Axis lines across its grid Area (spec 0702), or Radial's ring and lines (ticket 0705), where the Mirror
@@ -690,11 +735,11 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, and the marker lifted above its row.
   if (space.open) {
-    if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 })
+    if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, selectionColor, canvasView, { row: 0, column: 0 }, theme)
     if (preview && canvasCells.length) drawPreview(context, canvasWeaveOf, space, canvasCells, preview, theme, inCanvasArea)
     if (preview && canvasStamp.length) drawStampPreview(context, canvasWeaveOf, space, canvasStamp, preview, theme, zoom * pixelRatio, inCanvasArea)
     if (canvasArea) {
-      drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme.mirror, canvasView, { row: 0, column: 0 })
+      drawAreaRect(context, canvasWeaveOf, space, canvasArea, theme.mirror, canvasView, { row: 0, column: 0 }, theme)
       drawMirrorAxes(context, canvasWeaveOf, canvasArea, mirror!, zoom, theme)
     }
   }
@@ -731,7 +776,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (showRows) {
       drawLiftedBeads(context, inPass, sheetWeave, zoom * scale, pixelRatio, theme, letters)
     }
-    if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, selectionColor, sheetView, layerOrigin)
+    if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, selectionColor, sheetView, layerOrigin, theme)
     // The whole-Frame Mirror, in the Frame's own positions from its first, drawn alone too: the Axes across a Frame on a
     // grid; a Custom frame's through its layout's centre (ticket 0706).
     const mirrored = wholeFrame && geometry!.grid ? frameOf(project) : undefined
@@ -778,11 +823,15 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
   }
-  if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
-    drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), pixelRatio, theme, selectionHandles.touch)
+  // The Area's corners first, so a Selection's lie over them where the two meet (ContextBar card, Mirror bar placement).
+  // A size is a number too: the Rulers toggle hides its Tooltip with the rest.
+  const sized = (handles: AreaHandles) => (rulers?.layout.numbers === false ? '' : (handles.tooltip ?? ''))
+  if (mirrorArea && space.open && canvasArea) {
+    drawAreaCorners(context, { ...mirrorArea, box: mirrorArea.surface.beadBox(canvasArea, 'canvas'), pixelRatio, theme, color: theme.mirror, tooltip: sized(mirrorArea) })
   }
-  // A Canvas Area's handles, the Selection's eight (ContextBar card's Mirror bar): they resize it in Mirror mode.
-  if (mirrorArea && space.open && canvasArea) drawBoxHandles(context, mirrorArea.surface.beadBox(canvasArea, 'canvas'), pixelRatio, theme, mirrorArea.touch)
+  if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
+    drawAreaCorners(context, { ...selectionHandles, box: selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), pixelRatio, theme, color: selectionColor, tooltip: sized(selectionHandles) })
+  }
   if (pointer) {
     const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf
     // On the Canvas, a Frame's bead is its Bead's size (ticket 0665).

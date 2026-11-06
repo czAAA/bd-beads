@@ -1790,6 +1790,22 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(surface.attributes('style')).toContain('nwse-resize')
   })
 
+  it('grows the corner under the pointer on its disc with the size beside it, and lets it go off it (ticket 0807)', async () => {
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true }), selection, selectionTooltip: '3 × 2', showRulers: true })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+
+    context.calls.length = 0
+    await surface.trigger('pointermove', { clientX: 22, clientY: 22, pointerId: 1, pointerType: 'mouse' })
+    await vi.waitFor(() => expect(context.named('fillText').map((call) => call.args[0])).toContain('3 × 2'))
+    expect(context.named('arc')).toHaveLength(1)
+
+    context.calls.length = 0
+    await surface.trigger('pointermove', { clientX: 50, clientY: 40, pointerId: 1, pointerType: 'mouse' })
+    await vi.waitFor(() => expect(context.named('stroke').length).toBeGreaterThan(0))
+    expect(context.named('arc')).toHaveLength(0)
+    expect(context.named('fillText').map((call) => call.args[0])).not.toContain('3 × 2')
+  })
+
   it('scrolls the view toward the edge a resized or moved Selection is dragged to, and follows it (ticket 0660)', async () => {
     const frames: Array<() => void> = []
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
