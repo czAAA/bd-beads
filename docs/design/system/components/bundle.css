@@ -108,14 +108,20 @@
   --selbar-gap: 6px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
-  /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview */
+  /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
   --mirror-bar-control-touch: 30px;
   --mirror-axis-width: 1.25px;
   --mirror-axis-dash: 5 4;
   --mirror-axis-soft: 0.45;
   --mirror-ring-radius: 7px;
-  --mirror-area-handle: 9px;
+  --area-band: 10px;
+  --area-band-top: 40px;
+  --area-band-radius: 8px;
+  --area-band-fill: 0.16;
+  --area-band-edge: 0.55;
+  --area-cut: 0.45;
+  --area-move-grip: 18px;
   --mirror-area-line: 1.5px;
   --mirror-ghost-opacity: 0.45;
   --color-wheel-size: 200px;

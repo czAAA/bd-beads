@@ -39,7 +39,8 @@
   --switch-off: #858585; /* The Switch track while off (3.5:1 light, 4.1:1 dark on box). */
   --board: #e8e3df; /* The rounded board the beads sit on (PatternTheme background). */
   --ruler: #6a6a6a; /* Row and column numbers on the canvas rulers (5.2:1 light, 4.9:1 dark on box); the current pass's number is canvas on a marker pill (ticket 0685). */
-  --marker: #1d4ed8; /* Current-row border, the pill behind its ruler number and the tick on the Frame's line where it has none, the Selection and Mirror axes; PatternTheme marker. Royal blue in light, 6.0:1 on the canvas backgrounds (ticket 369). */
+  --marker: #1d4ed8; /* Current-row border, the pill behind its ruler number and the tick on the Frame's line where it has none, the Selection's line, Area sheet and hot corners; PatternTheme marker. Royal blue in light, 6.0:1 on the canvas backgrounds (ticket 369). */
+  --mirror: #c026d3; /* The Mirror's Area: its line, Area sheet, hot corners, Axis lines, Radial ring and hover outline (ContextBar card). Lighter than marker in light, darker in dark. */
   --track: #e5e5e5; /* Progress bar track. */
   --word: #f1eadd; /* The background technique word ("Loom") behind the board. */
   --print-board: #f7f3ec; /* The board behind the chart in PDF and PNG exports. Exports are always light, so it is the same in every theme. */
@@ -100,6 +101,7 @@
   --board: #202020;
   --ruler: #8c8c8c;
   --marker: #faff69;
+  --mirror: #b79cff;
   --track: #333333;
   --word: #202020;
   --print-board: #f7f3ec;
@@ -160,6 +162,7 @@
   --board: #e8e3df;
   --ruler: #3d3d3d;
   --marker: #000000;
+  --mirror: #6d28d9;
   --track: #d0d0d0;
   --word: #f5f5f5;
   --print-board: #f7f3ec;
