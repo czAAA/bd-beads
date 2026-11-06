@@ -4,22 +4,16 @@ import type { Rotation } from '../domain/grid'
 import type { SurfaceView } from './surfaceView'
 
 // The handles a Frame carries while being set (Frame card): eight with a mouse or pen, four corners on touch, named by
-// where they stand on screen; what one drags is the Frame's own edge, which a turned view carries to another side. The
-// Frame's stand on its line, drawn as hot corners (MarginSheet card, ticket 0657); a Selection's straddle its own.
+// where they stand on screen; what one drags is the Frame's own edge, which a turned view carries to another side. All
+// are drawn as hot corners (MarginSheet card, ticket 0657), a Selection's and a Canvas Area's too (ticket 0807).
 export type HandleId = 'top-left' | 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left'
 
 export interface Handle {
   id: HandleId
-  /** The centre, and the side of the square. */
+  /** Where it stands: its hit point, and the corner or edge middle its hot corner is drawn round. */
   x: number
   y: number
-  size: number
 }
-
-/** @internal Tests find a handle by its size. */
-export const HANDLE_PX = 9
-/** @internal Tests find a touch handle by its size. */
-export const TOUCH_HANDLE_PX = 16
 
 const ALL: readonly HandleId[] = ['top-left', 'top', 'top-right', 'right', 'bottom-right', 'bottom', 'bottom-left', 'left']
 const CORNERS: readonly HandleId[] = ['top-left', 'top-right', 'bottom-right', 'bottom-left']
@@ -27,7 +21,6 @@ const CORNERS: readonly HandleId[] = ['top-left', 'top-right', 'bottom-right', '
 /** The handles round a rectangle on screen (the Frame's line, not its beads), the eight or, for touch, the four
  * corners. */
 export function frameHandles(box: { x: number; y: number; width: number; height: number }, touch: boolean): Handle[] {
-  const size = touch ? TOUCH_HANDLE_PX : HANDLE_PX
   const left = box.x
   const centreX = box.x + box.width / 2
   const right = box.x + box.width
@@ -44,7 +37,26 @@ export function frameHandles(box: { x: number; y: number; width: number; height:
     'bottom-left': [left, bottom],
     left: [left, centreY],
   }
-  return (touch ? CORNERS : ALL).map((id) => ({ id, x: places[id][0], y: places[id][1], size }))
+  return (touch ? CORNERS : ALL).map((id) => ({ id, x: places[id][0], y: places[id][1] }))
+}
+
+/** How far out from an area's rectangle, in screen px on each side, its handles stand (ContextBar card, Area sheet). */
+interface Outset {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+/** A rectangle Selection's and a Canvas Area's handles stand on the rectangle's edge (ticket 0807); the Area sheet's
+ * band moves them out onto its outer edge (ticket 0808). */
+const AREA_HANDLE_OUTSET: Outset = { top: 0, right: 0, bottom: 0, left: 0 }
+
+/** The handles of a rectangle Selection or a Canvas Area round its box on screen: the Frame's, set out by the area's
+ * outset, where they are drawn and grabbed alike. */
+export function areaHandles(box: { x: number; y: number; width: number; height: number }, touch: boolean, outset: Outset = AREA_HANDLE_OUTSET): Handle[] {
+  const around = { x: box.x - outset.left, y: box.y - outset.top, width: box.width + outset.left + outset.right, height: box.height + outset.top + outset.bottom }
+  return frameHandles(around, touch)
 }
 
 /** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target
@@ -112,9 +124,10 @@ export function frameHandleIdAt(frame: Rect | undefined, surface: Pick<SurfaceVi
   return handleAt(frameHandles(box, touch), point, hitRadius(box, touch))?.id
 }
 
-/** The handle of a Selection a point is within reach of (ticket 414), for the resize cursor a hover shows. */
+/** The handle of a Selection or a Canvas Area a point is within reach of (tickets 414, 0807), for the resize cursor
+ * and the hot corner a hover shows. */
 export function handleIdAt(box: { x: number; y: number; width: number; height: number }, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
-  return handleAt(frameHandles(box, touch), point, hitRadius(box, touch))?.id
+  return handleAt(areaHandles(box, touch), point, hitRadius(box, touch))?.id
 }
 
 /** The cursor that shows a handle is resizable: the diagonal pairs for corners, the straight arrows for sides. */

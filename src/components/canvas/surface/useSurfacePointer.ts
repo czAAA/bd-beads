@@ -10,7 +10,7 @@ import { isInFinishedRow } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
 import { selectionFrame, selectionHasHandles, selectionLayer, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
-import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
+import { areaHandles, boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 import type { TiltedView } from '../../../rendering/tiltedView'
@@ -147,6 +147,9 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   const handleCursor = ref<string>()
   /** The Frame's handle under the pointer, or the one a drag holds: Edit Frame grows it (MarginSheet card, ticket 0657). */
   const hotHandle = ref<HandleId>()
+  /** The handle of a rectangle Selection or a Canvas Area under the pointer, or the one a drag holds: grown as the
+   * Frame's is (ContextBar card, Area sheet, ticket 0807). */
+  const hotAreaHandle = ref<HandleId>()
   /** Whether the last pointer was a finger: its Frame handles are the four larger corner ones. */
   const touchInput = ref(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
   let lastBead: GridPosition | undefined
@@ -402,6 +405,11 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     return { top: row, left: column, rows, columns, layer: 'canvas' }
   })
 
+  // A Selection cleared or an Area closed takes its hot corner with it, so the next one starts plain.
+  watch(() => grabbed.value === undefined, (gone) => {
+    if (gone) hotAreaHandle.value = undefined
+  })
+
   /** The layer a Selection acts on, for measuring a press on its handles. */
   function selectionViewLayer(): ViewLayer {
     return grabbed.value ? selectionLayer(props.project, grabbed.value) : 'canvas'
@@ -579,11 +587,12 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       const target: FramePress = held.cells
         ? { kind: 'outside' }
         : selectionHasHandles(held)
-          ? boxPressAt(box, quarterTurnOf(props.project), point, touchInput.value)
+          ? boxPressAt(box, quarterTurnOf(props.project), point, touchInput.value, areaHandles(box, touchInput.value))
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
       if (target.kind !== 'outside') {
         adjusting.value = true
         resizing = target.kind === 'handle'
+        hotAreaHandle.value = resizing ? handleIdAt(box, point, touchInput.value) : undefined
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
@@ -674,12 +683,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     const held = grabbed.value
     if (props.tools.selects && held && event.pointerType !== 'touch' && selectionHasHandles(held)) {
       const id = handleIdAt(surface.value.beadBox(selectionFrame(held), selectionViewLayer()), pointInDrawing(event), false)
+      hotAreaHandle.value = id
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
+      hotAreaHandle.value = undefined
       const target = framePress(event)
       hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(frameOf(props.project), surface.value, pointInDrawing(event), false) : undefined
       handleCursor.value = target?.kind === 'move' ? 'grab' : hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
     } else {
+      hotAreaHandle.value = undefined
       handleCursor.value = undefined
     }
     if (framing.value) {
@@ -765,6 +777,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     dragging.value = false
     if (adjusting.value) {
       adjusting.value = false
+      // A finger has no hover to keep a handle hot once it lifts.
+      if (event?.pointerType === 'touch') hotAreaHandle.value = undefined
       emit('selection-release')
     }
     if (framing.value) {
@@ -778,6 +792,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   /** A cancelled pointer is a pen gone out of range or a gesture taken over: it has no marker to show. */
   function onPointerCancel(): void {
     penAt.value = undefined
+    hotAreaHandle.value = undefined
     onPointerEnd()
     hideMarker()
   }
@@ -785,6 +800,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   function onPointerLeave(): void {
     penAt.value = undefined
     if (!framing.value) hotHandle.value = undefined
+    if (!adjusting.value) hotAreaHandle.value = undefined
     hovered.value = false
     hoverPoint = undefined
     lastBead = undefined
@@ -843,6 +859,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     framing,
     touchInput,
     hotHandle,
+    hotAreaHandle,
     showFinished,
     pressMoveHandle,
   }

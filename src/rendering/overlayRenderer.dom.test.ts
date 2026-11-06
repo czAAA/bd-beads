@@ -401,11 +401,50 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1, selection: { top: 1, left: 0, rows: 2, columns: 2 } })
 
       // Row 1 is half a bead across, row 2 is back at the left: the box runs from 0 to 10 + 40.
-      const [top] = named('fillRect')
+      const [top] = named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.marker)
       expect(top!.args).toEqual([0, 20, 50, 2])
     })
 
-    it('is one border on peyote too, with no per-bead work however big the Selection is', () => {
+    it('covers the half positions its edge cuts with `canvas` at 45%: brick\'s rows (ContextBar card, ticket 0807)', () => {
+      const brick = projectOf('brick', 6, 5, noProgress)
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project: brick, region: whole(brick), zoom: 1, selection: { top: 1, left: 0, rows: 2, columns: 2 } })
+
+      // Row 1 starts half a bead in, so the half before it is cut; row 2 ends half a bead short of the box.
+      const covers = named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas)
+      expect(covers.map((call) => call.args)).toEqual([
+        [0, 20, 10, 20],
+        [40, 40, 10, 20],
+      ])
+      expect(covers.every((call) => call.globalAlpha === 0.45)).toBe(true)
+    })
+
+    it('covers the half positions above and below on peyote\'s columns, and none on loom', () => {
+      const peyote = projectOf('peyote', 6, 5, noProgress)
+      const cut = recordingContext()
+      renderOverlay(cut.context, { project: peyote, region: whole(peyote), zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 } })
+      const covers = cut.named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas)
+      // One column ends half a bead short of the box, the other starts half a bead down it.
+      expect(covers).toHaveLength(2)
+      expect(covers.every((call) => (call.args[2] as number) > (call.args[3] as number))).toBe(true)
+
+      const loom = projectOf('loom', 6, 5, noProgress)
+      const plain = recordingContext()
+      renderOverlay(plain.context, { project: loom, region: whole(loom), zoom: 1, selection: selected })
+      expect(plain.named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas)).toHaveLength(0)
+    })
+
+    it('covers nothing round a Piece\'s shape Selection', () => {
+      const brick = projectOf('brick', 6, 5, noProgress)
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project: brick, region: whole(brick), zoom: 1, selection: { top: 1, left: 0, rows: 2, columns: 2, cells: [{ row: 1, column: 0 }, { row: 2, column: 1 }] } })
+
+      expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas)).toHaveLength(0)
+    })
+
+    it('is one border on peyote too, with no per-bead work however big the Selection is: its cut halves only in view', () => {
       const project = projectOf('peyote', 250, 250, noProgress)
       const { context, named } = recordingContext()
 
@@ -416,7 +455,9 @@ describe('renderOverlay', () => {
         selection: { top: 0, left: 0, rows: 250, columns: 250 },
       })
 
-      expect(named('fillRect')).toHaveLength(4)
+      expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.marker)).toHaveLength(4)
+      // A column's cut half at the top or the bottom, for the few columns 100px shows.
+      expect(named('fillRect').filter((call) => call.fillStyle === DEFAULT_THEME.canvas).length).toBeLessThan(10)
     })
 
     it('clips a Selection that reaches past the Project', () => {
@@ -451,16 +492,29 @@ describe('renderOverlay', () => {
       expect(fromBorder.indexOf('preview')).toBeLessThan(fromBorder.indexOf('marker'))
     })
 
-    it('shows the Frame\'s eight handles round it when the surface is known, and four on touch (ticket 414)', () => {
+    it('shows the Frame\'s hot corners round it in `marker` when the surface is known: four brackets and four edge bars, the brackets alone on touch (tickets 414, 0807)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
       const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
 
-      for (const [touch, count] of [[false, 8], [true, 4]] as const) {
+      for (const [touch, bars] of [[false, 4], [true, 0]] as const) {
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: selected, selectionHandles: { surface, touch } })
 
-        expect(named('roundRect')).toHaveLength(count)
+        expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(4).fill(DEFAULT_THEME.marker))
+        expect(named('roundRect').map((call) => call.fillStyle)).toEqual(Array(bars).fill(DEFAULT_THEME.marker))
       }
+    })
+
+    it('grows the hot corner on its disc and shows the size Tooltip beside it, as the Frame\'s (ticket 0807)', () => {
+      const project = projectOf('loom', 6, 5, noProgress)
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: selected, selectionHandles: { surface, touch: false, hot: 'bottom-right', tooltip: '4 × 3' } })
+
+      expect(named('arc')).toHaveLength(1)
+      expect(named('fill').map((call) => [call.fillStyle, call.globalAlpha])).toContainEqual([DEFAULT_THEME.marker, 0.18])
+      expect(named('fillText').map((call) => call.args[0])).toEqual(['4 × 3'])
     })
 
     it('shows no handles on a Selection of fewer than five beads, the same size rulers need (ticket 435)', () => {
@@ -471,7 +525,7 @@ describe('renderOverlay', () => {
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: { top: 0, left: 0, rows, columns }, selectionHandles: { surface, touch: false } })
 
-        expect(named('roundRect')).toHaveLength(count)
+        expect(named('stroke')).toHaveLength(count / 2)
       }
     })
   })
@@ -542,18 +596,20 @@ describe('renderOverlay', () => {
     const fills = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'fillRect').map((call) => call.args)
     const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
 
-    it('draws the Area as the Selection\'s rectangle round its cells with its Axes inside it, and the Selection\'s eight handles when the view is known', () => {
+    it('draws the Area as the Selection\'s rectangle round its cells with its Axes inside it, and the hot corners in `mirror` when the view is known', () => {
       const project = open()
       const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
       const { context, calls, named } = recordingContext()
 
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 200, height: 160 }, zoom: 1, mirror: on({ leftRight: true }), mirrorArea: { surface, touch: false } })
 
-      expect(lines(calls)).toEqual([[[80, 40], [80, 80]]])
+      // The Axis line first; the brackets' arms after it, in the viewport's px.
+      expect(lines(calls)[0]).toEqual([[80, 40], [80, 80]])
       expect(fills(calls)).toEqual([[60, 40, 40, 2], [60, 78, 40, 2], [60, 40, 2, 40], [98, 40, 2, 40]])
       expect(calls.find((call) => call.name === 'fillRect')!.fillStyle).toBe(DEFAULT_THEME.mirror)
-      expect(calls.find((call) => call.name === 'stroke')!.strokeStyle).toBe(DEFAULT_THEME.mirror)
-      expect(named('roundRect')).toHaveLength(8)
+      // The Axis line, then four brackets; and the four edge bars.
+      expect(named('stroke').map((call) => call.strokeStyle)).toEqual(Array(5).fill(DEFAULT_THEME.mirror))
+      expect(named('roundRect').map((call) => call.fillStyle)).toEqual(Array(4).fill(DEFAULT_THEME.mirror))
     })
 
     it('reads apart from a Selection on screen with it: the Selection\'s line `marker`, the Area\'s `mirror` (ticket 0806)', () => {
