@@ -197,7 +197,7 @@ export interface Translations {
     closeMirror: string
     /** The Selection bar's Mirror: its Tooltip body, and why it is off on a Frame Selection. */
     insideArea: string
-    /** The docked Mirror bar's move grip (ticket 0808): its name and its Tooltip. */
+    /** The Mirror bar's move grip (ticket 0808): its name and its Tooltip. */
     moveArea: string
     moveAreaBody: string
     frameMirrorsWhole: string
@@ -477,7 +477,7 @@ export interface Translations {
     clearButton: string
     /** The "…" overflow of the Selection bar when its controls do not fit (ticket 415). */
     moreLabel: string
-    /** The docked Selection bar's move grip (ticket 0808): its name and its Tooltip. */
+    /** The Selection bar's move grip (ticket 0808): its name and its Tooltip. */
     moveSelection: string
     moveSelectionBody: string
   }

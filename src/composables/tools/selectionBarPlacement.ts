@@ -1,4 +1,4 @@
-import { areaSheetOutset } from '../../rendering/frameHandles'
+import { AREA_SHEET_OUTSET } from '../../rendering/frameHandles'
 import type { TitleCorner } from '../../rendering/marginForm'
 
 /** A rectangle in the canvas box's own pixels. */
@@ -79,44 +79,20 @@ export function selectionBarPlacement(
   return clear.sort((a, b) => distance(a) - distance(b))[0] ?? preferred
 }
 
-/** The two areas that wear an Area sheet with their bar docked in it (ContextBar card, ticket 0808). */
-export type DockedArea = 'selection' | 'mirror'
+/** The two areas that wear an Area sheet, their bar carrying a move grip (ContextBar card, ticket 0808). */
+export type SheetArea = 'selection' | 'mirror'
 
-/** Where a docked bar is in its sheet's top band and how wide it is: as wide as the band unless its own width is more. */
-export interface DockedPlacement {
-  left: number
-  top: number
-  /** The least the bar is wide: the band's width less its insets, as much of it as is in the canvas box; none where
-   * the bar is wider than the band and keeps its own width. */
-  minWidth?: number
-}
-
-/** How far in from the band's left and right edges, and down from its top, the docked bar sits (ContextBar card). */
-const DOCK_INSET_PX = 8
-const DOCK_TOP_PX = 6
-
-/** A docked bar (ContextBar card, Area sheet, ticket 0808): in the top band, 8px in and 6px down, as wide as the part of
- * the band in the canvas box. A bar wider than the band keeps its width, centred on it, held on screen only while it
- * still sits over the area (ticket 0779); one narrower slides along the band to stay in view, never out of it. */
-export function dockedBarPlacement(
+/** Where an Area sheet's bar goes (ContextBar card, Area sheet, ticket 0812): placed as the floating bar is, but round
+ * the sheet's outer edge, so neither the area nor its band is ever under it. */
+export function areaBarPlacement(
   area: BarBox,
-  bar: { width: number },
-  viewport: { width: number },
-  outset: { top: number; right: number; left: number },
-): DockedPlacement {
-  const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
-  const onScreen = (left: number, width: number) => clamp(left, BAR_EDGE_PX, viewport.width - width - BAR_EDGE_PX)
-  const start = area.left - outset.left + DOCK_INSET_PX
-  const end = area.left + area.width + outset.right - DOCK_INSET_PX
-  const top = area.top - outset.top + DOCK_TOP_PX
-  if (bar.width > end - start + 0.5) {
-    const stick = Math.min(BAR_STICK_PX, area.width / 2)
-    const left = clamp(onScreen((start + end) / 2 - bar.width / 2, bar.width), area.left + stick - bar.width, area.left + area.width - stick)
-    return { left, top }
-  }
-  const minWidth = Math.max(0, Math.min(end, viewport.width - BAR_EDGE_PX) - Math.max(start, BAR_EDGE_PX))
-  const shown = Math.min(end - start, Math.max(minWidth, bar.width))
-  return { left: clamp(onScreen(start, shown), start, end - shown), top, minWidth }
+  bar: { width: number; height: number },
+  viewport: { width: number; height: number },
+  obstacle?: BarBox,
+): BarPlacement {
+  const { top, right, bottom, left } = AREA_SHEET_OUTSET
+  const sheet = { left: area.left - left, top: area.top - top, width: area.width + left + right, height: area.height + top + bottom }
+  return selectionBarPlacement(sheet, bar, viewport, obstacle)
 }
 
 /** Where the Frame is on screen (tickets 427, 473, 0657): its line's box, its margin sheet's box and the canvas box
@@ -136,12 +112,14 @@ export interface FrameAnchor extends SelectionAnchor {
   tilt?: number
 }
 
-/** How far a Selection's handles reach past its edge, in screen px (a finger's 35), and over its top, where its Area
- * sheet's top band (48px at most, with the docked bar) carries them out (ticket 0808). */
+/** How far a Selection's handles reach past its edge, in screen px (a finger's 35), and over its top, where its bar
+ * sits above its Area sheet's band: the band, the gap and the 36px touch bar (tickets 0808, 0812). */
 const SELECTION_HANDLE_REACH_PX = 35
-const SELECTION_TOP_REACH_PX = areaSheetOutset(true).top + 24
+/** The touch bar's height, `--selbar-height-touch` (ContextBar card): the taller bar, so the reach covers both. */
+const TOUCH_BAR_PX = 36
+const SELECTION_TOP_REACH_PX = AREA_SHEET_OUTSET.top + BAR_GAP_PX + TOUCH_BAR_PX
 
-/** Whether a control's hit area lies where a Selection's handles or docked bar can be pressed, so they win the press
+/** Whether a control's hit area lies where a Selection's handles or bar can be pressed, so they win the press
  * (tickets 498, 0657, 0808): over the reach round its edge, not well inside it. */
 export function overlapsSelectionHandles(hit: BarBox, selection: BarBox): boolean {
   const reach = SELECTION_HANDLE_REACH_PX

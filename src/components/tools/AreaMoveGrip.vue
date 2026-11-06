@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { controlAction } from '../../composables/shell/controlRegistry'
-import type { DockedArea } from '../../composables/tools/selectionBarPlacement'
+import type { SheetArea } from '../../composables/tools/selectionBarPlacement'
 import IconButton from '../ui/IconButton.vue'
 
-/** The move grip, a docked bar's first item (ContextBar card, Area sheet, ticket 0808): an 18 × 4 `canvas` pill whose
+/** The move grip, an area's bar's first item (ContextBar card, Area sheet, ticket 0808): an 18 × 4 `canvas` pill whose
  * press goes on to the canvas to drag the area, and whose arrows move it a bead. Its own Tab stop, before the bar's. */
 const props = defineProps<{
   /** Which area it moves: the Selection, or the Mirror's Canvas Area. */
-  area: DockedArea
+  area: SheetArea
 }>()
 
 const emit = defineEmits<{
