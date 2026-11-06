@@ -801,6 +801,28 @@ describe('useSelectionGesture', () => {
       piece.endAdjust()
       expect(piece.selection.value).toBeUndefined()
     })
+
+    it('a press of the docked bar\'s move grip names no tool: it moves the Selection, and never taps (ticket 0808)', () => {
+      const gesture = selected()
+      const before = gesture.selection.value
+      gesture.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 })
+      gesture.endAdjust()
+      expect(gesture.selection.value).toBe(before)
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 9, column: 9 })
+      gesture.dragAdjust({ row: 10, column: 8 })
+      gesture.endAdjust()
+      expect(gesture.selection.value).toMatchObject({ top: before!.top + 1, left: before!.left - 1, rows: before!.rows, columns: before!.columns })
+    })
+
+    it('an arrow on the move grip moves the Selection a bead that way (ticket 0808)', () => {
+      const gesture = selected()
+      const before = gesture.selection.value!
+      gesture.moveSelectionBy(0, 1)
+      expect(gesture.selection.value).toMatchObject({ top: before.top, left: before.left + 1, rows: before.rows, columns: before.columns })
+      gesture.moveSelectionBy(-1, 0)
+      expect(gesture.selection.value).toMatchObject({ top: before.top - 1, left: before.left + 1 })
+    })
   })
 
   describe('picking a drag back up, a finger come back from the bezel (ticket 0805)', () => {

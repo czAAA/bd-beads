@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { overlapsSelectionHandles, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
+import { dockedBarPlacement, overlapsSelectionHandles, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -45,8 +45,12 @@ describe('what of the margin sheet gives way to a Selection\'s handles (tickets 
   })
 
   it('keeps its press clear of the Selection and well inside it', () => {
-    expect(overlapsSelectionHandles({ left: 120, top: 20, width: 100, height: 28 }, selection)).toBe(false)
+    expect(overlapsSelectionHandles({ left: 120, top: 0, width: 100, height: 20 }, selection)).toBe(false)
     expect(overlapsSelectionHandles({ left: 140, top: 140, width: 20, height: 20 }, selection)).toBe(false)
+  })
+
+  it('gives way over the Area sheet\'s top band, where the docked bar and the top handles are (ticket 0808)', () => {
+    expect(overlapsSelectionHandles({ left: 120, top: 20, width: 100, height: 28 }, selection)).toBe(true)
   })
 })
 
@@ -92,5 +96,41 @@ describe('selectionBarPlacement around the Tool pill (ticket 439)', () => {
     const kept = selectionBarPlacement(sheet, bar, viewport, pill, { keepSide: true })
     expect(kept.below).toBe(true)
     expect(overlaps(kept, pill)).toBe(false)
+  })
+})
+
+describe('dockedBarPlacement (ContextBar card, Area sheet, ticket 0808)', () => {
+  const band = { top: 40, right: 10, left: 10 }
+  const area = { left: 100, top: 100, width: 200, height: 80 }
+
+  it('docks the bar in the top band, 8px in and 6px down, as wide as the band', () => {
+    expect(dockedBarPlacement(area, { width: 150 }, viewport, band)).toEqual({ left: 98, top: 66, minWidth: 204 })
+  })
+
+  it('keeps a bar wider than the band at its own width, centred on the band', () => {
+    const narrow = { left: 150, top: 100, width: 40, height: 40 }
+    expect(dockedBarPlacement(narrow, { width: 200 }, viewport, band)).toEqual({ left: 70, top: 66 })
+  })
+
+  it('stays in the band however the band and the canvas box lie, the bar never leaving its area', () => {
+    const offLeft = { left: -50, top: 100, width: 200, height: 80 }
+    // The band runs off the box's left edge: the bar is as wide as the part in view, and starts at the box's edge.
+    expect(dockedBarPlacement(offLeft, { width: 120 }, viewport, band)).toEqual({ left: 8, top: 66, minWidth: 144 })
+    // Less of it in view than the bar needs: the bar slides along the band as far as its end, no further.
+    const further = { left: -150, top: 100, width: 200, height: 80 }
+    expect(dockedBarPlacement(further, { width: 120 }, viewport, band).left).toBe(52 - 120)
+    // An area panned away takes its bar with it.
+    const away = { left: -400, top: 100, width: 200, height: 80 }
+    const placed = dockedBarPlacement(away, { width: 120 }, viewport, band)
+    expect(placed.left + (placed.minWidth ?? 0)).toBeLessThanOrEqual(-400 + 200 + 2)
+  })
+
+  it('is no wider than the canvas box when the band is wider', () => {
+    const wide = { left: -100, top: 100, width: 800, height: 80 }
+    expect(dockedBarPlacement(wide, { width: 150 }, viewport, band)).toEqual({ left: 8, top: 66, minWidth: 384 })
+  })
+
+  it('sits lower in the taller touch band, as tall as the touch bar with its gaps', () => {
+    expect(dockedBarPlacement(area, { width: 150 }, viewport, { ...band, top: 48 }).top).toBe(58)
   })
 })
