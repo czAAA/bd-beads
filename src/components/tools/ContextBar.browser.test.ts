@@ -112,4 +112,13 @@ describe('ContextBar states', () => {
     close.focus()
     expect(bar.scrollLeft).toBeGreaterThan(0)
   })
+
+  it('lays the Mirror bar under the Selection bar where the two meet, until it takes focus (ticket 0809)', async () => {
+    const { root } = await mountAt(ContextBar, mirrorProps, { locale: 'en', width: 800 })
+    const bar = root.querySelector<HTMLElement>('[data-testid="mirror-bar"]')!
+    const selectionBar = (await mountBar(selectionProps)).root.querySelector<HTMLElement>('[data-testid="context-bar"]')!
+    expect(Number(getComputedStyle(bar).zIndex)).toBeLessThan(Number(getComputedStyle(selectionBar).zIndex))
+    root.querySelector<HTMLElement>('[data-testid="mirror-bar-close"]')!.focus()
+    expect(Number(getComputedStyle(bar).zIndex)).toBe(Number(getComputedStyle(selectionBar).zIndex))
+  })
 })
