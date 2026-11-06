@@ -93,6 +93,8 @@ export const zh: Translations = {
     repeatNeedsRadial: '{axis}，按形状：重复需要环绕。',
     closeMirror: '关闭镜像',
     insideArea: '在此区域内镜像。',
+    moveArea: '移动镜像区域',
+    moveAreaBody: '拖动可移动镜像区域，按方向键可将其移动一颗珠子。',
     frameMirrorsWhole: '边框整体镜像：请使用其边距上的镜像。',
     wholeFrame: '镜像整个边框',
     mirrorOff: '关闭镜像',
@@ -402,6 +404,8 @@ export const zh: Translations = {
     label: '选区操作',
     clearButton: '清除选区',
     moreLabel: '更多',
+    moveSelection: '移动选区',
+    moveSelectionBody: '拖动可移动选区，按方向键可将其移动一颗珠子。',
   },
   palette: {
     pickerLabel: '调色板颜色',

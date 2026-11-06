@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MIRROR_OFF } from '../../domain/mirror'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
@@ -1726,7 +1727,8 @@ describe('ProjectSurface', () => {
 
       // The rectangle's border, four strips; no wash on its beads.
       expect(context.named('fillRect')).toHaveLength(4)
-      expect(context.named('rect')).toHaveLength(0) // the cells were left alone
+      // The cells were left alone: the one rect is the Area sheet's inner edge (ticket 0808).
+      expect(context.named('rect')).toHaveLength(1)
 
       context.calls.length = 0
       await wrapper.setProps({ selection: undefined })
@@ -1753,8 +1755,9 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true }), selection })
     const surface = wrapper.find('[data-testid="project-surface"]')
 
-    // The box is (20, 20) to (80, 60): near its top-left corner, then inside, then well away.
-    await surface.trigger('pointerdown', { button: 0, clientX: 24, clientY: 24, pointerId: 1 })
+    // The box is (20, 20) to (80, 60), its sheet (10, -20) to (90, 70): near the sheet's bottom-left corner, then
+    // inside, then well away.
+    await surface.trigger('pointerdown', { button: 0, clientX: 13, clientY: 67, pointerId: 1 })
     await surface.trigger('pointermove', { buttons: 1, clientX: 45, clientY: 45, pointerId: 1 })
     await surface.trigger('pointerup', { pointerId: 1 })
     await surface.trigger('pointerdown', { button: 0, clientX: 50, clientY: 40, pointerId: 1 })
@@ -1762,7 +1765,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     await surface.trigger('pointerdown', { button: 0, clientX: 250, clientY: 150, pointerId: 1 })
     await surface.trigger('pointerup', { pointerId: 1 })
 
-    expect(wrapper.emitted('selection-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['top', 'left'] }, { kind: 'inside' }])
+    expect(wrapper.emitted('selection-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['bottom', 'left'] }, { kind: 'inside' }])
     expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 2, column: 2 }]])
     expect(wrapper.emitted('selection-release')).toHaveLength(2)
     // Only the press away from the Selection reached the beads.
@@ -1786,8 +1789,8 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     expect(surface.classes()).not.toContain('project-surface--over-bead')
     expect(surface.attributes('style') ?? '').not.toContain('resize')
 
-    await surface.trigger('pointermove', { clientX: 22, clientY: 22, pointerId: 1, pointerType: 'mouse' })
-    expect(surface.attributes('style')).toContain('nwse-resize')
+    await surface.trigger('pointermove', { clientX: 13, clientY: 67, pointerId: 1, pointerType: 'mouse' })
+    expect(surface.attributes('style')).toContain('nesw-resize')
   })
 
   it('grows the corner under the pointer on its disc with the size beside it, and lets it go off it (ticket 0807)', async () => {
@@ -1795,7 +1798,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     const surface = wrapper.find('[data-testid="project-surface"]')
 
     context.calls.length = 0
-    await surface.trigger('pointermove', { clientX: 22, clientY: 22, pointerId: 1, pointerType: 'mouse' })
+    await surface.trigger('pointermove', { clientX: 13, clientY: 67, pointerId: 1, pointerType: 'mouse' })
     await vi.waitFor(() => expect(context.named('fillText').map((call) => call.args[0])).toContain('3 × 2'))
     expect(context.named('arc')).toHaveLength(1)
 
@@ -1804,6 +1807,27 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
     await vi.waitFor(() => expect(context.named('stroke').length).toBeGreaterThan(0))
     expect(context.named('arc')).toHaveLength(0)
     expect(context.named('fillText').map((call) => call.args[0])).not.toContain('3 × 2')
+  })
+
+  it('takes a press on a docked bar\'s move grip as a drag of its area, whatever the tool, naming the area (ticket 0808)', async () => {
+    const place = { layer: 'canvas' as const, area: { row: 5, column: 5, rows: 2, columns: 2 } }
+    const mirror = { ...MIRROR_OFF, mode: 'mirror' as const, axes: { ...MIRROR_OFF.axes, leftRight: true }, place }
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can(), selection, mirror })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    const grip = wrapper.vm as unknown as { pressAreaGrip(event: PointerEvent, area: 'selection' | 'mirror'): void }
+    const press = (area: 'selection' | 'mirror') =>
+      grip.pressAreaGrip({ button: 0, clientX: 30, clientY: 10, pointerId: 1, pointerType: 'mouse', isPrimary: true, preventDefault: () => {} } as unknown as PointerEvent, area)
+
+    for (const area of ['selection', 'mirror'] as const) {
+      press(area)
+      await surface.trigger('pointermove', { buttons: 1, clientX: 50, clientY: 30, pointerId: 1 })
+      await surface.trigger('pointerup', { pointerId: 1 })
+    }
+
+    expect(wrapper.emitted('selection-press')!.map(([target, , area]) => [target, area])).toEqual([[{ kind: 'inside' }, 'selection'], [{ kind: 'inside' }, 'mirror']])
+    expect(wrapper.emitted('selection-drag')).toHaveLength(2)
+    expect(wrapper.emitted('selection-release')).toHaveLength(2)
+    expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
   })
 
   it('scrolls the view toward the edge a resized or moved Selection is dragged to, and follows it (ticket 0660)', async () => {

@@ -681,6 +681,61 @@ describe('renderOverlay', () => {
     })
   })
 
+  describe('the Area sheet round a Selection and a Canvas Area (ContextBar card, ticket 0808)', () => {
+    const open = () => (changeFrame(projectOf('loom', 6, 5, { marks: false }), { remove: true }) as { project: Project }).project
+    const region = { x: 0, y: 0, width: 200, height: 160 }
+    const outset = { top: 40, right: 10, bottom: 10, left: 10 }
+    const mirror: MirrorSetting = { ...MIRROR_OFF, mode: 'mirror', axes: { ...MIRROR_OFF.axes, leftRight: true }, place: inArea(2, 3, 2, 2) }
+    /** The bands: an even-odd fill round each box, in its colour. */
+    const bands = (named: ReturnType<typeof recordingContext>['named']) => named('fill').filter((call) => call.args[0] === 'evenodd')
+
+    it('runs a band round each, the Mirror\'s first so the Selection\'s lies over it, at 16% with a 55% edge, 40px over the top and 10px round the rest', () => {
+      const project = open()
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: region })
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror, areaSheet: { surface, outset } })
+
+      expect(bands(named).map((call) => [call.fillStyle, call.globalAlpha])).toEqual([[DEFAULT_THEME.mirror, 0.16], [DEFAULT_THEME.marker, 0.16]])
+      // The Area's 2 × 2 beads at (60, 40), 20px each: its sheet from 10px left of it and 40px over it, radius 8.
+      expect(named('roundRect')[0]!.args).toEqual([50, 0, 60, 90, 8])
+      expect(named('stroke').filter((call) => call.globalAlpha === 0.55)).toHaveLength(2)
+    })
+
+    it('is the same in screen px at every zoom', () => {
+      const project = open()
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 2, viewport: region })
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 2, mirror, areaSheet: { surface, outset } })
+
+      const [x, y, width, height] = named('roundRect')[0]!.args as number[]
+      const box = surface.beadBox(mirror.place!.layer === 'canvas' ? mirror.place!.area : { row: 0, column: 0, rows: 0, columns: 0 }, 'canvas')
+      expect([box.x - x!, box.y - y!, width! - box.width, height! - box.height]).toEqual([10, 40, 20, 50])
+    })
+
+    it('is drawn round a rectangle Selection whatever the tool, not round a Piece\'s shape, and never without the surface (an export)', () => {
+      const project = open()
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: region })
+      const shape = recordingContext()
+      renderOverlay(shape.context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2, cells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] }, areaSheet: { surface, outset } })
+      expect(bands(shape.named)).toHaveLength(0)
+      const exported = recordingContext()
+      renderOverlay(exported.context, { project, space: spaceOf(project, true), region, zoom: 1, selection: { top: 0, left: 0, rows: 2, columns: 2 }, mirror })
+      expect(bands(exported.named)).toHaveLength(0)
+    })
+
+    it('carries the hot corners on its outer edge', () => {
+      const project = open()
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: region })
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region, zoom: 1, mirror, mirrorArea: { surface, touch: false }, areaSheet: { surface, outset } })
+
+      // The top and bottom edges' bars, 12 × 4, centred on the sheet's edges at (80, 0) and (80, 90), just outside them.
+      const edgeBars = named('roundRect').slice(1).map((call) => call.args as number[])
+      expect(edgeBars).toContainEqual([74, -4, 12, 4, 2])
+      expect(edgeBars).toContainEqual([74, 90, 12, 4, 2])
+    })
+  })
+
   describe('Radial on the whole Frame (tickets 0705, 0750)', () => {
     const radial = (fold: number, mode: MirrorSetting['mode']): MirrorSetting => ({ ...MIRROR_OFF, mode, axes: { ...MIRROR_OFF.axes, radial: true }, fold, place: WHOLE_FRAME })
     const strokes = (calls: ReturnType<typeof recordingContext>['calls']) => calls.filter((call) => call.name === 'stroke')

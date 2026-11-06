@@ -93,4 +93,24 @@ describe('useMirrorFlow (ADR 0082, ticket 0750)', () => {
     harness.history.onUndo()
     expect(flow.on.value).toBe(false)
   })
+
+  it('moves the Canvas Area a bead for an arrow on its move grip, one Undo step each (ticket 0808)', () => {
+    const { flow, harness } = setup(true)
+    flow.makeFrom(area)
+    flow.moveAreaBy(0, 1)
+    flow.moveAreaBy(1, 0)
+    expect(mirrorSettingOf(harness.project!).place).toEqual({ layer: 'canvas', area: { ...area, row: 2, column: 3 } })
+    harness.history.onUndo()
+    expect(mirrorSettingOf(harness.project!).place).toEqual({ layer: 'canvas', area: { ...area, column: 3 } })
+  })
+
+  it('holds a press that grabbed the Area until it is let go, so its drags are the Area\'s (ticket 0808)', () => {
+    const { flow } = setup(true)
+    flow.makeFrom(area)
+    expect(flow.holding()).toBe(false)
+    flow.pressArea({ kind: 'inside' }, { row: 2, column: 4 })
+    expect(flow.holding()).toBe(true)
+    flow.releaseArea()
+    expect(flow.holding()).toBe(false)
+  })
 })

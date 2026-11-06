@@ -32,6 +32,8 @@ import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
 import type { MirrorSetting } from '../../domain/mirror'
 import { useSurfacePointer, type SurfacePointerEvents } from './surface/useSurfacePointer'
 import { useRowMotion } from './surface/useRowMotion'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { areaSheetOutset } from '../../rendering/frameHandles'
 import type { RowPress } from '../../composables/project/useRowOps'
 import PatternDone from './PatternDone.vue'
 import { PATTERN_DONE_STARS } from '../../rendering/rowMotion'
@@ -353,8 +355,12 @@ watch(schemaAnchors, (anchors) => emit('schema-anchors', anchors), { immediate: 
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 
 const marginCue = useMarginCue(props)
-const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
-const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
+/** The Area sheets' band (ticket 0808): its top fits the bar docked in it, the touch bar on a coarse pointer as the
+ * bar's own CSS picks it. */
+const coarse = useMediaQuery('(pointer: coarse)')
+const areaOutset = computed(() => areaSheetOutset(coarse.value))
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse, areaOutset })
+const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle, pressAreaGrip } = pointer
 const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
@@ -364,7 +370,7 @@ watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flu
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, hotAreaHandle: pointer.hotAreaHandle, marginOpacity: marginCue.opacity,
-  rowMotion: rowMotion.rowMotion,
+  rowMotion: rowMotion.rowMotion, areaOutset,
 })
 
 /** Where Pattern done plays (ticket 0730): the margin sheet, the Frame in it and the beads its stars light, in the
@@ -395,7 +401,7 @@ function beadOnScreen(position: GridPosition): { x: number; y: number } | undefi
   return { x: box.left + shown.x, y: box.top + shown.y }
 }
 
-defineExpose({ rulerLayout: rulers, pressMoveHandle, beadOnScreen })
+defineExpose({ rulerLayout: rulers, pressMoveHandle, pressAreaGrip, beadOnScreen })
 
 onMounted(() => {
   measure()
