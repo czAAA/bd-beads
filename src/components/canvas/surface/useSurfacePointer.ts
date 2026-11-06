@@ -10,7 +10,8 @@ import { isInFinishedRow } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
 import { selectionFrame, selectionHasHandles, selectionLayer, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
-import { areaHandles, boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
+import { areaPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId, type Outset } from '../../../rendering/frameHandles'
+import type { DockedArea } from '../../../composables/tools/selectionBarPlacement'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 import type { TiltedView } from '../../../rendering/tiltedView'
@@ -50,8 +51,9 @@ export interface SurfacePointerEvents {
   'frame-drag': [cell: GridPosition]
   /** Edit Frame: the press ended. */
   'frame-release': []
-  /** The Selection's handles or inside were pressed (ticket 414), at this bead position. */
-  'selection-press': [target: FramePress, cell: GridPosition]
+  /** The Selection's handles or inside were pressed (ticket 414), at this bead position; or the move grip of an
+   * area's docked bar, which names the area it moves (ticket 0808). */
+  'selection-press': [target: FramePress, cell: GridPosition, area?: DockedArea]
   /** The pointer moved with that press held, over this bead position. */
   'selection-drag': [cell: GridPosition]
   /** That press ended. */
@@ -96,6 +98,8 @@ export interface SurfacePointerDeps {
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
   refuse: () => void
+  /** How far an Area sheet's band reaches round its area (ContextBar card, ticket 0808): its handles stand on its edge. */
+  areaOutset: Ref<Outset>
 }
 
 /** How long after the last wheel event a wheel or trackpad scroll or zoom counts as over, so the bar comes back
@@ -127,7 +131,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, size, surface, leaning, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, size, surface, leaning, marksShown, refuse: refusePress, areaOutset }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -547,6 +551,24 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     event.preventDefault()
   }
 
+  /** A press on the move grip of an area's docked bar (ticket 0808): the drag a press inside the area starts, whatever
+   * the tool, with no tap at its end. */
+  function pressAreaGrip(event: PointerEvent, area: DockedArea): void {
+    const place = props.mirror?.place
+    const layer = area === 'selection' ? props.selection && !props.selection.cells && selectionLayer(props.project, props.selection) : place?.layer === 'canvas' && 'canvas'
+    if (!layer || event.button !== 0) return
+    touchInput.value = event.pointerType === 'touch'
+    onPress(event)
+    adjusting.value = true
+    resizing = false
+    selectionAtPress = props.selection
+    hideMarker()
+    rootEl.value?.setPointerCapture?.(event.pointerId)
+    gestureLayer = layer
+    emit('selection-press', { kind: 'inside' }, cellUnder(event), area)
+    event.preventDefault()
+  }
+
   /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
   let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined
 
@@ -587,12 +609,12 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
       const target: FramePress = held.cells
         ? { kind: 'outside' }
         : selectionHasHandles(held)
-          ? boxPressAt(box, quarterTurnOf(props.project), point, touchInput.value, areaHandles(box, touchInput.value))
+          ? areaPressAt(box, quarterTurnOf(props.project), point, touchInput.value, areaOutset.value)
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
       if (target.kind !== 'outside') {
         adjusting.value = true
         resizing = target.kind === 'handle'
-        hotAreaHandle.value = resizing ? handleIdAt(box, point, touchInput.value) : undefined
+        hotAreaHandle.value = resizing ? handleIdAt(box, point, touchInput.value, areaOutset.value) : undefined
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = selectionViewLayer()
@@ -682,7 +704,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     }
     const held = grabbed.value
     if (props.tools.selects && held && event.pointerType !== 'touch' && selectionHasHandles(held)) {
-      const id = handleIdAt(surface.value.beadBox(selectionFrame(held), selectionViewLayer()), pointInDrawing(event), false)
+      const id = handleIdAt(surface.value.beadBox(selectionFrame(held), selectionViewLayer()), pointInDrawing(event), false, areaOutset.value)
       hotAreaHandle.value = id
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
     } else if (frameOf(props.project) && event.pointerType !== 'touch' && !framing.value) {
@@ -862,5 +884,6 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
     hotAreaHandle,
     showFinished,
     pressMoveHandle,
+    pressAreaGrip,
   }
 }

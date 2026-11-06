@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { areaHandles, boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, hitRadius } from './frameHandles'
+import { areaHandles, areaPressAt, areaSheetOutset, boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, handleIdAt, hitRadius } from './frameHandles'
 
 const box = { x: 100, y: 50, width: 200, height: 100 }
 
@@ -18,11 +18,31 @@ describe('frame handles', () => {
     expect(handles.map((h) => h.id)).toEqual(['top-left', 'top-right', 'bottom-right', 'bottom-left'])
   })
 
-  it('stand on an area\'s edge, as the Frame\'s on its line, unless set out from it (tickets 0807, 0808)', () => {
-    expect(areaHandles(box, false)).toEqual(frameHandles(box, false))
-    const out = areaHandles(box, false, { top: 40, right: 10, bottom: 10, left: 10 })
+  it('stand on an area\'s sheet\'s outer edge: 10px out on the sides and bottom, 40px over the top (tickets 0807, 0808)', () => {
+    const out = areaHandles(box, false, areaSheetOutset(false))
     expect(out.find((h) => h.id === 'top-left')).toMatchObject({ x: 90, y: 10 })
+    expect(out.find((h) => h.id === 'top')).toMatchObject({ x: 200, y: 10 })
     expect(out.find((h) => h.id === 'bottom-right')).toMatchObject({ x: 310, y: 160 })
+  })
+
+  it('give the sheet a top as tall as the touch bar with its gaps where the pointer is coarse (ticket 0808)', () => {
+    expect(areaSheetOutset(false)).toEqual({ top: 40, right: 10, bottom: 10, left: 10 })
+    expect(areaSheetOutset(true)).toEqual({ top: 48, right: 10, bottom: 10, left: 10 })
+  })
+
+  it('grab an area at its sheet\'s corners and edges; its inside moves it, the band is the canvas\'s (ticket 0808)', () => {
+    const outset = areaSheetOutset(false)
+    expect(areaPressAt(box, 0, { x: 92, y: 12 }, false, outset)).toEqual({ kind: 'handle', edges: ['top', 'left'] })
+    expect(areaPressAt(box, 0, { x: 310, y: 85 }, false, outset)).toEqual({ kind: 'handle', edges: ['right'] })
+    expect(handleIdAt(box, { x: 308, y: 158 }, false, outset)).toBe('bottom-right')
+    expect(areaPressAt(box, 0, { x: 102, y: 52 }, false, outset)).toEqual({ kind: 'inside' })
+    expect(areaPressAt(box, 0, { x: 150, y: 30 }, false, outset)).toEqual({ kind: 'outside' })
+  })
+
+  it('measure their reach on the sheet, so a tiny area keeps handles that can be grabbed (ticket 0808)', () => {
+    const small = { x: 100, y: 100, width: 12, height: 12 }
+    // The sheet is 32 × 62: a third of 32 is the reach, not a third of the area's 12.
+    expect(handleIdAt(small, { x: 96, y: 66 }, false, areaSheetOutset(false))).toBe('top-left')
   })
 
   it('are grabbed within 14px of their centre with a pointer and 24px with a finger, and not away from them', () => {

@@ -40,23 +40,35 @@ export function frameHandles(box: { x: number; y: number; width: number; height:
   return (touch ? CORNERS : ALL).map((id) => ({ id, x: places[id][0], y: places[id][1] }))
 }
 
-/** How far out from an area's rectangle, in screen px on each side, its handles stand (ContextBar card, Area sheet). */
-interface Outset {
+/** How far out from an area's rectangle, in screen px on each side, its Area sheet's band reaches (ContextBar card). */
+export interface Outset {
   top: number
   right: number
   bottom: number
   left: number
 }
 
-/** A rectangle Selection's and a Canvas Area's handles stand on the rectangle's edge (ticket 0807); the Area sheet's
- * band moves them out onto its outer edge (ticket 0808). */
-const AREA_HANDLE_OUTSET: Outset = { top: 0, right: 0, bottom: 0, left: 0 }
+/** The Area sheet's band (ContextBar card): `--area-band` on the sides and bottom, `--area-band-top` on top, the docked
+ * bar with 6px above and below it; `--area-band-top-touch` where the bar is the touch one. */
+const AREA_BAND_PX = 10
+const AREA_BAND_TOP_PX = 40
+const AREA_BAND_TOP_TOUCH_PX = 48
 
-/** The handles of a rectangle Selection or a Canvas Area round its box on screen: the Frame's, set out by the area's
- * outset, where they are drawn and grabbed alike. */
-export function areaHandles(box: { x: number; y: number; width: number; height: number }, touch: boolean, outset: Outset = AREA_HANDLE_OUTSET): Handle[] {
-  const around = { x: box.x - outset.left, y: box.y - outset.top, width: box.width + outset.left + outset.right, height: box.height + outset.top + outset.bottom }
-  return frameHandles(around, touch)
+/** The band round a rectangle Selection or a Canvas Area (ticket 0808), its top as tall as the bar docked in it: the
+ * touch bar's on a coarse pointer, as the bar's own CSS picks it. */
+export function areaSheetOutset(coarse: boolean): Outset {
+  return { top: coarse ? AREA_BAND_TOP_TOUCH_PX : AREA_BAND_TOP_PX, right: AREA_BAND_PX, bottom: AREA_BAND_PX, left: AREA_BAND_PX }
+}
+
+/** A rectangle on screen set out by an outset: an Area sheet's outer edge. */
+export function outsetBox(box: { x: number; y: number; width: number; height: number }, outset: Outset): { x: number; y: number; width: number; height: number } {
+  return { x: box.x - outset.left, y: box.y - outset.top, width: box.width + outset.left + outset.right, height: box.height + outset.top + outset.bottom }
+}
+
+/** The handles of a rectangle Selection or a Canvas Area round its box on screen: the Frame's, on its Area sheet's
+ * outer edge (tickets 0807, 0808), where they are drawn and grabbed alike. */
+export function areaHandles(box: { x: number; y: number; width: number; height: number }, touch: boolean, outset: Outset): Handle[] {
+  return frameHandles(outsetBox(box, outset), touch)
 }
 
 /** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target
@@ -102,10 +114,11 @@ export function handleEdges(rotation: Rotation, id: HandleId): FrameEdge[] {
  * inside, or the Canvas. */
 export type FramePress = { kind: 'handle'; edges: FrameEdge[] } | { kind: 'move' } | { kind: 'inside' } | { kind: 'outside' }
 
-/** What a press at a point of the viewport grabs of a rectangle on screen, given its handles: a handle first, then its
- * inside, then the canvas round it. */
-export function boxPressAt(box: { x: number; y: number; width: number; height: number }, rotation: Rotation, point: { x: number; y: number }, touch: boolean, handles: readonly Handle[] = frameHandles(box, touch)): FramePress {
-  const handle = handleAt(handles, point, hitRadius(box, touch))
+/** What a press at a point of the viewport grabs of a rectangle on screen: a handle first, then its inside, then the
+ * canvas round it.
+ * @internal Tests check a press on a bare rectangle on its own. */
+export function boxPressAt(box: { x: number; y: number; width: number; height: number }, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
+  const handle = handleAt(frameHandles(box, touch), point, hitRadius(box, touch))
   if (handle) {
     return { kind: 'handle', edges: handleEdges(rotation, handle.id) }
   }
@@ -125,9 +138,18 @@ export function frameHandleIdAt(frame: Rect | undefined, surface: Pick<SurfaceVi
 }
 
 /** The handle of a Selection or a Canvas Area a point is within reach of (tickets 414, 0807), for the resize cursor
- * and the hot corner a hover shows. */
-export function handleIdAt(box: { x: number; y: number; width: number; height: number }, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
-  return handleAt(areaHandles(box, touch), point, hitRadius(box, touch))?.id
+ * and the hot corner a hover shows. Its reach is measured on the sheet, whose inside the band keeps clear. */
+export function handleIdAt(box: { x: number; y: number; width: number; height: number }, point: { x: number; y: number }, touch: boolean, outset: Outset): HandleId | undefined {
+  const sheet = outsetBox(box, outset)
+  return handleAt(frameHandles(sheet, touch), point, hitRadius(sheet, touch))?.id
+}
+
+/** What a press grabs of a rectangle Selection or a Canvas Area: a handle on its sheet's edge first, then its inside;
+ * the band itself is the canvas's, as nothing but the bar is on it (ContextBar card, Area sheet). */
+export function areaPressAt(box: { x: number; y: number; width: number; height: number }, rotation: Rotation, point: { x: number; y: number }, touch: boolean, outset: Outset): FramePress {
+  const id = handleIdAt(box, point, touch, outset)
+  if (id) return { kind: 'handle', edges: handleEdges(rotation, id) }
+  return { kind: pointInBox(box, point) ? 'inside' : 'outside' }
 }
 
 /** The cursor that shows a handle is resizable: the diagonal pairs for corners, the straight arrows for sides. */

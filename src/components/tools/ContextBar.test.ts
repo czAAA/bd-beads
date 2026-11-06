@@ -59,7 +59,7 @@ describe('ContextBar', () => {
 
     expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
-    expect(ids).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-mirror-selection', 'context-bar-clear'])
+    expect(ids).toEqual(['context-bar-move', 'context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-mirror-selection', 'context-bar-clear'])
     for (const id of ids) expect(wrapper.get(`[data-testid="${id}"]`).text(), id).toBe('')
     expect(wrapper.get('[data-testid="context-bar-copy"]').attributes('aria-label')).toBe('Copy')
     expect(wrapper.get('[data-testid="context-bar-clear"]').attributes('aria-label')).toBe('Clear selection')
@@ -284,7 +284,7 @@ describe('ContextBar keyboard (ticket 563, ADR 0075)', () => {
       attachTo: document.body,
     })
     await arm()
-    const buttons = wrapper.findAll('button[data-testid]')
+    const buttons = wrapper.findAll('button.context-bar__button')
     expect(buttons.filter((button) => button.attributes('tabindex') === '0')).toHaveLength(1)
 
     ;(buttons[0]!.element as HTMLElement).focus()
@@ -297,6 +297,64 @@ describe('ContextBar keyboard (ticket 563, ADR 0075)', () => {
     await last.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(last.element)
     wrapper.unmount()
+  })
+})
+
+describe('the docked bar (ContextBar card, Area sheet, ticket 0808)', () => {
+  const anchor = { box: { left: 100, top: 200, width: 300, height: 60 }, viewport: { width: 600, height: 400 } }
+
+  beforeEach(() => {
+    localStorage.setItem('openbeads:locale', 'en')
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('is docked in a rectangle Selection\'s top band, 8px in and 6px down, as wide as the band', () => {
+    const wrapper = mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, anchor } })
+    const root = wrapper.get('[data-testid="context-bar"]')
+    expect(root.classes()).toContain('context-bar--docked')
+    expect(root.attributes('style')).toContain('left: 98px')
+    expect(root.attributes('style')).toContain('top: 166px')
+    expect(root.attributes('style')).toContain('min-width: 304px')
+  })
+
+  it('floats above a Piece\'s shape, with no grip', () => {
+    const shape: Selection = { ...selection, cells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] }
+    const wrapper = mount(ContextBar, { props: { project: drawn, selection: shape, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false, anchor } })
+    expect(wrapper.get('[data-testid="context-bar"]').classes()).not.toContain('context-bar--docked')
+    expect(wrapper.find('[data-testid="context-bar-move"]').exists()).toBe(false)
+  })
+
+  it('leads with the move grip, named and its own Tab stop: a press hands on to the canvas, an arrow moves the Selection, not the focus', async () => {
+    const wrapper = mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, anchor }, attachTo: document.body })
+    await arm()
+    const grip = wrapper.get('[data-testid="context-bar-move"]')
+    expect(grip.attributes('aria-label')).toBe('Move selection')
+    expect(grip.attributes('tabindex')).not.toBe('-1')
+    await grip.trigger('pointerdown', { button: 0 })
+    expect(wrapper.emitted('move-press')?.[0]?.[1]).toBe('selection')
+    ;(grip.element as HTMLElement).focus()
+    await grip.trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.emitted('move-key')?.[0]?.[1]).toBe('selection')
+    expect(document.activeElement).toBe(grip.element)
+    wrapper.unmount()
+  })
+
+  it('docks the Mirror bar in a Canvas Area\'s sheet with its own grip, and floats it above the whole Frame', async () => {
+    const place = { layer: 'canvas' as const, area: { row: 0, column: 0, rows: 4, columns: 6 } }
+    const mirror = { setting: { ...MIRROR_OFF, axes: { ...MIRROR_OFF.axes, leftRight: true }, place }, summary: '6×4', rect: place.area }
+    const wrapper = mount(ContextBar, { props: { project, pasteArmed: false, canRemoveLine: false, mirror, mirrorAnchor: anchor } })
+    expect(wrapper.get('[data-testid="mirror-bar"]').classes()).toContain('context-bar--docked')
+    expect(wrapper.get('[data-testid="mirror-bar-move"]').attributes('aria-label')).toBe('Move mirror area')
+    await wrapper.get('[data-testid="mirror-bar-move"]').trigger('pointerdown', { button: 0 })
+    expect(wrapper.emitted('move-press')?.[0]?.[1]).toBe('mirror')
+
+    await wrapper.setProps({ mirror: { ...mirror, setting: { ...mirror.setting, place: { layer: 'frame' as const } } } })
+    expect(wrapper.get('[data-testid="mirror-bar"]').classes()).not.toContain('context-bar--docked')
+    expect(wrapper.find('[data-testid="mirror-bar-move"]').exists()).toBe(false)
   })
 })
 

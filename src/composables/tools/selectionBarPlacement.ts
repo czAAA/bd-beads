@@ -1,3 +1,4 @@
+import { areaSheetOutset } from '../../rendering/frameHandles'
 import type { TitleCorner } from '../../rendering/marginForm'
 
 /** A rectangle in the canvas box's own pixels. */
@@ -78,6 +79,46 @@ export function selectionBarPlacement(
   return clear.sort((a, b) => distance(a) - distance(b))[0] ?? preferred
 }
 
+/** The two areas that wear an Area sheet with their bar docked in it (ContextBar card, ticket 0808). */
+export type DockedArea = 'selection' | 'mirror'
+
+/** Where a docked bar is in its sheet's top band and how wide it is: as wide as the band unless its own width is more. */
+export interface DockedPlacement {
+  left: number
+  top: number
+  /** The least the bar is wide: the band's width less its insets, as much of it as is in the canvas box; none where
+   * the bar is wider than the band and keeps its own width. */
+  minWidth?: number
+}
+
+/** How far in from the band's left and right edges, and down from its top, the docked bar sits (ContextBar card). */
+const DOCK_INSET_PX = 8
+const DOCK_TOP_PX = 6
+
+/** A docked bar (ContextBar card, Area sheet, ticket 0808): in the top band, 8px in and 6px down, as wide as the part of
+ * the band in the canvas box. A bar wider than the band keeps its width, centred on it, held on screen only while it
+ * still sits over the area (ticket 0779); one narrower slides along the band to stay in view, never out of it. */
+export function dockedBarPlacement(
+  area: BarBox,
+  bar: { width: number },
+  viewport: { width: number },
+  outset: { top: number; right: number; left: number },
+): DockedPlacement {
+  const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
+  const onScreen = (left: number, width: number) => clamp(left, BAR_EDGE_PX, viewport.width - width - BAR_EDGE_PX)
+  const start = area.left - outset.left + DOCK_INSET_PX
+  const end = area.left + area.width + outset.right - DOCK_INSET_PX
+  const top = area.top - outset.top + DOCK_TOP_PX
+  if (bar.width > end - start + 0.5) {
+    const stick = Math.min(BAR_STICK_PX, area.width / 2)
+    const left = clamp(onScreen((start + end) / 2 - bar.width / 2, bar.width), area.left + stick - bar.width, area.left + area.width - stick)
+    return { left, top }
+  }
+  const minWidth = Math.max(0, Math.min(end, viewport.width - BAR_EDGE_PX) - Math.max(start, BAR_EDGE_PX))
+  const shown = Math.min(end - start, Math.max(minWidth, bar.width))
+  return { left: clamp(onScreen(start, shown), start, end - shown), top, minWidth }
+}
+
 /** Where the Frame is on screen (tickets 427, 473, 0657): its line's box, its margin sheet's box and the canvas box
  * they sit in, in the canvas box's pixels. The sheet's tools and title block are placed from it. */
 export interface FrameAnchor extends SelectionAnchor {
@@ -95,14 +136,17 @@ export interface FrameAnchor extends SelectionAnchor {
   tilt?: number
 }
 
-/** How far a Selection's handles reach past its edge, in screen px (a finger's 35). */
+/** How far a Selection's handles reach past its edge, in screen px (a finger's 35), and over its top, where its Area
+ * sheet's top band (48px at most, with the docked bar) carries them out (ticket 0808). */
 const SELECTION_HANDLE_REACH_PX = 35
+const SELECTION_TOP_REACH_PX = areaSheetOutset(true).top + 24
 
-/** Whether a control's hit area lies where a Selection's handles can be pressed, so the handle wins the press (tickets
- * 498, 0657): over the reach round its edge, not well inside it. */
+/** Whether a control's hit area lies where a Selection's handles or docked bar can be pressed, so they win the press
+ * (tickets 498, 0657, 0808): over the reach round its edge, not well inside it. */
 export function overlapsSelectionHandles(hit: BarBox, selection: BarBox): boolean {
   const reach = SELECTION_HANDLE_REACH_PX
-  const handles: BarBox = { left: selection.left - reach, top: selection.top - reach, width: selection.width + 2 * reach, height: selection.height + 2 * reach }
+  const above = SELECTION_TOP_REACH_PX
+  const handles: BarBox = { left: selection.left - reach, top: selection.top - above, width: selection.width + 2 * reach, height: selection.height + reach + above }
   const inside: BarBox = { left: selection.left + reach, top: selection.top + reach, width: selection.width - 2 * reach, height: selection.height - 2 * reach }
   const coveredWhole = inside.width > 0 && inside.height > 0 && hit.left >= inside.left && hit.top >= inside.top && hit.left + hit.width <= inside.left + inside.width && hit.top + hit.height <= inside.top + inside.height
   return boxesOverlap(hit, handles) && !coveredWhole

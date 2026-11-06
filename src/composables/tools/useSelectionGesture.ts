@@ -64,10 +64,11 @@ export function useSelectionGesture(
   const pasteProjectionActive = computed(() => !!copiedBlock.value && !pasteDismissed.value)
 
   // A press on the Selection's handles or inside it (ticket 414): a handle resizes, the inside moves the outline,
-  // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do.
+  // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do; the docked bar's
+  // move grip (ticket 0808) names no tool, so it never taps.
   let adjust:
     | { kind: 'resize'; edges: FrameEdge[]; start: Selection }
-    | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool: 'select' | 'piece' }
+    | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool?: 'select' | 'piece' }
     | undefined
 
   // Where a Select press started and whether it has left that cell. Dragging marks a new Selection, a click in place
@@ -192,9 +193,9 @@ export function useSelectionGesture(
     return true
   }
 
-  /** Begins resizing (a handle) or moving (the inside) the Selection (ticket 414); `cell` is the bead position under
-   * the press. */
-  function beginAdjust(target: FramePress, cell: GridPosition, tool: 'select' | 'piece') {
+  /** Begins resizing (a handle) or moving (the inside, or the move grip with no `tool`) the Selection (tickets 414,
+   * 0808); `cell` is the bead position under the press. */
+  function beginAdjust(target: FramePress, cell: GridPosition, tool?: 'select' | 'piece') {
     const start = selection.value
     lastDrag = undefined
     if (!start) {
@@ -228,7 +229,7 @@ export function useSelectionGesture(
     const done = adjust
     adjust = undefined
     if (done) lastDrag = done.kind === 'resize' && selection.value ? { kind: 'resize', adjust: done, made: selection.value } : undefined
-    if (done?.kind !== 'move' || done.moved) {
+    if (done?.kind !== 'move' || done.moved || !done.tool) {
       return
     }
     if (done.tool === 'piece') {
@@ -396,6 +397,12 @@ export function useSelectionGesture(
     selection.value = undefined
   }
 
+  /** An arrow on the move grip (ticket 0808): the rectangle moves by that many beads, as a drag of its inside does. */
+  function moveSelectionBy(rows: number, columns: number) {
+    const current = selection.value
+    if (current && !current.cells) selection.value = movedSelection(current, rows, columns)
+  }
+
   return {
     selection,
     refusals,
@@ -422,6 +429,7 @@ export function useSelectionGesture(
     pastePreviewCells,
     pastePreviewStamp,
     clearSelection,
+    moveSelectionBy,
     /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the
      * Selection's own controls once this is true). */
     pasteProjectionActive,

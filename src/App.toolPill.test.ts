@@ -122,7 +122,7 @@ describe('the Tool pill', () => {
     wrapper.unmount()
   })
 
-  it('the Mirror bar (ADR 0082): its Mode and Close mirror reach the Project', async () => {
+  it('the Mirror bar (ADR 0082): its Mode, move grip and Close mirror reach the Project', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     const top = aboveFrame(wrapper)
     await wrapper.get('[data-testid="pill-tool-mirror"]').trigger('click')
@@ -131,6 +131,10 @@ describe('the Tool pill', () => {
     await wrapper.get('[data-testid="mirror-bar-mode-repeat"]').trigger('click')
     await flushPromises()
     expect(loadProjects()[0]!.mirror?.mode).toBe('repeat')
+    // An arrow on its move grip moves the Area a bead, saved (ticket 0808).
+    await wrapper.get('[data-testid="mirror-bar-move"]').trigger('keydown', { key: 'ArrowRight' })
+    await flushPromises()
+    expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'canvas', area: { row: top.row, column: top.column + 1, rows: 4, columns: 4 } })
     await wrapper.get('[data-testid="mirror-bar-close"]').trigger('click')
     await flushPromises()
     expect(loadProjects()[0]!.mirror).toMatchObject({ mode: 'repeat', place: null })
