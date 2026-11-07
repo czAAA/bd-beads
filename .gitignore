@@ -27,6 +27,9 @@ dist-ssr
 test-results
 playwright-report
 
+# The UX audit's screenshot walk (ticket 0815): full screenshots and reports stay local; cropped evidence goes to the docs repo
+ux-audit-output/
+
 # Design exploration (tickets 125–134): prototypes and screenshots are local-only
 design-exploration/
 
