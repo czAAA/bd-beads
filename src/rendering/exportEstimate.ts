@@ -5,8 +5,6 @@ import { planWithKey } from './chartPageKey'
 import type { PrintText } from './printText'
 import { wordChartPageCount } from './wordChartPages'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
-import { shownLetters } from '../domain/paletteEdits'
-import { lettersDrawn } from '../domain/swatchLetters'
 
 // The File size estimate (ticket 0588, ADR 0076): each page by its kind and content, every figure lifted to sit at or above
 // 65 real Projects measured on 2026-10-27 (8 to 237 beads a side, 1 to 300 colors, three Techniques), so never below the
@@ -22,8 +20,6 @@ export interface ExportFacts {
   cells: number
   filled: number
   edges: number
-  /** Whether the PDF's Cover marks its empty positions with a cross (the PNG's always does, having no letters). */
-  pdfCrosses: boolean
   /** The pages Beads needed runs over onto, with the colors on each. */
   lists: number[]
   /** The chart pages and the area of every part on them, in grid units. */
@@ -69,7 +65,6 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
     cells: frame.columns * frame.rows,
     filled,
     edges,
-    pdfCrosses: !lettersDrawn(shownLetters(project)),
     lists: layout.lists.map((list) => list.count),
     sheets: new Set(plan.parts.map((part) => part.page)).size,
     partArea: plan.parts.reduce((sum, part) => sum + (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1), 0),
@@ -123,10 +118,10 @@ const WORD_PER_CHARACTER = 113
 const PNG_OVERHEAD = 200
 const PDF_PAGE_OVERHEAD = 2_000
 
-function coverBytes(facts: ExportFacts, dpi: number, crosses: boolean): number {
+/** The Cover's bytes at a dpi; every empty position carries its cross, in the PNG and the PDF (tickets 0719, 0818). */
+function coverBytes(facts: ExportFacts, dpi: number): number {
   const [base, perColor, perCell, perBead, perEdge, perCross] = atDpi(COVER_BYTES, dpi) as [number, number, number, number, number, number]
-  const crossed = crosses ? perCross * (facts.cells - facts.filled) : 0
-  return base + perColor * facts.coverColors + (perCell * facts.cells + perBead * facts.filled + perEdge * facts.edges + crossed) * facts.zoom
+  return base + perColor * facts.coverColors + (perCell * facts.cells + perBead * facts.filled + perEdge * facts.edges + perCross * (facts.cells - facts.filled)) * facts.zoom
 }
 
 function listBytes(facts: ExportFacts, dpi: number): number {
@@ -136,7 +131,7 @@ function listBytes(facts: ExportFacts, dpi: number): number {
 /** The PNG: the Cover, then a file for every list page Beads needed runs over onto, drawn at `dpi`. */
 export function estimatePng(facts: ExportFacts, dpi: number): SizeEstimate {
   const count = 1 + facts.lists.length
-  return { bytes: Math.ceil(coverBytes(facts, dpi, true) + listBytes(facts, dpi) + count * PNG_OVERHEAD), count }
+  return { bytes: Math.ceil(coverBytes(facts, dpi) + listBytes(facts, dpi) + count * PNG_OVERHEAD), count }
 }
 
 /** The PDF, its picture pages (the Cover, the list pages, the Specification, the Word chart) drawn at `dpi`, and its chart pages vector over a picture of their text. */
@@ -147,5 +142,5 @@ export function estimatePdf(facts: ExportFacts, dpi: number): SizeEstimate {
   const charts = facts.sheets * (CHART_PICTURE * text + CHART_DRAWING) + CHART_PER_BEAD * facts.filled + CHART_PER_AREA * facts.partArea
   const wordPages = facts.wordPages * (WORD_PAGE + WORD_PAGE_PER_COLOR * Math.min(facts.colors, WORD_COLORS))
   const word = (wordPages + WORD_PER_ROW * facts.wordRows + WORD_PER_CHARACTER * facts.wordChars) * text
-  return { bytes: Math.ceil(coverBytes(facts, dpi, facts.pdfCrosses) + listBytes(facts, dpi) + specification + charts + word + count * PDF_PAGE_OVERHEAD), count }
+  return { bytes: Math.ceil(coverBytes(facts, dpi) + listBytes(facts, dpi) + specification + charts + word + count * PDF_PAGE_OVERHEAD), count }
 }

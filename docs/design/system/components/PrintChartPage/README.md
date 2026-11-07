@@ -30,7 +30,7 @@ Signed off in the design session of 2026-10-27 (tickets 0585, 0586, 0588; the cl
 - **Every bead carries its Swatch letter**, whether the Letters toggle is on or off, in every Technique. The letter is Helvetica-Bold **6.5 pt** (`print-letter`), centred across using its Helvetica width. Its baseline is **2.32 mm** below the cell's top: the cell's centre plus half of Helvetica's cap height (0.718 em).
 - A two-letter Swatch letter (AA, AB…) is drawn at the same size, squeezed to `--print-letter-squeeze` (72%, PDF `Tz 72`) so it fits in 2.4 mm.
 - **White or black**: take the WCAG relative luminance of the bead's color. Above `--print-letter-balance` (0.1791) the letter is `ink`, otherwise `canvas` (white). 0.1791 is where black and white contrast equally, the same rule as `markOn` in `swatchMark.ts`. Because the rule follows lightness, the choice still holds on a gray-only printer.
-- **Empty position**: no fill, no letter; only the cell lines cross it, so it shows as plain paper.
+- **Empty position**: no fill, no letter; a small `faint` cross, 0.1 mm (`print-line-cell`), 40 % of the bead across, centred in it (ticket 0818). It is the mark a chart reader knows as "no bead here", so an empty position is never taken for a White or pale bead.
 - **White bead**: filled with its color like any bead, with its letter in `ink`. The letter is what tells it from an empty position.
 
 ## Lines
@@ -88,10 +88,10 @@ The lines count from the Schema's first bead, not the part's. On part B (columns
 
 The beads follow the canvas drawing (ticket 0585). The letters, rulers, key and tint are the same as for square beads.
 
-- **Round beads**: a circle 2.6 mm across, centred in its 3 mm cell, filled, with a 0.1 mm `line-strong` edge so a White bead shows. There are no lines between cells; the 5th and 10th lines run in the gaps between the circles. An empty position draws nothing.
+- **Round beads**: a circle 2.6 mm across, centred in its 3 mm cell, filled, with a 0.1 mm `line-strong` edge so a White bead shows. There are no lines between cells; the 5th and 10th lines run in the gaps between the circles. An empty position draws only its cross, 40 % of the cell across.
 - **Brick stitch**: every other row is offset by half a bead, as on the canvas. The cells are squares with their cell lines. The 5th and 10th lines across the rows are straight; the ones down the columns step with each row's offset. Column numbers sit over the first row's beads. No outer edge line: the outermost cell lines are the edge.
 - **Peyote**: the same, with every other column offset half a bead down. The lines down the columns are straight; the ones across step with each column. Row numbers sit beside the first column's beads.
-- **A Custom frame** (ticket 0594): the parts tile its bounding rectangle as for any Frame. Each bead is drawn at its centre, turned to its panel's angle, filled, with a 0.1 mm `line-strong` edge (round beads as circles), its letter upright at its centre; an empty position is outlined 0.1 mm `faint` so the shape reads; the Seams are 0.18 mm `field-line` lines. A bead belongs to the part its centre falls in. There are no cell lines, no 5th or 10th lines and no rulers: its beads keep no rows and columns.
+- **A Custom frame** (ticket 0594): the parts tile its bounding rectangle as for any Frame. Each bead is drawn at its centre, turned to its panel's angle, filled, with a 0.1 mm `line-strong` edge (round beads as circles), its letter upright at its centre; an empty position is outlined 0.1 mm `faint` so the shape reads, with its cross; the Seams are 0.18 mm `field-line` lines. A bead belongs to the part its centre falls in. There are no cell lines, no 5th or 10th lines and no rulers: its beads keep no rows and columns.
 
 ## Shared sheets
 
@@ -103,7 +103,7 @@ A build agent checks each of these on a 100 × 100 loom Schema with an empty bac
 
 - [ ] Chart pages are vector. The only image on a chart page is the text picture, and it lies under the drawing. Letters and numbers are text in `/Helvetica` or `/Helvetica-Bold`, not embedded fonts.
 - [ ] A bead is 3 mm. Part A is 60 columns × 75 rows. The pad's left edge is at 10 mm and its top at 25 mm.
-- [ ] Every non-empty position has its letter in Helvetica-Bold 6.5 pt, centred across, baseline 2.32 mm below its cell top. No empty position has a letter or a fill.
+- [ ] Every non-empty position has its letter in Helvetica-Bold 6.5 pt, centred across, baseline 2.32 mm below its cell top. No empty position has a letter or a fill; each carries the small `faint` cross.
 - [ ] A bead with luminance > 0.1791 has an `ink` letter, otherwise white. A White bead has an `ink` letter.
 - [ ] A two-letter Swatch letter is drawn at 72% horizontal scale and stays inside its cell.
 - [ ] Cell lines are 0.1 mm `line-strong`, every 5th 0.18 mm `field-line`, every 10th and the edge 0.3 mm `ink`, counted from the Schema's first bead.
@@ -114,6 +114,6 @@ A build agent checks each of these on a 100 × 100 loom Schema with an empty bac
 - [ ] "Colors on this page" shows this page's colors only, in 6 columns: the swatch with its letter, then the name, no counts. The key is the same height on every chart page of the PDF.
 - [ ] The footer has the mark, "openbeads", and the date and time on the left, and the continuation on the right.
 - [ ] Round, brick and peyote pages are drawn as "Other bead shapes" says.
-- [ ] Printed in black and white, every letter is readable, empty positions are white, and overlap columns are lighter than their neighbours. Zoomed to 800 % on a Retina screen, letters and lines are sharp.
+- [ ] Printed in black and white, every letter is readable, empty positions are white under their cross, and overlap columns are lighter than their neighbours. Zoomed to 800 % on a Retina screen, letters and lines are sharp.
 
 The earlier cards (1.75 mm and 2.3 mm cells, odd and even numbers turned upwards, counts in the key) are in git history.
