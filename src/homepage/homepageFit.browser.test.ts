@@ -40,10 +40,10 @@ function boxOf(root: Element, selector: string): DOMRect {
   return root.querySelector(selector)!.getBoundingClientRect()
 }
 
-// What's inside (ticket 0797): its cards, its list and its editor in the section's room, nothing cut and nothing wider
-// than the box; under reduced motion the editor shows the first row's end.
+// What's inside (ticket 0797): its list and its editor in the section's room, nothing cut and nothing wider than the
+// box; under reduced motion the editor shows the first row's end. Its cards are the coffee screen's promises (0823).
 describe("What's inside fits its room", () => {
-  // Windows too short for the cards over the editor (ticket 0802); with no hero a 1366 × 768 laptop has room (0822).
+  // Short windows (ticket 0802): the editor keeps its least height, seen whole (no hero, 0822; no cards, 0823).
   for (const [width, height, tier] of [[1440, 900, 'desktop'], [1366, 680, 'short'], [1280, 640, 'short'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
     it(`at ${width} × ${height} (${tier})`, async () => {
       const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
@@ -51,10 +51,6 @@ describe("What's inside fits its room", () => {
       await settleForMeasuring()
       const section = mounted.root.querySelector<HTMLElement>('[data-testid="homepage-section-inside"]')!
       expect(section.scrollWidth, 'nothing wider than the section').toBeLessThanOrEqual(section.clientWidth + 1)
-      const cards = [...mounted.root.querySelectorAll('[data-testid^="inside-card-"]')].map((card) => card.getBoundingClientRect())
-      expect(cards).toHaveLength(4)
-      const columns = new Set(cards.map((card) => Math.round(card.left))).size
-      expect(columns).toBe(tier === 'tablet' ? 2 : tier === 'phone' ? 1 : 4)
       if (tier === 'phone') {
         expect(mounted.root.querySelector('[data-testid="inside-editor"]')).toBeNull()
       } else {
@@ -65,9 +61,6 @@ describe("What's inside fits its room", () => {
         // The first row's end: its Frame on a Margin sheet whose band the later rows reach for.
         await expect.poll(() => mounted.root.querySelector('[data-testid="inside-editor"] [data-testid="margin-band"]'), { timeout: 8000 }).not.toBeNull()
       }
-      if (tier === 'short') {
-        expect(cards[0].top, 'the cards step under the editor').toBeGreaterThanOrEqual(boxOf(mounted.root, '[data-testid="inside-editor"]').bottom)
-      }
       if (tier === 'desktop') {
         expect(section.scrollHeight, 'the section fits whole at 1440 × 900').toBeLessThanOrEqual(section.clientHeight + 1)
         const list = boxOf(mounted.root, '[data-testid="inside-list"]')
@@ -75,7 +68,7 @@ describe("What's inside fits its room", () => {
         expect(playing.top).toBeGreaterThanOrEqual(list.top - 1)
         expect(playing.bottom).toBeLessThanOrEqual(list.bottom + 1)
       }
-      expect(await misfitsNow()).toEqual([])
+      expect(unexplainedFit("What's inside", 'en', width, await misfitsNow())).toEqual([])
     })
   }
 })

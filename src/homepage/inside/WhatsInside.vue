@@ -6,13 +6,13 @@ import { useI18n } from '../../i18n/useI18n'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
 import { TourStopped } from './hand'
-import { INSIDE_ROWS, insideCards, insideRows } from './insideCopy'
+import { INSIDE_ROWS, insideRows } from './insideCopy'
 import { TOUR_SCRIPTS } from './tourScripts'
 import { useInsideTour } from './useInsideTour'
 
-// What's inside (Homepage card, ticket 0797): four quiet cards, then the list of what's inside beside the editor, which
-// plays each row in turn. On a tablet the list is a row of tabs above the editor; on a phone there is no editor and the
-// list is plain, with every row's line.
+// What's inside (Homepage card, ticket 0797): the list of what's inside beside the editor, which plays each row in turn.
+// On a tablet the list is a row of tabs above the editor; on a phone there is no editor and the list is plain, with
+// every row's line.
 const props = defineProps<{
   /** Whether there is room for the editor: none on a phone. */
   withEditor: boolean
@@ -21,7 +21,6 @@ const props = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
-const cards = computed(() => insideCards(t.value))
 const rows = computed(() => insideRows(t.value, locale.value))
 const editor = shallowRef<InstanceType<typeof InsideEditor>>()
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
@@ -60,14 +59,6 @@ function choose(row: InsideRowId) {
 
 <template>
   <div class="inside" :class="{ 'inside--plain': !props.withEditor }" data-testid="whats-inside">
-    <ul class="inside__cards" data-testid="inside-cards">
-      <li v-for="card in cards" :key="card.id" class="inside__card" :data-testid="`inside-card-${card.id}`">
-        <AppIcon class="inside__card-icon" :name="card.icon" :size="18" />
-        <strong class="inside__card-name">{{ card.name }}</strong>
-        <span class="inside__card-text">{{ card.text }}</span>
-      </li>
-    </ul>
-
     <div v-if="withEditor" class="inside__main">
       <ul ref="listEl" class="inside__list" data-testid="inside-list">
         <li v-for="row in rows" :key="row.id">
@@ -110,84 +101,11 @@ function choose(row: InsideRowId) {
   min-height: 0;
 }
 
-/* With the editor, the section's room is a container its height is asked of (ticket 0802). */
-.inside:not(.inside--plain) {
-  container: inside / size;
-}
-
-.inside__cards,
 .inside__list,
 .inside__plain {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-/* Four quiet tiles that never play and take no press: four in a row from 1024, two by two from 481, one column below. */
-.inside__cards {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-12);
-}
-
-@container homepage (min-width: 481px) {
-  .inside__cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@container homepage (min-width: 1024px) {
-  .inside__cards {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.inside__card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
-  column-gap: var(--space-10);
-  row-gap: var(--space-2);
-  box-sizing: border-box;
-  padding: 11px 14px;
-  background: var(--panel);
-  border: 1px solid var(--panel-rule);
-  border-radius: var(--radius-lg);
-}
-
-@container homepage (min-width: 481px) {
-  .inside__card {
-    height: var(--inside-card-height);
-    overflow: hidden;
-  }
-}
-
-.inside__card-icon {
-  grid-row: 1 / span 2;
-  color: var(--muted);
-}
-
-.inside__card-name {
-  overflow: hidden;
-  font: var(--type-inside-name);
-  color: var(--ink);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.inside__card-text {
-  font: var(--type-inside-text);
-  color: var(--body);
-}
-
-/* From 481 a card is `--inside-card-height` tall: its text up to three lines. On a phone it is as tall as its text. */
-@container homepage (min-width: 481px) {
-  .inside__card-text {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
 }
 
 /* The list beside the editor, which fills the section's height. */
@@ -196,7 +114,7 @@ function choose(row: InsideRowId) {
   flex: 1 1 auto;
   grid-template-columns: var(--inside-list-width) minmax(0, 1fr);
   gap: var(--space-16);
-  min-height: var(--inside-main-min-height);
+  min-height: var(--inside-main-least-height);
 }
 
 .inside__list {
@@ -276,29 +194,6 @@ function choose(row: InsideRowId) {
 
 .inside__editor {
   min-height: 0;
-}
-
-/* A short screen (ticket 0802): where the room is less than the cards over `--inside-main-min-height` (5.75rem + 1rem +
- * 19rem; two rows of cards on a tablet, 12.25rem + 1rem + 19rem), the cards step under the editor: the list and the
- * editor fill the room, at least `--inside-main-least-height`, and the cards are a scroll away. */
-@container inside (max-height: 25.75rem) {
-  .inside__main {
-    flex: none;
-    order: -1;
-    height: max(100cqh, var(--inside-main-least-height));
-    min-height: 0;
-  }
-}
-
-@container homepage (max-width: 1023.98px) {
-  @container inside (max-height: 32.25rem) {
-    .inside__main {
-      flex: none;
-      order: -1;
-      height: max(100cqh, var(--inside-main-least-height));
-      min-height: 0;
-    }
-  }
 }
 
 /* On a tablet the list is a row of tabs above the editor: the names alone, scrolling sideways. */

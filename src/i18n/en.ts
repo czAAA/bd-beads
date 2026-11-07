@@ -331,12 +331,6 @@ export const en: Translations = {
     openEditor: 'Open the editor',
     whatsInside: "What's inside",
     inside: {
-      cards: {
-        device: { name: 'Yours, on this device', text: 'Runs in your browser and offline. No account, nothing to install.' },
-        pencil: { name: 'For iPad and Pencil', text: 'Pen mode, Pencil hover and big buttons for your finger.' },
-        free: { name: 'Free forever', text: 'All you need is free, and nothing is paid for now. Professional extras will come later.' },
-        shortcuts: { name: 'Keyboard shortcuts', text: 'Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}.' },
-      },
       rows: {
         canvas: { name: 'Canvas and Frame', text: 'Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count.' },
         techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },
@@ -357,6 +351,16 @@ export const en: Translations = {
     },
     sections: { label: 'Sections', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.', goTo: 'Go to {section}' },
     coffee: { title: 'Made by one family', text: 'openbeads stays free and fully local, with no ads and no tracking. If it helps your work, you can support its development through Buy Me a Coffee.', button: 'Buy me a coffee', star: 'A star on GitHub helps too.', source: 'View the source' },
+    promises: {
+      device: { name: 'Yours, on this device', text: 'Runs in your browser. No account, nothing to install.' },
+      offline: { name: 'Works offline', text: 'Once open, it keeps working without a connection.' },
+      noAds: { name: 'No ads or tracking', text: 'Nothing is sold to you, and nothing records what you do.' },
+      pencil: { name: 'For iPad and Pencil', text: 'Pen mode, Pencil hover and big buttons for your finger.' },
+      free: { name: 'Free forever', text: 'All you need is free, and nothing is paid for now. Professional extras will come later.' },
+      shortcuts: { name: 'Keyboard shortcuts', text: 'Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}.' },
+    },
+    openSource: { name: 'Open source', text: 'All of openbeads is public under the AGPL-3.0 licence. Read the code, report a bug or suggest a change.' },
+    sayHello: { name: 'Say hello', text: "A bug, an idea, a pattern you made: send it to the family. It's also in {menu} → {feedback}." },
     plans: {
       heading: 'Three ways to use it',
       why: "Accounts and Pro aren't open yet. Everything works without them.",
