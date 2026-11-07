@@ -358,7 +358,7 @@ export const pl: Translations = {
       demo: { kaleidoscope: 'Kalejdoskop', heart: 'Serce', bracelet: 'Bransoletka' },
     },
     sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}' },
-    coffee: { title: 'Robi to jedna rodzina', button: 'Postaw mi kawę' },
+    coffee: { title: 'Robi to jedna rodzina', text: 'openbeads pozostaje darmowe i w pełni lokalne, bez reklam i śledzenia. Jeśli aplikacja ci pomaga, możesz wesprzeć jej rozwój przez Buy Me a Coffee.', button: 'Postaw mi kawę', star: 'Gwiazdka na GitHubie też pomaga.', source: 'Kod źródłowy' },
     plans: {
       heading: 'Trzy sposoby użycia',
       why: 'Konta i Pro nie są jeszcze otwarte. Wszystko działa bez nich.',
