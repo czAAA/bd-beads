@@ -284,6 +284,12 @@
   --ghost-ripple: 840ms; /* The ripple a ghost press leaves, growing and fading (ticket 0802: 1.2 times its first). */
   --ghost-fill: #ffffff; /* The ghost pointer, the system arrow in white, and its ripple. */
   --ghost-edge: #1a1a1a; /* The ghost pointer's 1.5px edge. */
+  --ghost-room: 1.5rem; /* What the ghost keeps clear round a control it scrolls into view, 24px (ticket 0819). */
+  --ghost-pause: 300ms; /* The ghost's rest on a control in a panel before it presses, and on a drag's first bead (ticket 0819). */
+  --ghost-drag: 1400ms; /* A Selection growing bead by bead behind the ghost (ticket 0819). */
+  --ghost-drag-hold: 1200ms; /* The whole Selection shown before the ghost moves on (ticket 0819). */
+  --strip-slogan-size: 1.5rem; /* The rolling slogan in the Homepage's Canvas strip, 24px (ticket 0819). */
+  --strip-slogan-size-phone: 1.375rem; /* The same on a phone, 22px. */
   --type-inside-name: 600 0.875rem/1.25rem var(--font-sans); /* A card's name, Inter 600 14. */
   --type-inside-text: 400 0.75rem/1rem var(--font-sans); /* A card's text, Inter 12/16. */
   --type-inside-line: 400 0.8125rem/1.125rem var(--font-sans); /* The playing row's line, Inter 13/18. */
