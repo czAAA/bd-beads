@@ -39,45 +39,42 @@ beforeEach(() => {
 
 describe('HomePage', () => {
   describe('for a new visitor', () => {
-    it('offers "Make your first Project" as the primary button and "Open the editor" beside it', async () => {
+    it('offers "Make your first Project" alone, a small primary button in the strip beside Menu (ticket 0822)', async () => {
       const wrapper = page()
-      const make = wrapper.find('[data-testid="homepage-make-first"]')
+      const wayIn = wrapper.get('[data-testid="canvas-strip"] [data-testid="strip-way-in"]')
+      const make = wayIn.get('[data-testid="homepage-make-first"]')
       expect(make.text()).toBe('Make your first Project')
-      expect(make.classes()).toContain('app-button--primary')
-      expect(wrapper.find('[data-testid="homepage-open-editor"]').text()).toBe('Open the editor')
+      expect(make.classes()).toEqual(expect.arrayContaining(['app-button--primary', 'app-button--sm']))
+      expect(wayIn.findAll('button')).toHaveLength(1)
 
       await make.trigger('click')
-      await wrapper.find('[data-testid="homepage-open-editor"]').trigger('click')
       expect(wrapper.emitted('makeFirstProject')).toHaveLength(1)
-      expect(wrapper.emitted('openEditor')).toHaveLength(1)
     })
   })
 
-  describe('the hero (ticket 0797)', () => {
-    it('is the rolling slogan and its two buttons, with no line or note between them', () => {
-      const hero = page().get('.homepage__hero')
-      expect(hero.element.children).toHaveLength(2)
-      expect(hero.find('[data-testid="homepage-slogan"]').exists()).toBe(true)
-      expect(hero.find('[data-testid^="homepage-note"]').exists()).toBe(false)
-      expect(hero.text()).not.toContain('save. count. export')
+  describe('no hero (ticket 0822)', () => {
+    it('has nothing over the sections: the slogan is in the strip, the sections right under it', () => {
+      const wrapper = page()
+      expect(wrapper.find('.homepage__hero').exists()).toBe(false)
+      expect(wrapper.get('[data-testid="homepage-body"]').find('[data-testid="homepage-slogan"]').exists()).toBe(false)
+      expect(wrapper.get('main').element.firstElementChild?.classList).toContain('homepage__sections')
     })
-
-    it('shows the slogan as the one stable label "openbeads"', () => {
-      const slogan = page().get('[data-testid="homepage-slogan"]')
-      expect(slogan.attributes('aria-label')).toBe('openbeads')
-      expect(slogan.find('[data-testid="homepage-note-you"]').exists()).toBe(false)
-    })
-
   })
 
   describe('with Projects saved', () => {
-    it('offers "Open the editor" as the primary button and "Saved Projects · N" beside it (ticket 0716)', async () => {
+    it('offers "Open the editor" as the primary button and "Projects library · N" beside it, in the strip (tickets 0716, 0822)', async () => {
       const wrapper = page(3)
-      expect(wrapper.find('[data-testid="homepage-make-first"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="homepage-open-editor"]').classes()).toContain('app-button--primary')
-      const saved = wrapper.get('[data-testid="homepage-saved-projects"]')
+      const wayIn = wrapper.get('[data-testid="strip-way-in"]')
+      expect(wayIn.find('[data-testid="homepage-make-first"]').exists()).toBe(false)
+      const open = wayIn.get('[data-testid="homepage-open-editor"]')
+      expect(open.classes()).toEqual(expect.arrayContaining(['app-button--primary', 'app-button--sm']))
+      const saved = wayIn.get('[data-testid="homepage-saved-projects"]')
       expect(saved.text()).toBe(`${en.projects.heading} · 3`)
+      // The name hides on a narrow strip, so it is a part of its own the strip can hide.
+      expect(saved.get('.canvas-strip__way-in-name').text()).toBe(en.projects.heading)
+      await open.trigger('click')
       await saved.trigger('click')
+      expect(wrapper.emitted('openEditor')).toHaveLength(1)
       expect(wrapper.emitted('openSavedProjects')).toHaveLength(1)
       expect(page(0).find('[data-testid="homepage-saved-projects"]').exists()).toBe(false)
     })
@@ -105,11 +102,10 @@ describe('HomePage', () => {
     })
   })
 
-  it('is one canvas box: the Canvas strip on top, the hero and the sections between, the Progress bar below, and no header of its own', () => {
+  it('is one canvas box: the Canvas strip on top, the sections between, the Progress bar below, and no header of its own', () => {
     const wrapper = page()
     const box = wrapper.get('[data-testid="homepage"]')
     expect(box.element.children[0].firstElementChild).toBe(wrapper.get('[data-testid="canvas-strip"]').element)
-    expect(box.get('[data-testid="homepage-body"]').find('[data-testid="homepage-slogan"]').exists()).toBe(true)
     expect(box.element.lastElementChild).toBe(wrapper.get('[data-testid="section-bar"]').element)
     expect(wrapper.find('[data-testid="canvas-footer"]').exists()).toBe(false)
     expect(wrapper.find('.homepage__header').exists()).toBe(false)
@@ -124,7 +120,6 @@ describe('HomePage', () => {
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="strip-undo"]').exists()).toBe(false)
     const brand = wrapper.get('[data-testid="canvas-brand"]')
-    expect(brand.text()).toBe('openbeads')
     expect(brand.attributes('aria-current')).toBe('page')
     expect(brand.attributes('href')).toBeUndefined()
     expect(wrapper.find('[data-testid="zoom-reset"]').exists()).toBe(true)
@@ -260,7 +255,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
   it('turns by the wheel on its first scroll', async () => {
     const wrapper = page()
     const event = new WheelEvent('wheel', { deltaY: 4, bubbles: true, cancelable: true })
-    wrapper.get('.homepage__hero').element.dispatchEvent(event)
+    wrapper.get('[data-testid="canvas-strip"]').element.dispatchEvent(event)
     await nextTick()
     expect(event.defaultPrevented).toBe(true)
     expect(shown(wrapper)).toEqual(['coffee'])
