@@ -48,17 +48,10 @@ export interface Outset {
   left: number
 }
 
-/** The Area sheet's band (ContextBar card): `--area-band` on the sides and bottom, `--area-band-top` on top, the docked
- * bar with 6px above and below it; `--area-band-top-touch` where the bar is the touch one. */
+/** The band round a rectangle Selection or a Canvas Area (ContextBar card, Area sheet, tickets 0808, 0812):
+ * `--area-band` on every side. The area's bar sits above it, never on it, so the band shows only what is selected. */
 const AREA_BAND_PX = 10
-const AREA_BAND_TOP_PX = 40
-const AREA_BAND_TOP_TOUCH_PX = 48
-
-/** The band round a rectangle Selection or a Canvas Area (ticket 0808), its top as tall as the bar docked in it: the
- * touch bar's on a coarse pointer, as the bar's own CSS picks it. */
-export function areaSheetOutset(coarse: boolean): Outset {
-  return { top: coarse ? AREA_BAND_TOP_TOUCH_PX : AREA_BAND_TOP_PX, right: AREA_BAND_PX, bottom: AREA_BAND_PX, left: AREA_BAND_PX }
-}
+export const AREA_SHEET_OUTSET: Readonly<Outset> = { top: AREA_BAND_PX, right: AREA_BAND_PX, bottom: AREA_BAND_PX, left: AREA_BAND_PX }
 
 /** A rectangle on screen set out by an outset: an Area sheet's outer edge. */
 export function outsetBox(box: { x: number; y: number; width: number; height: number }, outset: Outset): { x: number; y: number; width: number; height: number } {

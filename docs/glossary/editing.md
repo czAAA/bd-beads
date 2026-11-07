@@ -90,7 +90,7 @@ The live drawing aid that lands every drawing gesture (a Paint or Eraser stroke,
 _Avoid_: mirror tool, symmetry, symmetry tool, kaleidoscope (Kaleidocycle is a Frame shape), copy mode, Mirror current, Mirror popover (retired names)
 
 **Mirror bar**:
-The Mirror's own bar (ContextBar card): the Selection bar's component with Mirror's items, in order the Area's size ("12×8 · 4.2 × 2.6 cm"), the Mirror mode (Mirror | Repeat), the Axis chips, the Steppers that apply and Close mirror. It shows whenever the Mirror is on, whatever tool is active: 6px above a Canvas Area (the Selection bar's placement), above the margin's top band for the whole-Frame Mirror. Like the Selection bar it hides during a gesture, pan or pinch and shrinks to its size readout while the Area is resized; while a Selection exists it gives way to the Selection bar (only one bar is on screen) and comes back when the Selection clears. It holds everything the retired Mirror popover held.
+The Mirror's own bar (ContextBar card): the Selection bar's component with Mirror's items, in order the Area's size ("12×8 · 4.2 × 2.6 cm"), the Mirror mode (Mirror | Repeat), the Axis chips, the Steppers that apply and Close mirror. It shows whenever the Mirror is on, whatever tool is active: 6px above a Canvas Area's sheet, clear of its band (the Selection bar's placement, ticket 0812), above the margin's top band for the whole-Frame Mirror. Like the Selection bar it hides during a gesture, pan or pinch and shrinks to its size readout while the Area is resized; it stays while a Selection exists, both bars on screen (ticket 0809). It holds everything the retired Mirror popover held.
 _Avoid_: Mirror popover, Mirror panel, mirror toolbar
 
 **Mirror mode**:

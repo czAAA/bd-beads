@@ -148,7 +148,7 @@ const AREA_BAND_EDGE = 0.55
 const AREA_BAND_RADIUS_PX = 8
 
 /** An Area sheet (ContextBar card, ticket 0808): the band round an area's box on screen in its colour, its outer edge a
- * 1px line; nothing on it but the docked bar, which the DOM draws. In viewport px, the same at every zoom. */
+ * 1px line; nothing on it, its bar sits above it (ticket 0812). In viewport px, the same at every zoom. */
 function drawAreaSheet(context: DrawingContext, box: Region, outset: Outset, color: string, pixelRatio: number): void {
   const sheet = outsetBox(box, outset)
   context.save()

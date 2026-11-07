@@ -99,7 +99,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect(surface.props('selection')).toMatchObject({ top: before.top + 1, left: before.left, rows: before.rows, columns: before.columns })
   })
 
-  it('sits inside the drawing area, docked over the Selection when there is room', async () => {
+  it('sits inside the drawing area, above the Selection\'s sheet when there is room', async () => {
     const wrapper = await mountWithProject(6, 6)
     await pickTool(wrapper, 'select')
     await drag(wrapper, [14, 15]) // a row well below the top
