@@ -15,8 +15,10 @@
   // (docs/testing.md, the Worker's tests), so the production run takes those and the fixture Worker as entries of
   // their own. 0078 gives them their caller and removes the `!` from the fixture Worker and the three entries after it.
   // The production run does not follow wrangler.jsonc's Worker past its entry, so the feedback route, the one route the
-  // domain/ builder it shares with the app is read by, is an entry of its own (ticket 0699).
+  // domain/ builder it shares with the app is read by, is an entry of its own (ticket 0699). The UX audit's walk config
+  // (ticket 0815) is run by hand through scripts/ux-walk.sh, so no plugin finds it.
   "entry": [
+    "playwright.ux-audit.config.ts",
     "index.html!",
     "homepage/index.html!",
     "src/browserSetup.ts",
