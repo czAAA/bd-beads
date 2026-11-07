@@ -882,6 +882,8 @@ export const en: Translations = {
       tolerance: 'Tolerance',
       toleranceMin: 'close colors',
       toleranceMax: 'more',
+      toleranceInfoLabel: 'What Tolerance does',
+      toleranceInfo: 'How far a color may be from the background\'s colors and still be taken as background. Low takes only the background itself, with its noise and soft shading; high also takes colors that only look alike, so it may reach into the subject.',
       removeFound: 'Remove what was found',
       removed: 'Background removed',
       removedLine: { one: '{count} bead left out, shown as an empty place on the preview.', other: '{count} beads left out, shown as empty places on the preview.' },

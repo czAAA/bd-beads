@@ -898,6 +898,8 @@ export const pl: Translations = {
       tolerance: 'Tolerancja',
       toleranceMin: 'bliskie kolory',
       toleranceMax: 'więcej',
+      toleranceInfoLabel: 'Co robi Tolerancja',
+      toleranceInfo: 'Jak bardzo kolor może różnić się od kolorów tła i nadal liczyć się jako tło. Mała: tylko samo tło, z jego szumem i miękkimi cieniami; duża: także kolory tylko podobne, więc może sięgnąć w głąb motywu.',
       removeFound: 'Usuń znalezione',
       removed: 'Tło usunięte',
       removedLine: { one: 'Pominięto koralików: {count}, na podglądzie to puste miejsca.', few: 'Pominięto koralików: {count}, na podglądzie to puste miejsca.', many: 'Pominięto koralików: {count}, na podglądzie to puste miejsca.', other: 'Pominięto koralików: {count}, na podglądzie to puste miejsca.' },

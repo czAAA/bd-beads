@@ -642,6 +642,13 @@ describe('ConvertImageWizard Background (ticket 0780)', () => {
     expect(summary()).toBe(en.convertImage.wizard.summaryOff)
     expect(wizard.usedColorCount.value).toBe(colorsBefore)
   })
+
+  it('says what Tolerance does behind an info button beside its name (ticket 0817)', async () => {
+    const { wrapper } = open({ decodeImage: onAWall })
+    await chooseFile(wrapper, picture())
+    await wrapper.get('[data-testid="convert-remove-background"]').trigger('click')
+    expect(wrapper.get('[data-testid="convert-tolerance-info"]').attributes('aria-label')).toBe(en.convertImage.wizard.toleranceInfoLabel)
+  })
 })
 
 describe('ConvertImageWizard the one scrolling pane (ticket 0780)', () => {
