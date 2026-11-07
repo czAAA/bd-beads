@@ -276,9 +276,7 @@
   --homepage-mark-large: 26.25rem; /* The faint X1 mark beside the box, 420px, at 7%. */
   --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
   /* Homepage card, What's inside (ticket 0797). */
-  --inside-card-height: 5.75rem; /* A What's inside card, 92px: a name over three lines of text. */
-  --inside-main-min-height: 19rem; /* The list and editor's least height under the cards, 304px: where the room is less, the cards step under the editor (ticket 0802). */
-  --inside-main-least-height: 15rem; /* The list and editor's least height with the cards under them, 240px: on a shorter screen still the section scrolls inside itself, so the editor is seen whole before the page turns. */
+  --inside-main-least-height: 15rem; /* The list and editor's least height, 240px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns (ticket 0802). */
   --inside-list-width: 17rem; /* What's inside's list beside the editor, 272px. */
   --ghost-move: 840ms; /* The tour's ghost pointer moving to its next press (ticket 0802: twice its first pace). */
   --ghost-ripple: 840ms; /* The ripple a ghost press leaves, growing and fading (ticket 0802: 1.2 times its first). */
@@ -290,8 +288,8 @@
   --ghost-drag-hold: 1200ms; /* The whole Selection shown before the ghost moves on (ticket 0819). */
   --strip-slogan-size: 1.5rem; /* The rolling slogan in the Homepage's Canvas strip, 24px (ticket 0819). */
   --strip-slogan-size-phone: 1.375rem; /* The same on a phone, 22px. */
-  --type-inside-name: 600 0.875rem/1.25rem var(--font-sans); /* A card's name, Inter 600 14. */
-  --type-inside-text: 400 0.75rem/1rem var(--font-sans); /* A card's text, Inter 12/16. */
+  --type-inside-name: 600 0.875rem/1.25rem var(--font-sans); /* A coffee screen tile's name, Inter 600 14 (ticket 0823). */
+  --type-promise: 500 0.8125rem/1.125rem var(--font-sans); /* A coffee screen promise's name, Inter 500 13/18 (ticket 0823). */
   --type-inside-line: 400 0.8125rem/1.125rem var(--font-sans); /* The playing row's line, Inter 13/18. */
   /* Homepage card, the nudge (ticket 0784). */
   --nudge-lift: 0.75rem; /* How far the first section lifts to show the page scrolls, 12px. */

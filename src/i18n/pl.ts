@@ -333,12 +333,6 @@ export const pl: Translations = {
     openEditor: 'Otwórz edytor',
     whatsInside: 'Co jest w środku',
     inside: {
-      cards: {
-        device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce i offline. Bez konta i bez instalacji.' },
-        pencil: { name: 'Dla iPada i Pencil', text: 'Tryb pióra, najechanie Pencil i duże przyciski pod palec.' },
-        free: { name: 'Za darmo na zawsze', text: 'Wszystko potrzebne jest darmowe, nic nie jest płatne. Dodatki dla zawodowców przyjdą później.' },
-        shortcuts: { name: 'Skróty klawiszowe', text: 'Każda edycja ma swój klawisz. Wszystkie znajdziesz w {menu} → {help} → {shortcuts}.' },
-      },
       rows: {
         canvas: { name: 'Płótno i ramka', text: 'Rysuj gdziekolwiek: płótno nie ma krawędzi. Ramka ustala rozmiar, eksporty i liczbę koralików.' },
         techniques: { name: 'Techniki', text: 'Krosno, peyote i ścieg ceglasty, każda narysowana tak, jak układają się koraliki.' },
@@ -359,6 +353,16 @@ export const pl: Translations = {
     },
     sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}' },
     coffee: { title: 'Robi to jedna rodzina', text: 'openbeads pozostaje darmowe i w pełni lokalne, bez reklam i śledzenia. Jeśli aplikacja ci pomaga, możesz wesprzeć jej rozwój przez Buy Me a Coffee.', button: 'Postaw mi kawę', star: 'Gwiazdka na GitHubie też pomaga.', source: 'Kod źródłowy' },
+    promises: {
+      device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce. Bez konta i bez instalacji.' },
+      offline: { name: 'Działa offline', text: 'Raz otwarte, działa także bez internetu.' },
+      noAds: { name: 'Bez reklam i śledzenia', text: 'Nic ci nie sprzedajemy i nic nie zapisuje, co robisz.' },
+      pencil: { name: 'Dla iPada i Pencil', text: 'Tryb pióra, najechanie Pencil i duże przyciski pod palec.' },
+      free: { name: 'Za darmo na zawsze', text: 'Wszystko potrzebne jest darmowe, nic nie jest płatne. Dodatki dla zawodowców przyjdą później.' },
+      shortcuts: { name: 'Skróty klawiszowe', text: 'Każda edycja ma swój klawisz. Wszystkie znajdziesz w {menu} → {help} → {shortcuts}.' },
+    },
+    openSource: { name: 'Otwarty kod', text: 'Całe openbeads jest publiczne na licencji AGPL-3.0. Czytaj kod, zgłaszaj błędy, proponuj zmiany.' },
+    sayHello: { name: 'Napisz do nas', text: 'Błąd, pomysł, twoja praca: wyślij to rodzinie. Jest to też w {menu} → {feedback}.' },
     plans: {
       heading: 'Trzy sposoby użycia',
       why: 'Konta i Pro nie są jeszcze otwarte. Wszystko działa bez nich.',

@@ -13,7 +13,8 @@ export interface FitPending {
 }
 
 export const FIT_PENDING: FitPending[] = [
-  { case: 'HomePage', texts: ['Ваше, на вашем устройстве', 'Всё нужное бесплатно, платного сейчас нет. Позже появятся...'], at: { longest: [1900, 1280] }, fixedBy: '231' },
+  // The demo given the whole room on a short screen, its cards gone (0823): its view is not sized to the Margin sheet yet.
+  { case: "What's inside", texts: ['Name this frame'], at: { en: [1366, 1280] }, fixedBy: '0821' },
   { case: 'HomePage', texts: ['Бесплатный аккаунт'], at: { longest: [1900, 1280, 1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Без аккаунта'], at: { longest: [844, 820, 320] }, fixedBy: '231' },

@@ -16,7 +16,7 @@ import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import AppLogo from '../components/ui/AppLogo.vue'
 import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
-import CoffeeTile from './CoffeeTile.vue'
+import CoffeeScreen from './CoffeeScreen.vue'
 import { wheelPixels } from './wheelTurn'
 import WhatsInside from './inside/WhatsInside.vue'
 import PlanTiles from './PlanTiles.vue'
@@ -113,7 +113,15 @@ const sections = computed<HomepageSection[]>(() => [
     shows: WhatsInside,
     with: (): Record<string, unknown> => ({ class: 'homepage__fill', withEditor: pageWidth.value >= EDITOR_FROM, shown: sections.value[section.value]?.id === 'inside' }),
   },
-  { id: 'coffee', heading: t.value.homepage.coffee.title, title: 'hidden', centred: true, shows: CoffeeTile },
+  {
+    id: 'coffee',
+    heading: t.value.homepage.coffee.title,
+    title: 'hidden',
+    centred: true,
+    shows: CoffeeScreen,
+    // Say hello's Send feedback opens the Feedback sheet as the Menu's row does (ticket 0823).
+    with: () => ({ onFeedback: () => feedback.onOpenFeedback('general') }),
+  },
   {
     id: 'plans',
     heading: t.value.homepage.plans.heading,
@@ -565,8 +573,10 @@ const savedProjects = controlAction('saved-projects')
   visibility: hidden;
 }
 
+/* Centred while it fits; taller than its room it starts at the top, so the whole of it scrolls into view. */
 .homepage__section--centred {
   justify-content: center;
+  justify-content: safe center;
 }
 
 .homepage__heading {

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import { en } from '../../i18n/en'
-import { ru } from '../../i18n/ru'
 import { browserDevicePreferences } from '../../services/devicePreferences'
 import WhatsInside from './WhatsInside.vue'
 import { TOUR_TIMING } from './useInsideTour'
@@ -36,14 +35,6 @@ afterEach(() => {
 })
 
 describe("What's inside (ticket 0797)", () => {
-  it('has four quiet cards that take no press, in order, in every shipped language', () => {
-    for (const [locale, t] of [['en', en], ['ru', ru]] as const) {
-      const cards = section({ withEditor: true }, locale).findAll('[data-testid^="inside-card-"]')
-      expect(cards.map((card) => card.get('strong').text())).toEqual(Object.values(t.homepage.inside.cards).map((card) => card.name))
-      expect(cards.every((card) => !card.find('button, a').exists())).toBe(true)
-    }
-  })
-
   it('lists the 13 rows beside the editor as buttons, named alone until one plays', () => {
     const wrapper = section({ withEditor: true })
     const rows = wrapper.findAll('[data-testid^="inside-row-"]')
@@ -72,7 +63,7 @@ describe("What's inside (ticket 0797)", () => {
     expect(wrapper.get('[aria-current="step"]').attributes('data-testid')).toBe('inside-row-canvas')
   })
 
-  it('on a phone has no editor and no tour: the cards, then the 13 rows each with its line, nothing to press', async () => {
+  it('on a phone has no editor and no tour: the 13 rows each with its line, nothing to press', async () => {
     const wrapper = section({ withEditor: false, shown: true })
     await vi.advanceTimersByTimeAsync(5000)
     expect(wrapper.find('[data-testid="inside-editor"]').exists()).toBe(false)

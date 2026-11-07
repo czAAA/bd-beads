@@ -345,6 +345,12 @@ describe('HomePage coffee tile', () => {
       expect(html.indexOf('data-testid="homepage-coffee"')).toBeGreaterThan(html.indexOf('data-testid="whats-inside"'))
     }
   })
+  it("opens the Feedback sheet from Say hello's Send feedback, as the Menu's row does (ticket 0823)", async () => {
+    const wrapper = page()
+    await wrapper.get('[data-testid="homepage-send-feedback"]').trigger('click')
+    expect(wrapper.get('[data-testid="feedback-sheet"]').attributes('data-kind')).toBe('general')
+    wrapper.unmount()
+  })
 })
 
 describe('HomePage plan tiles', () => {

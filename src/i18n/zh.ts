@@ -332,12 +332,6 @@ export const zh: Translations = {
     openEditor: '打开编辑器',
     whatsInside: '功能一览',
     inside: {
-      cards: {
-        device: { name: '属于你，留在本设备', text: '在浏览器中运行，也可离线使用。无需账户，无需安装。' },
-        pencil: { name: '为 iPad 和 Pencil 而做', text: '笔模式、Pencil 悬停，以及适合手指的大按钮。' },
-        free: { name: '永久免费', text: '你需要的一切都免费，现在没有任何付费内容。专业扩展以后会推出。' },
-        shortcuts: { name: '键盘快捷键', text: '每项编辑都有自己的按键。全部列在 {menu} → {help} → {shortcuts} 中。' },
-      },
       rows: {
         canvas: { name: '画布和边框', text: '随处绘制：画布没有边界。边框决定尺寸、导出和珠子数量。' },
         techniques: { name: '编织技法', text: '织机、佩奥特编织和砖形，按珠子实际的排列方式绘制。' },
@@ -358,6 +352,16 @@ export const zh: Translations = {
     },
     sections: { label: '章节', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}' },
     coffee: { title: '一家人做的', text: 'openbeads 将保持免费且完全本地运行，没有广告，也不追踪用户。如果它对你有帮助，可以通过 Buy Me a Coffee 支持它的开发。', button: '请我喝咖啡', star: '在 GitHub 上点个星标也是一种支持。', source: '查看源代码' },
+    promises: {
+      device: { name: '属于你，留在本设备', text: '在浏览器中运行。无需账户，无需安装。' },
+      offline: { name: '离线可用', text: '打开一次后，没有网络也能继续使用。' },
+      noAds: { name: '无广告，无追踪', text: '不向你推销任何东西，也不记录你的操作。' },
+      pencil: { name: '为 iPad 和 Pencil 而做', text: '笔模式、Pencil 悬停，以及适合手指的大按钮。' },
+      free: { name: '永久免费', text: '你需要的一切都免费，现在没有任何付费内容。专业扩展以后会推出。' },
+      shortcuts: { name: '键盘快捷键', text: '每项编辑都有自己的按键。全部列在 {menu} → {help} → {shortcuts} 中。' },
+    },
+    openSource: { name: '开源', text: 'openbeads 的全部代码都以 AGPL-3.0 许可证公开。你可以阅读代码、报告问题或提出修改建议。' },
+    sayHello: { name: '打个招呼', text: '发现问题、有个想法、做了一个图案：都可以发给我们一家人。它也在 {menu} → {feedback} 中。' },
     plans: {
       heading: '三种使用方式',
       why: '账户和专业版尚未开放。没有它们，一切照常使用。',
