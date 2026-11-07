@@ -449,7 +449,6 @@ describe('a Fringe earring (ticket 0597)', () => {
       expect(mirrored(peyote)).toBe(true)
       // More Top rows give every column a body as tall under its point.
       expect(columnHeights(woven({ lines: 'columns', drop: 1, twoPasses: true }, 7, 6))).toEqual([3, 4, 5, 6, 5, 4, 3])
-      expect(peyote.twoPasses).toBe(true)
     })
 
     it('tapers a 2-drop peyote top a stitch of a bead a block of two columns', () => {

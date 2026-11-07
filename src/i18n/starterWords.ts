@@ -40,7 +40,6 @@ function weaveWords(t: Translations, locale: Locale, weave: Weave): string {
 }
 
 /** The design's Weave, sizes and choices a setup has moved away from, as the note names them ("fringe 12", "V fringe"). */
-
 export function designWords(t: Translations, locale: Locale, starter: Starter, differences: readonly DesignDifference[]): string {
   const picks = designPicks(starter)
   return differences

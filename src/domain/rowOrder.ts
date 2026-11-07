@@ -115,12 +115,14 @@ function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[]
       continue
     }
     // Its lines in the order of their names: a Fringe earring's body is named below its point (ticket 0814). A peyote
-    // top weaves each line after the first in two passes, even beads then odd, as a peyote Frame does.
+    // top weaves each line after the first in two passes, as a peyote Frame does: its higher columns' beads, then the
+    // lower ones'.
     const names = [...new Set(beads.map(({ row }) => row))].sort((a, b) => a - b)
     const first = passes.length
     for (const [index, line] of names.entries()) {
       const positions = beads.filter(({ row }) => row === line).sort((a, b) => (lines === 'row' ? a.x - b.x : a.column - b.column))
-      const halves = layout.twoPasses && index > 0 ? [0, 1].map((parity) => positions.filter(({ column }) => column % 2 === parity)) : [positions]
+      const lower = new Set(layout.twoPasses?.lower)
+      const halves = layout.twoPasses && index > 0 ? [false, true].map((low) => positions.filter(({ column }) => lower.has(column) === low)) : [positions]
       for (const half of halves.filter((each) => each.length > 0)) {
         passes.push({ step: { kind: lines, number: passes.length - first + 1, ...(several ? { part: part + 1 } : {}) }, positions: half.map(({ row, column }) => ({ row, column })) })
       }

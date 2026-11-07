@@ -65,9 +65,9 @@ export interface FrameLayout {
   /** Beads that touch though the chart draws them apart, as pairs of indexes into `positions`: a peyote bead and those
    * of the round before that it sits between, which a steep Seam lifts off a corner pair (ticket 0723). */
   links?: readonly (readonly [number, number])[]
-  /** Its rows woven as peyote's lines are (ticket 0814): the first in one pass, every later one in two, even beads then
-   * odd; a Fringe earring's peyote top. */
-  twoPasses?: true
+  /** Its rows woven as peyote's lines are (ticket 0814): the first in one pass, every later one in two, the beads of the
+   * columns that sit higher, then those of the columns half a bead lower, named here; a Fringe earring's peyote top. */
+  twoPasses?: { lower: readonly number[] }
 }
 
 /** Beads whose outlines lie this close touch, in bead widths (ticket 0723): side by side, end to end, a corner pair at
@@ -481,7 +481,8 @@ export function fringeLayout(settings: FringeSettings, top: FringeTop = BRICK_TO
     const seams: (readonly [LayoutPoint, LayoutPoint])[] = level
       ? [[{ x: -0.5, y: (1 + FRINGE_GAP) / 2 }, { x: topWidth - 0.5, y: (1 + FRINGE_GAP) / 2 }]]
       : bases.map((base, column) => [{ x: column - 0.5, y: base + (1 + FRINGE_GAP) / 2 }, { x: column + 0.5, y: base + (1 + FRINGE_GAP) / 2 }] as const)
-    return boxed({ positions, panels, seams, beadDepth: 1, symmetry: MIRRORED_ACROSS, ...(top.twoPasses ? { twoPasses: true as const } : {}) }, { x: (topWidth - 1) / 2, y: 0 })
+    const lower = bases.flatMap((base, column) => (base > 0 ? [column] : []))
+    return boxed({ positions, panels, seams, beadDepth: 1, symmetry: MIRRORED_ACROSS, ...(top.twoPasses ? { twoPasses: { lower } } : {}) }, { x: (topWidth - 1) / 2, y: 0 })
   })
 }
 

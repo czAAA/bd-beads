@@ -4,7 +4,7 @@ import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt, type FrameSheet } from './canvas'
 import { changeFrame, relaidInBead, type FrameChange } from './changeFrame'
 import { findBead } from './beads'
-import { customFrameSize, frameLayoutOf, type FrameSettings } from './frameShape'
+import { customFrameSize, frameLayoutOf, settingValuesOf, type FrameSettings } from './frameShape'
 import { replaceBead } from './projectBead'
 import { frameGeometryOf, onLayer } from './layers'
 import { beadCell, describeWeave } from './weave'
@@ -359,6 +359,8 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(frameOf(changed(peyote, { settings: { topWidth: 8 } }))!.settings!.topWidth).toBe(9)
       expect(frameOf(changed(peyote, { settings: { topWidth: 6 } }))!.settings!.topWidth).toBe(5)
       expect(frameOf(woven('peyote', { peyoteDrop: 2 }, { ...settings, topWidth: 8 }))!.settings!.topWidth).toBe(6)
+      // Its stepper offers only those: from 3 to 29 on 1-drop.
+      expect(settingValuesOf(frameOf(peyote)!).find(({ name }) => name === 'topWidth')).toMatchObject({ min: 3, max: 29 })
     })
 
     it('grows a peyote or loom body a row at a time, and a 2-drop brick body four rows at a time', () => {

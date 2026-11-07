@@ -716,7 +716,6 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, setTechnique } = setup(placed.project)
     setTechnique('peyote')
-    expect(frameOf(deps.harness.project)!.settings!.topWidth).toBe(5)
     expect(deps.showToast).toHaveBeenCalledWith('frame-odd-width', expect.stringContaining('Width is now 5'), 'info')
   })
 

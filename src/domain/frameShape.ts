@@ -286,7 +286,8 @@ export function settingValuesOf(frame: Pick<FrameSheet, 'shape' | 'settings'> & 
   const weave = wovenIn(shape, frame)
   const read = readWithin(shape, frame.settings)
   const values = settled(shape, read, weave)
-  return shape.settings.map((setting) => ({ name: setting.id, value: values[setting.id]!, min: setting.min, max: settled(shape, { ...read, [setting.id]: setting.max }, weave)[setting.id]! }))
+  const kept = (setting: FrameSetting, value: number) => settled(shape, { ...read, [setting.id]: value }, weave)[setting.id]!
+  return shape.settings.map((setting) => ({ name: setting.id, value: values[setting.id]!, min: kept(setting, setting.min), max: kept(setting, setting.max) }))
 }
 
 /** A Custom frame's settings changed (ticket 0814): those asked over its own, each within its range, kept together the
