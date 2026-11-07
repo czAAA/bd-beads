@@ -777,6 +777,7 @@ export const es: Translations = {
       },
     },
     fringeStyle: { label: 'Estilo de fleco', announce: 'Estilo de fleco: {style}' },
+    oddWidthNote: 'El ancho ahora es {count}: una parte superior en peyote necesita una columna central, así que su ancho es un número impar de columnas, o de bloques con más de 1-drop.',
     announceCustom: 'Marco «{shape}», {size}',
     snapAddedTop: {
       one: 'Se añadió una fila vacía arriba: un marco debe empezar en una fila sin desplazar.',

@@ -1,7 +1,11 @@
 import { plural } from './plural'
 import type { Locale, Translations } from './translations'
 import type { Bead } from '../domain/beads'
-import { designPicks, designSizes, starterBeadCount, type Starter, type StarterChoice, type StarterPick, type StarterSize, type StarterSizes } from '../domain/starters'
+import { fillBlanks } from '../domain/fillBlanks'
+import { weaveSettings, type Weave } from '../domain/weave'
+import { techniqueName } from './techniqueName'
+import { weaveSettingWords } from './settingWords'
+import { designPicks, designSizes, starterBeadCount, type DesignDifference, type Starter, type StarterChoice, type StarterPick, type StarterSize, type StarterSizes } from '../domain/starters'
 
 /** A Starter's name: a Shape's, whose id is its Frame shape's, its shape's name; an Earring's, Ring's or Band's its own
  * (tickets 0596, 0597, 0633). */
@@ -29,10 +33,18 @@ export function starterSizeWords(t: Translations, locale: Locale, starter: Start
     .join(' · ')
 }
 
-/** The design's sizes and choices a setup has moved away from, as the note names them ("fringe 12", "V fringe"). */
-export function designWords(t: Translations, locale: Locale, starter: Starter, differences: readonly ({ size: StarterSize } | { pick: StarterPick })[]): string {
+/** A Weave as a design is made in: its Technique and each of its settings, "brick stitch 1-drop". */
+function weaveWords(t: Translations, locale: Locale, weave: Weave): string {
+  const settings = Object.entries(weaveSettings(weave)).map(([id, count]) => fillBlanks(weaveSettingWords(t, { labelKey: id }).short, { count }))
+  return [techniqueName(t, weave.technique).toLocaleLowerCase(locale), ...settings].join(' ')
+}
+
+/** The design's Weave, sizes and choices a setup has moved away from, as the note names them ("fringe 12", "V fringe"). */
+export function designWords(t: Translations, locale: Locale, starter: Starter, differences: readonly DesignDifference[]): string {
   const picks = designPicks(starter)
-  return differences.map((each) => ('size' in each ? sizeWords(t, locale, each.size, each.size.default) : pickWords(t, each.pick, picks[each.pick.id]!))).join(', ')
+  return differences
+    .map((each) => ('size' in each ? sizeWords(t, locale, each.size, each.size.default) : 'pick' in each ? pickWords(t, each.pick, picks[each.pick.id]!) : weaveWords(t, locale, each.weave)))
+    .join(', ')
 }
 
 /** A Starter's bead count for a choice on a Bead: "165 beads", one of a pair's "87 beads each", and "≈ 252 beads" for a

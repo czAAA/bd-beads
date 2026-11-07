@@ -711,6 +711,14 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     expect(frameOf(deps.harness.project)).toEqual(frame)
   })
 
+  it('says why a Fringe earring\'s Width moved when its top is switched to peyote (ticket 0814)', () => {
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 6, topRows: 4, fringeStyle: 'straight', fringeLength: 9 }, centre: { row: 20, column: 30 } } })
+    if (placed.kind !== 'changed') throw new Error(placed.kind)
+    const { deps, setTechnique } = setup(placed.project)
+    setTechnique('peyote')
+    expect(deps.showToast).toHaveBeenCalledWith('frame-odd-width', expect.stringContaining('Width is now 5'), 'info')
+  })
+
   it('announces the setting a Fringe earring\'s handle drove: its bottom handle Fringe length (ticket 0814)', () => {
     const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
     if (placed.kind !== 'changed') throw new Error(placed.kind)

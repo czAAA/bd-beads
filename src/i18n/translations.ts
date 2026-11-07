@@ -885,6 +885,8 @@ export interface Translations {
     /** A Fringe earring's Fringe style in the Frame panel (ticket 0597), its options the setup's: its label and what is
      * announced. */
     fringeStyle: { label: string; announce: string }
+    /** Why a Fringe earring's Width moved when its top was switched to peyote (ticket 0814); {count} is the new Width. */
+    oddWidthNote: string
     /** `{shape}` is the Frame shape's name, `{size}` its size setting's summary. */
     announceCustom: string
     /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows added on top, and why. */

@@ -772,6 +772,7 @@ export const en: Translations = {
       },
     },
     fringeStyle: { label: 'Fringe style', announce: 'Fringe style: {style}' },
+    oddWidthNote: 'Width is now {count}: a peyote top needs a middle column, so its Width is an odd number of columns, or of blocks on more than 1-drop.',
     announceCustom: '{shape} frame set, {size}',
     snapAddedTop: {
       one: 'Added an empty row on top: a Frame must start on an unshifted row.',

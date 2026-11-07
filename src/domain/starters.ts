@@ -1,11 +1,11 @@
 import { findBead, type Bead } from './beads'
 import type { BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
-import { changedSettings, customFrameSize, frameGeometry, frameShapeOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
+import { changedSettings, customFrameSize, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
-import { weaveOf } from './layerWeave'
+import { sameWeave, weaveOf } from './layerWeave'
 import { withBackground, withLayer } from './layerRecord'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
@@ -221,36 +221,50 @@ function pickIn(starter: Starter, picks: StarterPicks | undefined, id: StarterPi
   return picks?.[id] ?? starter.picks.find((each) => each.id === id)!.default
 }
 
-/** The design's sizes and choices a setup has moved away from, in the setup's order; none when the design fits. A Ring
- * size set in US counts as the whole EU size it comes to. */
-export function designDifferences(starter: Starter, { sizes, picks }: Pick<StarterChoice, 'sizes' | 'picks'>): ({ size: StarterSize } | { pick: StarterPick })[] {
+/** What a setup has moved off its Starter's design: a size, a choice, or a Custom frame's Weave, whose layout the design's
+ * beads are named by (a Fringe earring's top, ticket 0814). */
+export type DesignDifference = { size: StarterSize } | { pick: StarterPick } | { weave: Weave }
+
+/** The design's Weave, sizes and choices a setup has moved away from, in the setup's order; none when the design fits.
+ * A Ring size set in US counts as the whole EU size it comes to. */
+export function designDifferences(starter: Starter, { sizes, picks, weave }: Pick<StarterChoice, 'sizes' | 'picks' | 'weave'>): DesignDifference[] {
+  const rewoven = starter.measure === 'frame' && weave !== undefined && !sameWeave(weaveOf(weave), weaveOf(starter.weave))
   return [
+    ...(rewoven ? [{ weave: starter.weave }] : []),
     ...starter.sizes.filter((size) => Math.round(sizeIn(starter, sizes, size.id)) !== size.default).map((size) => ({ size })),
     ...starter.picks.filter((pick) => pickIn(starter, picks, pick.id) !== pick.default).map((pick) => ({ pick })),
   ]
 }
 
 /** Whether a choice's sizes and choices are the design's. */
-export function designFits(starter: Starter, choice: Pick<StarterChoice, 'sizes' | 'picks'>): boolean {
+export function designFits(starter: Starter, choice: Pick<StarterChoice, 'sizes' | 'picks' | 'weave'>): boolean {
   return designDifferences(starter, choice).length === 0
 }
 
 /** The range each of a Starter's sizes may take with the others as they are: on a Fringe earring, Top rows up to the
  * highest its brick body keeps (ticket 0814). */
-export function starterSizeRanges(starter: Starter, sizes: StarterSizes): Partial<Record<StarterSizeName, { min: number; max: number }>> {
-  const custom = new Map(settingValuesOf({ shape: starter.shape, settings: customSettings(starter, { sizes }) }).map((each) => [each.name as StarterSizeName, each]))
+export function starterSizeRanges(starter: Starter, sizes: StarterSizes, weave: Weave = starter.weave): Partial<Record<StarterSizeName, { min: number; max: number }>> {
+  const custom = new Map(settingValuesOf({ shape: starter.shape, settings: customSettings(starter, { sizes }), ...weave }).map((each) => [each.name as StarterSizeName, each]))
   return Object.fromEntries(starter.sizes.map(({ id, min, max }) => [id, { min, max: custom.get(id)?.max ?? max }]))
 }
 
 /** A Starter's sizes with one set from its stepper or a chip (ticket 0814): within its range, and on a Custom frame
  * Starter kept together as a change of its Frame shape's settings keeps them (a Fringe earring's body steps two rows,
  * a Width keeps it as tall). */
-export function sizesWith(starter: Starter, sizes: StarterSizes, id: StarterSizeName, value: number): StarterSizes {
-  const { min, max } = starterSizeRanges(starter, sizes)[id]!
+export function sizesWith(starter: Starter, sizes: StarterSizes, id: StarterSizeName, value: number, weave: Weave = starter.weave): StarterSizes {
+  const { min, max } = starterSizeRanges(starter, sizes, weave)[id]!
   const set = { ...sizes, [id]: Math.min(max, Math.max(min, Math.round(value))) }
   if (starter.measure !== 'frame') return set
-  const changed = changedSettings({ shape: starter.shape, settings: customSettings(starter, { sizes }) }, { [id]: set[id] })
+  const changed = changedSettings({ shape: starter.shape, settings: customSettings(starter, { sizes }), ...weave }, { [id]: set[id] })
   return Object.fromEntries(starter.sizes.map((size) => [size.id, changed[size.id as FrameSettingName] ?? set[size.id]]))
+}
+
+/** A Custom frame Starter's sizes as its layout keeps them in a Weave (ticket 0814): a peyote Width an odd number of
+ * blocks, the one below an even one; a Ring's or Band's as they are. */
+export function sizesIn(starter: Starter, sizes: StarterSizes, weave: Weave): StarterSizes {
+  if (starter.measure !== 'frame') return sizes
+  const kept = settingsOf({ shape: starter.shape, settings: customSettings(starter, { sizes }), ...weave })!
+  return Object.fromEntries(starter.sizes.map((size) => [size.id, kept[size.id as FrameSettingName] ?? sizeIn(starter, sizes, size.id)]))
 }
 
 /** A strip rule's length round the finger or wrist, in mm: a Ring's size and its ease, or a Band's wrist with its Fit's
@@ -270,7 +284,7 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
  * or Band lying across takes its Width in rows and its length in columns of the Bead's pitch, as put in place.
  * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
-  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice).technique, beadCell(bead, weaveIn(starter, choice).technique))
+  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice), beadCell(bead, weaveIn(starter, choice).technique))
   if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
   const across = describeWeave(weaveIn(starter, choice)).stepMm(bead).across
   return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / across)) }

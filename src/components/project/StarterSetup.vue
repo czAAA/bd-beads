@@ -15,6 +15,7 @@ import {
   starterMeasure,
   STARTER_BEAD_ID,
   starterSizeRanges,
+  sizesIn,
   sizesWith,
   US_RING_PRESETS,
   usRingSize,
@@ -99,7 +100,23 @@ function shownValue(size: StarterSize): number {
 function setSize(size: StarterSize, shown: number) {
   const eu = inUs(size) ? euRingSize(shown) : shown
   if (!Number.isFinite(eu)) return
-  Object.assign(sizes, sizesWith(props.starter, sizes, size.id, eu))
+  Object.assign(sizes, sizesWith(props.starter, sizes, size.id, eu, weave.value))
+  widthKept.value = undefined
+  followDesign()
+}
+
+/** The Width a Weave change moved to keep a middle column (a peyote top, ticket 0814), said in a note until a size
+ * changes again; none while it kept its own. */
+const widthKept = ref<number>()
+
+/** The Frame's Technique or a setting of it chosen (ticket 0814): a Custom frame's sizes kept to what its layout takes
+ * in it, a Width that has to change said why, and the design followed, as it is made in its own Weave. */
+function setWeave(chosen: Technique, values: TechniqueSettings) {
+  technique.value = chosen
+  settings.value = values
+  const was = sizes.topWidth
+  Object.assign(sizes, sizesIn(props.starter, sizes, weave.value))
+  widthKept.value = was !== undefined && sizes.topWidth !== was ? sizes.topWidth : undefined
   followDesign()
 }
 
@@ -132,7 +149,7 @@ const note = computed(() => {
   if (useDesign.value) return undefined
   if (!offByChange.value) return t.value.starters.emptyNote
   const differences = designDifferences(props.starter, choice.value)
-  const template = differences.every((each) => 'pick' in each) ? t.value.starters.designOffChoiceNote : t.value.starters.designOffNote
+  const template = differences.every((each) => !('size' in each)) ? t.value.starters.designOffChoiceNote : t.value.starters.designOffNote
   return fillBlanks(template, { size: designWords(t.value, locale.value, props.starter, differences) })
 })
 
@@ -164,7 +181,7 @@ function sizeWords(size: StarterSize): { label: string; less: string; more: stri
 
 /** A size's stepper range and step as shown: a Ring size in US goes by halves. */
 function stepperOf(size: StarterSize): { min: number; max: number; stepBy: number } {
-  const { min, max } = starterSizeRanges(props.starter, sizes)[size.id]!
+  const { min, max } = starterSizeRanges(props.starter, sizes, weave.value)[size.id]!
   return inUs(size) ? { min: usRingSize(min), max: usRingSize(max), stepBy: 0.5 } : { min, max, stepBy: 1 }
 }
 
@@ -229,11 +246,13 @@ function onSubmit() {
       :bead="bead"
       :background="background"
       testid="starter"
-      @set-technique="technique = $event"
-      @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
+      @set-technique="setWeave($event, settings)"
+      @set-setting="(id, value) => setWeave(technique, { ...settings, [id]: value })"
       @pick-bead="beadId = $event"
       @set-background="picked = $event"
     />
+
+    <AppNote v-if="widthKept !== undefined" data-testid="starter-width-note">{{ fillBlanks(t.frame.oddWidthNote, { count: widthKept }) }}</AppNote>
 
     <FormField :label="t.starters.designLabel" label-id="starter-design-label">
       <SegmentedControl

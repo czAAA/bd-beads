@@ -767,6 +767,7 @@ export const zh: Translations = {
       },
     },
     fringeStyle: { label: '流苏样式', announce: '流苏样式：{style}' },
+    oddWidthNote: '宽度现为 {count}：佩奥特针法的顶部需要一列居中，所以宽度须为奇数列（多于 1-drop 时为奇数个块）。',
     announceCustom: '边框「{shape}」，{size}',
     snapAddedTop: {
       other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
