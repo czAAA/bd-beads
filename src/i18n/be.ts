@@ -359,7 +359,7 @@ export const be: Translations = {
       demo: { kaleidoscope: 'Калейдаскоп', heart: 'Сэрца', bracelet: 'Бранзалет' },
     },
     sections: { label: 'Раздзелы', back: 'Назад', next: 'Далей', firstBody: 'Гэта першы раздзел.', lastBody: 'Гэта апошні раздзел.', goTo: 'Перайсці: {section}' },
-    coffee: { title: 'Робіць адна сям’я', button: 'Пачаставаць кавай' },
+    coffee: { title: 'Робіць адна сям’я', text: 'openbeads застаецца бясплатным і цалкам лакальным, без рэкламы і сачэння. Калі праграма вам дапамагае, падтрымаць яе развіццё можна праз Buy Me a Coffee.', button: 'Пачаставаць кавай', star: 'Зорка на GitHub таксама дапамагае.', source: 'Зыходны код' },
     plans: {
       heading: 'Тры варыянты',
       why: 'Акаўнты і Pro пакуль не адкрыты. Усё працуе і без іх.',
