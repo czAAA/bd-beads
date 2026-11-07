@@ -11,6 +11,7 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 - **Track, filled part and thumb** as QualitySlider: `slider-track` (4px, `radius-full`) in `track`, the filled part in `accent`, the thumb `slider-thumb` (20px) in `ink` with a 2px `canvas` ring; the input `touch-target` (44px) tall. Its states (hover, focus-visible ring 2px outside the thumb, dragging at `slider-thumb-scale`, disabled) are QualitySlider's.
 - **The ends**, `space-4` under the track, each centred under its end of the thumb's travel: the min in `meta-small` `muted`, the max in `meta-small` `ink`, written "max 256" so it reads as a limit, not a reading.
 - **Hint:** optional, one line under the ends in `small` `muted`.
+- **Info button:** optional (ticket 0817), the Button card's Info button (16px `info` icon, `space-4` after the name) for help a person reads once, such as what the setting changes; its Tooltip holds the help and its accessible name says what it explains ("What Tolerance does"). Prefer it to a Hint for anything that does not change with the value.
 
 ## Marks
 

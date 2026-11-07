@@ -1050,6 +1050,9 @@ export interface Translations {
       tolerance: string
       toleranceMin: string
       toleranceMax: string
+      /** Tolerance's info button (ticket 0817): its accessible name and the Tooltip saying what it changes. */
+      toleranceInfoLabel: string
+      toleranceInfo: string
       removeFound: string
       removed: string
       removedLine: PluralForms

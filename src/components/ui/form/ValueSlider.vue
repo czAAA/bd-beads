@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useElementSize } from '../../../composables/ui/useElementSize'
 import { clamp } from '../../../domain/clamp'
+import InfoButton from '../InfoButton.vue'
 
 // A slider that picks one whole number over a range and writes the value above it (ValueSlider card, ticket 0747):
 // QualitySlider's track and thumb on a native range, so touch drag, arrows, Home and End work, moving through every
@@ -24,6 +25,9 @@ const props = defineProps<{
   marks?: readonly { value: number; label?: string }[]
   /** One line under the ends. */
   hint?: string
+  /** The info button beside the label (ticket 0817): its accessible name ("What Tolerance does") and Tooltip, for help
+   * read once rather than a line kept under the slider. */
+  info?: { label: string; body: string }
   testid?: string
 }>()
 
@@ -102,7 +106,10 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
 <template>
   <div class="vs" :style="{ '--vs-at': at }" :data-testid="testid">
     <p class="vs-head">
-      <span class="vs-label">{{ label }}</span>
+      <span class="vs-label">
+        {{ label }}
+        <InfoButton v-if="info" :label="info.label" :body="info.body" :data-testid="testid && `${testid}-info`" />
+      </span>
       <span class="vs-value" :data-testid="testid && `${testid}-value`">
         <b>{{ value }}</b><template v-if="secondary"> · <span class="vs-secondary">{{ secondary }}</span></template>
       </span>
@@ -136,7 +143,7 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
 <style scoped>
   .vs { display: flex; flex-direction: column; gap: var(--space-4); color: var(--body); }
   .vs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; }
-  .vs-label { font: var(--type-control); font-weight: 500; color: var(--ink); }
+  .vs-label { display: inline-flex; align-items: center; gap: var(--space-4); font: var(--type-control); font-weight: 500; color: var(--ink); }
   .vs-value { font: var(--type-meta); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .vs-value b { font-weight: 500; }
   .vs-secondary { color: var(--muted); }

@@ -37,6 +37,14 @@ describe('ValueSlider (ValueSlider card, ticket 0747)', () => {
     expect(wrapper.text()).toContain('Height follows the picture.')
   })
 
+  it('puts an info button beside the label only when given one, its Tooltip holding the help (ticket 0817)', async () => {
+    expect(slider().find('[data-testid="width-info"]').exists()).toBe(false)
+    const wrapper = slider({ info: { label: 'What Width does', body: 'How many beads across.' } })
+    expect(wrapper.get('.vs-label [data-testid="width-info"]').attributes('aria-label')).toBe('What Width does')
+    await wrapper.get('.vs-label .app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('How many beads across.')
+  })
+
   it('emits every whole number the range is moved to, kept inside its ends', async () => {
     const wrapper = slider()
     await wrapper.get('[data-testid="width-range"]').setValue('40')

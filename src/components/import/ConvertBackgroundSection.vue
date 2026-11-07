@@ -64,6 +64,7 @@ const toolLine = computed(() => {
           :valuetext="String(wizard.tolerance.value)"
           :min-label="words.toleranceMin"
           :max-label="words.toleranceMax"
+          :info="{ label: words.toleranceInfoLabel, body: words.toleranceInfo }"
           testid="convert-tolerance"
           @update:model-value="wizard.setTolerance"
         />

@@ -891,6 +891,8 @@ export const es: Translations = {
       tolerance: 'Tolerancia',
       toleranceMin: 'colores cercanos',
       toleranceMax: 'más',
+      toleranceInfoLabel: 'Qué hace la Tolerancia',
+      toleranceInfo: 'Cuánto puede alejarse un color de los colores del fondo y seguir contando como fondo. Baja: solo el propio fondo, con su ruido y sus sombras suaves; alta: también colores que solo se parecen, así que puede llegar al motivo.',
       removeFound: 'Quitar lo encontrado',
       removed: 'Fondo quitado',
       removedLine: { one: '{count} cuenta queda fuera, como un hueco vacío en la vista previa.', many: '{count} de cuentas quedan fuera, como huecos vacíos en la vista previa.', other: '{count} cuentas quedan fuera, como huecos vacíos en la vista previa.' },

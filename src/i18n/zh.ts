@@ -870,6 +870,8 @@ export const zh: Translations = {
       tolerance: '容差',
       toleranceMin: '相近颜色',
       toleranceMax: '更多',
+      toleranceInfoLabel: '容差的作用',
+      toleranceInfo: '颜色与背景颜色相差多少仍算作背景。低：只取背景本身及其噪点和柔和阴影；高：也取只是看起来相似的颜色，可能会伸入主体。',
       removeFound: '去除找到的部分',
       removed: '背景已去除',
       removedLine: { other: '已去掉 {count} 颗珠子，在预览上显示为空位。' },
