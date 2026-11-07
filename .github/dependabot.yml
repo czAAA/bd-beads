@@ -1,0 +1,13 @@
+# Keeps the commit SHAs the workflows pin their actions to up to date (the repo requires every action to be pinned).
+# npm security fixes come from Dependabot security updates, turned on in the repo settings.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: 'ref:[none]'

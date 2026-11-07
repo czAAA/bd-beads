@@ -1,5 +1,6 @@
 {
   "name": "bd-beads",
+  "private": true,
   "license": "AGPL-3.0-or-later",
   "version": "0.0.0",
   "type": "module",
@@ -55,6 +56,15 @@
     "miniflare": {
       "undici": "7.30.1",
       "sharp": "0.35.5"
-    }
+    },
+    "minimatch": "^11.0.5"
+  },
+  "homepage": "https://openbeads.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/czAAA/bd-beads.git"
+  },
+  "bugs": {
+    "url": "https://github.com/czAAA/bd-beads/issues"
   }
 }
