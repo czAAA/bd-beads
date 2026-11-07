@@ -711,6 +711,18 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     expect(frameOf(deps.harness.project)).toEqual(frame)
   })
 
+  it('announces the setting a Fringe earring\'s handle drove: its bottom handle Fringe length (ticket 0814)', () => {
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
+    if (placed.kind !== 'changed') throw new Error(placed.kind)
+    const { deps, press, drag, release } = setupEditing(placed.project)
+    const frame = frameOf(placed.project)!
+    const bottom = frame.row + frame.rows - 1
+    press({ kind: 'handle', edges: ['bottom'] }, { row: bottom, column: frame.column })
+    drag({ row: bottom + 2, column: frame.column })
+    release()
+    expect(deps.announce).toHaveBeenLastCalledWith('Fringe length: 14')
+  })
+
   it('asks before removing it, as for any Frame, and removes it on Yes (ticket 0669)', () => {
     const triangle = custom('triangle', 9)
     const { deps, remove, removeConfirmOpen, confirmRemove } = setup(withLayers(triangle, { frame: { ...frameOf(triangle)!, beads: { 0: { 0: '#ff0000' } } } }))

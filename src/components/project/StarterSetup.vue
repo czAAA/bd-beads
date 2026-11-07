@@ -15,6 +15,7 @@ import {
   starterMeasure,
   STARTER_BEAD_ID,
   starterSizeRanges,
+  sizesWith,
   US_RING_PRESETS,
   usRingSize,
   type Starter,
@@ -93,15 +94,12 @@ function shownValue(size: StarterSize): number {
   return inUs(size) ? usRingSize(value) : value
 }
 
-/** A size set from its stepper or a chip, within its range, and every size after it kept within its own (Top rows
- * within a narrower Top width). A Ring size set in US is kept as the whole EU size it comes to. */
+/** A size set from its stepper or a chip, within its range, the others kept with it as the Starter keeps them (a Fringe
+ * earring's body, ticket 0814). A Ring size set in US is kept as the whole EU size it comes to. */
 function setSize(size: StarterSize, shown: number) {
-  const range = starterSizeRanges(props.starter, sizes)[size.id]!
   const eu = inUs(size) ? euRingSize(shown) : shown
   if (!Number.isFinite(eu)) return
-  sizes[size.id] = Math.min(range.max, Math.max(range.min, Math.round(eu)))
-  const ranges = starterSizeRanges(props.starter, sizes)
-  for (const each of props.starter.sizes) sizes[each.id] = Math.min(ranges[each.id]!.max, sizes[each.id] ?? each.default)
+  Object.assign(sizes, sizesWith(props.starter, sizes, size.id, eu))
   followDesign()
 }
 

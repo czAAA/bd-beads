@@ -261,7 +261,7 @@ export const zh: Translations = {
     presetsLabel: '常用尺寸',
     pictureWithDesign: '{option}，带图案',
     pictureEmpty: '{option}，带接缝的空白形状',
-    sizes: { topWidth: { other: '顶部 {count}' }, topRows: { other: '顶部 {count} 行' }, fringeLength: { other: '流苏 {count}' }, width: { other: '宽 {count}' }, ringSize: { other: 'eu {count}' }, wrist: { other: '手腕 {count} 厘米' }, rounds: { other: '{count} 圈' }, partSize: { other: '部件大小 {count}' }, rows: { other: '{count} 行' } },
+    sizes: { topWidth: { other: '宽 {count}' }, topRows: { other: '顶部 {count} 行' }, fringeLength: { other: '流苏 {count}' }, width: { other: '宽 {count}' }, ringSize: { other: 'eu {count}' }, wrist: { other: '手腕 {count} 厘米' }, rounds: { other: '{count} 圈' }, partSize: { other: '部件大小 {count}' }, rows: { other: '{count} 行' } },
     hints: { fringeEarring: '底排的珠子数', triangle: '从中心起', warpedSquare: '从中心起', kite: '从尖端起', star: '每个角的圈数', kaleidocycle: '每个三角形的圈数' },
     sizeHints: { topRows: '每行少一颗', fringeLength: '最长一条的珠子数', width: '珠子数', ringSize: '手指周长毫米', ringSizeUs: '美国尺码', wrist: '厘米，贴紧测量' },
     setupSizes: { width: { label: '宽度', less: '窄一颗珠子', more: '宽一颗珠子' }, ringSize: { label: '戒指尺寸', less: '小一个尺码', more: '大一个尺码' }, wrist: { label: '手腕', less: '少一厘米', more: '多一厘米' } },
@@ -741,7 +741,7 @@ export const zh: Translations = {
     refusedCutsSchema: '边框不能切开图案“{name}”。要么整个框住，要么都不框。',
     shapes: { fringeEarring: '流苏耳环', triangle: '三角形', warpedSquare: '弯曲方形', star: '星形', kaleidocycle: '万花筒环', kite: '风筝' },
     sizeSettings: {
-      topWidth: { label: '顶部宽度', less: '底排少一颗', more: '底排多一颗', summary: { other: '顶部 {count}' }, announce: '顶部宽度：{count}' },
+      topWidth: { label: '宽度', less: '底排少一颗', more: '底排多一颗', summary: { other: '宽 {count}' }, announce: '宽度：{count}' },
       topRows: { label: '顶部行数', less: '少一行', more: '多一行', summary: { other: '顶部 {count} 行' }, announce: '顶部行数：{count}' },
       fringeLength: { label: '流苏长度', less: '短一颗', more: '长一颗', summary: { other: '流苏 {count}' }, announce: '流苏长度：{count}' },
       rounds: {

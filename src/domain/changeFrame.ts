@@ -13,7 +13,7 @@ import {
   type FrameSheet,
   sameFrame,
 } from './canvas'
-import { movedFrame, snapColumn, snapRow, withFrame, withFrameGiving } from './frame'
+import { movedFrame, snapColumn, snapRow, withFrame, withFrameGiving, type FrameEdge } from './frame'
 import { frameGeometryOf, layerSheet, shownBeads } from './layers'
 import { droppedFromLayout, droppedFromTurnedGrid, liftedOntoLayout } from './customSelection'
 import type { GridPosition } from './grid'
@@ -21,10 +21,12 @@ import { footprintOf } from './footprint'
 import { refoldSheet, withEachBead } from './folding'
 import { canvasLift, grownFrame, namedPieceTaken } from './frameGrowth'
 import {
+  changedSettings,
   customFrameSize,
   frameAllows,
   frameGeometry,
   frameShapeOf,
+  sameSettings,
   settingsHolding,
   settingsOf,
   sizedSettings,
@@ -200,17 +202,18 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
     return { kind: 'changed', project: placedCustomFrame(project, change.custom) }
   }
 
-  // A Custom frame's resize handles step its size setting (ADR 0079).
+  // A Custom frame's resize handles step its size setting (ADR 0079), or each the setting of its own side (ticket 0814).
   const current = frameOf(project)
-  const sized = 'set' in change && current ? sizedSettings({ ...current, cell: frameWeave(project).cell }, change.set, 'nearest') : undefined
+  const edges = 'set' in change && current ? movedEdges(current, change.set) : undefined
+  const sized = 'set' in change && current ? sizedSettings({ ...current, cell: frameWeave(project).cell }, change.set, 'nearest', edges) : undefined
   if ('settings' in change || sized) {
     const frame = frameOf(project)!
-    const asked = 'settings' in change ? change.settings : sized
-    const settings = settingsOf({ shape: frame.shape, settings: { ...frame.settings, ...asked } })!
+    const settings = 'settings' in change ? changedSettings(frame, change.settings) : sized!
     if (sameSettings(settings, settingsOf(frame)!)) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: touchFrameSheet(project, resettled(project, frame, settings, frame.quarterTurns)) }
+    const laid = resettled(project, frame, settings, frame.quarterTurns)
+    return { kind: 'changed', project: touchFrameSheet(project, edges && frameShapeOf(frame)!.sides ? keptEdges(project, frame, laid, edges) : laid) }
   }
 
   if ('remove' in change) {
@@ -265,12 +268,6 @@ function customSheet(project: Project, shape: FrameShapeId, settings: FrameSetti
  * its Weave, a Starter's (ticket 0671), or else the first Technique its shape supports. */
 type CustomPlacement = { shape: FrameShapeId; centre: GridPosition; beads?: BeadMap; weave?: Weave } & ({ size: number } | { settings: FrameSettings })
 
-/** Whether two Custom frames' settings, as `settingsOf` reads them, are the same. */
-function sameSettings(a: FrameSettings, b: FrameSettings): boolean {
-  const names = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof FrameSettings>
-  return [...names].every((name) => a[name] === b[name])
-}
-
 /** The Project with a new Custom frame in place of any Frame there (ticket 0592), holding the beads given that its
  * layout has a position for: Row progress starts at the first pass, and the Canvas keeps every bead. */
 function placedCustomFrame(project: Project, placement: CustomPlacement): Project {
@@ -289,6 +286,27 @@ function resettled<T extends FrameSheet>(project: Project, frame: T, settings: F
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
   const geometry = frameGeometry(sheet)
   return { ...rest, ...sheet, ...refoldSheet(frame, (position) => geometry.hasPosition(position)) }
+}
+
+/** The edges of a Frame's rectangle a resize handle moved to make `asked`: the top or left where its first row or column
+ * moved, else the bottom or right where its rows or columns changed. */
+function movedEdges(frame: Rect, asked: Rect): FrameEdge[] {
+  return [
+    ...(asked.row !== frame.row ? (['top'] as const) : asked.rows !== frame.rows ? (['bottom'] as const) : []),
+    ...(asked.column !== frame.column ? (['left'] as const) : asked.columns !== frame.columns ? (['right'] as const) : []),
+  ]
+}
+
+/** A Custom frame laid out again by its resize handles (ticket 0814): on each side of its rectangle a handle moved, only
+ * the moved edge goes, the one across from it staying where it was on the Canvas; along the other its centre stays. */
+function keptEdges<T extends FrameSheet>(project: Project, before: FrameSheet, sheet: T, edges: readonly FrameEdge[]): T {
+  const weave = heldWeave(project, 'frame')!
+  const was = canvasDistance(project, weave, before.rows, before.columns)
+  const now = canvasDistance(project, weave, sheet.rows, sheet.columns)
+  const canvas = canvasWeave(project)
+  const row = edges.includes('top') ? before.row + was.row - now.row : edges.includes('bottom') ? before.row : sheet.row
+  const column = edges.includes('left') ? before.column + was.column - now.column : edges.includes('right') ? before.column : sheet.column
+  return { ...sheet, row: snapRow(canvas, row), column: snapColumn(canvas, column) }
 }
 
 /** A Custom frame laid out again in the Bead its layer now has in `after`, `before` with a Bead replaced (ticket 0723):

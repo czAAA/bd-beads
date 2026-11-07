@@ -114,10 +114,11 @@ function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[]
       passes.push({ step: { kind: 'strand', number: strands }, positions: [...beads].sort((a, b) => a.row - b.row).map(({ row, column }) => ({ row, column })) })
       continue
     }
-    const count = Math.max(...beads.map(({ row }) => row)) + 1
-    for (let line = 0; line < count; line += 1) {
+    // Its lines in the order of their names: a Fringe earring's body is named below its point (ticket 0814).
+    const names = [...new Set(beads.map(({ row }) => row))].sort((a, b) => a - b)
+    for (const [index, line] of names.entries()) {
       const positions = beads.filter(({ row }) => row === line).sort((a, b) => (lines === 'row' ? a.x - b.x : a.column - b.column))
-      passes.push({ step: { kind: lines, number: line + 1, ...(several ? { part: part + 1 } : {}) }, positions: positions.map(({ row, column }) => ({ row, column })) })
+      passes.push({ step: { kind: lines, number: index + 1, ...(several ? { part: part + 1 } : {}) }, positions: positions.map(({ row, column }) => ({ row, column })) })
     }
   }
   for (const join of layout.joins) {

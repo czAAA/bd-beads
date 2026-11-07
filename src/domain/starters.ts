@@ -1,7 +1,7 @@
 import { findBead, type Bead } from './beads'
 import type { BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
-import { customFrameSize, frameGeometry, frameShapeOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
+import { changedSettings, customFrameSize, frameGeometry, frameShapeOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
@@ -235,11 +235,22 @@ export function designFits(starter: Starter, choice: Pick<StarterChoice, 'sizes'
   return designDifferences(starter, choice).length === 0
 }
 
-/** The range each of a Starter's sizes may take with the others as they are: a Fringe earring's top has fewer rows than
- * its base row has beads. */
+/** The range each of a Starter's sizes may take with the others as they are: on a Fringe earring, Top rows up to the
+ * highest its brick body keeps (ticket 0814). */
 export function starterSizeRanges(starter: Starter, sizes: StarterSizes): Partial<Record<StarterSizeName, { min: number; max: number }>> {
   const custom = new Map(settingValuesOf({ shape: starter.shape, settings: customSettings(starter, { sizes }) }).map((each) => [each.name as StarterSizeName, each]))
   return Object.fromEntries(starter.sizes.map(({ id, min, max }) => [id, { min, max: custom.get(id)?.max ?? max }]))
+}
+
+/** A Starter's sizes with one set from its stepper or a chip (ticket 0814): within its range, and on a Custom frame
+ * Starter kept together as a change of its Frame shape's settings keeps them (a Fringe earring's body steps two rows,
+ * a Width keeps it as tall). */
+export function sizesWith(starter: Starter, sizes: StarterSizes, id: StarterSizeName, value: number): StarterSizes {
+  const { min, max } = starterSizeRanges(starter, sizes)[id]!
+  const set = { ...sizes, [id]: Math.min(max, Math.max(min, Math.round(value))) }
+  if (starter.measure !== 'frame') return set
+  const changed = changedSettings({ shape: starter.shape, settings: customSettings(starter, { sizes }) }, { [id]: set[id] })
+  return Object.fromEntries(starter.sizes.map((size) => [size.id, changed[size.id as FrameSettingName] ?? set[size.id]]))
 }
 
 /** A strip rule's length round the finger or wrist, in mm: a Ring's size and its ease, or a Band's wrist with its Fit's

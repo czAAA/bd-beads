@@ -443,13 +443,14 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     }
   })
 
-  it('offers a Fringe earring\'s Top width, Top rows and Fringe length, and its Fringe style (ticket 0597)', async () => {
+  it('offers a Fringe earring\'s Width, Top rows and Fringe length, and its Fringe style (tickets 0597, 0814)', async () => {
     const result = changeFrame(framed(), { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 10, column: 10 } } })
     if (result.kind !== 'changed') throw new Error('expected an earring')
     const wrapper = mountBar(result.project)
     expect(['topWidth', 'topRows', 'fringeLength'].map((name) => wrapper.get(`[data-testid="frame-setting-${name}-value"]`).text())).toEqual(['7', '6', '12'])
-    // Top rows stop one short of Top width, so the top ends on a pair.
-    expect(wrapper.get('[data-testid="frame-setting-topRows-more"]').attributes('disabled')).toBeDefined()
+    // Top rows go on past the point into a body under it.
+    expect(wrapper.get('[data-testid="frame-setting-topWidth"]').text()).toContain('Width')
+    expect(wrapper.get('[data-testid="frame-setting-topRows-more"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.get('[data-testid="frame-fringe-style"]').text()).toContain(en.starters.picks.fringeStyle.options.straight)
     await wrapper.get('[data-testid="frame-setting-fringeLength-more"]').trigger('click')
     await wrapper.get('[data-testid="frame-fringe-style"] [data-value="straight"]').trigger('click')
