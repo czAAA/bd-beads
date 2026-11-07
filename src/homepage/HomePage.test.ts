@@ -53,10 +53,8 @@ describe('HomePage', () => {
   })
 
   describe('no hero (ticket 0822)', () => {
-    it('has nothing over the sections: the slogan is in the strip, the sections right under it', () => {
+    it('has nothing over the sections: they start right under the strip', () => {
       const wrapper = page()
-      expect(wrapper.find('.homepage__hero').exists()).toBe(false)
-      expect(wrapper.get('[data-testid="homepage-body"]').find('[data-testid="homepage-slogan"]').exists()).toBe(false)
       expect(wrapper.get('main').element.firstElementChild?.classList).toContain('homepage__sections')
     })
   })

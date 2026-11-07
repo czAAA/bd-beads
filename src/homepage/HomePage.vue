@@ -38,8 +38,8 @@ import { useToasts } from '../composables/ui/useToasts'
 import type { FeedbackService } from '../services/feedback'
 
 // The Homepage (ticket 77; Homepage card): one canvas box like the editor's (ticket 540, ADR 0073) mid-page: the Canvas
-// strip (its slogan and the way into the editor, ticket 0822), one section at a time, the Progress bar. Scrolling turns the box to the next section (ticket 0739);
-// the box never moves. It only reports which way in was chosen: the entry decides where that goes.
+// strip (its slogan and the way into the editor, ticket 0822), one section at a time, the Progress bar. Scrolling turns
+// the box to the next section (ticket 0739); it never moves. It only reports which way in was chosen, not where it goes.
 const props = defineProps<{
   /** How many Projects this device has saved, read without decoding any; none means a new visitor. */
   projectCount: number

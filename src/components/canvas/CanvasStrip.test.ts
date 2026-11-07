@@ -138,12 +138,11 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
       slots: { 'way-in': '<button data-testid="way-in-a">A</button><button data-testid="way-in-b">B</button>' },
       attachTo: document.body,
     })
-    const panels = wrapper.get('.canvas-strip__panels')
+    const buttons = wrapper.findAll('button').map((el) => el.attributes('data-testid'))
+    const stops = wrapper.findAll('button').filter((el) => el.attributes('tabindex') !== '-1').map((el) => el.attributes('data-testid'))
 
-    expect(panels.get('[data-testid="strip-way-in"]').element.previousElementSibling?.contains(wrapper.get('[data-testid="strip-menu"]').element)).toBe(true)
-    expect(wrapper.findAll('button').filter((el) => el.attributes('tabindex') !== '-1').map((el) => el.attributes('data-testid'))).toEqual(
-      expect.arrayContaining(['strip-menu', 'way-in-a', 'way-in-b']),
-    )
+    expect(buttons.slice(0, 3)).toEqual(['strip-menu', 'way-in-a', 'way-in-b'])
+    expect(stops.slice(0, 3)).toEqual(['strip-menu', 'way-in-a', 'way-in-b'])
     expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-way-in"]').exists()).toBe(false)
     wrapper.unmount()
   })

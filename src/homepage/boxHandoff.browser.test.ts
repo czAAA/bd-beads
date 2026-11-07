@@ -11,11 +11,8 @@ afterEach(() => {
   mounted?.unmount()
 })
 
-/** An element's opacity once the leave's fade (`duration-base`) has had time to end. */
-async function settledOpacity(selector: string): Promise<string> {
-  await new Promise((done) => setTimeout(done, 400))
-  return getComputedStyle(mounted!.root.querySelector(selector)!).opacity
-}
+/** An element's opacity now, which the leave's fade (`duration-base`) moves. */
+const opacity = (selector: string) => () => getComputedStyle(mounted!.root.querySelector(selector)!).opacity
 
 // Leaving for the editor (tickets 0776, 0783, 0822): the content fades, the Canvas strip with its slogan and its way in
 // stays, as the editor's first paint draws it again.
@@ -24,8 +21,8 @@ describe('leaving the Homepage for the editor', () => {
     mounted = await mountAt(HomePage, { projectCount: 3, feedback: fakeFeedback() }, { locale: 'en', width: 1280 })
     await settleForMeasuring()
     document.documentElement.dataset.handoff = 'leaving'
-    expect(await settledOpacity('.homepage__strip')).toBe('1')
-    expect(await settledOpacity('.homepage__page')).toBe('0')
-    expect(await settledOpacity('[data-testid="section-bar"]')).toBe('0')
+    await expect.poll(opacity('.homepage__page')).toBe('0')
+    await expect.poll(opacity('[data-testid="section-bar"]')).toBe('0')
+    expect(opacity('.homepage__strip')()).toBe('1')
   })
 })
