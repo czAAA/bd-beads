@@ -23,6 +23,7 @@ import {
   starterMeasure,
   starterProject,
   starterSizeRanges,
+  sizesWith,
   usRingSize,
   type StarterManifest,
 } from './starters'
@@ -215,9 +216,14 @@ describe('an Earring Starter (ticket 0597)', () => {
     expect(designDifferences(straight, { sizes: { fringeLength: 12 }, picks: { fringeStyle: 'v' } })).toEqual([{ size: straight.sizes[2] }, { pick: straight.picks[0] }])
   })
 
-  it('offers fewer Top rows than its Top width has beads, so the top ends on a pair', () => {
-    expect(starterSizeRanges(starterById('straightFringe'), { topWidth: 6 }).topRows).toEqual({ min: 1, max: 5 })
-    expect(starterSizeRanges(starterById('straightFringe'), {}).topWidth).toEqual({ min: 2, max: 30 })
+  it('offers Top rows past its point, a brick body two rows at a time, and keeps the body as tall when the Width changes (ticket 0814)', () => {
+    const straight = starterById('straightFringe')
+    // A Width of 6 tapers to a pair in 5 rows; the highest body up to 60 Top rows is 54 rows.
+    expect(starterSizeRanges(straight, { topWidth: 6 }).topRows).toEqual({ min: 1, max: 59 })
+    expect(starterSizeRanges(straight, {}).topWidth).toEqual({ min: 2, max: 30 })
+    expect(sizesWith(straight, { topWidth: 7, topRows: 6 }, 'topRows', 7)).toMatchObject({ topWidth: 7, topRows: 8 })
+    expect(sizesWith(straight, { topWidth: 7, topRows: 8 }, 'topRows', 7)).toMatchObject({ topRows: 6 })
+    expect(sizesWith(straight, { topWidth: 7, topRows: 8 }, 'topWidth', 9)).toMatchObject({ topWidth: 9, topRows: 10 })
   })
 })
 

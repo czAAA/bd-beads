@@ -369,8 +369,7 @@ export function kiteLayout(rows: number): FrameLayout {
  * earring about the middle of its top. */
 const MIRRORED_ACROSS: LayoutSymmetry = { fold: 1, line: 0 }
 
-/** A Fringe earring's settings (ticket 0597): its brick-stitch top's base row and rows, and its strands' style and
- * length. */
+/** A Fringe earring's settings (ticket 0597): its Width, its top's rows, and its strands' style and length. */
 export interface FringeSettings {
   topWidth: number
   topRows: number
@@ -382,6 +381,11 @@ export interface FringeSettings {
  * strand's beads are renamed when Top rows or Fringe length change. */
 const STRAND_ROW = 1000
 
+/** A body row's name (ticket 0814): its place from the base row up, from this row on. Below the point's, so the rows of
+ * the top read from the base up in the order of their names, and apart from them, so the point's beads keep their names
+ * as the body grows under it. */
+const BODY_ROW = -1000
+
 /** How far below the base row the strands hang, past touching, so the Seam between them shows. */
 const FRINGE_GAP = 0.25
 
@@ -392,15 +396,27 @@ function strandLength({ topWidth, fringeStyle, fringeLength }: FringeSettings, s
   return Math.max(1, fringeLength - 2 * Math.floor(Math.abs(strand - (topWidth - 1) / 2)))
 }
 
-/** A Fringe earring (ticket 0597): a brick-stitch triangle worked from its base row of Top width beads upwards, each
- * row one bead shorter and half a bead in, and a strand hanging under each bead of the base row, a Seam between the top
- * and the strands. Every bead lies upright, as brick stitch and a strung strand hold it. */
+/** The rows a Fringe earring's brick-stitch point takes to taper from its Width to a pair (ticket 0814): Top rows beyond
+ * them are its body. */
+export function fringePointRows(topWidth: number): number {
+  return topWidth - 1
+}
+
+/** A Fringe earring (tickets 0597, 0814): a brick-stitch top, a strand under each bead of its base row, a Seam between.
+ * The top is a point, a row one bead shorter and half a bead in to a pair (cut off by fewer Top rows), over a body of the
+ * rest, rows of the Width and one fewer half a bead in, an even number of them. Every bead lies upright. */
 export function fringeLayout(settings: FringeSettings): FrameLayout {
   const { topWidth, topRows, fringeStyle, fringeLength } = settings
   return remembered(`fringe:${topWidth}:${topRows}:${fringeStyle}:${fringeLength}`, () => {
     const positions: LayoutPosition[] = []
-    for (let row = 0; row < Math.min(topRows, topWidth - 1); row += 1) {
-      for (let column = 0; column < topWidth - row; column += 1) positions.push({ row, column, panel: 0, angle: 0, x: row / 2 + column, y: -row })
+    const point = fringePointRows(topWidth)
+    const body = Math.max(0, topRows - point)
+    for (let line = 0; line < body; line += 1) {
+      const inset = line % 2
+      for (let column = 0; column < topWidth - inset; column += 1) positions.push({ row: BODY_ROW + line, column, panel: 0, angle: 0, x: inset / 2 + column, y: -line })
+    }
+    for (let row = 0; row < Math.min(topRows, point); row += 1) {
+      for (let column = 0; column < topWidth - row; column += 1) positions.push({ row, column, panel: 0, angle: 0, x: row / 2 + column, y: -(body + row) })
     }
     for (let strand = 0; strand < topWidth; strand += 1) {
       for (let bead = 0; bead < strandLength(settings, strand); bead += 1) {

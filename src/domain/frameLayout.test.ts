@@ -427,6 +427,46 @@ describe('a Fringe earring (ticket 0597)', () => {
     expect(layoutPositionAt(layout, 0.71, layout.height - 0.71)).toBeUndefined()
   })
 
+  describe('with more Top rows than its point needs (ticket 0814)', () => {
+    /** The top's rows from the base up, by where they lie: each row's bead count and its first bead's x. */
+    const rowsUp = (layout: FrameLayout) => {
+      const lines = [...new Set(top(layout).map(({ y }) => y))].sort((a, b) => b - a)
+      return lines.map((y) => {
+        const beads = top(layout).filter((bead) => bead.y === y)
+        return { beads: beads.length, x: Math.min(...beads.map((bead) => bead.x)) }
+      })
+    }
+
+    it('lays a full-width body under the point, its brick rows alternating the Width and one fewer half a bead in', () => {
+      const tall = earring('straight', 5, 4 + 4, 6)
+      expect(rowsUp(tall).map(({ beads }) => beads)).toEqual([5, 4, 5, 4, 5, 4, 3, 2])
+      const [base, second] = rowsUp(tall)
+      expect(second!.x - base!.x).toBeCloseTo(0.5)
+      // The strands still hang one under each bead of the base row.
+      expect(strandLengths(tall)).toEqual([6, 6, 6, 6, 6])
+    })
+
+    it('stays symmetric about the middle of its base row', () => {
+      const layout = earring('v', 6, 5 + 6, 9)
+      const at = (x: number, y: number) => `${(x - layout.centre.x).toFixed(3)}:${y.toFixed(3)}`
+      const places = new Set(layout.positions.map(({ x, y }) => at(x, y)))
+      expect(layout.positions.filter(({ x, y }) => !places.has(at(2 * layout.centre.x - x, y)))).toEqual([])
+    })
+
+    it('keeps the point\'s beads in the point as the body grows, the body\'s own rows named apart from both', () => {
+      const point = earring('straight', 6, 5)
+      const tall = earring('straight', 6, 5 + 2)
+      const names = (layout: FrameLayout) => new Set(top(layout).map(({ row, column }) => `${row}:${column}`))
+      expect([...names(point)].every((key) => names(tall).has(key))).toBe(true)
+      // The point lies two rows higher over the body, each of its beads as it was.
+      const pointBase = (layout: FrameLayout) => layout.positions.find(({ row, column }) => row === 0 && column === 0)!
+      const strandTop = (layout: FrameLayout) => layout.positions.find(({ row, column }) => row === 1000 && column === 0)!
+      expect(strandTop(tall).y - pointBase(tall).y).toBeCloseTo(strandTop(point).y - pointBase(point).y + 2)
+      // A taller body keeps the rows of the shorter one.
+      expect([...names(tall)].every((key) => names(earring('straight', 6, 5 + 4)).has(key))).toBe(true)
+    })
+  })
+
   it('keeps a bead\'s name when the top or the strands change size', () => {
     const name = ({ row, column }: { row: number; column: number }) => `${row}:${column}`
     const small = new Set(earring('straight', 8, 5, 12).positions.map(name))

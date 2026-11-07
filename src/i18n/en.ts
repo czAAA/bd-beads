@@ -259,7 +259,7 @@ export const en: Translations = {
     presetsLabel: 'Usual sizes',
     pictureWithDesign: '{option}, with design',
     pictureEmpty: '{option}, empty shape with seams',
-    sizes: { topWidth: { one: 'top {count}', other: 'top {count}' }, topRows: { one: '{count} top row', other: '{count} top rows' }, fringeLength: { one: 'fringe {count}', other: 'fringe {count}' }, width: { one: '{count} wide', other: '{count} wide' }, ringSize: { one: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'wrist {count} cm', other: 'wrist {count} cm' }, rounds: { one: '{count} round', other: '{count} rounds' }, partSize: { one: 'part size {count}', other: 'part size {count}' }, rows: { one: '{count} row', other: '{count} rows' } },
+    sizes: { topWidth: { one: '{count} wide', other: '{count} wide' }, topRows: { one: '{count} top row', other: '{count} top rows' }, fringeLength: { one: 'fringe {count}', other: 'fringe {count}' }, width: { one: '{count} wide', other: '{count} wide' }, ringSize: { one: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'wrist {count} cm', other: 'wrist {count} cm' }, rounds: { one: '{count} round', other: '{count} rounds' }, partSize: { one: 'part size {count}', other: 'part size {count}' }, rows: { one: '{count} row', other: '{count} rows' } },
     hints: { fringeEarring: 'beads in the base row', triangle: 'from the centre', warpedSquare: 'from the centre', kite: 'from the point', star: 'rounds an arm', kaleidocycle: 'rounds a triangle' },
     sizeHints: { topRows: 'one bead fewer each', fringeLength: 'beads, longest strand', width: 'beads', ringSize: 'mm round the finger', ringSizeUs: 'us size', wrist: 'cm, measured snug' },
     setupSizes: { width: { label: 'Width', less: 'One bead narrower', more: 'One bead wider' }, ringSize: { label: 'Ring size', less: 'One size smaller', more: 'One size larger' }, wrist: { label: 'Wrist', less: 'One centimetre less', more: 'One centimetre more' } },
@@ -746,7 +746,7 @@ export const en: Translations = {
     refusedCutsSchema: 'A Frame can’t cut through the Schema “{name}”. Frame all of it, or none of it.',
     shapes: { fringeEarring: 'Fringe earring', triangle: 'Triangle', warpedSquare: 'Warped Square', star: 'Star', kaleidocycle: 'Kaleidocycle', kite: 'Kite' },
     sizeSettings: {
-      topWidth: { label: 'Top width', less: 'One bead fewer in the base row', more: 'One bead more in the base row', summary: { one: 'top {count}', other: 'top {count}' }, announce: 'Top width: {count}' },
+      topWidth: { label: 'Width', less: 'One bead fewer in the base row', more: 'One bead more in the base row', summary: { one: '{count} wide', other: '{count} wide' }, announce: 'Width: {count}' },
       topRows: { label: 'Top rows', less: 'One row fewer', more: 'One row more', summary: { one: '{count} top row', other: '{count} top rows' }, announce: 'Top rows: {count}' },
       fringeLength: { label: 'Fringe length', less: 'One bead shorter', more: 'One bead longer', summary: { one: 'fringe {count}', other: 'fringe {count}' }, announce: 'Fringe length: {count}' },
       rounds: {

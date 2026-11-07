@@ -175,6 +175,16 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(rowOrderOf({ ...earring, quarterTurns: 2 }, { direction: 'rows' }).positionsOf(4)).toEqual([0, 1, 2, 3, 4].map((bead) => ({ row: 1000 + bead, column: 1 })))
   })
 
+  it('steps a Fringe earring\'s body from its base row up before its point (ticket 0814)', () => {
+    const earring = { shape: 'fringeEarring' as const, settings: { topWidth: 3, topRows: 2 + 2, fringeStyle: 'straight' as const, fringeLength: 2 }, rows: 1, columns: 1, technique: 'brick' as const }
+    const order = rowOrderOf(earring, { direction: 'rows' })
+    expect(order.count).toBe(4 + 3)
+    expect([0, 1, 2, 3].map((pass) => order.stepOf?.(pass))).toEqual([1, 2, 3, 4].map((number) => ({ kind: 'row', number })))
+    expect([0, 1, 2, 3].map((pass) => order.positionsOf(pass).length)).toEqual([3, 2, 3, 2])
+    // The point's base row comes after the body, its beads as they were named without one.
+    expect(order.positionsOf(2)).toEqual([0, 1, 2].map((column) => ({ row: 0, column })))
+  })
+
   it('finishes no position it does not have', () => {
     expect(rowOrderOf(custom('triangle', 2), { direction: 'rows' }).passAt({ row: 5, column: 0 })).toBe(Number.POSITIVE_INFINITY)
   })

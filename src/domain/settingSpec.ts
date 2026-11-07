@@ -17,8 +17,6 @@ export interface SettingSpec<Id extends string = string> {
   presets?: readonly number[]
   /** Whether a change of it can drop painted beads, so the weaver is asked first (a smaller Custom frame). */
   lossOnChange?: boolean
-  /** Another setting of the same kind it stays below (a Fringe earring's Top rows, under its Top width). */
-  below?: Id
 }
 
 /** The setting's value as it is kept: a whole number within its range on one of its steps, a value between two steps

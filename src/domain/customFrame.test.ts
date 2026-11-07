@@ -345,8 +345,89 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     expect(rowProgressOn(project)).toBe(true)
   })
 
-  it('reads settings it was not given as the shape\'s defaults, and fewer Top rows than its Top width, ending on a pair', () => {
-    expect(frameOf(earring({ topWidth: 5, topRows: 9 }))!.settings).toEqual({ topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 12 })
+  it('reads settings it was not given as the shape\'s defaults, and a body under its point of an even number of rows (ticket 0814)', () => {
+    expect(frameOf(earring({ topWidth: 5, topRows: 9 }))!.settings).toEqual({ topWidth: 5, topRows: 8, fringeStyle: 'straight', fringeLength: 12 })
+  })
+
+  describe('resized by its handles and steppers (ticket 0814)', () => {
+    /** Where the Frame's four edges lie on the Canvas. */
+    const edges = (project: Project) => {
+      const frame = frameOf(project)!
+      const extent = canvasDistance(project, frameWeave(project), frame.rows, frame.columns)
+      return { top: frame.row, bottom: frame.row + extent.row, left: frame.column, right: frame.column + extent.column }
+    }
+    /** The Frame's rectangle with one edge dragged out by some rows or columns. */
+    const dragged = (project: Project, edge: 'top' | 'bottom' | 'left' | 'right', by: number) => {
+      const frame = frameOf(project)!
+      if (edge === 'top') return { ...frame, row: frame.row - by, rows: frame.rows + by }
+      if (edge === 'left') return { ...frame, column: frame.column - by, columns: frame.columns + by }
+      return edge === 'bottom' ? { ...frame, rows: frame.rows + by } : { ...frame, columns: frame.columns + by }
+    }
+
+    it('changes Width by its left and right handles, only the dragged side moving', () => {
+      const project = earring()
+      const right = changed(project, { set: dragged(project, 'right', 2) })
+      expect(frameOf(right)!.settings).toEqual({ ...settings, topWidth: 8 })
+      expect(edges(right).left).toBe(edges(project).left)
+      expect(edges(right).right).toBeGreaterThan(edges(project).right)
+      const left = changed(project, { set: dragged(project, 'left', 2) })
+      expect(frameOf(left)!.settings).toEqual({ ...settings, topWidth: 8 })
+      expect(edges(left).right).toBe(edges(project).right)
+      expect(edges(left).left).toBeLessThan(edges(project).left)
+    })
+
+    it('changes Top rows by its top handle, growing upwards with the strands staying put', () => {
+      const project = earring()
+      const taller = changed(project, { set: dragged(project, 'top', 3) })
+      expect(frameOf(taller)!.settings).toMatchObject({ topWidth: 6, fringeLength: 9 })
+      expect(frameOf(taller)!.settings!.topRows).toBeGreaterThan(5)
+      expect(edges(taller).bottom).toBe(edges(project).bottom)
+      expect(edges(taller).top).toBeLessThan(edges(project).top)
+    })
+
+    it('changes Fringe length by its bottom handle, the top staying put', () => {
+      const project = earring()
+      const longer = changed(project, { set: dragged(project, 'bottom', 3) })
+      expect(frameOf(longer)!.settings).toEqual({ ...settings, fringeLength: 12 })
+      expect(edges(longer).top).toBe(edges(project).top)
+      // A V's tip moves the same way.
+      const v = earring({ ...settings, fringeStyle: 'v' })
+      expect(frameOf(changed(v, { set: dragged(v, 'bottom', 3) }))!.settings).toEqual({ ...settings, fringeStyle: 'v', fringeLength: 12 })
+    })
+
+    it('drives the setting of the shape\'s side a handle sits on once Rotate Frame has turned it', () => {
+      // A quarter turn clockwise lays the top on the right and the strands on the left.
+      const turned = rotateFrame(earring())!
+      expect(frameOf(changed(turned, { set: dragged(turned, 'right', 3) }))!.settings!.topRows).toBeGreaterThan(5)
+      expect(frameOf(changed(turned, { set: dragged(turned, 'left', 3) }))!.settings).toEqual({ ...settings, fringeLength: 12 })
+      expect(frameOf(changed(turned, { set: dragged(turned, 'bottom', 2) }))!.settings).toEqual({ ...settings, topWidth: 8 })
+    })
+
+    it('takes Top rows past its point two brick rows at a time, and keeps the body as tall when Width changes', () => {
+      // A Width of 6 tapers to a pair in 5 rows.
+      const point = changed(earring(), { settings: { topRows: 5 } })
+      const body = changed(point, { settings: { topRows: 6 } })
+      expect(frameOf(body)!.settings!.topRows).toBe(7)
+      expect(frameOf(changed(body, { settings: { topRows: 6 } }))!.settings!.topRows).toBe(5)
+      expect(frameOf(changed(body, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 9 })
+      expect(frameOf(changed(body, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 5 })
+      // A whole point stays whole with no body under it, and a cut-off one keeps its rows where the point has them.
+      expect(frameOf(changed(point, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
+      expect(frameOf(changed(point, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 7 })
+      expect(frameOf(changed(earring(), { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 4 })
+      expect(frameOf(changed(earring(), { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
+    })
+
+    it('keeps the point\'s beads in the point as the body grows and shrinks, the body\'s given-up rows folded until they come back', () => {
+      const tall = changed(earring(), { settings: { topRows: 9 } })
+      // The body's fourth row, named from -1000 up.
+      const bodyBead = frameLayoutOf(frameOf(tall)!)!.positions.find(({ row }) => row === -1000 + 3)!
+      const painted = paintFrame(tall, [base, bodyBead], RED)
+      const short = changed(painted, { settings: { topRows: 7 } })
+      expect(frameOf(short)!.beads).toEqual({ [base.row]: { [base.column]: RED } })
+      expect(colorAt(frameOf(short)!.folded!, bodyBead.row, bodyBead.column)).toBe(RED)
+      expect(frameOf(changed(short, { settings: { topRows: 9 } }))!.beads).toEqual(frameOf(painted)!.beads)
+    })
   })
 
   it('paints its top and its strands, and nothing on the Seam between them', () => {

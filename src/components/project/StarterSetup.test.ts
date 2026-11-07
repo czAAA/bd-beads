@@ -109,7 +109,7 @@ describe('the Starter setup', () => {
     const wrapper = mountSetup('vFringe')
     expect(['topWidth', 'topRows', 'fringeLength'].map((name) => text(wrapper, `starter-size-value-${name}`))).toEqual(['7', '6', '12'])
     expect(text(wrapper, 'starter-size-label-topWidth')).toContain('beads in the base row')
-    // The card's order: Top width, Top rows, Fringe style, Fringe length.
+    // The card's order: Width, Top rows, Fringe style, Fringe length.
     const order = wrapper.findAll('[data-testid^="starter-size-label-"], [data-testid^="starter-pick-"]').map((each) => each.attributes('data-testid'))
     expect(order).toEqual(['starter-size-label-topWidth', 'starter-size-label-topRows', 'starter-pick-fringeStyle', 'starter-size-label-fringeLength'])
     expect(text(wrapper, 'starter-count')).toBe('87 beads each · 174 for the pair')
@@ -120,12 +120,13 @@ describe('the Starter setup', () => {
     expect(design(wrapper)).toBe(en.starters.useDesign)
   })
 
-  it('keeps an earring\'s Top rows below its Top width, and offers only the chips allowed', async () => {
+  it('takes an earring\'s Top rows past its point two rows at a time, and keeps its body as tall when the Width changes (ticket 0814)', async () => {
     const wrapper = mountSetup('straightFringe')
+    await wrapper.get('[data-testid="starter-size-increase-topRows"]').trigger('click')
+    expect(text(wrapper, 'starter-size-value-topRows')).toBe('8')
     await wrapper.get('[data-testid="starter-size-preset-topWidth-5"]').trigger('click')
-    expect(text(wrapper, 'starter-size-value-topRows')).toBe('4')
-    expect(wrapper.findAll('[data-testid^="starter-size-preset-topRows-"]').map((chip) => chip.text())).toEqual(['4'])
-    expect(text(wrapper, 'starter-design-note')).toBe('The design is made for top 7, 6 top rows. Set it back to turn the design on.')
+    expect(text(wrapper, 'starter-size-value-topRows')).toBe('6')
+    expect(text(wrapper, 'starter-design-note')).toBe('The design is made for 7 wide. Set it back to turn the design on.')
   })
 
   /** An open Project on Delica 11/0, the Bead the StarterGallery card measures with. */

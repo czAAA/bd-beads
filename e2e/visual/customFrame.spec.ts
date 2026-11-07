@@ -28,7 +28,7 @@ function customFramed(shape: FrameShapeId, size: number): Project {
 }
 
 // Each at a size that fits the screen whole: a Star's arms and a Kaleidocycle's triangles in Part size rounds, a Kite in
-// Rows, a Fringe earring by its Top width (ticket 0597).
+// Rows, a Fringe earring by its Width (ticket 0597).
 const SIZES = { triangle: 7, warpedSquare: 7, star: 5, kaleidocycle: 5, kite: 15, fringeEarring: 7 } as const satisfies Record<FrameShapeId, number>
 
 for (const shape of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite', 'fringeEarring'] as const) {

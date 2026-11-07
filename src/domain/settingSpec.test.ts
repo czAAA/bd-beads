@@ -32,7 +32,6 @@ describe('every registry\'s settings (ADR 0078, ticket 0624)', () => {
       if (!(setting.step > 0 && setting.min <= setting.max && onStep(setting, setting.max))) found.push('bounds')
       if (!(setting.default >= setting.min && setting.default <= setting.max && onStep(setting, setting.default))) found.push('default out of bounds')
       if (setting.presets?.some((preset) => preset < setting.min || preset > setting.max || !onStep(setting, preset))) found.push('preset out of bounds')
-      if (setting.below !== undefined && !ids.includes(setting.below)) found.push(`below an unknown ${setting.below}`)
       return found.map((problem) => `${owner} ${setting.id}: ${problem}`)
     })
   }
