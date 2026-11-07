@@ -255,12 +255,13 @@ a.coffee__cup:hover .coffee-cup {
   color: var(--body);
 }
 
-/* In one row, centred, wrapping to centred rows where there is no room. */
+/* In one row, centred, wrapping to centred rows where there is no room; 16px apart, not the prototype's 20, so the six
+ * keep to one row in the 60rem band on every platform's text rendering. */
 .coffee__promises {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-6) var(--space-20);
+  gap: var(--space-6) var(--space-16);
   margin: var(--space-20) 0 0;
   padding: var(--space-14) 0 0;
   list-style: none;
@@ -271,7 +272,7 @@ a.coffee__cup:hover .coffee-cup {
   position: relative;
   display: inline-flex;
   align-items: center;
-  /* 7px, as the card has it: with 8 the six promises no longer keep to one row at 1280. */
+  /* 7px, as the card has it. */
   gap: 7px;
   font: var(--type-promise);
   color: var(--body);
