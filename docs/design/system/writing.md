@@ -236,7 +236,9 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 
 | English | Russian |
 | --- | --- |
-| Yours, on this device · Runs in your browser and offline. No account, nothing to install. | Ваше, на вашем устройстве · Работает в браузере и офлайн. Без аккаунта и установки. |
+| Yours, on this device · Runs in your browser. No account, nothing to install. (ticket 0819: "and offline" went to its own promise) | Ваше, на вашем устройстве · Работает в браузере. Без аккаунта и установки. |
+| Works offline · Once open, it keeps working without a connection. (ticket 0819) | Работает офлайн · Однажды открытое, работает и без интернета. |
+| No ads or tracking · Nothing is sold to you, and nothing records what you do. (ticket 0819) | Без рекламы и слежки · Вам ничего не продают, и никто не записывает, что вы делаете. |
 | For iPad and Pencil · Pen mode, Pencil hover and big buttons for your finger. | Для iPad и Pencil · Режим пера, наведение Pencil и крупные кнопки под палец. |
 | Free forever · All you need is free, and nothing is paid for now. Professional extras will come later. | Бесплатно навсегда · Всё нужное бесплатно, платного сейчас нет. Позже появятся профессиональные дополнения. |
 | Keyboard shortcuts · Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}. | Горячие клавиши · У каждой правки есть своя клавиша. Все они в {menu} → {help} → {shortcuts}. |
@@ -254,7 +256,25 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | Exports · PDF ready to print, PNG ready to share, and the Project file. | Экспорт · PDF для печати, PNG, чтобы поделиться, и файл проекта. |
 | Saved Projects · Kept in this browser, on this device. | Сохранённые проекты · Хранятся в этом браузере, на этом устройстве. |
 | What's inside: the editor (the editor's region, for screen readers) | Что внутри: редактор |
-| Kaleidoscope · Heart · Bracelet (the demo's Projects) | Калейдоскоп · Сердце · Браслет |
+| Ring · Heart · Bracelet (the demo's Projects; Ring replaced Kaleidoscope, ticket 0819) | Кольцо · Сердце · Браслет |
+
+Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · For iPad and Pencil · Free forever · Keyboard shortcuts (left out on a phone). The rows are What's inside's tabs, their lines its caption.
+
+### The Homepage rework (ticket 0819)
+
+| English | Russian |
+| --- | --- |
+| {i} / 13 (What's inside's caption, the playing row's place) | {i} / 13 |
+| More below (the hint on the section bar's edge) | Ниже ещё |
+| Next · {section} (a phone section's last line; `{section}` the next section's heading) | Дальше · {section} |
+| Projects library, {n} (the phone strip's library button, for screen readers) | Библиотека проектов, {n} |
+| What's new · Every change | Что нового · Все изменения |
+| Open source · All of openbeads is public under the AGPL-3.0 licence. Read the code, report a bug or suggest a change. · View the source · A star on GitHub helps too. | Открытый код · Весь openbeads открыт по лицензии AGPL-3.0. Читайте код, сообщайте об ошибках, предлагайте изменения. · Исходный код · Звезда на GitHub тоже помогает. |
+| Say hello · A bug, an idea, a pattern you made: send it to the family. It's also in {menu} → {feedback}. · Send feedback | Напишите нам · Ошибка, идея, ваша работа: отправьте семье. Это есть и в {menu} → {feedback}. · Отправить отзыв |
+| Coming soon (a phone's chip in place of the stamp) · you are here (its chip) | Скоро · вы здесь |
+| Show all {n} (a phone's free list, past its first six rows) | Показать все {n} |
+
+`{menu}` and `{feedback}` are the Menu's own labels (the Canvas strip's Menu, its Send feedback row), never typed in. What's new's lines are the release notes', in the language shown, each with its date in the language's short form ("7 Nov", "7 нояб.").
 
 The scroll story (ticket 0739): the Progress bar's words.
 
