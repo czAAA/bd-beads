@@ -780,6 +780,7 @@ export const pl: Translations = {
       },
     },
     fringeStyle: { label: 'Rodzaj frędzli', announce: 'Rodzaj frędzli: {style}' },
+    oddWidthNote: 'Szerokość to teraz {count}: góra w peyote potrzebuje środkowej kolumny, więc jej szerokość to nieparzysta liczba kolumn (przy drop większym niż 1 nieparzysta liczba bloków).',
     announceCustom: 'Ramka „{shape}”, {size}',
     snapAddedTop: {
       one: 'Dodano pusty wiersz u góry: ramka musi zaczynać się od nieprzesuniętego wiersza.',

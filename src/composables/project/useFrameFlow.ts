@@ -176,6 +176,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project) return
     const before = layerWeave(project, layer)
+    const width = frameOf(project)?.settings?.topWidth
     const change = { technique, techniqueSettings: values }
     const outcome =
       layer === 'frame'
@@ -183,6 +184,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
         : deps.edit('exempt', (current) => changeCanvasWeave(current, change))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
+    // A Fringe earring's top switched to peyote keeps a middle column, so its Width may move (ticket 0814).
+    const kept = layer === 'frame' ? frameOf(deps.currentProject())?.settings?.topWidth : undefined
+    if (kept !== undefined && kept !== width) deps.showToast('frame-odd-width', fillBlanks(t.frame.oddWidthNote, { count: kept }), 'info')
     if (technique !== before.technique) {
       deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
       return

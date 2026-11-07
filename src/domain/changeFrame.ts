@@ -222,7 +222,11 @@ function frameChanged(project: Project, change: FrameChange): FrameChangeResult 
 
   if ('technique' in change || 'techniqueSettings' in change) {
     const rewoven = withWeave(project, 'frame', change)
-    return rewoven === project ? { kind: 'unchanged', project } : { kind: 'changed', project: rewoven }
+    if (rewoven === project) return { kind: 'unchanged', project }
+    // A Custom frame's layout follows its Weave (a Fringe earring's top, ticket 0814): laid out again round its centre,
+    // each bead keeping its row and column, those with no place in it folded until a layout has one again.
+    const woven = frameOf(rewoven)!
+    return { kind: 'changed', project: frameShapeOf(woven) ? withFrameSheet(rewoven, resettled(rewoven, woven, woven.settings ?? {}, woven.quarterTurns, project)) : rewoven }
   }
 
   if ('make' in change) {
@@ -256,9 +260,9 @@ function frameRefuses(frame: FrameSheet, change: FrameChange): boolean {
  * Technique and its layer's Bead (by default the Bead a Frame of the Project is made in, ticket 0723), its first row
  * and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
 function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns, woven?: Weave, cell: BeadCell | undefined = frameWeave(project).cell): FrameSheet {
-  const read = settingsOf({ shape, settings })!
   const weave = weaveOf(woven ?? { technique: frameShapeOf({ shape })!.techniques[0] })
-  const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave.technique, cell)
+  const read = settingsOf({ shape, settings, ...weave })!
+  const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave, cell)
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
   return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }

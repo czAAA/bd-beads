@@ -114,11 +114,16 @@ function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[]
       passes.push({ step: { kind: 'strand', number: strands }, positions: [...beads].sort((a, b) => a.row - b.row).map(({ row, column }) => ({ row, column })) })
       continue
     }
-    // Its lines in the order of their names: a Fringe earring's body is named below its point (ticket 0814).
+    // Its lines in the order of their names: a Fringe earring's body is named below its point (ticket 0814). A peyote
+    // top weaves each line after the first in two passes, even beads then odd, as a peyote Frame does.
     const names = [...new Set(beads.map(({ row }) => row))].sort((a, b) => a - b)
+    const first = passes.length
     for (const [index, line] of names.entries()) {
       const positions = beads.filter(({ row }) => row === line).sort((a, b) => (lines === 'row' ? a.x - b.x : a.column - b.column))
-      passes.push({ step: { kind: lines, number: index + 1, ...(several ? { part: part + 1 } : {}) }, positions: positions.map(({ row, column }) => ({ row, column })) })
+      const halves = layout.twoPasses && index > 0 ? [0, 1].map((parity) => positions.filter(({ column }) => column % 2 === parity)) : [positions]
+      for (const half of halves.filter((each) => each.length > 0)) {
+        passes.push({ step: { kind: lines, number: passes.length - first + 1, ...(several ? { part: part + 1 } : {}) }, positions: half.map(({ row, column }) => ({ row, column })) })
+      }
     }
   }
   for (const join of layout.joins) {

@@ -1,6 +1,6 @@
 import { findBead, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
-import { fringeLayout, fringePointRows, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import { fringeLayout, fringePointRows, type FringeTop, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { FrameEdge } from './frame'
 import type { GridDimensions, GridPosition } from './grid'
 import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
@@ -37,7 +37,11 @@ export type QuarterTurns = 1 | 2 | 3
 
 /** What a Custom frame's layout is built from: its Frame shape, its settings, how far it is turned, and the cell of its
  * layer's Bead, whose depth a round shape packs its beads by (ticket 0723). */
-type Laid = Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns' | 'cell'>
+type Laid = Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns' | 'cell'> & Woven
+
+/** The Weave a Custom frame is woven in, where known: a Fringe earring's top is laid out by it (ticket 0814); left out,
+ * its shape's first Technique with its settings at their defaults. */
+type Woven = Partial<Pick<Weave, 'technique' | 'techniqueSettings'>>
 
 /** A Frame as its Frame shape reads it: its shape, its settings, its turn, its size and its Weave. */
 export type ShapedSheet = Laid & Pick<FrameSheet, 'rows' | 'columns'> & Weave
@@ -78,10 +82,10 @@ export interface FrameShape extends FrameRules {
   /** Its numbered settings, each already within its range, kept to the values its layout takes together, a changed one
    * moved on the way it was changed from `before` (a Fringe earring's brick body, ticket 0814); without it every value
    * in range is one. */
-  settle?(read: NumberedSettings, before?: NumberedSettings): NumberedSettings
+  settle?(read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings
   /** Built from its settings as `settingsOf` reads them, every one the shape has, and its Bead's depth across the
    * thread over its pitch along it, which only a round shape's packing reads (ticket 0723). */
-  layout(settings: FrameSettings, depth: number): FrameLayout
+  layout(settings: FrameSettings, depth: number, weave: Weave): FrameLayout
 }
 
 /** A Frame without a Frame shape: its beads in its Weave's rows over its own rectangle, every action open to it. */
@@ -138,18 +142,38 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
   }
 }
 
-/** A Fringe earring's settings kept together (ticket 0814): its brick body an even number of rows, a Top rows between
- * two such the one the change moved towards (or below); a changed Width keeps a whole point whole with its body as tall
- * (none stays none), a cut-off one its rows where the new point has them. */
-function settledFringe(read: NumberedSettings, before?: NumberedSettings): NumberedSettings {
-  const width = read.topWidth!
-  const point = fringePointRows(width)
+/** How a Fringe earring's top is woven in a Weave (ticket 0814), read from its geometry: lines that stagger, how many
+ * beads a stitch picks up, and whether a line after the first takes two passes. */
+function fringeTopOf(weave: Weave): FringeTop {
+  const { staggers, rowCycle, columnCycle, twoPasses } = describeWeave(weave)
+  if (staggers === 'columns') return { lines: 'columns', drop: columnCycle / 2, twoPasses }
+  return rowCycle > 1 ? { lines: 'shiftedRows', drop: rowCycle / 2, twoPasses } : { lines: 'rows', drop: 1, twoPasses }
+}
+
+/** The value on a grid of `step` from `first` that a setting moved to `value` comes to: the next one the way it moved
+ * from `was`, or the one below where it did not move; within `low` and `high`, themselves on the grid. */
+function onGrid(value: number, first: number, step: number, low: number, high: number, was?: number): number {
+  const below = first + Math.floor((value - first) / step) * step
+  const at = below === value ? value : was !== undefined && value > was ? below + step : below
+  return Math.min(high, Math.max(low, at))
+}
+
+/** A Fringe earring's settings kept together (ticket 0814): a peyote Width odd in blocks of Drop, a brick body in pairs
+ * of Drop rows. A changed Width keeps a whole point whole with its body as tall, a cut-off one its rows where the new
+ * point has them; a value between two allowed is the one the change moved towards, or the one below. */
+function settledFringe(read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings {
+  const top = fringeTopOf(weave)
+  const blocks = top.lines === 'columns' ? 2 * top.drop : 1
+  const firstWidth = top.lines === 'columns' ? top.drop * (2 * Math.ceil((TOP_WIDTH.min / top.drop - 1) / 2) + 1) : TOP_WIDTH.min
+  const width = onGrid(read.topWidth!, firstWidth, blocks, firstWidth, onGrid(TOP_WIDTH.max, firstWidth, blocks, firstWidth, TOP_WIDTH.max), before?.topWidth)
+  const point = fringePointRows(width, top)
   const widthChanged = before !== undefined && before.topWidth !== width
-  const body = widthChanged ? before.topRows! - fringePointRows(before.topWidth!) : undefined
-  let rows = body === undefined ? read.topRows! : body >= 0 ? point + body : Math.min(read.topRows!, point)
-  const highest = TOP_ROWS.max <= point ? TOP_ROWS.max : point + 2 * Math.floor((TOP_ROWS.max - point) / 2)
-  if (rows > point && (rows - point) % 2 === 1) rows += before && rows > before.topRows! ? 1 : -1
-  return { ...read, topRows: Math.min(rows, highest) }
+  const body = widthChanged ? before.topRows! - fringePointRows(before.topWidth!, top) : undefined
+  const rows = body === undefined ? read.topRows! : body >= 0 ? point + body : Math.min(read.topRows!, point)
+  if (rows <= point) return { ...read, topWidth: width, topRows: Math.min(rows, TOP_ROWS.max) }
+  const step = top.lines === 'shiftedRows' ? 2 * top.drop : 1
+  const highest = TOP_ROWS.max <= point ? TOP_ROWS.max : onGrid(TOP_ROWS.max, point, step, point, TOP_ROWS.max)
+  return { ...read, topWidth: width, topRows: onGrid(rows, point, step, point, highest, widthChanged ? undefined : before?.topRows) }
 }
 
 /** The registry, one entry per Frame shape, like the Starters'. */
@@ -164,12 +188,12 @@ const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
   }),
   kite: frameShape('kite', 'row', { techniques: ['peyote'], settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) }),
   fringeEarring: frameShape('fringeEarring', 'row', {
-    techniques: ['brick'],
+    techniques: ['brick', 'peyote', 'loom'],
     settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],
     styles: FRINGE_STYLES,
     sides: { left: 'topWidth', right: 'topWidth', top: 'topRows', bottom: 'fringeLength' },
     settle: settledFringe,
-    layout: (settings) => fringeLayout(settings as FringeSettings),
+    layout: (settings, _depth, weave) => fringeLayout(settings as FringeSettings, fringeTopOf(weave)),
   }),
 }
 
@@ -235,9 +259,14 @@ function readWithin(shape: FrameShape, settings: FrameSettings | undefined): Num
   )
 }
 
-/** A shape's numbered settings kept together as its `settle` keeps them. */
-function settled(shape: FrameShape, read: NumberedSettings, before?: NumberedSettings): NumberedSettings {
-  return shape.settle ? shape.settle(read, before) : read
+/** The Weave a Custom frame of a shape is laid out in: its own, or its shape's first Technique. */
+function wovenIn(shape: FrameShape, { technique, techniqueSettings }: Woven): Weave {
+  return { technique: technique ?? shape.techniques[0], ...(techniqueSettings ? { techniqueSettings } : {}) }
+}
+
+/** A shape's numbered settings kept together as its `settle` keeps them in a Weave. */
+function settled(shape: FrameShape, read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings {
+  return shape.settle ? shape.settle(read, weave, before) : read
 }
 
 /** One of a Custom frame's numbered settings as the Frame panel offers it: its value and the range it may take now. */
@@ -251,22 +280,23 @@ export interface SettingValue {
 /** A Custom frame's numbered settings, each read within its range, its default where missing, kept together as its
  * shape keeps them; the most each may take is the highest its shape keeps with the others as they are. None for a Frame
  * without a shape. */
-export function settingValuesOf(frame: Pick<FrameSheet, 'shape' | 'settings'>): SettingValue[] {
+export function settingValuesOf(frame: Pick<FrameSheet, 'shape' | 'settings'> & Woven): SettingValue[] {
   const shape = frameShapeOf(frame)
   if (!shape) return []
+  const weave = wovenIn(shape, frame)
   const read = readWithin(shape, frame.settings)
-  const values = settled(shape, read)
-  return shape.settings.map((setting) => ({ name: setting.id, value: values[setting.id]!, min: setting.min, max: settled(shape, { ...read, [setting.id]: setting.max })[setting.id]! }))
+  const values = settled(shape, read, weave)
+  return shape.settings.map((setting) => ({ name: setting.id, value: values[setting.id]!, min: setting.min, max: settled(shape, { ...read, [setting.id]: setting.max }, weave)[setting.id]! }))
 }
 
 /** A Custom frame's settings changed (ticket 0814): those asked over its own, each within its range, kept together the
  * way the change moved them (a Fringe earring's brick body steps two rows, a Width keeps the body). As `settingsOf`
  * reads them. */
-export function changedSettings(frame: Pick<FrameSheet, 'shape' | 'settings'>, asked: FrameSettings): FrameSettings {
+export function changedSettings(frame: Pick<FrameSheet, 'shape' | 'settings'> & Woven, asked: FrameSettings): FrameSettings {
   const shape = frameShapeOf(frame)!
   const before = settingsOf(frame)!
-  const values = settled(shape, readWithin(shape, { ...before, ...asked }), before as NumberedSettings)
-  return settingsOf({ shape: frame.shape, settings: { ...before, ...asked, ...values } })!
+  const values = settled(shape, readWithin(shape, { ...before, ...asked }), wovenIn(shape, frame), before as NumberedSettings)
+  return settingsOf({ ...frame, settings: { ...before, ...asked, ...values } })!
 }
 
 /** The one setting a Frame panel change names (it changes one at a time): a numbered setting or the Fringe style. */
@@ -284,7 +314,7 @@ export function fringeStyleOf(frame: Pick<FrameSheet, 'shape' | 'settings'>): Fr
 
 /** A Custom frame's settings as it keeps them: each of its shape's read within its range, and nothing else; none for a
  * Frame without a shape. */
-export function settingsOf(frame: Pick<FrameSheet, 'shape' | 'settings'>): FrameSettings | undefined {
+export function settingsOf(frame: Pick<FrameSheet, 'shape' | 'settings'> & Woven): FrameSettings | undefined {
   if (!frameShapeOf(frame)) return undefined
   const style = fringeStyleOf(frame)
   return { ...Object.fromEntries(settingValuesOf(frame).map(({ name, value }) => [name, value])), ...(style ? { fringeStyle: style } : {}) }
@@ -314,7 +344,8 @@ function depthOf(frame: Pick<Laid, 'cell'>): number {
 
 /** The layout a Custom frame's Frame shape lays it out by: called only on a Frame that has one. */
 function laidLayout(frame: Laid): FrameLayout {
-  return turnedLayout(frameShapeOf(frame)!.layout(settingsOf(frame)!, depthOf(frame)), frame.quarterTurns ?? 0)
+  const shape = frameShapeOf(frame)!
+  return turnedLayout(shape.layout(settingsOf(frame)!, depthOf(frame), wovenIn(shape, frame)), frame.quarterTurns ?? 0)
 }
 
 /** A Frame's Layer geometry (ADR 0078): what it lays its beads out by, its own rows or its shape's layout. `frame`
@@ -331,9 +362,10 @@ export function frameSizeMm(frame: Measured, bead: Bead): { widthMm: number; hei
 /** The rows and columns of a Custom frame's Technique (the first its shape supports unless given) that cover its
  * layout: the bounding rectangle its footprint is made from (ADR 0077), counted in the cells of its layer's Bead
  * (ticket 0723), so a bead of the layout is a cell wide. */
-export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, quarterTurns?: QuarterTurns, technique: Technique = FRAME_SHAPES[shape].techniques[0], cell?: Laid['cell']): GridDimensions {
-  const layout = laidLayout({ shape, settings, quarterTurns, cell })
-  const description = describeWeave(withCell({ technique }, cell))
+export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, quarterTurns?: QuarterTurns, woven: Woven = {}, cell?: Laid['cell']): GridDimensions {
+  const weave = wovenIn(FRAME_SHAPES[shape], woven)
+  const layout = laidLayout({ shape, settings, quarterTurns, cell, ...weave })
+  const description = describeWeave(withCell({ technique: weave.technique }, cell))
   const aspect = description.cellAspect
   let columns = 1
   while (description.blockExtent(columns, 2, 1, aspect).width < layout.width) columns += 1
@@ -358,11 +390,11 @@ function shapeSide(edge: FrameEdge, quarterTurns = 0): FrameEdge {
 /** A Custom frame's settings with one setting stepped, a change at a time, to where its rectangle comes nearest the
  * asked one along rows or columns (ticket 0814). */
 function nearestStep(frame: Laid & Pick<FrameSheet, 'technique'>, settings: FrameSettings, name: FrameSettingName, along: keyof GridDimensions, asked: GridDimensions): FrameSettings {
-  const miss = (each: FrameSettings) => Math.abs(customFrameSize(frame.shape!, each, frame.quarterTurns, frame.technique, frame.cell)[along] - asked[along])
+  const miss = (each: FrameSettings) => Math.abs(customFrameSize(frame.shape!, each, frame.quarterTurns, frame, frame.cell)[along] - asked[along])
   let best = settings
   for (const by of [1, -1]) {
     for (;;) {
-      const next = changedSettings({ shape: frame.shape, settings: best }, { [name]: best[name]! + by })
+      const next = changedSettings({ ...frame, settings: best }, { [name]: best[name]! + by })
       if (sameSettings(next, best) || miss(next) >= miss(best)) break
       best = next
     }
@@ -383,7 +415,7 @@ export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' 
   if (!setting) return undefined
   const settings = settingsOf(frame)!
   const at = (value: number): FrameSettings => ({ ...settings, [setting.id]: value })
-  const sizeAt = (value: number) => customFrameSize(frame.shape!, at(value), frame.quarterTurns, frame.technique, frame.cell)
+  const sizeAt = (value: number) => customFrameSize(frame.shape!, at(value), frame.quarterTurns, frame, frame.cell)
   if (fit === 'cover') {
     for (let value = setting.min; value < setting.max; value += 1) {
       const size = sizeAt(value)
@@ -405,7 +437,7 @@ export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' 
 /** A Custom frame's settings grown until its layout holds every one of these positions, or as far as they go: where
  * Remove Frame finds its Folded beads (ticket 0669), as growing it back would show them. Its numbered settings step up
  * together, in its own Fringe style first, then in each other. */
-export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | 'cell'>, positions: readonly GridPosition[]): FrameSettings {
+export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | 'cell'> & Woven, positions: readonly GridPosition[]): FrameSettings {
   const shape = frameShapeOf(frame)!
   const start = settingsOf(frame)!
   const styles = shape.styles ? [start.fringeStyle, ...shape.styles.filter((style) => style !== start.fringeStyle)] : [start.fringeStyle]
@@ -413,12 +445,12 @@ export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | '
   for (const style of styles) {
     let settings: FrameSettings = { ...start, ...(style ? { fringeStyle: style } : {}) }
     for (;;) {
-      const layout = shape.layout(settings, depthOf(frame))
+      const layout = shape.layout(settings, depthOf(frame), wovenIn(shape, frame))
       const held = positions.filter((position) => layoutPosition(layout, position)).length
       if (held === positions.length) return settings
       if (!best || held > best.held) best = { settings, held }
       // Each a step up in turn, as a change of it would go, so a Fringe earring's body grows too (ticket 0814).
-      const grown = shape.settings.reduce((each, { id }) => changedSettings({ shape: frame.shape, settings: each }, { [id]: each[id]! + 1 }), settings)
+      const grown = shape.settings.reduce((each, { id }) => changedSettings({ ...frame, settings: each }, { [id]: each[id]! + 1 }), settings)
       if (sameSettings(grown, settings)) break
       settings = grown
     }

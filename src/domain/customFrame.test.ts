@@ -149,7 +149,7 @@ describe('a Custom frame in another Bead (ticket 0723)', () => {
     const project = paintFrame(changed(openPeyote(), { custom: { shape: 'warpedSquare', size: 6, centre: { row: 20, column: 30 } } }), [{ row: 5, column: 0 }, { row: 2, column: 4 }], RED)
     const round = findBead('toho/round/11-0')!
     const relaid = relaidInBead(project, replaceBead(project, round))
-    expect(frameOf(relaid)).toMatchObject(customFrameSize('warpedSquare', { rounds: 6 }, undefined, 'peyote', beadCell(round, 'peyote')))
+    expect(frameOf(relaid)).toMatchObject(customFrameSize('warpedSquare', { rounds: 6 }, undefined, { technique: 'peyote' }, beadCell(round, 'peyote')))
     expect(frameOf(relaid)!.rows).not.toBe(frameOf(project)!.rows)
     expect(frameOf(relaid)!.beads).toEqual(frameOf(project)!.beads)
     expect(frameLayoutOf({ ...frameOf(relaid)!, cell: frameWeave(relaid).cell })!.beadDepth).toBeCloseTo(2.2 / 1.65, 9)
@@ -347,6 +347,45 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
 
   it('reads settings it was not given as the shape\'s defaults, and a body under its point of an even number of rows (ticket 0814)', () => {
     expect(frameOf(earring({ topWidth: 5, topRows: 9 }))!.settings).toEqual({ topWidth: 5, topRows: 8, fringeStyle: 'straight', fringeLength: 12 })
+  })
+
+  describe('with its top woven in another Technique (ticket 0814)', () => {
+    const woven = (technique: 'peyote' | 'loom' | 'brick', techniqueSettings?: Record<string, number>, given: FrameSettings = settings) =>
+      changed(open(), { custom: { shape: 'fringeEarring', settings: given, centre: { row: 20, column: 30 }, weave: { technique, ...(techniqueSettings ? { techniqueSettings } : {}) } } })
+
+    it('keeps a peyote Width an odd number of blocks of Drop, stepping it by two blocks', () => {
+      expect(frameOf(woven('peyote'))!.settings!.topWidth).toBe(5)
+      const peyote = woven('peyote', undefined, { ...settings, topWidth: 7 })
+      expect(frameOf(changed(peyote, { settings: { topWidth: 8 } }))!.settings!.topWidth).toBe(9)
+      expect(frameOf(changed(peyote, { settings: { topWidth: 6 } }))!.settings!.topWidth).toBe(5)
+      expect(frameOf(woven('peyote', { peyoteDrop: 2 }, { ...settings, topWidth: 8 }))!.settings!.topWidth).toBe(6)
+    })
+
+    it('grows a peyote or loom body a row at a time, and a 2-drop brick body four rows at a time', () => {
+      // A peyote Width of 5 tapers in 3 lines, a loom one in 3 rows; a 2-drop brick Width of 6 in 10 rows.
+      expect(frameOf(changed(woven('peyote', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }))!.settings!.topRows).toBe(4)
+      expect(frameOf(changed(woven('loom', undefined, { ...settings, topWidth: 5, topRows: 3 }), { settings: { topRows: 4 } }))!.settings!.topRows).toBe(4)
+      const brick = woven('brick', { brickDrop: 2 }, { ...settings, topRows: 10 })
+      expect(frameOf(changed(brick, { settings: { topRows: 11 } }))!.settings!.topRows).toBe(14)
+    })
+
+    it('switches its top\'s Technique keeping each bead\'s row and column, folding what has no place, the strands untouched, as one change', () => {
+      const project = paintFrame(earring(), [base, { row: 3, column: 1 }, strandEnd], RED)
+      const loom = changed(project, { technique: 'loom' })
+      expect(frameOf(loom)).toMatchObject({ technique: 'loom', settings })
+      // A loom row 3 of a Width of 6 has no place: the point tapers to a pair in 3 rows, a body row under them.
+      expect(frameOf(loom)!.beads).toEqual({ [base.row]: { [base.column]: RED }, [strandEnd.row]: { [strandEnd.column]: RED } })
+      expect(colorAt(frameOf(loom)!.folded!, 3, 1)).toBe(RED)
+      expect(frameOf(changed(loom, { technique: 'brick' }))!.beads).toEqual(frameOf(project)!.beads)
+      // Peyote makes the even Width odd.
+      const peyote = changed(project, { technique: 'peyote' })
+      expect(frameOf(peyote)!.settings!.topWidth).toBe(5)
+      // Saved and opened again, its settings are read in its own Weave.
+      const tall = changed(peyote, { settings: { topRows: 6 } })
+      expect(parseProjectsFile(serializeProject(tall)).projects).toEqual([tall])
+      // On 2-drop the base row's block is two rows of the Width.
+      expect(frameLayoutOf(frameOf(changed(project, { techniqueSettings: { brickDrop: 2 } }))!)!.positions.filter(({ row }) => row === 1)).toHaveLength(6)
+    })
   })
 
   describe('resized by its handles and steppers (ticket 0814)', () => {
