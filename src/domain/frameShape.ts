@@ -80,9 +80,9 @@ export interface FrameShape extends FrameRules {
    * them every handle steps its first setting. */
   sides?: Readonly<Record<FrameEdge, FrameSettingName>>
   /** Its numbered settings, each already within its range, kept to the values its layout takes together, a changed one
-   * moved on the way it was changed from `before` (a Fringe earring's brick body, ticket 0814); without it every value
-   * in range is one. */
-  settle?(read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings
+   * moved on the way it was changed from `before` (a Fringe earring's brick body, ticket 0814, and V fringe, ticket 0816);
+   * without it every value in range is one. */
+  settle?(read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings
   /** Built from its settings as `settingsOf` reads them, every one the shape has, and its Bead's depth across the
    * thread over its pitch along it, which only a round shape's packing reads (ticket 0723). */
   layout(settings: FrameSettings, depth: number, weave: Weave): FrameLayout
@@ -158,10 +158,21 @@ function onGrid(value: number, first: number, step: number, low: number, high: n
   return Math.min(high, Math.max(low, at))
 }
 
-/** A Fringe earring's settings kept together (ticket 0814): a peyote Width odd in blocks of Drop, a brick body in pairs
- * of Drop rows. A changed Width keeps a whole point whole with its body as tall, a cut-off one its rows where the new
- * point has them; a value between two allowed is the one the change moved towards, or the one below. */
-function settledFringe(read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings {
+/** A Fringe earring's settings kept together: its top's (ticket 0814), and a V fringe's length moved with a changed Width,
+ * two beads for each strand the V gains or loses on a side, so its outer strands keep their length and the V reaches the
+ * edges (ticket 0816). */
+function settledFringe(read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings {
+  const top = settledFringeTop(read, weave, before)
+  if (before?.fringeStyle !== 'v' || before.topWidth === top.topWidth) return top
+  const side = (width: number) => Math.floor((width - 1) / 2)
+  const length = read.fringeLength! + 2 * (side(top.topWidth!) - side(before.topWidth!))
+  return { ...top, fringeLength: Math.min(FRINGE_LENGTH.max, Math.max(FRINGE_LENGTH.min, length)) }
+}
+
+/** A Fringe earring's top kept together (ticket 0814): a peyote Width odd in blocks of Drop, a brick body in pairs of
+ * Drop rows. A changed Width keeps a whole point whole with its body as tall, a cut-off one its rows where the new point
+ * has them; a value between two allowed is the one the change moved towards, or the one below. */
+function settledFringeTop(read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings {
   const top = fringeTopOf(weave)
   const blocks = top.lines === 'columns' ? 2 * top.drop : 1
   const firstWidth = top.lines === 'columns' ? top.drop * (2 * Math.ceil((TOP_WIDTH.min / top.drop - 1) / 2) + 1) : TOP_WIDTH.min
@@ -265,7 +276,7 @@ function wovenIn(shape: FrameShape, { technique, techniqueSettings }: Woven): We
 }
 
 /** A shape's numbered settings kept together as its `settle` keeps them in a Weave. */
-function settled(shape: FrameShape, read: NumberedSettings, weave: Weave, before?: NumberedSettings): NumberedSettings {
+function settled(shape: FrameShape, read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings {
   return shape.settle ? shape.settle(read, weave, before) : read
 }
 
@@ -296,7 +307,7 @@ export function settingValuesOf(frame: Pick<FrameSheet, 'shape' | 'settings'> & 
 export function changedSettings(frame: Pick<FrameSheet, 'shape' | 'settings'> & Woven, asked: FrameSettings): FrameSettings {
   const shape = frameShapeOf(frame)!
   const before = settingsOf(frame)!
-  const values = settled(shape, readWithin(shape, { ...before, ...asked }), wovenIn(shape, frame), before as NumberedSettings)
+  const values = settled(shape, readWithin(shape, { ...before, ...asked }), wovenIn(shape, frame), before)
   return settingsOf({ ...frame, settings: { ...before, ...asked, ...values } })!
 }
 
