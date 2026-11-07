@@ -64,7 +64,7 @@ export function useSelectionGesture(
   const pasteProjectionActive = computed(() => !!copiedBlock.value && !pasteDismissed.value)
 
   // A press on the Selection's handles or inside it (ticket 414): a handle resizes, the inside moves the outline,
-  // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do; the docked bar's
+  // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do; the area's bar's
   // move grip (ticket 0808) names no tool, so it never taps.
   let adjust:
     | { kind: 'resize'; edges: FrameEdge[]; start: Selection }

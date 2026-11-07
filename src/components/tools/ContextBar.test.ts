@@ -300,7 +300,7 @@ describe('ContextBar keyboard (ticket 563, ADR 0075)', () => {
   })
 })
 
-describe('the docked bar (ContextBar card, Area sheet, ticket 0808)', () => {
+describe('an area\'s bar (ContextBar card, Area sheet, tickets 0808, 0812)', () => {
   const anchor = { box: { left: 100, top: 200, width: 300, height: 60 }, viewport: { width: 600, height: 400 } }
 
   beforeEach(() => {
@@ -312,19 +312,19 @@ describe('the docked bar (ContextBar card, Area sheet, ticket 0808)', () => {
     vi.useRealTimers()
   })
 
-  it('is docked in a rectangle Selection\'s top band, 8px in and 6px down, as wide as the band', () => {
+  it('sits above a rectangle Selection\'s Area sheet, clear of its band, at its own width (ticket 0812)', () => {
     const wrapper = mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, anchor } })
     const root = wrapper.get('[data-testid="context-bar"]')
-    expect(root.classes()).toContain('context-bar--docked')
-    expect(root.attributes('style')).toContain('left: 98px')
-    expect(root.attributes('style')).toContain('top: 166px')
-    expect(root.attributes('style')).toContain('min-width: 304px')
+    expect(root.classes()).toContain('context-bar--area')
+    // The band reaches 10px over the Selection's top; the bar (unmeasured here, 0px tall) keeps 6px above it.
+    expect(root.attributes('style')).toContain('top: 184px')
+    expect(root.attributes('style')).not.toContain('min-width')
   })
 
   it('floats above a Piece\'s shape, with no grip', () => {
     const shape: Selection = { ...selection, cells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] }
     const wrapper = mount(ContextBar, { props: { project: drawn, selection: shape, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false, anchor } })
-    expect(wrapper.get('[data-testid="context-bar"]').classes()).not.toContain('context-bar--docked')
+    expect(wrapper.get('[data-testid="context-bar"]').classes()).not.toContain('context-bar--area')
     expect(wrapper.find('[data-testid="context-bar-move"]').exists()).toBe(false)
   })
 
@@ -343,17 +343,17 @@ describe('the docked bar (ContextBar card, Area sheet, ticket 0808)', () => {
     wrapper.unmount()
   })
 
-  it('docks the Mirror bar in a Canvas Area\'s sheet with its own grip, and floats it above the whole Frame', async () => {
+  it('gives the Mirror bar of a Canvas Area its own grip, and none above the whole Frame', async () => {
     const place = { layer: 'canvas' as const, area: { row: 0, column: 0, rows: 4, columns: 6 } }
     const mirror = { setting: { ...MIRROR_OFF, axes: { ...MIRROR_OFF.axes, leftRight: true }, place }, summary: '6×4', rect: place.area }
     const wrapper = mount(ContextBar, { props: { project, pasteArmed: false, canRemoveLine: false, mirror, mirrorAnchor: anchor } })
-    expect(wrapper.get('[data-testid="mirror-bar"]').classes()).toContain('context-bar--docked')
+    expect(wrapper.get('[data-testid="mirror-bar"]').classes()).toContain('context-bar--area')
     expect(wrapper.get('[data-testid="mirror-bar-move"]').attributes('aria-label')).toBe('Move mirror area')
     await wrapper.get('[data-testid="mirror-bar-move"]').trigger('pointerdown', { button: 0 })
     expect(wrapper.emitted('move-press')?.[0]?.[1]).toBe('mirror')
 
     await wrapper.setProps({ mirror: { ...mirror, setting: { ...mirror.setting, place: { layer: 'frame' as const } } } })
-    expect(wrapper.get('[data-testid="mirror-bar"]').classes()).not.toContain('context-bar--docked')
+    expect(wrapper.get('[data-testid="mirror-bar"]').classes()).not.toContain('context-bar--area')
     expect(wrapper.find('[data-testid="mirror-bar-move"]').exists()).toBe(false)
   })
 })

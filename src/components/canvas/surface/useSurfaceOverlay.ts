@@ -10,7 +10,7 @@ import type { RulerLayout } from '../../../rendering/rulers'
 import type { Space } from '../../../rendering/space'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
-import type { HandleId, Outset } from '../../../rendering/frameHandles'
+import { AREA_SHEET_OUTSET, type HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
 import { frameOf } from '../../../domain/layerRecord'
 import { isMirrorOn, type MirrorSetting } from '../../../domain/mirror'
@@ -115,15 +115,13 @@ export interface SurfaceOverlayDeps {
   marginOpacity: Ref<number>
   /** Row done's glints and the marker's glide (ticket 0730), while they play. */
   rowMotion: Ref<RowMotion | undefined>
-  /** How far an Area sheet's band reaches round a rectangle Selection or the Mirror's Canvas Area (ticket 0808). */
-  areaOutset: Ref<Outset>
   oncePerFrame: (draw: () => void) => () => void
 }
 
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion, areaOutset } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, hotAreaHandle, marginOpacity, rowMotion } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
@@ -184,7 +182,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         mirror: props.mirror && isMirrorOn(props.mirror) ? props.mirror : undefined,
         mirrorArea: { surface: surface.value, touch: touchInput.value, ...hotArea(props.areaTooltip, !props.selection) },
         rowMotion: rowMotion.value,
-        areaSheet: { surface: surface.value, outset: areaOutset.value },
+        areaSheet: { surface: surface.value, outset: AREA_SHEET_OUTSET },
       })
     }
   }
@@ -218,7 +216,6 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       touchInput,
       hotHandle,
       hotAreaHandle,
-      areaOutset,
       theme,
     ],
     deps.oncePerFrame(drawOverlay),
