@@ -43,6 +43,23 @@ describe('CoffeeTile', () => {
     expect(link.attributes('rel')).toBe('noopener')
   })
 
+  it('makes the cup a pointer shortcut to the Coffee link, out of the Tab order and hidden from screen readers', () => {
+    const cup = tile().get('[data-testid="homepage-coffee-cup-link"]')
+    expect(cup.element.tagName).toBe('A')
+    expect(cup.attributes('href')).toBe('https://buymeacoffee.com/openbeads')
+    expect(cup.attributes('target')).toBe('_blank')
+    expect(cup.attributes('tabindex')).toBe('-1')
+    expect(cup.attributes('aria-hidden')).toBe('true')
+    expect(cup.find('[data-testid="coffee-cup"]').exists()).toBe(true)
+  })
+
+  it('makes the cup no link while the Coffee link is empty', () => {
+    coffee.url = ''
+    const cup = tile().get('[data-testid="homepage-coffee-cup-link"]')
+    expect(cup.element.tagName).toBe('DIV')
+    expect(cup.attributes('href')).toBeUndefined()
+  })
+
   it('links to the source in a small line under the button', () => {
     const wrapper = tile()
     const link = wrapper.get('[data-testid="homepage-coffee-source"]')
