@@ -43,8 +43,8 @@ function boxOf(root: Element, selector: string): DOMRect {
 // What's inside (ticket 0797): its cards, its list and its editor in the section's room, nothing cut and nothing wider
 // than the box; under reduced motion the editor shows the first row's end.
 describe("What's inside fits its room", () => {
-  // 1366 × 768 and 1280 × 720 are laptop windows too short for the cards over the editor (ticket 0802).
-  for (const [width, height, tier] of [[1440, 900, 'desktop'], [1366, 768, 'short'], [1280, 720, 'short'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
+  // Windows too short for the cards over the editor (ticket 0802); with no hero a 1366 × 768 laptop has room (0822).
+  for (const [width, height, tier] of [[1440, 900, 'desktop'], [1366, 680, 'short'], [1280, 640, 'short'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
     it(`at ${width} × ${height} (${tier})`, async () => {
       const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
       await page.viewport(width, height)
@@ -80,11 +80,11 @@ describe("What's inside fits its room", () => {
   }
 })
 
-// With Projects saved the hero holds Open the editor and Saved Projects · N side by side (ticket 0716).
+// With Projects saved the strip holds Open the editor and Projects library · N beside Menu (tickets 0716, 0822).
 describe('HomePage text fit with Projects saved', () => {
   for (const width of WIDTHS) {
     for (const locale of FIT_LOCALES) {
-      it(`${locale} at ${width}px, the hero's two buttons`, async () => {
+      it(`${locale} at ${width}px, the strip's two buttons`, async () => {
         const mounted = await mountAt(HomePage, { projectCount: 128, feedback: fakeFeedback() }, { locale, width })
         const labels = ['homepage-open-editor', 'homepage-saved-projects'].map((id) => mounted.root.querySelector(`[data-testid="${id}"]`)!.textContent!.trim())
         // The rest of the page is the case above's; only what these two buttons hold is checked here.
@@ -113,4 +113,55 @@ describe("What's inside's tour on the real editor", () => {
     expect(warned).not.toHaveBeenCalled()
     warned.mockRestore()
   }, 45000)
+})
+
+/** A size token as the page resolves it, in px. */
+function tokenSize(within: Element, token: string): string {
+  const probe = document.createElement('span')
+  probe.style.fontSize = `var(${token})`
+  within.append(probe)
+  const size = getComputedStyle(probe).fontSize
+  probe.remove()
+  return size
+}
+
+/** Whether two boxes share any pixel, beyond a rounding's pixel. */
+function overlaps(a: DOMRect, b: DOMRect): boolean {
+  return a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1
+}
+
+// The strip (ticket 0822): the way into the editor beside Menu, or in a row of its own under 744px, never over the
+// slogan, which is 24px (22px on a phone); nothing wider than the strip; Projects library's name hides under 1000px.
+describe("The Homepage's strip at every tier", () => {
+  for (const projectCount of [0, 128]) {
+    for (const width of WIDTHS) {
+      for (const locale of FIT_LOCALES) {
+        it(`${projectCount ? 'with Projects saved' : 'a new visitor'}, ${locale} at ${width}px`, async () => {
+          const mounted = await mountAt(HomePage, { projectCount, feedback: fakeFeedback() }, { locale, width })
+          await settleForMeasuring()
+          const strip = mounted.root.querySelector<HTMLElement>('[data-testid="canvas-strip"]')!
+          const box = mounted.root.querySelector<HTMLElement>('[data-testid="homepage"]')!.clientWidth
+          const wayIn = boxOf(strip, '[data-testid="strip-way-in"]')
+          const menu = boxOf(strip, '[data-testid="strip-menu"]')
+          const slogan = boxOf(strip, '[data-testid="homepage-slogan"]')
+          expect(strip.scrollWidth, 'nothing wider than the strip').toBeLessThanOrEqual(strip.clientWidth + 1)
+          expect(overlaps(wayIn, slogan), 'the way in clear of the slogan').toBe(false)
+          expect(wayIn.left).toBeGreaterThanOrEqual(strip.getBoundingClientRect().left)
+          expect(wayIn.right).toBeLessThanOrEqual(strip.getBoundingClientRect().right)
+          if (box >= 744) expect(Math.abs(wayIn.top + wayIn.height / 2 - (menu.top + menu.height / 2)), 'beside Menu').toBeLessThanOrEqual(2)
+          else expect(wayIn.top, 'a row of its own under Menu').toBeGreaterThanOrEqual(menu.bottom)
+          const size = getComputedStyle(strip.querySelector('[data-testid="homepage-slogan"]')!).fontSize
+          expect(size).toBe(tokenSize(strip, box <= 480 ? '--strip-slogan-size-phone' : '--strip-slogan-size'))
+          expect(boxOf(strip, '[data-testid="zoom-reset"]').width > 0, 'the zoom, but not on a phone').toBe(box > 480)
+          if (projectCount) {
+            const name = boxOf(strip, '.canvas-strip__way-in-name')
+            expect(name.width > 1, 'the library\'s name shown from 1000px').toBe(box >= 1000)
+          }
+          // The rest of the page is the first case's; only the strip's own text is checked here.
+          const texts = [...strip.querySelectorAll('button, a, span')].map((el) => el.textContent!.trim()).filter(Boolean)
+          expect((await misfitsNow()).filter((misfit) => texts.some((text) => misfit.includes(`"${text}"`)))).toEqual([])
+        })
+      }
+    }
+  }
 })

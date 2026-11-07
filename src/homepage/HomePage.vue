@@ -20,7 +20,6 @@ import CoffeeTile from './CoffeeTile.vue'
 import { wheelPixels } from './wheelTurn'
 import WhatsInside from './inside/WhatsInside.vue'
 import PlanTiles from './PlanTiles.vue'
-import RollingSlogan from './RollingSlogan.vue'
 import SectionBar from './SectionBar.vue'
 import type { HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
@@ -39,8 +38,8 @@ import { useToasts } from '../composables/ui/useToasts'
 import type { FeedbackService } from '../services/feedback'
 
 // The Homepage (ticket 77; Homepage card): one canvas box like the editor's (ticket 540, ADR 0073) mid-page: the Canvas
-// strip, the hero, one section at a time, the Progress bar. Scrolling turns the box to the next section (ticket 0739);
-// the box never moves. It only reports which way in was chosen: the entry decides where that goes.
+// strip (its slogan and the way into the editor, ticket 0822), one section at a time, the Progress bar. Scrolling turns
+// the box to the next section (ticket 0739); it never moves. It only reports which way in was chosen, not where it goes.
 const props = defineProps<{
   /** How many Projects this device has saved, read without decoding any; none means a new visitor. */
   projectCount: number
@@ -238,9 +237,8 @@ function confirmRemove() {
 }
 
 const isNew = computed(() => count.value === 0)
+/** The Menu row's action, whose name the strip's library button shows with the count (tickets 0716, 0822). */
 const savedProjects = controlAction('saved-projects')
-/** "Saved Projects · 3": the Menu row's name with the count (ticket 0716). */
-const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${count.value}`)
 </script>
 
 <template>
@@ -274,7 +272,23 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
             @zoom-in="zoom.zoomIn"
             @zoom-out="zoom.zoomOut"
             @reset="zoom.reset"
-          />
+          >
+            <!-- The way into the editor beside Menu (ticket 0822): the hero's buttons, moved into the strip. -->
+            <template #way-in>
+              <AppButton v-if="isNew" variant="primary" size="sm" data-testid="homepage-make-first" @click="emit('makeFirstProject')">
+                {{ t.homepage.makeFirstProject }}
+              </AppButton>
+              <template v-else>
+                <AppButton variant="primary" size="sm" data-testid="homepage-open-editor" @click="emit('openEditor')">
+                  {{ t.homepage.openEditor }}
+                </AppButton>
+                <!-- Projects library (ticket 0716): the editor with no Project open and the Menu on its list. -->
+                <AppButton size="sm" :action="savedProjects" data-testid="homepage-saved-projects" @click="emit('openSavedProjects')">
+                  <span class="canvas-strip__way-in-name">{{ savedProjects.name(t) }}</span> · {{ count }}
+                </AppButton>
+              </template>
+            </template>
+          </CanvasStrip>
         </div>
         <PanelHost v-if="menuOpen" open="menu" :only="['menu']" :sub-title="t.projects.heading" :sub-meta="String(count)" @close="menuOpen = false">
           <MenuPanel page="homepage" :project-count="count" @saved-projects="showSavedProjects" @feedback="feedback.onOpenFeedback" />
@@ -312,29 +326,6 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
 
         <div ref="bodyEl" class="homepage__body" data-testid="homepage-body">
           <main class="homepage__page" :style="{ zoom: zoom.percent.value / 100 }">
-            <section class="homepage__hero">
-              <RollingSlogan />
-              <div class="homepage__actions">
-                <span v-if="isNew" class="homepage__buttons">
-                  <AppButton variant="primary" size="lg" data-testid="homepage-make-first" @click="emit('makeFirstProject')">
-                    {{ t.homepage.makeFirstProject }}
-                  </AppButton>
-                  <AppButton size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
-                    {{ t.homepage.openEditor }}
-                  </AppButton>
-                </span>
-                <span v-else class="homepage__buttons">
-                  <AppButton variant="primary" size="lg" data-testid="homepage-open-editor" @click="emit('openEditor')">
-                    {{ t.homepage.openEditor }}
-                  </AppButton>
-                  <!-- Saved Projects (ticket 0716): the editor with no Project open and the Menu on its list. -->
-                  <AppButton size="lg" icon="library" data-testid="homepage-saved-projects" @click="emit('openSavedProjects')">
-                    {{ savedProjectsLabel }}
-                  </AppButton>
-                </span>
-              </div>
-            </section>
-
             <div class="homepage__sections">
               <section
                 v-for="(entry, index) in sections"
@@ -440,8 +431,8 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   transform: translateY(calc(-3.75rem + 10.625rem * var(--progress)));
 }
 
-/* The canvas box (ticket 540, ADR 0073): the Canvas strip on top, the hero and one section between, the Progress bar
- * below, as the editor's box is laid out. */
+/* The canvas box (ticket 540, ADR 0073): the Canvas strip on top, one section under it, the Progress bar below, as the
+ * editor's box is laid out. */
 .homepage {
   position: relative;
   z-index: 1;
@@ -482,37 +473,6 @@ const savedProjectsLabel = computed(() => `${savedProjects.name(t.value)} · ${c
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-}
-
-/* The hero stays put while the sections change under it. */
-.homepage__hero {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--space-20) var(--space-16) var(--space-12);
-  text-align: center;
-}
-
-@container homepage (min-width: 744px) {
-  .homepage__hero {
-    padding: var(--space-24) var(--space-24) var(--space-16);
-  }
-}
-
-.homepage__actions {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--space-16);
-}
-
-.homepage__buttons {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-12);
 }
 
 /* One section at a time in the room left (ticket 0739): the one shown, the ones before slid up and faded, the ones after
