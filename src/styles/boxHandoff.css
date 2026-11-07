@@ -7,7 +7,7 @@
 
 /* Leaving (ticket 0783): the content goes first, before the navigation; the Canvas strip and the marks under the
    content stay, and the editor's first paint draws them again, so nothing is ever empty. */
-[data-handoff='leaving'] :is(.homepage__page, .homepage > :not(.canvas-strip, .homepage__body), .homepage-page__marks) {
+[data-handoff='leaving'] :is(.homepage__page, .homepage > :not(.homepage__strip, .homepage__body), .homepage-page__marks) {
   opacity: 0;
   transition: opacity var(--duration-base) var(--ease-in);
 }
@@ -35,6 +35,8 @@
   background: var(--box);
   border-radius: var(--canvas-box-radius);
   view-transition-name: canvas-box;
+  /* The strip sizes itself by the box, as on the Homepage (ticket 0822). */
+  container: shell / inline-size;
 }
 
 /* The drawing area's marks, where the Homepage's content stood (ticket 0783); the strip sits above at its own height. */

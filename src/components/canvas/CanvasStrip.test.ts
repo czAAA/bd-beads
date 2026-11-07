@@ -123,6 +123,30 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
     expect(brand.attributes('aria-current')).toBe('page')
   })
 
+  it('has the rolling slogan in the wordmark\'s place on the Homepage, its one name "openbeads" (ticket 0822)', () => {
+    const brand = mount(CanvasStrip, { props: { page: 'homepage', zoomPercent: 100 } }).get('[data-testid="canvas-brand"]')
+
+    expect(brand.find('[data-testid="app-logo"]').exists()).toBe(true)
+    expect(brand.find('.canvas-strip__wordmark').exists()).toBe(false)
+    expect(brand.get('[data-testid="homepage-slogan"]').attributes('aria-label')).toBe('openbeads')
+    expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="homepage-slogan"]').exists()).toBe(false)
+  })
+
+  it('holds the Homepage\'s way into the editor beside Menu, each button a Tab stop of its own (ticket 0822)', () => {
+    const wrapper = mount(CanvasStrip, {
+      props: { page: 'homepage', zoomPercent: 100 },
+      slots: { 'way-in': '<button data-testid="way-in-a">A</button><button data-testid="way-in-b">B</button>' },
+      attachTo: document.body,
+    })
+    const buttons = wrapper.findAll('button').map((el) => el.attributes('data-testid'))
+    const stops = wrapper.findAll('button').filter((el) => el.attributes('tabindex') !== '-1').map((el) => el.attributes('data-testid'))
+
+    expect(buttons.slice(0, 3)).toEqual(['strip-menu', 'way-in-a', 'way-in-b'])
+    expect(stops.slice(0, 3)).toEqual(['strip-menu', 'way-in-a', 'way-in-b'])
+    expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-way-in"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('keeps the words of Menu and Project in the page for a screen reader, and has no Canvas color control', () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
 

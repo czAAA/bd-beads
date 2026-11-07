@@ -49,9 +49,9 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
   })
 
   it('by the wheel, one section a scroll, down through the plans\' free list and back up', async () => {
-    const hero = testid('homepage-page').querySelector('.homepage__hero')!
+    const strip = testid('canvas-strip')
     for (const to of ['coffee', 'plans']) {
-      await userEvent.wheel(hero, { delta: { y: 100 } })
+      await userEvent.wheel(strip, { delta: { y: 100 } })
       await settle()
       expect(shown()).toBe(to)
     }
@@ -66,7 +66,7 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
     await settle()
     expect(plans.scrollTop).toBe(0)
     for (const to of ['coffee', 'inside']) {
-      await userEvent.wheel(hero, { delta: { y: -100 } })
+      await userEvent.wheel(strip, { delta: { y: -100 } })
       await settle()
       expect(shown()).toBe(to)
     }

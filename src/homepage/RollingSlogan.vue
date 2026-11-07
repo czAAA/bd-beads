@@ -3,9 +3,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import { SLOGAN_HOLD_MS, SLOGAN_ROLL_MS, SLOGAN_WORDS } from './slogan'
 
-// The Homepage's rolling slogan (ticket 550; Homepage card): "open" stays still, the word after it rolls; screen readers
-// hear "openbeads". The column holds the words reversed, the closing "beads" on top, so each step moves it down and the
-// next word arrives from above; on the closing "beads" it jumps back to the first one unseen.
+// The Homepage's rolling slogan (tickets 550, 0822; Homepage card), its brand in the Canvas strip: "open" stays still,
+// the word after it rolls; screen readers hear "openbeads". The column holds the words reversed, "beads" on top, so each
+// step moves it down and the next word drops in from above; on the closing "beads" it jumps back to the first unseen.
 const column = [...SLOGAN_WORDS, SLOGAN_WORDS[0]!].reverse()
 const lastStep = column.length - 1
 
@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <p class="slogan" aria-label="openbeads" :data-word="word" data-testid="homepage-slogan">
+  <span class="slogan" aria-label="openbeads" :data-word="word" data-testid="homepage-slogan">
     <span class="slogan__open" aria-hidden="true">open</span>
     <span class="slogan__slot" aria-hidden="true">
       <span
@@ -76,18 +76,18 @@ onBeforeUnmount(() => {
         <span v-for="w in SLOGAN_WORDS" :key="w">{{ w }}</span>
       </span>
     </span>
-  </p>
+  </span>
 </template>
 
 <style scoped>
 .slogan {
-  /* Steps up with the screen (Homepage card): 40px phone, 58px from 744, 60px from 1024, 70px at 24″. */
-  --slogan-size: 2.5rem;
-  --slogan-line: 2.5rem;
+  /* In the Canvas strip, in the wordmark's place (ticket 0822): 24px, 22px on a phone. */
+  --slogan-size: var(--strip-slogan-size);
+  --slogan-line: calc(var(--slogan-size) * 1.25);
 
   display: flex;
   justify-content: center;
-  margin: 0;
+  white-space: nowrap;
   font: var(--type-tagline);
   font-size: var(--slogan-size);
   line-height: var(--slogan-line);
@@ -95,23 +95,9 @@ onBeforeUnmount(() => {
   color: var(--ink);
 }
 
-@container homepage (min-width: 744px) {
+@container shell (max-width: 480px) {
   .slogan {
-    --slogan-size: 3.625rem;
-    --slogan-line: 3.875rem;
-  }
-}
-
-@container homepage (min-width: 1024px) {
-  .slogan {
-    --slogan-size: 3.75rem;
-  }
-}
-
-@container homepage (min-width: 1920px) {
-  .slogan {
-    --slogan-size: 4.375rem;
-    --slogan-line: 4.5rem;
+    --slogan-size: var(--strip-slogan-size-phone);
   }
 }
 
