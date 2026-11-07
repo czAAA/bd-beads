@@ -81,7 +81,21 @@ describe('the Starter setup', () => {
     expect(panelOptionShown(wrapper, 'starter-technique')).toBe(en.techniques.brick)
     expect(panelOptionShown(wrapper, 'bead-size')).toBe('11/0')
     await wrapper.get('[data-testid="starter-technique"] button[aria-haspopup]').trigger('click')
-    expect(wrapper.findAll('[data-testid="starter-technique"] [role="menuitemradio"]').map((each) => each.text())).toEqual([en.techniques.brick])
+    expect(wrapper.findAll('[data-testid="starter-technique"] [role="menuitemradio"]').map((each) => each.text())).toEqual([en.techniques.brick, en.techniques.peyote, en.techniques.loom])
+  })
+
+  it('weaves an earring\'s top in another Technique, turning the brick design off with its note, an even Width made odd for peyote with why (ticket 0814)', async () => {
+    const wrapper = mountSetup('straightFringe')
+    await wrapper.get('[data-testid="starter-size-increase-topWidth"]').trigger('click')
+    await choosePanelOption(wrapper, 'starter-technique', 'peyote')
+    expect(text(wrapper, 'starter-size-value-topWidth')).toBe('7')
+    expect(text(wrapper, 'starter-width-note')).toBe('Width is now 7: a peyote top needs a middle column, so its Width is an odd number of columns, or of blocks on more than 1-drop.')
+    expect(design(wrapper)).toBe(en.starters.startEmpty)
+    // Widened as a whole point, the top took a row more.
+    expect(text(wrapper, 'starter-design-note')).toBe('The design is made for brick stitch 1-drop, 6 top rows. Set it back to turn the design on.')
+    await choosePanelOption(wrapper, 'starter-technique', 'brick')
+    // Back in brick stitch, 7 rows of a Width of 7 come to its whole point, the design's 6.
+    expect(design(wrapper)).toBe(en.starters.useDesign)
   })
 
   it('makes each of the Frame\'s Layer settings changeable, the Estimated size and count following the Bead and Technique (ticket 0671)', async () => {

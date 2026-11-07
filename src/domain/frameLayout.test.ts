@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import chart from './fixtures/warpedSquareChart.json'
-import { fringeLayout, kaleidocycleLayout, kiteLayout, kiteWingBeads, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import { fringeLayout, kaleidocycleLayout, type FringeTop, kiteLayout, kiteWingBeads, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 
 /** A Delica 11/0's depth across the thread over its pitch along it (1.6 mm over 1.3 mm). */
 const DELICA = 1.6 / 1.3
@@ -425,6 +425,54 @@ describe('a Fringe earring (ticket 0597)', () => {
     sharesNothing(layout)
     liesInside(layout)
     expect(layoutPositionAt(layout, 0.71, layout.height - 0.71)).toBeUndefined()
+  })
+
+  describe('with its top woven in another Technique (ticket 0814)', () => {
+    const woven = (top: FringeTop, topWidth: number, topRows: number) => fringeLayout({ topWidth, topRows, fringeStyle: 'straight', fringeLength: 3 }, top)
+    /** Each column's beads in the top, from the left. */
+    const columnHeights = (layout: FrameLayout) => Array.from({ length: Math.max(...top(layout).map(({ column }) => column)) + 1 }, (_unused, column) => top(layout).filter((bead) => bead.column === column).length)
+    /** Where each strand starts, from the left. */
+    const strandTops = (layout: FrameLayout) => layout.panels.flatMap((panel, index) => (panel.strand ? [Math.min(...layout.positions.filter((bead) => bead.panel === index).map(({ y }) => y))] : []))
+    /** Whether every bead has a counterpart across the middle. */
+    const mirrored = (layout: FrameLayout) => {
+      const at = (x: number, y: number) => `${(x - layout.centre.x).toFixed(3)}:${y.toFixed(3)}`
+      const places = new Set(layout.positions.map(({ x, y }) => at(x, y)))
+      return layout.positions.every(({ x, y }) => places.has(at(2 * layout.centre.x - x, y)))
+    }
+
+    it('tapers a peyote top a bead a column outwards from its middle, the strands hanging from each column at two heights', () => {
+      const peyote = woven({ lines: 'columns', drop: 1, twoPasses: true }, 7, 4)
+      expect(columnHeights(peyote)).toEqual([1, 2, 3, 4, 3, 2, 1])
+      const starts = strandTops(peyote)
+      expect(Math.abs(starts[1]! - starts[0]!)).toBeCloseTo(0.5)
+      expect(starts[2]).toBeCloseTo(starts[0]!)
+      expect(mirrored(peyote)).toBe(true)
+      // More Top rows give every column a body as tall under its point.
+      expect(columnHeights(woven({ lines: 'columns', drop: 1, twoPasses: true }, 7, 6))).toEqual([3, 4, 5, 6, 5, 4, 3])
+    })
+
+    it('tapers a 2-drop peyote top a stitch of a bead a block of two columns', () => {
+      const twoDrop = woven({ lines: 'columns', drop: 2, twoPasses: true }, 6, 2)
+      expect(columnHeights(twoDrop)).toEqual([1, 1, 2, 2, 1, 1])
+      expect(mirrored(twoDrop)).toBe(true)
+    })
+
+    it('steps a loom top in a bead each side a row, its strands hanging straight', () => {
+      const loom = woven({ lines: 'rows', drop: 1, twoPasses: false }, 6, 3 + 2)
+      expect(rowSizes({ ...loom, positions: top(loom).filter(({ row }) => row >= 0) })).toEqual([6, 4, 2])
+      expect(top(loom).filter(({ row }) => row < 0)).toHaveLength(2 * 6)
+      expect(new Set(strandTops(loom)).size).toBe(1)
+      expect(mirrored(loom)).toBe(true)
+      expect(mirrored(woven({ lines: 'rows', drop: 1, twoPasses: false }, 7, 4))).toBe(true)
+    })
+
+    it('tapers a 2-drop brick top a stitch, a bead, every two rows, its body in blocks of two', () => {
+      const twoDrop = woven({ lines: 'shiftedRows', drop: 2, twoPasses: false }, 4, 6 + 4)
+      expect(rowSizes({ ...twoDrop, positions: top(twoDrop).filter(({ row }) => row >= 0) })).toEqual([4, 4, 3, 3, 2, 2])
+      const body = top(twoDrop).filter(({ row }) => row < 0)
+      expect([0, 1, 2, 3].map((line) => body.filter(({ row }) => row === -1000 + line).length)).toEqual([4, 4, 3, 3])
+      expect(mirrored(twoDrop)).toBe(true)
+    })
   })
 
   describe('with more Top rows than its point needs (ticket 0814)', () => {

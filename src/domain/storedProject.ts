@@ -170,7 +170,7 @@ function readCanvas(stored: StoredLayer, projectId: string): CanvasLayer {
 function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string): FrameLayer {
   const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas))
   const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
-  const laid = readFrameShape(stored)
+  const laid = readFrameShape(stored, weaveOf(layer))
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, rows, columns }
   return {
     ...layer,
@@ -248,12 +248,12 @@ function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weav
 /** A stored Frame's Frame shape, kept only where it is one this build knows (ticket 0591), else none. A Custom frame
  * keeps its settings, read within its shape's range (ticket 0592), and any Frame its orientation (tickets 0594, 0667);
  * one turned before 0667 had its beads rewritten, and opens upright. */
-function readFrameShape({ shape, settings: stored, quarterTurns }: StoredLayer): Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'> {
+function readFrameShape({ shape, settings: stored, quarterTurns }: StoredLayer, weave: Weave): Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'> {
   // Rotate Frame's turn: one, two or three quarters; anything else reads as none.
   const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
   if (!isFrameShape(shape)) {
     return turned
   }
-  const settings = settingsOf({ shape, settings: stored })
+  const settings = settingsOf({ shape, settings: stored, ...weave })
   return { shape, ...(settings ? { settings } : {}), ...turned }
 }
