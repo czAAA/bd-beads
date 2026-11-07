@@ -5,8 +5,8 @@ import { SOURCE_URL } from '../data/sourceLink'
 import { useI18n } from '../i18n/useI18n'
 
 // The coffee tile (ticket 219; Homepage card): a decorative beaded cup, who made the app, a few lines and a button opening the
-// Coffee link in a new tab (ticket 560), inert while empty. The button's `::after` covers the tile (ticket 0718); the source
-// link under it sits above that cover. No donation-service name, logo or colours.
+// Coffee link in a new tab (ticket 560), inert while empty. Only the cup, the button and the source link take a click (ticket
+// 0813). No donation-service name, logo or colours.
 const { t } = useI18n()
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */
@@ -27,31 +27,43 @@ const steam = [
 
 <template>
   <section class="coffee" data-testid="homepage-coffee">
-    <svg
-      class="coffee-cup"
-      :width="8 * STEP"
-      :height="9 * STEP"
-      :viewBox="`0 0 ${8 * STEP} ${9 * STEP}`"
+    <!-- A pointer shortcut to the Coffee link (ticket 0813): keyboards and screen readers meet the button only. -->
+    <component
+      :is="COFFEE_URL ? 'a' : 'div'"
+      class="coffee__cup"
+      :href="COFFEE_URL || undefined"
+      :target="COFFEE_URL ? '_blank' : undefined"
+      :rel="COFFEE_URL ? 'noopener' : undefined"
+      tabindex="-1"
       aria-hidden="true"
-      data-testid="coffee-cup"
+      data-testid="homepage-coffee-cup-link"
     >
-      <rect v-for="(bead, i) in steam" :key="`s${i}`" class="coffee-cup__steam" :x="bead.x" :y="bead.y" :width="BEAD" :height="BEAD" rx="1" />
-      <rect
-        v-for="(bead, i) in cupBeads"
-        :key="i"
-        :class="bead.saucer ? 'coffee-cup__saucer' : 'coffee-cup__body'"
-        :x="bead.x"
-        :y="bead.y"
-        :width="BEAD"
-        :height="BEAD"
-        rx="1.5"
-      />
-    </svg>
+      <svg
+        class="coffee-cup"
+        :width="8 * STEP"
+        :height="9 * STEP"
+        :viewBox="`0 0 ${8 * STEP} ${9 * STEP}`"
+        aria-hidden="true"
+        data-testid="coffee-cup"
+      >
+        <rect v-for="(bead, i) in steam" :key="`s${i}`" class="coffee-cup__steam" :x="bead.x" :y="bead.y" :width="BEAD" :height="BEAD" rx="1" />
+        <rect
+          v-for="(bead, i) in cupBeads"
+          :key="i"
+          :class="bead.saucer ? 'coffee-cup__saucer' : 'coffee-cup__body'"
+          :x="bead.x"
+          :y="bead.y"
+          :width="BEAD"
+          :height="BEAD"
+          rx="1.5"
+        />
+      </svg>
+    </component>
     <div>
       <h3 class="coffee__title">{{ t.homepage.coffee.title }}</h3>
       <p class="coffee__text">{{ t.homepage.coffee.text }}</p>
     </div>
-    <AppButton :href="COFFEE_URL || undefined" :class="{ coffee__link: COFFEE_URL }" data-testid="homepage-coffee-button">{{ t.homepage.coffee.button }}</AppButton>
+    <AppButton :href="COFFEE_URL || undefined" data-testid="homepage-coffee-button">{{ t.homepage.coffee.button }}</AppButton>
     <p class="coffee__star">
       {{ t.homepage.coffee.star }}
       <a class="coffee__source" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="homepage-coffee-source">{{ t.homepage.coffee.source }}</a>
@@ -80,27 +92,30 @@ const steam = [
   border-radius: var(--coffee-radius);
 }
 
-/* The link's box is the tile, not its own (a coarse pointer makes every control `relative`, and a press scales it, which
-   would shrink the cover mid-click), so its `::after` reaches the tile's edges. */
-.coffee :deep(.coffee__link.app-button),
-.coffee :deep(.coffee__link.app-button:active) {
-  position: static;
-  transform: none;
+/* The cup's link (ticket 0813): on hover a soft accent halo behind the cup, and the cup grows a little. */
+.coffee__cup {
+  display: block;
+  padding: var(--space-14);
+  border-radius: var(--coffee-radius);
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-.coffee :deep(.coffee__link)::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--coffee-radius);
+a.coffee__cup:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+a.coffee__cup:hover .coffee-cup {
+  transform: scale(1.05);
 }
 
 .coffee-cup {
   flex: none;
   overflow: visible;
-  /* The drawing scales, its beads stay square. Inside the tile's link, so it opens the Coffee link. */
+  /* The drawing scales, its beads stay square. */
+  display: block;
   width: var(--coffee-cup-width);
   height: auto;
+  transition: transform var(--duration-fast) var(--ease-standard);
 }
 
 .coffee-cup__body {
@@ -144,6 +159,10 @@ const steam = [
     opacity: 0.8;
     animation: none;
   }
+
+  a.coffee__cup:hover .coffee-cup {
+    transform: none;
+  }
 }
 
 .coffee__title {
@@ -162,10 +181,7 @@ const steam = [
   color: var(--muted);
 }
 
-/* Above the tile's cover, so it takes its own click. */
 .coffee__source {
-  position: relative;
-  z-index: 1;
   color: inherit;
   text-decoration: underline;
 }
