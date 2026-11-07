@@ -6,9 +6,9 @@ import KeyChip from './KeyChip.vue'
 import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
-// The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows
-// on mouse/pen hover held HOVER_DELAY_MS or keyboard focus; a touch/pen press held LONG_PRESS_MS (ticket 166) or a
-// click on a disabled control opens it. Never clipped (ticket 265): a manual top-layer popover.
+// The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows on
+// hover held HOVER_DELAY_MS (not again after a press until the pointer leaves) or keyboard focus; a touch/pen press held
+// LONG_PRESS_MS (ticket 166) or a click on a disabled control opens it. Never clipped (ticket 265): a top-layer popover.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
@@ -99,6 +99,16 @@ function follow(on: boolean) {
 
 /** Set by a press inside the trigger, so the focus that press gives it doesn't pop a tooltip over what was pressed. */
 let pressing = false
+/** Set by a press inside the trigger, until the pointer is really off it: a control that captures the pointer for a
+ * drag (the Frame's move handle) makes the browser report a leave at the press and an enter at the release, with the
+ * pointer still on it, and that enter must not start the hover tip again over the control just used. */
+let pressedUntilLeave = false
+
+/** Whether the point lies inside the trigger's box (its edge counts as outside, where a real leave reports). */
+function overTrigger(x: number, y: number): boolean {
+  const box = triggerEl.value?.getBoundingClientRect()
+  return !!box && x > box.left && x < box.right && y > box.top && y < box.bottom
+}
 let longPressTimer: ReturnType<typeof setTimeout> | undefined
 let hoverTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -128,12 +138,16 @@ function onPointerEnter(event: PointerEvent) {
   // (`buttons` is 1): that is a press, which the long-press handles, not a hover.
   if (event.pointerType === 'touch') return
   if (event.pointerType === 'pen' && event.buttons !== 0) return
+  if (pressedUntilLeave) return
   clearHover()
   hoverTimer = setTimeout(show, HOVER_DELAY_MS)
 }
 
 function onPointerDown(event: PointerEvent) {
   pressing = true
+  // A finger has no hover to suppress, and its leave comes where it lifted, inside: it would block a later mouse.
+  if (event.pointerType !== 'touch') pressedUntilLeave = true
+  hide()
   if (event.pointerType === 'touch' || event.pointerType === 'pen') {
     clearLongPress()
     longPressTimer = setTimeout(() => {
@@ -181,6 +195,11 @@ function onClick() {
  * it. */
 useOverlayLayer({ isOpen: () => open.value && pinned.value, root: () => triggerEl.value, close: hide })
 
+function onPointerLeave(event: PointerEvent) {
+  if (!overTrigger(event.clientX, event.clientY)) pressedUntilLeave = false
+  hide()
+}
+
 function onFocusOut() {
   pressing = false
   hide()
@@ -199,7 +218,7 @@ onBeforeUnmount(hide)
     ref="triggerEl"
     class="app-tooltip"
     @pointerenter="onPointerEnter"
-    @pointerleave="hide"
+    @pointerleave="onPointerLeave"
     @focusin="onFocusIn"
     @pointerdown="onPointerDown"
     @pointerup="hide"

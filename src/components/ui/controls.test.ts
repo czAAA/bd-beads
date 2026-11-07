@@ -334,6 +334,45 @@ describe('AppTooltip', () => {
     vi.useRealTimers()
   })
 
+  it('hides on a press of its trigger, and hover shows it again only once the pointer has left and come back', async () => {
+    const wrapper = tooltip()
+    const bubble = wrapper.get('[role="tooltip"]')
+    await hover(wrapper)
+    expect(bubble.isVisible()).toBe(true)
+    await wrapper.trigger('pointerdown', { pointerType: 'mouse' })
+    expect(bubble.isVisible()).toBe(false)
+    await wrapper.trigger('pointerup', { pointerType: 'mouse' })
+
+    await hover(wrapper)
+    expect(bubble.isVisible()).toBe(false)
+
+    await wrapper.trigger('pointerleave', { clientX: 500, clientY: 500 })
+    await hover(wrapper)
+    expect(bubble.isVisible()).toBe(true)
+  })
+
+  it('stays hidden after a drag that captured the pointer, whose leave and enter come with the pointer still on the trigger', async () => {
+    const wrapper = tooltip()
+    const bubble = wrapper.get('[role="tooltip"]')
+    vi.spyOn(wrapper.element, 'getBoundingClientRect').mockReturnValue(DOMRect.fromRect({ x: 100, y: 100, width: 56, height: 28 }))
+    await hover(wrapper)
+    expect(bubble.isVisible()).toBe(true)
+    await wrapper.trigger('pointerdown', { pointerType: 'mouse', buttons: 1 })
+    await wrapper.trigger('pointerleave', { clientX: 128, clientY: 114 })
+    await hover(wrapper)
+    expect(bubble.isVisible()).toBe(false)
+  })
+
+  it('still shows for a mouse after a tap, whose leave comes where the finger lifted', async () => {
+    const wrapper = tooltip()
+    vi.spyOn(wrapper.element, 'getBoundingClientRect').mockReturnValue(DOMRect.fromRect({ x: 100, y: 100, width: 56, height: 28 }))
+    await wrapper.trigger('pointerdown', { pointerType: 'touch' })
+    await wrapper.trigger('pointerup', { pointerType: 'touch' })
+    await wrapper.trigger('pointerleave', { pointerType: 'touch', clientX: 128, clientY: 114 })
+    await hover(wrapper)
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+  })
+
   it('does not show for a touch', async () => {
     const wrapper = tooltip()
     await wrapper.trigger('pointerenter', { pointerType: 'touch' })
