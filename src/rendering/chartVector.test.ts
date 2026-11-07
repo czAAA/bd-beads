@@ -7,8 +7,9 @@ import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
-import { drawChartParts, letterColor, placeBeads } from './chartVector'
-import { planPrint, mm } from './printPlan'
+import { drawChartParts, K, letterColor, placeBeads } from './chartVector'
+import { EMPTY_CROSS_SHARE } from './printPages'
+import { displayedGrid, planPrint, mm } from './printPlan'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
 import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
@@ -28,6 +29,22 @@ function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra:
     beads[row]![15] = '#f2c94c'
   }
   return withLayers(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: LETTERS, letters: false, ...extra })
+}
+
+/** The arms of the empty positions' crosses: the bare line segments stroked faint at 0.1 mm, as [x1, y1, x2, y2] in
+ * points. The stroke's colour and width are only written when they change, so they are followed through the content. */
+function crossArms(content: string): number[][] {
+  let color = ''
+  let width = ''
+  const arms: number[][] = []
+  for (const line of content.split('\n')) {
+    if (line.endsWith(' RG')) color = line
+    else if (line.endsWith(' w')) width = line
+    else if (color === '0.659 0.659 0.659 RG' && width === '0.283 w' && /^([\d.-]+ [\d.-]+ m [\d.-]+ [\d.-]+ l ?)+$/.test(line)) {
+      arms.push(...[...line.matchAll(/([\d.-]+) ([\d.-]+) m ([\d.-]+) ([\d.-]+) l/g)].map((match) => match.slice(1, 5).map(Number)))
+    }
+  }
+  return arms
 }
 
 const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) Tf ([\d.]+) Tz ([\d.-]+) ([\d.-]+) Td \(([^)]*)\) Tj ET/g)].map((match) => ({ font: match[1]!, size: Number(match[2]), scale: Number(match[3]), x: Number(match[4]), y: Number(match[5]), value: match[6]! }))
@@ -97,11 +114,32 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(letterColor('red')).toBe('#1f1f1f')
   })
 
-  it('fills only the painted positions: an empty position is plain paper', () => {
+  it('fills only the painted positions: an empty position has no fill', () => {
     const { content } = chartOf(schema())
     const fills = content.toString().match(/ re f/g) ?? []
 
     expect(fills).toHaveLength(10 * 16)
+  })
+
+  it('marks every empty position, and only those, with a small faint cross, 0.1 mm (ticket 0818)', () => {
+    const { part, content } = chartOf(schema())
+    const crosses = crossArms(content.toString())
+    const positions = (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1)
+
+    expect(crosses).toHaveLength((positions - 10 * 16) * 2)
+  })
+
+  it('marks an empty position among round beads with the same cross, 40 % of the bead across (ticket 0818)', () => {
+    const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: { 0: DARK } } }, paletteLetters: LETTERS, letters: false })
+    const { plan, part, content } = chartOf(project)
+    const arms = crossArms(content.toString())
+    const empty = placeBeads(project, plan, part).filter((bead) => bead.color === null)
+
+    expect(empty.length).toBeGreaterThan(0)
+    expect(arms).toHaveLength(empty.length * 2)
+    const across = Math.abs(arms[0]![2] - arms[0]![0])
+    expect(across / (plan.zoom * displayedGrid(project).stepAcross * K)).toBeCloseTo(EMPTY_CROSS_SHARE, 2)
   })
 
   it('numbers only every 5th row and column, upright, on all four sides, the tens in Helvetica-Bold', () => {
@@ -218,6 +256,8 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
     const turned = pdf.split('\n').filter((line) => / l .* h [BfS]$/.test(line) && !line.includes(' c '))
     expect(turned.length).toBe(frameLayoutOf(frameOf(project)!)!.positions.length)
     expect(turned.filter((line) => line.endsWith(' S')).length).toBe(frameLayoutOf(frameOf(project)!)!.positions.length - 30)
+    // Each empty one carries the cross too (ticket 0818).
+    expect(crossArms(pdf)).toHaveLength((frameLayoutOf(frameOf(project)!)!.positions.length - 30) * 2)
     // No ruler numbers: the only text is the beads' letters.
     expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
   })

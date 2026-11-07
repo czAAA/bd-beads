@@ -64,14 +64,15 @@ describe('Cover page', () => {
     expect(pixel(canvas, ...at(3, 2))).toBe('#ffffff')
   })
 
-  it('leaves an empty position as bare board when every bead carries its letter', () => {
+  it('marks an empty position with the faint cross when every bead carries its letter too (ticket 0818)', () => {
     const project = withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20, blank: true, override: [{ row: 3, column: 2, color: '#ff0000' }] }), { letters: true, paletteLetters: { '#ff0000': 'R' } })
     const words = wordsOf(project)
     const layout = coverLayout(project, words)
     const canvas = drawCoverPage(project, words, layout, 1)
     const grid = displayedGrid(project)
 
-    expect(pixel(canvas, layout.board.x + 5.5 * grid.stepAcross * layout.zoom, layout.board.y + 5.5 * grid.stepDown * layout.zoom)).toBe(PRINT_THEME.background)
+    expect(pixel(canvas, layout.board.x + 5.5 * grid.stepAcross * layout.zoom, layout.board.y + 5.5 * grid.stepDown * layout.zoom)).not.toBe(PRINT_THEME.background)
+    expect(pixel(canvas, layout.board.x + 5.25 * grid.stepAcross * layout.zoom, layout.board.y + 5.5 * grid.stepDown * layout.zoom)).toBe(PRINT_THEME.background)
   })
 
   it('exports the PNG without Swatch letters, whatever the Letters toggle says', async () => {

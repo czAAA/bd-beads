@@ -5,7 +5,7 @@ import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import { acrossNumber, downNumber, lineBetween, rulerLevel } from './printPages'
+import { acrossNumber, downNumber, emptyCrossArms, lineBetween, rulerLevel } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
@@ -249,6 +249,12 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
     content.lines([[chart.x * K, chart.y * K, right * K, chart.y * K], [right * K, chart.y * K, right * K, bottom * K], [right * K, bottom * K, chart.x * K, bottom * K], [chart.x * K, bottom * K, chart.x * K, chart.y * K]], LINE_TEN, PRINT_COLORS.ink)
   }
 
+  // An empty position's small faint cross (ticket 0818), on the paper the fills leave.
+  content.lines(beads.filter((bead) => bead.color === null).flatMap((bead) => {
+    const { x, y, width, height } = round ? bead.box : bead.cell
+    return emptyCross(chart.x + x + width / 2, chart.y + y + height / 2, Math.min(width, height))
+  }), LINE_CELL, PRINT_COLORS.faint)
+
   // Letters over the lines: every bead carries its Swatch letter, whether the Letters toggle is on or not.
   for (const bead of beads) {
     if (bead.color === null) continue
@@ -309,8 +315,13 @@ function clippedTo(box: Box, [from, to]: readonly [LayoutPoint, LayoutPoint]): [
   return start <= end ? [from.x + start * dx, from.y + start * dy, from.x + end * dx, from.y + end * dy] : undefined
 }
 
+/** An empty position's cross (ticket 0818; the Cover's, ticket 0719), centred at `x`, `y` in layout px, in points. */
+function emptyCross(x: number, y: number, size: number): [number, number, number, number][] {
+  return emptyCrossArms(x * K, y * K, size * K)
+}
+
 /** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls on the part, turned as it lies, with
- * its Swatch letter upright; empty positions outlined so the shape reads; its Seams as lines. No cell lines or rulers:
+ * its Swatch letter upright; empty positions outlined so the shape reads, each with its cross; its Seams as lines. No cell lines or rulers:
  * its beads keep no rows and columns. */
 function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }): void {
   const own = (bead: ChartBead) => bead.x >= 0 && bead.y >= 0 && bead.x <= part.region.width && bead.y <= part.region.height
@@ -338,6 +349,7 @@ function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, 
     return cut ? [[(chart.x + cut[0]) * K, (chart.y + cut[1]) * K, (chart.x + cut[2]) * K, (chart.y + cut[3]) * K] as [number, number, number, number]] : []
   })
   content.lines(seams, LINE_FIVE, PRINT_COLORS.fieldLine)
+  content.lines(beads.filter((bead) => bead.color === null).flatMap((bead) => emptyCross(chart.x + bead.x, chart.y + bead.y, Math.min(bead.width, bead.height))), LINE_CELL, PRINT_COLORS.faint)
   for (const bead of beads) {
     if (bead.color === null) continue
     const size = Math.min(bead.width, bead.height)
