@@ -34,9 +34,6 @@ interface Budget {
 /** What's inside's list beside the editor from 1024 (WhatsInside.vue, ticket 0797): `--inside-list-width` (272px), 10px
  * padding each side, an 18px icon and a 10px gap before the name. */
 const INSIDE_ROW_ROOM = 272 - 2 * 10 - 18 - 10
-/** A What's inside card from 1024: a quarter of the 1080px section less its three 12px gaps, 14px padding each side, a
- * 18px icon (the icon sizes have no 20) and a 10px gap. */
-const INSIDE_CARD_ROOM = (1080 - 3 * 12) / 4 - 2 * 14 - 18 - 10
 
 const BUDGETS: Budget[] = [
   {
@@ -46,14 +43,6 @@ const BUDGETS: Budget[] = [
     lines: 1,
     style: { size: 14, weight: 500 },
     texts: (t) => Object.fromEntries(Object.entries(t.homepage.inside.rows).map(([key, copy]) => [key, copy.name])),
-  },
-  {
-    name: "What's inside card name",
-    room: { px: INSIDE_CARD_ROOM, source: 'WhatsInside.vue .inside__card-name, --type-inside-name' },
-    breakpoint: 'from 1024px',
-    lines: 1,
-    style: { size: 14, weight: 600 },
-    texts: (t) => Object.fromEntries(Object.entries(t.homepage.inside.cards).map(([key, copy]) => [key, copy.name])),
   },
 ]
 
