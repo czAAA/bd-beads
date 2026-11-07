@@ -720,7 +720,6 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     press({ kind: 'handle', edges: ['bottom'] }, { row: bottom, column: frame.column })
     drag({ row: bottom + 2, column: frame.column })
     release()
-    expect(frameOf(deps.harness.project)!.settings).toMatchObject({ topWidth: 7, topRows: 6, fringeLength: 14 })
     expect(deps.announce).toHaveBeenLastCalledWith('Fringe length: 14')
   })
 

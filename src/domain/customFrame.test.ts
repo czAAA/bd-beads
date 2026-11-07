@@ -411,6 +411,11 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(frameOf(changed(body, { settings: { topRows: 6 } }))!.settings!.topRows).toBe(5)
       expect(frameOf(changed(body, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 9 })
       expect(frameOf(changed(body, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 5 })
+      // A whole point stays whole with no body under it, and a cut-off one keeps its rows where the point has them.
+      expect(frameOf(changed(point, { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
+      expect(frameOf(changed(point, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 7 })
+      expect(frameOf(changed(earring(), { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, topRows: 4 })
+      expect(frameOf(changed(earring(), { settings: { topWidth: 4 } }))!.settings).toMatchObject({ topWidth: 4, topRows: 3 })
     })
 
     it('keeps the point\'s beads in the point as the body grows and shrinks, the body\'s given-up rows folded until they come back', () => {

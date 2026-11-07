@@ -138,14 +138,15 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
   }
 }
 
-/** A Fringe earring's settings kept together (ticket 0814): its brick body, the Top rows beyond its point, an even
- * number of rows, so it ends a row of one bead fewer under the point's widest; a Top rows between two such is the one
- * the change moved towards, or the one below. A Width changed keeps the body as tall, the point following it. */
+/** A Fringe earring's settings kept together (ticket 0814): its brick body an even number of rows, a Top rows between
+ * two such the one the change moved towards (or below); a changed Width keeps a whole point whole with its body as tall
+ * (none stays none), a cut-off one its rows where the new point has them. */
 function settledFringe(read: NumberedSettings, before?: NumberedSettings): NumberedSettings {
   const width = read.topWidth!
   const point = fringePointRows(width)
-  const keptBody = before && before.topWidth !== width ? before.topRows! - fringePointRows(before.topWidth!) : 0
-  let rows = keptBody > 0 ? point + keptBody : read.topRows!
+  const widthChanged = before !== undefined && before.topWidth !== width
+  const body = widthChanged ? before.topRows! - fringePointRows(before.topWidth!) : undefined
+  let rows = body === undefined ? read.topRows! : body >= 0 ? point + body : Math.min(read.topRows!, point)
   const highest = TOP_ROWS.max <= point ? TOP_ROWS.max : point + 2 * Math.floor((TOP_ROWS.max - point) / 2)
   if (rows > point && (rows - point) % 2 === 1) rows += before && rows > before.topRows! ? 1 : -1
   return { ...read, topRows: Math.min(rows, highest) }
