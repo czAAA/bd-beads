@@ -225,6 +225,13 @@ describe('an Earring Starter (ticket 0597)', () => {
     expect(sizesWith(straight, { topWidth: 7, topRows: 8 }, 'topRows', 7)).toMatchObject({ topRows: 6 })
     expect(sizesWith(straight, { topWidth: 7, topRows: 8 }, 'topWidth', 9)).toMatchObject({ topWidth: 9, topRows: 10 })
   })
+
+  it('moves a V fringe\'s length with its Width, as the style picked has it (ticket 0816)', () => {
+    const v = starterById('vFringe')
+    expect(sizesWith(v, { topWidth: 7, fringeLength: 12 }, 'topWidth', 9)).toMatchObject({ topWidth: 9, fringeLength: 14 })
+    expect(sizesWith(v, { topWidth: 7, fringeLength: 12 }, 'topWidth', 9, v.weave, { fringeStyle: 'straight' })).toMatchObject({ topWidth: 9, fringeLength: 12 })
+    expect(sizesWith(starterById('straightFringe'), { topWidth: 7, fringeLength: 12 }, 'topWidth', 9, undefined, { fringeStyle: 'v' })).toMatchObject({ fringeLength: 14 })
+  })
 })
 
 describe('a Ring or Band Starter (ticket 0597)', () => {

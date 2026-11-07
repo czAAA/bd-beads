@@ -100,7 +100,7 @@ function shownValue(size: StarterSize): number {
 function setSize(size: StarterSize, shown: number) {
   const eu = inUs(size) ? euRingSize(shown) : shown
   if (!Number.isFinite(eu)) return
-  Object.assign(sizes, sizesWith(props.starter, sizes, size.id, eu, weave.value))
+  Object.assign(sizes, sizesWith(props.starter, sizes, size.id, eu, weave.value, picks))
   widthKept.value = undefined
   followDesign()
 }

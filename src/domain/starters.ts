@@ -250,12 +250,12 @@ export function starterSizeRanges(starter: Starter, sizes: StarterSizes, weave: 
 
 /** A Starter's sizes with one set from its stepper or a chip (ticket 0814): within its range, and on a Custom frame
  * Starter kept together as a change of its Frame shape's settings keeps them (a Fringe earring's body steps two rows,
- * a Width keeps it as tall). */
-export function sizesWith(starter: Starter, sizes: StarterSizes, id: StarterSizeName, value: number, weave: Weave = starter.weave): StarterSizes {
+ * a Width keeps it as tall, and a V fringe's length moves with it, ticket 0816, as the choices `picks` have it). */
+export function sizesWith(starter: Starter, sizes: StarterSizes, id: StarterSizeName, value: number, weave: Weave = starter.weave, picks?: StarterPicks): StarterSizes {
   const { min, max } = starterSizeRanges(starter, sizes, weave)[id]!
   const set = { ...sizes, [id]: Math.min(max, Math.max(min, Math.round(value))) }
   if (starter.measure !== 'frame') return set
-  const changed = changedSettings({ shape: starter.shape, settings: customSettings(starter, { sizes }), ...weave }, { [id]: set[id] })
+  const changed = changedSettings({ shape: starter.shape, settings: customSettings(starter, { sizes, picks }), ...weave }, { [id]: set[id] })
   return Object.fromEntries(starter.sizes.map((size) => [size.id, changed[size.id as FrameSettingName] ?? set[size.id]]))
 }
 
