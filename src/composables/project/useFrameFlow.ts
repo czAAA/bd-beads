@@ -141,10 +141,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** What a resize left, said as the Frame is sized: its width and height, or a Custom frame's size setting. */
-  function describe(frame: FrameSheet): string {
+  function describe(frame: FrameSheet, before: FrameSheet | undefined): string {
     const t = deps.messages()
-    const id = sizeSettingOf(frame)?.id
-    const setting = settingValuesOf(frame).find(({ name }) => name === id)
+    // The setting a handle changed, a side's own (ticket 0814), or else the size setting.
+    const was = before && settingValuesOf(before)
+    const values = settingValuesOf(frame)
+    const id = values.find(({ name, value }) => was?.find((each) => each.name === name)?.value !== value)?.name ?? sizeSettingOf(frame)?.id
+    const setting = values.find(({ name }) => name === id)
     if (setting) return fillBlanks(t.frame.sizeSettings[setting.name].announce, { count: String(setting.value) })
     return fillBlanks(t.frame.announceSet, { width: frame.columns, height: frame.rows })
   }
@@ -165,7 +168,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     }
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
     const left = frameOf(deps.currentProject())
-    deps.announce(frame && left ? describe(left) : deps.messages().frame.announceRemoved)
+    deps.announce(frame && left ? describe(left, frameOf(before)) : deps.messages().frame.announceRemoved)
     return true
   }
 

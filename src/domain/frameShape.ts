@@ -1,6 +1,7 @@
 import { findBead, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
-import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import { fringeLayout, fringePointRows, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import type { FrameEdge } from './frame'
 import type { GridDimensions, GridPosition } from './grid'
 import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
@@ -13,7 +14,7 @@ import { beadCell, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, withCell, type 
 export type FrameShapeId = 'triangle' | 'warpedSquare' | 'star' | 'kaleidocycle' | 'kite' | 'fringeEarring'
 
 /** A Custom frame's settings in numbers: Rounds from the centre (Triangle, Warped Square), Part size, the rounds of
- * each part (Star, Kaleidocycle), Rows from its point (Kite), or a Fringe earring's Top width, Top rows and Fringe
+ * each part (Star, Kaleidocycle), Rows from its point (Kite), or a Fringe earring's Width, Top rows and Fringe
  * length. */
 export type FrameSettingName = 'rounds' | 'partSize' | 'rows' | 'topWidth' | 'topRows' | 'fringeLength'
 
@@ -27,8 +28,7 @@ export const FRINGE_STYLES: readonly FringeStyle[] = ['straight', 'v']
 export type FrameSettings = Partial<Record<FrameSettingName, number>> & { fringeStyle?: FringeStyle }
 
 /** One setting of a Frame shape, in the shape a Technique's has (ticket 0624): its words are under its id in
- * `frame.sizeSettings`, a smaller one asks before it drops beads, and one bounded by another stays below it (a Fringe
- * earring's top has fewer rows than its base has beads, so it ends on a pair: StarterGallery card). */
+ * `frame.sizeSettings`, and a smaller one asks before it drops beads. */
 type FrameSetting = SettingSpec<FrameSettingName>
 
 /** How many quarter turns clockwise a Frame lies at on the Canvas (Rotate Frame, tickets 0594, 0667, ADR 0079): a Custom
@@ -72,6 +72,13 @@ export interface FrameShape extends FrameRules {
   techniques: readonly [Technique, ...Technique[]]
   settings: readonly [FrameSetting, ...FrameSetting[]]
   styles?: readonly FringeStyle[]
+  /** The setting each side's resize handle drives (ticket 0814), the side of the shape as it stands upright; without
+   * them every handle steps its first setting. */
+  sides?: Readonly<Record<FrameEdge, FrameSettingName>>
+  /** Its numbered settings, each already within its range, kept to the values its layout takes together, a changed one
+   * moved on the way it was changed from `before` (a Fringe earring's brick body, ticket 0814); without it every value
+   * in range is one. */
+  settle?(read: NumberedSettings, before?: NumberedSettings): NumberedSettings
   /** Built from its settings as `settingsOf` reads them, every one the shape has, and its Bead's depth across the
    * thread over its pitch along it, which only a round shape's packing reads (ticket 0723). */
   layout(settings: FrameSettings, depth: number): FrameLayout
@@ -102,15 +109,17 @@ const KALEIDOCYCLE_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', 
 const KITE_ROWS: FrameSetting = { id: 'rows', labelKey: 'rows', min: 4, max: 60, step: 1, default: 21, presets: [15, 21, 30], lossOnChange: true }
 /** A Fringe earring's base row, its rows up to a pair at the top, and its longest strand (StarterGallery card). */
 const TOP_WIDTH: FrameSetting = { id: 'topWidth', labelKey: 'topWidth', min: 2, max: 30, step: 1, default: 7, presets: [5, 7, 9], lossOnChange: true }
-const TOP_ROWS: FrameSetting = { id: 'topRows', labelKey: 'topRows', min: 1, max: 29, step: 1, default: 6, presets: [4, 6, 8], lossOnChange: true, below: 'topWidth' }
+/** As many as its point needs and a body under it as tall again (ticket 0814). */
+const TOP_ROWS: FrameSetting = { id: 'topRows', labelKey: 'topRows', min: 1, max: 60, step: 1, default: 6, presets: [4, 6, 8], lossOnChange: true }
 const FRINGE_LENGTH: FrameSetting = { id: 'fringeLength', labelKey: 'fringeLength', min: 2, max: 80, step: 1, default: 12, presets: [8, 12, 16], lossOnChange: true }
 
 /** What a Custom frame offers (ADR 0079, ticket 0669): every Frame action, each done through its shape, but Remove
  * row/column, which needs plain rows. */
 const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['resize', 'from-selection', 'rotate', 'technique', 'select'])
 
-/** A Frame shape's own: the Techniques it supports, its settings and styles, and its panel builder. */
-type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'layout'>
+/** A Frame shape's own: the Techniques it supports, its settings and styles, what its handles drive, how its settings
+ * keep together, and its panel builder. */
+type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'sides' | 'settle' | 'layout'>
 
 /** A Frame shape (ADR 0078): its panel builder and settings, and its Row order's passes worked in rounds from the centre
  * or rows from a point (ticket 0594). Its beads are where its layout puts them, laid in its rectangle. */
@@ -129,6 +138,19 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
   }
 }
 
+/** A Fringe earring's settings kept together (ticket 0814): its brick body, the Top rows beyond its point, an even
+ * number of rows, so it ends a row of one bead fewer under the point's widest; a Top rows between two such is the one
+ * the change moved towards, or the one below. A Width changed keeps the body as tall, the point following it. */
+function settledFringe(read: NumberedSettings, before?: NumberedSettings): NumberedSettings {
+  const width = read.topWidth!
+  const point = fringePointRows(width)
+  const keptBody = before && before.topWidth !== width ? before.topRows! - fringePointRows(before.topWidth!) : 0
+  let rows = keptBody > 0 ? point + keptBody : read.topRows!
+  const highest = TOP_ROWS.max <= point ? TOP_ROWS.max : point + 2 * Math.floor((TOP_ROWS.max - point) / 2)
+  if (rows > point && (rows - point) % 2 === 1) rows += before && rows > before.topRows! ? 1 : -1
+  return { ...read, topRows: Math.min(rows, highest) }
+}
+
 /** The registry, one entry per Frame shape, like the Starters'. */
 const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
   triangle: frameShape('triangle', 'round', { techniques: ['peyote'], settings: [ROUNDS], layout: ({ rounds }, depth) => roundsLayout(3, rounds!, depth) }),
@@ -144,6 +166,8 @@ const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
     techniques: ['brick'],
     settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],
     styles: FRINGE_STYLES,
+    sides: { left: 'topWidth', right: 'topWidth', top: 'topRows', bottom: 'fringeLength' },
+    settle: settledFringe,
     layout: (settings) => fringeLayout(settings as FringeSettings),
   }),
 }
@@ -197,6 +221,24 @@ export function sizeSettingOf(frame: Pick<FrameSheet, 'shape'>): Readonly<FrameS
   return frameShapeOf(frame)?.settings[0]
 }
 
+/** A Custom frame's numbered settings by name. */
+type NumberedSettings = Partial<Record<FrameSettingName, number>>
+
+/** Each of a shape's numbered settings read within its range, its default where missing or no number. */
+function readWithin(shape: FrameShape, settings: FrameSettings | undefined): NumberedSettings {
+  return Object.fromEntries(
+    shape.settings.map((setting) => {
+      const stored = settings?.[setting.id]
+      return [setting.id, typeof stored === 'number' && Number.isFinite(stored) ? Math.min(setting.max, Math.max(setting.min, Math.round(stored))) : setting.default]
+    }),
+  )
+}
+
+/** A shape's numbered settings kept together as its `settle` keeps them. */
+function settled(shape: FrameShape, read: NumberedSettings, before?: NumberedSettings): NumberedSettings {
+  return shape.settle ? shape.settle(read, before) : read
+}
+
 /** One of a Custom frame's numbered settings as the Frame panel offers it: its value and the range it may take now. */
 export interface SettingValue {
   name: FrameSettingName
@@ -205,17 +247,25 @@ export interface SettingValue {
   max: number
 }
 
-/** A Custom frame's numbered settings, each read within its range (bounded by another where one is), its default where
- * missing; none for a Frame without a shape. */
+/** A Custom frame's numbered settings, each read within its range, its default where missing, kept together as its
+ * shape keeps them; the most each may take is the highest its shape keeps with the others as they are. None for a Frame
+ * without a shape. */
 export function settingValuesOf(frame: Pick<FrameSheet, 'shape' | 'settings'>): SettingValue[] {
-  const read: Partial<Record<FrameSettingName, number>> = {}
-  return (frameShapeOf(frame)?.settings ?? []).map((setting) => {
-    const max = setting.below ? Math.min(setting.max, (read[setting.below] ?? setting.max + 1) - 1) : setting.max
-    const stored = frame.settings?.[setting.id]
-    const value = typeof stored === 'number' && Number.isFinite(stored) ? Math.min(max, Math.max(setting.min, Math.round(stored))) : Math.min(max, setting.default)
-    read[setting.id] = value
-    return { name: setting.id, value, min: setting.min, max }
-  })
+  const shape = frameShapeOf(frame)
+  if (!shape) return []
+  const read = readWithin(shape, frame.settings)
+  const values = settled(shape, read)
+  return shape.settings.map((setting) => ({ name: setting.id, value: values[setting.id]!, min: setting.min, max: settled(shape, { ...read, [setting.id]: setting.max })[setting.id]! }))
+}
+
+/** A Custom frame's settings changed (ticket 0814): those asked over its own, each within its range, kept together the
+ * way the change moved them (a Fringe earring's brick body steps two rows, a Width keeps the body). As `settingsOf`
+ * reads them. */
+export function changedSettings(frame: Pick<FrameSheet, 'shape' | 'settings'>, asked: FrameSettings): FrameSettings {
+  const shape = frameShapeOf(frame)!
+  const before = settingsOf(frame)!
+  const values = settled(shape, readWithin(shape, { ...before, ...asked }), before as NumberedSettings)
+  return settingsOf({ shape: frame.shape, settings: { ...before, ...asked, ...values } })!
 }
 
 /** The one setting a Frame panel change names (it changes one at a time): a numbered setting or the Fringe style. */
@@ -295,9 +345,39 @@ export function customFrameSize(shape: FrameShapeId, settings: FrameSettings, qu
  * nearest on the sides that changed; Frame from Selection's, the smallest that covers it (the largest if none does). */
 export type SizeFit = 'nearest' | 'cover'
 
-/** A Custom frame's settings with its size setting stepped to a rectangle asked of it (ADR 0079, ticket 0669), its
- * other settings kept; none for a Frame without a shape, whose rectangle is its size. */
-export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' | 'technique'>, asked: GridDimensions, fit: SizeFit): FrameSettings | undefined {
+/** The sides round a shape, clockwise from its top. */
+const AROUND: readonly FrameEdge[] = ['top', 'right', 'bottom', 'left']
+
+/** The side of a Custom frame's shape, as it stands upright, that an edge of its rectangle on the Canvas shows once
+ * Rotate Frame has turned it (ticket 0814): turned a quarter clockwise, its top is on the right. */
+function shapeSide(edge: FrameEdge, quarterTurns = 0): FrameEdge {
+  return AROUND[(AROUND.indexOf(edge) - quarterTurns + AROUND.length) % AROUND.length]!
+}
+
+/** A Custom frame's settings with one setting stepped, a change at a time, to where its rectangle comes nearest the
+ * asked one along rows or columns (ticket 0814). */
+function nearestStep(frame: Laid & Pick<FrameSheet, 'technique'>, settings: FrameSettings, name: FrameSettingName, along: keyof GridDimensions, asked: GridDimensions): FrameSettings {
+  const miss = (each: FrameSettings) => Math.abs(customFrameSize(frame.shape!, each, frame.quarterTurns, frame.technique, frame.cell)[along] - asked[along])
+  let best = settings
+  for (const by of [1, -1]) {
+    for (;;) {
+      const next = changedSettings({ shape: frame.shape, settings: best }, { [name]: best[name]! + by })
+      if (sameSettings(next, best) || miss(next) >= miss(best)) break
+      best = next
+    }
+  }
+  return best
+}
+
+/** A Custom frame's settings stepped to a rectangle asked of it (ADR 0079, ticket 0669); none for a Frame without a
+ * shape. Its size setting steps, or where its sides drive their own (ticket 0814), the setting of the side of the shape
+ * each of the `edges` a handle moved shows. */
+export function sizedSettings(frame: Laid & Pick<FrameSheet, 'rows' | 'columns' | 'technique'>, asked: GridDimensions, fit: SizeFit, edges?: readonly FrameEdge[]): FrameSettings | undefined {
+  const sides = frameShapeOf(frame)?.sides
+  if (fit === 'nearest' && sides && edges) {
+    const along = (edge: FrameEdge) => (edge === 'top' || edge === 'bottom' ? 'rows' : 'columns')
+    return edges.reduce((settings, edge) => nearestStep(frame, settings, sides[shapeSide(edge, frame.quarterTurns)], along(edge), asked), settingsOf(frame)!)
+  }
   const setting = sizeSettingOf(frame)
   if (!setting) return undefined
   const settings = settingsOf(frame)!
@@ -336,10 +416,17 @@ export function settingsHolding(frame: Pick<FrameSheet, 'shape' | 'settings' | '
       const held = positions.filter((position) => layoutPosition(layout, position)).length
       if (held === positions.length) return settings
       if (!best || held > best.held) best = { settings, held }
-      const values = settingValuesOf({ shape: frame.shape, settings })
-      if (values.every(({ value, max }) => value >= max)) break
-      settings = settingsOf({ shape: frame.shape, settings: { ...settings, ...Object.fromEntries(values.map(({ name, value }) => [name, value + 1])) } })!
+      // Each a step up in turn, as a change of it would go, so a Fringe earring's body grows too (ticket 0814).
+      const grown = shape.settings.reduce((each, { id }) => changedSettings({ shape: frame.shape, settings: each }, { [id]: each[id]! + 1 }), settings)
+      if (sameSettings(grown, settings)) break
+      settings = grown
     }
   }
   return best!.settings
+}
+
+/** Whether two Custom frames' settings, as `settingsOf` reads them, are the same. */
+export function sameSettings(a: FrameSettings, b: FrameSettings): boolean {
+  const names = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof FrameSettings>
+  return [...names].every((name) => a[name] === b[name])
 }
