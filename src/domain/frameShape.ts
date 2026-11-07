@@ -158,14 +158,18 @@ function onGrid(value: number, first: number, step: number, low: number, high: n
   return Math.min(high, Math.max(low, at))
 }
 
+/** How many strands a V fringe of a Width has on each side of its middle, each two beads shorter (ticket 0816). */
+function strandsASide(width: number): number {
+  return Math.floor((width - 1) / 2)
+}
+
 /** A Fringe earring's settings kept together: its top's (ticket 0814), and a V fringe's length moved with a changed Width,
  * two beads for each strand the V gains or loses on a side, so its outer strands keep their length and the V reaches the
  * edges (ticket 0816). */
 function settledFringe(read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings {
   const top = settledFringeTop(read, weave, before)
   if (before?.fringeStyle !== 'v' || before.topWidth === top.topWidth) return top
-  const side = (width: number) => Math.floor((width - 1) / 2)
-  const length = read.fringeLength! + 2 * (side(top.topWidth!) - side(before.topWidth!))
+  const length = read.fringeLength! + 2 * (strandsASide(top.topWidth!) - strandsASide(before.topWidth!))
   return { ...top, fringeLength: Math.min(FRINGE_LENGTH.max, Math.max(FRINGE_LENGTH.min, length)) }
 }
 

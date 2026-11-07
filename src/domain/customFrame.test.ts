@@ -443,11 +443,17 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
       expect(frameOf(changed(v, { settings: { topWidth: 5 } }))!.settings).toMatchObject({ topWidth: 5, fringeLength: 10 })
       // A strand gained in the middle only (an even Width) keeps the length.
       expect(frameOf(changed(v, { settings: { topWidth: 8 } }))!.settings).toMatchObject({ topWidth: 8, fringeLength: 12 })
-      // Within its range.
+    })
+
+    it('keeps a V fringe\'s length within its range as Width moves it (ticket 0816)', () => {
+      const v = earring({ ...settings, topWidth: 7, fringeStyle: 'v', fringeLength: 12 })
       expect(frameOf(changed(v, { settings: { topWidth: 2 } }))!.settings).toMatchObject({ topWidth: 2, fringeLength: 6 })
       const long = changed(v, { settings: { fringeLength: 79 } })
       expect(frameOf(changed(long, { settings: { topWidth: 11 } }))!.settings).toMatchObject({ topWidth: 11, fringeLength: 80 })
-      // A straight fringe, and a change of another setting, keep it.
+    })
+
+    it('keeps a straight fringe\'s length as Width changes, and a V\'s as another setting does (ticket 0816)', () => {
+      const v = earring({ ...settings, topWidth: 7, fringeStyle: 'v', fringeLength: 12 })
       expect(frameOf(changed(earring(), { settings: { topWidth: 8 } }))!.settings!.fringeLength).toBe(9)
       expect(frameOf(changed(v, { settings: { topRows: 5 } }))!.settings!.fringeLength).toBe(12)
     })
