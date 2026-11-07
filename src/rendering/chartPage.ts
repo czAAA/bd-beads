@@ -9,7 +9,7 @@ import { fillBlanks } from '../domain/fillBlanks'
 import { type Layered } from '../domain/layerRecord'
 
 // A chart page for the PDF (ticket 0585; PrintChartPage card): the translated text as one picture and everything else as
-// PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper.
+// PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper under their small cross.
 
 
 /** A, B ... Z, AA: the order the key's letters run in. */
