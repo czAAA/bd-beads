@@ -65,7 +65,7 @@ describe('CoffeeBand', () => {
     const promises = band().findAll('[data-testid^="homepage-promise-"]')
     expect(promises.map((promise) => promise.element.tagName)).toEqual(Array(6).fill('LI'))
     expect(promises.map((promise) => promise.get('.coffee__promise-name').text())).toEqual(Object.values(en.homepage.promises).map((copy) => copy.name))
-    expect(promises[1].get('.coffee__promise-text').text()).toBe(en.homepage.promises.offline.text)
+    expect(promises[1].text()).toBe(`${en.homepage.promises.offline.name}. ${en.homepage.promises.offline.text}`)
     expect(promises.every((promise) => promise.find('svg').exists() && !promise.find('button, a').exists())).toBe(true)
   })
 

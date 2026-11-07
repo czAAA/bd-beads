@@ -76,7 +76,8 @@ const steam = [
       <li v-for="promise in promises" :key="promise.id" class="coffee__promise" :data-testid="`homepage-promise-${promise.id}`">
         <AppIcon class="coffee__promise-icon" :name="promise.icon" :size="18" />
         <span class="coffee__promise-name">{{ promise.name }}</span>
-        <span class="coffee__promise-text">{{ promise.text }}</span>
+        <!-- The stop keeps a screen reader from running the name into its line. -->
+        <span class="coffee__promise-text">. {{ promise.text }}</span>
       </li>
     </ul>
   </div>

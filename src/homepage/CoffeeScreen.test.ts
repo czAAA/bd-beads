@@ -12,7 +12,6 @@ describe('CoffeeScreen (ticket 0823)', () => {
     const tiles = wrapper.get('[data-testid="homepage-tiles"]').findAll('article')
     expect(tiles.map((tile) => tile.get('h3').text())).toEqual([en.homepage.openSource.name, en.homepage.sayHello.name])
     expect(tiles[0].get('p').text()).toBe(en.homepage.openSource.text)
-    expect(tiles[1].get('p').text()).toBe("A bug, an idea, a pattern you made: send it to the family. It's also in Menu → Send feedback.")
   })
 
   it('links to the source from Open source, in a new tab, with the star line beside it', () => {

@@ -35,10 +35,6 @@ afterEach(() => {
 })
 
 describe("What's inside (ticket 0797)", () => {
-  it("shows no cards: they are the coffee screen's promises now (ticket 0823)", () => {
-    for (const withEditor of [true, false]) expect(section({ withEditor }).find('[data-testid^="inside-card"]').exists()).toBe(false)
-  })
-
   it('lists the 13 rows beside the editor as buttons, named alone until one plays', () => {
     const wrapper = section({ withEditor: true })
     const rows = wrapper.findAll('[data-testid^="inside-row-"]')

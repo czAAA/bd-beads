@@ -575,6 +575,7 @@ const savedProjects = controlAction('saved-projects')
 
 /* Centred while it fits; taller than its room it starts at the top, so the whole of it scrolls into view. */
 .homepage__section--centred {
+  justify-content: center;
   justify-content: safe center;
 }
 
