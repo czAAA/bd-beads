@@ -383,8 +383,7 @@ a.canvas-strip__brand:focus-visible {
   grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr);
 }
 
-/* Under 744px the way in has no room beside Menu and the slogan: it takes a row of its own under them, centred (on a
- * phone until the phone's own bar carries it, ticket 0827). */
+/* Under 744px the way in has no room beside Menu and the slogan: it takes a row of its own under them, centred. */
 @container shell (max-width: 743px) {
   .canvas-strip--homepage {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -414,10 +413,27 @@ a.canvas-strip__brand:focus-visible {
   }
 }
 
-/* A phone's Homepage strip has no zoom (Homepage card): the slogan takes its room. */
+/* A phone's Homepage strip has no zoom (Homepage card): the slogan takes its room. The way in is the phone bar's; what
+ * the slot holds, Projects library's icon and count, stands on the right, 36px tall (ticket 0827). The slogan stays
+ * centred while there is room and moves over where the narrowest phones have none. */
 @container shell (max-width: 480px) {
+  .canvas-strip--homepage {
+    grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr);
+    padding-bottom: var(--bar-pad);
+  }
+
   .canvas-strip--homepage .canvas-strip__zoom {
     display: none;
+  }
+
+  .canvas-strip--homepage .canvas-strip__way-in {
+    grid-area: 1 / 3;
+    justify-self: end;
+  }
+
+  .canvas-strip--homepage .canvas-strip__way-in :deep(.app-button) {
+    height: var(--phone-library);
+    padding: 0 var(--space-10);
   }
 }
 

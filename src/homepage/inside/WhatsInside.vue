@@ -5,6 +5,7 @@ import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import type { InsideRowId } from '../../i18n/translations'
+import GroupedList from '../GroupedList.vue'
 import InsideEditor from './InsideEditor.vue'
 import { TourStopped } from './hand'
 import { INSIDE_ROWS, insideRows } from './insideCopy'
@@ -13,8 +14,8 @@ import { TOUR_SCRIPTS } from './tourScripts'
 import { useInsideTour } from './useInsideTour'
 
 // What's inside (Homepage card, tickets 0797, 0825): a band on top holds the heading, the rows as tabs and the playing
-// row's caption; the framed editor under it fills the rest and plays each row in turn. On a phone there is no editor
-// and the list is plain, with every row's line.
+// row's caption; the framed editor under it fills the rest and plays each row in turn. On a phone there is no editor:
+// the rows are one grouped list, each with its line (ticket 0827).
 const props = defineProps<{
   /** Whether there is room for the editor: none on a phone. */
   withEditor: boolean
@@ -67,7 +68,7 @@ function choose(row: InsideRowId) {
 
 <template>
   <!-- Named by its own heading, which sits in the band (ticket 0825), as the plans name theirs. -->
-  <section class="inside" :class="{ 'inside--plain': !props.withEditor }" aria-labelledby="homepage-inside" data-testid="whats-inside">
+  <section class="inside" aria-labelledby="homepage-inside" data-testid="whats-inside">
     <template v-if="withEditor">
       <div class="inside__band" data-testid="inside-band">
         <div class="inside__head">
@@ -113,15 +114,7 @@ function choose(row: InsideRowId) {
 
     <template v-else>
       <h2 id="homepage-inside" class="inside__heading">{{ t.homepage.whatsInside }}</h2>
-      <ul class="inside__plain" data-testid="inside-list">
-        <li v-for="row in rows" :key="row.id" class="inside__plain-row" :data-testid="`inside-row-${row.id}`">
-          <AppIcon class="inside__plain-icon" :name="row.icon" :size="18" />
-          <span class="inside__plain-words">
-            <span>{{ row.name }}</span>
-            <span class="inside__plain-line">{{ row.text }}</span>
-          </span>
-        </li>
-      </ul>
+      <GroupedList :rows="rows" testid="inside-list" row-testid="inside-row" />
     </template>
   </section>
 </template>
@@ -134,8 +127,7 @@ function choose(row: InsideRowId) {
   min-height: 0;
 }
 
-.inside__tabs,
-.inside__plain {
+.inside__tabs {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -309,36 +301,5 @@ function choose(row: InsideRowId) {
   min-height: var(--inside-main-least-height);
   border: 1px solid var(--inside-frame-edge);
   box-shadow: var(--inside-frame-shadow);
-}
-
-/* The phone's plain list: every row with its icon, its name and its line, nothing to press. */
-.inside__plain {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-}
-
-.inside__plain-row {
-  display: grid;
-  grid-template-columns: 1.125rem minmax(0, 1fr);
-  column-gap: var(--space-10);
-  align-items: start;
-  font: var(--type-control);
-  color: var(--ink);
-}
-
-.inside__plain-icon {
-  color: var(--muted);
-}
-
-.inside__plain-words {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.inside__plain-line {
-  font: var(--type-inside-line);
-  color: var(--body);
 }
 </style>

@@ -396,8 +396,10 @@ export const zh: Translations = {
           starters: { other: '{count} 个起始方案：{categories}' },
         },
         more: '更多功能即将推出',
+        showAll: '显示全部 {count} 项',
       },
     },
+    library: '{library}，{count}',
   },
   pieceName: {
     title: '给小块命名',

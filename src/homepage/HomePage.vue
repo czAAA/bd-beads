@@ -20,6 +20,8 @@ import CoffeeScreen from './CoffeeScreen.vue'
 import { wheelPixels } from './wheelTurn'
 import WhatsInside from './inside/WhatsInside.vue'
 import MoreBelow from './MoreBelow.vue'
+import NextLine from './NextLine.vue'
+import PhoneBar from './PhoneBar.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
 import type { HomepageSection } from './sections'
@@ -74,12 +76,18 @@ const dialogs = useDialogs()
 const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
 const zoom = useHomepageZoom()
-/** The content's own width once zoomed: the width its layout is made for (the CSS asks the container the same). */
 /** The width from which What's inside has its editor, as in the CSS (481px): a phone has the plain list (ticket 0797). */
 const EDITOR_FROM = 481
 const bodyEl = ref<HTMLElement>()
 const bodySize = useElementSize(bodyEl)
-const pageWidth = computed(() => (bodySize.width.value || window.innerWidth) / (zoom.percent.value / 100))
+/** A phone's box (ticket 0827): its own bar in place of the Progress bar, the way in on it, and no zoom. */
+const phone = computed(() => (bodySize.width.value || window.innerWidth) < EDITOR_FROM)
+const zoomPercent = computed(() => (phone.value ? 100 : zoom.percent.value))
+/** The content's own width once zoomed: the width its layout is made for (the CSS asks the container the same). */
+const pageWidth = computed(() => (bodySize.width.value || window.innerWidth) / (zoomPercent.value / 100))
+/** The sections laid out for a phone's width: What's inside's and the promises' grouped lists, the plans stacked, and
+ * each section's end saying what is next (ticket 0827). */
+const narrow = computed(() => pageWidth.value < EDITOR_FROM)
 const canvasBackground = useCanvasBackground()
 /** What the page's background is woven in (ticket 0734: its every other column hangs half a bead lower). */
 const BACKGROUND: { technique: Technique } = { technique: 'peyote' }
@@ -89,7 +97,7 @@ const DELICA_CELL = beadCell(findBead('miyuki/delica/11-0'), BACKGROUND.techniqu
 // Bead's real cell, outlined in the theme's Position mark color, sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
-  const zoomScale = zoom.percent.value / 100
+  const zoomScale = zoomPercent.value / 100
   const pixelRatio = window.devicePixelRatio || 1
   const marks = positionMarkBackground({
     technique: BACKGROUND.technique,
@@ -113,7 +121,7 @@ const sections = computed<HomepageSection[]>(() => [
     heading: t.value.homepage.whatsInside,
     title: 'inside',
     shows: WhatsInside,
-    with: (): Record<string, unknown> => ({ class: 'homepage__fill', withEditor: pageWidth.value >= EDITOR_FROM, shown: sections.value[section.value]?.id === 'inside' }),
+    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, shown: sections.value[section.value]?.id === 'inside' }),
   },
   {
     id: 'coffee',
@@ -122,14 +130,20 @@ const sections = computed<HomepageSection[]>(() => [
     centred: true,
     shows: CoffeeScreen,
     // Say hello's Send feedback opens the Feedback sheet as the Menu's row does (ticket 0823).
-    with: () => ({ onFeedback: () => feedback.onOpenFeedback('general') }),
+    with: () => ({ phone: narrow.value, onFeedback: () => feedback.onOpenFeedback('general') }),
   },
   {
     id: 'plans',
     heading: t.value.homepage.plans.heading,
     title: 'inside',
     shows: PlanTiles,
-    with: () => ({ freeHeight: freeGrowth.height.value, freeOpen: freeGrowth.open.value, onOpenEditor: () => emit('openEditor') }),
+    // A phone's list has no growing and no fade: Show all opens it (ticket 0827).
+    with: () => ({
+      phone: narrow.value,
+      freeHeight: narrow.value ? undefined : freeGrowth.height.value,
+      freeOpen: narrow.value || freeGrowth.open.value,
+      onOpenEditor: () => emit('openEditor'),
+    }),
   },
 ])
 const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id === 'plans'))
@@ -222,21 +236,21 @@ const freeGrowth = useFreeGrowth({
   section: plansSection,
   freeWindow: () => plans.value?.freeWindow,
   freeTile: () => plans.value?.freeTile,
-  zoom: () => zoom.percent.value / 100,
+  zoom: () => zoomPercent.value / 100,
 })
 const remeasureFree = () => void nextTick(freeGrowth.remeasure)
 onMounted(() => {
   remeasureFree()
   void document.fonts?.ready.then(remeasureFree)
 })
-watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
+watch([locale, zoomPercent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
 
 // More below (ticket 0826): a press scrolls the section on, or turns to the next as Next does.
 const moreBelow = useMoreBelow({
   section,
   count: () => sections.value.length,
   shown: shownSection,
-  phone: () => pageWidth.value < EDITOR_FROM,
+  phone: () => narrow.value,
 })
 
 /** A section's own scroll: the plans' grows the free list. */
@@ -260,6 +274,12 @@ function confirmRemove() {
 }
 
 const isNew = computed(() => count.value === 0)
+
+/** The phone bar's main button: into the editor as the strip's way in goes, a new visitor making their first Project. */
+function goIn() {
+  if (isNew.value) emit('makeFirstProject')
+  else emit('openEditor')
+}
 /** The Menu row's action, whose name the strip's library button shows with the count (tickets 0716, 0822). */
 const savedProjects = controlAction('saved-projects')
 </script>
@@ -296,8 +316,20 @@ const savedProjects = controlAction('saved-projects')
             @zoom-out="zoom.zoomOut"
             @reset="zoom.reset"
           >
+            <!-- On a phone the way in is the phone bar's; the strip keeps Projects library, its icon and count (ticket 0827). -->
+            <template v-if="phone && !isNew" #way-in>
+              <AppButton
+                variant="box"
+                :action="savedProjects"
+                :aria-label="fillBlanks(t.homepage.library, { library: savedProjects.name(t), count })"
+                data-testid="homepage-saved-projects"
+                @click="emit('openSavedProjects')"
+              >
+                {{ count }}
+              </AppButton>
+            </template>
             <!-- The way into the editor beside Menu (ticket 0822): the hero's buttons, moved into the strip. -->
-            <template #way-in>
+            <template v-else-if="!phone" #way-in>
               <AppButton v-if="isNew" variant="primary" size="sm" data-testid="homepage-make-first" @click="emit('makeFirstProject')">
                 {{ t.homepage.makeFirstProject }}
               </AppButton>
@@ -348,7 +380,7 @@ const savedProjects = controlAction('saved-projects')
         <ToastRegion :toasts="toasts" @dismiss="dismissToast" />
 
         <div ref="bodyEl" class="homepage__body" data-testid="homepage-body">
-          <main class="homepage__page" :style="{ zoom: zoom.percent.value / 100 }">
+          <main class="homepage__page" :style="{ zoom: zoomPercent / 100 }">
             <div class="homepage__sections">
               <section
                 v-for="(entry, index) in sections"
@@ -374,9 +406,11 @@ const savedProjects = controlAction('saved-projects')
                   v-bind="entry.with?.()"
                   :ref="(shown: unknown) => (shown ? shownIn.set(entry.id, shown) : shownIn.delete(entry.id))"
                 />
+                <!-- On a phone each section but the last ends saying what is next (ticket 0827). -->
+                <NextLine v-if="narrow && index < sections.length - 1" :section="sections[index + 1]!.heading" />
                 <!-- The plans section reaches on as far as the free list grows (ticket 0742). -->
                 <span
-                  v-if="entry.id === 'plans'"
+                  v-if="entry.id === 'plans' && !narrow"
                   class="homepage__free-room"
                   :style="{ height: `calc(100% + ${freeGrowth.room.value}px)` }"
                   aria-hidden="true"
@@ -387,7 +421,12 @@ const savedProjects = controlAction('saved-projects')
           <!-- At the drawing area's foot, so it rides on whatever bar sits under it (ticket 0826). -->
           <MoreBelow v-if="moreBelow.shows.value" :fade="moreBelow.continues.value" @more="input.more" />
         </div>
-        <SectionBar :section="section" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
+        <PhoneBar v-if="phone" :section="section" :sections="sections" @go="goTo">
+          <AppButton variant="primary" data-testid="homepage-phone-way-in" data-wrap-ok @click="goIn">
+            {{ isNew ? t.homepage.makeFirstProject : t.homepage.openEditor }}
+          </AppButton>
+        </PhoneBar>
+        <SectionBar v-else :section="section" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
       </div>
     </div>
   </div>
@@ -536,6 +575,13 @@ const savedProjects = controlAction('saved-projects')
   .homepage__section {
     padding-right: var(--space-32);
     padding-left: var(--space-32);
+  }
+}
+
+/* On a phone every section 16 16 24 (ticket 0827). */
+@container homepage (max-width: 480px) {
+  .homepage__section {
+    padding: var(--space-16) var(--space-16) var(--space-24);
   }
 }
 

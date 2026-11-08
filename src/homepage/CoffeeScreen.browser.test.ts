@@ -12,10 +12,11 @@ const middle = (element: Element) => {
 }
 const linkAt = ([x, y]: readonly [number, number]) => document.elementFromPoint(x, y)?.closest('a, button') ?? null
 
-/** The Homepage turned to the coffee screen: its layout answers to the box's width (the `homepage` container). */
+/** The Homepage turned to the coffee screen: its layout answers to the box's width (the `homepage` container). A phone
+ * turns by its bar's ↓ (ticket 0827). */
 async function coffeeAt(width: number): Promise<Element> {
   const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
-  root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')[1]!.click()
+  ;(root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')[1] ?? root.querySelector<HTMLElement>('[data-testid="phone-bar-next"]')!).click()
   await settleForMeasuring()
   return root.querySelector('[data-testid="homepage-coffee"]')!
 }
@@ -67,8 +68,9 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
     expect(columns(root, '[data-testid="homepage-tiles"] > *'), 'the tiles side by side').toBe(3)
   })
 
+  // On a phone the promises are a grouped list under the band (ticket 0827), laid out in homepagePhone.browser.test.ts.
   for (const width of [820, 390]) {
-    it(`under 1000px at ${width}: one column, centred, the promises wrapping to centred rows`, async () => {
+    it(`under 1000px at ${width}: one column, centred, the promises wrapping to centred rows off a phone`, async () => {
       const root = await coffeeAt(width)
       const box = (selector: string) => root.querySelector(selector)!.getBoundingClientRect()
       const centre = centreOf(box('[data-testid="homepage-coffee-band"]'))
@@ -76,6 +78,8 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
       for (const selector of ['.coffee__lead', '.coffee__text', '[data-testid="homepage-coffee-button"]']) {
         expect(Math.abs(centreOf(box(selector)) - centre), `${selector} centred`).toBeLessThanOrEqual(1)
       }
+      expect(columns(root, '[data-testid="homepage-tiles"] > *')).toBe(width > 480 ? 3 : 1)
+      if (width <= 480) return
       const promises = [...root.querySelectorAll('[data-testid^="homepage-promise-"]')].map((el) => el.getBoundingClientRect())
       const tops = new Set(promises.map((promise) => Math.round(promise.top)))
       expect(tops.size, 'the promises wrap').toBeGreaterThan(1)
@@ -83,7 +87,6 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
         const row = promises.filter((promise) => Math.round(promise.top) === top)
         expect(Math.abs((row[0].left + row.at(-1)!.right) / 2 - centre), 'a row of promises centred').toBeLessThanOrEqual(1)
       }
-      expect(columns(root, '[data-testid="homepage-tiles"] > *')).toBe(width > 480 ? 3 : 1)
     })
   }
 })
