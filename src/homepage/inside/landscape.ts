@@ -49,6 +49,11 @@ export async function landscapeFile(width = 432): Promise<File> {
   context.beginPath()
   context.arc((SUN.column + SUN.size / 2) * cell, (SUN.row + SUN.size / 2) * tall, cell * 1.1, 0, Math.PI * 2)
   context.fill()
+  return pngFile(canvas, 'landscape.png')
+}
+
+/** What's drawn on `canvas` as a PNG file named `name`, as a file picker would hand it over. */
+export async function pngFile(canvas: HTMLCanvasElement, name: string): Promise<File> {
   const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((made) => (made ? resolve(made) : reject(new Error('No picture'))), 'image/png'))
-  return new File([blob], 'landscape.png', { type: 'image/png' })
+  return new File([blob], name, { type: 'image/png' })
 }

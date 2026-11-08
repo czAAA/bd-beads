@@ -4,8 +4,9 @@ import type { InsideRowId } from '../../i18n/translations'
 import type { Hand, Target } from './hand'
 import { HOLD, TOUR_SCRIPTS } from './tourScripts'
 
-// The landscape is drawn on a canvas this DOM doesn't have; any picture does here.
+// The pictures are drawn on a canvas this DOM doesn't have; any picture does here.
 vi.mock('./landscape', () => ({ landscapeFile: async () => new File([], 'landscape.png', { type: 'image/png' }) }))
+vi.mock('./balloon', () => ({ balloonFile: async () => new File([], 'balloon.png', { type: 'image/png' }) }))
 
 /** A hand on a fixture of the editor's controls, as the ghost plays (not at once): what it pressed, by test id, and every
  * time it waited, rested or scrolled for. */

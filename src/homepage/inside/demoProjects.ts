@@ -145,6 +145,9 @@ export const PANORAMA = { columns: DEMO_FRAME.columns, rows: DEMO_FRAME.rows, ce
  * sky's Fill no gap. */
 export const RIDGE: readonly number[] = [4, 4, 3, 3, 2, 1, 2, 3, 3, 4, 4, 3, 2, 2, 1, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 2, 2, 3, 4, 4, 3, 3, 4, 4, 4, 4]
 
+/** Where the tour paints the meadow's flowers on the band: at the mountains' foot, on the slopes' lowest row. */
+export const DEMO_FLOWERS: readonly (readonly [number, number])[] = [[5, 6], [5, 16], [5, 28]]
+
 /** Where the sun is: its top-left bead and size, in the sky right of the last peak. */
 export const SUN = { row: 0, column: 29, size: 2 } as const
 

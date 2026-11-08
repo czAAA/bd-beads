@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, ref, watch } from 'vue'
 import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { beadColorAt } from '../../domain/layerBeads'
 import { frameOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
+import type { ReferencePlace } from '../../domain/referenceImage'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
-import { DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, PANORAMA, RIDGE, SUN } from './demoProjects'
+import { DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, PANORAMA, RIDGE, SUN } from './demoProjects'
 import { TOUR_SCRIPTS } from './tourScripts'
 
 // The tour's rows applied at once on the real demo editor (ticket 0821), as a press on a later row applies them: what
@@ -92,9 +93,44 @@ describe("What's inside's Reference image row on the ring (ticket 0821)", () => 
   }, 60000)
 })
 
+describe("What's inside's Reference image row's picture (ticket 0828)", () => {
+  it('lands smaller than the Frame, then grows to fit it', async () => {
+    const editor = await demoEditor()
+    const flow = editor.hand(true, new AbortController().signal).canvas.referenceImage
+    const places: ReferencePlace[] = []
+    const stop = watch(() => flow.image.value?.place, (place) => place && places.push(place), { flush: 'sync' })
+    await applyThrough(editor, 'reference')
+    stop()
+    const [fit] = places
+    expect(places.length, 'the fit, a smaller place, the fit again').toBeGreaterThanOrEqual(3)
+    expect(places[1]!.width, 'shown smaller first').toBeLessThan(fit!.width)
+    expect(places.at(-1), 'grown back to the fit').toEqual(fit)
+  }, 60000)
+})
+
 describe("What's inside's Starters row on the ring (ticket 0821)", () => {
   it("lays the Starter's ring where the band was, the same size", async () => {
     const frame = frameOf(await applyThrough(await demoEditor(), 'starters'))!
     expect({ row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }).toEqual(DEMO_FRAME)
+  }, 60000)
+})
+
+// Last: a Colors row run in one mount moves the Starter ring the next mount lays (seen in ticket 0828, not yet traced).
+describe("What's inside's Colors built in row on the ring (ticket 0828)", () => {
+  it("paints its flowers on the slopes in the catalog color it picked, Delica's DB55", async () => {
+    const project = await applyThrough(await demoEditor(), 'colors')
+    for (const [row, column] of DEMO_FLOWERS) {
+      const flower = frameBead(project, row, column)
+      expect(flower && project.paletteCodes?.[flower.toLowerCase()], `${row},${column}`).toBe('DB55')
+    }
+  }, 60000)
+
+  it('paints them in DB55 when the Palette has it already', async () => {
+    const editor = await demoEditor()
+    await applyThrough(editor, 'colors')
+    const hand = editor.hand(true, new AbortController().signal)
+    await TOUR_SCRIPTS.colors(hand)
+    const project = hand.canvas.activeProject.value!
+    for (const [row, column] of DEMO_FLOWERS) expect(project.paletteCodes?.[frameBead(project, row, column)!.toLowerCase()], `${row},${column}`).toBe('DB55')
   }, 60000)
 })
