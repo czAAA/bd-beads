@@ -1,8 +1,11 @@
 import type { GridPosition } from '../../domain/grid'
 import type { InsideRowId } from '../../i18n/translations'
 import type { Hand } from './hand'
+import type { ReferencePlace } from '../../domain/referenceImage'
+import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
-import { DEMO_COLORS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PANORAMA, RIDGE, SUN, type DemoColor } from './demoProjects'
+import { DEMO_COLORS, DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PANORAMA, RIDGE, SUN, type DemoColor } from './demoProjects'
+import { balloonFile } from './balloon'
 import { landscapeFile } from './landscape'
 
 // What the ghost does for each row of What's inside (Homepage card, ticket 0797), in the demo editor, each row picking
@@ -16,6 +19,14 @@ async function pickSwatch(hand: Hand, id: string): Promise<void> {
   await hand.press('pill-color')
   await hand.press(() => hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${id}"]`))
   if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
+}
+
+/** The Palette's swatches in the color popover, and their color ids. */
+function swatches(hand: Hand): Element[] {
+  return [...hand.root.querySelectorAll('[data-testid="palette-swatch"]')]
+}
+function swatchIds(hand: Hand): string[] {
+  return swatches(hand).map((swatch) => swatch.getAttribute('data-color-id') ?? '')
 }
 
 /** Picks a color on the Tool pill: a recent swatch, or the color popover for one that isn't recent. */
@@ -47,7 +58,7 @@ const LANDSCAPE = {
   ground: Array.from({ length: PANORAMA.columns }, (_, column) => inFrame(PANORAMA.rows - 1, column)),
   sky: inFrame(0, 0),
   slopes: inFrame(PANORAMA.rows - 2, 9),
-  flowers: [inFrame(5, 6), inFrame(5, 16), inFrame(5, 28)],
+  flowers: DEMO_FLOWERS.map(([row, column]) => inFrame(row, column)),
 }
 
 /** How long a row holds what it shows, in ms (Homepage card, the tour): 1.2 times its first pace (ticket 0802). Every
@@ -154,7 +165,8 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       for (const [row, column] of beads) await hand.stroke([inFrame(row, column)])
     }
   },
-  /** The Frame emptied, a picture laid under the beads, made a little smaller from its corner, then traced. */
+  /** The Frame emptied, a picture laid under the beads smaller than the Frame, grown from its corner to fit it, then
+   * traced. */
   async reference(hand) {
     await hand.press('pill-tool-mirror')
     await hand.press('mirror-bar-close')
@@ -163,9 +175,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
     // The ring is all there is on the Canvas, so Delete asks first.
     if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
-    const picture = await landscapeFile()
-    await hand.pressWith('strip-reference-image', () => hand.canvas.referenceImage.pick(picture, 'strip'))
-    await shrinkReference(hand)
+    await growReference(hand, await landscapeFile())
     await hand.press('reference-adjust-done')
     await hand.press('pill-tool-paint')
     await pickColor(hand, 'Y')
@@ -180,12 +190,12 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await pickSwatch(hand, SLOPES_SWATCH)
     await hand.stroke([LANDSCAPE.slopes])
   },
-  /** Convert image from the Menu: the landscape chosen as its file picker would hand it over, the picture converted, its
-   * found colors, then left, nothing made. */
+  /** Convert image from the Menu: a balloon chosen as its file picker would hand it over (another picture than the
+   * Reference image's mountains), the picture converted, its found colors, then left, nothing made. */
   async convert(hand) {
     await hand.press('strip-menu')
     await hand.press('menu-convert-image')
-    const picture = await landscapeFile()
+    const picture = await balloonFile()
     await hand.pressWith('convert-choose-file', () => hand.canvas.convertSession.value?.setFile(picture))
     await hand.find('convert-image-canvas')
     await hand.wait(HOLD.convertPicture)
@@ -201,7 +211,10 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('pill-tool-paint')
     await hand.press('pill-color')
     await hand.press('bead-colors-toggle')
+    // Adding a catalog color puts it in the Palette and leaves the paint color as it was, so its new swatch is picked.
+    const before = new Set(swatchIds(hand))
     await hand.press(() => hand.root.querySelector(`[data-testid="bead-color"][data-code="${FLOWER_CODE}"]`))
+    await hand.press(() => swatches(hand).find((swatch) => !before.has(swatch.getAttribute('data-color-id') ?? '')))
     if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
     for (const flower of LANDSCAPE.flowers) await hand.stroke([flower])
   },
@@ -292,22 +305,40 @@ async function present(hand: Hand, testid: string): Promise<boolean> {
   return false
 }
 
-/** How much of its width the reference image keeps when the ghost makes it a little smaller. */
-const REFERENCE_SHRINK = 0.86
+/** How much of the Frame's width the reference image lands at, before the ghost makes it fit. */
+const REFERENCE_LANDS_AT = 0.7
 
-/** The reference image made a little smaller from its bottom-right corner, its top-left staying, as a drag would. */
-async function shrinkReference(hand: Hand): Promise<void> {
+/** The picture laid under the beads smaller than the Frame, its top-left where its fit's is, then grown from its
+ * bottom-right corner to fit the Frame, as a drag would. It is made smaller the moment it lands, so it never shows at
+ * its fit first. */
+async function growReference(hand: Hand, picture: File): Promise<void> {
   const flow = hand.canvas.referenceImage
+  let fit: ReferencePlace | undefined
+  const landing = watch(() => flow.image.value, (image) => {
+    if (!image) return
+    landing()
+    fit = image.place
+    flow.commit(smallerFrom(image.place, image.picture.height / image.picture.width))
+  }, { flush: 'sync' })
+  try {
+    await hand.pressWith('strip-reference-image', () => flow.pick(picture, 'strip'))
+  } finally {
+    landing()
+  }
+  if (!fit) return
   await hand.find('reference-adjust')
   const corner = await hand.find(() => [...hand.root.querySelectorAll('.reference-adjust__corner')].at(-1))
-  const image = flow.image.value
-  if (!image) return
   const from = hand.middleOf(corner)
   await hand.moveTo(from)
-  const { place, picture } = image
-  const width = place.width * REFERENCE_SHRINK
-  const shrunk = { ...place, width, x: place.x - (place.width - width) / 2, y: place.y - ((place.width - width) * (picture.height / picture.width)) / 2 }
   const box = corner.closest('[data-testid="reference-adjust"]')!.getBoundingClientRect()
-  await hand.moveTo({ x: from.x - box.width * (1 - REFERENCE_SHRINK), y: from.y - box.height * (1 - REFERENCE_SHRINK) })
-  flow.commit(shrunk)
+  const grow = 1 / REFERENCE_LANDS_AT - 1
+  await hand.moveTo({ x: from.x + box.width * grow, y: from.y + box.height * grow })
+  flow.commit(fit)
+}
+
+/** `place` made `REFERENCE_LANDS_AT` as wide, its top-left staying: a place is held by its middle. */
+function smallerFrom(place: ReferencePlace, aspect: number): ReferencePlace {
+  const width = place.width * REFERENCE_LANDS_AT
+  const less = place.width - width
+  return { ...place, width, x: place.x - less / 2, y: place.y - (less * aspect) / 2 }
 }
