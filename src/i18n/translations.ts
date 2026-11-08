@@ -442,7 +442,7 @@ export interface Translations {
     inside: {
       rows: Record<InsideRowId, InsideCopy>
       editor: string
-      demo: { kaleidoscope: string; heart: string; bracelet: string }
+      demo: { ring: string; heart: string; bracelet: string }
     }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
     sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }

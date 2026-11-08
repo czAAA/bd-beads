@@ -50,10 +50,10 @@ afterEach(() => {
 })
 
 describe("What's inside's demo editor (ticket 0797)", () => {
-  it('opens Kaleidoscope, the demo\'s own, with nothing drawn', () => {
+  it('opens Ring, the demo\'s own, with nothing drawn', () => {
     const { wired } = demo()
-    expect(wired.canvas.activeProject.value?.layers[0].name).toBe('Kaleidoscope')
-    expect(wired.panels.projects.value.map((project) => project.layers[0].name)).toEqual(['Kaleidoscope', 'Heart', 'Bracelet'])
+    expect(wired.canvas.activeProject.value?.layers[0].name).toBe('Ring')
+    expect(wired.panels.projects.value.map((project) => project.layers[0].name)).toEqual(['Ring', 'Heart', 'Bracelet'])
   })
 
   it("never lets an edit, an export choice or a Menu press reach the beader's library or preferences", async () => {

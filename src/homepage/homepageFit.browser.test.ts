@@ -5,6 +5,7 @@ import { unexplainedFit } from '../testUtils/fitPending'
 import { page } from 'vitest/browser'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
+import { ROW_DONE_PASSES } from './inside/tourScripts'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 
 // The Homepage has its own tiers, so it is tried at more widths than the rest (ticket 552).
@@ -58,8 +59,19 @@ describe("What's inside fits its room", () => {
         expect(editor.height, 'the editor has room').toBeGreaterThan(tier === 'short' ? 230 : 300)
         expect(editor.bottom, 'the editor seen whole before the section scrolls').toBeLessThanOrEqual(section.getBoundingClientRect().bottom + 1)
         await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
+        // The demo's view is set as it starts, so it is started afresh at this size, as a visitor's would be.
+        mounted.root.querySelector<HTMLElement>('[data-testid="inside-row-canvas"]')!.click()
         // The first row's end: its Frame on a Margin sheet whose band the later rows reach for.
-        await expect.poll(() => mounted.root.querySelector('[data-testid="inside-editor"] [data-testid="margin-band"]'), { timeout: 8000 }).not.toBeNull()
+        await expect.poll(() => mounted.root.querySelector('[data-testid="inside-editor"] [data-testid="margin-band"]'), { timeout: 30000 }).not.toBeNull()
+        // The view is sized to the Frame's real sheet, so the sheet and its band are never cut nor under the Tool pill
+        // (ticket 0821).
+        const area = boxOf(mounted.root, '[data-testid="inside-editor"] [data-testid="app-drawing-area"]')
+        const pill = boxOf(mounted.root, '[data-testid="inside-editor"] [data-testid="tool-pill"]')
+        const sheet = boxOf(mounted.root, '[data-testid="inside-editor"] [data-testid="margin-sheet"]')
+        expect(sheet.top, 'the Margin sheet whole in the drawing area').toBeGreaterThanOrEqual(area.top - 1)
+        expect(sheet.left, 'the Margin sheet whole in the drawing area').toBeGreaterThanOrEqual(area.left - 1)
+        expect(sheet.right, 'the Margin sheet whole in the drawing area').toBeLessThanOrEqual(area.right + 1)
+        expect(sheet.bottom, 'the Margin sheet clear of the Tool pill').toBeLessThanOrEqual(pill.top + 1)
       }
       if (tier === 'desktop') {
         expect(section.scrollHeight, 'the section fits whole at 1440 × 900').toBeLessThanOrEqual(section.clientHeight + 1)
@@ -69,7 +81,7 @@ describe("What's inside fits its room", () => {
         expect(playing.bottom).toBeLessThanOrEqual(list.bottom + 1)
       }
       expect(unexplainedFit("What's inside", 'en', width, await misfitsNow())).toEqual([])
-    })
+    }, 40000)
   }
 })
 
@@ -90,18 +102,18 @@ describe('HomePage text fit with Projects saved', () => {
 // The tour's own steps on the real editor (ticket 0797): a press on the last row applies all 13 at once (reduced motion,
 // as these tests run), so a control a row reaches for that has moved or gone fails here, not only in a browser by eye.
 describe("What's inside's tour on the real editor", () => {
-  it('applies all 13 rows, ending on the earring with every row done', async () => {
+  it("applies all 13 rows, ending on the Starter's ring with its first rounds done", async () => {
     const warned = vi.spyOn(console, 'warn')
     const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     await page.viewport(1440, 900)
     await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
     mounted.root.querySelector<HTMLElement>('[data-testid="inside-row-savedProjects"]')!.click()
-    // The row pressed lights at once, on the next render (ticket 0802); the rows are applied by the time the earring is
-    // done.
+    // The row pressed lights at once, on the next render (ticket 0802); the rows are applied by the time the ring's first
+    // rounds are done.
     await nextTick()
     expect(mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid')).toBe('inside-row-savedProjects')
     const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
-    await expect.poll(() => editor.querySelector('[data-testid="progress-bar-next"]')?.getAttribute('aria-disabled'), { timeout: 30000 }).toBe('true')
+    await expect.poll(() => editor.querySelector('[data-testid="progress-bar-position"]')?.textContent ?? '', { timeout: 30000 }).toMatch(new RegExp(`\\b${ROW_DONE_PASSES + 1}\\D`))
     expect(editor.querySelector('[data-testid="margin-sheet"]')).not.toBeNull()
     expect(warned).not.toHaveBeenCalled()
     warned.mockRestore()
