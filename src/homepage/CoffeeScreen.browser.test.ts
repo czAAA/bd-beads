@@ -64,7 +64,7 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
     expect(button.top).toBeGreaterThanOrEqual(text.bottom)
     expect(Math.abs(centreOf(button) - centreOf(text)), 'the button centred under the text').toBeLessThanOrEqual(1)
     expect(rows(root, '[data-testid^="homepage-promise-"]'), 'the six promises in one row').toBe(1)
-    expect(columns(root, '[data-testid="homepage-tiles"] > *'), 'the tiles side by side').toBe(2)
+    expect(columns(root, '[data-testid="homepage-tiles"] > *'), 'the tiles side by side').toBe(3)
   })
 
   for (const width of [820, 390]) {
@@ -83,7 +83,30 @@ describe('CoffeeScreen at its widths (ticket 0823)', () => {
         const row = promises.filter((promise) => Math.round(promise.top) === top)
         expect(Math.abs((row[0].left + row.at(-1)!.right) / 2 - centre), 'a row of promises centred').toBeLessThanOrEqual(1)
       }
-      expect(columns(root, '[data-testid="homepage-tiles"] > *')).toBe(width > 480 ? 2 : 1)
+      expect(columns(root, '[data-testid="homepage-tiles"] > *')).toBe(width > 480 ? 3 : 1)
+    })
+  }
+})
+
+describe("What's new at its widths (ticket 0824)", () => {
+  for (const width of [1280, 820, 390]) {
+    it(`at ${width}: the first tile, its dates in one column, each line beside its date, Every change a link`, async () => {
+      const root = await coffeeAt(width)
+      const tiles = [...root.querySelectorAll('[data-testid="homepage-tiles"] > *')]
+      expect(tiles[0]?.getAttribute('data-testid')).toBe('homepage-tile-whats-new')
+      const notes = [...root.querySelectorAll('[data-testid="homepage-release-note"]')]
+      expect(notes).toHaveLength(3)
+      const dates = notes.map((note) => note.querySelector('time')!.getBoundingClientRect())
+      const lines = notes.map((note) => note.querySelector('.whats-new__line')!.getBoundingClientRect())
+      expect(new Set(lines.map((line) => Math.round(line.left))).size, 'the lines start in one column').toBe(1)
+      for (const [i, date] of dates.entries()) {
+        expect(date.right, `note ${i + 1}'s line beside its date`).toBeLessThanOrEqual(lines[i].left)
+        expect(Math.abs(date.left - dates[0].left), 'the dates in one column').toBeLessThanOrEqual(1)
+      }
+      const history = root.querySelector('[data-testid="homepage-history"]')!
+      history.scrollIntoView({ block: 'center' })
+      expect(linkAt(middle(history))).toBe(history)
+      expect(getComputedStyle(history).textDecorationLine, 'underlined at rest').toBe('underline')
     })
   }
 })
