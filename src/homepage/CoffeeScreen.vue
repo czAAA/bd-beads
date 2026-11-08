@@ -5,10 +5,11 @@ import { SOURCE_URL } from '../data/sourceLink'
 import { useI18n } from '../i18n/useI18n'
 import CoffeeBand from './CoffeeBand.vue'
 import CoffeeScreenTile from './CoffeeScreenTile.vue'
+import WhatsNewTile from './WhatsNewTile.vue'
 import { sayHelloText } from './coffeeCopy'
 
-/** The Homepage's coffee screen (tickets 0811, 0823; Homepage card): the band, then the tiles in a row under it. Send
- * feedback only asks for the Feedback sheet; the page opens it as the Menu's row does. */
+/** The Homepage's coffee screen (tickets 0811, 0823, 0824; Homepage card): the band, then the tiles in a row under it.
+ * Send feedback only asks for the Feedback sheet; the page opens it as the Menu's row does. */
 const emit = defineEmits<{ feedback: [] }>()
 
 const { t } = useI18n()
@@ -19,6 +20,7 @@ const sayHello = computed(() => sayHelloText(t.value))
   <div class="coffee-screen" data-testid="homepage-coffee">
     <CoffeeBand />
     <div class="coffee-screen__tiles" data-testid="homepage-tiles">
+      <WhatsNewTile />
       <CoffeeScreenTile icon="code" :name="t.homepage.openSource.name" data-testid="homepage-tile-open-source">
         <p>{{ t.homepage.openSource.text }}</p>
         <template #foot>

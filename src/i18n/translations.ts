@@ -455,6 +455,8 @@ export interface Translations {
     openSource: { name: string; text: string }
     /** The coffee screen's Say hello tile (ticket 0823): {menu} and {feedback}, and its button, are the Menu's own labels. */
     sayHello: { name: string; text: string }
+    /** The coffee screen's What's new tile (ticket 0824): its name and Every change, the link to the source's history. */
+    whatsNew: { name: string; history: string }
     /** The plan tiles (ticket 220; Homepage card). */
     plans: {
       heading: string

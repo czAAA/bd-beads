@@ -362,6 +362,7 @@ export const zh: Translations = {
     },
     openSource: { name: '开源', text: 'openbeads 的全部代码都以 AGPL-3.0 许可证公开。你可以阅读代码、报告问题或提出修改建议。' },
     sayHello: { name: '打个招呼', text: '发现问题、有个想法、做了一个图案：都可以发给我们一家人。它也在 {menu} → {feedback} 中。' },
+    whatsNew: { name: '更新内容', history: '全部更改' },
     plans: {
       heading: '三种使用方式',
       why: '账户和专业版尚未开放。没有它们，一切照常使用。',
