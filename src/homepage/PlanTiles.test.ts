@@ -4,7 +4,7 @@ import PlanTiles from './PlanTiles.vue'
 import { freeListRows } from './freeList'
 import { en } from '../i18n/en'
 
-function tiles(locale: 'en' | 'ru' = 'en', props: { freeHeight?: number; freeOpen?: boolean } = {}) {
+function tiles(locale: 'en' | 'ru' = 'en', props: { freeHeight?: number; freeOpen?: boolean; phone?: boolean } = {}) {
   localStorage.setItem('openbeads:locale', locale)
   return mount(PlanTiles, { props })
 }
@@ -96,5 +96,47 @@ describe('PlanTiles', () => {
     expect(wrapper.find('[data-testid="plan-pro"] button').text()).toBe('Появится позже')
     expect(wrapper.get('[data-testid="plan-pro"] [role="img"]').text()).toBe('СКОРО')
     expect(wrapper.get('[data-testid="plan-no-account"]').text()).toContain('бесплатно навсегда:')
+  })
+
+  describe('on a phone (ticket 0827)', () => {
+    const phone = () => tiles('en', { phone: true })
+
+    it('keeps No account whole but its button, "you are here" a chip after its name, hidden from screen readers', () => {
+      const tile = phone().get('[data-testid="plan-no-account"]')
+      expect(tile.find('button.plan__button').exists()).toBe(false)
+      const chip = tile.get('h3 [data-testid="plan-here-chip"]')
+      expect(chip.text()).toBe('you are here')
+      expect(chip.attributes('aria-hidden')).toBe('true')
+      expect(tile.text()).toContain('Draw, count and weave on this device.')
+    })
+
+    it('shows the free list\'s first six rows, then Show all {n}, which opens the rest in place', async () => {
+      const wrapper = phone()
+      const rows = freeListRows(en, 'en')
+      const items = () => wrapper.get('[data-testid="free-window"] ul').findAll('li').map((item) => item.text())
+      expect(items()).toEqual(rows.slice(0, 6))
+      const showAll = wrapper.get('[data-testid="free-show-all"]')
+      expect(showAll.text()).toBe(`Show all ${rows.length}`)
+      await showAll.trigger('click')
+      expect(items()).toEqual([...rows, 'More on the way'])
+      expect(wrapper.find('[data-testid="free-show-all"]').exists()).toBe(false)
+    })
+
+    it('makes Free account and Pro a row each, with a Coming soon chip in place of the stamp and no button', () => {
+      const wrapper = phone()
+      for (const id of ['plan-free-account', 'plan-pro']) {
+        const tile = wrapper.get(`[data-testid="${id}"]`)
+        expect(tile.get('[data-testid="plan-coming-soon"]').text()).toBe('Coming soon')
+        expect(tile.find('[role="img"]').exists()).toBe(false)
+        expect(tile.find('button').exists()).toBe(false)
+      }
+    })
+
+    it('has no chip, no Show all and the whole list off a phone', () => {
+      const wrapper = tiles()
+      expect(wrapper.find('[data-testid="plan-here-chip"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="plan-coming-soon"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="free-show-all"]').exists()).toBe(false)
+    })
   })
 })

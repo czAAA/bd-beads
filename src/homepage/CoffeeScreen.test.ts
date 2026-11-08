@@ -51,4 +51,16 @@ describe('CoffeeScreen (ticket 0823)', () => {
     await button.trigger('click')
     expect(wrapper.emitted('feedback')).toHaveLength(1)
   })
+
+  it('on a phone lists the promises under the band, each with its line, but Keyboard shortcuts (ticket 0827)', () => {
+    const wrapper = mount(CoffeeScreen, { props: { phone: true } })
+    expect(wrapper.find('[data-testid="homepage-coffee-band"] [data-testid="homepage-promises"]').exists()).toBe(false)
+    const list = wrapper.get('[data-testid="homepage-promises"]')
+    expect(list.classes()).toContain('grouped-list')
+    const rows = list.findAll('[data-testid^="homepage-promise-"]')
+    expect(rows.map((row) => row.attributes('data-testid'))).toEqual(['device', 'offline', 'noAds', 'pencil', 'free'].map((id) => `homepage-promise-${id}`))
+    expect(rows[1].text()).toBe(`${en.homepage.promises.offline.name}. ${en.homepage.promises.offline.text}`)
+    const order = [...wrapper.get('[data-testid="homepage-coffee"]').element.children].map((el) => el.getAttribute('data-testid'))
+    expect(order).toEqual(['homepage-coffee-band', 'homepage-promises', 'homepage-tiles'])
+  })
 })

@@ -397,8 +397,10 @@ export const uk: Translations = {
           starters: { one: '{count} стартер: {categories}', few: '{count} стартери: {categories}', many: '{count} стартерів: {categories}', other: '{count} стартера: {categories}' },
         },
         more: 'Далі буде більше',
+        showAll: 'Показати всі {count}',
       },
     },
+    library: '{library}, {count}',
   },
   pieceName: {
     title: 'Назва шматочка',

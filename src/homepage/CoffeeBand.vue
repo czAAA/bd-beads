@@ -9,6 +9,10 @@ import { coffeePromises } from './coffeeCopy'
 // The coffee screen's band (tickets 219, 0823; Homepage card): a decorative beaded cup, who made the app, a few lines and
 // a button opening the Coffee link in a new tab (ticket 560), inert while empty; under them the promises. Only the cup
 // and the button take a click (ticket 0813). No donation-service name, logo or colours.
+defineProps<{
+  /** On a phone the screen lists the promises under the band, each with its line (ticket 0827): none in the band. */
+  promisesApart?: boolean
+}>()
 const { t } = useI18n()
 const promises = computed(() => coffeePromises(t.value))
 
@@ -72,7 +76,7 @@ const steam = [
       </div>
     </div>
     <!-- The promises (ticket 0823): an icon and a name each, nothing to press; the line is there for screen readers. -->
-    <ul class="coffee__promises" data-testid="homepage-promises">
+    <ul v-if="!promisesApart" class="coffee__promises" data-testid="homepage-promises">
       <li v-for="promise in promises" :key="promise.id" class="coffee__promise" :data-testid="`homepage-promise-${promise.id}`">
         <AppIcon class="coffee__promise-icon" :name="promise.icon" :size="18" />
         <span class="coffee__promise-name">{{ promise.name }}</span>
@@ -125,7 +129,7 @@ const steam = [
   min-width: 0;
 }
 
-/* On a phone the cup stands over the title, and Buy me a coffee takes the band's width. */
+/* On a phone the cup stands over the title, and Buy me a coffee takes the band's width, 44px tall. */
 @container homepage (max-width: 480px) {
   .coffee {
     --coffee-cup-width: 4.5rem;
@@ -141,6 +145,10 @@ const steam = [
   .coffee__ask,
   .coffee__ask > .app-button {
     align-self: stretch;
+  }
+
+  .coffee__ask > .app-button {
+    height: var(--touch-target);
   }
 }
 

@@ -1,23 +1,31 @@
 <script setup lang="ts">
-import { computed, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import { fillBlanks } from '../domain/fillBlanks'
 import { useI18n } from '../i18n/useI18n'
 import FreeList from './FreeList.vue'
 import { freeListRows } from './freeList'
 
 // The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account opens the editor, like the hero's
 // button, and lists everything free; the page grows its list as it scrolls (ticket 0742). Free account and Pro are
-// greyed out and list nothing, a Coming soon stamp where the list was.
-defineProps<{
+// greyed out and list nothing, a Coming soon stamp where the list was; on a phone they are stacked (ticket 0827).
+const props = defineProps<{
   /** The free list's height, in the tile's own px, as far as the page has grown it; unset, the whole list. */
   freeHeight?: number
   /** Whether the whole list is out, so its foot no longer fades. */
   freeOpen?: boolean
+  /** Drawn for a phone: stacked, the phone bar's main button the way in. */
+  phone?: boolean
 }>()
 const emit = defineEmits<{ openEditor: [] }>()
 const { t, locale } = useI18n()
 const rows = computed(() => freeListRows(t.value, locale.value))
+/** The free list's rows a phone shows before Show all opens the rest in place. */
+const PHONE_ROWS = 6
+const allShown = ref(false)
+const cut = computed(() => props.phone && !allShown.value && rows.value.length > PHONE_ROWS)
+const shownRows = computed(() => (cut.value ? rows.value.slice(0, PHONE_ROWS) : rows.value))
 
 /** Free account and Pro: their ids, and the noise each stamp's ink is worn by, so the two don't look pasted. */
 const OFF = [
@@ -31,7 +39,7 @@ defineExpose({ freeWindow, freeTile })
 </script>
 
 <template>
-  <section class="plans" aria-labelledby="homepage-plans" data-testid="homepage-plans">
+  <section class="plans" :class="{ 'plans--phone': phone }" aria-labelledby="homepage-plans" data-testid="homepage-plans">
     <header class="plans__head">
       <h2 id="homepage-plans" class="plans__heading">{{ t.homepage.plans.heading }}</h2>
       <p class="plans__why"><AppIcon name="info" :size="16" />{{ t.homepage.plans.why }}</p>
@@ -43,13 +51,16 @@ defineExpose({ freeWindow, freeTile })
           <svg class="plan__arrow" width="36" height="30" viewBox="0 0 36 30"><path d="M4 4 C 10 14, 18 20, 30 22 M20 24 L31 22 L24 13" /></svg>
         </span>
         <span class="plan__strand" aria-hidden="true"><span class="plan__bead" /></span>
-        <h3 class="plan__name">{{ t.homepage.plans.tiles[0].name }}</h3>
+        <h3 class="plan__name">
+          {{ t.homepage.plans.tiles[0].name
+          }}<span v-if="phone" class="plan__here-chip" aria-hidden="true" data-testid="plan-here-chip">{{ t.homepage.plans.youAreHere }}</span>
+        </h3>
         <p class="plan__price">
           <b>{{ t.homepage.plans.tiles[0].price }}</b
           ><span>{{ t.homepage.plans.tiles[0].meta }}</span>
         </p>
         <p class="plan__text">{{ t.homepage.plans.tiles[0].text }}</p>
-        <AppButton class="plan__button" variant="primary" @click="emit('openEditor')">{{ t.homepage.plans.tiles[0].button }}</AppButton>
+        <AppButton v-if="!phone" class="plan__button" variant="primary" @click="emit('openEditor')">{{ t.homepage.plans.tiles[0].button }}</AppButton>
         <p id="homepage-free" class="plan__free-head">{{ t.homepage.plans.free.heading }}</p>
         <div
           ref="freeWindow"
@@ -58,8 +69,18 @@ defineExpose({ freeWindow, freeTile })
           :style="freeHeight === undefined ? undefined : { height: `${freeHeight}px` }"
           data-testid="free-window"
         >
-          <FreeList :rows="rows" :more="t.homepage.plans.free.more" labelled-by="homepage-free" />
+          <FreeList :rows="shownRows" :more="cut ? undefined : t.homepage.plans.free.more" labelled-by="homepage-free" />
         </div>
+        <AppButton
+          v-if="cut"
+          class="plan__show-all"
+          variant="text"
+          trailing-icon="chevron-down"
+          data-testid="free-show-all"
+          @click="allShown = true"
+        >
+          {{ fillBlanks(t.homepage.plans.free.showAll, { count: rows.length }) }}
+        </AppButton>
       </article>
       <article v-for="(off, i) in OFF" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
         <span class="plan__strand" aria-hidden="true">
@@ -71,9 +92,11 @@ defineExpose({ freeWindow, freeTile })
         <h3 class="plan__name">{{ t.homepage.plans.tiles[i + 1]!.name }}</h3>
         <p class="plan__price"><b>{{ t.homepage.plans.tiles[i + 1]!.price }}</b></p>
         <p class="plan__text">{{ t.homepage.plans.tiles[i + 1]!.text }}</p>
-        <AppButton class="plan__button" disabled>{{ t.homepage.plans.tiles[i + 1]!.button }}</AppButton>
-        <!-- The stamp: a rubber stamp's two borders and its word, the ink worn by noise where the paper didn't take it. -->
-        <svg class="plan__stamp" role="img" :aria-label="t.homepage.plans.comingSoon" viewBox="0 0 236 96">
+        <AppButton v-if="!phone" class="plan__button" disabled>{{ t.homepage.plans.tiles[i + 1]!.button }}</AppButton>
+        <!-- The stamp: a rubber stamp's two borders and its word, the ink worn by noise where the paper didn't take it; on
+             a phone a chip in its place. -->
+        <span v-if="phone" class="plan__soon" data-testid="plan-coming-soon">{{ t.homepage.plans.comingSoon }}</span>
+        <svg v-else class="plan__stamp" role="img" :aria-label="t.homepage.plans.comingSoon" viewBox="0 0 236 96">
           <filter :id="`coming-soon-ink-${off.id}`" x="-4%" y="-8%" width="108%" height="116%">
             <feTurbulence type="fractalNoise" :baseFrequency="off.frequency" numOctaves="2" :seed="off.seed" result="noise" />
             <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -3 0 0 0 2.15" result="ink" />
@@ -348,5 +371,90 @@ defineExpose({ freeWindow, freeTile })
   letter-spacing: 3px;
   fill: currentColor;
   stroke: none;
+}
+
+/* On a phone (ticket 0827): the three stacked, No account first and whole, the room above for "you are here" gone. */
+.plans--phone .plans__grid {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-12);
+  padding: var(--space-14) 0 0;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+/* "you are here" a chip after No account's name, in place of the note. */
+.plan__here-chip {
+  display: inline-block;
+  margin-left: var(--space-8);
+  padding: var(--space-2) var(--space-8);
+  font: var(--type-meta-small);
+  color: var(--on-accent);
+  vertical-align: middle;
+  background: var(--accent);
+  border-radius: var(--radius-full);
+}
+
+/* Free account and Pro a row each: the name, 24px, over the price, and a Coming soon chip on the right. */
+.plans--phone .plan--off {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-12);
+  row-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-14) var(--space-16);
+}
+
+.plans--phone .plan--off :is(.plan__strand, .plan__text) {
+  display: none;
+}
+
+.plans--phone .plan--off .plan__name {
+  grid-area: 1 / 1;
+  font-size: 1.5rem;
+  line-height: 1.75rem;
+}
+
+.plans--phone .plan--off .plan__price {
+  grid-area: 2 / 1;
+}
+
+.plan__soon {
+  grid-area: 1 / 2 / 3 / 3;
+  justify-self: end;
+  padding: var(--space-4) var(--space-10);
+  font: var(--type-meta-small);
+  color: var(--accent-strong);
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-full);
+}
+
+/* The narrowest phones have no room for the chip beside the name: it goes under the price. */
+@container homepage (max-width: 340px) {
+  .plans--phone .plan--off {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plans--phone .plan__soon {
+    grid-area: 3 / 1;
+    justify-self: start;
+    margin-top: var(--space-6);
+  }
+}
+
+/* Show all {n}: the rest of the list in place, under a hairline. */
+.plan__show-all {
+  justify-content: space-between;
+  width: 100%;
+  height: auto;
+  margin-top: var(--space-6);
+  padding: var(--space-8) 0 0;
+  font: var(--type-control);
+  color: var(--ink);
+  border: 0;
+  border-top: 1px solid var(--panel-rule);
+  border-radius: 0;
 }
 </style>

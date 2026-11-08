@@ -397,8 +397,10 @@ export const ru: Translations = {
           starters: { one: '{count} стартер: {categories}', few: '{count} стартера: {categories}', many: '{count} стартеров: {categories}', other: '{count} стартера: {categories}' },
         },
         more: 'Скоро будет больше',
+        showAll: 'Показать все {count}',
       },
     },
+    library: '{library}, {count}',
   },
   pieceName: {
     title: 'Имя кусочка',

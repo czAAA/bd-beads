@@ -397,8 +397,10 @@ export const es: Translations = {
           starters: { one: '{count} punto de partida para {categories}', many: '{count} puntos de partida para {categories}', other: '{count} puntos de partida para {categories}' },
         },
         more: 'Y vendrá más',
+        showAll: 'Mostrar las {count}',
       },
     },
+    library: '{library}, {count}',
   },
   pieceName: {
     title: 'Nombra este trozo',

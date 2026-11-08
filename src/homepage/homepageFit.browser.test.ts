@@ -7,13 +7,23 @@ import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
 import { ROW_DONE_PASSES } from './inside/tourScripts'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
+import { tokenPx } from '../testUtils/tokenPx'
 
 // The Homepage has its own tiers, so it is tried at more widths than the rest (ticket 552).
 const WIDTHS = [1900, 1280, 1024, 844, 820, 768, 390, 360, 320]
 
-/** Turns the page to a section by its step; the browser tests run under reduced motion, so it swaps without sliding. */
+/** Turns the page to a section by its step, or on a phone by ↓ (ticket 0827); the browser tests run under reduced
+ * motion, so it swaps without sliding. */
 async function turnTo(root: Element, section: number) {
-  root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')[section]!.click()
+  const step = root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')[section]
+  if (step) step.click()
+  else {
+    const counter = root.querySelector('[data-testid="phone-bar-counter"]')!
+    for (let presses = 0; presses < 3 && !counter.textContent!.startsWith(`${section + 1}/`); presses += 1) {
+      root.querySelector<HTMLElement>('[data-testid="phone-bar-next"]')!.click()
+      await nextTick()
+    }
+  }
   await settleForMeasuring()
 }
 
@@ -108,13 +118,15 @@ describe("What's inside fits its room", () => {
   }
 })
 
-// With Projects saved the strip holds Open the editor and Projects library · N beside Menu (tickets 0716, 0822).
+// With Projects saved the strip holds Open the editor and Projects library · N beside Menu (tickets 0716, 0822); on a
+// phone the bar holds Open the editor (0827).
 describe('HomePage text fit with Projects saved', () => {
   for (const width of WIDTHS) {
     for (const locale of FIT_LOCALES) {
       it(`${locale} at ${width}px, the strip's two buttons`, async () => {
         const mounted = await mountAt(HomePage, { projectCount: 128, feedback: fakeFeedback() }, { locale, width })
-        const labels = ['homepage-open-editor', 'homepage-saved-projects'].map((id) => mounted.root.querySelector(`[data-testid="${id}"]`)!.textContent!.trim())
+        const labels = ['homepage-open-editor', 'homepage-phone-way-in', 'homepage-saved-projects']
+          .filter((id) => mounted.root.querySelector(`[data-testid="${id}"]`)).map((id) => mounted.root.querySelector(`[data-testid="${id}"]`)!.textContent!.trim())
         // The rest of the page is the case above's; only what these two buttons hold is checked here.
         expect((await misfitsNow()).filter((misfit) => labels.some((label) => misfit.includes(label)))).toEqual([])
       })
@@ -169,19 +181,28 @@ describe("The Homepage's strip at every tier", () => {
           await settleForMeasuring()
           const strip = mounted.root.querySelector<HTMLElement>('[data-testid="canvas-strip"]')!
           const box = mounted.root.querySelector<HTMLElement>('[data-testid="homepage"]')!.clientWidth
-          const wayIn = boxOf(strip, '[data-testid="strip-way-in"]')
           const menu = boxOf(strip, '[data-testid="strip-menu"]')
           const slogan = boxOf(strip, '[data-testid="homepage-slogan"]')
           expect(strip.scrollWidth, 'nothing wider than the strip').toBeLessThanOrEqual(strip.clientWidth + 1)
-          expect(overlaps(wayIn, slogan), 'the way in clear of the slogan').toBe(false)
-          expect(wayIn.left).toBeGreaterThanOrEqual(strip.getBoundingClientRect().left)
-          expect(wayIn.right).toBeLessThanOrEqual(strip.getBoundingClientRect().right)
-          if (box >= 744) expect(Math.abs(wayIn.top + wayIn.height / 2 - (menu.top + menu.height / 2)), 'beside Menu').toBeLessThanOrEqual(2)
-          else expect(wayIn.top, 'a row of its own under Menu').toBeGreaterThanOrEqual(menu.bottom)
+          const centredOnMenu = (part: DOMRect) => Math.abs(part.top + part.height / 2 - (menu.top + menu.height / 2))
+          // On a phone the way in is the phone bar's; Projects library's icon and count stay, on the right (ticket 0827).
+          if (box <= 480 && !projectCount) expect(strip.querySelector('[data-testid="strip-way-in"]'), 'no way in on a phone').toBeNull()
+          else {
+            const wayIn = boxOf(strip, '[data-testid="strip-way-in"]')
+            expect(overlaps(wayIn, slogan), 'the way in clear of the slogan').toBe(false)
+            expect(wayIn.left).toBeGreaterThanOrEqual(strip.getBoundingClientRect().left)
+            expect(wayIn.right).toBeLessThanOrEqual(strip.getBoundingClientRect().right)
+            if (box <= 480) {
+              expect(wayIn.left, 'the library on the right').toBeGreaterThanOrEqual(slogan.right)
+              expect(centredOnMenu(wayIn), 'on Menu\'s line').toBeLessThanOrEqual(2)
+              expect(boxOf(strip, '[data-testid="homepage-saved-projects"]').height).toBeCloseTo(tokenPx(strip, '--phone-library'), 0)
+            } else if (box >= 744) expect(centredOnMenu(wayIn), 'beside Menu').toBeLessThanOrEqual(2)
+            else expect(wayIn.top, 'a row of its own under Menu').toBeGreaterThanOrEqual(menu.bottom)
+          }
           const size = getComputedStyle(strip.querySelector('[data-testid="homepage-slogan"]')!).fontSize
           expect(size).toBe(tokenSize(strip, box <= 480 ? '--strip-slogan-size-phone' : '--strip-slogan-size'))
           expect(boxOf(strip, '[data-testid="zoom-reset"]').width > 0, 'the zoom, but not on a phone').toBe(box > 480)
-          if (projectCount) {
+          if (projectCount && box > 480) {
             const name = boxOf(strip, '.canvas-strip__way-in-name')
             expect(name.width > 1, 'the library\'s name shown from 1000px').toBe(box >= 1000)
           }

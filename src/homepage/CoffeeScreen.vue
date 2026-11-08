@@ -4,21 +4,30 @@ import AppButton from '../components/ui/AppButton.vue'
 import { SOURCE_URL } from '../data/sourceLink'
 import { useI18n } from '../i18n/useI18n'
 import CoffeeBand from './CoffeeBand.vue'
+import GroupedList from './GroupedList.vue'
 import CoffeeScreenTile from './CoffeeScreenTile.vue'
 import WhatsNewTile from './WhatsNewTile.vue'
-import { sayHelloText } from './coffeeCopy'
+import { coffeePromises, sayHelloText } from './coffeeCopy'
 
-/** The Homepage's coffee screen (tickets 0811, 0823, 0824; Homepage card): the band, then the tiles in a row under it.
- * Send feedback only asks for the Feedback sheet; the page opens it as the Menu's row does. */
+/** The Homepage's coffee screen (tickets 0811, 0823, 0824; Homepage card): the band, then the tiles in a row under it;
+ * on a phone the promises as a grouped list between them (0827). Send feedback only asks for the Feedback sheet; the
+ * page opens it as the Menu's row does. */
+defineProps<{
+  /** Drawn for a phone: the promises apart from the band, with their lines. */
+  phone?: boolean
+}>()
 const emit = defineEmits<{ feedback: [] }>()
 
 const { t } = useI18n()
 const sayHello = computed(() => sayHelloText(t.value))
+/** The promises a phone lists: not Keyboard shortcuts, as a phone has no keyboard to speak of. */
+const phonePromises = computed(() => coffeePromises(t.value).filter((promise) => promise.id !== 'shortcuts'))
 </script>
 
 <template>
   <div class="coffee-screen" data-testid="homepage-coffee">
-    <CoffeeBand />
+    <CoffeeBand :promises-apart="phone" />
+    <GroupedList v-if="phone" :rows="phonePromises" testid="homepage-promises" row-testid="homepage-promise" />
     <div class="coffee-screen__tiles" data-testid="homepage-tiles">
       <WhatsNewTile />
       <CoffeeScreenTile icon="code" :name="t.homepage.openSource.name" data-testid="homepage-tile-open-source">

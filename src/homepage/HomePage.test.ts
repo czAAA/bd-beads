@@ -376,6 +376,77 @@ describe('HomePage plan tiles', () => {
   })
 })
 
+describe('HomePage on a phone (ticket 0827)', () => {
+  beforeEach(() => setScreenWidth(390))
+  const shown = (wrapper: ReturnType<typeof page>) =>
+    ['inside', 'coffee', 'plans'].find((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
+
+  it('has its own bar in place of the Progress bar, ↑ and ↓ turning the page as Back and Next do', async () => {
+    const wrapper = page()
+    expect(wrapper.find('[data-testid="section-bar"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="phone-bar-name"]').text()).toBe("What's inside")
+    await wrapper.get('[data-testid="phone-bar-next"]').trigger('click')
+    expect(shown(wrapper)).toBe('coffee')
+    expect(wrapper.get('[data-testid="phone-bar-counter"]').text()).toBe('2/3')
+    await wrapper.get('[data-testid="phone-bar-back"]').trigger('click')
+    expect(shown(wrapper)).toBe('inside')
+  })
+
+  it('goes into the editor from the bar\'s main button as the strip\'s way in does, which is not in the strip', async () => {
+    const fresh = page()
+    expect(fresh.find('[data-testid="strip-way-in"]').exists()).toBe(false)
+    const make = fresh.get('[data-testid="homepage-phone-way-in"]')
+    expect(make.text()).toBe('Make your first Project')
+    await make.trigger('click')
+    expect(fresh.emitted('makeFirstProject')).toHaveLength(1)
+
+    const returning = page(3)
+    const open = returning.get('[data-testid="homepage-phone-way-in"]')
+    expect(open.text()).toBe('Open the editor')
+    await open.trigger('click')
+    expect(returning.emitted('openEditor')).toHaveLength(1)
+  })
+
+  it('keeps Projects library in the strip as its icon and count, named with both, opening the library', async () => {
+    const wrapper = page(3)
+    const wayIn = wrapper.get('[data-testid="strip-way-in"]')
+    expect(wayIn.findAll('button')).toHaveLength(1)
+    const library = wayIn.get('[data-testid="homepage-saved-projects"]')
+    expect(library.text()).toBe('3')
+    expect(library.get('[data-icon]').attributes('data-icon')).toBe('library')
+    expect(library.attributes('aria-label')).toBe(`${en.projects.heading}, 3`)
+    expect(library.classes()).toContain('app-button--box')
+    await library.trigger('click')
+    expect(wrapper.emitted('openSavedProjects')).toHaveLength(1)
+  })
+
+  it('does not zoom, whatever was remembered', async () => {
+    setScreenWidth(600)
+    const first = page()
+    await first.get('[data-testid="zoom-in"]').trigger('click')
+    first.unmount()
+    setScreenWidth(390)
+    expect((page().get('.homepage__page').element as HTMLElement).style.zoom).toBe('1')
+  })
+
+  it('ends each section but the last with "Next · {section}"', () => {
+    const wrapper = page()
+    const line = (id: string) => wrapper.find(`[data-testid="homepage-section-${id}"] [data-testid="homepage-next-line"]`)
+    expect(line('inside').text()).toBe('Next · Made by one family')
+    expect(line('coffee').text()).toBe('Next · Three ways to use it')
+    expect(line('plans').exists()).toBe(false)
+  })
+
+  it('lays the sections out for it: no editor, the promises listed, the plans stacked with no growing', () => {
+    const wrapper = page()
+    expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-with-editor')).toBe('false')
+    expect(wrapper.get('[data-testid="homepage-coffee"] > [data-testid="homepage-promises"]').classes()).toContain('grouped-list')
+    expect(wrapper.get('[data-testid="homepage-plans"]').classes()).toContain('plans--phone')
+    expect(wrapper.find('.homepage__free-room').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="free-window"]').attributes('style')).toBeUndefined()
+  })
+})
+
 // jsdom has no canvas to draw the tile on: a stand-in gives the picture and the size the editor's tile would have.
 const { positionMarkBackground } = vi.hoisted(() => ({
   positionMarkBackground: vi.fn((_input: { technique: string }) => ({ url: 'data:image/png;base64,AAAA', width: 20, height: 30 })),

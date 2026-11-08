@@ -78,7 +78,7 @@ describe("What's inside (tickets 0797, 0825)", () => {
     expect(wrapper.get('[aria-current="step"]').attributes('data-testid')).toBe('inside-row-canvas')
   })
 
-  it('on a phone has no editor and no tour: the heading over the 13 rows each with its line, nothing to press', async () => {
+  it('on a phone has no editor and no tour: the heading over one grouped list of the 13 rows, each its icon tile and its name over its line, nothing to press (ticket 0827)', async () => {
     const wrapper = section({ withEditor: false, shown: true })
     await vi.advanceTimersByTimeAsync(5000)
     expect(wrapper.find('[data-testid="inside-editor"]').exists()).toBe(false)
@@ -86,7 +86,9 @@ describe("What's inside (tickets 0797, 0825)", () => {
     const rows = wrapper.findAll('[data-testid^="inside-row-"]')
     expect(rows).toHaveLength(13)
     expect(rows.every((row) => row.element.tagName === 'LI' && !row.find('button').exists())).toBe(true)
-    expect(rows[0].text()).toBe(`${en.homepage.inside.rows.canvas.name}${en.homepage.inside.rows.canvas.text}`)
+    expect(rows[0].text()).toBe(`${en.homepage.inside.rows.canvas.name}. ${en.homepage.inside.rows.canvas.text}`)
+    expect(rows.every((row) => row.find('.grouped-list__tile [data-icon]').exists())).toBe(true)
+    expect(wrapper.get('[data-testid="inside-list"]').classes()).toContain('grouped-list')
     expect(wrapper.find('[aria-current="step"]').exists()).toBe(false)
   })
 })
