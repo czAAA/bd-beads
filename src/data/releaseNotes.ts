@@ -1,0 +1,122 @@
+import type { Locale } from '../domain/locale'
+
+/** One release note: the day a user-facing change shipped and its line in every shipped language. */
+export interface ReleaseNote {
+  /** The day it shipped, `YYYY-MM-DD`. */
+  date: string
+  line: Record<Locale, string>
+}
+
+// The app's release notes, newest first; the Homepage's What's new tile shows the first three (ticket 0824). To add one,
+// put it at the top when a user-facing change ships: its date and one short line in every language, the product's voice
+// (writing.md), no full stop. releaseNotes.test.ts fails on a missing language or one out of order.
+export const RELEASE_NOTES: readonly ReleaseNote[] = [
+  {
+    date: '2026-11-07',
+    line: {
+      en: 'Every empty bead in the PDF carries a small cross',
+      ru: 'Каждая пустая бисеринка в PDF отмечена крестиком',
+      uk: 'Кожна порожня бісерина в PDF позначена хрестиком',
+      be: 'Кожная пустая бісерына ў PDF пазначана крыжыкам',
+      zh: 'PDF 中每颗空珠子都标有一个小叉',
+      es: 'Cada cuenta vacía del PDF lleva una pequeña cruz',
+      pl: 'Każdy pusty koralik w PDF ma mały krzyżyk',
+    },
+  },
+  {
+    date: '2026-11-07',
+    line: {
+      en: "A Fringe earring's top is woven in brick stitch, peyote or loom",
+      ru: 'Верх серьги с бахромой плетётся кирпичным, мозаичным плетением или на станке',
+      uk: 'Верх сережки з бахромою плететься цегляним, мозаїчним плетінням або на верстаті',
+      be: 'Верх завушніцы з махрамі пляцецца цагляным, мазаічным пляценнем або на станку',
+      zh: '流苏耳环的顶部可用砖形、佩奥或织机编织',
+      es: 'La parte de arriba del pendiente de flecos se teje en punto ladrillo, peyote o telar',
+      pl: 'Górę kolczyka z frędzlami tka się ściegiem ceglastym, peyote lub na krośnie',
+    },
+  },
+  {
+    date: '2026-11-07',
+    line: {
+      en: 'The Selection and Mirror bars stay beside their area',
+      ru: 'Панели выделения и отражения держатся рядом со своей областью',
+      uk: 'Панелі виділення й відображення тримаються поруч зі своєю областю',
+      be: 'Панэлі вылучэння і адлюстравання трымаюцца побач са сваёй вобласцю',
+      zh: '选区栏和镜像栏紧靠各自的区域',
+      es: 'Las barras de selección y de espejo se quedan junto a su área',
+      pl: 'Paski zaznaczenia i odbicia trzymają się obok swojego obszaru',
+    },
+  },
+  {
+    date: '2026-11-06',
+    line: {
+      en: 'The mirror area has its own color, so it is never taken for a Selection',
+      ru: 'У области отражения свой цвет, её не спутать с выделением',
+      uk: 'Область відображення має свій колір, її не сплутати з виділенням',
+      be: 'Вобласць адлюстравання мае свой колер, яе не зблытаць з вылучэннем',
+      zh: '镜像区域有自己的颜色，不会被当成选区',
+      es: 'El área del espejo tiene su propio color y no se confunde con una selección',
+      pl: 'Obszar odbicia ma własny kolor, więc nie pomylisz go z zaznaczeniem',
+    },
+  },
+  {
+    date: '2026-11-05',
+    line: {
+      en: 'Save writes back into the same Project file',
+      ru: 'Сохранение записывает в тот же файл проекта',
+      uk: 'Збереження записує в той самий файл проєкту',
+      be: 'Захаванне запісвае ў той самы файл праекта',
+      zh: '保存会写回同一个项目文件',
+      es: 'Guardar escribe en el mismo archivo de proyecto',
+      pl: 'Zapis trafia do tego samego pliku projektu',
+    },
+  },
+  {
+    date: '2026-11-05',
+    line: {
+      en: 'A reference image can lie under the beads, to draw over',
+      ru: 'Под бисер можно положить подложку и рисовать поверх',
+      uk: 'Під бісер можна покласти підкладку й малювати поверх',
+      be: 'Пад бісер можна пакласці падкладку і маляваць паверх',
+      zh: '可以在珠子下面放一张参考图，照着画',
+      es: 'Una imagen de referencia puede ir bajo las cuentas, para dibujar encima',
+      pl: 'Pod koralikami może leżeć obraz pomocniczy, by rysować na nim',
+    },
+  },
+  {
+    date: '2026-11-04',
+    line: {
+      en: 'Convert image finds the background, and a tap fixes what it missed',
+      ru: '«Из картинки» находит фон, а касание исправляет пропущенное',
+      uk: '«З картинки» знаходить тло, а дотик виправляє пропущене',
+      be: '«З малюнка» знаходзіць фон, а дотык выпраўляе прапушчанае',
+      zh: '转换图片会找出背景，点一下就能修正漏掉的部分',
+      es: 'Convertir imagen encuentra el fondo, y un toque corrige lo que se le escapó',
+      pl: 'Konwertuj obraz znajduje tło, a dotknięcie poprawia to, co pominął',
+    },
+  },
+  {
+    date: '2026-10-30',
+    line: {
+      en: 'Mirror is back, on the Frame, the Canvas or an area of either',
+      ru: 'Отражение вернулось: на рамке, на холсте или в их области',
+      uk: 'Відображення повернулося: на рамці, на полотні або в їхній області',
+      be: 'Адлюстраванне вярнулася: на рамцы, на палатне або ў іх вобласці',
+      zh: '镜像回来了：可用于边框、画布或其中的区域',
+      es: 'Vuelve el espejo: en el marco, en el lienzo o en un área de ellos',
+      pl: 'Odbicie wróciło: na ramce, na płótnie lub w ich obszarze',
+    },
+  },
+  {
+    date: '2026-10-29',
+    line: {
+      en: 'TOHO and Miyuki Round colors are in the catalogs',
+      ru: 'Цвета TOHO и Miyuki Round есть в каталогах',
+      uk: 'Кольори TOHO і Miyuki Round є в каталогах',
+      be: 'Колеры TOHO і Miyuki Round ёсць у каталогах',
+      zh: '目录中已收录 TOHO 和 Miyuki Round 的颜色',
+      es: 'Los colores de TOHO y Miyuki Round están en los catálogos',
+      pl: 'Kolory TOHO i Miyuki Round są w katalogach',
+    },
+  },
+]

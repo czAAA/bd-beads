@@ -333,12 +333,6 @@ export const es: Translations = {
     openEditor: 'Abrir el editor',
     whatsInside: 'Qué incluye',
     inside: {
-      cards: {
-        device: { name: 'Tuyo, en este dispositivo', text: 'Funciona en tu navegador y sin conexión. Sin cuenta, nada que instalar.' },
-        pencil: { name: 'Para iPad y Pencil', text: 'Modo lápiz, Pencil al pasar por encima y botones grandes para el dedo.' },
-        free: { name: 'Gratis para siempre', text: 'Todo lo necesario es gratis y nada es de pago. Los extras profesionales llegarán después.' },
-        shortcuts: { name: 'Atajos de teclado', text: 'Cada edición tiene su propia tecla. Están todas en {menu} → {help} → {shortcuts}.' },
-      },
       rows: {
         canvas: { name: 'Lienzo y marco', text: 'Dibuja donde quieras: el Lienzo no tiene bordes. Un marco fija el tamaño, las exportaciones y el recuento de cuentas.' },
         techniques: { name: 'Técnicas', text: 'Telar, peyote y punto ladrillo, cada una dibujada como se colocan sus cuentas.' },
@@ -359,6 +353,17 @@ export const es: Translations = {
     },
     sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}' },
     coffee: { title: 'Hecho por una familia', text: 'openbeads sigue siendo gratis y totalmente local, sin anuncios ni seguimiento. Si te ayuda en tu trabajo, puedes apoyar su desarrollo a través de Buy Me a Coffee.', button: 'Invítame a un café', star: 'Una estrella en GitHub también ayuda.', source: 'Ver el código fuente' },
+    promises: {
+      device: { name: 'Tuyo, en este dispositivo', text: 'Funciona en tu navegador. Sin cuenta, nada que instalar.' },
+      offline: { name: 'Funciona sin conexión', text: 'Una vez abierto, sigue funcionando sin conexión.' },
+      noAds: { name: 'Sin anuncios ni seguimiento', text: 'No se te vende nada, y nada registra lo que haces.' },
+      pencil: { name: 'Para iPad y Pencil', text: 'Modo lápiz, Pencil al pasar por encima y botones grandes para el dedo.' },
+      free: { name: 'Gratis para siempre', text: 'Todo lo necesario es gratis y nada es de pago. Los extras profesionales llegarán después.' },
+      shortcuts: { name: 'Atajos de teclado', text: 'Cada edición tiene su propia tecla. Están todas en {menu} → {help} → {shortcuts}.' },
+    },
+    openSource: { name: 'Código abierto', text: 'Todo openbeads es público bajo la licencia AGPL-3.0. Lee el código, informa de un error o propón un cambio.' },
+    sayHello: { name: 'Saluda', text: 'Un error, una idea, un diseño que hiciste: envíalo a la familia. También está en {menu} → {feedback}.' },
+    whatsNew: { name: 'Novedades', history: 'Todos los cambios' },
     plans: {
       heading: 'Tres formas de usarlo',
       why: 'Las cuentas de usuario y Pro aún no están abiertas. Todo funciona sin ellas.',

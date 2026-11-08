@@ -7,6 +7,7 @@ import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { homepageUrl } from '../../homepage/homepageRoute'
+import RollingSlogan from '../../homepage/RollingSlogan.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -16,7 +17,7 @@ import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
 // Project · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Undo · Redo, zoom
-// and Export on the right (tickets 543, 0652). Under 1024px the words hide; on an editor phone there is no Brand.
+// and Export on the right (tickets 543, 0652); the Homepage's way in beside Menu, its slogan as the wordmark (0822).
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page, and
    * Convert image's is plain, so leaving never happens by a link that asks nothing. */
@@ -126,38 +127,43 @@ function onPanelsKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="canvas-strip no-page-pan" :class="{ 'canvas-strip--homepage': onHomepage }" data-testid="canvas-strip">
-    <div ref="panelsEl" class="canvas-strip__panels" @keydown="onPanelsKeydown" @focusin="panelsRoving.onFocusin">
-      <AppButton
-        variant="text"
-        :action="actions.menu"
-        :selected="openPanel === 'menu' ? true : undefined"
-        data-testid="strip-menu"
-        @click="emit('select-panel', 'menu')"
-      >
-        <span class="canvas-strip__label">{{ actions.menu.name(t) }}</span>
-      </AppButton>
-      <IconButton v-if="page === 'convert-image'" variant="plain" :icon-size="18" :action="actions.close" data-testid="convert-close" @click="emit('close')" />
-      <AppButton
-        v-if="project"
-        variant="text"
-        :action="actions.project"
-        :selected="openPanel === 'project' ? true : undefined"
-        data-testid="strip-project"
-        @click="emit('select-panel', 'project')"
-      >
-        <span class="canvas-strip__label">{{ actions.project.name(t) }}</span>
-      </AppButton>
-      <AppButton
-        v-if="project"
-        variant="text"
-        :action="actions.frame"
-        :deps="deps"
-        :selected="frameOpen"
-        data-testid="strip-frame"
-        @click="emit('toggle-frame')"
-      >
-        <span class="canvas-strip__label">{{ actions.frame.name(t) }}</span>
-      </AppButton>
+    <div class="canvas-strip__panels">
+      <div ref="panelsEl" class="canvas-strip__panel-buttons" @keydown="onPanelsKeydown" @focusin="panelsRoving.onFocusin">
+        <AppButton
+          variant="text"
+          :action="actions.menu"
+          :selected="openPanel === 'menu' ? true : undefined"
+          data-testid="strip-menu"
+          @click="emit('select-panel', 'menu')"
+        >
+          <span class="canvas-strip__label">{{ actions.menu.name(t) }}</span>
+        </AppButton>
+        <IconButton v-if="page === 'convert-image'" variant="plain" :icon-size="18" :action="actions.close" data-testid="convert-close" @click="emit('close')" />
+        <AppButton
+          v-if="project"
+          variant="text"
+          :action="actions.project"
+          :selected="openPanel === 'project' ? true : undefined"
+          data-testid="strip-project"
+          @click="emit('select-panel', 'project')"
+        >
+          <span class="canvas-strip__label">{{ actions.project.name(t) }}</span>
+        </AppButton>
+        <AppButton
+          v-if="project"
+          variant="text"
+          :action="actions.frame"
+          :deps="deps"
+          :selected="frameOpen"
+          data-testid="strip-frame"
+          @click="emit('toggle-frame')"
+        >
+          <span class="canvas-strip__label">{{ actions.frame.name(t) }}</span>
+        </AppButton>
+      </div>
+      <!-- The Homepage's way into the editor (ticket 0822): its own Tab stops, styled here so the editor's first paint
+           draws it as handed over. -->
+      <div v-if="$slots['way-in']" class="canvas-strip__way-in" data-testid="strip-way-in"><slot name="way-in" /></div>
     </div>
     <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Homepage, the Homepage's is the page itself. -->
     <div ref="centerEl" class="canvas-strip__center" @keydown="centerRoving.onKeydown" @focusin="centerRoving.onFocusin">
@@ -169,7 +175,9 @@ function onPanelsKeydown(event: KeyboardEvent) {
         data-testid="canvas-brand"
       >
         <AppLogo class="canvas-strip__mark" :size="22" />
-        <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
+        <!-- On the Homepage the slogan is the brand (ticket 0822). -->
+        <RollingSlogan v-if="onHomepage" class="canvas-strip__slogan" />
+        <span v-else class="canvas-strip__wordmark">{{ t.app.title }}</span>
       </component>
       <!-- Buy me a coffee (ticket 560): after the wordmark; only where the strip has room (1024px and up), under it the Menu row is the way in. -->
       <span v-if="COFFEE_URL && !demo" class="canvas-strip__coffee">
@@ -252,7 +260,32 @@ function onPanelsKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   justify-self: start;
+  gap: var(--space-8);
+}
+
+.canvas-strip__panel-buttons {
+  display: flex;
+  align-items: center;
   gap: var(--space-2);
+}
+
+/* The Homepage's way into the editor (ticket 0822; Homepage card): `sm` buttons 8px apart, beside Menu. */
+.canvas-strip__way-in {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* Under 1000px Projects library's name hides, its icon and count staying; a screen reader still hears it. */
+@container shell (max-width: 999px) {
+  .canvas-strip__way-in :deep(.canvas-strip__way-in-name) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 /* Under 1024px the words go and the icons stay; the label stays in the page for a screen reader. */
@@ -333,13 +366,57 @@ a.canvas-strip__brand:focus-visible {
   border-radius: var(--radius-xs);
 }
 
-/* The editor's phone strip has no Brand and gives the room to the controls; the Homepage's keeps the logo. */
+/* The editor's phone strip has no Brand and gives the room to the controls; the Homepage's keeps its slogan. */
 @container shell (max-width: 743px) {
   .canvas-strip:not(.canvas-strip--homepage) {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
   .canvas-strip:not(.canvas-strip--homepage) .canvas-strip__center {
+    display: none;
+  }
+}
+
+/* The Homepage's left slot is as wide as Menu and its way in need: the slogan stays centred while there is room and moves
+ * right where there is not, the zoom scrolling (ticket 0822). */
+.canvas-strip--homepage {
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr);
+}
+
+/* Under 744px the way in has no room beside Menu and the slogan: it takes a row of its own under them, centred (on a
+ * phone until the phone's own bar carries it, ticket 0827). */
+@container shell (max-width: 743px) {
+  .canvas-strip--homepage {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    padding-bottom: var(--space-8);
+  }
+
+  .canvas-strip--homepage .canvas-strip__panels {
+    display: contents;
+  }
+
+  .canvas-strip--homepage .canvas-strip__panel-buttons {
+    grid-area: 1 / 1;
+    justify-self: start;
+  }
+
+  .canvas-strip--homepage .canvas-strip__center {
+    grid-area: 1 / 2;
+  }
+
+  .canvas-strip--homepage .canvas-strip__controls {
+    grid-area: 1 / 3;
+  }
+
+  .canvas-strip--homepage .canvas-strip__way-in {
+    grid-area: 2 / 1 / 3 / -1;
+    justify-self: center;
+  }
+}
+
+/* A phone's Homepage strip has no zoom (Homepage card): the slogan takes its room. */
+@container shell (max-width: 480px) {
+  .canvas-strip--homepage .canvas-strip__zoom {
     display: none;
   }
 }

@@ -274,7 +274,7 @@ Since ticket 0819 the cards above are the coffee screen's promises, in this orde
 | Coming soon (a phone's chip in place of the stamp) · you are here (its chip) | Скоро · вы здесь |
 | Show all {n} (a phone's free list, past its first six rows) | Показать все {n} |
 
-`{menu}` and `{feedback}` are the Menu's own labels (the Canvas strip's Menu, its Send feedback row), never typed in. What's new's lines are the release notes', in the language shown, each with its date in the language's short form ("7 Nov", "7 нояб.").
+`{menu}` and `{feedback}` are the Menu's own labels (the Canvas strip's Menu, its Send feedback row), never typed in. What's new's lines are the release notes', in the language shown, each with its date in the language's short form ("Nov 7", "7 нояб."). A release note is added to `src/data/releaseNotes.ts` when a user-facing change ships: one short line in every language, no full stop.
 
 The scroll story (ticket 0739): the Progress bar's words.
 

@@ -6,7 +6,7 @@ import type { PluralForms } from './plural'
 
 export type { Locale }
 
-/** A card or a row of What's inside (ticket 0797): its name and its line. */
+/** A row of What's inside (ticket 0797) or a promise of the coffee screen (ticket 0823): its name and its line. */
 interface InsideCopy {
   name: string
   text: string
@@ -437,11 +437,9 @@ export interface Translations {
     makeFirstProject: string
     openEditor: string
     whatsInside: string
-    /** What's inside (ticket 0797; Homepage card): the four cards, the 13 rows the tour plays, the editor's region, and
-     * the demo's Projects. The shortcuts card's {menu}, {help} and {shortcuts}, the colors row's {brands} and Convert
-     * image's {max} come from the app. */
+    /** What's inside (ticket 0797; Homepage card): the 13 rows the tour plays, the editor's region, and the demo's
+     * Projects. The colors row's {brands} and Convert image's {max} come from the app. */
     inside: {
-      cards: Record<'device' | 'pencil' | 'free' | 'shortcuts', InsideCopy>
       rows: Record<InsideRowId, InsideCopy>
       editor: string
       demo: { kaleidoscope: string; heart: string; bracelet: string }
@@ -450,6 +448,15 @@ export interface Translations {
     sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }
     /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string; star: string; source: string }
+    /** The coffee screen's promises (ticket 0823; Homepage card), in the order shown; the shortcuts one's {menu}, {help}
+     * and {shortcuts} come from the app. */
+    promises: Record<'device' | 'offline' | 'noAds' | 'pencil' | 'free' | 'shortcuts', InsideCopy>
+    /** The coffee screen's Open source tile (ticket 0823); its View the source and star line are `coffee`'s. */
+    openSource: { name: string; text: string }
+    /** The coffee screen's Say hello tile (ticket 0823): {menu} and {feedback}, and its button, are the Menu's own labels. */
+    sayHello: { name: string; text: string }
+    /** The coffee screen's What's new tile (ticket 0824): its name and Every change, the link to the source's history. */
+    whatsNew: { name: string; history: string }
     /** The plan tiles (ticket 220; Homepage card). */
     plans: {
       heading: string
