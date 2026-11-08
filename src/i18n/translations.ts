@@ -443,6 +443,8 @@ export interface Translations {
       rows: Record<InsideRowId, InsideCopy>
       editor: string
       demo: { ring: string; heart: string; bracelet: string }
+      /** The playing row's place in the caption, "4 / 13" (ticket 0825). */
+      place: string
     }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
     sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }

@@ -31,15 +31,16 @@ interface Budget {
   texts: (t: Translations) => Record<string, string>
 }
 
-/** What's inside's list beside the editor from 1024 (WhatsInside.vue, ticket 0797): `--inside-list-width` (272px), 10px
- * padding each side, an 18px icon and a 10px gap before the name. */
-const INSIDE_ROW_ROOM = 272 - 2 * 10 - 18 - 10
+/** What's inside's tabs on the narrowest band, a 481px box (WhatsInside.vue, ticket 0825): the section's 16px padding
+ * and the band's 1px edge and 12px padding each side; in it a tab's 10px padding each side, an 18px icon and a 10px gap
+ * before the name. A tab no wider than that scrolls into view whole. */
+const INSIDE_ROW_ROOM = 481 - 2 * (16 + 1 + 12) - 2 * 10 - 18 - 10
 
 const BUDGETS: Budget[] = [
   {
-    name: "What's inside row name",
-    room: { px: INSIDE_ROW_ROOM, source: 'WhatsInside.vue .inside__row, --type-control' },
-    breakpoint: 'from 1024px',
+    name: "What's inside tab name",
+    room: { px: INSIDE_ROW_ROOM, source: 'WhatsInside.vue .inside__band, .inside__tab, --type-control' },
+    breakpoint: 'from 481px',
     lines: 1,
     style: { size: 14, weight: 500 },
     texts: (t) => Object.fromEntries(Object.entries(t.homepage.inside.rows).map(([key, copy]) => [key, copy.name])),

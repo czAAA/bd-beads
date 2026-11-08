@@ -157,7 +157,7 @@ describe('HomePage', () => {
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="homepage-make-first"]').text()).toBe('Сделать первый проект')
-    expect(wrapper.get('#homepage-inside').text()).toBe('Что внутри')
+    expect(wrapper.get('[data-step="inside"]').text()).toBe('Что внутри')
     expect(localStorage.getItem('openbeads:locale')).toBe('ru')
   })
 

@@ -182,4 +182,20 @@ describe("What's inside's tour (ticket 0797)", () => {
     expect(steps().slice(2)).toEqual(['fresh', 'apply canvas', 'apply techniques', 'apply editing'])
     expect(tour.playing.value).toBe('editing')
   })
+
+  it('captions the row last lit: the first before the tour starts, kept through the rest and a take-over (ticket 0825)', async () => {
+    const { tour } = tourHost()
+    expect(tour.captioned.value).toBe('canvas')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before + 1000 + TOUR_TIMING.after + TOUR_TIMING.before)
+    expect(tour.captioned.value).toBe('techniques')
+    tour.takeOver()
+    expect(tour.playing.value).toBeUndefined()
+    expect(tour.captioned.value).toBe('techniques')
+
+    tour.choose('mirror')
+    expect(tour.captioned.value).toBe('mirror')
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before + 1000 + TOUR_TIMING.after)
+    expect(tour.playing.value).toBeUndefined()
+    expect(tour.captioned.value).toBe('mirror')
+  })
 })

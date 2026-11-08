@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-08',
     line: {
+      en: "On the Homepage, What's inside gives its demo all the room, the features as tabs above it",
+      ru: 'На главной демо в «Что внутри» занимает всё место, а возможности стали вкладками над ним',
+      uk: 'На головній демо в «Що всередині» займає все місце, а можливості стали вкладками над ним',
+      be: 'На галоўнай дэма ў «Што ўнутры» займае ўсё месца, а магчымасці сталі ўкладкамі над ім',
+      zh: '首页「功能一览」的演示占满整个区域，功能变成了上方的标签',
+      es: 'En la página de inicio, la demo de Qué incluye ocupa todo el espacio, con las funciones en pestañas encima',
+      pl: 'Na stronie głównej demo w „Co jest w środku” zajmuje całe miejsce, a funkcje są kartami nad nim',
+    },
+  },
+  {
+    date: '2026-11-08',
+    line: {
       en: "The Homepage's demo now weaves a gold-on-black peyote ring",
       ru: 'Демо на главной теперь плетёт мозаичное кольцо: золото на чёрном',
       uk: 'Демо на головній тепер плете мозаїчну каблучку: золото на чорному',

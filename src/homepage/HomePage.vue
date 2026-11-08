@@ -109,7 +109,7 @@ const sections = computed<HomepageSection[]>(() => [
   {
     id: 'inside',
     heading: t.value.homepage.whatsInside,
-    title: 'above',
+    title: 'inside',
     shows: WhatsInside,
     with: (): Record<string, unknown> => ({ class: 'homepage__fill', withEditor: pageWidth.value >= EDITOR_FROM, shown: sections.value[section.value]?.id === 'inside' }),
   },
@@ -518,6 +518,14 @@ const savedProjects = controlAction('saved-projects')
   .homepage__section {
     padding-right: var(--space-32);
     padding-left: var(--space-32);
+  }
+}
+
+/* What's inside gives its demo the box's whole width (ticket 0825); the phone's plain list keeps the phone's room. */
+@container homepage (min-width: 481px) {
+  .homepage__section--inside {
+    max-width: none;
+    padding: var(--space-8) var(--space-16) var(--space-16);
   }
 }
 

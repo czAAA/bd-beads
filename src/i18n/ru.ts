@@ -350,6 +350,7 @@ export const ru: Translations = {
       },
       editor: 'Что внутри: редактор',
       demo: { ring: 'Кольцо', heart: 'Сердце', bracelet: 'Браслет' },
+      place: '{at} / {count}',
     },
     sections: { label: 'Разделы', back: 'Назад', next: 'Дальше', firstBody: 'Это первый раздел.', lastBody: 'Это последний раздел.', goTo: 'Перейти: {section}' },
     coffee: { title: 'Делает одна семья', text: 'openbeads остаётся бесплатным и полностью локальным, без рекламы и отслеживания. Если приложение вам помогает, поддержать его развитие можно через Buy Me a Coffee.', button: 'Угостить кофе', star: 'Звезда на GitHub тоже помогает.', source: 'Исходный код' },
