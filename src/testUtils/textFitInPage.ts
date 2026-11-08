@@ -19,11 +19,9 @@ export interface TextMisfit {
 /** Controls that are meant to be one line; running paragraphs are exempt from the wrap check. */
 const ONE_LINE = 'button, a, label, th, h1, h2, h3, h4, h5, h6, summary, legend, [role="tab"], [role="menuitem"], [role="button"], .ui-pill, [data-one-line]'
 
-/** One-line controls that are designed to take more lines than one, with how many: the line under What's inside's
- * playing row (ticket 0797), the coffee screen's balanced title (0823), the segmented control's two-line options, a
- * dialog's title. */
+/** One-line controls that are designed to take more lines than one, with how many: the coffee screen's balanced title
+ * (ticket 0823), the segmented control's two-line options, a dialog's title. */
 const MORE_LINES: [string, number][] = [
-  ['.inside__row-text', 4],
   ['.coffee__title', 2],
   ['.segmented__option', 2],
   ['.app-modal__title', 2],
