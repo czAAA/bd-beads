@@ -361,6 +361,7 @@ export const en: Translations = {
     },
     openSource: { name: 'Open source', text: 'All of openbeads is public under the AGPL-3.0 licence. Read the code, report a bug or suggest a change.' },
     sayHello: { name: 'Say hello', text: "A bug, an idea, a pattern you made: send it to the family. It's also in {menu} → {feedback}." },
+    whatsNew: { name: "What's new", history: 'Every change' },
     plans: {
       heading: 'Three ways to use it',
       why: "Accounts and Pro aren't open yet. Everything works without them.",
