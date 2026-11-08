@@ -395,8 +395,10 @@ export const en: Translations = {
           starters: { one: '{count} Starter for {categories}', other: '{count} Starters for {categories}' },
         },
         more: 'More on the way',
+        showAll: 'Show all {count}',
       },
     },
+    library: '{library}, {count}',
   },
   pieceName: {
     title: 'Name this Piece',

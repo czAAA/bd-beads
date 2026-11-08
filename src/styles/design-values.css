@@ -302,6 +302,13 @@
   --more-below-overhang: 35%; /* How much of the pill sits below the bar's top edge. */
   --more-below-fade: 2.5rem; /* The fade of the canvas above it where the section continues, 40px. */
   --more-below-fade-to: 92%; /* How much of the canvas the fade reaches at the bar. */
+  /* Homepage card, the phone (ticket 0827). */
+  --phone-bar-button: 3rem; /* The phone bar's ↑, ↓ and main button, 48px. */
+  --phone-bar-segment: 3px; /* A section's segment on the phone bar. */
+  --phone-library: 2.25rem; /* The phone strip's Projects library button, 36px tall. */
+  --grouped-tile: 2.25rem; /* A phone's grouped list row's icon tile, 36px. */
+  --grouped-tile-radius: 0.625rem; /* Its corners, 10px. */
+  --type-grouped-name: 600 0.9375rem/1.25rem var(--font-sans); /* A grouped list row's name, Inter 600 15/20. */
   /* Homepage card, plan tiles (tickets 0740, 0742). */
   --free-start-rows: 4; /* The free list's rows shown before the page is scrolled. */
   --free-growth: 2.5; /* The tile grows this many times as fast as the page scrolls, until it reaches the screen's foot. */

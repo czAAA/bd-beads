@@ -398,8 +398,10 @@ export const be: Translations = {
           starters: { one: '{count} стартар: {categories}', few: '{count} стартары: {categories}', many: '{count} стартараў: {categories}', other: '{count} стартара: {categories}' },
         },
         more: 'Хутка будзе больш',
+        showAll: 'Паказаць усе {count}',
       },
     },
+    library: '{library}, {count}',
   },
   pieceName: {
     title: 'Назва кавалачка',

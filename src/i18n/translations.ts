@@ -469,9 +469,12 @@ export interface Translations {
       tiles: [PlanCopy & { meta: string }, PlanCopy, PlanCopy]
       /** The stamp on Free account and Pro, written in capitals on it, and its image's name. */
       comingSoon: string
-      /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them. */
-      free: { heading: string; rows: FreeRows; more: string }
+      /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them; a
+       * phone's Show all opens the rows past its first (ticket 0827). */
+      free: { heading: string; rows: FreeRows; more: string; showAll: string }
     }
+    /** The phone strip's library button's name (ticket 0827): {library} is the Menu row's, "Projects library, 28". */
+    library: string
   }
   /** The Name Piece dialog (ticket 406). */
   pieceName: {

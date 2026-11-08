@@ -397,8 +397,10 @@ export const pl: Translations = {
           starters: { one: '{count} starter: {categories}', few: '{count} startery: {categories}', many: '{count} starterów: {categories}', other: '{count} startera: {categories}' },
         },
         more: 'Więcej w drodze',
+        showAll: 'Pokaż wszystkie {count}',
       },
     },
+    library: '{library}, {count}',
   },
   pieceName: {
     title: 'Nazwij ten kawałek',
