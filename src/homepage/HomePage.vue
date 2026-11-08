@@ -138,6 +138,11 @@ const pageEl = ref<HTMLElement>()
 const section = ref(0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
+/** The section shown, as drawn: what the keys and More below scroll when it is taller than its room. */
+function shownSection() {
+  return sectionEls.get(sections.value[section.value]!.id)
+}
+
 /** Back, Next, the steps and every scroll and key: the box turns to the section at once, however far it is. */
 function goTo(index: number) {
   if (index === section.value || index < 0 || index >= sections.value.length) return
@@ -150,7 +155,7 @@ const input = useSectionInput({
   section,
   count: () => sections.value.length,
   page: () => pageEl.value,
-  shown: () => sectionEls.get(sections.value[section.value]!.id),
+  shown: shownSection,
   held: () => menuOpen.value || !!dialogs.open.value || !!pendingRemove.value,
   reducedMotion,
   turn: goTo,
@@ -230,7 +235,7 @@ watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.valu
 const moreBelow = useMoreBelow({
   section,
   count: () => sections.value.length,
-  shown: () => sectionEls.get(sections.value[section.value]!.id),
+  shown: shownSection,
   phone: () => pageWidth.value < EDITOR_FROM,
 })
 

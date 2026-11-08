@@ -34,7 +34,11 @@ describe('More below (ticket 0826)', () => {
     const button = pill()!.getBoundingClientRect()
     const bar = el('[data-testid="section-bar"]')!.getBoundingClientRect()
     expect(button.top).toBeLessThan(bar.top)
-    expect(button.bottom - bar.top).toBeCloseTo(button.height * 0.35, 0)
+    const overhang = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--more-below-overhang')) / 100
+    expect(button.bottom - bar.top).toBeCloseTo(button.height * overhang, 0)
+    // Drawn over the bar, not under it.
+    const below = document.elementFromPoint(button.left + button.width / 2, (bar.top + button.bottom) / 2)
+    expect(pill()!.contains(below)).toBe(true)
     expect(button.left + button.width / 2).toBeCloseTo(bar.left + bar.width / 2, 0)
     const body = el('[data-testid="homepage-body"]')!.getBoundingClientRect()
     expect(body.bottom).toBe(bar.top)
