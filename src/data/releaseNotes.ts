@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-08',
     line: {
+      en: 'On the Homepage, More below on the bar says when a section has more, and takes you there',
+      ru: 'На главной «Ниже ещё» над панелью показывает, что в разделе есть ещё, и ведёт туда',
+      uk: 'На головній «Нижче ще» над панеллю показує, що в розділі є ще, і веде туди',
+      be: 'На галоўнай «Ніжэй яшчэ» над панэллю паказвае, што ў раздзеле ёсць яшчэ, і вядзе туды',
+      zh: '首页栏上的「下方还有」会提示区块还有更多内容，点一下就带你过去',
+      es: 'En la página de inicio, Más abajo en la barra avisa cuando una sección tiene más y te lleva allí',
+      pl: 'Na stronie głównej „Więcej poniżej” na pasku mówi, że sekcja ma więcej, i tam prowadzi',
+    },
+  },
+  {
+    date: '2026-11-08',
+    line: {
       en: "On the Homepage, What's inside gives its demo all the room, the features as tabs above it",
       ru: 'На главной демо в «Что внутри» занимает всё место, а возможности стали вкладками над ним',
       uk: 'На головній демо в «Що всередині» займає все місце, а можливості стали вкладками над ним',

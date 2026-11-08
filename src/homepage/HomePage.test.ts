@@ -259,6 +259,17 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     expect(shown(wrapper)).toEqual(['coffee'])
   })
 
+  it('says there is more with More below: a press turns to the next section, as Next does, and it is gone at the end (ticket 0826)', async () => {
+    const wrapper = page()
+    expect(wrapper.find('.homepage__body [data-testid="more-below"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="more-below-button"]').trigger('click')
+    expect(shown(wrapper)).toEqual(['coffee'])
+    await wrapper.get('[data-testid="more-below-button"]').trigger('click')
+    expect(shown(wrapper)).toEqual(['plans'])
+    await flushPromises()
+    expect(wrapper.find('[data-testid="more-below"]').exists()).toBe(false)
+  })
+
   describe('the nudge (ticket 0784)', () => {
     beforeEach(() => void vi.useFakeTimers())
     afterEach(() => void vi.useRealTimers())

@@ -19,10 +19,12 @@ import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeScreen from './CoffeeScreen.vue'
 import { wheelPixels } from './wheelTurn'
 import WhatsInside from './inside/WhatsInside.vue'
+import MoreBelow from './MoreBelow.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
 import type { HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
+import { useMoreBelow } from './useMoreBelow'
 import { useScrollNudge } from './useScrollNudge'
 import { useSectionInput } from './useSectionInput'
 import { provideI18n } from '../i18n/useI18n'
@@ -136,6 +138,11 @@ const pageEl = ref<HTMLElement>()
 const section = ref(0)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
+/** The section shown, as drawn: what the keys and More below scroll when it is taller than its room. */
+function shownSection() {
+  return sectionEls.get(sections.value[section.value]!.id)
+}
+
 /** Back, Next, the steps and every scroll and key: the box turns to the section at once, however far it is. */
 function goTo(index: number) {
   if (index === section.value || index < 0 || index >= sections.value.length) return
@@ -148,7 +155,7 @@ const input = useSectionInput({
   section,
   count: () => sections.value.length,
   page: () => pageEl.value,
-  shown: () => sectionEls.get(sections.value[section.value]!.id),
+  shown: shownSection,
   held: () => menuOpen.value || !!dialogs.open.value || !!pendingRemove.value,
   reducedMotion,
   turn: goTo,
@@ -223,6 +230,14 @@ onMounted(() => {
   void document.fonts?.ready.then(remeasureFree)
 })
 watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
+
+// More below (ticket 0826): a press scrolls the section on, or turns to the next as Next does.
+const moreBelow = useMoreBelow({
+  section,
+  count: () => sections.value.length,
+  shown: shownSection,
+  phone: () => pageWidth.value < EDITOR_FROM,
+})
 
 /** A section's own scroll: the plans' grows the free list. */
 function onSectionScroll(id: string, event: Event) {
@@ -369,6 +384,8 @@ const savedProjects = controlAction('saved-projects')
               </section>
             </div>
           </main>
+          <!-- At the drawing area's foot, so it rides on whatever bar sits under it (ticket 0826). -->
+          <MoreBelow v-if="moreBelow.shows.value" :fade="moreBelow.continues.value" @more="input.more" />
         </div>
         <SectionBar :section="section" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
       </div>
@@ -459,6 +476,7 @@ const savedProjects = controlAction('saved-projects')
 
 /* The drawing area: today's Canvas background with its peyote position marks. */
 .homepage__body {
+  position: relative;
   display: flex;
   flex: 1 1 0;
   min-height: 0;

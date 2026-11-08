@@ -297,6 +297,11 @@
   --nudge-fade: 0.82; /* The first section's opacity at the top of its lift. */
   --nudge-dip: 0.25rem; /* How far Next's arrow dips with it, 4px. */
   --nudge-length: 1100ms; /* The lift and settle, once. */
+  /* Homepage card, More below (ticket 0826). */
+  --more-below-shadow: 0 4px 14px rgb(0 0 0 / 35%); /* The pill's soft shadow, lifting it off the bar it rides on. */
+  --more-below-overhang: 35%; /* How much of the pill sits below the bar's top edge. */
+  --more-below-fade: 2.5rem; /* The fade of the canvas above it where the section continues, 40px. */
+  --more-below-fade-to: 92%; /* How much of the canvas the fade reaches at the bar. */
   /* Homepage card, plan tiles (tickets 0740, 0742). */
   --free-start-rows: 4; /* The free list's rows shown before the page is scrolled. */
   --free-growth: 2.5; /* The tile grows this many times as fast as the page scrolls, until it reaches the screen's foot. */

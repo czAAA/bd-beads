@@ -352,7 +352,7 @@ export const es: Translations = {
       demo: { ring: 'Anillo', heart: 'Corazón', bracelet: 'Pulsera' },
       place: '{at} / {count}',
     },
-    sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}' },
+    sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}', moreBelow: 'Más abajo' },
     coffee: { title: 'Hecho por una familia', text: 'openbeads sigue siendo gratis y totalmente local, sin anuncios ni seguimiento. Si te ayuda en tu trabajo, puedes apoyar su desarrollo a través de Buy Me a Coffee.', button: 'Invítame a un café', star: 'Una estrella en GitHub también ayuda.', source: 'Ver el código fuente' },
     promises: {
       device: { name: 'Tuyo, en este dispositivo', text: 'Funciona en tu navegador. Sin cuenta, nada que instalar.' },

@@ -352,7 +352,7 @@ export const pl: Translations = {
       demo: { ring: 'Pierścionek', heart: 'Serce', bracelet: 'Bransoletka' },
       place: '{at} / {count}',
     },
-    sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}' },
+    sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}', moreBelow: 'Więcej poniżej' },
     coffee: { title: 'Robi to jedna rodzina', text: 'openbeads pozostaje darmowe i w pełni lokalne, bez reklam i śledzenia. Jeśli aplikacja ci pomaga, możesz wesprzeć jej rozwój przez Buy Me a Coffee.', button: 'Postaw mi kawę', star: 'Gwiazdka na GitHubie też pomaga.', source: 'Kod źródłowy' },
     promises: {
       device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce. Bez konta i bez instalacji.' },
