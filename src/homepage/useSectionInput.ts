@@ -27,9 +27,11 @@ const DEMO_EDITOR = '.inside-editor'
 const OWN_KEYS = `input, textarea, select, [role="slider"], [role="listbox"], [role="menu"], [role="radiogroup"], [role="tablist"], [role="spinbutton"], ${DEMO_EDITOR}`
 /** Where Space presses rather than scrolls. */
 const PRESSES = 'button, a[href], summary, [role="button"]'
+/** How much of its room More below scrolls a section on (ticket 0826; Homepage card). */
+const MORE_SHARE = 0.8
 
-/** Whether an element scrolls itself and has more to go that way. */
-function canScroll(el: Element, way: Way): boolean {
+/** Whether an element scrolls itself and has more to go that way: a section taller than its room, More below's fade. */
+export function canScroll(el: Element, way: Way): boolean {
   const { overflowY } = getComputedStyle(el)
   if (overflowY !== 'auto' && overflowY !== 'scroll') return false
   return way > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 1 : el.scrollTop > 0
@@ -140,10 +142,22 @@ export function useSectionInput({ section, count, page, shown, held, reducedMoti
       if (index !== section.value) turn(index)
       return
     }
+    if (!scrollOn(move.way, (room) => keyScroll(move.by, room))) turnWay(move.way)
+  }
+
+  /** Scrolls the section shown on by `by` its room's height in px, if it has more that way; whether it did. */
+  function scrollOn(way: Way, by: (room: number) => number): boolean {
     const room = shown()
-    if (room && canScroll(room, move.way)) {
-      room.scrollBy({ top: move.way * keyScroll(move.by, room.clientHeight), behavior: reducedMotion.value ? 'auto' : 'smooth' })
-    } else turnWay(move.way)
+    if (!room || !canScroll(room, way)) return false
+    room.scrollBy({ top: way * by(room.clientHeight), behavior: reducedMotion.value ? 'auto' : 'smooth' })
+    return true
+  }
+
+  /** More below (ticket 0826): the section shown scrolled on most of its room while it has more, else the next one
+   * turned to at once, as Next turns to it. */
+  function more() {
+    const index = towards(1)
+    if (!scrollOn(1, (room) => room * MORE_SHARE) && index !== undefined) turn(index)
   }
 
   // A turn by any means stands its while, and a wheel gesture going on through it turns nothing more.
@@ -159,5 +173,5 @@ export function useSectionInput({ section, count, page, shown, held, reducedMoti
     clearTimeout(quiet)
     clearTimeout(due)
   })
-  return { onWheel, onTouchStart, onTouchEnd, onTouchCancel, onKeydown }
+  return { onWheel, onTouchStart, onTouchEnd, onTouchCancel, onKeydown, more }
 }

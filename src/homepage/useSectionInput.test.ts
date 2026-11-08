@@ -250,4 +250,29 @@ describe('the Homepage turned by wheel, swipe and keys (tickets 0784, 0801)', ()
       expect(turns).toEqual([1])
     })
   })
+
+  describe('by More below (ticket 0826)', () => {
+    it('scrolls a section taller than its room 80% of its room, until its end shows', () => {
+      const { turns, more } = turning()
+      tall(400)
+      more()
+      expect(room.scrollBy).toHaveBeenCalledWith({ top: 240, behavior: 'smooth' })
+      expect(turns).toEqual([])
+    })
+
+    it('turns to the next section at once where the section has no more, as Next does, however soon after a turn', () => {
+      const { turns, more } = turning()
+      tall(100, 100)
+      more()
+      more()
+      expect(room.scrollBy).not.toHaveBeenCalled()
+      expect(turns).toEqual([1, 2])
+    })
+
+    it('does nothing at the last section\'s end', () => {
+      const { turns, more } = turning({ at: 2 })
+      more()
+      expect(turns).toEqual([])
+    })
+  })
 })

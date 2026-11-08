@@ -19,10 +19,12 @@ import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeScreen from './CoffeeScreen.vue'
 import { wheelPixels } from './wheelTurn'
 import WhatsInside from './inside/WhatsInside.vue'
+import MoreBelow from './MoreBelow.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
 import type { HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
+import { useMoreBelow } from './useMoreBelow'
 import { useScrollNudge } from './useScrollNudge'
 import { useSectionInput } from './useSectionInput'
 import { provideI18n } from '../i18n/useI18n'
@@ -224,6 +226,14 @@ onMounted(() => {
 })
 watch([locale, zoom.percent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
 
+// More below (ticket 0826): a press scrolls the section on, or turns to the next as Next does.
+const moreBelow = useMoreBelow({
+  section,
+  count: () => sections.value.length,
+  shown: () => sectionEls.get(sections.value[section.value]!.id),
+  phone: () => pageWidth.value < EDITOR_FROM,
+})
+
 /** A section's own scroll: the plans' grows the free list. */
 function onSectionScroll(id: string, event: Event) {
   if (id === 'plans') freeGrowth.scrolled((event.target as HTMLElement).scrollTop)
@@ -369,6 +379,8 @@ const savedProjects = controlAction('saved-projects')
               </section>
             </div>
           </main>
+          <!-- At the drawing area's foot, so it rides on whatever bar sits under it (ticket 0826). -->
+          <MoreBelow v-if="moreBelow.shows.value" :fade="moreBelow.continues.value" @more="input.more" />
         </div>
         <SectionBar :section="section" :sections="sections" :nudging="nudge.nudging.value" @go="goTo" />
       </div>
@@ -459,6 +471,7 @@ const savedProjects = controlAction('saved-projects')
 
 /* The drawing area: today's Canvas background with its peyote position marks. */
 .homepage__body {
+  position: relative;
   display: flex;
   flex: 1 1 0;
   min-height: 0;

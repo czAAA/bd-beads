@@ -447,7 +447,7 @@ export interface Translations {
       place: string
     }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
-    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string }
+    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string; moreBelow: string }
     /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string; star: string; source: string }
     /** The coffee screen's promises (ticket 0823; Homepage card), in the order shown; the shortcuts one's {menu}, {help}
