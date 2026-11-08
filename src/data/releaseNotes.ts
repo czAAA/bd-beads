@@ -12,6 +12,18 @@ export interface ReleaseNote {
 // (writing.md), no full stop. releaseNotes.test.ts fails on a missing language or one out of order.
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    date: '2026-11-08',
+    line: {
+      en: "The Homepage's demo now weaves a gold-on-black peyote ring",
+      ru: 'Демо на главной теперь плетёт мозаичное кольцо: золото на чёрном',
+      uk: 'Демо на головній тепер плете мозаїчну каблучку: золото на чорному',
+      be: 'Дэма на галоўнай цяпер пляце мазаічны пярсцёнак: золата на чорным',
+      zh: '首页演示现在编织一枚黑底金字的佩奥戒指',
+      es: 'La demo de la página de inicio ahora teje un anillo de peyote dorado sobre negro',
+      pl: 'Demo na stronie głównej tka teraz pierścionek peyote: złoto na czerni',
+    },
+  },
+  {
     date: '2026-11-07',
     line: {
       en: 'Every empty bead in the PDF carries a small cross',
