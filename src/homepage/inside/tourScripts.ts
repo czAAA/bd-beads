@@ -2,6 +2,7 @@ import type { GridPosition } from '../../domain/grid'
 import type { InsideRowId } from '../../i18n/translations'
 import type { Hand } from './hand'
 import type { ReferencePlace } from '../../domain/referenceImage'
+import { addedColorId } from '../../domain/palette'
 import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
 import { DEMO_COLORS, DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PANORAMA, RIDGE, SUN, type DemoColor } from './demoProjects'
@@ -21,12 +22,16 @@ async function pickSwatch(hand: Hand, id: string): Promise<void> {
   if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
 }
 
-/** The Palette's swatches in the color popover, and their color ids. */
-function swatches(hand: Hand): Element[] {
-  return [...hand.root.querySelectorAll('[data-testid="palette-swatch"]')]
-}
-function swatchIds(hand: Hand): string[] {
-  return swatches(hand).map((swatch) => swatch.getAttribute('data-color-id') ?? '')
+/** The Palette swatch of catalog color `code`, from the color popover's open catalog list: added to the Palette first
+ * unless it is there already. Adding leaves the paint color as it was, so the swatch is what makes it the paint color. */
+async function catalogSwatch(hand: Hand, code: string): Promise<() => Element | undefined> {
+  const row = () => hand.root.querySelector(`[data-testid="bead-color"][data-code="${code}"]`)
+  await hand.find('bead-colors-count')
+  if (!row()?.hasAttribute('data-taken')) await hand.press(row)
+  return () => {
+    const hex = Object.entries(hand.canvas.activeProject.value?.paletteCodes ?? {}).find(([, each]) => each === code)?.[0]
+    return hex ? (hand.root.querySelector(`[data-testid="palette-swatch"][data-color-id="${addedColorId(hex)}"]`) ?? undefined) : undefined
+  }
 }
 
 /** Picks a color on the Tool pill: a recent swatch, or the color popover for one that isn't recent. */
@@ -211,10 +216,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('pill-tool-paint')
     await hand.press('pill-color')
     await hand.press('bead-colors-toggle')
-    // Adding a catalog color puts it in the Palette and leaves the paint color as it was, so its new swatch is picked.
-    const before = new Set(swatchIds(hand))
-    await hand.press(() => hand.root.querySelector(`[data-testid="bead-color"][data-code="${FLOWER_CODE}"]`))
-    await hand.press(() => swatches(hand).find((swatch) => !before.has(swatch.getAttribute('data-color-id') ?? '')))
+    await hand.press(await catalogSwatch(hand, FLOWER_CODE))
     if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
     for (const flower of LANDSCAPE.flowers) await hand.stroke([flower])
   },
@@ -336,9 +338,10 @@ async function growReference(hand: Hand, picture: File): Promise<void> {
   flow.commit(fit)
 }
 
-/** `place` made `REFERENCE_LANDS_AT` as wide, its top-left staying: a place is held by its middle. */
-function smallerFrom(place: ReferencePlace, aspect: number): ReferencePlace {
+/** `place` made `REFERENCE_LANDS_AT` as wide, its top-left staying: a place is held by its middle. `heightPerWidth` is
+ * the picture's height over its width. */
+function smallerFrom(place: ReferencePlace, heightPerWidth: number): ReferencePlace {
   const width = place.width * REFERENCE_LANDS_AT
   const less = place.width - width
-  return { ...place, width, x: place.x - less / 2, y: place.y - (less * aspect) / 2 }
+  return { ...place, width, x: place.x - less / 2, y: place.y - (less * heightPerWidth) / 2 }
 }

@@ -2,11 +2,15 @@
 // its envelope in bold stripes over a basket, two clouds by it. Another picture than the Reference image row's
 // mountains, in a few clear colors, so the converted beads and their found colors read at a glance.
 
+import { pngFile } from './landscape'
+
 /** Its colors: the sky's two blues, the clouds, the envelope's stripes, its ropes and the basket. */
 const SKY_TOP = '#4f86d9'
 const SKY_LOW = '#a9c8f0'
 const CLOUD = '#ffffff'
 const STRIPES = ['#e8413c', '#f39c32', '#f7d046', '#2bb3a3'] as const
+/** How many upright stripes the envelope is cut into. */
+const STRIPE_COUNT = 6
 const ROPE = '#6b4a35'
 const BASKET = '#8a5a3b'
 
@@ -36,8 +40,8 @@ export async function balloonFile(size = 360): Promise<File> {
   context.quadraticCurveTo(middle - radius, top + radius * 1.7, middle - radius, top + radius)
   context.closePath()
   context.clip()
-  const stripe = (radius * 2) / 6
-  for (let index = 0; index < 6; index++) {
+  const stripe = (radius * 2) / STRIPE_COUNT
+  for (let index = 0; index < STRIPE_COUNT; index++) {
     context.fillStyle = STRIPES[(index + 1) % STRIPES.length]!
     context.fillRect(middle - radius + index * stripe, top, stripe, mouth - top)
   }
@@ -54,8 +58,7 @@ export async function balloonFile(size = 360): Promise<File> {
   }
   context.fillStyle = BASKET
   context.fillRect(middle - size * 0.06, basketTop, size * 0.12, size * 0.09)
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((made) => (made ? resolve(made) : reject(new Error('No picture'))), 'image/png'))
-  return new File([blob], 'balloon.png', { type: 'image/png' })
+  return pngFile(canvas, 'balloon.png')
 }
 
 /** A cloud of three puffs round (`x`, `y`). */

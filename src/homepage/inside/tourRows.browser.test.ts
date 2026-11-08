@@ -117,13 +117,20 @@ describe("What's inside's Starters row on the ring (ticket 0821)", () => {
 
 // Last: a Colors row run in one mount moves the Starter ring the next mount lays (seen in ticket 0828, not yet traced).
 describe("What's inside's Colors built in row on the ring (ticket 0828)", () => {
-  it('paints its flowers on the slopes, a color of their own', async () => {
+  it("paints its flowers on the slopes in the catalog color it picked, Delica's DB55", async () => {
     const project = await applyThrough(await demoEditor(), 'colors')
-    const slopes = frameBead(project, PANORAMA.rows - 2, 9)
     for (const [row, column] of DEMO_FLOWERS) {
       const flower = frameBead(project, row, column)
-      expect(flower, `${row},${column}`).not.toBeNull()
-      expect(flower, `${row},${column}`).not.toBe(slopes)
+      expect(flower && project.paletteCodes?.[flower.toLowerCase()], `${row},${column}`).toBe('DB55')
     }
+  }, 60000)
+
+  it('paints them in DB55 when the Palette has it already', async () => {
+    const editor = await demoEditor()
+    await applyThrough(editor, 'colors')
+    const hand = editor.hand(true, new AbortController().signal)
+    await TOUR_SCRIPTS.colors(hand)
+    const project = hand.canvas.activeProject.value!
+    for (const [row, column] of DEMO_FLOWERS) expect(project.paletteCodes?.[frameBead(project, row, column)!.toLowerCase()], `${row},${column}`).toBe('DB55')
   }, 60000)
 })
