@@ -17,12 +17,13 @@ const opacity = (selector: string) => () => getComputedStyle(mounted!.root.query
 // Leaving for the editor (tickets 0776, 0783, 0822): the content fades, the Canvas strip with its slogan and its way in
 // stays, as the editor's first paint draws it again.
 describe('leaving the Homepage for the editor', () => {
-  it('fades the section and the Progress bar but keeps the strip', async () => {
+  it('fades the section, More below and the Progress bar but keeps the strip', async () => {
     mounted = await mountAt(HomePage, { projectCount: 3, feedback: fakeFeedback() }, { locale: 'en', width: 1280 })
     await settleForMeasuring()
     document.documentElement.dataset.handoff = 'leaving'
     await expect.poll(opacity('.homepage__page')).toBe('0')
     await expect.poll(opacity('[data-testid="section-bar"]')).toBe('0')
+    await expect.poll(opacity('[data-testid="more-below"]')).toBe('0')
     expect(opacity('.homepage__strip')()).toBe('1')
   })
 })

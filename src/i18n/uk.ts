@@ -352,7 +352,7 @@ export const uk: Translations = {
       demo: { ring: 'Каблучка', heart: 'Серце', bracelet: 'Браслет' },
       place: '{at} / {count}',
     },
-    sections: { label: 'Розділи', back: 'Назад', next: 'Далі', firstBody: 'Це перший розділ.', lastBody: 'Це останній розділ.', goTo: 'Перейти: {section}' },
+    sections: { label: 'Розділи', back: 'Назад', next: 'Далі', firstBody: 'Це перший розділ.', lastBody: 'Це останній розділ.', goTo: 'Перейти: {section}', moreBelow: 'Нижче ще' },
     coffee: { title: 'Робить одна родина', text: 'openbeads залишається безкоштовним і повністю локальним, без реклами та відстеження. Якщо застосунок вам допомагає, підтримати його розвиток можна через Buy Me a Coffee.', button: 'Пригостити кавою', star: 'Зірка на GitHub теж допомагає.', source: 'Вихідний код' },
     promises: {
       device: { name: 'Ваше, на вашому пристрої', text: 'Працює в браузері. Без акаунта й встановлення.' },
