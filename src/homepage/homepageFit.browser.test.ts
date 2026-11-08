@@ -41,11 +41,13 @@ function boxOf(root: Element, selector: string): DOMRect {
   return root.querySelector(selector)!.getBoundingClientRect()
 }
 
-// What's inside (ticket 0797): its list and its editor in the section's room, nothing cut and nothing wider than the
-// box; under reduced motion the editor shows the first row's end. Its cards are the coffee screen's promises (0823).
+// What's inside (tickets 0797, 0825): its band and its framed editor in the section's room, nothing cut and nothing
+// wider than the box; under reduced motion the editor shows the first row's end. Its cards are the coffee screen's
+// promises (0823).
 describe("What's inside fits its room", () => {
   // Short windows (ticket 0802): the editor keeps its least height, seen whole (no hero, 0822; no cards, 0823).
-  for (const [width, height, tier] of [[1440, 900, 'desktop'], [1366, 680, 'short'], [1280, 640, 'short'], [820, 1180, 'tablet'], [390, 844, 'phone']] as const) {
+  const sizes = [[1440, 900, 'desktop'], [1366, 680, 'short'], [1280, 640, 'short'], [1024, 768, 'laptop'], [820, 1180, 'tablet'], [600, 960, 'tablet'], [390, 844, 'phone']] as const
+  for (const [width, height, tier] of sizes) {
     it(`at ${width} × ${height} (${tier})`, async () => {
       const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
       await page.viewport(width, height)
@@ -57,6 +59,24 @@ describe("What's inside fits its room", () => {
       } else {
         const editor = boxOf(mounted.root, '[data-testid="inside-editor"]')
         expect(editor.height, 'the editor has room').toBeGreaterThan(tier === 'short' ? 230 : 300)
+        // The section's whole width but its padding, `--space-16` (ticket 0825).
+        const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize)
+        expect(editor.left - section.getBoundingClientRect().left, "the editor the section's width").toBeCloseTo(rem, 0)
+        expect(getComputedStyle(mounted.root.querySelector('[data-testid="inside-editor"]')!).boxShadow, 'the editor framed').not.toBe('none')
+        // The band (ticket 0825): the heading beside the tabs from a 1000px box, over them under it; the caption under
+        // both, then the editor.
+        const band = boxOf(mounted.root, '[data-testid="inside-band"]')
+        const heading = boxOf(mounted.root, '#homepage-inside')
+        const tabs = boxOf(mounted.root, '[data-testid="inside-list"]')
+        const caption = boxOf(mounted.root, '[data-testid="inside-caption"]')
+        const box = mounted.root.querySelector<HTMLElement>('[data-testid="homepage"]')!.clientWidth
+        if (box >= 1000) {
+          expect(tabs.left, 'the tabs beside the heading').toBeGreaterThanOrEqual(heading.right)
+          expect(Math.abs(tabs.top + tabs.height / 2 - (heading.top + heading.height / 2)), 'on its line').toBeLessThanOrEqual(2)
+        } else expect(tabs.top, 'the tabs under the heading').toBeGreaterThanOrEqual(heading.bottom)
+        expect(caption.top, 'the caption under the tabs').toBeGreaterThanOrEqual(tabs.bottom)
+        expect(caption.bottom, 'the caption in the band').toBeLessThanOrEqual(band.bottom)
+        expect(editor.top, 'the editor under the band').toBeGreaterThanOrEqual(band.bottom)
         expect(editor.bottom, 'the editor seen whole before the section scrolls').toBeLessThanOrEqual(section.getBoundingClientRect().bottom + 1)
         await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
         // The demo's view is set as it starts, so it is started afresh at this size, as a visitor's would be.
@@ -72,13 +92,16 @@ describe("What's inside fits its room", () => {
         expect(sheet.left, 'the Margin sheet whole in the drawing area').toBeGreaterThanOrEqual(area.left - 1)
         expect(sheet.right, 'the Margin sheet whole in the drawing area').toBeLessThanOrEqual(area.right + 1)
         expect(sheet.bottom, 'the Margin sheet clear of the Tool pill').toBeLessThanOrEqual(pill.top + 1)
+        // The last tab, pressed, scrolls into the band's view; the caption keeps its height, so the editor its size.
+        mounted.root.querySelector<HTMLElement>('[data-testid="inside-row-savedProjects"]')!.click()
+        await expect.poll(() => {
+          const last = boxOf(mounted.root, '[data-testid="inside-row-savedProjects"]')
+          return last.left >= tabs.left - 1 && last.right <= tabs.right + 1
+        }, { timeout: 4000 }).toBe(true)
+        expect(boxOf(mounted.root, '[data-testid="inside-editor"]').height, 'the editor keeps its size').toBe(editor.height)
       }
       if (tier === 'desktop') {
         expect(section.scrollHeight, 'the section fits whole at 1440 × 900').toBeLessThanOrEqual(section.clientHeight + 1)
-        const list = boxOf(mounted.root, '[data-testid="inside-list"]')
-        const playing = boxOf(mounted.root, '[aria-current="step"]')
-        expect(playing.top).toBeGreaterThanOrEqual(list.top - 1)
-        expect(playing.bottom).toBeLessThanOrEqual(list.bottom + 1)
       }
       expect(unexplainedFit("What's inside", 'en', width, await misfitsNow())).toEqual([])
     }, 40000)

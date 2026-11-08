@@ -276,8 +276,9 @@
   --homepage-mark-large: 26.25rem; /* The faint X1 mark beside the box, 420px, at 7%. */
   --homepage-mark-small: 7.5rem; /* The smaller X1 mark, 120px, at 16%. */
   /* Homepage card, What's inside (ticket 0797). */
-  --inside-main-least-height: 15rem; /* The list and editor's least height, 240px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns (ticket 0802). */
-  --inside-list-width: 17rem; /* What's inside's list beside the editor, 272px. */
+  --inside-main-least-height: 15rem; /* The demo editor's least height, 240px: on a shorter screen the section scrolls inside itself, so the editor is seen whole before the page turns (tickets 0802, 0825). */
+  --inside-frame-edge: color-mix(in srgb, var(--ink) 22%, transparent); /* The demo editor's 1px edge (ticket 0825). */
+  --inside-frame-shadow: 0 0 0 5px color-mix(in srgb, var(--page-ground) 55%, transparent), 0 18px 48px rgb(0 0 0 / 50%); /* Round the demo editor: a ring of the page's ground and a deep shadow, a window onto the editor, not the page's canvas (ticket 0825). */
   --ghost-move: 840ms; /* The tour's ghost pointer moving to its next press (ticket 0802: twice its first pace). */
   --ghost-ripple: 840ms; /* The ripple a ghost press leaves, growing and fading (ticket 0802: 1.2 times its first). */
   --ghost-fill: #ffffff; /* The ghost pointer, the system arrow in white, and its ripple. */

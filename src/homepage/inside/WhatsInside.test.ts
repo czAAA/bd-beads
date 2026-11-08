@@ -34,24 +34,39 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe("What's inside (ticket 0797)", () => {
-  it('lists the 13 rows beside the editor as buttons, named alone until one plays', () => {
+describe("What's inside (tickets 0797, 0825)", () => {
+  it('holds its heading, the 13 rows as a list of buttons and the caption in a band over the editor', () => {
     const wrapper = section({ withEditor: true })
-    const rows = wrapper.findAll('[data-testid^="inside-row-"]')
+    const band = wrapper.get('[data-testid="inside-band"]')
+    expect(band.get('h2#homepage-inside').text()).toBe(en.homepage.whatsInside)
+    const rows = band.findAll('ul[data-testid="inside-list"] > li > button')
     expect(rows).toHaveLength(13)
-    expect(rows.every((row) => row.element.tagName === 'BUTTON')).toBe(true)
     expect(rows.map((row) => row.text())).toEqual(Object.values(en.homepage.inside.rows).map((row) => row.name))
     expect(wrapper.find('[aria-current="step"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="inside-editor"]').exists()).toBe(true)
   })
 
-  it('plays from a row pressed, lighting it with its line under its name', async () => {
+  it('names each tab by its row, described by its line', () => {
+    const wrapper = section({ withEditor: true })
+    const tab = wrapper.get('[data-testid="inside-row-mirror"]')
+    expect(wrapper.get(`#${tab.attributes('aria-describedby')}`).text()).toBe(en.homepage.inside.rows.mirror.text)
+  })
+
+  it('captions the first row before the tour starts', () => {
+    const wrapper = section({ withEditor: true })
+    const { canvas } = en.homepage.inside.rows
+    expect(wrapper.get('[data-testid="inside-caption-shown"]').text()).toBe(`${canvas.name}${canvas.text}1 / 13`)
+  })
+
+  it('plays from a row pressed, lighting its tab and captioning it with its line and place', async () => {
     const wrapper = section({ withEditor: true })
     await wrapper.get('[data-testid="inside-row-mirror"]').trigger('click')
     await flushPromises()
     const playing = wrapper.get('[aria-current="step"]')
+    const { mirror } = en.homepage.inside.rows
     expect(playing.attributes('data-testid')).toBe('inside-row-mirror')
-    expect(playing.text()).toBe(`${en.homepage.inside.rows.mirror.name}${en.homepage.inside.rows.mirror.text}`)
+    expect(playing.text()).toBe(mirror.name)
+    expect(wrapper.get('[data-testid="inside-caption-shown"]').text()).toBe(`${mirror.name}${mirror.text}4 / 13`)
   })
 
   it('starts the tour by itself a moment after it first shows', async () => {
@@ -63,10 +78,11 @@ describe("What's inside (ticket 0797)", () => {
     expect(wrapper.get('[aria-current="step"]').attributes('data-testid')).toBe('inside-row-canvas')
   })
 
-  it('on a phone has no editor and no tour: the 13 rows each with its line, nothing to press', async () => {
+  it('on a phone has no editor and no tour: the heading over the 13 rows each with its line, nothing to press', async () => {
     const wrapper = section({ withEditor: false, shown: true })
     await vi.advanceTimersByTimeAsync(5000)
     expect(wrapper.find('[data-testid="inside-editor"]').exists()).toBe(false)
+    expect(wrapper.get('h2#homepage-inside').text()).toBe(en.homepage.whatsInside)
     const rows = wrapper.findAll('[data-testid^="inside-row-"]')
     expect(rows).toHaveLength(13)
     expect(rows.every((row) => row.element.tagName === 'LI' && !row.find('button').exists())).toBe(true)
