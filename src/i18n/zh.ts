@@ -348,7 +348,7 @@ export const zh: Translations = {
         savedProjects: { name: '已保存的项目', text: '保存在此浏览器中，在此设备上。' },
       },
       editor: '功能一览：编辑器',
-      demo: { kaleidoscope: '万花筒', heart: '心形', bracelet: '手链' },
+      demo: { ring: '戒指', heart: '心形', bracelet: '手链' },
     },
     sections: { label: '章节', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}' },
     coffee: { title: '一家人做的', text: 'openbeads 将保持免费且完全本地运行，没有广告，也不追踪用户。如果它对你有帮助，可以通过 Buy Me a Coffee 支持它的开发。', button: '请我喝咖啡', star: '在 GitHub 上点个星标也是一种支持。', source: '查看源代码' },
