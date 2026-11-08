@@ -1,6 +1,6 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
-import { scopeRoom, useShellScope } from '../ui/shellScope'
+import { PAGE_SCOPE, scopeRoom, useShellScope } from '../ui/shellScope'
 
 /** What a popover beside the Tool pill is placed against: the tile that opened it, the pill, and the pill's edge. */
 export interface PillPopoverAnchor {
@@ -24,8 +24,11 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
     if (!el || !tileBox || !pillBox) return
     const css = getComputedStyle(document.documentElement)
     const px = (name: string) => parseFloat(css.getPropertyValue(name)) * (css.getPropertyValue(name).endsWith('rem') ? parseFloat(css.fontSize) : 1)
-    // In a boxed shell (ticket 0797) the box is the screen, and the popover, teleported into it, is placed from its corner.
+    // In a boxed shell (ticket 0797) the box is the screen, and the popover, teleported into it, is placed from its corner;
+    // it is never taller than the box and scrolls inside itself past that, as it does past the screen (ticket 0820).
     const room = scopeRoom(scope)
+    const maxHeight = scope === PAGE_SCOPE ? undefined : `${room.bottom - room.top - 2 * px('--float-edge')}px`
+    if (maxHeight) el.style.maxHeight = maxHeight
     const inRoom = (box: DOMRect) => ({ left: box.left - room.left, top: box.top - room.top, width: box.width, height: box.height })
     const { left, top } = popoverPlacement(
       inRoom(tileBox),
@@ -36,7 +39,7 @@ export function usePillPopoverPlacement(root: Ref<HTMLElement | undefined>, anch
       px('--pill-gap'),
       px('--float-edge'),
     )
-    style.value = { left: `${left}px`, top: `${top}px` }
+    style.value = { left: `${left}px`, top: `${top}px`, ...(maxHeight ? { maxHeight } : {}) }
   }
 
   let resizeObserver: ResizeObserver | undefined

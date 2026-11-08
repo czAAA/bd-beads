@@ -1,6 +1,7 @@
 import { nextTick, reactive } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import type { CanvasContext, ShellFrameContext } from '../../composables/shell/useAppShell'
+import { easeStandard } from '../../rendering/rowMotion'
 
 // The ghost's hand (Homepage card, What's inside, ticket 0797): it presses the demo editor's own controls and draws
 // through the handlers a press on the Canvas reaches, the ghost pointer moving where a beader's hand would. Applied at
@@ -40,6 +41,11 @@ export interface HandDeps {
   /** `--ghost-move` and `--ghost-ripple`, in ms. */
   moveMs: number
   rippleMs: number
+  /** `--ghost-pause`, `--ghost-drag` and `--ghost-drag-hold`, in ms, and `--ghost-room`, in px (ticket 0820). */
+  pauseMs: number
+  dragMs: number
+  dragHoldMs: number
+  roomPx: number
 }
 
 /** A control: by its test id, or found some other way. */
@@ -55,6 +61,18 @@ const TOOLTIP_DEPTH = 4
 /** The quickest hop, and how a hop's time grows with its length, up to `--ghost-move`. */
 const HOP_MS = 280
 const HOP_MS_PER_PX = 4.8
+/** What counts as a panel, popover, menu or dialog: on a control in one the ghost rests `--ghost-pause` before it
+ * presses, so the beader sees what is pressed. */
+const PANEL = '.app-panel, .color-popover, .margin-sheet, .convert-page__step, [role="dialog"], [role="alertdialog"], [role="listbox"], [role="menu"]'
+/** A scroll that brings a control into view, eased as `--ease-standard`: its time grows with its length, within these. */
+const SCROLL_MS = { least: 200, most: 450, perPx: 1.2 }
+/** How many times the hand follows a control that moved under it before it presses, and how far it may be off it. */
+const AIM_TRIES = 4
+const AIM_SLACK_PX = 3
+/** The most frames the hand waits for a control to stop moving. */
+const STEADY_FRAMES = 45
+/** How near a scroller's top a sticky header counts as stuck there, in px. */
+const STUCK_SLACK_PX = 2
 
 /** A hand in the demo; every step throws `TourStopped` once the run is stopped. */
 export function createHand(deps: HandDeps) {
@@ -142,17 +160,105 @@ export function createHand(deps: HandDeps) {
     return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
   }
 
-  /** Scrolls the scroller in the editor that holds `element` so it shows, at the scroller's top or wherever is nearest;
-   * never the page, which turns its sections when it scrolls. */
-  function bringIntoView(element: Element, at: 'start' | 'nearest' = 'nearest'): void {
-    for (let scroller = element.parentElement; scroller && scroller !== root; scroller = scroller.parentElement) {
-      if (scroller.scrollHeight <= scroller.clientHeight + 1 || !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) continue
-      const room = scroller.getBoundingClientRect()
+  /** The middle of the part of an element that shows: inside every scroller or clip round it, and the demo's box. */
+  function visibleMiddleOf(element: Element): { x: number; y: number } {
+    const box = element.getBoundingClientRect()
+    let [left, top, right, bottom] = [box.left, box.top, box.right, box.bottom]
+    // A menu or picker in the top layer is clipped by none of its ancestors, only by the demo's box the ghost is drawn in.
+    let lifted = false
+    for (let up = element.parentElement; up; up = up.parentElement) {
+      const style = getComputedStyle(up)
+      if (up === root || (!lifted && /(auto|scroll|hidden|clip)/.test(style.overflowX + style.overflowY))) {
+        const clip = up.getBoundingClientRect()
+        ;[left, top, right, bottom] = [Math.max(left, clip.left), Math.max(top, clip.top), Math.min(right, clip.right), Math.min(bottom, clip.bottom)]
+        if (!lifted && up !== root) top = belowStuck(up, element, top)
+      }
+      if (up === root) break
+      lifted ||= up.matches(':popover-open')
+    }
+    return right > left && bottom > top ? { x: (left + right) / 2, y: (top + bottom) / 2 } : middleOf(element)
+  }
+
+  /** The top of a scroller's room past any sticky header stuck across `top` (one not round `element`). */
+  function belowStuck(scroller: Element, element: Element, top: number): number {
+    for (const header of scroller.querySelectorAll('*')) {
+      if (header.contains(element) || getComputedStyle(header).position !== 'sticky') continue
+      const edge = header.getBoundingClientRect()
+      if (edge.top <= top + STUCK_SLACK_PX && edge.bottom > top) top = edge.bottom
+    }
+    return top
+  }
+
+  /** Waits until an element stops moving (a bar or a panel still sliding in), a few frames at most. */
+  async function steady(element: Element): Promise<void> {
+    if (instant) return
+    let last = ''
+    for (let frames = 0; frames < STEADY_FRAMES; frames++) {
       const box = element.getBoundingClientRect()
-      if (at === 'start') scroller.scrollTop += box.top - room.top
-      else if (box.top < room.top) scroller.scrollTop -= room.top - box.top
-      else if (box.bottom > room.bottom) scroller.scrollTop += box.bottom - room.bottom
-      return
+      const now = [box.left, box.top, box.width, box.height].map(Math.round).join()
+      if (now === last) return
+      last = now
+      await frame()
+      await frame()
+    }
+  }
+
+  /** Scrolls each scroller in the editor round `element`, innermost first, so all of it shows, `--ghost-room` clear where
+   * there is room, below sticky headers: at the top with `at` or when taller than the room, else nearest. Smoothly while
+   * the ghost plays; never the page, which turns its sections when it scrolls. */
+  async function bringIntoView(element: Element, at: 'start' | 'nearest' = 'nearest'): Promise<void> {
+    for (let scroller = element.parentElement; scroller && scroller !== root; scroller = scroller.parentElement) {
+      if (scroller.scrollHeight > scroller.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(scroller).overflowY)) await scrollToShow(scroller, element, at)
+    }
+  }
+
+  /** One scroller's part of `bringIntoView`. */
+  async function scrollToShow(scroller: Element, element: Element, at: 'start' | 'nearest'): Promise<void> {
+    // Twice: a sticky header sticks only once the scroll has passed it, and may then cover the control's top.
+    for (let pass = 0; pass < 2; pass++) {
+      const room = scroller.getBoundingClientRect()
+      const box = root.getBoundingClientRect()
+      const top = belowStuck(scroller, element, Math.max(room.top, box.top))
+      const bottom = Math.min(room.bottom, box.bottom)
+      const target = element.getBoundingClientRect()
+      const margin = Math.min(deps.roomPx, Math.max(0, (bottom - top - target.height) / 2))
+      let by = 0
+      if (at === 'start' || target.height > bottom - top || target.top < top + margin) by = target.top - (top + margin)
+      else if (target.bottom > bottom - margin) by = target.bottom - (bottom - margin)
+      const from = scroller.scrollTop
+      const to = Math.max(0, Math.min(scroller.scrollHeight - scroller.clientHeight, from + by))
+      if (Math.abs(to - from) < 1) return
+      if (instant) {
+        scroller.scrollTop = to
+        continue
+      }
+      const ms = Math.min(SCROLL_MS.most, Math.max(SCROLL_MS.least, Math.abs(to - from) * SCROLL_MS.perPx))
+      const started = performance.now()
+      for (let done = 0; done < 1; ) {
+        done = Math.min(1, (performance.now() - started) / ms)
+        scroller.scrollTop = from + (to - from) * easeStandard(done)
+        if (done < 1) await frame()
+      }
+      await frame()
+    }
+  }
+
+  /** Brings a control into view and moves the ghost onto the part of it that shows, once it has stopped moving; rests a
+   * moment on one in a panel; follows it if it moved meanwhile, so what is pressed is always under the ghost. */
+  async function aimAt(element: Element, at: 'start' | 'nearest' = 'nearest'): Promise<void> {
+    await steady(element)
+    await bringIntoView(element, at)
+    await steady(element)
+    await moveTo(visibleMiddleOf(element))
+    if (instant) return
+    if (element.closest(PANEL)) await wait(deps.pauseMs)
+    for (let tries = 0; tries < AIM_TRIES; tries++) {
+      await steady(element)
+      const box = root.getBoundingClientRect()
+      const middle = visibleMiddleOf(element)
+      if (Math.hypot(middle.x - (box.left + ghost.x), middle.y - (box.top + ghost.y)) <= AIM_SLACK_PX) return
+      await bringIntoView(element, at)
+      await moveTo(visibleMiddleOf(element))
     }
   }
 
@@ -170,8 +276,7 @@ export function createHand(deps: HandDeps) {
   /** Moves to a control and presses it. */
   async function press(target: Target): Promise<HTMLElement> {
     const element = await find(target)
-    bringIntoView(element)
-    await moveTo(middleOf(element))
+    await aimAt(element)
     ripple()
     if (instant) pastTheMillisecond()
     element.click()
@@ -183,7 +288,7 @@ export function createHand(deps: HandDeps) {
    * picker, which only a beader may open, hands the ghost's picture to the same flow the picker would. */
   async function pressWith(target: Target, action: () => unknown): Promise<void> {
     const element = await find(target)
-    await moveTo(middleOf(element))
+    await aimAt(element)
     ripple()
     await action()
     await settle()
@@ -196,7 +301,8 @@ export function createHand(deps: HandDeps) {
       element.scrollTop += by
       return
     }
-    await moveTo(middleOf(element))
+    await steady(element)
+    await moveTo(visibleMiddleOf(element))
     const steps = Math.max(1, Math.round(ms / 50))
     for (let step = 0; step < steps; step++) {
       element.scrollTop += by / steps
@@ -210,8 +316,7 @@ export function createHand(deps: HandDeps) {
     // Applied at once a rest shows nothing, so nothing is waited for.
     if (instant) return alive()
     const element = await find(target)
-    bringIntoView(element, at)
-    await moveTo(middleOf(element))
+    await aimAt(element, at)
     // The Tooltip's own element is the control or one of its nearest wrappers.
     const chain: Element[] = []
     for (let up: Element | null = element; up && up !== root && chain.length < TOOLTIP_DEPTH; up = up.parentElement) chain.push(up)
@@ -250,22 +355,34 @@ export function createHand(deps: HandDeps) {
     await settle()
   }
 
-  /** A drag from one bead to another, as the Select tool's: a Selection, or the Mirror's Area. */
+  /** A drag from one bead to another, as the Select tool's: a Selection, or the Mirror's Area. The ghost rests on the
+   * first bead, then the Selection grows bead by bead behind it, and rests whole a moment, so the beader sees what is
+   * selected. */
   async function drag(from: GridPosition, to: GridPosition): Promise<void> {
     await moveToBead(from)
+    await wait(deps.pauseMs)
     ripple()
     deps.canvas.onCellPrimaryDown(from.row, from.column, from.layer)
-    await moveToBead(to)
-    deps.canvas.onCellPrimaryMove(to.row, to.column, to.layer)
+    if (instant) {
+      deps.canvas.onCellPrimaryMove(to.row, to.column, to.layer)
+    } else {
+      const steps = Math.max(1, Math.abs(to.row - from.row), Math.abs(to.column - from.column))
+      for (let step = 1; step <= steps; step++) {
+        const at = { ...to, row: Math.round(from.row + ((to.row - from.row) * step) / steps), column: Math.round(from.column + ((to.column - from.column) * step) / steps) }
+        await moveToBead(at, Math.round(deps.dragMs / steps))
+        deps.canvas.onCellPrimaryMove(at.row, at.column, at.layer)
+      }
+    }
     deps.shell.endStroke()
     await settle()
+    await wait(deps.dragHoldMs)
   }
 
   /** Drags the Frame by its Move bar from one bead to another, as a beader moves it. */
   async function dragFrame(handle: Target, from: GridPosition, to: GridPosition): Promise<void> {
     const bar = await find(handle)
-    const start = middleOf(bar)
-    await moveTo(start)
+    await aimAt(bar)
+    const start = visibleMiddleOf(bar)
     ripple()
     deps.canvas.onFramePress({ kind: 'move' }, from)
     if (!instant) {

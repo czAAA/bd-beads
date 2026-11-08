@@ -57,7 +57,10 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
       ],
     })
     if (mine !== latest) return
-    roomBelow.value = scope === PAGE_SCOPE ? undefined : room.bottom - y - EDGE
+    // `y` is from the popup's containing block, which a boxed shell's box is (`contain`), the room's bottom from the
+    // screen's top: the block's own top joins them.
+    const blockTop = list.getBoundingClientRect().top - (Number.parseFloat(list.style.top) || 0)
+    roomBelow.value = scope === PAGE_SCOPE ? undefined : room.bottom - (y + blockTop) - EDGE
     style.value = { ...fixedAt(y, x), minWidth }
   }
 
