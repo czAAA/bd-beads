@@ -285,15 +285,16 @@ watch(wizard.hasPicture, () => nextTick(onPaneScroll))
   color: var(--muted);
 }
 
-/* Under 1024 px or in portrait (PhoneForms card): the preview above the step, the step scrolling under it. */
+/* Under 1024 px or in portrait (PhoneForms card): the preview above the step, the step scrolling under it. On a short
+ * page (a phone on its side, the Homepage's demo) the preview takes at most half and the step keeps room (ticket 0820). */
 @media (max-width: 63.99rem), (orientation: portrait) {
   .convert-page {
     flex-direction: column;
   }
 
   .convert-page__preview {
-    flex: 0 1 var(--convert-preview-phone);
-    min-height: var(--convert-preview-min);
+    flex: 0 1 min(var(--convert-preview-phone), 50%);
+    min-height: min(var(--convert-preview-min), 40%);
     border-bottom: 1px solid var(--panel-rule);
   }
 
@@ -314,7 +315,7 @@ watch(wizard.hasPicture, () => nextTick(onPaneScroll))
 
 @media (min-width: 40rem) and (orientation: portrait) {
   .convert-page__preview {
-    flex-basis: var(--convert-preview-tablet);
+    flex-basis: min(var(--convert-preview-tablet), 50%);
   }
 }
 </style>

@@ -60,6 +60,14 @@ function cssMs(name: string): number {
   return Number.isNaN(amount) ? 0 : value.endsWith('ms') ? amount : amount * 1000
 }
 
+/** A length token in px: a `rem` one by the root's font size. */
+function cssPx(name: string): number {
+  const value = rootEl.value ? getComputedStyle(rootEl.value).getPropertyValue(name).trim() : ''
+  const amount = Number.parseFloat(value)
+  if (Number.isNaN(amount)) return 0
+  return value.endsWith('rem') ? amount * Number.parseFloat(getComputedStyle(document.documentElement).fontSize) : amount
+}
+
 /** Lets the shell draw: a frame or two once it is mounted. */
 async function settle(): Promise<void> {
   await nextTick()
@@ -106,7 +114,20 @@ async function fresh(): Promise<void> {
 /** The ghost's hand for a run of the tour. */
 function hand(instant: boolean, signal: AbortSignal): Hand {
   const wired = shell.value!.wired
-  return createHand({ root: rootEl.value!, shell: wired.shell, canvas: wired.canvas, ghost, instant, signal, moveMs: cssMs('--ghost-move'), rippleMs: cssMs('--ghost-ripple') })
+  return createHand({
+    root: rootEl.value!,
+    shell: wired.shell,
+    canvas: wired.canvas,
+    ghost,
+    instant,
+    signal,
+    moveMs: cssMs('--ghost-move'),
+    rippleMs: cssMs('--ghost-ripple'),
+    pauseMs: cssMs('--ghost-pause'),
+    dragMs: cssMs('--ghost-drag'),
+    dragHoldMs: cssMs('--ghost-drag-hold'),
+    roomPx: cssPx('--ghost-room'),
+  })
 }
 
 defineExpose({ fresh, hand, hideGhost: () => void (ghost.shown = false), giveFocusBack })
