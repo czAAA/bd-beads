@@ -4,6 +4,7 @@ import { page } from 'vitest/browser'
 import { FIT_LOCALES, misfitsNow, mountAt, type Mounted } from '../testUtils/browserFit'
 import { unexplainedFit } from '../testUtils/fitPending'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
+import { tokenPx as tokenOf } from '../testUtils/tokenPx'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
 
@@ -19,15 +20,8 @@ const PHONES = [[390, 844], [360, 640]] as const
 const el = <T extends Element = HTMLElement>(selector: string) => mounted.root.querySelector<T>(selector)!
 const box = (selector: string) => el(selector).getBoundingClientRect()
 const shown = () => el('.homepage__section--shown')
-/** A length token as the page resolves it, in px. */
-function tokenPx(token: string): number {
-  const probe = document.createElement('span')
-  probe.style.cssText = `position: absolute; height: var(${token})`
-  mounted.root.append(probe)
-  const height = probe.getBoundingClientRect().height
-  probe.remove()
-  return height
-}
+/** A length token as the Homepage resolves it, in px. */
+const tokenPx = (token: string) => tokenOf(mounted.root, token)
 
 async function next() {
   el('[data-testid="phone-bar-next"]').click()

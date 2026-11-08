@@ -7,6 +7,7 @@ import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
 import { ROW_DONE_PASSES } from './inside/tourScripts'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
+import { tokenPx } from '../testUtils/tokenPx'
 
 // The Homepage has its own tiers, so it is tried at more widths than the rest (ticket 552).
 const WIDTHS = [1900, 1280, 1024, 844, 820, 768, 390, 360, 320]
@@ -162,16 +163,6 @@ function tokenSize(within: Element, token: string): string {
   const size = getComputedStyle(probe).fontSize
   probe.remove()
   return size
-}
-
-/** A length token as the page resolves it, in px. */
-function tokenPx(within: Element, token: string): number {
-  const probe = document.createElement('span')
-  probe.style.cssText = `position: absolute; height: var(${token})`
-  within.append(probe)
-  const height = probe.getBoundingClientRect().height
-  probe.remove()
-  return height
 }
 
 /** Whether two boxes share any pixel, beyond a rounding's pixel. */

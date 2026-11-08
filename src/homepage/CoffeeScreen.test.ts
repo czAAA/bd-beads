@@ -64,4 +64,3 @@ describe('CoffeeScreen (ticket 0823)', () => {
     expect(order).toEqual(['homepage-coffee-band', 'homepage-promises', 'homepage-tiles'])
   })
 })
-
