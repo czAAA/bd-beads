@@ -26,13 +26,20 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
 
   function toShortcut(control: ControlAction): KeyboardShortcut {
     const modals = control.modals ?? 'block'
+    const givesWay = (event: KeyboardEvent) => !!control.givesWayToFocusedButton && isFocusedOnProgressBarButton(event)
+    const isRepeatOfHeldKey = (event: KeyboardEvent) => !!control.actsOnce && event.repeat
     return {
+      // A focused button gives way to its native press, except for a held key's repeats, which that press must not
+      // take either (ticket 0835).
       matches: (event) =>
-        control.chords.some((chord) => chordMatches(chord, event)) &&
-        !(control.givesWayToFocusedButton && isFocusedOnProgressBarButton(event)),
+        control.chords.some((chord) => chordMatches(chord, event)) && (!givesWay(event) || isRepeatOfHeldKey(event)),
       guard: () => (modals !== 'block' || noModalOpen()) && (!control.needsProject || !!deps.activeProject()),
       allowWhileTyping: control.allowWhileTyping,
       action: (event) => {
+        if (isRepeatOfHeldKey(event)) {
+          if (givesWay(event)) event.preventDefault()
+          return
+        }
         if (control.preventDefault) event.preventDefault()
         // Claimed from the browser everywhere (Canvas zoom, ADR 0034), but only run when nothing is open.
         if (modals === 'claim' && !noModalOpen()) return
