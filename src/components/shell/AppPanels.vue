@@ -82,6 +82,8 @@ const {
   onSelectProjectFromPhoneDrawer,
   onOpenShortcutsHelp,
   onOpenFeedback,
+  projectsKept,
+  onAskToKeep,
 } = usePanelsContext()
 
 /** The reference image's state the Project panel shows (ticket 0790). */
@@ -177,6 +179,7 @@ const chosenStarter = ref<StarterId>()
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
       :demo="demo"
+      :kept="projectsKept"
       @new-project="demo ? onStartDemoAfresh() : (phoneSavedProjectsOpen = false)"
       @convert-image="onOpenConvertImage()"
       @saved-projects="phoneSavedProjectsOpen = true"
@@ -184,6 +187,7 @@ const chosenStarter = ref<StarterId>()
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
       @feedback="onOpenFeedback"
+      @keep-projects="onAskToKeep"
     />
     <ProjectPanel
       v-else-if="activeProject"

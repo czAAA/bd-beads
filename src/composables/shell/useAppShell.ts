@@ -97,13 +97,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Which App page fills the canvas box, and the leave guard the page may register (ADR 0085, ticket 0756). */
   const appPage = useAppPage()
 
-  /** Asking the browser to keep the library, at a device's first save (ticket 399). */
-  const storageAsk = useStorageAskFlow({
-    persistentStorage: services.persistentStorage,
-    devicePreferences: services.devicePreferences,
-    dialogs,
-  })
-
   // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes
   // it.
   if (!demo) migrateLegacyMakerName(services.libraryStore)
@@ -130,7 +123,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     flushPendingSave,
     saveNow,
     openElsewhere,
-  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved, { held: safeStart.held, locks: services.projectLocks })
+  } = useProjectLibrary(services.libraryStore, { held: safeStart.held, locks: services.projectLocks })
   const openingAddress = services.openingAddress()
   // `?open=saved-projects` lands with no Project open; `?project=<id>` is opened below, through the Saved Projects pick.
   if (openingAddress.savedProjects || openingAddress.project) activeProjectId.value = undefined
@@ -700,6 +693,18 @@ function wireAppShell(services: Services, options: ShellOptions) {
     dialogs,
   })
 
+  /** Asking the browser to keep the library, at a device's first Project file or export, and saying its answer
+   * (tickets 399, 0839); its Message saves the open Project's file through Save Project file. */
+  const storageAsk = useStorageAskFlow({
+    persistentStorage: services.persistentStorage,
+    devicePreferences: services.devicePreferences,
+    dialogs,
+    messages,
+    showToast,
+    openProjectId: () => currentProject()?.id,
+    saveFileOf: (id) => exportFlow.onSaveFileOf(id),
+  })
+
   /** Exporting as a file, PNG or PDF, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
   const exportFlow = useExportFlow({
     currentProject,
@@ -715,6 +720,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     linkedFiles: services.linkedFiles,
     libraryIds,
     onFileSaved: sinceFile.fileSaved,
+    onFileReached: storageAsk.onFileReached,
   })
 
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
@@ -1114,6 +1120,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onExportPng: exportFlow.onExportPng,
       onExportPdf: exportFlow.onExportPdf,
       onSetLetters: exportFlow.onSetLetters,
+      // Menu: whether the browser keeps the Projects, and asking it again (ticket 0839)
+      projectsKept: storageAsk.kept,
+      onAskToKeep: storageAsk.onAskToKeep,
     },
     /** The dialogs (AppDialogs): which one the registry shows, what each asks about, and its answers. */
     dialogs: {
