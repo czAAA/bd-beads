@@ -14,6 +14,17 @@ import { openSavedProjects } from './testUtils/pill'
 // What each decides is in useSafeStart, useProjectLibrary and useSavedProjectConfirms's tests.
 
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
+// Another tab has this one Project open first (ticket 0834); every other Project is this tab's.
+const OPEN_ELSEWHERE = 'open-in-another-tab'
+vi.mock('./services/projectLocks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./services/projectLocks')>()),
+  browserProjectLocks: {
+    claim: (id: string, onHeld: (held: boolean) => void) => {
+      onHeld(id !== OPEN_ELSEWHERE)
+      return () => undefined
+    },
+  },
+}))
 
 function project(name: string, updatedAt: number): Project {
   return withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 4, height: 4, unit: 'beads' } }), { updatedAt, savedAt: updatedAt })
@@ -88,5 +99,16 @@ describe('opening the editor (ticket 0716)', () => {
 
     expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Older')
+  })
+
+  it('says so in the notice row when the open Project is open in another tab first', async () => {
+    storeLibrary([withLayers(project('Shared', 2000), { id: OPEN_ELSEWHERE })])
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="open-elsewhere-message"]').text()).toBe(
+      "This Project is open in another tab. Changes made here aren't saved while it is open there.",
+    )
   })
 })

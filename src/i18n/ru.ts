@@ -320,6 +320,7 @@ export const ru: Translations = {
       confirmButton: 'Хранить проекты',
       cancelButton: 'Пропустить',
     },
+    openElsewhere: 'Этот проект открыт в другой вкладке. Изменения здесь не сохраняются, пока он открыт там.',
   },
   header: {
     menuButton: 'Меню',
