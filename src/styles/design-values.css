@@ -219,7 +219,7 @@
   --margin-band-folded: 31px; /* MarginSheet card: the band height under which even the folded row has no room: only the Move bar is left (ticket 0682). */
   --margin-band-inset-compact: 10px; /* MarginSheet card: the compact and folded rows in from the sheet's sides. */
   --margin-band-top-compact: 8px; /* MarginSheet card: the compact row down from the sheet's top, 2px inside its 6px border. */
-  --margin-done-compact: 22px; /* MarginSheet card: Row done in the compact and folded forms. */
+  --margin-done-compact: 24px; /* MarginSheet card: Row done in the compact and folded forms. */
   --margin-track-compact: 40px; /* MarginSheet card: the Row progress track in the compact form. */
   --margin-tab: 24px; /* MarginSheet card: the folded title block's name tab, and the folded row's height. */
   --margin-tab-name: 600 0.6875rem/0.875rem var(--font-sans); /* MarginSheet card: the Frame's name on its tab and in the compact title block (Inter 600 11). */
