@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import IconButton from '../components/ui/IconButton.vue'
 import { useI18n } from '../i18n/useI18n'
+import { stepName, type HomepageSection } from './sections'
 
 // The phone's own bar (ticket 0827; Homepage card, the phone's bar): in place of the Progress bar on a phone, the
 // section's name, a segment per section and the counter over ↑, the way into the editor (the slot) and ↓. ↑ and ↓ turn
@@ -9,14 +10,14 @@ import { useI18n } from '../i18n/useI18n'
 const props = defineProps<{
   /** The section shown, from 0. */
   section: number
-  /** The Homepage's sections in order; the shown one's heading names it. */
-  sections: readonly { id: string; heading: string }[]
+  /** The Homepage's sections in order; the shown one's step name, or its heading, names it. */
+  sections: readonly Pick<HomepageSection, 'id' | 'heading' | 'step'>[]
 }>()
 const emit = defineEmits<{ go: [section: number] }>()
 const { t } = useI18n()
 
 const last = computed(() => props.sections.length - 1)
-const current = computed(() => props.sections[props.section]?.heading ?? '')
+const current = computed(() => (props.sections[props.section] ? stepName(props.sections[props.section]!) : ''))
 </script>
 
 <template>

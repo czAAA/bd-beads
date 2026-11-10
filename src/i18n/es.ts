@@ -332,6 +332,15 @@ export const es: Translations = {
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
     whatsInside: 'Qué incluye',
+    welcome: {
+      heading: 'Patrones de cuentas, dibujados como se colocan las cuentas.',
+      line: 'Para telar, peyote y punto ladrillo.',
+      seeHow: 'Mira cómo funciona',
+      colors: { one: '{codes} color de {brands}', many: '{codes} colores de {brands}', other: '{codes} colores de {brands}' },
+      starters: { one: '{count} punto de partida', many: '{count} puntos de partida', other: '{count} puntos de partida' },
+      caption: '{technique} · {size}',
+      piece: 'Montañas bajo un sol, en peyote',
+    },
     inside: {
       rows: {
         canvas: { name: 'Lienzo y marco', text: 'Dibuja donde quieras: el Lienzo no tiene bordes. Un marco fija el tamaño, las exportaciones y el recuento de cuentas.' },
@@ -351,8 +360,14 @@ export const es: Translations = {
       editor: 'Qué incluye: el editor',
       demo: { ring: 'Anillo', heart: 'Corazón', bracelet: 'Pulsera' },
       place: '{at} / {count}',
+      chapters: { draw: 'Dibuja', startFrom: 'Empieza con algo hecho', beadColors: 'Colores reales de cuentas', weaveKeep: 'Teje y guarda' },
+      pause: 'Pausa',
+      play: 'Reproducir',
+      tryIt: 'Pruébalo',
+      expand: 'Ampliar',
+      collapse: 'Reducir',
     },
-    sections: { label: 'Secciones', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}', moreBelow: 'Más abajo' },
+    sections: { label: 'Secciones', welcome: 'Bienvenida', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}', moreBelow: 'Más abajo' },
     coffee: { title: 'Hecho por una familia', text: 'openbeads sigue siendo gratis y totalmente local, sin anuncios ni seguimiento. Si te ayuda en tu trabajo, puedes apoyar su desarrollo a través de Buy Me a Coffee.', button: 'Invítame a un café', star: 'Una estrella en GitHub también ayuda.', source: 'Ver el código fuente' },
     promises: {
       device: { name: 'Tuyo, en este dispositivo', text: 'Funciona en tu navegador. Sin cuenta, nada que instalar.' },

@@ -59,7 +59,7 @@ function onPointerDown(event: PointerEvent) {
   // A pinch's second finger is not a press.
   if (!top || (event.pointerType === 'touch' && !event.isPrimary) || !(target instanceof Element)) return
   const root = top.root()
-  if (!root || root.contains(target) || isExempt(top, target) || top.keepsPress?.(event)) return
+  if (!root || root.contains(target) || isExempt(top, target) || top.keepsPress?.(event) || top.scope.pagesOwn?.(target)) return
   if (top.outside === 'through') return (top.onOutsidePress ?? top.close)()
   event.stopPropagation()
   event.preventDefault()

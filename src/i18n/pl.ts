@@ -332,6 +332,15 @@ export const pl: Translations = {
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
     whatsInside: 'Co jest w środku',
+    welcome: {
+      heading: 'Wzory koralikowe, narysowane tak, jak układają się koraliki.',
+      line: 'Na krosno, peyote i ścieg ceglasty.',
+      seeHow: 'Zobacz, jak to działa',
+      colors: { one: '{codes} kolor {brands}', few: '{codes} kolory {brands}', many: '{codes} kolorów {brands}', other: '{codes} koloru {brands}' },
+      starters: { one: '{count} starter', few: '{count} startery', many: '{count} starterów', other: '{count} startera' },
+      caption: '{technique} · {size}',
+      piece: 'Góry pod słońcem, w peyote',
+    },
     inside: {
       rows: {
         canvas: { name: 'Płótno i ramka', text: 'Rysuj gdziekolwiek: płótno nie ma krawędzi. Ramka ustala rozmiar, eksporty i liczbę koralików.' },
@@ -351,8 +360,14 @@ export const pl: Translations = {
       editor: 'Co jest w środku: edytor',
       demo: { ring: 'Pierścionek', heart: 'Serce', bracelet: 'Bransoletka' },
       place: '{at} / {count}',
+      chapters: { draw: 'Rysuj', startFrom: 'Zacznij od gotowego', beadColors: 'Realne kolory koralików', weaveKeep: 'Pleć i zachowaj' },
+      pause: 'Pauza',
+      play: 'Odtwórz',
+      tryIt: 'Spróbuj samodzielnie',
+      expand: 'Rozwiń',
+      collapse: 'Zwiń',
     },
-    sections: { label: 'Sekcje', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}', moreBelow: 'Więcej poniżej' },
+    sections: { label: 'Sekcje', welcome: 'Powitanie', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}', moreBelow: 'Więcej poniżej' },
     coffee: { title: 'Robi to jedna rodzina', text: 'openbeads pozostaje darmowe i w pełni lokalne, bez reklam i śledzenia. Jeśli aplikacja ci pomaga, możesz wesprzeć jej rozwój przez Buy Me a Coffee.', button: 'Postaw mi kawę', star: 'Gwiazdka na GitHubie też pomaga.', source: 'Kod źródłowy' },
     promises: {
       device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce. Bez konta i bez instalacji.' },

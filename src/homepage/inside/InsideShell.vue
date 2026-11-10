@@ -12,13 +12,19 @@ import { memoryServices } from '../../services/memoryServices'
 const props = defineProps<{
   /** The demo's library to start on. */
   projects: Project[]
+  /** Which word its Canvas strip's Expand button reads (ticket 0830); none where the demo has the width already. */
+  expand?: 'expand' | 'collapse'
 }>()
 const emit = defineEmits<{
   /** New Project in its Menu: the demo starts afresh. */
   startAfresh: []
+  /** Expand or Collapse pressed in its Canvas strip. */
+  toggleExpand: []
 }>()
 
-const wired = provideAppShell(memoryServices(props.projects), { demo: { startAfresh: () => emit('startAfresh') } })
+const wired = provideAppShell(memoryServices(props.projects), {
+  demo: { startAfresh: () => emit('startAfresh'), expand: () => props.expand, toggleExpand: () => emit('toggleExpand') },
+})
 const { announcement, endStroke } = wired.shell
 
 /** The wiring, for the tour to work the demo through the same flows a press reaches. */

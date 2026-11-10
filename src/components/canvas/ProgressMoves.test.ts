@@ -31,6 +31,15 @@ describe('ProgressMoves (ticket 0788)', () => {
     expect(wrapper.emitted('forward')).toHaveLength(1)
   })
 
+  it('draws the forward button secondary where the page has another primary button (ticket 0830)', () => {
+    const wrapper = mount(ProgressMoves, {
+      props: { back: { label: 'Back', testid: 'back' }, forward: { label: 'Next', variant: 'secondary', testid: 'next' } },
+    })
+    const next = wrapper.get('[data-testid="next"]').classes()
+    expect(next).toContain('app-button--secondary')
+    expect(next).not.toContain('app-button--primary')
+  })
+
   it('is the one pair in the editor bar and in a bar of steps, so the two look the same', () => {
     // A row in, so both of the editor's buttons are on, as both of the step bar's are on its middle step.
     const project = moveToRow(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } }), 1)

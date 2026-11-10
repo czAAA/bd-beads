@@ -4,12 +4,13 @@ import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { beadColorAt } from '../../domain/layerBeads'
 import { frameOf } from '../../domain/layerRecord'
+import { currentPass, rowProgressOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { ReferencePlace } from '../../domain/referenceImage'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
 import { DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, PANORAMA, RIDGE, SUN } from './demoProjects'
-import { TOUR_SCRIPTS } from './tourScripts'
+import { ROW_DONE_PASSES, TOUR_SCRIPTS } from './tourScripts'
 
 // The tour's rows applied at once on the real demo editor (ticket 0821), as a press on a later row applies them: what
 // they leave on the ring's band.
@@ -112,6 +113,17 @@ describe("What's inside's Starters row on the ring (ticket 0821)", () => {
   it("lays the Starter's ring where the band was, the same size", async () => {
     const frame = frameOf(await applyThrough(await demoEditor(), 'starters'))!
     expect({ row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }).toEqual(DEMO_FRAME)
+  }, 60000)
+})
+
+describe("What's inside's last chapter on the mountains (ticket 0830)", () => {
+  it('counts Row done on the traced mountains, their flowers still there, with no ring left under them', async () => {
+    const project = await applyThrough(await demoEditor(), 'exports')
+    expect(currentPass(rowProgressOf(project)), 'Row done pressed for the first rows').toBe(ROW_DONE_PASSES)
+    for (const [row, column] of DEMO_FLOWERS) expect(project.paletteCodes?.[frameBead(project, row, column)!.toLowerCase()], `${row},${column}`).toBe('DB55')
+    const sun = new Set<string | null>()
+    for (let row = SUN.row; row < SUN.row + SUN.size; row++) for (let column = SUN.column; column < SUN.column + SUN.size; column++) sun.add(frameBead(project, row, column))
+    expect(sun.size, 'the sun one color').toBe(1)
   }, 60000)
 })
 

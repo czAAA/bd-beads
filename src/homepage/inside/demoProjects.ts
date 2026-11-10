@@ -1,5 +1,6 @@
 import { beadsFromColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
+import { defaultPalette } from '../../domain/palette'
 import { withLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { starterById } from '../../domain/starters'
@@ -150,6 +151,31 @@ export const DEMO_FLOWERS: readonly (readonly [number, number])[] = [[5, 6], [5,
 
 /** Where the sun is: its top-left bead and size, in the sky right of the last peak. */
 export const SUN = { row: 0, column: 29, size: 2 } as const
+
+/** The swatches the tour fills the panorama with, by what each paints: the sky is Miyuki's Iridescent, a pale blue. */
+export const DEMO_SWATCHES = { sky: 'iridescent', slopes: 'grey', ground: 'brown' } as const
+
+/** A built-in color of the demo's Bead by its family, as the tour picks its swatch. */
+function swatchHex(id: string): string {
+  return defaultPalette(DEMO_BEAD).find((color) => color.id === id)!.hex
+}
+
+/** The Welcome section's piece (ticket 0830; Homepage card): the panorama the tour traces, finished. The sky over the
+ * snow line, which runs down its own column to the next one's ridge as the ghost paints it, the slopes under it, the
+ * ground along the foot and the sun in the sky; no flowers yet. A peyote Frame lying across, as the demo's band lies. */
+export function finishedMountains(): Project {
+  const [sky, slopes, ground] = [DEMO_SWATCHES.sky, DEMO_SWATCHES.slopes, DEMO_SWATCHES.ground].map(swatchHex)
+  const colors = Array.from({ length: PANORAMA.rows }, (_, row) =>
+    Array.from({ length: PANORAMA.columns }, (_, column) => {
+      const [here, next] = [RIDGE[column], RIDGE[column + 1] ?? RIDGE[column]]
+      if (row >= SUN.row && row < SUN.row + SUN.size && column >= SUN.column && column < SUN.column + SUN.size) return DEMO_COLORS.Y
+      if (row === PANORAMA.rows - 1) return ground
+      return row < Math.min(here, next) ? sky : row <= Math.max(here, next) ? DEMO_COLORS.W : slopes
+    }),
+  )
+  const project = createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size: { unit: 'beads', width: PANORAMA.columns, height: PANORAMA.rows }, background: 1 })
+  return lyingAcross(withLayer(project, 'frame', { beads: beadsFromColors(colors) }))
+}
 
 /** The Canvas the tour's view shows across (ticket 0797): the Frame in its middle, with room for its sheet. The Starter's
  * ring lands where the Frame was, the same size, so nothing needs room beside it. */

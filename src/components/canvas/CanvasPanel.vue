@@ -169,6 +169,8 @@ const {
   onSelectionRelease,
   onSelectionResume,
   demo,
+  demoExpand,
+  onToggleDemoExpand,
   surfaceProbe,
 } = useCanvasContext()
 
@@ -339,6 +341,7 @@ const drawingStyle = computed(() => {
         class="app-shell__canvas-strip"
         :page="page"
         :demo="demo"
+        :expand="demoExpand"
         :project="onEditor ? activeProject : undefined"
         :rulers="showRulers"
         :reference-image="onEditor && activeProject ? referenceState : undefined"
@@ -348,6 +351,7 @@ const drawingStyle = computed(() => {
         :open-panel="openPanel === 'export' && exportOpener !== 'strip-export' ? null : openPanel"
         :zoom-percent="onEditor ? stripZoomPercent : undefined"
         @select-panel="onSelectPanel"
+        @toggle-expand="onToggleDemoExpand"
         @close="onCloseConvertImage"
         @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"

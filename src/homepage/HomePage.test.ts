@@ -12,8 +12,8 @@ import { fakeFeedback } from '../testUtils/fakeFeedback'
 // What's inside stands in for itself here, saying what the page asks of it: its own tests mount the demo editor.
 vi.mock('./inside/WhatsInside.vue', () => ({
   default: defineComponent({
-    props: { withEditor: Boolean, shown: Boolean },
-    setup: (props) => () => h('div', { 'data-testid': 'whats-inside', 'data-with-editor': String(props.withEditor), 'data-shown': String(props.shown) }),
+    props: { withEditor: Boolean, shown: Boolean, wide: Boolean },
+    setup: (props) => () => h('div', { 'data-testid': 'whats-inside', 'data-with-editor': String(props.withEditor), 'data-shown': String(props.shown), 'data-wide': String(props.wide) }),
   }),
 }))
 
@@ -196,6 +196,19 @@ describe('HomePage', () => {
       for (let i = 0; i < 4; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
       expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-with-editor')).toBe('false')
     })
+
+    it("stands What's inside's list beside its demo from a 1000px page, by the zoomed width (ticket 0830)", async () => {
+      setScreenWidth(1150)
+      const wrapper = page()
+      expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-wide')).toBe('true')
+
+      // 1150 at 110% is a 1045px page; at 120% it is 958px.
+      await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-wide')).toBe('true')
+      await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-wide')).toBe('false')
+      setScreenWidth(1024)
+    })
   })
 
   it('starts in English on a device with no saved language', () => {
@@ -206,15 +219,18 @@ describe('HomePage', () => {
 
 describe('HomePage sections (tickets 0739, 0801)', () => {
   const shown = (wrapper: ReturnType<typeof page>) =>
-    ['inside', 'coffee', 'plans'].filter((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
+    ['welcome', 'inside', 'coffee', 'plans'].filter((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
   const step = (wrapper: ReturnType<typeof page>, index: number) => wrapper.findAll('[data-testid="section-step"]')[index]!.trigger('click')
 
-  it('shows one section at a time under the hero, What\'s inside first, the others slid away', () => {
+  it('shows one section at a time, Welcome first (ticket 0830), the others slid away', () => {
     const wrapper = page()
-    expect(shown(wrapper)).toEqual(['inside'])
-    expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('true')
+    expect(shown(wrapper)).toEqual(['welcome'])
+    expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('false')
     expect(wrapper.get('[data-testid="homepage-section-plans"]').classes()).toContain('homepage__section--after')
-    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/3')
+    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('1/4')
+    // Welcome's heading is a sentence, so its step has a name of its own.
+    expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('1/4 · Welcome')
+    expect(wrapper.get('[data-testid="homepage-section-welcome"] h2').text()).toBe('Bead patterns, drawn the way the beads sit.')
   })
 
   it('turns with Next and Back, the bar following, the page itself never scrolled', async () => {
@@ -222,21 +238,25 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     const el = wrapper.get('[data-testid="homepage-page"]').element as HTMLElement
     el.scrollTo = vi.fn() as typeof el.scrollTo
     await wrapper.get('[data-testid="section-next"]').trigger('click')
-    expect(shown(wrapper)).toEqual(['coffee'])
-    expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--before')
-    expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('2/3 · Made by one family')
+    expect(shown(wrapper)).toEqual(['inside'])
+    expect(wrapper.get('[data-testid="homepage-section-welcome"]').classes()).toContain('homepage__section--before')
+    expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe("2/4 · What's inside")
     // What's inside plays its tour only while it is the section shown (ticket 0797).
+    expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('true')
+    await wrapper.get('[data-testid="section-next"]').trigger('click')
+    expect(shown(wrapper)).toEqual(['coffee'])
     expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-shown')).toBe('false')
     await wrapper.get('[data-testid="section-back"]').trigger('click')
-    expect(shown(wrapper)).toEqual(['inside'])
+    await wrapper.get('[data-testid="section-back"]').trigger('click')
+    expect(shown(wrapper)).toEqual(['welcome'])
     expect(el.scrollTo).not.toHaveBeenCalled()
   })
 
   it('turns straight to the section a step asks for', async () => {
     const wrapper = page()
-    await step(wrapper, 2)
+    await step(wrapper, 3)
     expect(shown(wrapper)).toEqual(['plans'])
-    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('3/3')
+    expect(wrapper.get('[data-testid="section-counter"]').text()).toBe('4/4')
   })
 
   it('turns with the keys from anywhere on the page, but not while the Menu is open', async () => {
@@ -256,14 +276,15 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     wrapper.get('[data-testid="canvas-strip"]').element.dispatchEvent(event)
     await nextTick()
     expect(event.defaultPrevented).toBe(true)
-    expect(shown(wrapper)).toEqual(['coffee'])
+    expect(shown(wrapper)).toEqual(['inside'])
   })
 
   it('says there is more with More below: a press turns to the next section, as Next does, and it is gone at the end (ticket 0826)', async () => {
     const wrapper = page()
     expect(wrapper.find('.homepage__body [data-testid="more-below"]').exists()).toBe(true)
     await wrapper.get('[data-testid="more-below-button"]').trigger('click')
-    expect(shown(wrapper)).toEqual(['coffee'])
+    expect(shown(wrapper)).toEqual(['inside'])
+    await wrapper.get('[data-testid="more-below-button"]').trigger('click')
     await wrapper.get('[data-testid="more-below-button"]').trigger('click')
     expect(shown(wrapper)).toEqual(['plans'])
     await flushPromises()
@@ -274,12 +295,53 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     beforeEach(() => void vi.useFakeTimers())
     afterEach(() => void vi.useRealTimers())
 
-    it('lifts What\'s inside and dips Next\'s arrow', async () => {
+    it("lifts the first section, Welcome, and dips Next's arrow", async () => {
       const wrapper = page()
       vi.advanceTimersByTime(1500)
       await nextTick()
-      expect(wrapper.get('[data-testid="homepage-section-inside"]').classes()).toContain('homepage__section--nudge')
+      expect(wrapper.get('[data-testid="homepage-section-welcome"]').classes()).toContain('homepage__section--nudge')
       expect(wrapper.get('[data-testid="section-bar"]').classes()).toContain('section-bar--nudging')
+    })
+  })
+
+  describe('Welcome (ticket 0830)', () => {
+    const wayIn = (wrapper: ReturnType<typeof page>) => wrapper.get('[data-testid="strip-way-in"]')
+
+    it("turns to What's inside from See how it works, as Next does", async () => {
+      const wrapper = page()
+      await wrapper.get('[data-testid="welcome-see-how"]').trigger('click')
+      expect(shown(wrapper)).toEqual(['inside'])
+    })
+
+    it("goes into the editor from its tile's way in, as the strip's does", async () => {
+      const fresh = page()
+      await fresh.get('[data-testid="welcome-make-first"]').trigger('click')
+      expect(fresh.emitted('makeFirstProject')).toHaveLength(1)
+
+      const returning = page(3)
+      await returning.get('[data-testid="welcome-open-editor"]').trigger('click')
+      expect(returning.emitted('openEditor')).toHaveLength(1)
+      const library = returning.get('[data-testid="welcome-saved-projects"]')
+      expect(library.text()).toBe(`${en.projects.heading} · 3`)
+      await library.trigger('click')
+      expect(returning.emitted('openSavedProjects')).toHaveLength(1)
+    })
+
+    it("keeps the strip's way in away on Welcome, out of the Tab order and unread, and brings it back from the second section", async () => {
+      const wrapper = page()
+      expect(wayIn(wrapper).classes()).toContain('canvas-strip__way-in--away')
+      expect(wayIn(wrapper).attributes('aria-hidden')).toBe('true')
+      expect(wayIn(wrapper).attributes('inert')).toBeDefined()
+      // Its place is kept, so the slogan never moves: the button is still there to take its room.
+      expect(wayIn(wrapper).find('[data-testid="homepage-make-first"]').exists()).toBe(true)
+
+      await wrapper.get('[data-testid="section-next"]').trigger('click')
+      expect(wayIn(wrapper).classes()).not.toContain('canvas-strip__way-in--away')
+      expect(wayIn(wrapper).attributes('aria-hidden')).toBeUndefined()
+      expect(wayIn(wrapper).attributes('inert')).toBeUndefined()
+
+      await wrapper.get('[data-testid="section-back"]').trigger('click')
+      expect(wayIn(wrapper).classes()).toContain('canvas-strip__way-in--away')
     })
   })
 
@@ -379,17 +441,17 @@ describe('HomePage plan tiles', () => {
 describe('HomePage on a phone (ticket 0827)', () => {
   beforeEach(() => setScreenWidth(390))
   const shown = (wrapper: ReturnType<typeof page>) =>
-    ['inside', 'coffee', 'plans'].find((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
+    ['welcome', 'inside', 'coffee', 'plans'].find((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
 
   it('has its own bar in place of the Progress bar, ↑ and ↓ turning the page as Back and Next do', async () => {
     const wrapper = page()
     expect(wrapper.find('[data-testid="section-bar"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="phone-bar-name"]').text()).toBe("What's inside")
+    expect(wrapper.get('[data-testid="phone-bar-name"]').text()).toBe('Welcome')
     await wrapper.get('[data-testid="phone-bar-next"]').trigger('click')
-    expect(shown(wrapper)).toBe('coffee')
-    expect(wrapper.get('[data-testid="phone-bar-counter"]').text()).toBe('2/3')
-    await wrapper.get('[data-testid="phone-bar-back"]').trigger('click')
     expect(shown(wrapper)).toBe('inside')
+    expect(wrapper.get('[data-testid="phone-bar-counter"]').text()).toBe('2/4')
+    await wrapper.get('[data-testid="phone-bar-back"]').trigger('click')
+    expect(shown(wrapper)).toBe('welcome')
   })
 
   it('goes into the editor from the bar\'s main button as the strip\'s way in does, which is not in the strip', async () => {
@@ -416,6 +478,8 @@ describe('HomePage on a phone (ticket 0827)', () => {
     expect(library.get('[data-icon]').attributes('data-icon')).toBe('library')
     expect(library.attributes('aria-label')).toBe(`${en.projects.heading}, 3`)
     expect(library.classes()).toContain('app-button--box')
+    // It is not the way in, so Welcome leaves it shown (ticket 0830).
+    expect(wayIn.classes()).not.toContain('canvas-strip__way-in--away')
     await library.trigger('click')
     expect(wrapper.emitted('openSavedProjects')).toHaveLength(1)
   })
@@ -432,6 +496,7 @@ describe('HomePage on a phone (ticket 0827)', () => {
   it('ends each section but the last with "Next · {section}"', () => {
     const wrapper = page()
     const line = (id: string) => wrapper.find(`[data-testid="homepage-section-${id}"] [data-testid="homepage-next-line"]`)
+    expect(line('welcome').text()).toBe("Next · What's inside")
     expect(line('inside').text()).toBe('Next · Made by one family')
     expect(line('coffee').text()).toBe('Next · Three ways to use it')
     expect(line('plans').exists()).toBe(false)
@@ -439,6 +504,9 @@ describe('HomePage on a phone (ticket 0827)', () => {
 
   it('lays the sections out for it: no editor, the promises listed, the plans stacked with no growing', () => {
     const wrapper = page()
+    // Welcome has no button of its own: the bar's main button is the way in (ticket 0830).
+    expect(wrapper.findAll('[data-testid="homepage-welcome"] button')).toHaveLength(0)
+    expect(wrapper.get('[data-testid="homepage-welcome"] > [data-testid="welcome-promises"]').classes()).toContain('grouped-list')
     expect(wrapper.get('[data-testid="whats-inside"]').attributes('data-with-editor')).toBe('false')
     expect(wrapper.get('[data-testid="homepage-coffee"] > [data-testid="homepage-promises"]').classes()).toContain('grouped-list')
     expect(wrapper.get('[data-testid="homepage-plans"]').classes()).toContain('plans--phone')

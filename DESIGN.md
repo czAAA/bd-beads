@@ -215,6 +215,21 @@ The Homepage card describes the page (ticket 0739); how the app builds it:
   Techniques from `TECHNIQUES`, the brands from the offered Beads' catalogs, the codes counted from the catalog files
   at build time (`__COLOR_CATALOG_CODES__`, so the Homepage fetches no catalog), the Starters from `categories.json`.
 - The two X1 marks are `AppLogo`, the design system's own file.
+- Welcome is the first of four sections (ticket 0830; `homepage/sections.ts` lists them, and the bar counts what it
+  lists). `WelcomeTile` takes its counts from the app (`homepage/appCounts.ts`: the catalogs' codes and the Starters,
+  as the free list counts them) and its piece from the Project renderer (`WelcomePiece`, the tour's mountains from
+  `inside/demoProjects.ts`, drawn in the theme shown), so neither is a number or a picture kept by hand. The way into
+  the editor is the page's one primary button: `StepBar`'s `nextVariant` makes the Homepage's Next secondary, and
+  Convert image's stays primary.
+- What's inside is a real editor (`inside/InsideShell`, the app's shell given its own stores), played by a tour
+  (`inside/useInsideTour.ts`: 13 rows, `inside/tourScripts.ts`) and shown as four chapters (`inside/insideCopy.ts`).
+  A row pressed applies the rows before it at once, so every chapter starts on what the ones before it made. The list
+  stands beside the demo from a 1000px homepage box (`LIST_FROM` in `HomePage.vue`, by the zoomed width) and is a band
+  over it under that. Expand is the page's control drawn in the demo's own Canvas strip: the shell passes it through
+  (`demo.expand` in `useAppShell`), and `composables/ui/shellScope.ts` (`pagesOwn`) keeps a press on it from taking the
+  editor over or closing its popovers.
+- The step names are measured, not counted (`StepBar`): where two would come closer than 6px only the current one
+  shows, the others on hover or focus.
 
 ### 4.8 Decisions
 

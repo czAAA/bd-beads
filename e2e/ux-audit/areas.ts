@@ -32,8 +32,13 @@ const SAVE_MS = 3000
 const TAB_STOPS = [1, 4, 8]
 const PHONE = /^phone-/
 
-async function scrollHomepageTo(page: Page, testId: string): Promise<void> {
-  await page.getByTestId(testId).scrollIntoViewIfNeeded()
+/** Turns the Homepage to a section (ticket 0830: Welcome comes first): by its step in the bar, or on a phone, whose bar
+ * has none, by Next until it shows. */
+async function turnHomepageTo(page: Page, id: 'inside' | 'coffee' | 'plans'): Promise<void> {
+  const step = page.locator(`[data-testid="section-step"][data-step="${id}"]`)
+  const shown = page.locator(`[data-testid="homepage-section-${id}"].homepage__section--shown`)
+  if (await step.count()) await step.click()
+  else for (let presses = 0; presses < 3 && !(await shown.count()); presses += 1) await page.getByTestId('phone-bar-next').click()
   await page.waitForTimeout(PANEL_MS)
 }
 
@@ -130,9 +135,9 @@ const arrive: AreaWalk = {
     const { page } = walk
     await walk.step('homepage-top', async () => openForAudit(walk, { url: 'homepage/' }))
     await walk.stop('homepage-whole-page', { fullPage: true })
-    await walk.step('homepage-inside', async () => scrollHomepageTo(page, 'homepage-section-inside'))
-    await walk.step('homepage-plans', async () => scrollHomepageTo(page, 'homepage-section-plans'))
-    await walk.step('homepage-coffee', async () => scrollHomepageTo(page, 'homepage-coffee'))
+    await walk.step('homepage-inside', async () => turnHomepageTo(page, 'inside'))
+    await walk.step('homepage-coffee', async () => turnHomepageTo(page, 'coffee'))
+    await walk.step('homepage-plans', async () => turnHomepageTo(page, 'plans'))
     await walk.step('editor-first-open', async () => {
       await page.getByTestId('homepage-make-first').scrollIntoViewIfNeeded()
       await page.getByTestId('homepage-make-first').click()

@@ -1,4 +1,3 @@
-import { offeredBeads, uniqueBy } from '../domain/beads'
 import { fillBlanks } from '../domain/fillBlanks'
 import { groupThousands } from '../domain/formatNumber'
 import type { StarterCategoryId } from '../domain/starters'
@@ -7,8 +6,7 @@ import { formatList } from '../i18n/listFormat'
 import { pluralForm } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
-// The registry's own list of categories, not `STARTER_CATEGORIES`, which would bring every Starter's design to the Homepage.
-import categories from '../data/starters/categories.json'
+import { STARTER_CATEGORY_IDS, catalogCounts, starterCount } from './appCounts'
 
 // The No account tile's free list (ticket 0742; Homepage card, the free list): the app's real features in the order of
 // the design system's list. Its counts and names are read from the app, so a new Technique, catalog or Starter shows up.
@@ -38,16 +36,14 @@ const ROWS = [
 export function freeListRows(t: Translations, locale: Locale): string[] {
   const { rows } = t.homepage.plans.free
   const lower = (words: string[]) => words.map((word) => word.toLocaleLowerCase(locale))
-  const withCatalog = offeredBeads().filter((bead) => bead.formFactor.colorCatalog)
-  const catalogs = [...new Set(withCatalog.map((bead) => bead.formFactor.colorCatalog!))]
-  const codes = catalogs.reduce((sum, id) => sum + (__COLOR_CATALOG_CODES__[id] ?? 0), 0)
-  const starters = categories.reduce((sum, category) => sum + category.starters.length, 0)
+  const colors = catalogCounts(locale)
+  const starters = starterCount()
   const values = {
     techniques: { count: TECHNIQUES.length, names: formatList(locale, lower(TECHNIQUES.map((technique) => techniqueName(t, technique)))) },
-    colors: { brands: formatList(locale, uniqueBy(withCatalog, (bead) => bead.brand.id).map((bead) => bead.brand.name)), codes: groupThousands(codes, locale) },
+    colors: { brands: colors.brands, codes: groupThousands(colors.codes, locale) },
     starters: {
       count: starters,
-      categories: formatList(locale, lower(categories.map(({ id }) => t.starters.categories[id as StarterCategoryId].name))),
+      categories: formatList(locale, lower(STARTER_CATEGORY_IDS.map((id) => t.starters.categories[id as StarterCategoryId].name))),
     },
   }
   return ROWS.map((key) => {

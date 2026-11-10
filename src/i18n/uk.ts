@@ -332,6 +332,15 @@ export const uk: Translations = {
     makeFirstProject: 'Створити перший проєкт',
     openEditor: 'Відкрити редактор',
     whatsInside: 'Що всередині',
+    welcome: {
+      heading: 'Схеми для бісеру, намальовані так, як лягає бісер.',
+      line: 'Для ткацтва, мозаїчного й цегляного плетіння.',
+      seeHow: 'Як це працює',
+      colors: { one: '{codes} колір {brands}', few: '{codes} кольори {brands}', many: '{codes} кольорів {brands}', other: '{codes} кольору {brands}' },
+      starters: { one: '{count} стартер', few: '{count} стартери', many: '{count} стартерів', other: '{count} стартера' },
+      caption: '{technique} · {size}',
+      piece: 'Гори під сонцем, мозаїчне плетіння',
+    },
     inside: {
       rows: {
         canvas: { name: 'Полотно й рамка', text: 'Малюйте будь-де: у полотна немає країв. Рамка задає розмір, експорт і кількість бісеринок.' },
@@ -351,8 +360,14 @@ export const uk: Translations = {
       editor: 'Що всередині: редактор',
       demo: { ring: 'Каблучка', heart: 'Серце', bracelet: 'Браслет' },
       place: '{at} / {count}',
+      chapters: { draw: 'Малюйте', startFrom: 'Почніть із готового', beadColors: 'Справжні кольори бісеру', weaveKeep: 'Плетіть і зберігайте' },
+      pause: 'Пауза',
+      play: 'Продовжити',
+      tryIt: 'Спробуйте самі',
+      expand: 'Розгорнути',
+      collapse: 'Згорнути',
     },
-    sections: { label: 'Розділи', back: 'Назад', next: 'Далі', firstBody: 'Це перший розділ.', lastBody: 'Це останній розділ.', goTo: 'Перейти: {section}', moreBelow: 'Нижче ще' },
+    sections: { label: 'Розділи', welcome: 'Початок', back: 'Назад', next: 'Далі', firstBody: 'Це перший розділ.', lastBody: 'Це останній розділ.', goTo: 'Перейти: {section}', moreBelow: 'Нижче ще' },
     coffee: { title: 'Робить одна родина', text: 'openbeads залишається безкоштовним і повністю локальним, без реклами та відстеження. Якщо застосунок вам допомагає, підтримати його розвиток можна через Buy Me a Coffee.', button: 'Пригостити кавою', star: 'Зірка на GitHub теж допомагає.', source: 'Вихідний код' },
     promises: {
       device: { name: 'Ваше, на вашому пристрої', text: 'Працює в браузері. Без акаунта й встановлення.' },

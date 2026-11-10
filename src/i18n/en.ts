@@ -330,6 +330,15 @@ export const en: Translations = {
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
     whatsInside: "What's inside",
+    welcome: {
+      heading: 'Bead patterns, drawn the way the beads sit.',
+      line: 'For loom, peyote and brick stitch.',
+      seeHow: 'See how it works',
+      colors: { one: '{codes} {brands} color', other: '{codes} {brands} colors' },
+      starters: { one: '{count} Starter', other: '{count} Starters' },
+      caption: '{technique} · {size}',
+      piece: 'Mountains under a sun, in peyote',
+    },
     inside: {
       rows: {
         canvas: { name: 'Canvas and Frame', text: 'Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count.' },
@@ -349,8 +358,14 @@ export const en: Translations = {
       editor: 'What\'s inside: the editor',
       demo: { ring: 'Ring', heart: 'Heart', bracelet: 'Bracelet' },
       place: '{at} / {count}',
+      chapters: { draw: 'Draw', startFrom: 'Start from something', beadColors: 'Real bead colors', weaveKeep: 'Weave and keep' },
+      pause: 'Pause',
+      play: 'Play',
+      tryIt: 'Try it yourself',
+      expand: 'Expand',
+      collapse: 'Collapse',
     },
-    sections: { label: 'Sections', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.', goTo: 'Go to {section}', moreBelow: 'More below' },
+    sections: { label: 'Sections', welcome: 'Welcome', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.', goTo: 'Go to {section}', moreBelow: 'More below' },
     coffee: { title: 'Made by one family', text: 'openbeads stays free and fully local, with no ads and no tracking. If it helps your work, you can support its development through Buy Me a Coffee.', button: 'Buy me a coffee', star: 'A star on GitHub helps too.', source: 'View the source' },
     promises: {
       device: { name: 'Yours, on this device', text: 'Runs in your browser. No account, nothing to install.' },
