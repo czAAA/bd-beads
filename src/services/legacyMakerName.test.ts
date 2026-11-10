@@ -22,6 +22,9 @@ describe('applyLegacyMakerName (temporary, ADR 0060)', () => {
 })
 
 describe('migrateLegacyMakerName', () => {
+  /** What a library that no other tab writes to answers. */
+  const unchanging = { reread: () => undefined, onOutsideChange: () => () => undefined }
+
   function fakes(device: Record<string, string>, projects: Project[]) {
     const data = new Map(Object.entries(device))
     const storage = {
@@ -30,7 +33,16 @@ describe('migrateLegacyMakerName', () => {
       removeItem: (key: string) => void data.delete(key),
     }
     let saved: Project[] | undefined
-    const library: LibraryStore = { load: () => projects, open: () => ({ projects, sealed: [] }), unseal: () => projects[0]!, save: (next) => void (saved = next) }
+    const library: LibraryStore = {
+      ...unchanging,
+      load: () => projects,
+      open: () => ({ projects, sealed: [], revision: '' }),
+      unseal: () => projects[0]!,
+      save: (next) => {
+        saved = next
+        return ''
+      },
+    }
     return { storage, library, data, saved: () => saved }
   }
 
@@ -50,7 +62,7 @@ describe('migrateLegacyMakerName', () => {
 
   it('keeps the device value when the library refuses the write, to try again next load', () => {
     const { storage, data } = fakes({ [LEGACY_MAKER_NAME_KEY]: 'Ada' }, [])
-    const library: LibraryStore = { load: () => [make('Fox')], open: () => ({ projects: [], sealed: [] }), unseal: () => make('Fox'), save: () => { throw new Error('quota') } }
+    const library: LibraryStore = { ...unchanging, load: () => [make('Fox')], open: () => ({ projects: [], sealed: [], revision: '' }), unseal: () => make('Fox'), save: () => { throw new Error('quota') } }
     migrateLegacyMakerName(library, storage)
     expect(data.get(LEGACY_MAKER_NAME_KEY)).toBe('Ada')
   })

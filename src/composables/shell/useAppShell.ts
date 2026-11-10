@@ -128,7 +128,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     removeAllProjects,
     flushPendingSave,
     saveNow,
-  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved, { held: safeStart.held })
+    openElsewhere,
+  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved, { held: safeStart.held, locks: services.projectLocks })
   const openingAddress = services.openingAddress()
   // `?open=saved-projects` lands with no Project open; `?project=<id>` is opened below, through the Saved Projects pick.
   if (openingAddress.savedProjects || openingAddress.project) activeProjectId.value = undefined
@@ -878,6 +879,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onPictureForConvert: convertImage.onPicture,
       dialogOpen: dialogs.open,
       page: appPage.page,
+      /** The open Project is open in another tab first (ticket 0834): the notice row says its changes here aren't saved. */
+      openElsewhere,
     },
     /** The canvas box (CanvasPanel): its strip, the drawing surface, the Tool pill, the Context and Progress bars, the
      * toasts. */
