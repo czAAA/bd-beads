@@ -185,8 +185,8 @@ const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, r
 // The control registry (ADR 0035, ticket 329): every action with a key, defined once; the shortcut table and the
 // shortcuts dialog (in this order) are built from it. A test fails if two actions share a key.
 export const CONTROLS: readonly ControlAction[] = [
-  selectTool('paint', 'paint', (t) => t.tools.paintLabel, 'tools'),
-  selectTool('fill', 'fill', (t) => t.tools.fillLabel, 'tools'),
+  selectTool('paint', 'paint', (t) => t.tools.paintLabel, 'tools', (t) => t.tooltips.paint),
+  selectTool('fill', 'fill', (t) => t.tools.fillLabel, 'tools', (t) => t.tooltips.fill),
   selectTool('select', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
   selectTool('piece', 'piece', (t) => t.tools.pieceLabel, 'tools', (t) => t.tooltips.piece),
   {
@@ -277,6 +277,7 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'rulers',
     icon: 'ruler',
     name: (t) => t.canvas.rulersLabel,
+    body: (t) => t.tooltips.rulers,
     group: 'canvas',
     chords: [{ key: 'r', label: 'R' }],
     run: (deps) => deps.onToggleRulers(),
@@ -491,6 +492,7 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'row-direction',
     icon: 'turn-row-direction',
     name: (t) => t.rowProgress.directionButton,
+    body: (t) => t.tooltips.rowDirection,
     group: 'rowProgress',
     chords: [{ key: 'd', label: 'D' }],
     run: (deps) => deps.onToggleRowDirection(),
@@ -499,6 +501,7 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'row-highlight',
     icon: 'row-highlight',
     name: (t) => t.rowProgress.highlightButton,
+    body: (t) => t.tooltips.rowHighlight,
     group: 'rowProgress',
     chords: [],
     run: (deps) => deps.onToggleRowHighlight(),
@@ -615,7 +618,7 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
     icon: 'menu',
-    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading, t.languageSwitcher.ariaLabel, t.theme.groupLabel]),
+    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.convertImage.fileLabel, t.projects.heading, t.languageSwitcher.ariaLabel, t.theme.groupLabel]),
   }),
   unkeyed('strip-export', (t) => t.panels.project.exportHeading, 'edit', { icon: 'share' }),
   unkeyed('strip-coffee', (t) => t.panels.menu.coffee, 'edit', { icon: 'coffee' }),
@@ -643,7 +646,7 @@ export const CONTROLS: readonly ControlAction[] = [
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
   // Its floating bar (ticket 0780): Select keeps a part of the beads, or crops the picture with A part of the picture.
   unkeyed('convert-turn', (t) => t.convertImage.wizard.turn, 'edit', { icon: 'rotate', body: (t) => t.tooltips.convertTurn }),
-  unkeyed('convert-flip', (t) => t.convertImage.wizard.flip, 'edit', { body: (t) => t.tooltips.convertFlip }),
+  unkeyed('convert-flip', (t) => t.convertImage.wizard.flip, 'edit', { icon: 'flip', body: (t) => t.tooltips.convertFlip }),
   unkeyed('convert-select-beads', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectBeads }),
   unkeyed('convert-select-crop', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectCrop }),
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowReactive, shallowRef, watch, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
-import ConfirmModal from '../components/ui/ConfirmModal.vue'
+import DeleteProjectModal from '../components/project/DeleteProjectModal.vue'
 import ProjectsLibrary from '../components/project/ProjectsLibrary.vue'
 import { controlAction } from '../composables/shell/controlRegistry'
 import type { ProjectLibrary } from '../composables/project/useProjectLibrary'
-import type { LibraryEntry } from '../composables/project/useSavedProjectConfirms'
+import { useDeleteProjectFlow } from '../composables/project/useDeleteProjectFlow'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import CanvasStrip from '../components/canvas/CanvasStrip.vue'
@@ -61,6 +61,8 @@ const emit = defineEmits<{
   /** The editor on the Project picked in the Menu's Saved Projects. */
   openProject: [id: string]
   exportAll: [projects: Project[], sealed: SealedProject[]]
+  /** The Delete dialog's Save Project file (ticket 0842): one Project's file, a sealed one in its stored form. */
+  saveProjectFile: [project: Project | SealedProject]
 }>()
 
 /** What the Homepage's Saved Projects needs of the library (ticket 0716). */
@@ -72,7 +74,7 @@ watchEffect(() => {
 })
 
 const menuOpen = ref(false)
-// The Homepage has no app shell: its one dialog, the Feedback sheet, has a registry and toasts of its own.
+// The Homepage has no app shell: its dialogs, the Feedback sheet and Delete, have a registry and toasts of their own.
 const dialogs = useDialogs()
 const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 const feedback = useFeedbackFlow({ feedback: props.feedback, locale: () => locale.value, messages: () => t.value, showToast, dialogs })
@@ -194,7 +196,7 @@ const input = useSectionInput({
   count: () => sections.value.length,
   page: () => pageEl.value,
   shown: shownSection,
-  held: () => menuOpen.value || !!dialogs.open.value || !!pendingRemove.value,
+  held: () => menuOpen.value || !!dialogs.open.value,
   reducedMotion,
   turn: goTo,
 })
@@ -282,19 +284,22 @@ function onSectionScroll(id: string, event: Event) {
   if (id === 'plans') freeGrowth.scrolled((event.target as HTMLElement).scrollTop)
 }
 
-// The Menu's Saved Projects (ticket 0716): the editor's list, its Remove asking first, a pick opening the editor on it.
+// The Menu's Saved Projects (ticket 0716): the editor's list, its × asking the editor's Delete question first (ticket
+// 0842), a pick opening the editor on it.
 const library = shallowRef<HomepageLibrary>()
 const count = computed(() => (library.value ? library.value.projects.value.length + library.value.sealed.value.length : props.projectCount))
-const pendingRemove = ref<LibraryEntry>()
+const deleteProject = useDeleteProjectFlow({
+  findProject: (id) => library.value?.entryOf(id),
+  removeProject: (id) => library.value?.removeProject(id),
+  saveProjectFile: (id) => {
+    const project = library.value?.projects.value.find((each) => each.id === id) ?? library.value?.sealed.value.find((each) => each.id === id)
+    if (project) emit('saveProjectFile', project)
+  },
+  dialogs,
+})
 
 function showSavedProjects() {
   library.value ??= props.openLibrary?.()
-}
-
-function confirmRemove() {
-  const entry = pendingRemove.value
-  pendingRemove.value = undefined
-  if (entry) library.value?.removeProject(entry.id)
 }
 
 const isNew = computed(() => count.value === 0)
@@ -378,21 +383,18 @@ const savedProjects = controlAction('saved-projects')
               :projects="library.projects.value"
               :sealed="library.sealed.value"
               @select="emit('openProject', $event)"
-              @remove="pendingRemove = library.entryOf($event)"
+              @remove="deleteProject.onRequestDelete"
               @import="library.addProjects"
               @export-all="emit('exportAll', library.projects.value, library.sealed.value)"
             />
           </template>
         </PanelHost>
-        <ConfirmModal
-          v-if="pendingRemove"
-          data-testid="remove-project-modal"
-          :title="t.removeProject.title"
-          :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
-          :confirm-label="t.removeProject.confirmButton"
-          :cancel-label="t.removeProject.cancelButton"
-          @confirm="confirmRemove"
-          @cancel="pendingRemove = undefined"
+        <DeleteProjectModal
+          v-if="dialogs.open.value === 'delete-project' && deleteProject.pendingDelete.value"
+          :name="deleteProject.pendingDelete.value.name"
+          @confirm="deleteProject.onConfirmDelete"
+          @cancel="deleteProject.onCancelDelete"
+          @save-file="deleteProject.onSaveFileBeforeDelete"
         />
         <FeedbackSheet
           v-if="dialogs.open.value === 'feedback' && feedback.feedbackRequest.value"

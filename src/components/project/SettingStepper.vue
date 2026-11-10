@@ -2,13 +2,14 @@
 import { computed, useId } from 'vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import { settingValue, type SettingSpec } from '../../domain/settingSpec'
 import { weaveSettingWords } from '../../i18n/settingWords'
 import { useI18n } from '../../i18n/useI18n'
 
-/** One Technique setting's stepper, drawn from its description (ticket 0624, ADR 0078; Stepper card): its range and
- * step, its words by its label key, and its hover text where it has one. A typed value settles on a step (an even Net
- * size on the odd one below it); `disabled` (Row progress is on) comes with the reason. */
+/** One Technique setting's stepper, drawn from its description (ticket 0624, ADR 0078; Stepper card): range, step,
+ * words by its label key, an Info button with its help where they have one (ticket 0844). A typed value settles on a
+ * step (an even Net size on the odd one below it); `disabled` (Row progress is on) comes with the reason. */
 const props = defineProps<{ setting: SettingSpec; disabled?: boolean; disabledBody?: string; testid: string }>()
 const value = defineModel<number>({ required: true })
 const settled = computed({ get: () => value.value, set: (next: number) => (value.value = settingValue(props.setting, next)) })
@@ -16,11 +17,10 @@ const settled = computed({ get: () => value.value, set: (next: number) => (value
 const { t } = useI18n()
 const labelId = useId()
 const words = computed(() => weaveSettingWords(t.value, props.setting))
-/** The Tooltip over the stepper: the reason while it is locked, what it does where its words say; none otherwise. */
-const tooltip = computed(() => {
-  if (props.disabled && props.disabledBody !== undefined) return { name: words.value.label, disabled: true as const, disabledBody: props.disabledBody }
-  return words.value.body ? { name: words.value.label, body: words.value.body } : undefined
-})
+/** The Tooltip over the stepper: the reason while it is locked; none otherwise, its help being the Info button's. */
+const tooltip = computed(() =>
+  props.disabled && props.disabledBody !== undefined ? { name: words.value.label, disabled: true as const, disabledBody: props.disabledBody } : undefined,
+)
 const stepper = computed(() => ({
   min: props.setting.min,
   max: props.setting.max,
@@ -38,7 +38,10 @@ const stepper = computed(() => ({
 
 <template>
   <div class="setting-stepper" role="group" :aria-labelledby="labelId" :data-testid="testid">
-    <span :id="labelId" class="setting-stepper__label">{{ words.label }}</span>
+    <span class="setting-stepper__head">
+      <span :id="labelId">{{ words.label }}</span>
+      <InfoButton v-if="words.body" :label="words.infoLabel ?? words.label" :body="words.body" :data-testid="`${testid}-info`" />
+    </span>
     <AppTooltip v-if="tooltip" v-bind="tooltip" placement="top" :announce="false">
       <AppStepper v-model="settled" v-bind="stepper" />
     </AppTooltip>
@@ -53,5 +56,11 @@ const stepper = computed(() => ({
   gap: var(--space-6);
   align-items: flex-start;
   font: var(--type-control);
+}
+
+.setting-stepper__head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 </style>
