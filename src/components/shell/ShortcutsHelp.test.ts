@@ -52,7 +52,7 @@ describe('ShortcutsHelp', () => {
     const wrapper = mountHelp()
     const rows = wrapper.findAll('.shortcuts-help__row').map((row) => row.find('.shortcuts-help__spoken').text())
 
-    for (const keys of ['Shift+Del', 'Shift+R', 'Ctrl/Cmd+Z', 'Ctrl/Cmd+Shift+Z, Ctrl+Y', 'Enter, Space', 'Esc', '?']) {
+    for (const keys of ['Shift+Del', 'Shift+R', 'Ctrl/Cmd+Z', 'Ctrl/Cmd+Shift+Z, Ctrl+Y', 'Enter', 'Shift+Enter', 'Esc', '?']) {
       expect(rows).toContain(keys)
     }
     expect(wrapper.text()).toContain(ru.palette.rotateButton)

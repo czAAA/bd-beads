@@ -26,6 +26,30 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'The Frame’s margin sheet never shrinks its buttons and words to specks, and its row comes back whole after a turn of the row direction',
+      ru: 'Поля рамки больше не сжимают кнопки и надписи до точек, а их строка снова видна целиком после поворота направления рядов',
+      uk: 'Поля рамки більше не стискають кнопки й написи до цяток, а їхній рядок знову видно цілим після повороту напрямку рядів',
+      be: 'Палі рамкі больш не сціскаюць кнопкі і надпісы да кропак, а іх радок зноў відаць цалкам пасля павароту кірунку радоў',
+      zh: '边框的边距纸不再把按钮和文字缩成小点，切换行方向后那一排也会完整回来',
+      es: 'La hoja del margen del marco ya no reduce sus botones y textos a puntitos, y su fila vuelve entera tras girar la dirección de las filas',
+      pl: 'Arkusz marginesu ramki nie zmniejsza już przycisków i napisów do kropek, a jego rząd wraca w całości po obróceniu kierunku rzędów',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
+      en: 'Holding Space to look around no longer marks rows done: Enter marks a row done, Shift+Enter takes it back',
+      ru: 'Пробел, зажатый чтобы осмотреться, больше не отмечает ряды готовыми: ряд отмечает Enter, а Shift+Enter снимает отметку',
+      uk: 'Пропуск, затиснутий щоб роздивитися, більше не позначає ряди готовими: ряд позначає Enter, а Shift+Enter знімає позначку',
+      be: 'Прабел, заціснуты каб агледзецца, больш не адзначае рады гатовымі: рад адзначае Enter, а Shift+Enter здымае адзнаку',
+      zh: '按住空格四处查看时不再把行标为已完成：Enter 标记一行已完成，Shift+Enter 撤回',
+      es: 'Mantener Espacio para mirar alrededor ya no marca filas como terminadas: Enter marca una fila, Shift+Enter la desmarca',
+      pl: 'Przytrzymana spacja, by się rozejrzeć, nie oznacza już rzędów jako gotowych: Enter oznacza rząd, Shift+Enter cofa oznaczenie',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'Deleting a Project asks one question wherever you start, offers to save its Project file first, and then opens your most recent other Project',
       ru: 'Удаление проекта задаёт один и тот же вопрос, откуда бы вы ни начали, предлагает сначала сохранить файл проекта, а потом открывает последний из остальных проектов',
       uk: 'Видалення проєкту ставить те саме запитання, звідки б ви не почали, пропонує спершу зберегти файл проєкту, а потім відкриває останній з інших проєктів',
