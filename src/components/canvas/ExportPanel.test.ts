@@ -46,7 +46,7 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('export-pdf')).toHaveLength(1)
   })
 
-  it('says to set a frame with none, offers Select a frame and Fit, and shows no export rows', async () => {
+  it('says to set a frame with none, offers Select a Frame and Fit, and shows no export rows', async () => {
     const wrapper = mountPanel(drawn())
 
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)

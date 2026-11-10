@@ -177,7 +177,7 @@ export const es: Translations = {
       tooltipRename: 'Cambia el nombre de este proyecto.',
       tooltipDuplicate: 'Haz una copia de este proyecto para guardarla como instantánea.',
       tooltipDelete: 'Quita este proyecto de este dispositivo.',
-      titleLabel: 'proyecto:',
+      titleLabel: 'proyecto',
       nameLabel: 'nombre:',
       makerLabel: 'autor:',
       savedLocal: 'Guardado en el navegador',
@@ -192,7 +192,7 @@ export const es: Translations = {
   },
   theme: {
     groupLabel: 'Tema',
-    matchDevice: 'Sistema',
+    matchDevice: 'Como el dispositivo',
     light: 'Tema claro',
     dark: 'Tema oscuro',
     contrast: 'Alto contraste',
@@ -700,7 +700,7 @@ export const es: Translations = {
   },
   frame: {
     title: 'Marco',
-    titleLabel: 'marco:',
+    titleLabel: 'marco',
     nameEmpty: 'Ponle nombre al marco',
     nameEdit: 'Cambiar el nombre del marco',
     nameTooltip: 'Cambia el nombre de este marco.',

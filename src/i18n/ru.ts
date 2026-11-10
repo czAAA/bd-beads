@@ -177,7 +177,7 @@ export const ru: Translations = {
       tooltipRename: 'Изменить название этого проекта.',
       tooltipDuplicate: 'Сделать копию проекта, чтобы сохранить снимок.',
       tooltipDelete: 'Удалить этот проект с этого устройства.',
-      titleLabel: 'проект:',
+      titleLabel: 'проект',
       nameLabel: 'название:',
       makerLabel: 'автор:',
       savedLocal: 'Сохранено в браузере',
@@ -192,7 +192,7 @@ export const ru: Translations = {
   },
   theme: {
     groupLabel: 'Тема',
-    matchDevice: 'Как в системе',
+    matchDevice: 'Как на устройстве',
     light: 'Светлая тема',
     dark: 'Тёмная тема',
     contrast: 'Высокий контраст',
@@ -703,7 +703,7 @@ export const ru: Translations = {
   },
   frame: {
     title: 'Рамка',
-    titleLabel: 'рамка:',
+    titleLabel: 'рамка',
     nameEmpty: 'Назвать рамку',
     nameEdit: 'Переименовать рамку',
     nameTooltip: 'Изменить название рамки.',

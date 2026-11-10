@@ -149,7 +149,7 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
       </div>
     </template>
     <!-- Compact, the name and the Technique are read only: the Frame panel and the full form edit them. Only an empty
-         name opens its field, from "Name this frame" (ticket 0803). -->
+         name opens its field, from "Name this Frame" (ticket 0803). -->
     <template v-else>
       <div class="margin-title__cell margin-title__name">
         <EditableLine v-bind="nameLine" invite-only @save="emit('rename', $event)" />

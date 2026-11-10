@@ -8,7 +8,7 @@ import { useI18n } from '../../i18n/useI18n'
 import { frameOf } from '../../domain/layerRecord'
 
 // The Export panel (ticket 0652; ExportPanel card): opened by the strip's Export button. With a Frame, the Frame panel's
-// export rows (ExportSection); with none, the way to set one: Select a frame and Fit a frame to the drawing.
+// export rows (ExportSection); with none, the way to set one: Select a Frame and Fit a Frame to the drawing.
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -23,14 +23,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-/** Fit a frame to the drawing needs something drawn. */
+/** Fit a Frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 </script>
 
 <template>
   <div class="export-panel" role="group" :aria-label="t.panels.project.exportHeading" data-testid="export-panel">
     <div class="export-panel__title">
-      <span class="export-panel__label">{{ t.panels.project.exportHeading }}:</span>
+      <span class="export-panel__label">{{ t.panels.project.exportHeading }}</span>
     </div>
     <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
     <template v-else>

@@ -177,7 +177,7 @@ export const zh: Translations = {
       tooltipRename: '更改此项目的名称。',
       tooltipDuplicate: '复制此项目，留作快照。',
       tooltipDelete: '从此设备中移除此项目。',
-      titleLabel: '项目：',
+      titleLabel: '项目',
       nameLabel: '名称：',
       makerLabel: '作者：',
       savedLocal: '已保存在本地浏览器',
@@ -192,7 +192,7 @@ export const zh: Translations = {
   },
   theme: {
     groupLabel: '主题',
-    matchDevice: '跟随系统',
+    matchDevice: '跟随设备',
     light: '浅色主题',
     dark: '深色主题',
     contrast: '高对比度',
@@ -690,7 +690,7 @@ export const zh: Translations = {
   },
   frame: {
     title: '边框',
-    titleLabel: '边框：',
+    titleLabel: '边框',
     nameEmpty: '给边框命名',
     nameEdit: '重命名边框',
     nameTooltip: '更改此边框的名称。',
