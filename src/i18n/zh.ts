@@ -170,7 +170,7 @@ export const zh: Translations = {
       duplicateHint: '建议：当前名称加上下一个可用编号。',
       deleteThis: '删除项目',
       deleteTitle: '删除“{name}”？',
-      deleteMessage: '“{name}”及其行进度将从此设备中移除，且无法撤销。如需保留副本，请先导出。',
+      deleteMessage: '“{name}”及其行进度将从此设备中移除，且无法撤销。如需保留，请先保存项目文件。',
       deleteConfirm: '删除项目',
       cancel: '取消',
       save: '保存',
@@ -825,12 +825,6 @@ export const zh: Translations = {
     switchAnywayButton: '仍然切换',
     keepButton: '保持当前',
     saveButton: '保存当前',
-  },
-  removeProject: {
-    title: '移除这个项目？',
-    message: '“{name}”将从此设备删除。此操作无法撤销。',
-    confirmButton: '移除',
-    cancelButton: '取消',
   },
   switchProject: {
     title: '切换项目？',

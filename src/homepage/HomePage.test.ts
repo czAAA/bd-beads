@@ -77,7 +77,7 @@ describe('HomePage', () => {
       expect(page(0).find('[data-testid="homepage-saved-projects"]').exists()).toBe(false)
     })
 
-    it('lists the library in the Menu\'s Saved Projects, opened only then, with Remove asking first and a pick opening it (ticket 0716)', async () => {
+    it('lists the library in the Menu\'s Saved Projects, opened only then, with × asking Delete first and a pick opening it (tickets 0716, 0842)', async () => {
       const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
       const projects = shallowRef([project])
       const library = { projects, sealed: shallowRef([]), removeProject: vi.fn(() => void (projects.value = [])), addProjects: vi.fn(), entryOf: (id: string) => ({ id, name: 'Moth' }) }
@@ -93,7 +93,10 @@ describe('HomePage', () => {
       expect(wrapper.emitted('exportAll')).toEqual([[[project], []]])
       await wrapper.get(`[data-testid="remove-project-${project.id}"]`).trigger('click')
       expect(library.removeProject).not.toHaveBeenCalled()
-      await wrapper.get('[data-testid="remove-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+      // The editor's Delete question (ticket 0842): its Save Project file asks for the Project's file and stays open.
+      await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-extra"]').trigger('click')
+      expect(wrapper.emitted('saveProjectFile')).toEqual([[project]])
+      await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
 
       expect(library.removeProject).toHaveBeenCalledWith(project.id)
       expect(wrapper.find('[data-testid="homepage-saved-projects"]').exists()).toBe(false)

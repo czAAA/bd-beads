@@ -2,7 +2,7 @@ import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf, projectListFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { readProjectsFile } from '../../services/projectFileCodec'
 import { encodeProject } from '../../domain/projectEncoding'
@@ -120,6 +120,18 @@ describe('useExportFlow', () => {
     it('hands over the whole library when no Project is open', async () => {
       await setup({ open: false }).onSave()
       expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(Uint8Array), 'application/json')
+    })
+
+    it('saves the Project file of any Project of the library, open or not, a sealed one from its stored form (ticket 0842)', async () => {
+      const other = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Owl', size: { width: 3, height: 3, unit: 'beads' } })
+      const kept = { ...projectSummaryOf(encodeProject(other))!, id: 'kept', name: 'Kept', stored: JSON.stringify(encodeProject(other)) }
+      const flow = useExportFlow({ currentProject: () => project, projects: () => [project, other], sealed: () => [kept], messages: () => en, locale: () => 'en', replaceProject: () => {}, downloadFile })
+
+      expect(await flow.onSaveFileOf(other.id)).toBe(true)
+      await flow.onSaveFileOf('kept')
+      expect(await flow.onSaveFileOf('gone')).toBe(false)
+
+      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectFileName(other), projectFileNameOf('Kept')])
     })
   })
 

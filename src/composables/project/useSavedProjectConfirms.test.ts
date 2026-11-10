@@ -14,27 +14,12 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
     currentProject: () => (options.open === false ? undefined : open),
     findProject: (id: string) => [{ id: 'open', name: 'Open' }, { id: 'other', name: 'Other' }, { id: 'huge', name: 'Huge', gatedBeads: 31_000_000 }].find((entry) => entry.id === id),
     openProject: vi.fn(),
-    removeProject: vi.fn(),
     saveNow: vi.fn(() => options.saved ?? true),
   }
   return { deps, ...useSavedProjectConfirms(deps) }
 }
 
 describe('useSavedProjectConfirms', () => {
-  it('asks before removing, and deletes only on confirm', () => {
-    const { deps, pendingRemove, onRequestRemove, onCancelRemove, onConfirmRemove } = setup()
-    onRequestRemove('other')
-    expect(pendingRemove.value?.id).toBe('other')
-    expect(deps.removeProject).not.toHaveBeenCalled()
-    onCancelRemove()
-    expect(pendingRemove.value).toBeUndefined()
-    expect(deps.removeProject).not.toHaveBeenCalled()
-    onRequestRemove('other')
-    onConfirmRemove()
-    expect(deps.removeProject).toHaveBeenCalledWith('other')
-    expect(pendingRemove.value).toBeUndefined()
-  })
-
   it('asks before switching, and opens only on confirm', () => {
     const { deps, pendingSwitch, onRequestSwitch, onCancelSwitch, onConfirmSwitch } = setup()
     const opened = vi.fn()
