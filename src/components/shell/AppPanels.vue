@@ -44,6 +44,7 @@ const {
   onSetBackground,
   onFitFrame,
   onSelectFrame,
+  onResetProgress,
   onRequestReplaceBead,
   onImportProjects,
   exporting,
@@ -119,6 +120,7 @@ const chosenStarter = ref<StarterId>()
       @set-weave-setting="onSetWeaveSetting"
       @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
+      @reset-progress="onResetProgress"
     />
     <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
       its Frame on the open Project. -->

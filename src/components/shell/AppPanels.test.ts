@@ -13,6 +13,7 @@ import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { moveToRow, rowProgressStarted } from '../../domain/rowProgress'
 import { newReferenceImage, withReferenceImage } from '../../domain/referenceImage'
 import { projectFileNameOf } from '../../domain/projectFile'
 import { downloadFile } from '../../services/fileDownload'
@@ -273,6 +274,15 @@ describe('The Frame panel', () => {
 
     mounted.canvas.onUndo()
     expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick' }, beadId: 'toho/cube/1.5mm' })
+  })
+
+  it('resets progress from the line under the held size, after the Reset progress question (ticket 0848)', async () => {
+    saveProjects([moveToRow(moth(), 2)])
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    await click(mounted, 'frame-size-locked-reset')
+    await click(mounted, 'confirm-modal-confirm')
+    expect(rowProgressStarted(loadProjects()[0]!)).toBe(false)
   })
 
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {

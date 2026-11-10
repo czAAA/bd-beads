@@ -4,6 +4,7 @@ import { h } from 'vue'
 import FramePanel from './FramePanel.vue'
 import { rotateFrame } from '../../domain/rotate'
 import PanelHost from '../shell/PanelHost.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
@@ -159,6 +160,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
+  })
+
+  it('offers Reset progress beside the line saying rows are marked done, which asks the shell (ticket 0848)', async () => {
+    const wrapper = mountBar(moveToRow(framed(), 1))
+    const reset = wrapper.get('[data-testid="frame-size-locked-reset"]')
+    expect(reset.text()).toBe(en.rowProgress.resetButton)
+    await reset.trigger('click')
+    expect(wrapper.emitted('reset-progress')).toHaveLength(1)
   })
 
   it('shows a turned Frame\'s size as seen, off until it is upright, and keeps Rotate Frame (ticket 0667)', () => {
@@ -351,9 +360,12 @@ describe('FramePanel (ticket 473)', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="frame-replace-from-starter"]').element)
   })
 
-  it('holds Replace Frame still once a pass is done (ticket 0596)', () => {
+  it('holds Replace Frame and Select a frame still once a pass is done, each Tooltip saying why (tickets 0596, 0848)', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
     expect(wrapper.get('[data-testid="frame-replace-from-starter"]').attributes('aria-disabled')).toBe('true')
+    const tips = wrapper.findAllComponents(AppTooltip).map((tip) => tip.props())
+    expect(tips).toContainEqual(expect.objectContaining({ name: en.frame.replaceFrame, disabled: true, disabledBody: en.tooltips.rowProgressLockedFrameFromStarter }))
+    expect(tips).toContainEqual(expect.objectContaining({ name: en.frame.selectAFrame, disabled: true, disabledBody: en.tooltips.rowProgressLockedFrame }))
   })
 
   it('with no Frame offers Frame from starter, Select a frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {

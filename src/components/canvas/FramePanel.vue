@@ -4,6 +4,7 @@ import BeadQuantities from '../palette/BeadQuantities.vue'
 import EditableLine from '../project/EditableLine.vue'
 import ExportSection from './ExportSection.vue'
 import LayerSettings from '../project/LayerSettings.vue'
+import MarkedDoneLine from '../project/MarkedDoneLine.vue'
 import { layerSettingsOf, layerSummary } from '../project/layerSettingsOf'
 import MarginSection from './MarginSection.vue'
 import PanelItem from '../shell/PanelItem.vue'
@@ -63,6 +64,8 @@ const emit = defineEmits<{
   'set-weave-setting': [layer: Layer, id: string, value: number]
   'set-background': [layer: Layer, background: Background]
   'replace-bead': [layer: Layer, beadId: string]
+  /** Reset progress, from the line under a size that rows marked done hold (ticket 0848); it asks first. */
+  'reset-progress': []
 }>()
 
 const { t, locale } = useI18n()
@@ -281,7 +284,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             <span class="frame-panel__unit">{{ t.frame.sizeUnit }}</span>
           </component>
 
-          <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
+          <MarkedDoneLine v-if="locked" class="frame-panel__line" testid="frame-size-locked" @reset-progress="emit('reset-progress')" />
           <p v-else-if="turned" class="frame-panel__line" data-testid="frame-size-turned">{{ t.frame.sizeTurnedLine }}</p>
           <div v-else class="frame-panel__edges">
             <div v-for="cell in ordered" :key="cell.edge" class="frame-panel__cell" :data-testid="`frame-panel-cell-${cell.edge}`">
@@ -316,13 +319,14 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             <span class="frame-panel__estimate-value">{{ estimate }}</span>
             <InfoButton :label="t.size.estimateLabel" :body="t.frame.estimateInfo" data-testid="frame-estimate-info" />
           </div>
-          <PanelItem icon="select" :disabled="locked" :disabled-body="t.tooltips.frameSizeLocked" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
+          <PanelItem icon="select" :disabled="locked" :name="t.frame.selectAFrame" :disabled-body="t.tooltips.rowProgressLockedFrame" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
           <!-- Replace Frame (ticket 0596): the Starter gallery, its Frame put in place of this one. -->
           <PanelItem
             icon="frame"
             sub
             stays
             :disabled="locked"
+            :name="t.frame.replaceFrame"
             :disabled-body="t.tooltips.rowProgressLockedFrameFromStarter"
             data-testid="frame-replace-from-starter"
             @select="context?.openSub(t.starters.title, { opener: 'frame-replace-from-starter' })"
@@ -341,6 +345,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         @set-shape-settings="emit('set-settings', $event)"
         @pick-bead="emit('replace-bead', 'frame', $event)"
         @set-background="emit('set-background', 'frame', $event)"
+        @reset-progress="emit('reset-progress')"
       />
     </PanelSection>
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />

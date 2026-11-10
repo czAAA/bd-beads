@@ -402,7 +402,7 @@ Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is 
 
 | English | Russian |
 | --- | --- |
-| The Frame goes, and its beads go with it. Rows marked as done are cleared too. This can be undone. | Рамка уйдёт, и её бусины вместе с ней. Отмеченные готовыми ряды сотрутся тоже. Это действие можно отменить. |
+| The Frame goes, and its beads go with it. Rows marked done are cleared too. This can be undone. | Рамка уйдёт, и её бусины вместе с ней. Ряды, отмеченные как готовые, сотрутся тоже. Это действие можно отменить. |
 
 ## Template copy (ticket 0493)
 
@@ -464,7 +464,7 @@ Russian here is a proposal for review, like the section below.
 | Brand · Type · Size | Бренд · Тип · Размер |
 | Project file · Picture · Printable chart · Clear all beads · Delete project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
 | frame: · Name this frame · Rename the frame · Frame from template · Fit a frame to the drawing · A frame sets the size, the exports and the bead count. | рамка: · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
-| Estimated size · An estimate. · Rows are marked done. Remove the frame to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Уберите рамку, чтобы изменить размер. · Показать все цвета ({n}) |
+| Estimated size · An estimate. · Rows are marked done. Reset progress to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Сбросьте прогресс, чтобы изменить размер. · Показать все цвета ({n}) |
 | Stone · Fog · Pebble · Slate | Камень · Туман · Галька · Сланец |
 
 Russian here is a proposal for review; the other five languages follow it in the app change.
