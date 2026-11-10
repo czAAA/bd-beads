@@ -157,7 +157,6 @@
   --selbar-height: 28px;
   --selbar-height-touch: 36px;
   --selbar-radius: 8px;
-  --selbar-gap: 6px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
   --mirror-bar-control: 24px; /* ContextBar card, Mirror bar: the Mode switch, an Axis chip and a count button, on mouse and pen. */
@@ -170,6 +169,7 @@
   --area-band-radius: 8px; /* ContextBar card, Area sheet: the band's outer corners. */
   --area-band-fill: 0.16; /* ContextBar card, Area sheet: the band's fill, the area's colour at this opacity. */
   --area-band-edge: 0.55; /* ContextBar card, Area sheet: the band's 1px outer edge, the area's colour at this opacity. */
+  --area-bar-gap: 14px; /* ContextBar card, Area sheet: how far the area's bar stands off its sheet, a mouse's reach of its handles (ticket 0833). */
   --area-cut: 0.45; /* ContextBar card, Area sheet: a half position the area's edge cuts, canvas at this opacity over it. */
   --area-move-grip: 18px; /* ContextBar card, Area sheet: the area bar's move grip, an 18 x 4 pill in a 28px cell. */
   --mirror-area-line: 1.5px; /* ContextBar card, Mirror bar: the Area's rectangle. */

@@ -182,7 +182,8 @@ const rootEl = ref<HTMLElement>()
 // One Tab stop; ←/→ step along the buttons and stop at the ends (ADR 0075).
 const roving = useRovingFocus(rootEl, { selector: '.context-bar__button, .context-bar__control', axis: () => 'horizontal', managesTabIndex: true })
 const readoutEl = ref<HTMLElement>()
-const bar = useElementSize(rootEl)
+// Placed by its outer edge: its padding and the dark theme's border count, or it would sit on what it keeps clear of.
+const bar = useElementSize(rootEl, { box: 'border-box' })
 const readout = useElementSize(readoutEl)
 
 /** How many buttons fit beside the readout in the canvas box's width (a button is as wide as the bar is high); every
