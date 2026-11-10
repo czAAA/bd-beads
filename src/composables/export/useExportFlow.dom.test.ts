@@ -287,6 +287,7 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     const toasts: { id: string; text: string; action?: { label: string; run: () => void } }[] = []
     const links = new Map(Object.entries(options.links ?? {}))
     const saved: (readonly string[])[] = []
+    const reached = vi.fn()
     downloadFile.mockReturnValue(options.handOver ?? 'handed')
     const writer: FileWriter = {
       available: true,
@@ -312,9 +313,10 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
       fileWriter: writer,
       linkedFiles,
       onFileSaved: (ids) => saved.push(ids),
+      onFileReached: reached,
       showToast: (id, text, _tone, action) => toasts.push({ id, text, action }),
     })
-    return { flow, writer, links, saved, toasts }
+    return { flow, writer, links, saved, toasts, reached }
   }
 
   it('without File System Access, Save hands the file over as before, says File ready and counts from 0 again', async () => {
@@ -408,6 +410,31 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     expect(writer.ready).not.toHaveBeenCalled()
     expect(links.get(project.id)).toEqual(linked('Moth 2.openbeads'))
     expect(flow.canSaveAs.value).toBe(true)
+  })
+
+  it('says a file reached the device after a Save, whether written or handed over (ticket 0839)', async () => {
+    const written = setupSave()
+    await written.flow.onSave()
+    expect(written.reached).toHaveBeenCalledOnce()
+    const handed = setupSave({ writer: { available: false } })
+    await handed.flow.onSaveFileOf(project.id)
+    expect(handed.reached).toHaveBeenCalledOnce()
+  })
+
+  it('says nothing reached the device when the pick is cancelled or the share refused (ticket 0839)', async () => {
+    const cancelled = setupSave({ writer: { pick: vi.fn(async () => ({ kind: 'cancelled' as const })) } })
+    await cancelled.flow.onSave()
+    expect(cancelled.reached).not.toHaveBeenCalled()
+    const refused = setupSave({ writer: { available: false }, handOver: 'refused' })
+    await refused.flow.onSave()
+    expect(refused.reached).not.toHaveBeenCalled()
+  })
+
+  it('says a file reached the device after a PNG or PDF export too (ticket 0839)', async () => {
+    const { flow, reached } = setupSave()
+    await flow.onExportPng()
+    await flow.onExportPdf()
+    expect(reached).toHaveBeenCalledTimes(2)
   })
 
   it('Export all and a sealed Project\'s Export hand over, never link, and count every Project they wrote from 0 again', async () => {

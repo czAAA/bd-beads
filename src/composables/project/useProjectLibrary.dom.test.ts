@@ -85,23 +85,6 @@ describe('useProjectLibrary', () => {
     expect(loadProjects()).toEqual(library.projects.value)
   })
 
-  it('tells its subscriber after a write that got through, not after a refused one', () => {
-    const onSaved = vi.fn()
-    const library = useProjectLibrary(undefined, onSaved)
-    expect(onSaved).not.toHaveBeenCalled()
-
-    library.addProject(makeProject())
-    expect(onSaved).toHaveBeenCalledOnce()
-
-    library.removeProject(library.projects.value[0]!.id)
-    library.addProject(makeProject())
-    expect(onSaved).toHaveBeenCalledTimes(2)
-
-    refuseStorageWrites()
-    library.addProject(makeProject())
-    expect(onSaved).toHaveBeenCalledTimes(2)
-  })
-
   it('persists a replaced Project straight away by default', () => {
     const library = useProjectLibrary()
     const project = makeProject()
@@ -428,7 +411,7 @@ describe('Projects kept sealed when the library opens (ticket 0716)', () => {
     const other = makeProject({ updatedAt: 400 })
     storeLibrary([small, other])
 
-    const library = useProjectLibrary(undefined, undefined, { held: small.id })
+    const library = useProjectLibrary(undefined, { held: small.id })
 
     expect(library.activeProjectId.value).toBeUndefined()
     expect(library.sealed.value.map((project) => project.id)).toEqual([small.id])
@@ -438,7 +421,7 @@ describe('Projects kept sealed when the library opens (ticket 0716)', () => {
   it('opens a sealed Project when it is picked, decoded only then', () => {
     const small = makeProject({ name: 'Held' })
     storeLibrary([small])
-    const library = useProjectLibrary(undefined, undefined, { held: small.id })
+    const library = useProjectLibrary(undefined, { held: small.id })
 
     library.openSealed(small.id)
 
@@ -477,7 +460,7 @@ describe('two tabs over one library (ticket 0834)', () => {
   function openTab(locks?: ProjectLocks) {
     const scope = effectScope()
     scopes.push(scope)
-    return scope.run(() => useProjectLibrary(browserLibraryStore, undefined, { locks }))!
+    return scope.run(() => useProjectLibrary(browserLibraryStore, { locks }))!
   }
   type Tab = ReturnType<typeof openTab>
   afterEach(() => scopes.splice(0).forEach((scope) => scope.stop()))
