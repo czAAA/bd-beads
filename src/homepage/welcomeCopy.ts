@@ -5,7 +5,7 @@ import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
 import { catalogCounts, starterCount } from './appCounts'
 import { coffeePromises, type CoffeePromise } from './coffeeCopy'
-import { DEMO_TECHNIQUE, PANORAMA } from './inside/demoProjects'
+import { DEMO_PIECE_SIZE, DEMO_TECHNIQUE } from './inside/demoProjects'
 
 // The Welcome section's words (Homepage card, ticket 0830): its counts, read from the app as the free list's are, the
 // piece's caption, and the three promises it keeps of the coffee screen's six.
@@ -17,9 +17,9 @@ export function welcomeCounts(t: Translations, locale: Locale): string {
   return [fillBlanks(pluralForm(locale, codes, colors), { codes: groupThousands(codes, locale), brands }), plural(locale, starterCount(), starters)].join(' · ')
 }
 
-/** The piece's caption: its Technique and its grid's size, "Peyote · 36×7". */
+/** The piece's caption: its Technique and its grid's size, "Peyote · 48×23". */
 export function welcomeCaption(t: Translations): string {
-  return fillBlanks(t.homepage.welcome.caption, { technique: techniqueName(t, DEMO_TECHNIQUE), size: `${PANORAMA.columns}×${PANORAMA.rows}` })
+  return fillBlanks(t.homepage.welcome.caption, { technique: techniqueName(t, DEMO_TECHNIQUE), size: `${DEMO_PIECE_SIZE.long}×${DEMO_PIECE_SIZE.wide}` })
 }
 
 /** The promises the Welcome tile shows, in its order. */

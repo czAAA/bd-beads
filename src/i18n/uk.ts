@@ -339,7 +339,7 @@ export const uk: Translations = {
       colors: { one: '{codes} колір {brands}', few: '{codes} кольори {brands}', many: '{codes} кольорів {brands}', other: '{codes} кольору {brands}' },
       starters: { one: '{count} стартер', few: '{count} стартери', many: '{count} стартерів', other: '{count} стартера' },
       caption: '{technique} · {size}',
-      piece: 'Гори під сонцем, мозаїчне плетіння',
+      piece: 'Вічка павиного пера, мозаїчне плетіння',
     },
     inside: {
       rows: {

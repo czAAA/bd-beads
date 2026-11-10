@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'The Homepage demo now draws a peacock feather: an eye on a ring, then a cuff traced from a picture',
+      ru: 'Демо на главной теперь рисует павлинье перо: глазок на кольце, затем браслет, обведённый по картинке',
+      uk: 'Демо на головній тепер малює павине перо: вічко на каблучці, потім браслет, обведений за картинкою',
+      be: 'Дэма на галоўнай цяпер малюе паўлінава пяро: вочка на пярсцёнку, потым бранзалет, абведзены па малюнку',
+      zh: '主页的演示现在绘制孔雀羽毛：先在戒指上画一只羽眼，再照着图片描出一条手环',
+      es: 'La demo de la página de inicio ahora dibuja una pluma de pavo real: un ojo en un anillo y luego una pulsera calcada de una imagen',
+      pl: 'Demo na stronie głównej rysuje teraz pawie pióro: oczko na pierścionku, potem bransoletkę odrysowaną z obrazka',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'Ring and Band Starters now lie the way they are woven, the thread across the strip, with sizes true to the bead',
       ru: 'Стартеры колец и браслетов теперь лежат так, как их плетут: нить идёт поперёк полосы, размеры точны по бисеру',
       uk: 'Стартери каблучок і браслетів тепер лежать так, як їх плетуть: нитка йде впоперек смуги, розміри точні за бісером',

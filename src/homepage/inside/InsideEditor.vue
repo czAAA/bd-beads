@@ -4,7 +4,7 @@ import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
 import GhostPointer from './GhostPointer.vue'
 import InsideShell from './InsideShell.vue'
-import { DEMO_FRAME, DEMO_VIEW, demoLibrary } from './demoProjects'
+import { DEMO_CUFF, DEMO_VIEW_MARGIN, demoLibrary } from './demoProjects'
 import { createHand, ghostState, type Hand } from './hand'
 import { useTakeOver } from './useTakeOver'
 
@@ -82,18 +82,21 @@ async function settle(): Promise<void> {
   await new Promise((resolve) => requestAnimationFrame(resolve))
 }
 
-/** How much taller the Frame's margin sheet is than the Frame, at the demo's size (ticket 0802): its margin, 4 beads
- * above and 4 below, which hold its band and title block, and its border and padding, which grow with it (measured: a
- * 7-row Frame's sheet is 1.27 times its 15 rows). A thin Frame such as the ring's is mostly sheet. */
-const SHEET_MARGIN_ROWS = 8
-const SHEET_BORDER = 1.27
+/** How many lines taller the cuff's margin sheet is than its Frame (ticket 0802): its margin, 4 beads above and 4
+ * below, for its band and title block. Measured at the demo's sizes, the sheet with its border is that tall. */
+const SHEET_MARGIN_LINES = 8
+
+/** How far along the piece from the Frames' middle the view's middle is, in beads: the Frames' middle lies between two
+ * beads of a peyote line, and the bead under the view's middle is where a Starter's Frame is laid (it lands where the
+ * band was only from the further of the two). */
+const STARTER_ALONG = 0.75
 
 /** The zoom a fresh demo's editor starts at: the view is at most 3 times it, however often it is set (ticket 0821). */
 let ownZoom: number | undefined
 
-/** The view the tour plays in: `DEMO_VIEW` across the drawing area, the Frame's middle at the view's (where a Starter's
- * Frame is laid, so the ring Starter lands where the band was), zoomed to show it and the Frame's sheet whole, clear of
- * the Tool pill. Set once before anything is drawn, and again only when Expand or Collapse resizes the demo (0830). */
+/** The view the tour plays in (ticket 0831): the cuff's Frame and `DEMO_VIEW_MARGIN` beads either side across nine
+ * tenths of the area, its sheet clear of the Tool pill, its middle at the view's but for `STARTER_ALONG`. Set before
+ * anything is drawn, and again only when Expand or Collapse resizes the demo. The Canvas is turned: rows run across. */
 async function frameDrawings(): Promise<void> {
   const canvas = shell.value?.wired.canvas
   const area = rootEl.value?.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
@@ -101,22 +104,25 @@ async function frameDrawings(): Promise<void> {
   const pill = rootEl.value?.querySelector('[data-testid="tool-pill"]')?.getBoundingClientRect().height ?? 0
   // The sheet lies round the view's middle, so it keeps clear of the pill below and as much room above.
   const room = area.height - 2 * (pill + 16)
-  const { left, right } = DEMO_VIEW
   const at = (row: number, column: number) => canvas.surfaceProbe.value?.beadOnScreen({ row, column })
-  const first = at(DEMO_FRAME.row, left)
-  const across = at(DEMO_FRAME.row, right)
-  const down = at(DEMO_FRAME.row + DEMO_FRAME.rows - 1, left)
-  if (first && across && down && across.x > first.x && down.y > first.y) {
-    const wide = (area.width * 0.9) / (across.x - first.x)
-    const pitch = (down.y - first.y) / Math.max(1, DEMO_FRAME.rows - 1)
-    const tall = room / ((DEMO_FRAME.rows + SHEET_MARGIN_ROWS) * SHEET_BORDER * pitch)
+  const last = { row: DEMO_CUFF.row + DEMO_CUFF.rows - 1, column: DEMO_CUFF.column + DEMO_CUFF.columns - 1 }
+  const first = at(DEMO_CUFF.row, DEMO_CUFF.column)
+  const opposite = at(last.row, last.column)
+  if (first && opposite && opposite.x !== first.x && opposite.y !== first.y) {
+    const along = Math.abs(opposite.x - first.x) / (DEMO_CUFF.rows - 1)
+    const line = Math.abs(opposite.y - first.y) / (DEMO_CUFF.columns - 1)
+    const wide = (area.width * 0.9) / ((DEMO_CUFF.rows + 2 * DEMO_VIEW_MARGIN) * along)
+    const tall = room / ((DEMO_CUFF.columns + SHEET_MARGIN_LINES) * line)
     ownZoom ??= canvas.zoom.value
     canvas.setZoom(Math.min(canvas.zoom.value * Math.min(wide, tall), ownZoom * 3))
   }
   await settle()
-  const corner = at(DEMO_FRAME.row, left)
-  const opposite = at(DEMO_FRAME.row + DEMO_FRAME.rows - 1, right)
-  if (corner && opposite) canvas.panBy(area.left + area.width / 2 - (corner.x + opposite.x) / 2, area.top + area.height / 2 - (corner.y + opposite.y) / 2)
+  const corner = at(DEMO_CUFF.row, DEMO_CUFF.column)
+  const far = at(last.row, last.column)
+  if (!corner || !far) return
+  // The Starter's ring is laid round the bead under the view's middle: a little along from the Frames', it is the band's.
+  const along = ((far.x - corner.x) / (DEMO_CUFF.rows - 1)) * STARTER_ALONG
+  canvas.panBy(area.left + area.width / 2 - (corner.x + far.x) / 2 - along, area.top + area.height / 2 - (corner.y + far.y) / 2)
 }
 
 /** A fresh demo: Ring with nothing drawn, the Menu's Saved Projects listing the demo's own three. */
