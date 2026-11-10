@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { areaHandles, areaPressAt, AREA_SHEET_OUTSET, boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, handleIdAt, hitRadius } from './frameHandles'
+import { AREA_BAR_GAP_PX, areaHandles, areaPressAt, AREA_SHEET_OUTSET, boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, handleIdAt, hitRadius } from './frameHandles'
 
 const box = { x: 100, y: 50, width: 200, height: 100 }
 
@@ -104,5 +106,14 @@ describe('the Frame\'s handles on its line (MarginSheet card, ticket 0657)', () 
     expect(framePressAt(frame, surface, 0, { x: 200, y: 52 }, false)).toEqual({ kind: 'handle', edges: ['top'] })
     expect(framePressAt(frame, surface, 0, { x: 200, y: 100 }, false)).toEqual({ kind: 'inside' })
     expect(framePressAt(undefined, surface, 0, { x: 300, y: 150 }, false)).toEqual({ kind: 'outside' })
+  })
+})
+
+describe('the Area bar gap (ContextBar card, Area sheet, ticket 0833)', () => {
+  it('is the `--area-bar-gap` token, in the app and the design system alike', () => {
+    for (const sheet of ['src/styles/design-values.css', 'docs/design/system/components/bundle.css']) {
+      const css = readFileSync(resolve(__dirname, '../..', sheet), 'utf8')
+      expect(css.match(/--area-bar-gap:\s*([^;]+);/)?.[1]?.trim(), sheet).toBe(`${AREA_BAR_GAP_PX}px`)
+    }
   })
 })
