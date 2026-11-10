@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createApp, defineComponent, h } from 'vue'
 import { createProject } from '../domain/createProject'
 import { withBackground, withFrameSheet } from '../domain/layerRecord'
 import { PREFERENCES } from '../services/devicePreferences'
-import { useCanvasBackground } from './useCanvasBackground'
+import { provideMarginLeastScale, useCanvasBackground } from './useCanvasBackground'
 
 const framed = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 
@@ -35,5 +36,23 @@ describe('useCanvasBackground (ticket 0666)', () => {
     device.remember(4)
     expect(device.start.value).toBe(4)
     expect(device.customColor.value).toBe('#7a2e8c')
+  })
+})
+
+describe('the margin sheet\'s least scale (ticket 0851)', () => {
+  /** The least scale a sheet below a shell is drawn at, with the shell giving one or not. */
+  function leastBelow(given?: number): number | undefined {
+    let least: number | undefined
+    const Sheet = defineComponent({ setup: () => ((least = useCanvasBackground().projectTheme.value.margin.leastScale), () => null) })
+    const Shell = defineComponent({ setup: () => (given !== undefined && provideMarginLeastScale(given), () => h(Sheet)) })
+    const app = createApp(Shell)
+    app.mount(document.createElement('div'))
+    app.unmount()
+    return least
+  }
+
+  it('is the Homepage demo\'s where its shell gives one, and the app\'s own otherwise', () => {
+    expect(leastBelow(0.6)).toBe(0.6)
+    expect(leastBelow()).toBeUndefined()
   })
 })

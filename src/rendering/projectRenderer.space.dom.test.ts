@@ -258,23 +258,23 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
       expect(near(roundRects(calls), [127.5, 127.5, 205, 225, 4.5])).toBe(true)
     })
 
-    it('draws the compact form\'s inner border 6px in and corners of 10px at the smallest scale, and none once the sheet folds (tickets 0658, 0698)', () => {
-      // At 40% the band is 32px: under 0.6 of the full form's 68px, so compact at 0.6: 3.6px in, 9 grid px; corners 6px, 15 grid px.
-      const compact = roundRects(drawn(true, 0.4).calls)
-      expect(near(compact, [129, 129, 202, 222, 6 * 0.6 / 0.4])).toBe(true)
-      expect(near(compact, [120, 120, 220, 240, 15])).toBe(true)
-      // At 25% the band is 20px, folded: the paper keeps its color and its edge, with no inner border.
-      expect(strokedIn(drawn(true, 0.25).calls, '#abcdef')).toHaveLength(0)
-      expect(strokedIn(drawn(true, 0.25).calls, '#fedcba')).toHaveLength(1)
+    it('draws the compact form\'s inner border 6px in and corners of 10px at the smallest scale, and none once the sheet folds (tickets 0658, 0698, 0851)', () => {
+      // At 60% the band is 48px: under the full form's 68px, so compact at 1: 6px in, 10 grid px; corners 10px, 16.7 grid px.
+      const compact = roundRects(drawn(true, 0.6).calls)
+      expect(near(compact, [130, 130, 200, 220, 6 / 0.6])).toBe(true)
+      expect(near(compact, [120, 120, 220, 240, 10 / 0.6])).toBe(true)
+      // At 45% the band is 36px, folded: the paper keeps its color and its edge, with no inner border.
+      expect(strokedIn(drawn(true, 0.45).calls, '#abcdef')).toHaveLength(0)
+      expect(strokedIn(drawn(true, 0.45).calls, '#fedcba')).toHaveLength(1)
     })
 
-    it('is not drawn at all under 0.6 of the folded row\'s 31px, where only its Move bar is left (tickets 0682, 0698)', () => {
-      // At 23% the band is 18.4px: no paper, no edge, no inner border.
-      for (const zoom of [0.23, 0.2, 0.1]) {
+    it('is not drawn at all under the folded row\'s 31px, where only its Move bar is left (tickets 0682, 0698, 0851)', () => {
+      // At 38% the band is 30.4px: no paper, no edge, no inner border.
+      for (const zoom of [0.38, 0.2, 0.1]) {
         const { calls } = drawn(true, zoom)
         expect(calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#fedcba' || call.strokeStyle === '#abcdef'), `${zoom}`).toBe(false)
       }
-      expect(drawn(true, 0.24).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
+      expect(drawn(true, 0.39).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
     })
 
     it('is never drawn in an export, which draws the Frame on its own, nor with no Frame', () => {

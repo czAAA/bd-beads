@@ -1,4 +1,4 @@
-import { computed, readonly, type ComputedRef, type Ref } from 'vue'
+import { computed, hasInjectionContext, inject, provide, readonly, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import { backgroundOf, frameOf, type Layered } from '../domain/layerRecord'
 import type { Layer } from '../domain/grid'
 import type { Background } from '../domain/project'
@@ -16,6 +16,14 @@ import {
 import type { ProjectTheme } from '../rendering/beadLook'
 import { useDevicePreferences, type DevicePreferences } from '../services/devicePreferences'
 import { useResolvedTheme } from './useResolvedTheme'
+
+const marginLeastKey: InjectionKey<number> = Symbol('marginLeastScale')
+
+/** Draws the Frame's margin sheet below the caller at a least scale of its own (ticket 0851): the Homepage demo's, whose
+ * view is set for its box and whose tour presses the band, so its sheet shrinks where the app's would go bare. */
+export function provideMarginLeastScale(scale: number): void {
+  provide(marginLeastKey, scale)
+}
 
 /** The Frame's margin color (ticket 0656, MarginSheet card): stored on the device. */
 export interface MarginColor {
@@ -72,6 +80,7 @@ export function useCanvasBackground(
   const marginCustomColor = preferences.get('marginCustomColor')
   const titleBlock = preferences.get('marginTitleBlock')
   const theme = useResolvedTheme()
+  const leastScale = hasInjectionContext() ? inject(marginLeastKey, undefined) : undefined
   const start = computed(() => backgroundOfPick({ choice: choice.value, customColor: customColor.value }))
   const marginPick = () => ({ choice: marginChoice.value, customColor: marginCustomColor.value })
   const backgroundOfLayer = (layer: Layer): Background => {
@@ -94,7 +103,10 @@ export function useCanvasBackground(
     customColor: readonly(customColor),
     shownOf,
     background: computed(() => canvasBackgroundOf(theme.value, canvasPick.value.choice, canvasPick.value.customColor)),
-    projectTheme: computed(() => canvasTheme(theme.value, canvasPick.value.choice, canvasPick.value.customColor, marginPick())),
+    projectTheme: computed(() => {
+      const drawn = canvasTheme(theme.value, canvasPick.value.choice, canvasPick.value.customColor, marginPick())
+      return leastScale === undefined ? drawn : { ...drawn, margin: { ...drawn.margin, leastScale } }
+    }),
     frameTheme: computed(() => {
       const { choice: frameChoice, customColor: frameColor } = pickOf(frameBackground.value)
       return canvasTheme(theme.value, frameChoice, frameColor)

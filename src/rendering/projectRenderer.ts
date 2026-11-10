@@ -581,9 +581,9 @@ export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: 
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
-  const form = marginForm(band)
+  const form = marginForm(band, look.leastScale)
   if (form === 'bare') return
-  const px = marginScale(band) / zoom
+  const px = marginScale(band, look.leastScale) / zoom
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
   const radius = Math.min(MARGIN_PX.sheetRadius[drawn] * px, gridBand)

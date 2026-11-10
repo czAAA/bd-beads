@@ -196,7 +196,8 @@ function rulerFontPx(): number {
 /** The form and scale the Frame's margin sheet takes at this zoom (tickets 0658, 0698): the Frame's numbers hang on it. */
 const sheetLook = computed(() => {
   const band = (marginSheetPx(props.project)?.band ?? 0) * props.zoom
-  return band ? { sheet: marginForm(band), sheetScale: marginScale(band) } : {}
+  const least = theme.value.margin.leastScale
+  return band ? { sheet: marginForm(band, least), sheetScale: marginScale(band, least) } : {}
 })
 
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two

@@ -157,7 +157,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     await control(wrapper, 'margin-color').trigger('click')
     await nextTick()
     // Compact keeps Margin color in the row: the picker follows it.
-    await wrapper.setProps({ anchor: anchorAt(0.4) })
+    await wrapper.setProps({ anchor: anchorAt(0.6) })
     await nextTick()
     expect(document.querySelector('[data-testid="margin-color-popover"]')).not.toBeNull()
     // Bare has no row, so no button to hang from.
@@ -186,9 +186,9 @@ const names = (wrapper: ReturnType<typeof mountSheet>) =>
 
 const styleOf = (wrapper: ReturnType<typeof mountSheet>, testid: string) => control(wrapper, testid).attributes('style') ?? ''
 
-// The band is 80px at 100% here; the drafting sheet's 72px is scale 1, held between 0.6 and 1.5 (ticket 0698), so the
-// sheet is full down to 0.6 × 68px of band (51%), compact to 0.6 × 40px (30%), folded to 0.6 × 31px (23%).
-describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom forms, tickets 0658, 0698)', () => {
+// The band is 80px at 100% here; the drafting sheet's 72px is scale 1, held between 1 and 1.5 (tickets 0698, 0851), so
+// the sheet is full down to 68px of band (85%), compact to 40px (50%), folded to 31px (39%).
+describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom forms, tickets 0658, 0698, 0851)', () => {
   it('is full at the drafting sheet\'s band, its tools 14px in and the title block in two rows 10px in', () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.9) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--full')
@@ -198,35 +198,35 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(styleOf(wrapper, 'margin-title')).toContain('bottom: 10px')
   })
 
-  it('draws the band\'s row and the title block at the band\'s scale, held at 1.5, so they grow and shrink with the beads (ticket 0698)', () => {
+  it('draws the band\'s row and the title block at the band\'s scale, held between 1 and 1.5, so they grow with the beads (tickets 0698, 0851)', () => {
     // At 135% the band is 108px: 1.5, the row 21px down, laid out 2 × 21px narrower than the sheet over the scale.
     const near = mountSheet({ anchor: anchorAt(1.35) })
     expect(styleOf(near, 'margin-band')).toContain('top: 21px')
     expect(styleOf(near, 'margin-band')).toContain('transform: scale(1.5)')
     expect(styleOf(near, 'margin-band')).toContain(`width: ${(anchorAt(1.35).sheet.width - 42) / 1.5}px`)
     expect(styleOf(near, 'margin-title')).toContain('bottom: 15px')
-    // At 60% the band is 48px: still the full form, two thirds the size.
-    const far = mountSheet({ anchor: anchorAt(0.6) })
+    // At 85% the band is 68px: still the full form, at 1 and no smaller, where its words and buttons are legible.
+    const far = mountSheet({ anchor: anchorAt(0.85) })
     expect(control(far, 'margin-sheet').classes()).toContain('margin-sheet--full')
-    expect(styleOf(far, 'margin-band')).toMatch(/transform: scale\(0\.666/)
+    expect(styleOf(far, 'margin-band')).toContain('transform: scale(1)')
   })
 
-  it('is compact under 0.6 of 68px: Row highlight, the counter, the track and Row done, the tools, and the title block in one row with its legend', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.4), project: moveToRow(framed(), 2) })
+  it('is compact under 68px: Row highlight, the counter, the track and Row done, the tools, and the title block in one row with its legend', () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.6), project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--compact')
     // Two rows done: the Frame holds still, so no Edit Frame.
     expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Mirror the whole Frame', 'Rotate Frame', 'Export', 'Margin color', 'Remove Frame'])
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('3/11')
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(true)
-    expect(styleOf(wrapper, 'margin-band')).toContain('top: 4.8px')
-    expect(styleOf(wrapper, 'margin-band')).toContain('transform: scale(0.6)')
+    expect(styleOf(wrapper, 'margin-band')).toContain('top: 8px')
+    expect(styleOf(wrapper, 'margin-band')).toContain('transform: scale(1)')
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('compact')
-    expect(Number.parseFloat(styleOf(wrapper, 'margin-title').split('bottom: ')[1]!)).toBeCloseTo(3.6)
+    expect(Number.parseFloat(styleOf(wrapper, 'margin-title').split('bottom: ')[1]!)).toBeCloseTo(6)
     expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
   })
 
-  it('folds under 0.6 of 40px: Row highlight and the counter with Row done, the Move bar, Margin color and Frame tools, the title block a tab', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.25) })
+  it('folds under 40px: Row highlight and the counter with Row done, the Move bar, Margin color and Frame tools, the title block a tab', () => {
+    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--folded')
     expect(names(wrapper)).toEqual(['Row highlight', 'Row done', 'Move Frame', 'Margin color', 'Frame tools'])
     expect(wrapper.find('[data-testid="margin-progress-track"]').exists()).toBe(false)
@@ -237,15 +237,15 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
   })
 
   it('stands the folded row and tab in the middle of the room between the sheet\'s edge and the Frame\'s line', () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.25) })
+    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     const px = (testid: string, side: string) => Number.parseFloat(styleOf(wrapper, testid).split(`${side}: `)[1]!)
-    // At 25% the band is 20px, the line its outset out from the beads; the 24px row is 14.4px at 0.6.
-    const inset = (20 - frameOutsetPx(0.25) - 24 * 0.6) / 2
+    // At 45% the band is 36px, the line its outset out from the beads; the 24px row is 24px at 1.
+    const inset = (36 - frameOutsetPx(0.45) - 24) / 2
     expect(px('margin-band', 'top')).toBeCloseTo(inset, 2)
     expect(px('margin-title', 'bottom')).toBeCloseTo(inset, 2)
   })
 
-  it('keeps only the Move bar where even the folded row has no room, under 0.6 of 31px (tickets 0682, 0698)', async () => {
+  it('keeps only the Move bar where even the folded row has no room, under 31px (tickets 0682, 0698, 0851)', async () => {
     const wrapper = mountSheet({ anchor: anchorAt(0.2), editing: true })
     expect(control(wrapper, 'margin-sheet').classes()).toContain('margin-sheet--bare')
     expect(wrapper.find('[data-testid="margin-band"]').exists()).toBe(false)
@@ -269,7 +269,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
   })
 
   it('offers the tools the folded band has no room for in its Frame tools menu, each asking as its button does', async () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.25) })
+    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     const menu = () => control(wrapper, 'margin-frame-tools')
     const items = async () => {
       await menu().trigger('click')
@@ -322,14 +322,14 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
   })
 
   it('opens the name field from an unnamed Frame\'s tab folded by the zoom too, with no chevron', async () => {
-    const wrapper = mountSheet({ anchor: anchorAt(0.25) })
+    const wrapper = mountSheet({ anchor: anchorAt(0.45) })
     await control(wrapper, 'margin-frame-name').trigger('click')
     expect(wrapper.find('[data-testid="margin-frame-name-form"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="margin-title-unfold"]').exists()).toBe(false)
   })
 
   it('keeps the fold for the session, on the next sheet too, and folds from the compact title block', async () => {
-    const compact = mountSheet({ anchor: anchorAt(0.4) })
+    const compact = mountSheet({ anchor: anchorAt(0.6) })
     await control(compact, 'margin-title-fold').trigger('click')
     compact.unmount()
     mounted.splice(0)
@@ -356,7 +356,7 @@ describe('the title block on a turned Canvas (ticket 0728)', () => {
   })
 
   it('stands the folded tab beside the folded row at a top corner, in the middle of the room above the Frame\'s line', () => {
-    const wrapper = mountSheet({ anchor: { ...anchorAt(0.25), titleCorner: { top: true, left: false } } })
+    const wrapper = mountSheet({ anchor: { ...anchorAt(0.45), titleCorner: { top: true, left: false } } })
     const top = (testid: string) => Number.parseFloat(styleOf(wrapper, testid).split('top: ')[1]!)
     expect(top('margin-title')).toBeCloseTo(top('margin-band'), 4)
   })

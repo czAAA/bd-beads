@@ -10,7 +10,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { rowProgressStarted } from '../../domain/rowProgress'
+import { rowProgressOf, rowProgressPosition, rowProgressStarted } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
@@ -74,7 +74,7 @@ const emit = defineEmits<{
   'set-letters': [on: boolean]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const actions = {
   mirror: controlAction('mirror-frame'),
@@ -105,11 +105,13 @@ const sheetStyle = computed(() => {
   return { left: `${sheet.left}px`, top: `${sheet.top}px`, width: `${sheet.width}px`, height: `${sheet.height}px`, '--margin-line': canvas.projectTheme.value.margin.line, ...leaning }
 })
 
-/** The sheet's form by its band's height (MarginSheet card, Zoom forms): what the canvas draws it in too. */
-const form = computed(() => marginForm(props.anchor.band))
+/** The sheet's form by its band's height (MarginSheet card, Zoom forms): what the canvas draws it in too, at its least
+ * scale (1, or the Homepage demo's; ticket 0851). */
+const least = computed(() => canvas.projectTheme.value.margin.leastScale)
+const form = computed(() => marginForm(props.anchor.band, least.value))
 /** What the band's row and the title block are drawn at (ticket 0698): laid out in the drafting sheet's px and scaled
  * with the beads, so the fitting below measures in those px too. */
-const scale = computed(() => marginScale(props.anchor.band))
+const scale = computed(() => marginScale(props.anchor.band, least.value))
 
 // The band's row and the title block step down a form where the sheet is too narrow for them, and are left out where
 // nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu and no Row progress. Each tools form
@@ -160,6 +162,11 @@ const title = useFittingForm({
   room: () => titleRoom.value / scale.value,
   measure: () => (titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
   observed: () => [titleEl.value?.firstElementChild],
+  // Its words: a shorter name, maker or language brings back the block it stepped down from (ticket 0851).
+  labels: () => {
+    const { name, technique, techniqueSettings, columns, rows } = frame.value ?? {}
+    return JSON.stringify([locale.value, name, props.project.makerName, technique, techniqueSettings, columns, rows])
+  },
 })
 /** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
 const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
@@ -202,6 +209,12 @@ const rowFit = useFittingForm({
   room: () => bandRoom.value / scale.value,
   measure: bandWidth,
   observed: bandParts,
+  // What the row reads and holds: Row done or Column done, the counter, the language, the tools shown. Turned back to
+  // rows, the row it stepped down from shows whole again where it fits (ticket 0851).
+  labels: () => {
+    const { current, total } = rowProgressPosition(props.project)
+    return JSON.stringify([locale.value, rowProgressOf(props.project).direction, current, total, rotatable.value, editable.value])
+  },
 })
 const row = computed(() => rowFit.value?.split(':')[0] as RowForm | undefined)
 /** How much of Row progress the row gives up: nothing, its track, or its track and counter. */
@@ -231,7 +244,9 @@ const yields = (box: BarBox) => !!props.selection && overlapsSelectionHandles(bo
 const bandYields = computed(() => yields(bandBox.value))
 
 // Bare, the Move bar stands alone over the middle of the Frame's top edge, above its line, so it takes no press meant
-// for the beads (ticket 0682).
+// for the beads (ticket 0682); so it does where the sheet is too narrow for even the narrowest row, so the Frame can
+// always be moved (ticket 0851).
+const handleShown = computed(() => form.value === 'bare' || !row.value)
 const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2, top: props.anchor.box.top - props.anchor.sheet.top }))
 const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
 const handleYields = computed(() => {
@@ -379,7 +394,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       </div>
     </div>
 
-    <div v-if="form === 'bare'" class="margin-sheet__handle" :class="{ 'margin-sheet__yielding': handleYields }" :style="handleStyle" data-testid="margin-handle">
+    <div v-if="handleShown" class="margin-sheet__handle" :class="{ 'margin-sheet__yielding': handleYields }" :style="handleStyle" data-testid="margin-handle">
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
     </div>
 
