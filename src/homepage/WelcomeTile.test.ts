@@ -57,8 +57,8 @@ describe('WelcomeTile (ticket 0830)', () => {
     const piece = find(wrapper, 'welcome-piece')
     expect(piece.element.tagName).toBe('CANVAS')
     expect(piece.attributes('role')).toBe('img')
-    expect(piece.attributes('aria-label')).toBe('Mountains under a sun, in peyote')
-    expect(find(wrapper, 'welcome-caption').text()).toBe('Peyote · 36×7')
+    expect(piece.attributes('aria-label')).toBe('Peacock feather eyes, in peyote')
+    expect(find(wrapper, 'welcome-caption').text()).toBe('Peyote · 48×23')
   })
 
   it('makes three promises, each a name over its line', () => {

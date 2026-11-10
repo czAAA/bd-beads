@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { rotationSwapsAxes } from '../domain/grid'
+import { quarterTurnOf } from '../domain/layerRecord'
 import { useI18n } from '../i18n/useI18n'
 import { PROJECT_THEMES } from '../rendering/beadLook'
 import { renderProject } from '../rendering/projectRenderer'
 import { spaceOf } from '../rendering/space'
 import { useResolvedTheme } from '../theme/useResolvedTheme'
-import { finishedMountains } from './inside/demoProjects'
+import { finishedCuff } from './inside/demoProjects'
 
-// The Welcome section's piece (Homepage card, ticket 0830): the mountains the tour traces, finished in peyote, drawn by
-// the Project renderer in the theme shown with its Frame's line round it. An image, never a picture file.
+// The Welcome section's piece (Homepage card, tickets 0830, 0831): the peacock cuff the tour traces, finished in peyote,
+// drawn by the Project renderer in the theme shown with its Frame's line round it. An image, never a picture file.
 const { t } = useI18n()
 const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()
-const project = finishedMountains()
+const project = finishedCuff()
 
 /** The piece at its widest, in CSS px (`--welcome-piece-width`); it is drawn at twice that and narrows with the tile. */
 const DRAWN_PX = 720
@@ -20,10 +22,13 @@ const DRAWN_PX = 720
 const FRAME_LINE = { width: 1.5, outset: 7, radius: 7 }
 
 const space = spaceOf(project, false)
+/** The piece's size as it is shown: turned with its Canvas, so the cuff lies across (ticket 0831). */
+const turned = rotationSwapsAxes(quarterTurnOf(project))
+const shown = turned ? { width: space.extent.height, height: space.extent.width } : space.extent
 /** The line's room round the beads, and the zoom that fits both in the drawing's width. */
 const room = FRAME_LINE.outset + FRAME_LINE.width
-const zoom = (DRAWN_PX - room * 2) / space.extent.width
-const region = { x: 0, y: 0, width: space.extent.width * zoom, height: space.extent.height * zoom }
+const zoom = (DRAWN_PX - room * 2) / shown.width
+const region = { x: 0, y: 0, width: shown.width * zoom, height: shown.height * zoom }
 /** How many times wider than tall it is drawn: a short screen sizes it by its height. */
 const shape = DRAWN_PX / (region.height + room * 2)
 

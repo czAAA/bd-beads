@@ -1,8 +1,8 @@
 // The picture What's inside converts (Homepage card, Convert image row, ticket 0828): a hot-air balloon in a blue sky,
 // its envelope in bold stripes over a basket, two clouds by it. Another picture than the Reference image row's
-// mountains, in a few clear colors, so the converted beads and their found colors read at a glance.
+// feather, in a few clear colors, so the converted beads and their found colors read at a glance.
 
-import { pngFile } from './landscape'
+import { pngFile } from './peacockPicture'
 
 /** Its colors: the sky's two blues, the clouds, the envelope's stripes, its ropes and the basket. */
 const SKY_TOP = '#4f86d9'

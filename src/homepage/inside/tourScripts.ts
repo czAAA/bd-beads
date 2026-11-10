@@ -5,15 +5,28 @@ import type { ReferencePlace } from '../../domain/referenceImage'
 import { addedColorId } from '../../domain/palette'
 import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
-import { DEMO_COLORS, DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, DEMO_STARTER, DEMO_SWATCHES, DEMO_TECHNIQUE, PANORAMA, RIDGE, SUN, type DemoColor } from './demoProjects'
+import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STRIP, DEMO_FRAME, DEMO_MIRROR_STRIP, DEMO_RING_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PEACOCK_COLORS, onCanvas, type DemoColor, type DemoFrame } from './demoProjects'
 import { balloonFile } from './balloon'
-import { landscapeFile } from './landscape'
+import { PEACOCK_CUFF } from './peacock'
+import { peacockFile } from './peacockPicture'
+import { eyeByHand, eyeTrace, pupilMiddle, ringGroundFills, type TraceBead, type TraceStep } from './peacockTrace'
 
 // What the ghost does for each row of What's inside (Homepage card, ticket 0797), in the demo editor, each row picking
 // up where the one before it left the editor.
 
-/** The Palette swatch of each color the tour draws with: Miyuki's color families. */
-const SWATCH_IDS: Record<DemoColor, string> = { W: 'white', Y: 'yellow', O: 'orange', R: 'red', B: 'blue', G: 'green', P: 'pink', K: 'black', D: 'gold' }
+/** The Palette swatch of each color the tour draws with: Miyuki's color families, and Ring's own three, named as Custom
+ * color names what it adds. */
+const SWATCH_IDS: Record<DemoColor, string> = {
+  W: 'white',
+  Y: 'yellow',
+  R: 'red',
+  B: 'blue',
+  G: 'green',
+  D: 'gold',
+  T: addedColorId(DEMO_COLORS.T),
+  N: addedColorId(DEMO_COLORS.N),
+  E: addedColorId(DEMO_COLORS.E),
+}
 
 /** Picks a Palette swatch by its id through the color popover. */
 async function pickSwatch(hand: Hand, id: string): Promise<void> {
@@ -22,11 +35,25 @@ async function pickSwatch(hand: Hand, id: string): Promise<void> {
   if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
 }
 
-/** The Palette swatch of catalog color `code`, from the color popover's open catalog list: added to the Palette first
- * unless it is there already. Adding leaves the paint color as it was, so the swatch is what makes it the paint color. */
-async function catalogSwatch(hand: Hand, code: string): Promise<() => Element | undefined> {
+/** A catalog color the tour picks: its code, and the color family whose filter brings it into the list, which shows
+ * the catalog's first colors only. */
+interface CatalogPick {
+  code: string
+  family: string
+}
+
+/** The Palette swatch of a catalog color, from the color popover's open catalog list: added to the Palette first unless
+ * it is there already. Adding leaves the paint color as it was, so the swatch is what makes it the paint color. */
+async function catalogSwatch(hand: Hand, { code, family }: CatalogPick): Promise<() => Element | undefined> {
   const row = () => hand.root.querySelector(`[data-testid="bead-color"][data-code="${code}"]`)
   await hand.find('bead-colors-count')
+  if (!row()) {
+    const filter = () => hand.root.querySelector<HTMLElement>(`[data-testid="bead-colors-family"][data-value="${family}"]`)
+    // A narrow popover folds its filters behind their button.
+    if (!filter()?.offsetParent) await hand.press('bead-colors-filters-toggle')
+    await hand.press(filter)
+    await present(hand, row)
+  }
   if (!row()?.hasAttribute('data-taken')) await hand.press(row)
   return () => {
     const hex = Object.entries(hand.canvas.activeProject.value?.paletteCodes ?? {}).find(([, each]) => each === code)?.[0]
@@ -42,33 +69,39 @@ async function pickColor(hand: Hand, color: DemoColor): Promise<void> {
   else await pickSwatch(hand, SWATCH_IDS[color])
 }
 
-/** A bead of the Frame, by its place in the Frame. */
-function inFrame(row: number, column: number): GridPosition {
-  return { row: DEMO_FRAME.row + row, column: DEMO_FRAME.column + column }
+/** The beads of a drawing on Ring's Canvas, in `frame`. */
+function beadsOn(frame: DemoFrame, beads: readonly TraceBead[]): GridPosition[] {
+  return beads.map(([line, along]) => onCanvas(frame, line, along))
 }
 
-/** The Frame's corners, for a drag over the whole of it. */
-const FRAME_FIRST = inFrame(0, 0)
-const FRAME_LAST = inFrame(DEMO_FRAME.rows - 1, DEMO_FRAME.columns - 1)
-
-/** The corners of what the Starter's ring covers lying turned, longer than the band (ticket 0832): for a drag over it. */
-const RING_FIRST = inFrame(-1, -6)
-const RING_LAST = inFrame(DEMO_FRAME.rows, DEMO_FRAME.columns + 5)
-
-/** The panorama the ghost traces over the Reference image, in the band: the sun and the ridge's snow line painted, the
- * ground's row, the sky and the slopes filled from one bead each; flowers at the mountains' foot. */
-const LANDSCAPE = {
-  sun: [inFrame(SUN.row, SUN.column), inFrame(SUN.row, SUN.column + 1), inFrame(SUN.row + 1, SUN.column + 1), inFrame(SUN.row + 1, SUN.column)],
-  ridge: RIDGE.flatMap((row, column) => {
-    const next = RIDGE[column + 1] ?? row
-    const down = next > row ? 1 : -1
-    return Array.from({ length: Math.abs(next - row) + 1 }, (_, step) => inFrame(row + step * down, column))
-  }),
-  ground: Array.from({ length: PANORAMA.columns }, (_, column) => inFrame(PANORAMA.rows - 1, column)),
-  sky: inFrame(0, 0),
-  slopes: inFrame(PANORAMA.rows - 2, 9),
-  flowers: DEMO_FLOWERS.map(([row, column]) => inFrame(row, column)),
+/** A Frame's corners, for a drag over the whole of it. */
+function cornersOf(frame: DemoFrame): [GridPosition, GridPosition] {
+  return [onCanvas(frame, 0, 0), onCanvas(frame, frame.columns - 1, frame.rows - 1)]
 }
+
+/** A bead to the next along a line traced over the picture, in ms: half a bead drawn by hand, as the line is there to
+ * follow (a Selection's drag is quicker still). It takes 13s off Reference image, the longest row (about 72s). */
+const TRACE_MS = 70
+
+/** Draws `steps` in `frame`: each color picked, its strokes painted (`ms` a bead; the hand's own pace unless given),
+ * then Fill pressed where it fills. The tool is pressed only when it changes. */
+async function draw(hand: Hand, frame: DemoFrame, steps: readonly TraceStep[], ms?: number): Promise<void> {
+  let tool: 'paint' | 'fill' | undefined
+  const take = async (next: 'paint' | 'fill') => {
+    if (tool !== next) await hand.press(`pill-tool-${next}`)
+    tool = next
+  }
+  for (const { part, strokes, fills } of steps) {
+    if (strokes.length > 0) await take('paint')
+    await pickColor(hand, PEACOCK_COLORS[part])
+    for (const stroke of strokes) await hand.stroke(beadsOn(frame, stroke), ms)
+    if (fills.length > 0) await take('fill')
+    for (const press of fills) await hand.stroke(beadsOn(frame, [press]))
+  }
+}
+
+/** The cuff's strip the ghost traces its eye in: the middle one. */
+const CUFF_TRACE_STRIP = 1
 
 /** How long a row holds what it shows, in ms (Homepage card, the tour): 1.2 times its first pace (ticket 0802). Every
  * wait of a script is one of these.
@@ -98,12 +131,13 @@ export const HOLD = {
 /** How many of Row done's passes are slower. */
 const ROW_DONE_SLOW = 3
 
-/** How many of Row done's passes the tour shows of the mountains' rows, before it rests.
+/** How many of Row done's passes the tour shows of the cuff's rows, before it rests.
  * @internal Its browser test checks the tour ends there. */
 export const ROW_DONE_PASSES = 10
-/** The catalog color the meadow's flowers are painted in (Homepage card, Colors built in). */
-const FLOWER_CODE = 'DB55'
-
+/** The catalog color the cuff's pupils are painted in (Homepage card, Colors built in): DB799, a matte purple. Not an
+ * opaque one such as DB660: the catalog draws those in their family's color, which Miyuki's Palette holds from the
+ * start, so the list reads them In Palette and adds nothing. */
+const PUPIL_COLOR: CatalogPick = { code: 'DB799', family: 'Purple' }
 
 /** Opens the Frame panel, if it isn't open, and closes it after `work`. */
 async function inFramePanel(hand: Hand, work: () => Promise<void>): Promise<void> {
@@ -124,19 +158,17 @@ function techniqueOption(hand: Hand, technique: string) {
 
 /** Each row's script. */
 export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = {
-  /** The open Canvas: a ring's lettering in gold with Paint, a Selection round it becomes the Frame, then Fill makes its
-   * ground black. */
+  /** The open Canvas: one eye of the feather with Paint, color by color from its green ring in, a Selection round the
+   * band becomes the Frame, then Fill makes its ground deep green, either side of the eye. */
   async canvas(hand) {
-    await hand.press('pill-tool-paint')
-    await pickColor(hand, 'D')
-    for (const stroke of DEMO_LETTERING) await hand.stroke(stroke.map(([row, column]) => inFrame(row, column)))
+    await draw(hand, DEMO_FRAME, eyeByHand(DEMO_FIRST_STRIP))
     await hand.press('pill-tool-select')
-    await hand.drag(FRAME_FIRST, FRAME_LAST)
+    await hand.drag(...cornersOf(DEMO_FRAME))
     await hand.hover('context-bar-frame', HOLD.setFrame)
     await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
     await hand.press('pill-tool-fill')
-    await pickColor(hand, 'K')
-    await hand.stroke([inFrame(0, 0)])
+    await pickColor(hand, 'E')
+    for (const press of ringGroundFills(DEMO_FIRST_STRIP)) await hand.stroke(beadsOn(DEMO_FRAME, [press]))
   },
   /** The Frame's Technique, each of the others in turn and back to the ring's peyote, each held a moment with the panel
    * shut so the beads show how they sit. */
@@ -149,31 +181,24 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       await hand.wait(HOLD.technique)
     }
   },
-  /** Paint, three gold beads above the lettering, then Undo. */
+  /** Paint, three gold beads on the ground beside the eye, then Undo. */
   async editing(hand) {
     await hand.press('pill-tool-paint')
     await pickColor(hand, 'D')
-    await hand.stroke([inFrame(0, 16), inFrame(0, 17), inFrame(0, 18)])
+    await hand.stroke(beadsOn(DEMO_FRAME, DEMO_EDIT_BEADS))
     await hand.wait(HOLD.undo)
     await hand.press('strip-undo')
   },
-  /** Mirror over the whole Frame in Repeat, its band cut into strips a letter wide: a dot above and below the first gap,
-   * and the ring has them all round. */
+  /** Mirror over the whole Frame in Repeat, its band cut into strips an eye long: the eye drawn again in the second
+   * strip, and the ring has it all round. */
   async mirror(hand) {
-    await mirrorWholeFrame(hand)
-    await hand.press('mirror-bar-mode-repeat')
-    for (let presses = 0; presses < 6 && !axesAre(hand, DEMO_REPEAT_AXES); presses++) await hand.press('mirror-bar-leftRight-more')
-    await hand.press('pill-tool-paint')
-    for (const { color, beads } of DEMO_MIRROR_BEADS) {
-      await pickColor(hand, color)
-      for (const [row, column] of beads) await hand.stroke([inFrame(row, column)])
-    }
+    await repeatAlong(hand, DEMO_RING_AXES)
+    await draw(hand, DEMO_FRAME, eyeByHand(DEMO_MIRROR_STRIP))
   },
   /** The Mirror closed, then Replace Frame from the Starter gallery: Rings, Chevrons, its setup looked through (the
    * ring's size inside), Replace. A ring the same size as the band, it lands where the band was (fifth since 0830). */
   async starters(hand) {
-    await hand.press('pill-tool-mirror')
-    await hand.press('mirror-bar-close')
+    await closeMirror(hand)
     await hand.press('strip-frame')
     await hand.press('frame-replace-from-starter')
     await hand.press('starter-category-rings')
@@ -182,38 +207,25 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('create-starter-project')
     if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
   },
-  /** The Starter's ring cleared off the Frame, a picture laid under the beads smaller than the Frame, grown from its
-   * corner to fit it, then traced. */
+  /** The Starter's ring deleted, a cuff's Frame set from a new Selection in place of the ring's (nothing is asked: it
+   * holds nothing now), a picture of the feather landed smaller than the Frame and grown to fit it, then one eye traced
+   * in Repeat: each ring's edge painted and its inside filled, the ground filled, the barbs painted over it. */
   async reference(hand) {
-    // The Starter's ring lies turned on this unturned Canvas (ticket 0832): its Frame goes, and the band is the Frame again.
-    await inFramePanel(hand, async () => {
-      await hand.press('frame-chrome-remove')
-      if (await present(hand, 'remove-frame-modal')) await hand.press('confirm-modal-confirm')
-    })
     await hand.press('pill-tool-select')
-    await hand.drag(RING_FIRST, RING_LAST)
+    await hand.drag(...cornersOf(DEMO_FRAME))
     await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
     // The Starter's ring is all there is on the Canvas, so Delete asks first.
     if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
-    await hand.drag(FRAME_FIRST, FRAME_LAST)
+    await hand.drag(...cornersOf(DEMO_CUFF))
     await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
-    await growReference(hand, await landscapeFile())
+    await growReference(hand, await peacockFile())
     await hand.press('reference-adjust-done')
-    await hand.press('pill-tool-paint')
-    await pickColor(hand, 'Y')
-    await hand.stroke(LANDSCAPE.sun)
-    await pickColor(hand, 'W')
-    await hand.stroke(LANDSCAPE.ridge)
-    await pickSwatch(hand, DEMO_SWATCHES.ground)
-    await hand.stroke(LANDSCAPE.ground)
-    await hand.press('pill-tool-fill')
-    await pickSwatch(hand, DEMO_SWATCHES.sky)
-    await hand.stroke([LANDSCAPE.sky])
-    await pickSwatch(hand, DEMO_SWATCHES.slopes)
-    await hand.stroke([LANDSCAPE.slopes])
+    await repeatAlong(hand, DEMO_CUFF_AXES)
+    await draw(hand, DEMO_CUFF, eyeTrace(PEACOCK_CUFF, CUFF_TRACE_STRIP), TRACE_MS)
+    await closeMirror(hand)
   },
   /** Convert image from the Menu: a balloon chosen as its file picker would hand it over (another picture than the
-   * Reference image's mountains), the picture converted, its found colors, then left, nothing made. */
+   * Reference image's feather), the picture converted, its found colors, then left, nothing made. */
   async convert(hand) {
     await hand.press('strip-menu')
     await hand.press('menu-convert-image')
@@ -228,14 +240,15 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('convert-close')
     if (await present(hand, 'leave-converter-modal')) await hand.press('confirm-modal-confirm')
   },
-  /** The color popover's Miyuki Delica palette, a catalog color picked, a few flowers at the mountains' foot. */
+  /** The color popover's Miyuki Delica palette, a catalog purple found among its purples and picked, the middle line of each eye's pupil painted
+   * in it, from the left as the cuff lies. */
   async colors(hand) {
     await hand.press('pill-tool-paint')
     await hand.press('pill-color')
     await hand.press('bead-colors-toggle')
-    await hand.press(await catalogSwatch(hand, FLOWER_CODE))
+    await hand.press(await catalogSwatch(hand, PUPIL_COLOR))
     if (hand.root.querySelector('[data-testid="color-popover"]')) await hand.press('color-popover-close')
-    for (const flower of LANDSCAPE.flowers) await hand.stroke([flower])
+    for (let strip = DEMO_CUFF_AXES; strip >= 0; strip--) await hand.stroke(beadsOn(DEMO_CUFF, pupilMiddle(strip)))
   },
   /** Letters: each color's letter on its beads. */
   async letters(hand) {
@@ -244,7 +257,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       await hand.wait(HOLD.letters)
     })
   },
-  /** Row done for the traced mountains' first rows, the first three slower, then a rest: too many to show them all. */
+  /** Row done for the traced cuff's first rows, the first three slower, then a rest: too many to show them all. */
   async rowProgress(hand) {
     for (let step = 0; step < ROW_DONE_PASSES; step++) {
       const next = hand.root.querySelector('[data-testid="progress-bar-next"]')
@@ -298,16 +311,43 @@ async function mirrorWholeFrame(hand: Hand): Promise<void> {
   await hand.press('margin-frame-tools-mirror')
 }
 
-/** Whether the Mirror has `count` Left–right Axes. */
-function axesAre(hand: Hand, count: number): boolean {
-  const value = hand.root.querySelector('[data-testid="mirror-bar-leftRight-value"]')
-  return value?.textContent?.trim() === String(count)
+/** The Mirror's axis that cuts a piece along its length: on Ring's turned Canvas the Frame's rows run along the piece,
+ * and the Mirror names its axes by the Frame's rows and columns, so it is Top–bottom. */
+const ALONG = 'topBottom'
+/** The Mirror's other axis, which the tour keeps off: it would cut the piece across its width. */
+const ACROSS = 'leftRight'
+
+/** Whether a Mirror axis is on. */
+function axisOn(hand: Hand, axis: string): boolean {
+  return !!hand.root.querySelector(`[data-testid="mirror-bar-chip-${axis}"]`)?.classList.contains('mirror-bar__chip--on')
+}
+
+/** How many Axes the Mirror has along the piece. */
+function axesAlong(hand: Hand): number {
+  return Number(hand.root.querySelector(`[data-testid="mirror-bar-${ALONG}-value"]`)?.textContent?.trim())
+}
+
+/** Mirror over the whole Frame in Repeat, `axes` Axes cutting the piece along its length into strips. */
+async function repeatAlong(hand: Hand, axes: number): Promise<void> {
+  await mirrorWholeFrame(hand)
+  await hand.press('mirror-bar-mode-repeat')
+  await hand.find('mirror-bar-chips')
+  if (!axisOn(hand, ALONG)) await hand.press(`mirror-bar-axis-${ALONG}`)
+  if (axisOn(hand, ACROSS)) await hand.press(`mirror-bar-axis-${ACROSS}`)
+  for (let presses = 0; presses < 8 && axesAlong(hand) !== axes; presses++) await hand.press(`mirror-bar-${ALONG}-${axesAlong(hand) < axes ? 'more' : 'fewer'}`)
+}
+
+/** Closes the Mirror from its bar, which the Tool pill's Mirror tile brings back while another tool is in hand. */
+async function closeMirror(hand: Hand): Promise<void> {
+  if (!hand.root.querySelector('[data-testid="mirror-bar-close"]')) await hand.press('pill-tool-mirror')
+  await hand.press('mirror-bar-close')
 }
 
 /** Whether a dialog or control shows up within a moment. */
-async function present(hand: Hand, testid: string): Promise<boolean> {
+async function present(hand: Hand, target: string | (() => Element | null)): Promise<boolean> {
+  const there = () => (typeof target === 'string' ? hand.root.querySelector(`[data-testid="${target}"]`) : target())
   for (let frames = 0; frames < 10; frames++) {
-    if (hand.root.querySelector(`[data-testid="${testid}"]`)) return true
+    if (there()) return true
     await hand.frame()
   }
   return false
@@ -340,7 +380,9 @@ async function growReference(hand: Hand, picture: File): Promise<void> {
   await hand.moveTo(from)
   const box = corner.closest('[data-testid="reference-adjust"]')!.getBoundingClientRect()
   const grow = 1 / REFERENCE_LANDS_AT - 1
-  await hand.moveTo({ x: from.x + box.width * grow, y: from.y + box.height * grow })
+  // The picture turns with Ring's Canvas, so its bottom-right corner is another on screen: it is dragged out from the middle.
+  const out = { x: Math.sign(from.x - (box.left + box.width / 2)), y: Math.sign(from.y - (box.top + box.height / 2)) }
+  await hand.moveTo({ x: from.x + out.x * box.width * grow, y: from.y + out.y * box.height * grow })
   flow.commit(fit)
 }
 

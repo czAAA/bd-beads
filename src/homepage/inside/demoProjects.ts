@@ -1,32 +1,44 @@
 import { beadsFromColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
-import { defaultPalette } from '../../domain/palette'
+import { addUsedColor, defaultPalette } from '../../domain/palette'
+import { setPalette } from '../../domain/paletteEdits'
+import type { GridPosition } from '../../domain/grid'
 import { withLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { starterById } from '../../domain/starters'
 import { DEFAULT_TECHNIQUE, type Technique } from '../../domain/weave'
 import type { Translations } from '../../i18n/translations'
+import { PEACOCK_CUFF, PEACOCK_RING, type PeacockDrawing, type PeacockPart } from './peacock'
 
 // The demo's own Projects (Homepage card, What's inside, ticket 0797): "Ring", the one the tour plays on, an open peyote
-// Canvas with no Frame on Delica 11/0, and "Heart" and "Bracelet", which only its Saved Projects lists.
+// Canvas with no Frame on Delica 11/0, and "Heart" and "Bracelet", which only its Saved Projects lists; and where the
+// tour's peacock feather (peacock.ts, ticket 0831) lies on Ring's Canvas.
 
 /** The Bead every demo Project is on. */
 const DEMO_BEAD = 'miyuki/delica/11-0'
 
-/** The colors the tour draws with: Miyuki's own color families, so each is a swatch of the demo's Palette. */
+/** The colors the demo draws with: Miyuki's own color families, each a swatch of the demo's Palette, and the three the
+ * peacock needs that the families lack (teal, deep blue, deep green), which Ring's Palette starts with. */
 export const DEMO_COLORS = {
   W: '#ffffff',
   Y: '#f2c94c',
-  O: '#f2994a',
   R: '#e63746',
   B: '#2f6fed',
   G: '#27ae60',
-  P: '#ec5990',
-  K: '#1a1a1a',
   D: '#d4af37',
+  T: '#17c3c9',
+  N: '#1c1f6e',
+  E: '#0c4a3a',
 } as const
 
 export type DemoColor = keyof typeof DEMO_COLORS
+
+/** Ring's own colors, added to its Palette as Custom color adds them: the eye's teal, its deep blue pupil and the deep
+ * green ground. */
+const DEMO_OWN_COLORS: readonly DemoColor[] = ['T', 'N', 'E']
+
+/** The color of each part of the feather: a barb is the eye's green, the ground deep green. */
+export const PEACOCK_COLORS: Record<PeacockPart, DemoColor> = { G: 'G', D: 'D', T: 'T', B: 'B', N: 'N', g: 'G', '.': 'E' }
 
 /** A drawing in rows of letters, `.` for an empty position. */
 function colorsOf(rows: readonly string[]): (string | null)[][] {
@@ -62,121 +74,80 @@ const BRACELET = Array.from({ length: 24 }, (_, row) =>
   Array.from({ length: 7 }, (_, column) => (Math.abs(column - 3) === (row % 6 < 3 ? row % 3 : 3 - (row % 3)) ? 'B' : row % 6 === 0 ? 'Y' : 'W')).join(''),
 )
 
+/** The Project with Ring's own colors in its Palette's last slots. */
+function withOwnColors(project: Project): Project {
+  const builtIns = defaultPalette(DEMO_BEAD)
+  const palette = DEMO_OWN_COLORS.reduce((ids, color) => addUsedColor(ids, DEMO_COLORS[color], builtIns).ids, project.palette)
+  return setPalette(project, palette)
+}
+
 /** The demo's library, freshly made: Ring with nothing drawn, Heart and Bracelet. Ring is the newest, so it is the one
- * that opens. */
+ * that opens; its Canvas keeps the quarter turn a new peyote Project starts with, so its band lies across the demo's
+ * wide box the way a ring is woven (ticket 0831). */
 export function demoLibrary(t: Translations): Project[] {
   const { ring, heart, bracelet } = t.homepage.inside.demo
   const earlier = (project: Project, minutes: number) => ({ ...project, updatedAt: project.updatedAt - minutes * 60_000, createdAt: project.createdAt - minutes * 60_000 })
-  return [earlier(demoProject(bracelet, BRACELET), 2), earlier(demoProject(heart, HEART), 1), lyingAcross(demoProject(ring, undefined, DEMO_TECHNIQUE))]
+  return [earlier(demoProject(bracelet, BRACELET), 2), earlier(demoProject(heart, HEART), 1), withOwnColors(demoProject(ring, undefined, DEMO_TECHNIQUE))]
 }
 
-/** The Ring's Canvas unturned: peyote starts a quarter turn round (its columns upright), and the band reads lying across
- * the demo's wide box, as its size says (7 beads wide, 36 round). */
-function lyingAcross(project: Project): Project {
-  const [canvas, ...rest] = project.layers
-  return { ...project, layers: [{ ...canvas, orientation: 0 }, ...rest] }
-}
-
-/** One of the tour's drawings on the open Canvas: its rows, from the position given. */
-interface DemoDrawing {
+/** A Frame of the tour's on Ring's turned Canvas: its first bead, its rows (the beads along the piece as it lies
+ * across) and its columns (its lines, top to bottom). It starts on an even column, as a peyote Frame must. */
+export interface DemoFrame {
   row: number
   column: number
-  rows: readonly string[]
+  rows: number
+  columns: number
 }
 
-/** The Frame the tour sets from a Selection: a peyote ring band, 7 beads wide and 36 round, the size of the Starters'
- * rings at their 54 mm (DEMO_STARTER's among them): where its first bead lies on the Canvas. */
-export const DEMO_FRAME = { row: 6, column: 30, rows: 7, columns: 36 } as const
+/** The Frame the first row sets from a Selection: a peyote ring band, 36 beads long and woven across its 7, the size of
+ * the Starters' rings at their 54 mm (DEMO_STARTER's among them). */
+export const DEMO_FRAME: DemoFrame = { row: 10, column: 12, rows: PEACOCK_RING.length, columns: PEACOCK_RING.lines }
 
-/** The Mirror row's Repeat: 8 Axes across the band cut it into 9 strips, one letter wide, so the beads painted in the
- * first strip go all round the ring: a dot above and below each gap between letters. */
-export const DEMO_REPEAT_AXES = 8
-
-/** How wide a letter is with its gap: one strip of the Repeat. */
-const LETTER_WIDTH = DEMO_FRAME.columns / (DEMO_REPEAT_AXES + 1)
-
-/** The first row's lettering: nine letters of a flowing, elvish-looking script of our own, in Miyuki gold, a letter
- * every `LETTER_WIDTH` beads (one strip of the Mirror row's Repeat). Each letter is written as a pen would, a stroke or two of
- * neighbouring beads, left to right: [row, column] in the Frame. The Frame round it is then filled black. */
-const LETTERS: readonly (readonly (readonly [number, number])[])[][] = [
-  // A stem down, its bow to the right, a dot over it.
-  [[[4, 0], [3, 0], [2, 0], [1, 0], [1, 1], [2, 2], [3, 1]], [[0, 1]]],
-  // An arch.
-  [[[3, 0], [2, 0], [1, 1], [2, 2], [3, 2]]],
-  // A stem up on the right, its bow to the left.
-  [[[0, 2], [1, 2], [2, 2], [3, 2], [3, 1], [2, 0], [1, 1]]],
-  // A cup, a dot over it.
-  [[[1, 0], [2, 0], [3, 1], [2, 2], [1, 2]], [[0, 1]]],
-  // A stem down on the right, its bow to the left.
-  [[[4, 2], [3, 2], [2, 2], [1, 2], [1, 1], [2, 0], [3, 1]]],
-  // A stem up, its bow to the right.
-  [[[0, 0], [1, 0], [2, 0], [3, 0], [3, 1], [2, 2], [1, 1]]],
-  // An arch, two dots over it.
-  [[[3, 0], [2, 0], [1, 1], [2, 2], [3, 2]], [[0, 0]], [[0, 2]]],
-  // A stem down, its bow to the right.
-  [[[4, 0], [3, 0], [2, 0], [1, 0], [1, 1], [2, 2], [3, 1]]],
-  // A cup.
-  [[[1, 0], [2, 0], [3, 1], [2, 2], [1, 2]]],
-]
-
-/** The lettering's strokes, in the Frame: each letter a strip on, its rows one down from the band's edge. */
-export const DEMO_LETTERING: readonly (readonly (readonly [number, number])[])[] = LETTERS.flatMap((letter, index) =>
-  letter.map((stroke) => stroke.map(([row, column]) => [row + 1, column + index * LETTER_WIDTH] as const)),
-)
-
-/** The lettering as rows of letters, `D` for gold, `.` for empty.
- * @internal Its test checks the lettering's size and color. */
-export const DEMO_DRAWING: DemoDrawing = {
-  row: DEMO_FRAME.row,
-  column: DEMO_FRAME.column,
-  rows: Array.from({ length: DEMO_FRAME.rows }, (_, row) =>
-    Array.from({ length: DEMO_FRAME.columns }, (_, column) => (DEMO_LETTERING.some((stroke) => stroke.some(([down, across]) => down === row && across === column)) ? 'D' : '.')).join(''),
-  ),
+/** The Frame the Reference image row sets: a cuff 48 long and 23 wide, its middle where the band's is. */
+export const DEMO_CUFF: DemoFrame = {
+  row: DEMO_FRAME.row - (PEACOCK_CUFF.length - PEACOCK_RING.length) / 2,
+  column: DEMO_FRAME.column - (PEACOCK_CUFF.lines - PEACOCK_RING.lines) / 2,
+  rows: PEACOCK_CUFF.length,
+  columns: PEACOCK_CUFF.lines,
 }
 
-/** The beads the Mirror row paints in the Repeat's first strip. */
-export const DEMO_MIRROR_BEADS: readonly { color: DemoColor; beads: readonly (readonly [number, number])[] }[] = [{ color: 'D', beads: [[0, 3], [6, 3]] }]
-
-/** The Reference image row's panorama (landscape.ts draws it, the ghost traces it): the band's beads across and down,
- * and how much taller a bead's step is than it is wide (Delica 11/0 in peyote). */
-export const PANORAMA = { columns: DEMO_FRAME.columns, rows: DEMO_FRAME.rows, cellAspect: 1.23 } as const
-
-/** The ridge's row in each column: the snow line the ghost paints, never below row 4, so the slopes are one Fill. Next
- * columns differ by a row at most, and the stroke steps down its own column first: peyote's half-bead shift leaves the
- * sky's Fill no gap. */
-export const RIDGE: readonly number[] = [4, 4, 3, 3, 2, 1, 2, 3, 3, 4, 4, 3, 2, 2, 1, 1, 2, 3, 4, 4, 4, 4, 3, 2, 1, 2, 2, 3, 4, 4, 3, 3, 4, 4, 4, 4]
-
-/** Where the tour paints the meadow's flowers on the band: at the mountains' foot, on the slopes' lowest row. */
-export const DEMO_FLOWERS: readonly (readonly [number, number])[] = [[5, 6], [5, 16], [5, 28]]
-
-/** Where the sun is: its top-left bead and size, in the sky right of the last peak. */
-export const SUN = { row: 0, column: 29, size: 2 } as const
-
-/** The swatches the tour fills the panorama with, by what each paints: the sky is Miyuki's Iridescent, a pale blue. */
-export const DEMO_SWATCHES = { sky: 'iridescent', slopes: 'grey', ground: 'brown' } as const
-
-/** A built-in color of the demo's Bead by its family, as the tour picks its swatch. */
-function swatchHex(id: string): string {
-  return defaultPalette(DEMO_BEAD).find((color) => color.id === id)!.hex
+/** Where a bead of a drawing lies on Ring's Canvas: its line is the Frame's column, how far along the Frame's row. On
+ * the turned Canvas the rows run right to left, so the piece's start is at the right and every eye reads the same. */
+export function onCanvas(frame: DemoFrame, line: number, along: number): GridPosition {
+  return { row: frame.row + along, column: frame.column + line }
 }
 
-/** The Welcome section's piece (ticket 0830; Homepage card): the panorama the tour traces, finished. The sky over the
- * snow line, which runs down its own column to the next one's ridge as the ghost paints it, the slopes under it, the
- * ground along the foot and the sun in the sky; no flowers yet. A peyote Frame lying across, as the demo's band lies. */
-export function finishedMountains(): Project {
-  const [sky, slopes, ground] = [DEMO_SWATCHES.sky, DEMO_SWATCHES.slopes, DEMO_SWATCHES.ground].map(swatchHex)
-  const colors = Array.from({ length: PANORAMA.rows }, (_, row) =>
-    Array.from({ length: PANORAMA.columns }, (_, column) => {
-      const [here, next] = [RIDGE[column], RIDGE[column + 1] ?? RIDGE[column]]
-      if (row >= SUN.row && row < SUN.row + SUN.size && column >= SUN.column && column < SUN.column + SUN.size) return DEMO_COLORS.Y
-      if (row === PANORAMA.rows - 1) return ground
-      return row < Math.min(here, next) ? sky : row <= Math.max(here, next) ? DEMO_COLORS.W : slopes
-    }),
-  )
-  const project = createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size: { unit: 'beads', width: PANORAMA.columns, height: PANORAMA.rows }, background: 1 })
-  return lyingAcross(withLayer(project, 'frame', { beads: beadsFromColors(colors) }))
+/** The Mirror row's Repeat on the ring: 3 Axes cut the band into 4 strips an eye long. */
+export const DEMO_RING_AXES = PEACOCK_RING.length / PEACOCK_RING.period - 1
+
+/** The Reference image row's Repeat on the cuff: 2 Axes, 3 strips an eye long. */
+export const DEMO_CUFF_AXES = PEACOCK_CUFF.length / PEACOCK_CUFF.period - 1
+
+/** The strip of the ring the first row draws its eye in, and the one the Mirror row draws it in again: the first two
+ * from the left as the band lies. */
+export const DEMO_FIRST_STRIP = DEMO_RING_AXES
+export const DEMO_MIRROR_STRIP = DEMO_RING_AXES - 1
+
+/** Project editing's three gold beads, by line and how far along: on the pupil's line, on the ground beside the first
+ * eye, where the second eye leaves ground too. */
+export const DEMO_EDIT_BEADS: readonly (readonly [number, number])[] = [[4, 27], [4, 26], [4, 25]]
+
+/** A drawing's colors as its Frame holds them: a row of the Frame for each bead along the piece. */
+function frameColors(drawing: PeacockDrawing): string[][] {
+  return Array.from({ length: drawing.length }, (_, along) => drawing.rows.map((line) => DEMO_COLORS[PEACOCK_COLORS[line[along] as PeacockPart]]))
 }
 
-/** The Canvas the tour's view shows across (ticket 0797): the Frame in its middle, with room for its sheet. The Starter's
- * ring lands where the Frame was, the same size, so nothing needs room beside it. */
-export const DEMO_VIEW = { left: DEMO_FRAME.column - 8, right: DEMO_FRAME.column + DEMO_FRAME.columns + 8 } as const
+/** The Welcome section's piece (ticket 0831; Homepage card): the peacock cuff the tour traces, finished as the tour
+ * leaves it at the end of Reference image (no purple pupils). A peyote Frame 48 long and 23 wide on a Canvas turned as
+ * a new peyote Project's is, so it lies across as it is woven. */
+export function finishedCuff(): Project {
+  const size = { unit: 'beads' as const, width: PEACOCK_CUFF.lines, height: PEACOCK_CUFF.length }
+  const project = createProject({ name: '', technique: DEMO_TECHNIQUE, beadId: DEMO_BEAD, size, background: 1 })
+  return withLayer(project, 'frame', { beads: beadsFromColors(frameColors(PEACOCK_CUFF)) })
+}
+
+/** The size the Welcome piece's caption names, long by wide. */
+export const DEMO_PIECE_SIZE = { long: PEACOCK_CUFF.length, wide: PEACOCK_CUFF.lines } as const
+
+/** How many beads of the Canvas the tour's view shows either side of the cuff's Frame (Homepage card, Its view). */
+export const DEMO_VIEW_MARGIN = 4

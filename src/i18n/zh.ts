@@ -338,7 +338,7 @@ export const zh: Translations = {
       colors: { other: '{codes} 种 {brands} 颜色' },
       starters: { other: '{count} 个起始方案' },
       caption: '{technique} · {size}',
-      piece: '太阳下的群山，佩奥特编织',
+      piece: '孔雀羽眼，佩奥特编织',
     },
     inside: {
       rows: {

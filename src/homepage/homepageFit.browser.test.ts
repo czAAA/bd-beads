@@ -191,7 +191,7 @@ describe('HomePage text fit with Projects saved', () => {
 // chapter shows its next row's end (ticket 0830), so four presses on the last chapter apply all 13 at once, and a
 // control a row reaches for that has moved or gone fails here, not only in a browser by eye.
 describe("What's inside's tour on the real editor", () => {
-  it("applies all 13 rows, ending on the Starter's ring with its first rounds done", async () => {
+  it("applies all 13 rows, ending on the traced cuff with its first rows done", async () => {
     const warned = vi.spyOn(console, 'warn')
     const mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     await page.viewport(1440, 900)

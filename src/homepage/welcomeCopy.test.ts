@@ -20,8 +20,8 @@ describe("the Welcome section's words (ticket 0830)", () => {
   })
 
   it("names the piece by its Technique and its grid's size", () => {
-    expect(welcomeCaption(en)).toBe('Peyote · 36×7')
-    expect(welcomeCaption(ru)).toBe('Мозаичное плетение · 36×7')
+    expect(welcomeCaption(en)).toBe('Peyote · 48×23')
+    expect(welcomeCaption(ru)).toBe('Мозаичное плетение · 48×23')
   })
 
   it("keeps three of the coffee screen's promises, with its icons and lines", () => {

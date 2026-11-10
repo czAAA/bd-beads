@@ -217,8 +217,10 @@ The Homepage card describes the page (ticket 0739); how the app builds it:
 - The two X1 marks are `AppLogo`, the design system's own file.
 - Welcome is the first of four sections (ticket 0830; `homepage/sections.ts` lists them, and the bar counts what it
   lists). `WelcomeTile` takes its counts from the app (`homepage/appCounts.ts`: the catalogs' codes and the Starters,
-  as the free list counts them) and its piece from the Project renderer (`WelcomePiece`, the tour's mountains from
-  `inside/demoProjects.ts`, drawn in the theme shown), so neither is a number or a picture kept by hand. The way into
+  as the free list counts them) and its piece from the Project renderer (`WelcomePiece`, the tour's peacock cuff from
+  `inside/demoProjects.ts`, drawn in the theme shown), so neither is a number or a picture kept by hand. The feather
+  is data (`inside/peacock.ts`, ticket 0831): the ring's eye, the cuff, the reference picture (`peacockPicture.ts`) and
+  the strokes and Fills that trace it (`peacockTrace.ts`) all come from the one formula, so they cannot drift apart. The way into
   the editor is the page's one primary button: `StepBar`'s `nextVariant` makes the Homepage's Next secondary, and
   Convert image's stays primary.
 - What's inside is a real editor (`inside/InsideShell`, the app's shell given its own stores), played by a tour

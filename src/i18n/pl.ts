@@ -339,7 +339,7 @@ export const pl: Translations = {
       colors: { one: '{codes} kolor {brands}', few: '{codes} kolory {brands}', many: '{codes} kolorów {brands}', other: '{codes} koloru {brands}' },
       starters: { one: '{count} starter', few: '{count} startery', many: '{count} starterów', other: '{count} startera' },
       caption: '{technique} · {size}',
-      piece: 'Góry pod słońcem, w peyote',
+      piece: 'Oczka pawiego pióra, w peyote',
     },
     inside: {
       rows: {

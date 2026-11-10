@@ -3,18 +3,17 @@ import { defineComponent, h, ref, watch } from 'vue'
 import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { beadColorAt } from '../../domain/layerBeads'
-import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf } from '../../domain/layerRecord'
 import { currentPass, rowProgressOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { ReferencePlace } from '../../domain/referenceImage'
 import type { InsideRowId } from '../../i18n/translations'
 import InsideEditor from './InsideEditor.vue'
-import { DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, PANORAMA, RIDGE, SUN } from './demoProjects'
+import { PEACOCK_CUFF, PEACOCK_RING, type PeacockDrawing } from './peacock'
 import { ROW_DONE_PASSES, TOUR_SCRIPTS } from './tourScripts'
 
 // The tour's rows applied at once on the real demo editor (ticket 0821), as a press on a later row applies them: what
-// they leave on the ring's band.
+// they leave on the ring's band and on the cuff (ticket 0831).
 
 /** The demo editor in a box the size of the desk's, and its handle. */
 async function demoEditor() {
@@ -36,67 +35,78 @@ async function applyThrough(editor: InstanceType<typeof InsideEditor>, last: Ins
   return hand.canvas.activeProject.value!
 }
 
-/** The color of a bead of the Frame, by its place in the Frame. */
-function frameBead(project: Project, row: number, column: number): string | null {
-  const frame = frameOf(project)!
-  return beadColorAt(project, frame.row + row, frame.column + column, 'frame')
+/** The feather's colors by part, as the card names them: a barb is the eye's green, the ground deep green. */
+const COLORS: Record<string, string> = { G: '#27ae60', D: '#d4af37', T: '#17c3c9', B: '#2f6fed', N: '#1c1f6e', g: '#27ae60', '.': '#0c4a3a' }
+
+/** The Frame's place and size, and nothing else of it. */
+function placeOf(project: Project) {
+  const { row, column, rows, columns } = frameOf(project)!
+  return { row, column, rows, columns }
 }
 
-describe("What's inside's first rows on the ring (ticket 0821)", () => {
-  it('sets the band as the Frame, its lettering one color and its ground another, every bead filled', async () => {
+/** The Frame's beads as lines of parts, as a drawing writes them: a line for each column, a part for each bead along.
+ * A bead of another color reads `?`, an empty one a space. */
+function linesOf(project: Project): string[] {
+  const { row, column, rows, columns } = placeOf(project)
+  const part = (color: string | null) => (color ? (Object.keys(COLORS).find((key) => COLORS[key] === color.toLowerCase()) ?? '?') : ' ')
+  return Array.from({ length: columns }, (_, line) => Array.from({ length: rows }, (_, along) => part(beadColorAt(project, row + along, column + line, 'frame'))).join(''))
+}
+
+/** A drawing's lines with barbs read as the green they are painted in. */
+function painted(drawing: PeacockDrawing): string[] {
+  return drawing.rows.map((line) => line.replaceAll('g', 'G'))
+}
+
+/** The middle line of each of the cuff's pupils, 3 beads long: the beads Colors built in paints. */
+const PUPIL_BEADS = [0, 16, 32].flatMap((eye) => [6, 7, 8].map((along) => ({ line: 13, along: eye + along })))
+
+/** The catalog code of each of the pupils' middle beads. */
+function pupilCodes(project: Project): (string | undefined)[] {
+  const { row, column } = placeOf(project)
+  return PUPIL_BEADS.map(({ line, along }) => {
+    const color = beadColorAt(project, row + along, column + line, 'frame')
+    return color ? project.paletteCodes?.[color.toLowerCase()] : undefined
+  })
+}
+
+describe("What's inside's first rows on the ring (ticket 0831)", () => {
+  it('sets a band 36 long and 7 wide as the Frame and draws one eye at its left, the rest deep green', async () => {
     const project = await applyThrough(await demoEditor(), 'canvas')
-    const lettering = new Set(DEMO_LETTERING.flat().map(([row, column]) => frameBead(project, row, column)))
-    const ground = new Set<string | null>()
-    for (let row = 0; row < DEMO_FRAME.rows; row++) {
-      for (let column = 0; column < DEMO_FRAME.columns; column++) {
-        if (!DEMO_LETTERING.some((stroke) => stroke.some(([down, across]) => down === row && across === column))) ground.add(frameBead(project, row, column))
-      }
-    }
-    expect(lettering.size, 'the lettering one color').toBe(1)
-    expect(ground.size, 'the ground one Fill').toBe(1)
-    expect([...lettering, ...ground]).not.toContain(null)
-    expect([...lettering][0]).not.toBe([...ground][0])
+    expect(placeOf(project)).toEqual({ row: 10, column: 12, rows: 36, columns: 7 })
+    const eye = ['...GGG...', '..GDDG...', '..DTTTD..', '.GTBBTG..', '..DBNBD..', '..DTTD...', '...GGG...']
+    expect(linesOf(project)).toEqual(eye.map((line) => '.'.repeat(27) + line))
   }, 60000)
 
-  it("repeats the Mirror row's dots in every strip of the band", async () => {
+  it("leaves the band as it was after Project editing: its gold beads undone", async () => {
+    const editor = await demoEditor()
+    const before = linesOf(await applyThrough(editor, 'canvas'))
+    const hand = editor.hand(true, new AbortController().signal)
+    await TOUR_SCRIPTS.editing(hand)
+    expect(linesOf(hand.canvas.activeProject.value!)).toEqual(before)
+  }, 60000)
+
+  it('has four eyes after the Mirror row drew the second: Repeat lays it in every strip', async () => {
     const project = await applyThrough(await demoEditor(), 'mirror')
-    const width = DEMO_FRAME.columns / (DEMO_REPEAT_AXES + 1)
-    const first = DEMO_MIRROR_BEADS.flatMap(({ beads }) => beads.map(([row, column]) => frameBead(project, row, column)))
-    for (const { beads } of DEMO_MIRROR_BEADS) {
-      for (const [row, column] of beads) {
-        for (let strip = 1; strip <= DEMO_REPEAT_AXES; strip++) expect(frameBead(project, row, column + strip * width), `${row},${column + strip * width}`).toBe(first[0])
-      }
-    }
-    expect(first[0]).not.toBeNull()
+    expect(linesOf(project)).toEqual(PEACOCK_RING.rows)
   }, 60000)
 })
 
-describe("What's inside's Reference image row on the ring (ticket 0821)", () => {
-  it("traces the panorama: the sky's Fill never under the snow line, the slopes one Fill", async () => {
+describe("What's inside's Starters row on the ring (ticket 0832)", () => {
+  it("lays the Starter's ring where the band was: the same Frame, 36 long and 7 wide", async () => {
+    const project = await applyThrough(await demoEditor(), 'starters')
+    expect(placeOf(project)).toEqual({ row: 10, column: 12, rows: 36, columns: 7 })
+    expect(linesOf(project), "the Starter's own ring, not the eyes").not.toEqual(PEACOCK_RING.rows)
+  }, 60000)
+})
+
+describe("What's inside's Reference image row on the cuff (ticket 0831)", () => {
+  it('sets a cuff 48 long and 23 wide round the same middle and traces the feather on it, bead for bead', async () => {
     const project = await applyThrough(await demoEditor(), 'reference')
-    const sky = new Set<string | null>()
-    const snow = new Set<string | null>()
-    const slopes = new Set<string | null>()
-    for (let column = 0; column < PANORAMA.columns; column++) {
-      // The snow line runs down its own column to the next column's ridge.
-      const [top, bottom] = [Math.min(RIDGE[column], RIDGE[column + 1] ?? RIDGE[column]), Math.max(RIDGE[column], RIDGE[column + 1] ?? RIDGE[column])]
-      for (let row = 0; row < PANORAMA.rows - 1; row++) {
-        const sun = row >= SUN.row && row < SUN.row + SUN.size && column >= SUN.column && column < SUN.column + SUN.size
-        if (sun) continue
-        ;(row < top ? sky : row <= bottom ? snow : slopes).add(frameBead(project, row, column))
-      }
-    }
-    expect(sky.size, 'the sky one color').toBe(1)
-    expect(snow.size, 'the snow line one color').toBe(1)
-    expect(slopes.size, 'the slopes one color, filled in one press').toBe(1)
-    const [skyColor, snowColor, slopesColor] = [...sky, ...snow, ...slopes]
-    expect(new Set([skyColor, snowColor, slopesColor]).size, 'sky, snow and slopes apart').toBe(3)
-    expect([skyColor, slopesColor]).not.toContain(null)
-  }, 60000)
-})
+    expect(placeOf(project)).toEqual({ row: 4, column: 4, rows: 48, columns: 23 })
+    expect(linesOf(project)).toEqual(painted(PEACOCK_CUFF))
+  }, 120000)
 
-describe("What's inside's Reference image row's picture (ticket 0828)", () => {
-  it('lands smaller than the Frame, then grows to fit it', async () => {
+  it('lands its picture smaller than the Frame, then grows it to fit (ticket 0828)', async () => {
     const editor = await demoEditor()
     const flow = editor.hand(true, new AbortController().signal).canvas.referenceImage
     const places: ReferencePlace[] = []
@@ -105,52 +115,33 @@ describe("What's inside's Reference image row's picture (ticket 0828)", () => {
     stop()
     const [fit] = places
     expect(places.length, 'the fit, a smaller place, the fit again').toBeGreaterThanOrEqual(3)
-    expect(places[1]!.width, 'shown smaller first').toBeLessThan(fit!.width)
+    expect(places[1]!.width / fit!.width, 'shown at 70% first').toBeCloseTo(0.7, 2)
     expect(places.at(-1), 'grown back to the fit').toEqual(fit)
-  }, 60000)
+  }, 120000)
 })
 
-describe("What's inside's Starters row on the ring (ticket 0821)", () => {
-  it("lays the Starter's ring over the band's middle, 36 long and 7 wide, turned to lie across (ticket 0832)", async () => {
-    const project = await applyThrough(await demoEditor(), 'starters')
-    const frame = frameOf(project)!
-    expect({ rows: frame.rows, columns: frame.columns, quarterTurns: frame.quarterTurns }).toEqual({ rows: 36, columns: 7, quarterTurns: 1 })
-    expect(laidFrame(project)).toEqual({ row: 6, column: 26, rows: 6, columns: 45 })
-  }, 60000)
-
-  it("has the band back as the Frame once the Reference image row cleared the Starter's ring (ticket 0832)", async () => {
-    const frame = frameOf(await applyThrough(await demoEditor(), 'reference'))!
-    expect({ row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns, quarterTurns: frame.quarterTurns }).toEqual({ ...DEMO_FRAME, quarterTurns: undefined })
-  }, 60000)
-})
-
-describe("What's inside's last chapter on the mountains (ticket 0830)", () => {
-  it('counts Row done on the traced mountains, their flowers still there, with no ring left under them', async () => {
+describe("What's inside's last chapter on the cuff (ticket 0831)", () => {
+  it('counts Row done on the traced cuff, its purple pupils still there', async () => {
     const project = await applyThrough(await demoEditor(), 'exports')
     expect(currentPass(rowProgressOf(project)), 'Row done pressed for the first rows').toBe(ROW_DONE_PASSES)
-    for (const [row, column] of DEMO_FLOWERS) expect(project.paletteCodes?.[frameBead(project, row, column)!.toLowerCase()], `${row},${column}`).toBe('DB55')
-    const sun = new Set<string | null>()
-    for (let row = SUN.row; row < SUN.row + SUN.size; row++) for (let column = SUN.column; column < SUN.column + SUN.size; column++) sun.add(frameBead(project, row, column))
-    expect(sun.size, 'the sun one color').toBe(1)
-  }, 60000)
+    expect(pupilCodes(project)).toEqual(PUPIL_BEADS.map(() => 'DB799'))
+  }, 120000)
 })
 
 // Last: a Colors row run in one mount moves the Starter ring the next mount lays (seen in ticket 0828, not yet traced).
-describe("What's inside's Colors built in row on the ring (ticket 0828)", () => {
-  it("paints its flowers on the slopes in the catalog color it picked, Delica's DB55", async () => {
+describe("What's inside's Colors built in row on the cuff (ticket 0831)", () => {
+  it("paints the middle line of each pupil in the catalog color it picked, Delica's DB799, and nothing else", async () => {
     const project = await applyThrough(await demoEditor(), 'colors')
-    for (const [row, column] of DEMO_FLOWERS) {
-      const flower = frameBead(project, row, column)
-      expect(flower && project.paletteCodes?.[flower.toLowerCase()], `${row},${column}`).toBe('DB55')
-    }
-  }, 60000)
+    expect(pupilCodes(project)).toEqual(PUPIL_BEADS.map(() => 'DB799'))
+    const purple = linesOf(project).flatMap((line, at) => [...line].flatMap((part, along) => (part === '?' ? [{ line: at, along }] : [])))
+    expect(purple).toEqual(PUPIL_BEADS)
+  }, 120000)
 
-  it('paints them in DB55 when the Palette has it already', async () => {
+  it('paints them in DB799 when the Palette has it already', async () => {
     const editor = await demoEditor()
     await applyThrough(editor, 'colors')
     const hand = editor.hand(true, new AbortController().signal)
     await TOUR_SCRIPTS.colors(hand)
-    const project = hand.canvas.activeProject.value!
-    for (const [row, column] of DEMO_FLOWERS) expect(project.paletteCodes?.[frameBead(project, row, column)!.toLowerCase()], `${row},${column}`).toBe('DB55')
-  }, 60000)
+    expect(pupilCodes(hand.canvas.activeProject.value!)).toEqual(PUPIL_BEADS.map(() => 'DB799'))
+  }, 120000)
 })

@@ -339,7 +339,7 @@ export const es: Translations = {
       colors: { one: '{codes} color de {brands}', many: '{codes} colores de {brands}', other: '{codes} colores de {brands}' },
       starters: { one: '{count} punto de partida', many: '{count} puntos de partida', other: '{count} puntos de partida' },
       caption: '{technique} · {size}',
-      piece: 'Montañas bajo un sol, en peyote',
+      piece: 'Ojos de pluma de pavo real, en peyote',
     },
     inside: {
       rows: {
