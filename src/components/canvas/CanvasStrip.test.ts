@@ -286,4 +286,24 @@ describe("CanvasStrip in What's inside's demo editor (ticket 0797)", () => {
     expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-reference-image', 'strip-reference-image-input', 'strip-undo', 'strip-redo'])
     expect(wrapper.get('[data-testid="canvas-brand"]').element.tagName).toBe('SPAN')
   })
+
+  it('offers Expand first in its right slot, before Reference image, a secondary button of words only that asks to toggle (ticket 0830)', async () => {
+    const project = bareProject({ beads: {}, technique: 'loom' })
+    const wrapper = mount(CanvasStrip, { props: { project, demo: true, expand: 'expand', referenceImage: 'none' } })
+    const controls = wrapper.get('[data-testid="canvas-strip-controls"]').findAll('button')
+    expect(controls[0].attributes('data-testid')).toBe('strip-expand')
+    expect(controls[0].text()).toBe('Expand')
+    expect(controls[0].classes()).toContain('app-button--secondary')
+    expect(controls[0].find('svg').exists()).toBe(false)
+    await controls[0].trigger('click')
+    expect(wrapper.emitted('toggle-expand')).toHaveLength(1)
+  })
+
+  it('reads Collapse once the demo is expanded, and has no such button where the demo has the width already', () => {
+    const project = bareProject({ beads: {}, technique: 'loom' })
+    const expanded = mount(CanvasStrip, { props: { project, demo: true, expand: 'collapse', referenceImage: 'none' } })
+    expect(expanded.get('[data-testid="strip-expand"]').text()).toBe('Collapse')
+    const narrow = mount(CanvasStrip, { props: { project, demo: true, referenceImage: 'none' } })
+    expect(narrow.find('[data-testid="strip-expand"]').exists()).toBe(false)
+  })
 })

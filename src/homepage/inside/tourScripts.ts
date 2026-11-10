@@ -5,7 +5,7 @@ import type { ReferencePlace } from '../../domain/referenceImage'
 import { addedColorId } from '../../domain/palette'
 import { watch } from 'vue'
 import { TECHNIQUES } from '../../domain/weave'
-import { DEMO_COLORS, DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, DEMO_STARTER, DEMO_TECHNIQUE, PANORAMA, RIDGE, SUN, type DemoColor } from './demoProjects'
+import { DEMO_COLORS, DEMO_FLOWERS, DEMO_FRAME, DEMO_LETTERING, DEMO_MIRROR_BEADS, DEMO_REPEAT_AXES, DEMO_STARTER, DEMO_SWATCHES, DEMO_TECHNIQUE, PANORAMA, RIDGE, SUN, type DemoColor } from './demoProjects'
 import { balloonFile } from './balloon'
 import { landscapeFile } from './landscape'
 
@@ -94,12 +94,7 @@ export const HOLD = {
 /** How many of Row done's passes are slower. */
 const ROW_DONE_SLOW = 3
 
-/** The swatch the sky is filled with: Miyuki's Iridescent, a pale blue. */
-const SKY_SWATCH = 'iridescent'
-/** The ground's swatch, and the mountains' slopes'. */
-const GROUND_SWATCH = 'brown'
-const SLOPES_SWATCH = 'grey'
-/** How many of Row done's passes the tour shows of the ring's rounds, before it rests.
+/** How many of Row done's passes the tour shows of the mountains' rows, before it rests.
  * @internal Its browser test checks the tour ends there. */
 export const ROW_DONE_PASSES = 10
 /** The catalog color the meadow's flowers are painted in (Homepage card, Colors built in). */
@@ -170,15 +165,26 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       for (const [row, column] of beads) await hand.stroke([inFrame(row, column)])
     }
   },
-  /** The Frame emptied, a picture laid under the beads smaller than the Frame, grown from its corner to fit it, then
-   * traced. */
-  async reference(hand) {
+  /** The Mirror closed, then Replace Frame from the Starter gallery: Rings, Chevrons, its setup looked through (the
+   * ring's size inside), Replace. A ring the same size as the band, it lands where the band was (fifth since 0830). */
+  async starters(hand) {
     await hand.press('pill-tool-mirror')
     await hand.press('mirror-bar-close')
+    await hand.press('strip-frame')
+    await hand.press('frame-replace-from-starter')
+    await hand.press('starter-category-rings')
+    await hand.press(`starter-card-${DEMO_STARTER}`)
+    await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, HOLD.starterScroll)
+    await hand.press('create-starter-project')
+    if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
+  },
+  /** The Starter's ring cleared off the Frame, a picture laid under the beads smaller than the Frame, grown from its
+   * corner to fit it, then traced. */
+  async reference(hand) {
     await hand.press('pill-tool-select')
     await hand.drag(FRAME_FIRST, FRAME_LAST)
     await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
-    // The ring is all there is on the Canvas, so Delete asks first.
+    // The Starter's ring is all there is on the Canvas, so Delete asks first.
     if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
     await growReference(hand, await landscapeFile())
     await hand.press('reference-adjust-done')
@@ -187,12 +193,12 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.stroke(LANDSCAPE.sun)
     await pickColor(hand, 'W')
     await hand.stroke(LANDSCAPE.ridge)
-    await pickSwatch(hand, GROUND_SWATCH)
+    await pickSwatch(hand, DEMO_SWATCHES.ground)
     await hand.stroke(LANDSCAPE.ground)
     await hand.press('pill-tool-fill')
-    await pickSwatch(hand, SKY_SWATCH)
+    await pickSwatch(hand, DEMO_SWATCHES.sky)
     await hand.stroke([LANDSCAPE.sky])
-    await pickSwatch(hand, SLOPES_SWATCH)
+    await pickSwatch(hand, DEMO_SWATCHES.slopes)
     await hand.stroke([LANDSCAPE.slopes])
   },
   /** Convert image from the Menu: a balloon chosen as its file picker would hand it over (another picture than the
@@ -227,18 +233,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       await hand.wait(HOLD.letters)
     })
   },
-  /** Replace Frame from the Starter gallery: Rings, Chevrons, its setup looked through (the ring's size inside), Replace.
-   * A ring the same size as the band, it lands where the band was. */
-  async starters(hand) {
-    await hand.press('strip-frame')
-    await hand.press('frame-replace-from-starter')
-    await hand.press('starter-category-rings')
-    await hand.press(`starter-card-${DEMO_STARTER}`)
-    await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, HOLD.starterScroll)
-    await hand.press('create-starter-project')
-    if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
-  },
-  /** Row done for the ring's first rounds, the first three slower, then a rest: a ring has too many to show them all. */
+  /** Row done for the traced mountains' first rows, the first three slower, then a rest: too many to show them all. */
   async rowProgress(hand) {
     for (let step = 0; step < ROW_DONE_PASSES; step++) {
       const next = hand.root.querySelector('[data-testid="progress-bar-next"]')

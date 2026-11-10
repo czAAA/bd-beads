@@ -1,8 +1,8 @@
 import { onBeforeUnmount, readonly, ref, watch, type Ref } from 'vue'
 
-// What's inside's tour (Homepage card, tickets 0797, 0802): the rows in order, each done in the demo editor, lit while it
-// plays, then a rest and the loop again. A row pressed, earlier or later, plays from there on a fresh demo, the rows
-// before it applied at once; one that can't be done is skipped. It plays only while seen, until the beader takes over.
+// What's inside's tour (Homepage card, tickets 0797, 0802): the rows in order, each done in the demo editor and lit while
+// it plays, then a rest and the loop again. A row pressed plays from there on a fresh demo, the rows before it applied at
+// once; one that can't be done is skipped. It plays only while seen, until the beader takes over or pauses it (0830).
 
 /** The tour's timing, in ms (Homepage card): 1.2 times its first pace (ticket 0802).
  * @internal Its test steps the clock by it. */
@@ -47,6 +47,8 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
   const captioned = ref<Row>(deps.rows[0]!) as Ref<Row>
   /** The beader took the editor over: the tour stays stopped until a row is pressed. */
   const takenOver = ref(false)
+  /** The beader paused it (ticket 0830): stopped at its row, still lit, until Play or a row is pressed. */
+  const paused = ref(false)
   let run: AbortController | undefined
   let startTimer: ReturnType<typeof setTimeout> | undefined
   let everShown = false
@@ -59,7 +61,7 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
     captioned.value = row
   }
 
-  function pause(ms: number, signal: AbortSignal): Promise<void> {
+  function wait(ms: number, signal: AbortSignal): Promise<void> {
     if (signal.aborted) return Promise.reject(new Stopped())
     return new Promise((resolve, reject) => {
       const timer = setTimeout(resolve, ms)
@@ -104,14 +106,14 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
     for (;;) {
       const row = deps.rows[index]
       light(row)
-      await pause(timing.before, signal)
+      await wait(timing.before, signal)
       await attempt(row, false, signal)
-      await pause(timing.after, signal)
+      await wait(timing.after, signal)
       index += 1
       if (index < deps.rows.length) continue
       playing.value = undefined
       deps.hideGhost()
-      await pause(timing.rest, signal)
+      await wait(timing.rest, signal)
       await deps.fresh()
       check(signal)
       index = 0
@@ -135,6 +137,7 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
   function choose(row: Row): void {
     stop()
     takenOver.value = false
+    paused.value = false
     light(row)
     const current = new AbortController()
     run = current
@@ -151,20 +154,33 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
     if (takenOver.value) return
     stop()
     takenOver.value = true
+    paused.value = false
     playing.value = undefined
   }
 
-  /** Plays only while `seen()`: the first time after a moment, again from the first row each time it comes back. */
+  /** Pause (ticket 0830): the tour stops where it is, its row still lit and the editor as it is. */
+  function pause(): void {
+    stop()
+    paused.value = true
+  }
+
+  /** Play (ticket 0830): on from the start of the row that was playing, as a row pressed plays. */
+  function resume(): void {
+    choose(captioned.value)
+  }
+
+  /** Plays only while `seen()`: the first time after a moment, again from the first row each time it comes back, unless
+   * the beader took it over or paused it. */
   function follow(seen: () => boolean): void {
     watch(
       seen,
       (now) => {
         if (!now) {
           stop()
-          if (!takenOver.value) playing.value = undefined
+          if (!takenOver.value && !paused.value) playing.value = undefined
           return
         }
-        if (takenOver.value) return
+        if (takenOver.value || paused.value) return
         const delay = everShown || deps.reducedMotion() ? 0 : timing.start
         everShown = true
         clearStart()
@@ -176,5 +192,5 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
 
   onBeforeUnmount(stop)
 
-  return { playing: readonly(playing), captioned: readonly(captioned), takenOver: readonly(takenOver), choose, takeOver, follow, stop }
+  return { playing: readonly(playing), captioned: readonly(captioned), takenOver: readonly(takenOver), paused: readonly(paused), choose, takeOver, pause, resume, follow }
 }

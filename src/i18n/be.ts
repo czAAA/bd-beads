@@ -333,6 +333,15 @@ export const be: Translations = {
     makeFirstProject: 'Стварыць першы праект',
     openEditor: 'Адкрыць рэдактар',
     whatsInside: 'Што ўнутры',
+    welcome: {
+      heading: 'Схемы для бісеру, намаляваныя так, як кладзецца бісер.',
+      line: 'Для ткацтва, мазаічнага і цаглянага пляцення.',
+      seeHow: 'Як гэта працуе',
+      colors: { one: '{codes} колер {brands}', few: '{codes} колеры {brands}', many: '{codes} колераў {brands}', other: '{codes} колеру {brands}' },
+      starters: { one: '{count} стартар', few: '{count} стартары', many: '{count} стартараў', other: '{count} стартара' },
+      caption: '{technique} · {size}',
+      piece: 'Горы пад сонцам, мазаічнае пляценне',
+    },
     inside: {
       rows: {
         canvas: { name: 'Палатно і рамка', text: 'Малюйце дзе заўгодна: у палатна няма краёў. Рамка задае памер, экспарт і колькасць бісерын.' },
@@ -352,8 +361,14 @@ export const be: Translations = {
       editor: 'Што ўнутры: рэдактар',
       demo: { ring: 'Пярсцёнак', heart: 'Сэрца', bracelet: 'Бранзалет' },
       place: '{at} / {count}',
+      chapters: { draw: 'Малюйце', startFrom: 'Пачніце з гатовага', beadColors: 'Рэальныя колеры бісеру', weaveKeep: 'Пляціце і захоўвайце' },
+      pause: 'Паўза',
+      play: 'Працягнуць',
+      tryIt: 'Паспрабуйце самі',
+      expand: 'Разгарнуць',
+      collapse: 'Згарнуць',
     },
-    sections: { label: 'Раздзелы', back: 'Назад', next: 'Далей', firstBody: 'Гэта першы раздзел.', lastBody: 'Гэта апошні раздзел.', goTo: 'Перайсці: {section}', moreBelow: 'Ніжэй яшчэ' },
+    sections: { label: 'Раздзелы', welcome: 'Пачатак', back: 'Назад', next: 'Далей', firstBody: 'Гэта першы раздзел.', lastBody: 'Гэта апошні раздзел.', goTo: 'Перайсці: {section}', moreBelow: 'Ніжэй яшчэ' },
     coffee: { title: 'Робіць адна сям’я', text: 'openbeads застаецца бясплатным і цалкам лакальным, без рэкламы і сачэння. Калі праграма вам дапамагае, падтрымаць яе развіццё можна праз Buy Me a Coffee.', button: 'Пачаставаць кавай', star: 'Зорка на GitHub таксама дапамагае.', source: 'Зыходны код' },
     promises: {
       device: { name: 'Ваша, на вашай прыладзе', text: 'Працуе ў браўзеры. Без акаўнта і ўсталёўкі.' },

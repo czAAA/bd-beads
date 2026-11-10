@@ -24,7 +24,8 @@ import NextLine from './NextLine.vue'
 import PhoneBar from './PhoneBar.vue'
 import PlanTiles from './PlanTiles.vue'
 import SectionBar from './SectionBar.vue'
-import type { HomepageSection } from './sections'
+import WelcomeTile from './WelcomeTile.vue'
+import { stepName, type HomepageSection } from './sections'
 import { useFreeGrowth } from './useFreeGrowth'
 import { useMoreBelow } from './useMoreBelow'
 import { useScrollNudge } from './useScrollNudge'
@@ -88,6 +89,9 @@ const pageWidth = computed(() => (bodySize.width.value || window.innerWidth) / (
 /** The sections laid out for a phone's width: What's inside's and the promises' grouped lists, the plans stacked, and
  * each section's end saying what is next (ticket 0827). */
 const narrow = computed(() => pageWidth.value < EDITOR_FROM)
+/** The width from which What's inside's list stands beside its demo, as the CSS's 1000px steps (ticket 0830). */
+const LIST_FROM = 1000
+const wide = computed(() => pageWidth.value >= LIST_FROM)
 const canvasBackground = useCanvasBackground()
 /** What the page's background is woven in (ticket 0734: its every other column hangs half a bead lower). */
 const BACKGROUND: { technique: Technique } = { technique: 'peyote' }
@@ -117,11 +121,29 @@ const boxStyle = computed(() => {
 // its steps.
 const sections = computed<HomepageSection[]>(() => [
   {
+    // Welcome (ticket 0830): the way in is its own, the same reports as the strip's; See how it works turns as Next does.
+    id: 'welcome',
+    heading: t.value.homepage.welcome.heading,
+    step: t.value.homepage.sections.welcome,
+    title: 'inside',
+    centred: true,
+    shows: WelcomeTile,
+    with: () => ({
+      phone: narrow.value,
+      isNew: isNew.value,
+      count: count.value,
+      onMakeFirstProject: () => emit('makeFirstProject'),
+      onOpenEditor: () => emit('openEditor'),
+      onOpenSavedProjects: () => emit('openSavedProjects'),
+      onSeeHow: () => goTo(section.value + 1),
+    }),
+  },
+  {
     id: 'inside',
     heading: t.value.homepage.whatsInside,
     title: 'inside',
     shows: WhatsInside,
-    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, shown: sections.value[section.value]?.id === 'inside' }),
+    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, wide: wide.value, shown: sections.value[section.value]?.id === 'inside' }),
   },
   {
     id: 'coffee',
@@ -147,6 +169,8 @@ const sections = computed<HomepageSection[]>(() => [
   },
 ])
 const plansIndex = computed(() => sections.value.findIndex((entry) => entry.id === 'plans'))
+/** On Welcome the way in is the section's own, so the strip's is away (ticket 0830); a phone's strip has none to hide. */
+const wayInAway = computed(() => !phone.value && sections.value[section.value]?.id === 'welcome')
 const pageEl = ref<HTMLElement>()
 /** The section shown: the one truth of where the Homepage is, which every way of turning it sets (ticket 0801). */
 const section = ref(0)
@@ -311,6 +335,7 @@ const savedProjects = controlAction('saved-projects')
             :zoom-percent="zoom.percent.value"
             :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
             :zoom-max-percent="HOMEPAGE_MAX_ZOOM_PERCENT"
+            :way-in-away="wayInAway"
             @select-panel="menuOpen = !menuOpen"
             @zoom-in="zoom.zoomIn"
             @zoom-out="zoom.zoomOut"
@@ -407,7 +432,7 @@ const savedProjects = controlAction('saved-projects')
                   :ref="(shown: unknown) => (shown ? shownIn.set(entry.id, shown) : shownIn.delete(entry.id))"
                 />
                 <!-- On a phone each section but the last ends saying what is next (ticket 0827). -->
-                <NextLine v-if="narrow && index < sections.length - 1" :section="sections[index + 1]!.heading" />
+                <NextLine v-if="narrow && index < sections.length - 1" :section="stepName(sections[index + 1]!)" />
                 <!-- The plans section reaches on as far as the free list grows (ticket 0742). -->
                 <span
                   v-if="entry.id === 'plans' && !narrow"

@@ -39,10 +39,16 @@ const props = defineProps<{
   /** The Homepage's demo editor (ticket 0797): Menu, Project and Frame; Reference image, Undo and Redo, and the Brand,
    * which links nowhere. */
   demo?: boolean
+  /** The Homepage's Welcome section has the way in itself (ticket 0830): the strip's is away, its place kept. */
+  wayInAway?: boolean
+  /** The demo beside What's inside's list (ticket 0830): the word its button reads, Expand or Collapse; none without. */
+  expand?: 'expand' | 'collapse'
 }>()
 const emit = defineEmits<{
   'select-panel': [sheet: 'menu' | 'project' | 'export']
   'toggle-frame': []
+  /** Expand or Collapse: the demo asks for the section's whole width, or gives it back. */
+  'toggle-expand': []
   /** Close (×) on Convert image: the page's way out, which asks first once a picture is set. */
   close: []
   'rotate-canvas': []
@@ -163,7 +169,16 @@ function onPanelsKeydown(event: KeyboardEvent) {
       </div>
       <!-- The Homepage's way into the editor (ticket 0822): its own Tab stops, styled here so the editor's first paint
            draws it as handed over. -->
-      <div v-if="$slots['way-in']" class="canvas-strip__way-in" data-testid="strip-way-in"><slot name="way-in" /></div>
+      <div
+        v-if="$slots['way-in']"
+        class="canvas-strip__way-in"
+        :class="{ 'canvas-strip__way-in--away': wayInAway }"
+        :aria-hidden="wayInAway || undefined"
+        :inert="wayInAway || undefined"
+        data-testid="strip-way-in"
+      >
+        <slot name="way-in" />
+      </div>
     </div>
     <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Homepage, the Homepage's is the page itself. -->
     <div ref="centerEl" class="canvas-strip__center" @keydown="centerRoving.onKeydown" @focusin="centerRoving.onFocusin">
@@ -185,6 +200,12 @@ function onPanelsKeydown(event: KeyboardEvent) {
       </span>
     </div>
     <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
+      <!-- Expand (ticket 0830): words only, the icon set has none for it; it keeps the width of the wider word. -->
+      <AppButton v-if="expand" class="canvas-strip__expand" size="sm" data-testid="strip-expand" @click="emit('toggle-expand')">
+        <span class="canvas-strip__expand-word" :data-other="expand === 'expand' ? t.homepage.inside.collapse : t.homepage.inside.expand">{{
+          expand === 'expand' ? t.homepage.inside.expand : t.homepage.inside.collapse
+        }}</span>
+      </AppButton>
       <div v-if="project" class="canvas-strip__tools">
         <template v-if="!demo">
           <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
@@ -274,6 +295,17 @@ function onPanelsKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: var(--space-8);
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+/* Away on the Welcome section (ticket 0830): not shown, not pressed and not read, but its room kept, so the slogan
+ * never moves; it fades back in as the page turns to the second section. */
+.canvas-strip__way-in--away {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    visibility 0s linear var(--duration-base);
 }
 
 /* Under 1000px Projects library's name hides, its icon and count staying; a screen reader still hears it. */
@@ -320,6 +352,24 @@ function onPanelsKeydown(event: KeyboardEvent) {
 
 .canvas-strip__controls::-webkit-scrollbar {
   display: none;
+}
+
+/* Expand: `--control-height-small`, 28px, 8px before the tools. The word not read lies hidden in the same cell. */
+.canvas-strip .canvas-strip__expand {
+  flex: none;
+  height: var(--control-height-small);
+  margin-right: var(--space-6);
+}
+
+.canvas-strip__expand-word {
+  display: inline-grid;
+}
+
+.canvas-strip__expand-word::after {
+  content: attr(data-other);
+  grid-area: 1 / 1;
+  height: 0;
+  visibility: hidden;
 }
 
 .canvas-strip__tools,

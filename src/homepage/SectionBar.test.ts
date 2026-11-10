@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import SectionBar from './SectionBar.vue'
 
-const SECTIONS = [
+const SECTIONS: { id: string; heading: string; step?: string }[] = [
   { id: 'inside', heading: "What's inside" },
   { id: 'coffee', heading: 'Made by one family' },
   { id: 'plans', heading: 'Three ways to use it' },
@@ -37,7 +37,15 @@ describe('SectionBar', () => {
     // Back and Next point up and down, as the sections turn (ticket 0780 keeps them so).
     expect(wrapper.get('[data-testid="section-back"] [data-icon]').attributes('data-icon')).toBe('arrow-up')
     expect(wrapper.get('[data-testid="section-next"]').text()).toBe('Next')
-    expect(wrapper.get('[data-testid="section-next"]').classes()).toContain('app-button--primary')
+    // Secondary: the way into the editor is the page's one primary button (ticket 0830).
+    expect(wrapper.get('[data-testid="section-next"]').classes()).toContain('app-button--secondary')
+  })
+
+  it('names a step by the section’s step name where its heading is a sentence (ticket 0830)', () => {
+    const wrapper = bar(0, [{ id: 'welcome', heading: 'Bead patterns, drawn the way the beads sit.', step: 'Welcome' }, ...SECTIONS])
+    expect(steps(wrapper).map((step) => step.text())).toEqual(['Welcome', "What's inside", 'Made by one family', 'Three ways to use it'])
+    expect(steps(wrapper)[0]!.attributes('aria-label')).toBe('Go to Welcome')
+    expect(wrapper.get('[data-testid="section-track"]').attributes('aria-valuetext')).toBe('1/4 · Welcome')
   })
 
   it('fills the track from empty on the first section to full on the last, reaching each step as it arrives', () => {

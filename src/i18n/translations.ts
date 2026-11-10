@@ -12,21 +12,24 @@ interface InsideCopy {
   text: string
 }
 
-/** What's inside's 13 rows, in the order the tour plays them (homepage/inside/insideRows.ts). */
+/** What's inside's 13 rows, in the order the tour plays them (homepage/inside/insideCopy.ts). */
 export type InsideRowId =
   | 'canvas'
   | 'techniques'
   | 'editing'
   | 'mirror'
+  | 'starters'
   | 'reference'
   | 'convert'
   | 'colors'
   | 'letters'
-  | 'starters'
   | 'rowProgress'
   | 'beadsNeeded'
   | 'exports'
   | 'savedProjects'
+
+/** What's inside's four chapters, each a run of the tour's rows (ticket 0830; homepage/inside/insideCopy.ts). */
+export type InsideChapterId = 'draw' | 'startFrom' | 'beadColors' | 'weaveKeep'
 
 /** One Homepage plan tile's words (ticket 220): its name, its price, its one line and its button. */
 interface PlanCopy {
@@ -437,6 +440,17 @@ export interface Translations {
     makeFirstProject: string
     openEditor: string
     whatsInside: string
+    /** The Welcome section (ticket 0830; Homepage card): its heading and line, See how it works, the counts line's two
+     * counted parts ({codes} and {brands} from the app), the piece's caption and its name as an image. */
+    welcome: {
+      heading: string
+      line: string
+      seeHow: string
+      colors: PluralForms
+      starters: PluralForms
+      caption: string
+      piece: string
+    }
     /** What's inside (ticket 0797; Homepage card): the 13 rows the tour plays, the editor's region, and the demo's
      * Projects. The colors row's {brands} and Convert image's {max} come from the app. */
     inside: {
@@ -445,9 +459,17 @@ export interface Translations {
       demo: { ring: string; heart: string; bracelet: string }
       /** The playing row's place in the caption, "4 / 13" (ticket 0825). */
       place: string
+      /** The four chapters, the tour's Pause and Play, Try it yourself, and the demo's Expand and Collapse (ticket 0830). */
+      chapters: Record<InsideChapterId, string>
+      pause: string
+      play: string
+      tryIt: string
+      expand: string
+      collapse: string
     }
-    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each step's name for screen readers (ticket 0744). */
-    sections: { label: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string; moreBelow: string }
+    /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each
+     * step's name for screen readers (ticket 0744); the Welcome section's step, its heading being a sentence (ticket 0830). */
+    sections: { label: string; welcome: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string; moreBelow: string }
     /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string; star: string; source: string }
     /** The coffee screen's promises (ticket 0823; Homepage card), in the order shown; the shortcuts one's {menu}, {help}

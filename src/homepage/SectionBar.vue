@@ -4,22 +4,23 @@ import PatternDone from '../components/canvas/PatternDone.vue'
 import StepBar from '../components/canvas/StepBar.vue'
 import { fillBlanks } from '../domain/fillBlanks'
 import { useI18n } from '../i18n/useI18n'
+import { stepName, type HomepageSection } from './sections'
 
 // The Homepage's Progress bar (tickets 0739, 0744; Homepage and ProgressBar cards): the editor's bar, its sections in
-// place of rows, drawn by StepBar. What is the Homepage's own is Pattern done, which plays round the track's end on
-// reaching the last section.
+// place of rows, drawn by StepBar. The Homepage's own: Pattern done round the track's end on reaching the last section,
+// and Next secondary, the way into the editor being the page's one primary button (ticket 0830).
 const props = defineProps<{
   /** The section shown, from 0. */
   section: number
-  /** The Homepage's sections in order; each one's heading names its step. */
-  sections: readonly { id: string; heading: string }[]
+  /** The Homepage's sections in order; each one's step name, or its heading, names its step. */
+  sections: readonly Pick<HomepageSection, 'id' | 'heading' | 'step'>[]
   /** The Homepage's nudge is playing (ticket 0784): Next's arrow dips with it. */
   nudging?: boolean
 }>()
 const emit = defineEmits<{ go: [section: number] }>()
 const { t } = useI18n()
 
-const steps = computed(() => props.sections.map((entry) => ({ id: entry.id, label: entry.heading })))
+const steps = computed(() => props.sections.map((entry) => ({ id: entry.id, label: stepName(entry) })))
 const last = computed(() => props.sections.length - 1)
 
 /** Counts the bursts, so each one is drawn afresh; none while it is 0 or over. */
@@ -57,6 +58,7 @@ const BURST_SPAN = { x: 100, y: 160, width: 120, height: 0 }
     :next-label="t.homepage.sections.next"
     :first-body="t.homepage.sections.firstBody"
     :last-body="t.homepage.sections.lastBody"
+    next-variant="secondary"
     testid="section"
     @go="emit('go', $event)"
   >

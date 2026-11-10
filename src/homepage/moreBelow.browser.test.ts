@@ -3,6 +3,7 @@ import { page } from 'vitest/browser'
 import { mountAt, type Mounted } from '../testUtils/browserFit'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
+import { turnToSection } from '../testUtils/homepageSection'
 import HomePage from './HomePage.vue'
 
 // More below in a real browser (ticket 0826): on the section bar's top edge, where a section scrolls on it scrolls it,
@@ -46,6 +47,8 @@ describe('More below (ticket 0826)', () => {
 
   it('where every section fits, turns to the next as Next does, then scrolls the plans on as the free list grows, gone at its end', async () => {
     await homepageAt(1440, 900)
+    expect([shown(), fading()]).toEqual(['welcome', false])
+    await pressMore()
     expect([shown(), fading()]).toEqual(['inside', false])
     await pressMore()
     expect([shown(), fading()]).toEqual(['coffee', false])
@@ -63,6 +66,7 @@ describe('More below (ticket 0826)', () => {
 
   it('where a section is taller than its room, scrolls it on to its end first, with the fade, then turns', async () => {
     await homepageAt(1280, 480)
+    await turnToSection(mounted.root, 'inside')
     const inside = shownSection()
     expect(inside.scrollHeight, 'What\'s inside scrolls on here').toBeGreaterThan(inside.clientHeight)
     expect(fading()).toBe(true)
@@ -77,6 +81,7 @@ describe('More below (ticket 0826)', () => {
 
   it('on a phone shows only while the section scrolls on', async () => {
     await homepageAt(390, 844)
+    await turnToSection(mounted.root, 'inside')
     const inside = shownSection()
     expect(inside.scrollHeight).toBeGreaterThan(inside.clientHeight)
     expect(pill()).not.toBeNull()

@@ -39,7 +39,9 @@ test('the Frame tools menu opens under its button in the full editor', async ({ 
 // hung from the band the same way, is the one tried (ticket 0821).
 test('the Margin color popover stays inside the What\'s inside box', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 })
-  await openApp(page, [], './homepage/')
+  await openApp(page, [], './homepage/', { canvasHidden: true })
+  // Welcome comes first (ticket 0830): the demo shows once the page is turned to What's inside.
+  await page.locator('[data-testid="section-step"][data-step="inside"]').click()
   await expect(page.getByTestId('inside-editor')).toBeVisible()
   await expectUnderButton(page, '[data-testid="inside-editor"]', '[data-testid="inside-editor"]', { button: 'margin-color', item: 'margin-color-popover' })
 })

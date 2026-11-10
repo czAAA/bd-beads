@@ -4,14 +4,16 @@ import type { ControlActionLike } from '../ui/controlAction'
 import type { IconName } from '../ui/icons'
 
 // The Progress bar's back and forward pair (ProgressBar card, ticket 0788): Row not done and Row done in the editor, Back
-// and Next on the Homepage and Convert image. One component, so the pair is the same size and look on every page: the
-// quiet 32px `text` button back, the 32px primary forward; on a phone the two take a second row, half the bar each.
+// and Next on the Homepage and Convert image. One component, so the pair is the same size on every page: the quiet 32px
+// `text` button back, the 32px forward (primary; secondary on the Homepage); on a phone a second row, half the bar each.
 type Move = {
   label: string
   /** The back button's leading arrow. */
   icon?: IconName
   /** The forward button's trailing arrow; none where it ends the page in an act (Create Project). */
   trailingIcon?: IconName
+  /** The forward button's look: primary unless the page's one primary button is another (the Homepage, ticket 0830). */
+  variant?: 'primary' | 'secondary'
   disabled?: boolean
   /** Why it is off, shown by its Tooltip; an `action` gives its own. */
   disabledBody?: string
@@ -41,7 +43,7 @@ const emit = defineEmits<{ back: []; forward: [] }>()
     </AppButton>
     <AppButton
       class="progress-moves__forward"
-      variant="primary"
+      :variant="forward.variant ?? 'primary'"
       size="sm"
       :action="forward.action"
       :trailing-icon="forward.trailingIcon"

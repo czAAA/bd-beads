@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mountAt } from '../testUtils/browserFit'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
-import { settleForMeasuring } from '../testUtils/textFitInPage'
+import { turnToSection } from '../testUtils/homepageSection'
 import HomePage from './HomePage.vue'
 
 // Only the cup and Buy me a coffee take a click in the band (ticket 0813); the title, the text, the promises and the
@@ -12,12 +12,10 @@ const middle = (element: Element) => {
 }
 const linkAt = ([x, y]: readonly [number, number]) => document.elementFromPoint(x, y)?.closest('a, button') ?? null
 
-/** The Homepage turned to the coffee screen: its layout answers to the box's width (the `homepage` container). A phone
- * turns by its bar's ↓ (ticket 0827). */
+/** The Homepage turned to the coffee screen: its layout answers to the box's width (the `homepage` container). */
 async function coffeeAt(width: number): Promise<Element> {
   const { root } = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
-  ;(root.querySelectorAll<HTMLElement>('[data-testid="section-step"]')[1] ?? root.querySelector<HTMLElement>('[data-testid="phone-bar-next"]')!).click()
-  await settleForMeasuring()
+  await turnToSection(root, 'coffee')
   return root.querySelector('[data-testid="homepage-coffee"]')!
 }
 

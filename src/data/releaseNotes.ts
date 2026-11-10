@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: "The Homepage now opens on a welcome, and What's inside plays in four chapters you can pause or try yourself",
+      ru: 'Главная начинается с приветствия, а «Что внутри» идёт четырьмя главами: можно остановить и попробовать самим',
+      uk: 'Головна починається з привітання, а «Що всередині» йде чотирма розділами: можна зупинити й спробувати самим',
+      be: 'Галоўная пачынаецца з прывітання, а «Што ўнутры» ідзе чатырма раздзеламі: можна спыніць і паспрабаваць самім',
+      zh: '首页现在以欢迎区开场，「功能一览」分四章播放，可以暂停，也可以自己试试',
+      es: 'La página de inicio se abre con una bienvenida, y Qué incluye va en cuatro capítulos que puedes pausar o probar',
+      pl: 'Strona główna otwiera się powitaniem, a Co jest w środku gra w czterech rozdziałach: można wstrzymać i spróbować',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'The Colors button is now shaped like a palette and filled with your color, so it stands apart from the recent colors',
       ru: 'Кнопка «Цвета» теперь в форме палитры и залита вашим цветом, так что её не спутать с недавними цветами',
       uk: 'Кнопка «Кольори» тепер у формі палітри й залита вашим кольором, тож її не сплутати з недавніми кольорами',

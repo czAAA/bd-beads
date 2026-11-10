@@ -36,6 +36,14 @@ describe('PhoneBar (ticket 0827)', () => {
     expect(wrapper.get('[data-testid="phone-bar-next"] [data-icon]').attributes('data-icon')).toBe('arrow-down')
   })
 
+  it('names the Welcome section by its step name, its heading being a sentence (ticket 0830)', () => {
+    const sections = [{ id: 'welcome', heading: 'Bead patterns, drawn the way the beads sit.', step: 'Welcome' }, ...SECTIONS]
+    const wrapper = mount(PhoneBar, { props: { section: 0, sections } })
+    expect(wrapper.get('[data-testid="phone-bar-name"]').text()).toBe('Welcome')
+    expect(wrapper.get('[data-testid="phone-bar-track"]').attributes('aria-valuetext')).toBe('1/4 · Welcome')
+    expect(wrapper.findAll('[data-testid="phone-bar-segment"]')).toHaveLength(4)
+  })
+
   it('turns back and on with ↑ and ↓', async () => {
     const wrapper = bar(1)
     await wrapper.get('[data-testid="phone-bar-back"]').trigger('click')
