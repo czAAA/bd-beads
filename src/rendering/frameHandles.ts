@@ -69,6 +69,11 @@ export function areaHandles(box: { x: number; y: number; width: number; height: 
 const HIT_RADIUS_PX = 14
 const TOUCH_HIT_RADIUS_PX = 24
 
+/** How far an Area's bar stands off its sheet's edge (ContextBar card, Area sheet): a mouse or pen's reach of the
+ * handles there, so they are drawn whole beside the bar and grabbed where they are drawn, the bar's touch targets
+ * reaching past it included. */
+export const AREA_BAR_GAP_PX = HIT_RADIUS_PX
+
 /** The reach of a handle on a rectangle: 14px for a mouse or pen, 24px for touch, never more than a third of the
  * shorter side so a small rectangle keeps an inside to move.
  * @internal Tests check a handle's reach on its own. */
