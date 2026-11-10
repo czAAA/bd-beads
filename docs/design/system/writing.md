@@ -258,7 +258,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | What's inside: the editor (the editor's region, for screen readers) | Что внутри: редактор |
 | Ring · Heart · Bracelet (the demo's Projects; Ring replaced Kaleidoscope, ticket 0819) | Кольцо · Сердце · Браслет |
 
-Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · For iPad and Pencil · Free forever · Keyboard shortcuts (left out on a phone). The rows are What's inside's tabs, their lines its caption.
+Since ticket 0819 the cards above are the coffee screen's promises, in this order: Yours, on this device · Works offline · No ads or tracking · For iPad and Pencil · Free forever · Keyboard shortcuts (left out on a phone). The rows were What's inside's tabs (ticket 0819); since ticket 0830 they play under four chapters, the caption showing the playing row's name and line, and a phone lists them. Ticket 0830 also moved Starters up to fifth, after Mirror.
 
 ### The Homepage rework (ticket 0819)
 
@@ -310,6 +310,26 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 The names are joined as the language joins a list (`formatList`): English with a serial comma, "loom, peyote, and brick stitch". The counted rows take the language's counted forms (ticket 0742; the Russian rows had an em dash, which the Russian copy never uses).
 
 "An open Canvas" is the owner's wording for the Homepage only; everywhere else the copy says Canvas, never "open canvas" (ADR 0050).
+
+### Welcome first (ticket 0830)
+
+The Homepage's first section and What's inside's chapters (Homepage card). English and Russian here; the other shipped languages are written when it is built, and read by a native speaker as theirs always are. `{codes}`, `{brands}` and `{n}` come from the app as the free list's do, never typed in; `{technique}` is the Technique's own name and `{size}` the grid size in the app's form ("36×7").
+
+| English | Russian |
+| --- | --- |
+| Welcome (the section's step on the Progress bar; its heading is a sentence, too long for a step) | Начало |
+| Bead patterns, drawn the way the beads sit. (the heading) | Схемы для бисера, нарисованные так, как ложится бисер. |
+| For loom, peyote and brick stitch. (the three Techniques, lowercase in a sentence as in the Techniques row) | Для ткачества, мозаичного и кирпичного плетения. |
+| See how it works (turns to What's inside) | Как это работает |
+| {codes} {brands} colors · {n} Starters ("3 817 TOHO and Miyuki colors · 15 Starters"; counted words) | {codes} цвет / цвета / цветов {brands} · {n} стартер / стартера / стартеров |
+| {technique} · {size} (the piece's caption: "Peyote · 36×7") | {technique} · {size} |
+| Mountains under a sun, in peyote (the piece, an image's name for screen readers) | Горы под солнцем, мозаичное плетение |
+| Draw · Start from something · Real bead colors · Weave and keep (What's inside's chapters) | Рисуйте · Начните с готового · Настоящие цвета бисера · Плетите и сохраняйте |
+| Pause · Play (the tour) | Пауза · Продолжить |
+| Try it yourself | Попробуйте сами |
+| Expand · Collapse (the demo's width) | Развернуть · Свернуть |
+
+The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
 
 ## Copy added in v16
 
