@@ -58,7 +58,7 @@ describe('opening the editor (ticket 0716)', () => {
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalled())
 
     await wrapper.get('[data-testid="missed-project-remove"]').trigger('click')
-    await wrapper.get('[data-testid="remove-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+    await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadProjects().map((each) => each.id)).toEqual([other.id])
     expect(wrapper.find('[data-testid="missed-project"]').exists()).toBe(false)

@@ -167,8 +167,8 @@ export const en: Translations = {
       nameField: 'Name',
       duplicateHint: 'Suggested: the current name and the next free number.',
       deleteThis: 'Delete project',
-      deleteTitle: 'Delete {name}?',
-      deleteMessage: "{name} and its Row progress are removed from this device. This can't be undone. Export it first if you want to keep a copy.",
+      deleteTitle: 'Delete “{name}”?',
+      deleteMessage: "“{name}” and its Row progress are removed from this device. This can't be undone. Save its Project file first if you want to keep it.",
       deleteConfirm: 'Delete Project',
       cancel: 'Cancel',
       save: 'Save',
@@ -835,12 +835,6 @@ export const en: Translations = {
     switchAnywayButton: 'Switch anyway',
     keepButton: 'Keep current',
     saveButton: 'Save current',
-  },
-  removeProject: {
-    title: 'Remove this Project?',
-    message: '“{name}” will be deleted from this device. This cannot be undone.',
-    confirmButton: 'Remove',
-    cancelButton: 'Cancel',
   },
   switchProject: {
     title: 'Switch Project?',
