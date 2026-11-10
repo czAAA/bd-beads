@@ -288,6 +288,15 @@ function sealedDates(project: SealedProject): string {
   }
 }
 
+/* Touch (ticket 0836): the same × in a `touch-target` box, so its whole hit area lies inside the row, clear of the row's
+ * own button; the 44px hit area round the 20px box was cut by the list's scroll edge. */
+@media (pointer: coarse) {
+  .projects-library__remove {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+}
+
 .projects-library__empty {
   padding: var(--space-16) var(--space-10);
   text-align: center;
