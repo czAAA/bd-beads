@@ -5,10 +5,9 @@
 /** The margin sheet's px at scale 1, which `marginScale` multiplies (ticket 0698). The compact places serve the folded
  * form too. */
 export const MARGIN_PX = {
-  /** The drafting sheet's band, where the scale is 1, and the scale's bounds (ticket 0698). The least is 1 (ticket 0851):
-   * the sheet's smallest words, the name tab's 11px, and its smallest buttons, the compact tools, Row done, the tab and
-   * the Move bar at 24px, are `legible` there and no smaller; under it the sheet changes form. The Homepage demo's is
-   * 0.6: its view is set for its box and its tour presses the band, so its sheet shrinks rather than go bare. */
+  /** The drafting sheet's band, where the scale is 1, and the scale's bounds (ticket 0698). The least is 1 (ticket 0851),
+   * where the name tab's 11px and the 24px compact tools, Row done, tab and Move bar are `legible`; the Homepage demo's
+   * 0.6, as its tour presses the band in a view it cannot grow. */
   scale: { band: 72, min: 1, max: 1.5, demo: 0.6 },
   /** The least the sheet's words and buttons are drawn at on screen (ticket 0851, accessibility.md): smaller, they are
    * specks no one reads or hits. */

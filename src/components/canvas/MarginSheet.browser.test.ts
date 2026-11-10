@@ -154,7 +154,7 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
         await settled(root)
         expect(problems(root), `${at}`).toEqual([])
         // At 60% the sheet is compact, its title block one row without the Drop cell.
-        if (at < 0.85) continue
+        if (80 * at < MARGIN_PX.band.full) continue
         expect(root.querySelector('[data-testid="margin-brick-drop-short"]'), `${at}`).not.toBeNull()
         // The full block's pencils stand on one line, the Technique's picker too.
         const pencils = ['margin-frame-name-edit', 'margin-technique-picker', 'margin-brick-drop-edit', 'margin-maker-edit']

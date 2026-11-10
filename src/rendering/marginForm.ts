@@ -1,10 +1,9 @@
 import { MARGIN_PX } from './marginSizes'
 import type { SurfaceView } from './surfaceView'
 
-// The margin sheet's scale and forms (MarginSheet card, Zoom forms; tickets 0658, 0698, 0851): the sheet is drawn at the
-// drafting sheet's proportion to its band, held between a smallest and a largest scale, and only under the smallest,
-// where its controls shrink no further, does it change form by how much of a form its band still holds. The smallest is
-// 1, where its words and buttons are still legible.
+// The margin sheet's scale and forms (MarginSheet card, Zoom forms; tickets 0658, 0698, 0851): drawn at the drafting
+// sheet's proportion to its band, held between 1 (where its words and buttons are legible) and 1.5; only under 1 does
+// it change form, by how much of a form its band still holds.
 
 /** The full form, as built at 100%; compact, one row of smaller tools; folded, the Move bar, Row done and a menu;
  * bare, where not even the folded row fits between its edge and the Frame's line: nothing of the sheet is drawn but the

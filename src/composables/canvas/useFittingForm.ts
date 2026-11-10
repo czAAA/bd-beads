@@ -15,8 +15,7 @@ export interface FittingFormDeps<F extends string> {
 
 /** The first of the forms whose width fits its room (ticket 0658): the margin sheet's band row and title block step down
  * a form where the sheet is too narrow for them. Each form's width is learnt as it is shown, so a form not yet seen is
- * tried; none fitting gives none. A width is learnt only from a form shown, so a longer label that stepped the row down
- * would keep it down after the label is short again: a change of label forgets them all. */
+ * tried; none fitting gives none. A change of label forgets every width learnt (ticket 0851). */
 export function useFittingForm<F extends string>({ forms, room, measure, observed, labels }: FittingFormDeps<F>): ComputedRef<F | undefined> {
   const widths = reactive(new Map<F, number>()) as Map<F, number>
   const shown = computed(() => forms().find((form) => !((widths.get(form) ?? 0) > room())))

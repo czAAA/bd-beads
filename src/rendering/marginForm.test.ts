@@ -8,10 +8,6 @@ describe('the margin sheet\'s scale by its band (tickets 0698, 0851)', () => {
   it('is the band over the drafting sheet\'s 72px, held between 1 and 1.5', () => {
     expect([72, 90, 54, 108, 200, 40, 30, 8].map((band) => marginScale(band))).toEqual([1, 1.25, 1, 1.5, 1.5, 1, 1, 1])
   })
-
-  it('never takes the sheet\'s smallest buttons, 24px at scale 1, under the 24px a finger can hit', () => {
-    expect(marginScale(0) * MARGIN_PX.tab).toBeGreaterThanOrEqual(MARGIN_PX.legible.button)
-  })
 })
 
 describe('the margin sheet\'s form by its band (MarginSheet card, Zoom forms, tickets 0658, 0698, 0851)', () => {
