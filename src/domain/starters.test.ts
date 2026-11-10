@@ -29,6 +29,8 @@ import {
 } from './starters'
 import { beadsOfLayer, canvasOf, frameOf, withBackground } from './layerRecord'
 import { frameGeometryOf } from './layers'
+import { laidFrame } from './frameOrientation'
+import { rotateCanvas } from './rotate'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 
 const beadId = 'miyuki/delica/11-0'
@@ -187,15 +189,15 @@ describe('the Frame\'s Layer settings from a Starter\'s setup (ADR 0079, ticket 
     const open = createProject({ technique: 'loom', beadId, name: 'Open' })
     const result = placedStarter(open, starterById('ringStripes'), { sizes: { width: 7, ringSize: 54 }, useDesign: false, ...set }, { row: 50, column: 50 })
     if (result.kind !== 'changed') throw new Error(result.kind)
-    // 58 mm of 1.5 mm cubes: 39 columns.
-    expect(frameSheetOf(result.project)).toMatchObject({ rows: 7, columns: 39 })
+    // 58 mm of 1.5 mm cubes: 39 rows.
+    expect(frameSheetOf(result.project)).toMatchObject({ rows: 39, columns: 7 })
   })
 
   it('sizes and counts a Starter in the Technique the setup chose', () => {
     const ring = { sizes: { width: 7, ringSize: 54 }, useDesign: false }
-    // Peyote counts each column twice round; loom once.
-    expect(starterMeasure(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toMatchObject({ rows: 45 })
-    expect(starterBeadCount(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toBe(315)
+    // Peyote counts each row twice round; loom once.
+    expect(starterMeasure(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toMatchObject({ rows: 36 })
+    expect(starterBeadCount(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toBe(252)
     expect(starterBeadCount(starterById('triangle'), { ...asDesigned('triangle'), weave: { technique: 'peyote' } }, delica)).toBe(165)
   })
 })
@@ -238,22 +240,52 @@ describe('a Ring or Band Starter (ticket 0597)', () => {
   const toho = findBead('toho-cube-1.5mm')!
   const ringAt = (ringSize: number) => ({ sizes: { width: 7, ringSize }, useDesign: false })
 
-  it('lies across in peyote, its Width in rows and its length in columns of the Bead: a Ring 4 mm longer than the finger', () => {
-    // EU 54 is 54 mm round; 58 mm of Delica 11/0, 1.3 mm a column, is 45 columns, 90 rows round.
-    expect(starterFrameSize(starterById('ringStripes'), ringAt(54), delica)).toEqual({ rows: 7, columns: 45 })
-    expect(starterMeasure(starterById('ringStripes'), ringAt(54), delica)).toEqual({ shape: 'ring', insideMm: 54 / Math.PI, widthMm: 7 * 1.6, rows: 90 })
-    expect(starterBeadCount(starterById('ringStripes'), ringAt(54), delica)).toBe(315)
-    expect(layersView(starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...asDesigned('ringStripes') }))).toMatchObject({ technique: 'peyote', frame: { rows: 7, columns: 36, technique: 'peyote' } })
+  it('is woven across its width in peyote, its length in rows of the Bead and its Width in columns: a 54 mm Ring 7 wide is 36 beads long (ticket 0832)', () => {
+    // EU 54 is 54 mm round; 58 mm of Delica 11/0 on their sides, 1.6 mm a row, is 36 rows, each two lines of the zig-zag.
+    expect(starterFrameSize(starterById('ringStripes'), ringAt(54), delica)).toEqual({ rows: 36, columns: 7 })
+    const measure = starterMeasure(starterById('ringStripes'), ringAt(54), delica)
+    expect(measure).toMatchObject({ shape: 'ring', insideMm: 54 / Math.PI, rows: 72 })
+    expect(measure.widthMm).toBeCloseTo(9.1)
+    expect(starterBeadCount(starterById('ringStripes'), ringAt(54), delica)).toBe(252)
+  })
+
+  it('lies across on a new Project: the Canvas turned the quarter a peyote Project starts with, the Frame unturned', () => {
+    const project = starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...asDesigned('ringStripes') })
+    expect(layersView(project)).toMatchObject({ technique: 'peyote', orientation: 90, frame: { rows: 36, columns: 7, technique: 'peyote' } })
+    expect(frameOf(project)!.quarterTurns).toBeUndefined()
+  })
+
+  it('lies the way each Technique works a strip: loom as peyote on a Canvas turned a quarter, brick stitch along its rows unturned', () => {
+    const loom = { ...ringAt(54), weave: { technique: 'loom' as const } }
+    expect(starterFrameSize(starterById('ringStripes'), loom, delica)).toEqual({ rows: 36, columns: 7 })
+    expect(layersView(starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...loom }))).toMatchObject({ technique: 'loom', orientation: 90, frame: { rows: 36, columns: 7 } })
+    const brick = { ...ringAt(54), weave: { technique: 'brick' as const } }
+    expect(starterFrameSize(starterById('ringStripes'), brick, delica)).toEqual({ rows: 7, columns: 36 })
+    expect(starterMeasure(starterById('ringStripes'), brick, delica)).toMatchObject({ widthMm: 7 * 1.3, rows: 72 })
+    expect(layersView(starterProject(starterById('ringStripes'), { name: 'Ring', beadId, ...brick }))).toMatchObject({ technique: 'brick', orientation: 0, frame: { rows: 7, columns: 36 } })
+  })
+
+  it('lays its design in brick stitch with its rows as columns, the stagger in register: the lying peyote strip in a mirror', () => {
+    const ring = starterById('ringChevrons')
+    const design = starterDesign(ring)
+    const beads = frameOf(starterProject(ring, { name: 'Ring', beadId, ...asDesigned('ringChevrons'), weave: { technique: 'brick' } }))!.beads
+    expect(beadCount(beads)).toBe(252)
+    expect(beads[0]![0]).toBe(design[0]![0])
+    expect(beads[6]![0]).toBe(design[0]![6])
+    expect(beads[2]![35]).toBe(design[35]![2])
+    // An odd line's bead sits half a bead further along the strip than the even lines' in both: peyote's odd column
+    // hangs half a row down, brick's odd row half a bead across.
+    expect(beads[1]![4]).toBe(design[4]![1])
   })
 
   it('makes a Band of the wrist and its Fit\'s ease, less 1.5 cm for the clasp', () => {
-    // A 16 cm wrist, Comfortable (1.5 cm) less the clasp: 160 mm, 123 columns, 246 rows.
+    // A 16 cm wrist, Comfortable (1.5 cm) less the clasp: 160 mm, 100 rows of 1.6 mm, 200 lines.
     const comfortable = { sizes: { width: 11, wrist: 16 }, useDesign: false }
-    expect(starterFrameSize(starterById('bandStripes'), comfortable, delica)).toEqual({ rows: 11, columns: 123 })
-    expect(starterMeasure(starterById('bandStripes'), comfortable, delica)).toMatchObject({ shape: 'band', lengthMm: 159.9, rows: 246 })
-    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'snug' } }, delica).columns).toBe(Math.round(155 / 1.3))
-    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'loose' } }, delica).columns).toBe(Math.round(165 / 1.3))
-    expect(starterFrameSize(starterById('bandStripes'), comfortable, toho).columns).toBe(Math.round(160 / 1.5))
+    expect(starterFrameSize(starterById('bandStripes'), comfortable, delica)).toEqual({ rows: 100, columns: 11 })
+    expect(starterMeasure(starterById('bandStripes'), comfortable, delica)).toMatchObject({ shape: 'band', lengthMm: 160, rows: 200 })
+    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'snug' } }, delica).rows).toBe(97)
+    expect(starterFrameSize(starterById('bandStripes'), { ...comfortable, picks: { fit: 'loose' } }, delica).rows).toBe(103)
+    expect(starterFrameSize(starterById('bandStripes'), comfortable, toho).rows).toBe(107)
     expect(designFits(starterById('bandStripes'), { sizes: { width: 11, wrist: 16 }, picks: { fit: 'loose' } })).toBe(false)
   })
 
@@ -267,7 +299,7 @@ describe('a Ring or Band Starter (ticket 0597)', () => {
 
   it('keeps the design\'s own rectangle when put in place on another Bead, never cropping it', () => {
     const project = starterProject(starterById('bandDiamonds'), { name: 'Band', beadId: 'toho-cube-1.5mm', ...asDesigned('bandDiamonds') })
-    expect(frameOf(project)).toMatchObject({ rows: 11, columns: 100, technique: 'peyote' })
+    expect(frameOf(project)).toMatchObject({ rows: 100, columns: 11, technique: 'peyote' })
     expect(frameOf(project)!.beads).toEqual(starterDesign(starterById('bandDiamonds')))
   })
 })
@@ -295,18 +327,32 @@ describe('a Starter put on an open Project', () => {
   it('puts a Ring in place through the Frame change that places any Frame, holding its design', () => {
     const ring = starterById('ringDiamonds')
     const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? frameSheetOf(result.project) : undefined)
-    const frame = { row: 47, column: 32, rows: 7, columns: 36 }
-    const placed = frameOf(changeFrame(open, { place: { frame, weave: weaveOf({ technique: 'peyote' }), beads: starterDesign(ring) } }))
+    const turned = rotateCanvas(open)
+    const frame = { row: 32, column: 47, rows: 36, columns: 7 }
+    const placed = frameOf(changeFrame(turned, { place: { frame, weave: weaveOf({ technique: 'peyote' }), beads: starterDesign(ring) } }))
     expect(placed?.beads).toEqual(starterDesign(ring))
-    expect(frameOf(placedStarter(open, ring, asDesigned('ringDiamonds'), { row: 50, column: 50 }))).toEqual(placed)
+    expect(frameOf(placedStarter(turned, ring, asDesigned('ringDiamonds'), { row: 50, column: 50 }))).toEqual(placed)
   })
 
-  it('puts a Ring in its own Technique round the centre, its length from the Project\'s Bead', () => {
+  it('lays a Ring across on an unturned Canvas too (ticket 0832): its Frame turned a quarter round the centre, in its own Technique', () => {
     const result = placedStarter(open, starterById('ringDiamonds'), asDesigned('ringDiamonds'), { row: 50, column: 50 })
     if (result.kind !== 'changed') throw new Error(result.kind)
-    expect(frameOf(result.project)).toMatchObject({ rows: 7, columns: 36, technique: 'peyote' })
-    expect(settingsOf(frameOf(result.project)!)).toBeUndefined()
-    expect(frameOf(result.project)!.beads).toEqual(starterDesign(starterById('ringDiamonds')))
+    const frame = frameOf(result.project)!
+    expect(frame).toMatchObject({ rows: 36, columns: 7, technique: 'peyote', quarterTurns: 1 })
+    // As it lies it covers 6 rows of 45 columns of its own cells, round row 50, column 50.
+    expect(laidFrame(result.project)).toMatchObject({ row: 47, column: 28, rows: 6, columns: 45 })
+    expect(settingsOf(frame)).toBeUndefined()
+    expect(frame.beads).toEqual(starterDesign(starterById('ringDiamonds')))
     expect(canvasOf(result.project).technique).toBe('loom')
+  })
+
+  it('turns the Frame by what the Canvas lacks, so the strip reads as its Starter shows it at any quarter', () => {
+    const turnsOn = (project: typeof open, technique: 'peyote' | 'brick') => {
+      const result = placedStarter(project, starterById('ringDiamonds'), { ...asDesigned('ringDiamonds'), weave: { technique } }, { row: 50, column: 50 })
+      return result.kind === 'changed' ? (frameOf(result.project)!.quarterTurns ?? 0) : undefined
+    }
+    const [quarter, half] = [rotateCanvas(open), rotateCanvas(rotateCanvas(open))]
+    expect([open, quarter, half].map((project) => turnsOn(project, 'peyote'))).toEqual([1, 0, 3])
+    expect([open, quarter, half].map((project) => turnsOn(project, 'brick'))).toEqual([0, 3, 2])
   })
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { quarterTurnOf, withCanvas } from '../../domain/layerRecord'
 import { designSizes, STARTER_BEAD_ID, starterProject, type Starter, type StarterChoice } from '../../domain/starters'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -7,8 +8,8 @@ import { spaceOf } from '../../rendering/space'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
 // A Starter's picture (tickets 0596, 0597; StarterGallery card, Pictures): its design, or its shape empty with its Seams,
-// drawn by the Project renderer in its Bead's real cell and fitted to its well, never cropped. On a card a Band stands
-// upright and the Earrings' category shows a pair. Decorative: the card or the setup names it.
+// drawn by the Project renderer in its Bead's real cell, turned as its Canvas is (a Ring lies across, ticket 0832) and
+// fitted to its well. On a card a Band stands upright and the Earrings' category shows a pair. Decorative.
 const props = withDefaults(
   defineProps<{
     starter: Starter
@@ -40,36 +41,39 @@ function draw() {
   const canvas = canvasEl.value
   const context = canvas?.getContext('2d')
   if (!canvas || !context) return
-  const space = spaceOf(project.value, false)
-  const turned = props.upright && props.starter.measure === 'band'
+  // A Ring's or Band's own grid is drawn unturned and shown turned whole, so no end is cut off: by its Canvas's
+  // quarters, and one more for a Band standing upright.
+  const strip = props.starter.measure !== 'frame'
+  const turns = strip ? (quarterTurnOf(project.value) / 90 + (props.upright && props.starter.measure === 'band' ? 1 : 0)) % 4 : 0
+  const drawn = strip ? withCanvas(project.value, { orientation: 0 }) : project.value
+  const space = spaceOf(drawn, false)
   const copies = props.pair ? 2 : 1
-  // The drawing's sides as shown: turned a quarter, and side by side with a gap between a pair.
-  const width = turned ? space.extent.height : space.extent.width
-  const height = turned ? space.extent.width : space.extent.height
+  // The drawing's sides as shown: turned, and side by side with a gap between a pair.
+  const width = turns % 2 === 1 ? space.extent.height : space.extent.width
+  const height = turns % 2 === 1 ? space.extent.width : space.extent.height
   const across = width * (copies + PAIR_GAP * (copies - 1))
   const zoom = props.drawnPx / Math.max(across, height)
   const pixelRatio = 2
   const region = { x: 0, y: 0, width: space.extent.width * zoom, height: space.extent.height * zoom }
   // No board of its own: the well's fill shows round the beads.
   const look = { ...PROJECT_THEMES[theme.value], background: 'transparent' }
-  const single = copies === 1 && !turned
+  const single = copies === 1 && turns === 0
   const target = single ? canvas : document.createElement('canvas')
   target.width = Math.round(region.width * pixelRatio)
   target.height = Math.round(region.height * pixelRatio)
-  renderProject(target.getContext('2d')!, { project: project.value, space, region, zoom, pixelRatio, theme: look, rowMarks: false })
+  renderProject(target.getContext('2d')!, { project: drawn, space, region, zoom, pixelRatio, theme: look, rowMarks: false })
   if (single) return
   canvas.width = Math.round(across * zoom * pixelRatio)
   canvas.height = Math.round(height * zoom * pixelRatio)
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, canvas.width, canvas.height)
   const step = width * (1 + PAIR_GAP) * zoom * pixelRatio
+  // Where the drawing's own corner goes for each quarter clockwise: at one, its top edge runs down the right.
+  const corner = [[0, 0], [target.height, 0], [target.width, target.height], [0, target.width]][turns]!
   for (let copy = 0; copy < copies; copy += 1) {
     context.setTransform(1, 0, 0, 1, copy * step, 0)
-    if (turned) {
-      // A quarter turn clockwise: what was the top edge now runs down the right.
-      context.translate(target.height, 0)
-      context.rotate(Math.PI / 2)
-    }
+    context.translate(corner[0]!, corner[1]!)
+    context.rotate((turns * Math.PI) / 2)
     context.drawImage(target, 0, 0)
   }
   context.setTransform(1, 0, 0, 1, 0, 0)

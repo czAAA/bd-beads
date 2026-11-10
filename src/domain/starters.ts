@@ -1,12 +1,13 @@
 import { findBead, type Bead } from './beads'
-import type { BeadMap } from './canvas'
+import { forEachBead, type BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
-import { changedSettings, customFrameSize, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
+import { laidSize } from './frameOrientation'
+import { changedSettings, customFrameSize, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
 import { sameWeave, weaveOf } from './layerWeave'
-import { withBackground, withLayer } from './layerRecord'
+import { quarterTurnOf, withBackground, withCanvas, withLayer } from './layerRecord'
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
@@ -51,7 +52,8 @@ const RING_EASE_MM = 4
 export const US_RING_PRESETS: readonly number[] = [5, 6, 7, 8, 9]
 
 /** How a Starter's Frame is sized and measured, the rule its manifest names (ticket 0633): `frame` by its Frame shape's
- * settings, `ring` and `band` as a strip lying across, as long as the finger's round or the wrist with its Fit. */
+ * settings, `ring` and `band` as a strip woven across its width (ticket 0832), shown lying across, as long as the
+ * finger's round or the wrist with its Fit. */
 type StarterMeasureRule = 'frame' | 'ring' | 'band'
 
 /** One size of a Starter, in the shape every setting has (ADR 0078): its default is the value its design is made for,
@@ -93,7 +95,8 @@ export interface StarterManifest {
 }
 
 /** A Starter's design as its file stores it (ticket 0636): its Frame's rows and columns, and its beads in the compact
- * encoding a Project file uses (ADR 0009), by their position in the layout or the rectangle. */
+ * encoding a Project file uses (ADR 0009), by their position in the layout or the rectangle. A Ring's or Band's is
+ * drawn as peyote weaves it (ticket 0832): its length in rows, its Width in columns. */
 interface StoredDesign {
   rows: number
   columns: number
@@ -280,14 +283,29 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
   return { ...numbers, ...Object.fromEntries(starter.picks.map(({ id }) => [id, pickIn(starter, picks, id)])) }
 }
 
-/** A Starter's Frame rows and columns for a choice on a Bead, by its measuring rule: a Custom frame's rectangle; a Ring
- * or Band lying across takes its Width in rows and its length in columns of the Bead's pitch, as put in place.
+/** Whether a strip's length runs down a Weave's rows (ticket 0832). A strip is woven across its width, the thread from
+ * edge to edge, so its length runs across the thread: down the rows in peyote and on a loom, whose Canvas is turned a
+ * quarter to show it lying across, and along the rows in brick stitch, peyote turned a quarter. */
+function runsDown(weave: Weave): boolean {
+  return describeWeave(weave).threadDirection === 'leftToRight'
+}
+
+/** The quarter turn a strip in a Weave lies across at, in degrees clockwise: what a new Project's Canvas starts at. */
+function lyingTurn(weave: Weave): number {
+  return runsDown(weave) ? 90 : 0
+}
+
+/** A Starter's Frame rows and columns for a choice on a Bead: a Custom frame's rectangle; a Ring or Band its length in
+ * beads on their sides (the design's own when put in place) and its Width, as its Weave works a strip (`runsDown`).
  * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
-  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weaveIn(starter, choice), beadCell(bead, weaveIn(starter, choice).technique))
-  if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
-  const across = describeWeave(weaveIn(starter, choice)).stepMm(bead).across
-  return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / across)) }
+  const weave = weaveIn(starter, choice)
+  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice), undefined, weave, beadCell(bead, weave.technique))
+  const step = describeWeave(weave).stepMm(bead)
+  const worked = Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / (runsDown(weave) ? step.down : step.across)))
+  const length = choice.useDesign && designFits(starter, choice) ? designOf(starter).rows : worked
+  const width = sizeIn(starter, choice.sizes, 'width')
+  return runsDown(weave) ? { rows: length, columns: width } : { rows: width, columns: length }
 }
 
 /** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
@@ -310,25 +328,42 @@ export function starterMeasure(starter: Starter, choice: StarterChoice, bead: Be
   if (starter.measure === 'frame') {
     return { shape: 'frame', ...estimatedSizeMm({ rows, columns, shape: starter.shape, settings: customSettings(starter, choice) }, bead, technique) }
   }
-  // Lying across, the strip's length is the Frame's width on screen and its width the Frame's height.
-  const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns }, bead, technique)
+  const size = estimatedSizeMm({ rows, columns }, bead, technique)
+  const down = runsDown(weaveIn(starter, choice))
+  const [lengthMm, widthMm] = down ? [size.heightMm, size.widthMm] : [size.widthMm, size.heightMm]
   // Where every other line shifts, a round zig-zags through two lines as a pattern counts it.
-  const round = columns * (describeWeave(weaveIn(starter, choice)).shifted ? 2 : 1)
+  const round = (down ? rows : columns) * (describeWeave(weaveIn(starter, choice)).shifted ? 2 : 1)
   if (starter.measure === 'ring') return { shape: 'ring', insideMm: sizeIn(starter, choice.sizes, 'ringSize') / Math.PI, widthMm, rows: round }
   return { shape: 'band', widthMm, lengthMm, rows: round }
 }
 
+const designsAlongRows = new Map<StarterId, BeadMap>()
+
+/** A strip's design laid along a Weave's rows (brick stitch, ticket 0832): its rows the columns, which is the design
+ * lying across seen in a mirror. The mirror keeps the stagger in register: peyote's odd lines, turned, sit half a
+ * bead left, brick's half a bead right. Made once. */
+function designAlongRows(starter: Starter): BeadMap {
+  const known = designsAlongRows.get(starter.id)
+  if (known) return known
+  const { beads } = designOf(starter)
+  const along: BeadMap = {}
+  forEachBead(beads, (row, column, color) => ((along[column] ??= {})[row] = color))
+  designsAlongRows.set(starter.id, along)
+  return along
+}
+
 /** The beads a Starter puts in place: its design when asked for at its sizes and choices, else none. */
 function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
-  return choice.useDesign && designFits(starter, choice) ? starterDesign(starter) : {}
+  if (!choice.useDesign || !designFits(starter, choice)) return {}
+  return starter.measure === 'frame' || runsDown(weaveIn(starter, choice)) ? starterDesign(starter) : designAlongRows(starter)
 }
 
 /** Add Frame from Starter and Replace Frame (tickets 0596, 0633, 0671): the Starter's Frame round a Canvas position, in
- * place of any Frame there, in the setup's Layer settings (ADR 0079), with its design or empty; the Canvas as it is.
- * Colours stay as painted; an empty Ring's or Band's length is worked out in the Frame's Bead. */
+ * place of any Frame, in the setup's Layer settings (ADR 0079), with its design or empty, colours as painted; the
+ * Canvas as it is. A Ring's or Band's Frame is turned by what the Canvas lacks, so it lies across (ticket 0832). */
 export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition): FrameChangeResult {
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
-  const placement = starterPlacement(starter, choice, centre, bead ?? resolveProjectBead(project)!)
+  const placement = starterPlacement(project, starter, choice, centre, bead ?? resolveProjectBead(project)!)
   const placed = changeFrame(project, placement)
   if (placed.kind !== 'changed' || (!bead && choice.background === undefined)) return placed
   // Laid again once it has its Bead, a replaced Frame keeping it, so it lies round the centre at that Bead's size.
@@ -337,21 +372,26 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
   return relaid.kind === 'changed' ? { kind: 'changed', project: withWovenPalette(project, relaid.project) } : relaid
 }
 
-/** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`. */
-function starterPlacement(starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
+/** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`
+ * and its turn the quarters from the Canvas's own to the one its strip lies across at. */
+function starterPlacement(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
   const beads = chosenBeads(starter, choice)
   const weave = weaveIn(starter, choice)
   if (starter.shape) return { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads, weave } }
   const { rows, columns } = starterFrameSize(starter, choice, bead)
-  return { place: { frame: { row: centre.row - Math.floor(rows / 2), column: centre.column - Math.floor(columns / 2), rows, columns }, weave, beads } }
+  const quarterTurns = (((lyingTurn(weave) - quarterTurnOf(project)) / 90 + 4) % 4) as QuarterTurns | 0
+  const laid = laidSize({ rows, columns, ...(quarterTurns ? { quarterTurns } : {}), ...withCell(weave, beadCell(bead, weave.technique)) })
+  const frame = { row: centre.row - Math.floor(laid.rows / 2), column: centre.column - Math.floor(laid.columns / 2), rows, columns }
+  return { place: { frame, weave, beads, ...(quarterTurns ? { quarterTurns } : {}) } }
 }
 
 /** A new Project from a Starter (New Project's Pick a starter): its Frame as the setup sets it, with its first row and
- * column at the origin, and its Canvas a copy of the Frame's Layer settings (ADR 0079). Nothing in it records the
- * Starter. */
+ * column at the origin, and its Canvas a copy of the Frame's Layer settings (ADR 0079), turned so a Ring or Band lies
+ * across (ticket 0832). Nothing in it records the Starter. */
 export function starterProject(starter: Starter, choice: StarterChoice & Pick<StarterProjectChoice, 'name' | 'beadId'> & Partial<StarterLayerSettings>): Project {
   const { name, beadId, background } = choice
-  const project = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
+  const made = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
+  const project = starter.measure === 'frame' ? made : withCanvas(made, { orientation: lyingTurn(weaveIn(starter, choice)) })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project

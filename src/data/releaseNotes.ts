@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'Ring and Band Starters now lie the way they are woven, the thread across the strip, with sizes true to the bead',
+      ru: 'Стартеры колец и браслетов теперь лежат так, как их плетут: нить идёт поперёк полосы, размеры точны по бисеру',
+      uk: 'Стартери каблучок і браслетів тепер лежать так, як їх плетуть: нитка йде впоперек смуги, розміри точні за бісером',
+      be: 'Стартары пярсцёнкаў і бранзалетаў цяпер ляжаць так, як іх плятуць: нітка ідзе ўпоперак паласы, памеры дакладныя па бісеры',
+      zh: '戒指和手环的起始方案现在按实际编织的方向摆放：线横穿条带，尺寸也按珠子如实计算',
+      es: 'Los puntos de partida de anillos y pulseras ahora quedan como se tejen: el hilo cruza la tira y las medidas son fieles a la cuenta',
+      pl: 'Startery pierścionków i bransoletek leżą teraz tak, jak się je wyplata: nić biegnie w poprzek paska, a rozmiary zgadzają się z koralikiem',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: "The Homepage now opens on a welcome, and What's inside plays in four chapters you can pause or try yourself",
       ru: 'Главная начинается с приветствия, а «Что внутри» идёт четырьмя главами: можно остановить и попробовать самим',
       uk: 'Головна починається з привітання, а «Що всередині» йде чотирма розділами: можна зупинити й спробувати самим',
