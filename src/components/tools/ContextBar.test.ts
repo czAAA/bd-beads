@@ -15,6 +15,7 @@ import { frameOf } from '../../domain/layerRecord'
 import { MIRROR_OFF, mirrorFit, type MirrorMode } from '../../domain/mirror'
 import type { Technique } from '../../domain/weave'
 import IconButton from '../ui/IconButton.vue'
+import { AREA_BAR_GAP_PX } from '../../rendering/frameHandles'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
@@ -316,8 +317,8 @@ describe('an area\'s bar (ContextBar card, Area sheet, tickets 0808, 0812)', () 
     const wrapper = mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, anchor } })
     const root = wrapper.get('[data-testid="context-bar"]')
     expect(root.classes()).toContain('context-bar--area')
-    // The band reaches 10px over the Selection's top; the bar (unmeasured here, 0px tall) keeps 6px above it.
-    expect(root.attributes('style')).toContain('top: 184px')
+    // The band reaches 10px over the Selection's top; the bar (unmeasured here, 0px tall) keeps a handle's reach above it.
+    expect(root.attributes('style')).toContain(`top: ${200 - 10 - AREA_BAR_GAP_PX}px`)
     expect(root.attributes('style')).not.toContain('min-width')
   })
 

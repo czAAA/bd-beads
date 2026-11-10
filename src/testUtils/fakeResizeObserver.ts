@@ -4,6 +4,8 @@ export class FakeResizeObserver implements ResizeObserver {
   static instances: FakeResizeObserver[] = []
 
   private target: Element | undefined
+  /** The options the last observe() was given: which box it watches. */
+  options: ResizeObserverOptions | undefined
   private readonly callback: ResizeObserverCallback
 
   constructor(callback: ResizeObserverCallback) {
@@ -11,8 +13,9 @@ export class FakeResizeObserver implements ResizeObserver {
     FakeResizeObserver.instances.push(this)
   }
 
-  observe(target: Element): void {
+  observe(target: Element, options?: ResizeObserverOptions): void {
     this.target = target
+    this.options = options
   }
 
   unobserve(): void {
@@ -23,8 +26,9 @@ export class FakeResizeObserver implements ResizeObserver {
     this.target = undefined
   }
 
-  /** Fires the observed callback as if `target` resized to (width, height); a no-op before observe() is called. */
-  trigger(width: number, height: number): void {
+  /** Fires the observed callback as if `target` resized to (width, height), its border box `border` (the same by
+   * default); a no-op before observe() is called. */
+  trigger(width: number, height: number, border: { width: number; height: number } = { width, height }): void {
     if (!this.target) {
       return
     }
@@ -33,7 +37,7 @@ export class FakeResizeObserver implements ResizeObserver {
     const entry: ResizeObserverEntry = {
       target: this.target,
       contentRect: rect,
-      borderBoxSize: [{ inlineSize: width, blockSize: height }] as unknown as ReadonlyArray<ResizeObserverSize>,
+      borderBoxSize: [{ inlineSize: border.width, blockSize: border.height }] as unknown as ReadonlyArray<ResizeObserverSize>,
       contentBoxSize: [{ inlineSize: width, blockSize: height }] as unknown as ReadonlyArray<ResizeObserverSize>,
       devicePixelContentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
     }

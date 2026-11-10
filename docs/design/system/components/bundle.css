@@ -105,7 +105,6 @@
   --selbar-height: 28px;
   --selbar-height-touch: 36px;
   --selbar-radius: 8px;
-  --selbar-gap: 6px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
@@ -119,6 +118,7 @@
   --area-band-radius: 8px;
   --area-band-fill: 0.16;
   --area-band-edge: 0.55;
+  --area-bar-gap: 14px;
   --area-cut: 0.45;
   --area-move-grip: 18px;
   --mirror-area-line: 1.5px;

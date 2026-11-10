@@ -1,4 +1,4 @@
-import { AREA_SHEET_OUTSET } from '../../rendering/frameHandles'
+import { AREA_BAR_GAP_PX, AREA_SHEET_OUTSET } from '../../rendering/frameHandles'
 import type { TitleCorner } from '../../rendering/marginForm'
 
 /** A rectangle in the canvas box's own pixels. */
@@ -33,26 +33,26 @@ const BAR_STICK_PX = 24
 /** Whether two boxes of the canvas box overlap: the Selection bar against the Tool pill. */
 const boxesOverlap = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height
 
-// Where the Selection bar sits (tickets 415, 0779): centred above the Selection, flipped below with no room above, held
-// inside the canvas box only while it stays beside the Selection. The Tool pill (`obstacle`, ticket 439) acts as an edge
-// while the bar is wholly in the box: it flips or slides clear the way it overlaps least (with `keepSide` only slides).
+// Where the Selection bar sits (tickets 415, 0779): `gap` above the Selection, centred, flipped below with no room above,
+// held in the canvas box only while beside the Selection. The Tool pill (`obstacle`, ticket 439) acts as an edge while
+// the bar is wholly in the box: it flips or slides clear the way it overlaps least (with `keepSide` only slides).
 export function selectionBarPlacement(
   selection: BarBox,
   bar: { width: number; height: number },
   viewport: { width: number; height: number },
   obstacle?: BarBox,
-  { keepSide = false }: { keepSide?: boolean } = {},
+  { keepSide = false, gap = BAR_GAP_PX }: { keepSide?: boolean; gap?: number } = {},
 ): BarPlacement {
   const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max))
   const onScreen = (value: number, size: number, limit: number) => clamp(value, BAR_EDGE_PX, limit - size - BAR_EDGE_PX)
   const stick = Math.min(BAR_STICK_PX, selection.width / 2)
-  const above = selection.top - BAR_GAP_PX - bar.height
+  const above = selection.top - gap - bar.height
   const left = clamp(
     onScreen(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width),
     selection.left + stick - bar.width,
     selection.left + selection.width - stick,
   )
-  const underneath = selection.top + selection.height + BAR_GAP_PX
+  const underneath = selection.top + selection.height + gap
   const below = above < BAR_EDGE_PX
   const at = (isBelow: boolean): BarPlacement => ({
     left,
@@ -83,7 +83,7 @@ export function selectionBarPlacement(
 export type SheetArea = 'selection' | 'mirror'
 
 /** Where an Area sheet's bar goes (ContextBar card, Area sheet, ticket 0812): placed as the floating bar is, but round
- * the sheet's outer edge, so neither the area nor its band is ever under it. */
+ * the sheet's outer edge and a handle's reach off it, so neither the area, its band nor its handles are ever under it. */
 export function areaBarPlacement(
   area: BarBox,
   bar: { width: number; height: number },
@@ -92,7 +92,7 @@ export function areaBarPlacement(
 ): BarPlacement {
   const { top, right, bottom, left } = AREA_SHEET_OUTSET
   const sheet = { left: area.left - left, top: area.top - top, width: area.width + left + right, height: area.height + top + bottom }
-  return selectionBarPlacement(sheet, bar, viewport, obstacle)
+  return selectionBarPlacement(sheet, bar, viewport, obstacle, { gap: AREA_BAR_GAP_PX })
 }
 
 /** Where the Frame is on screen (tickets 427, 473, 0657): its line's box, its margin sheet's box and the canvas box
@@ -113,11 +113,11 @@ export interface FrameAnchor extends SelectionAnchor {
 }
 
 /** How far a Selection's handles reach past its edge, in screen px (a finger's 35), and over its top, where its bar
- * sits above its Area sheet's band: the band, the gap and the 36px touch bar (tickets 0808, 0812). */
+ * sits above its Area sheet's band: the band, the bar's gap and the 36px touch bar (tickets 0808, 0812). */
 const SELECTION_HANDLE_REACH_PX = 35
 /** The touch bar's height, `--selbar-height-touch` (ContextBar card): the taller bar, so the reach covers both. */
 const TOUCH_BAR_PX = 36
-const SELECTION_TOP_REACH_PX = AREA_SHEET_OUTSET.top + BAR_GAP_PX + TOUCH_BAR_PX
+const SELECTION_TOP_REACH_PX = AREA_SHEET_OUTSET.top + AREA_BAR_GAP_PX + TOUCH_BAR_PX
 
 /** Whether a control's hit area lies where a Selection's handles or bar can be pressed, so they win the press
  * (tickets 498, 0657, 0808): over the reach round its edge, not well inside it. */

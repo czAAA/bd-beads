@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AREA_BAR_GAP_PX } from '../../rendering/frameHandles'
 import { areaBarPlacement, overlapsSelectionHandles, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
@@ -103,12 +104,12 @@ describe('areaBarPlacement (ContextBar card, Area sheet, ticket 0812)', () => {
   const area = { left: 100, top: 100, width: 200, height: 80 }
 
   it('sets the bar above the Area sheet, clear of the band, centred on it', () => {
-    // The sheet reaches 10px past the area on every side: the bar keeps 6px above its outer edge.
-    expect(areaBarPlacement(area, bar, viewport)).toEqual({ left: 150, top: 100 - 10 - 6 - 28, below: false })
+    // The sheet reaches 10px past the area on every side: the bar keeps a handle's reach above its outer edge.
+    expect(areaBarPlacement(area, bar, viewport)).toEqual({ left: 150, top: 100 - 10 - AREA_BAR_GAP_PX - 28, below: false })
   })
 
   it('flips below the sheet, clear of its band, when there is no room above', () => {
-    expect(areaBarPlacement({ ...area, top: 30 }, bar, viewport)).toEqual({ left: 150, top: 30 + 80 + 10 + 6, below: true })
+    expect(areaBarPlacement({ ...area, top: 30 }, bar, viewport)).toEqual({ left: 150, top: 30 + 80 + 10 + AREA_BAR_GAP_PX, below: true })
   })
 
   it('never lies over the area or its band', () => {
