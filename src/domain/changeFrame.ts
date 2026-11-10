@@ -73,8 +73,9 @@ export type FrameChange =
    * Technique changes just those. */
   | WeaveChange
   /** Put a new Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
-   * the Canvas under the new one is hidden, not changed. Empty, or holding a Starter's design (ticket 0633). */
-  | { place: { frame: Rect; weave: Weave; beads?: BeadMap } }
+   * the Canvas under the new one is hidden, not changed. Empty, or holding a Starter's design (ticket 0633), and turned
+   * where a Starter's strip lies across the Canvas's own lines (ticket 0832). */
+  | { place: FramePlacement }
   /** Name the Frame (ticket 555), or clear its name with an empty one; allowed after Row progress has started, as it
    * touches no bead and no pass. */
   | { name: string }
@@ -85,6 +86,15 @@ export type FrameChange =
   /** Change a Custom frame's settings (ticket 0592): its layout is built again round the same centre, and every bead
    * whose position is still in it stays; growing adds empty rounds or rows outside. */
   | { settings: FrameSettings }
+
+/** A new Frame without a shape to put in place: its first row and column and its own rows and columns, its Weave, the
+ * beads it holds, and the quarters it lies turned at (as Rotate Frame turns one). */
+interface FramePlacement {
+  frame: Rect
+  weave: Weave
+  beads?: BeadMap
+  quarterTurns?: QuarterTurns
+}
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -410,9 +420,9 @@ function withFoldedLaid(project: Project): Project {
 
 /** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
  * Row progress starts at the first pass, and the Canvas keeps every bead. */
-function placedFrame(project: Project, place: { frame: Rect; weave: Weave; beads?: BeadMap }): Project {
+function placedFrame(project: Project, place: FramePlacement): Project {
   const { row, column, rows, columns } = place.frame
-  const sheet = { row, column, rows, columns, ...weaveOf(place.weave) }
+  const sheet = { row, column, rows, columns, ...weaveOf(place.weave), ...(place.quarterTurns ? { quarterTurns: place.quarterTurns } : {}) }
   const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {} }
   return touchFrameSheet(project, { ...frame, rowProgress: firstPasses(rowProgressOf(project)) })
 }

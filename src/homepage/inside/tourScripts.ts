@@ -51,6 +51,10 @@ function inFrame(row: number, column: number): GridPosition {
 const FRAME_FIRST = inFrame(0, 0)
 const FRAME_LAST = inFrame(DEMO_FRAME.rows - 1, DEMO_FRAME.columns - 1)
 
+/** The corners of what the Starter's ring covers lying turned, longer than the band (ticket 0832): for a drag over it. */
+const RING_FIRST = inFrame(-1, -6)
+const RING_LAST = inFrame(DEMO_FRAME.rows, DEMO_FRAME.columns + 5)
+
 /** The panorama the ghost traces over the Reference image, in the band: the sun and the ridge's snow line painted, the
  * ground's row, the sky and the slopes filled from one bead each; flowers at the mountains' foot. */
 const LANDSCAPE = {
@@ -181,11 +185,18 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
   /** The Starter's ring cleared off the Frame, a picture laid under the beads smaller than the Frame, grown from its
    * corner to fit it, then traced. */
   async reference(hand) {
+    // The Starter's ring lies turned on this unturned Canvas (ticket 0832): its Frame goes, and the band is the Frame again.
+    await inFramePanel(hand, async () => {
+      await hand.press('frame-chrome-remove')
+      if (await present(hand, 'remove-frame-modal')) await hand.press('confirm-modal-confirm')
+    })
     await hand.press('pill-tool-select')
-    await hand.drag(FRAME_FIRST, FRAME_LAST)
+    await hand.drag(RING_FIRST, RING_LAST)
     await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
     // The Starter's ring is all there is on the Canvas, so Delete asks first.
     if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
+    await hand.drag(FRAME_FIRST, FRAME_LAST)
+    await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
     await growReference(hand, await landscapeFile())
     await hand.press('reference-adjust-done')
     await hand.press('pill-tool-paint')
