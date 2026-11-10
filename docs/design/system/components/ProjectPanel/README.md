@@ -26,7 +26,7 @@ Not here any more: the size estimate, Frame from starter and Beads needed (all i
 
 - Both close the panel, then open a dialog on the Modal shell (ConfirmDialogs card), `z-modal`. Neither is part of Undo and both act at once.
 - **Duplicate:** "Duplicate Project", the note "Everything is copied, including Row progress, so the copy works as a snapshot.", a TextField "Name" holding the suggestion, its hint "Suggested: the current name and the next free number.", Cancel and a primary Duplicate. The suggestion is the name plus the first unused number from 2: "Moth" suggests "Moth 2", then "Moth 3" once that exists; a name that already ends in a number ("Moth 2") suggests the next free one ("Moth 3"). After confirming, the copy opens.
-- **Delete project:** "Delete {name}?", "{name} and its Row progress are removed from this device. This can't be undone. Export it first if you want to keep a copy.", Cancel and a `danger`-filled "Delete Project". Afterwards the app shows the empty state with New Project and Import (EmptyCanvas card).
+- **Delete project:** "Delete “{name}”?", "“{name}” and its Row progress are removed from this device. This can't be undone. Save its Project file first if you want to keep it.", the side action "Save Project file" (saves this Project's file, the dialog stays open), Cancel and a `danger`-filled "Delete Project" (ticket 0842). The Projects library's × asks the same dialog. Afterwards the most recently updated other Project opens; with none left, the empty state with New Project and Import (EmptyCanvas card).
 
 ## Keyboard and screen readers
 

@@ -11,22 +11,17 @@ export interface ProjectManageDeps {
   replaceProject: (project: Project) => void
   /** Adds the copy and opens it. */
   addProject: (project: Project) => void
-  removeProject: (id: string) => void
   removeAllProjects: () => void
-  /** Leaves no Project open, so the empty state shows. */
-  closeProject: () => void
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
 
-// Rename, Duplicate, Delete for the open Project and Delete all Projects (spec 0440, ticket 443): saved with the
-// library, independent of Undo; Duplicate and Delete ask first in the dialogs AppDialogs draws from
-// `duplicating`/`deleting`. Deps are lazy.
+// Rename and Duplicate for the open Project and Delete all Projects (spec 0440, ticket 443): saved with the library,
+// independent of Undo; Duplicate asks first. Deleting one Project is useDeleteProjectFlow's (ticket 0842). Deps are lazy.
 export function useProjectManageFlow(deps: ProjectManageDeps) {
-  /** The suggested name while the Duplicate dialog is open. */
   const dialogs = deps.dialogs ?? useDialogs()
+  /** The suggested name while the Duplicate dialog is open. */
   const duplicating = dialogs.question<string>('duplicate-project')
-  const deleting = dialogs.flag('delete-project')
   const deletingAll = dialogs.flag('delete-all-projects')
 
   /** Renames the open Project; false (nothing changes) when the name is empty. */
@@ -56,23 +51,6 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
     return true
   }
 
-  function onRequestDelete() {
-    if (deps.currentProject()) deleting.value = true
-  }
-
-  function onCancelDelete() {
-    deleting.value = false
-  }
-
-  /** Removes the open Project from this device and leaves the empty state, not the next Project. */
-  function onConfirmDelete() {
-    const project = deps.currentProject()
-    deleting.value = false
-    if (!project) return
-    deps.removeProject(project.id)
-    deps.closeProject()
-  }
-
   function onRequestDeleteAllProjects() {
     if (deps.projects().length > 0) deletingAll.value = true
   }
@@ -87,5 +65,5 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
     deps.removeAllProjects()
   }
 
-  return { duplicating, deleting, deletingAll, onRequestDeleteAllProjects, onCancelDeleteAllProjects, onConfirmDeleteAllProjects, onRenameProject, onRequestDuplicate, onCancelDuplicate, onConfirmDuplicate, onRequestDelete, onCancelDelete, onConfirmDelete }
+  return { duplicating, deletingAll, onRequestDeleteAllProjects, onCancelDeleteAllProjects, onConfirmDeleteAllProjects, onRenameProject, onRequestDuplicate, onCancelDuplicate, onConfirmDuplicate }
 }

@@ -149,13 +149,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
   }
 
   /** Save, or with `again` Save as (ADR 0090, ticket 0796), which the Project panel, the save ring and the keys run:
-   * into the Linked file where the browser can, else (or if the dialog or write fails) handed over as before. With no
-   * Project open it offers the whole library, the way out when a save fails (ticket 158). */
-  async function save(again: boolean): Promise<boolean> {
-    const project = deps.currentProject()
-    if (!project) {
-      return onExportLibraryFile()
-    }
+   * into the Linked file where the browser can, else (or if the dialog or write fails) handed over as before. */
+  async function save(project: Project, again: boolean): Promise<boolean> {
     const make = async () => packProjectFile(project, await picturesOf([project.id]))
     const target = linking.value ? await fileToWrite(project, again) : 'unavailable'
     if (target === 'cancelled') {
@@ -175,8 +170,23 @@ export function useExportFlow(deps: ExportFlowDeps) {
     return handOverFile(projectFileName(project), make, [project.id])
   }
 
-  const onSave = () => save(false)
-  const onSaveAs = () => save(true)
+  /** Save of the open Project; with none open it offers the whole library, the way out when a save fails (ticket 158). */
+  function saveOpen(again: boolean): Promise<boolean> {
+    const project = deps.currentProject()
+    return project ? save(project, again) : onExportLibraryFile()
+  }
+
+  const onSave = () => saveOpen(false)
+  const onSaveAs = () => saveOpen(true)
+
+  /** Save Project file for any Project of the library, open or not (ticket 0842: the Delete dialog's): a decoded one
+   * saves as Save does, a sealed one from its stored form. */
+  function onSaveFileOf(id: string): Promise<boolean> {
+    const project = deps.projects().find((each) => each.id === id)
+    if (project) return save(project, false)
+    const kept = deps.sealed?.().find((each) => each.id === id)
+    return kept ? onExportSealed(kept) : Promise.resolve(false)
+  }
 
   // A Project gone from the library takes its Linked file with it; at start, every link of no Project is dropped.
   if (deps.libraryIds && deps.linkedFiles) {
@@ -232,5 +242,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { makerName, onSaveMakerName, onSetLetters, exporting, onSave, onSaveAs, canSaveAs, linkedFileName, onExportLibraryFile, onExportSealed, onExportPng, onExportPdf }
+  return { makerName, onSaveMakerName, onSetLetters, exporting, onSave, onSaveAs, onSaveFileOf, canSaveAs, linkedFileName, onExportLibraryFile, onExportSealed, onExportPng, onExportPdf }
 }

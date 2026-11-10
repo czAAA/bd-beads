@@ -14,6 +14,10 @@ import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 import { newReferenceImage, withReferenceImage } from '../../domain/referenceImage'
+import { projectFileNameOf } from '../../domain/projectFile'
+import { downloadFile } from '../../services/fileDownload'
+
+vi.mock('../../services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
 /** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
  * test per control → flow. What the panels hold is in MenuPanel and ProjectPanel, Back, Escape and focus in AppPanel
@@ -101,14 +105,16 @@ describe('Menu', () => {
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('removes a Project from the Projects library after a danger confirmation naming it (ticket 232)', async () => {
+  it('deletes a Project from the Projects library after the Delete question naming it, whose Save Project file saves that Project (tickets 232, 0842)', async () => {
     saveProjects([moth(), other()])
     const mounted = mountPanels()
     await openSavedProjects(mounted)
     await click(mounted, 'remove-project-other')
 
-    expect(text(mounted, 'remove-project-modal')).toContain('“Other”')
+    expect(text(mounted, 'delete-project-modal')).toContain('Delete “Other”?')
     expect(mounted.wrapper.get('[data-testid="confirm-modal-confirm"]').classes().join(' ')).toContain('danger')
+    await click(mounted, 'confirm-modal-extra')
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Other'), expect.any(Uint8Array), 'application/json'))
     expect(names()).toEqual(['Moth', 'Other'])
 
     await click(mounted, 'confirm-modal-confirm')
@@ -216,13 +222,13 @@ describe('Project', () => {
     expect(canvasOf(mounted.panels.activeProject.value!).name).toBe('Moth 2')
   })
 
-  it('deletes after a confirmation naming the Project, leaving none open; Cancel keeps it', async () => {
+  it('deletes the open Project after the same Delete question, and the other Project opens; Cancel keeps it (ticket 0842)', async () => {
     saveProjects([moth(), other()])
     const mounted = mountPanels()
     await mounted.openPanel('project')
     const open = text(mounted, 'project-name')
     await click(mounted, 'project-delete')
-    expect(text(mounted, 'delete-project-modal')).toContain(`Delete ${open}?`)
+    expect(text(mounted, 'delete-project-modal')).toContain(`Delete “${open}”?`)
     await click(mounted, 'confirm-modal-cancel')
     expect(loadProjects()).toHaveLength(2)
 
@@ -230,8 +236,8 @@ describe('Project', () => {
     await click(mounted, 'project-delete')
     await click(mounted, 'confirm-modal-confirm')
 
-    expect(loadProjects()).toHaveLength(1)
-    expect(mounted.panels.activeProject.value).toBeUndefined()
+    expect(loadProjects().map((project) => canvasOf(project).name)).toEqual([open === 'Moth' ? 'Other' : 'Moth'])
+    expect(mounted.panels.activeProject.value?.id).toBe(loadProjects()[0]!.id)
   })
 
   it('replaces the Canvas\'s Bead after a confirmation, the Frame keeping its own; Cancel keeps it (tickets 48, 0665, 0670)', async () => {

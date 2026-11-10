@@ -3,6 +3,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogsContext } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
+import DeleteProjectModal from '../project/DeleteProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 import FeedbackSheet from './FeedbackSheet.vue'
@@ -43,9 +44,6 @@ const {
   pendingImport,
   pendingImportOpens,
   importSaveRefused,
-  pendingRemove,
-  onCancelRemove,
-  onConfirmRemove,
   pendingSwitch,
   switchSaveRefused,
   onCancelSwitch,
@@ -60,8 +58,10 @@ const {
   duplicating,
   onConfirmDuplicate,
   onCancelDuplicate,
+  pendingDelete,
   onConfirmDelete,
   onCancelDelete,
+  onSaveFileBeforeDelete,
   onConfirmDeleteAllProjects,
   onCancelDeleteAllProjects,
   naming,
@@ -219,18 +219,7 @@ const { locale } = useI18n()
     </p>
   </ConfirmModal>
 
-  <!-- Saved Projects asks before removing a Project or switching to another (ticket 232). -->
-  <ConfirmModal
-    v-if="open === 'remove-project' && pendingRemove"
-    data-testid="remove-project-modal"
-    :title="t.removeProject.title"
-    :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
-    :confirm-label="t.removeProject.confirmButton"
-    :cancel-label="t.removeProject.cancelButton"
-    @confirm="onConfirmRemove"
-    @cancel="onCancelRemove"
-  />
-
+  <!-- Saved Projects asks before switching to another Project (ticket 232). -->
   <ConfirmModal
     v-if="open === 'switch-project' && pendingSwitch && activeProject"
     data-testid="switch-project-modal"
@@ -291,18 +280,16 @@ const { locale } = useI18n()
     @cancel="onCloseFeedback"
   />
 
-  <!-- Duplicate and Delete this Project (ProjectPanel and ConfirmDialogs cards, ticket 443): opened from the Project panel, which has closed. -->
+  <!-- Duplicate this Project (ProjectPanel and ConfirmDialogs cards, ticket 443): opened from the Project panel, which has closed. -->
   <DuplicateProjectModal v-if="open === 'duplicate-project' && duplicating !== undefined" :suggested="duplicating" @confirm="onConfirmDuplicate" @cancel="onCancelDuplicate" />
 
-  <ConfirmModal
-    v-if="open === 'delete-project' && activeProject"
-    data-testid="delete-project-modal"
-    :title="fillBlanks(t.panels.project.deleteTitle, { name: projectNameOf(activeProject) })"
-    :message="fillBlanks(t.panels.project.deleteMessage, { name: projectNameOf(activeProject) })"
-    :confirm-label="t.panels.project.deleteConfirm"
-    :cancel-label="t.panels.project.cancel"
+  <!-- Delete “{name}”?, the one question of every delete of a Project, wherever it starts (ticket 0842). -->
+  <DeleteProjectModal
+    v-if="open === 'delete-project' && pendingDelete"
+    :name="pendingDelete.name"
     @confirm="onConfirmDelete"
     @cancel="onCancelDelete"
+    @save-file="onSaveFileBeforeDelete"
   />
 
   <ConfirmModal

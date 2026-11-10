@@ -14,9 +14,9 @@ import { browserLibraryStore, storedProjectCount } from '../services/libraryStor
 import { startOfflineShell } from '../services/offlineShell'
 import { browserOpeningNote } from '../services/openingNote'
 import { downloadFile } from '../services/fileDownload'
-import { packLibraryFile } from '../services/projectFileCodec'
+import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../services/projectFileCodec'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
-import { libraryFileName } from '../domain/projectFile'
+import { libraryFileName, projectFileName, projectFileNameOf } from '../domain/projectFile'
 import { projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
@@ -44,6 +44,15 @@ async function exportAll(projects: Project[], sealed: SealedProject[]) {
   await downloadFile(libraryFileName(), await packLibraryFile(projects, sealed.map((project) => project.stored)), 'application/json')
 }
 
+/** The Delete dialog's Save Project file (ticket 0842): one Project's file, a sealed one written from its stored form. */
+async function saveProjectFile(project: Project | SealedProject) {
+  const [name, contents] =
+    'stored' in project
+      ? [projectFileNameOf(project.name, project.makerName), await packStoredProjectFile(project.stored)]
+      : [projectFileName(project), await packProjectFile(project)]
+  await downloadFile(name, contents, 'application/json')
+}
+
 // Only the language in use is fetched before the page starts (ticket 0616).
 void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
   createApp({
@@ -58,6 +67,7 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(base)),
         onOpenProject: (id: string) => goToEditor(projectAddress(base, id)),
         onExportAll: exportAll,
+        onSaveProjectFile: saveProjectFile,
       }),
   }).mount('#app')
 

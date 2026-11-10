@@ -170,7 +170,7 @@ export const pl: Translations = {
       duplicateHint: 'Propozycja: obecna nazwa i następny wolny numer.',
       deleteThis: 'Usuń projekt',
       deleteTitle: 'Usunąć „{name}”?',
-      deleteMessage: '„{name}” i jego postęp rzędów zostaną usunięte z tego urządzenia. Nie można tego cofnąć. Najpierw wyeksportuj projekt, jeśli chcesz zachować kopię.',
+      deleteMessage: '„{name}” i jego postęp rzędów zostaną usunięte z tego urządzenia. Nie można tego cofnąć. Jeśli chcesz go zachować, najpierw zapisz plik projektu.',
       deleteConfirm: 'Usuń projekt',
       cancel: 'Anuluj',
       save: 'Zapisz',
@@ -847,12 +847,6 @@ export const pl: Translations = {
     switchAnywayButton: 'Przełącz mimo to',
     keepButton: 'Zostaw bieżący',
     saveButton: 'Zapisz bieżący',
-  },
-  removeProject: {
-    title: 'Usunąć ten projekt?',
-    message: '„{name}” zostanie usunięty z tego urządzenia. Nie można tego cofnąć.',
-    confirmButton: 'Usuń',
-    cancelButton: 'Anuluj',
   },
   switchProject: {
     title: 'Przełączyć projekt?',

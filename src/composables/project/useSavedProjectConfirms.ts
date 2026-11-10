@@ -10,25 +10,21 @@ export interface LibraryEntry {
   gatedBeads?: number
 }
 
-/** What the Saved Projects confirmations need from the app shell: the library's lookup, open, remove and manual
- * save. */
+/** What the Saved Projects confirmations need from the app shell: the library's lookup, open and manual save. */
 export interface SavedProjectConfirmsDeps {
   currentProject: () => Project | undefined
   findProject: (id: string) => LibraryEntry | undefined
   openProject: (id: string) => void
-  removeProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
   saveNow: () => boolean
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
 
-/** The questions Saved Projects asks before acting on a thumbnail (ticket 232): remove, or "Switch?" like Import
- * (ticket 154). Nothing changes until confirmed. Deps are lazy. */
+/** The questions Saved Projects asks before opening a thumbnail's Project (ticket 232): "Switch?" like Import (ticket
+ * 154). Nothing changes until confirmed; its × asks useDeleteProjectFlow's question (ticket 0842). Deps are lazy. */
 export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
-  /** The Project whose × was pressed, until the person answers. */
   const dialogs = deps.dialogs ?? useDialogs()
-  const pendingRemove = dialogs.question<LibraryEntry>('remove-project')
 
   /** The Project a thumbnail pick would open, until the person answers. */
   const pendingSwitch = dialogs.question<LibraryEntry>('switch-project')
@@ -41,22 +37,6 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
 
   /** Whether Save first was tried and the device refused it too. */
   const switchSaveRefused = ref(false)
-
-  function onRequestRemove(id: string) {
-    pendingRemove.value = deps.findProject(id)
-  }
-
-  function onCancelRemove() {
-    pendingRemove.value = undefined
-  }
-
-  function onConfirmRemove() {
-    const project = pendingRemove.value
-    pendingRemove.value = undefined
-    if (project) {
-      deps.removeProject(project.id)
-    }
-  }
 
   /** A thumbnail pick: the open Project does nothing, no open Project opens at once, anything else asks; a Project
    * over the size gate asks whether to open it anyway in place of the switch question (ticket 0716). `opened` runs
@@ -127,13 +107,9 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
   }
 
   return {
-    pendingRemove,
     pendingSwitch,
     pendingLargeOpen,
     switchSaveRefused,
-    onRequestRemove,
-    onCancelRemove,
-    onConfirmRemove,
     onRequestSwitch,
     onCancelSwitch,
     onConfirmSwitch,

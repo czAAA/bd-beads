@@ -11,7 +11,6 @@ type DialogId =
   | 'remove-all-colors'
   | 'replace-bead'
   | 'import-switch'
-  | 'remove-project'
   | 'switch-project'
   | 'keep-note'
   | 'shortcuts'
