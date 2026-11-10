@@ -1,6 +1,6 @@
 # Icons
 
-Icons v2: 81 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
+Icons v2: 83 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
 
 v15 added `menu` (three lines, the same 1.75 stroke, round caps and 4–20 span as `row-progress`): the HeaderMenu button next to the logo.
 v15 also added `pattern` (a 12×17 board, radius 3.5, with two columns of three beads at stroke 2.6): the Dock's Pattern button, so it no longer reads as Save.
@@ -34,3 +34,5 @@ Ticket 0778 added `arrow-left` and `arrow-right`, `arrow-up` turned a quarter (t
 Ticket 0790 added `reference-image`: the `image` picture (the same 17×15 frame, radius 2.5) with its edge dashed (2.4 on, 2.6 off), a lower, shorter hill and the bead sun: the Canvas strip's Reference image toggle. The dash is the Select tool's way of saying "not beads"; the picture inside stays solid so it reads at 18px.
 
 Ticket 0829 made `palette` the Tool pill's colour swatch: there it is drawn at 28px with its body filled with the chosen colour (the one place an icon carries a fill, and the fill is the user's colour, not ink). The tile fills the file's first path and recolours its last, so `palette.svg` keeps that order: the body first, the dabs last.
+
+Ticket 0862 added two for Convert image. `flip` is the picture turned over left to right: the set's dotted axis (2.4, `0 4.5`, as `mirror` draws it) between two right triangles, their upright sides along it and their slopes facing out, one 1.75 stroke each: the floating bar's Flip, icon only. `camera` is a rounded body (17 × 12.5, radius 2.5) with the viewfinder's hump on top, a round lens and the bead as its flash: the No picture row's Take photo, which had no icon.

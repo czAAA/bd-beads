@@ -5,6 +5,7 @@ import { useConvertImageWizardState } from '../../composables/import/useConvertI
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { providePalette } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { useRevealWhenOpen } from '../../composables/ui/useRevealWhenOpen'
 import type { FoundColor, TargetColor } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { isAddedColorId } from '../../domain/palette'
@@ -119,6 +120,8 @@ provide(PICK_CLOSE, () => {})
 providePalette(wizard.remapPalette)
 provideBeadColors(beadColors)
 useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () => void close(), keepsPress: () => true })
+// The picker opens under the row, often under the pane's fold: the row and its picker scroll into view (ticket 0862).
+useRevealWhenOpen(rowEl, () => props.open)
 </script>
 
 <template>
@@ -149,7 +152,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
           :action="actions.change"
           :pressed="remapOn"
           :aria-expanded="open"
-          :class="{ 'found-color__action--on': remapOn }"
+          :class="{ 'found-color__action--on': remapOn || open }"
           data-testid="found-color-remap"
           @click="onRemap"
         />
@@ -190,6 +193,8 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
 
 <style scoped>
 .found-color {
+  /* Revealed clear of the step's pinned header and the table's heading row under it. */
+  scroll-margin-top: calc(var(--convert-step-head) + var(--space-32));
   list-style: none;
   border-top: 1px solid var(--line-soft);
 }
