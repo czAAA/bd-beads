@@ -43,6 +43,13 @@ describe('AppIcon', () => {
     expect(svg.html()).toMatch(/h\.01/)
   })
 
+  it('draws the palette as its body first and its dabs last: the Tool pill fills the first and recolours the last (ticket 0829)', () => {
+    const paths = mount(AppIcon, { props: { name: 'palette' } }).findAll('path')
+    expect(paths).toHaveLength(2)
+    expect(paths[0]!.attributes('d')).toMatch(/z$/)
+    expect(paths[1]!.attributes('d')).toMatch(/h\.01/)
+  })
+
   it('sizes itself in rem from the design system sizes', () => {
     const svg = mount(AppIcon, { props: { name: 'check', size: 14 } }).get('svg')
     expect(svg.attributes('style')).toContain('width: 0.875rem')
