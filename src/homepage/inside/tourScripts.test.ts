@@ -5,7 +5,7 @@ import type { Hand, Target } from './hand'
 import { HOLD, TOUR_SCRIPTS } from './tourScripts'
 
 // The pictures are drawn on a canvas this DOM doesn't have; any picture does here.
-vi.mock('./landscape', () => ({ landscapeFile: async () => new File([], 'landscape.png', { type: 'image/png' }) }))
+vi.mock('./peacockPicture', () => ({ peacockFile: async () => new File([], 'peacock.png', { type: 'image/png' }) }))
 vi.mock('./balloon', () => ({ balloonFile: async () => new File([], 'balloon.png', { type: 'image/png' }) }))
 
 /** A hand on a fixture of the editor's controls, as the ghost plays (not at once): what it pressed, by test id, and every
@@ -59,12 +59,12 @@ describe("What's inside's rows in the order they play (ticket 0830)", () => {
     expect(presses.slice(0, 4)).toEqual(['pill-tool-mirror', 'mirror-bar-close', 'strip-frame', 'frame-replace-from-starter'])
   })
 
-  it("starts the Reference image row by removing the Starter's turned Frame and clearing its ring, the Mirror closed already", async () => {
+  it("starts the Reference image row by clearing the Starter's ring, and sets the cuff's Frame over its Frame with none removed (ticket 0831)", async () => {
     const { hand, presses } = fakeHand()
     await TOUR_SCRIPTS.reference(hand)
-    expect(presses).not.toContain('pill-tool-mirror')
-    expect(presses.slice(0, 2)).toEqual(['strip-frame', 'frame-chrome-remove'])
-    expect(presses).toContain('pill-tool-select')
+    expect(presses.slice(0, 2)).toEqual(['pill-tool-select', 'context-bar-clear'])
+    expect(presses).toContain('context-bar-frame')
+    expect(presses).not.toContain('frame-chrome-remove')
   })
 })
 

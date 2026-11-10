@@ -340,15 +340,16 @@ export function createHand(deps: HandDeps) {
     if (!instant) await moveTo(await beadAt(position), ms)
   }
 
-  /** One stroke of the active tool through `cells`, in order: Paint, Fill or Erase as a beader's drag does. */
-  async function stroke(cells: readonly GridPosition[]): Promise<void> {
+  /** One stroke of the active tool through `cells`, in order: Paint, Fill or Erase as a beader's drag does, `ms` from a
+   * bead to the next. */
+  async function stroke(cells: readonly GridPosition[], ms = STROKE_MS): Promise<void> {
     const [first, ...rest] = cells
     if (!first) return
     await moveToBead(first)
     ripple()
     deps.canvas.onCellPrimaryDown(first.row, first.column, first.layer)
     for (const cell of rest) {
-      await moveToBead(cell, STROKE_MS)
+      await moveToBead(cell, ms)
       deps.canvas.onCellPrimaryMove(cell.row, cell.column, cell.layer)
     }
     deps.shell.endStroke()

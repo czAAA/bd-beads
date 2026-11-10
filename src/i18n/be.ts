@@ -340,7 +340,7 @@ export const be: Translations = {
       colors: { one: '{codes} колер {brands}', few: '{codes} колеры {brands}', many: '{codes} колераў {brands}', other: '{codes} колеру {brands}' },
       starters: { one: '{count} стартар', few: '{count} стартары', many: '{count} стартараў', other: '{count} стартара' },
       caption: '{technique} · {size}',
-      piece: 'Горы пад сонцам, мазаічнае пляценне',
+      piece: 'Вочкі паўлінавага пяра, мазаічнае пляценне',
     },
     inside: {
       rows: {

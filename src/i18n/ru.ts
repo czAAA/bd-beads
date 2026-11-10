@@ -339,7 +339,7 @@ export const ru: Translations = {
       colors: { one: '{codes} цвет {brands}', few: '{codes} цвета {brands}', many: '{codes} цветов {brands}', other: '{codes} цвета {brands}' },
       starters: { one: '{count} стартер', few: '{count} стартера', many: '{count} стартеров', other: '{count} стартера' },
       caption: '{technique} · {size}',
-      piece: 'Горы под солнцем, мозаичное плетение',
+      piece: 'Глазки павлиньего пера, мозаичное плетение',
     },
     inside: {
       rows: {

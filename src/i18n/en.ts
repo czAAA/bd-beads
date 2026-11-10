@@ -337,7 +337,7 @@ export const en: Translations = {
       colors: { one: '{codes} {brands} color', other: '{codes} {brands} colors' },
       starters: { one: '{count} Starter', other: '{count} Starters' },
       caption: '{technique} · {size}',
-      piece: 'Mountains under a sun, in peyote',
+      piece: 'Peacock feather eyes, in peyote',
     },
     inside: {
       rows: {
