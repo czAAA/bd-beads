@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'On an iPad the converter fits: its whole tool bar shows, slider labels stay apart, and Next and Change show what they open',
+      ru: 'На iPad конвертер помещается целиком: видна вся панель инструментов, подписи слайдеров не наезжают друг на друга, а «Дальше» и «Изменить» показывают то, что открывают',
+      uk: 'На iPad конвертер вміщується повністю: видно всю панель інструментів, підписи повзунків не налазять одна на одну, а «Далі» і «Змінити» показують те, що відкривають',
+      be: 'На iPad канвертар змяшчаецца цалкам: відаць усю панэль інструментаў, подпісы паўзункоў не налазяць адзін на адзін, а «Далей» і «Змяніць» паказваюць тое, што адкрываюць',
+      zh: '在 iPad 上转换器完整显示：工具栏全部可见，滑块标签不再重叠，“下一步”和“更改”会把打开的内容带到眼前',
+      es: 'En un iPad el conversor cabe entero: se ve toda su barra de herramientas, las etiquetas de los deslizadores no se pisan, y Siguiente y Cambiar muestran lo que abren',
+      pl: 'Na iPadzie konwerter mieści się cały: widać cały pasek narzędzi, etykiety suwaków na siebie nie nachodzą, a Dalej i Zmień pokazują to, co otwierają',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'On a tablet, a tap in the converter’s menus picks the row you tapped, and the library’s × is easier to hit',
       ru: 'На планшете касание в меню конвертера выбирает ту строку, которой вы коснулись, а в × в библиотеке легче попасть',
       uk: 'На планшеті дотик у меню конвертера вибирає той рядок, якого ви торкнулися, а в × у бібліотеці легше влучити',

@@ -643,7 +643,7 @@ export const CONTROLS: readonly ControlAction[] = [
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
   // Its floating bar (ticket 0780): Select keeps a part of the beads, or crops the picture with A part of the picture.
   unkeyed('convert-turn', (t) => t.convertImage.wizard.turn, 'edit', { icon: 'rotate', body: (t) => t.tooltips.convertTurn }),
-  unkeyed('convert-flip', (t) => t.convertImage.wizard.flip, 'edit', { body: (t) => t.tooltips.convertFlip }),
+  unkeyed('convert-flip', (t) => t.convertImage.wizard.flip, 'edit', { icon: 'flip', body: (t) => t.tooltips.convertFlip }),
   unkeyed('convert-select-beads', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectBeads }),
   unkeyed('convert-select-crop', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectCrop }),
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
