@@ -11,6 +11,7 @@ import { canvasOf, frameOf } from '../domain/layerRecord'
 import { layersView } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { encodeProject } from '../domain/projectEncoding'
+import { storedHugeProject, storeLibrary } from '../testUtils/hugeProject'
 
 // Counts the encodings a save makes (ticket 0677), passing each through to the real encoder.
 vi.mock('../domain/projectEncoding', async (importOriginal) => {
@@ -429,5 +430,57 @@ describe('a library of version 5 opened with a Project kept sealed (ticket 0716)
 
     expect(opened.projects).toEqual(whole.filter((project) => project.id === other.id))
     expect(browserLibraryStore.unseal(opened.sealed[0]!)).toEqual(whole.find((project) => project.id !== other.id))
+  })
+})
+
+describe('rereading what another tab stored (ticket 0834)', () => {
+  it('gives nothing while storage holds what this tab last wrote', () => {
+    const revision = browserLibraryStore.save([makeProject()])
+
+    expect(browserLibraryStore.reread(revision, () => false, [])).toBeUndefined()
+  })
+
+  it('hands back each Project held as it is stored, decoding only the ones another tab changed or made', () => {
+    const mine = makeProject()
+    const revision = browserLibraryStore.save([mine])
+    const theirs = makeProject()
+    saveProjects([mine, theirs])
+
+    const fresh = browserLibraryStore.reread(revision, () => false, [mine])!
+
+    expect(fresh.projects[0]).toBe(mine)
+    expect(fresh.projects.map((project) => project.id)).toEqual([mine.id, theirs.id])
+    expect(fresh.revision).toBe(localStorage.getItem(STORAGE_KEY))
+  })
+
+  it('keeps a Project the caller picks sealed, and a sealed one held as stored is that one', () => {
+    storeLibrary([], [storedHugeProject()])
+    const opened = browserLibraryStore.open(() => true)
+    const theirs = makeProject()
+    saveProjects([theirs], opened.sealed)
+
+    const fresh = browserLibraryStore.reread(opened.revision, (summary) => summary.id !== theirs.id, opened.sealed)!
+
+    expect(fresh.sealed).toHaveLength(1)
+    expect(fresh.sealed[0]).toBe(opened.sealed[0])
+    expect(fresh.projects.map((project) => project.id)).toEqual([theirs.id])
+  })
+
+  it('refuses a stored value it cannot read', () => {
+    localStorage.setItem(STORAGE_KEY, 'not json')
+
+    expect(() => browserLibraryStore.reread('', () => false, [])).toThrow()
+  })
+
+  it("hears another tab's write of the library, and stops hearing when asked", () => {
+    const heard = vi.fn()
+    const stop = browserLibraryStore.onOutsideChange(heard)
+
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'openbeads:theme' }))
+    stop()
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+
+    expect(heard).toHaveBeenCalledTimes(1)
   })
 })

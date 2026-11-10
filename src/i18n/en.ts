@@ -320,6 +320,7 @@ export const en: Translations = {
       confirmButton: 'Keep Projects',
       cancelButton: 'Skip',
     },
+    openElsewhere: "This Project is open in another tab. Changes made here aren't saved while it is open there.",
   },
   header: {
     menuButton: 'Menu',

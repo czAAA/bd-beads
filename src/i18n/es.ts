@@ -322,6 +322,7 @@ export const es: Translations = {
       confirmButton: 'Conservar proyectos',
       cancelButton: 'Omitir',
     },
+    openElsewhere: 'Este proyecto está abierto en otra pestaña. Los cambios hechos aquí no se guardan mientras siga abierto allí.',
   },
   header: {
     menuButton: 'Menú',

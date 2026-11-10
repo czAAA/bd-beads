@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'Two tabs open at once no longer erase each other’s Projects, and a Project open in another tab says so',
+      ru: 'Две открытые вкладки больше не стирают проекты друг друга, а проект, открытый в другой вкладке, сообщает об этом',
+      uk: 'Дві відкриті вкладки більше не стирають проєкти одна одної, а проєкт, відкритий в іншій вкладці, про це каже',
+      be: 'Дзве адкрытыя ўкладкі больш не сціраюць праекты адна адной, а праект, адкрыты ў іншай укладцы, пра гэта кажа',
+      zh: '同时打开两个标签页不再互相抹掉项目，在另一个标签页中打开的项目也会提示',
+      es: 'Dos pestañas abiertas a la vez ya no borran los proyectos de la otra, y un proyecto abierto en otra pestaña lo avisa',
+      pl: 'Dwie otwarte karty nie usuwają już sobie nawzajem projektów, a projekt otwarty w innej karcie o tym mówi',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'On a tablet, a tap in the converter’s menus picks the row you tapped, and the library’s × is easier to hit',
       ru: 'На планшете касание в меню конвертера выбирает ту строку, которой вы коснулись, а в × в библиотеке легче попасть',
       uk: 'На планшеті дотик у меню конвертера вибирає той рядок, якого ви торкнулися, а в × у бібліотеці легше влучити',

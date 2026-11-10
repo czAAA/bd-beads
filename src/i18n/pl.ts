@@ -322,6 +322,7 @@ export const pl: Translations = {
       confirmButton: 'Zachowaj projekty',
       cancelButton: 'Pomiń',
     },
+    openElsewhere: 'Ten projekt jest otwarty w innej karcie. Zmiany wprowadzone tutaj nie są zapisywane, dopóki jest tam otwarty.',
   },
   header: {
     menuButton: 'Menu',
