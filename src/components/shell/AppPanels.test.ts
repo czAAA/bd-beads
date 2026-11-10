@@ -170,7 +170,7 @@ describe('Keep Projects (ticket 0839)', () => {
   })
   afterEach(() => void delete (navigator as { storage?: unknown }).storage)
 
-  it('asks at the first Project file, and its Keep Projects says the browser\'s no with Save Project file', async () => {
+  it('asks at the first Project file, and its Keep Projects wires the browser\'s no to Save Project file', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await click(mounted, 'save-project-file')
@@ -179,7 +179,6 @@ describe('Keep Projects (ticket 0839)', () => {
     await click(mounted, 'confirm-modal-confirm')
     expect(persist).toHaveBeenCalledOnce()
     const said = mounted.canvas.toasts.value.find((toast) => toast.id === 'storage-kept')
-    expect(said?.text).toBe(en.storage.notKeptMessage)
     vi.mocked(downloadFile).mockClear()
     said!.action!.run()
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))

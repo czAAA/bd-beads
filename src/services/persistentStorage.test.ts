@@ -10,6 +10,8 @@ describe('browserPersistentStorage', () => {
     expect(await browserPersistentStorage.persisted()).toBe(false)
     expect(await browserPersistentStorage.persist()).toBe(true)
     expect(persist).toHaveBeenCalledOnce()
+    persist.mockResolvedValueOnce(false)
+    expect(await browserPersistentStorage.persist()).toBe(false)
   })
 
   it('answers unknown without the API, a refusal when it fails, and throws nothing', async () => {

@@ -412,18 +412,22 @@ describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {
     expect(flow.canSaveAs.value).toBe(true)
   })
 
-  it('says a file reached the device after a Save, whether written or handed over, and not when none did (ticket 0839)', async () => {
+  it('says a file reached the device after a Save, whether written or handed over (ticket 0839)', async () => {
     const written = setupSave()
     await written.flow.onSave()
     expect(written.reached).toHaveBeenCalledOnce()
     const handed = setupSave({ writer: { available: false } })
     await handed.flow.onSaveFileOf(project.id)
     expect(handed.reached).toHaveBeenCalledOnce()
+  })
+
+  it('says nothing reached the device when the pick is cancelled or the share refused (ticket 0839)', async () => {
     const cancelled = setupSave({ writer: { pick: vi.fn(async () => ({ kind: 'cancelled' as const })) } })
     await cancelled.flow.onSave()
+    expect(cancelled.reached).not.toHaveBeenCalled()
     const refused = setupSave({ writer: { available: false }, handOver: 'refused' })
     await refused.flow.onSave()
-    expect([cancelled.reached, refused.reached].map((each) => each.mock.calls.length)).toEqual([0, 0])
+    expect(refused.reached).not.toHaveBeenCalled()
   })
 
   it('says a file reached the device after a PNG or PDF export too (ticket 0839)', async () => {
