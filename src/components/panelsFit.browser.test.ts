@@ -55,7 +55,7 @@ const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
   ['ShortcutsHelp', ShortcutsHelp, {}],
-  ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true }), {}],
+  ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true, kept: false }), {}],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, canSaveAs: true, linkedFileName: 'Scarf for winter.openbeads' }],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
   ['ProjectPanel (technique locked)', ProjectPanel, { project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 1 } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],

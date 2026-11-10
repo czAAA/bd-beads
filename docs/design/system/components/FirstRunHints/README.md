@@ -14,10 +14,11 @@ What an empty Project says: only where Projects are kept and how not to lose the
 Centred on the drawing area, under the CanvasHint line. The risk is plain but calm: a fact and what to do, no alarm words, no warning colour or icon.
 
 - The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: "Your Projects are saved only in this browser, on this device."
-- 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide: "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:".
+- 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide, in two lines on purpose: "If the browser's data is cleared, they go with it." and under it "Keep a file of each one you don't want to lose:" (ticket 0839: the string breaks after its first sentence, so no word sits alone on a line; a screen too narrow for a line balances it, `text-wrap: balance`).
 - 10px under it the way to a Project file, the Project panel's own labels in the CanvasHint's chips (DM Mono on `.hint-chip`) joined by "›": `Project › Export › Save Project file`.
 - No buttons: opening a file, Convert image and Keyboard shortcuts stay in Menu.
 - It sits on the canvas overlay layer (`z-canvas-overlay`), under the Tool pill, the strip and every popover, and does not move with the canvas.
+- Nothing covers it when a Project is created (ticket 0839): the question "Ask the browser to keep your Projects?" waits for the first Project file or export (the Keep note, `docs/glossary/`), so the welcome alone carries the advice to keep a file.
 
 ## Phone (30rem and under)
 

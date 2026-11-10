@@ -70,9 +70,6 @@ function quietly(work: () => void): void {
 // library, so it touches only what this tab changed and also persists what a failed one left (tickets 145, 0834).
 export function useProjectLibrary(
   store: LibraryStore = browserLibraryStore,
-  /** Called after each write that got through with a Project in the library, a removal aside (ticket 399: the first
-   * one asks the browser to keep it). */
-  onSaved?: () => void,
   /** `held`: the Project that didn't open last time (safe start, ticket 0716), kept sealed, and then none opens.
    * `locks`: the tabs' locks on the open Project (ticket 0834), for the editor; the Homepage's list opens none. */
   { held, locks }: { held?: string; locks?: ProjectLocks } = {},
@@ -139,14 +136,13 @@ export function useProjectLibrary(
   /** Whether the library in memory has changes storage hasn't taken yet — a deferred stroke, or a write that threw. */
   const savePending = ref(false)
 
-  function save(announce = true): void {
+  function save(): void {
     try {
       takeIn()
       revision = store.save(projects.value, sealed.value)
       known = byId(inMemory())
       savePending.value = false
       saveFailed.value = false
-      if (announce && projects.value.length > 0) onSaved?.()
     } catch {
       // Out of quota, or storage refused outright (a private window can). The edit itself stands in memory; leaving
       // it pending means the next save retries it, and saveFailed tells the user it isn't safe yet.
@@ -161,10 +157,10 @@ export function useProjectLibrary(
     projects.value = [saved, ...projects.value.filter((existing) => existing.id !== project.id)]
   }
 
-  function commit(options?: ReplaceOptions, announce = true): void {
+  function commit(options?: ReplaceOptions): void {
     savePending.value = true
     if (!options?.deferSave) {
-      save(announce)
+      save()
     }
   }
 
@@ -258,17 +254,15 @@ export function useProjectLibrary(
       if (activeProjectId.value === id) {
         activeProjectId.value = mostRecentlyUpdated(projects.value)?.id
       }
-      // Removing isn't the Project's first save, so it never opens the storage note (ticket 399).
-      commit(undefined, false)
+      commit()
     },
 
-    /** Removes every Project; none is open afterwards. Like any removal it isn't a first save, so it never opens the
-     * storage note. */
+    /** Removes every Project; none is open afterwards. */
     removeAllProjects() {
       projects.value = []
       sealed.value = []
       activeProjectId.value = undefined
-      commit(undefined, false)
+      commit()
     },
 
     /** Writes whatever a deferred change (or a failed save) left pending; a no-op when storage is already up to

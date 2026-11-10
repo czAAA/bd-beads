@@ -146,6 +146,9 @@ export const zh: Translations = {
       deleteAllConfirm: '删除所有项目',
       sendFeedback: '发送反馈',
       reportTranslation: '报告翻译问题',
+      keepProjects: '在此设备上保留项目',
+      keepProjectsOn: '开',
+      keepProjectsOff: '关',
     },
     project: {
       rename: '重命名“{name}”',
@@ -302,7 +305,7 @@ export const zh: Translations = {
     },
     firstRun: {
       storageLead: '你的项目只保存在这台设备的浏览器里。',
-      storage: '浏览器数据一旦被清除，项目也会随之消失。请把不想丢失的项目存成文件：',
+      storage: '浏览器数据一旦被清除，项目也会随之消失。\n请把不想丢失的项目存成文件：',
     },
   },
   shell: {
@@ -313,15 +316,16 @@ export const zh: Translations = {
   },
   storage: {
     saveFailedMessage: '无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或将项目导出为文件以保留。',
-    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
-      title: '在此设备上保留项目？',
-      message:
-        '浏览器可能会询问是否允许此应用保存数据。请勾选“记住此决定”并选择允许，这样即使设备空间不足，项目也会保留。如果拒绝，空间不足时浏览器可能会清除项目，所以请务必用“保存”保存重要项目，它会生成项目文件，并妥善保管该文件。',
+      title: '请浏览器保留你的项目？',
+      message: '设备空间不足时，浏览器可能会清除此应用的数据。如果浏览器询问，请选择允许。',
       confirmButton: '保留项目',
-      cancelButton: '跳过',
+      cancelButton: '以后再说',
     },
     openElsewhere: '此项目已在另一个标签页中打开。在那里打开期间，这里的更改不会保存。',
+    keptToast: '此浏览器会保留你的项目。',
+    notKeptMessage: '浏览器未同意保留项目。请为每个你在意的项目保存项目文件。',
   },
   header: {
     menuButton: '菜单',

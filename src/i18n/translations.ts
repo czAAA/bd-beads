@@ -239,6 +239,10 @@ export interface Translations {
       /** The Help row and the Language row's link that open the Feedback sheet (ticket 0700). */
       sendFeedback: string
       reportTranslation: string
+      /** The row that shows whether the browser keeps the Projects and asks it again (ticket 0839), and its value. */
+      keepProjects: string
+      keepProjectsOn: string
+      keepProjectsOff: string
     }
     project: {
       rename: string
@@ -422,10 +426,13 @@ export interface Translations {
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
   storage: {
     saveFailedMessage: string
-    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: { title: string; message: string; confirmButton: string; cancelButton: string }
     /** The notice row's line while the open Project is open in another tab first (ticket 0834). */
     openElsewhere: string
+    /** The browser's answer to Keep Projects, said back (ticket 0839): the toast on yes, the Message on no. */
+    keptToast: string
+    notKeptMessage: string
   }
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {

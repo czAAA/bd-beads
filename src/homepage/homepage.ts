@@ -61,7 +61,7 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
         projectCount: storedProjectCount(),
         feedback: browserFeedback,
         // Decoded only when the Menu shows Saved Projects; a gated Project, or one that didn't open, stays stored.
-        openLibrary: () => useProjectLibrary(browserLibraryStore, undefined, { held: browserOpeningNote.read()?.id }),
+        openLibrary: () => useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }),
         onMakeFirstProject: () => goToEditor(),
         onOpenEditor: () => goToEditor(),
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(base)),

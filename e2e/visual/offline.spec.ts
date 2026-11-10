@@ -97,9 +97,11 @@ test('is installable: a manifest with icons, standalone, and no installability e
   expect(manifest.display).toBe('standalone')
 })
 
-test('asks the browser to keep the library at the first save, after the note, and not on load', async ({ page }) => {
+test('asks the browser to keep the library at the first Project file, not on load or on creating, and says its answer', async ({ page }) => {
   await page.addInitScript(() => {
     ;(window as unknown as { persistAsked: number }).persistAsked = 0
+    // The download route, so the Project file reaches the device with no file picker (ADR 0090).
+    delete (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker
     navigator.storage.persisted = () => Promise.resolve(false)
     navigator.storage.persist = () => {
       ;(window as unknown as { persistAsked: number }).persistAsked += 1
@@ -115,12 +117,18 @@ test('asks the browser to keep the library at the first save, after the note, an
   if (!(await page.getByTestId('name-input').isVisible())) await page.getByTestId('menu-new-project').click()
   await page.getByTestId('name-input').fill('First save')
   await page.locator('[data-testid=create-project]').click()
+  await expect(page.getByTestId('project-surface')).toBeVisible()
+  await expect(page.getByTestId('keep-note-modal')).toHaveCount(0)
+
+  await openStripPanel(page, 'strip-project')
+  await Promise.all([page.waitForEvent('download'), page.getByTestId('save-project-file').click()])
   await expect(page.getByTestId('keep-note-modal')).toBeVisible()
   expect(await asked()).toBe(0)
 
   await page.getByTestId('confirm-modal-confirm').click()
   await expect.poll(asked).toBe(1)
   await expect(page.getByTestId('keep-note-modal')).toHaveCount(0)
+  await expect(page.getByText('This browser will keep your Projects.')).toBeVisible()
 })
 
 test.describe('a new version', () => {

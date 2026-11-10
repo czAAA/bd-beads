@@ -235,3 +235,22 @@ describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
     expect(wrapper.get('[data-testid="menu-new-project"]').find('.panel-item__mark--sub').exists()).toBe(false)
   })
 })
+
+describe('MenuPanel Keep Projects on this device (ticket 0839)', () => {
+  it('shows whether the browser keeps the Projects, and a press asks it again', async () => {
+    const off = mountIn({ kept: false })
+    const row = off.get('[data-testid="menu-keep-projects"]')
+    expect(row.text()).toBe(`${en.panels.menu.keepProjects}${en.panels.menu.keepProjectsOff}`)
+    expect(row.get('svg').attributes('data-icon')).toBe('device')
+    await row.trigger('click')
+    expect(off.getComponent(MenuPanel).emitted('keep-projects')).toHaveLength(1)
+
+    expect(mountIn({ kept: true }).get('[data-testid="menu-keep-projects"]').text()).toContain(en.panels.menu.keepProjectsOn)
+  })
+
+  it('is absent where the browser can\'t say, on the Homepage and in the demo', () => {
+    expect(mountIn().find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
+    expect(mountIn({ kept: false, page: 'homepage', projectCount: 3 }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
+    expect(mountIn({ kept: false, demo: true }).find('[data-testid="menu-keep-projects"]').exists()).toBe(false)
+  })
+})
