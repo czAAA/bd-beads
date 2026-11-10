@@ -16,6 +16,8 @@ export interface MarginLook {
   /** The ruler numbers on it, regular and every 5th, readable on `fill`. */
   ruler: string
   rulerStrong: string
+  /** The least scale the sheet is drawn at, where it is not `MARGIN_PX.scale.min`: the Homepage demo's (ticket 0851). */
+  leastScale?: number
 }
 
 /** How far Auto steps the Canvas color: toward white in the dark look, toward black in the light one, hue kept. */
