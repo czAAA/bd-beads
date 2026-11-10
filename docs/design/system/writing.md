@@ -322,8 +322,8 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 | For loom, peyote and brick stitch. (the three Techniques, lowercase in a sentence as in the Techniques row) | Для ткачества, мозаичного и кирпичного плетения. |
 | See how it works (turns to What's inside) | Как это работает |
 | {codes} {brands} colors · {n} Starters ("3 817 TOHO and Miyuki colors · 15 Starters"; counted words) | {codes} цвет / цвета / цветов {brands} · {n} стартер / стартера / стартеров |
-| {technique} · {size} (the piece's caption: "Peyote · 36×7") | {technique} · {size} |
-| Mountains under a sun, in peyote (the piece, an image's name for screen readers) | Горы под солнцем, мозаичное плетение |
+| {technique} · {size} (the piece's caption: "Peyote · 48×23") | {technique} · {size} |
+| Peacock feather eyes, in peyote (the piece, an image's name for screen readers) | Павлиньи перья, мозаичное плетение |
 | Draw · Start from something · Real bead colors · Weave and keep (What's inside's chapters) | Рисуйте · Начните с готового · Настоящие цвета бисера · Плетите и сохраняйте |
 | Pause · Play (the tour) | Пауза · Продолжить |
 | Try it yourself | Попробуйте сами |
