@@ -1,9 +1,9 @@
 import { MARGIN_PX } from './marginSizes'
 import type { SurfaceView } from './surfaceView'
 
-// The margin sheet's scale and forms (MarginSheet card, Zoom forms; tickets 0658, 0698): the sheet is drawn at the
-// drafting sheet's proportion to its band, held between a smallest and a largest scale, and only under the smallest,
-// where its controls shrink no further, does it change form by how much of a form its band still holds.
+// The margin sheet's scale and forms (MarginSheet card, Zoom forms; tickets 0658, 0698, 0851): drawn at the drafting
+// sheet's proportion to its band, held between 1 (where its words and buttons are legible) and 1.5; only under 1 does
+// it change form, by how much of a form its band still holds.
 
 /** The full form, as built at 100%; compact, one row of smaller tools; folded, the Move bar, Row done and a menu;
  * bare, where not even the folded row fits between its edge and the Frame's line: nothing of the sheet is drawn but the
@@ -11,16 +11,17 @@ import type { SurfaceView } from './surfaceView'
 export type MarginForm = 'full' | 'compact' | 'folded' | 'bare'
 
 /** What every px of the sheet (its controls, insets, corners and ruler numbers) is drawn at, for a band of `bandPx` on
- * screen: 1 where the band is the drafting sheet's 72px (ticket 0698). */
-export function marginScale(bandPx: number): number {
-  const { band, min, max } = MARGIN_PX.scale
-  return Math.min(max, Math.max(min, bandPx / band))
+ * screen: 1 where the band is the drafting sheet's 72px (ticket 0698), and never less (ticket 0851). */
+export function marginScale(bandPx: number, least: number = MARGIN_PX.scale.min): number {
+  const { band, max } = MARGIN_PX.scale
+  return Math.min(max, Math.max(least, bandPx / band))
 }
 
-/** The form a sheet whose narrowest band is `bandPx` on screen takes: the band's height at scale 1. */
-export function marginForm(bandPx: number): MarginForm {
+/** The form a sheet whose narrowest band is `bandPx` on screen takes: the band's height at scale 1. `least` is the
+ * Homepage demo's smaller scale where it has one (`MarginLook.leastScale`). */
+export function marginForm(bandPx: number, least: number = MARGIN_PX.scale.min): MarginForm {
   const { band } = MARGIN_PX
-  const designPx = bandPx / marginScale(bandPx)
+  const designPx = bandPx / marginScale(bandPx, least)
   if (designPx >= band.full) return 'full'
   if (designPx >= band.compact) return 'compact'
   return designPx >= band.folded ? 'folded' : 'bare'

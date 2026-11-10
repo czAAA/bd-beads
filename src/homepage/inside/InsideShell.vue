@@ -5,6 +5,8 @@ import AppDialogs from '../../components/shell/AppDialogs.vue'
 import { provideAppShell } from '../../composables/shell/useAppShell'
 import type { Project } from '../../domain/project'
 import { memoryServices } from '../../services/memoryServices'
+import { MARGIN_PX } from '../../rendering/marginSizes'
+import { provideMarginLeastScale } from '../../theme/useCanvasBackground'
 
 // The editor in What's inside (Homepage card, ticket 0797): the editor's own wiring (ADR 0020) on services of its own in
 // memory, and the shell's own parts drawing on it, so every press in it is real editing of the demo Project. It is
@@ -25,6 +27,8 @@ const emit = defineEmits<{
 const wired = provideAppShell(memoryServices(props.projects), {
   demo: { startAfresh: () => emit('startAfresh'), expand: () => props.expand, toggleExpand: () => emit('toggleExpand') },
 })
+// Its Frame's sheet shrinks rather than go bare: the demo's view is set for its box and the tour presses the band.
+provideMarginLeastScale(MARGIN_PX.scale.demo)
 const { announcement, endStroke } = wired.shell
 
 /** The wiring, for the tour to work the demo through the same flows a press reaches. */
