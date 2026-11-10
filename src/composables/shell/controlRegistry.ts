@@ -127,10 +127,10 @@ export type ControlAction = Disableable & {
   modals?: ModalRule
   /** Only with a Project open (the key is left to the browser otherwise). */
   needsProject?: boolean
-  /** The key chip lists every key, not just the first (Row done: Enter, Space). */
-  chipAllKeys?: boolean
-  /** Enter and Space give way to a focused Progress bar button, which they press natively. */
+  /** Enter gives way to a focused Progress bar button, which it presses natively. */
   givesWayToFocusedButton?: boolean
+  /** A held key acts once: its repeats do nothing, on a focused Progress bar button too (Row done, ticket 0835). */
+  actsOnce?: boolean
 }
 
 /** A tile's key chord: its place in the pill (ADR 0084). */
@@ -151,7 +151,7 @@ const frameLocked = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && rowProgressStarted(project)
 }
-/** Whether the open Project has Row progress on (it has a Frame), so Enter and Space move the row (ticket 434). */
+/** Whether the open Project has Row progress on (it has a Frame), so Enter moves the row (ticket 434). */
 const rowProgressIsOn = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && rowProgressOn(project)
@@ -510,12 +510,10 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'row-done',
     name: (t) => t.rowProgress.nextButton,
     group: 'rowProgress',
-    chords: [
-      { key: 'Enter', label: 'Enter' },
-      { key: ' ', label: 'Space' },
-    ],
-    chipAllKeys: true,
+    // Not Space (ticket 0835): Space + drag pans, and a pan must never mark rows done.
+    chords: [{ key: 'Enter', label: 'Enter' }],
     givesWayToFocusedButton: true,
+    actsOnce: true,
     run: (deps) => {
       if (rowProgressIsOn(deps)) deps.onMoveRow(1)
     },
@@ -524,12 +522,9 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'row-not-done',
     name: (t) => t.rowProgress.previousButton,
     group: 'rowProgress',
-    chords: [
-      { key: 'Enter', shift: true, label: 'Enter' },
-      { key: ' ', shift: true, label: 'Space' },
-    ],
-    chipAllKeys: true,
+    chords: [{ key: 'Enter', shift: true, label: 'Enter' }],
     givesWayToFocusedButton: true,
+    actsOnce: true,
     run: (deps) => {
       if (rowProgressIsOn(deps)) deps.onMoveRow(-1)
     },

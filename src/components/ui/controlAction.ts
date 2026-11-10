@@ -11,8 +11,6 @@ export interface ControlActionLike {
   chords: readonly Chord[]
   /** A key the action shows without owning it: Done, Cancel and Clear selection show Back out's `Esc`. */
   shownKey?: string
-  /** The key chip lists every key, not just the first. */
-  chipAllKeys?: boolean
   enabled?: (deps: never) => boolean
   disabledBody?: (t: Translations, deps: never) => string
 }
@@ -26,9 +24,9 @@ function chordText(chord: Chord): string {
   return !modifiers ? key : key === '+' || key === '−' ? modifiers + key : `${modifiers}+${key}`
 }
 
-/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one; every chord, joined by ", ", when the action asks for it. */
+/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one. */
 export function actionKey(action: ControlActionLike | undefined): string | undefined {
   if (!action) return undefined
-  if (!action.chords.length) return action.shownKey
-  return (action.chipAllKeys ? action.chords : action.chords.slice(0, 1)).map(chordText).join(', ')
+  const [first] = action.chords
+  return first ? chordText(first) : action.shownKey
 }

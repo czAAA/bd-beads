@@ -165,8 +165,11 @@ describe('ProgressBar', () => {
   it('gives every control its key in a Tooltip and no native title (ticket 339)', () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
     const text = wrapper.text()
-    expect(text).toContain('Enter, Space')
-    expect(text).toContain('Shift+Enter, Shift+Space')
+    const keys = wrapper.findAll('.app-tooltip__key').map((chip) => chip.text())
+    // Row done is Enter alone and Row not done Shift+Enter: Space only pans (ticket 0835).
+    expect(keys).toContain('Enter')
+    expect(keys).toContain('Shift+Enter')
+    expect(keys.some((key) => key.includes('Space'))).toBe(false)
     expect(text).toContain('D')
     expect(wrapper.find('[title]').exists()).toBe(false)
   })

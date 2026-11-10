@@ -128,6 +128,20 @@ describe('App keyboard shortcuts', () => {
     expect(rowProgressOf(loadProjects()[0]).direction).toBe('columns')
   })
 
+  it('Space held over a Frame with Row progress pans and leaves the counter where it was (ticket 0835)', async () => {
+    const wrapper = await mountApp(15, 30)
+    const counter = () => wrapper.find('[data-testid="progress-bar-compact-position"]').text()
+    const before = counter()
+
+    await pressKey({ key: ' ', code: 'Space', cancelable: true })
+    for (let repeat = 0; repeat < 9; repeat++) await pressKey({ key: ' ', code: 'Space', cancelable: true, repeat: true })
+    expect(wrapper.find('[data-testid="app-canvas"]').classes()).toContain('app-shell__canvas--pan')
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', code: 'Space' }))
+    await flushPromises()
+
+    expect(counter()).toBe(before)
+  })
+
   it('Space held stops painting and shows the grab cursor', async () => {
     const wrapper = await mountApp(15, 30)
     await pickColor(wrapper, 'red')
