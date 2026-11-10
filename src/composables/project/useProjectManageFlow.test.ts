@@ -13,9 +13,7 @@ function setup(projects: Project[]) {
     projects: () => library.projects,
     replaceProject: vi.fn((project: Project) => void (library.projects = library.projects.map((p) => (p.id === project.id ? project : p)))),
     addProject: vi.fn((project: Project) => void (library.projects = [project, ...library.projects])),
-    removeProject: vi.fn((id: string) => void (library.projects = library.projects.filter((p) => p.id !== id))),
     removeAllProjects: vi.fn(() => void (library.projects = [])),
-    closeProject: vi.fn(() => void (library.open = undefined)),
   }
   return { flow: useProjectManageFlow(deps), deps, library }
 }
@@ -48,17 +46,6 @@ describe('useProjectManageFlow', () => {
     const copy = deps.addProject.mock.calls[0]![0]
     expect(canvasOf(copy).name).toBe('Copy')
     expect(copy.id).not.toBe(moth.id)
-  })
-
-  it('deletes only the open Project and leaves none open', () => {
-    const { flow, deps, library } = setup([make('Moth'), make('Owl')])
-    flow.onRequestDelete()
-    expect(flow.deleting.value).toBe(true)
-    flow.onConfirmDelete()
-    expect(deps.removeProject).toHaveBeenCalledOnce()
-    expect(library.projects.map((p) => canvasOf(p).name)).toEqual(['Owl'])
-    expect(library.open).toBeUndefined()
-    expect(flow.deleting.value).toBe(false)
   })
 
   it('deletes every Project only after being asked, and leaves none open', () => {

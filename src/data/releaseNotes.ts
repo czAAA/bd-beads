@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'Deleting a Project asks one question wherever you start, offers to save its Project file first, and then opens your most recent other Project',
+      ru: 'Удаление проекта задаёт один и тот же вопрос, откуда бы вы ни начали, предлагает сначала сохранить файл проекта, а потом открывает последний из остальных проектов',
+      uk: 'Видалення проєкту ставить те саме запитання, звідки б ви не почали, пропонує спершу зберегти файл проєкту, а потім відкриває останній з інших проєктів',
+      be: 'Выдаленне праекта задае адно і тое ж пытанне, адкуль бы вы ні пачалі, прапануе спачатку захаваць файл праекта, а потым адкрывае апошні з астатніх праектаў',
+      zh: '无论从哪里删除项目，都会问同一个问题，先提供保存项目文件，删除后打开你最近的另一个项目',
+      es: 'Eliminar un proyecto hace la misma pregunta empieces donde empieces, ofrece guardar antes su archivo de proyecto y luego abre tu otro proyecto más reciente',
+      pl: 'Usuwanie projektu zadaje to samo pytanie, skądkolwiek zaczniesz, proponuje najpierw zapisać plik projektu, a potem otwiera twój ostatni inny projekt',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'Two tabs open at once no longer erase each other’s Projects, and a Project open in another tab says so',
       ru: 'Две открытые вкладки больше не стирают проекты друг друга, а проект, открытый в другой вкладке, сообщает об этом',
       uk: 'Дві відкриті вкладки більше не стирають проєкти одна одної, а проєкт, відкритий в іншій вкладці, про це каже',

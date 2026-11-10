@@ -51,6 +51,7 @@ import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
 import { useStorageAskFlow } from '../project/useStorageAskFlow'
 import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
+import { useDeleteProjectFlow } from '../project/useDeleteProjectFlow'
 import { useSafeStart } from '../project/useSafeStart'
 import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
@@ -728,21 +729,23 @@ function wireAppShell(services: Services, options: ShellOptions) {
     openProject(id)
   }
 
-  function onNewProject() {
-    activeProjectId.value = undefined
-  }
-
-  /** Saved Projects asks before removing a thumbnail's Project or switching to it (ticket 232). */
+  /** Saved Projects asks before switching to a thumbnail's Project (ticket 232). */
   const savedProjectConfirms = useSavedProjectConfirms({
     currentProject,
     findProject: entryOf,
     openProject: onSelectProject,
-    removeProject,
     saveNow,
     dialogs,
   })
 
-  /** Rename, Duplicate and Delete for the open Project, from the Project panel (spec 0440, ticket 443). */
+  /** Delete “{name}”?, from the library's ×, the Project panel and the missed Project notice alike (ticket 0842). */
+  const deleteProject = useDeleteProjectFlow({ findProject: entryOf, removeProject, saveProjectFile: exportFlow.onSaveFileOf, dialogs })
+  const onRequestDeleteOpen = () => {
+    const project = currentProject()
+    if (project) deleteProject.onRequestDelete(project.id)
+  }
+
+  /** Rename and Duplicate for the open Project, from the Project panel, and Delete all (spec 0440, ticket 443). */
   const manageProject = useProjectManageFlow({
     currentProject,
     projects: () => projects.value,
@@ -754,9 +757,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       if (source) sinceFile.duplicated(source.id, copy.id)
       addProject(copy)
     },
-    removeProject,
     removeAllProjects,
-    closeProject: onNewProject,
     dialogs,
   })
 
@@ -870,7 +871,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveProjectFile: exportFlow.onSave,
       /** The notice of a Project that didn't open last time (ticket 0716), with its Remove and Export. */
       missedProject,
-      onRemoveMissed: () => missedProject.value && savedProjectConfirms.onRequestRemove(missedProject.value.id),
+      onRemoveMissed: () => missedProject.value && deleteProject.onRequestDelete(missedProject.value.id),
       onExportMissed: () => missedProject.value && exportFlow.onExportSealed(missedProject.value),
       onDismissMissed: () => {
         safeStart.missed.value = undefined
@@ -1064,7 +1065,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       projects,
       sealed,
       activeProjectId,
-      onRequestRemove: savedProjectConfirms.onRequestRemove,
+      onRequestRemove: deleteProject.onRequestDelete,
       onImportProjects: afterLeaving(onImportProjects),
       onExportLibraryFile: exportFlow.onExportLibraryFile,
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
@@ -1080,7 +1081,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       saveNow,
       onRenameProject: manageProject.onRenameProject,
       onRequestDuplicate: manageProject.onRequestDuplicate,
-      onRequestDelete: manageProject.onRequestDelete,
+      onRequestDelete: onRequestDeleteOpen,
       onRequestDeleteAll: deleteAll.onRequestDeleteAll,
       // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
       onSetTechnique: frameFlow.setLayerTechnique,
@@ -1145,9 +1146,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSwitchToImported: importSwitch.onSwitchToImported,
       onKeepCurrentAfterImport: importSwitch.onKeepCurrentAfterImport,
       onSaveBeforeImportSwitch: importSwitch.onSaveBeforeImportSwitch,
-      pendingRemove: savedProjectConfirms.pendingRemove,
-      onConfirmRemove: savedProjectConfirms.onConfirmRemove,
-      onCancelRemove: savedProjectConfirms.onCancelRemove,
       pendingSwitch: savedProjectConfirms.pendingSwitch,
       switchSaveRefused: savedProjectConfirms.switchSaveRefused,
       onConfirmSwitch: savedProjectConfirms.onConfirmSwitch,
@@ -1167,8 +1165,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       duplicating: manageProject.duplicating,
       onConfirmDuplicate: manageProject.onConfirmDuplicate,
       onCancelDuplicate: manageProject.onCancelDuplicate,
-      onConfirmDelete: manageProject.onConfirmDelete,
-      onCancelDelete: manageProject.onCancelDelete,
+      pendingDelete: deleteProject.pendingDelete,
+      onConfirmDelete: deleteProject.onConfirmDelete,
+      onCancelDelete: deleteProject.onCancelDelete,
+      onSaveFileBeforeDelete: deleteProject.onSaveFileBeforeDelete,
       onConfirmDeleteAllProjects: manageProject.onConfirmDeleteAllProjects,
       onCancelDeleteAllProjects: manageProject.onCancelDeleteAllProjects,
       naming: namePiece.naming,

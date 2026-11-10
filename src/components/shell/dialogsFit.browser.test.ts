@@ -15,15 +15,14 @@ type DialogId = Parameters<Dialogs['flag']>[0]
 // edges (ticket 552).
 const FLAGS: DialogId[] = ['delete-all', 'reset-progress', 'remove-frame', 'replace-frame', 'remove-all-colors', 'keep-note', 'shortcuts']
 
-// The dialogs that name a Project: two are saved, so the open one has another to switch to and to remove.
+// The dialogs that name a Project: two are saved, so the open one has another to switch to and to delete.
 const moth = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 const fox = { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Fox', size: { width: 12, height: 12, unit: 'beads' } }), id: 'fox' }
 const WITH_PROJECT: [DialogId, unknown][] = [
   ['duplicate-project', 'Moth copy'],
-  ['delete-project', true],
+  ['delete-project', { id: 'fox', name: 'Fox' }],
   ['delete-all-projects', true],
   ['name-piece', { at: { row: 0, column: 0 }, name: 'Moth' }],
-  ['remove-project', fox],
   ['switch-project', fox],
   // The size gate's warning (ticket 0716), for the maintainer's 31 million beads.
   ['open-large-project', { id: 'fox', name: 'Fox', gatedBeads: 31_771_024 }],

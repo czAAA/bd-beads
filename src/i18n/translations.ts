@@ -968,13 +968,6 @@ export interface Translations {
     keepButton: string
     saveButton: string
   }
-  removeProject: {
-    title: string
-    /** `{name}` is the Project's name. */
-    message: string
-    confirmButton: string
-    cancelButton: string
-  }
   switchProject: {
     title: string
     /** `{current}` is the open Project and `{picked}` the one being opened. */
