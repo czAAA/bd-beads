@@ -55,6 +55,7 @@
   --slider-mark-width: 2px; /* ValueSlider card: a mark across the track. */
   --slider-mark-height: 14px; /* ValueSlider card: a mark's height, taller than the track so it shows over the filled part. */
   --slider-mark-snap: 6px; /* ValueSlider card: a drag released this near a mark lands on it. */
+  --slider-label-gap: 12px; /* ValueSlider card (ticket 0862): the least room between two labels under the track. */
   --picture-drop-width: 400px; /* ConvertImage card: the card a picture dragged over the app shows. */
   --picture-drop-height: 220px; /* ConvertImage card: its height. */
 }

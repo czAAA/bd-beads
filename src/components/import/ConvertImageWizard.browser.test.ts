@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { mountAt } from '../../testUtils/browserFit'
+import { fitProblems, mountAt } from '../../testUtils/browserFit'
 import ConvertPageHost from '../../testUtils/ConvertPageHost.vue'
 import { flatColorsPicture, pictureSet } from '../../testUtils/convertPicture'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
@@ -216,5 +216,97 @@ describe('the preview’s overlays on the canvas', () => {
     expect(g).toBeGreaterThan(200)
     expect(r! + b!).toBeLessThan(80)
     compare.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+  })
+})
+
+// An iPad's screen, both ways up (ticket 0862): the floating bar fits its preview, slider labels keep apart, Next lands
+// on its step's header, a picker that opens is brought into view with the counter left as it was, and the text fits.
+describe('Convert image at iPad size', () => {
+  const find = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
+  const rect = (root: HTMLElement, testid: string) => find(root, testid).getBoundingClientRect()
+  /** How often, and how many times in a row, the pane's scroll must read the same to count as at rest. */
+  const REST_CHECK_MS = 50
+  const REST_READS = 4
+  /** Waits for the pane's scroll to come to rest (Next and a revealed part scroll it smoothly, and may start a frame late). */
+  async function scrollRests(pane: HTMLElement) {
+    let last = -1
+    let still = 0
+    for (let reads = 0; reads < 100 && still < REST_READS; reads += 1) {
+      still = pane.scrollTop === last ? still + 1 : 0
+      last = pane.scrollTop
+      await new Promise((resolve) => setTimeout(resolve, REST_CHECK_MS))
+    }
+    await settleForMeasuring()
+  }
+
+  for (const [width, height] of [
+    [1366, 1024],
+    [1024, 1366],
+  ] as const) {
+    it(`fits and shows what opens at ${width} × ${height}`, async () => {
+      const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width })
+      await page.viewport(width, height)
+      await pictureSet(mounted.root)
+      await settleForMeasuring()
+      const root = mounted.root
+
+      // The floating bar's buttons, Zoom in and Fit among them, all stand whole inside it; Turn 90° and Flip are icons.
+      const bar = rect(root, 'convert-preview-tools')
+      const buttons = [...find(root, 'convert-preview-tools').querySelectorAll('button')].map((button) => button.getBoundingClientRect())
+      for (const button of buttons) expect([button.left >= bar.left, button.right <= bar.right]).toEqual([true, true])
+      expect([find(root, 'convert-turn').textContent, find(root, 'convert-flip').textContent]).toEqual(['', ''])
+
+      // The Size step's labels under each slider never touch.
+      find(root, 'convert-step-size').click()
+      await scrollRests(find(root, 'convert-step-pane'))
+      for (const ends of root.querySelectorAll('[data-testid="convert-section-size"] .vs-ends')) {
+        const shown = [...ends.children].filter((label) => getComputedStyle(label).visibility !== 'hidden').map((label) => label.getBoundingClientRect())
+        shown.sort((a, b) => a.left - b.left)
+        for (let index = 1; index < shown.length; index += 1) expect(shown[index]!.left).toBeGreaterThan(shown[index - 1]!.right)
+      }
+
+      // Next lands with the Colors step's header at the pane's top.
+      const pane = find(root, 'convert-step-pane')
+      find(root, 'convert-next').click()
+      await scrollRests(pane)
+      expect(Math.abs(rect(root, 'convert-section-colors').top - pane.getBoundingClientRect().top)).toBeLessThan(1)
+      expect(find(root, 'convert-counter').textContent).toBe('4/5')
+
+      // Color by color, then a row's Change: its picker is brought into view, Change shows pressed, the counter stays.
+      find(root, 'convert-color-by-color').click()
+      await scrollRests(pane)
+      const opened = rect(root, 'convert-color-by-color-content')
+      expect(opened.top).toBeLessThan(pane.getBoundingClientRect().bottom)
+      expect(find(root, 'convert-counter').textContent).toBe('4/5')
+      find(root, 'found-color-remap').click()
+      await scrollRests(pane)
+      const picker = rect(root, 'found-color-picker')
+      const shownPane = pane.getBoundingClientRect()
+      expect([picker.top >= shownPane.top - 1, picker.bottom <= shownPane.bottom + 1]).toEqual([true, true])
+      expect(find(root, 'found-color-remap').classList).toContain('found-color__action--on')
+      expect(find(root, 'convert-counter').textContent).toBe('4/5')
+      expect(await fitProblems('Convert image page (iPad)', 'en', width)).toEqual([])
+    })
+  }
+
+  it('sets the ways in with one height in one row', async () => {
+    const mounted = await mountAt(ConvertPageHost, { ...props, start: { draft: props.start.draft } }, { locale: 'en', width: 1366 })
+    await page.viewport(1366, 1024)
+    await settleForMeasuring()
+    const file = find(mounted.root, 'convert-choose-file').closest('label')!.getBoundingClientRect()
+    const paste = rect(mounted.root, 'convert-paste')
+    expect([paste.top, paste.height]).toEqual([file.top, file.height])
+  })
+
+  it('fits its text in the longest wording at 1366 × 1024', async () => {
+    const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1366 })
+    await page.viewport(1366, 1024)
+    await pictureSet(mounted.root)
+    find(mounted.root, 'convert-step-colors').click()
+    find(mounted.root, 'convert-color-by-color').click()
+    await settleForMeasuring()
+    find(mounted.root, 'found-color-remap').click()
+    await settleForMeasuring()
+    expect(await fitProblems('Convert image page (iPad)', 'longest', 1366)).toEqual([])
   })
 })

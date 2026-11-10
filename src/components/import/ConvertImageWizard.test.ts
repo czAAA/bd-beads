@@ -449,16 +449,17 @@ describe('ConvertImageWizard the floating bar (ticket 0780)', () => {
   const box = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-box"]')
   const context = (wrapper: VueWrapper) => wrapper.find('[data-testid="convert-band-context"]')
 
-  it('holds Turn 90°, Flip, Select, Make empty, Background, Compare and zoom, named from the registry, once a picture is set', async () => {
+  it('holds Turn 90° and Flip as icons, Select, Make empty, Background, Compare and zoom, named from the registry, once a picture is set', async () => {
     const { wrapper } = open()
     expect(wrapper.find('[data-testid="convert-preview-tools"]').exists()).toBe(false)
     await chooseFile(wrapper, picture())
 
-    const names = ['convert-turn', 'convert-flip', 'convert-tool-select', 'convert-tool-make-empty', 'convert-tool-background', 'convert-compare'].map((id) =>
-      wrapper.get(`[data-testid="${id}"]`).text(),
-    )
+    const names = ['convert-tool-select', 'convert-tool-make-empty', 'convert-tool-background', 'convert-compare'].map((id) => wrapper.get(`[data-testid="${id}"]`).text())
     const words = en.convertImage.wizard
-    expect(names).toEqual([words.turn, words.flip, en.tools.selectLabel, words.makeEmpty, words.backgroundTool, words.compare])
+    expect(names).toEqual([en.tools.selectLabel, words.makeEmpty, words.backgroundTool, words.compare])
+    // Turn 90° and Flip are icons, named by their Tooltips (ticket 0862), so the bar fits an iPad's preview.
+    const iconOnly = ['convert-turn', 'convert-flip'].map((id) => wrapper.get(`[data-testid="${id}"]`))
+    expect(iconOnly.map((button) => [button.attributes('aria-label'), button.text()])).toEqual([[words.turn, ''], [words.flip, '']])
     expect(wrapper.get('[data-testid="convert-preview-tools"]').text()).toContain('100%')
   })
 

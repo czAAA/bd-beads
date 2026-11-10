@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useElementSize } from '../../../composables/ui/useElementSize'
 import { clamp } from '../../../domain/clamp'
+import { shownMarkLabels } from '../../../domain/sliderMarkLabels'
 import InfoButton from '../InfoButton.vue'
 
 // A slider that picks one whole number over a range and writes the value above it (ValueSlider card, ticket 0747):
@@ -44,9 +45,11 @@ function set(next: number) {
   if (kept !== props.modelValue) emit('update:modelValue', kept)
 }
 
-/** The design's values where no style is loaded (a test): the thumb's width and the snap distance (ValueSlider card). */
+/** The design's values where no style is loaded (a test): the thumb's width, the snap distance and the least room
+ * between two labels (ValueSlider card). */
 const THUMB_PX = 20
 const SNAP_PX = 6
+const LABEL_GAP_PX = 12
 
 /** A pixel length read from the slider's own custom property, so the thumb and snap distance stay the design's. */
 function pxValue(name: string, fallback: number): number {
@@ -76,29 +79,27 @@ function onPointerUp() {
   if (Math.abs(nearest.value - props.modelValue) * pxPerUnit <= snap) set(nearest.value)
 }
 
-/** About how wide a label is in meta-small, for keeping labels apart; a word a bit wider only moves it out sooner. */
-const LABEL_PX_PER_CHAR = 6.5
+const endsEl = ref<HTMLElement>()
+/** The marks whose labels are left out: measured where they stand, so a label never touches an end's label or another. */
+const leftOut = ref<ReadonlySet<number>>(new Set())
 
-/** The mark labels with room: one that would touch an end's label or a kept label is left out, the mark stays. With
- * no measured width yet, every label shows. */
-const shownLabels = computed(() => {
-  const marks = props.marks ?? []
-  const width = trackWidth.value
-  if (width === 0) return marks.filter((mark) => mark.label)
-  const taken: [number, number][] = [
-    [0, props.minLabel.length * LABEL_PX_PER_CHAR],
-    [width - props.maxLabel.length * LABEL_PX_PER_CHAR, width],
-  ]
-  const thumb = pxValue('--slider-thumb', THUMB_PX)
-  return marks.filter((mark) => {
-    if (!mark.label) return false
-    const centre = thumb / 2 + (width - thumb) * fraction(mark.value)
-    const half = (mark.label.length * LABEL_PX_PER_CHAR) / 2
-    const free = taken.every(([from, to]) => centre + half < from || centre - half > to)
-    if (free) taken.push([centre - half, centre + half])
-    return free
-  })
-})
+/** Reads where the ends' and the marks' labels stand and leaves out each label that would touch one kept before it
+ * (ValueSlider card, ticket 0862). Left-out labels stay laid out, hidden, so they can be measured again. */
+function placeLabels() {
+  const ends = endsEl.value
+  const box = ends?.getBoundingClientRect()
+  if (!ends || !box?.width) return
+  const spanOf = (element: Element) => {
+    const rect = element.getBoundingClientRect()
+    return { from: rect.left - box.left, to: rect.right - box.left }
+  }
+  const labels = [...ends.querySelectorAll<HTMLElement>('.vs-mark-label')]
+  const shown = shownMarkLabels(labels.map(spanOf), [...ends.querySelectorAll('.vs-min, .vs-max')].map(spanOf), pxValue('--slider-label-gap', LABEL_GAP_PX))
+  const next = new Set(labels.filter((_, index) => !shown[index]).map((label) => Number(label.dataset.value)))
+  if ([...next].join() !== [...leftOut.value].join()) leftOut.value = next
+}
+watch([trackWidth, () => props.marks, () => props.minLabel, () => props.maxLabel], placeLabels, { flush: 'post' })
+onMounted(() => void document.fonts?.ready.then(placeLabels))
 
 const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * ${fraction(value)})` })
 </script>
@@ -131,9 +132,11 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
       />
       <span v-for="mark in marks" :key="mark.value" class="vs-mark" :style="markStyle(mark.value)" :data-testid="testid && `${testid}-mark`" :data-value="mark.value" aria-hidden="true" />
     </div>
-    <div class="vs-ends" aria-hidden="true">
+    <div ref="endsEl" class="vs-ends" aria-hidden="true">
       <span class="vs-min">{{ minLabel }}</span>
-      <span v-for="mark in shownLabels" :key="mark.value" class="vs-mark-label" :style="markStyle(mark.value)">{{ mark.label }}</span>
+      <template v-for="mark in marks" :key="mark.value">
+        <span v-if="mark.label" class="vs-mark-label" :class="{ 'vs-mark-label--out': leftOut.has(mark.value) }" :style="markStyle(mark.value)" :data-value="mark.value">{{ mark.label }}</span>
+      </template>
       <span class="vs-max">{{ maxLabel }}</span>
     </div>
     <p v-if="hint" class="vs-hint">{{ hint }}</p>
@@ -166,6 +169,7 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
   .vs-ends { position: relative; display: flex; justify-content: space-between; min-height: var(--space-16); margin-top: calc(-1 * var(--space-8)); font: var(--type-meta-small); color: var(--muted); white-space: nowrap; }
   .vs-max { color: var(--ink); }
   .vs-mark-label { position: absolute; top: 0; transform: translateX(-50%); }
+  .vs-mark-label--out { visibility: hidden; }
   .vs-hint { margin: 0; font: var(--type-small); color: var(--muted); }
   [data-theme="contrast"] .vs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 </style>

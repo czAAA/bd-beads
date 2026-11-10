@@ -640,8 +640,8 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="convert-preview__tools" data-testid="convert-preview-tools">
-        <AppButton variant="text" :action="actions.turn" data-testid="convert-turn" @click="wizard.turn" />
-        <AppButton variant="text" :action="actions.flip" data-testid="convert-flip" @click="wizard.flip" />
+        <IconButton variant="plain" :icon-size="16" :action="actions.turn" data-testid="convert-turn" @click="wizard.turn" />
+        <IconButton variant="plain" :icon-size="16" :action="actions.flip" data-testid="convert-flip" @click="wizard.flip" />
         <span class="convert-preview__divider" aria-hidden="true" />
         <IconButton variant="plain" :icon-size="16" :action="actions.undo" :disabled="!wizard.canUndo.value" :disabled-body="t.tooltips.nothingToUndo" data-testid="convert-undo" @click="wizard.undo" />
         <IconButton variant="plain" :icon-size="16" :action="actions.redo" :disabled="!wizard.canRedo.value" :disabled-body="t.tooltips.nothingToRedo" data-testid="convert-redo" @click="wizard.redo" />

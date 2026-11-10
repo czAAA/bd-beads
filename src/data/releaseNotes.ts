@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'On an iPad the converter fits the screen, and what you open in it comes into view',
+      ru: 'На iPad конвертер помещается на экран, а то, что вы в нём открываете, видно сразу',
+      uk: 'На iPad конвертер вміщується на екран, а те, що ви в ньому відкриваєте, видно одразу',
+      be: 'На iPad канвертар змяшчаецца на экран, а тое, што вы ў ім адкрываеце, відаць адразу',
+      zh: '在 iPad 上转换器完整显示在屏幕内，打开的内容会直接出现在眼前',
+      es: 'En un iPad el conversor cabe en la pantalla, y lo que abres en él aparece a la vista',
+      pl: 'Na iPadzie konwerter mieści się na ekranie, a to, co w nim otwierasz, od razu widać',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'On a touch screen a tap opens the help behind an (i), and holding a button to read its name no longer presses it',
       ru: 'На сенсорном экране справка за (i) открывается касанием, а кнопка, которую держат, чтобы прочитать её название, больше не нажимается',
       uk: 'На сенсорному екрані довідка за (i) відкривається дотиком, а кнопка, яку тримають, щоб прочитати її назву, більше не натискається',

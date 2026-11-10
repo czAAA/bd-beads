@@ -253,6 +253,12 @@ watch(wizard.hasPicture, () => nextTick(onPaneScroll))
   border-left: 1px solid var(--panel-rule);
 }
 
+/* Room under the last step, so each step's header reaches the pane's top and Next lands on it (ticket 0862). */
+.convert-page__step > .convert-section:last-child:not(.convert-section--shut) {
+  box-sizing: border-box;
+  min-height: 100%;
+}
+
 @media (max-width: 68.75rem) {
   .convert-page__step {
     width: var(--convert-sections-width-narrow);
