@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'Holding Space to look around no longer marks rows done: Enter marks a row done, Shift+Enter takes it back',
+      ru: 'Пробел, зажатый чтобы осмотреться, больше не отмечает ряды готовыми: ряд отмечает Enter, а Shift+Enter снимает отметку',
+      uk: 'Пропуск, затиснутий щоб роздивитися, більше не позначає ряди готовими: ряд позначає Enter, а Shift+Enter знімає позначку',
+      be: 'Прабел, заціснуты каб агледзецца, больш не адзначае рады гатовымі: рад адзначае Enter, а Shift+Enter здымае адзнаку',
+      zh: '按住空格四处查看时不再把行标为已完成：Enter 标记一行已完成，Shift+Enter 撤回',
+      es: 'Mantener Espacio para mirar alrededor ya no marca filas como terminadas: Enter marca una fila, Shift+Enter la desmarca',
+      pl: 'Przytrzymana spacja, by się rozejrzeć, nie oznacza już rzędów jako gotowych: Enter oznacza rząd, Shift+Enter cofa oznaczenie',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'On an iPad the converter fits the screen, and what you open in it comes into view',
       ru: 'На iPad конвертер помещается на экран, а то, что вы в нём открываете, видно сразу',
       uk: 'На iPad конвертер вміщується на екран, а те, що ви в ньому відкриваєте, видно одразу',

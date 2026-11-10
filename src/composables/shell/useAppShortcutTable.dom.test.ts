@@ -67,6 +67,9 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
   return { deps, wrapper }
 }
 
+/** A Project with a Frame, so Row progress is on. */
+const framedProject = bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })
+
 function press(init: KeyboardEventInit) {
   window.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
 }
@@ -293,34 +296,70 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('Enter and Space move one row on, with Shift one back, and only while Row progress is on (tickets 94, 178)', () => {
-    const on = mountTable({ activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
+  it('Enter moves one row on and Shift+Enter one back, only while Row progress is on (tickets 94, 178)', () => {
+    const on = mountTable({ activeProject: () => framedProject })
     press({ key: 'Enter' })
-    press({ key: ' ' })
     press({ key: 'Enter', shiftKey: true })
-    press({ key: ' ', shiftKey: true })
-    expect(vi.mocked(on.deps.onMoveRow).mock.calls).toEqual([[1], [1], [-1], [-1]])
+    expect(vi.mocked(on.deps.onMoveRow).mock.calls).toEqual([[1], [-1]])
     on.wrapper.unmount()
     const off = mountTable({ activeProject: () => bareProject({}) })
     press({ key: 'Enter' })
-    press({ key: ' ', shiftKey: true })
+    press({ key: 'Enter', shiftKey: true })
     expect(off.deps.onMoveRow).not.toHaveBeenCalled()
     off.wrapper.unmount()
   })
 
-  it('leaves Enter and Space to a focused Progress bar button, so one press does not also move the row', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
-    for (const container of ['progress-bar']) {
-      const holder = document.createElement('div')
-      holder.dataset.testid = container
-      const button = document.createElement('button')
-      holder.appendChild(button)
-      document.body.appendChild(holder)
-      for (const init of [{ key: 'Enter' }, { key: ' ' }, { key: 'Enter', shiftKey: true }, { key: ' ', shiftKey: true }]) {
-        button.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
-      }
-      holder.remove()
+  it('Space, pressed or held, with or without Shift, never moves the row: it only pans (ticket 0835)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
+    for (const shiftKey of [false, true]) {
+      press({ key: ' ', code: 'Space', shiftKey })
+      press({ key: ' ', code: 'Space', shiftKey, repeat: true })
     }
+    expect(deps.onMoveRow).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('a held Enter or Shift+Enter moves the row once, not once per repeat (ticket 0835)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
+    for (const shiftKey of [false, true]) {
+      press({ key: 'Enter', shiftKey })
+      press({ key: 'Enter', shiftKey, repeat: true })
+      press({ key: 'Enter', shiftKey, repeat: true })
+    }
+    expect(vi.mocked(deps.onMoveRow).mock.calls).toEqual([[1], [-1]])
+    wrapper.unmount()
+  })
+
+  it('leaves Enter to a focused Progress bar button, so one press does not also move the row', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
+    const holder = document.createElement('div')
+    holder.dataset.testid = 'progress-bar'
+    const button = document.createElement('button')
+    holder.appendChild(button)
+    document.body.appendChild(holder)
+    for (const init of [{ key: 'Enter' }, { key: 'Enter', shiftKey: true }]) {
+      button.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+    }
+    holder.remove()
+    expect(deps.onMoveRow).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('a held Enter on a focused Progress bar button presses it once: its repeats are claimed from the browser (ticket 0835)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
+    const holder = document.createElement('div')
+    holder.dataset.testid = 'progress-bar'
+    const button = document.createElement('button')
+    holder.appendChild(button)
+    document.body.appendChild(holder)
+    const keydown = (init: KeyboardEventInit) => {
+      const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+      button.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    expect([keydown({ key: 'Enter' }), keydown({ key: 'Enter', repeat: true })]).toEqual([false, true])
+    expect([keydown({ key: 'Enter', shiftKey: true }), keydown({ key: 'Enter', shiftKey: true, repeat: true })]).toEqual([false, true])
+    holder.remove()
     expect(deps.onMoveRow).not.toHaveBeenCalled()
     wrapper.unmount()
   })
@@ -344,7 +383,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while typing in a form field, except those marked to', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }), hasSelection: () => true, onPickColorKey: vi.fn() })
+    const { deps, wrapper } = mountTable({ activeProject: () => framedProject, hasSelection: () => true, onPickColorKey: vi.fn() })
     const field = document.createElement('input')
     document.body.appendChild(field)
     for (const init of [
@@ -361,7 +400,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while a dialog is open, except Escape', () => {
-    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }), onPickColorKey: vi.fn() })
+    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => framedProject, onPickColorKey: vi.fn() })
     for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
     for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
