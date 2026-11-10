@@ -8,11 +8,11 @@ describe('browserPersistentStorage', () => {
     const persist = vi.fn(() => Promise.resolve(true))
     vi.stubGlobal('navigator', { storage: { persisted: () => Promise.resolve(false), persist } })
     expect(await browserPersistentStorage.persisted()).toBe(false)
-    await browserPersistentStorage.persist()
+    expect(await browserPersistentStorage.persist()).toBe(true)
     expect(persist).toHaveBeenCalledOnce()
   })
 
-  it('answers unknown and throws nothing without the API or when it refuses', async () => {
+  it('answers unknown without the API, a refusal when it fails, and throws nothing', async () => {
     vi.stubGlobal('navigator', {})
     expect(await browserPersistentStorage.persisted()).toBeUndefined()
     await expect(browserPersistentStorage.persist()).resolves.toBeUndefined()
@@ -20,6 +20,6 @@ describe('browserPersistentStorage', () => {
       storage: { persisted: () => Promise.reject(new Error('no')), persist: () => Promise.reject(new Error('no')) },
     })
     expect(await browserPersistentStorage.persisted()).toBeUndefined()
-    await expect(browserPersistentStorage.persist()).resolves.toBeUndefined()
+    await expect(browserPersistentStorage.persist()).resolves.toBe(false)
   })
 })
