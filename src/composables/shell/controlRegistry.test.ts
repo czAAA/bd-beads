@@ -142,6 +142,16 @@ describe('the control registry', () => {
     }
   })
 
+  it('gives Paint, Fill, Eraser, Rulers and the Progress bar\'s icons a line saying what they do, and the Menu its rows (ticket 0844)', () => {
+    for (const id of ['tool-paint', 'tool-fill', 'tool-erase', 'rulers', 'row-direction', 'row-highlight', 'reset-progress']) {
+      for (const t of Object.values(LANGUAGES)) expect(controlAction(id).body?.(t), id).toBeTruthy()
+    }
+    expect(controlAction('rulers').body?.(en)).toBe('Rulers number your beads and the Frame.')
+    expect(controlAction('tool-erase').body?.(en)).toBe('Drag over beads to remove them.')
+    expect(controlAction('empty-selection').name(en)).toBe('Remove selected beads')
+    expect(controlAction('strip-menu').body?.(en)).toBe('New Project, Convert image, Projects library, Language, Theme.')
+  })
+
   it('writes the zoom chords without a separator before the sign: Ctrl/Cmd+ and Ctrl/Cmd−', () => {
     expect(actionKey(controlAction('zoom-in'))).toBe('Ctrl/Cmd+')
     expect(actionKey(controlAction('zoom-out'))).toBe('Ctrl/Cmd−')
