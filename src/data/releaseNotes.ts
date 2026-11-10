@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'On a touch screen a tap opens the help behind an (i), and holding a button to read its name no longer presses it',
+      ru: 'На сенсорном экране справка за (i) открывается касанием, а кнопка, которую держат, чтобы прочитать её название, больше не нажимается',
+      uk: 'На сенсорному екрані довідка за (i) відкривається дотиком, а кнопка, яку тримають, щоб прочитати її назву, більше не натискається',
+      be: 'На сэнсарным экране даведка за (i) адкрываецца дотыкам, а кнопка, якую трымаюць, каб прачытаць яе назву, больш не націскаецца',
+      zh: '在触摸屏上，轻点 (i) 即可打开说明；按住按钮查看名称时不再误按它',
+      es: 'En una pantalla táctil, un toque abre la ayuda tras una (i), y mantener pulsado un botón para leer su nombre ya no lo pulsa',
+      pl: 'Na ekranie dotykowym dotknięcie otwiera pomoc za (i), a przytrzymanie przycisku, by przeczytać jego nazwę, już go nie naciska',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'Two tabs open at once no longer erase each other’s Projects, and a Project open in another tab says so',
       ru: 'Две открытые вкладки больше не стирают проекты друг друга, а проект, открытый в другой вкладке, сообщает об этом',
       uk: 'Дві відкриті вкладки більше не стирають проєкти одна одної, а проєкт, відкритий в іншій вкладці, про це каже',
