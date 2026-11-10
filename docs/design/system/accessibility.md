@@ -42,7 +42,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Beads and the keyboard
 
-- The keyboard does not place, erase or select beads (ADR 0074): the Pattern is pointer and touch only, takes no focus, and has no cursor ring or ruler marks. A person who cannot point or touch cannot place a bead; the Tool keys, Select all, Clear selection, Undo and Redo, and the Frame handle's keys still work from the keyboard.
+- The keyboard does not place, erase or select beads (ADR 0074): the Pattern is pointer and touch only, takes no focus, and has no cursor ring or ruler marks. A person who cannot point or touch cannot place a bead; the Tool keys, Select all, Remove selected beads, Undo and Redo, and the Frame handle's keys still work from the keyboard.
 - Screen readers meet the Pattern as one image named for what it shows (see Screen readers below), and hear a polite announcement after a Frame move or a rotation.
 
 ## Screen readers

@@ -9,6 +9,8 @@ export type TooltipProps = {
   /** Quiet lines under the body (`meta-tiny`, `tooltip-muted`): facts about the control's state (the save ring's). */
   meta?: readonly string[]
   announce?: boolean
+  /** A click or tap opens the tip and keeps it open until the next press anywhere: the Info button's help (ticket 0844). */
+  opensOnClick?: boolean
 } & (
   | { hotkey?: string; disabled?: false; disabledBody?: undefined }
   | { hotkey?: undefined; disabled: true; disabledBody: string }

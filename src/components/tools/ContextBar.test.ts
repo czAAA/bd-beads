@@ -63,7 +63,7 @@ describe('ContextBar', () => {
     expect(ids).toEqual(['context-bar-move', 'context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-mirror-selection', 'context-bar-clear'])
     for (const id of ids) expect(wrapper.get(`[data-testid="${id}"]`).text(), id).toBe('')
     expect(wrapper.get('[data-testid="context-bar-copy"]').attributes('aria-label')).toBe('Copy')
-    expect(wrapper.get('[data-testid="context-bar-clear"]').attributes('aria-label')).toBe('Clear selection')
+    expect(wrapper.get('[data-testid="context-bar-clear"]').attributes('aria-label')).toBe('Remove selected beads')
     expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar-remove-line"]').exists()).toBe(false)
 

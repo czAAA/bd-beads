@@ -7,14 +7,15 @@ import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
 // The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows on
-// hover held HOVER_DELAY_MS (not again after a press until the pointer leaves) or keyboard focus; a touch/pen press held
-// LONG_PRESS_MS (ticket 166) or a click on a disabled control opens it. Never clipped (ticket 265): a top-layer popover.
+// hover held HOVER_DELAY_MS (not again after a press until the pointer leaves), keyboard focus, a touch/pen press held
+// LONG_PRESS_MS (ticket 166) or a click on a disabled or `opensOnClick` control. Never clipped: a top-layer popover.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
   align: 'center',
   meta: undefined,
   announce: true,
+  opensOnClick: false,
 })
 
 /** What the bubble's second line says: the reason when disabled, the body otherwise. */
@@ -29,6 +30,8 @@ const VIEWPORT_MARGIN_PX = 8
 const TRIGGER_GAP_PX = 6
 
 const LONG_PRESS_MS = 500
+/** How long after the release of a long press that showed the tip its click may still come, and is swallowed. */
+const RELEASE_CLICK_MS = 1000
 /** How long a mouse or hovering pen rests on the trigger before the tip shows, so passing over it shows nothing. */
 const HOVER_DELAY_MS = 400
 
@@ -110,6 +113,11 @@ function overTrigger(x: number, y: number): boolean {
   return !!box && x > box.left && x < box.right && y > box.top && y < box.bottom
 }
 let longPressTimer: ReturnType<typeof setTimeout> | undefined
+/** Whether the current press held long enough to show the tip, and until when its release's click is swallowed. */
+let heldOpen = false
+let swallowClickUntil = 0
+/** Whether the tip was open by a click when its trigger was pressed again: that tap closes it (ticket 0844). */
+let wasPinned = false
 let hoverTimer: ReturnType<typeof setTimeout> | undefined
 
 function clearLongPress() {
@@ -145,6 +153,9 @@ function onPointerEnter(event: PointerEvent) {
 
 function onPointerDown(event: PointerEvent) {
   pressing = true
+  heldOpen = false
+  swallowClickUntil = 0
+  wasPinned = pinned.value
   // A finger has no hover to suppress, and its leave comes where it lifted, inside: it would block a later mouse.
   if (event.pointerType !== 'touch') pressedUntilLeave = true
   hide()
@@ -152,6 +163,7 @@ function onPointerDown(event: PointerEvent) {
     clearLongPress()
     longPressTimer = setTimeout(() => {
       longPressTimer = undefined
+      heldOpen = true
       show()
     }, LONG_PRESS_MS)
   }
@@ -183,10 +195,24 @@ function hide() {
   setTopLayer(false)
 }
 
-/** A click or tap on a disabled control with a reason (ticket 453): the pointer's release has just hidden any tip, so
- * it is shown again, and stays until leave, blur, Escape or a press elsewhere. */
-function onClick() {
-  if (!props.disabled) return
+function onPointerUp() {
+  if (heldOpen) swallowClickUntil = performance.now() + RELEASE_CLICK_MS
+  heldOpen = false
+  hide()
+}
+
+/** A click or tap on a disabled control with a reason (ticket 453) or on an Info button (ticket 0844): the pointer's
+ * release has just hidden any tip, so it is shown again, and stays until leave, blur, Escape or a press elsewhere; a tap
+ * on the Info button while it shows closes it. The click that ends a long press which showed the tip presses nothing. */
+function onClick(event: MouseEvent) {
+  if (performance.now() < swallowClickUntil) {
+    swallowClickUntil = 0
+    event.preventDefault()
+    event.stopPropagation()
+  }
+  const tapClosesIt = props.opensOnClick && wasPinned
+  wasPinned = false
+  if (!(props.disabled || props.opensOnClick) || tapClosesIt) return
   show()
   pinned.value = true
 }
@@ -221,7 +247,7 @@ onBeforeUnmount(hide)
     @pointerleave="onPointerLeave"
     @focusin="onFocusIn"
     @pointerdown="onPointerDown"
-    @pointerup="hide"
+    @pointerup="onPointerUp"
     @click.capture="onClick"
     @pointercancel="hide"
     @focusout="onFocusOut"

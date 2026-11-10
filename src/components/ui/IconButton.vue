@@ -39,8 +39,9 @@ const props = withDefaults(
      * chip. */
     hotkey?: string
     showHotkey?: boolean
-    /** Gives the button a Tooltip: `true` for its name alone, or the body and side to show it on. */
-    tooltip?: boolean | { body?: string; placement?: 'top' | 'bottom' }
+    /** Gives the button a Tooltip: `true` for its name alone, or the body and side to show it on, and whether a click
+     * opens it (the Info button). */
+    tooltip?: boolean | { body?: string; placement?: 'top' | 'bottom'; opensOnClick?: boolean }
   }>(),
   {
     icon: undefined,
@@ -78,13 +79,14 @@ const body = computed(() => {
   return props.action?.body?.(t.value)
 })
 const placement = computed(() => (typeof props.tooltip === 'object' ? props.tooltip.placement : undefined))
+const opensOnClick = computed(() => typeof props.tooltip === 'object' && props.tooltip.opensOnClick)
 
 const tooltipProps = computed(() => {
   if (!props.tooltip && !props.action) return undefined
   if (isDisabled.value) {
     return reason.value === undefined ? undefined : { name: name.value, disabled: true as const, disabledBody: reason.value, placement: placement.value, announce: false }
   }
-  return { name: name.value, hotkey: key.value, body: body.value, placement: placement.value, announce: false }
+  return { name: name.value, hotkey: key.value, body: body.value, placement: placement.value, announce: false, opensOnClick: opensOnClick.value }
 })
 
 const isTool = computed(() => props.variant === 'tool')
