@@ -10,6 +10,7 @@ import type { ProjectKeyedStore } from './deviceDatabase'
 import { browserFileWriter } from './fileWriter'
 import type { SinceFiles } from './sinceFileStore'
 import type { Services } from './index'
+import { soleProjectLocks } from './projectLocks'
 
 /** The page's own choices the demo shows live and never changes: it has no Language or Theme of its own. */
 const LIVE: readonly PreferenceName[] = ['locale', 'theme']
@@ -47,17 +48,28 @@ function memoryPreferences(page: DevicePreferences, pageStorage: () => Preferenc
   }
 }
 
-/** A library kept in memory, starting with `projects`. */
+/** A library kept in memory, starting with `projects`; each save is a revision of its own, and its listeners hear
+ * every one after it, as the browser's other tabs would. */
 function memoryLibrary(projects: readonly Project[]): LibraryStore {
   let kept = [...projects]
+  let revision = 0
+  const listeners = new Set<() => void>()
   return {
     load: () => [...kept],
-    open: () => ({ projects: [...kept], sealed: [] }),
+    open: () => ({ projects: [...kept], sealed: [], revision: String(revision) }),
     unseal: () => {
       throw new Error('A library in memory keeps nothing sealed')
     },
     save: (next) => {
       kept = [...next]
+      revision += 1
+      queueMicrotask(() => listeners.forEach((listener) => listener()))
+      return String(revision)
+    },
+    reread: (since) => (since === String(revision) ? undefined : { projects: [...kept], sealed: [], revision: String(revision) }),
+    onOutsideChange: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
     },
   }
 }
@@ -115,6 +127,7 @@ export function memoryServices(projects: readonly Project[], options: MemoryServ
     fileWriter: browserFileWriter,
     linkedFiles: memoryKeyed(),
     sinceFiles: memorySinceFiles(),
+    projectLocks: soleProjectLocks,
     preparePicture,
     drawablePicture,
   }

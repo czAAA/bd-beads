@@ -44,3 +44,34 @@ export function mostRecentlyUpdated(projects: Project[]): Project | undefined {
     undefined,
   )
 }
+
+/** One Project of the library as the merge reads it: decoded or sealed, told apart by nothing but its id. */
+interface Entry {
+  id: string
+}
+
+/** The library a save writes when another tab may have stored since (ticket 0834): `stored` with this tab's changes
+ * since `known` (what it last read or wrote) on top, so what another tab made, renamed or removed stays so, and one
+ * changed here but removed there stays removed. `mayChange` is false for a Project another tab has open first. */
+export function mergeLibrary<T extends Entry>(
+  here: readonly T[],
+  known: ReadonlyMap<string, T>,
+  stored: readonly T[],
+  mayChange: (id: string) => boolean = () => true,
+): T[] {
+  const hereById = new Map(here.map((entry) => [entry.id, entry]))
+  const storedIds = new Set(stored.map((entry) => entry.id))
+  const changedHere = (id: string) => {
+    const mine = hereById.get(id)
+    return mine === undefined ? known.has(id) : mine !== known.get(id) && mayChange(id)
+  }
+  const merged: T[] = []
+  for (const entry of stored) {
+    if (!changedHere(entry.id)) merged.push(entry)
+    else if (hereById.has(entry.id)) merged.push(hereById.get(entry.id)!)
+  }
+  for (const entry of here) {
+    if (!storedIds.has(entry.id) && !known.has(entry.id)) merged.push(entry)
+  }
+  return merged
+}

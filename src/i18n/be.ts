@@ -321,6 +321,7 @@ export const be: Translations = {
       confirmButton: 'Захоўваць праекты',
       cancelButton: 'Прапусціць',
     },
+    openElsewhere: 'Гэты праект адкрыты ў іншай укладцы. Змены тут не захоўваюцца, пакуль ён адкрыты там.',
   },
   header: {
     menuButton: 'Меню',

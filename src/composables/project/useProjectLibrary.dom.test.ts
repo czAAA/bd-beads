@@ -1,15 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, type EffectScope } from 'vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
-import { loadProjects } from '../../services/libraryStore'
+import { browserLibraryStore, loadProjects } from '../../services/libraryStore'
+import type { ProjectLocks } from '../../services/projectLocks'
+import { sharedProjectLocks } from '../../testUtils/projectLocks'
+import { projectNameOf } from '../../domain/layerRecord'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
 import { useProjectLibrary } from './useProjectLibrary'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { frameOf } from '../../domain/layerRecord'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 import { storedHugeProject, storeLibrary } from '../../testUtils/hugeProject'
+
+const STORAGE_KEY = 'openbeads:patterns'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -53,7 +59,7 @@ describe('useProjectLibrary', () => {
   it('starts from what was saved, with the most recently updated Project open', () => {
     const older = makeProject({ updatedAt: 1000 })
     const newer = makeProject({ updatedAt: 2000 })
-    localStorage.setItem('openbeads:patterns', JSON.stringify([older, newer]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([older, newer]))
 
     const library = useProjectLibrary()
 
@@ -316,7 +322,7 @@ describe('useProjectLibrary', () => {
     const ids = (library: ReturnType<typeof useProjectLibrary>) => library.projects.value.map((project) => project.id)
 
     function storedLibrary(...projects: Project[]) {
-      localStorage.setItem('openbeads:patterns', JSON.stringify(projects))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
     }
 
     it('gives a library saved before the order existed a stable order, newest edit first, loading every Project unchanged', () => {
@@ -448,7 +454,7 @@ describe('Projects kept sealed when the library opens (ticket 0716)', () => {
     library.removeProject('huge')
 
     expect(library.sealed.value).toEqual([])
-    const stored = JSON.parse(localStorage.getItem('openbeads:patterns')!) as { patterns: { id: string }[] }
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: { id: string }[] }
     expect(stored.patterns.map((project) => project.id)).toEqual([small.id])
   })
 
@@ -460,7 +466,192 @@ describe('Projects kept sealed when the library opens (ticket 0716)', () => {
 
     library.replaceProject(withPaintedCell(small, 0, 0))
 
-    const stored = JSON.parse(localStorage.getItem('openbeads:patterns')!) as { patterns: unknown[] }
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: unknown[] }
     expect(stored.patterns).toContainEqual(huge)
+  })
+})
+
+describe('two tabs over one library (ticket 0834)', () => {
+  const scopes: EffectScope[] = []
+  /** A tab of the editor: a library over the one device storage, ended when the test is. */
+  function openTab(locks?: ProjectLocks) {
+    const scope = effectScope()
+    scopes.push(scope)
+    return scope.run(() => useProjectLibrary(browserLibraryStore, undefined, { locks }))!
+  }
+  type Tab = ReturnType<typeof openTab>
+  afterEach(() => scopes.splice(0).forEach((scope) => scope.stop()))
+
+  const storedIds = () => loadProjects().map((project) => project.id).sort()
+  const painted = (project: Project | undefined, column: number) => frameGrid(project!)[0]![column]!.color
+
+  /** Every order the two tabs' steps can come in, each tab's own steps in their order. */
+  function interleavings<T>(a: T[], b: T[]): T[][] {
+    if (a.length === 0) return [b]
+    if (b.length === 0) return [a]
+    return [...interleavings(a.slice(1), b).map((rest) => [a[0]!, ...rest]), ...interleavings(a, b.slice(1)).map((rest) => [b[0]!, ...rest])]
+  }
+
+  it('loses no Project and no drawing in any order of the two tabs\' saves (F-05-01)', () => {
+    const steps = (made: Project, column: number) => [
+      (tab: Tab) => tab.addProject(made),
+      (tab: Tab) => tab.replaceProject(withPaintedCell(tab.projects.value.find((project) => project.id === made.id)!, 0, column)),
+      (tab: Tab) => void tab.saveNow(),
+    ]
+    const alpha = makeProject()
+    const beta = makeProject()
+    const gamma = makeProject()
+    const orders = interleavings(
+      steps(beta, 1).map((step) => ({ tab: 'a' as 'a' | 'b', step })),
+      steps(gamma, 2).map((step) => ({ tab: 'b' as 'a' | 'b', step })),
+    )
+    for (const order of orders) {
+      localStorage.clear()
+      useProjectLibrary().addProject(alpha)
+      const tabs = { a: openTab(), b: openTab() }
+      for (const { tab, step } of order) step(tabs[tab])
+
+      expect(storedIds()).toEqual([alpha.id, beta.id, gamma.id].sort())
+      const reloaded = openTab().projects.value
+      expect(painted(reloaded.find((project) => project.id === beta.id), 1)).toBe('#e63746')
+      expect(painted(reloaded.find((project) => project.id === gamma.id), 2)).toBe('#e63746')
+    }
+  })
+
+  it('takes in the Projects another tab saved, so a later save of its own keeps them', () => {
+    const a = openTab()
+    const b = openTab()
+    const beta = makeProject()
+    b.addProject(beta)
+
+    a.addProject(makeProject())
+
+    expect(a.projects.value.map((project) => project.id)).toContain(beta.id)
+  })
+
+  it("follows another tab's write as it lands, before saving anything", () => {
+    const a = openTab()
+    const b = openTab()
+    const beta = makeProject()
+    b.addProject(beta)
+
+    window.dispatchEvent(new StorageEvent('storage', { key: STORAGE_KEY }))
+
+    expect(a.projects.value.map((project) => project.id)).toEqual([beta.id])
+  })
+
+  it('keeps a rename made in one tab after the other tab saves', () => {
+    const alpha = makeProject({ name: 'Alpha' })
+    const beta = makeProject()
+    useProjectLibrary().addProjects([alpha, beta])
+    const a = openTab()
+    const b = openTab()
+
+    a.replaceProject(withLayers(a.projects.value.find((project) => project.id === alpha.id)!, { name: 'Sunrise' }))
+    b.replaceProject(withPaintedCell(b.projects.value.find((project) => project.id === beta.id)!, 0, 0))
+
+    expect(projectNameOf(loadProjects().find((project) => project.id === alpha.id)!)).toBe('Sunrise')
+    expect(projectNameOf(b.projects.value.find((project) => project.id === alpha.id)!)).toBe('Sunrise')
+  })
+
+  it('keeps a Project removed in one tab removed after the other tab saves, or draws on it', () => {
+    const alpha = makeProject()
+    const beta = makeProject()
+    useProjectLibrary().addProjects([alpha, beta])
+    const a = openTab()
+    const b = openTab()
+
+    a.removeProject(alpha.id)
+    b.replaceProject(withPaintedCell(b.projects.value.find((project) => project.id === alpha.id)!, 0, 0))
+
+    expect(storedIds()).toEqual([beta.id])
+    expect(b.projects.value.map((project) => project.id)).toEqual([beta.id])
+  })
+
+  it('refuses a save over a stored library it cannot read, rather than writing one without its Projects', () => {
+    const a = openTab()
+    a.addProject(makeProject())
+    localStorage.setItem(STORAGE_KEY, '{"version":999,"patterns":[]}')
+
+    a.replaceProject(withPaintedCell(a.activeProject.value!, 0, 0))
+
+    expect(a.saveFailed.value).toBe(true)
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('{"version":999,"patterns":[]}')
+  })
+
+  describe('the same Project open in both tabs', () => {
+    it('tells the second tab it is open in another tab, and keeps the first tab\'s beads whatever the second draws', () => {
+      const alpha = makeProject()
+      useProjectLibrary().addProject(alpha)
+      const locks = sharedProjectLocks()
+      const first = openTab(locks)
+      const second = openTab(locks)
+
+      first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0))
+      second.replaceProject(withPaintedCell(second.activeProject.value!, 0, 1))
+
+      expect(first.openElsewhere.value).toBe(false)
+      expect(second.openElsewhere.value).toBe(true)
+      expect(painted(loadProjects()[0], 0)).toBe('#e63746')
+      expect(painted(loadProjects()[0], 1)).toBeNull()
+      expect(painted(second.activeProject.value, 0)).toBe('#e63746')
+      expect(painted(second.activeProject.value, 1)).toBeNull()
+    })
+
+    it('lets the second tab draw once the first opens another Project, from what the first one drew', () => {
+      const alpha = makeProject()
+      const beta = makeProject()
+      useProjectLibrary().addProjects([alpha, beta])
+      const locks = sharedProjectLocks()
+      const first = openTab(locks)
+      const second = openTab(locks)
+      const open = first.activeProjectId.value!
+      second.replaceProject(withPaintedCell(second.activeProject.value!, 0, 1), { deferSave: true })
+      first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0))
+
+      first.openProject(open === alpha.id ? beta.id : alpha.id)
+
+      expect(second.openElsewhere.value).toBe(false)
+      expect(painted(second.activeProject.value, 0)).toBe('#e63746')
+      expect(painted(second.activeProject.value, 1)).toBeNull()
+      second.replaceProject(withPaintedCell(second.activeProject.value!, 0, 2))
+      const stored = loadProjects().find((project) => project.id === open)
+      expect([painted(stored, 0), painted(stored, 2)]).toEqual(['#e63746', '#e63746'])
+    })
+
+    it('writes a stroke still waiting to be saved before the next tab may take the Project', () => {
+      const alpha = makeProject()
+      const beta = makeProject()
+      useProjectLibrary().addProjects([alpha, beta])
+      const first = openTab(sharedProjectLocks())
+      const open = first.activeProjectId.value!
+      first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0), { deferSave: true })
+
+      first.openProject(open === alpha.id ? beta.id : alpha.id)
+
+      expect(painted(loadProjects().find((project) => project.id === open), 0)).toBe('#e63746')
+    })
+
+    it('keeps to the stored copy of the open Project until the locks answer', () => {
+      useProjectLibrary().addProject(makeProject())
+      const unanswered = openTab({ claim: () => () => undefined })
+
+      unanswered.replaceProject(withPaintedCell(unanswered.activeProject.value!, 0, 0))
+
+      expect(painted(loadProjects()[0], 0)).toBeNull()
+    })
+
+    it('says nothing while the two tabs have different Projects open', () => {
+      const alpha = makeProject()
+      const beta = makeProject()
+      useProjectLibrary().addProjects([alpha, beta])
+      const locks = sharedProjectLocks()
+      const first = openTab(locks)
+      const second = openTab(locks)
+
+      second.openProject(first.activeProjectId.value === alpha.id ? beta.id : alpha.id)
+
+      expect([first.openElsewhere.value, second.openElsewhere.value]).toEqual([false, false])
+    })
   })
 })

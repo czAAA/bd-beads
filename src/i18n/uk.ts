@@ -320,6 +320,7 @@ export const uk: Translations = {
       confirmButton: 'Зберігати проєкти',
       cancelButton: 'Пропустити',
     },
+    openElsewhere: 'Цей проєкт відкрито в іншій вкладці. Зміни тут не зберігаються, поки він відкритий там.',
   },
   header: {
     menuButton: 'Меню',

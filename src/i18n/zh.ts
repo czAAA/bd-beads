@@ -319,6 +319,7 @@ export const zh: Translations = {
       confirmButton: '保留项目',
       cancelButton: '跳过',
     },
+    openElsewhere: '此项目已在另一个标签页中打开。在那里打开期间，这里的更改不会保存。',
   },
   header: {
     menuButton: '菜单',

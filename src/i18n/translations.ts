@@ -422,6 +422,8 @@ export interface Translations {
     saveFailedMessage: string
     /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
     keepNote: { title: string; message: string; confirmButton: string; cancelButton: string }
+    /** The notice row's line while the open Project is open in another tab first (ticket 0834). */
+    openElsewhere: string
   }
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
