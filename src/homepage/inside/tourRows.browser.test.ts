@@ -3,6 +3,7 @@ import { defineComponent, h, ref, watch } from 'vue'
 import { page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { beadColorAt } from '../../domain/layerBeads'
+import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf } from '../../domain/layerRecord'
 import { currentPass, rowProgressOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
@@ -110,9 +111,16 @@ describe("What's inside's Reference image row's picture (ticket 0828)", () => {
 })
 
 describe("What's inside's Starters row on the ring (ticket 0821)", () => {
-  it("lays the Starter's ring where the band was, the same size", async () => {
-    const frame = frameOf(await applyThrough(await demoEditor(), 'starters'))!
-    expect({ row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }).toEqual(DEMO_FRAME)
+  it("lays the Starter's ring over the band's middle, 36 long and 7 wide, turned to lie across (ticket 0832)", async () => {
+    const project = await applyThrough(await demoEditor(), 'starters')
+    const frame = frameOf(project)!
+    expect({ rows: frame.rows, columns: frame.columns, quarterTurns: frame.quarterTurns }).toEqual({ rows: 36, columns: 7, quarterTurns: 1 })
+    expect(laidFrame(project)).toEqual({ row: 6, column: 26, rows: 6, columns: 45 })
+  }, 60000)
+
+  it("has the band back as the Frame once the Reference image row cleared the Starter's ring (ticket 0832)", async () => {
+    const frame = frameOf(await applyThrough(await demoEditor(), 'reference'))!
+    expect({ row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns, quarterTurns: frame.quarterTurns }).toEqual({ ...DEMO_FRAME, quarterTurns: undefined })
   }, 60000)
 })
 

@@ -59,11 +59,12 @@ describe("What's inside's rows in the order they play (ticket 0830)", () => {
     expect(presses.slice(0, 4)).toEqual(['pill-tool-mirror', 'mirror-bar-close', 'strip-frame', 'frame-replace-from-starter'])
   })
 
-  it("starts the Reference image row by clearing the Starter's ring, the Mirror closed already", async () => {
+  it("starts the Reference image row by removing the Starter's turned Frame and clearing its ring, the Mirror closed already", async () => {
     const { hand, presses } = fakeHand()
     await TOUR_SCRIPTS.reference(hand)
     expect(presses).not.toContain('pill-tool-mirror')
-    expect(presses[0]).toBe('pill-tool-select')
+    expect(presses.slice(0, 2)).toEqual(['strip-frame', 'frame-chrome-remove'])
+    expect(presses).toContain('pill-tool-select')
   })
 })
 
