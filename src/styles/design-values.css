@@ -297,9 +297,9 @@
   --inside-row-height: 2rem; /* A chapter's row in that list, 32px. */
   --welcome-tile-width: 60rem; /* The Welcome section's tile at its widest, 960px. */
   --welcome-heading-size: 2.75rem; /* The Welcome heading, serif-heading at 44px on 48. */
-  --welcome-piece-width: 52.5rem; /* The finished piece on the Welcome tile at its widest, 840px. */
+  --welcome-piece-width: 45rem; /* The finished piece on the Welcome tile at its widest, 720px. */
   --welcome-piece-least-width: 26rem; /* The narrowest a short screen makes it, 416px. */
-  --welcome-beside-piece: 37.5rem; /* What a screen's height holds besides the piece: the box's bars, the tile's other lines; 600px. */
+  --welcome-beside-piece: 38.75rem; /* What a screen's height holds besides the piece: the box's bars, the tile's other lines; 620px. */
   /* Homepage card, the nudge (ticket 0784). */
   --nudge-lift: 0.75rem; /* How far the first section lifts to show the page scrolls, 12px. */
   --nudge-fade: 0.82; /* The first section's opacity at the top of its lift. */

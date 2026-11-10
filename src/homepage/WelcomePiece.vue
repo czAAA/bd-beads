@@ -15,7 +15,7 @@ const canvasEl = ref<HTMLCanvasElement>()
 const project = finishedMountains()
 
 /** The piece at its widest, in CSS px (`--welcome-piece-width`); it is drawn at twice that and narrows with the tile. */
-const DRAWN_PX = 840
+const DRAWN_PX = 720
 /** The Frame's line as the editor draws it at 100% (Frame card): 1.5px, 7px off the beads, 7px corners. */
 const FRAME_LINE = { width: 1.5, outset: 7, radius: 7 }
 
