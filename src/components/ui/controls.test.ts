@@ -114,6 +114,28 @@ describe('InfoButton (ticket 0651)', () => {
     await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
     expect(wrapper.get('.app-tooltip__body').text()).toBe('Print each letter.')
   })
+
+  it('opens its note above it on a tap, keeps it until the next tap anywhere, and a tap on it closes it (ticket 0844)', async () => {
+    const wrapper = mount(InfoButton, { attachTo: document.body, props: { label: 'What Letters does', body: 'Print each letter.' } })
+    const bubble = wrapper.get('[role="tooltip"]')
+    const tap = async () => {
+      for (const type of ['pointerdown', 'pointerup', 'pointerleave'] as const) await wrapper.get('button').trigger(type, { pointerType: 'touch' })
+      await wrapper.get('button').trigger('click')
+    }
+    expect(wrapper.findComponent(AppTooltip).props()).toMatchObject({ placement: 'top', opensOnClick: true })
+
+    await tap()
+    expect(bubble.isVisible()).toBe(true)
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', isPrimary: true }))
+    await nextTick()
+    expect(bubble.isVisible()).toBe(false)
+
+    await tap()
+    expect(bubble.isVisible()).toBe(true)
+    await tap()
+    expect(bubble.isVisible()).toBe(false)
+    wrapper.unmount()
+  })
 })
 
 describe('IconButton disabled (ticket 327)', () => {
@@ -410,6 +432,33 @@ describe('AppTooltip', () => {
       }
     } finally {
       vi.useRealTimers()
+    }
+  })
+
+  it('does not press the control on the release of a long press that showed the tip, and does on a tap (ticket 0844)', async () => {
+    const pressed = vi.fn()
+    const wrapper = mount(AppTooltip, {
+      attachTo: document.body,
+      props: { name: 'Row highlight' },
+      slots: { default: '<button type="button">x</button>' },
+      attrs: { onClick: pressed },
+    })
+    const button = wrapper.get('button')
+    vi.useFakeTimers()
+    try {
+      await button.trigger('pointerdown', { pointerType: 'touch' })
+      vi.advanceTimersByTime(500)
+      await button.trigger('pointerup', { pointerType: 'touch' })
+      await button.trigger('click')
+      expect(pressed).not.toHaveBeenCalled()
+
+      await button.trigger('pointerdown', { pointerType: 'touch' })
+      await button.trigger('pointerup', { pointerType: 'touch' })
+      await button.trigger('click')
+      expect(pressed).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+      wrapper.unmount()
     }
   })
 

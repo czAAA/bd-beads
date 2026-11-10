@@ -15,6 +15,7 @@ import { browserLinkedFileStore, type LinkedFileStore } from './linkedFileStore'
 import { browserSinceFileStore, type SinceFileStore } from './sinceFileStore'
 import { drawablePicture, preparePicture, type DrawablePicture, type PreparedPicture } from './referencePicture'
 import type { OpeningAddress } from '../domain/openingAddress'
+import { browserProjectLocks, type ProjectLocks } from './projectLocks'
 
 // Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
 // cares about.
@@ -42,6 +43,8 @@ export interface Services {
   linkedFiles: LinkedFileStore
   /** Each Project's Beads since last file and last-file time (ticket 0796). */
   sinceFiles: SinceFileStore
+  /** Which tab has a Project open first, so the same Project in a second tab keeps the first one's beads (ticket 0834). */
+  projectLocks: ProjectLocks
 }
 
 export const browserServices: Services = {
@@ -61,4 +64,5 @@ export const browserServices: Services = {
   fileWriter: browserFileWriter,
   linkedFiles: browserLinkedFileStore,
   sinceFiles: browserSinceFileStore,
+  projectLocks: browserProjectLocks,
 }

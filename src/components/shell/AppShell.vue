@@ -21,6 +21,7 @@ const {
   onPictureForConvert,
   dialogOpen,
   page,
+  openElsewhere,
 } = useShellFrame()
 </script>
 
@@ -36,7 +37,7 @@ const {
       It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
       (see useProjectLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
     -->
-    <div v-if="saveFailed || missedProject" class="app-shell__notices" data-testid="app-notices">
+    <div v-if="saveFailed || missedProject || openElsewhere" class="app-shell__notices" data-testid="app-notices">
       <!-- Safe start (ticket 0716): the Project that didn't open last time stays shut, named here with a way out. -->
       <AppMessage v-if="missedProject" tone="warning" placement="notice" data-testid="missed-project" @close="onDismissMissed">
         <span data-testid="missed-project-message">{{ fillBlanks(t.opening.didNotOpen, { name: missedProject.name }) }}</span>
@@ -53,6 +54,10 @@ const {
             {{ t.saveBox.exportProjectFile }}
           </AppButton>
         </template>
+      </AppMessage>
+      <!-- Two tabs (ticket 0834): the first to open a Project keeps it; this one shows its beads and saves none of its own. -->
+      <AppMessage v-if="openElsewhere" tone="warning" placement="notice" :closable="false">
+        <span data-testid="open-elsewhere-message">{{ t.storage.openElsewhere }}</span>
       </AppMessage>
     </div>
 

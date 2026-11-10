@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { mostRecentlyUpdated, summarizeProject } from './projectLibrary'
+import { mergeLibrary, mostRecentlyUpdated, summarizeProject } from './projectLibrary'
 import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { turnedClockwise } from '../testUtils/rotated'
@@ -61,5 +61,57 @@ describe('mostRecentlyUpdated', () => {
 
     expect(mostRecentlyUpdated([older, newer])).toBe(newer)
     expect(mostRecentlyUpdated([newer, older])).toBe(newer)
+  })
+})
+
+describe('mergeLibrary (ticket 0834)', () => {
+  /** A library entry: an id and the version it is at, so a test can tell two copies of one Project apart. */
+  const entry = (id: string, version = 1) => ({ id, version })
+  type Entry = ReturnType<typeof entry>
+  const known = (...entries: Entry[]) => new Map(entries.map((each) => [each.id, each]))
+
+  it('keeps a Project another tab stored that this tab has never seen', () => {
+    const alpha = entry('alpha')
+    const beta = entry('beta')
+
+    expect(mergeLibrary([alpha], known(alpha), [alpha, beta])).toEqual([alpha, beta])
+  })
+
+  it("writes this tab's change over the stored copy, and only that Project", () => {
+    const alpha = entry('alpha')
+    const beta = entry('beta')
+    const changed = entry('alpha', 2)
+
+    expect(mergeLibrary([changed, beta], known(alpha, beta), [alpha, entry('beta', 3)])).toEqual([changed, entry('beta', 3)])
+  })
+
+  it('adds a Project made here', () => {
+    const alpha = entry('alpha')
+    const made = entry('gamma')
+
+    expect(mergeLibrary([made, alpha], known(alpha), [alpha])).toEqual([alpha, made])
+  })
+
+  it('leaves out a Project removed here, and keeps out one another tab removed', () => {
+    const alpha = entry('alpha')
+    const beta = entry('beta')
+
+    expect(mergeLibrary([beta], known(alpha, beta), [alpha, beta])).toEqual([beta])
+    expect(mergeLibrary([alpha, beta], known(alpha, beta), [beta])).toEqual([beta])
+  })
+
+  it('keeps a Project removed even when this tab changed it after', () => {
+    const alpha = entry('alpha')
+
+    expect(mergeLibrary([entry('alpha', 2)], known(alpha), [])).toEqual([])
+  })
+
+  it('takes the stored copy of a Project this tab may not change, but still removes it when asked', () => {
+    const alpha = entry('alpha')
+    const drawnThere = entry('alpha', 3)
+    const notHere = (id: string) => id !== 'alpha'
+
+    expect(mergeLibrary([entry('alpha', 2)], known(alpha), [drawnThere], notHere)).toEqual([drawnThere])
+    expect(mergeLibrary([], known(alpha), [drawnThere], notHere)).toEqual([])
   })
 })

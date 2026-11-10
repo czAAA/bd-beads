@@ -75,6 +75,8 @@ export interface SettingWords {
   changed: string
   /** The value in a word or two where room is short, the margin's title block (ticket 0698): `{count}` is the value. */
   short: string
+  /** The Info button's name beside the label, where `body` is its help (ticket 0844): "What Drop does". */
+  infoLabel?: string
 }
 
 export interface Translations {
@@ -422,6 +424,8 @@ export interface Translations {
     saveFailedMessage: string
     /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
     keepNote: { title: string; message: string; confirmButton: string; cancelButton: string }
+    /** The notice row's line while the open Project is open in another tab first (ticket 0834). */
+    openElsewhere: string
   }
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
@@ -1298,6 +1302,12 @@ export interface Translations {
     emptyColor: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
+    /** The second Tooltip lines of the Paint and Fill tiles, Rulers, Turn row direction and Row highlight (ticket 0844). */
+    paint: string
+    fill: string
+    rulers: string
+    rowDirection: string
+    rowHighlight: string
   }
   /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
    * in every layer's. */
