@@ -12,6 +12,18 @@ export interface ReleaseNote {
 // (writing.md), no full stop. releaseNotes.test.ts fails on a missing language or one out of order.
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    date: '2026-11-10',
+    line: {
+      en: 'The Colors button is now shaped like a palette and filled with your color, so it stands apart from the recent colors',
+      ru: 'Кнопка «Цвета» теперь в форме палитры и залита вашим цветом, так что её не спутать с недавними цветами',
+      uk: 'Кнопка «Кольори» тепер у формі палітри й залита вашим кольором, тож її не сплутати з недавніми кольорами',
+      be: 'Кнопка «Колеры» цяпер у форме палітры і заліта вашым колерам, так што яе не зблытаць з нядаўнімі колерамі',
+      zh: '「颜色」按钮现在是调色板的形状，并填充你选的颜色，不会再和最近用过的颜色混在一起',
+      es: 'El botón Colores ahora tiene forma de paleta y se rellena con tu color, así se distingue de los colores recientes',
+      pl: 'Przycisk Kolory ma teraz kształt palety wypełnionej twoim kolorem, więc nie myli się z ostatnimi kolorami',
+    },
+  },
+  {
     date: '2026-11-08',
     line: {
       en: 'On a phone, the Homepage has its own bar with Back, Next and the way into the editor, and every section fits the screen',

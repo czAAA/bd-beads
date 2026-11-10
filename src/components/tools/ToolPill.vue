@@ -251,9 +251,12 @@ watch(
         data-testid="pill-color"
         @click="toggleColor"
       >
-        <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }">
-          <AppIcon name="palette" :size="14" :class="['tool-pill__swatch-mark', colorHex && `tool-pill__swatch-mark--${markOn(colorHex)}`]" />
-        </span>
+        <AppIcon
+          name="palette"
+          :size="28"
+          :class="['tool-pill__swatch', colorHex && `tool-pill__swatch--${markOn(colorHex)}`]"
+          :style="{ '--pill-swatch': colorHex }"
+        />
       </IconButton>
 
       <template v-if="showRecents">
@@ -446,30 +449,25 @@ watch(
   margin: var(--space-4) 0;
 }
 
-/* The chosen colour: a 22px round swatch, ringed with a 2px gap in the pill's fill. */
-.tool-pill__swatch {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: var(--pill-icon);
-  height: var(--pill-icon);
-  border-radius: var(--radius-full);
-  box-shadow: 0 0 0 var(--space-2) var(--elevated), 0 0 0 calc(2 * var(--space-2)) var(--ring);
+/* The chosen colour (ticket 0829): the `palette` icon at 28px is the swatch. Its body (the file's first path) is
+ * filled with the colour and outlined in `ink` at the neighbours' weight (a 22px icon's 1.75, so 1.4 at 28px); its
+ * dabs (the last path) take the mark that reads on the colour. With no colour it is an empty icon in the tile's ink. */
+.tool-pill__swatch :deep(path:first-child) {
+  fill: var(--pill-swatch, none);
+  stroke-width: 1.4;
 }
 
-/* The palette icon sits inside the swatch, in the mark that reads on the chosen colour (or the muted ink while none
- * is chosen). */
-.tool-pill__swatch-mark {
-  color: var(--muted);
+.tool-pill__swatch--dark,
+.tool-pill__swatch--light {
+  color: var(--ink);
 }
 
-.tool-pill__swatch-mark--dark {
-  color: var(--swatch-mark-dark);
+.tool-pill__swatch--dark :deep(path:last-child) {
+  stroke: var(--swatch-mark-dark);
 }
 
-.tool-pill__swatch-mark--light {
-  color: var(--swatch-mark-light);
+.tool-pill__swatch--light :deep(path:last-child) {
+  stroke: var(--swatch-mark-light);
 }
 
 /* Recents: 18px swatches on tiles 30px long and 40px across (30px tall when vertical). */

@@ -149,7 +149,20 @@ describe('ToolPill (ticket 439)', () => {
     await recents[1]!.trigger('click')
     expect(wrapper.emitted('pick-recent')).toEqual([['#222222']])
     expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="pill-color"] .tool-pill__swatch-mark').exists()).toBe(true)
+  })
+
+  it('draws the colour tile as the palette icon filled with the chosen colour, its dabs in the mark that reads on it (ticket 0829)', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, colorHex: '#102040' } })
+    const swatch = wrapper.find('[data-testid="pill-color"] .tool-pill__swatch')
+    expect(swatch.attributes('data-icon')).toBe('palette')
+    expect((swatch.element as SVGElement).style.getPropertyValue('--pill-swatch')).toBe('#102040')
+    expect(swatch.classes()).toContain('tool-pill__swatch--light')
+    await wrapper.setProps({ colorHex: '#fff8e0' })
+    expect(swatch.classes()).toContain('tool-pill__swatch--dark')
+    // No colour chosen: an empty palette in the tile's own ink, with no mark.
+    await wrapper.setProps({ colorHex: undefined })
+    expect((swatch.element as SVGElement).style.getPropertyValue('--pill-swatch')).toBe('')
+    expect(swatch.classes().some((name) => name.startsWith('tool-pill__swatch--'))).toBe(false)
   })
 
   it('drops the recents while the pill would overflow its edge, and brings them back with room', async () => {

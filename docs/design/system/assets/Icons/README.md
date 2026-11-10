@@ -32,3 +32,5 @@ Ticket 0757 added two for the Convert image Size step's chain between Width and 
 Ticket 0778 added `arrow-left` and `arrow-right`, `arrow-up` turned a quarter (the same 15-unit shaft and 6-unit head): Convert image's Back and Next on its Progress bar, which move along the steps sideways, so they point the way the steps go (ProgressBar card).
 
 Ticket 0790 added `reference-image`: the `image` picture (the same 17×15 frame, radius 2.5) with its edge dashed (2.4 on, 2.6 off), a lower, shorter hill and the bead sun: the Canvas strip's Reference image toggle. The dash is the Select tool's way of saying "not beads"; the picture inside stays solid so it reads at 18px.
+
+Ticket 0829 made `palette` the Tool pill's colour swatch: there it is drawn at 28px with its body filled with the chosen colour (the one place an icon carries a fill, and the fill is the user's colour, not ink). The tile fills the file's first path and recolours its last, so `palette.svg` keeps that order: the body first, the dabs last.
