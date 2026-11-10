@@ -1,30 +1,33 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import AppButton from '../../components/ui/AppButton.vue'
 import AppIcon from '../../components/ui/AppIcon.vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
-import type { InsideRowId } from '../../i18n/translations'
 import GroupedList from '../GroupedList.vue'
 import InsideEditor from './InsideEditor.vue'
 import { TourStopped } from './hand'
-import { INSIDE_ROWS, insideRows } from './insideCopy'
+import { INSIDE_ROWS, insideChapters, type InsideChapter } from './insideCopy'
 import { scrollToShow } from './tabScroll'
 import { TOUR_SCRIPTS } from './tourScripts'
 import { useInsideTour } from './useInsideTour'
 
-// What's inside (Homepage card, tickets 0797, 0825): a band on top holds the heading, the rows as tabs and the playing
-// row's caption; the framed editor under it fills the rest and plays each row in turn. On a phone there is no editor:
-// the rows are one grouped list, each with its line (ticket 0827).
+// What's inside (Homepage card, tickets 0797, 0825, 0830): the heading, four chapters, the playing row's caption, Pause
+// and Try it yourself, in a list beside the framed demo editor from 1000px and in a band over it under that or while
+// the demo is expanded. The editor plays the 13 rows in turn. On a phone there is no editor: the rows are one list.
 const props = defineProps<{
   /** Whether there is room for the editor: none on a phone. */
   withEditor: boolean
   /** Whether What's inside is the section shown: the tour plays only then. */
   shown: boolean
+  /** Whether the box is 1000px wide or more: the list stands beside the demo, which offers Expand. */
+  wide: boolean
 }>()
 
 const { t, locale } = useI18n()
-const rows = computed(() => insideRows(t.value, locale.value))
+const chapters = computed(() => insideChapters(t.value, locale.value))
+const rows = computed(() => chapters.value.flatMap((chapter) => chapter.rows))
 const editor = shallowRef<InstanceType<typeof InsideEditor>>()
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
@@ -48,50 +51,102 @@ const tour = useInsideTour({
 })
 tour.follow(() => props.withEditor && props.shown && pageVisible.value && !!editor.value)
 
-/** The tabs scroll sideways to keep the playing one in view, `scroll-padding` clear of the edge; only they scroll, never
- * the section, which the beader may have scrolled to see the editor whole. */
-const tabsEl = ref<HTMLElement>()
-watch(tour.playing, (row) => {
-  const tabs = tabsEl.value
-  const tab = row ? tabs?.querySelector<HTMLElement>(`[data-testid="inside-row-${row}"]`) : undefined
-  if (!tabs || !tab) return
-  const room = Number.parseFloat(getComputedStyle(tabs).scrollPaddingInlineStart) || 0
-  const left = scrollToShow({ left: tabs.scrollLeft, width: tabs.clientWidth }, { left: tab.offsetLeft, width: tab.offsetWidth }, room)
-  if (left !== tabs.scrollLeft) tabs.scrollTo?.({ left, behavior: reducedMotion.value ? 'instant' : 'smooth' })
+/** The chapter whose row is playing: the one lit. */
+const lit = computed(() => chapters.value.find((chapter) => chapter.rows.some((row) => row.id === tour.playing.value))?.id)
+
+/** The demo has the section's whole width for this visit (Expand): the list's parts sit in the band over it. */
+const expanded = ref(false)
+const layout = computed(() => (props.wide && !expanded.value ? 'beside' : 'band'))
+/** Which word the demo strip's button reads; none under 1000px, where the demo has the width already. */
+const expand = computed(() => (props.wide ? (expanded.value ? 'collapse' : 'expand') : undefined))
+
+/** In the band the chapters scroll sideways to keep the lit one in view, `scroll-padding` clear of the edge; only they
+ * scroll, never the section, which the beader may have scrolled to see the editor whole. */
+const chaptersEl = ref<HTMLElement>()
+watch(lit, (id) => {
+  const list = chaptersEl.value
+  const chapter = id ? list?.querySelector<HTMLElement>(`[data-testid="inside-chapter-${id}"]`) : undefined
+  if (!list || !chapter) return
+  const room = Number.parseFloat(getComputedStyle(list).scrollPaddingInlineStart) || 0
+  const left = scrollToShow({ left: list.scrollLeft, width: list.clientWidth }, { left: chapter.offsetLeft, width: chapter.offsetWidth }, room)
+  if (left !== list.scrollLeft) list.scrollTo?.({ left, behavior: reducedMotion.value ? 'instant' : 'smooth' })
 })
 
-/** A row pressed plays from there, even after the beader took the editor over. */
-function choose(row: InsideRowId) {
-  tour.choose(row)
+/** A chapter pressed plays from its first row, even paused or after the beader took the editor over. Under reduced
+ * motion, where nothing plays on, a press on the lit chapter shows its next row, round to its first. */
+function choose(chapter: InsideChapter) {
+  const ids = chapter.rows.map((row) => row.id)
+  const shown = tour.playing.value ? ids.indexOf(tour.playing.value) : -1
+  tour.choose(reducedMotion.value && shown >= 0 ? ids[(shown + 1) % ids.length]! : ids[0]!)
 }
+
+/** The tour stands still, paused or taken over: Pause reads Play. */
+const still = computed(() => tour.paused.value || tour.takenOver.value)
+function onPause() {
+  if (still.value) tour.resume()
+  else tour.pause()
+}
+
+/** Try it yourself: the demo is the beader's, as a press in it makes it, and the focus goes into it. */
+async function tryIt() {
+  tour.takeOver()
+  await nextTick()
+  editor.value?.takeFocus()
+}
+
+/** Expand or Collapse: the demo's size changes at once. */
+function toggleExpand() {
+  expanded.value = !expanded.value
+}
+
+/** The demo's size changed (Expand, Collapse, or the page crossing 1000px). A playing row starts again in the new size; a
+ * paused tour only has its view set again, and a beader who took over keeps the editor as it is. */
+watch(layout, async () => {
+  await nextTick()
+  if (tour.takenOver.value) return
+  if (tour.playing.value && !tour.paused.value) tour.choose(tour.playing.value)
+  else await editor.value?.refit()
+})
 </script>
 
 <template>
-  <!-- Named by its own heading, which sits in the band (ticket 0825), as the plans name theirs. -->
-  <section class="inside" aria-labelledby="homepage-inside" data-testid="whats-inside">
+  <!-- Named by its own heading, which sits in the list or the band (ticket 0825), as the plans name theirs. -->
+  <section
+    class="inside"
+    :class="withEditor ? [`inside--${layout}`, { 'inside--wide': wide }] : undefined"
+    aria-labelledby="homepage-inside"
+    data-testid="whats-inside"
+    :data-layout="withEditor ? layout : undefined"
+  >
     <template v-if="withEditor">
-      <div class="inside__band" data-testid="inside-band">
-        <div class="inside__head">
-          <h2 id="homepage-inside" class="inside__heading">{{ t.homepage.whatsInside }}</h2>
-          <ul ref="tabsEl" class="inside__tabs" data-testid="inside-list">
-            <li v-for="row in rows" :key="row.id">
-              <button
-                type="button"
-                class="inside__tab"
-                :class="{ 'inside__tab--playing': row.id === tour.playing.value }"
-                :aria-current="row.id === tour.playing.value ? 'step' : undefined"
-                :aria-describedby="`inside-line-${row.id}`"
-                :data-testid="`inside-row-${row.id}`"
-                @click="choose(row.id)"
-              >
-                <AppIcon class="inside__tab-icon" :name="row.icon" :size="18" />
-                <span>{{ row.name }}</span>
-              </button>
-            </li>
-          </ul>
+      <div class="inside__guide" data-testid="inside-guide">
+        <h2 id="homepage-inside" class="inside__heading">{{ t.homepage.whatsInside }}</h2>
+        <ul ref="chaptersEl" class="inside__chapters" data-testid="inside-chapters">
+          <li v-for="chapter in chapters" :key="chapter.id">
+            <button
+              type="button"
+              class="inside__chapter"
+              :class="{ 'inside__chapter--lit': chapter.id === lit }"
+              :aria-current="chapter.id === lit ? 'step' : undefined"
+              :aria-describedby="`inside-rows-${chapter.id}`"
+              :data-testid="`inside-chapter-${chapter.id}`"
+              @click="choose(chapter)"
+            >
+              <AppIcon class="inside__chapter-icon" :name="chapter.icon" :size="18" />
+              <span>{{ chapter.name }}</span>
+            </button>
+            <span :id="`inside-rows-${chapter.id}`" hidden>{{ chapter.describes }}</span>
+          </li>
+        </ul>
+        <!-- Each button keeps the width of the wider word it reads, which its `data-other` holds. -->
+        <div class="inside__controls">
+          <AppButton v-if="!reducedMotion" class="inside__control" size="sm" data-testid="inside-pause" @click="onPause">
+            <span class="inside__word" :data-other="still ? t.homepage.inside.pause : t.homepage.inside.play">{{ still ? t.homepage.inside.play : t.homepage.inside.pause }}</span>
+          </AppButton>
+          <AppButton class="inside__control" size="sm" data-testid="inside-try-it" @click="tryIt">{{ t.homepage.inside.tryIt }}</AppButton>
         </div>
-        <!-- Every row's caption in one cell, the one shown on top: the band keeps the tallest's height, so the editor
-             under it never changes size as the tour plays. -->
+        <!-- Every row's caption in one cell, the one shown on top: it keeps the tallest's height, so nothing moves and
+             the editor never changes size as the tour plays. Not a live region: it would speak every few seconds. -->
         <div class="inside__caption" data-testid="inside-caption">
           <p
             v-for="(row, index) in rows"
@@ -103,13 +158,13 @@ function choose(row: InsideRowId) {
             <AppIcon class="inside__caption-icon" :name="row.icon" :size="18" />
             <span class="inside__caption-words">
               <span class="inside__caption-name">{{ row.name }}</span>
-              <span :id="`inside-line-${row.id}`" class="inside__caption-line">{{ row.text }}</span>
+              <span class="inside__caption-line">{{ row.text }}</span>
             </span>
             <span class="inside__caption-place">{{ fillBlanks(t.homepage.inside.place, { at: index + 1, count: rows.length }) }}</span>
           </p>
         </div>
       </div>
-      <InsideEditor ref="editor" class="inside__editor" :taken-over="tour.takenOver.value" @take-over="tour.takeOver" />
+      <InsideEditor ref="editor" class="inside__editor" :taken-over="tour.takenOver.value" :expand="expand" @take-over="tour.takeOver" @toggle-expand="toggleExpand" />
     </template>
 
     <template v-else>
@@ -127,10 +182,12 @@ function choose(row: InsideRowId) {
   min-height: 0;
 }
 
-.inside__tabs {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* From 1000px, collapsed: the list on the demo's left, as tall as it. The row is as tall as the section's room and never
+ * shorter than the list's parts or the demo's least height: on a shorter screen the section scrolls inside itself. */
+.inside--beside {
+  display: grid;
+  grid-template-rows: minmax(min-content, 1fr);
+  grid-template-columns: var(--inside-list-width) minmax(0, 1fr);
 }
 
 .inside__heading {
@@ -141,12 +198,14 @@ function choose(row: InsideRowId) {
   color: var(--ink);
 }
 
-/* The band: its own background, never the canvas grid; the heading over the tabs under 1000px, beside them from it. */
-.inside__band {
+/* The list or the band: its own background, never the canvas grid. As a band under 1000px: the heading over the
+ * chapters, Pause and Try it yourself at the end of their line or under it, the caption under them. */
+.inside__guide {
   display: flex;
   flex: none;
-  flex-direction: column;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-12);
+  align-items: center;
   min-width: 0;
   padding: var(--space-10) var(--space-12);
   background: var(--box);
@@ -154,45 +213,109 @@ function choose(row: InsideRowId) {
   border-radius: var(--radius-lg);
 }
 
-.inside__head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  min-width: 0;
+.inside--band .inside__heading {
+  flex: 0 0 100%;
+  margin-bottom: var(--space-6);
 }
 
-@container homepage (min-width: 1000px) {
-  .inside__band {
-    padding: var(--space-8) var(--space-10) var(--space-8) var(--space-16);
-  }
-
-  .inside__head {
-    flex-direction: row;
-    gap: var(--space-16);
-    align-items: center;
-  }
-}
-
-/* The rows in one line, taking what the heading leaves and scrolling sideways with no scroll bar. */
-.inside__tabs {
+/* The chapters in one line, taking what is left and scrolling sideways with no scroll bar. */
+.inside__chapters {
   position: relative;
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
+  margin: 0;
+  padding: 0;
   overflow: auto hidden;
+  list-style: none;
   scroll-padding-inline: var(--space-24);
   scrollbar-width: none;
 }
 
-.inside__tabs::-webkit-scrollbar {
+.inside__chapters::-webkit-scrollbar {
   display: none;
 }
 
-.inside__tabs > li {
+.inside__chapters > li {
   flex: none;
 }
 
-.inside__tab {
+.inside__controls {
+  display: flex;
+  flex: none;
+  gap: var(--space-8);
+  margin-left: auto;
+}
+
+/* `--control-height-small`, 28px, under AppButton's own small height. */
+.inside .inside__control {
+  height: var(--control-height-small);
+}
+
+/* Pause and Play in one cell, the one not read hidden: the button keeps the wider word's width. */
+.inside__word {
+  display: inline-grid;
+}
+
+.inside__word::after {
+  content: attr(data-other);
+  grid-area: 1 / 1;
+  height: 0;
+  visibility: hidden;
+}
+
+.inside__caption {
+  display: grid;
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* The band from 1000px (the demo expanded): padding 8 10 8 16, the heading, the chapters and the buttons on one line. */
+.inside--band.inside--wide .inside__guide {
+  column-gap: var(--space-16);
+  padding: var(--space-8) var(--space-10) var(--space-8) var(--space-16);
+}
+
+.inside--band.inside--wide .inside__heading {
+  flex: none;
+  margin-bottom: 0;
+}
+
+.inside--band.inside--wide .inside__chapters {
+  flex: 1 1 0;
+}
+
+/* The list: padding 12 16 16; the heading, 8px under it the chapters one under another, a hairline with 12px over and
+ * under it, the caption, and at its foot Pause and Try it yourself. */
+.inside--beside .inside__guide {
+  flex-flow: column nowrap;
+  gap: 0;
+  align-items: stretch;
+  padding: var(--space-12) var(--space-16) var(--space-16);
+}
+
+.inside--beside .inside__chapters {
+  flex: none;
+  flex-direction: column;
+  margin-top: var(--space-8);
+  overflow: visible;
+}
+
+.inside--beside .inside__caption {
+  flex: none;
+  margin-top: var(--space-12);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--panel-rule);
+}
+
+.inside--beside .inside__controls {
+  order: 1;
+  flex-wrap: wrap;
+  margin: auto 0 0;
+  padding-top: var(--space-12);
+}
+
+.inside__chapter {
   position: relative;
   display: flex;
   gap: var(--space-10);
@@ -210,22 +333,31 @@ function choose(row: InsideRowId) {
     color var(--duration-fast) var(--ease-standard);
 }
 
-.inside__tab:hover {
+/* In the list a chapter is `--inside-row-height` tall and the list's width. */
+.inside--beside .inside__chapter {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--inside-row-height);
+  padding: 0 var(--space-10);
+}
+
+.inside__chapter:hover {
   color: var(--ink);
   background: var(--hover-fill);
 }
 
-.inside__tab:focus-visible {
+.inside__chapter:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
-/* The row playing: a 2px `accent` bar along its foot, its icon `accent-strong`, its name `ink`. */
-.inside__tab--playing {
+/* The chapter whose row is playing: its icon `accent-strong`, its name `ink`, and a 2px `accent` bar, along its foot in
+ * the band and down its left edge in the list. */
+.inside__chapter--lit {
   color: var(--ink);
 }
 
-.inside__tab--playing::after {
+.inside__chapter--lit::after {
   content: '';
   position: absolute;
   right: var(--space-10);
@@ -236,16 +368,22 @@ function choose(row: InsideRowId) {
   border-radius: var(--radius-full);
 }
 
-.inside__tab--playing .inside__tab-icon,
+.inside--beside .inside__chapter--lit::after {
+  top: var(--space-6);
+  right: auto;
+  bottom: var(--space-6);
+  left: 0;
+  width: 2px;
+  height: auto;
+}
+
+.inside__chapter--lit .inside__chapter-icon,
 .inside__caption-icon {
   color: var(--accent-strong);
 }
 
-/* The caption: the playing row's icon, name, line and place. */
-.inside__caption {
-  display: grid;
-}
-
+/* The caption: the playing row's icon, name, line and place. In the band on one line where there is room, the line
+ * wrapping beside or under the name on a narrower one. */
 .inside__caption-row {
   display: flex;
   grid-area: 1 / 1;
@@ -293,6 +431,34 @@ function choose(row: InsideRowId) {
   font: var(--type-meta-small);
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* In the list: the icon, the name and on the right the place on one line, the row's line 6px under them. */
+.inside--beside .inside__caption-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  row-gap: var(--space-6);
+  align-content: start;
+  padding: 0;
+}
+
+.inside--beside .inside__caption-words {
+  display: contents;
+}
+
+/* A long name wraps beside its place, never cut short. */
+.inside--beside .inside__caption-name {
+  white-space: normal;
+}
+
+.inside--beside .inside__caption-line {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+
+.inside--beside .inside__caption-place {
+  grid-row: 1;
+  grid-column: 3;
 }
 
 /* The demo framed as a window onto the editor, not the page's canvas; it fills the rest of the section's room. */

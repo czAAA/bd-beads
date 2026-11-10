@@ -226,4 +226,23 @@ describe('useOverlayLayer in a boxed shell (ticket 0797)', () => {
     box.remove()
     outside.remove()
   })
+
+  it("leaves a press on the page's own control in the box alone: the layer stays open and the press goes on (ticket 0830)", () => {
+    const box = document.body.appendChild(document.createElement('div'))
+    const own = box.appendChild(document.createElement('button'))
+    const other = box.appendChild(document.createElement('button'))
+    const scope: ShellScope = { root: () => box, teleportTo: 'body', pagesOwn: (target) => target === own }
+    const close = vi.fn()
+    const boxed = mount(rootedLayer(close, scope))
+
+    const ownPress = press(own)
+    expect(close).not.toHaveBeenCalled()
+    expect(ownPress.defaultPrevented).toBe(false)
+
+    const otherPress = press(other)
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(otherPress.defaultPrevented).toBe(true)
+    boxed.unmount()
+    box.remove()
+  })
 })

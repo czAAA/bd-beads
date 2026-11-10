@@ -26,22 +26,28 @@ beforeEach(async () => {
   withMotion()
   mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
   await page.viewport(1440, 900)
-  // What's inside's editor is playing its tour: its layout changes many times a second.
-  await expect.poll(() => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-row-canvas')
 })
+
+/** What's inside's editor is playing its tour: its layout changes many times a second. */
+async function playing() {
+  expect(shown()).toBe('inside')
+  await expect.poll(() => mounted.root.querySelector('[data-testid="inside-chapters"] [aria-current="step"]')?.getAttribute('data-testid'), { timeout: 8000 }).toBe('inside-chapter-draw')
+}
+
 afterEach(() => {
   mounted.unmount()
   window.matchMedia = realMatchMedia
 })
 
 describe('The Homepage turns both ways (ticket 0801)', () => {
-  it('by Next and Back, through every section and back to What\'s inside', async () => {
-    for (const to of ['coffee', 'plans']) {
+  it('by Next and Back, through every section and back to Welcome', async () => {
+    for (const to of ['inside', 'coffee', 'plans']) {
       testid('section-next').click()
       await settle()
       expect(shown()).toBe(to)
+      if (to === 'inside') await playing()
     }
-    for (const to of ['coffee', 'inside']) {
+    for (const to of ['coffee', 'inside', 'welcome']) {
       testid('section-back').click()
       await settle()
       expect(shown()).toBe(to)
@@ -50,10 +56,11 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
 
   it('by the wheel, one section a scroll, down through the plans\' free list and back up', async () => {
     const strip = testid('canvas-strip')
-    for (const to of ['coffee', 'plans']) {
+    for (const to of ['inside', 'coffee', 'plans']) {
       await userEvent.wheel(strip, { delta: { y: 100 } })
       await settle()
       expect(shown()).toBe(to)
+      if (to === 'inside') await playing()
     }
     // Over the plans the wheel scrolls their section, growing the free list, and turns nothing.
     const plans = testid('homepage-section-plans')
@@ -65,7 +72,7 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
     await userEvent.wheel(plans, { delta: { y: -100 } })
     await settle()
     expect(plans.scrollTop).toBe(0)
-    for (const to of ['coffee', 'inside']) {
+    for (const to of ['coffee', 'inside', 'welcome']) {
       await userEvent.wheel(strip, { delta: { y: -100 } })
       await settle()
       expect(shown()).toBe(to)
@@ -75,24 +82,30 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
   it('by the keys, from wherever the focus is', async () => {
     await userEvent.keyboard('{PageDown}')
     await settle()
+    await playing()
+    await userEvent.keyboard('{PageDown}')
+    await settle()
     expect(shown()).toBe('coffee')
     await userEvent.keyboard('{ArrowDown}')
     await settle()
     expect(shown()).toBe('plans')
     await userEvent.keyboard('{Home}')
     await settle()
-    expect(shown()).toBe('inside')
+    expect(shown()).toBe('welcome')
     // A press on the box's own ground takes the focus off the page; the keys still turn it.
     ;(document.activeElement as HTMLElement | null)?.blur()
     await userEvent.keyboard('{PageDown}')
     await settle()
-    expect(shown()).toBe('coffee')
+    expect(shown()).toBe('inside')
     await userEvent.keyboard('{PageUp}')
     await settle()
-    expect(shown()).toBe('inside')
+    expect(shown()).toBe('welcome')
   })
 
   it('never scrolls the page itself: the box stands still while it turns', async () => {
+    testid('section-next').click()
+    await settle()
+    await playing()
     testid('section-next').click()
     await settle()
     testid('section-back').click()

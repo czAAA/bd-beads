@@ -12,9 +12,10 @@ export async function openApp(
   page: Page,
   projects: Project[],
   url = './',
-  /** Leave the storage note (ticket 399) to appear at the first save; by default the device has already seen it, so
-   * it never covers a check's clicks. */
-  options: { storageNote?: boolean } = {},
+  /** `storageNote`: leave the storage note (ticket 399) to appear at the first save; by default the device has already
+   * seen it, so it never covers a check's clicks. `canvasHidden`: the page opens with its canvas out of sight (the
+   * Homepage shows Welcome first, ticket 0830), so wait for it to be there, not to be seen. */
+  options: { storageNote?: boolean; canvasHidden?: boolean } = {},
 ): Promise<void> {
   if (!options.storageNote) {
     await page.addInitScript(() => localStorage.setItem('openbeads:storage-note-seen', 'yes'))
@@ -42,7 +43,7 @@ export async function openApp(
     document.documentElement.appendChild(style)
   }, '* { text-rendering: geometricPrecision; font-kerning: normal; font-synthesis: none; -webkit-font-smoothing: antialiased; }')
   await page.goto(url)
-  await page.getByTestId('app-canvas').waitFor()
+  await page.getByTestId('app-canvas').waitFor({ state: options.canvasHidden ? 'attached' : 'visible' })
   // The app's line height is 145% of 18px, which puts everything below the first line of text at a fractional pixel
   // and so blurs the edge of every bead by a fraction of a pixel. Pinning it to whole pixels leaves the layout as it is
   // and the screenshots free of that noise.

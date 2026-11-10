@@ -8,6 +8,9 @@ export interface ShellScope {
   root: () => HTMLElement | null | undefined
   /** Where the shell's popovers are teleported to, as a selector. */
   teleportTo: string
+  /** Whether something in the box is the page's own control, not the shell's (the demo strip's Expand, ticket 0830):
+   * a press on it is no press outside the shell's overlays. */
+  pagesOwn?: (target: Element) => boolean
 }
 
 /** The room overlays are placed in, in screen coordinates. */

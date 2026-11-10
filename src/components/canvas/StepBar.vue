@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useElementSize } from '../../composables/ui/useElementSize'
 import ProgressMoves from './ProgressMoves.vue'
 import ProgressBar from './ProgressBar.vue'
 import ProgressTrack from './ProgressTrack.vue'
@@ -31,6 +32,8 @@ const props = defineProps<{
   finish?: { label: string; disabled?: boolean; disabledBody?: string; testid: string }
   /** Why Next is off while the next step is not open yet. */
   nextDisabledBody?: string
+  /** Next drawn secondary, on a page whose one primary button is another (the Homepage, ticket 0830). */
+  nextVariant?: 'primary' | 'secondary'
   /** Prefix of the test ids: `<testid>-bar`, `-counter`, `-track`, `-step`, `-back`, `-next`. */
   testid: string
 }>()
@@ -57,6 +60,7 @@ const forward = computed(() => {
   if (finishing.value && finish) return { label: finish.label, disabled: finish.disabled, disabledBody: finish.disabledBody, testid: finish.testid }
   return {
     label: props.nextLabel,
+    variant: props.nextVariant,
     trailingIcon: icons.value.next,
     disabled: props.step === last.value || !!nextStep.value?.disabled,
     disabledBody: nextStep.value?.disabled ? props.nextDisabledBody : props.lastBody,
@@ -97,12 +101,33 @@ function stepClass(index: number) {
 function go(index: number) {
   if (!props.steps[index]?.disabled) emit('go', index)
 }
+
+const dotsEl = ref<HTMLElement>()
+const dotsSize = useElementSize(dotsEl)
+/** The least room between two names, in px (`--space-6`): closer, and they read as one. */
+const NAMES_APART = 6
+/** The names don't fit side by side (the Homepage's four under about 950px, ticket 0830): only the current step's shows. */
+const tight = ref(false)
+
+/** Judged by the names as laid out, hidden ones too: they keep their room, so showing fewer never changes the answer. */
+function measureNames() {
+  const names = [...(dotsEl.value?.querySelectorAll('.step-dot > span') ?? [])].map((name) => name.getBoundingClientRect())
+  // Not laid out (a test's DOM, a bar not shown): nothing to judge by.
+  if (names.some((name) => name.width === 0)) return
+  tight.value = names.some((name, index) => index > 0 && name.left - names[index - 1]!.right < NAMES_APART)
+}
+
+watch([dotsSize.width, () => props.steps.map((entry) => entry.label).join('\n'), () => props.step], measureNames, { flush: 'post' })
+onMounted(() => {
+  measureNames()
+  void document.fonts?.ready.then(measureNames)
+})
 </script>
 
 <template>
   <ProgressBar class="step-bar" :data-testid="`${testid}-bar`">
     <p class="step-bar__counter" :data-testid="`${testid}-counter`">{{ step + 1 }}/{{ steps.length }}</p>
-    <span class="step-dots">
+    <span ref="dotsEl" class="step-dots" :class="{ 'step-dots--tight': tight }">
       <ProgressTrack
         class="step-bar__track"
         :share="share"
@@ -253,6 +278,21 @@ function go(index: number) {
 .step-dot--disabled {
   color: var(--faint);
   cursor: default;
+}
+
+/* Where the names would run into each other only the current step's shows (ticket 0830); the others keep their dots,
+ * and each shows its name, over the current one's, while pointed at or focused. */
+.step-dots--tight .step-dot:not(.step-dot--current) > span {
+  visibility: hidden;
+}
+
+.step-dots--tight .step-dot:is(:hover, :focus-visible) {
+  z-index: 1;
+}
+
+.step-dots--tight .step-dot:is(:hover, :focus-visible) > span {
+  visibility: visible;
+  background: var(--box);
 }
 
 .step-dot:focus-visible {

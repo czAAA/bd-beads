@@ -8,9 +8,9 @@ import { tokenPx as tokenOf } from '../testUtils/tokenPx'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import HomePage from './HomePage.vue'
 
-// The Homepage on a phone (ticket 0827; Homepage card): its own bar at the box's foot, What's inside and the promises
-// as grouped lists, the plans stacked, each section ending in "Next · …"; laid out and every text fit at a large and a
-// small phone, in each language and for a new visitor and with Projects saved; misfits are the page's (`HomePage`).
+// The Homepage on a phone (tickets 0827, 0830; Homepage card): its own bar at the box's foot, Welcome's tile, What's
+// inside and the promises as grouped lists, the plans stacked, each section ending in "Next · …"; laid out and every
+// text fit at a large and a small phone, in each language, new and with Projects saved; misfits are `HomePage`'s.
 
 let mounted: Mounted
 afterEach(() => mounted.unmount())
@@ -77,7 +77,25 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           // No zoom on a phone.
           expect(box('[data-testid="zoom-reset"]').width).toBe(0)
 
+          // Welcome first (ticket 0830): the tile with no button in it (the bar's main button is the way in), the piece
+          // inside it, and the three promises a grouped list under it.
+          expect(mounted.root.querySelectorAll('[data-testid="phone-bar-segment"]')).toHaveLength(4)
+          insideTheSection()
+          const welcome = box('.welcome__tile')
+          expect(mounted.root.querySelectorAll('[data-testid="homepage-welcome"] button')).toHaveLength(0)
+          const piece = box('[data-testid="welcome-piece"]')
+          expect(piece.left).toBeGreaterThanOrEqual(welcome.left)
+          expect(piece.right).toBeLessThanOrEqual(welcome.right)
+          expect(piece.width, 'the piece the tile\'s width but its padding').toBeGreaterThan(welcome.width * 0.8)
+          expect(box('[data-testid="welcome-caption"]').top).toBeGreaterThanOrEqual(piece.bottom)
+          const kept = box('[data-testid="welcome-promises"]')
+          expect(kept.top).toBeGreaterThanOrEqual(welcome.bottom)
+          expect(mounted.root.querySelectorAll('[data-testid="welcome-promises"] > li')).toHaveLength(3)
+          endsWithNext(el('#homepage-inside').textContent!)
+          found.push(...(await misfitsNow()))
+
           // What's inside: one grouped list, each row's icon tile beside its name over its line.
+          await next()
           insideTheSection()
           const list = box('[data-testid="inside-list"]')
           const rows = [...mounted.root.querySelectorAll('[data-testid="inside-list"] > li')]

@@ -1028,6 +1028,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onOpenExport: overlays.onOpenExport,
       /** The Homepage's demo (ticket 0797): its margin sheet's band has no Row not done. */
       demo: !!demo,
+      /** The demo's Expand in its Canvas strip (ticket 0830): the word it reads, none in the editor itself. */
+      demoExpand: computed(() => demo?.expand?.()),
+      onToggleDemoExpand: () => demo?.toggleExpand?.(),
       surfaceProbe,
     },
     /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
@@ -1187,8 +1190,9 @@ interface SurfaceProbe {
 /** How a shell differs from the editor's own. */
 export interface ShellOptions {
   /** The Homepage's demo editor (ticket 0797), on services of its own in memory: what belongs to the page (its zoom
-   * lock, the update prompt, the save on leaving) stays the page's, and New Project asks the demo to start afresh. */
-  demo?: { startAfresh: () => void }
+   * lock, the update prompt, the save on leaving) stays the page's, and New Project asks the demo to start afresh.
+   * Its Canvas strip offers Expand or Collapse (ticket 0830), whichever `expand` says, and none where it says none. */
+  demo?: { startAfresh: () => void; expand?: () => 'expand' | 'collapse' | undefined; toggleExpand?: () => void }
 }
 
 type Wired = ReturnType<typeof wireAppShell>

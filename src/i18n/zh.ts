@@ -331,6 +331,15 @@ export const zh: Translations = {
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
     whatsInside: '功能一览',
+    welcome: {
+      heading: '串珠图样，按珠子实际的排列方式绘制。',
+      line: '适用于织机、佩奥特编织和砖形。',
+      seeHow: '看看怎么用',
+      colors: { other: '{codes} 种 {brands} 颜色' },
+      starters: { other: '{count} 个起始方案' },
+      caption: '{technique} · {size}',
+      piece: '太阳下的群山，佩奥特编织',
+    },
     inside: {
       rows: {
         canvas: { name: '画布和边框', text: '随处绘制：画布没有边界。边框决定尺寸、导出和珠子数量。' },
@@ -350,8 +359,14 @@ export const zh: Translations = {
       editor: '功能一览：编辑器',
       demo: { ring: '戒指', heart: '心形', bracelet: '手链' },
       place: '{at} / {count}',
+      chapters: { draw: '绘制', startFrom: '从现成的开始', beadColors: '真实的珠子颜色', weaveKeep: '编织并保存' },
+      pause: '暂停',
+      play: '播放',
+      tryIt: '自己试试',
+      expand: '展开',
+      collapse: '收起',
     },
-    sections: { label: '章节', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}', moreBelow: '下方还有' },
+    sections: { label: '章节', welcome: '欢迎', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}', moreBelow: '下方还有' },
     coffee: { title: '一家人做的', text: 'openbeads 将保持免费且完全本地运行，没有广告，也不追踪用户。如果它对你有帮助，可以通过 Buy Me a Coffee 支持它的开发。', button: '请我喝咖啡', star: '在 GitHub 上点个星标也是一种支持。', source: '查看源代码' },
     promises: {
       device: { name: '属于你，留在本设备', text: '在浏览器中运行。无需账户，无需安装。' },

@@ -52,6 +52,21 @@ describe("What's inside's Mirror row (ticket 0802)", () => {
   })
 })
 
+describe("What's inside's rows in the order they play (ticket 0830)", () => {
+  it('closes the Mirror before the Starter gallery, which comes right after the Mirror row', async () => {
+    const { hand, presses } = fakeHand()
+    await TOUR_SCRIPTS.starters(hand)
+    expect(presses.slice(0, 4)).toEqual(['pill-tool-mirror', 'mirror-bar-close', 'strip-frame', 'frame-replace-from-starter'])
+  })
+
+  it("starts the Reference image row by clearing the Starter's ring, the Mirror closed already", async () => {
+    const { hand, presses } = fakeHand()
+    await TOUR_SCRIPTS.reference(hand)
+    expect(presses).not.toContain('pill-tool-mirror')
+    expect(presses[0]).toBe('pill-tool-select')
+  })
+})
+
 describe("What's inside's rows wait only for the tour's holds", () => {
   const holds: number[] = Object.values(HOLD)
   for (const row of Object.keys(TOUR_SCRIPTS) as InsideRowId[]) {

@@ -3,6 +3,7 @@ import type {} from '@vitest/browser-playwright'
 import { cdp, page } from 'vitest/browser'
 import { mountAt } from '../../testUtils/browserFit'
 import { fakeFeedback } from '../../testUtils/fakeFeedback'
+import { turnToSection } from '../../testUtils/homepageSection'
 import HomePage from '../HomePage.vue'
 
 // Everything the ghost presses or rests on is seen whole (ticket 0820): the tour played with motion, as a visitor
@@ -20,15 +21,28 @@ function ghostTip(editor: Element): { x: number; y: number } | undefined {
   return { x: layer.left + Number(moved[1]) + 4, y: layer.top + Number(moved[2]) + 2 }
 }
 
-/** The part of the screen an element can show in: inside every ancestor that clips it and the window; one in the top
- * layer (a menu, a picker) is clipped by none of its ancestors past itself. */
+/** Where a scroller's room starts: under the headers stuck at its top (a section's title, a table's head), which cover
+ * what scrolls beneath them. One round `element` is no cover. */
+function underStuck(scroller: Element, element: Element, top: number): number {
+  let under = top
+  for (const each of scroller.querySelectorAll('*')) {
+    if (each.contains(element) || getComputedStyle(each).position !== 'sticky') continue
+    const box = each.getBoundingClientRect()
+    if (box.height > 0 && box.top <= under + SLACK && box.bottom > under) under = box.bottom
+  }
+  return under
+}
+
+/** The part of the screen an element can show in: inside every ancestor that clips it, under the headers stuck at a
+ * scroller's top, and the window; one in the top layer (a menu, a picker) is clipped by none of its ancestors past itself. */
 function roomOf(element: Element): { left: number; top: number; right: number; bottom: number } {
   const room = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight }
   for (let up = element.parentElement; up; up = up.parentElement) {
     const style = getComputedStyle(up)
     if (/(auto|scroll|hidden|clip)/.test(style.overflowX + style.overflowY)) {
       const clip = up.getBoundingClientRect()
-      Object.assign(room, { left: Math.max(room.left, clip.left), top: Math.max(room.top, clip.top), right: Math.min(room.right, clip.right), bottom: Math.min(room.bottom, clip.bottom) })
+      const top = /(auto|scroll)/.test(style.overflowY) ? underStuck(up, element, clip.top) : clip.top
+      Object.assign(room, { left: Math.max(room.left, clip.left), top: Math.max(room.top, top), right: Math.min(room.right, clip.right), bottom: Math.min(room.bottom, clip.bottom) })
     }
     if (up.matches(':popover-open')) break
   }
@@ -115,11 +129,13 @@ describe("What's inside: everything the ghost presses is seen whole (ticket 0820
       await page.viewport(width, height)
       const editor = mounted.root.querySelector('[data-testid="inside-editor"]')!
       const ghost = watchTheGhost(editor)
-      const playing = () => mounted.root.querySelector('[aria-current="step"]')?.getAttribute('data-testid')
+      // Welcome comes first (ticket 0830): the tour plays once the page is turned to What's inside.
+      await turnToSection(mounted.root, 'inside')
+      const playing = () => mounted.root.querySelector('[data-testid="inside-chapters"] [aria-current="step"]')?.getAttribute('data-testid')
       try {
-        await expect.poll(playing, { timeout: 8000 }).toBe('inside-row-canvas')
-        await expect.poll(playing, { timeout: 600_000, interval: 500 }).toBe('inside-row-savedProjects')
-        await expect.poll(playing, { timeout: 120_000, interval: 500 }).toBe('inside-row-canvas')
+        await expect.poll(playing, { timeout: 8000 }).toBe('inside-chapter-draw')
+        await expect.poll(playing, { timeout: 600_000, interval: 500 }).toBe('inside-chapter-weaveKeep')
+        await expect.poll(playing, { timeout: 300_000, interval: 500 }).toBe('inside-chapter-draw')
       } finally {
         ghost.stop()
       }

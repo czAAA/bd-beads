@@ -199,3 +199,86 @@ describe("What's inside's tour (ticket 0797)", () => {
     expect(tour.captioned.value).toBe('mirror')
   })
 })
+
+describe("What's inside's Pause and Play (ticket 0830)", () => {
+  /** The tour playing its second row. */
+  async function onSecondRow() {
+    const host = tourHost()
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before + 1000 + TOUR_TIMING.after + TOUR_TIMING.before)
+    expect(host.tour.playing.value).toBe('techniques')
+    return host
+  }
+
+  it('pauses where it is: the ghost hidden, the row still lit, nothing more played', async () => {
+    const { done, steps, tour } = await onSecondRow()
+    tour.pause()
+    expect(tour.paused.value).toBe(true)
+    expect(done.at(-1)).toBe('hide')
+    expect(tour.playing.value).toBe('techniques')
+    const before = steps().length
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(steps().slice(before)).toEqual([])
+    expect(tour.playing.value).toBe('techniques')
+  })
+
+  it('plays on from the start of the row that was playing: a fresh demo, the rows before it applied at once', async () => {
+    const { steps, tour } = await onSecondRow()
+    tour.pause()
+    const before = steps().length
+    tour.resume()
+    expect(tour.paused.value).toBe(false)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(steps().slice(before)).toEqual(['fresh', 'apply canvas', 'play techniques'])
+  })
+
+  it('stays paused at its row when the page turns away and back', async () => {
+    const { steps, seen, tour } = await onSecondRow()
+    tour.pause()
+    const before = steps().length
+    seen.value = false
+    await vi.advanceTimersByTimeAsync(0)
+    seen.value = true
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(steps().slice(before)).toEqual([])
+    expect(tour.paused.value).toBe(true)
+    expect(tour.playing.value).toBe('techniques')
+  })
+
+  it('plays a row chosen while paused, paused no more', async () => {
+    const { tour } = await onSecondRow()
+    tour.pause()
+    tour.choose('mirror')
+    expect(tour.paused.value).toBe(false)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(tour.playing.value).toBe('mirror')
+  })
+
+  it('plays on from the row that was playing after the beader took the editor over', async () => {
+    const { steps, tour } = await onSecondRow()
+    tour.takeOver()
+    const before = steps().length
+    tour.resume()
+    expect(tour.takenOver.value).toBe(false)
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(steps().slice(before)).toEqual(['fresh', 'apply canvas', 'play techniques'])
+  })
+
+  it('unlights a paused tour the beader takes over', async () => {
+    const { tour } = await onSecondRow()
+    tour.pause()
+    tour.takeOver()
+    expect(tour.playing.value).toBeUndefined()
+    expect(tour.takenOver.value).toBe(true)
+    expect(tour.paused.value).toBe(false)
+  })
+
+  it('paused before it has started, plays from the first row', async () => {
+    const { steps, tour } = tourHost()
+    tour.pause()
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(steps()).toEqual([])
+    tour.resume()
+    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
+    expect(steps()).toEqual(['fresh', 'play canvas'])
+  })
+})
