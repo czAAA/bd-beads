@@ -316,6 +316,19 @@ function onListKeydown(event: KeyboardEvent) {
   cursor: pointer;
 }
 
+/* Touch (ticket 0836): a list row is `panel-row-touch` wherever the picker sits, not only in a panel (the converter's
+ * page sets no `--panel-item-height`, so its rows were 23px and their 44px hit areas overlapped), and each row is its
+ * own hit area, as the rows touch (responsive.md). */
+@media (pointer: coarse) {
+  .panel-picker__option {
+    min-height: var(--panel-row-touch);
+  }
+
+  .panel-picker__option::before {
+    content: none;
+  }
+}
+
 .panel-picker__option:focus {
   background: var(--overlay-hover);
 }
