@@ -14,13 +14,13 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
-      en: 'On an iPad the converter fits: its whole tool bar shows, slider labels stay apart, and Next and Change show what they open',
-      ru: 'На iPad конвертер помещается целиком: видна вся панель инструментов, подписи слайдеров не наезжают друг на друга, а «Дальше» и «Изменить» показывают то, что открывают',
-      uk: 'На iPad конвертер вміщується повністю: видно всю панель інструментів, підписи повзунків не налазять одна на одну, а «Далі» і «Змінити» показують те, що відкривають',
-      be: 'На iPad канвертар змяшчаецца цалкам: відаць усю панэль інструментаў, подпісы паўзункоў не налазяць адзін на адзін, а «Далей» і «Змяніць» паказваюць тое, што адкрываюць',
-      zh: '在 iPad 上转换器完整显示：工具栏全部可见，滑块标签不再重叠，“下一步”和“更改”会把打开的内容带到眼前',
-      es: 'En un iPad el conversor cabe entero: se ve toda su barra de herramientas, las etiquetas de los deslizadores no se pisan, y Siguiente y Cambiar muestran lo que abren',
-      pl: 'Na iPadzie konwerter mieści się cały: widać cały pasek narzędzi, etykiety suwaków na siebie nie nachodzą, a Dalej i Zmień pokazują to, co otwierają',
+      en: 'On an iPad the converter fits the screen, and what you open in it comes into view',
+      ru: 'На iPad конвертер помещается на экран, а то, что вы в нём открываете, видно сразу',
+      uk: 'На iPad конвертер вміщується на екран, а те, що ви в ньому відкриваєте, видно одразу',
+      be: 'На iPad канвертар змяшчаецца на экран, а тое, што вы ў ім адкрываеце, відаць адразу',
+      zh: '在 iPad 上转换器完整显示在屏幕内，打开的内容会直接出现在眼前',
+      es: 'En un iPad el conversor cabe en la pantalla, y lo que abres en él aparece a la vista',
+      pl: 'Na iPadzie konwerter mieści się na ekranie, a to, co w nim otwierasz, od razu widać',
     },
   },
   {
