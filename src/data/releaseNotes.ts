@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-10',
     line: {
+      en: 'On a tablet, a tap in the converter’s menus picks the row you tapped, and the library’s × is easier to hit',
+      ru: 'На планшете касание в меню конвертера выбирает ту строку, которой вы коснулись, а в × в библиотеке легче попасть',
+      uk: 'На планшеті дотик у меню конвертера вибирає той рядок, якого ви торкнулися, а в × у бібліотеці легше влучити',
+      be: 'На планшэце дотык у меню канвертара выбірае той радок, якога вы дакрануліся, а ў × у бібліятэцы лягчэй трапіць',
+      zh: '在平板上，转换器菜单里点哪一行就选中哪一行，项目库里的 × 也更容易点中',
+      es: 'En una tableta, un toque en los menús del conversor elige la fila que tocaste, y la × de la biblioteca es más fácil de acertar',
+      pl: 'Na tablecie dotknięcie w menu konwertera wybiera dotknięty wiersz, a w × w bibliotece łatwiej trafić',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
       en: 'A selection’s bar now sits clear of its top handles, so you can grab them where you see them',
       ru: 'Панель выделения больше не заслоняет верхние ручки: их можно взять там, где они видны',
       uk: 'Панель виділення більше не затуляє верхні ручки: їх можна взяти там, де їх видно',
