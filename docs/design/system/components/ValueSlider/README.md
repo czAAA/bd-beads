@@ -16,7 +16,7 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 ## Marks
 
 - Optional. Each mark is a `--slider-mark-width` (2px) × `--slider-mark-height` (14px) bar in `line-strong`, radius 1, standing across the track at its value. It is taller than the track, so it still shows over the filled part; the thumb covers it.
-- A mark may carry a label under the track, on the ends' line, in `meta-small` `muted`, centred under it ("8×8 px"). A label that would touch an end's label or another label is left out; the mark stays.
+- A mark may carry a label under the track, on the ends' line, in `meta-small` `muted`, centred under it ("8×8 px"). A label that would touch an end's label or another label is left out; the mark stays. "Touch" is measured on the labels as drawn, in the language shown: two labels keep at least `--slider-label-gap` (12px) between them, and the marks are tried in order, so an earlier mark's label wins (ticket 0862).
 - **Settling on a mark:** a pointer drag released within `--slider-mark-snap` (6px) of a mark lands on it. Keys never snap: they step by 1 and land on marks on their way.
 - Marks are drawn for the pointer and the eye; they are not separate stops for a screen reader, which hears the meaning in `aria-valuetext` when the value is on one.
 

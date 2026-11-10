@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
+import { useRevealWhenOpen } from '../../composables/ui/useRevealWhenOpen'
 import AppIcon from '../ui/AppIcon.vue'
 
 // A full-width row that opens its content in place, below it (DisclosureRow card, without an icon): the Convert image
@@ -13,10 +14,13 @@ defineProps<{
 
 const open = ref(false)
 const contentId = useId()
+const rootEl = ref<HTMLElement>()
+// Opened under the fold, it scrolls up into view (ticket 0862).
+useRevealWhenOpen(rootEl, () => open.value)
 </script>
 
 <template>
-  <div class="convert-disclosure" :class="{ 'convert-disclosure--open': open }">
+  <div ref="rootEl" class="convert-disclosure" :class="{ 'convert-disclosure--open': open }">
     <button type="button" class="convert-disclosure__row" :aria-expanded="open" :aria-controls="contentId" :data-testid="testid" @click="open = !open">
       <span class="convert-disclosure__label">{{ label }}</span>
       <span v-if="summary" class="convert-disclosure__summary" :data-testid="testid && `${testid}-summary`">{{ summary }}</span>
@@ -30,6 +34,8 @@ const contentId = useId()
 
 <style scoped>
 .convert-disclosure {
+  /* Revealed clear of the step's pinned header. */
+  scroll-margin-top: var(--convert-step-head);
   border-top: 1px solid var(--panel-rule);
   border-bottom: 1px solid var(--panel-rule);
 }

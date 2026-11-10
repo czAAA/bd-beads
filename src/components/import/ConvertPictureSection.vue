@@ -103,6 +103,7 @@ watchPostEffect(() => {
       <FileButton
         v-if="touch"
         :label="t.convertImage.wizard.takePhoto"
+        icon="camera"
         :accept="accept"
         capture="environment"
         data-testid="convert-take-photo"
@@ -170,18 +171,24 @@ watchPostEffect(() => {
   gap: var(--space-16);
 }
 
+/* One row of the ways in, shared out evenly (ticket 0862): a button is never narrower than its label, so a pane too
+ * narrow for all of them in a row (a phone) stacks them. */
 .convert-picture__ways {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-8);
 }
 
-/* A button fills its cell, so the rows line up whatever the label's width. */
-.convert-picture__ways > *,
+.convert-picture__ways > * {
+  flex: 1 1 0;
+  min-width: max-content;
+}
+
+/* Every way in at field-height, Paste with the file buttons, filling its share of the row. */
 .convert-picture__ways :deep(.app-button) {
   box-sizing: border-box;
   width: 100%;
-  min-width: 0;
+  height: var(--field-height);
 }
 
 .convert-picture__set {
