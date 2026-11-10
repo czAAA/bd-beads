@@ -292,6 +292,12 @@
   --type-inside-name: 600 0.875rem/1.25rem var(--font-sans); /* A coffee screen tile's name, Inter 600 14 (ticket 0823). */
   --type-promise: 500 0.8125rem/1.125rem var(--font-sans); /* A coffee screen promise's name, Inter 500 13/18 (ticket 0823). */
   --type-inside-line: 400 0.8125rem/1.125rem var(--font-sans); /* The playing row's line, Inter 13/18. */
+  /* Homepage card, Welcome first (ticket 0830). */
+  --inside-list-width: 16rem; /* What's inside's list beside the demo from 1000px, 256px. */
+  --inside-row-height: 2rem; /* A chapter's row in that list, 32px. */
+  --welcome-tile-width: 60rem; /* The Welcome section's tile at its widest, 960px. */
+  --welcome-heading-size: 2.75rem; /* The Welcome heading, serif-heading at 44px on 48. */
+  --welcome-piece-width: 52.5rem; /* The finished piece on the Welcome tile at its widest, 840px. */
   /* Homepage card, the nudge (ticket 0784). */
   --nudge-lift: 0.75rem; /* How far the first section lifts to show the page scrolls, 12px. */
   --nudge-fade: 0.82; /* The first section's opacity at the top of its lift. */
