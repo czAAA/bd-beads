@@ -29,6 +29,7 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
 - The number of runs on the right is gone: it is not something a weaver works from.
 - A row too long for its column wraps at a run, with a hanging indent at the runs' start; the wrapped line adds one pitch. A row never splits across columns or pages.
 - **A Custom frame** (ticket 0594): one line per pass of its Row order, numbered from 1, the runs led by the pass in words ("Round 3: 2A, 1B", "Part 2, round 1: 4A", a join on its own as "Zip 1–2"); no (L) or (R). The notes say where it starts ("Round 1 is at the centre…", "Row 1 is at the point…", or parts in making order then the joins) in place of the edge Row 1 is at.
+- **A round side by side** (ticket 0873): a round of a part worked in rounds (Triangle, Warped Square, a Kaleidocycle's triangle, a Star's square) starts with its corner pair after the step-up and is written a side at a time: the side's corner pair in brackets, `(2A)` for two beads of A, `(1A 1B)` for two colors in the order they are picked up, then its singles in the run notation, the sides apart at ` | ` ("Round 3: (2A), 1A | (2A), 1A | (2A), 1A | (2A), 1A"). The bracket and the bar are plain DM Mono 400 `ink`, like the runs, so they read in black and white. A pair's two runs are joined by a no-break space and the `|` by one to the side it ends, so a wrapped row never splits a pair or starts a line with a bar. Round 1, the ring, is a plain run ("Round 1: 4A"). When any row has a pair the notes end with what a pair and a `|` are ("(2A) is a corner pair: two beads picked up together. A side ends at |."). Each side is written out, never "×4": the weaver follows the beads one side at a time.
 
 ## Two columns
 
@@ -53,5 +54,6 @@ A build agent checks on a 35 × 120 loom bracelet and a 100 × 100 loom Schema, 
 - [ ] A row never splits across a column or a page. A wrapped row indents to its runs.
 - [ ] The color key strip is an outline with no fill, its swatches drawn like chart beads with their letters, and `*` empty listed when the Schema has empty positions.
 - [ ] Peyote's first line is "1&2". Peyote and brick lines carry (L)/(R) in `muted`. The run notation is unchanged from 0574.
+- [ ] A 5-round Warped Square in one color reads "Round 1: 4A", "Round 2: (2A) | (2A) | (2A) | (2A)", "Round 5: (2A), 3A | …" four sides; a Kite and a Fringe earring read as before (ticket 0873).
 
 The earlier card (whole-range title, runs count, key strip on `print-board`) is in git history.

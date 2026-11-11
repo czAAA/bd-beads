@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createProject } from '../domain/createProject'
 import { withLetters } from '../domain/layerRecord'
 import { changeFrame } from '../domain/changeFrame'
+import { frameLayoutOf } from '../domain/frameShape'
 import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
@@ -154,9 +155,26 @@ describe('printText Word chart (ticket 0574)', () => {
     const painted = paintAt(placed.project, [{ row, column, layer: 'frame' }], '#e63746')
     const chart = printText(letters(painted), en, 'en', at).wordChart!
 
-    expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, en.print.wordChart.runNote])
-    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1C, 3*' })
+    expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, en.print.wordChart.runNote, en.print.wordChart.pairNote])
+    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1*, 1C, 2*' })
     expect(chart.rows[10]).toEqual({ label: '11', first: 11, last: 11, runs: 'Zip 1–2' })
+  })
+
+  it('writes a round side by side, each from its corner pair in brackets, a pair of two colors with both (ticket 0873)', () => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'warpedSquare', size: 3, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Warped Square')
+    const layout = frameLayoutOf(frameOf(placed.project)!)!
+    const { row, column } = frameOf(placed.project)!
+    // Round 3's first side's beads, its first pair's second bead among them.
+    const cells = layout.positions.filter((position) => position.row === 2 && position.panel === 0).map((position) => ({ row: row + position.row, column: column + position.column, layer: 'frame' as const }))
+    expect(cells.length).toBe(3)
+    const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at).wordChart!
+    expect(chart.notes).toEqual([en.print.wordChart.firstCentre, en.print.wordChart.runNote, en.print.wordChart.pairNote])
+    expect(chart.rows[0]!.runs).toBe('Round 1: 4*')
+    expect(chart.rows[1]!.runs).toBe('Round 2: (2*)\u00a0| (2*)\u00a0| (2*)\u00a0| (2*)')
+    // A side's mark keeps to the side it ends; a pair of two colors is never split between lines.
+    expect(chart.rows[2]!.runs).toBe('Round 3: (1*\u00a01C), 1C\u00a0| (1C\u00a01*), 1*\u00a0| (2*), 1*\u00a0| (2*), 1*')
   })
 
   it('starts a Fringe earring\'s Word chart at its top\'s base row and names each strand (ticket 0597)', () => {
