@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { findBead } from '../../domain/beads'
-import { frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
+import { followsWeave, frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
 import type { Background, Project } from '../../domain/project'
 import { MAX_PROJECT_NAME } from '../../domain/projectName'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
@@ -246,6 +246,7 @@ function onSubmit() {
       :technique="technique"
       :technique-settings="settings"
       :techniques="techniquesOf(starter)"
+      :without-technique-settings="!followsWeave(starter)"
       :bead="bead"
       :background="background"
       testid="starter"

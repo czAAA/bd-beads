@@ -40,6 +40,22 @@ for (const shape of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite',
   })
 }
 
+// Ticket 0872: a Triangle Starter's Project made through New Project, on the peyote Canvas it comes with, upright where
+// any other peyote Project's starts turned a quarter: the Triangle stands point up, a flat side at the bottom.
+test('a Triangle Starter\'s Project on its own peyote Canvas', async ({ page }) => {
+  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await openStripPanel(page, 'strip-menu')
+  await page.getByTestId('menu-new-project').click()
+  await page.getByTestId('pick-starter').click()
+  await page.getByTestId('starter-category-shapes').click()
+  await page.getByTestId('starter-card-triangle').click()
+  await page.getByTestId('create-starter-project').click()
+  await expect(page.getByTestId('panel-dropdown')).toHaveCount(0)
+  await settle(page)
+  await page.mouse.move(5, 5)
+  await expect(page.getByTestId('app-canvas')).toHaveScreenshot('custom-frame-triangle-starter.png', { maxDiffPixelRatio: 0.01 })
+})
+
 // Ticket 0594: Row progress on a Star (its second arm's first round current, the first arm faded), a Selection over a
 // Triangle, and the PNG export drawing the whole shape.
 test('Row progress on a Star Custom frame', async ({ page }) => {

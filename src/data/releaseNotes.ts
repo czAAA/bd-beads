@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Shapes from a starter open upright: the Triangle point up, a Star arm up, the Kite standing',
+      ru: 'Фигуры-стартеры открываются прямо: Треугольник остриём вверх, луч Звезды вверх, Воздушный змей стоя',
+      uk: 'Фігури-стартери відкриваються прямо: Трикутник вістрям угору, промінь Зірки вгору, Повітряний змій стоячи',
+      be: 'Фігуры-стартары адкрываюцца проста: Трохвугольнік вастрыём уверх, прамень Зоркі ўверх, Паветраны змей стоячы',
+      zh: '起始方案中的形状打开时是正的：三角形尖朝上，星形一角朝上，风筝竖着',
+      es: 'Las formas de punto de partida se abren derechas: el Triángulo con la punta arriba, un brazo de la Estrella arriba, la Cometa de pie',
+      pl: 'Kształty ze starterów otwierają się prosto: Trójkąt czubkiem do góry, ramię Gwiazdy do góry, Latawiec pionowo',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A first visit ends on what is free, not on Coming soon',
       ru: 'Новый гость видит, что бесплатно, а не «Скоро»',
       uk: 'Новий гість бачить, що безплатне, а не «Незабаром»',
