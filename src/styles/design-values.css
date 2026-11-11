@@ -160,6 +160,7 @@
   --selbar-radius: 8px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
+  --pill-fade: 1.5rem; /* ToolPill card: the fade on the end where the pill's scrolling tools are cut on a phone, 24px (ticket 0837). */
   --mirror-bar-control: 24px; /* ContextBar card, Mirror bar: the Mode switch, an Axis chip and a count button, on mouse and pen. */
   --mirror-bar-control-touch: 30px; /* ContextBar card, Mirror bar: the same on touch, in the 36px bar. */
   --mirror-axis-width: 1.25px; /* ContextBar card, Mirror bar: an Axis line on the overlay. */

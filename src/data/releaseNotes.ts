@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'On a phone Paint and Colors stay in view, and a swipe shows the other tools',
+      ru: 'На телефоне Кисть и Цвета всегда на экране, прочее листается свайпом',
+      uk: 'На телефоні Пензель і Кольори завжди на екрані, решта гортається свайпом',
+      be: 'На тэлефоне Пэндзаль і Колеры заўсёды на экране, астатняе гартаецца свайпам',
+      zh: '在手机上，涂色和颜色始终可见，其余工具滑动查看',
+      es: 'En el móvil Pintar y Colores siempre se ven; desliza para ver el resto',
+      pl: 'Na telefonie Maluj i Kolory są zawsze widoczne, resztę przewiń palcem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The empty Canvas no longer shows its message cut behind the New Project form, and after a delete it names the Project that was deleted',
       ru: 'Пустой холст больше не показывает обрезанный текст за формой нового проекта, а после удаления называет удалённый проект',
       uk: 'Порожнє полотно більше не показує обрізаний текст за формою нового проєкту, а після видалення називає видалений проєкт',
