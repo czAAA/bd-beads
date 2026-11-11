@@ -7,6 +7,6 @@ The second box of the left column: the library's save state, Save Pattern and th
 - **Buttons**, 38px, 8 apart: **Export** (secondary in a box, `export` icon, trailing chevron) which opens a Menu with PNG image and PDF for printing.
 - **Formats hint:** "png · pdf" (`meta-small`), right-aligned under Export, 6px down.
 - **No Save button (ticket 523):** edits reach the device on their own; the whole canvas, beads outside the Frame included, is kept.
-- **Export needs a Frame.** With none set, Export ▾ opens a popover in the Menu's place, under the button: "Set Frame to export" (`control`), "The Frame marks which beads become the Pattern. Beads outside it stay on the canvas." (13/18 `body`), then Fit to drawing (secondary) and Set Frame (primary, `frame` icon). 288px, padding 14, radius 10, `elevation-3`; `canvas` with a 1px `panel-line` border in light, `panel` with `line-strong` in dark.
+- **Export needs a Frame.** With none set, Export ▾ opens a popover in the Menu's place, under the button: "Set Frame to export" (`control`), "The Frame marks which beads become the Pattern. Beads outside it stay on the Canvas." (13/18 `body`), then Fit to drawing (secondary) and Set Frame (primary, `frame` icon). 288px, padding 14, radius 10, `elevation-3`; `canvas` with a 1px `panel-line` border in light, `panel` with `line-strong` in dark.
 
 Hand-written from DESIGN.md §5.10 and the v16 sign-off; static rendition.

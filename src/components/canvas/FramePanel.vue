@@ -34,7 +34,7 @@ import { frameWeave } from '../../domain/layerWeave'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export, the name, size, its
-// Layer settings (ticket 0670), Beads needed and the margin; with no Frame, Frame from starter, Select a frame and Fit.
+// Layer settings (ticket 0670), Beads needed and the margin; with no Frame, Frame from starter, Select a Frame and Fit.
 // A panel like Menu and Project (AppPanels, PanelHost), opened from the strip's Frame button; outside or Escape closes.
 const props = defineProps<{
   project: Project
@@ -146,7 +146,7 @@ const estimate = computed(() => {
 const sizeSummary = computed(() =>
   [sizeSettings.value[0] ? plural(locale.value, sizeSettings.value[0].value, sizeSettings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
 )
-/** Fit a frame to the drawing needs something drawn. */
+/** Fit a Frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Tooltip over the off size fields. */
 const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: turned.value ? t.value.tooltips.frameSizeTurned : t.value.tooltips.frameSizeLocked, announce: false }))
@@ -367,6 +367,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-panel__label {
   font: var(--type-label);
   color: var(--muted);
+  text-transform: lowercase;
 }
 
 .frame-panel__tools {

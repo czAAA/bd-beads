@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Theme’s first choice is now called Match device, and the app writes Project, Frame and Canvas the same way everywhere',
+      ru: 'Первый вариант темы теперь называется «Как на устройстве», а проект, рамка и холст везде называются одинаково',
+      uk: 'Перший варіант теми тепер називається «Як на пристрої», а проєкт, рамка й полотно скрізь називаються однаково',
+      be: 'Першы варыянт тэмы цяпер называецца «Як на прыладзе», а праект, рамка і палатно ўсюды называюцца аднолькава',
+      zh: '主题的第一个选项现在叫“跟随设备”，项目、边框和画布在各处的写法也一致了',
+      es: 'La primera opción del tema ahora se llama Como el dispositivo, y proyecto, marco y lienzo se escriben igual en toda la app',
+      pl: 'Pierwsza opcja motywu nazywa się teraz Jak w urządzeniu, a projekt, ramka i płótno są wszędzie pisane tak samo',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Keeping your Projects is now asked at your first saved file, the browser’s answer is shown, and the Menu asks again',
       ru: 'О хранении проектов теперь спрашивают при первом сохранении файла, показывают ответ браузера, а в меню можно спросить снова',
       uk: 'Про зберігання проєктів тепер питають під час першого збереження файлу, показують відповідь браузера, а в меню можна запитати знову',
