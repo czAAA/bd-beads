@@ -28,10 +28,18 @@
   --found-hatch-step: 4px; /* ConvertImage card (ticket 0780): from one hatch line to the next. */
   --found-hatch: repeating-linear-gradient(135deg, var(--found-hatch-ink) 0 var(--found-hatch-line), var(--found-hatch-wash) var(--found-hatch-line) var(--found-hatch-step)); /* ConvertImage card (ticket 0778): what Remove background found, hatched over the beads and on its legend swatch; the preview's canvas draws it from its four parts. */
   --found-dim: color-mix(in srgb, var(--canvas) 60%, transparent); /* ConvertImage card (ticket 0787): the found beads faded under the hatch, as beads outside a kept part are, so the background reads as gone whatever the bead's color. */
-  --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
-  --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
-  --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
-  --crop-bar-width: 8px; /* ConvertImage card: an edge handle's thickness. */
+  --handle-arm: 14px; /* Handle card: a corner bracket's arms along the line. */
+  --handle-line: 3px; /* Handle card: a bracket's thickness. */
+  --handle-radius: 4px; /* Handle card: a bracket's rounded corner. */
+  --handle-offset: 3px; /* Handle card: how far outside the line a bracket and a bar stand. */
+  --handle-hot-arm: 18px; /* Handle card: the arms of the corner under the pointer or being dragged. */
+  --handle-hot-line: 4px; /* Handle card: the hot corner's thickness. */
+  --handle-hot-disc: 16px; /* Handle card: the radius of the disc under the hot corner. */
+  --handle-hot-disc-alpha: 0.18; /* Handle card: how strongly the disc is filled with the handle's colour. */
+  --handle-bar-length: 12px; /* Handle card: an edge's bar, along the line. */
+  --handle-bar-thickness: 4px; /* Handle card: an edge's bar, across the line. */
+  --handle-reach: 14px; /* Handle card: how far from its centre a mouse or pen grabs a handle. */
+  --handle-reach-touch: 22px; /* Handle card: the same for a finger, half the 44px touch-target. */
   --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
   --found-columns: 64px minmax(0, 1fr) 56px 56px 56px; /* FoundColorRow card: the found-colors table's columns, in its heading row and every row. */
   --found-columns-narrow: 20px minmax(0, 1fr) 56px 1.875rem 1.875rem; /* FoundColorRow card (ticket 0782): the columns while the table is under 360px wide: the picture's swatch alone (the arrow is the heading's), then Becomes, Beads, and Change and Empty as wide as their buttons. */
@@ -213,11 +221,7 @@
   --frame-edit-chip: 32px;
   --frame-edit-hit: 44px;
   --frame-control-offset: 48px;
-  --reference-outline: 1.5px; /* ReferenceImage card: the picture's outline in Adjust, and the handles' and the turn stem's lines. */
-  --reference-handle: 9px; /* ReferenceImage card: a corner resize handle in Adjust, the Frame's resize handle. */
-  --reference-handle-offset: 7.5px; /* ReferenceImage card: how far a corner handle stands off the picture's corner (11px on touch). */
-  --reference-handle-offset-touch: 11px; /* ReferenceImage card: the same on a coarse pointer. */
-  --reference-handle-hit: 28px; /* ReferenceImage card: a handle is grabbed within 14px of its centre (44px to hit on touch). */
+  --reference-outline: 1.5px; /* ReferenceImage card: the picture's outline in Adjust, and the Turn handle's and its stem's lines. */
   --reference-turn: 28px; /* ReferenceImage card: the Turn handle's circle, a 12px turning arrow inside (AppIcon's 12 size). */
   --reference-bar-bottom: 14px; /* ReferenceImage card: the Adjust bar above the drawing area's bottom, over the Tool pill's place. */
   /* The MarginSheet card's px the canvas and the sheet's script use too: `MARGIN_PX` (src/rendering/marginSizes.ts) holds
@@ -324,7 +328,7 @@
   /* Homepage card, More below (ticket 0826). */
   --more-below-shadow: 0 4px 14px rgb(0 0 0 / 35%); /* The pill's soft shadow, lifting it off the bar it rides on. */
   --more-below-overhang: 35%; /* How much of the pill sits below the bar's top edge. */
-  --more-below-fade: 2.5rem; /* The fade of the canvas above it where the section continues, 40px. */
+  --more-below-fade: 2.5rem; /* The fade of the canvas above it, the section scrolling on, 40px. */
   --more-below-fade-to: 92%; /* How much of the canvas the fade reaches at the bar. */
   /* Homepage card, the phone (ticket 0827). */
   --phone-bar-button: 3rem; /* The phone bar's ↑, ↓ and main button, 48px. */

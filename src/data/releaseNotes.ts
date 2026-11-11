@@ -26,6 +26,30 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'On the Homepage, More below shows only where there is more to scroll to',
+      ru: 'На главной странице «Ниже ещё» видно, только когда есть что прокрутить',
+      uk: 'На головній сторінці «Нижче ще» видно, лише коли є що прокрутити',
+      be: 'На галоўнай старонцы «Ніжэй яшчэ» відаць, толькі калі ёсць што пракруціць',
+      zh: '主页上的“下方还有”只在确实还能往下滚动时出现',
+      es: 'En la página de inicio, «Más abajo» solo aparece donde queda algo por desplazar',
+      pl: 'Na stronie głównej „Więcej poniżej” widać tylko tam, gdzie jest co przewinąć',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'The crop\'s and the Reference image\'s handles are the Frame\'s, easy to catch with a finger',
+      ru: 'Ручки обрезки и подложки теперь как у рамки и легко ловятся пальцем',
+      uk: 'Ручки обрізки й підкладки тепер як у рамки й легко хапаються пальцем',
+      be: 'Ручкі абрэзкі і падкладкі цяпер як у рамкі і лёгка ловяцца пальцам',
+      zh: '裁剪框和参考图的手柄与画框相同，手指也能轻松抓住',
+      es: 'Los tiradores del recorte y de la imagen de referencia son los del Marco, fáciles de tomar con el dedo',
+      pl: 'Uchwyty kadrowania i obrazu pomocniczego są jak w ramce, łatwe do złapania palcem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The PDF\'s Specification says Color + letters, as its chart prints',
       ru: 'Стиль схемы в PDF: «Цвет + буквы», как она и печатается',
       uk: 'Специфікація в PDF пише «Колір + літери», як і друкує схема',
