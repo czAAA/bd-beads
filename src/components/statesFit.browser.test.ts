@@ -185,6 +185,7 @@ const CASES: FitCase[] = [
   ['ProjectsLibrary (sealed and counting)', ProjectsLibrary, { projects: [withLayers(empty, { id: 'h', name: 'Counting', beads: hugeRows, updatedAt: 1, savedAt: 1 })], sealed: [sealedProject] }],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
+  ['EmptyCanvas (deleted)', EmptyCanvas, { deleted: 'Sunflower' }],
   ['CanvasHint', CanvasHint, {}],
   ['FirstRunHints', FirstRunHints, {}],
   ['MarginSheet', marginSheetHost(1), {}],

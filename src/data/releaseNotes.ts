@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The empty Canvas no longer shows its message cut behind the New Project form, and after a delete it names the Project that was deleted',
+      ru: 'Пустой холст больше не показывает обрезанный текст за формой нового проекта, а после удаления называет удалённый проект',
+      uk: 'Порожнє полотно більше не показує обрізаний текст за формою нового проєкту, а після видалення називає видалений проєкт',
+      be: 'Пустое палатно больш не паказвае абрэзаны тэкст за формай новага праекта, а пасля выдалення называе выдалены праект',
+      zh: '空画布的提示不再被新建项目表单挡住一半，删除后会说出被删除的项目名称',
+      es: 'El lienzo vacío ya no muestra su mensaje cortado tras el formulario de Nuevo proyecto y, tras borrar, nombra el proyecto borrado',
+      pl: 'Puste płótno nie pokazuje już uciętego tekstu za formularzem nowego projektu, a po usunięciu podaje nazwę usuniętego projektu',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A row marked done says why it won’t take a bead, and whatever it holds still offers Reset progress right there',
       ru: 'Ряд, отмеченный как готовый, говорит, почему не берёт бусину, а всё, что он держит, сразу предлагает сбросить прогресс',
       uk: 'Ряд, позначений як готовий, каже, чому не бере намистину, а все, що він тримає, одразу пропонує скинути прогрес',
