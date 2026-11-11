@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A round starts with its corner pair, and the Word chart marks each pair and side',
+      ru: 'Круг начинается с угловой пары, а в словесной схеме видны пары и стороны',
+      uk: 'Коло починається з кутової пари, а в словесній схемі видно пари й сторони',
+      be: 'Круг пачынаецца з вуглавой пары, а ў слоўнай схеме відаць пары і бакі',
+      zh: '每圈从转角对开始，文字图解标出每个转角对和每条边',
+      es: 'Cada vuelta empieza por su par de esquina, y el patrón escrito marca pares y lados',
+      pl: 'Okrążenie zaczyna się od pary narożnej, a schemat słowny pokazuje pary i boki',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A first visit ends on what is free, not on Coming soon',
       ru: 'Новый гость видит, что бесплатно, а не «Скоро»',
       uk: 'Новий гість бачить, що безплатне, а не «Незабаром»',

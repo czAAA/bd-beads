@@ -13,7 +13,7 @@ import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
-import { wordChartOf, type WordChart } from '../domain/wordChart'
+import { wordChartOf, type WordChart, type WordRun, type WordSide } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
@@ -93,6 +93,25 @@ const FIRST_ROW_KEY = { top: 'firstTop', right: 'firstRight', bottom: 'firstBott
 /** Where a Custom frame's Word chart starts, as its note (ticket 0594). */
 const START_KEY = { centre: 'firstCentre', point: 'firstPoint', base: 'firstBase', parts: 'partsThenJoins' } as const
 
+/** Runs in the 0574 notation: `2C, 1A, 3*`. */
+function runsText(runs: readonly WordRun[]): string {
+  return runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(', ')
+}
+
+// Kept together when a row wraps at its spaces: a corner pair's two colors, and a side's mark with the side it ends.
+const NO_BREAK_SPACE = '\u00a0'
+
+/** A round side by side (ticket 0873): each side its corner pair in brackets, `(2A)` or `(1A 1B)`, then its singles'
+ * runs, the sides apart at a `|`. */
+function sidesText(sides: readonly WordSide[]): string {
+  return sides
+    .map(({ corner, singles }) => {
+      const pair = corner.length > 0 ? `(${corner.map((run) => runsText([run])).join(NO_BREAK_SPACE)})` : ''
+      return [pair, runsText(singles)].filter(Boolean).join(', ')
+    })
+    .join(`${NO_BREAK_SPACE}| `)
+}
+
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
  * round, row, part or join before its runs (ticket 0594). */
 function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], steps: Translations['rowProgress']): PrintedWordChart {
@@ -101,6 +120,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
   if (chart.count) notes.push(chart.count === 'even' ? t.evenCount : t.oddCount)
   if (chart.marked) notes.push(t.sides)
   notes.push(t.runNote)
+  if (chart.rows.some((row) => row.sides)) notes.push(t.pairNote)
   return {
     title: t.title,
     ...(chart.hasEmpty ? { empty: t.empty } : {}),
@@ -110,7 +130,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
       first: row.number,
       last: row.both ? 2 : row.number,
       ...(row.marker ? { marker: row.marker } : {}),
-      runs: [row.step && orderStepLabel(steps, row.step), row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(', ')].filter(Boolean).join(': '),
+      runs: [row.step && orderStepLabel(steps, row.step), row.sides ? sidesText(row.sides) : runsText(row.runs)].filter(Boolean).join(': '),
     })),
   }
 }

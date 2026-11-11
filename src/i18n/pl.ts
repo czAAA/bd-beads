@@ -700,6 +700,7 @@ export const pl: Translations = {
       firstBase: 'Rząd 1 to dolny rząd góry; każdy rząd czyta się od lewej do prawej, potem każdą nitkę od lewej, z góry na dół.',
       partsThenJoins: 'Każdą część plecie się okrążeniami od jej środka, w kolejności składania, a potem połączenia.',
       faceNote: 'Ten schemat to jedna ściana: {parts} z {total} trójkątów kalejdocyklu. Dla każdej innej ściany zrób osobną ramkę.',
+      pairNote: '(2A) to para narożna: dwa koraliki nabrane razem. Bok kończy się na |.',
     },
   },
   saveBox: {

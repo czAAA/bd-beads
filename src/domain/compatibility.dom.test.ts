@@ -44,6 +44,7 @@ import projectFileV13MirrorAxes from './fixtures/project-file-v13-mirror-axes.js
 import projectFileV13MirrorArea from './fixtures/project-file-v13-mirror-area.json?raw'
 import projectFileV13MirrorPlace from './fixtures/project-file-v13-mirror-place.json?raw'
 import projectFileV14Reference from './fixtures/project-file-v14-reference.json?raw'
+import projectFileV14Progress from './fixtures/project-file-v14-warped-square-progress.json?raw'
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
@@ -52,7 +53,7 @@ import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?r
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 import { backgroundOf, beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { rowProgressOf } from './rowProgress'
+import { currentPass, frameRowOrder, rowProgressOf } from './rowProgress'
 import { frameSheetOf, layersView } from '../testUtils/layerFields'
 
 // Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn, not how it is
@@ -408,6 +409,17 @@ describe('stored-data compatibility', () => {
     it('opens a version 9 Custom frame turned by Rotate Frame with its turn, and writes it back the same (ticket 0594)', () => {
       const [opened] = parseProjectsFile(projectFileV9Turned).projects
       expect(frameOf(opened)).toMatchObject({ rows: 10, columns: 12, shape: 'triangle', settings: { rounds: 4 }, quarterTurns: 1 })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('keeps a Warped Square\'s Row progress on the round it was on, now read from its corner pair (ticket 0873)', () => {
+      const [opened] = parseProjectsFile(projectFileV14Progress).projects
+      expect(currentPass(rowProgressOf(opened!))).toBe(2)
+      const order = frameRowOrder(opened!)
+      expect(order.stepOf?.(2)).toEqual({ kind: 'round', number: 3 })
+      // Saved when round 3 read from its first side's first bead: the same 12 beads, the corner pair first.
+      expect(order.positionsOf(2).map(({ column }) => column)).toEqual([11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+      expect(order.positionsOf(2).every(({ row }) => row === 2)).toBe(true)
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 

@@ -852,6 +852,8 @@ export interface Translations {
       partsThenJoins: string
       /** A Kaleidocycle's note (ticket 0876): the chart is one face, and each other face is a Frame of its own. */
       faceNote: string
+      /** What a round's corner pair and a side's end look like in it (ticket 0873). */
+      pairNote: string
     }
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */

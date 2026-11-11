@@ -697,6 +697,7 @@ export const es: Translations = {
       firstBase: 'La fila 1 es la base de la parte superior; cada fila se lee de izquierda a derecha, y luego cada fleco desde la izquierda, de arriba abajo.',
       partsThenJoins: 'Cada parte se teje vuelta a vuelta desde su centro, en orden de montaje, y después las uniones.',
       faceNote: 'Este esquema es una cara: {parts} de los {total} triángulos del caleidociclo. Haz un marco para cada una de las otras caras.',
+      pairNote: '(2A) es un par de esquina: dos cuentas que se toman juntas. Un lado termina en |.',
     },
   },
   saveBox: {

@@ -692,6 +692,7 @@ export const en: Translations = {
       firstBase: 'Row 1 is the top\'s base row; each row reads left to right, then each strand from the left, top to bottom.',
       partsThenJoins: 'Each part is beaded round by round from its centre, in making order, then the joins.',
       faceNote: 'This chart is one face: {parts} of the Kaleidocycle\'s {total} triangles. Make a Frame for each other face to chart its design.',
+      pairNote: '(2A) is a corner pair: two beads picked up together. A side ends at |.',
     },
   },
   saveBox: {
