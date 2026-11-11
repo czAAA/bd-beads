@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Convert image opens on a small piece in your Bead\'s colors, says what each choice does, and counts colors as Beads needed does',
+      ru: 'Конвертер изображений открывается на небольшой работе в цветах вашего бисера, объясняет каждый вариант и считает цвета так же, как «Нужно бисера»',
+      uk: 'Конвертер зображень відкривається на невеликій роботі в кольорах вашого бісеру, пояснює кожен варіант і рахує кольори так само, як «Потрібно бісеру»',
+      be: 'Канвертар выяў адкрываецца на невялікай рабоце ў колерах вашага бісеру, тлумачыць кожны варыянт і лічыць колеры гэтак жа, як «Патрэбна бісеру»',
+      zh: '转换图片默认是一件小作品、用你的珠子颜色，说明每个选项的作用，颜色数与所需珠子一致',
+      es: 'Convertir imagen empieza con una pieza pequeña en los colores de tu cuenta, explica cada opción y cuenta los colores como Cuentas necesarias',
+      pl: 'Konwertuj obraz zaczyna od małej pracy w kolorach twojego koralika, mówi, co robi każda opcja, i liczy kolory tak jak Potrzebne koraliki',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The row counter goes to any row you type, names the row on peyote, says rows done are kept when you turn the direction, and reads Pattern done at the end',
       ru: 'Счётчик рядов переходит к ряду, который вы введёте, называет ряд в мозаичном плетении, говорит, что готовые ряды сохраняются при повороте направления, и в конце показывает «Схема готова»',
       uk: 'Лічильник рядів переходить до ряду, який ви введете, називає ряд у мозаїчному плетінні, каже, що готові ряди зберігаються під час повороту напрямку, і наприкінці показує «Схема готова»',

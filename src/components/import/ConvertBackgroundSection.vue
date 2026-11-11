@@ -9,8 +9,8 @@ import AppIcon from '../ui/AppIcon.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
-// Convert image's Background step (ConvertImage card, 2 Background; tickets 0780, 0787): the Remove background switch, then
-// 1 Find (the preview hatches what the edges inward take, Tolerance, the line pointing at the Background tool, whose steps
+// Convert image's Background step (ConvertImage card, 2 Background; tickets 0780, 0787): the Remove background switch, the
+// stage in hand as a plain numbered line (ticket 0863), then 1 Find (the preview hatches what the edges inward take, Tolerance, the line pointing at the Background tool, whose steps
 // Start over takes back, and Remove what was found; Undo and Redo are on the Tool pill under the picture) and 2 Remove (empty places; Show what was found goes back).
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -41,14 +41,7 @@ const toolLine = computed(() => {
     />
 
     <template v-if="on">
-      <ol class="convert-background__stages" :aria-label="words.stagesLabel" data-testid="convert-background-stages">
-        <li class="convert-background__stage" :class="stage === 'find' ? 'is-current' : 'is-done'" :aria-current="stage === 'find' ? 'step' : undefined">
-          <b aria-hidden="true">1</b>{{ words.stageFind }}
-        </li>
-        <li class="convert-background__stage" :class="{ 'is-current': stage === 'removed' }" :aria-current="stage === 'removed' ? 'step' : undefined">
-          <b aria-hidden="true">2</b>{{ words.stageRemove }}
-        </li>
-      </ol>
+      <p class="convert-background__stage" data-testid="convert-background-stages">{{ stage === 'find' ? words.stageFind : words.stageRemove }}</p>
 
       <template v-if="stage === 'find'">
         <p class="convert-background__legend" role="status" data-testid="convert-background-found">
@@ -105,51 +98,10 @@ const toolLine = computed(() => {
   gap: var(--space-16);
 }
 
-.convert-background__stages {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-6);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .convert-background__stage {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  box-sizing: border-box;
-  height: var(--convert-stage-height);
-  padding: 0 var(--space-10);
+  margin: 0;
   font: var(--type-control);
-  color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-md);
-}
-
-.convert-background__stage > b {
-  display: grid;
-  place-items: center;
-  box-sizing: border-box;
-  width: var(--convert-stage-disc);
-  height: var(--convert-stage-disc);
-  font: var(--type-meta-tiny);
-  border: 1px solid var(--line-strong);
-  border-radius: 50%;
-}
-
-.convert-background__stage.is-current {
   color: var(--ink);
-  background: var(--elevated);
-  border-color: var(--ink);
-}
-
-.convert-background__stage.is-current > b,
-.convert-background__stage.is-done > b {
-  color: var(--canvas);
-  background: var(--ink);
-  border-color: var(--ink);
 }
 
 .convert-background__legend,

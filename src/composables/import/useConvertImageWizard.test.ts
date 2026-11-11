@@ -36,13 +36,13 @@ async function setup(picture: PixelData, beadId = 'toho/cube/1.5mm') {
 }
 
 describe('useConvertImageWizard sizing (ticket 0747)', () => {
-  it('starts on the whole picture at the largest Width, linked', async () => {
+  it('starts on the whole picture at a small piece, the mark nearest 60 beads wide, linked (ticket 0863)', async () => {
     const wizard = await setup(flat(240, 160))
     expect(wizard.weave.value).toBe('whole')
     expect(wizard.linked.value).toBe(true)
-    expect(wizard.sizing.value.width).toBe(240)
-    expect(wizard.sizing.value.mark).toEqual({ width: 240, pixelsPerBead: 1 })
-    expect(wizard.dimensions.value).toEqual({ columns: 240, rows: 160 })
+    expect(wizard.sizing.value.width).toBe(60)
+    expect(wizard.sizing.value.mark).toEqual({ width: 60, pixelsPerBead: 4 })
+    expect(wizard.dimensions.value).toEqual({ columns: 60, rows: 40 })
   })
 
   it('follows the picture’s physical shape through the Bead between marks', async () => {
@@ -132,6 +132,28 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     expect(wizard.found.value).toHaveLength(3)
   })
 
+  it('matches to the Bead’s colors at first (ticket 0863)', async () => {
+    const wizard = await setup(bands(60, 30))
+    expect(wizard.source.value).toBe('bead-colors')
+  })
+
+  it('counts the bead colors after the match, and Make empty takes a bead color whole (ticket 0863)', async () => {
+    // Two blues the Default Palette both matches to its Blue, and a red.
+    const data = new Uint8ClampedArray(30 * 4)
+    for (let x = 0; x < 30; x += 1) data.set(x < 10 ? [47, 111, 219, 255] : x < 20 ? [40, 100, 230, 255] : [230, 55, 70, 255], x * 4)
+    const wizard = await setup({ width: 30, height: 1, data })
+    wizard.setSource('default')
+    expect(wizard.found.value).toHaveLength(3)
+    expect(wizard.rows.value).toHaveLength(2)
+    expect(wizard.usedColorCount.value).toBe(2)
+
+    wizard.toggleEmptyAtBead(0)
+    expect(wizard.usedColorCount.value).toBe(1)
+    expect(wizard.emptyColorCount.value).toBe(1)
+    wizard.toggleEmptyAtBead(0)
+    expect(wizard.emptyColorCount.value).toBe(0)
+  })
+
   it('reduces to the count the slider asks, inside the picture’s colors', async () => {
     const wizard = await setup(bands(60, 30))
     wizard.setMaxColors(1)
@@ -145,6 +167,7 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     const data = new Uint8ClampedArray(300 * 4)
     for (let x = 0; x < 300; x += 1) data.set([x & 255, (x >> 8) * 90, 60, 255], x * 4)
     const wizard = await setup({ width: 300, height: 1, data })
+    wizard.setWidth(300)
     expect(wizard.colorsMax.value).toBe(256)
     expect(wizard.colorsCapped.value).toBe(true)
   })
