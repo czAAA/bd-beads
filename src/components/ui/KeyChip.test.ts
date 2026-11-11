@@ -9,8 +9,8 @@ import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 const PILL_PROPS = { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false } as const
 const QUERY = '(any-pointer: fine) and (any-hover: hover)'
 
-function onDevice(keyboardLikely: boolean) {
-  const media = fakeMatchMedia({ [QUERY]: keyboardLikely })
+function onDevice(keyboardLikely: boolean, touch = false) {
+  const media = fakeMatchMedia({ [QUERY]: keyboardLikely, '(pointer: coarse)': touch })
   window.matchMedia = media.matchMedia
   useKeyHints()
   resetKeyHintsDevice()
@@ -36,7 +36,7 @@ describe('hotkey chips follow the device (ticket 438)', () => {
   })
 
   it('shows none of them on a touch-only device until a real key is pressed', async () => {
-    onDevice(false)
+    onDevice(false, true)
     const dock = mount(ToolPill, { props: PILL_PROPS })
     const hint = mount(CanvasHint)
     const tooltip = mount(AppTooltip, { props: { name: 'Fill', hotkey: '2' }, slots: { default: '<button>x</button>' }, attachTo: document.body })
@@ -47,5 +47,14 @@ describe('hotkey chips follow the device (ticket 438)', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
     await dock.vm.$nextTick()
     expect(dock.find('.icon-btn__key').exists()).toBe(true)
+  })
+
+  it('on touch the Canvas hint speaks of fingers and names no key, and the pill shows no digits (ticket 0846)', () => {
+    onDevice(true, true)
+    const dock = mount(ToolPill, { props: PILL_PROPS })
+    const hint = mount(CanvasHint)
+    expect(dock.find('.icon-btn__key').exists()).toBe(false)
+    expect(hint.findAll('span').map((part) => part.text())).toEqual(['two fingers to move', '·', 'pinch to zoom'])
+    expect(hint.find('kbd').exists()).toBe(false)
   })
 })

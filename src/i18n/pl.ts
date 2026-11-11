@@ -301,6 +301,8 @@ export const pl: Translations = {
       scrollToZoom: 'przewiń, aby powiększyć',
       hand: 'Ręka',
       rulers: 'Linijki',
+      twoFingersToMove: 'dwa palce, aby przesunąć',
+      pinchToZoom: 'uszczypnij, aby powiększyć',
     },
     firstRun: {
       storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
@@ -315,6 +317,7 @@ export const pl: Translations = {
     canvasPlaceholderPan: 'Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
     canvasDeleted: 'Projekt „{name}” został usunięty.',
     canvasDeletedHint: 'Otwórz inny z biblioteki projektów albo utwórz nowy.',
+    canvasPlaceholderPanTouch: 'Przesuwaj płótno dwoma palcami.',
   },
   storage: {
     saveFailedMessage:
@@ -966,12 +969,11 @@ export const pl: Translations = {
       turn: 'Obróć o 90°',
       flip: 'Odbij',
       replace: 'Zamień',
-      pictureNote: 'Upuść obraz w dowolnym miejscu aplikacji, wybierz plik albo wklej go przez Ctrl+V. {formats}, do {maxSizeMb} MB i {maxMegapixels} megapikseli.',
+      pictureNote: 'Upuść obraz w dowolnym miejscu aplikacji, wybierz plik albo wklej go przez {pasteKey}. {formats}, do {maxSizeMb} MB i {maxMegapixels} megapikseli.',
       pictureNoteTouch: 'Wybierz plik, wklej obraz albo zrób zdjęcie. {formats}, do {maxSizeMb} MB i {maxMegapixels} megapikseli.',
       pictureSize: '{width}×{height} px · {format}',
       dropHere: 'Upuść obraz tutaj',
-      dropOrPaste: 'albo wklej go przez Ctrl+V',
-      dropOrChoose: 'albo wybierz plik poniżej',
+      dropOrPaste: 'albo wklej go przez {pasteKey}',
       dropToUse: 'Upuść, aby użyć tego obrazu',
       dropToConvert: 'Upuść, aby skonwertować obraz',
       dropLimits: '{formats} · do {maxSizeMb} MB',
@@ -1020,6 +1022,8 @@ export const pl: Translations = {
       pictureColor: 'Kolor obrazu',
       newPalette: 'paleta nowego projektu',
       rowName: { one: '{hex} na {name}, {count} koralik', few: '{hex} na {name}, {count} koraliki', many: '{hex} na {name}, {count} koralików', other: '{hex} na {name}, {count} koralika' },
+      emptyTouchTitle: 'Tu pojawi się twój obraz',
+      emptyTouchLine: 'Wybierz plik, wklej albo zrób zdjęcie',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

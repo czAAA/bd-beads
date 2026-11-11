@@ -301,6 +301,8 @@ export const es: Translations = {
       scrollToZoom: 'desplaza para hacer zoom',
       hand: 'Mano',
       rulers: 'Reglas',
+      twoFingersToMove: 'dos dedos para mover',
+      pinchToZoom: 'pellizca para hacer zoom',
     },
     firstRun: {
       storageLead: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
@@ -315,6 +317,7 @@ export const es: Translations = {
     canvasPlaceholderPan: 'Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
     canvasDeleted: 'Se eliminó «{name}».',
     canvasDeletedHint: 'Abre otro desde la biblioteca de proyectos o crea uno nuevo.',
+    canvasPlaceholderPanTouch: 'Mueve el lienzo arrastrando con dos dedos.',
   },
   storage: {
     saveFailedMessage:
@@ -959,12 +962,11 @@ export const es: Translations = {
       turn: 'Girar 90°',
       flip: 'Voltear',
       replace: 'Cambiar',
-      pictureNote: 'Suelta una imagen en cualquier parte de la app, elige un archivo o pégala con Ctrl+V. {formats}, hasta {maxSizeMb} MB y {maxMegapixels} megapíxeles.',
+      pictureNote: 'Suelta una imagen en cualquier parte de la app, elige un archivo o pégala con {pasteKey}. {formats}, hasta {maxSizeMb} MB y {maxMegapixels} megapíxeles.',
       pictureNoteTouch: 'Elige un archivo, pega una imagen o haz una foto. {formats}, hasta {maxSizeMb} MB y {maxMegapixels} megapíxeles.',
       pictureSize: '{width}×{height} px · {format}',
       dropHere: 'Suelta una imagen aquí',
-      dropOrPaste: 'o pégala con Ctrl+V',
-      dropOrChoose: 'o elige un archivo abajo',
+      dropOrPaste: 'o pégala con {pasteKey}',
       dropToUse: 'Suelta para usar esta imagen',
       dropToConvert: 'Suelta para convertir la imagen',
       dropLimits: '{formats} · hasta {maxSizeMb} MB',
@@ -1013,6 +1015,8 @@ export const es: Translations = {
       pictureColor: 'Color de la imagen',
       newPalette: 'paleta del nuevo proyecto',
       rowName: { one: '{hex} a {name}, {count} cuenta', many: '{hex} a {name}, {count} de cuentas', other: '{hex} a {name}, {count} cuentas' },
+      emptyTouchTitle: 'Tu imagen se verá aquí',
+      emptyTouchLine: 'Elige un archivo, pega o haz una foto',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

@@ -2,6 +2,7 @@
 import { computed, ref, watchPostEffect } from 'vue'
 import { useConvertImageWizardState, type ConvertWeave } from '../../composables/import/useConvertImageWizard'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { useHelpDevice } from '../../composables/ui/useKeyHints'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { formatImageLimits, imageInputAccept } from '../../domain/imageConversion'
 import { offeredBeads } from '../../domain/beads'
@@ -24,7 +25,10 @@ const emit = defineEmits<{ paste: [] }>()
 
 const { t } = useI18n()
 const wizard = useConvertImageWizardState()
+/** Take photo is offered where the main pointer is a finger (a phone's or a tablet's camera), keyboard or not. */
 const touch = useMediaQuery('(pointer: coarse)')
+/** The Note speaks to the device by the help lines' one rule (ticket 0846): touch words, or the paste key it has. */
+const help = useHelpDevice()
 const accept = imageInputAccept()
 const words = computed(() => t.value.convertImage.wizard)
 
@@ -48,7 +52,9 @@ const replaceEl = ref<HTMLElement>()
 /** Replace's Choose file opens the picker of the file input kept beside the menu. */
 const chooseReplacement = () => replaceEl.value?.querySelector<HTMLInputElement>('input[type="file"]')?.click()
 
-const note = computed(() => formatImageLimits(touch.value ? t.value.convertImage.wizard.pictureNoteTouch : t.value.convertImage.wizard.pictureNote))
+const note = computed(() =>
+  help.device.value === 'touch' ? formatImageLimits(words.value.pictureNoteTouch) : formatImageLimits(words.value.pictureNote, { pasteKey: help.modKey('V') }),
+)
 const error = computed(() => (wizard.rejection.value ? formatImageLimits(t.value.convertImage.errors[wizard.rejection.value]) : undefined))
 const facts = computed(() => {
   const image = wizard.image.value
