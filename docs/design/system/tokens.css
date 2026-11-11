@@ -24,12 +24,12 @@
   --accent-disabled-fg: #a8a8a8; /* Disabled primary button text. */
   --on-accent: #1f1f1f; /* Text and icons on accent and accent-hover: dark in both themes (4.9:1 on light orange, 18:1 on dark yellow). The logo on an accent tile stays white (a graphic, 3.3:1). */
   --ring: #1f1f1f; /* The selected palette swatch's outer ring (inner gap in panel). */
-  --danger: #c23604; /* Delete all, error text, the error message edge, danger-filled confirm buttons (their label is on-danger). 4.9:1 on panel in light, 4.6:1 in dark. */
-  --on-danger: #ffffff; /* Label on danger-filled buttons: white in light (5.5:1), near-black in dark (5.0:1 on #ef4444). */
+  --danger: #b91c1c; /* Delete all, error text, the error message edge in light, danger-filled confirm buttons (their label is on-danger). A red of its own, never accent-strong's orange. 5.7:1 on panel in light, 5.9:1 on panel and 5.2:1 on elevated in dark. */
+  --on-danger: #ffffff; /* Label on danger-filled buttons: white in light (6.5:1), near-black in dark (7.2:1 on #f87171). */
   --warning: #ffa110; /* Warning message edge and the Estimated size warning (Derived). Never as text. */
   --swatch-edge: rgba(0,0,0,.2); /* Inset 1px edge on every swatch so ivory and black swatches do not vanish. */
   --button: #ffffff; /* Secondary button fill on the page (header): EN / RU, theme toggle frame, keyboard shortcuts. */
-  --button-line: #c7c7c7; /* Secondary button border on the page. */
+  --button-line: #c7c7c7; /* Secondary button border on the page. Dark: the button's only edge (its fill is the box's), 3.8:1 on box and panel, 3.3:1 on elevated. */
   --box: #fafafa; /* Canvas box background. */
   --page-ground: #ebebeb; /* The Homepage's page around its canvas box, darker than the box so the box stands off it. */
   --box-line: #e5e5e5; /* Canvas box border. */
@@ -85,12 +85,12 @@
   --accent-disabled-fg: #888888;
   --on-accent: #0a0a0a;
   --ring: #faff69;
-  --danger: #ef4444;
+  --danger: #f87171;
   --on-danger: #0a0a0a;
   --warning: #f59e0b;
   --swatch-edge: #3a3a3a;
   --button: #202020;
-  --button-line: #202020;
+  --button-line: #7a7a7a;
   --box: #202020;
   --page-ground: #0a0a0a;
   --box-line: #202020;
