@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Delete and error reds read better and are no longer the accent’s orange, and dark buttons show their edge',
+      ru: 'Красный удаления и ошибок лучше читается и не совпадает с оранжевым акцентом, а у кнопок в тёмной теме видна рамка',
+      uk: 'Червоний видалення й помилок краще читається і не збігається з помаранчевим акцентом, а кнопки в темній темі мають рамку',
+      be: 'Чырвоны выдалення і памылак лепш чытаецца і не супадае з аранжавым акцэнтам, а ў кнопак у цёмнай тэме бачная рамка',
+      zh: '删除和错误的红色更易读，不再与橙色强调色相同，深色主题中的按钮也显示边框',
+      es: 'El rojo de borrar y de los errores se lee mejor y ya no es el naranja del acento, y los botones muestran su borde en oscuro',
+      pl: 'Czerwień usuwania i błędów lepiej się czyta i nie jest już pomarańczą akcentu, a przyciski w ciemnym motywie mają krawędź',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'On a phone Paint and Colors stay in view, and a swipe shows the other tools',
       ru: 'На телефоне Кисть и Цвета всегда на экране, прочее листается свайпом',
       uk: 'На телефоні Пензель і Кольори завжди на екрані, решта гортається свайпом',

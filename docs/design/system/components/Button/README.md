@@ -4,7 +4,7 @@ Every clickable action in openbeads: primary, primary select, secondary, seconda
 
 ## When to use
 - **Primary** (`bb-btn bb-btn--primary`): the single most likely next action in a region: New Pattern, Replace bead (as a select), Save Pattern, Row done. `accent` fill and border, `on-accent` text; hover and pressed use `accent-hover`; disabled uses `accent-disabled-bg` / `accent-disabled-fg`. **Two primary buttons never sit next to each other.**
-- **Secondary** (`bb-btn`): on the page (header). `button` fill, `button-line` border, `ink` text; hover `surface` in light, `elevated` in dark.
+- **Secondary** (`bb-btn`): on the page (header). `button` fill, `button-line` border (in dark the button's only edge, so 3:1 on the box, ticket 0855), `ink` text; hover `surface` in light, `elevated` in dark.
 - **Secondary in a box** (`bb-btn--in-box`): inside the save box and Saved Patterns: `elevated` fill, `line-strong` border (light) / `elevated` (dark). The Toolbox's own buttons (`bb-btn--toolbox`) use `panel-line` as border.
 - **Text** (`bb-btn--text`): Import a file. No fill or border, padding 0 6, hover `surface`.
 - **Link** (`bb-link`, `bb-link--danger`; `AppButton variant="link"`, ticket 331, which replaces `AppLink`): Remove line (`ink`), Delete all (`danger`). 14/20 500, 16px icon, gap 6.
