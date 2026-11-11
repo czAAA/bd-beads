@@ -591,7 +591,8 @@ export const en: Translations = {
     showAll: 'Show all colors ({count})',
     showFewer: 'Show fewer',
     weightInfo:
-      'This is bead count × about {grams} g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
+      "This is bead count × about {grams} g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
+    weightInfoLabel: 'How the weight is worked out',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

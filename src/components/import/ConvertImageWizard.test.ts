@@ -352,7 +352,7 @@ describe('ConvertImageWizard Review (ticket 0759)', () => {
     await show(wizard, 'review')
 
     expect(header(wrapper).attributes('aria-expanded')).toBe('false')
-    expect(header(wrapper).text()).toContain(en.quantities.heading)
+    expect(header(wrapper).attributes('aria-label')).toContain(en.quantities.heading)
     // 16 × 8 beads, and the Delica's weight, as the Frame panel writes them.
     expect(wrapper.get('[data-testid="quantity-total"]').text()).toMatch(/^128 · ≈ [\d.]+ g$/)
     expect(wrapper.find('[data-testid="quantity-row"]').exists()).toBe(false)

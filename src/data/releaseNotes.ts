@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Beads needed sits right after the Frame size, and how the weight is worked out is behind its info button',
+      ru: 'Нужно бисера стоит сразу после размера рамки, а как считается вес, подскажет кнопка с информацией',
+      uk: 'Потрібно бісеру стоїть одразу після розміру рамки, а як рахується вага, підкаже кнопка з інформацією',
+      be: 'Патрэбна бісеру стаіць адразу пасля памеру рамкі, а як лічыцца вага, падкажа кнопка з інфармацыяй',
+      zh: '所需珠子紧跟在边框尺寸之后，重量如何计算可在它的信息按钮里查看',
+      es: 'Cuentas necesarias va justo después del tamaño del marco, y cómo se calcula el peso está en su botón de información',
+      pl: 'Potrzebne koraliki są zaraz po rozmiarze ramki, a jak liczona jest waga, podpowie przycisk informacji',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The first beads lead to a picture: one button fits a Frame and opens Export, and a Frame selected from Export brings it back',
       ru: 'Первые бусины ведут к картинке: одна кнопка задаёт рамку и открывает экспорт, а рамка, выделенная из экспорта, возвращает к нему',
       uk: 'Перші намистини ведуть до картинки: одна кнопка задає рамку й відкриває експорт, а рамка, виділена з експорту, повертає до нього',

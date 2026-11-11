@@ -34,8 +34,8 @@ import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
-// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export, the name, size, its
-// Layer settings (ticket 0670), Beads needed and the margin; with no Frame, Frame from starter, Select a Frame and Fit.
+// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export, the name, size, Beads
+// needed (ticket 0852), its Layer settings (ticket 0670) and the margin; with no Frame, Frame from starter, Select a Frame and Fit.
 // A panel like Menu and Project (AppPanels, PanelHost), opened from the strip's Frame button; outside or Escape closes.
 const props = defineProps<{
   project: Project
@@ -335,6 +335,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           >{{ t.frame.replaceFrame }}</PanelItem>
         </div>
       </PanelSection>
+      <!-- Beads needed right after the size (ticket 0852), in view as the panel opens. -->
+      <BeadQuantities :project="settledProject ?? project" />
     </template>
 
     <PanelSection v-if="frameSettings" id="frame:settings" :label="t.layerSettings.frameHeading" :summary="settingsSummary">
@@ -350,7 +352,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         @reset-progress="emit('reset-progress')"
       />
     </PanelSection>
-    <BeadQuantities v-if="frame" :project="settledProject ?? project" />
     <MarginSection v-if="frame" :project="project" />
   </div>
 </template>

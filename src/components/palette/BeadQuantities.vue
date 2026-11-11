@@ -7,19 +7,19 @@ import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domai
 import { frameOf } from '../../domain/layerRecord'
 import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
-import { groupThousands } from '../../domain/formatNumber'
+import { decimalSign, groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
-import AppNote from '../ui/AppNote.vue'
 import AppIcon from '../ui/AppIcon.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { LabelledColor } from '../../i18n/colorLabel'
 import ColorLabel from './ColorLabel.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's last section, with the total and the weight
-// ("1 512 · ≈ 7.6 g", none when the Bead has none) in its header. Five colors show, then "Show all {n} colors" opens the
-// rest in place; a Note (ticket 328) says where the weight comes from. The rows stay a table, headings for screen readers only.
+// Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's section after the size (ticket 0852), with the
+// total and the weight ("1 512 · ≈ 7.6 g", none when the Bead has none) in its header, and an Info button there saying how
+// the weight is worked out. Five colors show, then "Show all colors (n)" opens the rest; the rows are a table.
 const props = defineProps<{
   /** The Project whose bead counts are shown; without one the box just asks for a Project to be opened. */
   project?: Project
@@ -44,6 +44,10 @@ const SUMMARY_ROWS = 5
  * 0665), never stored; no weight column if the Bead has none. */
 const projectBead = computed(() => (props.project ? resolveProjectBead(props.project) : undefined))
 const averageGrams = computed(() => gramsPerBead(projectBead.value))
+/** The weight's Info button: how it is worked out, the average with the language's decimal sign (ticket 0852). */
+const weightInfo = computed(() =>
+  averageGrams.value === undefined ? undefined : fillBlanks(t.value.quantities.weightInfo, { grams: String(averageGrams.value).replace('.', decimalSign(locale.value)) }),
+)
 
 function weightOf(count: number): string | undefined {
   const grams = estimatedGrams(count, projectBead.value)
@@ -68,7 +72,10 @@ const total = computed(() => {
 </script>
 
 <template>
-  <PanelSection id="frame:beads" :label="t.quantities.heading" keep-summary :closed-first="closedFirst" data-testid="bead-quantities">
+  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="quantities.length > 0 ? total : undefined" keep-summary :closed-first="closedFirst" data-testid="bead-quantities">
+    <template v-if="quantities.length > 0 && weightInfo" #info>
+      <InfoButton :label="t.quantities.weightInfoLabel" :body="weightInfo" data-testid="quantities-weight-info" />
+    </template>
     <template v-if="quantities.length > 0" #summary><span data-testid="quantity-total">{{ total }}</span></template>
     <div class="bead-quantities">
       <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
@@ -108,9 +115,6 @@ const total = computed(() => {
         <span>{{ expanded ? t.quantities.showFewer : fillBlanks(t.quantities.showAll, { count: quantities.length }) }}</span>
         <AppIcon name="chevron-down" :size="14" class="bead-quantities__chevron" :class="{ 'bead-quantities__chevron--up': expanded }" />
       </button>
-      <AppNote v-if="quantities.length > 0 && averageGrams !== undefined" class="bead-quantities__note" data-testid="quantities-weight-note">
-        {{ fillBlanks(t.quantities.weightInfo, { grams: String(averageGrams) }) }}
-      </AppNote>
     </div>
   </PanelSection>
 </template>
@@ -208,9 +212,5 @@ const total = computed(() => {
 
 .bead-quantities__chevron--up {
   transform: rotate(180deg);
-}
-
-.bead-quantities__note {
-  margin-top: var(--space-6);
 }
 </style>
