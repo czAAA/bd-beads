@@ -115,6 +115,12 @@ function isFormat(file: ImageFileFacts, format: ImageFormat, mimeTypes = [format
   return mimeTypes.includes(file.type.toLowerCase()) || (file.type === '' && hasExtension(file.name, format))
 }
 
+/** Whether a file is a picture of any kind, one Convert image takes or turns away (HEIC, SVG): by its media type or,
+ * as a phone often gives none, its ending. Open Project file points such a file at Convert image (ticket 0859). */
+export function looksLikePicture(file: Pick<ImageFileFacts, 'name' | 'type'>): boolean {
+  return file.type.toLowerCase().startsWith('image/') || [...ACCEPTED_IMAGE_FORMATS, HEIC_FORMAT, SVG_FORMAT].some((format) => hasExtension(file.name, format))
+}
+
 /** The `accept` attribute for the file input: the media types plus their extensions, for pickers that filter by
  * either. */
 export function imageInputAccept(): string {

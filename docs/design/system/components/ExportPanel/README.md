@@ -21,6 +21,7 @@ The Frame panel's export section, the same component, under the title line:
 - **Picture** (`image`) and **Printable chart** (`pdf`) PanelItems, each with its File size estimate in the value slot ("PNG ≈ 1.4 MB · 1 file", "PDF ≈ 3.2 MB · 9 pages"; QualitySlider card).
 - The **Export quality** QualitySlider under them, `space-8` below the last row.
 - While an export runs the buttons and the slider are disabled and the LoadingState line shows, as in the Frame panel.
+- Once the file is handed over, the saved-file toast names it ("Saved: sunflower.png", Message card) and starts 8px under this panel, never over its rows (ticket 0859), on a phone too.
 - Letters stays in the Frame panel only.
 
 ### With no Frame

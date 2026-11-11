@@ -10,7 +10,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import { actionKey } from '../ui/controlAction'
 
 // The save ring (SaveReminder card, ticket 0796): at the drawing area's top-right once the open Project's Project file is
-// well behind. A press runs Save, the Project panel's row; its label "Save a copy +n" opens leftwards for a moment.
+// well behind. A press runs Save, the Project panel's row; its label "Save Project file +n" opens leftwards for a moment.
 const props = defineProps<{
   /** The open Project's Beads since last file. */
   beads: number
@@ -129,7 +129,7 @@ const lastLine = computed(() => {
   border-radius: var(--radius-full);
 }
 
-/* "Save a copy" then "+n"; a count with no room wraps onto the hidden second line, leaving the words. */
+/* "Save Project file" then "+n"; a count with no room wraps onto the hidden second line, leaving the words. */
 .save-ring__label {
   display: flex;
   flex-wrap: wrap;

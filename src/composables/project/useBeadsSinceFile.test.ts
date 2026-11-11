@@ -38,19 +38,20 @@ describe('useBeadsSinceFile', () => {
     expect(setup({ test: { beads: 64, lastFileAt: 5 } }).since.current.value).toEqual({ beads: 64, lastFileAt: 5 })
   })
 
-  it('goes back to 0 with the time of the file when a Project file is saved', () => {
+  it('goes back to 0 with the time and name of the file when a Project file is saved', () => {
     const { since } = setup({ test: { beads: 64 } })
-    since.fileSaved(['test'])
+    since.fileSaved(['test'], 'moth.openbeads')
 
-    expect(since.current.value).toEqual({ beads: 0, lastFileAt: 1000 })
+    expect(since.current.value).toEqual({ beads: 0, lastFileAt: 1000, fileName: 'moth.openbeads' })
   })
 
-  it('gives a duplicate its original\'s count and time, and an import 0', () => {
-    const { since, kept } = setup({ test: { beads: 64, lastFileAt: 5 }, old: { beads: 9 } }, ['test', 'old'])
+  it('gives a duplicate its original\'s count and time but not its file\'s name, and an import 0', () => {
+    const { since, kept } = setup({ test: { beads: 64, lastFileAt: 5, fileName: 'moth.openbeads' }, old: { beads: 9 } }, ['test', 'old'])
     since.duplicated('test', 'copy')
     since.imported(['old'])
 
     expect(kept()).toMatchObject({ copy: { beads: 64, lastFileAt: 5 }, old: { beads: 0 } })
+    expect(kept().copy).not.toHaveProperty('fileName')
   })
 
   it('drops the records of no Project at start, and a Project\'s when it leaves the library', async () => {

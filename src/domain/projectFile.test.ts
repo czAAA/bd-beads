@@ -13,6 +13,7 @@ import {
   projectListFileName,
   serializeLibrary,
   serializeProject,
+  whyNotOpened,
   serializeStoredProject,
   projectFileNameOf,
 } from './projectFile'
@@ -544,5 +545,22 @@ describe('a reference image in the file (ticket 0790, ADR 0089)', () => {
     const project = traced()
     const added = importProjects([project], [{ id: project.id }], () => 'fresh')
     expect(importedPictures([project], added, new Map([[project.id, 'AAEC']]))).toEqual(new Map([['fresh', 'AAEC']]))
+  })
+})
+
+describe('whyNotOpened (ticket 0859)', () => {
+  it('names a picture by its type or its ending, so it is pointed at Convert image', () => {
+    expect(whyNotOpened({ name: 'sunflower.jpg', type: 'image/jpeg' })).toBe('picture')
+    expect(whyNotOpened({ name: 'Scan.HEIC', type: '' })).toBe('picture')
+  })
+
+  it('takes a file named as a Project file that did not read for a damaged one', () => {
+    expect(whyNotOpened({ name: 'summer-ada.openbeads', type: 'application/json' })).toBe('damaged')
+    expect(whyNotOpened({ name: 'Summer.OPENBEADS', type: '' })).toBe('damaged')
+  })
+
+  it('says anything else is not a Project file', () => {
+    expect(whyNotOpened({ name: 'notes.txt', type: 'text/plain' })).toBe('not-project')
+    expect(whyNotOpened({ name: 'pattern.pdf', type: 'application/pdf' })).toBe('not-project')
   })
 })

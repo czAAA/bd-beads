@@ -76,8 +76,8 @@ for (const { columns, rows } of SIZES) {
       expect([frameOf(reloaded)!.columns, frameOf(reloaded)!.rows]).toEqual([columns, rows])
       expect(frameGrid(reloaded)[2]![3]!.color).toBe(RED)
 
-      // The whole Project goes out in a Project file, and reads back the same. Export all projects is in the Projects
-      // library, a subpanel of Menu (ticket 0553).
+      // The whole Project goes out in a Project file, and reads back the same. Save all Projects to a Project file is in
+      // the Projects library, a subpanel of Menu (tickets 0553, 0859).
       await openStripPanel(page, 'strip-menu')
       await page.getByTestId('menu-saved-projects').click()
       await settle(page)

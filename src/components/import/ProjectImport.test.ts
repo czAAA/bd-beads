@@ -9,6 +9,7 @@ import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { serializeLibrary, serializeProject } from '../../domain/projectFile'
 import { frameGrid } from '../../testUtils/frameGrid'
+import { en } from '../../i18n/en'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -21,11 +22,11 @@ function makeProject(name: string): Project {
   })
 }
 
-async function pickFile(wrapper: ReturnType<typeof mount>, contents: string) {
+async function pickFile(wrapper: ReturnType<typeof mount>, contents: string | File) {
   const input = wrapper.find<HTMLInputElement>('[data-testid="import-file"]')
   Object.defineProperty(input.element, 'files', {
     configurable: true,
-    value: [new File([await gzipJson(contents)], 'import.openbeads', { type: 'application/json' })],
+    value: [typeof contents === 'string' ? new File([await gzipJson(contents)], 'import.openbeads', { type: 'application/json' }) : contents],
   })
 
   await input.trigger('change')
@@ -33,11 +34,23 @@ async function pickFile(wrapper: ReturnType<typeof mount>, contents: string) {
 }
 
 describe('ProjectImport import', () => {
-  it('puts no accept filter on either file input, so an iPad does not grey out .openbeads (ticket 469)', () => {
+  it('puts no accept filter on either file input on a touch device, so an iPad does not grey out .openbeads (ticket 469)', () => {
     for (const compact of [false, true]) {
       const input = mount(ProjectImport, { props: { projects: [], compact } }).find('[data-testid="import-file"]')
       expect(input.exists()).toBe(true)
       expect(input.attributes('accept')).toBeUndefined()
+    }
+  })
+
+  it('offers Project files on a device with no touch (ticket 0859)', () => {
+    Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 0 })
+    try {
+      for (const compact of [false, true]) {
+        const input = mount(ProjectImport, { props: { projects: [], compact } }).find('[data-testid="import-file"]')
+        expect(input.attributes('accept')).toBe('.openbeads,.json')
+      }
+    } finally {
+      Reflect.deleteProperty(navigator, 'maxTouchPoints')
     }
   })
 
@@ -73,13 +86,22 @@ describe('ProjectImport import', () => {
     expect(frameGrid(added[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('says so and imports nothing when the file is not an openbeads file', async () => {
+  it('says a damaged Project file is damaged, and imports nothing', async () => {
     const wrapper = mount(ProjectImport, { props: { projects: [] } })
 
     await pickFile(wrapper, 'this is not a project')
+    expect(wrapper.get('[data-testid="import-error"]').text()).toBe(en.transfer.damagedFile)
 
     expect(wrapper.emitted('import')).toBeUndefined()
-    expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(true)
+  })
+
+  it('points a picture at Convert image, and says anything else is not a Project file (ticket 0859)', async () => {
+    const wrapper = mount(ProjectImport, { props: { projects: [] } })
+
+    await pickFile(wrapper, new File(['\x89PNG'], 'sunflower.png', { type: 'image/png' }))
+    expect(wrapper.get('[data-testid="import-error"]').text()).toBe(en.transfer.pictureFile)
+    await pickFile(wrapper, new File(['notes'], 'notes.txt', { type: 'text/plain' }))
+    expect(wrapper.get('[data-testid="import-error"]').text()).toBe(en.transfer.notProjectFile)
   })
 })
 
