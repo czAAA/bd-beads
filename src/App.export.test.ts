@@ -94,7 +94,7 @@ describe('App library export (ticket 385)', () => {
 })
 
 describe('App empty, loading and failed states (ticket 158)', () => {
-  it('offers Export Project as the way out when a save fails, handing over the open Project', async () => {
+  it('offers Save Project file as the way out when a save fails, handing over the open Project', async () => {
     const wrapper = mountApp()
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')

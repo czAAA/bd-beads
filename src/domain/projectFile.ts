@@ -120,6 +120,17 @@ export function libraryFileName(): string {
   return 'openbeads_lib.openbeads'
 }
 
+/** Why a picked file didn't open as a Project file (ticket 0859): a picture belongs in Convert image, a file named as a
+ * Project file is damaged, and anything else isn't one. */
+export type UnopenedFile = 'picture' | 'damaged' | 'not-project'
+
+const PICTURE_ENDING = /\.(png|jpe?g|gif|webp|avif|bmp|svg|tiff?|heic|heif)$/i
+
+export function whyNotOpened(file: { name: string; type: string }): UnopenedFile {
+  if (file.type.startsWith('image/') || PICTURE_ENDING.test(file.name)) return 'picture'
+  return /\.openbeads$/i.test(file.name) ? 'damaged' : 'not-project'
+}
+
 /** Whether a parsed value has the fields of a Project saved before its layers, in either the beads shape or the
  * older grid shape. */
 export function looksLikeProject(value: unknown): value is StoredProject {

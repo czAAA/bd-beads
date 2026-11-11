@@ -51,11 +51,11 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.emitted('export')).toEqual([['png'], ['pdf']])
   })
 
-  it('names the Linked file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {
+  it('names the last saved file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {
     const wrapper = mountPanel()
     expect(wrapper.find('[data-testid="save-project-file-as"]').exists()).toBe(false)
 
-    await wrapper.setProps({ linkedFileName: 'Moth.openbeads', canSaveAs: true })
+    await wrapper.setProps({ lastFileName: 'Moth.openbeads', canSaveAs: true })
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}Moth.openbeads`)
     await wrapper.get('[data-testid="save-project-file-as"]').trigger('click')
     expect(wrapper.emitted('save-project-file-as')).toHaveLength(1)

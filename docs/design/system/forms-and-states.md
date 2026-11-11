@@ -27,8 +27,8 @@ How the app asks for input, and what every part shows when it is empty, waiting 
 ## Errors and results
 
 - An error stays beside what caused it: at the field (forms), beside the button (imports), in the save box (saving). Only save failures, which affect the whole library, use the notice row under the header, and they stay until a save succeeds.
-- Every error offers the way out when there is one: Export Pattern when saving fails.
-- Results that need no action ("PNG ready", "Row direction: top to bottom") are short and go by themselves.
+- Every error offers the way out when there is one: Save Project file when saving fails.
+- Results that need no action ("Saved: sunflower.png", "Row direction: top to bottom") are short and go by themselves.
 
 ## Open canvas and Frame (v16)
 

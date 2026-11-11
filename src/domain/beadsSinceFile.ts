@@ -12,6 +12,8 @@ export interface SinceFile {
   beads: number
   /** When a Project file of it was last saved on this device; absent when it never was. */
   lastFileAt?: number
+  /** That file's name, which the Project panel's Save row shows (ticket 0859); absent in records older builds wrote. */
+  fileName?: string
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000

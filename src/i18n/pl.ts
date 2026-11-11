@@ -141,7 +141,7 @@ export const pl: Translations = {
       themeDark: 'Ciemny',
       tooltipDeleteAll: 'Usuń wszystkie projekty z tego urządzenia.',
       deleteAllTitle: 'Usunąć projekty?',
-      deleteAllMessage: 'Wszystkie projekty zostaną usunięte z tego urządzenia. Nie można tego cofnąć. Najpierw kliknij „Eksportuj całość”, jeśli chcesz zachować kopie.',
+      deleteAllMessage: 'Wszystkie projekty zostaną usunięte z tego urządzenia. Nie można tego cofnąć. Najpierw kliknij „Zapisz wszystko w pliku projektu”, jeśli chcesz zachować kopie.',
       deleteAllConfirm: 'Usuń wszystkie projekty',
       sendFeedback: 'Wyślij opinię',
       reportTranslation: 'Zgłoś błąd tłumaczenia',
@@ -237,7 +237,7 @@ export const pl: Translations = {
     removeButton: 'Usuń',
     unknownBeadLabel: 'Nieznany koralik',
     emptyTitle: 'Brak projektów',
-    emptyBody: 'Projekty są przechowywane na tym urządzeniu. Zaimportuj plik .openbeads, aby dodać projekt.',
+    emptyBody: 'Projekty są przechowywane na tym urządzeniu. Otwórz plik projektu, aby dodać projekt.',
     pieces: { one: '{count} kawałek', few: '{count} kawałki', many: '{count} kawałków', other: '{count} kawałka' },
     unnamedPieces: 'bez nazwy: {count}',
     frameSize: 'Ramka {width} × {height} koralików',
@@ -304,11 +304,11 @@ export const pl: Translations = {
     },
     firstRun: {
       storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
-      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi.\nZapisz do pliku te, których nie chcesz stracić:',
+      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi.\nZapisz plik projektu każdego, którego nie chcesz stracić:',
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo zaimportuj plik.',
+    canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo z pliku projektu.',
     canvasPlaceholder: 'Nie otwarto jeszcze żadnego projektu',
     updateReady: 'Aktualizacja gotowa',
     updateReload: 'Załaduj ponownie',
@@ -318,7 +318,7 @@ export const pl: Translations = {
   },
   storage: {
     saveFailedMessage:
-      'Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo wyeksportuj projekt do pliku, żeby go zachować.',
+      'Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić.',
     /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
       title: 'Poprosić przeglądarkę o zachowanie projektów?',
@@ -672,12 +672,8 @@ export const pl: Translations = {
     formatsHint: 'png · pdf',
     makingPng: 'Tworzenie obrazu PNG · {name}',
     makingPdf: 'Tworzenie PDF · {name}',
-    readyPng: 'PNG gotowy',
-    readyPdf: 'PDF gotowy',
-    readyFile: 'Plik gotowy',
     savedFile: 'Zapisano: {file}',
     readySave: 'Zapisz',
-    exportProjectFile: 'Eksportuj projekt',
     nameOnExports: 'Imię w eksportach',
     changeName: 'Zmień',
     addName: 'Dodaj',
@@ -685,21 +681,23 @@ export const pl: Translations = {
     nameHint: 'Drukowane w eksportach PDF i PNG tego projektu.',
     saveName: 'Zapisz',
     cancelName: 'Anuluj',
+    readyToSave: 'Gotowy do zapisania: {file}',
   },
   saveReminder: {
-    label: 'Zapisz kopię',
+    label: 'Zapisz plik projektu',
     body: 'Przeglądarka przechowuje twoją pracę, ale może ją wyczyścić. Plik projektu zostanie.',
     count: 'Koralików od ostatniego pliku: {count}',
     lastFile: 'Ostatni plik: {when}',
     noFile: 'Nie ma jeszcze pliku projektu',
-    announce: 'Koralików od ostatniego pliku: {count}. Zapisz kopię, żeby je zachować.',
+    announce: 'Koralików od ostatniego pliku: {count}. Zapisz plik projektu, żeby je zachować.',
   },
   transfer: {
-    exportProjectButton: 'Eksportuj projekt',
-    exportLibraryButton: 'Eksportuj wszystkie projekty',
-    importLabel: 'Importuj projekt',
-    importedLabel: 'Zaimportowane projekty',
-    importErrorLabel: 'Nie udało się zaimportować tego pliku .openbeads',
+    exportLibraryButton: 'Zapisz wszystko w pliku projektu',
+    importLabel: 'Otwórz plik projektu',
+    importedLabel: 'Dodane projekty',
+    notProjectFile: 'To nie jest plik projektu. Wybierz plik z końcówką .openbeads.',
+    pictureFile: 'To jest obraz. Użyj „Konwertuj obraz”, aby zamienić go na koraliki.',
+    damagedFile: 'Ten plik projektu jest uszkodzony i nie da się go otworzyć.',
   },
   toolbox: {
     groups: {
@@ -844,11 +842,11 @@ export const pl: Translations = {
     lockedReason: 'Rzędy są oznaczone jako gotowe. Zresetuj postęp, aby zmienić rozmiar.',
   },
   importSwitch: {
-    title: 'Przełączyć na zaimportowany projekt?',
+    title: 'Przełączyć na otwarty projekt?',
     messageOne:
-      'Zaimportowano „{imported}”. Twój postęp w „{current}” jest zapisany. Przełączyć na „{imported}” czy zostawić otwarty „{current}”?',
+      'Dodano „{imported}” do biblioteki projektów. Twój postęp w „{current}” jest zapisany. Przełączyć na „{imported}” czy zostawić otwarty „{current}”?',
     messageMany:
-      'Zaimportowano projekty: {count}. Twój postęp w „{current}” jest zapisany. Przełączyć na „{imported}” czy zostawić otwarty „{current}”?',
+      'Dodano projekty do biblioteki: {count}. Twój postęp w „{current}” jest zapisany. Przełączyć na „{imported}” czy zostawić otwarty „{current}”?',
     unsavedMessage:
       '„{current}” nie jest jeszcze zapisany na tym urządzeniu. Najpierw go zapisz albo przełącz mimo to i zaryzykuj utratę ostatniej zmiany.',
     switchButton: 'Przełącz',
@@ -1189,7 +1187,6 @@ export const pl: Translations = {
   opening: {
     didNotOpen: 'Projekt „{name}” nie otworzył się ostatnim razem.',
     removeButton: 'Usuń',
-    exportButton: 'Eksportuj',
     largeTitle: 'Otworzyć „{name}”?',
     largeMessage: '{count} mln koralików. Otwieranie może być wolne lub się nie udać.',
     openAnyway: 'Otwórz mimo to',

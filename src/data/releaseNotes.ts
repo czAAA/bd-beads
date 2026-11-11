@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Project file has one name, Save Project file and Open Project file, every saved file is named in one toast, and a file that won’t open says why',
+      ru: 'У файла проекта одно имя, «Сохранить файл проекта» и «Открыть файл проекта», каждый сохранённый файл назван в одном сообщении, а файл, который не открылся, объясняет почему',
+      uk: 'У файлу проєкту одна назва, «Зберегти файл проєкту» і «Відкрити файл проєкту», кожен збережений файл названо в одному повідомленні, а файл, що не відкрився, пояснює чому',
+      be: 'У файла праекта адна назва, «Захаваць файл праекта» і «Адкрыць файл праекта», кожны захаваны файл названы ў адным паведамленні, а файл, які не адкрыўся, тлумачыць чаму',
+      zh: '项目文件只有一个名字：“保存项目文件”和“打开项目文件”，每个保存的文件都在同一条提示里写出名字，打不开的文件会说明原因',
+      es: 'El archivo de proyecto tiene un solo nombre, Guardar archivo de proyecto y Abrir archivo de proyecto, cada archivo guardado se nombra en un aviso y un archivo que no se abre dice por qué',
+      pl: 'Plik projektu ma jedną nazwę, Zapisz plik projektu i Otwórz plik projektu, każdy zapisany plik jest nazwany w jednym komunikacie, a plik, który się nie otwiera, mówi dlaczego',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Delete and error reds read better and are no longer the accent’s orange, and dark buttons show their edge',
       ru: 'Красный удаления и ошибок лучше читается и не совпадает с оранжевым акцентом, а у кнопок в тёмной теме видна рамка',
       uk: 'Червоний видалення й помилок краще читається і не збігається з помаранчевим акцентом, а кнопки в темній темі мають рамку',

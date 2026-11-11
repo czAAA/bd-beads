@@ -196,7 +196,30 @@ function sealedDates(project: SealedProject): string {
 </template>
 
 <style scoped>
-/* Import is a file label (ProjectImport), dressed as one of the rows around it. */
+/* Open Project file is a file label (ProjectImport), dressed as one of the rows around it: the full width, its
+ * `.openbeads` at the right edge like the Save row's, its result on a line of its own under it (ticket 0859). */
+.projects-library__import {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.projects-library__import :deep(.app-tooltip) {
+  display: flex;
+  flex: 1 0 100%;
+}
+
+/* Its text from the rows' label column; an error's icon in their icon column. */
+.projects-library__import :deep(.project-import__result),
+.projects-library__import :deep(.project-import__error) {
+  padding: var(--space-2) var(--space-10) var(--space-4) calc(var(--space-10) + 16px + var(--space-8));
+  font: var(--type-small);
+}
+
+.projects-library__import :deep(.project-import__error) {
+  gap: var(--space-8);
+  padding-left: var(--space-10);
+}
+
 .projects-library__import :deep(.project-import__button) {
   display: flex;
   flex-wrap: wrap;

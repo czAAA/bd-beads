@@ -1118,7 +1118,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveProjectFile: exportFlow.onSave,
       onSaveProjectFileAs: exportFlow.onSaveAs,
       canSaveAs: exportFlow.canSaveAs,
-      linkedFileName: exportFlow.linkedFileName,
+      // The Save row's value (ticket 0859): the Linked file, else the last file saved of the open Project, by any route.
+      lastFileName: computed(() => exportFlow.linkedFileName.value ?? sinceFile.current.value.fileName),
       onSaveMakerName: exportFlow.onSaveMakerName,
       // The Frame panel
       settledProject,
