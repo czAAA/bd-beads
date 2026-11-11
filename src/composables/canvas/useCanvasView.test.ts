@@ -7,6 +7,9 @@ import { orientationOf } from '../../domain/layerRecord'
 import { rotateCanvas, turnCanvasTo } from '../../domain/rotate'
 import { SNAP_MS } from '../../rendering/gestureView'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
+import { NO_INSETS } from '../../domain/toolPill'
+import { surfaceView } from '../../rendering/surfaceView'
+import { OPEN_SPACE } from '../../rendering/space'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 
@@ -14,17 +17,18 @@ function projectOf(columns: number, rows: number, extra: LayersChange = {}): Pro
   return withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), extra)
 }
 
-function setup(project: Project | undefined, size = { width: 1000, height: 800 }) {
+function setup(project: Project | undefined, size = { width: 1000, height: 800 }, pill = NO_INSETS) {
   const current = ref(project)
   const viewport = ref(size)
+  const covered = ref(pill)
   // The Project keeps the angle a twist settles on, as the Rotate canvas flow does.
   const kept: number[] = []
   const keepTwist = (orientation: number) => {
     kept.push(orientation)
     current.value = turnCanvasTo(current.value!, orientation)
   }
-  const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist }))!
-  return { current, viewport, view, kept }
+  const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist, covered: () => covered.value }))!
+  return { current, viewport, covered, view, kept }
 }
 
 describe('useCanvasView', () => {
@@ -37,12 +41,42 @@ describe('useCanvasView', () => {
     expect(view.scroll.value).toEqual({ x: -300, y: -300 })
   })
 
-  it('zooms out to fit a Frame bigger than the viewport', () => {
+  it('zooms out to fit a Frame bigger than the viewport, its Margin sheet whole (ticket 0850)', () => {
     const { view } = setup(projectOf(80, 40))
     view.fit()
 
-    expect(view.zoom.value).toBe(0.54)
-    expect(view.zoom.value * 1600 + FIT_MARGIN_PX.width * 2).toBeLessThanOrEqual(1000)
+    // The sheet is the Frame and 4 positions round it: 88 × 48 beads of 20px.
+    expect(view.zoom.value).toBe(0.52)
+    expect(view.zoom.value * 88 * 20).toBeLessThanOrEqual(1000)
+  })
+
+  it('fits the Frame\'s sheet in the room the Tool pill leaves, and centres it there (ticket 0850)', () => {
+    const { view } = setup(projectOf(40, 30), { width: 1000, height: 800 }, { ...NO_INSETS, bottom: 64 })
+    view.fit()
+
+    // The sheet, 48 × 38 beads from position -4, -4, lies whole in the 1000 × 736 above the pill, as much room above
+    // it as below.
+    const sheet = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: view.zoom.value, scroll: view.scroll.value }).beadBox({ row: -4, column: -4, rows: 38, columns: 48 })
+    expect(view.zoom.value).toBe(0.92)
+    expect(sheet.y).toBeGreaterThan(0)
+    expect(sheet.y + sheet.height).toBeLessThan(800 - 64)
+    expect(sheet.y).toBeCloseTo(800 - 64 - sheet.y - sheet.height, 5)
+  })
+
+  it('fits again when the Tool pill moves to another edge, until the person moves the view (ticket 0850)', async () => {
+    const { covered, view } = setup(projectOf(36, 30))
+    view.fit()
+    expect(view.zoom.value).toBe(1)
+
+    covered.value = { ...NO_INSETS, bottom: 64 }
+    await nextTick()
+    expect(view.zoom.value).toBe(0.92)
+
+    view.panBy(10, 10)
+    covered.value = { ...NO_INSETS, left: 64 }
+    await nextTick()
+    expect(view.zoom.value).toBe(0.92)
+    expect(view.isAtFit.value).toBe(false)
   })
 
   it('shrinks a huge Project down to the 10% Zoom floor and no further, on any screen', () => {
@@ -59,7 +93,7 @@ describe('useCanvasView', () => {
 
   it('fits what is drawn when there is no Frame, and puts the origin in the middle of an empty canvas', () => {
     const painted = paintAt(withLayers(projectOf(2, 2), { frame: undefined }), [{ row: 50, column: 80 }], '#e63746')
-    expect(fitBox(painted)).toEqual({ row: 50, column: 80, rows: 1, columns: 1 })
+    expect(fitBox(painted)).toEqual({ box: { row: 50, column: 80, rows: 1, columns: 1 }, margin: FIT_MARGIN_PX })
     expect(fitBox(withLayers(projectOf(2, 2), { frame: undefined }))).toBeUndefined()
 
     const { view } = setup(withLayers(projectOf(2, 2), { frame: undefined }))

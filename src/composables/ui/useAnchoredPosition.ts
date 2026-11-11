@@ -25,9 +25,17 @@ function raise(popup: HTMLElement): void {
 // Places a popup 4px under its button (Menu card) with Floating UI, `fixed` from its first render so it never pushes the
 // button aside in its row (ticket 0681), since the left column scrolls and would clip it. Opens on the other side when no
 // room on its own, stays inside the window (or a boxed shell's box, ticket 0797), follows the button while it moves.
-export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup: Ref<HTMLElement | undefined>, align: () => 'start' | 'end', side: () => 'below' | 'above' = () => 'below') {
+export function useAnchoredPosition(
+  anchor: Ref<HTMLElement | undefined>,
+  popup: Ref<HTMLElement | undefined>,
+  align: () => 'start' | 'end',
+  side: () => 'below' | 'above' = () => 'below',
+  /** How far down the screen the popup may reach, when it gives a place (the bottom bar's top, ticket 0850). */
+  floor: () => number | undefined = () => undefined,
+) {
   const style = ref<Record<string, string>>(unplaced)
-  /** How tall the popup may be below its top, inside a boxed shell's box (ticket 0797); none on the page. */
+  /** How tall the popup may be below its top, inside a boxed shell's box (ticket 0797) or above the floor; none on the
+   * page with no floor. */
   const roomBelow = ref<number>()
   const scope = useShellScope()
   const GAP = 4
@@ -60,7 +68,9 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
     // `y` is from the popup's containing block, which a boxed shell's box is (`contain`), the room's bottom from the
     // screen's top: the block's own top joins them.
     const blockTop = list.getBoundingClientRect().top - (Number.parseFloat(list.style.top) || 0)
-    roomBelow.value = scope === PAGE_SCOPE ? undefined : room.bottom - (y + blockTop) - EDGE
+    const lowest = floor()
+    const bottom = lowest === undefined ? room.bottom : Math.min(room.bottom, lowest)
+    roomBelow.value = scope === PAGE_SCOPE && lowest === undefined ? undefined : bottom - (y + blockTop) - EDGE
     style.value = { ...fixedAt(y, x), minWidth }
   }
 

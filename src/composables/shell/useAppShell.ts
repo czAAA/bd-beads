@@ -196,7 +196,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist } =
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
 
   /** Every Project in the library, sealed ones too: what a Project's records beside the library are kept for. */
@@ -1124,6 +1124,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       demoExpand: computed(() => demo?.expand?.()),
       onToggleDemoExpand: () => demo?.toggleExpand?.(),
       surfaceProbe,
+      /** Where the Tool pill stands over the drawing area: a Fit leaves its room clear (ticket 0850). */
+      onToolPillPlaced,
     },
     /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
      * Frame panel. Each control only asks; the flows do the work. */

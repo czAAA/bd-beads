@@ -71,12 +71,22 @@ const anchorEl = ref<HTMLElement>()
 /** The buttons that open, swap or close a panel themselves, so a press on one is not a press outside. */
 const OPENERS = PANEL_OPENERS
 
-const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
 /** Where the strip button it hangs from is looked for: its own shell's, not another on the page (ticket 0797). */
 const scope = useShellScope()
 const findInShell = (selector: string) => (scope.root() ?? document).querySelector<HTMLElement>(selector)
-/** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
- * past that. */
+/** The canvas box's bottom bar (the Progress bar, or Convert image's steps): a panel ends above it and a press on it
+ * goes through, so the bar works while a panel is open (ticket 0850). */
+const BOTTOM_BAR = '[data-bottom-bar]'
+/** The bottom bar of the canvas box the panel's button is in; none where the button is in no canvas box. */
+const ownBar = () => anchorEl.value?.closest('[data-testid="app-canvas"]')?.querySelector(BOTTOM_BAR)
+function barTop(): number | undefined {
+  const bar = ownBar()?.getBoundingClientRect()
+  return bar && bar.height > 0 ? bar.top : undefined
+}
+const onOwnBar = (target: EventTarget | null) => target instanceof Node && !!ownBar()?.contains(target)
+const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start', () => 'below', barTop)
+/** The dropdown is as tall as the room allows below its button (above the bottom bar, else 16px clear of the window's
+ * bottom edge) and scrolls inside past that. */
 const placed = anchored.style
 const dropdownStyle = computed(() => ({
   ...placed.value,
@@ -110,6 +120,7 @@ useOverlayLayer({
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
   isOpener: (target) => target.closest(OPENERS) !== null,
+  keepsPress: (event) => onOwnBar(event.target),
   onOutsidePress: () => {
     pressClosed.markPressClosed()
     emit('close')
@@ -164,11 +175,11 @@ function onKeydown(event: KeyboardEvent) {
   list[next]?.focus({ preventScroll: true })
 }
 
-/** The dropdown closes when focus leaves it with Tab. */
+/** The dropdown closes when focus leaves it with Tab; a press on the bottom bar leaves it open. */
 function onFocusOut(event: FocusEvent) {
   if (props.menu) return
   const next = event.relatedTarget
-  if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(OPENERS) && !next.closest('[popover]')) emit('close')
+  if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(OPENERS) && !next.closest('[popover]') && !onOwnBar(next)) emit('close')
 }
 
 /** `place` again after the button moved with no scroll or resize (the edit pencil on a zoom); the panel's element and

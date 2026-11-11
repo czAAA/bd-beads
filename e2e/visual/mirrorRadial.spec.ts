@@ -48,7 +48,8 @@ function starFramed(): Project {
  * others soft), in Repeat mode five rays along the Seams between the arms; the Mirror bar notes the shape's Axis. */
 for (const mode of ['mirror', 'repeat'] as const) {
   test(`the Radial overlay on a Star Frame in ${mode} mode`, async ({ browser }) => {
-    const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+    // Tall enough that Fit, which keeps the sheet clear of the Tool pill (ticket 0850), is 100%: the margin's Mirror button in view.
+    const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 1040 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
     await openApp(page, [starFramed()])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)

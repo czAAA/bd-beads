@@ -175,6 +175,7 @@ const {
   demoExpand,
   onToggleDemoExpand,
   surfaceProbe,
+  onToolPillPlaced,
 } = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
@@ -306,6 +307,13 @@ function bindDrawing(el: unknown) {
   drawingEl.value = el instanceof HTMLElement ? el : undefined
 }
 const drawingSize = useElementSize(drawingEl)
+/** The Tool pill where it now stands: the Selection bar keeps clear of it, and a Fit too (ticket 0850), in the drawing
+ * area as it is now. */
+function onPillRect(rect: PillRect | undefined) {
+  pillRect.value = rect
+  const el = drawingEl.value
+  if (el) onToolPillPlaced(rect, { width: el.clientWidth, height: el.clientHeight }, toolPillPosition.value)
+}
 const selectionLayerStyle = computed(() => {
   const el = drawingEl.value
   if (!el) return undefined
@@ -516,7 +524,7 @@ const drawingStyle = computed(() => {
             @pick-recent="pickRecent"
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
-            @rect="pillRect = $event"
+            @rect="onPillRect"
           />
         </div>
 
@@ -541,10 +549,11 @@ const drawingStyle = computed(() => {
           Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
           first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
         -->
-        <ConvertStepBar v-if="page === 'convert-image' && convertSession" class="app-shell__footer" :wizard="convertSession" @create="onCreateConvertImage" />
+        <ConvertStepBar v-if="page === 'convert-image' && convertSession" class="app-shell__footer" data-bottom-bar :wizard="convertSession" @create="onCreateConvertImage" />
         <ProgressBar
           v-else
           class="app-shell__footer"
+          data-bottom-bar
           :project="activeProject"
           :row-highlight="rowHighlight"
           :row-press="rowPress"

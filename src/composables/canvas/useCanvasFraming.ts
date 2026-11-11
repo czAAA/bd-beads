@@ -1,5 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Project } from '../../domain/project'
+import { NO_INSETS, pillInsets, type Insets, type PillPosition, type PillRect } from '../../domain/toolPill'
+import type { Size } from '../../rendering/cellSize'
 import { useElementSize } from '../ui/useElementSize'
 import { useCanvasView } from './useCanvasView'
 
@@ -18,8 +20,10 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   const canvasAreaEl = ref<HTMLElement | null>(null)
   const { width, height } = useElementSize(canvasAreaEl)
   const viewport = computed(() => ({ width: width.value, height: height.value }))
+  /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away (the Adjust bar's turn). */
+  const toolPillCover = ref<Insets>(NO_INSETS)
 
-  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist })
+  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value })
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
    * threaded down as a second prop. */
@@ -32,6 +36,12 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
    * App.vue has to declare. */
   function bindCanvasArea(el: unknown) {
     canvasAreaEl.value = el instanceof HTMLElement ? el : null
+  }
+
+  /** The Tool pill measured in the drawing area (`area`, its size at that moment) and the edge it docks to: a Fit leaves
+   * the room it takes clear (ticket 0850). */
+  function onToolPillPlaced(rect: PillRect | undefined, area: Size, position: PillPosition) {
+    if (rect) toolPillCover.value = pillInsets(rect, area, position)
   }
 
   return {
@@ -54,5 +64,6 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     endTwist,
     zoomPercent,
     stripZoomPercent,
+    onToolPillPlaced,
   }
 }

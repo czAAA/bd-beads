@@ -245,3 +245,34 @@ describe('↓ and ↑ leave a choice group', () => {
     wrapper.unmount()
   })
 })
+
+describe('the canvas box\'s bottom bar (ticket 0850)', () => {
+  /** A panel hung from a strip button in a canvas box whose bottom bar holds Row done. */
+  async function mountOverBar() {
+    const box = document.createElement('div')
+    box.dataset.testid = 'app-canvas'
+    box.innerHTML = '<button data-testid="strip-frame"></button><div data-bottom-bar><button data-testid="row-done"></button></div>'
+    document.body.append(box)
+    const wrapper = mount(AppPanel, { attachTo: document.body, props: { title: 'Frame', anchor: 'strip-frame' }, slots: { default: () => h('button', 'Row') } })
+    await nextTick()
+    return wrapper
+  }
+
+  it('lets a press on the bar work and stays open, where a press anywhere else closes it', async () => {
+    const wrapper = await mountOverBar()
+    const rowDone = document.querySelector<HTMLElement>('[data-testid="row-done"]')!
+    const pressed = vi.fn()
+    rowDone.addEventListener('click', pressed)
+
+    rowDone.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    rowDone.focus()
+    rowDone.click()
+    await nextTick()
+    expect(pressed).toHaveBeenCalledOnce()
+    expect(wrapper.emitted('close')).toBeUndefined()
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+})
