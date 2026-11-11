@@ -18,8 +18,6 @@
   --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
   --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
   --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
-  --convert-stage-height: 30px; /* ConvertImage card (ticket 0780): a Background stage chip, 1 Find or 2 Remove. */
-  --convert-stage-disc: 18px; /* ConvertImage card (ticket 0780): a stage chip's numbered disc. */
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
@@ -345,6 +343,7 @@
   --step-name-max: 5.75rem; /* A step's name on a phone wraps at 92px. */
   /* CanvasStrip card, the phone strip (ticket 0843). */
   --strip-fade: 1.5rem; /* The fade on the edge where the strip's scrolling controls are cut, 24px. */
+  --strip-project-name-max: 12rem; /* CanvasStrip card (ticket 0858): the Project button's name is cut at 192px. */
   /* Row progress motion (ticket 0729; interaction-and-motion.md, Row progress) */
   --row-glint-duration: 380ms; /* BeadBoard card: each bead of the finished pass washes in --row-glint and back. */
   --row-glint-step: 24ms; /* BeadBoard card: the gap between one bead's glint and the next, in the Row direction. */

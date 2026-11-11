@@ -4,6 +4,7 @@ import type { ColorCatalog } from './colorCatalog'
 import { BUILT_IN_COLORS, addedColorId } from './palette'
 import { reducePictureColors } from './imageColors'
 import {
+  beadColorRows,
   beadColorTargets,
   convertFrame,
   matchFoundColors,
@@ -72,6 +73,42 @@ describe('matchFoundColors', () => {
     const picture = reduced({ '#ff0000': 3, '#00a000': 2, '#ffffff': 1 })
     const found = matchFoundColors(picture, beadColorTargets(catalog, '11/0', BUILT_IN_COLORS), kept)
     expect(found.map((color) => color.result?.code ?? color.result?.hex)).toEqual(['DB1', '#2f6fed', undefined])
+  })
+})
+
+describe('beadColorRows (ticket 0863)', () => {
+  it('joins the found colors that become the same bead color, most beads first', () => {
+    const found = matchFoundColors(reduced({ '#0000ff': 2, '#1010f0': 3, '#ff0000': 4 }), defaults, choices())
+    expect(beadColorRows(found).map(({ pictureHexes, count, result }) => [pictureHexes, count, result?.colorId])).toEqual([
+      [['#1010f0', '#0000ff'], 5, 'blue'],
+      [['#ff0000'], 4, 'red'],
+    ])
+  })
+
+  it('keeps one row per color under Exact', () => {
+    const found = matchFoundColors(reduced({ '#123456': 2, '#654321': 1 }), undefined, choices())
+    expect(beadColorRows(found).map((row) => row.pictureHexes)).toEqual([['#123456'], ['#654321']])
+  })
+
+  it('joins the colors set to empty by the bead color they matched, so a row emptied stays one row', () => {
+    const found = matchFoundColors(
+      reduced({ '#0000ff': 2, '#1010f0': 3, '#ff0000': 4 }),
+      defaults,
+      choices({ '#0000ff': { kind: 'empty' }, '#1010f0': { kind: 'empty' } }),
+    )
+    const rows = beadColorRows(found)
+    expect(rows.map(({ pictureHexes, result, choice }) => [pictureHexes, result?.colorId, choice?.kind])).toEqual([
+      [['#1010f0', '#0000ff'], undefined, 'empty'],
+      [['#ff0000'], 'red', undefined],
+    ])
+  })
+
+  it('gives a row the choice its colors share, and none when they differ', () => {
+    const blue = defaults!.find((target) => target.colorId === 'blue')!
+    const found = matchFoundColors(reduced({ '#0000ff': 2, '#00a000': 3 }), defaults, choices({ '#00a000': { kind: 'remap', target: blue } }))
+    const [row] = beadColorRows(found)
+    expect(row!.pictureHexes).toEqual(['#00a000', '#0000ff'])
+    expect(row!.choice).toBeUndefined()
   })
 })
 

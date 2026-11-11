@@ -40,12 +40,13 @@ describe('CanvasStrip', () => {
     expect(link.attributes('aria-label')).toBe('Buy me a coffee')
   })
 
-  it('shows Menu and Project as icon + text, and asks for their sheets (ticket 431)', async () => {
+  it('shows Menu as icon + text and Project as its icon + the open Project\'s name, and asks for their sheets (tickets 431, 0858)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, openPanel: 'project' } })
 
     expect(wrapper.get('[data-testid="strip-menu"]').text()).toBe('Menu')
     expect(wrapper.find('[data-testid="strip-menu"] svg').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="strip-project"]').text()).toBe('Project')
+    expect(wrapper.get('[data-testid="strip-project"]').text()).toBe('Test')
+    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-label')).toBe('Project: Test')
     expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBeUndefined()
 
@@ -151,11 +152,11 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
     wrapper.unmount()
   })
 
-  it('keeps the words of Menu and Project in the page for a screen reader, and has no Canvas color control', () => {
+  it('keeps the words of Menu and the Project\'s name in the page for a screen reader, and has no Canvas color control', () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
 
     expect(wrapper.get('[data-testid="strip-menu"] .canvas-strip__label').text()).toBe('Menu')
-    expect(wrapper.get('[data-testid="strip-project"] .canvas-strip__label').text()).toBe('Project')
+    expect(wrapper.get('[data-testid="strip-project"] .canvas-strip__label').text()).toBe('Test')
     expect(wrapper.find('[data-testid="canvas-color"]').exists()).toBe(false)
   })
 })

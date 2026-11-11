@@ -455,6 +455,8 @@ export interface Translations {
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill,
      * Beads needed, Saved Projects, New Project, Import. */
     projectPanelLabel: string
+    /** The strip's Project button, named with the open Project's name it shows (ticket 0858). */
+    projectButtonNamed: string
   }
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
   homepage: {
@@ -866,6 +868,8 @@ export interface Translations {
     lastFile: string
     noFile: string
     announce: string
+    /** The label's count beside "Save Project file" (ticket 0858): "89 beads since the last file". */
+    since: PluralForms
   }
   /** Open Project file and Save all Projects to a Project file, in the Projects library (ticket 0859: the file's one name). */
   transfer: {
@@ -1111,9 +1115,9 @@ export interface Translations {
       dropToUse: string
       dropToConvert: string
       dropLimits: string
-      /** What to weave (tickets 0747, 0780): the label, its two choices and the line under each, and the line under the
-       * result box while a crop is woven. */
-      weave: string
+      /** What to convert (tickets 0747, 0780; the label "convert", ticket 0863): the label, its two choices and the line
+       * under each, and the line under the result box while a crop is woven. */
+      convert: string
       wholePicture: string
       wholePictureLine: string
       aPart: string
@@ -1128,12 +1132,11 @@ export interface Translations {
       makeEmpty: string
       compare: string
       makeEmptyLine: string
-      /** The Background step (ticket 0780): the switch and its line off and on, the two stages, what was found, Tolerance and
-       * its ends, and what was removed (`{count}` beads). */
+      /** The Background step (ticket 0780): the switch and its line off and on, the stage in hand as a numbered line
+       * (ticket 0863), what was found, Tolerance and its ends, and what was removed (`{count}` beads). */
       removeBackground: string
       removeBackgroundOff: string
       removeBackgroundOn: string
-      stagesLabel: string
       stageFind: string
       stageRemove: string
       foundLine: string
@@ -1173,9 +1176,9 @@ export interface Translations {
       beadsCount: PluralForms
       /** The result box's line after a kept part's size: the whole grid it was kept from. */
       resultKeptFrom: string
-      /** The Size section (ticket 0747): the unit row's label, the Width slider's value in each unit, its max end,
-       * its marks (the width they stand for) and the hint under it. */
-      slideIn: string
+      /** The Size section (ticket 0747): the unit row's label ("units", ticket 0863), the Width slider's value in each
+       * unit, its max end, its marks (the width they stand for) and the hint under it. */
+      units: string
       widthBeads: string
       widthMm: string
       maxLabel: string
@@ -1232,6 +1235,12 @@ export interface Translations {
       /** The empty preview on touch (ticket 0846): where the picture goes and the ways in, nothing to drop. */
       emptyTouchTitle: string
       emptyTouchLine: string
+      /** The line under match to's Default Palette and Exact (ticket 0863), as beadPaletteNote is the Bead palette's. */
+      defaultPaletteNote: string
+      exactNote: string
+      /** The Colors slider's hints under Exact (ticket 0863): its colors are not beads to buy. */
+      colorsHintExact: string
+      colorsHintExactCapped: string
       /** The Review summary's rows. */
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */

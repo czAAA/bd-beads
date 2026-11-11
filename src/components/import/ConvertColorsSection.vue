@@ -16,9 +16,9 @@ import ConvertDisclosure from './ConvertDisclosure.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
 
-// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758, 0780): the Colors slider, the line
-// pointing at the preview's Make empty, what the found colors are matched to (the Bead's palette only with a Color catalog; Exact at first, a Note on the
-// Bead's palette), and Color by color, closed at first: a heading and a row per found color, one Change open at a time.
+// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758, 0780, 0863): the Colors slider, the line
+// pointing at Make empty, match to (the Bead's palette first, with a Color catalog) with a Note on what each choice does,
+// and Color by color, closed at first: a row per bead color the found colors become, one Change open at a time.
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
@@ -44,7 +44,19 @@ const colorsText = (count: number) => plural(locale.value, count, words.value.co
 const colorsValue = computed(() => colorsText(wizard.maxColors.value))
 const colorsMaxText = computed(() => groupThousands(wizard.colorsMax.value, locale.value))
 const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: colorsMaxText.value }))
-const colorsHint = computed(() => fillBlanks(wizard.colorsCapped.value ? words.value.colorsHintCapped : words.value.colorsHint, { n: colorsMaxText.value }))
+/** Under Exact a color is not a bead to buy, so the hint says what it is instead (ticket 0863). */
+const colorsHint = computed(() => {
+  const exact = wizard.source.value === 'exact'
+  const capped = wizard.colorsCapped.value
+  const hint = exact ? (capped ? words.value.colorsHintExactCapped : words.value.colorsHintExact) : capped ? words.value.colorsHintCapped : words.value.colorsHint
+  return fillBlanks(hint, { n: colorsMaxText.value })
+})
+/** The line under the choice in hand, saying what it does (ticket 0863). */
+const sourceNote = computed(() => {
+  const chosen = wizard.source.value
+  if (chosen === 'bead-colors') return fillBlanks(words.value.beadPaletteNote, { bead: beadName.value })
+  return chosen === 'default' ? words.value.defaultPaletteNote : words.value.exactNote
+})
 
 const codes = computed(() =>
   fillBlanks(words.value.codesInSize, { size: wizard.bead.value.size, count: groupThousands(wizard.beadTargets.value.length, locale.value) }),
@@ -56,7 +68,7 @@ const summary = computed(() => {
   return [colorsText(wizard.usedColorCount.value), ...(empty > 0 ? [fillBlanks(words.value.emptyCount, { n: empty })] : [])].join(' · ')
 })
 
-/** The one row whose Remap picker is open. */
+/** The one row whose Remap picker is open, by a found color it joins, so it stays open when a pick joins it to another. */
 const remapping = ref<string>()
 </script>
 
@@ -89,24 +101,22 @@ const remapping = ref<string>()
     <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
       {{ t.palette.beadColors.failed }}
     </AppNote>
-    <AppNote v-if="wizard.source.value === 'bead-colors'" data-testid="convert-source-note">
-      {{ fillBlanks(words.beadPaletteNote, { bead: beadName }) }}
-    </AppNote>
+    <AppNote data-testid="convert-source-note">{{ sourceNote }}</AppNote>
 
     <ConvertDisclosure :label="words.colorByColor" :summary="summary" testid="convert-color-by-color">
       <div class="convert-colors__found-head">
         <span class="convert-colors__label">{{ words.colorsFound }}</span>
-        <span class="convert-colors__count" role="status" data-testid="convert-found-count">{{ wizard.found.value.length }}</span>
+        <span class="convert-colors__count" role="status" data-testid="convert-found-count">{{ wizard.rows.value.length }}</span>
       </div>
       <div class="convert-colors__table">
         <FoundColorsHeader />
         <ul class="convert-colors__list" data-testid="convert-found-colors">
           <FoundColorRow
-            v-for="color in wizard.found.value"
-            :key="color.pictureHex"
-            :color="color"
-            :open="remapping === color.pictureHex"
-            @toggle-remap="remapping = remapping === color.pictureHex ? undefined : color.pictureHex"
+            v-for="row in wizard.rows.value"
+            :key="row.pictureHexes[0]"
+            :row="row"
+            :open="!!remapping && row.pictureHexes.includes(remapping)"
+            @toggle-remap="remapping = remapping && row.pictureHexes.includes(remapping) ? undefined : row.pictureHexes[0]"
           />
         </ul>
       </div>

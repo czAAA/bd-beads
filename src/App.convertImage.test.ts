@@ -112,11 +112,12 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     await flushPromises()
 
     expect(page(wrapper).exists()).toBe(false)
-    // An 8 px picture opens at its largest Width (ticket 0757), 4× its pixels: 32 × 32 beads of 1.5 mm cubes, the left
-    // half red, the right half blue, in the picture's own colors (Exact is where the page opens, ticket 0758).
-    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 32, columns: 32 } })
-    expect(beadColor(wrapper, 0)).toBe('#ff0000')
-    expect(beadColor(wrapper, 31)).toBe('#0000ff')
+    // An 8 px picture opens one bead per pixel, under 60 beads wide (ticket 0863): 8 × 8 beads of 1.5 mm cubes, the left
+    // half one bead color and the right half another, matched to the Bead's colors.
+    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 8, columns: 8 } })
+    expect(beadColor(wrapper, 0)).toBeTruthy()
+    expect(beadColor(wrapper, 7)).toBeTruthy()
+    expect(beadColor(wrapper, 7)).not.toBe(beadColor(wrapper, 0))
     wrapper.unmount()
   })
 

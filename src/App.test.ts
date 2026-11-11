@@ -93,4 +93,23 @@ describe('App storage writes', () => {
 
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(en.storage.saveFailedMessage)
   })
+
+  it('asks before a reload or closing the tab while the last save failed, and lets the page go once one gets through (ticket 0858)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const reloadAsks = () => !window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    expect(reloadAsks()).toBe(false)
+
+    const refused = refuseStorageWrites(PROJECTS_KEY)
+    await pickColor(wrapper, 'red')
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('mouseup')
+    expect(reloadAsks()).toBe(true)
+
+    refused.mockRestore()
+    await pressBead(wrapper, 1)
+    await wrapper.trigger('mouseup')
+    expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
+    expect(reloadAsks()).toBe(false)
+    wrapper.unmount()
+  })
 })
