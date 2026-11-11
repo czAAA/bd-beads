@@ -188,6 +188,16 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2*' })
   })
 
+  it('says a Kaleidocycle\'s Word chart is one face of its 24 triangles, each other face a Frame of its own (ticket 0876)', () => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
+    const chart = printText(letters(placed.project), en, 'en', at).wordChart!
+
+    const face = "This chart is one face: 6 of the Kaleidocycle's 24 triangles. Make a Frame for each other face to chart its design."
+    expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, face, en.print.wordChart.runNote, en.print.wordChart.pairNote])
+  })
+
   it('has none with Letters off', () => {
     expect(printText(delicaProject(3), en, 'en', at).wordChart).toBeUndefined()
   })

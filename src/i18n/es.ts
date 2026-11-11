@@ -281,6 +281,11 @@ export const es: Translations = {
     rowsRound: { one: '{count} fila de contorno', many: '{count} de filas de contorno', other: '{count} filas de contorno' },
     bandRows: { one: '{count} fila', many: '{count} de filas', other: '{count} filas' },
     claspLeft: '{clasp} para el cierre',
+    faceOfPiece: 'una cara de {faces}: {parts} de {total} triángulos',
+    beadsFace: { one: '{count} por cara', many: '{count} por cara', other: '{count} por cara' },
+    forPiece: { one: '{count} la pieza entera', many: '{count} la pieza entera', other: '{count} la pieza entera' },
+    faceInfoLabel: 'Qué cuentan las cifras',
+    faceInfo: 'Un caleidociclo tiene {total} triángulos, {faces} caras de {parts}, y este marco es una cara. La pieza entera cuenta cada cara tejida como esta. Para dar a otra cara su propio diseño, haz un marco para ella. Solo se cuentan los triángulos, no las cuentas del borde, de las puntas ni de las bisagras.',
   },
   canvas: {
     zoomInLabel: 'Acercar',
@@ -610,6 +615,7 @@ export const es: Translations = {
     columnLabel: 'Columna',
     goButton: 'Ir',
     directionKeptToast: '{toast} {kept}',
+    faceBody: 'Cada triángulo de aquí se teje para esta cara: {parts} de los {total} de la pieza. {then}',
   },
   quantities: {
     heading: 'Cuentas necesarias',
@@ -625,6 +631,7 @@ export const es: Translations = {
     weightInfo:
       'Es el número de cuentas × unos {grams} g por cuenta. El promedio sale de las cuentas por kilo que publica el fabricante, o de anuncios de vendedores si el fabricante no lo da. Las cuentas reales varían según el color y el acabado.',
     weightInfoLabel: 'Cómo se calcula el peso',
+    pieceTotal: 'Estas cifras son de una cara de {faces}. Pieza entera: {count}',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -689,6 +696,7 @@ export const es: Translations = {
       firstPoint: 'La fila 1 está en la punta; cada fila se lee de izquierda a derecha.',
       firstBase: 'La fila 1 es la base de la parte superior; cada fila se lee de izquierda a derecha, y luego cada fleco desde la izquierda, de arriba abajo.',
       partsThenJoins: 'Cada parte se teje vuelta a vuelta desde su centro, en orden de montaje, y después las uniones.',
+      faceNote: 'Este esquema es una cara: {parts} de los {total} triángulos del caleidociclo. Haz un marco para cada una de las otras caras.',
       pairNote: '(2A) es un par de esquina: dos cuentas que se toman juntas. Un lado termina en |.',
     },
   },
