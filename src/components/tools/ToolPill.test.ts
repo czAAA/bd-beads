@@ -165,19 +165,16 @@ describe('ToolPill (ticket 439)', () => {
     expect(swatch.classes().some((name) => name.startsWith('tool-pill__swatch--'))).toBe(false)
   })
 
-  it('drops the recents while the pill would overflow its edge, and brings them back with room', async () => {
-    // The pill is 400px wide; its last tile ends at `tileRight`. A touch target reaching past the pill (scrollWidth) is not overflow.
-    let tileRight = 600
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(1000)
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      const right = this.classList.contains('tool-pill') ? 400 : tileRight
-      return { left: 0, top: 0, right, bottom: 40, width: right, height: 40, x: 0, y: 0, toJSON: () => ({}) }
-    })
+  it('drops the recents while the tools would have to scroll, and brings them back with room (ticket 0837)', async () => {
+    // The tools have 300px of room and need `needed`.
+    let needed = 500
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(300)
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => needed)
     const wrapper = mount(ToolPill, { props: { ...base, recentsInPill: ['#111111', '#222222', '#333333'] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
 
-    tileRight = 396
+    needed = 300
     await wrapper.setProps({ position: 'top' })
     await flushPromises()
     expect(wrapper.findAll('[data-testid="pill-recent"]')).toHaveLength(3)
@@ -237,6 +234,18 @@ describe('the Tool pill’s arrows follow its axis (ticket 563, ADR 0075)', () =
     expect(await pressOn('bottom', 'pill-tool-hand', 'Home')).toBe('tool-pill-grip')
   })
 
+  it('pins Paint before the scrolling tools and the colour control after them, the Paste tile scrolling with the tools (ticket 0837)', () => {
+    const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
+    const tools = wrapper.get('[data-testid="tool-pill-tools"]')
+    expect(tools.findAll('button').map((button) => button.attributes('data-testid'))).toEqual([
+      ...TOOL_IDS.slice(1).map((id) => `pill-tool-${id}`),
+      'pill-tool-mirror',
+      'pill-tool-paste',
+    ])
+    expect(tools.find('[data-testid="pill-tool-paint"]').exists()).toBe(false)
+    expect(tools.find('[data-testid="pill-color"]').exists()).toBe(false)
+  })
+
   it('leaves the grip out of the Tab stops', () => {
     const wrapper = mount(ToolPill, { props: base })
     expect(wrapper.get('[data-testid="tool-pill-grip"]').attributes('tabindex')).toBe('-1')
@@ -273,6 +282,33 @@ describe('dragging the Tool pill (ticket 439)', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted('update:position')).toEqual([['left']])
     expect(wrapper.find('[data-testid="tool-pill-zones"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('follows a finger or pen only from the grip, so a swipe on the tools scrolls them (ticket 0837); a mouse drags it from a tile', async () => {
+    const wrapper = mount(ToolPill, { props: base, attachTo: document.body })
+    area(wrapper)
+    const lifted = () => wrapper.get('[data-testid="tool-pill"]').classes().includes('tool-pill--lifted')
+    for (const pointerType of ['touch', 'pen']) {
+      await wrapper.get('[data-testid="pill-tool-fill"]').trigger('pointerdown', { button: 0, clientX: 200, clientY: 280, pointerId: 1, pointerType })
+      move(120, 280)
+      await nextTick()
+      expect(lifted(), pointerType).toBe(false)
+      move(120, 280, 'pointerup')
+    }
+
+    await wrapper.get('[data-testid="tool-pill-grip"]').trigger('pointerdown', { button: 0, clientX: 200, clientY: 280, pointerId: 1, pointerType: 'touch' })
+    move(120, 280)
+    await nextTick()
+    expect(lifted()).toBe(true)
+    move(120, 280, 'pointercancel')
+    await nextTick()
+
+    await wrapper.get('[data-testid="pill-tool-fill"]').trigger('pointerdown', { button: 0, clientX: 200, clientY: 280, pointerId: 1, pointerType: 'mouse' })
+    move(120, 280)
+    await nextTick()
+    expect(lifted()).toBe(true)
+    move(120, 280, 'pointercancel')
     wrapper.unmount()
   })
 

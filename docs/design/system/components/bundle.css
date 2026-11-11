@@ -108,6 +108,7 @@
   --selbar-radius: 8px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
+  --pill-fade: 1.5rem;
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
   --mirror-bar-control-touch: 30px;

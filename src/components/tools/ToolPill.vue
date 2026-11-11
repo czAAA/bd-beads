@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
+import { useScrollCut } from '../../composables/ui/useScrollCut'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect } from '../../domain/toolPill'
@@ -20,8 +21,8 @@ import { useShellScope } from '../../composables/ui/shellScope'
 const teleportTo = useShellScope().teleportTo
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): grip, six tool tiles, the Mirror tile (ADR 0082), the Paste tile,
-// a divider, the colour control, each tile keyed by its place (ADR 0084), docked to one of four edges. This layer takes
-// no pointer events itself and sits outside the canvas's zoom transform (ADR 0034).
+// a divider, the colour control, each keyed by its place (ADR 0084), docked to an edge; on a phone the tiles between
+// Paint and the colour control scroll (ticket 0837). Outside the canvas's zoom transform (ADR 0034).
 const props = withDefaults(defineProps<{
   activeTool: Tool
   /** Whether the clipboard holds something: the Paste tile follows Hand then (ticket 447). */
@@ -64,16 +65,37 @@ const { t } = useI18n()
 
 const layerEl = ref<HTMLElement>()
 const pillEl = ref<HTMLElement>()
+const gripEl = ref<HTMLElement>()
+/** The tiles between Paint and the divider: the part that scrolls when the pill is longer than its edge. */
+const toolsEl = ref<HTMLElement>()
 const colorTileEl = ref<HTMLElement>()
 
 const vertical = computed(() => isVerticalPill(props.position))
 const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: pillTileKey(tool) }))
+/** Paint stays whole at the pill's start; the other tools scroll (ticket 0837). */
+const pinnedTile = tiles.find((tile) => tile.tool === 'paint')!
+const scrollingTiles = tiles.filter((tile) => tile !== pinnedTile)
+/** A tile's Tooltip opens toward the canvas: beside a vertical pill, else above it (below one docked at the top). */
+const tooltipPlacement = computed(() => ({ placement: vertical.value ? undefined : props.position === 'top' ? ('bottom' as const) : ('top' as const) }))
 const pasteAction = controlAction('tool-paste')
 const mirrorAction = controlAction('mirror')
 /** The Mirror tile is lit while the Mirror is on and through its pick (ToolPill card). */
 const mirrorLit = computed(() => props.mirrorOn || props.mirrorMarking)
 /** Paste mode and Mirror mode run under Select, but their own tile is the one lit then (tickets 447, 0750). */
 const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && ((props.pasteArmed && props.hasClipboard) || props.mirrorMarking))
+/** A Tool tile's button, pinned or scrolling alike. */
+const toolTile = (tile: (typeof tiles)[number]) => ({
+  class: 'tool-pill__stop',
+  variant: 'pill' as const,
+  action: tile.action,
+  tooltip: tooltipPlacement.value,
+  hotkey: tile.key,
+  showHotkey: true,
+  selected: isActive(tile.tool),
+  accent: isActive(tile.tool),
+  tabindex: roving.tabIndexFor(isActive(tile.tool)),
+  'data-testid': `pill-tool-${tile.tool}`,
+})
 const colorAction = controlAction('pill-colors')
 const colorLabel = computed(() => fillBlanks(t.value.toolPill.color, { name: props.colorName ?? '' }))
 
@@ -84,10 +106,13 @@ const roving = useRovingFocus(pillEl, { selector: '.tool-pill__grip, .tool-pill_
 /** The button of an IconButton, for a popover to be placed against. */
 const buttonOf = (component: unknown) => (component as { $el?: HTMLElement } | null)?.$el?.querySelector('button') ?? undefined
 
-const drag = useToolPillDrag(pillEl, layerEl, {
+const drag = useToolPillDrag(pillEl, layerEl, gripEl, {
   onStart: () => emit('update:popoverOpen', false),
   onDrop: (position) => emit('update:position', position),
 })
+
+/** Which ends of the scrolling tools are cut, so that end fades (ticket 0837). */
+const toolsCut = useScrollCut(toolsEl, () => (vertical.value ? 'vertical' : 'horizontal'))
 
 const pillStyle = computed(() => (drag.dragging.value ? { left: `${drag.corner.value.left}px`, top: `${drag.corner.value.top}px` } : undefined))
 
@@ -112,7 +137,7 @@ function measure(): PillRect | undefined {
 }
 
 // The pill shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch
-// rather than scroll. Fit is probed by drawing the recents and asking the pill if it overflows, before the browser
+// rather than scroll. Fit is probed by drawing the recents and asking the tools if they must scroll, before the browser
 // paints.
 const recentsRoom = ref(true)
 const probing = ref(false)
@@ -124,14 +149,10 @@ async function probeRoom() {
   probing.value = true
   await nextTick()
   if (probe !== latestProbe) return // a newer probe owns the measuring now
-  const el = pillEl.value
-  // Where the last tile ends, not `scrollWidth`: a tile's touch target reaches past the pill's edge and would count as
-  // overflow. One pixel of slack for sub-pixel rounding.
-  const last = el?.lastElementChild
-  if (el && last) {
-    const box = el.getBoundingClientRect()
-    const tile = last.getBoundingClientRect()
-    recentsRoom.value = vertical.value ? tile.bottom <= box.bottom - el.clientTop + 1 : tile.right <= box.right - el.clientLeft + 1
+  // The tools give way first when the pill is longer than its edge; one pixel of slack for sub-pixel rounding.
+  const tools = toolsEl.value
+  if (tools && tools.clientWidth > 0) {
+    recentsRoom.value = vertical.value ? tools.scrollHeight <= tools.clientHeight + 1 : tools.scrollWidth <= tools.clientWidth + 1
   }
   probing.value = false
 }
@@ -178,6 +199,7 @@ watch(
       @keydown="roving.onKeydown"
     >
       <button
+        ref="gripEl"
         type="button"
         class="ui-control tool-pill__grip"
         :aria-label="t.toolPill.move"
@@ -188,51 +210,46 @@ watch(
         <span class="tool-pill__grip-bar" />
       </button>
 
-      <IconButton
-        v-for="tile in tiles"
-        :key="tile.tool"
-        class="tool-pill__stop"
-        variant="pill"
-        :action="tile.action"
-        :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
-        :hotkey="tile.key"
-        show-hotkey
-        :selected="isActive(tile.tool)"
-        :accent="isActive(tile.tool)"
-        :tabindex="roving.tabIndexFor(isActive(tile.tool))"
-        :data-testid="`pill-tool-${tile.tool}`"
-        @click="emit('select-tool', tile.tool)"
-      />
+      <IconButton v-bind="toolTile(pinnedTile)" @click="emit('select-tool', pinnedTile.tool)" />
 
-      <IconButton
-        class="tool-pill__stop"
-        variant="pill"
-        :action="mirrorAction"
-        :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
-        :hotkey="pillTileKey('mirror')"
-        show-hotkey
-        :selected="mirrorLit"
-        :accent="mirrorLit"
-        :pressed="mirrorLit"
-        :tabindex="-1"
-        data-testid="pill-tool-mirror"
-        @click="emit('mirror-tile')"
-      />
+      <div
+        ref="toolsEl"
+        class="tool-pill__tools"
+        :class="{ 'tool-pill__tools--cut-start': toolsCut === 'start' || toolsCut === 'both', 'tool-pill__tools--cut-end': toolsCut === 'end' || toolsCut === 'both' }"
+        data-testid="tool-pill-tools"
+      >
+        <IconButton v-for="tile in scrollingTiles" :key="tile.tool" v-bind="toolTile(tile)" @click="emit('select-tool', tile.tool)" />
 
-      <IconButton
-        v-if="hasClipboard"
-        class="tool-pill__stop"
-        variant="pill"
-        :action="pasteAction"
-        :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
-        :hotkey="pillTileKey('paste')"
-        show-hotkey
-        :selected="!!pasteArmed"
-        :accent="!!pasteArmed"
-        :tabindex="roving.tabIndexFor(!!pasteArmed)"
-        data-testid="pill-tool-paste"
-        @click="emit('paste-mode')"
-      />
+        <IconButton
+          class="tool-pill__stop"
+          variant="pill"
+          :action="mirrorAction"
+          :tooltip="tooltipPlacement"
+          :hotkey="pillTileKey('mirror')"
+          show-hotkey
+          :selected="mirrorLit"
+          :accent="mirrorLit"
+          :pressed="mirrorLit"
+          :tabindex="-1"
+          data-testid="pill-tool-mirror"
+          @click="emit('mirror-tile')"
+        />
+
+        <IconButton
+          v-if="hasClipboard"
+          class="tool-pill__stop"
+          variant="pill"
+          :action="pasteAction"
+          :tooltip="tooltipPlacement"
+          :hotkey="pillTileKey('paste')"
+          show-hotkey
+          :selected="!!pasteArmed"
+          :accent="!!pasteArmed"
+          :tabindex="roving.tabIndexFor(!!pasteArmed)"
+          data-testid="pill-tool-paste"
+          @click="emit('paste-mode')"
+        />
+      </div>
 
       <span class="tool-pill__divider" role="presentation" />
 
@@ -243,7 +260,7 @@ watch(
         :action="colorAction"
         :label="colorLabel"
         icon="palette"
-        :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
+        :tooltip="tooltipPlacement"
         :selected="popoverOpen"
         :aria-pressed="undefined"
         :aria-expanded="popoverOpen"
@@ -328,9 +345,8 @@ watch(
   gap: var(--pill-between);
   box-sizing: border-box;
   padding: var(--pill-pad);
-  /* A pill longer than its edge scrolls along its length, with no scrollbar (like the Canvas strip). */
-  overflow: auto;
-  scrollbar-width: none;
+  /* A pill longer than its edge scrolls its tools between Paint and the colour control (ticket 0837), not itself. */
+  overflow: hidden;
   pointer-events: auto;
   touch-action: pan-x;
   background: var(--elevated);
@@ -339,8 +355,50 @@ watch(
   box-shadow: var(--elevation-2);
 }
 
-.tool-pill::-webkit-scrollbar {
+.tool-pill__tools {
+  --fade-to: to right;
+  --fade-start: 0px;
+  --fade-end: 0px;
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--pill-between);
+  min-width: 0;
+  min-height: 0;
+  /* Across the pill it reaches the pill's padding, so a tile's touch target is not cut by its scrolling. */
+  margin-block: calc(-1 * var(--pill-pad));
+  padding-block: var(--pill-pad);
+  overflow: auto hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.tool-pill__tools::-webkit-scrollbar {
   display: none;
+}
+
+/* The end where tiles are cut fades over `pill-fade`, so a phone shows the tools go on and a swipe scrolls them. */
+.tool-pill__tools--cut-start {
+  --fade-start: var(--pill-fade);
+}
+
+.tool-pill__tools--cut-end {
+  --fade-end: var(--pill-fade);
+}
+
+.tool-pill__tools--cut-start,
+.tool-pill__tools--cut-end {
+  mask-image: linear-gradient(var(--fade-to), transparent, var(--ink) var(--fade-start), var(--ink) calc(100% - var(--fade-end)), transparent);
+}
+
+.tool-pill--vertical .tool-pill__tools {
+  --fade-to: to bottom;
+  flex-direction: column;
+  margin: 0 calc(-1 * var(--pill-pad));
+  padding: 0 var(--pill-pad);
+  overflow: hidden auto;
+  touch-action: pan-y;
 }
 
 .tool-pill--bottom,
