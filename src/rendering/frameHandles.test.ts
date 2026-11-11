@@ -42,14 +42,14 @@ describe('frame handles', () => {
     expect(handleIdAt(small, { x: 96, y: 96 }, false, AREA_SHEET_OUTSET)).toBe('top-left')
   })
 
-  it('are grabbed within 14px of their centre with a pointer and 24px with a finger, and not away from them', () => {
+  it('are grabbed within 14px of their centre with a pointer and 22px with a finger, and not away from them', () => {
     const handles = frameHandles(box, false)
 
     expect(handleAt(handles, { x: 100, y: 50 }, 14)?.id).toBe('top-left')
     expect(handleAt(handles, { x: 110, y: 58 }, 14)?.id).toBe('top-left')
     expect(handleAt(handles, { x: 200, y: 100 }, 14)).toBeUndefined()
     expect(hitRadius(box, false)).toBe(14)
-    expect(hitRadius(box, true)).toBe(24 > 100 / 3 ? 100 / 3 : 24)
+    expect(hitRadius(box, true)).toBe(22)
   })
 
   it('give the nearest handle, but a corner in reach beats an edge handle that is nearer', () => {
