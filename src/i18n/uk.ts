@@ -301,6 +301,8 @@ export const uk: Translations = {
       scrollToZoom: 'прокручування: масштаб',
       hand: 'Рука',
       rulers: 'Лінійки',
+      twoFingersToMove: 'два пальці: зсув',
+      pinchToZoom: 'зведення пальців: масштаб',
     },
     firstRun: {
       storageLead: 'Ваші проєкти збережено лише в цьому браузері, на цьому пристрої.',
@@ -315,6 +317,7 @@ export const uk: Translations = {
     canvasPlaceholderPan: 'Переміщуйте полотно правою кнопкою миші або пробілом.',
     canvasDeleted: 'Проєкт «{name}» видалено.',
     canvasDeletedHint: 'Відкрийте інший із бібліотеки проєктів або створіть новий.',
+    canvasPlaceholderPanTouch: 'Переміщуйте полотно двома пальцями.',
   },
   storage: {
     saveFailedMessage:
@@ -967,12 +970,11 @@ export const uk: Translations = {
       turn: 'Повернути на 90°',
       flip: 'Віддзеркалити',
       replace: 'Замінити',
-      pictureNote: 'Перетягніть зображення будь-куди в застосунок, виберіть файл або вставте його через Ctrl+V. {formats}, до {maxSizeMb} МБ і {maxMegapixels} мегапікселів.',
+      pictureNote: 'Перетягніть зображення будь-куди в застосунок, виберіть файл або вставте його через {pasteKey}. {formats}, до {maxSizeMb} МБ і {maxMegapixels} мегапікселів.',
       pictureNoteTouch: 'Виберіть файл, вставте зображення або сфотографуйте. {formats}, до {maxSizeMb} МБ і {maxMegapixels} мегапікселів.',
       pictureSize: '{width}×{height} px · {format}',
       dropHere: 'Перетягніть зображення сюди',
-      dropOrPaste: 'або вставте його через Ctrl+V',
-      dropOrChoose: 'або виберіть файл нижче',
+      dropOrPaste: 'або вставте його через {pasteKey}',
       dropToUse: 'Відпустіть, щоб узяти це зображення',
       dropToConvert: 'Відпустіть, щоб конвертувати зображення',
       dropLimits: '{formats} · до {maxSizeMb} МБ',
@@ -1021,6 +1023,8 @@ export const uk: Translations = {
       pictureColor: 'Колір зображення',
       newPalette: 'палітра нового проєкту',
       rowName: { one: '{hex} на {name}, {count} бісерина', few: '{hex} на {name}, {count} бісерини', many: '{hex} на {name}, {count} бісерин', other: '{hex} на {name}, {count} бісерини' },
+      emptyTouchTitle: 'Тут з’явиться ваше зображення',
+      emptyTouchLine: 'Виберіть файл, вставте або сфотографуйте',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',
