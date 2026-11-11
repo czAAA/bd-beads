@@ -6,7 +6,7 @@ import { pieceFaceOf } from '../domain/pieceFaces'
 import { weaveSettings, type Weave } from '../domain/weave'
 import { techniqueName } from './techniqueName'
 import { weaveSettingWords } from './settingWords'
-import { designPicks, designSizes, starterBeadCount, type DesignDifference, type Starter, type StarterChoice, type StarterPick, type StarterSize, type StarterSizes } from '../domain/starters'
+import { designPicks, designSizes, starterBeadCount, starterCountsBack, type DesignDifference, type Starter, type StarterChoice, type StarterPick, type StarterSize, type StarterSizes } from '../domain/starters'
 
 /** A Starter's name: a Shape's, whose id is its Frame shape's, its shape's name; an Earring's, Ring's or Band's its own
  * (tickets 0596, 0597, 0633). */
@@ -49,12 +49,13 @@ export function designWords(t: Translations, locale: Locale, starter: Starter, d
 }
 
 /** A Starter's bead count for a choice on a Bead: "165 beads", one of a pair's "87 beads each", a Kaleidocycle's "810
- * beads a face" (ticket 0876), and "≈ 252 beads" for a Ring or Band, whose length is worked out from the Bead, so its
+ * beads a face" (ticket 0876), a Star's "245 beads, front and back" (ticket 0875), and "≈ 252 beads" for a Ring or Band, whose length is worked out from the Bead, so its
  * count is an estimate (StarterGallery card). */
 export function starterCountWords(t: Translations, locale: Locale, starter: Starter, choice: StarterChoice, bead: Bead): string {
   const count = starterBeadCount(starter, choice, bead)
   if (starter.pair) return plural(locale, count, t.starters.beadsEach)
   if (pieceFaceOf(starter.shape)) return plural(locale, count, t.starters.beadsFace)
+  if (starterCountsBack(starter, choice)) return plural(locale, count, t.starters.beadsFrontBack)
   const beads = plural(locale, count, t.starters.beads)
   return starter.measure === 'frame' ? beads : `≈ ${beads}`
 }

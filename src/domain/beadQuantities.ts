@@ -4,7 +4,9 @@ import type { Locale } from './locale'
 import type { Palette } from './palette'
 import type { Project } from './project'
 import { frameGeometryOf } from './layers'
-import { beadsOfLayer } from './layerRecord'
+import { beadsOfLayer, frameOf } from './layerRecord'
+import { frameLayoutOf } from './frameShape'
+import { backBeadsAt } from './pieceFaces'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
@@ -24,9 +26,11 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
     return []
   }
 
-  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592). In no order, as a count needs none
-  // and it is redone after every edit (ticket 0674).
+  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592), twice where its back mirrors it, a
+  // Star's, but its tips (ticket 0875). In no order, as a count needs none and it is redone after every edit (ticket 0674).
   const geometry = frameGeometryOf(project)
+  const frame = frameOf(project)!
+  const back = frame.shape ? backBeadsAt(frameLayoutOf(frame)) : undefined
   for (const rowKey of Object.keys(beads)) {
     const row = Number(rowKey)
     const cells = beads[row]!
@@ -34,7 +38,7 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
       const column = Number(columnKey)
       if (geometry.hasPosition({ row, column })) {
         const color = cells[column]!
-        counts.set(color, (counts.get(color) ?? 0) + 1)
+        counts.set(color, (counts.get(color) ?? 0) + (back ? back({ row, column }) : 1))
       }
     }
   }
