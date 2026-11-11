@@ -282,8 +282,9 @@ export const en: Translations = {
     faceOfPiece: 'one face of {faces}: {parts} of {total} triangles',
     beadsFace: { one: '{count} bead a face', other: '{count} beads a face' },
     forPiece: { one: '{count} for the whole piece', other: '{count} for the whole piece' },
+    smallForPiece: '15/0: {count}',
     faceInfoLabel: 'What the counts cover',
-    faceInfo: 'A Kaleidocycle is {total} triangles, {faces} faces of {parts}, and this Frame is one face. The whole piece counts every face beaded like this one. To give another face its own design, make a Frame for it. Only the triangles are counted, not the edge, tip or hinge beads.',
+    faceInfo: 'A Kaleidocycle is {total} triangles, {faces} faces of {parts}, and this Frame is one face. The whole piece counts every face beaded like this one. To give another face its own design, make a Frame for it. The whole piece also counts the beads that join the triangles: Edge Beads, Hinge Beads, and the 15/0 Triangle Tips and Hinge Pins.',
     beadsFrontBack: { one: '{count} bead, front and back', other: '{count} beads, front and back' },
   },
   canvas: {
@@ -587,7 +588,9 @@ export const en: Translations = {
     stepStrand: 'Strand {number}',
     stepPartRound: 'Part {part}, round {number}',
     stepZip: 'Zip {parts}',
-    stepHinge: 'Hinge {parts}',
+    stepTetra: 'Strip and Tetra {parts}',
+    stepPair: 'Mirror pair {parts}, Hinge Pins',
+    stepRing: 'Ring: pairs {first} and {second}',
     stepClose: 'Close {parts}',
     ofSteps: 'of {total}',
     stepOfSteps: '· {current} of {total}',
@@ -627,7 +630,8 @@ export const en: Translations = {
     weightInfo:
       "This is bead count × about {grams} g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
     weightInfoLabel: 'How the weight is worked out',
-    pieceTotal: 'These counts are one face of {faces}. Whole piece: {count}',
+    pieceTotal: 'These counts are one face of {faces}. Whole piece: {count} · 15/0: {small}',
+    pieceLines: { triangles: 'Triangles', edgeBeads: 'Edge Beads', hingeBeads: 'Hinge Beads', tips: 'Triangle Tips', hingePins: 'Hinge Pins' },
     frontBackNote: 'These counts are the whole star, front and back.',
   },
   print: {

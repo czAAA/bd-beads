@@ -267,8 +267,14 @@ describe('BeadQuantities on a Kaleidocycle (ticket 0876)', () => {
     const wrapper = mountQuantities(kaleidocycle())
     expect(wrapper.get('[data-testid="quantity-total"]').text()).toMatch(/^810 · /)
     const piece = wrapper.get('[data-testid="quantities-piece"]').text().replace(/\s/g, ' ')
-    expect(piece).toMatch(/^These counts are one face of 4\. Whole piece: 3 240/)
-    expect(piece).toContain('make a Frame for it. Only the triangles are counted, not the edge, tip or hinge beads.')
+    expect(piece).toMatch(/^These counts are one face of 4\. Whole piece: 3 612 · 15\/0: 120/)
+    expect(piece).toContain('make a Frame for it.')
+  })
+
+  it('lists the whole piece\'s triangles and the beads that join them, each on its own line, the 15/0s as their own size (ticket 0877)', () => {
+    const wrapper = mountQuantities(kaleidocycle())
+    const lines = wrapper.findAll('[data-testid="quantities-piece-line"]').map((line) => line.findAll('span').map((part) => part.text()).join(' '))
+    expect(lines).toEqual(['Triangles 3\u00a0240', 'Edge Beads 288', 'Hinge Beads 84', 'Triangle Tips · 15/0 72', 'Hinge Pins · 15/0 48'])
   })
 
   it('says nothing of faces on any other Frame', () => {

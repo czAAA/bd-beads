@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Kaleidocycle’s joins follow the Kali Primer, and its whole piece counts their beads',
+      ru: 'Калейдоцикл соединяется как в Kali Primer и считает бисер соединений',
+      uk: 'З’єднання калейдоцикла як у Kali Primer, і весь виріб рахує їхній бісер',
+      be: 'Злучэнні калейдацыкла як у Kali Primer, і ўвесь выраб лічыць іх бісер',
+      zh: '万花筒环的连接按照 Kali Primer，整件计入连接用的珠子',
+      es: 'Las uniones del caleidociclo siguen el Kali Primer, y la pieza entera cuenta sus cuentas',
+      pl: 'Łączenia kalejdocyklu jak w Kali Primer, a cała praca liczy ich koraliki',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The Kite is two peyote wings on a spine, as wide as it is tall, its rows read back and forth',
       ru: 'Воздушный змей это два крыла мозаичного плетения на центральной паре, ширина как высота, ряды туда и обратно',
       uk: 'Повітряний змій це два крила мозаїчного плетіння на центральній парі, ширина як висота, ряди туди й назад',
