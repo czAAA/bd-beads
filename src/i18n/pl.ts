@@ -692,6 +692,7 @@ export const pl: Translations = {
       firstPoint: 'Rząd 1 jest przy czubku; każdy rząd czyta się od lewej do prawej.',
       firstBase: 'Rząd 1 to dolny rząd góry; każdy rząd czyta się od lewej do prawej, potem każdą nitkę od lewej, z góry na dół.',
       partsThenJoins: 'Każdą część plecie się okrążeniami od jej środka, w kolejności składania, a potem połączenia.',
+      pairNote: '(2A) to para narożna: dwa koraliki nabrane razem. Bok kończy się na |.',
     },
   },
   saveBox: {

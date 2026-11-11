@@ -839,6 +839,8 @@ export interface Translations {
       firstPoint: string
       firstBase: string
       partsThenJoins: string
+      /** What a round's corner pair and a side's end look like in it (ticket 0873). */
+      pairNote: string
     }
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */

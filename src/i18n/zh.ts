@@ -680,6 +680,7 @@ export const zh: Translations = {
       firstPoint: '第 1 行在尖端，每行从左往右读。',
       firstBase: '第 1 行是顶部的底排，每行从左往右读；然后从左起逐条流苏，从上往下读。',
       partsThenJoins: '各部件按组装顺序从中心逐圈编织，最后进行拼接。',
+      pairNote: '(2A) 是转角对：两颗珠一起穿上。| 表示一条边到此结束。',
     },
   },
   saveBox: {
