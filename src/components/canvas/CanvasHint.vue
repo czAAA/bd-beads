@@ -1,27 +1,30 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { pillTileKey } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import KeyChip from '../ui/KeyChip.vue'
-import { useKeyHints } from '../../composables/ui/useKeyHints'
+import { useHelpDevice, useKeyHints } from '../../composables/ui/useKeyHints'
 
-// The one line under the strip while the Project has no beads (ticket 429; CanvasHint card): "scroll or space drag to
-// move · ⌘ scroll to zoom · 5 Hand · R Rulers", decoration, left out on phone; ⌘ reads "Ctrl" on Windows/Linux.
+// The one line under the strip while the Project has no beads (tickets 429, 0846; CanvasHint card): "scroll or space drag
+// to move · ⌘ scroll to zoom · 5 Hand · R Rulers" with a keyboard (⌘ reads "Ctrl" off Apple devices), "two fingers to
+// move · pinch to zoom" on touch; decoration, left out on phone.
 const { t } = useI18n()
-/** The line is made of key chips, so it goes when they do (ticket 438). */
+/** The key line is made of key chips, so it goes when they do (ticket 438). */
 const { shown } = useKeyHints()
-
-/** Whether this is an Apple device, where the zoom key is ⌘. */
-const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent || navigator.platform || ''))
+const { device, modKey } = useHelpDevice()
 </script>
 
 <template>
-  <p v-if="shown" class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
+  <p v-if="device === 'touch'" class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
+    <span>{{ t.canvas.hint.twoFingersToMove }}</span>
+    <span class="canvas-hint__dot">·</span>
+    <span>{{ t.canvas.hint.pinchToZoom }}</span>
+  </p>
+  <p v-else-if="shown" class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
     <span>{{ t.canvas.hint.scrollOr }}</span>
     <KeyChip class="hint-chip canvas-hint__key">{{ t.canvas.hint.spaceKey }}</KeyChip>
     <span>{{ t.canvas.hint.dragToMove }}</span>
     <span class="canvas-hint__dot">·</span>
-    <KeyChip class="hint-chip canvas-hint__key">{{ apple ? '⌘' : 'Ctrl' }}</KeyChip>
+    <KeyChip class="hint-chip canvas-hint__key">{{ modKey() }}</KeyChip>
     <span>{{ t.canvas.hint.scrollToZoom }}</span>
     <span class="canvas-hint__dot">·</span>
     <KeyChip class="hint-chip canvas-hint__key">{{ pillTileKey('hand') }}</KeyChip>
@@ -51,7 +54,7 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
   pointer-events: none;
 }
 
-/* A phone has no wheel and no keyboard to hint at (CanvasHint card); the width is controls.css's phone width. */
+/* A phone's screen has no room for the line (CanvasHint card); the width is controls.css's phone width. */
 @media (max-width: 30rem) {
   .canvas-hint {
     display: none;

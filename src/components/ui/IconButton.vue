@@ -40,9 +40,9 @@ const props = withDefaults(
      * chip. */
     hotkey?: string
     showHotkey?: boolean
-    /** Gives the button a Tooltip: `true` for its name alone, or the body and side to show it on, and whether a click
-     * opens it (the Info button). */
-    tooltip?: boolean | { body?: string; placement?: 'top' | 'bottom'; opensOnClick?: boolean }
+    /** Gives the button a Tooltip: `true` for its name alone, or the body and side to show it on, whether a click
+     * opens it (the Info button), and whether it is kept hidden for now (the popover it opened is open). */
+    tooltip?: boolean | { body?: string; placement?: 'top' | 'bottom'; opensOnClick?: boolean; suppressed?: boolean }
   }>(),
   {
     icon: undefined,
@@ -84,13 +84,14 @@ const body = computed(() => {
 })
 const placement = computed(() => (typeof props.tooltip === 'object' ? props.tooltip.placement : undefined))
 const opensOnClick = computed(() => typeof props.tooltip === 'object' && props.tooltip.opensOnClick)
+const suppressed = computed(() => typeof props.tooltip === 'object' && !!props.tooltip.suppressed)
 
 const tooltipProps = computed(() => {
   if (!props.tooltip && !props.action) return undefined
   if (isDisabled.value) {
-    return reason.value === undefined ? undefined : { name: name.value, disabled: true as const, disabledBody: reason.value, placement: placement.value, announce: false }
+    return reason.value === undefined ? undefined : { name: name.value, disabled: true as const, disabledBody: reason.value, placement: placement.value, announce: false, suppressed: suppressed.value }
   }
-  return { name: name.value, hotkey: key.value, body: body.value, placement: placement.value, announce: false, opensOnClick: opensOnClick.value }
+  return { name: name.value, hotkey: key.value, body: body.value, placement: placement.value, announce: false, opensOnClick: opensOnClick.value, suppressed: suppressed.value }
 })
 
 const isTool = computed(() => props.variant === 'tool')
@@ -206,6 +207,12 @@ function swallowClick(event: MouseEvent) {
 .icon-btn:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* A lit button is filled with ink, the ring's own color: its ring is the surface color, inside its edge (ticket 0857). */
+.icon-btn--selected:not(.icon-btn--pill, .icon-btn--tool):focus-visible {
+  outline-color: var(--focus-ring-lit);
+  outline-offset: var(--focus-offset-lit);
 }
 
 /* A Tool pill tile (ToolPill card): 40px, radius-lg, a 22px icon in `muted`; the active tool sits on `panel` with

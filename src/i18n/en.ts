@@ -300,6 +300,8 @@ export const en: Translations = {
       scrollToZoom: 'scroll to zoom',
       hand: 'Hand',
       rulers: 'Rulers',
+      twoFingersToMove: 'two fingers to move',
+      pinchToZoom: 'pinch to zoom',
     },
     firstRun: {
       storageLead: 'Your Projects are saved only in this browser, on this device.',
@@ -314,6 +316,7 @@ export const en: Translations = {
     canvasPlaceholderPan: 'Drag the Canvas around with the right mouse button or Space.',
     canvasDeleted: '“{name}” was deleted.',
     canvasDeletedHint: 'Open another from the Projects library, or make a new one.',
+    canvasPlaceholderPanTouch: 'Drag the Canvas around with two fingers.',
   },
   storage: {
     saveFailedMessage:
@@ -592,7 +595,8 @@ export const en: Translations = {
     showAll: 'Show all colors ({count})',
     showFewer: 'Show fewer',
     weightInfo:
-      'This is bead count × about {grams} g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
+      "This is bead count × about {grams} g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
+    weightInfoLabel: 'How the weight is worked out',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -949,12 +953,11 @@ export const en: Translations = {
       turn: 'Turn 90°',
       flip: 'Flip',
       replace: 'Replace',
-      pictureNote: 'Drop a picture anywhere on the app, choose a file or paste one with Ctrl+V. {formats}, up to {maxSizeMb} MB and {maxMegapixels} megapixels.',
+      pictureNote: 'Drop a picture anywhere on the app, choose a file or paste one with {pasteKey}. {formats}, up to {maxSizeMb} MB and {maxMegapixels} megapixels.',
       pictureNoteTouch: 'Choose a file, paste a picture or take a photo. {formats}, up to {maxSizeMb} MB and {maxMegapixels} megapixels.',
       pictureSize: '{width}×{height} px · {format}',
       dropHere: 'Drop a picture here',
-      dropOrPaste: 'or paste one with Ctrl+V',
-      dropOrChoose: 'or choose a file below',
+      dropOrPaste: 'or paste one with {pasteKey}',
       dropToUse: 'Drop to use this picture',
       dropToConvert: 'Drop to convert image',
       dropLimits: '{formats} · up to {maxSizeMb} MB',
@@ -1003,6 +1006,8 @@ export const en: Translations = {
       pictureColor: 'Picture color',
       newPalette: 'Palette of the new Project',
       rowName: { one: '{hex} to {name}, {count} bead', other: '{hex} to {name}, {count} beads' },
+      emptyTouchTitle: 'Your picture shows here',
+      emptyTouchLine: 'Choose a file, paste or take a photo',
     },
     errors: {
       heic: 'Browsers cannot read HEIC pictures. Save it as PNG or JPEG and try again.',

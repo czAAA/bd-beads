@@ -147,6 +147,40 @@ describe('ToolPill (ticket 439)', () => {
     shell.remove()
   })
 
+  it('opens the colour popover from the keyboard with focus on its Palette, the tile\'s Tooltip hidden while it is open (ticket 0857)', async () => {
+    const shell = document.body.appendChild(document.createElement('div'))
+    shell.className = 'app-shell'
+    const wrapper = mount(ToolPill, { props: base, attachTo: shell, global: { stubs: { teleport: false } } })
+    const tile = wrapper.get<HTMLButtonElement>('[data-testid="pill-color"]')
+    const tileTip = () => wrapper.findAllComponents({ name: 'AppTooltip' }).find((tip) => tip.element.contains(tile.element))!
+    expect(tileTip().props('suppressed')).toBe(false)
+    // Enter or Space on a button is its click, with no pointer detail.
+    tile.element.click()
+    expect(wrapper.emitted('update:popoverOpen')).toEqual([[true]])
+    await wrapper.setProps({ popoverOpen: true })
+    await nextTick()
+    expect(tileTip().props('suppressed')).toBe(true)
+    expect(document.activeElement?.getAttribute('data-testid')).toBe('palette-swatch')
+    wrapper.unmount()
+    shell.remove()
+  })
+
+  it('leaves focus on the tile when a pointer opens the colour popover', async () => {
+    const shell = document.body.appendChild(document.createElement('div'))
+    shell.className = 'app-shell'
+    const wrapper = mount(ToolPill, { props: base, attachTo: shell, global: { stubs: { teleport: false } } })
+    const tile = wrapper.get<HTMLButtonElement>('[data-testid="pill-color"]')
+    tile.element.focus()
+    tile.element.dispatchEvent(new MouseEvent('click', { detail: 1, bubbles: true }))
+    expect(wrapper.emitted('update:popoverOpen')).toEqual([[true]])
+    await wrapper.setProps({ popoverOpen: true })
+    await nextTick()
+    expect(document.querySelector('[data-testid="color-popover"]')).not.toBeNull()
+    expect(document.activeElement).toBe(tile.element)
+    wrapper.unmount()
+    shell.remove()
+  })
+
   it('shows three recents beside the swatch, and a recent picks its colour at once', async () => {
     const wrapper = mount(ToolPill, { props: { ...base, recentsInPill: ['#111111', '#222222', '#333333'] } })
     const recents = wrapper.findAll('[data-testid="pill-recent"]')

@@ -408,6 +408,9 @@ export interface Translations {
       scrollToZoom: string
       hand: string
       rulers: string
+      /** On touch (ticket 0846): the line in finger words, with no key chips. */
+      twoFingersToMove: string
+      pinchToZoom: string
     }
     /** The welcome over an empty Project (FirstRunHints card, tickets 0795 and 0798): its lead line and its storage line,
      * which the Project file's path follows. */
@@ -428,6 +431,8 @@ export interface Translations {
     /** The empty Canvas after a delete left no Project open (ticket 0840): “{name}” was deleted, and what to do next. */
     canvasDeleted: string
     canvasDeletedHint: string
+    /** The pan sentence on touch (ticket 0846): fingers, no mouse button or key. */
+    canvasPlaceholderPanTouch: string
   }
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
   storage: {
@@ -712,8 +717,10 @@ export interface Translations {
     totalLabel: string
     showAll: string
     showFewer: string
-    /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
+    /** The Estimated weight's Info button body (tickets 155, 328, 0852); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
+    /** The accessible name of that Info button, in Beads needed's header (ticket 0852). */
+    weightInfoLabel: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
@@ -1068,14 +1075,14 @@ export interface Translations {
       flip: string
       /** The menu beside the picture's file name: Choose file and Paste. */
       replace: string
-      /** The Picture section's Note until the first picture: every way in and the limits (formatImageLimits). */
+      /** The Picture section's Note until the first picture: every way in and the limits (formatImageLimits); the
+       * keyboard one names the device's paste key, `{pasteKey}` (ticket 0846), as does `dropOrPaste`. */
       pictureNote: string
       pictureNoteTouch: string
       /** Under the file name: "256×192 px · png". */
       pictureSize: string
       dropHere: string
       dropOrPaste: string
-      dropOrChoose: string
       dropToUse: string
       dropToConvert: string
       dropLimits: string
@@ -1197,6 +1204,9 @@ export interface Translations {
       newPalette: string
       /** A found color's row, as a screen reader names it. */
       rowName: PluralForms
+      /** The empty preview on touch (ticket 0846): where the picture goes and the ways in, nothing to drop. */
+      emptyTouchTitle: string
+      emptyTouchLine: string
       /** The Review summary's rows. */
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */

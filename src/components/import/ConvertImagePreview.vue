@@ -5,7 +5,7 @@ import { useConvertResult } from '../../composables/import/useConvertResult'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useActionKeys } from '../../composables/shell/useActionKeys'
 import { useElementSize } from '../../composables/ui/useElementSize'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { useHelpDevice } from '../../composables/ui/useKeyHints'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
 import { foundRuns } from '../../domain/convertBackground'
@@ -32,7 +32,13 @@ import IconButton from '../ui/IconButton.vue'
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
-const touch = useMediaQuery('(pointer: coarse)')
+const help = useHelpDevice()
+/** The empty preview's two lines by the help lines' one rule (ticket 0846): nothing to drop on touch, else the paste key. */
+const emptyWords = computed(() =>
+  help.device.value === 'touch'
+    ? { title: words.value.emptyTouchTitle, line: words.value.emptyTouchLine }
+    : { title: words.value.dropHere, line: fillBlanks(words.value.dropOrPaste, { pasteKey: help.modKey('V') }) },
+)
 const actions = {
   zoomOut: controlAction('zoom-out'),
   zoomIn: controlAction('zoom-in'),
@@ -588,8 +594,8 @@ onBeforeUnmount(() => {
 
     <div v-if="!wizard.hasPicture.value" class="convert-preview__empty" data-testid="convert-drop-zone">
       <AppIcon name="image" :size="34" />
-      <span class="convert-preview__empty-title">{{ words.dropHere }}</span>
-      <span class="convert-preview__empty-line">{{ touch ? words.dropOrChoose : words.dropOrPaste }}</span>
+      <span class="convert-preview__empty-title">{{ emptyWords.title }}</span>
+      <span class="convert-preview__empty-line">{{ emptyWords.line }}</span>
     </div>
 
     <div v-else class="convert-preview__room">

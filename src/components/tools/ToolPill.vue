@@ -128,7 +128,11 @@ function onGripKeydown(event: KeyboardEvent) {
   emit('update:position', next)
 }
 
-function toggleColor() {
+/** Whether the colour popover was opened from the keyboard (a click with no pointer detail): focus goes into it. */
+const colorByKey = ref(false)
+
+function toggleColor(event: MouseEvent) {
+  colorByKey.value = !props.popoverOpen && event.detail === 0
   emit('update:popoverOpen', !props.popoverOpen)
 }
 
@@ -263,7 +267,7 @@ watch(
         :action="colorAction"
         :label="colorLabel"
         icon="palette"
-        :tooltip="tooltipPlacement"
+        :tooltip="{ ...tooltipPlacement, suppressed: popoverOpen }"
         :selected="popoverOpen"
         :aria-pressed="undefined"
         :aria-expanded="popoverOpen"
@@ -319,6 +323,7 @@ watch(
         :color-name="colorName"
         :selected-color-id="selectedColorId"
         :custom-color="customColor"
+        :focus-swatch="colorByKey"
         @close="emit('update:popoverOpen', false)"
         @select-color="emit('select-color', $event)"
         @select-custom-color="emit('select-custom-color', $event)"

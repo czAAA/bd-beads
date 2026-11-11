@@ -128,12 +128,14 @@ export function imageInputAccept(): string {
 }
 
 /** Fills `{formats}`, `{maxSizeMb}` and `{maxMegapixels}` into a localised sentence, so the numbers the UI promises
- * are the constants the validation enforces (ticket 58's "cannot drift apart"). A sentence holds the ones it needs. */
-export function formatImageLimits(template: string): string {
+ * are the constants the validation enforces (ticket 58's "cannot drift apart"). A sentence holds the ones it needs;
+ * `more` gives the other blanks a sentence may hold, such as the device's paste key (ticket 0846). */
+export function formatImageLimits(template: string, more: Readonly<Record<string, string>> = {}): string {
   return fillBlanks(template, {}, {
     formats: ACCEPTED_IMAGE_FORMATS.map((format) => format.label).join(', '),
     maxSizeMb: IMAGE_MAX_MEGABYTES,
     maxMegapixels: IMAGE_MAX_MEGAPIXELS,
+    ...more,
   })
 }
 
