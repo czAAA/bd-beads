@@ -110,7 +110,7 @@ const FRAME: FrameRules = {
 
 /** Rounds as a Triangle and a Warped Square offer them: a Kaleidocycle's triangles are 9 a side (research). */
 const ROUNDS: FrameSetting = { id: 'rounds', labelKey: 'rounds', min: 2, max: 40, step: 1, default: 9, presets: [6, 9, 12], lossOnChange: true }
-/** A Star's arms in rounds: the MiniStar's squares are 10 rounds (research). */
+/** A Star's squares in rounds, the partial last one counted: the MiniStar's are 10 (research; ticket 0875). */
 const STAR_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', min: 2, max: 30, step: 1, default: 10, presets: [6, 8, 10], lossOnChange: true }
 /** A Kaleidocycle's triangles, beads a side: 9 in the primer, which finds smaller ones fold badly (research). */
 const KALEIDOCYCLE_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', min: 3, max: 30, step: 1, default: 9, presets: [7, 9, 12], lossOnChange: true }

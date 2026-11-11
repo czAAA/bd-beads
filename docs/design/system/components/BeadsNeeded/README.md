@@ -8,6 +8,7 @@ An expandable panel listing how many beads of each color the Pattern needs, with
 - Each row shows the count and, after it, the weight in `meta` `muted` ("2.5 g"): count ÷ the Bead's beads per gram (a catalog field), rounded up to 0.1 g. The title adds the total weight ("· 1 200 · ≈ 6 g"). An unknown Bead shows no grams.
 - Numbers group thousands with a no-break space: "1 200".
 - **One face of a Kaleidocycle (ticket 0876):** its counts are one face of four, so under the rows, in `meta` `muted`, "These counts are one face of 4. Whole piece: 3 240" (the total four times over), and an Info button named "What the counts cover": the piece's faces, a Frame for each other face, and that only the triangles are counted.
+- **A Star, front and back (ticket 0875):** its back is beaded as the face's mirror, so every count is the whole star (each face bead twice, the five tip beads once), and under the rows, in `meta` `muted`, "These counts are the whole star, front and back." No Info button.
 - **Counts the Frame only (v16):** beads outside the Frame are not counted. With no Frame the panel keeps its header and says "Set Frame to count beads." (EmptyPanels).
 
 **In the Frame panel (tickets 0555, 0852):** Beads needed is the Frame panel's section right after size, above settings, so it is in view as the panel opens; not an expandable box: the total in its PanelSection header, kept there while open, `panel-row` rows (14px swatch, the color label, count, grams), five shown, then "Show all colors ({n})" opens the rest in place.

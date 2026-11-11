@@ -326,7 +326,8 @@ describe.each([
 
   it('counts its painted beads in Beads needed, and comes back from the Project file as it was', () => {
     const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
-    expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: 2 }])
+    // A Star counts each bead front and back (ticket 0875); neither of these is a tip.
+    expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: shape === 'star' ? 4 : 2 }])
     expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
   })
 })

@@ -268,7 +268,7 @@ export const zh: Translations = {
     pictureWithDesign: '{option}，带图案',
     pictureEmpty: '{option}，带接缝的空白形状',
     sizes: { topWidth: { other: '宽 {count}' }, topRows: { other: '顶部 {count} 行' }, fringeLength: { other: '流苏 {count}' }, width: { other: '宽 {count}' }, ringSize: { other: 'eu {count}' }, wrist: { other: '手腕 {count} 厘米' }, rounds: { other: '{count} 圈' }, partSize: { other: '部件大小 {count}' }, rows: { other: '{count} 行' } },
-    hints: { fringeEarring: '底排的珠子数', triangle: '从中心起', warpedSquare: '从中心起', kite: '从尖端起', star: '每个角的圈数', kaleidocycle: '每个三角形的圈数' },
+    hints: { fringeEarring: '底排的珠子数', triangle: '从中心起', warpedSquare: '从中心起', kite: '从尖端起', star: '每个方块的圈数', kaleidocycle: '每个三角形的圈数' },
     sizeHints: { topRows: '每行少一颗', fringeLength: '最长一条的珠子数', width: '珠子数', ringSize: '手指周长毫米', ringSizeUs: '美国尺码', wrist: '厘米，贴紧测量' },
     setupSizes: { width: { label: '宽度', less: '窄一颗珠子', more: '宽一颗珠子' }, ringSize: { label: '戒指尺寸', less: '小一个尺码', more: '大一个尺码' }, wrist: { label: '手腕', less: '少一厘米', more: '多一厘米' } },
     picks: { fringeStyle: { label: '流苏样式', options: { straight: '直流苏', v: 'V 形流苏' } }, fit: { label: '松紧', options: { snug: '贴合', comfortable: '舒适', loose: '宽松' } } },
@@ -286,6 +286,7 @@ export const zh: Translations = {
     forPiece: { other: '整件 {count} 颗' },
     faceInfoLabel: '计数包括哪些',
     faceInfo: '万花筒环由 {total} 个三角形组成，共 {faces} 面，每面 {parts} 个。此边框是其中一面。整件按每一面都像这一面来计算。若要给另一面单独的图案，请为它新建一个边框。只计三角形，不含边缘、尖端和铰链处的珠子。',
+    beadsFrontBack: { other: '正反两面共 {count} 颗珠子' },
   },
   canvas: {
     zoomInLabel: '放大',
@@ -623,6 +624,7 @@ export const zh: Translations = {
       '这是珠子数量 × 每颗约 {grams} 克。该平均值来自厂家公布的每公斤颗数，厂家未公布时来自卖家的商品信息。实际的珠子会因颜色和表面处理而有差异。',
     weightInfoLabel: '重量如何计算',
     pieceTotal: '这些是 {faces} 面中一面的数量。整件：{count}',
+    frontBackNote: '这些是整颗星星正反两面的数量。',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

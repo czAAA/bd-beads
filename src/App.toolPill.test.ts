@@ -177,7 +177,7 @@ describe('the Tool pill', () => {
     wrapper.unmount()
   })
 
-  it('Mirror the whole Frame on a Star Frame (ticket 0706): the shape\'s own Radial, a stroke on one arm landing on every arm', async () => {
+  it('Mirror the whole Frame on a Star Frame (ticket 0706): the shape\'s own Radial, a stroke in one square landing in every square', async () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: DEFAULT_BEAD.id, size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
@@ -191,9 +191,9 @@ describe('the Tool pill', () => {
     const own = frameOf(drawnProject(wrapper))!
     await pressBead(wrapper, { row: own.row, column: own.column, layer: 'frame' })
     await wrapper.find('.app-shell').trigger('mouseup')
-    // The stroke reaches the other arms (which beads, and how many, is the domain's test).
+    // The stroke reaches the other squares (which beads, and how many, is the domain's test).
     const beads = beadsOfLayer(drawnProject(wrapper), 'frame')!
-    expect([0, 4, 8, 12, 16].map((column) => colorAt(beads, 0, column))).toEqual(['#e63746', '#e63746', '#e63746', '#e63746', '#e63746'])
+    expect([0, 2, 4, 6, 8].map((column) => colorAt(beads, 0, column))).toEqual(['#e63746', '#e63746', '#e63746', '#e63746', '#e63746'])
     wrapper.unmount()
   })
 
