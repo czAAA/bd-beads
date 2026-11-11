@@ -945,3 +945,11 @@ Opening, duplicating and switching Projects say what happened and ask only when 
 | Now in “{copy}”. “{original}” stays as it was. (the toast after Duplicate) | Теперь открыт «{copy}». «{original}» остался как был. | Тепер відкрито «{copy}». «{original}» залишився як був. | Цяпер адкрыты «{copy}». «{original}» застаўся як быў. | 现在打开的是“{copy}”。“{original}”保持原样。 | Ahora estás en “{copy}”. “{original}” se queda como estaba. | Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian. |
 | Everything is copied, including Row progress. The copy opens; the original stays as it is now. (Duplicate's note) | Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. | Копіюється все, зокрема прогрес за рядами. Відкриється копія, а оригінал залишиться таким, як зараз. | Капіруецца ўсё, у тым ліку прагрэс па радах. Адкрыецца копія, а арыгінал застанецца такім, як зараз. | 所有内容都会被复制，包括行进度。复制后打开副本，原项目保持现状。 | Se copia todo, incluido el progreso por filas. Se abre la copia; el original se queda como está ahora. | Kopiowane jest wszystko, także postęp rzędów. Otworzy się kopia, a oryginał zostanie taki, jak teraz. |
 | Copy this Project and open the copy. (Duplicate's Tooltip) | Скопировать проект и открыть копию. | Скопіювати проєкт і відкрити копію. | Скапіраваць праект і адкрыць копію. | 复制此项目并打开副本。 | Copia este proyecto y abre la copia. | Skopiuj ten projekt i otwórz kopię. |
+
+## Unnamed Project copy (ticket 0866)
+
+A Project left unnamed is "Project 1", then the next free number as Duplicate counts ("Project 2" once "Project 1" is taken), never the Bead's name, which belongs in the Bead row. The same words are New Project's Name placeholder, so the grey text is the name the Project gets. The number always ends the name, after a space, in every language.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Project {number} (an unnamed Project's name and New Project's Name placeholder) | Проект {number} | Проєкт {number} | Праект {number} | 项目 {number} | Proyecto {number} | Projekt {number} |

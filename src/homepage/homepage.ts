@@ -17,7 +17,7 @@ import { downloadFile } from '../services/fileDownload'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../services/projectFileCodec'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
 import { libraryFileName, projectFileName, projectFileNameOf } from '../domain/projectFile'
-import { projectAddress, savedProjectsAddress } from '../domain/openingAddress'
+import { firstProjectAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import { browserFeedback } from '../services/feedback'
@@ -30,8 +30,8 @@ followDeviceTheme(window, document.documentElement, currentThemePick)
 
 const base = import.meta.env.BASE_URL
 
-/** Every way in leaves for the editor, at its plain address or one asking for Saved Projects or a Project (ticket
- * 0716); the tab remembers it, so the main address doesn't send the visitor back here. Its content leaves first and its
+/** Every way in leaves for the editor, at its plain address or one asking for Saved Projects, a Project (ticket 0716)
+ * or the first Project (ticket 0866); the tab remembers it, so the main address doesn't send the visitor back here. Its content leaves first and its
  * canvas box grows into the editor's (tickets 0776, 0783). */
 async function goToEditor(address = base) {
   markEditorChosen()
@@ -62,7 +62,8 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
         feedback: browserFeedback,
         // Decoded only when the Menu shows Saved Projects; a gated Project, or one that didn't open, stays stored.
         openLibrary: () => useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }),
-        onMakeFirstProject: () => goToEditor(),
+        // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).
+        onMakeFirstProject: () => goToEditor(firstProjectAddress(base)),
         onOpenEditor: () => goToEditor(),
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(base)),
         onOpenProject: (id: string) => goToEditor(projectAddress(base, id)),

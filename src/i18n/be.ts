@@ -41,6 +41,7 @@ export const be: Translations = {
     openCanvasSubtitle: 'Малюйце на адкрытым палатне, задайце рамку, каб экспартаваць карцінку або PDF, калі спатрэбіцца',
     pickStarter: 'Абраць стартар',
     estimateBeads: '≈ {columns}×{rows} бісерын',
+    unnamedProject: 'Праект {number}',
   },
   a11y: {
     toolsLandmark: 'Інструменты',

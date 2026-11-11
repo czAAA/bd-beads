@@ -40,6 +40,7 @@ export const uk: Translations = {
     openCanvasSubtitle: 'Малюйте на відкритому полотні, задайте рамку, щоб експортувати картинку або PDF, коли знадобиться',
     pickStarter: 'Обрати стартер',
     estimateBeads: '≈ {columns}×{rows} бісерин',
+    unnamedProject: 'Проєкт {number}',
   },
   a11y: {
     toolsLandmark: 'Інструменти',

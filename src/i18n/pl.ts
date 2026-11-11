@@ -40,6 +40,7 @@ export const pl: Translations = {
     openCanvasSubtitle: 'Rysuj na otwartym płótnie, ustaw ramkę, by wyeksportować obraz lub PDF, gdy będzie potrzeba',
     pickStarter: 'Wybierz starter',
     estimateBeads: '≈ {columns}×{rows} koralików',
+    unnamedProject: 'Projekt {number}',
   },
   a11y: {
     toolsLandmark: 'Narzędzia',

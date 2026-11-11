@@ -40,6 +40,7 @@ export const es: Translations = {
     openCanvasSubtitle: 'Dibuja en el lienzo abierto, pon un marco para exportar la imagen o el PDF cuando haga falta',
     pickStarter: 'Elegir un punto de partida',
     estimateBeads: '≈ {columns}×{rows} cuentas',
+    unnamedProject: 'Proyecto {number}',
   },
   a11y: {
     toolsLandmark: 'Herramientas',

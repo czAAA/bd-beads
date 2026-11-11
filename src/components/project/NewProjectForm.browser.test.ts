@@ -6,7 +6,7 @@ import NewProjectForm from './NewProjectForm.vue'
 // form's rules must still reach the button inside.
 describe('NewProjectForm buttons', () => {
   it('draws Create Project, Convert image and Pick a starter at one width and height', async () => {
-    const { root } = await mountAt(NewProjectForm, {}, { locale: 'en', width: 360 })
+    const { root } = await mountAt(NewProjectForm, { namePlaceholder: 'Project 1' }, { locale: 'en', width: 360 })
     const size = (testid: string) => {
       const box = root.querySelector(`[data-testid="${testid}"]`)!.getBoundingClientRect()
       return { width: box.width, height: box.height }

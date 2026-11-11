@@ -1,4 +1,4 @@
-import { beadCopy, beadLabel, findBead } from './beads'
+import { DEFAULT_BEAD, beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
 import { beadIdOfLayer, frameOf, newLayerId, withLayer } from './layerRecord'
@@ -8,13 +8,14 @@ import { lettersOfPalette } from './paletteEdits'
 import type { Background, Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
-import { startOrientation, type Technique, type TechniqueSettings } from './weave'
+import { DEFAULT_TECHNIQUE, startOrientation, type Technique, type TechniqueSettings } from './weave'
 
 // Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture. A peyote Canvas
 // starts turned a quarter, so its staggered columns lie as staggered rows, the way a weaver pictures it.
 
 export interface CreateProjectInput {
-  /** User-chosen name; blank or omitted defaults to the bead's label. */
+  /** User-chosen name; blank or omitted defaults to the bead's label. New Project never sends it blank: it names an
+   * unnamed Project "Project 1" first (useNewProjectFlow, ticket 0866). */
   name?: string
   technique: Technique
   /** Its Technique's settings (ticket 0625), such as peyote's or brick stitch's Drop (tickets 477, 0691); one left out is its
@@ -29,6 +30,10 @@ export interface CreateProjectInput {
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
   makerName?: string
 }
+
+/** What New Project starts on (ticket 0866): the form's presets, and the whole of the first Project, which is made
+ * without the form. */
+export const NEW_PROJECT_DEFAULTS: Readonly<CreateProjectInput> = { technique: DEFAULT_TECHNIQUE, beadId: DEFAULT_BEAD.id }
 
 export function createProject(input: CreateProjectInput): Project {
   const bead = findBead(input.beadId)

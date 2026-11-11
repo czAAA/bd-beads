@@ -127,6 +127,9 @@ export interface Translations {
     pickStarter: string
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
+    /** What a new Project left unnamed is called, and the Name's placeholder (ticket 0866): "Project 1", then the next
+     * free number. It ends in its number, as Duplicate's suggestions do. */
+    unnamedProject: string
   }
   /** Screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {

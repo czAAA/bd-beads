@@ -40,14 +40,20 @@ export function suggestCopyName(name: string, existingNames: readonly string[]):
   }
 }
 
+/** The name as it is when the library holds no name the same, else Duplicate's next free number: an import's name
+ * (ticket 0860), and "Project 1" for a new Project left unnamed, then "Project 2" (ticket 0866). */
+export function freeName(name: string, existingNames: readonly string[]): string {
+  const key = name.trim().toLowerCase()
+  return existingNames.some((existing) => existing.trim().toLowerCase() === key) ? suggestCopyName(name, existingNames) : name
+}
+
 /** Projects joining a library under names it doesn't hold yet (ticket 0860): a taken one, by the library or by one
  * arriving before it, gets Duplicate's next free number, so no two rows share a name. A free one comes as it is. */
 export function withFreeNames(arriving: readonly Project[], existingNames: readonly string[]): Project[] {
   const names = [...existingNames]
   return arriving.map((project) => {
     const name = projectNameOf(project)
-    const key = name.trim().toLowerCase()
-    const free = names.some((existing) => existing.trim().toLowerCase() === key) ? suggestCopyName(name, names) : name
+    const free = freeName(name, names)
     names.push(free)
     return free === name ? project : withProjectName(project, free)
   })

@@ -40,6 +40,7 @@ export const ru: Translations = {
     openCanvasSubtitle: 'Рисуйте на открытом холсте, задайте рамку, чтобы экспортировать картинку или PDF, когда понадобится',
     pickStarter: 'Выбрать стартер',
     estimateBeads: '≈ {columns}×{rows} бисерин',
+    unnamedProject: 'Проект {number}',
   },
   a11y: {
     toolsLandmark: 'Инструменты',
