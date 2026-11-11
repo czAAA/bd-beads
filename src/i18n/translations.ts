@@ -690,6 +690,9 @@ export interface Translations {
     stepClose: string
     ofSteps: string
     stepOfSteps: string
+    /** The toast when rows marked done take a drawing back (ticket 0848), naming Row not done, or Column not done. */
+    markedDoneToast: string
+    columnMarkedDoneToast: string
   }
   quantities: {
     heading: string

@@ -233,7 +233,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
     // Folded by the zoom, the tab only names the Frame: there is no room to unfold it.
     expect(control(wrapper, 'margin-title-tab').element.tagName).toBe('SPAN')
-    expect(control(wrapper, 'margin-title-tab').text()).toBe('Name this frame')
+    expect(control(wrapper, 'margin-title-tab').text()).toBe('Name this Frame')
   })
 
   it('stands the folded row and tab in the middle of the room between the sheet\'s edge and the Frame\'s line', () => {
@@ -306,7 +306,7 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('full')
   })
 
-  // An unnamed Frame's tab invites a name: "Name this frame" opens the name field, the chevron unfolds (ticket 0803).
+  // An unnamed Frame's tab invites a name: "Name this Frame" opens the name field, the chevron unfolds (ticket 0803).
   it('opens the name field from an unnamed Frame\'s tab, and its chevron unfolds the block', async () => {
     const wrapper = mountSheet()
     await control(wrapper, 'margin-title-fold').trigger('click')
@@ -316,7 +316,7 @@ describe('folding the title block by hand (MarginSheet card, Title block, ticket
     expect(wrapper.emitted('rename')).toEqual([['Sun band']])
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
     const unfold = control(wrapper, 'margin-title-unfold')
-    expect(unfold.attributes('aria-label')).toBe('Show the title block: Name this frame')
+    expect(unfold.attributes('aria-label')).toBe('Show the title block: Name this Frame')
     await unfold.trigger('click')
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('full')
   })

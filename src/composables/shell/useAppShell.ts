@@ -215,6 +215,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     },
     flushPendingSave,
     countChange: sinceFile.count,
+    onRowsHeld: (project) => rowOps.tellMarkedDone(project),
   })
   const { edit } = editing
 
@@ -1120,6 +1121,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRenameFrame: frameFlow.rename,
       onFitFrame: frameFlow.fit,
       onSelectFrame,
+      onResetProgress: rowOps.onResetProgress,
       onSetFrameSettings: frameFlow.setSettings,
       onPlaceFrameFromStarter: frameFlow.placeFromStarter,
       onFrameKey,

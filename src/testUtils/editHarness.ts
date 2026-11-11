@@ -16,6 +16,7 @@ export function editHarness(initial: Project | undefined) {
   })
   const resetAfterFrameChange = vi.fn()
   const flushPendingSave = vi.fn()
+  const onRowsHeld = vi.fn()
   const currentProject = () => project.value
   /** Beads since last file as the shell counts it (ticket 0796), from what Edit, Undo and Redo report. */
   const counted = { beads: 0 }
@@ -36,6 +37,7 @@ export function editHarness(initial: Project | undefined) {
     resetAfterFrameChange,
     flushPendingSave,
     countChange,
+    onRowsHeld,
   })
 
   return {
@@ -46,6 +48,7 @@ export function editHarness(initial: Project | undefined) {
     replaceProject,
     resetAfterFrameChange,
     flushPendingSave,
+    onRowsHeld,
     counted,
     get project() {
       return project.value!

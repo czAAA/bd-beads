@@ -87,6 +87,7 @@ const stateText = computed(() =>
 .project-head__label {
   font: var(--type-label);
   color: var(--muted);
+  text-transform: lowercase;
 }
 
 .project-head__state {
