@@ -10,7 +10,7 @@ import { useDialogs, type Dialogs } from '../shell/useDialogs'
 export interface RowOpsDeps {
   currentProject: () => Project | undefined
   replaceProject: (project: Project) => void
-  /** The success toast after the direction turns (ticket 411). */
+  /** The success toast after the direction turns (ticket 411), and the one saying a row marked done held a drawing. */
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   messages: () => Translations
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
@@ -102,5 +102,11 @@ export function useRowOps(deps: RowOpsDeps) {
     if (project) deps.replaceProject(resetRowProgress(project))
   }
 
-  return { rowPress, stopRowMotion, onToggleRowDirection, onMoveRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
+  /** Says why a drawing did not land: rows marked done took it back (ticket 0848). One toast, replaced, not stacked. */
+  function tellMarkedDone(project: Project) {
+    const t = deps.messages().rowProgress
+    deps.showToast('marked-done', rowProgressOf(project).direction === 'columns' ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
+  }
+
+  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onMoveRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
 }

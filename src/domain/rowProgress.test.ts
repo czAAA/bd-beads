@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsOf, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
+import { finishedRowsHold, finishedRowsOf, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -233,6 +233,21 @@ describe('keepFinishedRows', () => {
     const edited = paintAt(before, [{ row: 0, column: 0 }], '#e63746')
 
     expect(frameGrid(keepFinishedRows(before, edited))[0]![0]!.color).toBe('#e63746')
+  })
+})
+
+describe('finishedRowsHold (ticket 0848)', () => {
+  const before = moveToRow(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }), 3)
+
+  it('says so when rows marked done take back some of an edit', () => {
+    expect(finishedRowsHold(before, paintAt(before, [{ row: 2, column: 5 }, { row: 3, column: 5 }], '#e63746'))).toBe(true)
+    expect(finishedRowsHold(before, paintAt(before, [{ row: 0, column: 0 }], '#e63746'))).toBe(true)
+  })
+
+  it('stays quiet for an edit that keeps off them, or changes nothing', () => {
+    expect(finishedRowsHold(before, paintAt(before, [{ row: 3, column: 5 }], '#e63746'))).toBe(false)
+    expect(finishedRowsHold(before, paintAt(before, [{ row: 0, column: 0 }], null))).toBe(false)
+    expect(finishedRowsHold(before, before)).toBe(false)
   })
 })
 

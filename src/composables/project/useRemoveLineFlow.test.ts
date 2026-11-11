@@ -59,17 +59,17 @@ describe('useRemoveLineFlow', () => {
   it('words the question for the line it asks about, rows or columns as the rows run (ticket 0647)', () => {
     const { removeLinePrompt, onRemoveSelectedLine } = setup({ project: moveToRow(base, 2), selection: secondRow })
     onRemoveSelectedLine()
-    expect(removeLinePrompt.value).toEqual({ title: 'Remove row?', message: 'Row 2 is already woven. Removing it moves Row progress back to row 2.' })
+    expect(removeLinePrompt.value).toEqual({ title: 'Remove row?', message: 'Row 2 is marked done. Removing it moves Row progress back to row 2.' })
 
     const peyote: Project = withLayers(base, { technique: 'peyote', frame: { ...frameOf(base)!, technique: 'peyote' }, rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } })
     const firstColumn: Selection = { top: 0, left: 1, rows: 3, columns: 1 }
     const columns = setup({ project: peyote, selection: firstColumn })
     columns.onRemoveSelectedLine()
-    expect(columns.removeLinePrompt.value).toEqual({ title: 'Remove column?', message: 'Column 2 is already woven. Removing it moves Row progress back to column 2. The columns after it shift.' })
+    expect(columns.removeLinePrompt.value).toEqual({ title: 'Remove column?', message: 'Column 2 is marked done. Removing it moves Row progress back to column 2. The columns after it shift.' })
 
     const across = setup({ project: moveToRow(base, 2), selection: { top: 0, left: 1, rows: 3, columns: 1 } })
     across.onRemoveSelectedLine()
-    expect(across.removeLinePrompt.value).toEqual({ title: 'Remove column?', message: 'This takes a bead out of each of the 2 woven rows.' })
+    expect(across.removeLinePrompt.value).toEqual({ title: 'Remove column?', message: 'This takes a bead out of each of the 2 rows marked done.' })
   })
 
   it('leaves everything as it was when the question is answered No (ticket 0647)', () => {
