@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from './changeFrame'
 import { frameLayoutOf } from './frameShape'
-import { kiteWingBeads } from './frameLayout'
 import { onLayer } from './layers'
 import { createProject } from './createProject'
 import { paintCells } from './drawing'
@@ -150,11 +149,23 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     expect(sided(ring, 19)).toBeUndefined()
   })
 
-  it('lists a Kite row by row from its point', () => {
+  /** A Kite row as a beader reads it: its end, then its runs with the middle pair in brackets. */
+  const across = (project: Project) =>
+    wordChartOf(project)!.rows.map(({ marker, spine }) => `(${marker}) ${[...spine!.before.map(run), `(${spine!.pair.map(run).join(' ')})`, ...spine!.after.map(run)].join(',')}`)
+  const run = ({ count, letter }: { count: number; letter: string | undefined }) => `${count}${letter ?? '*'}`
+
+  it('lists a Kite row by row from its point, back and forth, each row round its middle pair (ticket 0874)', () => {
     const chart = wordChartOf(shaped('kite', 5, () => true))!
     expect(chart.start).toBe('point')
-    // Each row a chevron: its two wings' beads, the spine pair included.
-    expect(chart.rows.map((row) => row.runs)).toEqual([0, 1, 2, 3, 4].map((row) => [{ count: 2 * (kiteWingBeads(row, 5) + 1), letter: 'A' }]))
+    expect(chart.marked).toBe(true)
+    expect(across(shaped('kite', 5, () => true))).toEqual(['(L) (2A)', '(R) (2A)', '(L) 1A,(2A),1A', '(R) 1A,(2A),1A', '(L) 2A,(2A),2A'])
+    expect(chart.rows.map(({ runs }) => runs)).toEqual([2, 2, 4, 4, 6].map((count) => [{ count, letter: 'A' }]))
+  })
+
+  it('reads a Kite row from the wing it starts at: the left wing first on an odd row, the right on an even one (ticket 0874)', () => {
+    // The right wing painted: an odd row ends on it, an even row starts on it, a pair of two colors read in that order.
+    const kite = shaped('kite', 4, ({ column }) => column % 2 === 1, HEX.B)
+    expect(across(kite)).toEqual(['(L) (1* 1B)', '(R) (1B 1*)', '(L) 1*,(1* 1B),1B', '(R) 1B,(1B 1*),1*'])
   })
 
   it('lists a Fringe earring\'s top from its base row up, then each strand from the top down (ticket 0597)', () => {

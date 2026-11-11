@@ -854,6 +854,8 @@ export interface Translations {
       faceNote: string
       /** What a round's corner pair and a side's end look like in it (ticket 0873). */
       pairNote: string
+      /** What a Kite row's middle pair, its spine pair, looks like in it (ticket 0874). */
+      middlePairNote: string
     }
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */

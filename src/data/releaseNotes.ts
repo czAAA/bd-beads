@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Kite is two peyote wings on a spine, as wide as it is tall, its rows read back and forth',
+      ru: 'Воздушный змей это два крыла мозаичного плетения на центральной паре, ширина как высота, ряды туда и обратно',
+      uk: 'Повітряний змій це два крила мозаїчного плетіння на центральній парі, ширина як висота, ряди туди й назад',
+      be: 'Паветраны змей гэта два крылы мазаічнага пляцення на цэнтральнай пары, шырыня як вышыня, рады туды і назад',
+      zh: '风筝由中线两侧的两片佩奥翼组成，宽高相近，各行来回往返',
+      es: 'La Cometa son dos alas de peyote sobre un eje, tan ancha como alta, sus filas de ida y vuelta',
+      pl: 'Latawiec to dwa skrzydła peyote na grzbiecie, szeroki jak wysoki, rzędy tam i z powrotem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Shapes from a starter open upright: the Triangle point up, a Star arm up, the Kite standing',
       ru: 'Фигуры-стартеры открываются прямо: Треугольник остриём вверх, луч Звезды вверх, Воздушный змей стоя',
       uk: 'Фігури-стартери відкриваються прямо: Трикутник вістрям угору, промінь Зірки вгору, Повітряний змій стоячи',

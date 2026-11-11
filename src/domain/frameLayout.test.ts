@@ -330,49 +330,120 @@ describe('a Kaleidocycle (ticket 0593)', () => {
   })
 })
 
-describe('a Kite (ticket 0593)', () => {
-  it('starts with a two-bead pair at its point, and has a pair at the centre of every row', () => {
-    const kite = kiteLayout(12)
-    const sizes = rowSizes(kite)
-    expect(sizes.slice(0, 2)).toEqual([2, 2])
-    for (let row = 0; row < 12; row += 1) {
-      const centre = kite.positions.filter((position) => position.row === row && position.column < 2)
-      expect(centre.map(({ panel }) => panel).sort()).toEqual([0, 1])
+describe('a Kite: two peyote wings on a herringbone spine (ticket 0874)', () => {
+  /** Each bead's centre from the point, the middle of the first row's pair, in bead widths with y down. */
+  const fromPoint = (kite: FrameLayout) => {
+    const first = kite.positions.filter(({ row }) => row === 0)
+    const point = { x: (first[0]!.x + first[1]!.x) / 2, y: first[0]!.y }
+    return kite.positions.map((bead) => ({ ...bead, x: bead.x - point.x, y: bead.y - point.y }))
+  }
+  /** The box round the bead centres, wide × tall. */
+  const box = ({ positions }: FrameLayout) => [Math.max(...positions.map(({ x }) => x)) - Math.min(...positions.map(({ x }) => x)), Math.max(...positions.map(({ y }) => y)) - Math.min(...positions.map(({ y }) => y))]
+
+  it.each([
+    [5, [2, 2, 4, 4, 6], 18, [5.77, 4.7]],
+    [10, [2, 2, 4, 4, 6, 6, 8, 8, 10, 10], 60, [9.96, 10.57]],
+    [21, Array.from({ length: 21 }, (_unused, row) => 2 * Math.ceil((row + 1) / 2)), 242, [22.54, 23.48]],
+  ])('at %i rows holds %j beads a row, %i in all, its bead centres in a box of %j', (rows, sizes, total, [wide, tall]) => {
+    const kite = kiteLayout(rows, DELICA)
+    expect(rowSizes(kite)).toEqual(sizes)
+    expect(kite.positions).toHaveLength(total)
+    expect(box(kite)[0]).toBeCloseTo(wide!, 2)
+    expect(box(kite)[1]).toBeCloseTo(tall!, 2)
+  })
+
+  it('gains a bead a wing every two rows, the spine bead included', () => {
+    expect(Array.from({ length: 6 }, (_unused, row) => kiteWingBeads(row))).toEqual([1, 1, 2, 2, 3, 3])
+  })
+
+  it('lays its first four rows from the point as a Delica 11/0 is beaded', () => {
+    const at = (row: number, column: number) => fromPoint(kiteLayout(4, DELICA)).find((bead) => bead.row === row && bead.column === column)!
+    const expected: [number, number, number, number][] = [
+      [0, 0, -0.79, 0],
+      [0, 1, 0.79, 0],
+      [1, 0, -0.79, 1.17],
+      [1, 1, 0.79, 1.17],
+      [2, 0, -0.79, 2.35],
+      [2, 1, 0.79, 2.35],
+      [2, 2, -1.83, 0.65],
+      [2, 3, 1.83, 0.65],
+      [3, 0, -0.79, 3.52],
+      [3, 1, 0.79, 3.52],
+      [3, 2, -1.83, 1.82],
+      [3, 3, 1.83, 1.82],
+    ]
+    for (const [row, column, x, y] of expected) {
+      expect(at(row, column).x, `${row}:${column}`).toBeCloseTo(x, 2)
+      expect(at(row, column).y, `${row}:${column}`).toBeCloseTo(y, 2)
+    }
+    expect(kiteLayout(4, DELICA).positions).toHaveLength(12)
+  })
+
+  it('sets its spine pair 0.786 either side of the spine, inner corners touching, stepping 1.174 down a row', () => {
+    expect(Math.hypot(1, DELICA / 2)).toBeCloseTo(1.174, 3)
+    const beads = fromPoint(kiteLayout(10, DELICA))
+    for (let row = 0; row < 10; row += 1) {
+      const [left, right] = [0, 1].map((column) => beads.find((bead) => bead.row === row && bead.column === column)!)
+      expect(left!.x).toBeCloseTo(-0.786, 3)
+      expect(right!.x).toBeCloseTo(0.786, 3)
+      expect(right!.y).toBeCloseTo(row * Math.hypot(1, DELICA / 2), 9)
+      expect(left!.y).toBe(right!.y)
+      const inner = Math.min(...outlineOf(right!, DELICA).map(({ x }) => x))
+      expect(inner).toBeCloseTo(0, 9)
     }
   })
 
-  it('grows a bead a wing a row to its widest row a fifth down, then (inferred: the reference gives no counts) shrinks a bead every fourth row to a pair', () => {
-    expect(Array.from({ length: 12 }, (_unused, row) => kiteWingBeads(row, 12))).toEqual([0, 0, 1, 2, 2, 2, 2, 1, 1, 1, 1, 0])
-    expect(rowSizes(kiteLayout(12))).toEqual([2, 2, 4, 6, 6, 6, 6, 4, 4, 4, 4, 2])
-    expect(kiteWingBeads(20, 21)).toBe(0)
-  })
-
-  it('is shorter above its widest row than below it, as a kite is', () => {
-    const kite = kiteLayout(21)
-    const widest = kite.positions.reduce((outermost, position) => (position.x > outermost.x ? position : outermost))
-    expect(widest.y).toBeLessThan(kite.height / 2)
-  })
-
-  it('is two peyote wings, square to each other, meeting at a spine down its middle', () => {
-    const kite = kiteLayout(9)
-    expect(kite.panels).toHaveLength(2)
-    expect(new Set(kite.positions.map(({ panel, angle }) => `${panel}:${Math.round((angle * 180) / Math.PI)}`))).toEqual(new Set(['0:135', '1:45']))
-    for (const { x, panel } of kite.positions) expect(panel === 0 ? x < kite.centre.x : x > kite.centre.x).toBe(true)
-    expect(kite.seams).toHaveLength(1)
-    expect(kite.height).toBeGreaterThan(kite.width)
-  })
-
-  it('shares no position between its wings, lies inside its bounding rectangle, and refuses a press on its spine', () => {
-    const kite = kiteLayout(15)
+  it('is plain flat peyote in each wing: two widths apart in a row, each bead touching the two it sits between, and nothing overlaps', () => {
+    const kite = kiteLayout(12, DELICA)
     sharesNothing(kite)
     liesInside(kite)
-    // The spine at a row's point, just above its centre pair, between it and the row before.
-    const [left, right] = [0, 1].map((column) => kite.positions.find((position) => position.row === 5 && position.column === column)!)
-    expect(layoutPositionAt(kite, (left!.x + right!.x) / 2, (left!.y + right!.y) / 2 - 0.7)).toBeUndefined()
+    expect(crossingSeams(kite)).toEqual([])
+    const bead = (row: number, place: number, side: number) => kite.positions.find((each) => each.row === row && each.column === 2 * place + side)
+    for (const each of kite.positions.filter(({ row }) => row > 0)) {
+      const [place, side] = [Math.floor(each.column / 2), each.column % 2]
+      // Measured along its row and across it: a bead a width either way and half a depth on from the row before.
+      const offset = (other: LayoutPosition) => [(other.x - each.x) * Math.cos(each.angle) + (other.y - each.y) * Math.sin(each.angle), -(other.x - each.x) * Math.sin(each.angle) + (other.y - each.y) * Math.cos(each.angle)]
+      const before = [bead(each.row - 1, place, side), bead(each.row - 1, place - 1, side)].filter((other) => other !== undefined)
+      expect(before.length).toBeGreaterThan(0)
+      for (const other of before) {
+        expect(Math.abs(offset(other)[0]!)).toBeCloseTo(1, 9)
+        expect(Math.abs(offset(other)[1]!)).toBeCloseTo(DELICA / 2, 9)
+        expect(layoutNeighbors(kite, each)).toContainEqual({ row: other.row, column: other.column })
+      }
+      const next = bead(each.row, place + 1, side)
+      if (next) expect(Math.hypot(next.x - each.x, next.y - each.y)).toBeCloseTo(2, 9)
+    }
   })
 
-  it('fills across the spine, where the centre pair touch', () => {
-    expect(layoutNeighbors(kiteLayout(6), { row: 3, column: 0 })).toContainEqual({ row: 3, column: 1 })
+  it('draws every bead a width along its wing\'s rows and its Bead\'s depth across, the wings leaning 58.39 degrees', () => {
+    for (const depth of [DELICA, 1]) {
+      const kite = kiteLayout(9, depth)
+      expect(kite.beadDepth).toBe(depth)
+      const lean = Math.PI / 2 - Math.atan(depth / 2)
+      expect(new Set(kite.positions.map(({ panel, angle }) => `${panel}:${angle.toFixed(6)}`))).toEqual(new Set([`0:${lean.toFixed(6)}`, `1:${(Math.PI - lean).toFixed(6)}`]))
+      sharesNothing(kite)
+    }
+    expect((Math.PI / 2 - Math.atan(DELICA / 2)) * (180 / Math.PI)).toBeCloseTo(58.39, 2)
+  })
+
+  it('is two wings either side of a spine down its middle, each the other\'s mirror image', () => {
+    const kite = kiteLayout(9, DELICA)
+    expect(kite.panels).toHaveLength(2)
+    expect(kite.seams).toHaveLength(1)
+    expect(kite.symmetry).toEqual({ fold: 1, line: 0 })
+    for (const { x, y, row, column, panel } of kite.positions) {
+      expect(panel === 0 ? x < kite.centre.x : x > kite.centre.x).toBe(true)
+      const twin = kite.positions.find((each) => each.row === row && each.column === column + (panel === 0 ? 1 : -1))!
+      expect(twin.x - kite.centre.x).toBeCloseTo(kite.centre.x - x, 9)
+      expect(twin.y).toBeCloseTo(y, 9)
+    }
+  })
+
+  it('refuses a press on its spine between two rows\' pairs, and fills across it where the spine pair touch', () => {
+    const kite = kiteLayout(15, DELICA)
+    const [left, right] = [0, 1].map((column) => kite.positions.find((position) => position.row === 5 && position.column === column)!)
+    expect(layoutPositionAt(kite, (left!.x + right!.x) / 2, left!.y + 0.6)).toBeUndefined()
+    expect(layoutNeighbors(kite, { row: 3, column: 0 })).toContainEqual({ row: 3, column: 1 })
   })
 })
 

@@ -693,11 +693,12 @@ export const es: Translations = {
       sides: '(L) empieza por la izquierda, (R) por la derecha.',
       runNote: 'Un tramo es un número y una letra: 2C son dos cuentas C.',
       firstCentre: 'La vuelta 1 está en el centro; cada vuelta rodea la forma.',
-      firstPoint: 'La fila 1 está en la punta; cada fila se lee de izquierda a derecha.',
+      firstPoint: 'La fila 1 es el par de la punta; las filas van de ida y vuelta.',
       firstBase: 'La fila 1 es la base de la parte superior; cada fila se lee de izquierda a derecha, y luego cada fleco desde la izquierda, de arriba abajo.',
       partsThenJoins: 'Cada parte se teje vuelta a vuelta desde su centro, en orden de montaje, y después las uniones.',
       faceNote: 'Este esquema es una cara: {parts} de los {total} triángulos del caleidociclo. Haz un marco para cada una de las otras caras.',
       pairNote: '(2A) es un par de esquina: dos cuentas que se toman juntas. Un lado termina en |.',
+      middlePairNote: '(2A) es el par central: dos cuentas que se toman juntas.',
     },
   },
   saveBox: {

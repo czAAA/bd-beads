@@ -45,6 +45,7 @@ import projectFileV13MirrorArea from './fixtures/project-file-v13-mirror-area.js
 import projectFileV13MirrorPlace from './fixtures/project-file-v13-mirror-place.json?raw'
 import projectFileV14Reference from './fixtures/project-file-v14-reference.json?raw'
 import projectFileV14Progress from './fixtures/project-file-v14-warped-square-progress.json?raw'
+import projectFileV14OldKite from './fixtures/project-file-v14-old-kite.json?raw'
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
@@ -53,7 +54,10 @@ import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?r
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 import { backgroundOf, beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { currentPass, frameRowOrder, rowProgressOf } from './rowProgress'
+import { currentPass, frameRowOrder, moveToRow, rowProgressOf } from './rowProgress'
+import { changeFrame } from './changeFrame'
+import { customFrameSize } from './frameShape'
+import { frameGeometryOf } from './layers'
 import { frameSheetOf, layersView } from '../testUtils/layerFields'
 
 // Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn, not how it is
@@ -621,6 +625,31 @@ describe('stored-data compatibility', () => {
       expect(canvasOf(block!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
       const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
       expect(canvasOf(plain).techniqueSettings?.brickDrop ?? 1).toBe(1)
+    })
+
+    it('opens a Kite saved on its old layout on the new one at the same Rows, each bead whose row and place remain in its colour (ticket 0874)', () => {
+      const [opened] = parseProjectsFile(projectFileV14OldKite).projects
+      // Its saved rectangle, the new layout laid in it, until a Rows change lays it out again.
+      expect(frameSheetOf(opened)).toMatchObject({ rows: 40, columns: 11, shape: 'kite', settings: { rows: 21 } })
+      const geometry = frameGeometryOf(opened!)
+      expect(geometry.positions()).toHaveLength(242)
+      const RED = '#e63746'
+      const BLUE = '#2f6fed'
+      const GOLD = '#d9b94f'
+      // Row 4 holds two beads a wing now and row 5 three, so the old places past them are not shown or counted.
+      const kept = beadsOfLayer(opened, 'frame')!
+      expect(kept).toEqual({ 0: { 0: RED, 1: RED }, 3: { 0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE, 4: BLUE, 5: BLUE }, 4: { 6: RED, 7: RED }, 20: { 0: GOLD, 1: GOLD } })
+      const shown = geometry.positions().filter(({ row, column }) => kept[row]?.[column] !== undefined)
+      expect(shown.map(({ row, column }) => `${row}:${column}`)).toEqual(['0:0', '0:1', '3:0', '3:2', '3:1', '3:3', '20:0', '20:1'])
+      // Row progress stays on row 4, now read back from the right wing.
+      expect(currentPass(rowProgressOf(opened!))).toBe(3)
+      expect(frameRowOrder(opened!).stepOf?.(3)).toEqual({ kind: 'row', number: 4 })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+
+      // Back at the first row, a Rows change lays it out in its own rectangle and folds the beads with no place.
+      const regrown = changeFrame(moveToRow(opened!, 0), { settings: { rows: 22 } })
+      if (regrown.kind !== 'changed') throw new Error(regrown.kind)
+      expect(frameOf(regrown.project)).toMatchObject({ ...customFrameSize('kite', { rows: 22 }, undefined, {}, frameWeave(opened!).cell), folded: { 3: { 4: BLUE, 5: BLUE }, 4: { 6: RED, 7: RED } } })
     })
   })
 })

@@ -68,6 +68,9 @@ export interface FrameLayout {
   /** Its rows woven as peyote's lines are (ticket 0814): the first in one pass, every later one in two, the beads of the
    * columns that sit higher, then those of the columns half a bead lower, named here; a Fringe earring's peyote top. */
   twoPasses?: { lower: readonly number[] }
+  /** Its rows worked back and forth across a spine (ticket 0874): each from one wing's end to the spine pair, its beads
+   * named 0 and 1, and out along the other wing, the next row back; a Kite's. */
+  acrossSpine?: true
 }
 
 /** Beads whose outlines lie this close touch, in bead widths (ticket 0723): side by side, end to end, a corner pair at
@@ -330,42 +333,40 @@ export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout
   })
 }
 
-/** A Kite row's single beads a wing, besides its half of the centre pair (inferred; the reference gives no counts): two
- * rows of the pair alone, a bead more a row to the widest row a fifth down, a bead fewer every fourth row to the tail.
- * @internal Tests check the Kite's wing counts row by row. */
-export function kiteWingBeads(row: number, rows: number): number {
-  // Growing a bead a row for a fifth of the rows and shrinking one every fourth row for the rest ends on the pair.
-  const widest = Math.max(1, Math.floor((rows + KITE_SHRINK_EVERY - 1) / (KITE_SHRINK_EVERY + 1)))
-  if (row <= widest) return Math.max(0, row - 1)
-  return Math.max(0, widest - 1 - Math.floor((row - widest) / KITE_SHRINK_EVERY))
+/** A Kite row's beads a wing, its spine bead included (ticket 0874): a wing gains a bead every two rows, so the rows from
+ * the point (row 0 first) hold 2, 2, 4, 4, 6 … beads.
+ * @internal Tests check the Kite's rows bead by bead. */
+export function kiteWingBeads(row: number): number {
+  return Math.floor(row / 2) + 1
 }
 
-/** How many rows below its widest a Kite's wings take to lose a bead each. */
-const KITE_SHRINK_EVERY = 4
-
-/** A Kite (the maintainer's reference): two peyote wings at 90 degrees meeting at a herringbone spine, worked in Rows
- * from its point, each row a chevron of peyote out from a two-bead pair at the centre. A bead is named by its row and its
- * place out from the spine, the left wing's even and the right's odd, so it keeps its name when Rows change. */
-export function kiteLayout(rows: number): FrameLayout {
-  return remembered(`kite:${rows}`, () => {
+/** A Kite (ticket 0874): two flat peyote wings on a herringbone spine, in Rows from its point, its beads a width along
+ * a wing's rows and `depth` across, each row half a depth on and a width nearer the spine. A bead is named by its row
+ * and its place out from the spine, the left wing's even and the right's odd, so it keeps its name when Rows change. */
+export function kiteLayout(rows: number, depth: number): FrameLayout {
+  return remembered(`kite:${rows}:${depth}`, () => {
+    // The right wing's rows rise outwards at 90 degrees less the peyote lattice's angle, atan(depth / 2).
+    const step = Math.hypot(1, depth / 2)
+    const outwards = { x: depth / 2 / step, y: -1 / step }
+    // A spine bead's inner corners touch the spine.
+    const spine = outwards.x / 2 + depth / 2 / step
     const wings = [
-      { angle: (3 * Math.PI) / 4, side: 0 },
-      { angle: Math.PI / 4, side: 1 },
+      { side: 0, mirror: -1, angle: Math.PI / 2 - Math.atan(depth / 2) },
+      { side: 1, mirror: 1, angle: Math.PI / 2 + Math.atan(depth / 2) },
     ] as const
     const positions: LayoutPosition[] = []
     for (let row = 0; row < rows; row += 1) {
-      // The chevron's point on the spine moves one row's depth down it.
-      const point = { x: 0, y: (row + 1) * Math.SQRT2 }
-      for (const { angle, side } of wings) {
-        for (let place = 0; place <= kiteWingBeads(row, rows); place += 1) {
-          const out = 1 + 2 * place
-          positions.push({ row, column: 2 * place + side, panel: side, angle, x: point.x + out * Math.cos(angle), y: point.y + out * Math.sin(angle) })
+      for (const { side, mirror, angle } of wings) {
+        for (let place = 0; place < kiteWingBeads(row); place += 1) {
+          const x = mirror * (spine + 2 * place * outwards.x)
+          positions.push({ row, column: 2 * place + side, panel: side, angle, x, y: row * step + 2 * place * outwards.y })
         }
       }
     }
-    // The spine runs from the first row's point down past the last row's pair.
-    const spine: [LayoutPoint, LayoutPoint] = [{ x: 0, y: Math.SQRT2 }, { x: 0, y: (rows + 1) * Math.SQRT2 }]
-    return boxed({ positions, panels: wings.map(() => ({ part: 0, order: 0 })), seams: [spine], beadDepth: 1, symmetry: MIRRORED_ACROSS }, { x: 0, y: ((rows + 2) * Math.SQRT2) / 2 })
+    // The spine runs from the point down past the last row's pair.
+    const seam: [LayoutPoint, LayoutPoint] = [{ x: 0, y: 0 }, { x: 0, y: rows * step }]
+    const laid = boxed({ positions, panels: wings.map(() => ({ part: 0, order: 0 })), seams: [seam], beadDepth: depth, symmetry: MIRRORED_ACROSS }, { x: 0, y: ((rows - 1) * step) / 2 })
+    return { ...laid, acrossSpine: true }
   })
 }
 

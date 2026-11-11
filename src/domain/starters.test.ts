@@ -58,6 +58,20 @@ describe('the Starter registry', () => {
     expect(starterBeadCount(starterById('warpedSquare'), asDesigned('warpedSquare'), delica)).toBe(144)
   })
 
+  it('estimates a Kite of 15, 21 and 30 rows at 128, 242 and 480 beads, about as wide as it is tall (ticket 0874)', () => {
+    const kite = starterById('kite')
+    const estimates = [15, 21, 30].map((rows) => {
+      const choice = { sizes: { rows }, useDesign: false }
+      const measure = starterMeasure(kite, choice, delica)
+      return [starterBeadCount(kite, choice, delica), measure.shape === 'frame' && Math.round(measure.widthMm), measure.shape === 'frame' && Math.round(measure.heightMm)]
+    })
+    expect(estimates).toEqual([
+      [128, 23, 23],
+      [242, 31, 33],
+      [480, 42, 46],
+    ])
+  })
+
   for (const starter of allStarters) {
     it(`fills every position of the ${starter.id} design's Frame, and nothing beyond it`, () => {
       const beads = starterDesign(starter)

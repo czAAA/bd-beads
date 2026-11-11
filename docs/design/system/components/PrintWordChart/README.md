@@ -22,14 +22,15 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
 - Each row, left to right:
   1. A tick box: a 2.8 mm square, 0.2 mm `field-line` outline, corners 0.4 mm, its top 1.4 mm below the row's top.
   2. The row number in DM Mono 500 `print-word-row` (10 pt) `ink`, right-aligned 11.5 mm from the box's left edge ("1&2" fits).
-  3. The (L) or (R) marker, for peyote and brick only, in DM Mono 10 pt `muted`, 1 mm after the number. The runs follow it.
+  3. The (L) or (R) marker, for peyote, brick and a Kite's rows only, in DM Mono 10 pt `muted`, 1 mm after the number. The runs follow it.
   4. The runs in DM Mono 400 10 pt `ink`, from 13.5 mm after the box's left edge (2 mm further with a marker), in the 0574 notation ("3A, 7B, 2*").
 - Text baseline: 3.9 mm below the row's top.
 - A hairline under each row, across the column: 0.15 mm `line-soft`, and under every 5th row 0.2 mm `line-strong`, so the rows can be counted as on the chart.
 - The number of runs on the right is gone: it is not something a weaver works from.
 - A row too long for its column wraps at a run, with a hanging indent at the runs' start; the wrapped line adds one pitch. A row never splits across columns or pages.
-- **A Custom frame** (ticket 0594): one line per pass of its Row order, numbered from 1, the runs led by the pass in words ("Round 3: 2A, 1B", "Part 2, round 1: 4A", a join on its own as "Zip 1–2"); no (L) or (R). The notes say where it starts ("Round 1 is at the centre…", "Row 1 is at the point…", or parts in making order then the joins) in place of the edge Row 1 is at.
+- **A Custom frame** (ticket 0594): one line per pass of its Row order, numbered from 1, the runs led by the pass in words ("Round 3: 2A, 1B", "Part 2, round 1: 4A", a join on its own as "Zip 1–2"); no (L) or (R) but on a Kite's rows (below). The notes say where it starts ("Round 1 is at the centre…", "Row 1 is the pair at the point…", or parts in making order then the joins) in place of the edge Row 1 is at.
 - **A round side by side** (ticket 0873): a round of a part worked in rounds (Triangle, Warped Square, a Kaleidocycle's triangle, a Star's square) starts with its corner pair after the step-up and is written a side at a time: the side's corner pair in brackets, `(2A)` for two beads of A, `(1A 1B)` for two colors in the order they are picked up, then its singles in the run notation, the sides apart at ` | ` ("Round 3: (2A), 1A | (2A), 1A | (2A), 1A | (2A), 1A"). The bracket and the bar are plain DM Mono 400 `ink`, like the runs, so they read in black and white. A pair's two runs are joined by a no-break space and the `|` by one to the side it ends, so a wrapped row never splits a pair or starts a line with a bar. Round 1, the ring, is a plain run ("Round 1: 4A"). When any row has a pair the notes end with what a pair and a `|` are ("(2A) is a corner pair: two beads picked up together. A side ends at |."). Each side is written out, never "×4": the weaver follows the beads one side at a time.
+- **A Kite's row** (ticket 0874): worked back and forth from the point, so each line carries (L) or (R) after its number as peyote's do (row 1 (L), row 2 (R) …), and its middle pair, the spine pair, is in brackets as a corner pair is, `(2A)` or `(1A 1B)` in the order picked up, between the runs of the wing it starts on and of the other: "Row 1: (2A)", "Row 3: 1A, (2A), 1A", "Row 5: 2A, (2A), 2A". The notes say "Row 1 is the pair at the point; the rows go back and forth.", what (L) and (R) are, and end with what the middle pair is.
 
 ## Two columns
 
@@ -54,6 +55,7 @@ A build agent checks on a 35 × 120 loom bracelet and a 100 × 100 loom Schema, 
 - [ ] A row never splits across a column or a page. A wrapped row indents to its runs.
 - [ ] The color key strip is an outline with no fill, its swatches drawn like chart beads with their letters, and `*` empty listed when the Schema has empty positions.
 - [ ] Peyote's first line is "1&2". Peyote and brick lines carry (L)/(R) in `muted`. The run notation is unchanged from 0574.
-- [ ] A 5-round Warped Square in one color reads "Round 1: 4A", "Round 2: (2A) | (2A) | (2A) | (2A)", "Round 5: (2A), 3A | …" four sides; a Kite and a Fringe earring read as before (ticket 0873).
+- [ ] A 5-round Warped Square in one color reads "Round 1: 4A", "Round 2: (2A) | (2A) | (2A) | (2A)", "Round 5: (2A), 3A | …" four sides; a Fringe earring reads as before (ticket 0873).
+- [ ] A 5-row Kite in one color reads "1 (L) Row 1: (2A)", "2 (R) Row 2: (2A)", "3 (L) Row 3: 1A, (2A), 1A", "5 (L) Row 5: 2A, (2A), 2A" (ticket 0874).
 
 The earlier card (whole-range title, runs count, key strip on `print-board`) is in git history.

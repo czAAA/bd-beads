@@ -137,13 +137,21 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(order.stepOf?.(3)).toEqual({ kind: 'round', number: 4 })
   })
 
-  it('steps a Kite row by row from its point, each row read left to right across its wings', () => {
+  it('steps a Kite row by row from its point, back and forth across its spine pair (ticket 0874)', () => {
     const order = rowOrderOf(custom('kite', 21), { direction: 'rows' })
     expect(order.count).toBe(21)
-    const row = order.positionsOf(4)
-    // The left wing's places are even and run in to the spine, the right wing's odd and run out.
-    expect(row.map(({ column }) => column)).toEqual([6, 4, 2, 0, 1, 3, 5, 7])
+    expect(order.turns).toBe(false)
+    // The left wing's places are even and run in to the spine, the right wing's odd and run out; row 6 runs back.
+    expect(order.positionsOf(4).map(({ column }) => column)).toEqual([4, 2, 0, 1, 3, 5])
+    expect(order.positionsOf(5).map(({ column }) => column)).toEqual([5, 3, 1, 0, 2, 4])
     expect(order.stepOf?.(4)).toEqual({ kind: 'row', number: 5 })
+    expect([0, 1, 4, 5].map((pass) => order.spineOf?.(pass))).toEqual([
+      { from: 'left', pair: 0 },
+      { from: 'right', pair: 0 },
+      { from: 'left', pair: 2 },
+      { from: 'right', pair: 2 },
+    ])
+    expect(order.passAt({ row: 20, column: 21 })).toBe(20)
   })
 
   it('steps a Star part by part in making order, round by round, and then through its joins', () => {
