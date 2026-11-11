@@ -42,14 +42,13 @@ describe("App maker line: the Project's own Maker's name (ADR 0060, tickets 443,
     expect(wrapper.find('[data-testid="project-maker-edit"]').exists()).toBe(false)
   })
 
-  it('sets the name on this Project from the field, trimmed, with a counter, and then shows the name with a pencil', async () => {
+  it('sets the name on this Project from the field, trimmed, up to 40, and then shows the name with a pencil', async () => {
     const wrapper = mountApp()
     await openProject(wrapper)
 
     await wrapper.get('[data-testid="project-maker-add"]').trigger('click')
     await flushPromises()
     expect(field(wrapper).attributes('maxlength')).toBe('40')
-    expect(wrapper.get('[data-testid="project-maker-form"]').text()).toContain('0/40')
     await field(wrapper).setValue('  Maria Kovaleva ')
     await save(wrapper)
     await flushPromises()

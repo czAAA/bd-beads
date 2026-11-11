@@ -111,7 +111,6 @@ export interface Translations {
     unitCm: string
     /** This Project's own maker's name (ticket 182), overriding the device-wide one; blank by default. */
     makerNameLabel: string
-    makerNamePlaceholder: string
     submit: string
     /** Right of an optional field's label (TextField card). */
     optional: string
@@ -1462,5 +1461,20 @@ export interface Translations {
     resized: string
     /** The Project panel's save icon while the picture is not kept on this device. */
     notSaved: string
+  }
+  /** What an empty field says goes in it (ticket 0854, TextField card): a placeholder, never a value. */
+  fields: {
+    projectName: string
+    frameName: string
+    pieceName: string
+    feedbackMessage: string
+    feedbackShown: string
+    feedbackShouldSay: string
+    feedbackCode: string
+    feedbackLooksLike: string
+    feedbackNote: string
+    feedbackEmail: string
+    /** Under a name edited in place that is longer than the limit, with {max}. */
+    tooLong: string
   }
 }

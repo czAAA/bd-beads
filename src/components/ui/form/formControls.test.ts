@@ -93,6 +93,20 @@ describe('TextField select-on-focus and compact (ticket 517)', () => {
     plain.unmount()
   })
 
+  it('keeps the selection a press made when the press is let go, and only that once (ticket 0854)', async () => {
+    const selecting = mount(TextField, { attachTo: document.body, props: { modelValue: '11', selectOnFocus: true } })
+    const input = selecting.get('input')
+    await input.trigger('pointerdown')
+    input.element.focus()
+    const release = new MouseEvent('mouseup', { bubbles: true, cancelable: true })
+    input.element.dispatchEvent(release)
+    expect(release.defaultPrevented).toBe(true)
+    const next = new MouseEvent('mouseup', { bubbles: true, cancelable: true })
+    input.element.dispatchEvent(next)
+    expect(next.defaultPrevented).toBe(false)
+    selecting.unmount()
+  })
+
   it('draws the compact variant', () => {
     expect(mount(TextField, { props: { compact: true } }).classes()).toContain('text-field--compact')
   })

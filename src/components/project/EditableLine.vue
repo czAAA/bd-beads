@@ -4,15 +4,17 @@ import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
+import FieldCounter from '../ui/form/FieldCounter.vue'
 import TextField from '../ui/form/TextField.vue'
 import { useShellScope } from '../../composables/ui/shellScope'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 /** Where this shell's popovers go: the app shell, or the Homepage demo's own box (ticket 0797). */
 const teleportTo = useShellScope().teleportTo
 
-// One line of the Project panel's head that is edited in place (ProjectPanel card): a label, the value (or a line
-// inviting one) and a pencil that swaps in a TextField with Save, Cancel and a counter. Enter saves, Escape cancels. A
-// `required` line refuses an empty value; an optional one clears. Saved at once, not part of Undo.
+// A line edited in place (ProjectPanel card): a label, the value (or a line inviting one) and a pencil that swaps in a
+// TextField with Save, Cancel and a counter. Enter or a press outside saves, Escape cancels; a `required` line refuses
+// empty, and none cuts a too-long value without a word (ticket 0854). Saved at once, not part of Undo.
 const props = defineProps<{
   label: string
   value: string
@@ -42,7 +44,8 @@ const emit = defineEmits<{ save: [value: string] }>()
 const { t } = useI18n()
 const editing = ref(false)
 const draft = ref('')
-const refused = ref(false)
+/** Why the last Save was refused: empty where a value is required, or longer than the limit. */
+const refused = ref<'empty' | 'long'>()
 const field = ref<InstanceType<typeof TextField>>()
 const form = ref<HTMLFormElement>()
 const rootEl = ref<HTMLElement>()
@@ -51,11 +54,13 @@ const rootEl = ref<HTMLElement>()
 const anchored = useAnchoredPosition(rootEl, form, () => 'start', () => 'above')
 const fieldId = useId()
 const errorId = useId()
-const canSave = computed(() => !props.requiredMessage || props.normalize(draft.value) !== '')
+const tooLong = computed(() => draft.value.trim().length > props.maxlength)
+const canSave = computed(() => draft.value === props.value || (!tooLong.value && (!props.requiredMessage || props.normalize(draft.value) !== '')))
+const refusal = computed(() => (refused.value === 'long' ? fillBlanks(t.value.fields.tooLong, { max: props.maxlength }) : props.requiredMessage))
 
 function start() {
   draft.value = props.value
-  refused.value = false
+  refused.value = undefined
   editing.value = true
   void nextTick(() => {
     if (props.bare) anchored.follow()
@@ -65,9 +70,11 @@ function start() {
 }
 
 function commit() {
+  // A value left as it was is kept whole, even one longer than the limit that came in with a file (ticket 0854).
+  if (draft.value === props.value) return cancel()
   const next = props.normalize(draft.value)
-  if (!next && props.requiredMessage) {
-    refused.value = true
+  if (tooLong.value || (!next && props.requiredMessage)) {
+    refused.value = tooLong.value ? 'long' : 'empty'
     return
   }
   editing.value = false
@@ -78,12 +85,12 @@ function commit() {
 function cancel() {
   editing.value = false
   anchored.stop()
-  refused.value = false
+  refused.value = undefined
 }
 
-// The bare line's field floats over the margin sheet, outside any panel, so it is a layer of its own (ticket 0685):
-// Escape cancels, a press outside keeps what was typed, as Save does.
-useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.value, close: cancel, onOutsidePress: commit })
+// While editing the line is a layer of its own (tickets 0685, 0854): Escape cancels, a press outside keeps what was
+// typed, as Save does, in a panel as on the margin sheet.
+useOverlayLayer({ isOpen: () => editing.value, root: () => form.value, close: cancel, onOutsidePress: commit })
 </script>
 
 <template>
@@ -107,9 +114,7 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
         :popover="bare ? 'manual' : undefined"
         :style="bare ? anchored.style.value : undefined"
         :data-testid="`${testid}-form`"
-        data-handles-escape
         @submit.prevent="commit"
-        @panel-escape="cancel"
       >
         <div class="editable-line__field">
           <TextField
@@ -119,17 +124,17 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
             type="text"
             :maxlength="maxlength"
             :placeholder="placeholder"
-            :invalid="refused"
+            :invalid="!!refused"
             :aria-label="editLabel"
             :aria-describedby="refused ? errorId : undefined"
             :data-testid="`${testid}-input`"
-            @input="refused = false"
+            @input="refused = undefined"
           />
           <IconButton variant="plain" icon="check" :label="t.panels.project.save" tooltip :disabled="!canSave" :data-testid="`${testid}-save`" @click="commit" />
           <IconButton variant="plain" icon="close" :label="t.panels.project.cancel" tooltip :data-testid="`${testid}-cancel`" @click="cancel" />
         </div>
-        <span class="editable-line__counter">{{ draft.length }}/{{ maxlength }}</span>
-        <p v-if="refused" :id="errorId" class="editable-line__error" role="alert" :data-testid="`${testid}-error`">{{ requiredMessage }}</p>
+        <FieldCounter :length="draft.length" :max="maxlength" />
+        <p v-if="refused" :id="errorId" class="editable-line__error" role="alert" :data-testid="`${testid}-error`">{{ refusal }}</p>
       </form>
     </Teleport>
   </div>
@@ -196,10 +201,6 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
   cursor: pointer;
 }
 
-.editable-line__empty::before {
-  content: '+ ';
-}
-
 .editable-line__empty:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
@@ -220,11 +221,6 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
 .editable-line__field > :first-child {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.editable-line__counter {
-  font: var(--type-meta);
-  color: var(--muted);
 }
 
 /* Bare, the empty text invites a value: pressing it starts the edit, as the pencil does (ticket 0803). */

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Every field says what goes in it, and a tap outside keeps a new name',
+      ru: 'Поля говорят, что в них вписать, а касание мимо сохраняет новое название',
+      uk: 'Поля кажуть, що в них вписати, а дотик повз зберігає нову назву',
+      be: 'Палі кажуць, што ў іх упісаць, а дотык міма захоўвае новую назву',
+      zh: '每个输入框都会提示该填什么，点击别处也会保留新名称',
+      es: 'Cada campo dice qué va en él, y tocar fuera guarda el nombre nuevo',
+      pl: 'Każde pole mówi, co w nie wpisać, a dotknięcie obok zachowuje nową nazwę',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A row marked done says why it won’t take a bead, and whatever it holds still offers Reset progress right there',
       ru: 'Ряд, отмеченный как готовый, говорит, почему не берёт бусину, а всё, что он держит, сразу предлагает сбросить прогресс',
       uk: 'Ряд, позначений як готовий, каже, чому не бере намистину, а все, що він тримає, одразу пропонує скинути прогрес',

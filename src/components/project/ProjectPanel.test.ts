@@ -129,13 +129,13 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="project-name-input"]').element)
   })
 
-  it('renames: the pencil opens a field with Save and Cancel and a counter; Enter saves', async () => {
+  it('renames: the pencil opens a field with Save and Cancel and its placeholder; Enter saves', async () => {
     const wrapper = mountPanel()
     expect(wrapper.get('[data-testid="project-name-edit"]').attributes('aria-label')).toBe('Rename Moth')
     await wrapper.get('[data-testid="project-name-edit"]').trigger('click')
     const input = wrapper.get<HTMLInputElement>('[data-testid="project-name-input"]')
     expect(input.element.value).toBe('Moth')
-    expect(wrapper.get('[data-testid="project-name-form"]').text()).toContain('4/40')
+    expect(input.attributes('placeholder')).toBe(en.fields.projectName)
     expect(wrapper.find('[data-testid="project-name-save"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="project-name-cancel"]').exists()).toBe(true)
 
@@ -158,10 +158,12 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.get('[data-testid="project-name"]').text()).toBe('Moth')
   })
 
-  it('cancels a rename when the panel hears Escape', async () => {
+  it('cancels a rename on Escape', async () => {
     const wrapper = mountPanel()
     await wrapper.get('[data-testid="project-name-edit"]').trigger('click')
-    await wrapper.get('[data-testid="project-name-form"]').trigger('panel-escape')
+    await wrapper.get('[data-testid="project-name-input"]').setValue('Heron')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-testid="project-name-form"]').exists()).toBe(false)
     expect(wrapper.emitted('rename')).toBeUndefined()
   })

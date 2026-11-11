@@ -851,3 +851,23 @@ The Keep note (glossary), asked at the first Project file or export, and the bro
 | Keep Projects on this device · On · Off (Menu row and its value) | Хранить проекты на устройстве · Вкл · Выкл | Зберігати проєкти на пристрої · Увімк. · Вимк. | Захоўваць праекты на прыладзе · Укл. · Выкл. | 在此设备上保留项目 · 开 · 关 | Conservar proyectos en el dispositivo · Sí · No | Zachowaj projekty na urządzeniu · Wł. · Wył. |
 
 English follows the audit's proposal (F-05-06, F-05-07); the other languages are proposals for review with the build.
+
+## Field placeholders copy (ticket 0854)
+
+What an empty field says goes in it (TextField card, Placeholder, value and limit): a few words, no full stop, never a value. The maker's name reuses "Your name" (the Bead Master placeholder is gone), the colour's hex its label "Hex color", the Bead colors search "Find a code or color". `{max}` is the name limit, 40.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Project name (Rename, Duplicate) | Название проекта | Назва проєкту | Назва праекта | 项目名称 | Nombre del proyecto | Nazwa projektu |
+| Frame name | Название рамки | Назва рамки | Назва рамкі | 边框名称 | Nombre del marco | Nazwa ramki |
+| Piece name | Название кусочка | Назва шматочка | Назва кавалачка | 小块名称 | Nombre del trozo | Nazwa kawałka |
+| Your message (Feedback: Message) | Ваше сообщение | Ваше повідомлення | Ваша паведамленне | 你的留言 | Tu mensaje | Twoja wiadomość |
+| The words as the app shows them (Text as shown) | Слова, как их показывает приложение | Слова, як їх показує застосунок | Словы, як іх паказвае праграма | 应用中显示的文字 | El texto tal como lo muestra la app | Tekst tak, jak pokazuje go aplikacja |
+| The words it should use (Should say) | Как должно быть написано | Як має бути написано | Як павінна быць напісана | 应该写成什么 | Lo que debería decir | Jak powinno być |
+| Catalog code (Code) | Код по каталогу | Код за каталогом | Код па каталогу | 目录编号 | Código del catálogo | Kod z katalogu |
+| A color name or a hex (Looks like) | Название цвета или HEX | Назва кольору або HEX | Назва колеру або HEX | 颜色名称或十六进制值 | Nombre del color o hexadecimal | Nazwa koloru lub kod szesnastkowy |
+| Anything else (Note) | Что-нибудь ещё | Щось іще | Нешта яшчэ | 其他补充 | Algo más | Coś jeszcze |
+| Your email (Email) | Ваша эл. почта | Ваша ел. пошта | Ваша эл. пошта | 你的电子邮件 | Tu correo | Twój e-mail |
+| Use {max} characters or fewer. (a name edited in place, refused) | Не больше {max} символов. | Не більше {max} символів. | Не больш за {max} сімвалаў. | 最多 {max} 个字符。 | Usa {max} caracteres o menos. | Użyj najwyżej {max} znaków. |
+
+English follows the audit's proposal (F-01-28, F-05-18); the other languages are proposals for review with the build.
