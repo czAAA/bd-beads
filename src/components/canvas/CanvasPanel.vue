@@ -147,7 +147,7 @@ const {
   onToggleFramePanel,
   surfaceInputMode,
   handedness,
-  onFitFrame,
+  onFitAndExport,
   onEditFrame,
   onFrameKey,
   onRemoveFrame,
@@ -546,7 +546,7 @@ const drawingStyle = computed(() => {
         @reset-progress="onResetProgress"
         @toggle-row-direction="onToggleRowDirection"
         @toggle-row-highlight="toggleRowHighlight"
-        @fit-frame="onFitFrame"
+        @fit-and-export="onFitAndExport"
       />
 
       <!--

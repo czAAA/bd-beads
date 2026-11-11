@@ -38,7 +38,7 @@ import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { projectNameOf, withStartBackground } from '../../domain/layerRecord'
+import { frameOf, projectNameOf, withStartBackground } from '../../domain/layerRecord'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -77,6 +77,9 @@ import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
 import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useReferenceImageFlow'
+
+/** The panel whose Select a frame armed the framing drag (ticket 0847): Export comes back once the Frame is set. */
+type FramingFrom = 'frame' | 'export'
 
 /** The rows and columns an arrow moves an area by (ticket 0808). */
 const ARROW_STEPS: Readonly<Record<string, readonly [number, number]>> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
@@ -314,15 +317,21 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Whether Pick color from canvas is on (ticket 398); see pickColorAt. */
   const pickingColor = ref(false)
 
-  /** Whether the next Selection becomes the Frame (ticket 568): armed by the Frame panel's Select a frame, ended by the
-   * Selection being made, Escape or another tool. */
-  const selectingFrame = ref(false)
+  /** Whether the next Selection becomes the Frame (ticket 568), and which panel's Select a frame armed it: ended by the
+   * Selection being made, Escape or another tool. Armed from Export, Export opens again once it is set (ticket 0847). */
+  const selectingFrame = ref<FramingFrom>()
+
+  /** The framing drag is over, made or cancelled: its notice about dragging goes with it (ticket 0847). */
+  function endFraming() {
+    if (selectingFrame.value) dismissToast('select-frame')
+    selectingFrame.value = undefined
+  }
 
   // Choosing a tool. Leaving Select drops the Selection, the Eraser included; its beads stay. Any tool leaves Mirror mode,
   // the Mirror staying on (ADR 0082).
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
-    selectingFrame.value = false
+    endFraming()
     mirror.marking.value = false
     // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on
     // touch.
@@ -356,11 +365,18 @@ function wireAppShell(services: Services, options: ShellOptions) {
     if (selection.value) frameFlow.setTo(selectionFrame(selection.value))
   }
 
-  /** Select a frame (ticket 568): Select is the tool, and the Selection the next drag makes is framed on release. */
-  function onSelectFrame() {
+  /** Select a frame (ticket 568): Select is the tool, and the Selection the next drag makes is framed on release. From
+   * the Export panel, the panel comes back once the Frame is set (ticket 0847). */
+  function onSelectFrame(from: FramingFrom = 'frame') {
     onSelectTool('select')
-    selectingFrame.value = true
+    selectingFrame.value = from
     showToast('select-frame', t.value.frame.selectFrameHint, 'info')
+  }
+
+  /** The Progress bar's Fit a Frame and export a picture (ticket 0847, O-03): Fit to drawing, then Export on Picture. */
+  function onFitAndExport() {
+    frameFlow.fit()
+    if (frameOf(currentProject())) overlays.showExport('strip-export', 'png')
   }
 
   /** The end of a Select press: when the drag was made to set the Frame, the Frame is set to it; in Mirror mode its
@@ -373,10 +389,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
       resetSelection()
       return
     }
-    if (!selectingFrame.value || !selection.value) return
-    selectingFrame.value = false
+    const from = selectingFrame.value
+    if (!from || !selection.value) return
+    endFraming()
     onFrameFromSelection()
     resetSelection()
+    if (from === 'export' && frameOf(currentProject())) overlays.showExport('strip-export')
   }
 
   // Mirror mode runs under Select: whatever takes the tool elsewhere (a colour picked into Paint too) ends it.
@@ -426,8 +444,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Escape under Select: ends the framing drag too, which counts as the key being used. */
   function backOutOfSelectOrFraming(): boolean {
-    const was = selectingFrame.value
-    selectingFrame.value = false
+    const was = selectingFrame.value !== undefined
+    endFraming()
     return backOutOfSelect() || was
   }
 
@@ -1037,7 +1055,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onToggleFramePanel: frameFlow.toggleBar,
       onEditFrame: editFrame,
       onFrameKey,
-      onFitFrame: frameFlow.fit,
+      onFitAndExport,
       onRemoveFrame: frameFlow.remove,
       onFramePress: frameFlow.press,
       onFrameDrag: frameFlow.drag,

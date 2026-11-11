@@ -831,6 +831,7 @@ export const es: Translations = {
     progressSelectToSet: 'Selecciona para definir el',
     progressFrameWord: 'marco',
     rotateCoveredMessage: 'El fragmento girado quedó sobre cuentas existentes.',
+    fitAndExport: 'Ajustar marco y exportar imagen',
   },
   size: {
     estimateLabel: 'Tamaño estimado',
@@ -1116,6 +1117,7 @@ export const es: Translations = {
     rulers: 'Las reglas numeran tus cuentas y el marco.',
     rowDirection: 'Cambia el sentido de las filas: de arriba abajo, de izquierda a derecha, de abajo arriba o de derecha a izquierda.',
     rowHighlight: 'Muestra u oculta las marcas en la fila actual y en las filas marcadas como terminadas.',
+    fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

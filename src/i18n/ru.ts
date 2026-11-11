@@ -836,6 +836,7 @@ export const ru: Translations = {
     progressSelectToSet: 'Выделите, чтобы задать',
     progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Повёрнутый фрагмент оказался поверх существующих бусин.',
+    fitAndExport: 'Рамка и экспорт картинки',
   },
   size: {
     estimateLabel: 'Примерный размер',
@@ -1123,6 +1124,7 @@ export const ru: Translations = {
     rulers: 'Линейки нумеруют ваши бусины и рамку.',
     rowDirection: 'Меняет направление рядов: сверху вниз, слева направо, снизу вверх или справа налево.',
     rowHighlight: 'Показывает или скрывает отметки на текущем ряду и на рядах, отмеченных как готовые.',
+    fitAndExport: 'Подогнать рамку под все бусины и открыть экспорт картинки.',
   },
   layerSettings: {
     frameHeading: 'Настройки',

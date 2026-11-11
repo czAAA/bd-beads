@@ -836,6 +836,7 @@ export const uk: Translations = {
     progressSelectToSet: 'Виділіть, щоб задати',
     progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Повернутий фрагмент опинився поверх наявних намистин.',
+    fitAndExport: 'Рамка й експорт картинки',
   },
   size: {
     estimateLabel: 'Приблизний розмір',
@@ -1123,6 +1124,7 @@ export const uk: Translations = {
     rulers: 'Лінійки нумерують ваші намистини й рамку.',
     rowDirection: 'Змінює напрям рядів: згори донизу, зліва направо, знизу догори або справа наліво.',
     rowHighlight: 'Показує або ховає позначки на поточному ряду й на рядах, позначених як готові.',
+    fitAndExport: 'Підігнати рамку під усі бісеринки й відкрити експорт картинки.',
   },
   layerSettings: {
     frameHeading: 'Налаштування',

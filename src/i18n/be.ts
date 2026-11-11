@@ -837,6 +837,7 @@ export const be: Translations = {
     progressSelectToSet: 'Вылучыце, каб задаць',
     progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Павернуты фрагмент апынуўся паверх існуючых бусін.',
+    fitAndExport: 'Рамка і экспарт карцінкі',
   },
   size: {
     estimateLabel: 'Прыблізны памер',
@@ -1124,6 +1125,7 @@ export const be: Translations = {
     rulers: 'Лінейкі нумаруюць вашы бісерынкі і рамку.',
     rowDirection: 'Мяняе кірунак радоў: зверху ўніз, злева направа, знізу ўверх або справа налева.',
     rowHighlight: 'Паказвае або хавае адзнакі на бягучым радзе і на радах, пазначаных як гатовыя.',
+    fitAndExport: 'Падагнаць рамку пад усе бісерыны і адкрыць экспарт карцінкі.',
   },
   layerSettings: {
     frameHeading: 'Налады',
