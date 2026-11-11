@@ -142,7 +142,6 @@ describe('createPalette (ticket 0530)', () => {
     const many: PaletteColor[] = Array.from({ length: 16 }, (_, i) => ({ id: `c${i}`, hex: `#0000${i.toString(16).padStart(2, '0')}` }))
     const palette = createPalette(many.map((color) => color.id), many)
     expect(palette.colors).toHaveLength(16)
-    expect(palette.besideRecents([])).toHaveLength(16)
   })
 })
 
@@ -173,20 +172,6 @@ describe('moveSlot (ticket 398)', () => {
 describe('PALETTE_SHORTCUTS', () => {
   it('are Shift+1…9 and Shift+0, nothing else (ticket 529)', () => {
     expect(PALETTE_SHORTCUTS.map((shortcut) => shortcut.keyLabel)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
-  })
-})
-
-describe('Palette.besideRecents', () => {
-  const palette = createPalette(defaultPaletteIds())
-
-  it('keeps every slot when no recent is in the Palette', () => {
-    expect(palette.besideRecents(['#123456']).map(({ slot }) => slot)).toEqual(palette.colors.map((_color, slot) => slot))
-  })
-
-  it('leaves out the slots holding a recent and keeps the order of the rest, each with its slot', () => {
-    const shown = palette.besideRecents([palette.colors[2]!.hex, palette.colors[0]!.hex])
-    expect(shown.slice(0, 2).map(({ color, slot }) => [color.id, slot])).toEqual([[palette.colors[1]!.id, 1], [palette.colors[3]!.id, 3]])
-    expect(shown.map(({ slot }) => slot)).not.toContain(0)
   })
 })
 

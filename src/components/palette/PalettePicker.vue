@@ -25,14 +25,15 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const palette = usePalette()
 const recents = useRecentColors()
-/** The swatches shown, with the slot each holds: a color that is one of the pill's recent chips is shown there only
- * (ticket 529) and comes back in its slot when it drops out. Shift+4…0 follow this order. */
-const shown = computed(() => palette.value.besideRecents(recents.value))
+/** Every swatch stays in its slot (ticket 0865): a color that is one of the pill's recent chips is ringed there, not
+ * taken out, so the grid never shifts as colors are used. Shift+4…0 are the first slots. */
+const colors = computed(() => palette.value.colors)
+const isRecent = (color: PaletteColor) => recents.value.includes(color.hex)
 const closePanel = useClosePopoverOnPick()
 
 // A swatch picked from the Bead's Color catalog is named from it (ticket 0760), so the catalog loads once one is held.
 const beadColors = useBeadColorsList()
-loadCatalogWhen(beadColors, () => shown.value.some(({ color }) => !!color.code))
+loadCatalogWhen(beadColors, () => colors.value.some((color) => !!color.code))
 const labelOf = (color: PaletteColor) => colorLabel(t.value, color, beadColors?.catalog.value)
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
@@ -41,7 +42,7 @@ const roving = useRovingFocus(gridEl, { selector: '.palette-picker__swatch' })
 const removeAdded = useRemoveAddedColor()
 
 function isStop(colorId: string, index: number): boolean {
-  const selected = shown.value.some(({ color }) => color.id === props.selectedColorId)
+  const selected = colors.value.some((color) => color.id === props.selectedColorId)
   return selected ? colorId === props.selectedColorId : index === 0
 }
 
@@ -51,23 +52,22 @@ function remove(colorId: string) {
   removeAdded?.(colorId)
 }
 
-// Rearranging (ticket 398): drag a swatch to another slot, or move it with Alt+Left/Right. The shown swatches own
-// Shift+4…0 in order, so the swatch landing in the first shown slot is Shift+4.
+// Rearranging (ticket 398): drag a swatch to another slot, or move it with Alt+Left/Right. The slots own Shift+4…0 in
+// order, so the swatch landing in the first slot is Shift+4.
 const moveColor = useMoveColor()
 const drag = useSwatchDrag(
-  (from, to) => moveColor?.(shown.value[from]!.slot, shown.value[to]!.slot),
+  (from, to) => moveColor?.(from, to),
   (x, y) => {
     const id = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-color-id]')?.dataset.colorId
-    const position = shown.value.findIndex(({ color }) => color.id === id)
-    return position < 0 ? undefined : position
+    const slot = colors.value.findIndex((color) => color.id === id)
+    return slot < 0 ? undefined : slot
   },
 )
 
-async function nudge(position: number, by: number) {
-  const target = shown.value[position + by]
-  if (!moveColor || !target) return
-  const colorId = shown.value[position]!.color.id
-  moveColor(shown.value[position]!.slot, target.slot)
+async function nudge(slot: number, by: number) {
+  if (!moveColor || !colors.value[slot + by]) return
+  const colorId = colors.value[slot]!.id
+  moveColor(slot, slot + by)
   await nextTick()
   gridEl.value?.querySelector<HTMLElement>(`[data-color-id="${colorId}"]`)?.focus()
 }
@@ -107,12 +107,13 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
 <template>
   <div ref="gridEl" class="palette-picker" :class="{ 'palette-picker--wide': wide }" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
     <AppSwatch
-      v-for="({ color, slot }, index) in shown"
+      v-for="(color, index) in colors"
       :key="color.id"
       :color="color.hex"
-      :label="swatchLabel(color, slot)"
+      :label="swatchLabel(color, index)"
       :tooltip-name="color.code ? labelOf(color).text : undefined"
       :selected="color.id === selectedColorId"
+      :recent="isRecent(color)"
       :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
       :removable="editing && !!removeAdded && isAddedColorId(color.id)"
       :locked-body="editing && !isAddedColorId(color.id) ? t.palette.defaultColorLocked : undefined"

@@ -17,6 +17,13 @@ describe('AppSwatch', () => {
     expect(wrapper.emitted('select')).toHaveLength(1)
   })
 
+  it('rings a recent color, and the selected ring wins over it (ticket 0865)', () => {
+    expect(mount(AppSwatch, { props: { ...props, recent: true } }).get('button').classes()).toContain('swatch__chip--recent')
+    const selected = mount(AppSwatch, { props: { ...props, recent: true, selected: true } }).get('button')
+    expect(selected.classes()).toEqual(expect.arrayContaining(['swatch__chip--selected']))
+    expect(selected.classes()).not.toContain('swatch__chip--recent')
+  })
+
   it('is a radio when asked, with aria-checked in place of aria-pressed', () => {
     const chip = mount(AppSwatch, { props: { ...props, role: 'radio' } }).get('button')
 

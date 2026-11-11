@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountWithProject } from './testUtils/seedProject'
-import { beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
+import { beadColor, beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
 import { beadsOfLayer, frameOf, withFrameSheet } from './domain/layerRecord'
 import { colorAt } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
@@ -197,14 +197,19 @@ describe('the Tool pill', () => {
     wrapper.unmount()
   })
 
-  it('shows a recent color as a chip, left out of the popover Palette, and the chip picks it', async () => {
+  it('keeps a color used to paint at its place in the Palette grid, and shows it as a chip that picks it (ticket 0865)', async () => {
     const wrapper = await mountWithProject(15, 30)
+    const placeOf = (colorId: string) => wrapper.findAll('[data-testid="palette-swatch"]').findIndex((swatch) => swatch.attributes('data-color-id') === colorId)
+    await openColorPopover(wrapper)
+    const place = placeOf('blue')
     await pickColor(wrapper, 'blue')
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false) // a pick closes the popover
+    await pressBead(wrapper, 0)
+    expect(beadColor(wrapper, 0)).toBe('#2f6fed')
     await pickColor(wrapper, 'green')
 
-    await wrapper.get('[data-testid="pill-color"]').trigger('click')
-    expect(wrapper.find('[data-color-id="blue"]').exists()).toBe(false)
+    await openColorPopover(wrapper)
+    expect(placeOf('blue')).toBe(place)
     await wrapper.get('[data-testid="pill-color"]').trigger('click')
     await wrapper.findAll('[data-testid="pill-recent"]')[0]!.trigger('click')
 
