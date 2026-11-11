@@ -16,7 +16,10 @@ async function back() {
 describe('useBackClosesPage', () => {
   let scope = effectScope()
   beforeEach(() => void (scope = effectScope()))
-  afterEach(() => scope.stop())
+  afterEach(() => {
+    scope.stop()
+    vi.restoreAllMocks()
+  })
 
   function setup(stays = false) {
     const appPage = useAppPage()
@@ -25,11 +28,13 @@ describe('useBackClosesPage', () => {
     return { appPage, close }
   }
 
+  // An earlier Back leaves the tab mid-history, where a push replaces what was ahead: count the pushes, not the length.
   it('puts one entry on the history while a page other than the editor shows', () => {
     const { appPage } = setup()
-    const start = history.length
+    const push = vi.spyOn(history, 'pushState')
     appPage.open('convert-image')
-    expect(history.length).toBe(start + 1)
+    appPage.open('convert-image')
+    expect(push).toHaveBeenCalledOnce()
   })
 
   it('makes Back the page’s Close', async () => {
