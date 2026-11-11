@@ -6,8 +6,8 @@ import { settleForMeasuring } from '../testUtils/textFitInPage'
 import { turnToSection } from '../testUtils/homepageSection'
 import HomePage from './HomePage.vue'
 
-// More below in a real browser (ticket 0826): on the section bar's top edge, where a section scrolls on it scrolls it,
-// else it turns to the next section; gone on the last once its end shows. Whether a section scrolls on is the tier's.
+// More below in a real browser (tickets 0826, 0870): on the section bar's top edge, only while the section shown scrolls
+// on, a press scrolling it; gone on a section that fits whole and once an end shows. Whether one scrolls on is the tier's.
 
 let mounted: Mounted
 afterEach(() => mounted.unmount())
@@ -22,16 +22,21 @@ const el = (selector: string) => mounted.root.querySelector<HTMLElement>(selecto
 const shownSection = () => el('.homepage__section--shown')!
 const shown = () => shownSection().dataset.testid!.replace('homepage-section-', '')
 const pill = () => el('[data-testid="more-below-button"]')
-const fading = () => el('[data-testid="more-below"]')!.classList.contains('more-below--fade')
 
 async function pressMore() {
   pill()!.click()
   await settleForMeasuring()
 }
 
+async function pressNext() {
+  el('[data-testid="section-next"]')!.click()
+  await settleForMeasuring()
+}
+
 describe('More below (ticket 0826)', () => {
   it('rides on the section bar\'s top edge, a third of it below the edge, taking no room of the section\'s', async () => {
     await homepageAt(1440, 900)
+    await turnToSection(mounted.root, 'plans')
     const button = pill()!.getBoundingClientRect()
     const bar = el('[data-testid="section-bar"]')!.getBoundingClientRect()
     expect(button.top).toBeLessThan(bar.top)
@@ -45,16 +50,16 @@ describe('More below (ticket 0826)', () => {
     expect(body.bottom).toBe(bar.top)
   })
 
-  it('where every section fits, turns to the next as Next does, then scrolls the plans on as the free list grows, gone at its end', async () => {
+  it('where a section fits whole, is hidden and Next turns; on the plans, which scroll on, scrolls them, gone at their end', async () => {
     await homepageAt(1440, 900)
-    expect([shown(), fading()]).toEqual(['welcome', false])
-    await pressMore()
-    expect([shown(), fading()]).toEqual(['inside', false])
-    await pressMore()
-    expect([shown(), fading()]).toEqual(['coffee', false])
-    await pressMore()
+    for (const id of ['welcome', 'inside', 'coffee']) {
+      expect(shown()).toBe(id)
+      expect(shownSection().scrollHeight, `${id} fits whole here`).toBeLessThanOrEqual(shownSection().clientHeight + 1)
+      expect(pill(), `nothing more below on ${id}`).toBeNull()
+      await pressNext()
+    }
     expect(shown()).toBe('plans')
-    expect(fading(), 'the plans scroll on as the free list grows').toBe(true)
+    expect(pill(), 'the plans scroll on as the free list grows').not.toBeNull()
     for (let presses = 0; pill() && presses < 20; presses += 1) {
       const top = shownSection().scrollTop
       await pressMore()
@@ -64,18 +69,17 @@ describe('More below (ticket 0826)', () => {
     expect(pill(), 'gone once the end shows').toBeNull()
   })
 
-  it('where a section is taller than its room, scrolls it on to its end first, with the fade, then turns', async () => {
+  it('where a section is taller than its room, scrolls it on to its end, then is gone, Next turning', async () => {
     await homepageAt(1280, 480)
     await turnToSection(mounted.root, 'inside')
     const inside = shownSection()
     expect(inside.scrollHeight, 'What\'s inside scrolls on here').toBeGreaterThan(inside.clientHeight)
-    expect(fading()).toBe(true)
     await pressMore()
     expect(shown()).toBe('inside')
     expect(inside.scrollTop).toBeGreaterThan(0)
-    for (let presses = 0; fading() && presses < 10; presses += 1) await pressMore()
-    expect([shown(), fading()]).toEqual(['inside', false])
-    await pressMore()
+    for (let presses = 0; pill() && presses < 10; presses += 1) await pressMore()
+    expect([shown(), pill()]).toEqual(['inside', null])
+    await pressNext()
     expect(shown()).toBe('coffee')
   })
 

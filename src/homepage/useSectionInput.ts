@@ -153,11 +153,10 @@ export function useSectionInput({ section, count, page, shown, held, reducedMoti
     return true
   }
 
-  /** More below (ticket 0826): the section shown scrolled on most of its room while it has more, else the next one
-   * turned to at once, as Next turns to it. */
+  /** More below (tickets 0826, 0870): the section shown scrolled on most of its room while it has more. It never turns:
+   * a section with nothing below shows no More below, and Next turns. */
   function more() {
-    const index = towards(1)
-    if (!scrollOn(1, (room) => room * MORE_SHARE) && index !== undefined) turn(index)
+    scrollOn(1, (room) => room * MORE_SHARE)
   }
 
   // A turn by any means stands its while, and a wheel gesture going on through it turns nothing more.

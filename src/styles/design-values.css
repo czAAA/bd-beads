@@ -328,7 +328,7 @@
   /* Homepage card, More below (ticket 0826). */
   --more-below-shadow: 0 4px 14px rgb(0 0 0 / 35%); /* The pill's soft shadow, lifting it off the bar it rides on. */
   --more-below-overhang: 35%; /* How much of the pill sits below the bar's top edge. */
-  --more-below-fade: 2.5rem; /* The fade of the canvas above it where the section continues, 40px. */
+  --more-below-fade: 2.5rem; /* The fade of the canvas above it, the section scrolling on, 40px. */
   --more-below-fade-to: 92%; /* How much of the canvas the fade reaches at the bar. */
   /* Homepage card, the phone (ticket 0827). */
   --phone-bar-button: 3rem; /* The phone bar's ↑, ↓ and main button, 48px. */
