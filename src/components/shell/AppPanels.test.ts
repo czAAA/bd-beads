@@ -76,6 +76,16 @@ describe('Menu', () => {
     expect(mounted.wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
   })
 
+  it('opens on its root list over the converter, even with an empty library, so leaving asks first (ticket 0861)', async () => {
+    saveProjects([])
+    const mounted = mountPanels()
+    mounted.panels.onOpenConvertImage()
+    await flushPromises()
+    await mounted.openPanel('menu')
+    expect(mounted.wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(true)
+    expect(mounted.wrapper.find('[data-testid="create-project"]').exists()).toBe(false)
+  })
+
   it('deletes every Project after a confirmation, leaving none open; Cancel keeps them', async () => {
     saveProjects([moth(), other()])
     const mounted = mountPanels()
