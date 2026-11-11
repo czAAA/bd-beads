@@ -46,16 +46,16 @@ export function useToolPill(deps: ToolPillDeps) {
     else deps.onSelectCustomColor(color)
   }
 
-  /** Shift+1…3 pick the pill's chips; the keys after them pick the Palette's colors that are not a chip, in slot order
-   * (ticket 529). A key with nothing behind it does nothing. */
+  /** Shift+1…3 pick the pill's chips (ticket 529); the keys after them pick the Palette's first slots, in order, a chip's
+   * color too (ticket 0865). A key with nothing behind it does nothing. */
   function pickByKey(key: number) {
     if (key < RECENT_SHORTCUTS) {
       const hex = recentsInPill.value[key]
       if (hex) pickRecent(hex)
       return
     }
-    const shown = deps.palette().besideRecents(recentsInPill.value)[key - RECENT_SHORTCUTS]
-    if (shown) deps.onSelectColor(shown.color.id)
+    const swatch = deps.palette().colors[key - RECENT_SHORTCUTS]
+    if (swatch) deps.onSelectColor(swatch.id)
   }
 
   return {

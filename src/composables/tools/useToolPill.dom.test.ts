@@ -52,17 +52,19 @@ describe('useToolPill color keys (ticket 529)', () => {
     expect(selected.value).toBe(hexOf('green'))
   })
 
-  it('Shift+4 picks the first Palette color that is not a chip, and a key with nothing behind it does nothing', async () => {
+  it('Shift+4 picks the first Palette color, a chip or not, and a key with nothing behind it does nothing (ticket 0865)', async () => {
     const { pill, palette, selected, paint } = setup()
-    await paint(hexOf('blue'))
-    await paint(hexOf('green')) // chips: blue, then red
+    await paint(palette.colors[0]!.hex)
+    await paint(hexOf('green')) // chips: the first color, then red
 
     pill.pickByKey(RECENT_SHORTCUTS - 1) // there is no third chip
     pill.pickByKey(RECENT_SHORTCUTS + palette.colors.length) // nor a swatch that far on
     expect(selected.value).toBe(hexOf('green'))
 
     pill.pickByKey(RECENT_SHORTCUTS)
-    expect(selected.value).toBe(palette.colors.find((color) => ![hexOf('blue'), hexOf('red')].includes(color.hex))!.hex)
+    expect(selected.value).toBe(palette.colors[0]!.hex)
+    pill.pickByKey(RECENT_SHORTCUTS + 1)
+    expect(selected.value).toBe(palette.colors[1]!.hex)
   })
 
   it('picks a recent as its Palette swatch, or else as a Custom color', async () => {
