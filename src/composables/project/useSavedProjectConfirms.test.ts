@@ -9,19 +9,29 @@ function make(id: string): Project {
 
 const open = make('open')
 
-function setup(options: { open?: boolean; saved?: boolean } = {}) {
+function setup(options: { open?: boolean; saved?: boolean; saveFailed?: boolean } = {}) {
   const deps = {
     currentProject: () => (options.open === false ? undefined : open),
     findProject: (id: string) => [{ id: 'open', name: 'Open' }, { id: 'other', name: 'Other' }, { id: 'huge', name: 'Huge', gatedBeads: 31_000_000 }].find((entry) => entry.id === id),
     openProject: vi.fn(),
+    saveFailed: () => options.saveFailed ?? false,
     saveNow: vi.fn(() => options.saved ?? true),
   }
   return { deps, ...useSavedProjectConfirms(deps) }
 }
 
 describe('useSavedProjectConfirms', () => {
-  it('asks before switching, and opens only on confirm', () => {
-    const { deps, pendingSwitch, onRequestSwitch, onCancelSwitch, onConfirmSwitch } = setup()
+  it('opens a picked Project at once, as nothing can be lost (ticket 0860)', () => {
+    const { deps, pendingSwitch, onRequestSwitch } = setup()
+    const opened = vi.fn()
+    onRequestSwitch('other', opened)
+    expect(pendingSwitch.value).toBeUndefined()
+    expect(deps.openProject).toHaveBeenCalledWith('other')
+    expect(opened).toHaveBeenCalledOnce()
+  })
+
+  it('asks first while the last save failed, and opens only on confirm', () => {
+    const { deps, pendingSwitch, onRequestSwitch, onCancelSwitch, onConfirmSwitch } = setup({ saveFailed: true })
     const opened = vi.fn()
     onRequestSwitch('other', opened)
     expect(pendingSwitch.value?.id).toBe('other')
@@ -51,11 +61,21 @@ describe('useSavedProjectConfirms', () => {
     expect(deps.openProject).toHaveBeenCalledWith('other')
   })
 
+  it('Save first switches once the save gets through', () => {
+    const { deps, pendingSwitch, switchSaveRefused, onRequestSwitch, onSaveBeforeSwitch } = setup({ saveFailed: true })
+    onRequestSwitch('other')
+    onSaveBeforeSwitch()
+    expect(switchSaveRefused.value).toBe(false)
+    expect(pendingSwitch.value).toBeUndefined()
+    expect(deps.openProject).toHaveBeenCalledWith('other')
+  })
+
   it('Save first reports a refusal, and a later confirm still switches', () => {
-    const { deps, switchSaveRefused, onRequestSwitch, onSaveBeforeSwitch, onConfirmSwitch } = setup({ saved: false })
+    const { deps, switchSaveRefused, onRequestSwitch, onSaveBeforeSwitch, onConfirmSwitch } = setup({ saved: false, saveFailed: true })
     onRequestSwitch('other')
     onSaveBeforeSwitch()
     expect(switchSaveRefused.value).toBe(true)
+    expect(deps.openProject).not.toHaveBeenCalled()
     onConfirmSwitch()
     expect(deps.openProject).toHaveBeenCalledWith('other')
   })

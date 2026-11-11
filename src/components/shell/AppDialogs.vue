@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogsContext } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
@@ -79,6 +80,28 @@ const {
   onCancelLeaveConverter,
 } = useDialogsContext()
 const { locale } = useI18n()
+
+/** The import question's message: a failed save comes first, then a name that was taken, then what came in (ticket
+ * 0860). */
+const importMessage = computed(() => {
+  const joined = pendingImport.value
+  const opens = pendingImportOpens.value
+  const current = activeProject.value
+  if (!joined || !opens || !current) return ''
+  const words = t.value.importSwitch
+  if (saveFailed.value) return fillBlanks(words.unsavedMessage, { current: projectNameOf(current) })
+  const imported = projectNameOf(opens)
+  if (joined.projects.length === 1) {
+    const taken = joined.takenNames.get(opens.id)
+    return taken === undefined
+      ? fillBlanks(words.messageOne, { imported, current: projectNameOf(current) })
+      : fillBlanks(words.messageTaken, { taken, imported })
+  }
+  const count = joined.projects.length
+  return joined.takenNames.size > 0
+    ? fillBlanks(words.messageManyTaken, { count })
+    : fillBlanks(words.messageMany, { count, current: projectNameOf(current) })
+})
 </script>
 
 <template>
@@ -194,18 +217,13 @@ const { locale } = useI18n()
     @cancel="onCancelReplaceBead"
   />
 
-  <!-- Import asks before switching (ticket 154). With a failed save the question is about saving first. -->
+  <!-- What came in is in the library; the question is whether to open it (tickets 154, 0860). With a failed save it is
+       about saving first. A taken name came in under the next free number, and the message says so. -->
   <ConfirmModal
     v-if="open === 'import-switch' && pendingImport && pendingImportOpens && activeProject"
     data-testid="import-switch-modal"
-    :title="t.importSwitch.title"
-    :message="
-      saveFailed
-        ? fillBlanks(t.importSwitch.unsavedMessage, { current: projectNameOf(activeProject) })
-        : pendingImport.length === 1
-          ? fillBlanks(t.importSwitch.messageOne, { imported: projectNameOf(pendingImportOpens), current: projectNameOf(activeProject) })
-          : fillBlanks(t.importSwitch.messageMany, { count: pendingImport.length, imported: projectNameOf(pendingImportOpens), current: projectNameOf(activeProject) })
-    "
+    :title="fillBlanks(t.importSwitch.title, { imported: projectNameOf(pendingImportOpens) })"
+    :message="importMessage"
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.importSwitch.switchButton"
     :cancel-label="t.importSwitch.keepButton"
     :extra-label="saveFailed ? t.importSwitch.saveButton : undefined"
@@ -219,25 +237,21 @@ const { locale } = useI18n()
     </p>
   </ConfirmModal>
 
-  <!-- Saved Projects asks before switching to another Project (ticket 232). -->
+  <!-- A pick in the Projects library opens at once; it asks only while the last save failed (tickets 232, 0860). -->
   <ConfirmModal
     v-if="open === 'switch-project' && pendingSwitch && activeProject"
     data-testid="switch-project-modal"
     :title="t.switchProject.title"
-    :message="
-      saveFailed
-        ? fillBlanks(t.importSwitch.unsavedMessage, { current: projectNameOf(activeProject) })
-        : fillBlanks(t.switchProject.message, { current: projectNameOf(activeProject), picked: pendingSwitch.name })
-    "
-    :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchProject.confirmButton"
+    :message="fillBlanks(t.importSwitch.unsavedMessage, { current: projectNameOf(activeProject) })"
+    :confirm-label="t.importSwitch.switchAnywayButton"
     :cancel-label="t.switchProject.cancelButton"
-    :extra-label="saveFailed ? t.switchProject.saveButton : undefined"
+    :extra-label="t.switchProject.saveButton"
     :confirm-danger="false"
     @confirm="onConfirmSwitch"
     @cancel="onCancelSwitch"
     @extra="onSaveBeforeSwitch"
   >
-    <p v-if="saveFailed && switchSaveRefused" class="app-shell__modal-error" role="alert" data-testid="switch-project-save-failed">
+    <p v-if="switchSaveRefused" class="app-shell__modal-error" role="alert" data-testid="switch-project-save-failed">
       {{ t.storage.saveFailedMessage }}
     </p>
   </ConfirmModal>
