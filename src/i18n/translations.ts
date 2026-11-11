@@ -811,8 +811,7 @@ export interface Translations {
     /** A sheet whose parts continue on the next sheet, not to the right or below. */
     continuesOn: string
     lastPart: string
-    /** The chart style on a chart page's header: color alone, or with each bead's letter. */
-    chartStyleColor: string
+    /** The Specification's chart style: color with letters, as every chart page prints it (ticket 0869). */
     chartStyleLetters: string
     /** The heading over a chart page's color key. */
     keyOnPage: string

@@ -660,7 +660,6 @@ export const zh: Translations = {
     continuesBelow: '向下接第 {below} 页 →',
     continuesOn: '接第 {next} 页 →',
     lastPart: '最后一部分',
-    chartStyleColor: '仅颜色',
     chartStyleLetters: '颜色 + 字母',
     keyOnPage: '本页的颜色',
     wordChart: {

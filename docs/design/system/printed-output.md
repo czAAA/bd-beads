@@ -43,7 +43,7 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 
 - The full **Beads needed** table: letter, swatch, color name, brand code, beads, grams, to buy; a Total row with the beads, the grams and the tubes; the grams note.
 - **To buy**: tubes of 5 g, from the grams with about 10% spare, rounded up ("2 × 5 g"); the Total adds up the tubes.
-- **The Schema**: made by, technique, bead, shape, size, finished size, beads and grams, chart style, pages.
+- **The Schema**: made by, technique, bead, shape, size, finished size, beads and grams, chart style, pages. Chart style is always "Color + letters", as the chart pages print it (Letters always, above; ticket 0869).
 - **Where each part is**: a small map of the parts with their pages, and a line on the part size, the shared sheets and the overlap.
 
 ## Word chart
