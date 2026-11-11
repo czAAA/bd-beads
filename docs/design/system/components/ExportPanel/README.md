@@ -45,6 +45,8 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 - [ ] With no Frame: the line, Select a frame and Fit a frame to the drawing; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
 
+**From the Project panel too (ticket 0843; ProjectPanel card):** its export section's Picture and Printable chart open this panel as the strip's button does, hung from it, with focus on the row chosen; with no Frame the panel opens as usual, on its line and Select a frame.
+
 **From the margin too (ticket 0655; MarginSheet card):** the Frame's margin carries an Export button (`share`) in its top band. It opens this same panel, hanging 4px under that button with right edges aligned, kept inside the screen.
 
 Hand-written from the ticket 0652 design canvas; static rendition.
