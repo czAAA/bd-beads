@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Every way out of the converter asks first, the browser’s Back and a reload too, and Close goes back to the New Project form',
+      ru: 'Любой выход из конвертера сначала спрашивает, и кнопка «Назад» браузера, и перезагрузка тоже, а «Закрыть» возвращает к форме нового проекта',
+      uk: 'Будь-який вихід із конвертера спершу питає, і кнопка «Назад» браузера, і перезавантаження теж, а «Закрити» повертає до форми нового проєкту',
+      be: 'Любы выхад з канвертара спачатку пытае, і кнопка «Назад» браўзера, і перазагрузка таксама, а «Закрыць» вяртае да формы новага праекта',
+      zh: '离开转换器的每种方式都会先询问，浏览器的返回和重新加载也是，关闭会回到新项目表单',
+      es: 'Toda salida del conversor pregunta antes, también Atrás del navegador y recargar, y Cerrar vuelve al formulario de nuevo proyecto',
+      pl: 'Każde wyjście z konwertera najpierw pyta, także Wstecz przeglądarki i przeładowanie, a Zamknij wraca do formularza nowego projektu',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The empty Canvas no longer shows its message cut behind the New Project form, and after a delete it names the Project that was deleted',
       ru: 'Пустой холст больше не показывает обрезанный текст за формой нового проекта, а после удаления называет удалённый проект',
       uk: 'Порожнє полотно більше не показує обрізаний текст за формою нового проєкту, а після видалення називає видалений проєкт',

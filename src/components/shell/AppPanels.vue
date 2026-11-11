@@ -160,8 +160,8 @@ const chosenStarter = ref<StarterId>()
 
   <!--
     Menu and Project (spec 0440, ticket 443; MenuPanel and ProjectPanel cards): one panel host, a dropdown at every width,
-    which stays mounted while the two swap. Menu is about the app and the device, Project about the
-    open Project; New Project is Menu's subpanel and the Projects library below opens from it.
+    which stays mounted while the two swap. Menu is about the app and the device, Project about the open Project; New
+    Project is Menu's subpanel, as is the library. Over the converter Menu opens on its root list, which asks (0861).
   -->
   <PanelHost
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
@@ -169,7 +169,7 @@ const chosenStarter = ref<StarterId>()
     :only="['menu', 'project']"
     :sub-title="phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
     :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen ? String(projects.length + sealed.length) : undefined"
-    :start-in-sub="menuOpensOnForm || projects.length + sealed.length === 0"
+    :start-in-sub="page !== 'convert-image' && (menuOpensOnForm || projects.length + sealed.length === 0)"
     @close="openPanel = null"
   >
     <MenuPanel
