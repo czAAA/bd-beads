@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { duplicateProject, normalizeProjectName, suggestCopyName, withFreeNames, withProjectName } from './projectName'
+import { duplicateProject, freeName, normalizeProjectName, suggestCopyName, withFreeNames, withProjectName } from './projectName'
 import { canvasOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
 import { withLayers } from '../testUtils/layerFields'
@@ -60,5 +60,14 @@ describe('withFreeNames', () => {
 
   it('keeps the Projects arriving together apart too, and a taken name in any case', () => {
     expect(namesOf(withFreeNames([named('Moth'), named('moth'), named('Moth 2')], ['Moth']))).toEqual(['Moth 2', 'moth 3', 'Moth 4'])
+  })
+})
+
+describe('freeName', () => {
+  it('names an unnamed Project "Project 1", then the next free number (ticket 0866)', () => {
+    expect(freeName('Project 1', [])).toBe('Project 1')
+    expect(freeName('Project 1', ['Moth', 'project 1'])).toBe('Project 2')
+    expect(freeName('Project 1', ['Project 1', 'Project 2'])).toBe('Project 3')
+    expect(freeName('Project 1', ['Project 2'])).toBe('Project 1')
   })
 })

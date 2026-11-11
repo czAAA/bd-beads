@@ -4,7 +4,7 @@ import { parseOpeningAddress, type OpeningAddress } from '../domain/openingAddre
  * after the person has moved on opens as usual; a bookmark still asks again. */
 export function takeOpeningAddress(): OpeningAddress {
   const address = parseOpeningAddress(location.search)
-  if (address.savedProjects || address.project) {
+  if (address.savedProjects || address.firstProject || address.project) {
     try {
       history.replaceState(history.state, '', location.pathname + location.hash)
     } catch {
