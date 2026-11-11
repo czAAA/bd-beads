@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
+import { placedStarter, starterById } from '../../domain/starters'
 import type { Project } from '../../domain/project'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import type { ColorCatalog } from '../../domain/colorCatalog'
@@ -251,5 +252,26 @@ describe('BeadQuantities and the Frame (ticket 233)', () => {
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe('Set Frame to count beads.')
     expect(wrapper.find('table').exists()).toBe(false)
     expect(wrapper.text()).toContain('Beads needed')
+  })
+})
+
+describe('BeadQuantities on a Kaleidocycle (ticket 0876)', () => {
+  const kaleidocycle = () => {
+    const open = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 60, height: 60, unit: 'beads' } })
+    const placed = placedStarter(open, starterById('kaleidocycle'), { sizes: { partSize: 9 }, useDesign: true }, { row: 30, column: 30 })
+    if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
+    return placed.project
+  }
+
+  it('says its counts are one face and gives the whole piece beside them, with what they cover behind an Info button', () => {
+    const wrapper = mountQuantities(kaleidocycle())
+    expect(wrapper.get('[data-testid="quantity-total"]').text()).toMatch(/^810 · /)
+    const piece = wrapper.get('[data-testid="quantities-piece"]').text().replace(/\s/g, ' ')
+    expect(piece).toMatch(/^These counts are one face of 4\. Whole piece: 3 240/)
+    expect(piece).toContain('make a Frame for it. Only the triangles are counted, not the edge, tip or hinge beads.')
+  })
+
+  it('says nothing of faces on any other Frame', () => {
+    expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746')).find('[data-testid="quantities-piece"]').exists()).toBe(false)
   })
 })

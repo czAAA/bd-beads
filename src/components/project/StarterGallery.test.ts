@@ -76,6 +76,13 @@ describe('the Starter gallery, step 2', () => {
     expect(wrapper.get('[data-testid="starter-card-star"]').text()).toContain('part size 5')
   })
 
+  it('says the Kaleidocycle\'s card is one face of four and counts the face (ticket 0876)', () => {
+    const { wrapper } = mountGallery({ category: 'shapes' })
+    const lines = wrapper.get('[data-testid="starter-card-kaleidocycle"]').findAll('.starter-card__meta').map((line) => line.text())
+    expect(lines).toEqual(['part size 9', 'one face of 4: 6 of 24 triangles', '810 beads a face'])
+    expect(wrapper.get('[data-testid="starter-card-triangle"]').findAll('.starter-card__meta')).toHaveLength(2)
+  })
+
   it('names each card by its option, and describes it by its caption', () => {
     const { wrapper } = mountGallery({ category: 'shapes' })
     const card = wrapper.get('[data-testid="starter-card-triangle"]')

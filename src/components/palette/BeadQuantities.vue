@@ -5,9 +5,11 @@ import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/us
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { frameOf } from '../../domain/layerRecord'
+import { pieceFaceOf, wholePieceBeads } from '../../domain/pieceFaces'
 import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
+import { faceInfoWords } from '../../i18n/pieceFaceWords'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import InfoButton from '../ui/InfoButton.vue'
@@ -63,6 +65,15 @@ const colorOf = (colorId: string | null, hex: string): LabelledColor => palette.
 const beadColors = useBeadColorsList()
 loadCatalogWhen(beadColors, () => quantities.value.some((quantity) => !!colorOf(quantity.colorId, quantity.hex).code))
 
+/** On a Kaleidocycle the counts are one face (ticket 0876): the line under them gives the whole piece's, every face
+ * beaded like this one, with an Info button saying what they cover. */
+const piece = computed(() => {
+  const face = pieceFaceOf(props.project && frameOf(props.project)?.shape)
+  if (!face) return undefined
+  const count = groupThousands(wholePieceBeads(face, totalCount.value), locale.value)
+  return { line: fillBlanks(t.value.quantities.pieceTotal, { faces: face.faces, count }), info: faceInfoWords(t.value, face) }
+})
+
 const expanded = ref(false)
 const shown = computed(() => (expanded.value ? quantities.value : quantities.value.slice(0, SUMMARY_ROWS)))
 const total = computed(() => {
@@ -115,6 +126,10 @@ const total = computed(() => {
         <span>{{ expanded ? t.quantities.showFewer : fillBlanks(t.quantities.showAll, { count: quantities.length }) }}</span>
         <AppIcon name="chevron-down" :size="14" class="bead-quantities__chevron" :class="{ 'bead-quantities__chevron--up': expanded }" />
       </button>
+      <p v-if="piece && quantities.length > 0" class="bead-quantities__piece" data-testid="quantities-piece">
+        <span>{{ piece.line }}</span>
+        <InfoButton :label="t.starters.faceInfoLabel" :body="piece.info" data-testid="quantities-piece-info" />
+      </p>
     </div>
   </PanelSection>
 </template>
@@ -122,6 +137,16 @@ const total = computed(() => {
 <style scoped>
 .bead-quantities {
   padding: var(--space-4) var(--space-10);
+}
+
+.bead-quantities__piece {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  margin: 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
 }
 
 .bead-quantities__empty {

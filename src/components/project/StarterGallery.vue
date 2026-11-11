@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, inject, ref, useId } from 'vue'
 import { DEFAULT_BEAD, findBead } from '../../domain/beads'
+import { pieceFaceOf } from '../../domain/pieceFaces'
 import { designSizes, STARTER_BEAD_ID, STARTER_CATEGORIES, type Starter, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { plural } from '../../i18n/plural'
+import { faceOfPieceWords } from '../../i18n/pieceFaceWords'
 import { starterCountWords, starterCrumb, starterName, starterSizeWords } from '../../i18n/starterWords'
 import { useI18n } from '../../i18n/useI18n'
 import { PANEL_CONTEXT } from '../shell/panelContext'
@@ -34,6 +36,12 @@ const CARD_BEAD = findBead(STARTER_BEAD_ID) ?? DEFAULT_BEAD
 
 const shown = computed(() => STARTER_CATEGORIES.find((category) => category.id === props.category))
 
+/** A Kaleidocycle's card says its Frame is one face of the piece (ticket 0876). */
+function faceLines(starter: Starter): string[] {
+  const face = pieceFaceOf(starter.shape)
+  return face ? [faceOfPieceWords(t.value, face)] : []
+}
+
 const cards = computed<Card[]>(() => {
   const category = shown.value
   if (!category) {
@@ -58,7 +66,7 @@ const cards = computed<Card[]>(() => {
     return {
       testid: `starter-card-${starter.id}`,
       name,
-      lines: [starterSizeWords(t.value, locale.value, starter), starterCountWords(t.value, locale.value, starter, designed, CARD_BEAD)],
+      lines: [starterSizeWords(t.value, locale.value, starter), ...faceLines(starter), starterCountWords(t.value, locale.value, starter, designed, CARD_BEAD)],
       starter,
       open: () => {
         emit('choose', starter.id)

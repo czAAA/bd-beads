@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { findBead } from '../../domain/beads'
 import { frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
 import type { Background, Project } from '../../domain/project'
+import { pieceFaceOf, wholePieceBeads } from '../../domain/pieceFaces'
 import { MAX_PROJECT_NAME } from '../../domain/projectName'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {
@@ -29,11 +30,13 @@ import {
   type StarterSizeName,
 } from '../../domain/starters'
 import { plural } from '../../i18n/plural'
+import { faceInfoWords, faceOfPieceWords } from '../../i18n/pieceFaceWords'
 import { designWords, starterCountWords, starterName } from '../../i18n/starterWords'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { weaveSettings, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
 import AppNote from '../ui/AppNote.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
@@ -201,6 +204,10 @@ const pickOptions = (pick: StarterPick) =>
 
 const bead = computed(() => findBead(beadId.value))
 
+/** The piece a Kaleidocycle's Frame is one face of (ticket 0876): its estimate gives the face's beads and the piece's. */
+const face = computed(() => pieceFaceOf(props.starter.shape))
+const faceInfo = computed(() => face.value && faceInfoWords(t.value, face.value))
+
 /** The Estimated size and the lines under it (StarterGallery card, Setup 5): a Shape's or earring's width × height, a
  * Ring's inside and width, a Band's width × length; the bead count, a pair's, and a Ring's or Band's rows. */
 const estimate = computed(() => {
@@ -219,6 +226,10 @@ const estimate = computed(() => {
     return { value, lines: [count, plural(locale.value, measure.rows, words.bandRows), fillBlanks(words.claspLeft, { clasp })] }
   }
   const value = formatSizeMm(measure, units, locale.value)
+  if (face.value) {
+    const whole = wholePieceBeads(face.value, starterBeadCount(props.starter, choice.value, bead.value))
+    return { value, lines: [faceOfPieceWords(t.value, face.value), count, plural(locale.value, whole, words.forPiece)] }
+  }
   if (!props.starter.pair) return { value, lines: [count] }
   return { value, lines: [count, plural(locale.value, 2 * starterBeadCount(props.starter, choice.value, bead.value), words.forPair)] }
 })
@@ -323,7 +334,10 @@ function onSubmit() {
         <span>{{ t.size.estimateLabel }}</span>
         <strong data-testid="starter-estimate">{{ estimate.value }}</strong>
       </p>
-      <p class="starter-setup__count" data-testid="starter-count">{{ estimate.lines.join(' · ') }}</p>
+      <p class="starter-setup__count" data-testid="starter-count">
+        {{ estimate.lines.join(' · ') }}
+        <InfoButton v-if="faceInfo" :label="t.starters.faceInfoLabel" :body="faceInfo" data-testid="starter-face-info" />
+      </p>
     </div>
   </form>
 </template>
@@ -451,6 +465,10 @@ function onSubmit() {
 }
 
 .starter-setup__count {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: flex-end;
   margin: 0;
   font: var(--type-meta);
   color: var(--muted);

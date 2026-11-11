@@ -295,6 +295,16 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 1) } }))).toBe('Ряд 2 · 2 из 9')
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6) } }))).toBe('Нить 3 · 7 из 9')
   })
+
+  it('says on a Kaleidocycle that each triangle is beaded for this face, of the piece\'s 24 (ticket 0876)', () => {
+    const face = 'Каждый треугольник здесь плетётся для этой грани: 6 из 24 в изделии.'
+    const placed = changeFrame(makeProject(), { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 10, column: 10 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
+    expect(mount(ProgressBar, { props: { project: placed.project } }).text()).toContain(`${face} ${ru.rowProgress.goToRowBody}`)
+    const star = changeFrame(makeProject(), { custom: { shape: 'star', size: 3, centre: { row: 10, column: 10 } } })
+    if (star.kind !== 'changed') throw new Error('expected a Star')
+    expect(mount(ProgressBar, { props: { project: star.project } }).text()).not.toContain(face)
+  })
 })
 
 describe('ProgressBar counter (ticket 0849)', () => {

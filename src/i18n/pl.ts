@@ -281,6 +281,11 @@ export const pl: Translations = {
     rowsRound: { one: '{count} rząd w obwodzie', few: '{count} rzędy w obwodzie', many: '{count} rzędów w obwodzie', other: '{count} rzędu w obwodzie' },
     bandRows: { one: '{count} rząd', few: '{count} rzędy', many: '{count} rzędów', other: '{count} rzędu' },
     claspLeft: '{clasp} na zapięcie',
+    faceOfPiece: 'jedna ściana z {faces}: {parts} z {total} trójkątów',
+    beadsFace: { one: '{count} na ścianę', few: '{count} na ścianę', many: '{count} na ścianę', other: '{count} na ścianę' },
+    forPiece: { one: '{count} na całą pracę', few: '{count} na całą pracę', many: '{count} na całą pracę', other: '{count} na całą pracę' },
+    faceInfoLabel: 'Co obejmuje liczenie',
+    faceInfo: 'Kalejdocykl to {total} trójkątów: {faces} ściany po {parts}. Ta ramka to jedna ściana. Cała praca liczy każdą ścianę wyplecioną tak jak ta. Aby dać innej ścianie własny wzór, zrób dla niej osobną ramkę. Liczone są tylko trójkąty, bez koralików brzegu, czubków i zawiasów.',
   },
   canvas: {
     zoomInLabel: 'Powiększ',
@@ -613,6 +618,7 @@ export const pl: Translations = {
     columnLabel: 'Kolumna',
     goButton: 'Przejdź',
     directionKeptToast: '{toast} {kept}',
+    faceBody: 'Każdy trójkąt tutaj plecie się dla tej ściany: {parts} z {total} w całej pracy. {then}',
   },
   quantities: {
     heading: 'Potrzebne koraliki',
@@ -628,6 +634,7 @@ export const pl: Translations = {
     weightInfo:
       'To liczba koralików × około {grams} g na koralik. Średnia pochodzi z liczby koralików na kilogram podanej przez producenta, a gdy jej nie podaje, z ofert sprzedawców. Prawdziwe koraliki różnią się zależnie od koloru i wykończenia.',
     weightInfoLabel: 'Jak liczona jest waga',
+    pieceTotal: 'To liczby dla jednej ściany z {faces}. Cała praca: {count}',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -692,6 +699,7 @@ export const pl: Translations = {
       firstPoint: 'Rząd 1 jest przy czubku; każdy rząd czyta się od lewej do prawej.',
       firstBase: 'Rząd 1 to dolny rząd góry; każdy rząd czyta się od lewej do prawej, potem każdą nitkę od lewej, z góry na dół.',
       partsThenJoins: 'Każdą część plecie się okrążeniami od jej środka, w kolejności składania, a potem połączenia.',
+      faceNote: 'Ten schemat to jedna ściana: {parts} z {total} trójkątów kalejdocyklu. Dla każdej innej ściany zrób osobną ramkę.',
       pairNote: '(2A) to para narożna: dwa koraliki nabrane razem. Bok kończy się na |.',
     },
   },

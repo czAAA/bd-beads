@@ -384,6 +384,13 @@ export interface Translations {
     /** A Band's rows, and the room left for its clasp, with {clasp} as "1.5 cm". */
     bandRows: PluralForms
     claspLeft: string
+    /** A Kaleidocycle's Frame is one face of its piece (ticket 0876): "one face of 4: 6 of 24 triangles", its count "810
+     * beads a face", the whole piece's "3 240 for the whole piece", and the Info button saying what the counts cover. */
+    faceOfPiece: string
+    beadsFace: PluralForms
+    forPiece: PluralForms
+    faceInfoLabel: string
+    faceInfo: string
   }
   canvas: {
     zoomInLabel: string
@@ -740,6 +747,8 @@ export interface Translations {
     goButton: string
     /** The Turn row direction toast with the kept sentence after it: `{toast} {kept}`, with no space in Chinese. */
     directionKeptToast: string
+    /** The Go to row Tooltip on a Kaleidocycle (ticket 0876): the triangles here are this face's, `{then}` its usual sentence. */
+    faceBody: string
   }
   quantities: {
     heading: string
@@ -757,6 +766,8 @@ export interface Translations {
     weightInfo: string
     /** The accessible name of that Info button, in Beads needed's header (ticket 0852). */
     weightInfoLabel: string
+    /** Under the table on a Kaleidocycle (ticket 0876): the counts are one face, `{count}` the whole piece's total. */
+    pieceTotal: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
@@ -839,6 +850,8 @@ export interface Translations {
       firstPoint: string
       firstBase: string
       partsThenJoins: string
+      /** A Kaleidocycle's note (ticket 0876): the chart is one face, and each other face is a Frame of its own. */
+      faceNote: string
       /** What a round's corner pair and a side's end look like in it (ticket 0873). */
       pairNote: string
     }

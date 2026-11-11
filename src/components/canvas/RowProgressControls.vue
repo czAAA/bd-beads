@@ -14,6 +14,7 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
+import { pieceFaceOf } from '../../domain/pieceFaces'
 
 // Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658): one component in the
 // Progress bar and the margin sheet's top band, so a press in either moves the one pointer the Project carries. `bar`
@@ -94,11 +95,14 @@ const lineText = computed(() => {
   const words = t.value.rowProgress
   return line.value ? fillBlanks(columnWise.value ? words.columnPassLine : words.passLine, { line: line.value.line }) : undefined
 })
+/** On a Kaleidocycle it first says the triangles here are this face's, of the piece's 24 (ticket 0876). */
 const counterBody = computed(() => {
   const words = t.value.rowProgress
   if (allDone.value) return allDoneBody.value
   if (line.value) return fillBlanks(columnWise.value ? words.columnPassesBody : words.passesBody, { passes: position.value.total, lines: line.value.lines })
-  return columnWise.value ? words.goToColumnBody : words.goToRowBody
+  const body = columnWise.value ? words.goToColumnBody : words.goToRowBody
+  const face = pieceFaceOf(frameOf(props.project)?.shape)
+  return face ? fillBlanks(words.faceBody, { parts: face.parts, total: face.total, then: body }) : body
 })
 
 /** Go to row, opened by the bar's counter (ticket 0849, F-04-14): its number counts what the counter does, passes

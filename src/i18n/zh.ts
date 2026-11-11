@@ -281,6 +281,11 @@ export const zh: Translations = {
     rowsRound: { other: '一圈 {count} 行' },
     bandRows: { other: '{count} 行' },
     claspLeft: '留 {clasp} 装扣',
+    faceOfPiece: '{faces} 面之一：{total} 个三角形中的 {parts} 个',
+    beadsFace: { other: '每面 {count} 颗' },
+    forPiece: { other: '整件 {count} 颗' },
+    faceInfoLabel: '计数包括哪些',
+    faceInfo: '万花筒环由 {total} 个三角形组成，共 {faces} 面，每面 {parts} 个。此边框是其中一面。整件按每一面都像这一面来计算。若要给另一面单独的图案，请为它新建一个边框。只计三角形，不含边缘、尖端和铰链处的珠子。',
   },
   canvas: {
     zoomInLabel: '放大',
@@ -601,6 +606,7 @@ export const zh: Translations = {
     columnLabel: '列',
     goButton: '跳转',
     directionKeptToast: '{toast}{kept}',
+    faceBody: '这里的每个三角形都属于这一面：整件 {total} 个中的 {parts} 个。{then}',
   },
   quantities: {
     heading: '所需珠子',
@@ -616,6 +622,7 @@ export const zh: Translations = {
     weightInfo:
       '这是珠子数量 × 每颗约 {grams} 克。该平均值来自厂家公布的每公斤颗数，厂家未公布时来自卖家的商品信息。实际的珠子会因颜色和表面处理而有差异。',
     weightInfoLabel: '重量如何计算',
+    pieceTotal: '这些是 {faces} 面中一面的数量。整件：{count}',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -680,6 +687,7 @@ export const zh: Translations = {
       firstPoint: '第 1 行在尖端，每行从左往右读。',
       firstBase: '第 1 行是顶部的底排，每行从左往右读；然后从左起逐条流苏，从上往下读。',
       partsThenJoins: '各部件按组装顺序从中心逐圈编织，最后进行拼接。',
+      faceNote: '此图样只是一面：万花筒环 {total} 个三角形中的 {parts} 个。其他每一面请各建一个边框。',
       pairNote: '(2A) 是转角对：两颗珠一起穿上。| 表示一条边到此结束。',
     },
   },
