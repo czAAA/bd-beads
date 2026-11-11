@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
+import { PANELS, type PanelId } from '../../components/shell/panels'
 import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
 import GhostPointer from './GhostPointer.vue'
@@ -22,6 +23,8 @@ const emit = defineEmits<{
   takeOver: []
   /** Expand or Collapse pressed in its Canvas strip. */
   toggleExpand: []
+  /** The beader pressed the demo's Menu or Project, which open nothing for them (ticket 0841): the page's way in is theirs. */
+  pointAtWayIn: []
 }>()
 
 const { t } = useI18n()
@@ -39,6 +42,30 @@ const library = computed(() => (void session.value, demoLibrary(t.value)))
 const ghost = ghostState()
 
 useTakeOver(() => rootEl.value, () => emit('takeOver'), pagesOwn)
+
+/** The demo's ways out, Menu and Project (and through the Menu the library), are the ghost's (ticket 0841). */
+const WAY_OUT_PANELS: readonly PanelId[] = ['menu', 'project']
+const WAYS_OUT = WAY_OUT_PANELS.flatMap((id) => PANELS[id].openers.map((opener) => `[data-testid="${opener}"]`)).join(', ')
+
+/** A press on Menu or Project, by a click, Enter, Space or ↓, opens nothing unless the ghost's hand made it. */
+function onClick(event: MouseEvent) {
+  if (ghost.pressing) return
+  if (!(event.target instanceof Element) || !event.target.closest(WAYS_OUT)) return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('pointAtWayIn')
+}
+
+/** Taking over closes a Menu or Project panel the ghost left open, so the beader never meets the demo's library. */
+watch(
+  () => props.takenOver,
+  (now) => {
+    const open = shell.value?.wired.canvas.openPanel
+    if (!now || !open?.value || !WAY_OUT_PANELS.includes(open.value)) return
+    open.value = null
+    emit('pointAtWayIn')
+  },
+)
 
 /** Where the focus was when something the ghost opened took it. */
 let focusBefore: HTMLElement | undefined
@@ -179,6 +206,7 @@ defineExpose({ fresh, refit, takeFocus, hand, hideGhost: () => void (ghost.shown
     data-testid="inside-editor"
     :data-taken-over="takenOver || undefined"
     @focusin="onFocusIn"
+    @click.capture="onClick"
   >
     <InsideShell :key="session" ref="shell" :projects="library" :expand="expand" @start-afresh="fresh" @toggle-expand="emit('toggleExpand')" />
     <GhostPointer :ghost="ghost" />

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: "The Homepage's demo says it is a demo, and its Menu points you to your own first Project",
+      ru: 'Демо на главной странице подписано как демо, а его меню направляет вас к вашему первому проекту',
+      uk: 'Демо на головній сторінці підписане як демо, а його меню скеровує вас до вашого першого проєкту',
+      be: 'Дэма на галоўнай старонцы падпісана як дэма, а яго меню накіроўвае вас да вашага першага праекта',
+      zh: '主页上的演示标明了是演示，它的菜单会引你去创建自己的第一个项目',
+      es: 'La demo de la página de inicio dice que es una demo, y su menú te lleva a tu primer proyecto',
+      pl: 'Demo na stronie głównej jest oznaczone jako demo, a jego menu kieruje cię do twojego pierwszego projektu',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A screen reader finds one main area and one header on each page, and hears each button by the words it shows',
       ru: 'Программа чтения с экрана находит на каждой странице одну основную область и один заголовок и называет каждую кнопку словами, которые на ней видны',
       uk: 'Програма читання з екрана знаходить на кожній сторінці одну основну область і один заголовок і називає кожну кнопку словами, які на ній видно',
