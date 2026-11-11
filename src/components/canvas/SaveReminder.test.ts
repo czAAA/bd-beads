@@ -10,29 +10,29 @@ function mountRing(props: Partial<InstanceType<typeof SaveReminder>['$props']> =
 }
 
 describe('SaveReminder (ticket 0796)', () => {
-  it('is a button named Save a copy, described by its count line', () => {
+  it('is a button named Save Project file, described by its count line', () => {
     const wrapper = mountRing()
     const button = wrapper.get('[data-testid="save-ring"]')
     const described = document.getElementById(button.attributes('aria-describedby')!)
 
-    expect(button.attributes('aria-label')).toBe('Save a copy')
+    expect(button.attributes('aria-label')).toBe('Save Project file')
     expect(described?.textContent).toBe('Beads since last file: 64')
   })
 
-  it('shows its label only when open: Save a copy and the count', async () => {
+  it('shows its label only when open: Save Project file and the count', async () => {
     const wrapper = mountRing()
     expect(wrapper.classes()).not.toContain('save-ring--open')
 
     await wrapper.setProps({ labelOpen: true })
     expect(wrapper.classes()).toContain('save-ring--open')
-    expect(wrapper.get('[data-testid="save-ring-label"]').text()).toBe('Save a copy+64')
+    expect(wrapper.get('[data-testid="save-ring-label"]').text()).toBe('Save Project file+64')
   })
 
   it('has a Tooltip with the Save key, the body, the count and when the last file was', async () => {
     const wrapper = mountRing({ lastFileAt: Date.now() })
     const tooltip = wrapper.getComponent(AppTooltip)
 
-    expect(tooltip.props()).toMatchObject({ name: 'Save a copy', hotkey: 'Ctrl/Cmd+S', body: en.saveReminder.body, meta: ['Beads since last file: 64', 'Last file: today'], align: 'end' })
+    expect(tooltip.props()).toMatchObject({ name: 'Save Project file', hotkey: 'Ctrl/Cmd+S', body: en.saveReminder.body, meta: ['Beads since last file: 64', 'Last file: today'], align: 'end' })
     await wrapper.setProps({ lastFileAt: undefined })
     expect((tooltip.props() as TooltipProps).meta).toEqual(['Beads since last file: 64', 'No Project file yet'])
   })

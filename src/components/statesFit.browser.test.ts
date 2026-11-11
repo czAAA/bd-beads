@@ -99,7 +99,7 @@ const MissedProjectNotice = defineComponent({
         h('span', fillBlanks(t.value.opening.didNotOpen, { name: 'Panel with a logo' })),
         h('span', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' } }, [
           h(AppButton, { variant: 'in-box', size: 'sm', icon: 'delete' }, () => t.value.opening.removeButton),
-          h(AppButton, { variant: 'in-box', size: 'sm', icon: 'export' }, () => t.value.opening.exportButton),
+          h(AppButton, { variant: 'in-box', size: 'sm', icon: 'save' }, () => t.value.panels.project.saveFile),
         ]),
       ])
   },

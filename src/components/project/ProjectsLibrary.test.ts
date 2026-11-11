@@ -67,7 +67,7 @@ describe('ProjectsLibrary (ticket 0553)', () => {
   it('says there are none yet, and cannot export', () => {
     const wrapper = mountLibrary({ projects: [] })
     expect(wrapper.get('[data-testid="project-list-empty"]').text()).toContain(en.projects.emptyTitle)
-    expect(wrapper.get('[data-testid="project-list-empty"]').text()).toContain('.openbeads')
+    expect(wrapper.get('[data-testid="project-list-empty"]').text()).toContain(en.projects.emptyBody)
     expect(wrapper.get('[data-testid="menu-export-all"]').attributes('aria-disabled')).toBe('true')
   })
 })

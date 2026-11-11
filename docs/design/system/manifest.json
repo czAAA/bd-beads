@@ -215,7 +215,7 @@
     {
       "name": "ImportResult",
       "group": "Screens",
-      "summary": "The one-line result or error beside Import a file."
+      "summary": "The result or error of Open Project file, on a line of its own under it."
     },
     {
       "name": "InteractionStates",
@@ -405,7 +405,7 @@
     {
       "name": "SaveReminder",
       "group": "Canvas",
-      "summary": "The save ring at the drawing area's top-right: appears once 50 beads are drawn since the last Project file, opens to \"Save a copy\", and runs Save (into the Linked file where the browser allows) in one press."
+      "summary": "The save ring at the drawing area's top-right: appears once 50 beads are drawn since the last Project file, opens to \"Save Project file\", and runs Save (into the Linked file where the browser allows) in one press."
     },
     {
       "name": "SaveStates",

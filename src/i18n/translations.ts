@@ -810,16 +810,11 @@ export interface Translations {
     /** While an export is drawn (Loading card): what is happening, to which Project. */
     makingPng: string
     makingPdf: string
-    /** The toast once a PNG or PDF is made where sharing needs a fresh tap (iPhone, iPad; ticket 306), and its
-     * action. */
-    readyPng: string
-    readyPdf: string
-    readyFile: string
-    /** The toast once Save wrote a Project file into a picked file (ticket 0796). */
+    /** The one toast once any file reached the device, a Project file, PNG or PDF, by download or into a picked file
+     * (ticket 0859), with {file}. */
     savedFile: string
+    /** The action of a file whose share needs a fresh tap (iPhone, iPad; ticket 306). */
     readySave: string
-    /** The way out when a save fails: the Project as a file. */
-    exportProjectFile: string
     /** The Export menu's last row and its modal (NameOnExports card). */
     nameOnExports: string
     changeName: string
@@ -828,6 +823,8 @@ export interface Translations {
     nameHint: string
     saveName: string
     cancelName: string
+    /** The toast of a file whose share needs a fresh tap, with {file}, before its Save action (ticket 0859). */
+    readyToSave: string
   }
   /** The save ring (SaveReminder card, ticket 0796): its label and Tooltip, and what a screen reader hears. */
   saveReminder: {
@@ -838,12 +835,15 @@ export interface Translations {
     noFile: string
     announce: string
   }
+  /** Open Project file and Save all Projects to a Project file, in the Projects library (ticket 0859: the file's one name). */
   transfer: {
-    exportProjectButton: string
     exportLibraryButton: string
     importLabel: string
     importedLabel: string
-    importErrorLabel: string
+    /** Why a picked file didn't open (ticket 0859): not a Project file, a picture, a damaged Project file. */
+    notProjectFile: string
+    pictureFile: string
+    damagedFile: string
   }
   /** Titles of the Toolbox's five Tool groups (CONTEXT.md), shown in each group's top-left corner (ticket 40). */
   toolbox: {
@@ -1408,7 +1408,6 @@ export interface Translations {
     /** The notice row, with {name}. */
     didNotOpen: string
     removeButton: string
-    exportButton: string
     /** "Open “Scarf”?", with {name}. */
     largeTitle: string
     /** "31 million beads. Opening may be slow or fail.", {count} in millions. */

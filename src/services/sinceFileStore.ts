@@ -17,9 +17,9 @@ export interface SinceFileStore {
 
 /** A stored record as far as it reads as one; a count that isn't a number is no record. */
 function recordOf(value: unknown): SinceFile | undefined {
-  const { beads, lastFileAt } = (value ?? {}) as Partial<SinceFile>
+  const { beads, lastFileAt, fileName } = (value ?? {}) as Partial<SinceFile>
   if (typeof beads !== 'number' || !Number.isFinite(beads)) return undefined
-  return { beads: Math.max(0, beads), ...(typeof lastFileAt === 'number' ? { lastFileAt } : {}) }
+  return { beads: Math.max(0, beads), ...(typeof lastFileAt === 'number' ? { lastFileAt } : {}), ...(typeof fileName === 'string' ? { fileName } : {}) }
 }
 
 export const browserSinceFileStore: SinceFileStore = {

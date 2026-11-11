@@ -25,7 +25,7 @@ const LABEL_MS = 4000
 const LEAVE_MS = 1000
 
 /** The save ring (SaveReminder card, ticket 0796): shown once the open Project's Beads since last file reaches the
- * threshold (50, or 100 where the browser keeps storage), and its label "Save a copy +n" opened for a moment as it
+ * threshold (50, or 100 where the browser keeps storage), and its label "Save Project file +n" opened for a moment as it
  * appears, at every further 100 beads and when a Project 7 days behind opens; never mid-stroke or over an open panel. */
 export function useSaveReminder(deps: SaveReminderDeps) {
   const now = deps.now ?? Date.now

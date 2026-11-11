@@ -141,7 +141,7 @@ export const es: Translations = {
       themeDark: 'Oscuro',
       tooltipDeleteAll: 'Quita todos los proyectos de este dispositivo.',
       deleteAllTitle: '¿Eliminar proyectos?',
-      deleteAllMessage: 'Todos los proyectos se quitan de este dispositivo. No se puede deshacer. Antes, pulsa «Exportar todo» si quieres conservar copias.',
+      deleteAllMessage: 'Todos los proyectos se quitan de este dispositivo. No se puede deshacer. Antes, pulsa «Guardar todo en un archivo de proyecto» si quieres conservar copias.',
       deleteAllConfirm: 'Eliminar todos los proyectos',
       sendFeedback: 'Enviar comentarios',
       reportTranslation: 'Informar de un problema de traducción',
@@ -237,7 +237,7 @@ export const es: Translations = {
     removeButton: 'Quitar',
     unknownBeadLabel: 'Cuenta desconocida',
     emptyTitle: 'Aún no hay proyectos',
-    emptyBody: 'Los proyectos que crees se guardan en este dispositivo. Importa un archivo .openbeads para traer uno.',
+    emptyBody: 'Los proyectos que crees se guardan en este dispositivo. Abre un archivo de proyecto para traer uno.',
     pieces: { one: '{count} trozo', many: '{count} trozos', other: '{count} trozos' },
     unnamedPieces: 'sin nombre: {count}',
     frameSize: 'Marco de {width} × {height} cuentas',
@@ -304,11 +304,11 @@ export const es: Translations = {
     },
     firstRun: {
       storageLead: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
-      storage: 'Si se borran los datos del navegador, se van con ellos.\nGuarda un archivo de cada uno que no quieras perder:',
+      storage: 'Si se borran los datos del navegador, se van con ellos.\nGuarda un archivo de proyecto de cada uno que no quieras perder:',
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o importa un archivo.',
+    canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto.',
     canvasPlaceholder: 'Aún no hay ningún proyecto abierto',
     updateReady: 'Actualización lista',
     updateReload: 'Recargar',
@@ -318,7 +318,7 @@ export const es: Translations = {
   },
   storage: {
     saveFailedMessage:
-      'No se pudo guardar en este dispositivo. Tu último cambio solo está en pantalla. Libera espacio en el navegador o exporta el proyecto a un archivo para conservarlo.',
+      'No se pudo guardar en este dispositivo. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo.',
     /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
       title: '¿Pedir al navegador que conserve tus proyectos?',
@@ -673,12 +673,8 @@ export const es: Translations = {
     formatsHint: 'png · pdf',
     makingPng: 'Creando la imagen PNG · {name}',
     makingPdf: 'Creando el PDF · {name}',
-    readyPng: 'PNG listo',
-    readyPdf: 'PDF listo',
-    readyFile: 'Archivo listo',
     savedFile: 'Guardado: {file}',
     readySave: 'Guardar',
-    exportProjectFile: 'Exportar proyecto',
     nameOnExports: 'Nombre al exportar',
     changeName: 'Cambiar',
     addName: 'Añadir',
@@ -686,21 +682,23 @@ export const es: Translations = {
     nameHint: 'Se imprime en las exportaciones PDF y PNG de este proyecto.',
     saveName: 'Guardar',
     cancelName: 'Cancelar',
+    readyToSave: 'Listo para guardar: {file}',
   },
   saveReminder: {
-    label: 'Guardar una copia',
+    label: 'Guardar archivo de proyecto',
     body: 'El navegador guarda tu trabajo, pero puede borrarlo. Un archivo de proyecto se queda.',
     count: 'Cuentas desde el último archivo: {count}',
     lastFile: 'Último archivo: {when}',
     noFile: 'Aún no hay archivo de proyecto',
-    announce: 'Cuentas desde el último archivo: {count}. Guarda una copia para conservarlas.',
+    announce: 'Cuentas desde el último archivo: {count}. Guarda un archivo de proyecto para conservarlas.',
   },
   transfer: {
-    exportProjectButton: 'Exportar proyecto',
-    exportLibraryButton: 'Exportar todos los proyectos',
-    importLabel: 'Importar un proyecto',
-    importedLabel: 'Proyectos importados',
-    importErrorLabel: 'No se pudo importar ese archivo .openbeads',
+    exportLibraryButton: 'Guardar todo en un archivo de proyecto',
+    importLabel: 'Abrir archivo de proyecto',
+    importedLabel: 'Proyectos añadidos',
+    notProjectFile: 'Esto no es un archivo de proyecto. Elige un archivo que termine en .openbeads.',
+    pictureFile: 'Esto es una imagen. Usa Convertir imagen para convertirla en cuentas.',
+    damagedFile: 'Este archivo de proyecto está dañado y no se puede abrir.',
   },
   toolbox: {
     groups: {
@@ -844,11 +842,11 @@ export const es: Translations = {
     lockedReason: 'Hay filas marcadas como terminadas. Reinicia el progreso para cambiar el tamaño.',
   },
   importSwitch: {
-    title: '¿Cambiar al proyecto importado?',
+    title: '¿Cambiar al proyecto abierto?',
     messageOne:
-      'Se importó “{imported}”. Tu avance en “{current}” está guardado. ¿Cambiar a “{imported}” o mantener abierto “{current}”?',
+      '“{imported}” está ahora en la biblioteca de proyectos. Tu avance en “{current}” está guardado. ¿Cambiar a “{imported}” o mantener abierto “{current}”?',
     messageMany:
-      'Se importaron {count} proyectos. Tu avance en “{current}” está guardado. ¿Cambiar a “{imported}” o mantener abierto “{current}”?',
+      'Se añadieron {count} proyectos a la biblioteca de proyectos. Tu avance en “{current}” está guardado. ¿Cambiar a “{imported}” o mantener abierto “{current}”?',
     unsavedMessage:
       '“{current}” aún no está guardado en este dispositivo. Guárdalo primero o cambia igualmente y arriesga perder tu último cambio.',
     switchButton: 'Cambiar',
@@ -1189,7 +1187,6 @@ export const es: Translations = {
   opening: {
     didNotOpen: '«{name}» no se abrió la última vez.',
     removeButton: 'Quitar',
-    exportButton: 'Exportar',
     largeTitle: '¿Abrir «{name}»?',
     largeMessage: '{count} millones de cuentas. Abrirlo puede ser lento o fallar.',
     openAnyway: 'Abrir igualmente',
