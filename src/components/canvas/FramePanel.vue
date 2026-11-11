@@ -19,6 +19,7 @@ import InfoButton from '../ui/InfoButton.vue'
 import TextField from '../ui/form/TextField.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
+import { useLabelsThatFit } from '../../composables/ui/useLabelsThatFit'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
@@ -159,6 +160,10 @@ const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as
 
 // Top, Bottom, Left, Right is the cell order whatever the edges' own order is.
 const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cells.find((cell) => cell.edge === edge)!)
+/** The edges whose name has no room in its cell (ticket 0864): the cell keeps its glyph, which then holds the name in
+ * its Tooltip, on hover or a tap. */
+const edgesEl = ref<HTMLElement>()
+const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
 </script>
 
 <template>
@@ -288,10 +293,17 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
           <MarkedDoneLine v-if="locked" class="frame-panel__line" testid="frame-size-locked" @reset-progress="emit('reset-progress')" />
           <p v-else-if="turned" class="frame-panel__line" data-testid="frame-size-turned">{{ t.frame.sizeTurnedLine }}</p>
-          <div v-else class="frame-panel__edges">
+          <div v-else ref="edgesEl" class="frame-panel__edges">
             <div v-for="cell in ordered" :key="cell.edge" class="frame-panel__cell" :data-testid="`frame-panel-cell-${cell.edge}`">
-              <span class="frame-panel__glyph" :class="[`frame-panel__glyph--${cell.edge}`, { 'frame-panel__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
-              <span class="frame-panel__edge-name">{{ t.frame.edgeName[cell.edge] }}</span>
+              <component
+                :is="edgeNameCut[cell.edge] ? AppTooltip : 'span'"
+                class="frame-panel__glyph-hold"
+                v-bind="edgeNameCut[cell.edge] ? { name: t.frame.edgeName[cell.edge], opensOnClick: true, announce: false } : {}"
+                :data-testid="`frame-edge-${cell.edge}-glyph`"
+              >
+                <span class="frame-panel__glyph" :class="[`frame-panel__glyph--${cell.edge}`, { 'frame-panel__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
+              </component>
+              <span class="frame-panel__edge-name" :class="{ 'frame-panel__edge-name--cut': edgeNameCut[cell.edge] }" :data-fit-label="cell.edge">{{ t.frame.edgeName[cell.edge] }}</span>
               <span class="frame-panel__pair">
                 <AppButton
                   class="frame-panel__step"
@@ -505,19 +517,33 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   border-color: var(--accent-strong);
 }
 
+.frame-panel__glyph-hold {
+  display: flex;
+  flex: none;
+  align-self: stretch;
+  align-items: center;
+}
+
+/* Never cut short: with no room the name leaves the row (still laid out, to be measured) for the glyph's Tooltip. */
 .frame-panel__edge-name {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
   font: var(--type-control);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* The − | + pair is one joined control: the halves share a border. */
+.frame-panel__edge-name--cut {
+  position: absolute;
+  width: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+/* The − | + pair is one joined pill (Stepper card): the halves share a border, the outer ends are round. */
 .frame-panel__pair {
   display: flex;
   flex: none;
+  margin-left: auto;
 }
 
 .frame-panel__cell :deep(.frame-panel__step) {
@@ -531,13 +557,16 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   touch-action: manipulation;
 }
 
+/* Each sign sits a little in from its round end, so it looks centred in what the curve leaves. */
 .frame-panel__cell :deep(.frame-panel__step:first-child) {
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  padding-left: var(--space-2);
+  border-radius: var(--radius-full) 0 0 var(--radius-full);
 }
 
 .frame-panel__cell :deep(.frame-panel__step:last-child) {
   margin-left: -1px;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding-right: var(--space-2);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
 }
 
 .frame-panel__cell :deep(.frame-panel__step[aria-disabled='true']) {

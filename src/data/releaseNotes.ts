@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'In Russian and Ukrainian Row done says a row is done, Russian has one word for each thing, and the Frame’s edges have pill steppers and names that are never cut short',
+      ru: 'Вместо «Готово» кнопка пишет «Ряд готов», у каждой вещи одно слово (бисеринка, холст, автор), а у краёв рамки круглые кнопки и названия, которые не обрезаются',
+      uk: 'Замість «Готово» кнопка пише «Ряд готовий», а в країв рамки круглі кнопки й назви, які не обрізаються',
+      be: 'Па-руску і па-ўкраінску кнопка піша, што рад гатовы, а ў краёў рамкі круглыя кнопкі і назвы, якія не абразаюцца',
+      zh: '俄语和乌克兰语的“行已完成”按钮写明是行已完成，俄语每样东西只用一个词，边框四边的按钮改为圆角，名称不再被截断',
+      es: 'En ruso y ucraniano Fila terminada dice que la fila está hecha, el ruso usa una palabra para cada cosa, y los bordes del marco tienen botones redondeados y nombres que nunca se cortan',
+      pl: 'Po rosyjsku i ukraińsku Rząd gotowy mówi, że rząd jest gotowy, rosyjski ma jedno słowo na każdą rzecz, a krawędzie ramki mają zaokrąglone przyciski i nazwy, których nic nie obcina',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A screen reader finds one main area and one header on each page, and hears each button by the words it shows',
       ru: 'Программа чтения с экрана находит на каждой странице одну основную область и один заголовок и называет каждую кнопку словами, которые на ней видны',
       uk: 'Програма читання з екрана знаходить на кожній сторінці одну основну область і один заголовок і називає кожну кнопку словами, які на ній видно',
