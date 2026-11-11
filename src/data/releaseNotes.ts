@@ -12,6 +12,30 @@ export interface ReleaseNote {
 // (writing.md), no full stop. releaseNotes.test.ts fails on a missing language or one out of order.
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    date: '2026-11-11',
+    line: {
+      en: 'Keeping your Projects is now asked at your first saved file, the browser’s answer is shown, and the Menu asks again',
+      ru: 'О хранении проектов теперь спрашивают при первом сохранении файла, показывают ответ браузера, а в меню можно спросить снова',
+      uk: 'Про зберігання проєктів тепер питають під час першого збереження файлу, показують відповідь браузера, а в меню можна запитати знову',
+      be: 'Пра захоўванне праектаў цяпер пытаюць пры першым захаванні файла, паказваюць адказ браўзера, а ў меню можна спытаць зноў',
+      zh: '现在第一次保存文件时才询问是否保留项目，会显示浏览器的回答，也可以在菜单里再问一次',
+      es: 'Conservar tus proyectos se pregunta ahora al guardar tu primer archivo, se muestra la respuesta del navegador y el Menú vuelve a preguntar',
+      pl: 'O zachowanie projektów pytamy teraz przy pierwszym zapisie pliku, pokazujemy odpowiedź przeglądarki, a w menu można zapytać ponownie',
+    },
+  },
+  {
+    date: '2026-11-10',
+    line: {
+      en: 'The Frame’s margin sheet never shrinks its buttons and words to specks, and its row comes back whole after a turn of the row direction',
+      ru: 'Поля рамки больше не сжимают кнопки и надписи до точек, а их строка снова видна целиком после поворота направления рядов',
+      uk: 'Поля рамки більше не стискають кнопки й написи до цяток, а їхній рядок знову видно цілим після повороту напрямку рядів',
+      be: 'Палі рамкі больш не сціскаюць кнопкі і надпісы да кропак, а іх радок зноў відаць цалкам пасля павароту кірунку радоў',
+      zh: '边框的边距纸不再把按钮和文字缩成小点，切换行方向后那一排也会完整回来',
+      es: 'La hoja del margen del marco ya no reduce sus botones y textos a puntitos, y su fila vuelve entera tras girar la dirección de las filas',
+      pl: 'Arkusz marginesu ramki nie zmniejsza już przycisków i napisów do kropek, a jego rząd wraca w całości po obróceniu kierunku rzędów',
+    },
+  },
+  {
     date: '2026-11-10',
     line: {
       en: 'Holding Space to look around no longer marks rows done: Enter marks a row done, Shift+Enter takes it back',

@@ -144,6 +144,9 @@ export const en: Translations = {
       deleteAllConfirm: 'Delete all Projects',
       sendFeedback: 'Send feedback',
       reportTranslation: 'Report a translation problem',
+      keepProjects: 'Keep Projects on this device',
+      keepProjectsOn: 'On',
+      keepProjectsOff: 'Off',
     },
     project: {
       rename: 'Rename {name}',
@@ -300,7 +303,7 @@ export const en: Translations = {
     },
     firstRun: {
       storageLead: 'Your Projects are saved only in this browser, on this device.',
-      storage: "If the browser's data is cleared, they go with it. Keep a file of each one you don't want to lose:",
+      storage: "If the browser's data is cleared, they go with it.\nKeep a file of each one you don't want to lose:",
     },
   },
   shell: {
@@ -312,15 +315,16 @@ export const en: Translations = {
   storage: {
     saveFailedMessage:
       "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or export the Project to a file to keep it.",
-    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
-      title: 'Keep Projects on this device?',
-      message:
-        'Your browser may ask to let this app keep its data. Tick “Remember this decision” and choose Allow, so your Projects are kept even when the device is short on space. If you decline, the browser can clear Projects when space runs low, so always save important Projects with Save, which gives a Project file, and keep that file safe.',
+      title: 'Ask the browser to keep your Projects?',
+      message: "When the device runs short on space, the browser can clear this app's data. If the browser asks, choose Allow.",
       confirmButton: 'Keep Projects',
-      cancelButton: 'Skip',
+      cancelButton: 'Not now',
     },
     openElsewhere: "This Project is open in another tab. Changes made here aren't saved while it is open there.",
+    keptToast: 'This browser will keep your Projects.',
+    notKeptMessage: "The browser didn't agree to keep Projects. Save a Project file of each one you care about.",
   },
   header: {
     menuButton: 'Menu',

@@ -37,8 +37,10 @@ const props = withDefaults(
     /** The Homepage's demo editor (ticket 0797): only the Projects and Keyboard shortcuts, so nothing in the demo
      * changes the app; its New Project empties the demo, with no form. */
     demo?: boolean
+    /** Whether the browser keeps the Projects (ticket 0839): the row shows it and asks again; absent where it can't say. */
+    kept?: boolean
   }>(),
-  { page: 'editor', demo: false, leave: () => Promise.resolve(true), projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
+  { page: 'editor', demo: false, leave: () => Promise.resolve(true), projectCount: 0, toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false, kept: undefined },
 )
 const inEditor = computed(() => props.page !== 'homepage')
 const converting = computed(() => props.page === 'convert-image')
@@ -52,6 +54,8 @@ const emit = defineEmits<{
   shortcuts: []
   /** Opens the Feedback sheet with its Report kind (ticket 0700). */
   feedback: [kind: 'general' | 'translation']
+  /** Asks the browser again to keep the Projects (ticket 0839). */
+  'keep-projects': []
 }>()
 
 const { t, locale, setLocale } = useI18n()
@@ -118,6 +122,16 @@ const inputOptions = computed(() => [
       </PanelItem>
       <PanelItem icon="library" :value="String(projectCount)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
+      </PanelItem>
+      <!-- Whether the browser keeps the Projects, and a press asks it again (ticket 0839). -->
+      <PanelItem
+        v-if="inEditor && !demo && kept !== undefined"
+        icon="device"
+        :value="kept ? t.panels.menu.keepProjectsOn : t.panels.menu.keepProjectsOff"
+        data-testid="menu-keep-projects"
+        @select="emit('keep-projects')"
+      >
+        {{ t.panels.menu.keepProjects }}
       </PanelItem>
     </PanelSection>
 

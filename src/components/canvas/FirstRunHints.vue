@@ -69,10 +69,13 @@ const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.pr
   color: var(--body);
 }
 
+/* Two lines on purpose (ticket 0839): the string breaks after its first sentence, and a narrow screen balances each. */
 .first-run-hints__storage {
   max-width: 36rem;
   margin: var(--space-6) 0 0;
   font: var(--hint-storage);
+  white-space: pre-line;
+  text-wrap: balance;
 }
 
 .first-run-hints__path {
