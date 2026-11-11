@@ -162,6 +162,38 @@ describe('Menu', () => {
   })
 })
 
+describe('Keep Projects (ticket 0839)', () => {
+  const persist = vi.fn(async () => false)
+  beforeEach(() => {
+    persist.mockClear()
+    Object.defineProperty(navigator, 'storage', { configurable: true, value: { persisted: async () => false, persist } })
+  })
+  afterEach(() => void delete (navigator as { storage?: unknown }).storage)
+
+  it('asks at the first Project file, and its Keep Projects wires the browser\'s no to Save Project file', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await click(mounted, 'save-project-file')
+    await vi.waitFor(() => expect(mounted.wrapper.find('[data-testid="keep-note-modal"]').exists()).toBe(true))
+
+    await click(mounted, 'confirm-modal-confirm')
+    expect(persist).toHaveBeenCalledOnce()
+    const said = mounted.canvas.toasts.value.find((toast) => toast.id === 'storage-kept')
+    vi.mocked(downloadFile).mockClear()
+    said!.action!.run()
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))
+  })
+
+  it('asks the browser again from the Menu row', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('menu')
+    await flushPromises()
+    expect(text(mounted, 'menu-keep-projects')).toContain(en.panels.menu.keepProjectsOff)
+    await click(mounted, 'menu-keep-projects')
+    expect(persist).toHaveBeenCalledOnce()
+  })
+})
+
 describe('Project', () => {
   it('sets the Canvas from its Layer settings: Technique and its settings as Undo steps (ticket 0670)', async () => {
     const mounted = mountPanels()

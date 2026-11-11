@@ -146,6 +146,9 @@ export const pl: Translations = {
       deleteAllConfirm: 'Usuń wszystkie projekty',
       sendFeedback: 'Wyślij opinię',
       reportTranslation: 'Zgłoś błąd tłumaczenia',
+      keepProjects: 'Zachowaj projekty na urządzeniu',
+      keepProjectsOn: 'Wł.',
+      keepProjectsOff: 'Wył.',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',
@@ -302,7 +305,7 @@ export const pl: Translations = {
     },
     firstRun: {
       storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
-      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi. Zapisz do pliku te, których nie chcesz stracić:',
+      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi.\nZapisz do pliku te, których nie chcesz stracić:',
     },
   },
   shell: {
@@ -314,15 +317,16 @@ export const pl: Translations = {
   storage: {
     saveFailedMessage:
       'Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo wyeksportuj projekt do pliku, żeby go zachować.',
-    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
-      title: 'Zachować projekty na tym urządzeniu?',
-      message:
-        'Przeglądarka może zapytać, czy pozwolić aplikacji przechowywać dane. Zaznacz „Zapamiętaj decyzję” i wybierz Zezwól, aby projekty zostały zachowane, nawet gdy na urządzeniu brakuje miejsca. Jeśli odmówisz, przeglądarka może usunąć projekty, gdy zabraknie miejsca, więc ważne projekty zawsze zapisuj przyciskiem Zapisz, który daje plik projektu, i dbaj o ten plik.',
+      title: 'Poprosić przeglądarkę o zachowanie projektów?',
+      message: 'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji. Jeśli przeglądarka zapyta, wybierz Zezwól.',
       confirmButton: 'Zachowaj projekty',
-      cancelButton: 'Pomiń',
+      cancelButton: 'Nie teraz',
     },
     openElsewhere: 'Ten projekt jest otwarty w innej karcie. Zmiany wprowadzone tutaj nie są zapisywane, dopóki jest tam otwarty.',
+    keptToast: 'Ta przeglądarka zachowa Twoje projekty.',
+    notKeptMessage: 'Przeglądarka nie zgodziła się zachować projektów. Zapisz plik projektu każdego, na którym Ci zależy.',
   },
   header: {
     menuButton: 'Menu',
