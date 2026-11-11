@@ -195,7 +195,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(placed.project), en, 'en', at).wordChart!
 
     const face = "This chart is one face: 6 of the Kaleidocycle's 24 triangles. Make a Frame for each other face to chart its design."
-    expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, face, en.print.wordChart.runNote])
+    expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, face, en.print.wordChart.runNote, en.print.wordChart.pairNote])
   })
 
   it('has none with Letters off', () => {
