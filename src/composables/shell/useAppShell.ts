@@ -149,7 +149,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** The device's last Background pick (ticket 0666): a new Project's layers start on it, and keep it on every device. */
   const backgrounds = useCanvasBackground(currentProject, services.devicePreferences)
-  const addNewProject = (project: Parameters<typeof addProject>[0]) => addProject(withStartBackground(project, backgrounds.start.value))
+  /** A new Project opens on the device's last Background with a first color that shows on it (ticket 0838). */
+  const addNewProject = (project: Parameters<typeof addProject>[0]) => {
+    addProject(withStartBackground(project, backgrounds.start.value))
+    onStartOn(backgrounds.projectTheme.value.canvas)
+  }
 
   // Convert image (spec 0645, ADR 0010, ADR 0086): an App page creating a new Project, independent of the open one, so
   // nothing here touches replaceProject, undo or the Row lock.
@@ -304,6 +308,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onSelectColor,
     onSelectCustomColor: selectCustomColor,
     onCustomColorAdded,
+    onStartOn,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
 
   /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0046). */

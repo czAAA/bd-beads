@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
 import { BUILT_IN_COLORS, addedColorId, defaultPaletteIds } from '../../domain/palette'
 import { ru } from '../../i18n/ru'
 import { mountWithPalette } from '../../testUtils/paletteHost'
+import { provideRecentColors } from '../../composables/tools/usePalette'
 import { fillBlanks } from '../../domain/fillBlanks'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
 import type { ColorCatalog } from '../../domain/colorCatalog'
@@ -59,6 +60,24 @@ describe('PalettePicker', () => {
       if (index < shortcuts.length) expect(tooltip.get('.app-tooltip__key').text()).toBe(`Shift+${shortcuts[index]}`)
       else expect(tooltip.find('.app-tooltip__key').exists()).toBe(false)
     }
+  })
+
+  it('keeps a recent color in its own slot, with its slot\'s Shift+key, and rings it (ticket 0865)', async () => {
+    const recents = [BUILT_IN_COLORS[2]!.hex, BUILT_IN_COLORS[0]!.hex]
+    const Host = defineComponent({
+      setup() {
+        provideRecentColors(ref(recents))
+        return () => h(PalettePicker)
+      },
+    })
+    const wrapper = mount(Host)
+
+    const swatches = wrapper.findAll('[data-testid="palette-swatch"]')
+    expect(swatches.map((swatch) => swatch.attributes('data-color-id'))).toEqual(BUILT_IN_COLORS.map((color) => color.id))
+    expect(swatches.map((swatch) => swatch.classes('swatch__chip--recent'))).toEqual(BUILT_IN_COLORS.map((color) => recents.includes(color.hex)))
+    const third = wrapper.findAll('.app-tooltip')[2]!
+    await third.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(third.get('.app-tooltip__key').text()).toBe('Shift+6')
   })
 
   it('names the tooltip "Color" with the hex as its body (ticket 333)', async () => {

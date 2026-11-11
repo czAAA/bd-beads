@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { normalizeHex } from '../../domain/color'
-import type { Palette } from '../../domain/palette'
+import { startColorId, type Palette } from '../../domain/palette'
 import type { Tool } from '../../domain/tool'
 
 /** What choosing a tool needs from the app shell: leaving Select forgets what it was holding. */
@@ -86,6 +86,12 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     selectedColorId.value = colorId
   }
 
+  /** A new Project was made (ticket 0838): it starts painting with the swatch that shows on its Background's hex, gold
+   * on a dark one and red on a light one, on whichever tool is in hand. Only then: a later Background keeps the color. */
+  function onStartOn(background: string) {
+    selectedColorId.value = startColorId(deps.palette(), background)
+  }
+
   return {
     activeTool,
     selectedColorId,
@@ -96,5 +102,6 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     onSelectColor,
     onSelectCustomColor,
     onCustomColorAdded,
+    onStartOn,
   }
 }

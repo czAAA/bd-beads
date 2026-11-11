@@ -26,6 +26,42 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A color you used stays in its place in the Palette, ringed, so the grid never shifts',
+      ru: 'Цвет, которым вы рисовали, остаётся на своём месте в палитре, с кольцом, и сетка больше не сдвигается',
+      uk: 'Колір, яким ви малювали, лишається на своєму місці в палітрі, з кільцем, і сітка більше не зсувається',
+      be: 'Колер, якім вы малявалі, застаецца на сваім месцы ў палітры, з кольцам, і сетка больш не зрушваецца',
+      zh: '用过的颜色留在调色板中原来的位置并带有圆环，网格不再移动',
+      es: 'Un color que usaste se queda en su sitio en la paleta, con un anillo, y la cuadrícula ya no se mueve',
+      pl: 'Kolor, którego użyłeś, zostaje na swoim miejscu w palecie, z obwódką, i siatka już się nie przesuwa',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'Convert image opens on a small piece in your Bead\'s colors, says what each choice does, and counts colors as Beads needed does',
+      ru: 'Конвертер изображений открывается на небольшой работе в цветах вашего бисера, объясняет каждый вариант и считает цвета так же, как «Нужно бисера»',
+      uk: 'Конвертер зображень відкривається на невеликій роботі в кольорах вашого бісеру, пояснює кожен варіант і рахує кольори так само, як «Потрібно бісеру»',
+      be: 'Канвертар выяў адкрываецца на невялікай рабоце ў колерах вашага бісеру, тлумачыць кожны варыянт і лічыць колеры гэтак жа, як «Патрэбна бісеру»',
+      zh: '转换图片默认是一件小作品、用你的珠子颜色，说明每个选项的作用，颜色数与所需珠子一致',
+      es: 'Convertir imagen empieza con una pieza pequeña en los colores de tu cuenta, explica cada opción y cuenta los colores como Cuentas necesarias',
+      pl: 'Konwertuj obraz zaczyna od małej pracy w kolorach twojego koralika, mówi, co robi każda opcja, i liczy kolory tak jak Potrzebne koraliki',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'A new Project starts on a color that shows on its background: gold on a dark one, red on a light one',
+      ru: 'Новый проект начинается с цвета, который виден на его фоне: золотого на тёмном, красного на светлом',
+      uk: 'Новий проєкт починається з кольору, який видно на його тлі: золотого на темному, червоного на світлому',
+      be: 'Новы праект пачынаецца з колеру, які відаць на яго фоне: залатога на цёмным, чырвонага на светлым',
+      zh: '新项目从一种在背景上看得清的颜色开始：深色背景上是金色，浅色背景上是红色',
+      es: 'Un proyecto nuevo empieza con un color que se ve sobre su fondo: dorado sobre uno oscuro, rojo sobre uno claro',
+      pl: 'Nowy projekt zaczyna się od koloru widocznego na jego tle: złotego na ciemnym, czerwonego na jasnym',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The strip shows your Project’s name, the Project panel says in words that it is saved, and a reload asks first while a save has failed',
       ru: 'Полоса показывает имя проекта, панель проекта пишет словами, что он сохранён, а перезагрузка сначала спрашивает, пока сохранение не удалось',
       uk: 'Смуга показує назву проєкту, панель проєкту пише словами, що його збережено, а перезавантаження спершу питає, поки збереження не вдалося',

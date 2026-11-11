@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, findBead } from './beads'
-import { BUILT_IN_COLORS, addUsedColor, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
+import { BACKGROUND_POSITIONS } from './background'
+import { BEAD_CATALOG, DEFAULT_BEAD, findBead } from './beads'
+import { channelsOf, contrastRatio } from './color'
+import { createProject } from './createProject'
+import { canvasTheme } from '../rendering/canvasBackgrounds'
+import type { ResolvedTheme } from '../theme/theme'
+import { BUILT_IN_COLORS, addUsedColor, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, startColorId, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -142,7 +147,6 @@ describe('createPalette (ticket 0530)', () => {
     const many: PaletteColor[] = Array.from({ length: 16 }, (_, i) => ({ id: `c${i}`, hex: `#0000${i.toString(16).padStart(2, '0')}` }))
     const palette = createPalette(many.map((color) => color.id), many)
     expect(palette.colors).toHaveLength(16)
-    expect(palette.besideRecents([])).toHaveLength(16)
   })
 })
 
@@ -173,20 +177,6 @@ describe('moveSlot (ticket 398)', () => {
 describe('PALETTE_SHORTCUTS', () => {
   it('are Shift+1…9 and Shift+0, nothing else (ticket 529)', () => {
     expect(PALETTE_SHORTCUTS.map((shortcut) => shortcut.keyLabel)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
-  })
-})
-
-describe('Palette.besideRecents', () => {
-  const palette = createPalette(defaultPaletteIds())
-
-  it('keeps every slot when no recent is in the Palette', () => {
-    expect(palette.besideRecents(['#123456']).map(({ slot }) => slot)).toEqual(palette.colors.map((_color, slot) => slot))
-  })
-
-  it('leaves out the slots holding a recent and keeps the order of the rest, each with its slot', () => {
-    const shown = palette.besideRecents([palette.colors[2]!.hex, palette.colors[0]!.hex])
-    expect(shown.slice(0, 2).map(({ color, slot }) => [color.id, slot])).toEqual([[palette.colors[1]!.id, 1], [palette.colors[3]!.id, 3]])
-    expect(shown.map(({ slot }) => slot)).not.toContain(0)
   })
 })
 
@@ -294,5 +284,45 @@ describe('a stored Palette against a Bead\'s set (ticket 0528)', () => {
 
   it('starts a missing Palette from the set', () => {
     expect(normalizePaletteIds(undefined, defaultPalette('miyuki-delica-11-0'))).toHaveLength(16)
+  })
+})
+
+describe('the first color on a new Project\'s Background (ticket 0838)', () => {
+  const contrast = (a: string, b: string) => contrastRatio(channelsOf(a), channelsOf(b))
+  /** A new Project on this Bead and a theme's numbered Background, as the app makes it, and the color it starts painting with there. */
+  const startOn = (beadId: string, theme: ResolvedTheme, background: number) => {
+    const project = createProject({ technique: 'loom', beadId, background })
+    const palette = createPalette(project.palette, defaultPalette(beadId))
+    const canvas = canvasTheme(theme, background).canvas
+    return { canvas, color: palette.byId(startColorId(palette, canvas)) }
+  }
+
+  it.each(BEAD_CATALOG.filter((bead) => !bead.retired).map((bead) => bead.id))('starts %s on gold in dark, red in light and high contrast', (beadId) => {
+    expect(startOn(beadId, 'dark', 1).color?.id).toBe('gold')
+    expect(startOn(beadId, 'light', 1).color?.id).toBe('red')
+    expect(startOn(beadId, 'contrast', 1).color?.id).toBe('red')
+  })
+
+  it.each(['light', 'dark', 'contrast'] as const)('stands the first color off every Background of %s at 3:1 or more, a swatch of the Bead\'s own', (theme) => {
+    for (let position = 1; position <= BACKGROUND_POSITIONS; position++) {
+      const { canvas, color } = startOn(DEFAULT_BEAD.id, theme, position)
+      expect(defaultPalette(DEFAULT_BEAD.id), `${theme} ${position}`).toContainEqual(color)
+      expect(contrast(color!.hex, canvas), `${theme} ${position}`).toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('takes yellow on a dark Background where the Palette has no gold, as the twelve built-in colors', () => {
+    expect(startColorId(createPalette(defaultPaletteIds()), '#202020')).toBe('yellow')
+  })
+
+  it('takes the swatch that stands off a Custom color best where neither reaches 3:1', () => {
+    const toho = createPalette(defaultPaletteIds(defaultPalette(DEFAULT_BEAD.id)), defaultPalette(DEFAULT_BEAD.id))
+    // Red on a red Custom color, gold on a gold one: neither shows, so the swatch that shows most.
+    expect(startColorId(toho, '#e63746')).toBe('white')
+    expect(startColorId(toho, '#d4af37')).toBe('black')
+  })
+
+  it('has no color for an empty Palette', () => {
+    expect(startColorId(createPalette([]), '#202020')).toBeUndefined()
   })
 })

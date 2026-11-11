@@ -69,7 +69,7 @@ const keptResult = computed(() => {
 <template>
   <div class="convert-size" data-testid="convert-size">
     <div class="convert-size__row">
-      <span :id="unitLabelId" class="convert-size__label">{{ words.slideIn }}</span>
+      <span :id="unitLabelId" class="convert-size__label">{{ words.units }}</span>
       <SegmentedControl v-model="unit" :options="unitOptions" mono small :labelledby="unitLabelId" data-testid="convert-size-unit" />
     </div>
 

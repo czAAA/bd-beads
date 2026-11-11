@@ -1,6 +1,6 @@
 import { BEAD_CATALOG, findBead, findBrand } from './beads'
 import type { ColorCatalog } from './colorCatalog'
-import { normalizeHex } from './color'
+import { BLACK_WHITE_BALANCE, channelsOf, contrastRatio, normalizeHex, relativeLuminance } from './color'
 import { nearestColor } from './imageColors'
 import { beadIdOfLayer, type Layered } from './layerRecord'
 
@@ -80,7 +80,8 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
   { code: 'Digit0', keyLabel: '0' },
 ]
 
-/** The first keys, Shift+1…3, pick the recent colors, not Palette slots (ticket 529). */
+/** The first keys, Shift+1…3, pick the recent colors (ticket 529); the keys after them, Shift+4…0, pick the first
+ * Palette slots, a recent one included, so a slot's key never changes with what was used (ticket 0865). */
 export const RECENT_SHORTCUTS = 3
 
 const ADDED_PREFIX = 'added-'
@@ -158,10 +159,6 @@ export interface Palette {
   nearest: (hex: string) => PaletteColor | undefined
   /** The color a Project opens ready to paint with: the first built-in swatch (the first of any, if none is). */
   defaultColorId: string | undefined
-  /** The swatches the colour popover shows and Shift+4…0 reach (ticket 529): every slot but the ones holding one of the
-   * `recents` (the pill's chips show and key those instead), in slot order, each with the slot it stands in. A Palette
-   * longer than the keys has swatches without one. */
-  besideRecents: (recents: readonly string[]) => { color: PaletteColor; slot: number }[]
 }
 
 /** The catalog code of each swatch that has one, by the swatch's hex (ticket 0538): a hex is a swatch's identity whether
@@ -180,9 +177,28 @@ export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[]
       return colors.find((color) => color.hex === nearest)
     },
     defaultColorId: (colors.find((color) => !isAddedColorId(color.id)) ?? colors[0])?.id,
-    besideRecents: (recents) =>
-      colors.flatMap((color, slot) => (recents.includes(color.hex) ? [] : [{ color, slot }])),
   }
+}
+
+/** The least a new Project's first color keeps against its Background: WCAG's 3:1 for a meaningful mark. */
+const START_COLOR_CONTRAST = 3
+
+/** The colors a new Project starts painting with (ticket 0838), first choice first: gold on a dark Background (yellow
+ * where the Palette has no gold, as the twelve), red on a light one. */
+const START_COLORS = { dark: ['gold', 'yellow'], light: ['red'] } as const
+
+/** The swatch a new Project starts painting with on its Background's hex (ticket 0838): gold on a dark one, red on a
+ * light one, so the first bead shows. Where neither of those is in the Palette or stands 3:1 off the Background (a
+ * Custom color close to it), the swatch that stands off it most. Undefined for an empty Palette. */
+export function startColorId(palette: Palette, background: string): string | undefined {
+  const under = channelsOf(background)
+  const contrast = (color: PaletteColor) => contrastRatio(channelsOf(color.hex), under)
+  const look = relativeLuminance(under) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
+  const picked = START_COLORS[look]
+    .map((id) => palette.byId(id))
+    .find((color) => color !== undefined && contrast(color) >= START_COLOR_CONTRAST)
+  if (picked) return picked.id
+  return palette.colors.reduce<PaletteColor | undefined>((best, color) => (!best || contrast(color) > contrast(best) ? color : best), undefined)?.id
 }
 
 export type AddUsedColorOutcome = 'added' | 'known'

@@ -563,7 +563,8 @@ watch(
   width: calc(var(--space-16) + var(--space-2));
   height: calc(var(--space-16) + var(--space-2));
   border-radius: var(--radius-full);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
+  /* The `field-line` ring of a recent color, as in the Palette grid (ticket 0865): Black shows on the dark pill. */
+  box-shadow: inset 0 0 0 1px var(--field-line);
 }
 
 @media (hover: hover) {

@@ -20,8 +20,6 @@
   --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
   --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
   --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
-  --convert-stage-height: 30px; /* ConvertImage card (ticket 0780): a Background stage chip, 1 Find or 2 Remove. */
-  --convert-stage-disc: 18px; /* ConvertImage card (ticket 0780): a stage chip's numbered disc. */
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
@@ -289,6 +287,7 @@ body {
 .bb-swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
 .bb-swatch { aspect-ratio: 1; border: 0; padding: 0; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--swatch-edge); cursor: pointer; }
 .bb-swatch[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--swatch-edge), 0 0 0 2px var(--panel), 0 0 0 4px var(--ring); }
+.bb-swatch.is-recent:not([aria-pressed="true"]) { box-shadow: inset 0 0 0 1px var(--swatch-edge), 0 0 0 2px var(--panel), 0 0 0 3px var(--field-line); }
 .bb-swatch-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .bb-hatch { width: 14px; height: 14px; border-radius: 3px; background: repeating-linear-gradient(45deg, var(--muted) 0 1px, transparent 1px var(--space-4)); flex: none; }
 .bb-dot { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--swatch-edge); flex: none; }
