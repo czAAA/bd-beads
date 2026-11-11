@@ -529,6 +529,7 @@ const drawingStyle = computed(() => {
       <ToastRegion
         :toasts="toasts"
         :under-ring="ringShown"
+        :clear-of-panel="openPanel !== null"
         @dismiss="dismissToast"
       />
 
@@ -651,6 +652,7 @@ const drawingStyle = computed(() => {
    ticket 439). */
 .app-shell__empty-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
   /* Narrow enough that New Project and both imports fit a 320px screen in Russian. */

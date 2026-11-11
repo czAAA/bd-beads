@@ -139,7 +139,7 @@ export const en: Translations = {
       themeDark: 'Dark',
       tooltipDeleteAll: 'Remove every Project from this device.',
       deleteAllTitle: 'Delete all Projects?',
-      deleteAllMessage: "Every Project is removed from this device. This can't be undone. Export all first if you want to keep copies.",
+      deleteAllMessage: "Every Project is removed from this device. This can't be undone. Save all Projects to a Project file first if you want to keep copies.",
       deleteAllConfirm: 'Delete all Projects',
       sendFeedback: 'Send feedback',
       reportTranslation: 'Report a translation problem',
@@ -235,7 +235,7 @@ export const en: Translations = {
     removeButton: 'Remove',
     unknownBeadLabel: 'Unknown bead',
     emptyTitle: 'No Projects yet',
-    emptyBody: 'Projects you make are kept on this device. Import a .openbeads file to bring one in.',
+    emptyBody: 'Projects you make are kept on this device. Open a Project file to bring one in.',
     pieces: { one: '{count} piece', other: '{count} pieces' },
     unnamedPieces: '{count} unnamed',
     frameSize: 'Frame {width} × {height} beads',
@@ -302,11 +302,11 @@ export const en: Translations = {
     },
     firstRun: {
       storageLead: 'Your Projects are saved only in this browser, on this device.',
-      storage: "If the browser's data is cleared, they go with it.\nKeep a file of each one you don't want to lose:",
+      storage: "If the browser's data is cleared, they go with it.\nSave a Project file of each one you don't want to lose:",
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Make one with New Project, open one from the Projects library, or import a file.',
+    canvasPlaceholderHint: 'Make one with New Project, open one from the Projects library, or open a Project file.',
     canvasPlaceholder: 'No Project open yet',
     updateReady: 'Update ready',
     updateReload: 'Reload',
@@ -316,7 +316,7 @@ export const en: Translations = {
   },
   storage: {
     saveFailedMessage:
-      "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or export the Project to a file to keep it.",
+      "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it.",
     /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
       title: 'Ask the browser to keep your Projects?',
@@ -667,12 +667,8 @@ export const en: Translations = {
     formatsHint: 'png · pdf',
     makingPng: 'Making the PNG image · {name}',
     makingPdf: 'Making the PDF · {name}',
-    readyPng: 'PNG ready',
-    readyPdf: 'PDF ready',
-    readyFile: 'File ready',
     savedFile: 'Saved: {file}',
     readySave: 'Save',
-    exportProjectFile: 'Export Project',
     nameOnExports: 'Name on exports',
     changeName: 'Change',
     addName: 'Add',
@@ -680,21 +676,23 @@ export const en: Translations = {
     nameHint: "Printed on this Project's PDF and PNG exports.",
     saveName: 'Save',
     cancelName: 'Cancel',
+    readyToSave: 'Ready to save: {file}',
   },
   saveReminder: {
-    label: 'Save a copy',
+    label: 'Save Project file',
     body: 'The browser keeps your work but can clear it. A Project file stays.',
     count: 'Beads since last file: {count}',
     lastFile: 'Last file: {when}',
     noFile: 'No Project file yet',
-    announce: 'Beads since last file: {count}. Save a copy to keep them.',
+    announce: 'Beads since last file: {count}. Save a Project file to keep them.',
   },
   transfer: {
-    exportProjectButton: 'Export Project',
-    exportLibraryButton: 'Export all Projects',
-    importLabel: 'Import a Project',
-    importedLabel: 'Projects imported',
-    importErrorLabel: 'Could not import that .openbeads file',
+    exportLibraryButton: 'Save all Projects to a Project file',
+    importLabel: 'Open Project file',
+    importedLabel: 'Projects added',
+    notProjectFile: "This isn't a Project file. Choose a file ending in .openbeads.",
+    pictureFile: 'This is a picture. Use Convert image to turn it into beads.',
+    damagedFile: "This Project file is damaged and can't be opened.",
   },
   toolbox: {
     groups: {
@@ -836,11 +834,11 @@ export const en: Translations = {
     lockedReason: 'Rows are marked done. Reset progress to change the size.',
   },
   importSwitch: {
-    title: 'Switch to the imported Project?',
+    title: 'Switch to the Project you opened?',
     messageOne:
-      '“{imported}” was imported. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
+      '“{imported}” is now in the Projects library. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
     messageMany:
-      '{count} Projects were imported. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
+      '{count} Projects are now in the Projects library. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
     unsavedMessage:
       '“{current}” is not saved on this device yet. Save it first, or switch anyway and risk losing your latest change.',
     switchButton: 'Switch',
@@ -1179,7 +1177,6 @@ export const en: Translations = {
   opening: {
     didNotOpen: '“{name}” didn\'t open last time.',
     removeButton: 'Remove',
-    exportButton: 'Export',
     largeTitle: 'Open “{name}”?',
     largeMessage: '{count} million beads. Opening may be slow or fail.',
     openAnyway: 'Open anyway',

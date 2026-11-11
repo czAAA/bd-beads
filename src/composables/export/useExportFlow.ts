@@ -11,9 +11,9 @@ import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import type { FileWriter, PickedFile } from '../../services/fileWriter'
 import type { LinkedFileStore } from '../../services/linkedFileStore'
-import { fillBlanks } from '../../domain/fillBlanks'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
+import { SAVED_FILE_TOAST, savedFileToast, savedPageToast } from './savedFileToast'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
 
@@ -39,8 +39,9 @@ export interface ExportFlowDeps {
   linkedFiles?: LinkedFileStore
   /** Every Project in the library, sealed ones too: a Linked file of none is dropped (Delete, Delete all, start-up). */
   libraryIds?: () => readonly string[]
-  /** A Project file of these Projects reached the device (ticket 0796): their Beads since last file go back to 0. */
-  onFileSaved?: (projectIds: readonly string[]) => void
+  /** A Project file of these Projects reached the device (ticket 0796): their Beads since last file go back to 0, and
+   * the file's name is their last file's (ticket 0859). */
+  onFileSaved?: (projectIds: readonly string[], fileName: string) => void
   /** Any file reached the device by the person's press, a Project file or an export (ticket 0839: the first asks the
    * browser to keep Projects). */
   onFileReached?: () => void
@@ -52,6 +53,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
   const picturesOf = (ids: readonly string[]): Promise<ReadonlyMap<string, Blob>> => deps.picturesOf?.(ids) ?? Promise.resolve(new Map())
   const quality = useExportQuality()
+  const toast = savedFileToast(deps.showToast, deps.messages)
 
   /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
   const makerName = computed(() => deps.currentProject()?.makerName ?? '')
@@ -78,26 +80,32 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** The one place every save and export lands once its file is on the device: a Project file counts its Projects from
    * 0 again (ticket 0796), and any file may ask the browser to keep Projects (ticket 0839). */
-  function reached(projectIds?: readonly string[]) {
-    if (projectIds) deps.onFileSaved?.(projectIds)
+  function reached(fileName: string, projectIds?: readonly string[]) {
+    if (projectIds) deps.onFileSaved?.(projectIds, fileName)
     deps.onFileReached?.()
   }
 
-  /** Makes a file and hands it over inside the tap, then says it is ready (ticket 523). Safari shares only from a
-   * fresh tap, so when it refuses because the build took too long the toast's action is the new tap (ticket 306). */
-  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string, projectIds?: readonly string[]): Promise<boolean> {
+  /** Makes a file and hands it over inside the tap, then names it in the saved-file toast (tickets 523, 0859). Safari
+   * shares only from a fresh tap, so when it refuses because the build took too long the toast's action is the new tap
+   * (ticket 306). */
+  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, projectIds?: readonly string[], toastId = SAVED_FILE_TOAST): Promise<boolean> {
     const contents = await make()
     const outcome = await downloadFile(fileName, contents, type)
     if (outcome === 'cancelled') {
       return false
     }
-    // A refused share hands nothing over until its action does (SaveReminder card: the count stays till then).
-    const again = async () => {
-      if ((await downloadFile(fileName, contents, type)) !== 'refused') reached(projectIds)
+    if (outcome === 'refused') {
+      // A refused share hands nothing over until its action does (SaveReminder card: the count stays till then).
+      toast.readyToSave(fileName, async () => {
+        const again = await downloadFile(fileName, contents, type)
+        if (again === 'refused' || again === 'cancelled') return false
+        reached(fileName, projectIds)
+        return true
+      }, toastId)
+      return true
     }
-    const retry = outcome === 'refused' ? { label: deps.messages().saveBox.readySave, run: () => void again() } : undefined
-    if (outcome !== 'refused') reached(projectIds)
-    deps.showToast?.(toastId, ready, 'success', retry)
+    reached(fileName, projectIds)
+    toast.saved(fileName, toastId)
     return true
   }
 
@@ -111,16 +119,12 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
     exporting.value = extension
     try {
-      const { saveBox } = deps.messages()
-      const handed = await makeAndHandOver(
-        projectExportFileName(project, extension),
-        () => make(project),
-        type,
-        `export-${extension}`,
-        extension === 'png' ? saveBox.readyPng : saveBox.readyPdf,
-      )
-      for (const next of handed ? (more?.(project) ?? []) : []) {
-        if (!(await makeAndHandOver(next.fileName, next.make, type, `export-${extension}-instructions`, saveBox.readyPng))) break
+      const handed = await makeAndHandOver(projectExportFileName(project, extension), () => make(project), type)
+      // Each further page stacks a toast of its own, so every name is read; the cover is page 1.
+      const further = handed ? (more?.(project) ?? []) : []
+      for (const [index, next] of further.entries()) {
+        const page = index + 2
+        if (!(await makeAndHandOver(next.fileName, next.make, type, undefined, savedPageToast(page)))) break
       }
     } finally {
       exporting.value = undefined
@@ -133,7 +137,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** Hands a Project file over, and counts the Projects it holds from 0 again once it is handed (ticket 0796). */
   function handOverFile(fileName: string, make: () => Promise<BlobPart>, projectIds: readonly string[]) {
-    return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile, projectIds)
+    return makeAndHandOver(fileName, make, FILE_TYPE, projectIds)
   }
 
   const linking = computed(() => !!deps.fileWriter?.available && !!deps.linkedFiles)
@@ -171,8 +175,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
       if (await deps.fileWriter!.write(target, contents)) {
         await deps.linkedFiles!.put(project.id, target)
         if (deps.currentProject()?.id === project.id) linkedFileName.value = target.name
-        reached([project.id])
-        deps.showToast?.('export-file', fillBlanks(deps.messages().saveBox.savedFile, { file: target.name }), 'success')
+        reached(target.name, [project.id])
+        toast.saved(target.name)
         return true
       }
       return handOverFile(projectFileName(project), async () => contents, [project.id])
