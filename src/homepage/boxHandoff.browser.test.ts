@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mountAt, type Mounted } from '../testUtils/browserFit'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
+import { turnToSection } from '../testUtils/homepageSection'
 import HomePage from './HomePage.vue'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 import '../styles/boxHandoff.css'
@@ -20,6 +21,8 @@ describe('leaving the Homepage for the editor', () => {
   it('fades the section, More below and the Progress bar but keeps the strip', async () => {
     mounted = await mountAt(HomePage, { projectCount: 3, feedback: fakeFeedback() }, { locale: 'en', width: 1280 })
     await settleForMeasuring()
+    // More below shows only where the section scrolls on (ticket 0870): the plans do, their free list growing.
+    await turnToSection(mounted.root, 'plans')
     document.documentElement.dataset.handoff = 'leaving'
     await expect.poll(opacity('.homepage__page')).toBe('0')
     await expect.poll(opacity('[data-testid="section-bar"]')).toBe('0')
