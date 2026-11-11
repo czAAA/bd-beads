@@ -17,8 +17,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'HomePage', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Без аккаунта'], at: { longest: [844, 820] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Три способа работать'], at: { longest: [390, 360, 320] }, fixedBy: '231' },
-  // Row not done by columns once it can be pressed, in its Tooltip's wrapper: 3px over at 320px, as main has it.
-  { case: 'ProgressBar on peyote', texts: ['Стовпець не готовий'], at: { longest: [320] }, fixedBy: '0864', borderline: true },
 ]
 
 const quoted = (text: string) => `"${text}"`
