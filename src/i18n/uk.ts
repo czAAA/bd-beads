@@ -338,6 +338,7 @@ export const uk: Translations = {
     homepageItem: 'Головна',
     sourceItem: 'Вихідний код',
     projectPanelLabel: 'Проєкт',
+    projectButtonNamed: 'Проєкт: {name}',
   },
   homepage: {
     pageTitle: 'Головна',
@@ -696,6 +697,7 @@ export const uk: Translations = {
     lastFile: 'Останній файл: {when}',
     noFile: 'Файлу проєкту ще немає',
     announce: 'Бісеринок з останнього файлу: {count}. Збережіть файл проєкту, щоб вони залишилися.',
+    since: { one: '{count} бісеринка з останнього файлу', few: '{count} бісеринки з останнього файлу', many: '{count} бісеринок з останнього файлу', other: '{count} бісеринки з останнього файлу' },
   },
   transfer: {
     exportLibraryButton: 'Зберегти все у файл проєкту',

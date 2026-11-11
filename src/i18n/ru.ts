@@ -338,6 +338,7 @@ export const ru: Translations = {
     homepageItem: 'Главная',
     sourceItem: 'Исходный код',
     projectPanelLabel: 'Проект',
+    projectButtonNamed: 'Проект: {name}',
   },
   homepage: {
     pageTitle: 'Главная',
@@ -696,6 +697,7 @@ export const ru: Translations = {
     lastFile: 'Последний файл: {when}',
     noFile: 'Файла проекта ещё нет',
     announce: 'Бисеринок с последнего файла: {count}. Сохраните файл проекта, чтобы они остались.',
+    since: { one: '{count} бисеринка с последнего файла', few: '{count} бисеринки с последнего файла', many: '{count} бисеринок с последнего файла', other: '{count} бисеринки с последнего файла' },
   },
   transfer: {
     exportLibraryButton: 'Сохранить всё в файл проекта',

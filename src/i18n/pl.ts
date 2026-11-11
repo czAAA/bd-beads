@@ -338,6 +338,7 @@ export const pl: Translations = {
     homepageItem: 'Strona główna',
     sourceItem: 'Kod źródłowy',
     projectPanelLabel: 'Projekt',
+    projectButtonNamed: 'Projekt: {name}',
   },
   homepage: {
     pageTitle: 'Strona główna',
@@ -696,6 +697,7 @@ export const pl: Translations = {
     lastFile: 'Ostatni plik: {when}',
     noFile: 'Nie ma jeszcze pliku projektu',
     announce: 'Koralików od ostatniego pliku: {count}. Zapisz plik projektu, żeby je zachować.',
+    since: { one: '{count} koralik od ostatniego pliku', few: '{count} koraliki od ostatniego pliku', many: '{count} koralików od ostatniego pliku', other: '{count} koralika od ostatniego pliku' },
   },
   transfer: {
     exportLibraryButton: 'Zapisz wszystko w pliku projektu',

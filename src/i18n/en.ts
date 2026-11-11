@@ -336,6 +336,7 @@ export const en: Translations = {
     homepageItem: 'Homepage',
     sourceItem: 'Source code',
     projectPanelLabel: 'Project',
+    projectButtonNamed: 'Project: {name}',
   },
   homepage: {
     pageTitle: 'Homepage',
@@ -688,6 +689,7 @@ export const en: Translations = {
     lastFile: 'Last file: {when}',
     noFile: 'No Project file yet',
     announce: 'Beads since last file: {count}. Save a Project file to keep them.',
+    since: { one: '{count} bead since the last file', other: '{count} beads since the last file' },
   },
   transfer: {
     exportLibraryButton: 'Save all Projects to a Project file',

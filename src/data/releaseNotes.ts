@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The strip shows your Project’s name, the Project panel says in words that it is saved, and a reload asks first while a save has failed',
+      ru: 'Полоса показывает имя проекта, панель проекта пишет словами, что он сохранён, а перезагрузка сначала спрашивает, пока сохранение не удалось',
+      uk: 'Смуга показує назву проєкту, панель проєкту пише словами, що його збережено, а перезавантаження спершу питає, поки збереження не вдалося',
+      be: 'Паласа паказвае назву праекта, панэль праекта піша словамі, што ён захаваны, а перазагрузка спачатку пытаецца, пакуль захаванне не ўдалося',
+      zh: '顶栏显示项目名称，项目面板用文字说明已保存，保存失败时重新加载会先询问',
+      es: 'La barra muestra el nombre de tu proyecto, el panel del proyecto dice con palabras que está guardado y recargar pregunta antes mientras un guardado ha fallado',
+      pl: 'Pasek pokazuje nazwę projektu, panel projektu pisze słowami, że jest zapisany, a przeładowanie najpierw pyta, gdy zapis się nie udał',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Help lines fit your device: finger words on touch, no key numbers there, and ⌘V on a Mac',
       ru: 'Подсказки подходят устройству: на сенсорном экране говорят о пальцах и без цифр клавиш, а на Mac пишут ⌘V',
       uk: 'Підказки пасують пристрою: на сенсорному екрані говорять про пальці й без цифр клавіш, а на Mac пишуть ⌘V',

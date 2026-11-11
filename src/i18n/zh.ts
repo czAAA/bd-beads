@@ -337,6 +337,7 @@ export const zh: Translations = {
     homepageItem: '首页',
     sourceItem: '源代码',
     projectPanelLabel: '项目',
+    projectButtonNamed: '项目：{name}',
   },
   homepage: {
     pageTitle: '首页',
@@ -683,6 +684,7 @@ export const zh: Translations = {
     lastFile: '上次文件：{when}',
     noFile: '还没有项目文件',
     announce: '自上次保存文件后的珠子：{count}。保存项目文件以留住它们。',
+    since: { other: '自上次文件后 {count} 颗珠子' },
   },
   transfer: {
     exportLibraryButton: '将所有项目保存到项目文件',
