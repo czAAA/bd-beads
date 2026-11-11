@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A first visit ends on what is free, not on Coming soon',
+      ru: 'Новый гость видит, что бесплатно, а не «Скоро»',
+      uk: 'Новий гість бачить, що безплатне, а не «Незабаром»',
+      be: 'Новы госць бачыць, што бясплатна, а не «Хутка»',
+      zh: '首次访问以免费内容收尾，不再显示“即将推出”',
+      es: 'Una primera visita acaba en lo gratis, no en «Pronto»',
+      pl: 'Pierwsza wizyta kończy się na tym, co darmowe, nie na „Wkrótce”',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Fit keeps the whole Frame clear of the tools, and Row done works with the Frame panel open',
       ru: '«Вписать» больше не прячет рамку под кнопками, а «Ряд готов» работает при открытой панели рамки',
       uk: '«Вписати» більше не ховає рамку під кнопками, а «Ряд готовий» працює з відкритою панеллю рамки',

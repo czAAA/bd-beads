@@ -4,7 +4,7 @@ import PlanTiles from './PlanTiles.vue'
 import { freeListRows } from './freeList'
 import { en } from '../i18n/en'
 
-function tiles(locale: 'en' | 'ru' = 'en', props: { freeHeight?: number; freeOpen?: boolean; phone?: boolean } = {}) {
+function tiles(locale: 'en' | 'ru' = 'en', props: { freeHeight?: number; freeOpen?: boolean; phone?: boolean; isNew?: boolean } = {}) {
   localStorage.setItem('openbeads:locale', locale)
   return mount(PlanTiles, { props })
 }
@@ -96,6 +96,21 @@ describe('PlanTiles', () => {
     expect(wrapper.find('[data-testid="plan-pro"] button').text()).toBe('Появится позже')
     expect(wrapper.get('[data-testid="plan-pro"] [role="img"]').text()).toBe('СКОРО')
     expect(wrapper.get('[data-testid="plan-no-account"]').text()).toContain('бесплатно навсегда:')
+  })
+
+  describe('for a new visitor (ticket 0871)', () => {
+    it('shows No account alone with its free list, under its own heading and one line, no Coming soon anywhere', () => {
+      for (const phone of [false, true]) {
+        const wrapper = tiles('en', { isNew: true, phone })
+        expect(wrapper.get('h2').text()).toBe('Free to use')
+        expect(wrapper.get('[data-testid="plans-why"]').text()).toBe('Accounts and Pro come later; everything works without them.')
+        expect(wrapper.findAll('h3').map((h) => h.text().replace('you are here', ''))).toEqual(['No account'])
+        expect(wrapper.get('[data-testid="plan-no-account"] ul').findAll('li').map((item) => item.text())).toEqual(
+          phone ? freeListRows(en, 'en').slice(0, 6) : [...freeListRows(en, 'en'), 'More on the way'],
+        )
+        expect(wrapper.text()).not.toMatch(/coming soon/i)
+      }
+    })
   })
 
   describe('on a phone (ticket 0827)', () => {

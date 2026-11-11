@@ -431,6 +431,7 @@ export const ru: Translations = {
         more: 'Скоро будет больше',
         showAll: 'Показать все {count}',
       },
+      alone: { heading: 'Бесплатно', why: 'Аккаунты и Pro появятся позже; всё работает и без них.' },
     },
     library: '{library}, {count}',
   },

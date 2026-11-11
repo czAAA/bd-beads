@@ -471,6 +471,18 @@ describe('HomePage plan tiles', () => {
       expect(wrapper.emitted('openEditor')).toHaveLength(1)
     }
   })
+  // Ticket 0871: a first visit doesn't end on Coming soon; the step is named by the section's heading.
+  it('show a new visitor No account alone, the step named for it, and the three once Projects are saved', () => {
+    const plans = (count: number) => {
+      const wrapper = page(count)
+      return {
+        step: wrapper.get('[data-testid="section-step"][data-step="plans"]').text(),
+        tiles: wrapper.findAll('[data-testid="homepage-plans"] h3').length,
+      }
+    }
+    expect(plans(0)).toEqual({ step: 'Free to use', tiles: 1 })
+    expect(plans(3)).toEqual({ step: 'Three ways to use it', tiles: 3 })
+  })
 })
 
 describe('HomePage on a phone (ticket 0827)', () => {
@@ -533,7 +545,7 @@ describe('HomePage on a phone (ticket 0827)', () => {
     const line = (id: string) => wrapper.find(`[data-testid="homepage-section-${id}"] [data-testid="homepage-next-line"]`)
     expect(line('welcome').text()).toBe("Next · What's inside")
     expect(line('inside').text()).toBe('Next · Made by one family')
-    expect(line('coffee').text()).toBe('Next · Three ways to use it')
+    expect(line('coffee').text()).toBe('Next · Free to use')
     expect(line('plans').exists()).toBe(false)
   })
 

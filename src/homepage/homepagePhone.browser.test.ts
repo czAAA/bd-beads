@@ -131,11 +131,14 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           found.push(...(await misfitsNow()))
 
           // The plans: No account whole with its chip and no button, the other two a row each, name over price and the
-          // Coming soon chip on the right; six rows of the free list, then Show all, which opens the rest in place.
+          // Coming soon chip on the right, or No account alone for a new visitor (ticket 0871); six rows of the free
+          // list, then Show all, which opens the rest in place.
           await next()
           insideTheSection()
           expect(el('[data-testid="phone-bar-next"]').getAttribute('aria-disabled')).toBe('true')
-          const plans = ['plan-no-account', 'plan-free-account', 'plan-pro'].map((id) => box(`[data-testid="${id}"]`))
+          const offPlans = projectCount ? ['plan-free-account', 'plan-pro'] : []
+          expect(mounted.root.querySelectorAll('.plan--off')).toHaveLength(offPlans.length)
+          const plans = ['plan-no-account', ...offPlans].map((id) => box(`[data-testid="${id}"]`))
           for (const [i, plan] of plans.entries()) {
             expect(plan.left).toBeCloseTo(plans[0]!.left, 0)
             expect(plan.width).toBeCloseTo(plans[0]!.width, 0)
@@ -143,7 +146,7 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           }
           expect(mounted.root.querySelector('[data-testid="plan-no-account"] .plan__button')).toBeNull()
           expect(box('[data-testid="plan-here-chip"]').left).toBeGreaterThan(box('[data-testid="plan-no-account"] h3').left)
-          for (const id of ['plan-free-account', 'plan-pro']) {
+          for (const id of offPlans) {
             const chip = box(`[data-testid="${id}"] [data-testid="plan-coming-soon"]`)
             const planName = box(`[data-testid="${id}"] h3`)
             expect(chip.left).toBeGreaterThanOrEqual(planName.right)
@@ -162,7 +165,7 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           insideTheSection()
           found.push(...(await misfitsNow()))
 
-          expect(unexplainedFit('HomePage', locale, width, [...new Set(found)])).toEqual([])
+          expect(unexplainedFit(projectCount ? 'HomePage with Projects saved' : 'HomePage', locale, width, [...new Set(found)])).toEqual([])
         }, 30000)
       }
     }
