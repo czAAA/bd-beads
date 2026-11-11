@@ -1,4 +1,4 @@
-import { defineComponent, h, provide, ref, type Component } from 'vue'
+import { defineComponent, h, provide, type Component } from 'vue'
 import { describeFits, inShell, type FitCase } from '../testUtils/browserFit'
 import ShortcutsHelp from './shell/ShortcutsHelp.vue'
 import MenuPanel from './shell/MenuPanel.vue'
@@ -45,7 +45,7 @@ const showAll = (root: HTMLElement): void => {
 const inPanel = (component: Component, props: Record<string, unknown>, width?: string): Component =>
   defineComponent({
     setup() {
-      provide(PANEL_CONTEXT, { itemRole: ref(undefined), close: () => {}, openSub: () => {} })
+      provide(PANEL_CONTEXT, { close: () => {}, openSub: () => {} })
       return () => (width ? h('div', { style: { width, maxWidth: '100%' } }, [h(component, props)]) : h(component, props))
     },
   })

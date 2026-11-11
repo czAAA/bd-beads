@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
 import NewProjectForm from './NewProjectForm.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import { BEAD_CATALOG } from '../../domain/beads'
@@ -34,7 +33,7 @@ describe('NewProjectForm', () => {
 
   it('opens the Starter gallery one level deeper from Pick a starter, focus to come back to it (ticket 0596)', async () => {
     const openSub = vi.fn()
-    const wrapper = mount(NewProjectForm, { global: { provide: { [PANEL_CONTEXT as symbol]: { itemRole: ref(undefined), close: vi.fn(), openSub } } } })
+    const wrapper = mount(NewProjectForm, { global: { provide: { [PANEL_CONTEXT as symbol]: { close: vi.fn(), openSub } } } })
     expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
     await wrapper.get('[data-testid="pick-starter"]').trigger('click')
     expect(openSub).toHaveBeenCalledWith(ru.starters.title, { opener: 'pick-starter' })

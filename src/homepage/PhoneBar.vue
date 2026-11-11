@@ -21,7 +21,7 @@ const current = computed(() => (props.sections[props.section] ? stepName(props.s
 </script>
 
 <template>
-  <div class="phone-bar" data-testid="phone-bar">
+  <nav class="phone-bar" :aria-label="t.homepage.sections.label" data-testid="phone-bar">
     <div class="phone-bar__where">
       <p class="phone-bar__name" data-testid="phone-bar-name">{{ current }}</p>
       <span
@@ -69,7 +69,7 @@ const current = computed(() => (props.sections[props.section] ? stepName(props.s
         @click="emit('go', section + 1)"
       />
     </div>
-  </div>
+  </nav>
 </template>
 
 <style scoped>

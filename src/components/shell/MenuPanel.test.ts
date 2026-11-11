@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { provide, defineComponent, h, ref } from 'vue'
+import { provide, defineComponent, h } from 'vue'
 import MenuPanel from './MenuPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { en } from '../../i18n/en'
@@ -19,7 +19,7 @@ const base = { projectCount: 1, toolsPosition: 'bottom' as const, inputMode: 'pe
 function mountIn(props: Record<string, unknown> = {}, openSub = () => {}) {
   const Host = defineComponent({
     setup() {
-      provide(PANEL_CONTEXT, { itemRole: ref(undefined), close: () => {}, openSub })
+      provide(PANEL_CONTEXT, { close: () => {}, openSub })
       return () => h(MenuPanel, { ...base, ...props })
     },
   })

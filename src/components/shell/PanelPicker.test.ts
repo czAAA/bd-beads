@@ -99,6 +99,13 @@ describe('PanelPicker (ticket 0553)', () => {
 describe('PanelPicker bare and disabled (ticket 554)', () => {
   const options = [{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Beta' }]
 
+  it('names a value it shows as a code by the code after the label, then the value', () => {
+    const languages = [{ value: 'en', label: 'English', shortLabel: 'EN' }, { value: 'pl', label: 'Polski', shortLabel: 'PL' }]
+    const wrapper = mount(PanelPicker, { props: { label: 'Language', modelValue: 'en', options: languages } })
+    expect(wrapper.get('.panel-picker__value').text()).toBe('EN')
+    expect(wrapper.get('button').attributes('aria-label')).toBe('Language: EN, English')
+  })
+
   it('drops the visible label but keeps the name', () => {
     const wrapper = mount(PanelPicker, { props: { label: 'Brand', modelValue: 'a', options, bare: true } })
     expect(wrapper.find('.panel-picker__label').exists()).toBe(false)

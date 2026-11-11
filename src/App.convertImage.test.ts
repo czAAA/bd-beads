@@ -89,10 +89,11 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     const wrapper = mount(App, { attachTo: document.body })
     await openWizard(wrapper)
     expect(page(wrapper).exists()).toBe(true)
-    // The page fills the canvas box, the strip above it and the Progress bar its footer; the modal is gone.
+    // The page fills the canvas box, the strip above it and the Progress bar its footer, last in its main (ticket 0856);
+    // the modal is gone.
     const box = wrapper.get('[data-testid="app-canvas"]').element
     expect(box.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
-    expect(box.lastElementChild?.getAttribute('data-testid')).toBe('convert-bar')
+    expect(wrapper.get('main').element.lastElementChild?.getAttribute('data-testid')).toBe('convert-bar')
     expect(page(wrapper).element.closest('[data-testid="app-canvas"]')).toBe(box)
     expect(wrapper.find('.app-modal').exists()).toBe(false)
 
@@ -340,7 +341,7 @@ describe('App empty canvas (tickets 158, 0748, 0840)', () => {
     expect(wrapper.get('[data-testid="app-canvas"]').element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
     // The footer is there as with a Project open, with nothing in it (ticket 0748).
     const footer = wrapper.get('[data-testid="progress-bar"]')
-    expect(wrapper.get('[data-testid="app-canvas"]').element.lastElementChild).toBe(footer.element)
+    expect(wrapper.get('main').element.lastElementChild).toBe(footer.element)
     expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(false)
   })
 })

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A screen reader finds one main area and one header on each page, and hears each button by the words it shows',
+      ru: 'Программа чтения с экрана находит на каждой странице одну основную область и один заголовок и называет каждую кнопку словами, которые на ней видны',
+      uk: 'Програма читання з екрана знаходить на кожній сторінці одну основну область і один заголовок і називає кожну кнопку словами, які на ній видно',
+      be: 'Праграма чытання з экрана знаходзіць на кожнай старонцы адну асноўную вобласць і адзін загаловак і называе кожную кнопку словамі, якія на ёй відаць',
+      zh: '屏幕阅读器在每个页面只找到一个主要区域和一个页眉，并按按钮上显示的文字读出每个按钮',
+      es: 'Un lector de pantalla encuentra una sola zona principal y una sola cabecera en cada página, y nombra cada botón con las palabras que muestra',
+      pl: 'Czytnik ekranu znajduje na każdej stronie jeden główny obszar i jeden nagłówek, a każdy przycisk nazywa słowami, które na nim widać',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A Project opens from the library at once, a taken name gets a number, and Duplicate says which one is open',
       ru: 'Проект из библиотеки открывается сразу, занятое название получает номер, а после копии видно, какой открыт',
       uk: 'Проєкт із бібліотеки відкривається одразу, зайнята назва отримує номер, а після копії видно, який відкрито',

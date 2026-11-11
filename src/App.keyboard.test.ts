@@ -29,11 +29,16 @@ describe('the Project for a screen reader (ticket 159, ADR 0074)', () => {
     expect(surface(wrapper).attributes('aria-label')).toMatch(/, 6 by 4 beads, 0 colors, row 0 of 4 done$/)
   })
 
-  it('has the Tool pill\'s Tools landmark and main, and no skip link', async () => {
+  it('has the Tool pill\'s Tools landmark, one main and one banner, and no skip link', async () => {
     const wrapper = await openProject()
 
     expect(wrapper.find('[data-testid="tool-pill"]').attributes('aria-label')).toBe(en.a11y.toolsLandmark)
     expect(wrapper.find('main').find('[data-testid="project-surface"]').exists()).toBe(true)
+    // One main and one banner (ticket 0856): the Canvas strip is a header outside main, the Progress bar inside it.
+    expect(wrapper.findAll('main')).toHaveLength(1)
+    expect(wrapper.find('main').find('[data-testid="progress-bar"]').exists()).toBe(true)
+    expect(wrapper.findAll('header').map((header) => header.attributes('data-testid'))).toEqual(['canvas-strip'])
+    expect(wrapper.get('[data-testid="canvas-strip"]').element.closest('main')).toBeNull()
     expect(wrapper.find('[data-testid="skip-to-project"]').exists()).toBe(false)
   })
 })

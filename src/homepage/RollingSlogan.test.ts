@@ -30,6 +30,8 @@ afterEach(() => {
 describe('RollingSlogan', () => {
   it('reads "openbeads" to a screen reader, with the rolling words hidden', () => {
     const wrapper = slogan()
+    // An image of the name: a span with no role may not carry a label (ticket 0856).
+    expect(wrapper.attributes('role')).toBe('img')
     expect(wrapper.attributes('aria-label')).toBe('openbeads')
     expect(wrapper.get('.slogan__slot').attributes('aria-hidden')).toBe('true')
     expect(wrapper.get('.slogan__open').text()).toBe('open')
