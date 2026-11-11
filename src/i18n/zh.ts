@@ -686,11 +686,12 @@ export const zh: Translations = {
       sides: '(L) 从左边开始,(R) 从右边开始。',
       runNote: '一段由数量和字母组成:2C 是两颗 C 珠。',
       firstCentre: '第 1 圈在中心，每圈绕形状一周。',
-      firstPoint: '第 1 行在尖端，每行从左往右读。',
+      firstPoint: '第 1 行是尖端的一对珠，各行来回往返。',
       firstBase: '第 1 行是顶部的底排，每行从左往右读；然后从左起逐条流苏，从上往下读。',
       partsThenJoins: '各部件按组装顺序从中心逐圈编织，最后进行拼接。',
       faceNote: '此图样只是一面：万花筒环 {total} 个三角形中的 {parts} 个。其他每一面请各建一个边框。',
       pairNote: '(2A) 是转角对：两颗珠一起穿上。| 表示一条边到此结束。',
+      middlePairNote: '(2A) 是中间对：两颗珠一起穿上。',
     },
   },
   saveBox: {

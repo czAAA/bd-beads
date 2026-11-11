@@ -58,6 +58,20 @@ describe('the Starter registry', () => {
     expect(starterBeadCount(starterById('warpedSquare'), asDesigned('warpedSquare'), delica)).toBe(144)
   })
 
+  it('estimates a Kite of 15, 21 and 30 rows at 128, 242 and 480 beads, about as wide as it is tall (ticket 0874)', () => {
+    const kite = starterById('kite')
+    const estimates = [15, 21, 30].map((rows) => {
+      const choice = { sizes: { rows }, useDesign: false }
+      const measure = starterMeasure(kite, choice, delica)
+      return [starterBeadCount(kite, choice, delica), measure.shape === 'frame' && Math.round(measure.widthMm), measure.shape === 'frame' && Math.round(measure.heightMm)]
+    })
+    expect(estimates).toEqual([
+      [128, 23, 23],
+      [242, 31, 33],
+      [480, 42, 46],
+    ])
+  })
+
   it('measures a Star of Part size 10 in Delica 11/0 about 5 cm across, as a MiniStar is (ticket 0875)', () => {
     const { widthMm } = starterMeasure(starterById('star'), { sizes: { partSize: 10 }, useDesign: false }, delica) as { widthMm: number }
     // The bead centres span 36.8 bead widths; the box adds half a bead's diagonal each side.

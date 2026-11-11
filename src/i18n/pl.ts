@@ -698,11 +698,12 @@ export const pl: Translations = {
       sides: '(L) zaczyna się z lewej, (R) z prawej.',
       runNote: 'Odcinek to liczba i litera: 2C to dwa koraliki C.',
       firstCentre: 'Okrążenie 1 jest w środku; każde okrąża kształt.',
-      firstPoint: 'Rząd 1 jest przy czubku; każdy rząd czyta się od lewej do prawej.',
+      firstPoint: 'Rząd 1 to para przy czubku; rzędy idą tam i z powrotem.',
       firstBase: 'Rząd 1 to dolny rząd góry; każdy rząd czyta się od lewej do prawej, potem każdą nitkę od lewej, z góry na dół.',
       partsThenJoins: 'Każdą część plecie się okrążeniami od jej środka, w kolejności składania, a potem połączenia.',
       faceNote: 'Ten schemat to jedna ściana: {parts} z {total} trójkątów kalejdocyklu. Dla każdej innej ściany zrób osobną ramkę.',
       pairNote: '(2A) to para narożna: dwa koraliki nabrane razem. Bok kończy się na |.',
+      middlePairNote: '(2A) to para środkowa: dwa koraliki nabrane razem.',
     },
   },
   saveBox: {

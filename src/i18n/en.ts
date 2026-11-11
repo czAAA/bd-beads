@@ -690,11 +690,12 @@ export const en: Translations = {
       sides: '(L) starts at the left, (R) at the right.',
       runNote: 'A run is a count and a letter: 2C is two beads of C.',
       firstCentre: 'Round 1 is at the centre; each round goes round the shape.',
-      firstPoint: 'Row 1 is at the point; each row reads left to right.',
+      firstPoint: 'Row 1 is the pair at the point; the rows go back and forth.',
       firstBase: 'Row 1 is the top\'s base row; each row reads left to right, then each strand from the left, top to bottom.',
       partsThenJoins: 'Each part is beaded round by round from its centre, in making order, then the joins.',
       faceNote: 'This chart is one face: {parts} of the Kaleidocycle\'s {total} triangles. Make a Frame for each other face to chart its design.',
       pairNote: '(2A) is a corner pair: two beads picked up together. A side ends at |.',
+      middlePairNote: '(2A) is the middle pair: two beads picked up together.',
     },
   },
   saveBox: {
