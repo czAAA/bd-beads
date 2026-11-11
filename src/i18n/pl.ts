@@ -180,7 +180,7 @@ export const pl: Translations = {
       tooltipRename: 'Zmień nazwę tego projektu.',
       tooltipDuplicate: 'Zrób kopię tego projektu jako migawkę.',
       tooltipDelete: 'Usuń ten projekt z tego urządzenia.',
-      titleLabel: 'projekt:',
+      titleLabel: 'projekt',
       nameLabel: 'nazwa:',
       makerLabel: 'autor:',
       savedLocal: 'Zapisano w przeglądarce',
@@ -195,7 +195,7 @@ export const pl: Translations = {
   },
   theme: {
     groupLabel: 'Motyw',
-    matchDevice: 'Systemowy',
+    matchDevice: 'Jak w urządzeniu',
     light: 'Jasny motyw',
     dark: 'Ciemny motyw',
     contrast: 'Wysoki kontrast',
@@ -707,7 +707,7 @@ export const pl: Translations = {
   },
   frame: {
     title: 'Ramka',
-    titleLabel: 'ramka:',
+    titleLabel: 'ramka',
     nameEmpty: 'Nazwij tę ramkę',
     nameEdit: 'Zmień nazwę ramki',
     nameTooltip: 'Zmień nazwę tej ramki.',
