@@ -21,6 +21,11 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
       zh: '项目文件只有一个名字：“保存项目文件”和“打开项目文件”，每个保存的文件都在同一条提示里写出名字，打不开的文件会说明原因',
       es: 'El archivo de proyecto tiene un solo nombre, Guardar archivo de proyecto y Abrir archivo de proyecto, cada archivo guardado se nombra en un aviso y un archivo que no se abre dice por qué',
       pl: 'Plik projektu ma jedną nazwę, Zapisz plik projektu i Otwórz plik projektu, każdy zapisany plik jest nazwany w jednym komunikacie, a plik, który się nie otwiera, mówi dlaczego',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The first beads lead to a picture: one button fits a Frame and opens Export, and a Frame selected from Export brings it back',
       ru: 'Первые бусины ведут к картинке: одна кнопка задаёт рамку и открывает экспорт, а рамка, выделенная из экспорта, возвращает к нему',
       uk: 'Перші намистини ведуть до картинки: одна кнопка задає рамку й відкриває експорт, а рамка, виділена з експорту, повертає до нього',
