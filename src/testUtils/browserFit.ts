@@ -1,4 +1,4 @@
-import { createApp, type Component } from 'vue'
+import { createApp, defineComponent, h, type Component } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import type { Locale } from '../domain/locale'
@@ -25,6 +25,11 @@ export interface Mounted {
   root: HTMLElement
   unmount: () => void
 }
+
+/** `component` in a box that is the `shell` container, as AppShell is, so its layout answers to the width as in the app:
+ * the Canvas strip's phone layout (ticket 0843). */
+export const inShell = (component: Component, props: Record<string, unknown>): Component =>
+  defineComponent({ setup: () => () => h('div', { style: { container: 'shell / inline-size', width: '100%' } }, [h(component, props)]) })
 
 /** A phone-ish height: the tests are about width. */
 const VIEWPORT_HEIGHT = 800

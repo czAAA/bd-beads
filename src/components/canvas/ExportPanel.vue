@@ -6,13 +6,16 @@ import { fitToDrawing } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { frameOf } from '../../domain/layerRecord'
+import type { ExportChoice } from '../../composables/shell/openPanel'
 
 // The Export panel (ticket 0652; ExportPanel card): opened by the strip's Export button. With a Frame, the Frame panel's
 // export rows (ExportSection); with none, the way to set one: Select a Frame and Fit a Frame to the drawing.
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
-  exporting?: 'png' | 'pdf'
+  exporting?: ExportChoice
+  /** The row it opens on, focused (ticket 0843): the Project panel's Picture or Printable chart asked for it. */
+  opensOn?: ExportChoice
 }>()
 
 const emit = defineEmits<{
@@ -32,7 +35,7 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
     <div class="export-panel__title">
       <span class="export-panel__label">{{ t.panels.project.exportHeading }}</span>
     </div>
-    <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
+    <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" :opens-on="opensOn" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
     <template v-else>
       <p class="export-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <PanelItem icon="select" data-testid="export-select-frame" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>

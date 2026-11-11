@@ -1,5 +1,5 @@
 import { defineComponent, h, provide, ref, type Component } from 'vue'
-import { describeFits, type FitCase } from '../testUtils/browserFit'
+import { describeFits, inShell, type FitCase } from '../testUtils/browserFit'
 import ShortcutsHelp from './shell/ShortcutsHelp.vue'
 import MenuPanel from './shell/MenuPanel.vue'
 import { PANEL_CONTEXT } from './shell/panelContext'
@@ -54,6 +54,7 @@ const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
 
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
+  ['CanvasStrip (in its shell)', inShell(CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }), {}],
   ['ShortcutsHelp', ShortcutsHelp, {}],
   ['MenuPanel', inPanel(MenuPanel, { projectCount: 1, toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true, kept: false }), {}],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false, canSaveAs: true, linkedFileName: 'Scarf for winter.openbeads' }],

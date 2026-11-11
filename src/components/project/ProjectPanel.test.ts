@@ -30,7 +30,7 @@ function mountPanel(props: Record<string, unknown> = {}) {
 describe('ProjectPanel (tickets 443, 554, 0670)', () => {
   it('has the head, then the Canvas\'s Layer settings, the reference image, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'save-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'canvas-technique', 'bead-brand', 'canvas-section', 'reference-image-add', 'project-export-png', 'project-export-pdf', 'save-project-file', 'project-duplicate', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -39,6 +39,16 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
+  })
+
+  it('offers Picture and Printable chart in its export section, each asking to open Export on that choice (ticket 0843)', async () => {
+    const wrapper = mountPanel()
+    expect(wrapper.get('[data-testid="project-export-png"]').text()).toBe(`${en.frame.exportPicture}.png`)
+    expect(wrapper.get('[data-testid="project-export-pdf"]').text()).toBe(`${en.frame.exportChart}.pdf`)
+
+    await wrapper.get('[data-testid="project-export-png"]').trigger('click')
+    await wrapper.get('[data-testid="project-export-pdf"]').trigger('click')
+    expect(wrapper.emitted('export')).toEqual([['png'], ['pdf']])
   })
 
   it('names the Linked file on the Save row, and offers Save as only where the browser can link a file (ADR 0090)', async () => {

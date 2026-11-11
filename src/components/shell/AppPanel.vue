@@ -128,8 +128,11 @@ function focusUnlessKeyboard(control: HTMLElement | null | undefined) {
   ;(control && !wouldRaiseKeyboard(control) ? control : panelEl.value)?.focus({ preventScroll: true })
 }
 
-/** Focus on opening: the subpanel's first field (not its Back arrow), else the panel's first control. */
+/** Focus on opening: the row the panel was opened on (the Export panel's Picture or Printable chart, ticket 0843), else
+ * the subpanel's first field (not its Back arrow), else the panel's first control. */
 function focusEntry() {
+  const chosen = panelEl.value?.querySelector<HTMLElement>('[data-panel-entry]:not([aria-disabled="true"])')
+  if (chosen) return void chosen.focus({ preventScroll: true })
   const first = inSub.value ? subBodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) : focusables()[0]
   if (props.skipsFields) return void panelEl.value?.focus({ preventScroll: true })
   focusUnlessKeyboard(first ?? focusables()[0])

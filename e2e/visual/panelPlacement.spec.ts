@@ -20,11 +20,14 @@ for (const [name, width, height] of WIDTHS) {
     const page = await context.newPage()
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+    // Export is whole on the screen before anything is pressed or scrolled, on a phone too (ticket 0843).
+    const exportAtFirst = (await page.getByTestId('strip-export').boundingBox())!
+    expect(exportAtFirst.x).toBeGreaterThanOrEqual(0)
+    expect(exportAtFirst.x + exportAtFirst.width).toBeLessThanOrEqual(width)
     for (const id of ['strip-menu', 'strip-project', 'strip-frame', 'strip-export'] as const) {
       await closePanel(page)
       await page.getByTestId(id).click()
       await settle(page)
-      // Measured after the press: on a narrow strip the press scrolls Export into view.
       const button = (await page.getByTestId(id).boundingBox())!
       const panel = page.getByTestId('panel-dropdown')
       await expect(panel, id).toHaveCount(1)

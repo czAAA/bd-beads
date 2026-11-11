@@ -5,6 +5,7 @@ import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import type { ImageRejection } from '../../domain/imageConversion'
 import type { OpacityStep } from '../../domain/referenceImage'
+import type { ExportChoice } from '../../composables/shell/openPanel'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -16,8 +17,8 @@ import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
 // The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): everything about the open Project that no
-// tool already does. A head (title with the save state, name, maker), then four sections that fold shut: the Canvas's
-// Layer settings, the reference image (ticket 0790), export and this project. It only asks; the app shell does the work (the Frame's: Frame panel).
+// tool already does. A head (title, name, maker), then four sections that fold shut: the Canvas's Layer settings, the
+// reference image (0790), export (its Picture and Printable chart open Export, 0843) and this project. It only asks.
 const props = defineProps<{
   project: Project
   saveFailed: boolean
@@ -45,6 +46,8 @@ const emit = defineEmits<{
   /** Save and Save as (ADR 0090, ticket 0796), the actions the save ring and the keys also run. */
   'save-project-file': []
   'save-project-file-as': []
+  /** Picture or Printable chart (ticket 0843): open Export on that choice, as the Canvas strip's Export button opens it. */
+  export: [choice: ExportChoice]
   'save-maker-name': [name: string]
   duplicate: []
   clear: []
@@ -100,6 +103,8 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
     />
 
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
+      <PanelItem icon="image" value=".png" data-testid="project-export-png" @select="emit('export', 'png')">{{ t.frame.exportPicture }}</PanelItem>
+      <PanelItem icon="pdf" value=".pdf" data-testid="project-export-pdf" @select="emit('export', 'pdf')">{{ t.frame.exportChart }}</PanelItem>
       <PanelItem :icon="save.icon" :value="linkedFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
     </PanelSection>
