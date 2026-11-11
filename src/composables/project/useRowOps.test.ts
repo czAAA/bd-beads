@@ -60,6 +60,31 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
 
+  it('says the rows marked done the way it left are kept, so they do not look lost (ticket 0849, F-04-04)', () => {
+    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 3, beads: {} } })
+    const showToast = vi.fn()
+    useRowOps({ currentProject: () => moveToRow(framed, 2), replaceProject: vi.fn(), showToast, messages: () => en }).onToggleRowDirection()
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', `${en.rowProgress.directionToastColumns} ${en.rowProgress.rowsKeptToast}`, 'success')
+
+    useRowOps({ currentProject: () => moveToRow(toggleRowDirection(framed), 1), replaceProject: vi.fn(), showToast, messages: () => en }).onToggleRowDirection()
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', `${en.rowProgress.directionToastRowsReversed} ${en.rowProgress.columnsKeptToast}`, 'success')
+  })
+
+  it('goes straight to a row with Go to row, playing nothing (ticket 0849, F-04-14)', () => {
+    const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 50, columns: 3, beads: {} } })
+    const { deps, onGoToRow, rowPress } = setup(framed)
+    onGoToRow(39)
+    expect(rowProgressOf(replaced(deps)).currentRow).toBe(39)
+    expect(rowPress.value).toBeUndefined()
+    // Past the end is every row done; where the pointer already is, nothing is written.
+    const atEnd = setup(framed)
+    atEnd.onGoToRow(80)
+    expect(rowProgressOf(replaced(atEnd.deps)).currentRow).toBe(50)
+    const still = setup(moveToRow(framed, 5))
+    still.onGoToRow(5)
+    expect(still.deps.replaceProject).not.toHaveBeenCalled()
+  })
+
   it('moves the Row progress pointer by the given step', () => {
     const { deps, onMoveRow } = setup(tracking)
     onMoveRow(1)

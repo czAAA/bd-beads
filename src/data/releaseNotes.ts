@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The row counter goes to any row you type, names the row on peyote, says rows done are kept when you turn the direction, and reads Pattern done at the end',
+      ru: 'Счётчик рядов переходит к ряду, который вы введёте, называет ряд в мозаичном плетении, говорит, что готовые ряды сохраняются при повороте направления, и в конце показывает «Схема готова»',
+      uk: 'Лічильник рядів переходить до ряду, який ви введете, називає ряд у мозаїчному плетінні, каже, що готові ряди зберігаються під час повороту напрямку, і наприкінці показує «Схема готова»',
+      be: 'Лічыльнік радоў пераходзіць да рада, які вы ўведзяце, называе рад у мазаічным пляценні, кажа, што гатовыя рады захоўваюцца пры павароце кірунку, і ў канцы паказвае «Схема гатовая»',
+      zh: '行计数器可跳到你输入的行，佩奥会标出所在的行，转换方向时会说明已完成的行仍保留，全部完成时显示“图样已完成”',
+      es: 'El contador de filas va a la fila que escribas, nombra la fila en peyote, dice que las filas terminadas se guardan al girar la dirección y al final muestra Esquema terminado',
+      pl: 'Licznik rzędów przechodzi do wpisanego rzędu, nazywa rząd w peyote, mówi, że gotowe rzędy zostają po obróceniu kierunku, i na końcu pokazuje Schemat gotowy',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'With a keyboard, the colors open with focus on your color, the Frame’s tools are one Tab stop, and focus shows on dark buttons',
       ru: 'С клавиатуры цвета открываются с фокусом на вашем цвете, инструменты рамки стали одной остановкой Tab, а фокус виден на тёмных кнопках',
       uk: 'З клавіатури кольори відкриваються з фокусом на вашому кольорі, інструменти рамки стали однією зупинкою Tab, а фокус видно на темних кнопках',
