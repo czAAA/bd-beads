@@ -268,7 +268,7 @@ export const ru: Translations = {
     pictureWithDesign: '{option}, с дизайном',
     pictureEmpty: '{option}, пустая форма со швами',
     sizes: { topWidth: { one: 'ширина {count}', few: 'ширина {count}', many: 'ширина {count}', other: 'ширина {count}' }, topRows: { one: 'рядов верха: {count}', few: 'рядов верха: {count}', many: 'рядов верха: {count}', other: 'рядов верха: {count}' }, fringeLength: { one: 'бахрома {count}', few: 'бахрома {count}', many: 'бахрома {count}', other: 'бахрома {count}' }, width: { one: 'ширина {count}', few: 'ширина {count}', many: 'ширина {count}', other: 'ширина {count}' }, ringSize: { one: 'eu {count}', few: 'eu {count}', many: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'запястье {count} см', few: 'запястье {count} см', many: 'запястье {count} см', other: 'запястье {count} см' }, rounds: { one: 'кругов: {count}', few: 'кругов: {count}', many: 'кругов: {count}', other: 'кругов: {count}' }, partSize: { one: 'размер части {count}', few: 'размер части {count}', many: 'размер части {count}', other: 'размер части {count}' }, rows: { one: 'рядов: {count}', few: 'рядов: {count}', many: 'рядов: {count}', other: 'рядов: {count}' } },
-    hints: { fringeEarring: 'бисеринок в нижнем ряду', triangle: 'от центра', warpedSquare: 'от центра', kite: 'от острия', star: 'кругов в луче', kaleidocycle: 'кругов в треугольнике' },
+    hints: { fringeEarring: 'бисеринок в нижнем ряду', triangle: 'от центра', warpedSquare: 'от центра', kite: 'от острия', star: 'кругов в квадрате', kaleidocycle: 'кругов в треугольнике' },
     sizeHints: { topRows: 'каждый на бисеринку короче', fringeLength: 'бисеринок в самой длинной нити', width: 'бисеринок', ringSize: 'мм по кругу пальца', ringSizeUs: 'размер us', wrist: 'см, обхват вплотную' },
     setupSizes: { width: { label: 'Ширина', less: 'На бисеринку уже', more: 'На бисеринку шире' }, ringSize: { label: 'Размер кольца', less: 'На размер меньше', more: 'На размер больше' }, wrist: { label: 'Запястье', less: 'На сантиметр меньше', more: 'На сантиметр больше' } },
     picks: { fringeStyle: { label: 'Вид бахромы', options: { straight: 'Прямая бахрома', v: 'V-образная бахрома' } }, fit: { label: 'Посадка', options: { snug: 'Плотно', comfortable: 'Удобно', loose: 'Свободно' } } },
@@ -286,6 +286,7 @@ export const ru: Translations = {
     forPiece: { one: '{count} на всё изделие', few: '{count} на всё изделие', many: '{count} на всё изделие', other: '{count} на всё изделие' },
     faceInfoLabel: 'Что входит в подсчёт',
     faceInfo: 'Калейдоцикл собирается из {total} треугольников: {faces} грани по {parts}. Эта рамка показывает одну грань. Всё изделие считается так, будто каждая грань сплетена как эта. Чтобы дать другой грани свой дизайн, сделайте для неё отдельную рамку. Считаются только треугольники, без бисеринок края, кончиков и шарниров.',
+    beadsFrontBack: { one: '{count} бисеринка на обе стороны', few: '{count} бисеринки на обе стороны', many: '{count} бисеринок на обе стороны', other: '{count} бисеринки на обе стороны' },
   },
   canvas: {
     zoomInLabel: 'Увеличить',
@@ -635,6 +636,7 @@ export const ru: Translations = {
       'Вес = число бисеринок × около {grams} г. Среднее взято из числа бисеринок на килограмм у производителя, а где он его не даёт, из объявлений продавцов. Бисер разных цветов и покрытий весит по-разному.',
     weightInfoLabel: 'Как считается вес',
     pieceTotal: 'Это подсчёт для одной грани из {faces}. Всё изделие: {count}',
+    frontBackNote: 'Это подсчёт для всей звезды, на обе стороны.',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

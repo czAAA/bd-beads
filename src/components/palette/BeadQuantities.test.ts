@@ -275,3 +275,19 @@ describe('BeadQuantities on a Kaleidocycle (ticket 0876)', () => {
     expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746')).find('[data-testid="quantities-piece"]').exists()).toBe(false)
   })
 })
+
+describe('BeadQuantities on a Star (ticket 0875)', () => {
+  it('counts the whole star, front and back, and says so under the rows', () => {
+    const open = createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', size: { width: 60, height: 60, unit: 'beads' } })
+    const placed = placedStarter(open, starterById('star'), { sizes: { partSize: 5 }, useDesign: true }, { row: 30, column: 30 })
+    if (placed.kind !== 'changed') throw new Error('expected a Star')
+    const wrapper = mountQuantities(placed.project)
+    expect(wrapper.get('[data-testid="quantity-total"]').text()).toMatch(/^245 · /)
+    expect(wrapper.get('[data-testid="quantities-front-back"]').text()).toBe('These counts are the whole star, front and back.')
+    expect(wrapper.find('[data-testid="quantities-piece"]').exists()).toBe(false)
+  })
+
+  it('says nothing of front and back on any other Frame', () => {
+    expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746')).find('[data-testid="quantities-front-back"]').exists()).toBe(false)
+  })
+})

@@ -268,7 +268,7 @@ export const es: Translations = {
     pictureWithDesign: '{option}, con diseño',
     pictureEmpty: '{option}, forma vacía con costuras',
     sizes: { topWidth: { one: '{count} de ancho', many: '{count} de ancho', other: '{count} de ancho' }, topRows: { one: '{count} fila superior', many: '{count} de filas superiores', other: '{count} filas superiores' }, fringeLength: { one: 'fleco {count}', many: 'fleco {count}', other: 'fleco {count}' }, width: { one: '{count} de ancho', many: '{count} de ancho', other: '{count} de ancho' }, ringSize: { one: 'eu {count}', many: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'muñeca {count} cm', many: 'muñeca {count} cm', other: 'muñeca {count} cm' }, rounds: { one: '{count} vuelta', many: '{count} de vueltas', other: '{count} vueltas' }, partSize: { one: 'tamaño de parte {count}', many: 'tamaño de parte {count}', other: 'tamaño de parte {count}' }, rows: { one: '{count} fila', many: '{count} de filas', other: '{count} filas' } },
-    hints: { fringeEarring: 'cuentas en la fila base', triangle: 'desde el centro', warpedSquare: 'desde el centro', kite: 'desde la punta', star: 'vueltas por brazo', kaleidocycle: 'vueltas por triángulo' },
+    hints: { fringeEarring: 'cuentas en la fila base', triangle: 'desde el centro', warpedSquare: 'desde el centro', kite: 'desde la punta', star: 'vueltas por cuadrado', kaleidocycle: 'vueltas por triángulo' },
     sizeHints: { topRows: 'cada una con una cuenta menos', fringeLength: 'cuentas, fleco más largo', width: 'cuentas', ringSize: 'mm alrededor del dedo', ringSizeUs: 'talla us', wrist: 'cm, medida ajustada' },
     setupSizes: { width: { label: 'Ancho', less: 'Una cuenta menos de ancho', more: 'Una cuenta más de ancho' }, ringSize: { label: 'Talla de anillo', less: 'Una talla menos', more: 'Una talla más' }, wrist: { label: 'Muñeca', less: 'Un centímetro menos', more: 'Un centímetro más' } },
     picks: { fringeStyle: { label: 'Estilo de fleco', options: { straight: 'Fleco recto', v: 'Fleco en V' } }, fit: { label: 'Ajuste', options: { snug: 'Ajustado', comfortable: 'Cómodo', loose: 'Holgado' } } },
@@ -286,6 +286,7 @@ export const es: Translations = {
     forPiece: { one: '{count} la pieza entera', many: '{count} la pieza entera', other: '{count} la pieza entera' },
     faceInfoLabel: 'Qué cuentan las cifras',
     faceInfo: 'Un caleidociclo tiene {total} triángulos, {faces} caras de {parts}, y este marco es una cara. La pieza entera cuenta cada cara tejida como esta. Para dar a otra cara su propio diseño, haz un marco para ella. Solo se cuentan los triángulos, no las cuentas del borde, de las puntas ni de las bisagras.',
+    beadsFrontBack: { one: '{count} cuenta, anverso y reverso', many: '{count} de cuentas, anverso y reverso', other: '{count} cuentas, anverso y reverso' },
   },
   canvas: {
     zoomInLabel: 'Acercar',
@@ -632,6 +633,7 @@ export const es: Translations = {
       'Es el número de cuentas × unos {grams} g por cuenta. El promedio sale de las cuentas por kilo que publica el fabricante, o de anuncios de vendedores si el fabricante no lo da. Las cuentas reales varían según el color y el acabado.',
     weightInfoLabel: 'Cómo se calcula el peso',
     pieceTotal: 'Estas cifras son de una cara de {faces}. Pieza entera: {count}',
+    frontBackNote: 'Estas cifras son de la estrella entera, anverso y reverso.',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

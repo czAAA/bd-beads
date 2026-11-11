@@ -577,15 +577,15 @@ describe('the whole-Frame Mirror on a Custom frame, the shape\'s own Axes (ticke
   /** The whole-Frame Mirror in a Mode, whatever Axes the setting holds: the shape's are the ones that act. */
   const inMode = (mode: MirrorSetting['mode']): MirrorSetting => on({ leftRight: true }, {}, mode)
 
-  it('on a Star is Radial at the shape\'s fivefold turn: Repeat lands a bead at the same round and place on every arm, Mirror at its reflected place within each arm too', () => {
+  it('on a Star is Radial at the shape\'s fivefold turn: Repeat lands a bead at the same round and place in every square, Mirror at its reflected place too (ticket 0875)', () => {
     const { sheet } = custom('star', 3)
     const repeat = counterparts(sheet, inMode('repeat'), [at(0, 0)])
-    expect(cells(repeat)).toEqual([[0, 0], [0, 4], [0, 8], [0, 12], [0, 16]])
+    expect(cells(repeat)).toEqual([[0, 0], [0, 2], [0, 4], [0, 6], [0, 8]])
     expect(repeat.dropped).toBe(0)
-    const mirror = counterparts(sheet, inMode('mirror'), [at(2, 1)])
+    const mirror = counterparts(sheet, inMode('mirror'), [at(1, 1)])
     expect(mirror.positions).toHaveLength(10)
     expect(new Set(mirror.positions.map(({ column }) => column)).size).toBe(10)
-    expect(mirror.positions.every(({ row }) => row === 2)).toBe(true)
+    expect(mirror.positions.every(({ row }) => row === 1)).toBe(true)
     expect(mirror.dropped).toBe(0)
   })
 

@@ -58,6 +58,13 @@ describe('the Starter registry', () => {
     expect(starterBeadCount(starterById('warpedSquare'), asDesigned('warpedSquare'), delica)).toBe(144)
   })
 
+  it('measures a Star of Part size 10 in Delica 11/0 about 5 cm across, as a MiniStar is (ticket 0875)', () => {
+    const { widthMm } = starterMeasure(starterById('star'), { sizes: { partSize: 10 }, useDesign: false }, delica) as { widthMm: number }
+    // The bead centres span 36.8 bead widths; the box adds half a bead's diagonal each side.
+    expect(widthMm).toBeGreaterThan(48)
+    expect(widthMm).toBeLessThan(51)
+  })
+
   for (const starter of allStarters) {
     it(`fills every position of the ${starter.id} design's Frame, and nothing beyond it`, () => {
       const beads = starterDesign(starter)

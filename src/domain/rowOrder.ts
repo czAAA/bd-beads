@@ -29,9 +29,12 @@ export interface RowOrder {
   /** What a pass of a Custom frame is, for the Word chart: a round or row (of a part, where there are several), or a
    * join; none for a Frame without a shape, whose passes are its lines. */
   stepOf?(pass: number): OrderStep | undefined
-  /** A round's sides in the order `positionsOf` lists its beads (ticket 0873), for the Word chart; none for a ring, a
-   * row, a strand, a join or a Frame without a shape. */
+  /** A round's sides in the order `positionsOf` lists its beads (ticket 0873), or `wordsOf` where it has them, for the
+   * Word chart; none for a ring, a row, a strand, a join or a Frame without a shape. */
   sidesOf?(pass: number): readonly RoundSide[] | undefined
+  /** The positions the Word chart reads for a pass where the face shows only part of it (ticket 0875): a Star's round
+   * round its front and its mirrored back, a face bead read once on each side; none where it reads `positionsOf`. */
+  wordsOf?(pass: number): GridPosition[] | undefined
 }
 
 /** One side of a round as it is beaded (ticket 0873): the beads picked up together at its corner (a corner pair's two,
@@ -92,6 +95,7 @@ interface LayoutPass {
   step: OrderStep
   positions: GridPosition[]
   sides?: RoundSide[]
+  words?: GridPosition[]
 }
 
 /** A round as it is beaded (ticket 0873): the step-up leads into the corner pair across the Seam into its first panel,
@@ -110,6 +114,21 @@ function fromCornerPair(round: readonly LayoutPosition[]): { positions: LayoutPo
     sides.push({ corner, singles })
   }
   return { positions, sides }
+}
+
+/** A Star square's round as beaded (ticket 0875), front and mirrored back: from the centre front's corner pair out arm
+ * j's half, in on the back, out arm j + 1's half on the back, in on the front; its partial last round the ridge out and
+ * back in, the tip once, single-bead corners. Round 1 is a ring of four. */
+function frontAndBack(round: readonly LayoutPosition[]): { positions: LayoutPosition[]; words: LayoutPosition[]; sides?: RoundSide[] } {
+  const own = round.filter(({ panel }) => panel === round[0]!.panel)
+  const other = round.filter(({ panel }) => panel !== round[0]!.panel)
+  const n = own.length
+  if (other.length === 0) {
+    const sides = [{ corner: 1, singles: n - 2 }, { corner: 1, singles: n - 2 }, { corner: 1, singles: 0 }]
+    return { positions: own, words: [...own, ...own.slice(0, -1).reverse()], sides }
+  }
+  const words = [other[n - 1]!, ...own, ...[...own].reverse(), ...[...other].reverse(), ...other.slice(0, -1)]
+  return { positions: [...own, ...other], words, ...(n > 1 ? { sides: [0, 1, 2, 3].map(() => ({ corner: 2, singles: n - 2 })) } : {}) }
 }
 
 /** The beads of a part's last round that face another part: those within a bead of the nearest, where a zip or hinge
@@ -153,16 +172,19 @@ function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[]
       const lower = new Set(layout.twoPasses?.lower)
       const halves = layout.twoPasses && index > 0 ? [false, true].map((low) => positions.filter(({ column }) => lower.has(column) === low)) : [positions]
       for (const half of halves.filter((each) => each.length > 0)) {
-        const { positions: read, sides } = lines === 'round' ? fromCornerPair(half) : { positions: half }
+        const reading: { positions: LayoutPosition[]; sides?: RoundSide[]; words?: LayoutPosition[] } = lines !== 'round' ? { positions: half } : layout.back ? frontAndBack(half) : fromCornerPair(half)
+        const { positions: read, sides, words } = reading
         const step: OrderStep = { kind: lines, number: passes.length - first + 1, ...(several ? { part: part + 1 } : {}) }
-        passes.push({ step, positions: read.map(({ row, column }) => ({ row, column })), ...(sides ? { sides } : {}) })
+        const named = (beads: readonly LayoutPosition[]) => beads.map(({ row, column }) => ({ row, column }))
+        passes.push({ step, positions: named(read), ...(sides ? { sides } : {}), ...(words ? { words: named(words) } : {}) })
       }
     }
   }
   for (const join of layout.joins) {
     const [first, second] = join.parts
     // A part zipped on itself, or into what the face does not show, rings nothing.
-    const positions = second === undefined ? [] : [...facingEdge(lastRound(first!), lastRound(second)), ...facingEdge(lastRound(second), lastRound(first!))]
+    const facing = () => (second === undefined ? [] : [...facingEdge(lastRound(first!), lastRound(second)), ...facingEdge(lastRound(second), lastRound(first!))])
+    const positions = join.beads ? join.beads.map((index) => layout.positions[index]!) : facing()
     passes.push({ step: { kind: 'join', step: join.step, parts: join.parts.map((part) => part + 1) }, positions: positions.map(({ row, column }) => ({ row, column })) })
   }
   return passes
@@ -188,6 +210,7 @@ export function layoutOrder(layout: FrameLayout, lines: 'round' | 'row'): RowOrd
     lineOf: () => undefined,
     stepOf: (pass) => passes[pass]?.step,
     sidesOf: (pass) => passes[pass]?.sides,
+    wordsOf: (pass) => passes[pass]?.words,
   }
   layoutOrders.set(layout, order)
   return order

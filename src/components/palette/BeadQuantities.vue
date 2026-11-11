@@ -5,7 +5,7 @@ import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/us
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { frameOf } from '../../domain/layerRecord'
-import { pieceFaceOf, wholePieceBeads } from '../../domain/pieceFaces'
+import { backBeadsAt, pieceFaceOf, wholePieceBeads } from '../../domain/pieceFaces'
 import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
@@ -64,6 +64,12 @@ const colorOf = (colorId: string | null, hex: string): LabelledColor => palette.
 // A coded color is named from the Bead's Color catalog (ticket 0760), so the catalog loads once a row has a code.
 const beadColors = useBeadColorsList()
 loadCatalogWhen(beadColors, () => quantities.value.some((quantity) => !!colorOf(quantity.colorId, quantity.hex).code))
+
+/** On a Star the counts are the whole star (ticket 0875): its back is beaded as the face's mirror, and a line says so. */
+const countsBack = computed(() => {
+  const frame = props.project && frameOf(props.project)
+  return !!frame && backBeadsAt(frame) !== undefined
+})
 
 /** On a Kaleidocycle the counts are one face (ticket 0876): the line under them gives the whole piece's, every face
  * beaded like this one, with an Info button saying what they cover. */
@@ -130,6 +136,7 @@ const total = computed(() => {
         <span>{{ piece.line }}</span>
         <InfoButton :label="t.starters.faceInfoLabel" :body="piece.info" data-testid="quantities-piece-info" />
       </p>
+      <p v-if="countsBack && quantities.length > 0" class="bead-quantities__piece" data-testid="quantities-front-back">{{ t.quantities.frontBackNote }}</p>
     </div>
   </PanelSection>
 </template>
