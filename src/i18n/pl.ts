@@ -602,7 +602,8 @@ export const pl: Translations = {
     showAll: 'Pokaż wszystkie kolory ({count})',
     showFewer: 'Pokaż mniej',
     weightInfo:
-      'To liczba koralików × około {grams} g na koralik. Ta średnia pochodzi z ofert sprzedawców, a nie z potwierdzonych pomiarów. Prawdziwe koraliki się różnią, więc kup trochę więcej.',
+      'To liczba koralików × około {grams} g na koralik. Średnia pochodzi z liczby koralików na kilogram podanej przez producenta, a gdy jej nie podaje, z ofert sprzedawców. Prawdziwe koraliki różnią się zależnie od koloru i wykończenia.',
+    weightInfoLabel: 'Jak liczona jest waga',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

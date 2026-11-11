@@ -160,10 +160,13 @@ export const DEFAULT_BEAD: Bead = defineBead({
   size: '1.5mm',
   widthMm: 1.5,
   heightMm: 1.5,
-  // PROVISIONAL: from public seller listings' counts per gram, not confirmed with a dealer (ticket 155).
+  // PROVISIONAL: from public seller listings' counts per gram (ticket 155). TOHO's Beads Per Kg Chart lists Cube 3mm and
+  // 4mm only (checked in ticket 0852), so there is no maker's figure to take.
   beadsPerKg: 92593,
 })
 
+// Every beads per kg below matches its maker's page (TOHO's Beads Per Kg Chart, tohobeads.net/grainbeads; Miyuki's Size
+// and Bead Count Data, miyuki-beads.co.jp/english/seedbeads/seedgrain.html), checked in ticket 0852.
 export const BEAD_CATALOG: readonly Bead[] = [
   DEFAULT_BEAD,
   defineBead({

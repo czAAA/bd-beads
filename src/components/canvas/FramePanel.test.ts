@@ -306,18 +306,18 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
-  it('leads with Export, then the size, its Layer settings, Beads needed with its total in the header, and ends with the margin (tickets 555, 568, 0656, 0670)', () => {
+  it('leads with Export, then the size, Beads needed right after it, its Layer settings, and ends with the margin (tickets 555, 568, 0656, 0670, 0852)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
     expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([
       en.panels.project.exportHeading,
       en.frame.sizeHeading,
-      en.layerSettings.frameHeading,
       en.quantities.heading,
+      en.layerSettings.frameHeading,
       en.frame.margin.heading,
     ])
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-    expect(sections.at(-2)!.attributes('data-testid')).toBe('bead-quantities')
+    expect(sections.at(2)!.attributes('data-testid')).toBe('bead-quantities')
     expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
   })
 
