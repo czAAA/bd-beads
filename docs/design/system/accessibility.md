@@ -75,5 +75,5 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Frame number is "Frame 1, bring it into view". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
 - **Announced:** "Frame set, width 21, height 19", "Frame removed", and the rotate notice in full: "Pattern rotated. 1 piece was in the way and moved outside the Frame."
 - **Never colour alone:** the Frame is a line plus its rulers; a piece is a rectangle plus its rulers. The Frame line is `ink`, the strongest mark on every canvas background. The piece rectangle (`line-strong`) is decoration: the rulers carry the information.
-- **Touch targets:** the phone's Frame handles are drawn at 16px with a 44px hit area.
+- **Touch targets:** every resize handle (the Frame's, a Selection's, the Mirror's Area's, the crop's and the reference image's) is the Handle card's: drawn small, with a 44px touch area round where it is drawn.
 - The keyboard rules for the Frame and the announcements are proposed with v16 and were not part of the signed-off mockups.

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The crop\'s and the Reference image\'s handles are the Frame\'s, easy to catch with a finger',
+      ru: 'Ручки обрезки и подложки теперь как у рамки и легко ловятся пальцем',
+      uk: 'Ручки обрізки й підкладки тепер як у рамки й легко хапаються пальцем',
+      be: 'Ручкі абрэзкі і падкладкі цяпер як у рамкі і лёгка ловяцца пальцам',
+      zh: '裁剪框和参考图的手柄与画框相同，手指也能轻松抓住',
+      es: 'Los tiradores del recorte y de la imagen de referencia son los del Marco, fáciles de tomar con el dedo',
+      pl: 'Uchwyty kadrowania i obrazu pomocniczego są jak w ramce, łatwe do złapania palcem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'With Select, a tap beside the Selection lets go of it; a drag still makes a new one',
       ru: 'Касание рядом с выделением снимает его, а протягивание создаёт новое',
       uk: 'Дотик поруч із виділенням знімає його, а протягування створює нове',
