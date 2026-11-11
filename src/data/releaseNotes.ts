@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Convert image opens on a small piece in your Bead\'s colors, says what each choice does, and counts colors as Beads needed does',
+      ru: 'Конвертер изображений открывается на небольшой работе в цветах вашего бисера, объясняет каждый вариант и считает цвета так же, как «Нужно бисера»',
+      uk: 'Конвертер зображень відкривається на невеликій роботі в кольорах вашого бісеру, пояснює кожен варіант і рахує кольори так само, як «Потрібно бісеру»',
+      be: 'Канвертар выяў адкрываецца на невялікай рабоце ў колерах вашага бісеру, тлумачыць кожны варыянт і лічыць колеры гэтак жа, як «Патрэбна бісеру»',
+      zh: '转换图片默认是一件小作品、用你的珠子颜色，说明每个选项的作用，颜色数与所需珠子一致',
+      es: 'Convertir imagen empieza con una pieza pequeña en los colores de tu cuenta, explica cada opción y cuenta los colores como Cuentas necesarias',
+      pl: 'Konwertuj obraz zaczyna od małej pracy w kolorach twojego koralika, mówi, co robi każda opcja, i liczy kolory tak jak Potrzebne koraliki',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A new Project starts on a color that shows on its background: gold on a dark one, red on a light one',
       ru: 'Новый проект начинается с цвета, который виден на его фоне: золотого на тёмном, красного на светлом',
       uk: 'Новий проєкт починається з кольору, який видно на його тлі: золотого на темному, червоного на світлому',

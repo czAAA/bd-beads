@@ -146,10 +146,19 @@ describe('Height and the chain (ticket 0757)', () => {
     expect(heightRange({ width: 100, height: 74 })).toEqual({ min: 8, max: 296 })
   })
 
-  it('opens at the largest Width and Height for the picture or part', () => {
-    expect(startingSize({ width: 240, height: 160 })).toEqual({ width: 240, height: 160 })
-    expect(startingSize({ width: 1920, height: 1080 })).toEqual({ width: LARGE_SCHEMA_BEADS, height: LARGE_SCHEMA_BEADS })
-    expect(startingSize({ width: 32, height: 16 })).toEqual({ width: 128, height: 64 })
+  it('opens at a small piece: the mark nearest 60 beads wide, with Height in the picture\'s shape (ticket 0863)', () => {
+    expect(startingSize({ width: 240, height: 160 })).toEqual({ width: 60, height: 40 })
+    expect(startingSize({ width: 1920, height: 1080 })).toEqual({ width: 60, height: 34 })
+    expect(startingSize({ width: 200, height: 100 })).toEqual({ width: 50, height: 25 })
+  })
+
+  it('opens at 60 beads where no mark is near it', () => {
+    expect(startingSize({ width: 1000, height: 500 })).toEqual({ width: 60, height: 30 })
+  })
+
+  it('opens a picture narrower than 60 px at one bead per pixel', () => {
+    expect(startingSize({ width: 32, height: 16 })).toEqual({ width: 32, height: 16 })
+    expect(startingSize({ width: 4, height: 4 })).toEqual({ width: 8, height: 8 })
   })
 
   describe('linked', () => {

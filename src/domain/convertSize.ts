@@ -277,9 +277,23 @@ export function sizingFor({ part, width, height, linked = true, lead = 'width', 
   return whole(between({ columns, rows: columns === followed ? rows : shape({ columns }) }), heightMarks)
 }
 
-/** What the converter opens at (ConvertImage card): the largest Width and Height for the picture or part. */
+/** The Width a beginner's piece opens at (ticket 0863): about 60 beads, 9 cm in a 1.5 mm Bead. */
+const OPENING_WIDTH_BEADS = 60
+/** How far from OPENING_WIDTH_BEADS a mark may be and still be the opening Width: a fifth either way. */
+const OPENING_MARK_REACH = OPENING_WIDTH_BEADS / 5
+
+/** What the converter opens at (ConvertImage card, ticket 0863): a small piece, not the most detailed one. Width opens
+ * on the mark nearest 60 beads when one is near it, else at 60; a picture narrower than that opens at one bead per
+ * pixel. Height takes the picture's shape, so it reads true if Height is moved or the shape let go. */
 export function startingSize(part: ImageSize): { width: number; height: number } {
-  return { width: widthRange(part).max, height: heightRange(part).max }
+  const widths = widthRange(part)
+  const near = sizeMarks(part)
+    .filter((mark) => Math.abs(mark.width - OPENING_WIDTH_BEADS) <= OPENING_MARK_REACH)
+    .sort((a, b) => Math.abs(a.width - OPENING_WIDTH_BEADS) - Math.abs(b.width - OPENING_WIDTH_BEADS))[0]
+  const wanted = part.width <= OPENING_WIDTH_BEADS ? part.width : (near?.width ?? OPENING_WIDTH_BEADS)
+  const width = clamp(wanted, widths.min, widths.max)
+  const heights = heightRange(part)
+  return { width, height: clamp(Math.round((width * part.height) / part.width), heights.min, heights.max) }
 }
 
 /** The other side, in whole beads, of a Frame with the picture's physical shape through the Bead and the Technique's

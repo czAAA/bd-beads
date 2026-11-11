@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { formatImageLimits } from '../../domain/imageConversion'
+import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -10,9 +10,9 @@ import AppIcon from '../ui/AppIcon.vue'
 const props = defineProps<{ disabled: boolean }>()
 const emit = defineEmits<{ picture: [file: File] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const over = ref(false)
-const limits = computed(() => formatImageLimits(t.value.convertImage.wizard.dropLimits))
+const limits = computed(() => imageLimitsText(locale.value, t.value.convertImage.wizard.dropLimits))
 
 const carriesPicture = (transfer: DataTransfer | null) => [...(transfer?.items ?? [])].some((item) => item.kind === 'file' && item.type.startsWith('image/'))
 const pictureIn = (transfer: DataTransfer | null) => [...(transfer?.files ?? [])].find((file) => file.type.startsWith('image/'))

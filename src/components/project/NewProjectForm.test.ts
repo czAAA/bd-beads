@@ -7,7 +7,8 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import { chooseBeadInSection } from '../../testUtils/beadPicker'
 import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
-import { IMAGE_MAX_MEGABYTES, IMAGE_MAX_MEGAPIXELS, formatImageLimits } from '../../domain/imageConversion'
+import { IMAGE_MAX_MEGABYTES, IMAGE_MAX_MEGAPIXELS } from '../../domain/imageConversion'
+import { imageLimitsText } from '../../i18n/imageLimits'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
@@ -247,9 +248,9 @@ describe('NewProjectForm Drop (tickets 477, 0691)', () => {
 describe('NewProjectForm Convert image (spec 0645)', () => {
   it('advertises the limits as visible helper text and from the shared constants', () => {
     const wrapper = mount(NewProjectForm)
-    const expected = formatImageLimits(ru.convertImage.limitsHint)
+    const expected = imageLimitsText('ru', ru.convertImage.limitsHint)
 
-    expect(expected).toContain('PNG')
+    expect(expected).toContain('PNG, JPEG, GIF или WebP')
     expect(expected).toContain(String(IMAGE_MAX_MEGABYTES))
     expect(expected).toContain(String(IMAGE_MAX_MEGAPIXELS))
     expect(wrapper.find('[data-testid="convert-image-limits"]').text()).toBe(expected)

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { formatImageLimits, imageInputAccept, type ImageRejection } from '../../domain/imageConversion'
+import { imageInputAccept, type ImageRejection } from '../../domain/imageConversion'
 import { OPACITY_STEPS, type OpacityStep, type ReferenceImage } from '../../domain/referenceImage'
 import { REFERENCE_SECTION_ID } from '../../composables/project/useReferenceImageFlow'
+import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelListRow from '../shell/PanelListRow.vue'
@@ -31,7 +32,7 @@ const emit = defineEmits<{
   remove: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const words = computed(() => t.value.referenceImage)
 const accept = imageInputAccept()
 const opacityId = useId()
@@ -40,14 +41,14 @@ const pickerEl = ref<HTMLElement>()
 const summary = computed(() =>
   props.image ? fillBlanks(words.value.summary, { opacity: props.image.opacity, state: props.image.shown ? words.value.shown : words.value.hidden }) : undefined,
 )
-const info = computed(() => formatImageLimits(words.value.info))
+const info = computed(() => imageLimitsText(locale.value, words.value.info))
 const facts = computed(() => {
   const picture = props.image?.picture
   if (!picture) return ''
   const size = fillBlanks(words.value.kilobytes, { count: Math.max(1, Math.round(picture.bytes / 1024)) })
   return fillBlanks(words.value.facts, { width: picture.width, height: picture.height, size })
 })
-const refused = computed(() => (props.refusal ? fillBlanks(words.value.refused, { reason: formatImageLimits(words.value.reasons[props.refusal]) }) : undefined))
+const refused = computed(() => (props.refusal ? fillBlanks(words.value.refused, { reason: imageLimitsText(locale.value, words.value.reasons[props.refusal]) }) : undefined))
 // A refusal is scrolled into view, so one told after a pick from the strip button is seen in the panel it opened.
 const refusedEl = ref<HTMLElement>()
 watch(refusedEl, (line) => line?.scrollIntoView?.({ block: 'nearest' }), { flush: 'post' })
