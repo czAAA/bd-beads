@@ -31,6 +31,8 @@ Left to right, 14px in from the sheet's top-left corner (10px compact), 4px apar
 2. **Move bar**, centred on the top band: the Frame card's Move handle (40 × 6 `ink` pill in a 56 × 28 hit area, `grab`), now on the paper instead of in the gutter. Same name, Tooltip, keys and Tab stop.
 3. **Tools**, at the right, 28px icon buttons (`radius-md`, no fill, hover `ink` at 10%): **Mirror the whole Frame** (`mirror`, ticket 0750; below), **Rotate Frame** (`rotate`), **Edit Frame** (`pencil`; on: `ink` fill, `canvas` icon), **Export** (`share`, the Canvas strip's Export: opens the Export panel under this button, ExportPanel card), **Margin color** (`palette`), a divider, **Remove Frame** (`delete`, `ink` on the paper, `danger` on hover and in its confirmation). Each keeps the name, Tooltip, confirmation and disabled reasons it has in the Frame card.
 
+**Keyboard (ticket 0857):** the band is three Tab stops, in its order: Row progress, the Move bar (whose arrows move the Frame, so it stays a stop of its own) and the tools. ←/→, Home and End step along the tools and stop at the ends; the one last focused is the Tab stop. Folded, the tools stop is Margin color and Frame tools. The title block's name ("Name this Frame" on an unnamed Frame) is the next stop.
+
 The edit pencil, Remove Frame chip and Move handle no longer stand in the gutter: nothing of the Frame is drawn outside its sheet except the size Tooltip.
 
 The one exception: on the Homepage's What's inside, the demo Frame's band has no Row not done; the Progress bar under it keeps its own (Homepage card, ticket 0797).
