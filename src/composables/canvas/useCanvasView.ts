@@ -3,6 +3,9 @@ import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
 import { layerOf, orientationOf } from '../../domain/layerRecord'
+import { footprintOf } from '../../domain/footprint'
+import { withMargin } from '../../domain/margin'
+import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
 import { placedFrame } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
@@ -28,17 +31,32 @@ export interface PinchStep {
  * they lifted. The surface holds its drawing and turns it whole while either is set. */
 export type TwistPhase = 'turning' | 'settling'
 
-/** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and
- * BeadBoard cards).
+/** The rulers' gutter round drawn beads (CanvasStrip and BeadBoard cards). */
+const RULER_GUTTER_PX = 28
+
+/** Room left clear round the drawn beads at the fit level: the ruler gutter and a little air.
  * @internal Its test works out the fit zoom with it. */
 export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
 
-/** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every
- * bead, otherwise nothing.
+/** Room left clear round the Frame's Margin sheet at the fit level: the air alone, as the sheet's band holds the
+ * rulers (ticket 0850). */
+const SHEET_FIT_MARGIN_PX: Size = { width: FIT_MARGIN_PX.width - RULER_GUTTER_PX, height: FIT_MARGIN_PX.height - RULER_GUTTER_PX }
+
+/** What a view fits to and centres on, a block of the Canvas's positions, and the room left clear round it. */
+interface FitTarget {
+  box: Rect
+  margin: Size
+}
+
+/** What a view fits to: the Frame with its keep-out margin, its Margin sheet, when there is one (ticket 0850, so the
+ * sheet's title block is in view), otherwise the box round every bead, otherwise nothing.
  * @internal Its test checks what a view fits to on its own. */
-export function fitBox(project: Project): Rect | undefined {
-  // A turned Frame is fitted as it lies (ticket 0667).
-  return laidFrame(project) ?? beadBounds(layerOf(project, 'canvas').beads)
+export function fitBox(project: Project): FitTarget | undefined {
+  // The sheet is laid on the Canvas round the Frame's footprint, which takes a turned Frame as it lies (ticket 0667).
+  const footprint = footprintOf(project)
+  if (footprint) return { box: withMargin(footprint), margin: SHEET_FIT_MARGIN_PX }
+  const drawn = beadBounds(layerOf(project, 'canvas').beads)
+  return drawn && { box: drawn, margin: FIT_MARGIN_PX }
 }
 
 /** The layer a block is measured in: the Frame's own for the Frame itself (ticket 492), the Canvas's for anything else. */
@@ -51,6 +69,8 @@ function layerOfBox(project: Project, box: Rect): ViewLayer {
 export interface CanvasViewOptions {
   /** Saves the Canvas's orientation a two-finger twist came to rest at with the Project. */
   keepTwist?: (orientation: number) => void
+  /** What lies over the drawing area's edges (the Tool pill, ticket 0850): a fit leaves it clear. */
+  covered?: () => Insets
 }
 
 // Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
@@ -77,34 +97,42 @@ export function useCanvasView(
   /** The screen as the drawing leans off its quarter turn. */
   const leaning = computed(() => tiltedView(viewport.value, tiltOf(orientation.value)))
 
-  /** The Canvas as the view stands, or from another scroll; with no Project, an empty one in the default Technique. */
-  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value): SurfaceView {
+  /** The Canvas as the view stands, or from another scroll or in a part of the viewport; with no Project, an empty one
+   * in the default Technique. */
+  function surfaceOf(project: Project | undefined, at: Scroll = scroll.value, area: Size = viewport.value): SurfaceView {
     const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
-    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: zoom.value, scroll: at, viewport: viewport.value })
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project && placedFrame(project), rotation: nearestQuarterTurn(orientation.value), zoom: zoom.value, scroll: at, viewport: area })
+  }
+
+  /** The part of the viewport a fit uses (ticket 0850): all of it less what lies over its edges, while that leaves any;
+   * and where its top-left corner is. */
+  function fitRoom(): { area: Size; corner: Scroll } {
+    const clear = options.covered?.() ?? NO_INSETS
+    const area = { width: viewport.value.width - clear.left - clear.right, height: viewport.value.height - clear.top - clear.bottom }
+    return area.width > 0 && area.height > 0 ? { area, corner: { x: clear.left, y: clear.top } } : { area: viewport.value, corner: { x: 0, y: 0 } }
   }
 
   function measured(): boolean {
     return viewport.value.width > 0 && viewport.value.height > 0
   }
 
-  /** Puts the view at the fit: the Frame or the drawing whole, or the origin in the middle for an empty canvas. */
+  /** Puts the view at the fit: the Frame's sheet or the drawing whole, or the origin in the middle for an empty canvas,
+   * in the room the Tool pill leaves. */
   function fit(): void {
     const project = currentProject()
     if (!project) {
       return
     }
-    const box = fitBox(project)
+    const target = fitBox(project)
     if (!measured()) {
       // Nothing to fit to until the drawing area has a size: look at the origin at 100% and fit when it is measured.
       zoom.value = clampZoom(1)
       scroll.value = { x: 0, y: 0 }
-    } else if (!box) {
-      zoom.value = clampZoom(1)
-      scroll.value = surfaceOf(project).scrollToCentre()
     } else {
-      const layer = layerOfBox(project, box)
-      zoom.value = clampZoom(surfaceOf(project).zoomToFit(box, FIT_MARGIN_PX, layer))
-      scroll.value = surfaceOf(project).scrollToCentre(box, layer)
+      const { area, corner } = fitRoom()
+      zoom.value = clampZoom(target ? surfaceOf(project, scroll.value, area).zoomToFit(target.box, target.margin, 'canvas') : 1)
+      const centred = surfaceOf(project, scroll.value, area).scrollToCentre(target?.box, 'canvas')
+      scroll.value = { x: centred.x - corner.x, y: centred.y - corner.y }
     }
     isAtFit.value = true
   }
@@ -253,7 +281,9 @@ export function useCanvasView(
     if (!twisted) refit()
   })
 
-  watch(viewport, () => {
+  // A pill moved to another edge, or grown, moves the fit as a new size of the area does.
+  const coveredKey = () => Object.values(options.covered?.() ?? NO_INSETS).join()
+  watch([viewport, coveredKey], () => {
     if (!measured()) {
       return
     }

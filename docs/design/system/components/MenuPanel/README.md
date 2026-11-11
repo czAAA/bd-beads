@@ -4,8 +4,8 @@ The body of the Menu: what is about the app and the device. It renders as a drop
 
 ## Panel (the dropdown)
 
-- Opens 4px under the Menu button on the Canvas strip, left edges aligned. `panel-width` (520px, 585px at the app's 18px root) wide, `radius-lg`, `overlay-fill` with a 1px `overlay-line` edge (2px `line-strong` in high contrast), `elevation-3`, padding 8, `z-popover`. Taller than the box: it scrolls inside, with no visible scrollbar.
-- Closes on Escape, a press outside it (the press only closes), or the lit Menu button. Focus returns to the button.
+- Opens 4px under the Menu button on the Canvas strip, left edges aligned. `panel-width` (520px, 585px at the app's 18px root) wide, `radius-lg`, `overlay-fill` with a 1px `overlay-line` edge (2px `line-strong` in high contrast), `elevation-3`, padding 8, `z-popover`. Taller than the box: it scrolls inside, with no visible scrollbar. It ends 8px above the canvas box's bottom bar (the Progress bar, or Convert image's steps; ticket 0850), never over it; where it hangs from no canvas box, 16px above the window's bottom edge. This holds for every panel hung from the strip (Menu, Project, Frame, Export).
+- Closes on Escape, a press outside it (the press only closes), or the lit Menu button. Focus returns to the button. A press on the bottom bar is no press outside: it works at once (one press on Row done marks the row) and the panel stays open, so Beads needed can be read while weaving (ticket 0850).
 - Motion: `duration-base` in, 150ms out, opacity and a 4px move; a fade only under reduced motion (as the Menu card).
 
 ## Density (ticket 0553)
