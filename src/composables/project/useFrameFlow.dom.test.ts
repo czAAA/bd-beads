@@ -590,7 +590,7 @@ describe('useFrameFlow', () => {
       expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
       expect(frame.beads).toEqual(starterDesign(star))
       expect(beadsOfLayer(deps.harness.project, 'canvas')).toBe(beadsOfLayer(painted, 'canvas'))
-      expect(deps.announce).toHaveBeenCalledWith('Star frame set, part size 5')
+      expect(deps.announce).toHaveBeenCalledWith('Star Frame set, part size 5')
       deps.harness.history.onUndo()
       expect(frameOf(deps.harness.project)).toBeUndefined()
     })

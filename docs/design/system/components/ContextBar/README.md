@@ -85,7 +85,7 @@ About 380px in English on mouse with two straight Axes on. Where the bar cannot 
 
 ## Frame panel (retired)
 
-The Frame panel of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0054). Fit to drawing and Remove frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
+The Frame panel of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0054). Fit to drawing and Remove Frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
 
 ## What the app does differently
 

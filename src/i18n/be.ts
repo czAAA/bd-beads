@@ -181,7 +181,7 @@ export const be: Translations = {
       tooltipRename: 'Змяніць назву гэтага праекта.',
       tooltipDuplicate: 'Зрабіць копію праекта, каб захаваць здымак.',
       tooltipDelete: 'Выдаліць гэты праект з гэтай прылады.',
-      titleLabel: 'праект:',
+      titleLabel: 'праект',
       nameLabel: 'назва:',
       makerLabel: 'аўтар:',
       savedLocal: 'Захавана ў браўзеры',
@@ -196,7 +196,7 @@ export const be: Translations = {
   },
   theme: {
     groupLabel: 'Тэма',
-    matchDevice: 'Як у сістэме',
+    matchDevice: 'Як на прыладзе',
     light: 'Светлая тэма',
     dark: 'Цёмная тэма',
     contrast: 'Высокая кантраснасць',
@@ -710,7 +710,7 @@ export const be: Translations = {
   },
   frame: {
     title: 'Рамка',
-    titleLabel: 'рамка:',
+    titleLabel: 'рамка',
     nameEmpty: 'Назваць рамку',
     nameEdit: 'Перайменаваць рамку',
     nameTooltip: 'Змяніць назву рамкі.',

@@ -368,7 +368,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(tips).toContainEqual(expect.objectContaining({ name: en.frame.selectAFrame, disabled: true, disabledBody: en.tooltips.rowProgressLockedFrame }))
   })
 
-  it('with no Frame offers Frame from starter, Select a frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {
+  it('with no Frame offers Frame from starter, Select a Frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {
     const bare = withFrameSheet(framed(), undefined)
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
@@ -469,7 +469,7 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     expect(wrapper.emitted('set-settings')).toEqual([[{ fringeLength: 13 }], [{ fringeStyle: 'straight' }]])
   })
 
-  it('shows Rounds in place of Width and Height, Rotate Frame (ticket 0594) and no Select a frame', async () => {
+  it('shows Rounds in place of Width and Height, Rotate Frame (ticket 0594) and no Select a Frame', async () => {
     const wrapper = mountBar(triangle(4))
     expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-select"]').exists()).toBe(false)

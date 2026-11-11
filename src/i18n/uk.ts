@@ -180,7 +180,7 @@ export const uk: Translations = {
       tooltipRename: 'Змінити назву цього проєкту.',
       tooltipDuplicate: 'Зробити копію проєкту, щоб зберегти знімок.',
       tooltipDelete: 'Видалити цей проєкт із цього пристрою.',
-      titleLabel: 'проєкт:',
+      titleLabel: 'проєкт',
       nameLabel: 'назва:',
       makerLabel: 'автор:',
       savedLocal: 'Збережено в браузері',
@@ -195,7 +195,7 @@ export const uk: Translations = {
   },
   theme: {
     groupLabel: 'Тема',
-    matchDevice: 'Як у системі',
+    matchDevice: 'Як на пристрої',
     light: 'Світла тема',
     dark: 'Темна тема',
     contrast: 'Висока контрастність',
@@ -709,7 +709,7 @@ export const uk: Translations = {
   },
   frame: {
     title: 'Рамка',
-    titleLabel: 'рамка:',
+    titleLabel: 'рамка',
     nameEmpty: 'Назвати рамку',
     nameEdit: 'Перейменувати рамку',
     nameTooltip: 'Змінити назву рамки.',
