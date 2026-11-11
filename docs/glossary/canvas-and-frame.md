@@ -120,7 +120,7 @@ The browser's own whole-page zoom (pinch on the page, double-tap, Ctrl/⌘ + whe
 _Avoid_: UI scale, browser scale
 
 **Zoom floor**:
-The smallest zoom, 10%, the same on every screen: zoom out, pinch, wheel and Fit all stop there, so a Schema wider or taller than the screen can be seen whole. Fit never goes above 100%.
+The smallest zoom, 10%, the same on every screen: zoom out, pinch, wheel and Fit all stop there, so a Schema wider or taller than the screen can be seen whole. Fit never goes above 100%. Fit shows the Frame with its Margin sheet whole, clear of the Tool pill and the Progress bar (ticket 0850).
 _Avoid_: min zoom, bead-min floor
 
 **Ruler step**:

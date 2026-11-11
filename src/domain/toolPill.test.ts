@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nearestPillEdge, pillPositionForKey, popoverPlacement, pushRecentColor, recentsBeside } from './toolPill'
+import { nearestPillEdge, pillInsets, pillPositionForKey, popoverPlacement, pushRecentColor, recentsBeside } from './toolPill'
 
 describe('pushRecentColor (ticket 439)', () => {
   it('puts a colour at the front, moves a repeat to the front and keeps eight', () => {
@@ -71,5 +71,16 @@ describe('popoverPlacement', () => {
     expect(popoverPlacement(tile, bottom, tall, 'bottom', screen, 6, 6).top).toBe(6)
     const top = { left: 300, top: 6, width: 200, height: 48 }
     expect(popoverPlacement({ ...tile, top: 10 }, top, tall, 'top', screen, 6, 6).top).toBe(600 - 580 - 6)
+  })
+})
+
+describe('pillInsets (ticket 0850)', () => {
+  const area = { width: 1000, height: 800 }
+
+  it('takes the room from the docked edge to the pill\'s far side, and nothing from the other edges', () => {
+    expect(pillInsets({ left: 300, top: 736, width: 400, height: 56 }, area, 'bottom')).toEqual({ top: 0, right: 0, bottom: 64, left: 0 })
+    expect(pillInsets({ left: 300, top: 8, width: 400, height: 56 }, area, 'top')).toEqual({ top: 64, right: 0, bottom: 0, left: 0 })
+    expect(pillInsets({ left: 8, top: 200, width: 56, height: 400 }, area, 'left')).toEqual({ top: 0, right: 0, bottom: 0, left: 64 })
+    expect(pillInsets({ left: 936, top: 200, width: 56, height: 400 }, area, 'right')).toEqual({ top: 0, right: 64, bottom: 0, left: 0 })
   })
 })
