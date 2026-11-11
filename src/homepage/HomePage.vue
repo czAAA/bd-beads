@@ -271,13 +271,8 @@ onMounted(() => {
 })
 watch([locale, zoomPercent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
 
-// More below (ticket 0826): a press scrolls the section on, or turns to the next as Next does.
-const moreBelow = useMoreBelow({
-  section,
-  count: () => sections.value.length,
-  shown: shownSection,
-  phone: () => narrow.value,
-})
+// More below (tickets 0826, 0870): only while the section shown scrolls further; a press scrolls it on.
+const moreBelow = useMoreBelow({ shown: shownSection })
 
 /** A section's own scroll: the plans' grows the free list. */
 function onSectionScroll(id: string, event: Event) {
@@ -456,7 +451,7 @@ const savedProjects = controlAction('saved-projects')
             </div>
           </main>
           <!-- At the drawing area's foot, so it rides on whatever bar sits under it (ticket 0826). -->
-          <MoreBelow v-if="moreBelow.shows.value" :fade="moreBelow.continues.value" @more="input.more" />
+          <MoreBelow v-if="moreBelow.shows.value" @more="input.more" />
         </div>
         <PhoneBar v-if="phone" :section="section" :sections="sections" @go="goTo">
           <AppButton variant="primary" data-testid="homepage-phone-way-in" data-wrap-ok @click="goIn">

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'On the Homepage, More below shows only where there is more to scroll to',
+      ru: 'На главной странице «Ниже ещё» видно, только когда есть что прокрутить',
+      uk: 'На головній сторінці «Нижче ще» видно, лише коли є що прокрутити',
+      be: 'На галоўнай старонцы «Ніжэй яшчэ» відаць, толькі калі ёсць што пракруціць',
+      zh: '主页上的“下方还有”只在确实还能往下滚动时出现',
+      es: 'En la página de inicio, «Más abajo» solo aparece donde queda algo por desplazar',
+      pl: 'Na stronie głównej „Więcej poniżej” widać tylko tam, gdzie jest co przewinąć',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: "The Homepage's demo says it is a demo, and its Menu points you to your own first Project",
       ru: 'Демо на главной странице подписано как демо, а его меню направляет вас к вашему первому проекту',
       uk: 'Демо на головній сторінці підписане як демо, а його меню скеровує вас до вашого першого проєкту',

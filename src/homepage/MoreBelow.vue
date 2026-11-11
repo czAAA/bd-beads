@@ -3,18 +3,14 @@ import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
 import { useI18n } from '../i18n/useI18n'
 
-// More below (ticket 0826; Homepage card): a pill saying a section has more, at the foot of the drawing area, so it
-// rides on the top edge of whatever bar sits under it and takes no room of its own. It only says it was pressed.
-defineProps<{
-  /** The section shown scrolls further: a fade of the canvas runs above the bar. */
-  fade: boolean
-}>()
+// More below (tickets 0826, 0870; Homepage card): a pill saying the section scrolls further, with a fade of the canvas
+// above it, at the drawing area's foot, riding on whatever bar sits under it. It only says it was pressed.
 const emit = defineEmits<{ more: [] }>()
 const { t } = useI18n()
 </script>
 
 <template>
-  <div class="more-below" :class="{ 'more-below--fade': fade }" data-testid="more-below">
+  <div class="more-below" data-testid="more-below">
     <AppButton class="more-below__pill" variant="in-box" size="sm" data-testid="more-below-button" @click="emit('more')">
       {{ t.homepage.sections.moreBelow }}
       <AppIcon class="more-below__arrow" name="arrow-down" :size="14" />
@@ -34,9 +30,6 @@ const { t } = useI18n()
   justify-content: center;
   height: var(--more-below-fade);
   pointer-events: none;
-}
-
-.more-below--fade {
   background: linear-gradient(
     to bottom,
     transparent,
