@@ -67,6 +67,10 @@ interface FrameRules {
   rowOrder(sheet: ShapedSheet, way: RowWay): RowOrder
   /** What it offers: everything, or on a Custom frame all but Remove row/column, which needs plain rows (ADR 0079). */
   allows: ReadonlySet<FrameAction>
+  /** Whether it is laid in its Weave's own lines, so a Drop moves its beads and it stands as the Canvas shows that Weave:
+   * a Frame's rows, a Fringe earring's top. A round shape or a Kite is laid by its size and Bead alone and stands as it
+   * is charted (ticket 0872). */
+  followsWeave: boolean
 }
 
 /** A Frame shape (ADR 0079): how it answers what every Frame does, the Techniques it supports (the first the one it is
@@ -101,6 +105,7 @@ const FRAME: FrameRules = {
   // Chosen by the Frame's Technique, through its Weave's passes.
   rowOrder: rowsOrder,
   allows: new Set(['resize', 'remove-line', 'from-selection', 'rotate', 'technique', 'select']),
+  followsWeave: true,
 }
 
 /** Rounds as a Triangle and a Warped Square offer them: a Kaleidocycle's triangles are 9 a side (research). */
@@ -123,7 +128,7 @@ const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['resize', 'from-selecti
 
 /** A Frame shape's own: the Techniques it supports, its settings and styles, what its handles drive, how its settings
  * keep together, and its panel builder. */
-type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'sides' | 'settle' | 'layout'>
+type ShapeOwn = Pick<FrameShape, 'techniques' | 'settings' | 'styles' | 'sides' | 'settle' | 'layout'> & Partial<Pick<FrameShape, 'followsWeave'>>
 
 /** A Frame shape (ADR 0078): its panel builder and settings, and its Row order's passes worked in rounds from the centre
  * or rows from a point (ticket 0594). Its beads are where its layout puts them, laid in its rectangle. */
@@ -138,6 +143,7 @@ function frameShape(id: FrameShapeId, lines: 'round' | 'row', own: ShapeOwn): Fr
     },
     rowOrder: (sheet) => layoutOrder(laidLayout(sheet), lines),
     allows: CUSTOM_ALLOWS,
+    followsWeave: false,
     ...own,
   }
 }
@@ -209,6 +215,7 @@ const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
     sides: { left: 'topWidth', right: 'topWidth', top: 'topRows', bottom: 'fringeLength' },
     settle: settledFringe,
     layout: (settings, _depth, weave) => fringeLayout(settings as FringeSettings, fringeTopOf(weave)),
+    followsWeave: true,
   }),
 }
 
@@ -249,6 +256,11 @@ export function frameAllows(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'> | 
 /** The Techniques a Frame may be woven in (ADR 0079): its Frame shape's, or any; with no Frame, any. */
 export function techniquesOf(frame: Pick<FrameSheet, 'shape'> | undefined): readonly Technique[] {
   return rulesOf(frame ?? {}).techniques
+}
+
+/** Whether a Frame is laid in its Weave's own lines (`FrameRules.followsWeave`); with no Frame, as a Frame without a shape. */
+export function followsWeave(frame: Pick<FrameSheet, 'shape'> | undefined): boolean {
+  return rulesOf(frame ?? {}).followsWeave
 }
 
 /** The Frame's Row order worked one way: what Row progress's first row, current row, next row and pass count ask. */
