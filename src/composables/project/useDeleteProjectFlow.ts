@@ -1,3 +1,4 @@
+import { ref, watch } from 'vue'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 import type { LibraryEntry } from './useSavedProjectConfirms'
 
@@ -8,6 +9,9 @@ export interface DeleteProjectDeps {
   removeProject: (id: string) => void
   /** Save Project file for that Project, open or not: the Project panel's own action. */
   saveProjectFile: (id: string) => unknown
+  /** The open Project's id, or none: whether a delete left the Canvas empty. Left out where no Canvas tells it (the
+   * Homepage's Menu). */
+  openProjectId?: () => string | undefined
   /** The dialog registry its question opens through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
@@ -19,6 +23,15 @@ export function useDeleteProjectFlow(deps: DeleteProjectDeps) {
   const dialogs = deps.dialogs ?? useDialogs()
   /** The Project asked about, until the person answers. */
   const pendingDelete = dialogs.question<LibraryEntry>('delete-project')
+  /** The name of the Project whose delete left no Project open, which the empty Canvas tells (ticket 0840); cleared once
+   * a Project opens. */
+  const deletedName = ref<string>()
+  const { openProjectId } = deps
+  if (openProjectId) {
+    watch(openProjectId, (id) => {
+      if (id) deletedName.value = undefined
+    })
+  }
 
   function onRequestDelete(id: string) {
     const entry = deps.findProject(id)
@@ -40,8 +53,10 @@ export function useDeleteProjectFlow(deps: DeleteProjectDeps) {
   function onConfirmDelete() {
     const entry = pendingDelete.value
     pendingDelete.value = undefined
-    if (entry) deps.removeProject(entry.id)
+    if (!entry) return
+    deps.removeProject(entry.id)
+    if (openProjectId) deletedName.value = openProjectId() ? undefined : entry.name
   }
 
-  return { pendingDelete, onRequestDelete, onCancelDelete, onSaveFileBeforeDelete, onConfirmDelete }
+  return { deletedName, pendingDelete, onRequestDelete, onCancelDelete, onSaveFileBeforeDelete, onConfirmDelete }
 }

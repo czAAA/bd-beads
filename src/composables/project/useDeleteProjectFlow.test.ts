@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 import { useDeleteProjectFlow } from './useDeleteProjectFlow'
 
-function setup() {
+function setup(open?: string) {
+  const openId = ref(open)
   const deps = {
     findProject: (id: string) => [{ id: 'moth', name: 'Moth' }, { id: 'owl', name: 'Owl' }].find((entry) => entry.id === id),
-    removeProject: vi.fn(),
+    removeProject: vi.fn((id: string) => {
+      if (openId.value === id) openId.value = undefined
+    }),
     saveProjectFile: vi.fn(async () => true),
+    openProjectId: () => openId.value,
   }
-  return { deps, ...useDeleteProjectFlow(deps) }
+  return { deps, openId, ...useDeleteProjectFlow(deps) }
 }
 
 describe('useDeleteProjectFlow', () => {
@@ -38,5 +43,24 @@ describe('useDeleteProjectFlow', () => {
     expect(deps.saveProjectFile).toHaveBeenCalledExactlyOnceWith('moth')
     expect(pendingDelete.value?.id).toBe('moth')
     expect(deps.removeProject).not.toHaveBeenCalled()
+  })
+
+  it('names the deleted Project once its delete leaves no Project open, until one opens', async () => {
+    const { openId, deletedName, onRequestDelete, onConfirmDelete } = setup('owl')
+    expect(deletedName.value).toBeUndefined()
+    onRequestDelete('owl')
+    onConfirmDelete()
+    expect(deletedName.value).toBe('Owl')
+
+    openId.value = 'moth'
+    await nextTick()
+    expect(deletedName.value).toBeUndefined()
+  })
+
+  it('names no Project when another one stays open after the delete', () => {
+    const { deletedName, onRequestDelete, onConfirmDelete } = setup('moth')
+    onRequestDelete('owl')
+    onConfirmDelete()
+    expect(deletedName.value).toBeUndefined()
   })
 })
