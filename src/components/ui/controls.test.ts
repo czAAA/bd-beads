@@ -11,6 +11,7 @@ import InfoButton from './InfoButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
 import type { TooltipProps } from './tooltipProps'
 import { closePanel } from '../../testUtils/pill'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 describe('AppButton', () => {
   it.each(['primary', 'secondary', 'in-box', 'toolbox', 'text', 'danger', 'link'] as const)('draws the %s variant', (variant) => {
@@ -198,6 +199,23 @@ describe('IconButton variants and registry action (ticket 330)', () => {
     expect(wrapper.get('svg').attributes('data-icon')).toBe('paint')
     await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
     expect(wrapper.get('.app-tooltip__name').text()).toBe('Paint')
+  })
+
+  it('reads the action\'s touch line on a touch device, its own line with a mouse (ticket 0845)', async () => {
+    const action = CONTROLS.find((c) => c.id === 'tool-paste')!
+    const bodyOn = async (coarse: boolean) => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': coarse }).matchMedia)
+      const wrapper = mount(IconButton, { attachTo: document.body, props: { action } })
+      try {
+        await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+        return wrapper.get('.app-tooltip__body').text()
+      } finally {
+        wrapper.unmount()
+        vi.unstubAllGlobals()
+      }
+    }
+    expect(await bodyOn(true)).toBe('Tap where the copy goes.')
+    expect(await bodyOn(false)).toBe('Hover to preview the copied piece, then stamp it with a click.')
   })
 
   it('reads its enabled state and disabled reason from a registry action', async () => {

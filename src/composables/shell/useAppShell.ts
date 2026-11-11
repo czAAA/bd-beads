@@ -64,6 +64,7 @@ import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
+import { useArmedToolToasts } from '../tools/useArmedToolToasts'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
@@ -364,13 +365,17 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** The end of a Select press: when the drag was made to set the Frame, the Frame is set to it; in Mirror mode its
-   * rectangle is the Mirror's Area at once (ADR 0082), the Selection gone; a click that dragged nothing makes none. */
+   * rectangle is the Mirror's Area at once (ADR 0082), the Selection gone and the tool before Mirror mode back (ticket
+   * 0845); a click that dragged nothing makes none. */
   function endSelectPressFraming() {
     endSelectPress()
     if (mirror.marking.value && selection.value) {
       const area = selectionFrame(selection.value)
-      if (area.rows * area.columns > 1) mirror.makeFrom(area)
       resetSelection()
+      if (area.rows * area.columns > 1) {
+        mirror.makeFrom(area)
+        onSelectTool(toolBeforeMirror)
+      }
       return
     }
     if (!selectingFrame.value || !selection.value) return
@@ -384,9 +389,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
     if (tool !== 'select') mirror.marking.value = false
   })
 
+  /** The tool lit before Mirror mode, handed back once its drag has made the Area (ticket 0845). */
+  let toolBeforeMirror: Tool = 'paint'
+
   /** Mirror mode (ADR 0082, ToolPill card): the Select tool's drag makes the Mirror's Area, the Selection and paste mode
    * put away first. */
   function enterMirrorMode() {
+    if (!mirror.marking.value) toolBeforeMirror = activeTool.value
     onSelectTool('select')
     leavePasteMode()
     resetSelection()
@@ -528,6 +537,18 @@ function wireAppShell(services: Services, options: ShellOptions) {
     return true
   }
   provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
+
+  /** On touch, Mirror mode, paste mode and Pick color say in a toast what to tap next (ticket 0845). */
+  useArmedToolToasts({
+    touch,
+    showToast,
+    dismissToast,
+    messages,
+    mirrorMarking: () => mirror.marking.value,
+    mirrorOn: () => mirror.on.value,
+    picking: () => pickingColor.value,
+    pasteArmed: () => pasteProjectionActive.value,
+  })
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */

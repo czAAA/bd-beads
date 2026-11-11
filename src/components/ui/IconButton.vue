@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import AppIcon from './AppIcon.vue'
 import KeyChip from './KeyChip.vue'
 import AppTooltip from './AppTooltip.vue'
@@ -74,8 +75,11 @@ const reason = computed(
   () => props.disabledBody ?? (props.disabled === true ? undefined : props.action?.disabledBody && props.deps ? props.action.disabledBody(t.value, props.deps as never) : undefined),
 )
 const key = computed(() => props.shortcut ?? props.hotkey ?? actionKey(props.action))
+// Only an action with a touch line asks the pointer, so the many other buttons add no listener.
+const touch = props.action?.touchBody ? useMediaQuery('(pointer: coarse)') : undefined
 const body = computed(() => {
   if (typeof props.tooltip === 'object' && props.tooltip.body !== undefined) return props.tooltip.body
+  if (touch?.value && props.action?.touchBody) return props.action.touchBody(t.value)
   return props.action?.body?.(t.value)
 })
 const placement = computed(() => (typeof props.tooltip === 'object' ? props.tooltip.placement : undefined))

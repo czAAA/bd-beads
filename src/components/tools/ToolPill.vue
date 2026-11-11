@@ -33,6 +33,8 @@ const props = withDefaults(defineProps<{
   mirrorOn?: boolean
   /** Whether Mirror mode is on: its tile is lit, and the Select tile it runs under is not. */
   mirrorMarking?: boolean
+  /** Whether Pick color from canvas waits for a bead: no tool tile is lit then (ticket 0845). */
+  picking?: boolean
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -81,8 +83,9 @@ const pasteAction = controlAction('tool-paste')
 const mirrorAction = controlAction('mirror')
 /** The Mirror tile is lit while the Mirror is on and through its pick (ToolPill card). */
 const mirrorLit = computed(() => props.mirrorOn || props.mirrorMarking)
-/** Paste mode and Mirror mode run under Select, but their own tile is the one lit then (tickets 447, 0750). */
-const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && ((props.pasteArmed && props.hasClipboard) || props.mirrorMarking))
+/** Paste mode and Mirror mode run under Select, but their own tile is the one lit then (tickets 447, 0750); none while
+ * the eyedropper waits (ticket 0845). */
+const isActive = (tool: Tool) => !props.picking && props.activeTool === tool && !(tool === 'select' && ((props.pasteArmed && props.hasClipboard) || props.mirrorMarking))
 /** A Tool tile's button, pinned or scrolling alike. */
 const toolTile = (tile: (typeof tiles)[number]) => ({
   class: 'tool-pill__stop',

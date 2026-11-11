@@ -534,6 +534,9 @@ export const en: Translations = {
     namePieceButton: 'Name Piece',
     fillOpenMessage: 'Nothing encloses this spot. Select an area to fill it.',
     fillTooBigMessage: 'Too big to fill. Zoom in, or select an area.',
+    mirrorArmedHint: 'Drag over the Canvas to mark the area to mirror.',
+    pasteArmedHint: 'Tap the Canvas to place the copy. Pick a tool to stop.',
+    pickArmedHint: 'Tap a bead to use its color.',
   },
   inputMode: {
     penLabel: 'Pen mode',
@@ -1066,7 +1069,7 @@ export const en: Translations = {
     namePieceDisabled: 'Select one Piece first.',
     clear: 'Clear everything from the Canvas.',
     customColor: 'Add a color to the Palette; Enter takes the color.',
-    pickFromCanvas: 'Click a bead on the Canvas to use its color; it joins the Palette if a slot is free.',
+    pickFromCanvas: 'Use a color from a bead on the Canvas. It joins the Palette.',
     nothingToUndo: 'Nothing to undo.',
     zoomOutLimit: 'Already zoomed out as far as it goes.',
     zoomInLimit: 'Already zoomed in as far as it goes.',
@@ -1107,6 +1110,7 @@ export const en: Translations = {
     rulers: 'Rulers number your beads and the Frame.',
     rowDirection: 'Turn the way the rows run: top to bottom, left to right, bottom to top or right to left.',
     rowHighlight: 'Show or hide the marks on the current row and the rows marked done.',
+    pasteToolTouch: 'Tap where the copy goes.',
   },
   layerSettings: {
     frameHeading: 'Settings',

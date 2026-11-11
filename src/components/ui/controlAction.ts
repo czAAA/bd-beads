@@ -8,6 +8,8 @@ export interface ControlActionLike {
   icon?: IconName
   name: (t: Translations) => string
   body?: (t: Translations) => string
+  /** The body on a touch device, where the usual one would speak of hovering or clicking (ticket 0845). */
+  touchBody?: (t: Translations) => string
   chords: readonly Chord[]
   /** A key the action shows without owning it: Done, Cancel and Clear selection show Back out's `Esc`. */
   shownKey?: string
