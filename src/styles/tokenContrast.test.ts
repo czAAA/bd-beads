@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { channelsOf, relativeLuminance } from '../domain/color'
+import { channelsOf, contrastRatio } from '../domain/color'
 
 // Pairs the ContrastAudit card lists for `danger` and `button-line` (ticket 0855): `danger` is text at 4.5:1 on every
 // surface it is drawn on and a red of its own in light; a secondary button's border is its only edge in dark, so 3:1.
@@ -13,10 +13,7 @@ interface ColorToken {
 const tokens = (JSON.parse(readFileSync(join(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as { color: { tokens: ColorToken[] } }).color.tokens
 const color = (name: string, theme: Theme) => tokens.find((token) => token.name === name)!.value[theme]
 
-function ratio(a: string, b: string): number {
-  const [hi, lo] = [relativeLuminance(channelsOf(a)), relativeLuminance(channelsOf(b))].sort((x, y) => y - x)
-  return (hi! + 0.05) / (lo! + 0.05)
-}
+const ratio = (a: string, b: string) => contrastRatio(channelsOf(a), channelsOf(b))
 
 const THEMES: Theme[] = ['light', 'dark', 'contrast']
 

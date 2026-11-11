@@ -5,7 +5,8 @@ import AppMessage from './AppMessage.vue'
 // A Message is one tone, its edge and its icon alike (Message card, ticket 0855): the danger tone is red in light and
 // high contrast and gold (`accent-strong`) in dark, where the theme's own border once drew every edge yellow.
 const THEMES = ['light', 'dark', 'contrast'] as const
-const TONES = ['success', 'info', 'warning', 'danger'] as const
+/** The tones with a color of their own; success and info keep the Message's default `accent-strong`. */
+const TONES = ['warning', 'danger'] as const
 const DANGER = { light: 'rgb(185, 28, 28)', dark: 'rgb(250, 255, 105)', contrast: 'rgb(168, 44, 0)' }
 
 afterEach(() => {
