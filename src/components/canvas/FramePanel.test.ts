@@ -245,7 +245,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
   })
 
-  it('shows what each export gives in its value slot: the size and its count, or the extension with no Frame (ticket 0588)', async () => {
+  it('shows what each export gives in its value slot: the size and its count (ticket 0588)', async () => {
     const wrapper = mountBar()
     expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
     expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 3 pages$/)
@@ -255,10 +255,6 @@ describe('FramePanel (ticket 473)', () => {
     await wrapper.get('[data-testid="quality-stop-low"]').trigger('click')
     expect(lines()[0]).not.toBe(medium)
     expect(lines()[1]).toBe(pdf)
-
-    const empty = mountBar(withLayers(framed(), { frame: undefined }))
-    expect(empty.get('[data-testid="export-png"]').text()).toContain('.png')
-    expect(empty.get('[data-testid="export-pdf"]').text()).toContain('.pdf')
   })
 
   it('offers Export quality with Medium chosen, remembers a pick on the device and waits while exporting (ticket 576)', async () => {
@@ -368,26 +364,24 @@ describe('FramePanel (ticket 473)', () => {
     expect(tips).toContainEqual(expect.objectContaining({ name: en.frame.selectAFrame, disabled: true, disabledBody: en.tooltips.rowProgressLockedFrame }))
   })
 
-  it('with no Frame offers Frame from starter, Select a Frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {
+  it('with no Frame offers Frame from starter, Select a Frame and Fit, and no export rows or slider (tickets 555, 568, 0847)', () => {
     const bare = withFrameSheet(framed(), undefined)
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
-    expect(wrapper.findAll('.panel-section').map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading])
+    expect(wrapper.findAll('.panel-section')).toEqual([])
     expect(wrapper.get('[data-testid="frame-select"]').text()).toContain(en.frame.selectAFrame)
-    for (const id of ['export-png', 'export-pdf']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
+    for (const id of ['export-png', 'export-pdf', 'quality-range']) expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false)
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
-    await wrapper.get('[data-testid="export-png"]').trigger('click')
-    expect(wrapper.emitted('export-png')).toBeUndefined()
     expect(wrapper.get('[data-testid="frame-none-line"]').text()).toBe(en.frame.noFrameLine)
     expect(wrapper.get('[data-testid="frame-from-starter"]').text()).toContain(en.frame.fromStarter)
     expect(wrapper.get('[data-testid="frame-fit"]').attributes('aria-disabled')).toBe('true')
   })
 
-  it('with no Frame puts the ways to get one first, above Export, headed by the line saying why (ticket 0650)', () => {
+  it('with no Frame puts the ways to get one in order, headed by the line saying why (ticket 0650)', () => {
     const bare = withFrameSheet(framed(), undefined)
     const wrapper = mountBar(bare)
-    const order = ['export-needs-frame', 'frame-from-starter', 'frame-select', 'frame-fit', 'frame-none-line', 'export-png']
+    const order = ['export-needs-frame', 'frame-from-starter', 'frame-select', 'frame-fit', 'frame-none-line']
     const inDomOrder = wrapper.findAll('[data-testid]').map((node) => node.attributes('data-testid')).filter((id) => order.includes(id!))
     expect(inDomOrder).toEqual(order)
   })

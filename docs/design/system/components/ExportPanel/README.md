@@ -4,7 +4,7 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 
 ## The button
 
-- The `share` icon, plain look, the **last** button of the Canvas strip's right slot, after the zoom's Fit, in the strip's right corner (CanvasStrip card). An icon button like Rulers and Undo: 30px (44px on a coarse pointer), 18px icon, radius-sm, no fill.
+- The `export` icon (ticket 0847; it was `share`, which read as share or open elsewhere), plain look, the **last** button of the Canvas strip's right slot, after the zoom's Fit, in the strip's right corner (CanvasStrip card). An icon button like Rulers and Undo: 30px (44px on a coarse pointer), 18px icon, radius-sm, no fill.
 - Shown with a Project open, with or without a Frame. Name and Tooltip "Export", no body and no key.
 - Lit while its panel is open: an `ink` fill with a `canvas` icon, as Menu, Project and Frame are while theirs is open. A press while open closes it.
 
@@ -28,10 +28,10 @@ The Frame panel's export section, the same component, under the title line:
 No export buttons and no slider. Under the title line:
 
 - One `meta-small` `muted` line: "Set a Frame around the drawing you want to export."
-- **Select a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568).
+- **Select a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568). Once the Frame is set the notice about dragging closes and this panel opens again, hung from the strip's button, on Picture and Printable chart (ticket 0847). Escape or another tool cancels and the notice closes too; the panel stays shut.
 - **Fit a Frame to the drawing** (`fit`): disabled with "Nothing is drawn yet to fit a Frame to." while nothing is drawn.
 
-The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a Frame closes it.
+The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a Frame closes it until the drag has set the Frame, then brings it back (ticket 0847), so both ways end at the export rows.
 
 ## Copy
 
@@ -39,14 +39,16 @@ Every string is the Frame panel's: Export, Picture, Printable chart, Export qual
 
 ## Acceptance
 
-- [ ] The Export button is the strip's last button, `share` icon, Tooltip "Export", lit while its panel is open.
+- [ ] The Export button is the strip's last button, `export` icon, Tooltip "Export", lit while its panel is open.
 - [ ] The panel is 360px, 4px under the button, right edges aligned, and closes Menu, Project and Frame (and they close it).
 - [ ] With a Frame: Picture and Printable chart with their sizes, then Export quality, all working as in the Frame panel.
 - [ ] With no Frame: the line, Select a Frame and Fit a Frame to the drawing; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
 
+**From the Progress bar too (ticket 0847; ProgressBar card):** with beads and no Frame, its Fit a Frame and export a picture fits the Frame and opens this panel hung from the strip's button, focused on Picture.
+
 **From the Project panel too (ticket 0843; ProjectPanel card):** its export section's Picture and Printable chart open this panel as the strip's button does, hung from it, with focus on the row chosen; with no Frame the panel opens as usual, on its line and Select a frame.
 
-**From the margin too (ticket 0655; MarginSheet card):** the Frame's margin carries an Export button (`share`) in its top band. It opens this same panel, hanging 4px under that button with right edges aligned, kept inside the screen.
+**From the margin too (ticket 0655; MarginSheet card):** the Frame's margin carries an Export button (`export`, ticket 0847) in its top band. It opens this same panel, hanging 4px under that button with right edges aligned, kept inside the screen.
 
 Hand-written from the ticket 0652 design canvas; static rendition.

@@ -7,6 +7,8 @@ import SaveReminder from './canvas/SaveReminder.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { toggleRowDirection } from '../domain/rowProgress'
+import { withFrameSheet } from '../domain/layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 
 // Components with a fixed-size box, mounted in a real browser in every language at the layout's width edges, must keep
 // their text inside the box (ticket 552).
@@ -18,6 +20,8 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['ToolPill', ToolPill, { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false, hasClipboard: true, colorHex: '#e63746', colorName: 'Red' }],
   ['ProgressBar by rows', ProgressBar, { project }],
   ['ProgressBar by columns', ProgressBar, { project: toggleRowDirection(project) }],
+  // No Frame and a bead drawn (ticket 0847): the hint and Fit a Frame and export a picture.
+  ['ProgressBar with no Frame', ProgressBar, { project: withLayers(withFrameSheet(project, undefined), { beads: { 0: { 0: '#e63746' } } }) }],
   // The save ring with its label open (ticket 0796): on a phone a count with no room drops out, leaving the words.
   ['SaveReminder', SaveReminder, { beads: 12345, lastFileAt: Date.now() - 3 * 24 * 60 * 60 * 1000, labelOpen: true }],
 ]

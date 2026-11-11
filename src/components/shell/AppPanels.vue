@@ -152,7 +152,7 @@ const chosenStarter = ref<StarterId>()
       :exporting="exporting"
       :opens-on="exportChoice"
       @fit="onFitFrame"
-      @select-frame="onSelectFrame"
+      @select-frame="onSelectFrame('export')"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
     />

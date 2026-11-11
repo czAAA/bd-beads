@@ -46,6 +46,13 @@ describe('useOverlayVisibility', () => {
     expect([openPanel.value, exportChoice.value]).toEqual(['export', undefined])
   })
 
+  it('shows Export from what leads to it with no Frame, never closing it (ticket 0847)', () => {
+    const { openPanel, exportOpener, exportChoice, showExport } = setup()
+    showExport('strip-export', 'png')
+    showExport('strip-export', 'png')
+    expect([openPanel.value, exportOpener.value, exportChoice.value]).toEqual(['export', 'strip-export', 'png'])
+  })
+
   it('switches straight to another panel from a different strip button', () => {
     const { openPanel, onSelectPanel } = setup()
     onSelectPanel('project')

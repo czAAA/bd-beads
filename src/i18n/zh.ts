@@ -820,6 +820,7 @@ export const zh: Translations = {
     progressSelectToSet: '选择以设置',
     progressFrameWord: '边框',
     rotateCoveredMessage: '旋转后的片段落在了已有的珠子上方。',
+    fitAndExport: '贴合边框并导出图片',
   },
   size: {
     estimateLabel: '估算尺寸',
@@ -1098,6 +1099,7 @@ export const zh: Translations = {
     rulers: '标尺为你的珠子和边框编号。',
     rowDirection: '切换行的方向：从上到下、从左到右、从下到上或从右到左。',
     rowHighlight: '显示或隐藏当前行和已标记完成的行上的标记。',
+    fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
   },
   layerSettings: {

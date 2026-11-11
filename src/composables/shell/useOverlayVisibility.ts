@@ -23,10 +23,16 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
   /** Export from the strip or from the margin sheet: the same panel, hung from the button pressed. Pressing the
    * button it hangs from again closes it; the other one moves it there. */
   function onOpenExport(from: ExportOpener, choice?: ExportChoice) {
-    const shown = openPanel.value === 'export' && exportOpener.value === from
+    if (openPanel.value === 'export' && exportOpener.value === from) openPanel.value = null
+    else showExport(from, choice)
+  }
+
+  /** Export opened, never closed, by what leads to it from no Frame (ticket 0847): the Progress bar's Fit a Frame and
+   * export a picture, and a Frame selected from the Export panel. */
+  function showExport(from: ExportOpener, choice?: ExportChoice) {
     exportOpener.value = from
     exportChoice.value = choice
-    openPanel.value = shown ? null : 'export'
+    openPanel.value = 'export'
   }
 
   /** Whether Menu opens on a subpanel: New Project (the empty-canvas bar's button, spec 0478), or Saved Projects when
@@ -68,6 +74,7 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     onSelectPanel,
     exportOpener,
     onOpenExport,
+    showExport,
     exportChoice,
     menuOpensOnForm,
     openMenuOnForm,
