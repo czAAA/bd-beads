@@ -1,8 +1,7 @@
-import type { InjectionKey, Ref } from 'vue'
+import type { InjectionKey } from 'vue'
 
-/** What the panel shell tells the items inside it (ticket 443): the role its items take. */
+/** What the panel shell tells the items inside it (ticket 443). */
 export interface PanelContext {
-  itemRole: Ref<'menuitem' | undefined>
   /** Closes the panel; a panel item that opens something else (a dialog, a sheet) calls it first. */
   close: () => void
   /** Pushes a subpanel over the current one, under its title (the panel's `subTitle` when none) and a Back arrow (spec

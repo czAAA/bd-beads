@@ -115,6 +115,10 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
     expect(brand.find('[data-testid="app-logo"]').exists()).toBe(true)
   })
 
+  it('is a header, the banner of the page it tops (ticket 0856)', () => {
+    expect(mount(CanvasStrip, { props: { project, zoomPercent: 100 } }).element.tagName).toBe('HEADER')
+  })
+
   it('shows the Brand as the current page, with no link, on the Homepage', () => {
     const wrapper = mount(CanvasStrip, { props: { page: 'homepage', zoomPercent: 100 } })
     const brand = wrapper.get('[data-testid="canvas-brand"]')
