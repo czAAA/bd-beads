@@ -21,6 +21,8 @@ const props = defineProps<{
   testid: string
   /** The Techniques offered (a Custom frame's shape's, ADR 0079); every one when none are given. */
   techniques?: readonly Technique[]
+  /** The Technique alone, without its settings: for a shape no Drop changes (ticket 0872). */
+  withoutSettings?: boolean
 }>()
 const technique = defineModel<Technique>('technique', { required: true })
 const emit = defineEmits<{ 'set-setting': [id: string, value: number] }>()
@@ -28,7 +30,7 @@ const emit = defineEmits<{ 'set-setting': [id: string, value: number] }>()
 const { t } = useI18n()
 const options = computed(() => (props.techniques ?? TECHNIQUES).map((value) => ({ value, label: techniqueName(t.value, value) })))
 const steppers = computed(() =>
-  describeWeave({ technique: technique.value }).settings.map((setting) => ({
+  (props.withoutSettings ? [] : describeWeave({ technique: technique.value }).settings).map((setting) => ({
     setting,
     value: settingValue(setting, props.settings[setting.id]),
     disabledBody: props.disabled ? weaveSettingWords(t.value, setting).locked : undefined,

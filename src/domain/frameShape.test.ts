@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
-import { customFrameSize, FRAME_SHAPE_IDS, frameAllows, frameGeometry, frameLayoutOf, frameShapeOf, frameSizeMm, isFrameShape, rowOrderOf, techniquesOf, type FrameSettings } from './frameShape'
+import { customFrameSize, followsWeave, FRAME_SHAPE_IDS, frameAllows, frameGeometry, frameLayoutOf, frameShapeOf, frameSizeMm, isFrameShape, rowOrderOf, techniquesOf, type FrameSettings } from './frameShape'
 import { layoutNeighbors, type FrameLayout, type LayoutPosition } from './frameLayout'
 import { beadCell, TECHNIQUES } from './weave'
 import type { Weave } from './weave'
@@ -27,6 +27,17 @@ describe('the Frame shape (spec 0590, ticket 0591, ADR 0079)', () => {
 
   it('knows no "rectangular" shape: a Frame without one is just a Frame (ticket 0668)', () => {
     expect(isFrameShape('rectangular')).toBe(false)
+  })
+
+  it('lays a round shape and a Kite by their size and Bead alone, the same at every Drop; a Fringe earring\'s top by its Drop (ticket 0872)', () => {
+    const atDrop = (shape: (typeof FRAME_SHAPE_IDS)[number], drop: number) =>
+      JSON.stringify(frameLayoutOf({ shape, technique: 'peyote', techniqueSettings: { peyoteDrop: drop } }))
+    for (const shape of FRAME_SHAPE_IDS) {
+      const same = [2, 3].every((drop) => atDrop(shape, drop) === atDrop(shape, 1))
+      expect(same, shape).toBe(!followsWeave({ shape }))
+    }
+    expect(FRAME_SHAPE_IDS.filter((shape) => followsWeave({ shape }))).toEqual(['fringeEarring'])
+    expect(followsWeave({})).toBe(true)
   })
 })
 

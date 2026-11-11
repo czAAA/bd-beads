@@ -24,6 +24,8 @@ const props = defineProps<{
   techniqueSettings: TechniqueSettings
   /** The Techniques offered (a Custom frame's shape's); every one when none are given. */
   techniques?: readonly Technique[]
+  /** The Technique without its settings: a Starter's shape that no Drop changes (ticket 0872). */
+  withoutTechniqueSettings?: boolean
   /** The layer's Bead, or nothing for one that is no longer offered. */
   bead: Bead | undefined
   /** Its Background as it shows: its own, or the device's last pick where it has none. */
@@ -66,6 +68,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
       :technique="technique"
       :settings="techniqueSettings"
       :techniques="techniques"
+      :without-settings="withoutTechniqueSettings"
       :disabled="locked"
       :technique-disabled-body="locked ? t.tooltips.rowProgressLockedTechnique : undefined"
       :testid="testid"

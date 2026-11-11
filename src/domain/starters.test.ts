@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { beadCount } from './canvas'
-import { changeFrame, type FrameChangeResult } from './changeFrame'
+import { changeFrame, turnedCustomFrame, type FrameChangeResult } from './changeFrame'
 import { FRAME_SHAPE_IDS, frameShapeOf, frameLayoutOf, settingsOf, techniquesOf, type FrameSettings } from './frameShape'
 import { createProject } from './createProject'
 import { weaveOf } from './layerWeave'
@@ -148,6 +148,21 @@ describe('a new Project from a Starter', () => {
       const added = placedStarter(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 40, height: 40, unit: 'beads' } }), starter, { ...asDesigned(id), beadId }, { row: 20, column: 20 })
       expect(frameOf((added as { project: typeof project }).project)).toMatchObject(starterFrameSize(starter, asDesigned(id), delica))
     }
+  })
+
+  it('stands a shape as it is charted (ticket 0872): its peyote Canvas upright, not turned the quarter peyote starts with, and its Frame unturned', () => {
+    for (const id of ['triangle', 'warpedSquare', 'kite', 'star', 'kaleidocycle'] as const) {
+      const project = starterProject(starterById(id), { name: 'Piece', beadId, ...asDesigned(id) })
+      expect(layersView(project), id).toMatchObject({ technique: 'peyote', orientation: 0 })
+      expect(frameOf(project)!.quarterTurns, id).toBeUndefined()
+    }
+  })
+
+  it('opens a Fringe earring as its Technique\'s Canvas starts, laid in its lines: brick stitch upright, peyote turned', () => {
+    expect(canvasOf(starterProject(starterById('vFringe'), { name: 'Drop', beadId, ...asDesigned('vFringe') })).orientation).toBe(0)
+    const peyote = starterProject(starterById('vFringe'), { name: 'Drop', beadId, ...asDesigned('vFringe'), weave: { technique: 'peyote' } })
+    expect(canvasOf(peyote).orientation).toBe(90)
+    expect(frameOf(peyote)!.quarterTurns).toBeUndefined()
   })
 
   it('records nothing of the Starter', () => {
@@ -354,5 +369,20 @@ describe('a Starter put on an open Project', () => {
     const [quarter, half] = [rotateCanvas(open), rotateCanvas(rotateCanvas(open))]
     expect([open, quarter, half].map((project) => turnsOn(project, 'peyote'))).toEqual([1, 0, 3])
     expect([open, quarter, half].map((project) => turnsOn(project, 'brick'))).toEqual([0, 3, 2])
+  })
+
+  it('turns a shape by what the Canvas lacks, so it stands as charted at any quarter, and Rotate Frame turns it on from there (ticket 0872)', () => {
+    const turnsOf = (project: typeof open, id: 'triangle' | 'vFringe') => {
+      const result = placedStarter(project, starterById(id), asDesigned(id), { row: 50, column: 50 })
+      return result.kind === 'changed' ? result.project : undefined
+    }
+    const peyote = createProject({ technique: 'peyote', beadId, name: 'Open' })
+    const canvases = [open, rotateCanvas(open), rotateCanvas(rotateCanvas(open)), peyote]
+    expect(canvases.map((project) => frameOf(turnsOf(project, 'triangle')!)!.quarterTurns ?? 0)).toEqual([0, 3, 2, 3])
+    // A Fringe earring is laid in its Technique's lines, so it lies as the Canvas shows them.
+    expect(canvases.map((project) => frameOf(turnsOf(project, 'vFringe')!)!.quarterTurns ?? 0)).toEqual([0, 0, 0, 0])
+    const placed = turnsOf(peyote, 'triangle')!
+    expect(frameOf(placed)!.beads).toEqual(starterDesign(starterById('triangle')))
+    expect(frameOf(turnedCustomFrame(placed)!)!.quarterTurns).toBeUndefined()
   })
 })

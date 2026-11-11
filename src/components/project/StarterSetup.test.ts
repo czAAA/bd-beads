@@ -76,6 +76,17 @@ describe('the Starter setup', () => {
     ])
   })
 
+  it('offers a shape its Technique without Drop, which changes nothing on it, and an earring or a Ring its Drop (ticket 0872)', () => {
+    for (const id of ['triangle', 'warpedSquare', 'kite', 'star', 'kaleidocycle']) {
+      const wrapper = mountSetup(id)
+      expect(wrapper.find('[data-testid="starter-technique"]').exists(), id).toBe(true)
+      expect(wrapper.find('[data-testid="starter-peyote-drop"]').exists(), id).toBe(false)
+      wrapper.unmount()
+    }
+    expect(mountSetup('vFringe').find('[data-testid="starter-brick-drop"]').exists()).toBe(true)
+    expect(mountSetup('ringStripes').find('[data-testid="starter-peyote-drop"]').exists()).toBe(true)
+  })
+
   it('pre-fills the Frame\'s Layer settings from the Starter, offering only the Techniques its shape supports (ticket 0671)', async () => {
     const wrapper = mountSetup('vFringe')
     expect(panelOptionShown(wrapper, 'starter-technique')).toBe(en.techniques.brick)

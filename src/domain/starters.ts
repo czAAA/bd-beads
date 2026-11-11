@@ -2,7 +2,7 @@ import { findBead, type Bead } from './beads'
 import { forEachBead, type BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { laidSize } from './frameOrientation'
-import { changedSettings, customFrameSize, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
+import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
@@ -295,6 +295,14 @@ function lyingTurn(weave: Weave): number {
   return runsDown(weave) ? 90 : 0
 }
 
+/** The quarter turn a Starter's Frame is seen at, in degrees clockwise: a strip lying across, a shape laid by its size
+ * and Bead alone upright, as it is charted (ticket 0872); none for a Fringe earring, laid in its Weave's own lines, which
+ * stands as the Canvas shows that Weave. */
+function seenTurn(starter: Starter, weave: Weave): number | undefined {
+  if (!starter.shape) return lyingTurn(weave)
+  return followsWeave(starter) ? undefined : 0
+}
+
 /** A Starter's Frame rows and columns for a choice on a Bead: a Custom frame's rectangle; a Ring or Band its length in
  * beads on their sides (the design's own when put in place) and its Width, as its Weave works a strip (`runsDown`).
  * @internal Its test checks each Starter's size on its own. */
@@ -359,8 +367,8 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
 }
 
 /** Add Frame from Starter and Replace Frame (tickets 0596, 0633, 0671): the Starter's Frame round a Canvas position, in
- * place of any Frame, in the setup's Layer settings (ADR 0079), with its design or empty, colours as painted; the
- * Canvas as it is. A Ring's or Band's Frame is turned by what the Canvas lacks, so it lies across (ticket 0832). */
+ * place of any Frame, in the setup's Layer settings (ADR 0079), with its design or empty, colours as painted; the Canvas
+ * as it is, the Frame turned by what it lacks, so a Ring or Band lies across (0832) and a shape stands as charted (0872). */
 export function placedStarter(project: Project, starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>, centre: GridPosition): FrameChangeResult {
   const bead = choice.beadId === undefined ? undefined : findBead(choice.beadId)
   const placement = starterPlacement(project, starter, choice, centre, bead ?? resolveProjectBead(project)!)
@@ -373,25 +381,28 @@ export function placedStarter(project: Project, starter: Starter, choice: Starte
 }
 
 /** The Frame change that puts a Starter's Frame in place round a Canvas position, a Ring's or Band's length in `bead`
- * and its turn the quarters from the Canvas's own to the one its strip lies across at. */
+ * and its turn the quarters from the Canvas's own to the one it is seen at (`seenTurn`). */
 function starterPlacement(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition, bead: Bead): FrameChange {
   const beads = chosenBeads(starter, choice)
   const weave = weaveIn(starter, choice)
-  if (starter.shape) return { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads, weave } }
+  const seen = seenTurn(starter, weave)
+  const quarterTurns = seen === undefined ? 0 : ((((seen - quarterTurnOf(project)) / 90 + 4) % 4) as QuarterTurns | 0)
+  const turned = quarterTurns ? { quarterTurns } : {}
+  if (starter.shape) return { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads, weave, ...turned } }
   const { rows, columns } = starterFrameSize(starter, choice, bead)
-  const quarterTurns = (((lyingTurn(weave) - quarterTurnOf(project)) / 90 + 4) % 4) as QuarterTurns | 0
-  const laid = laidSize({ rows, columns, ...(quarterTurns ? { quarterTurns } : {}), ...withCell(weave, beadCell(bead, weave.technique)) })
+  const laid = laidSize({ rows, columns, ...turned, ...withCell(weave, beadCell(bead, weave.technique)) })
   const frame = { row: centre.row - Math.floor(laid.rows / 2), column: centre.column - Math.floor(laid.columns / 2), rows, columns }
-  return { place: { frame, weave, beads, ...(quarterTurns ? { quarterTurns } : {}) } }
+  return { place: { frame, weave, beads, ...turned } }
 }
 
 /** A new Project from a Starter (New Project's Pick a starter): its Frame as the setup sets it, with its first row and
  * column at the origin, and its Canvas a copy of the Frame's Layer settings (ADR 0079), turned so a Ring or Band lies
- * across (ticket 0832). Nothing in it records the Starter. */
+ * across (ticket 0832) and a shape stands as charted (ticket 0872). Nothing in it records the Starter. */
 export function starterProject(starter: Starter, choice: StarterChoice & Pick<StarterProjectChoice, 'name' | 'beadId'> & Partial<StarterLayerSettings>): Project {
   const { name, beadId, background } = choice
   const made = createProject({ name, ...weaveIn(starter, choice), beadId, ...(background !== undefined ? { background } : {}) })
-  const project = starter.measure === 'frame' ? made : withCanvas(made, { orientation: lyingTurn(weaveIn(starter, choice)) })
+  const seen = seenTurn(starter, weaveIn(starter, choice))
+  const project = seen === undefined ? made : withCanvas(made, { orientation: seen })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
   return placed.kind === 'changed' ? placed.project : project
