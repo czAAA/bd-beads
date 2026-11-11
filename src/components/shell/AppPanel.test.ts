@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, inject, nextTick } from 'vue'
 import AppPanel from './AppPanel.vue'
+import PanelItem from './PanelItem.vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
@@ -105,13 +106,26 @@ describe('AppSubpanel', () => {
     expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
   })
 
-  it('is a menu when asked to be one, and a dialog in a subpanel or otherwise', async () => {
+  it('is a plain region as the Menu, its rows buttons, and a dialog in a subpanel or otherwise', async () => {
     const role = (wrapper: ReturnType<typeof mountShell>) => wrapper.get('[data-testid="panel-dropdown"]').attributes('role')
     expect(role(mountShell())).toBe('dialog')
     const menu = mountShell({ menu: true })
-    expect(role(menu)).toBe('menu')
+    expect(role(menu)).toBe('region')
     await menu.get('[data-testid="root-row"]').trigger('click')
     expect(role(menu)).toBe('dialog')
+  })
+
+  it("gives the Menu's rows no menu item role: they are buttons", () => {
+    const menu = mount(AppPanel, { attachTo: document.body, props: { title: 'Menu', anchor: 'strip-menu', menu: true }, slots: { default: () => h(PanelItem, null, () => 'Theme') } })
+    expect(menu.get('.panel-item').attributes('role')).toBeUndefined()
+  })
+
+  it('has no header or footer element in it, which in a dialog would be a second banner and contentinfo', async () => {
+    const wrapper = mountShell({ startInSub: true })
+    await nextTick()
+    expect(wrapper.find('[data-testid="panel-back"]').exists()).toBe(true)
+    expect(wrapper.find('header').exists()).toBe(false)
+    expect(wrapper.find('footer').exists()).toBe(false)
   })
 
   it('gives focus back to its strip button when it closes', async () => {

@@ -48,7 +48,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Screen readers
 
-- Landmarks: `header`, `aside` "Tools", `main` (the canvas box); panels are `dialog`s named by their title.
+- Landmarks: one `banner` (the Canvas strip) and one `main` (the rest of the canvas box) per page, nothing outside a landmark; panels are `dialog`s named by their title, the Menu a plain `region` (ScreenReaders card).
 - The Pattern is `role="img"` named "Logo panel, 40 by 30 beads, 2 colors, row 12 of 30 done"; Beads needed is its text equivalent.
 - Every icon-only button has a name in the app's own words (the ScreenReaders card lists them). Toggles use `aria-pressed`, the Switch `role="switch"`, disclosure rows `aria-expanded`.
 - Results are `role="status"` (polite), errors `role="alert"`; one announcement per action, none for painting single beads.

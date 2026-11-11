@@ -52,6 +52,17 @@ describe('HomePage', () => {
     })
   })
 
+  describe('landmarks (ticket 0856)', () => {
+    it('has one main, the strip not in it, and the section bar a navigation named Sections', () => {
+      const wrapper = page()
+      expect(wrapper.findAll('main')).toHaveLength(1)
+      expect(wrapper.get('[data-testid="canvas-strip"]').element.closest('main')).toBeNull()
+      const bar = wrapper.get('[data-testid="section-bar"]')
+      expect(bar.attributes('role')).toBe('navigation')
+      expect(bar.attributes('aria-label')).toBe(en.homepage.sections.label)
+    })
+  })
+
   describe('no hero (ticket 0822)', () => {
     it('has nothing over the sections: they start right under the strip', () => {
       const wrapper = page()

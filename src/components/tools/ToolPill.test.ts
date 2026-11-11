@@ -36,7 +36,7 @@ describe('ToolPill (ticket 439)', () => {
     expect(ids.indexOf('pill-tool-mirror')).toBe(ids.indexOf('pill-tool-piece') + 1)
     const tile = wrapper.get('[data-testid="pill-tool-mirror"]')
     expect(tile.attributes('aria-label')).toBe('Mirror')
-    expect(tile.get('.icon-btn__key').text()).toBe('7')
+    expect(tile.get('.icon-btn__key').attributes('data-key')).toBe('7')
     expect(tile.attributes('aria-haspopup')).toBeUndefined()
     expect(tile.attributes('aria-pressed')).toBe('false')
     expect(tile.classes()).not.toContain('icon-btn--accent')
@@ -70,7 +70,7 @@ describe('ToolPill (ticket 439)', () => {
     expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-mirror') + 1)
     const paste = wrapper.get('[data-testid="pill-tool-paste"]')
     expect(paste.attributes('aria-label')).toBe('Paste')
-    expect(paste.get('.icon-btn__key').text()).toBe('8')
+    expect(paste.get('.icon-btn__key').attributes('data-key')).toBe('8')
     expect(paste.attributes('aria-pressed')).toBe('false')
     await paste.trigger('click')
     expect(wrapper.emitted('paste-mode')).toHaveLength(1)
@@ -85,7 +85,7 @@ describe('ToolPill (ticket 439)', () => {
     const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'fill' } })
     const fill = wrapper.get('[data-testid="pill-tool-fill"]')
     expect(fill.attributes('aria-label')).toBe('Fill')
-    expect(fill.get('.icon-btn__key').text()).toBe('2')
+    expect(fill.get('.icon-btn__key').attributes('data-key')).toBe('2')
     expect(fill.attributes('aria-pressed')).toBe('true')
     expect(fill.classes()).toContain('icon-btn--accent')
     expect(wrapper.get('[data-testid="pill-tool-paint"]').classes()).not.toContain('icon-btn--accent')
@@ -101,7 +101,7 @@ describe('ToolPill (ticket 439)', () => {
     tiles.forEach((tile, index) => {
       const id = PILL_TILES[index]!
       const chord = controlAction(id === 'mirror' ? 'mirror' : `tool-${id}`).chords[0]!.key
-      expect(tile.get('.icon-btn__key').text(), id).toBe(String(index + 1))
+      expect(tile.get('.icon-btn__key').attributes('data-key'), id).toBe(String(index + 1))
       expect(chord, id).toBe(String(index + 1))
     })
   })

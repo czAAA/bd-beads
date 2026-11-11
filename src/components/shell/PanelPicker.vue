@@ -44,6 +44,12 @@ const tooltip = computed(() => {
 })
 /** The button's text: a code or word shown for the value; the name always says label and value. */
 const shown = computed(() => chosen.value?.shortLabel ?? chosen.value?.label ?? '')
+/** "{label}: {value}", with a code the button shows in place of the value after the label too, where the value doesn't
+ * hold it, so the name holds the button's visible text (ticket 0856): "Language: EN, English". */
+const buttonName = computed(() => {
+  const value = chosen.value?.label ?? ''
+  return props.iconOnly || value.includes(shown.value) ? `${props.label}: ${value}` : `${props.label}: ${shown.value}, ${value}`
+})
 
 function items(): HTMLElement[] {
   return [...(listEl.value?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') ?? [])]
@@ -145,7 +151,7 @@ function onListKeydown(event: KeyboardEvent) {
         :aria-expanded="open"
         :aria-disabled="disabled || undefined"
         :aria-controls="open ? listId : undefined"
-        :aria-label="`${label}: ${chosen?.label ?? ''}`"
+        :aria-label="buttonName"
         @click="onButtonClick"
         @keydown="onButtonKeydown"
       >

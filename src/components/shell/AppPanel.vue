@@ -17,7 +17,8 @@ const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
   anchor: string
-  /** The Menu is a `menu` of items; the Project panel holds fields and is a plain dialog. */
+  /** The Menu: a plain region named by its title, its rows buttons (ticket 0856), focus wrapping inside it; the other
+   * panels and every subpanel are dialogs. */
   menu?: boolean
   /** Opens without focusing a field, so a tablet's keyboard stays down (the Frame panel's size fields). */
   skipsFields?: boolean
@@ -50,7 +51,6 @@ const depth = computed(() => stack.value.length)
 const openedInSub = props.startInSub ?? false
 const currentTitle = computed(() => stack.value.at(-1)?.title ?? props.subTitle)
 const currentMeta = computed(() => stack.value.at(-1)?.meta ?? props.subMeta)
-const itemRole = computed(() => (props.menu && !inSub.value ? ('menuitem' as const) : undefined))
 const subBodyEl = ref<HTMLElement>()
 function openSub(title?: string, level: { meta?: string; opener?: string } = {}) {
   stack.value.push({ title, meta: level.meta, returnTestId: level.opener ?? document.activeElement?.getAttribute('data-testid') ?? null })
@@ -63,7 +63,7 @@ function goBack() {
     focusUnlessKeyboard(row ?? focusables()[0])
   })
 }
-provide(PANEL_CONTEXT, { itemRole, close: () => emit('close'), openSub })
+provide(PANEL_CONTEXT, { close: () => emit('close'), openSub })
 
 const titleId = useId()
 const panelEl = ref<HTMLElement>()
@@ -195,26 +195,27 @@ onBeforeUnmount(() => {
     ref="panelEl"
     class="app-panel app-panel--dropdown"
     :style="dropdownStyle"
-    :role="itemRole ? 'menu' : 'dialog'"
+    :role="menu && !inSub ? 'region' : 'dialog'"
     :aria-labelledby="titleId"
     tabindex="-1"
     data-testid="panel-dropdown"
     @keydown="onKeydown"
     @focusout="onFocusOut"
   >
-    <header v-if="inSub" class="app-panel__header">
+    <!-- Plain boxes, not header and footer: in a dialog those would be a second banner and contentinfo (ticket 0856). -->
+    <div v-if="inSub" class="app-panel__header">
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
       <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
       <span v-if="currentMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ currentMeta }}</span>
-    </header>
+    </div>
     <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
     <div ref="subBodyEl" class="app-panel__body" data-testid="panel-body">
       <slot v-if="inSub" name="sub" :depth="depth" />
       <slot v-else />
     </div>
-    <footer v-if="inSub && $slots.footer" class="app-panel__footer" data-testid="panel-footer">
+    <div v-if="inSub && $slots.footer" class="app-panel__footer" data-testid="panel-footer">
       <slot name="footer" :depth="depth" />
-    </footer>
+    </div>
   </div>
 </template>
 

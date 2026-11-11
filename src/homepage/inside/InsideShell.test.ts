@@ -50,6 +50,12 @@ afterEach(() => {
 })
 
 describe("What's inside's demo editor (ticket 0797)", () => {
+  it("has no main of its own: it sits in the Homepage's (ticket 0856)", () => {
+    const { wrapper } = demo()
+    expect(wrapper.find('[data-testid="app-canvas"]').exists()).toBe(true)
+    expect(wrapper.find('main').exists()).toBe(false)
+  })
+
   it('opens Ring, the demo\'s own, with nothing drawn', () => {
     const { wired } = demo()
     expect(wired.canvas.activeProject.value?.layers[0].name).toBe('Ring')

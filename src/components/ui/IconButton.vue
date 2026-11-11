@@ -125,7 +125,7 @@ function swallowClick(event: MouseEvent) {
       @click.capture="swallowClick"
     >
       <slot><AppIcon v-if="iconName" :name="iconName" :size="size" /></slot>
-      <KeyChip v-if="keyed && showHotkey && hotkey" class="icon-btn__key" aria-hidden="true">{{ hotkey }}</KeyChip>
+      <KeyChip v-if="keyed && showHotkey && hotkey" class="icon-btn__key" :drawn="hotkey" aria-hidden="true" />
     </component>
   </component>
 </template>

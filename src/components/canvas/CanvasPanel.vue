@@ -330,7 +330,7 @@ const drawingStyle = computed(() => {
     The canvas box (ticket 141): all the width right of the left column and the full height of the main area. The
     page never scrolls; the Project scrolls inside the box.
   -->
-  <main class="app-shell__canvas-column">
+  <div class="app-shell__canvas-column">
     <div
       class="app-shell__canvas"
       :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning }"
@@ -368,285 +368,289 @@ const drawingStyle = computed(() => {
         @reset="resetZoom"
       />
 
-      <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
-      <div
-        :ref="bindDrawing"
-        class="app-shell__drawing"
-        :class="{ 'app-shell__drawing--behind': !onEditor }"
-        :style="drawingStyle"
-        :inert="!onEditor || undefined"
-        data-testid="app-drawing-area"
-      >
-        <!-- The save ring (ticket 0796, SaveReminder card): top-right, after the strip and before the drawing in Tab order. -->
-        <SaveReminder
-          v-if="ringShown"
-          :beads="saveRing.beads"
-          :last-file-at="saveRing.lastFileAt"
-          :label-open="saveRing.labelOpen"
-          @save="onSaveProjectFile"
-          @hold="onHoldSaveRing"
-        />
+      <!-- The page's one main landmark (ticket 0856, ScreenReaders card): the box under the strip, the strip being the
+        banner; laid out as if it weren't there. The Homepage's demo is a region in the Homepage's main, so a plain box. -->
+      <component :is="demo ? 'div' : 'main'" class="app-shell__main">
+        <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
+        <div
+          :ref="bindDrawing"
+          class="app-shell__drawing"
+          :class="{ 'app-shell__drawing--behind': !onEditor }"
+          :style="drawingStyle"
+          :inert="!onEditor || undefined"
+          data-testid="app-drawing-area"
+        >
+          <!-- The save ring (ticket 0796, SaveReminder card): top-right, after the strip and before the drawing in Tab order. -->
+          <SaveReminder
+            v-if="ringShown"
+            :beads="saveRing.beads"
+            :last-file-at="saveRing.lastFileAt"
+            :label-open="saveRing.labelOpen"
+            @save="onSaveProjectFile"
+            @hold="onHoldSaveRing"
+          />
 
-        <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
-          not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="emptyProject" />
+          <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
+            not on a phone (CanvasHint card). -->
+          <CanvasHint v-if="emptyProject" />
 
-        <!-- Where Projects are kept (tickets 0725, 0798, FirstRunHints card): over an empty Project, gone with
-          the first bead. -->
-        <Transition name="first-run-hints">
-          <FirstRunHints v-if="emptyProject" />
-        </Transition>
+          <!-- Where Projects are kept (tickets 0725, 0798, FirstRunHints card): over an empty Project, gone with
+            the first bead. -->
+          <Transition name="first-run-hints">
+            <FirstRunHints v-if="emptyProject" />
+          </Transition>
 
-        <div class="app-shell__canvas-row">
-          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
-            <ProjectSurface
-              v-if="activeProject"
-              ref="surfaceRef"
-              :project="shownProject!"
-              :tools="surfaceTools"
-              :frame-tooltip="frameTooltip"
-              :selection-tooltip="selectionSummary"
-              :area-tooltip="mirrorBar?.summary"
-              :zoom="zoom"
-              :scroll="scroll"
-              :orientation="canvasOrientation"
-              :twist="twistPhase"
-              :show-rulers="showRulers"
-              :stroking="stroking"
-              :row-marks="rowHighlight"
-              :row-press="rowPress"
-              :input-mode="surfaceInputMode"
-              :handedness="handedness"
-              :preview-cells="previewCells"
-              :preview-stamp="previewStamp"
-              :preview-color="previewColor"
-              :mirror="mirrorOn ? mirrorSetting : undefined"
-              :selection="selection"
-              :selection-refusals="selectionRefusals"
-              :fill-refusals="fillRefusals"
-              :label="projectLabel"
-              :reference="referenceImage.drawn.value"
-              @surface-view="surfaceView = $event"
-              @cell-primary-down="onCellPrimaryDown"
-              @cell-primary-move="onCellPrimaryMove"
-              @cells-primary-move="onCellsPrimaryMove"
-              @cell-hover="onCellHover"
-              @hover-end="onHoverEnd"
-              @pan="panBy"
-              @scroll="scrollBy"
-              @zoom-by="(factor, anchor) => setZoom(zoom * factor, anchor)"
-              @frame-press="onFramePress"
-              @frame-drag="onFrameDrag"
-              @frame-release="onFrameRelease"
-              @frame-cancel="onFrameCancel"
-              @selection-press="onSelectionPress"
-              @selection-drag="onSelectionDrag"
-              @selection-release="onSelectionRelease"
-              @selection-resume="onSelectionResume"
-              @selection-anchor="selectionAnchor = $event"
-              @mirror-anchor="mirrorAnchor = $event"
-              @frame-anchor="frameAnchor = $event"
-              @schema-anchors="schemaAnchors = $event"
-              @pressing="surfacePressing = $event"
-              @drawn="onSurfaceDrawn"
+          <div class="app-shell__canvas-row">
+            <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
+              <ProjectSurface
+                v-if="activeProject"
+                ref="surfaceRef"
+                :project="shownProject!"
+                :tools="surfaceTools"
+                :frame-tooltip="frameTooltip"
+                :selection-tooltip="selectionSummary"
+                :area-tooltip="mirrorBar?.summary"
+                :zoom="zoom"
+                :scroll="scroll"
+                :orientation="canvasOrientation"
+                :twist="twistPhase"
+                :show-rulers="showRulers"
+                :stroking="stroking"
+                :row-marks="rowHighlight"
+                :row-press="rowPress"
+                :input-mode="surfaceInputMode"
+                :handedness="handedness"
+                :preview-cells="previewCells"
+                :preview-stamp="previewStamp"
+                :preview-color="previewColor"
+                :mirror="mirrorOn ? mirrorSetting : undefined"
+                :selection="selection"
+                :selection-refusals="selectionRefusals"
+                :fill-refusals="fillRefusals"
+                :label="projectLabel"
+                :reference="referenceImage.drawn.value"
+                @surface-view="surfaceView = $event"
+                @cell-primary-down="onCellPrimaryDown"
+                @cell-primary-move="onCellPrimaryMove"
+                @cells-primary-move="onCellsPrimaryMove"
+                @cell-hover="onCellHover"
+                @hover-end="onHoverEnd"
+                @pan="panBy"
+                @scroll="scrollBy"
+                @zoom-by="(factor, anchor) => setZoom(zoom * factor, anchor)"
+                @frame-press="onFramePress"
+                @frame-drag="onFrameDrag"
+                @frame-release="onFrameRelease"
+                @frame-cancel="onFrameCancel"
+                @selection-press="onSelectionPress"
+                @selection-drag="onSelectionDrag"
+                @selection-release="onSelectionRelease"
+                @selection-resume="onSelectionResume"
+                @selection-anchor="selectionAnchor = $event"
+                @mirror-anchor="mirrorAnchor = $event"
+                @frame-anchor="frameAnchor = $event"
+                @schema-anchors="schemaAnchors = $event"
+                @pressing="surfacePressing = $event"
+                @drawn="onSurfaceDrawn"
+              />
+              <!-- The reference image's handles over the drawing whenever it is shown, its outline in Adjust (tickets 0790,
+                0799), outside its image role. -->
+              <ReferenceAdjust
+                v-if="handled"
+                :place="handled.image.place"
+                :aspect="handled.aspect"
+                :limits="handled.limits"
+                :opacity="handled.image.opacity"
+                :view="handled.view"
+                :bead="handled.bead"
+                :adjusting="referenceImage.adjusting.value"
+                @preview="referenceImage.preview"
+                @commit="referenceImage.commit"
+                @done="referenceImage.endAdjust"
+              />
+              <EmptyCanvas v-else-if="!activeProject" :deleted="deletedProjectName" :quiet="openPanel !== null" @library="openMenuOnSavedProjects">
+                <div class="app-shell__empty-actions" data-testid="phone-project-bar">
+                  <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
+                  <ProjectImport compact :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" />
+                </div>
+              </EmptyCanvas>
+            </div>
+
+            <!-- The unframed Schemas' names on tags (tickets 0721, 0733, SchemaTag card): over the beads, one Tab stop after
+              the canvas, under the Tool pill and the Selection bar. -->
+            <SchemaTags
+              v-if="activeProject && schemaAnchors?.schemas.length"
+              :project="activeProject"
+              :anchors="schemaAnchors"
+              @rename="onRenameSchema"
+              @frame="onFrameSchema"
             />
-            <!-- The reference image's handles over the drawing whenever it is shown, its outline in Adjust (tickets 0790,
-              0799), outside its image role. -->
-            <ReferenceAdjust
-              v-if="handled"
-              :place="handled.image.place"
-              :aspect="handled.aspect"
-              :limits="handled.limits"
-              :opacity="handled.image.opacity"
-              :view="handled.view"
-              :bead="handled.bead"
-              :adjusting="referenceImage.adjusting.value"
-              @preview="referenceImage.preview"
-              @commit="referenceImage.commit"
-              @done="referenceImage.endAdjust"
-            />
-            <EmptyCanvas v-else-if="!activeProject" :deleted="deletedProjectName" :quiet="openPanel !== null" @library="openMenuOnSavedProjects">
-              <div class="app-shell__empty-actions" data-testid="phone-project-bar">
-                <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
-                <ProjectImport compact :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" />
-              </div>
-            </EmptyCanvas>
           </div>
 
-          <!-- The unframed Schemas' names on tags (tickets 0721, 0733, SchemaTag card): over the beads, one Tab stop after
-            the canvas, under the Tool pill and the Selection bar. -->
-          <SchemaTags
-            v-if="activeProject && schemaAnchors?.schemas.length"
-            :project="activeProject"
-            :anchors="schemaAnchors"
-            @rename="onRenameSchema"
-            @frame="onFrameSchema"
+          <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
+          <!-- The Adjust bar takes the Tool pill's place while the reference image is adjusted (ticket 0790). -->
+          <ReferenceAdjustBar
+            v-if="handled && referenceImage.adjusting.value"
+            @replace="referenceImage.pick($event, 'adjust')"
+            @fit="referenceImage.fit"
+            @done="referenceImage.endAdjust"
+          />
+          <ToolPill
+            v-else-if="activeProject"
+            v-model:position="toolPillPosition"
+            v-model:popover-open="toolPillPopoverOpen"
+            :mirror-on="mirrorOn"
+            :mirror-marking="mirrorMarking"
+            :picking="colorPick?.picking.value"
+            :active-tool="activeTool"
+            :has-clipboard="hasClipboard()"
+            :paste-armed="pasteProjectionActive"
+            :color-hex="colorHex"
+            :color-name="colorLabel"
+            :recents-in-pill="recentsInPill"
+            :selected-color-id="selectedColorId"
+            :custom-color="customColor"
+            @select-tool="onSelectTool"
+            @paste-mode="onPasteMode"
+            @mirror-tile="onMirrorTile"
+            @pick-recent="pickRecent"
+            @select-color="onSelectColor"
+            @select-custom-color="onSelectCustomColor"
+            @rect="pillRect = $event"
           />
         </div>
 
-        <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
-        <!-- The Adjust bar takes the Tool pill's place while the reference image is adjusted (ticket 0790). -->
-        <ReferenceAdjustBar
-          v-if="handled && referenceImage.adjusting.value"
-          @replace="referenceImage.pick($event, 'adjust')"
-          @fit="referenceImage.fit"
-          @done="referenceImage.endAdjust"
+        <!-- Convert image fills the same cell as the drawing area, which stays laid out beneath it (ADR 0086). -->
+        <ConvertImageWizard
+          v-if="page === 'convert-image' && convertSession"
+          :wizard="convertSession"
+          :read-clipboard-image="readClipboardImage"
+          class="app-shell__page"
+          @close="onCloseConvertImage"
         />
-        <ToolPill
-          v-else-if="activeProject"
-          v-model:position="toolPillPosition"
-          v-model:popover-open="toolPillPopoverOpen"
-          :mirror-on="mirrorOn"
-          :mirror-marking="mirrorMarking"
-          :picking="colorPick?.picking.value"
-          :active-tool="activeTool"
-          :has-clipboard="hasClipboard()"
-          :paste-armed="pasteProjectionActive"
-          :color-hex="colorHex"
-          :color-name="colorLabel"
-          :recents-in-pill="recentsInPill"
-          :selected-color-id="selectedColorId"
-          :custom-color="customColor"
-          @select-tool="onSelectTool"
-          @paste-mode="onPasteMode"
-          @mirror-tile="onMirrorTile"
-          @pick-recent="pickRecent"
-          @select-color="onSelectColor"
-          @select-custom-color="onSelectCustomColor"
-          @rect="pillRect = $event"
+
+        <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
+        <ToastRegion
+          :toasts="toasts"
+          :under-ring="ringShown"
+          :clear-of-panel="openPanel !== null"
+          @dismiss="dismissToast"
         />
-      </div>
 
-      <!-- Convert image fills the same cell as the drawing area, which stays laid out beneath it (ADR 0086). -->
-      <ConvertImageWizard
-        v-if="page === 'convert-image' && convertSession"
-        :wizard="convertSession"
-        :read-clipboard-image="readClipboardImage"
-        class="app-shell__page"
-        @close="onCloseConvertImage"
-      />
-
-      <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
-      <ToastRegion
-        :toasts="toasts"
-        :under-ring="ringShown"
-        :clear-of-panel="openPanel !== null"
-        @dismiss="dismissToast"
-      />
-
-      <!--
-        Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
-        first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
-      -->
-      <ConvertStepBar v-if="page === 'convert-image' && convertSession" class="app-shell__footer" :wizard="convertSession" @create="onCreateConvertImage" />
-      <ProgressBar
-        v-else
-        class="app-shell__footer"
-        :project="activeProject"
-        :row-highlight="rowHighlight"
-        :row-press="rowPress"
-        @move-row="onMoveRow"
-        @reset-progress="onResetProgress"
-        @toggle-row-direction="onToggleRowDirection"
-        @toggle-row-highlight="toggleRowHighlight"
-        @fit-and-export="onFitAndExport"
-        @go-to-row="onGoToRow"
-      />
-
-      <!--
-        The Selection bar comes last in the page order (ADR 0075: Tab reaches the Progress bar first), so it sits in a
-        layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The margin sheet's
-        tools ride in it after the bar: the order of ADR 0075 has no place for them.
-      -->
-      <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
-          The Selection bar (tickets 168, 415, 0808, 0812; ContextBar card): above a rectangle Selection's Area sheet, its
-          move grip handing a press on to the canvas; above a Piece's shape it floats too, clamped inside the canvas box while
-          it stays beside it (ticket 0779), clear of the Tool pill. It shrinks to its readout in a gesture only while
-          the Mirror's Area isn't the one resized or moved.
+          Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
+          first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
         -->
-        <ContextBar
-          :selection-summary="selectionSummary"
-          :selection="selection"
-          :anchor="selectionAnchor"
-          :gesturing="surfacePressing"
-          :size-only="selectionGuided && !mirrorAdjusting"
-          :paste-armed="pasteProjectionActive"
-          :has-clipboard="hasClipboard()"
+        <ConvertStepBar v-if="page === 'convert-image' && convertSession" class="app-shell__footer" :wizard="convertSession" @create="onCreateConvertImage" />
+        <ProgressBar
+          v-else
+          class="app-shell__footer"
           :project="activeProject"
-          :can-remove-line="canRemoveSelectedLine"
-          :can-name-piece="canNamePiece"
-          :has-paint-color="hasPaintColor()"
-          :select-active="activeTool === 'select'"
-          :obstacle="pillRect"
-          @copy="onCopy"
-          @cut="onCut"
-          @paste="onPasteMode"
-          @fill="onFillSelection"
-          @frame="onFrameFromSelection"
-          @clear-selection="onClearSelection"
-          @rotate="onRotate"
-          @mirror-selection="onMirrorSelection"
-          @select-all="onSelectAll"
-          @remove-line="onRemoveSelectedLine"
-          @name-piece="onNamePiece"
-          @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
-          @move-key="onAreaKey"
-        />
-        <!--
-          The Mirror bar (tickets 0750, 0809; ContextBar card): shown whenever the Mirror is on, a Selection or not,
-          above a Canvas Area's sheet or above the whole Frame's. Right after the Selection bar in the page order, so
-          Tab reaches it next (ADR 0075); drawn under the Selection bar where the two meet, as its sheet is.
-        -->
-        <ContextBar
-          :gesturing="surfacePressing"
-          :paste-armed="pasteProjectionActive"
-          :project="activeProject"
-          :can-remove-line="false"
-          :obstacle="pillRect"
-          :mirror="mirrorBar"
-          :mirror-anchor="mirrorAnchor"
-          :mirror-size-only="mirrorAdjusting"
-          @update:mirror="onMirrorChange"
-          @close-mirror="onCloseMirror"
-          @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
-          @move-key="onAreaKey"
-        />
-
-        <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the
-          tools in its top band, the title block in its bottom-right corner, following the Frame. -->
-        <MarginSheet
-          v-if="frameOf(activeProject) && frameAnchor"
-          :project="activeProject"
-          :anchor="frameAnchor"
-          :editing="settingFrame"
-          :pressing="surfacePressing"
           :row-highlight="rowHighlight"
           :row-press="rowPress"
-          :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
-          :selection="selectionAnchor?.box"
-          :mirror-on-frame="mirrorOnFrame"
-          :without-not-done="demo"
-          @mirror="onMirrorWholeFrame"
-          @rotate="onRotateFrame"
-          @toggle-edit="onEditFrame"
-          @export="onOpenExport"
-          @remove="onRemoveFrame"
-          @move-press="surfaceRef?.pressMoveHandle($event)"
-          @key="onFrameKey"
           @move-row="onMoveRow"
           @reset-progress="onResetProgress"
           @toggle-row-direction="onToggleRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
-          @rename="onRenameFrame"
-          @set-technique="onSetFrameTechnique"
-          @set-setting="onSetFrameSetting"
-          @save-maker-name="onSaveMakerName"
-          @set-letters="onSetLetters"
+          @fit-and-export="onFitAndExport"
+          @go-to-row="onGoToRow"
         />
-      </div>
+
+        <!--
+          The Selection bar comes last in the page order (ADR 0075: Tab reaches the Progress bar first), so it sits in a
+          layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The margin sheet's
+          tools ride in it after the bar: the order of ADR 0075 has no place for them.
+        -->
+        <div v-if="activeProject" v-show="onEditor" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
+          <!--
+            The Selection bar (tickets 168, 415, 0808, 0812; ContextBar card): above a rectangle Selection's Area sheet, its
+            move grip handing a press on to the canvas; above a Piece's shape it floats too, clamped inside the canvas box while
+            it stays beside it (ticket 0779), clear of the Tool pill. It shrinks to its readout in a gesture only while
+            the Mirror's Area isn't the one resized or moved.
+          -->
+          <ContextBar
+            :selection-summary="selectionSummary"
+            :selection="selection"
+            :anchor="selectionAnchor"
+            :gesturing="surfacePressing"
+            :size-only="selectionGuided && !mirrorAdjusting"
+            :paste-armed="pasteProjectionActive"
+            :has-clipboard="hasClipboard()"
+            :project="activeProject"
+            :can-remove-line="canRemoveSelectedLine"
+            :can-name-piece="canNamePiece"
+            :has-paint-color="hasPaintColor()"
+            :select-active="activeTool === 'select'"
+            :obstacle="pillRect"
+            @copy="onCopy"
+            @cut="onCut"
+            @paste="onPasteMode"
+            @fill="onFillSelection"
+            @frame="onFrameFromSelection"
+            @clear-selection="onClearSelection"
+            @rotate="onRotate"
+            @mirror-selection="onMirrorSelection"
+            @select-all="onSelectAll"
+            @remove-line="onRemoveSelectedLine"
+            @name-piece="onNamePiece"
+            @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
+            @move-key="onAreaKey"
+          />
+          <!--
+            The Mirror bar (tickets 0750, 0809; ContextBar card): shown whenever the Mirror is on, a Selection or not,
+            above a Canvas Area's sheet or above the whole Frame's. Right after the Selection bar in the page order, so
+            Tab reaches it next (ADR 0075); drawn under the Selection bar where the two meet, as its sheet is.
+          -->
+          <ContextBar
+            :gesturing="surfacePressing"
+            :paste-armed="pasteProjectionActive"
+            :project="activeProject"
+            :can-remove-line="false"
+            :obstacle="pillRect"
+            :mirror="mirrorBar"
+            :mirror-anchor="mirrorAnchor"
+            :mirror-size-only="mirrorAdjusting"
+            @update:mirror="onMirrorChange"
+            @close-mirror="onCloseMirror"
+            @move-press="(event, area) => surfaceRef?.pressAreaGrip(event, area)"
+            @move-key="onAreaKey"
+          />
+
+          <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the
+            tools in its top band, the title block in its bottom-right corner, following the Frame. -->
+          <MarginSheet
+            v-if="frameOf(activeProject) && frameAnchor"
+            :project="activeProject"
+            :anchor="frameAnchor"
+            :editing="settingFrame"
+            :pressing="surfacePressing"
+            :row-highlight="rowHighlight"
+            :row-press="rowPress"
+            :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
+            :selection="selectionAnchor?.box"
+            :mirror-on-frame="mirrorOnFrame"
+            :without-not-done="demo"
+            @mirror="onMirrorWholeFrame"
+            @rotate="onRotateFrame"
+            @toggle-edit="onEditFrame"
+            @export="onOpenExport"
+            @remove="onRemoveFrame"
+            @move-press="surfaceRef?.pressMoveHandle($event)"
+            @key="onFrameKey"
+            @move-row="onMoveRow"
+            @reset-progress="onResetProgress"
+            @toggle-row-direction="onToggleRowDirection"
+            @toggle-row-highlight="toggleRowHighlight"
+            @rename="onRenameFrame"
+            @set-technique="onSetFrameTechnique"
+            @set-setting="onSetFrameSetting"
+            @save-maker-name="onSaveMakerName"
+            @set-letters="onSetLetters"
+          />
+        </div>
+      </component>
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped>
@@ -693,6 +697,11 @@ const drawingStyle = computed(() => {
 
 .app-shell__canvas-strip {
   grid-row: 1;
+}
+
+/* The main landmark draws no box: its parts are the canvas box's grid items and positioned against it. */
+.app-shell__main {
+  display: contents;
 }
 
 /* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, never the Project's size. Its

@@ -92,10 +92,10 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
     popup on a copy of these values (spec 0645).
   -->
   <form id="new-project-form" class="new-project-form" novalidate @submit.prevent="onSubmit">
-    <header class="new-project-form__head">
+    <div class="new-project-form__head">
       <h2 class="new-project-form__title" data-testid="open-canvas-title">{{ t.form.openCanvasTitle }}</h2>
       <p class="new-project-form__subtitle">{{ t.form.openCanvasSubtitle }}</p>
-    </header>
+    </div>
 
     <NamesSection ref="names" v-model:name="name" v-model:maker-name="makerName" :name-placeholder="namePlaceholder" />
 

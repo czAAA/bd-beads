@@ -55,7 +55,7 @@ describe('App Progress bar', () => {
   it('is the last control in the page order bar the Selection bar\'s layer (ADR 0075)', async () => {
     const wrapper = await mountApp(15, 30)
     const layer = wrapper.find('[data-testid="selection-layer"]')
-    expect(wrapper.find('[data-testid="app-canvas"]').element.lastElementChild).toBe(layer.element)
+    expect(wrapper.get('main').element.lastElementChild).toBe(layer.element)
     expect(layer.element.previousElementSibling).toBe(wrapper.find('[data-testid="progress-bar"]').element)
   })
 })

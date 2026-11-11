@@ -46,7 +46,7 @@ function onClick(event: Event) {
 
 <template>
   <AppTooltip v-if="disabled && name && disabledBody" :name="name" disabled :disabled-body="disabledBody" :announce="false" class="panel-item-wrap">
-    <button v-bind="$attrs" class="ui-control panel-item" :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent }" type="button" :role="context?.itemRole.value" aria-disabled="true" @click="onClick">
+    <button v-bind="$attrs" class="ui-control panel-item" :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent }" type="button" aria-disabled="true" @click="onClick">
       <AppIcon v-if="icon" :name="icon" :size="16" :class="{ 'panel-item__icon--accent': accentIcon }" />
       <span class="panel-item__label"><slot /></span>
       <span v-if="value" class="panel-item__value">{{ value }}</span>
@@ -63,7 +63,6 @@ function onClick(event: Event) {
     :href="href"
     :target="external ? '_blank' : undefined"
     :rel="external ? 'noopener' : undefined"
-    :role="context?.itemRole.value"
     :aria-disabled="disabled || undefined"
     @click="onClick"
   >

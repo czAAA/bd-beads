@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
 import StarterGallery from './StarterGallery.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import type { StarterCategoryId } from '../../domain/starters'
@@ -16,7 +15,7 @@ function mountGallery(props: { category?: StarterCategoryId } = {}) {
   const wrapper = mount(StarterGallery, {
     props,
     attachTo: document.body,
-    global: { provide: { [PANEL_CONTEXT as symbol]: { itemRole: ref(undefined), close: vi.fn(), openSub } } },
+    global: { provide: { [PANEL_CONTEXT as symbol]: { close: vi.fn(), openSub } } },
   })
   return { wrapper, openSub }
 }

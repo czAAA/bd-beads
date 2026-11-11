@@ -32,6 +32,9 @@ const props = withDefaults(
   { min: -Infinity, max: Infinity, stepBy: 1, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
 )
 const value = defineModel<number>({ required: true })
+/** The number's button is named by what it counts and then what it shows, so its name holds its visible text (ticket
+ * 0856): "Beads in each stitch: 2". */
+const valueName = computed(() => `${props.valueLabel}: ${props.display ?? value.value}`)
 
 /** The Tooltip of one button: its name while it can act, the reason while the stepper is locked (ADR 0035); a limit
  * shows none. */
@@ -129,7 +132,7 @@ watch(
         class="stepper__value-button"
         :class="{ 'stepper__value-button--hidden': editing }"
         type="button"
-        :aria-label="valueLabel"
+        :aria-label="valueName"
         :aria-hidden="editing || undefined"
         :tabindex="editing ? -1 : undefined"
         :disabled="disabled && !reasoned"

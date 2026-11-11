@@ -181,13 +181,15 @@ describe('IconButton variants and registry action (ticket 330)', () => {
     expect(wrapper.text()).toContain('1')
   })
 
-  it('draws the tool tab: underline when selected, and the key badge only with showHotkey', () => {
+  it('draws the tool tab: underline when selected, and the key badge, drawn not written, only with showHotkey', () => {
     const tool = (props: object) => mount(IconButton, { props: { icon: 'paint', label: 'Paint', variant: 'tool', hotkey: '1', ...props } })
     const selected = tool({ selected: true, showHotkey: true })
     expect(selected.get('button').classes()).toEqual(expect.arrayContaining(['icon-btn--tool', 'icon-btn--selected']))
     expect(selected.get('button').attributes('aria-pressed')).toBe('true')
     expect(selected.get('button').attributes('aria-keyshortcuts')).toBe('1')
-    expect(selected.get('.icon-btn__key').text()).toBe('1')
+    expect(selected.get('.icon-btn__key').attributes('data-key')).toBe('1')
+    // The key is drawn, not text: the tab's name stays its own words, the label it shows (ticket 0856).
+    expect(selected.get('button').text()).toBe('')
     expect(tool({}).find('.icon-btn__key').exists()).toBe(false)
     expect(tool({ showHotkey: true, hotkey: undefined }).find('.icon-btn__key').exists()).toBe(false)
   })
