@@ -97,18 +97,21 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.findAll('[data-testid="canvas-technique"] [role="menuitemradio"]')).toHaveLength(TECHNIQUES.length)
   })
 
-  it('says saved, unsaved or failed in a polite live region, failed with the reason and a press to try again', async () => {
+  it('writes saved, unsaved or failed beside its icon in a polite live region, failed with the reason and a press to try again', async () => {
     const wrapper = mountPanel()
     const state = () => wrapper.get('[data-testid="save-state"]')
     expect(state().text()).toBe(en.panels.project.savedLocal)
     expect(state().attributes('role')).toBe('status')
     expect(state().attributes('aria-live')).toBe('polite')
-    expect(wrapper.find('[data-testid="save-icon"] [data-icon="save"]').exists()).toBe(true)
+    // Saved is a check: the floppy means only the Save Project file action (ticket 0858).
+    expect(wrapper.find('[data-testid="save-icon"] [data-icon="check"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-head"] [data-icon="save"]').exists()).toBe(false)
     expect(wrapper.find('[data-icon="cloud"]').exists()).toBe(false)
 
     await wrapper.setProps({ unsaved: true })
     expect(state().text()).toBe(en.panels.project.notSavedYet)
     expect(state().classes()).toContain('project-head__state--unsaved')
+    expect(wrapper.find('[data-testid="project-head"] [data-icon="save"]').exists()).toBe(false)
 
     await wrapper.setProps({ saveFailed: true })
     expect(state().text()).toContain('Not saved. ')

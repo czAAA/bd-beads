@@ -455,6 +455,8 @@ export interface Translations {
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill,
      * Beads needed, Saved Projects, New Project, Import. */
     projectPanelLabel: string
+    /** The strip's Project button, named with the open Project's name it shows (ticket 0858). */
+    projectButtonNamed: string
   }
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
   homepage: {
@@ -866,6 +868,8 @@ export interface Translations {
     lastFile: string
     noFile: string
     announce: string
+    /** The label's count beside "Save Project file" (ticket 0858): "89 beads since the last file". */
+    since: PluralForms
   }
   /** Open Project file and Save all Projects to a Project file, in the Projects library (ticket 0859: the file's one name). */
   transfer: {

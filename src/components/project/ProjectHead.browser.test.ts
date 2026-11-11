@@ -24,3 +24,15 @@ describe('ProjectHead alignment', () => {
     })
   }
 })
+
+// The save state is written out beside its icon, not only said on hover (ticket 0858), on a phone too.
+describe('ProjectHead save state', () => {
+  it('shows the state in words on the title line, before its check', async () => {
+    const { root } = await mountAt(ProjectHead, { project, saveFailed: false, unsaved: false }, { locale: 'en', width: 390 })
+    const words = root.querySelector('[data-testid="save-state"]')!.getBoundingClientRect()
+    const icon = root.querySelector('[data-testid="save-icon"]')!.getBoundingClientRect()
+    expect(words.width).toBeGreaterThan(icon.width)
+    expect(words.right).toBeLessThanOrEqual(icon.left)
+    expect(Math.abs(words.top + words.height / 2 - (icon.top + icon.height / 2))).toBeLessThan(2)
+  })
+})

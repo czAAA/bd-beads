@@ -5,6 +5,8 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import type { Project } from '../../domain/project'
+import { fillBlanks } from '../../domain/fillBlanks'
+import { projectNameOf } from '../../domain/layerRecord'
 import { useI18n } from '../../i18n/useI18n'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { homepageUrl } from '../../homepage/homepageRoute'
@@ -84,6 +86,9 @@ const actions = {
   zoomIn: controlAction('zoom-in'),
   zoomFit: controlAction('zoom-fit'),
 }
+/** The Project button shows the open Project's name (ticket 0858), and is named and Tooltipped "Project: {name}" whole. */
+const projectName = computed(() => (props.project ? projectNameOf(props.project) : ''))
+const projectNamed = computed(() => fillBlanks(t.value.header.projectButtonNamed, { name: projectName.value }))
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 const onHomepage = computed(() => props.page === 'homepage')
 /** The Brand is a link only on the editor. */
@@ -152,12 +157,15 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <AppButton
           v-if="project"
           variant="text"
+          class="canvas-strip__project"
           :action="actions.project"
+          :label="projectNamed"
+          :aria-label="projectNamed"
           :selected="openPanel === 'project' ? true : undefined"
           data-testid="strip-project"
           @click="emit('select-panel', 'project')"
         >
-          <span class="canvas-strip__label">{{ actions.project.name(t) }}</span>
+          <span class="canvas-strip__label canvas-strip__project-name" data-user-text>{{ projectName }}</span>
         </AppButton>
         <AppButton
           v-if="project"
@@ -290,12 +298,21 @@ function onPanelsKeydown(event: KeyboardEvent) {
   align-items: center;
   justify-self: start;
   gap: var(--space-8);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .canvas-strip__panel-buttons {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Where the left slot is short of room, the Project button gives way first: its name is cut sooner (ticket 0858). */
+.canvas-strip__panel-buttons > :deep(.app-tooltip:has(> .canvas-strip__project)),
+.canvas-strip__panel-buttons :deep(.canvas-strip__project) {
+  min-width: 0;
 }
 
 /* The Homepage's way into the editor (ticket 0822; Homepage card): `sm` buttons 8px apart, beside Menu. */
@@ -338,6 +355,15 @@ function onPanelsKeydown(event: KeyboardEvent) {
     clip: rect(0 0 0 0);
     white-space: nowrap;
   }
+}
+
+/* The open Project's name (ticket 0858): one line, cut with an ellipsis, so a long one never crowds the Brand. */
+.canvas-strip__project-name {
+  min-width: 0;
+  max-width: var(--strip-project-name-max);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @container shell (max-width: 1023px) {

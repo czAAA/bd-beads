@@ -339,6 +339,7 @@ export const es: Translations = {
     homepageItem: 'Inicio',
     sourceItem: 'Código fuente',
     projectPanelLabel: 'Proyecto',
+    projectButtonNamed: 'Proyecto: {name}',
   },
   homepage: {
     pageTitle: 'Inicio',
@@ -713,6 +714,7 @@ export const es: Translations = {
     lastFile: 'Último archivo: {when}',
     noFile: 'Aún no hay archivo de proyecto',
     announce: 'Cuentas desde el último archivo: {count}. Guarda un archivo de proyecto para conservarlas.',
+    since: { one: '{count} cuenta desde el último archivo', many: '{count} de cuentas desde el último archivo', other: '{count} cuentas desde el último archivo' },
   },
   transfer: {
     exportLibraryButton: 'Guardar todo en un archivo de proyecto',

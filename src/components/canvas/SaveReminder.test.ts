@@ -19,13 +19,16 @@ describe('SaveReminder (ticket 0796)', () => {
     expect(described?.textContent).toBe('Beads since last file: 64')
   })
 
-  it('shows its label only when open: Save Project file and the count', async () => {
+  it('shows its label only when open: Save Project file and what the count counts (ticket 0858)', async () => {
     const wrapper = mountRing()
     expect(wrapper.classes()).not.toContain('save-ring--open')
 
     await wrapper.setProps({ labelOpen: true })
     expect(wrapper.classes()).toContain('save-ring--open')
-    expect(wrapper.get('[data-testid="save-ring-label"]').text()).toBe('Save Project file+64')
+    expect(wrapper.get('[data-testid="save-ring-label"] .save-ring__text').text()).toBe('Save Project file')
+    expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('64 beads since the last file')
+    await wrapper.setProps({ beads: 1 })
+    expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('1 bead since the last file')
   })
 
   it('has a Tooltip with the Save key, the body, the count and when the last file was', async () => {

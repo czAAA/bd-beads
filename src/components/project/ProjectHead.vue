@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
-import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import NamesSection from './NamesSection.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -43,16 +42,15 @@ const stateText = computed(() =>
   <section class="project-head" role="group" :aria-label="projectNameOf(project)" data-testid="project-head">
     <div class="project-head__title">
       <span class="project-head__label">{{ t.panels.project.titleLabel }}</span>
-      <!-- The save state (SaveStates card): the words are a polite live region so "Not saved" is announced; the icon and its Tooltip say the same. -->
+      <!-- The save state in words beside its icon (SaveStates card, ticket 0858): a polite live region, so "Not saved" is
+           announced. Saved is a check, never the floppy, which is the Save Project file action alone. -->
       <div class="project-head__state" :class="`project-head__state--${state}`">
         <p class="project-head__text" role="status" aria-live="polite" data-testid="save-state" :class="`project-head__state--${state}`">{{ stateText }}</p>
         <IconButton v-if="state === 'failed'" variant="plain" icon="warning" :label="stateText" tooltip data-testid="save-try-again" @click="emit('save')" />
-        <AppTooltip v-else :name="stateText" :announce="false">
-          <span class="project-head__icon" aria-hidden="true" data-testid="save-icon">
-            <AppIcon name="save" :size="16" />
-            <span v-if="state === 'unsaved'" class="project-head__dot" />
-          </span>
-        </AppTooltip>
+        <span v-else class="project-head__icon" aria-hidden="true" data-testid="save-icon">
+          <AppIcon v-if="state === 'saved'" name="check" :size="16" />
+          <span v-else class="project-head__dot" />
+        </span>
       </div>
     </div>
 
@@ -93,6 +91,8 @@ const stateText = computed(() =>
 .project-head__state {
   display: flex;
   align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
   margin: 0;
   color: var(--accent-strong);
 }
@@ -105,15 +105,11 @@ const stateText = computed(() =>
   color: var(--danger);
 }
 
-/* The words are for screen readers; the icon and its Tooltip say the same to everyone else. */
+/* The words, one line, then the icon; a long state wraps rather than pushing the icon out. */
 .project-head__text {
-  position: absolute;
   margin: 0;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  font: var(--type-small);
+  text-align: end;
 }
 
 .project-head__icon {
@@ -126,9 +122,6 @@ const stateText = computed(() =>
 }
 
 .project-head__dot {
-  position: absolute;
-  top: 1px;
-  right: 1px;
   width: 5.5px;
   height: 5.5px;
   background: var(--accent-strong);

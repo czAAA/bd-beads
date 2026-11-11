@@ -21,7 +21,7 @@ Every Project lives in the browser's own storage (ADR 0001, ADR 0012), and a bro
 - **Shown** with a Project open once Beads since last file reaches the threshold. It stays until the Project file is saved, and the count going back to 0 hides it. It is hidden below the threshold, with no Project open, on the Homepage and in Convert image.
 - **Place:** the drawing area's top-right corner, `--save-ring-inset` in from the right and under the Canvas strip (16px, 8px on a phone), where short toasts used to start (Message card). While the ring shows, the toast layer starts 8px under it, so a toast never covers it. The ring stays put when the canvas pans, zooms or turns.
 - **Material:** the Tool pill's: `elevated` fill, a 1px `line` edge, `radius-full`, no shadow in dark (`elevation-2` in light). It is 40px across (`--save-ring-size`): the 1px edge, 4px of padding, then a 30px halo (`--save-ring-halo`).
-- **Halo:** a full circle of radius 13 in a 30px box, stroke `--save-ring-stroke` (2px), in `accent-strong`. The `save` icon (the floppy disk) sits in it at 16px, also `accent-strong`. There is no partial arc: the ring only exists once the file is behind.
+- **Halo:** a full circle of radius 13 in a 30px box, stroke `--save-ring-stroke` (2px), in `accent-strong`. The `save` icon (the floppy disk) sits in it at 16px, also `accent-strong`. There is no partial arc: the ring only exists once the file is behind. The floppy means the action, saving a Project file, here and on the Project panel's Save row alone; the saved state is a check (SaveStates card, ticket 0858).
 - **Appearing:** it scales from 0.6 and fades in over `--duration-slow`, with `--ease-standard`. Under reduced motion it only fades.
 - **Hover** adds `--hover-fill` over the `elevated` fill. **Pressed** adds `--press-fill` and the usual slight shrink. **Focus** is the 2px `focus-ring` (3px in High contrast).
 - **High contrast:** the halo and the icon are `ink`, and the edge is 2px `line-strong`.
@@ -31,7 +31,7 @@ Every Project lives in the browser's own storage (ADR 0001, ADR 0012), and a bro
 
 - **When it opens:** as the ring appears, then again at every further 100 beads (150, 250, … with the 50 threshold), and once when a Project opens with its count at the threshold or above and its last file (or creation, if it never had one) 7 or more days ago.
 - **Never mid-stroke:** the ring's appearance and every opening wait until no stroke, Fill or paste has landed for 3 s, and until no panel, sheet, dialog or Adjust is open.
-- **What opens:** the button widens leftwards, its right edge staying put: the halo first, then the label "Save Project file" (`tab`, 13/18 500, `ink`), then the count "+{count}" (`meta-small`, `muted`), with padding 0 12 0 4 after the halo. The width animates over `--duration-slow` with `--ease-standard`. Under reduced motion the label fades in place, with no width animation.
+- **What opens:** the button widens leftwards, its right edge staying put: the halo first, then the label "Save Project file" (`tab`, 13/18 500, `ink`), then the count in words, "{count} beads since the last file" (`meta-small`, `muted`; a counted word, ticket 0858: a bare "+89" read as "89 beads not saved"), with padding 0 12 0 4 after the halo. The width animates over `--duration-slow` with `--ease-standard`. Under reduced motion the label fades in place, with no width animation.
 - **How long:** 4 s (`--save-ring-label-time`), then it closes back to the ring. It stays open while hovered or focused and closes 1 s after the pointer or focus leaves.
 - There is no "Later" and no ×: the ring is already the quiet form, and closing the label is the "later".
 - **Screen readers:** a polite live region says "Beads since last file: {count}. Save a Project file to keep them." once each time the label opens.
@@ -61,10 +61,10 @@ The Menu card's Tooltip, under the ring, right edges aligned (the Tooltip's `ali
 
 - **Desktop** (1024px and up, fine pointer): 40px, inset 16px, as above.
 - **Coarse pointer** (tablets, touch laptops): 44px (`--save-ring-size-touch`): the 1px edge, 6px of padding, then the same 30px halo. Inset 16px.
-- **Phone** (under 744px): 44px, inset 8px (`--save-ring-inset-phone`). The label opens leftwards as on desktop and is at most the drawing area's width minus 16px; if the count wouldn't fit, only "Save Project file" shows (the count wraps onto a hidden second line). Toasts start 8px under the ring, as on desktop.
+- **Phone** (under 744px): 44px, inset 8px (`--save-ring-inset-phone`). The label opens leftwards as on desktop and is at most the drawing area's width minus 16px (on any device at most 32rem); if the count wouldn't fit, only "Save Project file" shows (the count wraps onto a hidden second line). Toasts start 8px under the ring, as on desktop.
 
 ## Copy
 
-English, with the other languages in `writing.md` (Save reminder copy): Save Project file · The browser keeps your work but can clear it. A Project file stays. · Beads since last file: {count} · Last file: {when} · No Project file yet · Beads since last file: {count}. Save a Project file to keep them. · Saved: {file} · Save Project file as…. "Save a copy" is gone (ticket 0859): a copy is what Duplicate makes.
+English, with the other languages in `writing.md` (Save reminder copy): Save Project file · {count} beads since the last file (one: {count} bead since the last file) · The browser keeps your work but can clear it. A Project file stays. · Beads since last file: {count} · Last file: {when} · No Project file yet · Beads since last file: {count}. Save a Project file to keep them. · Saved: {file} · Save Project file as…. "Save a copy" is gone (ticket 0859): a copy is what Duplicate makes.
 
 Built in ticket 0796: `src/components/canvas/SaveReminder.vue`, its timing in `useSaveReminder`, the count in `useBeadsSinceFile` and `domain/beadsSinceFile.ts`, Save and Save as in `useExportFlow`.
