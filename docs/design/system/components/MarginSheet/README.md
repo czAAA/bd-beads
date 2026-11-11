@@ -47,7 +47,7 @@ The one exception: on the Homepage's What's inside, the demo Frame's band has no
 ## Edit Frame: hot corners
 
 - While Edit Frame is on, the sheet's outer edge is outlined 1px dashed in `accent` at 55%, 3px outside it.
-- The eight resize handles are drawn on the Frame line: at each corner an `accent` bracket (two 14px arms, 3px thick, the corner rounded 4px), at each edge's middle a 12 × 4 `accent` bar. Under the pointer a corner grows to 18px arms, 4px thick, on a 32px `accent` disc at 18%, and the size Tooltip shows beside it ("42 × 13 ≈ 6.7 × 1.7 cm"). The hit areas are the Frame card's (14px from the centre for mouse and pen, 24px for touch).
+- The eight resize handles are the Handle card's, in `accent`, on the Frame line: a bracket at each corner, a bar at each edge's middle, the corner under the pointer hot. Beside the hot corner the size Tooltip shows ("42 × 13 ≈ 6.7 × 1.7 cm"). Their reach is the Handle card's (14px for mouse and pen, a 44px touch area).
 - Editing stays locked once a Row progress pass is done, as before; the Edit Frame button is then not offered.
 
 ## Title block

@@ -17,7 +17,9 @@ import {
   type WidthLimits,
 } from '../../domain/referenceImage'
 import { useI18n } from '../../i18n/useI18n'
+import { reachLimit } from '../../rendering/handleSizes'
 import { placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
+import AppHandle from '../ui/AppHandle.vue'
 import AppIcon from '../ui/AppIcon.vue'
 
 // The reference image's handles (ReferenceImage card, tickets 0790, 0799), in screen px: whenever it is shown a corner
@@ -73,6 +75,9 @@ const pictureStyle = computed(() => {
 const CORNER_DEGREES: Record<ReferenceCorner, number> = { 'top-left': 225, 'top-right': 315, 'bottom-right': 45, 'bottom-left': 135 }
 const CURSORS = ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize']
 const cursorOf = (corner: ReferenceCorner) => CURSORS[Math.round((((CORNER_DEGREES[corner] + onScreen.value.angle) % 180) + 180) / 45) % 4]
+
+/** A corner's reach on the picture as it is on screen (Handle card). */
+const handleLimit = computed(() => reachLimit(onScreen.value))
 
 const angleText = computed(() => `${Math.round(shown.value.angle)}°`)
 const groupName = computed(() => fillBlanks(words.value.groupName, { opacity: props.opacity, angle: Math.round(props.place.angle) }))
@@ -191,12 +196,14 @@ watch(
       @pointercancel="cancel"
       @keydown="onKeydown"
     >
-      <button
+      <AppHandle
         v-for="corner in REFERENCE_CORNERS"
         :key="corner"
+        :place="corner"
+        :hot="press?.kind === corner"
+        :limit="handleLimit"
         class="reference-adjust__corner"
         :class="`reference-adjust__corner--${corner}`"
-        type="button"
         tabindex="-1"
         :aria-label="words.corners[corner]"
         :style="{ cursor: cursorOf(corner) }"
@@ -260,59 +267,29 @@ watch(
   outline-offset: var(--focus-offset);
 }
 
-/* A corner handle: the Frame's resize handle, standing off the corner, grabbed within 14px (44px on touch). */
+/* A corner handle: the shared handle (Handle card) in `ink`, on the picture's corner, turned with it. */
 .reference-adjust__corner {
-  --offset: var(--reference-handle-offset);
-  position: absolute;
-  box-sizing: border-box;
-  width: var(--reference-handle-hit);
-  height: var(--reference-handle-hit);
-  padding: 0;
-  background: none;
-  border: 0;
-  transform: translate(-50%, -50%);
-  touch-action: none;
-}
-
-.reference-adjust__corner::before {
-  position: absolute;
-  inset: calc((var(--reference-handle-hit) - var(--reference-handle)) / 2);
-  content: '';
-  background: var(--canvas);
-  border: var(--reference-outline) solid var(--ink);
-  border-radius: var(--radius-xs);
-}
-
-@media (pointer: coarse) {
-  .reference-adjust__corner {
-    --offset: var(--reference-handle-offset-touch);
-    width: var(--touch-target);
-    height: var(--touch-target);
-  }
-
-  .reference-adjust__corner::before {
-    inset: calc((var(--touch-target) - var(--reference-handle)) / 2);
-  }
+  --handle-color: var(--ink);
 }
 
 .reference-adjust__corner--top-left {
-  top: calc(-1 * var(--offset));
-  left: calc(-1 * var(--offset));
+  top: calc(-1 * var(--reference-outline));
+  left: calc(-1 * var(--reference-outline));
 }
 
 .reference-adjust__corner--top-right {
-  top: calc(-1 * var(--offset));
-  left: calc(100% + var(--offset));
+  top: calc(-1 * var(--reference-outline));
+  left: calc(100% + var(--reference-outline));
 }
 
 .reference-adjust__corner--bottom-right {
-  top: calc(100% + var(--offset));
-  left: calc(100% + var(--offset));
+  top: calc(100% + var(--reference-outline));
+  left: calc(100% + var(--reference-outline));
 }
 
 .reference-adjust__corner--bottom-left {
-  top: calc(100% + var(--offset));
-  left: calc(-1 * var(--offset));
+  top: calc(100% + var(--reference-outline));
+  left: calc(-1 * var(--reference-outline));
 }
 
 /* The Turn handle on its dashed stem, above the top edge's middle (below the bottom edge where there is no room). */
