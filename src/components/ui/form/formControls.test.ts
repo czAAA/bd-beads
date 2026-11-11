@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
+import FieldCounter from './FieldCounter.vue'
 import FileButton from './FileButton.vue'
 import FormField from './FormField.vue'
 import SegmentedControl from './SegmentedControl.vue'
@@ -109,6 +110,16 @@ describe('TextField select-on-focus and compact (ticket 517)', () => {
 
   it('draws the compact variant', () => {
     expect(mount(TextField, { props: { compact: true } }).classes()).toContain('text-field--compact')
+  })
+})
+
+describe('FieldCounter (ticket 0854)', () => {
+  it('shows "n/max" only from ten under the limit, in danger past it', () => {
+    expect(mount(FieldCounter, { props: { length: 29, max: 40 } }).find('[data-testid="field-counter"]').exists()).toBe(false)
+    const near = mount(FieldCounter, { props: { length: 30, max: 40 } })
+    expect(near.text()).toBe('30/40')
+    expect(near.classes()).not.toContain('field-counter--over')
+    expect(mount(FieldCounter, { props: { length: 41, max: 40 } }).classes()).toContain('field-counter--over')
   })
 })
 
