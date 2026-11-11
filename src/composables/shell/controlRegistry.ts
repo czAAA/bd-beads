@@ -668,6 +668,8 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.fitAndExport,
     ...fitsDrawing,
   }),
+  // The Progress bar's counter (ticket 0849, F-04-14): opens Go to row, for a weaver who started from a printed chart.
+  unkeyed('go-to-row', (t) => t.rowProgress.goToRow, 'rowProgress', { body: (t) => t.rowProgress.goToRowBody }),
 ]
 
 /** The gestures with no key the dialog still lists beside the keys (ticket 95): not actions, so not in CONTROLS. */

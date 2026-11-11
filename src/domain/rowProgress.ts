@@ -199,6 +199,19 @@ export function rowProgressPosition(project: Layered): { current: number; total:
 }
 
 
+/** The Frame line (row or column, from 1 as the rulers number it) the current pass works on, and how many lines there
+ * are, where a line takes more than one pass (peyote, ticket 0849): there the counter counts passes, not the rulers' rows.
+ * None where each pass is a line, for a Custom frame, and once every pass is done. */
+export function passLine(project: Layered): { line: number; lines: number } | undefined {
+  const frame = frameOf(project)
+  const order = frameRowOrder(project)
+  const pass = currentPass(rowProgressOf(project))
+  if (!frame || order.stepOf || pass >= order.count) return undefined
+  const lines = rowProgressOf(project).direction === 'columns' ? frame.columns : frame.rows
+  const line = order.lineOf(pass)
+  return order.count === lines || line === undefined ? undefined : { line: line + 1, lines }
+}
+
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
 export function frameRowOrder(project: Layered): RowOrder {
