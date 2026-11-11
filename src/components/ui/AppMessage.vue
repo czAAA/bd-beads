@@ -88,21 +88,23 @@ onBeforeUnmount(() => clearTimeout(timer))
   color: var(--ink);
   background: var(--panel);
   border: 1px solid var(--panel-line);
-  border-left: var(--tone-edge) solid var(--accent-strong);
+  border-left: var(--tone-edge) solid var(--message-tone);
   border-radius: var(--radius-lg);
+  /* The tone, edge and icon alike (Message card); the themes' own borders below keep it on the left edge. */
+  --message-tone: var(--accent-strong);
 }
 
 :root[data-theme='dark'] .app-message {
   background: var(--elevated);
   border-color: var(--line-strong);
-  border-left-color: var(--accent-strong);
+  border-left-color: var(--message-tone);
 }
 
 :root[data-theme='contrast'] .app-message {
   background: var(--canvas);
   border-width: 2px;
   border-color: var(--line-strong);
-  border-left: var(--tone-edge) solid var(--accent-strong);
+  border-left: var(--tone-edge) solid var(--message-tone);
 }
 
 .app-message--toast {
@@ -116,23 +118,15 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 .app-message__icon {
   margin-top: var(--space-2);
-  color: var(--accent-strong);
+  color: var(--message-tone);
 }
 
-.app-message.app-message--warning {
-  border-left-color: var(--warning);
+.app-message--warning {
+  --message-tone: var(--warning);
 }
 
-.app-message--warning .app-message__icon {
-  color: var(--warning);
-}
-
-.app-message.app-message--danger {
-  border-left-color: var(--danger);
-}
-
-.app-message--danger .app-message__icon {
-  color: var(--danger);
+.app-message--danger {
+  --message-tone: var(--message-danger);
 }
 
 .app-message__text {
