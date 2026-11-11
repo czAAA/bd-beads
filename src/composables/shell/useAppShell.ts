@@ -14,6 +14,8 @@ import type { SheetArea } from '../tools/selectionBarPlacement'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
+import { useBackClosesPage } from './useBackClosesPage'
+import { useUnloadGuard } from './useUnloadGuard'
 import { useViewportGuard } from './useViewportGuard'
 import { usePenInputMode } from './usePenInputMode'
 import { useProjectManageFlow } from '../project/useProjectManageFlow'
@@ -153,6 +155,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     addProject: addNewProject,
     decodeImage: services.decodeImage,
     loadCatalog: loadColorCatalog,
+    // Close with no Project open goes back to the New Project form the converter was opened from (ticket 0861).
+    onClosed: () => {
+      if (!activeProject.value) overlays.openMenuOnForm()
+    },
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
@@ -746,7 +752,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
   })
 
   /** Delete “{name}”?, from the library's ×, the Project panel and the missed Project notice alike (ticket 0842). */
-  const deleteProject = useDeleteProjectFlow({ findProject: entryOf, removeProject, saveProjectFile: exportFlow.onSaveFileOf, dialogs })
+  const deleteProject = useDeleteProjectFlow({
+    findProject: entryOf,
+    removeProject,
+    saveProjectFile: exportFlow.onSaveFileOf,
+    openProjectId: () => activeProjectId.value,
+    dialogs,
+  })
   const onRequestDeleteOpen = () => {
     const project = currentProject()
     if (project) deleteProject.onRequestDelete(project.id)
@@ -792,6 +804,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   if (!demo) {
     usePageZoomLock()
     useViewportGuard()
+    // The browser's Back is the converter's Close, and a reload or closing the tab asks while it holds a setup (0861).
+    useBackClosesPage({ page: appPage.page, close: convertImage.onClose })
+    useUnloadGuard().askWhile(() => appPage.guarded.value)
   }
   useAppShortcutTable({
     activeProject: currentProject,
@@ -908,6 +923,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       openPanel,
       onSelectPanel: overlays.onSelectPanel,
       openMenuOnForm: overlays.openMenuOnForm,
+      /** The empty Canvas's message after a delete (ticket 0840): the deleted Project's name, and its Projects library link. */
+      deletedProjectName: deleteProject.deletedName,
+      openMenuOnSavedProjects: overlays.openMenuOnSavedProjects,
       onImportProjects,
       toasts,
       dismissToast,
@@ -1078,9 +1096,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
       // New Project
       onNewProjectDraft: convertImage.onNewProjectDraft,
-      onCreateProject,
-      onCreateFromStarter,
-      onOpenConvertImage: convertImage.open,
+      // Each leaves the page first, as the Menu's rows do, should the form show over one (ticket 0861)
+      onCreateProject: afterLeaving(onCreateProject),
+      onCreateFromStarter: afterLeaving(onCreateFromStarter),
+      onOpenConvertImage: afterLeaving(convertImage.open),
       // Project
       activeProject,
       saveFailed,

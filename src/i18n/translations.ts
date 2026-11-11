@@ -421,6 +421,11 @@ export interface Translations {
     /** The toast once a newer version of the app is waiting (ticket 69), and its button, which reloads onto it. */
     updateReady: string
     updateReload: string
+    /** The hint's second sentence, how to move the Canvas: its own key so a touch device can say its own (ticket 0840). */
+    canvasPlaceholderPan: string
+    /** The empty Canvas after a delete left no Project open (ticket 0840): “{name}” was deleted, and what to do next. */
+    canvasDeleted: string
+    canvasDeletedHint: string
   }
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
   storage: {

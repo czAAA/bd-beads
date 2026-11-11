@@ -308,10 +308,13 @@ export const es: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre un proyecto guardado o importa un archivo. Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
+    canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o importa un archivo.',
     canvasPlaceholder: 'Aún no hay ningún proyecto abierto',
     updateReady: 'Actualización lista',
     updateReload: 'Recargar',
+    canvasPlaceholderPan: 'Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
+    canvasDeleted: 'Se eliminó «{name}».',
+    canvasDeletedHint: 'Abre otro desde la biblioteca de proyectos o crea uno nuevo.',
   },
   storage: {
     saveFailedMessage:

@@ -6,7 +6,7 @@ import { BEAD_CATALOG } from './domain/beads'
 import type { PixelData } from './domain/imageConversion'
 import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
-import { openNewProject, openPanel, pickColor } from './testUtils/pill'
+import { closePanel, openNewProject, openPanel, pickColor } from './testUtils/pill'
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseBeadInSection } from './testUtils/beadPicker'
 import { layersView } from './testUtils/layerFields'
@@ -162,7 +162,7 @@ describe('App Convert image as an App page (ADR 0086)', () => {
 })
 
 describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
-  it('closes at once with no picture set, asking nothing, and gives the empty canvas back', async () => {
+  it('closes at once with no picture set, asking nothing, back on the New Project form it came from (ticket 0861)', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await openWizard(wrapper)
     await wrapper.get('[data-testid="convert-close"]').trigger('click')
@@ -172,6 +172,22 @@ describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
     expect(page(wrapper).exists()).toBe(false)
     expect(loadProjects()).toEqual([])
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="create-project"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('takes the browser’s Back as Close, and a reload asks first while a picture is set (ticket 0861)', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    const reloadAsks = () => !window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    await openFromMenu(wrapper)
+    await chooseImage(wrapper)
+    expect(reloadAsks()).toBe(true)
+
+    history.back()
+    await vi.waitFor(() => expect(leaveModal(wrapper).exists()).toBe(true))
+    await leaveModal(wrapper).get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+    expect(page(wrapper).exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -308,12 +324,16 @@ describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
   })
 })
 
-describe('App empty canvas (tickets 158, 0748)', () => {
-  it('keeps the canvas box with its empty positions, what is missing and what to do, an empty Canvas footer and no Tool pill', () => {
+describe('App empty canvas (tickets 158, 0748, 0840)', () => {
+  it('keeps the canvas box with its empty positions, what is missing and what to do, an empty Canvas footer and no Tool pill', async () => {
     const wrapper = mount(App)
 
     const empty = wrapper.find('[data-testid="app-canvas-placeholder"]')
     expect(empty.find('.empty-canvas__board').exists()).toBe(true)
+    // The Menu opens on its New Project form here, and the message isn't shown cut behind it (ticket 0840).
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(true)
+    expect(empty.find('[data-testid="empty-canvas-message"]').exists()).toBe(false)
+    await closePanel(wrapper)
     expect(empty.text()).toContain(ru.shell.canvasPlaceholder)
     expect(empty.text()).toContain(ru.shell.canvasPlaceholderHint)
     // The strip heads the canvas box, above the board (ticket 143).
