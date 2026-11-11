@@ -6,7 +6,7 @@ import { coarsePointer } from '../../../composables/ui/touchKeyboard'
 // panel's (ticket 517), `selectOnFocus` selects on focus, `bare` has no frame (Stepper, ticket 518), `multiline` is a
 // textarea for free text whose height its form sets (ticket 0700).
 defineOptions({ inheritAttrs: false })
-withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean; bare?: boolean; multiline?: boolean }>(), {
+const props = withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean; bare?: boolean; multiline?: boolean }>(), {
   unit: undefined,
 })
 const value = defineModel<string | number>()
@@ -14,6 +14,20 @@ const unitId = useId()
 const input = ref<HTMLInputElement | HTMLTextAreaElement>()
 // Set by a press on the field, cleared when it loses focus: a focus after it is the person's own (ticket 515).
 const tapped = ref(false)
+// A press that focused a `selectOnFocus` field: its release would put the caret down and drop the selection (ticket 0854).
+const selectedByPress = ref(false)
+
+function onFocus() {
+  if (!props.selectOnFocus) return
+  input.value?.select()
+  selectedByPress.value = tapped.value
+}
+
+function onMouseUp(event: MouseEvent) {
+  if (!selectedByPress.value) return
+  selectedByPress.value = false
+  event.preventDefault()
+}
 
 /** Focuses the field, selecting its text when asked. On a touch device nothing happens unless the person tapped the
  * field, so the virtual keyboard stays down (ticket 515), unless the person `asked` for it by tapping something that opens
@@ -50,8 +64,9 @@ defineExpose({ focus })
       :aria-describedby="unit ? unitId : undefined"
       v-bind="$attrs"
       @pointerdown="tapped = true"
-      @focus="selectOnFocus && input?.select()"
-      @blur="tapped = false"
+      @focus="onFocus"
+      @mouseup="onMouseUp"
+      @blur="tapped = selectedByPress = false"
     />
     <span v-if="unit" :id="unitId" class="text-field__unit" aria-hidden="true">{{ unit }}</span>
   </span>

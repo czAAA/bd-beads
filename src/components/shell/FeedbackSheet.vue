@@ -167,6 +167,7 @@ onBeforeUnmount(() => stopVerifying?.())
           multiline
           class="feedback-sheet__message"
           :maxlength="NOTE_MAX"
+          :placeholder="t.fields.feedbackMessage"
           :invalid="!!shownError('message')"
           data-autofocus
           data-testid="feedback-message"
@@ -178,10 +179,10 @@ onBeforeUnmount(() => stopVerifying?.())
           <ChipRadioGroup v-model="language" :options="languageOptions" labelledby="feedback-language-label" data-testid="feedback-language" />
         </FormField>
         <FormField :label="words.shown" label-for="feedback-shown" :error="shownError('shown')">
-          <TextField id="feedback-shown" v-model="shown" type="text" :maxlength="FIELD_MAX" :invalid="!!shownError('shown')" data-autofocus data-testid="feedback-shown" />
+          <TextField id="feedback-shown" v-model="shown" type="text" :maxlength="FIELD_MAX" :placeholder="t.fields.feedbackShown" :invalid="!!shownError('shown')" data-autofocus data-testid="feedback-shown" />
         </FormField>
         <FormField :label="words.shouldSay" label-for="feedback-should-say" :aside="t.form.optional">
-          <TextField id="feedback-should-say" v-model="shouldSay" type="text" :maxlength="FIELD_MAX" data-testid="feedback-should-say" />
+          <TextField id="feedback-should-say" v-model="shouldSay" type="text" :maxlength="FIELD_MAX" :placeholder="t.fields.feedbackShouldSay" data-testid="feedback-should-say" />
         </FormField>
       </template>
 
@@ -193,15 +194,15 @@ onBeforeUnmount(() => stopVerifying?.())
           <p class="feedback-sheet__fixed" aria-describedby="feedback-brand-label" data-testid="feedback-brand">{{ brandAndCatalog }}</p>
         </FormField>
         <FormField :label="words.code" label-for="feedback-code" :aside="t.form.optional">
-          <TextField id="feedback-code" v-model="code" type="text" :maxlength="FIELD_MAX" autocomplete="off" data-testid="feedback-code" />
+          <TextField id="feedback-code" v-model="code" type="text" :maxlength="FIELD_MAX" :placeholder="t.fields.feedbackCode" autocomplete="off" data-testid="feedback-code" />
         </FormField>
         <FormField :label="words.looksLike" label-for="feedback-looks-like" :aside="t.form.optional" :hint="words.looksLikeHint">
-          <TextField id="feedback-looks-like" v-model="looksLike" type="text" :maxlength="FIELD_MAX" autocomplete="off" data-testid="feedback-looks-like" />
+          <TextField id="feedback-looks-like" v-model="looksLike" type="text" :maxlength="FIELD_MAX" :placeholder="t.fields.feedbackLooksLike" autocomplete="off" data-testid="feedback-looks-like" />
         </FormField>
       </template>
 
       <FormField v-if="kind !== 'general'" :label="words.note" label-for="feedback-note" :aside="t.form.optional">
-        <TextField id="feedback-note" v-model="note" multiline class="feedback-sheet__note" :maxlength="NOTE_MAX" data-testid="feedback-note" />
+        <TextField id="feedback-note" v-model="note" multiline class="feedback-sheet__note" :maxlength="NOTE_MAX" :placeholder="t.fields.feedbackNote" data-testid="feedback-note" />
       </FormField>
 
       <FormField :label="words.email" label-for="feedback-email" :aside="t.form.optional" :hint="words.emailHint" :error="shownError('email')">
@@ -211,6 +212,7 @@ onBeforeUnmount(() => stopVerifying?.())
           type="email"
           autocomplete="email"
           :maxlength="EMAIL_MAX"
+          :placeholder="t.fields.feedbackEmail"
           :invalid="!!shownError('email')"
           data-testid="feedback-email"
         />

@@ -4,14 +4,15 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { MAX_MAKER_NAME } from '../../domain/makerName'
 import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName'
 import { useI18n } from '../../i18n/useI18n'
+import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 import EditableLine from './EditableLine.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Project's Name and Maker's name, shared by New Project and the Project panel (tickets 182, 554, 568). By default
-// two always-open fields (the form); `inline` shows each as a line with a pencil that swaps in a field, saved at once,
-// and refuses an empty Name. Either way a change is `update:name` or `update:makerName`.
+// The Project's Name and Maker's name, shared by New Project and the Project panel (tickets 182, 554, 568): two open
+// fields, or `inline` a line each with a pencil, saved at once, refusing an empty Name. A change is `update:name` or
+// `update:makerName`; each name has the one limit and counter Rename and Duplicate have (ticket 0854).
 const props = defineProps<{
   /** What the Name field shows while empty: the chosen Bead, as the form's hint. */
   namePlaceholder?: string
@@ -41,6 +42,7 @@ defineExpose({ focusName })
       :value="name"
       :edit-label="renameLabel"
       :edit-tooltip="rename.body?.(t)"
+      :placeholder="t.fields.projectName"
       :maxlength="MAX_PROJECT_NAME"
       :required-message="t.panels.project.nameRequired"
       :normalize="normalizeProjectName"
@@ -62,7 +64,8 @@ defineExpose({ focusName })
   </div>
   <div v-else class="names-section" data-testid="names-section">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
-      <TextField id="name-input" ref="nameField" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
+      <TextField id="name-input" ref="nameField" v-model="name" data-testid="name-input" type="text" :maxlength="MAX_PROJECT_NAME" :placeholder="namePlaceholder" />
+      <template #after><FieldCounter :length="name.length" :max="MAX_PROJECT_NAME" /></template>
     </FormField>
 
     <!-- This Project's own maker's name (ticket 182): blank by default, overriding the device-wide one only if set. -->
@@ -74,8 +77,9 @@ defineExpose({ focusName })
         type="text"
         autocomplete="name"
         :maxlength="MAX_MAKER_NAME"
-        :placeholder="t.form.makerNamePlaceholder"
+        :placeholder="t.saveBox.yourName"
       />
+      <template #after><FieldCounter :length="makerName.length" :max="MAX_MAKER_NAME" /></template>
     </FormField>
   </div>
 </template>

@@ -47,10 +47,10 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(text(wrapper, 'margin-maker')).toBe('Your name')
   })
 
-  it('edits the name in place with its counter, saving on Enter and leaving it on Escape', async () => {
+  it('edits the name in place with its placeholder, saving on Enter and leaving it on Escape', async () => {
     const wrapper = mountBlock(framed())
     await wrapper.get('[data-testid="margin-frame-name-edit"]').trigger('click')
-    expect(wrapper.get('[data-testid="margin-frame-name-form"]').text()).toContain('0/40')
+    expect(wrapper.get('[data-testid="margin-frame-name-input"]').attributes('placeholder')).toBe('Frame name')
     await wrapper.get('[data-testid="margin-frame-name-input"]').setValue('  Sun band ')
     await wrapper.get('[data-testid="margin-frame-name-form"]').trigger('submit')
     expect(wrapper.emitted('rename')).toEqual([['Sun band']])

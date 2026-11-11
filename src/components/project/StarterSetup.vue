@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { findBead } from '../../domain/beads'
 import { frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
 import type { Background, Project } from '../../domain/project'
+import { MAX_PROJECT_NAME } from '../../domain/projectName'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {
   BAND_CLASP_MM,
@@ -34,6 +35,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { weaveSettings, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
+import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
@@ -235,7 +237,8 @@ function onSubmit() {
     </div>
 
     <FormField v-if="!project" :label="t.form.nameLabel" label-for="starter-name-input" :aside="t.form.optional">
-      <TextField id="starter-name-input" v-model="name" data-testid="starter-name-input" type="text" :placeholder="optionName" />
+      <TextField id="starter-name-input" v-model="name" data-testid="starter-name-input" type="text" :maxlength="MAX_PROJECT_NAME" :placeholder="optionName" />
+      <template #after><FieldCounter :length="name.length" :max="MAX_PROJECT_NAME" /></template>
     </FormField>
 
     <LayerSettings

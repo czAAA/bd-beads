@@ -2,7 +2,8 @@ import { MAX_MAKER_NAME } from './makerName'
 import { withLayer } from './layerRecord'
 import type { Project } from './project'
 
-/** A Project's own name (spec 0440, ticket 443), for Rename and Duplicate: up to 40 characters, never empty. */
+/** A Project's own name (spec 0440, ticket 443): up to 40 characters, never empty. New Project, Rename and Duplicate
+ * all take this one limit (ticket 0854). */
 export const MAX_PROJECT_NAME = MAX_MAKER_NAME
 
 /** A name as it is kept: trimmed and cut to the longest allowed; empty means the name is refused. */
@@ -15,8 +16,17 @@ export function withProjectName(project: Project, name: string): Project {
   return withLayer(project, 'canvas', { name: normalizeProjectName(name) })
 }
 
-/** What Duplicate suggests (ticket 443): the name plus the first unused number from 2 ("Moth 2", "Moth 3"), trimmed
- * to fit. */
+/** A name cut to `room` characters at the last word that fits whole (ticket 0854); a single word longer than that is
+ * cut where it ends. */
+function shortenAtWord(name: string, room: number): string {
+  if (name.length <= room) return name
+  const cut = name.slice(0, room)
+  const lastSpace = /\s(?=\S*$)/.exec(cut)
+  return (/\s/.test(name[room]!) || !lastSpace ? cut : cut.slice(0, lastSpace.index)).trim()
+}
+
+/** What Duplicate suggests (ticket 443): the name plus the first unused number from 2 ("Moth 2", "Moth 3"), shortened
+ * at a word to fit (ticket 0854). */
 export function suggestCopyName(name: string, existingNames: readonly string[]): string {
   const taken = new Set(existingNames.map((existing) => existing.trim().toLowerCase()))
   const trailing = /^(.*\S)\s+(\d+)$/.exec(name.trim())
@@ -24,7 +34,7 @@ export function suggestCopyName(name: string, existingNames: readonly string[]):
   let number = trailing ? Number(trailing[2]) + 1 : 2
   for (;;) {
     const suffix = ` ${number}`
-    const candidate = `${base.slice(0, MAX_PROJECT_NAME - suffix.length).trim()}${suffix}`
+    const candidate = `${shortenAtWord(base, MAX_PROJECT_NAME - suffix.length)}${suffix}`
     if (!taken.has(candidate.toLowerCase())) return candidate
     number += 1
   }

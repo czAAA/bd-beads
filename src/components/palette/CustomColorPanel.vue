@@ -246,6 +246,7 @@ onMounted(async () => {
         :model-value="hexText"
         :invalid="invalid"
         :aria-label="t.palette.hexLabel"
+        :placeholder="t.palette.hexLabel"
         :aria-describedby="invalid ? noteId : undefined"
         autocomplete="off"
         spellcheck="false"
