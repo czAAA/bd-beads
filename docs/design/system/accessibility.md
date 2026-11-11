@@ -70,7 +70,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Open canvas and Frame (v16)
 
-- **Keys:** `6` starts Set Frame, `R` toggles the rulers, `5` picks the Hand tool. Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
+- **Keys:** `R` toggles the rulers, `5` picks the Hand tool; no key starts Set Frame (ticket 0846). Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
 - **Frame keys:** on the Frame's focused Move handle, arrows move the Frame by one bead and Shift + arrows resize it.
 - **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Frame number is "Frame 1, bring it into view". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
 - **Announced:** "Frame set, width 21, height 19", "Frame removed", and the rotate notice in full: "Pattern rotated. 1 piece was in the way and moved outside the Frame."

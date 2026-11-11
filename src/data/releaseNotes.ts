@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Help lines fit your device: finger words on touch, no key numbers there, and ⌘V on a Mac',
+      ru: 'Подсказки подходят устройству: на сенсорном экране говорят о пальцах и без цифр клавиш, а на Mac пишут ⌘V',
+      uk: 'Підказки пасують пристрою: на сенсорному екрані говорять про пальці й без цифр клавіш, а на Mac пишуть ⌘V',
+      be: 'Падказкі пасуюць прыладзе: на сэнсарным экране кажуць пра пальцы і без лічбаў клавіш, а на Mac пішуць ⌘V',
+      zh: '提示文字随设备而变：触屏上讲手指操作、不显示按键数字，Mac 上显示 ⌘V',
+      es: 'Las ayudas se ajustan a tu dispositivo: en táctil hablan de dedos y sin números de teclas, y en Mac dicen ⌘V',
+      pl: 'Podpowiedzi pasują do urządzenia: na ekranie dotykowym mówią o palcach i bez cyfr klawiszy, a na Macu piszą ⌘V',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The Project file has one name, Save Project file and Open Project file, every saved file is named in one toast, and a file that won’t open says why',
       ru: 'У файла проекта одно имя, «Сохранить файл проекта» и «Открыть файл проекта», каждый сохранённый файл назван в одном сообщении, а файл, который не открылся, объясняет почему',
       uk: 'У файлу проєкту одна назва, «Зберегти файл проєкту» і «Відкрити файл проєкту», кожен збережений файл названо в одному повідомленні, а файл, що не відкрився, пояснює чому',

@@ -6,6 +6,7 @@ import { DEFAULT_BEAD } from '../../domain/beads'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { beadCell, DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
+import { useHelpDevice } from '../../composables/ui/useKeyHints'
 import { positionMarkBackground } from '../../rendering/positionMarks'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
@@ -26,10 +27,14 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const savedProjects = controlAction('saved-projects')
 const title = computed(() => (props.deleted === undefined ? t.value.shell.canvasPlaceholder : fillBlanks(t.value.shell.canvasDeleted, { name: props.deleted })))
-/** What to do: after a delete, open another or make one; otherwise make, open or import, then how to move the Canvas. */
-const hint = computed(() =>
-  props.deleted === undefined ? `${t.value.shell.canvasPlaceholderHint} ${t.value.shell.canvasPlaceholderPan}` : t.value.shell.canvasDeletedHint,
-)
+const { device } = useHelpDevice()
+/** What to do: after a delete, open another or make one; otherwise make, open or import, then how to move the Canvas, in
+ * finger words on touch (ticket 0846). */
+const hint = computed(() => {
+  if (props.deleted !== undefined) return t.value.shell.canvasDeletedHint
+  const pan = device.value === 'touch' ? t.value.shell.canvasPlaceholderPanTouch : t.value.shell.canvasPlaceholderPan
+  return `${t.value.shell.canvasPlaceholderHint} ${pan}`
+})
 const canvasBackground = useCanvasBackground()
 const DEFAULT_CELL = beadCell(DEFAULT_BEAD, DEFAULT_TECHNIQUE)
 const boardStyle = computed(() => {
