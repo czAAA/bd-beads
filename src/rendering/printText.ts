@@ -98,17 +98,17 @@ function runsText(runs: readonly WordRun[]): string {
 }
 
 // Kept together when a row wraps at its spaces: a corner pair's two colors, and a side's mark with the side it ends.
-const KEPT = '\u00a0'
+const NO_BREAK_SPACE = '\u00a0'
 
 /** A round side by side (ticket 0873): each side its corner pair in brackets, `(2A)` or `(1A 1B)`, then its singles'
  * runs, the sides apart at a `|`. */
 function sidesText(sides: readonly WordSide[]): string {
   return sides
     .map(({ corner, singles }) => {
-      const pair = corner.length > 0 ? [`(${corner.map((run) => runsText([run])).join(KEPT)})`] : []
-      return [...pair, ...(singles.length > 0 ? [runsText(singles)] : [])].join(', ')
+      const pair = corner.length > 0 ? `(${corner.map((run) => runsText([run])).join(NO_BREAK_SPACE)})` : ''
+      return [pair, runsText(singles)].filter(Boolean).join(', ')
     })
-    .join(`${KEPT}| `)
+    .join(`${NO_BREAK_SPACE}| `)
 }
 
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its

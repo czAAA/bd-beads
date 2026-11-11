@@ -132,7 +132,7 @@ function runsOf(letters: readonly (string | undefined)[]): WordRun[] {
 
 /** A round's letters cut into its sides (ticket 0873), each its corner pair's beads and then its singles, as runs; a
  * corner of one bead is a single. */
-function sidesOf(letters: readonly (string | undefined)[], sides: readonly RoundSide[]): WordSide[] {
+function cutIntoSides(letters: readonly (string | undefined)[], sides: readonly RoundSide[]): WordSide[] {
   let at = 0
   return sides.map(({ corner, singles }) => {
     const pair = corner > 1 ? corner : 0
@@ -162,7 +162,7 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
         })
     hasEmpty ||= letters.includes(undefined)
     const sides = order.sidesOf?.(pass)
-    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters), ...(sides ? { sides: sidesOf(letters, sides) } : {}) })
+    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters), ...(sides ? { sides: cutIntoSides(letters, sides) } : {}) })
   }
   const first = order.stepOf!(0)
   return {
