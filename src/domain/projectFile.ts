@@ -5,6 +5,7 @@ import type { VersionThreeProject } from './versionThree'
 import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
 import { frameOf, projectNameOf } from './layerRecord'
+import { looksLikePicture } from './imageConversion'
 
 // The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
 // version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
@@ -120,14 +121,13 @@ export function libraryFileName(): string {
   return 'openbeads_lib.openbeads'
 }
 
-/** Why a picked file didn't open as a Project file (ticket 0859): a picture belongs in Convert image, a file named as a
- * Project file is damaged, and anything else isn't one. */
+/** What a picked file that didn't open as a Project file turned out to be (ticket 0859). */
 export type UnopenedFile = 'picture' | 'damaged' | 'not-project'
 
-const PICTURE_ENDING = /\.(png|jpe?g|gif|webp|avif|bmp|svg|tiff?|heic|heif)$/i
-
+/** Why a picked file didn't open (ticket 0859): a picture belongs in Convert image, a file named as a Project file is
+ * damaged, and anything else isn't one. */
 export function whyNotOpened(file: { name: string; type: string }): UnopenedFile {
-  if (file.type.startsWith('image/') || PICTURE_ENDING.test(file.name)) return 'picture'
+  if (looksLikePicture(file)) return 'picture'
   return /\.openbeads$/i.test(file.name) ? 'damaged' : 'not-project'
 }
 

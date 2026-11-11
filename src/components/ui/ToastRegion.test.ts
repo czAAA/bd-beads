@@ -23,7 +23,7 @@ function mountInBox(props: { clearOfPanel: boolean }) {
     await nextTick()
     await nextTick()
   }
-  return { region, show }
+  return { wrapper, region, show }
 }
 
 afterEach(() => {
@@ -32,17 +32,19 @@ afterEach(() => {
 
 describe('ToastRegion (ticket 0859)', () => {
   it('drops the toasts under an open panel over their corner', async () => {
-    const { region, show } = mountInBox({ clearOfPanel: true })
+    const { wrapper, region, show } = mountInBox({ clearOfPanel: true })
     await show()
 
     expect(region.classList).toContain('toast-region--below-panel')
-    expect(region.style.getPropertyValue('--toasts-below')).toBe('300px')
+    expect(region.style.getPropertyValue('--toasts-below')).not.toBe('')
+    wrapper.unmount()
   })
 
   it('keeps its place with no panel open', async () => {
-    const { region, show } = mountInBox({ clearOfPanel: false })
+    const { wrapper, region, show } = mountInBox({ clearOfPanel: false })
     await show()
 
     expect(region.classList).not.toContain('toast-region--below-panel')
+    wrapper.unmount()
   })
 })

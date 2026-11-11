@@ -5,6 +5,9 @@ import type { MessageTone, Toast } from '../ui/useToasts'
 /** The id every saved-file toast shows under, so a new save replaces the last one's toast. */
 export const SAVED_FILE_TOAST = 'saved-file'
 
+/** The id of a further page's toast (a PNG's list pages, `_2`, `_3`), so it stacks under the cover's. */
+export const savedPageToast = (page: number) => `${SAVED_FILE_TOAST}-${page}`
+
 type ShowToast = (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
 
 /** The one toast every file that reaches the device shows (ticket 0859): a Project file, a PNG or a PDF, by download,

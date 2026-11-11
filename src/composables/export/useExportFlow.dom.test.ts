@@ -289,6 +289,20 @@ describe('useExportFlow toasts (ticket 523)', () => {
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
     await vi.waitFor(() => expect(toasts.at(-1)!.text).toBe('Saved: my-scarf.png'))
   })
+
+  it('says nothing more when the fresh tap is refused or the share sheet closed again', async () => {
+    for (const again of ['refused', 'cancelled'] as const) {
+      const { flow, toasts } = setupToasts('refused')
+      await flow.onExportPng()
+      downloadFile.mockReturnValue(again)
+      toasts[0]!.action!.run()
+      await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(2))
+      await Promise.resolve()
+
+      expect(toasts.map((toast) => toast.text)).toEqual(['Ready to save: my-scarf.png'])
+      downloadFile.mockClear()
+    }
+  })
 })
 
 describe('useExportFlow Save and Save as (ADR 0090, ticket 0796)', () => {

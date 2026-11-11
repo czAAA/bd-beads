@@ -13,7 +13,7 @@ import type { FileWriter, PickedFile } from '../../services/fileWriter'
 import type { LinkedFileStore } from '../../services/linkedFileStore'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
-import { SAVED_FILE_TOAST, savedFileToast } from './savedFileToast'
+import { SAVED_FILE_TOAST, savedFileToast, savedPageToast } from './savedFileToast'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
 
@@ -120,10 +120,11 @@ export function useExportFlow(deps: ExportFlowDeps) {
     exporting.value = extension
     try {
       const handed = await makeAndHandOver(projectExportFileName(project, extension), () => make(project), type)
-      // Each further file stacks a toast of its own, so every name is read.
+      // Each further page stacks a toast of its own, so every name is read; the cover is page 1.
       const further = handed ? (more?.(project) ?? []) : []
       for (const [index, next] of further.entries()) {
-        if (!(await makeAndHandOver(next.fileName, next.make, type, undefined, `${SAVED_FILE_TOAST}-${index + 2}`))) break
+        const page = index + 2
+        if (!(await makeAndHandOver(next.fileName, next.make, type, undefined, savedPageToast(page)))) break
       }
     } finally {
       exporting.value = undefined

@@ -58,17 +58,21 @@ async function onImportFile(event: Event): Promise<void> {
   importedCount.value = null
   failure.value = undefined
 
+  let read: { added: Project[]; pictures: ReadonlyMap<string, Blob> }
   try {
     const contents = await readImportedFile(file)
     const added = importProjects(contents.projects, props.projects)
-    importedCount.value = added.length
-    emit('import', added, importedPictures(contents.projects, added, contents.pictures))
+    read = { added, pictures: importedPictures(contents.projects, added, contents.pictures) }
   } catch {
+    // Only a file that didn't read is blamed: what the app does with the Projects is no fault of the file.
     failure.value = whyNotOpened(file)
+    return
   } finally {
     // Clear the input so re-picking the same file still counts as a change.
     input.value = ''
   }
+  importedCount.value = read.added.length
+  emit('import', read.added, read.pictures)
 }
 
 </script>
