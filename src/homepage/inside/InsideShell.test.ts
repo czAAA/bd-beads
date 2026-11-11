@@ -110,6 +110,53 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     expect(wired.dialogRegistry.open.value).toBe('shortcuts')
   })
 
+  /** The demo editor with the ghost's hand, applying at once. */
+  function editorWithHand(props: { takenOver?: boolean } = {}) {
+    const wrapper = mount(InsideEditor, { props, attachTo: document.body })
+    mounted.push(wrapper)
+    const vm = wrapper.vm as unknown as { hand: (instant: boolean, signal: AbortSignal) => { press: (target: string) => Promise<unknown> } }
+    return { wrapper, hand: vm.hand(true, new AbortController().signal) }
+  }
+
+  it("lets the ghost's press open its Menu (ticket 0841)", async () => {
+    const { wrapper, hand } = editorWithHand()
+    await hand.press('strip-menu')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(true)
+    expect(wrapper.emitted('pointAtWayIn')).toBeUndefined()
+  })
+
+  it.each(['strip-menu', 'strip-project'])("opens nothing from a beader's press on %s, before or after taking over, pointing at the way in (ticket 0841)", async (id) => {
+    for (const takenOver of [false, true]) {
+      const { wrapper } = editorWithHand({ takenOver })
+      // A scripted click, as ↓ on a strip button makes: still the beader's, not the ghost's.
+      await wrapper.get(`[data-testid="${id}"]`).trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(false)
+      expect(wrapper.emitted('pointAtWayIn')).toHaveLength(1)
+    }
+  })
+
+  it('closes the Menu the ghost left open when the beader takes over, pointing at the way in (ticket 0841)', async () => {
+    const { wrapper, hand } = editorWithHand()
+    await hand.press('strip-menu')
+    await flushPromises()
+    await wrapper.setProps({ takenOver: true })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(false)
+    expect(wrapper.emitted('pointAtWayIn')).toHaveLength(1)
+  })
+
+  it('keeps the Frame panel the ghost left open when the beader takes over (ticket 0841)', async () => {
+    const { wrapper, hand } = editorWithHand()
+    await hand.press('strip-frame')
+    await flushPromises()
+    await wrapper.setProps({ takenOver: true })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(true)
+    expect(wrapper.emitted('pointAtWayIn')).toBeUndefined()
+  })
+
   it('is a region named "What\'s inside: the editor", its ghost hidden from screen readers', () => {
     const wrapper = mount(InsideEditor, { attachTo: document.body })
     mounted.push(wrapper)
