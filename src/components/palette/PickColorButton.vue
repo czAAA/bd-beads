@@ -5,7 +5,7 @@ import IconButton from '../ui/IconButton.vue'
 import { useClosePopoverOnPick } from '../shell/pickContext'
 
 // Pick color from canvas (ticket 398; PaletteSwatches card): the last swatch-grid tile, a 22px eyedropper (ticket 403).
-// It arms the pick: the next press on a bead takes its color (the Palette gains it if a slot is free); pressed again
+// It arms the pick: the next press on a bead takes its color, which joins the Palette; pressed again
 // it disarms. Armed, the canvas pointer is the eyedropper; arming closes the colour popover.
 /** Edit palette (ticket 531) disables it. */
 defineProps<{ disabled?: boolean }>()

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'On touch, Mirror, Copy and the eyedropper say what to tap next',
+      ru: 'На сенсорном экране Отражение, Копировать и пипетка подскажут, куда нажать',
+      uk: 'На сенсорному екрані Відображення, Копіювати й піпетка підкажуть, де торкнутися',
+      be: 'На сэнсарным экране Адлюстраванне, Капіраваць і піпетка падкажуць, дзе націснуць',
+      zh: '在触屏上，镜像、复制和取色器会提示下一步点哪里',
+      es: 'En pantalla táctil, Espejo, Copiar y el cuentagotas dicen dónde tocar',
+      pl: 'Na ekranie dotykowym Odbicie, Kopiuj i pipeta podpowiedzą, gdzie dotknąć',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'On a phone Paint and Colors stay in view, and a swipe shows the other tools',
       ru: 'На телефоне Кисть и Цвета всегда на экране, прочее листается свайпом',
       uk: 'На телефоні Пензель і Кольори завжди на екрані, решта гортається свайпом',

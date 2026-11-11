@@ -530,6 +530,9 @@ export const zh: Translations = {
     namePieceButton: '命名小块',
     fillOpenMessage: '这里没有被围住。选择一个区域即可填充。',
     fillTooBigMessage: '区域太大，无法填充。放大画布，或选择一个区域。',
+    mirrorArmedHint: '在画布上拖动，框出要镜像的区域。',
+    pasteArmedHint: '点按画布放置副本。选择一个工具即可停止。',
+    pickArmedHint: '点按一颗珠子即可使用它的颜色。',
   },
   inputMode: {
     penLabel: '手写笔模式',
@@ -1054,7 +1057,7 @@ export const zh: Translations = {
     namePieceDisabled: '请先选择一个小块。',
     clear: '清除画布上的所有内容。',
     customColor: '向调色板添加颜色；按 Enter 确认颜色。',
-    pickFromCanvas: '点击画布上的珠子即可使用它的颜色；有空位时会加入调色板。',
+    pickFromCanvas: '使用画布上一颗珠子的颜色，它会加入调色板。',
     nothingToUndo: '没有可撤销的操作。',
     zoomOutLimit: '已缩小到最小。',
     zoomInLimit: '已放大到最大。',
@@ -1095,6 +1098,7 @@ export const zh: Translations = {
     rulers: '标尺为你的珠子和边框编号。',
     rowDirection: '切换行的方向：从上到下、从左到右、从下到上或从右到左。',
     rowHighlight: '显示或隐藏当前行和已标记完成的行上的标记。',
+    pasteToolTouch: '点按要放置副本的位置。',
   },
   layerSettings: {
     frameHeading: '设置',
