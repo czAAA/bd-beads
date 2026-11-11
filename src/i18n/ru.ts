@@ -381,6 +381,8 @@ export const ru: Translations = {
       tryIt: 'Попробуйте сами',
       expand: 'Развернуть',
       collapse: 'Свернуть',
+      demoTag: 'Демо',
+      demoOnly: { new: 'Это демо. Сделайте первый проект, чтобы сохранить свой.', back: 'Это демо. Ваши проекты в редакторе.' },
     },
     sections: { label: 'Разделы', welcome: 'Начало', back: 'Назад', next: 'Дальше', firstBody: 'Это первый раздел.', lastBody: 'Это последний раздел.', goTo: 'Перейти: {section}', moreBelow: 'Ниже ещё' },
     coffee: { title: 'Делает одна семья', text: 'openbeads остаётся бесплатным и полностью локальным, без рекламы и отслеживания. Если приложение вам помогает, поддержать его развитие можно через Buy Me a Coffee.', button: 'Угостить кофе', star: 'Звезда на GitHub тоже помогает.', source: 'Исходный код' },
@@ -670,7 +672,6 @@ export const ru: Translations = {
     continuesBelow: 'Продолжение ниже на странице {below} →',
     continuesOn: 'Продолжение на странице {next} →',
     lastPart: 'Последняя часть',
-    chartStyleColor: 'Только цвет',
     chartStyleLetters: 'Цвет + буквы',
     keyOnPage: 'Цвета на этой странице',
     wordChart: {

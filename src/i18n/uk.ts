@@ -381,6 +381,8 @@ export const uk: Translations = {
       tryIt: 'Спробуйте самі',
       expand: 'Розгорнути',
       collapse: 'Згорнути',
+      demoTag: 'Демо',
+      demoOnly: { new: 'Це демо. Створіть перший проєкт, щоб зберегти свій.', back: 'Це демо. Ваші проєкти в редакторі.' },
     },
     sections: { label: 'Розділи', welcome: 'Початок', back: 'Назад', next: 'Далі', firstBody: 'Це перший розділ.', lastBody: 'Це останній розділ.', goTo: 'Перейти: {section}', moreBelow: 'Нижче ще' },
     coffee: { title: 'Робить одна родина', text: 'openbeads залишається безкоштовним і повністю локальним, без реклами та відстеження. Якщо застосунок вам допомагає, підтримати його розвиток можна через Buy Me a Coffee.', button: 'Пригостити кавою', star: 'Зірка на GitHub теж допомагає.', source: 'Вихідний код' },
@@ -670,7 +672,6 @@ export const uk: Translations = {
     continuesBelow: 'Продовження нижче на сторінці {below} →',
     continuesOn: 'Продовження на сторінці {next} →',
     lastPart: 'Остання частина',
-    chartStyleColor: 'Лише колір',
     chartStyleLetters: 'Колір + літери',
     keyOnPage: 'Кольори на цій сторінці',
     wordChart: {

@@ -380,6 +380,8 @@ export const zh: Translations = {
       tryIt: '自己试试',
       expand: '展开',
       collapse: '收起',
+      demoTag: '演示',
+      demoOnly: { new: '这是演示。创建你的第一个项目，保存你自己的作品。', back: '这是演示。你自己的项目在编辑器里。' },
     },
     sections: { label: '章节', welcome: '欢迎', back: '上一节', next: '下一节', firstBody: '这是第一节。', lastBody: '这是最后一节。', goTo: '前往：{section}', moreBelow: '下方还有' },
     coffee: { title: '一家人做的', text: 'openbeads 将保持免费且完全本地运行，没有广告，也不追踪用户。如果它对你有帮助，可以通过 Buy Me a Coffee 支持它的开发。', button: '请我喝咖啡', star: '在 GitHub 上点个星标也是一种支持。', source: '查看源代码' },
@@ -658,7 +660,6 @@ export const zh: Translations = {
     continuesBelow: '向下接第 {below} 页 →',
     continuesOn: '接第 {next} 页 →',
     lastPart: '最后一部分',
-    chartStyleColor: '仅颜色',
     chartStyleLetters: '颜色 + 字母',
     keyOnPage: '本页的颜色',
     wordChart: {

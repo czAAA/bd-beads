@@ -381,6 +381,8 @@ export const es: Translations = {
       tryIt: 'Pruébalo',
       expand: 'Ampliar',
       collapse: 'Reducir',
+      demoTag: 'Demo',
+      demoOnly: { new: 'Esto es una demo. Crea tu primer proyecto para guardar el tuyo.', back: 'Esto es una demo. Tus proyectos están en el editor.' },
     },
     sections: { label: 'Secciones', welcome: 'Bienvenida', back: 'Atrás', next: 'Siguiente', firstBody: 'Esta es la primera sección.', lastBody: 'Esta es la última sección.', goTo: 'Ir a {section}', moreBelow: 'Más abajo' },
     coffee: { title: 'Hecho por una familia', text: 'openbeads sigue siendo gratis y totalmente local, sin anuncios ni seguimiento. Si te ayuda en tu trabajo, puedes apoyar su desarrollo a través de Buy Me a Coffee.', button: 'Invítame a un café', star: 'Una estrella en GitHub también ayuda.', source: 'Ver el código fuente' },
@@ -667,7 +669,6 @@ export const es: Translations = {
     continuesBelow: 'Continúa abajo en la página {below} →',
     continuesOn: 'Continúa en la página {next} →',
     lastPart: 'Última parte',
-    chartStyleColor: 'Solo color',
     chartStyleLetters: 'Color + letras',
     keyOnPage: 'Colores en esta página',
     wordChart: {

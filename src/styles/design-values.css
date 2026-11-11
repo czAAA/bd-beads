@@ -309,6 +309,9 @@
   --type-inside-name: 600 0.875rem/1.25rem var(--font-sans); /* A coffee screen tile's name, Inter 600 14 (ticket 0823). */
   --type-promise: 500 0.8125rem/1.125rem var(--font-sans); /* A coffee screen promise's name, Inter 500 13/18 (ticket 0823). */
   --type-inside-line: 400 0.8125rem/1.125rem var(--font-sans); /* The playing row's line, Inter 13/18. */
+  /* Homepage card, What's inside, a demo (ticket 0841). */
+  --way-in-pulse: 600ms; /* One ring of the strip's way in after a press on the demo's Menu or Project; it rings twice. */
+  --way-in-pulse-ring: 0.375rem; /* How far the ring grows round the button, 6px. */
   /* Homepage card, Welcome first (ticket 0830). */
   --inside-list-width: 16rem; /* What's inside's list beside the demo from 1000px, 256px. */
   --inside-row-height: 2rem; /* A chapter's row in that list, 32px. */

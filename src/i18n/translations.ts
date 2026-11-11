@@ -493,6 +493,10 @@ export interface Translations {
       tryIt: string
       expand: string
       collapse: string
+      /** The demo's tag in its Canvas strip, and the toast a press on its Menu or Project shows, with no Projects saved
+       * or with some (ticket 0841). */
+      demoTag: string
+      demoOnly: { new: string; back: string }
     }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each
      * step's name for screen readers (ticket 0744); the Welcome section's step, its heading being a sentence (ticket 0830). */
@@ -807,8 +811,7 @@ export interface Translations {
     /** A sheet whose parts continue on the next sheet, not to the right or below. */
     continuesOn: string
     lastPart: string
-    /** The chart style on a chart page's header: color alone, or with each bead's letter. */
-    chartStyleColor: string
+    /** The Specification's chart style: color with letters, as every chart page prints it (ticket 0869). */
     chartStyleLetters: string
     /** The heading over a chart page's color key. */
     keyOnPage: string
