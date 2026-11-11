@@ -21,5 +21,9 @@ The App page's footer (ADR 0085): along the canvas box's bottom edge, Row progre
 _Avoid_: progress control, row control
 
 **Pattern done** (tickets 0729, 0730):
-What the Canvas plays once when a press of Row done marks the last pass: a silver firework over the Frame, a shimmer that brings the finished passes back to full color, and twinkling stars, over in about 3s, taking no press and never in exports. Not on opening a finished Project, Undo or Redo; Row not done stops it. Each Row done before it glints its pass, bead by bead, and flares the spark on the Progress bar's track. Under reduced motion only the color comes back. See the design system's Motion section, Row progress.
+What the Canvas plays once when a press of Row done marks the last pass: a silver firework over the Frame, a shimmer that brings the finished passes back to full color, and twinkling stars, over in about 3s, taking no press and never in exports. Not on opening a finished Project, Undo or Redo; Row not done stops it. Each Row done before it glints its pass, bead by bead, and flares the spark on the Progress bar's track. Under reduced motion only the color comes back. See the design system's Motion section, Row progress. For as long as every pass is done the Progress bar's counter reads Pattern done, with a check, in place of the count (ticket 0849).
 _Avoid_: finish (a Bead color's Finish), celebration, confetti, party
+
+**Go to row** (ticket 0849):
+The Progress bar's counter is a button: it opens a small field to type the row (the column, or on peyote and a Custom frame the pass) the weaver is on, for a piece started from a printed chart. Every pass before it is then marked done; it plays nothing and is not an Undo step.
+_Avoid_: jump, seek, slider (the track is not a control)

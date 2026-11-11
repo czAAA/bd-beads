@@ -23,6 +23,7 @@
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
+  --go-to-row-field: 72px; /* ProgressBar card (ticket 0849): Go to row's number field, room for four digits. */
   --found-hatch-ink: color-mix(in srgb, var(--marker) 70%, transparent); /* ConvertImage card (ticket 0780): the hatch's lines. */
   --found-hatch-wash: color-mix(in srgb, var(--marker) 10%, transparent); /* ConvertImage card (ticket 0780): under the hatch's lines. */
   --found-hatch-line: 1.1px; /* ConvertImage card (ticket 0780): a hatch line's width. */
