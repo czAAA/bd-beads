@@ -312,16 +312,18 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     expect(shown(wrapper)).toEqual(['inside'])
   })
 
-  it('says there is more with More below: a press turns to the next section, as Next does, and it is gone at the end (ticket 0826)', async () => {
+  it('wires More below to the section shown: it shows once the section scrolls further, a press scrolling it on (tickets 0826, 0870)', async () => {
     const wrapper = page()
-    expect(wrapper.find('.homepage__body [data-testid="more-below"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="more-below-button"]').trigger('click')
-    expect(shown(wrapper)).toEqual(['inside'])
-    await wrapper.get('[data-testid="more-below-button"]').trigger('click')
-    await wrapper.get('[data-testid="more-below-button"]').trigger('click')
+    await step(wrapper, 3)
+    const plans = wrapper.get('[data-testid="homepage-section-plans"]').element as HTMLElement
+    plans.style.overflowY = 'auto'
+    Object.defineProperties(plans, { clientHeight: { configurable: true, value: 300 }, scrollHeight: { configurable: true, value: 700 } })
+    plans.scrollBy = vi.fn() as typeof plans.scrollBy
+    plans.dispatchEvent(new Event('scroll'))
+    await nextTick()
+    await wrapper.get('.homepage__body [data-testid="more-below-button"]').trigger('click')
+    expect(plans.scrollBy).toHaveBeenCalledOnce()
     expect(shown(wrapper)).toEqual(['plans'])
-    await flushPromises()
-    expect(wrapper.find('[data-testid="more-below"]').exists()).toBe(false)
   })
 
   describe('the nudge (ticket 0784)', () => {
