@@ -23,6 +23,18 @@ describe('useToolAndColor', () => {
     expect(previewColor.value).toBe(selectedColorHex())
   })
 
+  it('takes the color a new Project starts with on its Background, on the tool in hand (ticket 0838)', () => {
+    const { activeTool, selectedColorId, onSelectTool, onSelectCustomColor, onStartOn } = setup()
+    onSelectCustomColor('#123456')
+    onSelectTool('erase')
+    onStartOn('#202020')
+    // The twelve built-in colors have no gold, so yellow (the Bead's own set is domain/palette.test.ts's).
+    expect(selectedColorId.value).toBe('yellow')
+    expect(activeTool.value).toBe('erase')
+    onStartOn('#fafafa')
+    expect(selectedColorId.value).toBe('red')
+  })
+
   describe('choosing a tool', () => {
     it('makes it active, and leaving Select forgets what it held', () => {
       const { deps, activeTool, onSelectTool } = setup()
