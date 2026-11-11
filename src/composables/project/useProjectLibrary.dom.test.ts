@@ -210,6 +210,16 @@ describe('useProjectLibrary', () => {
     expect(library.activeProjectId.value).toBe(open.id)
   })
 
+  it('brings an import whose name is taken in under the next free number, sealed Projects counted, and hands back what joined (ticket 0860)', () => {
+    storeLibrary([makeProject({ name: 'Summer bracelet' })], [storedHugeProject({ name: 'Huge' })])
+    const library = useProjectLibrary()
+
+    const joined = library.addProjects([makeProject({ name: 'Summer bracelet' }), makeProject({ name: 'Huge' }), makeProject({ name: 'Owl' })])
+
+    expect(joined.map(projectNameOf).sort()).toEqual(['Huge 2', 'Owl', 'Summer bracelet 2'])
+    expect(loadProjects().map(projectNameOf).sort()).toEqual(['Huge', 'Huge 2', 'Owl', 'Summer bracelet', 'Summer bracelet 2'])
+  })
+
   it('reports a failed save instead of throwing, and clears the report once a save gets through', () => {
     const library = useProjectLibrary()
     const project = makeProject()

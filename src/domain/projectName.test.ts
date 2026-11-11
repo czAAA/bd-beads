@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from './projectName'
+import { duplicateProject, normalizeProjectName, suggestCopyName, withFreeNames, withProjectName } from './projectName'
 import { canvasOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
 import { withLayers } from '../testUtils/layerFields'
@@ -44,5 +44,21 @@ describe('naming a Project', () => {
     const copy = duplicateProject(original, 'Moth 2', 'copy-id', 5)
     expect(copy).toEqual(withLayers(original, { id: 'copy-id', name: 'Moth 2', createdAt: 5, updatedAt: 5 }))
     expect(rowProgressOf(copy)).not.toBe(rowProgressOf(original))
+  })
+})
+
+describe('withFreeNames', () => {
+  const named = (name: string) => withProjectName(moth(), name)
+  const namesOf = (projects: readonly ReturnType<typeof moth>[]) => projects.map((project) => canvasOf(project).name)
+
+  it('gives a taken name Duplicate\'s next free number and leaves a free one as it came (ticket 0860)', () => {
+    const free = named('Owl')
+    const arriving = withFreeNames([named('Summer bracelet'), free], ['Summer bracelet', 'Moth'])
+    expect(namesOf(arriving)).toEqual(['Summer bracelet 2', 'Owl'])
+    expect(arriving[1]).toBe(free)
+  })
+
+  it('keeps the Projects arriving together apart too, and a taken name in any case', () => {
+    expect(namesOf(withFreeNames([named('Moth'), named('moth'), named('Moth 2')], ['Moth']))).toEqual(['Moth 2', 'moth 3', 'Moth 4'])
   })
 })

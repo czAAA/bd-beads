@@ -26,7 +26,9 @@ const WITH_PROJECT: [DialogId, unknown][] = [
   ['switch-project', fox],
   // The size gate's warning (ticket 0716), for the maintainer's 31 million beads.
   ['open-large-project', { id: 'fox', name: 'Fox', gatedBeads: 31_771_024 }],
-  ['import-switch', [fox]],
+  // Open's question for one Project, and for a file whose name the library had, with its longer message (ticket 0860).
+  ['import-switch', { projects: [fox], takenNames: new Map() }],
+  ['import-switch', { projects: [fox], takenNames: new Map([['fox', 'A sunflower bracelet for my grandmother']]) }],
   // Each layer's own message (ticket 0687): the Frame's, the longer, adds its Estimated size before and after.
   ['replace-bead', { layer: 'canvas', beadId: 'toho/round/11-0' }],
   ['replace-bead', { layer: 'frame', beadId: 'toho/round/11-0' }],

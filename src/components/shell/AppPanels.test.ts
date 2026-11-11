@@ -132,7 +132,7 @@ describe('Menu', () => {
     expect(names()).toEqual(['Moth'])
   })
 
-  it('switches to a picked Project only once confirmed, naming both, and puts the library away (ticket 232)', async () => {
+  it('opens a picked Project at once and puts the library away, asking nothing (tickets 232, 0860)', async () => {
     saveProjects([other(), moth()])
     const mounted = mountPanels()
     const open = mounted.panels.activeProject.value!
@@ -140,19 +140,12 @@ describe('Menu', () => {
     await openSavedProjects(mounted)
     await click(mounted, `select-project-${picked.id}`)
 
-    const modal = text(mounted, 'switch-project-modal')
-    expect(modal).toContain(`“${canvasOf(open).name}”`)
-    expect(modal).toContain(`“${canvasOf(picked).name}”`)
-    expect(text(mounted, 'confirm-modal-confirm')).toBe(en.switchProject.confirmButton)
-    expect(mounted.panels.activeProject.value!.id).toBe(open.id)
-
-    await click(mounted, 'confirm-modal-confirm')
     expect(mounted.wrapper.find('[data-testid="switch-project-modal"]').exists()).toBe(false)
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(mounted.panels.activeProject.value!.id).toBe(picked.id)
   })
 
-  it('offers Save first and Switch anyway when the open Project is not saved (ticket 232)', async () => {
+  it('asks first only when the open Project is not saved, offering Save first and Switch anyway (tickets 232, 0860)', async () => {
     saveProjects([other(), moth()])
     const mounted = mountPanels()
     const picked = mounted.panels.activeProject.value!.id === 'other' ? moth() : other()

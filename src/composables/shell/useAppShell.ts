@@ -727,7 +727,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
   const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale, dialogs })
 
-  /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
+  /** Project import, under free names, and whether to open what came in (tickets 154, 168, 200, 0860). */
   const importSwitch = useImportSwitchFlow({
     currentProject,
     addProjects,
@@ -781,11 +781,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
     openProject(id)
   }
 
-  /** Saved Projects asks before switching to a thumbnail's Project (ticket 232). */
+  /** A pick in the Projects library opens at once; only a failed last save asks first (tickets 232, 0860). */
   const savedProjectConfirms = useSavedProjectConfirms({
     currentProject,
     findProject: entryOf,
     openProject: onSelectProject,
+    saveFailed: () => saveFailed.value,
     saveNow,
     dialogs,
   })
@@ -816,6 +817,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       addProject(copy)
     },
     removeAllProjects,
+    showToast,
+    messages,
     dialogs,
   })
 

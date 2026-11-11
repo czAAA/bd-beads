@@ -1,20 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
+import { withProjectName } from '../../domain/projectName'
 import { useImportSwitchFlow } from './useImportSwitchFlow'
 
-function make(id: string, updatedAt: number): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }), id, updatedAt }
+function make(id: string, updatedAt: number, name = id): Project {
+  return { ...createProject({ name, technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }), id, updatedAt }
 }
 
 const open = make('open', 1000)
 const older = make('older', 2000)
 const newer = make('newer', 3000)
 
-function setup(options: { open?: boolean; saved?: boolean } = {}) {
+/** The library's add as the flow sees it: what joined, `rename` naming the Projects whose name was taken. */
+function setup(options: { open?: boolean; saved?: boolean; rename?: Record<string, string> } = {}) {
   const deps = {
     currentProject: () => (options.open === false ? undefined : open),
-    addProjects: vi.fn(),
+    addProjects: vi.fn((projects: Project[]) => projects.map((project) => (options.rename?.[project.id] ? withProjectName(project, options.rename[project.id]!) : project))),
     openProject: vi.fn(),
     saveNow: vi.fn(() => options.saved ?? true),
   }
@@ -22,50 +24,57 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
 }
 
 describe('useImportSwitchFlow', () => {
-  it('joins the library straight away with no Project open', () => {
+  it('joins the library and asks nothing with no Project open', () => {
     const { deps, pendingImport, onImportProjects } = setup({ open: false })
     onImportProjects([older])
     expect(deps.addProjects).toHaveBeenCalledWith([older])
     expect(pendingImport.value).toBeUndefined()
   })
 
-  it('joins the library straight away when nothing came in', () => {
-    const { deps, pendingImport, onImportProjects } = setup()
+  it('asks nothing when nothing came in', () => {
+    const { pendingImport, onImportProjects } = setup()
     onImportProjects([])
-    expect(deps.addProjects).toHaveBeenCalledWith([])
     expect(pendingImport.value).toBeUndefined()
   })
 
-  it('holds the import back while a Project is open, and offers the most recently updated one', () => {
+  it('joins the library at once while a Project is open, and offers the most recently updated one (ticket 0860)', () => {
     const { deps, pendingImport, pendingImportOpens, onImportProjects } = setup()
     onImportProjects([older, newer])
-    expect(deps.addProjects).not.toHaveBeenCalled()
-    expect(pendingImport.value).toEqual([older, newer])
+    expect(deps.addProjects).toHaveBeenCalledWith([older, newer])
+    expect(pendingImport.value?.projects).toEqual([older, newer])
+    expect(pendingImport.value?.takenNames.size).toBe(0)
+    expect(pendingImportOpens.value?.id).toBe('newer')
+    expect(deps.openProject).not.toHaveBeenCalled()
+  })
+
+  it('keeps the name a Project came with where the library had it, for the question to say (ticket 0860)', () => {
+    const { pendingImport, pendingImportOpens, onImportProjects } = setup({ rename: { newer: 'newer 2' } })
+    onImportProjects([older, newer])
+    expect(pendingImport.value?.takenNames).toEqual(new Map([['newer', 'newer']]))
     expect(pendingImportOpens.value?.id).toBe('newer')
   })
 
-  it('keep current adds the import and opens nothing', () => {
+  it('Stay here opens nothing and closes the question', () => {
     const { deps, pendingImport, onImportProjects, onKeepCurrentAfterImport } = setup()
     onImportProjects([older])
     onKeepCurrentAfterImport()
-    expect(deps.addProjects).toHaveBeenCalledWith([older])
+    expect(deps.addProjects).toHaveBeenCalledOnce()
     expect(deps.openProject).not.toHaveBeenCalled()
     expect(pendingImport.value).toBeUndefined()
   })
 
-  it('switch adds the import and opens its most recent Project', () => {
+  it('Open opens the import\'s most recent Project, adding nothing twice', () => {
     const { deps, pendingImport, onImportProjects, onSwitchToImported } = setup()
     onImportProjects([older, newer])
     onSwitchToImported()
-    expect(deps.addProjects).toHaveBeenCalledWith([older, newer])
+    expect(deps.addProjects).toHaveBeenCalledOnce()
     expect(deps.openProject).toHaveBeenCalledWith('newer')
     expect(pendingImport.value).toBeUndefined()
   })
 
   it('hands the library the Projects it was given, not reactive copies (ticket 0616)', () => {
-    const { deps, onImportProjects, onKeepCurrentAfterImport } = setup()
+    const { deps, onImportProjects } = setup()
     onImportProjects([older])
-    onKeepCurrentAfterImport()
     expect(deps.addProjects.mock.calls[0]![0][0]).toBe(older)
   })
 

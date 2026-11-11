@@ -3,6 +3,7 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { useProjectManageFlow } from './useProjectManageFlow'
 import { canvasOf } from '../../domain/layerRecord'
+import { en } from '../../i18n/en'
 
 const make = (name: string) => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -14,6 +15,8 @@ function setup(projects: Project[]) {
     replaceProject: vi.fn((project: Project) => void (library.projects = library.projects.map((p) => (p.id === project.id ? project : p)))),
     addProject: vi.fn((project: Project) => void (library.projects = [project, ...library.projects])),
     removeAllProjects: vi.fn(() => void (library.projects = [])),
+    showToast: vi.fn(),
+    messages: () => en,
   }
   return { flow: useProjectManageFlow(deps), deps, library }
 }
@@ -46,6 +49,13 @@ describe('useProjectManageFlow', () => {
     const copy = deps.addProject.mock.calls[0]![0]
     expect(canvasOf(copy).name).toBe('Copy')
     expect(copy.id).not.toBe(moth.id)
+  })
+
+  it('says after Duplicate which Project is open now and that the original stays (ticket 0860)', () => {
+    const { flow, deps } = setup([make('Sunflower')])
+    flow.onRequestDuplicate()
+    flow.onConfirmDuplicate('Sunflower 2')
+    expect(deps.showToast).toHaveBeenCalledWith('duplicated', 'Now in “Sunflower 2”. “Sunflower” stays as it was.', 'success')
   })
 
   it('deletes every Project only after being asked, and leaves none open', () => {

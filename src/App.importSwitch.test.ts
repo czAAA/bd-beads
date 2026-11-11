@@ -50,19 +50,19 @@ const openName = async (wrapper: Wrapper) => {
 const libraryNames = () => loadProjects().map((project) => canvasOf(project).name).sort()
 const click = (wrapper: Wrapper, testId: string) => wrapper.find(`[data-testid="${testId}"]`).trigger('click')
 
-describe('App import asks before switching (ticket 154)', () => {
-  it('asks first, changing nothing on screen or in the library until answered', async () => {
+describe('App import asks whether to open what came in (tickets 154, 0860)', () => {
+  it('puts what came in in the library at once, and the open Project stays until answered', async () => {
     const wrapper = mount(App)
     await createProjectViaForm(wrapper, 'Current')
 
     await pick(wrapper, serializeLibrary([makeProject('Fox')]))
 
-    expect(modal(wrapper).exists()).toBe(true)
+    expect(modal(wrapper).find('.app-modal__title').text()).toBe('Open “Fox”?')
     expect(await openName(wrapper)).toContain('Current')
-    expect(libraryNames()).toEqual(['Current'])
+    expect(libraryNames()).toEqual(['Current', 'Fox'])
   })
 
-  it('Switch opens the imported Project and keeps the old one in the library', async () => {
+  it('Open opens the imported Project and keeps the old one in the library', async () => {
     const wrapper = mount(App)
     await createProjectViaForm(wrapper, 'Current')
     await pick(wrapper, serializeLibrary([makeProject('Fox')]))
@@ -74,7 +74,7 @@ describe('App import asks before switching (ticket 154)', () => {
     expect(libraryNames()).toEqual(['Current', 'Fox'])
   })
 
-  it('Keep current imports into the library and leaves the open Project open', async () => {
+  it('Stay here leaves the open Project open', async () => {
     const wrapper = mount(App)
     await createProjectViaForm(wrapper, 'Current')
     await pick(wrapper, serializeLibrary([makeProject('Fox')]))
@@ -84,6 +84,16 @@ describe('App import asks before switching (ticket 154)', () => {
     expect(modal(wrapper).exists()).toBe(false)
     expect(await openName(wrapper)).toContain('Current')
     expect(libraryNames()).toEqual(['Current', 'Fox'])
+  })
+
+  it('brings a file whose name is taken in under the next free number, and says so (ticket 0860)', async () => {
+    const wrapper = mount(App)
+    await createProjectViaForm(wrapper, 'Summer bracelet')
+
+    await pick(wrapper, serializeLibrary([makeProject('Summer bracelet')]))
+
+    expect(modal(wrapper).text()).toContain('“Summer bracelet” is already in the Projects library, so the file came in as “Summer bracelet 2”.')
+    expect(libraryNames()).toEqual(['Summer bracelet', 'Summer bracelet 2'])
   })
 
   it('shows no modal when no Project is open, and opens what came in as before', async () => {
