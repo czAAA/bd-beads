@@ -6,6 +6,7 @@ import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
 import { deleteAll, pickColor, panelRead } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
+import { ru } from './i18n/ru'
 
 // Each test drives one control to its flow. What the flows decide is in useRowOps and useDeleteAllFlow, the rules in
 // domain/project, what the controls show in ProgressBar, BeadQuantities and ConfirmModal (ticket 0603), and Replace
@@ -63,6 +64,16 @@ describe('App row progress', () => {
 
     await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(rowPress()).toBeUndefined()
+  })
+})
+
+describe('App rows marked done', () => {
+  it('says why a press on a row marked done draws nothing (ticket 0848)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await pickColor(wrapper, 'red')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await click(wrapper, 0)
+    expect(wrapper.get('[data-testid="marked-done"]').text()).toContain(ru.rowProgress.markedDoneToast)
   })
 })
 

@@ -1,5 +1,6 @@
 import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeFrame'
 import { keepAllowedEdits } from '../../domain/allowedEdits'
+import { finishedRowsHold } from '../../domain/rowProgress'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
@@ -49,6 +50,8 @@ export interface EditDeps {
   flushPendingSave: () => void
   /** Hears each Undo step taken with the state it led to: Beads since last file counts it (ticket 0796). */
   countChange?: (before: Layered, after: Layered, sign: 1) => void
+  /** Hears a drawing command that rows marked done took beads back from, once an edit or a stroke (ticket 0848). */
+  onRowsHeld?: (project: Project) => void
 }
 
 // Edit (ADR 0036): every undoable change to the open Project goes through here, which applies the rules (row lock,
@@ -59,6 +62,15 @@ export function useEdit(deps: EditDeps) {
   let strokeBaseline: UndoEntry | undefined
   /** What a held Frame change started from, and the Project it belongs to; undefined while none is held. */
   let held: { id: string; baseline: UndoEntry } | undefined
+  /** Whether the stroke running has told of rows marked done already: it says so once, not at every bead. */
+  let toldRowsHeld = false
+
+  /** Tells the shell when rows marked done took back some of `made` (ticket 0848); whether it told. */
+  function tellRowsHeld(project: Project, made: Project): boolean {
+    if (!deps.onRowsHeld || !finishedRowsHold(project, made)) return false
+    deps.onRowsHeld(project)
+    return true
+  }
 
   /** One Undo step, `before` the state it goes back to and `after` the state it led to. */
   function step(before: UndoEntry, after: Layered) {
@@ -79,6 +91,7 @@ export function useEdit(deps: EditDeps) {
     }
 
     const made = (command as EditCommands['drawing'])(project)
+    if (kind === 'drawing') tellRowsHeld(project, made)
     const updated = kind === 'drawing' ? keepAllowedEdits(project, made) : made
     if (updated === project) {
       return { kind: 'unchanged' }
@@ -137,6 +150,7 @@ export function useEdit(deps: EditDeps) {
     settle()
     const project = deps.currentProject()
     strokeBaseline = project && snapshotOf(project)
+    toldRowsHeld = false
   }
 
   /** One step of a stroke: drawing edits that land on screen at once but defer their save and their Undo step to
@@ -147,7 +161,11 @@ export function useEdit(deps: EditDeps) {
     if (!project) {
       return
     }
-    const updated = commands.reduce((current, command) => keepAllowedEdits(current, command(current)), project)
+    const updated = commands.reduce((current, command) => {
+      const made = command(current)
+      toldRowsHeld ||= tellRowsHeld(current, made)
+      return keepAllowedEdits(current, made)
+    }, project)
     if (updated !== project) {
       deps.replaceProject(updated, { deferSave: true })
     }

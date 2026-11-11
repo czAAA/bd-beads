@@ -11,6 +11,7 @@ import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BackgroundSection from './BackgroundSection.vue'
 import BeadSection from './BeadSection.vue'
+import MarkedDoneLine from './MarkedDoneLine.vue'
 import TechniqueSection from './TechniqueSection.vue'
 
 // Layer settings (ADR 0079, ticket 0670; LayerSettings card): the one section that sets a layer, wherever a layer is
@@ -40,6 +41,8 @@ const emit = defineEmits<{
   'set-shape-settings': [change: FrameSettings]
   'pick-bead': [beadId: string]
   'set-background': [background: Background]
+  /** Reset progress, from the line under the shape settings rows marked done hold (ticket 0848); the caller asks. */
+  'reset-progress': []
 }>()
 
 const { t } = useI18n()
@@ -102,7 +105,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
           @update:model-value="emit('set-shape-settings', { fringeStyle: $event as FringeStyle })"
         />
       </div>
-      <p v-if="locked" class="layer-settings__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
+      <MarkedDoneLine v-if="locked" testid="frame-size-locked" @reset-progress="emit('reset-progress')" />
     </div>
 
     <div class="layer-settings__group" role="group" :aria-labelledby="beadLabelId">
@@ -158,12 +161,6 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
 .layer-settings__heading {
   padding: 0 var(--space-10);
   font: var(--type-label);
-  color: var(--muted);
-}
-
-.layer-settings__line {
-  margin: 0;
-  font: var(--type-meta-small);
   color: var(--muted);
 }
 

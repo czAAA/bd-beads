@@ -60,6 +60,12 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     expect(wrapper.find('[data-testid="frame-background-picker"] [aria-disabled="true"]').exists()).toBe(false)
   })
 
+  it('offers Reset progress beside the line under the held shape settings, which only asks (ticket 0848)', async () => {
+    const wrapper = mountSettings({ locked: true, frame: { shape: 'triangle', settings: { rounds: 4 } } })
+    await wrapper.get('[data-testid="frame-size-locked-reset"]').trigger('click')
+    expect(wrapper.emitted('reset-progress')).toHaveLength(1)
+  })
+
   it('shows no shape settings for a layer without a Frame shape', () => {
     expect(mountSettings({ frame: { settings: {} } }).find('[data-testid^="frame-setting-"]').exists()).toBe(false)
     expect(mountSettings().find('[data-testid="frame-size-locked"]').exists()).toBe(false)

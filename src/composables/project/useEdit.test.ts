@@ -53,10 +53,18 @@ describe('useEdit', () => {
       expect(beadColorAt(ctx.project, inside(1, 0).row, inside(1, 0).column)).toBe('#ff0000')
     })
 
-    it('is refused silently when it only touched finished rows', () => {
+    it('is refused when it only touched finished rows, and says why (ticket 0848)', () => {
       const ctx = editHarness(moveToRow(base, 1))
       expect(ctx.edit('drawing', (project) => paint(project, inside(0, 0)))).toEqual({ kind: 'unchanged' })
       expect(ctx.history.canUndo.value).toBe(false)
+      expect(ctx.onRowsHeld).toHaveBeenCalledTimes(1)
+    })
+
+    it('says nothing of rows marked done when it keeps off them', () => {
+      const ctx = editHarness(moveToRow(base, 1))
+      ctx.edit('drawing', (project) => paint(project, inside(1, 0)))
+      ctx.edit('drawing', (project) => paint(project, marginCell))
+      expect(ctx.onRowsHeld).not.toHaveBeenCalled()
     })
 
     it('drops what lands in the margin, but erasing there still works', () => {
@@ -265,6 +273,16 @@ describe('useEdit', () => {
 
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBeNull()
       expect(beadColorAt(ctx.project, inside(1, 0).row, inside(1, 0).column)).toBe('#ff0000')
+    })
+
+    it('says once a stroke that rows marked done held it, however many of their beads it crossed (ticket 0848)', () => {
+      const ctx = editHarness(moveToRow(base, 1))
+      for (let stroke = 0; stroke < 2; stroke++) {
+        ctx.editing.beginStroke()
+        for (const column of [0, 1, 2]) ctx.editing.strokeStep((project) => paint(project, inside(0, column)))
+        ctx.editing.endStroke()
+      }
+      expect(ctx.onRowsHeld).toHaveBeenCalledTimes(2)
     })
 
     it('that changed nothing is no Undo step, but still flushes', () => {

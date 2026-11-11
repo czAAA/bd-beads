@@ -174,4 +174,12 @@ describe('useRowOps', () => {
       expect(rowPress.value?.patternDone).toBe(true)
     })
   })
+
+  it('says a drawing was held by a row marked done, naming Row not done, or Column not done (ticket 0848)', () => {
+    const { deps, tellMarkedDone } = setup()
+    tellMarkedDone(base)
+    expect(deps.showToast).toHaveBeenLastCalledWith('marked-done', en.rowProgress.markedDoneToast, 'info')
+    tellMarkedDone(toggleRowDirection(base))
+    expect(deps.showToast).toHaveBeenLastCalledWith('marked-done', en.rowProgress.columnMarkedDoneToast, 'info')
+  })
 })

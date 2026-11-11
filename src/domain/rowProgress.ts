@@ -289,6 +289,11 @@ export function keepFinishedRows(before: Project, after: Project): Project {
   return sameBeads(before, kept) ? before : kept
 }
 
+/** Whether rows marked done take back some of what an edit changed (ticket 0848), so the beader can be told why. */
+export function finishedRowsHold(before: Project, after: Project): boolean {
+  return !sameBeads(keepFinishedRows(before, after), after)
+}
+
 /** Points row progress at the given row in its current direction, clamped to the Project — used to advance a
  * finished row and to go back to an earlier one. */
 export function moveToRow(project: Project, row: number): Project {
