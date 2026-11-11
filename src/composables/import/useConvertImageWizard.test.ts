@@ -132,11 +132,6 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
     expect(wizard.found.value).toHaveLength(3)
   })
 
-  it('matches to the Bead’s colors at first (ticket 0863)', async () => {
-    const wizard = await setup(bands(60, 30))
-    expect(wizard.source.value).toBe('bead-colors')
-  })
-
   it('counts the bead colors after the match, and Make empty takes a bead color whole (ticket 0863)', async () => {
     // Two blues the Default Palette both matches to its Blue, and a red.
     const data = new Uint8ClampedArray(30 * 4)

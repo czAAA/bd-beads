@@ -41,7 +41,7 @@ const toolLine = computed(() => {
     />
 
     <template v-if="on">
-      <p class="convert-background__stage" data-testid="convert-background-stages">{{ stage === 'find' ? words.stageFind : words.stageRemove }}</p>
+      <p class="convert-background__stage" role="status" data-testid="convert-background-stages">{{ stage === 'find' ? words.stageFind : words.stageRemove }}</p>
 
       <template v-if="stage === 'find'">
         <p class="convert-background__legend" role="status" data-testid="convert-background-found">
