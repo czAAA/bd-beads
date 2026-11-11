@@ -21,6 +21,8 @@ const kept = usePanelSection(() => props.id)
 const local = ref(false)
 const open = computed(() => (props.closedFirst ? local.value : kept.open.value))
 const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.toggle())
+/** The summary shows while folded, and open too when it is kept (Beads needed's total beside its Info button, ticket 0852). */
+const summaryShown = computed(() => !open.value || props.keepSummary)
 </script>
 
 <template>
@@ -28,18 +30,18 @@ const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.to
     <h3 v-if="!$slots.info" class="panel-section__heading">
       <button :id="labelId" class="ui-control panel-section__header" :class="{ 'panel-section__header--kept': keepSummary }" type="button" :aria-expanded="open" :aria-controls="bodyId" @click="toggle">
         <span class="panel-section__label">{{ label }}</span>
-        <span v-if="(summary || $slots.summary) && (!open || keepSummary)" class="panel-section__summary" :class="{ 'panel-section__summary--kept': keepSummary }"><slot name="summary">{{ summary }}</slot></span>
+        <span v-if="(summary || $slots.summary) && summaryShown" class="panel-section__summary" :class="{ 'panel-section__summary--kept': keepSummary }"><slot name="summary">{{ summary }}</slot></span>
         <AppIcon :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="panel-section__chevron" :class="{ 'panel-section__chevron--closed': !open }" />
       </button>
     </h3>
     <!-- With an Info button (ticket 0790): the header button lies under the row, so the Info button can stand after the label. -->
     <h3 v-else class="panel-section__heading panel-section__heading--info">
-      <button :id="labelId" class="ui-control panel-section__header panel-section__header--under" type="button" :aria-label="summary && !open ? `${label}, ${summary}` : label" :aria-expanded="open" :aria-controls="bodyId" @click="toggle" />
-      <span class="panel-section__row">
+      <button :id="labelId" class="ui-control panel-section__header panel-section__header--under" type="button" :aria-label="summary && summaryShown ? `${label}, ${summary}` : label" :aria-expanded="open" :aria-controls="bodyId" @click="toggle" />
+      <span class="panel-section__row" :class="{ 'panel-section__row--kept': keepSummary }">
         <span class="panel-section__label panel-section__label--short" aria-hidden="true">{{ label }}</span>
         <span class="panel-section__info"><slot name="info" /></span>
-        <span v-if="(summary || $slots.summary) && !open" class="panel-section__summary panel-section__summary--end" aria-hidden="true"><slot name="summary">{{ summary }}</slot></span>
-        <AppIcon :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="panel-section__chevron" :class="{ 'panel-section__chevron--closed': !open, 'panel-section__chevron--end': open || !summary }" aria-hidden="true" />
+        <span v-if="(summary || $slots.summary) && summaryShown" class="panel-section__summary panel-section__summary--end" :class="{ 'panel-section__summary--kept': keepSummary }" aria-hidden="true"><slot name="summary">{{ summary }}</slot></span>
+        <AppIcon :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="panel-section__chevron" :class="{ 'panel-section__chevron--closed': !open, 'panel-section__chevron--end': !summaryShown || !summary }" aria-hidden="true" />
       </span>
     </h3>
     <div v-if="open" :id="bodyId">
@@ -148,7 +150,8 @@ const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.to
 }
 
 /* A kept summary (a total) is never shortened: with no room beside the label it takes a line of its own. */
-.panel-section__header--kept {
+.panel-section__header--kept,
+.panel-section__row--kept {
   flex-wrap: wrap;
 }
 

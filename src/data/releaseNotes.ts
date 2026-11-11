@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Beads needed sits right after the Frame size, and how the weight is worked out is behind its info button',
+      ru: 'Нужно бисера стоит сразу после размера рамки, а как считается вес, подскажет кнопка с информацией',
+      uk: 'Потрібно бісеру стоїть одразу після розміру рамки, а як рахується вага, підкаже кнопка з інформацією',
+      be: 'Патрэбна бісеру стаіць адразу пасля памеру рамкі, а як лічыцца вага, падкажа кнопка з інфармацыяй',
+      zh: '所需珠子紧跟在边框尺寸之后，重量如何计算可在它的信息按钮里查看',
+      es: 'Cuentas necesarias va justo después del tamaño del marco, y cómo se calcula el peso está en su botón de información',
+      pl: 'Potrzebne koraliki są zaraz po rozmiarze ramki, a jak liczona jest waga, podpowie przycisk informacji',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Help lines fit your device: finger words on touch, no key numbers there, and ⌘V on a Mac',
       ru: 'Подсказки подходят устройству: на сенсорном экране говорят о пальцах и без цифр клавиш, а на Mac пишут ⌘V',
       uk: 'Підказки пасують пристрою: на сенсорному екрані говорять про пальці й без цифр клавіш, а на Mac пишуть ⌘V',

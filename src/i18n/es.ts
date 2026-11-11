@@ -599,7 +599,8 @@ export const es: Translations = {
     showAll: 'Mostrar todos los colores ({count})',
     showFewer: 'Mostrar menos',
     weightInfo:
-      'Es el número de cuentas × unos {grams} g por cuenta. Ese promedio sale de anuncios de vendedores, no de mediciones confirmadas. Las cuentas reales varían, así que compra un poco de más.',
+      'Es el número de cuentas × unos {grams} g por cuenta. El promedio sale de las cuentas por kilo que publica el fabricante, o de anuncios de vendedores si el fabricante no lo da. Las cuentas reales varían según el color y el acabado.',
+    weightInfoLabel: 'Cómo se calcula el peso',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

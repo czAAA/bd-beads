@@ -589,7 +589,9 @@ export const zh: Translations = {
     totalLabel: '合计',
     showAll: '显示全部颜色（{count}）',
     showFewer: '收起',
-    weightInfo: '这是珠子数量 × 每颗约 {grams} 克。该平均值来自卖家的商品信息，并非实测。实际的珠子会有差异，所以请多买一点。',
+    weightInfo:
+      '这是珠子数量 × 每颗约 {grams} 克。该平均值来自厂家公布的每公斤颗数，厂家未公布时来自卖家的商品信息。实际的珠子会因颜色和表面处理而有差异。',
+    weightInfoLabel: '重量如何计算',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

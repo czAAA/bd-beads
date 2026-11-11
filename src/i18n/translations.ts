@@ -715,8 +715,10 @@ export interface Translations {
     totalLabel: string
     showAll: string
     showFewer: string
-    /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
+    /** The Estimated weight's Info button body (tickets 155, 328, 0852); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
+    /** The accessible name of that Info button, in Beads needed's header (ticket 0852). */
+    weightInfoLabel: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
