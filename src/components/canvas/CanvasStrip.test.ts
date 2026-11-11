@@ -284,12 +284,14 @@ describe('CanvasStrip\'s Reference image button (ReferenceImage card, ticket 079
 })
 
 describe("CanvasStrip in What's inside's demo editor (ticket 0797)", () => {
-  it('holds Menu, Project and Frame, then Reference image, Undo and Redo, and a Brand that links nowhere', () => {
+  it('holds Menu, Project and Frame, its Demo tag, then Reference image, Undo and Redo, and a Brand that links nowhere (ticket 0841)', () => {
     const project = bareProject({ beads: {}, technique: 'loom' })
     const wrapper = mount(CanvasStrip, { props: { project, demo: true, referenceImage: 'none', rulers: true, zoomPercent: 100 } })
     const ids = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-reference-image', 'strip-reference-image-input', 'strip-undo', 'strip-redo'])
+    expect(ids.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-demo', 'strip-reference-image', 'strip-reference-image-input', 'strip-undo', 'strip-redo'])
     expect(wrapper.get('[data-testid="canvas-brand"]').element.tagName).toBe('SPAN')
+    expect(wrapper.get('[data-testid="strip-demo"]').text()).toBe(en.homepage.inside.demoTag)
+    expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="strip-demo"]').exists()).toBe(false)
   })
 
   it('offers Expand first in its right slot, before Reference image, a secondary button of words only that asks to toggle (ticket 0830)', async () => {

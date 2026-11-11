@@ -22,11 +22,13 @@ export interface GhostState {
   /** How long its next move takes, in ms. */
   moveMs: number
   ripples: { id: number; x: number; y: number }[]
+  /** While its click is being dispatched: the press is the ghost's, not the beader's (ticket 0841). */
+  pressing: boolean
 }
 
 /** The ghost pointer's state, at rest and hidden. */
 export function ghostState(): GhostState {
-  return reactive({ shown: false, x: 0, y: 0, moveMs: 0, ripples: [] })
+  return reactive({ shown: false, x: 0, y: 0, moveMs: 0, ripples: [], pressing: false })
 }
 
 /** What the hand works on: the demo's box and wiring. */
@@ -279,7 +281,12 @@ export function createHand(deps: HandDeps) {
     await aimAt(element)
     ripple()
     if (instant) pastTheMillisecond()
-    element.click()
+    ghost.pressing = true
+    try {
+      element.click()
+    } finally {
+      ghost.pressing = false
+    }
     await settle()
     return element
   }

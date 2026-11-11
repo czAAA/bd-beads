@@ -379,6 +379,8 @@ export const en: Translations = {
       tryIt: 'Try it yourself',
       expand: 'Expand',
       collapse: 'Collapse',
+      demoTag: 'Demo',
+      demoOnly: { new: 'This is a demo. Make your first Project to keep your own.', back: 'This is a demo. Your own Projects are in the editor.' },
     },
     sections: { label: 'Sections', welcome: 'Welcome', back: 'Back', next: 'Next', firstBody: 'This is the first section.', lastBody: 'This is the last section.', goTo: 'Go to {section}', moreBelow: 'More below' },
     coffee: { title: 'Made by one family', text: 'openbeads stays free and fully local, with no ads and no tracking. If it helps your work, you can support its development through Buy Me a Coffee.', button: 'Buy me a coffee', star: 'A star on GitHub helps too.', source: 'View the source' },

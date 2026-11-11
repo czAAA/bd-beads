@@ -207,6 +207,8 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <RollingSlogan v-if="onHomepage" class="canvas-strip__slogan" />
         <span v-else class="canvas-strip__wordmark">{{ t.app.title }}</span>
       </component>
+      <!-- The Homepage's demo says it is one (ticket 0841), where the editor has Buy me a coffee. -->
+      <span v-if="demo" class="canvas-strip__demo" data-testid="strip-demo">{{ t.homepage.inside.demoTag }}</span>
       <!-- Buy me a coffee (ticket 560): after the wordmark; only where the strip has room (1024px and up), under it the Menu row is the way in. -->
       <span v-if="COFFEE_URL && !demo" class="canvas-strip__coffee">
         <IconButton variant="plain" :icon-size="18" :action="actions.coffee" :href="COFFEE_URL" data-testid="strip-coffee" />
@@ -472,6 +474,17 @@ function onPanelsKeydown(event: KeyboardEvent) {
   .canvas-strip__wordmark {
     display: inline;
   }
+}
+
+/* The demo's tag: `meta-small` in `accent-strong` on `accent` at 12%, `radius-full`, padding 2 8, never cut. */
+.canvas-strip__demo {
+  flex: none;
+  padding: var(--space-2) var(--space-8);
+  font: var(--type-meta-small);
+  color: var(--accent-strong);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: var(--radius-full);
 }
 
 a.canvas-strip__brand:focus-visible {

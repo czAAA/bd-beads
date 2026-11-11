@@ -13,7 +13,11 @@ import { fakeFeedback } from '../testUtils/fakeFeedback'
 vi.mock('./inside/WhatsInside.vue', () => ({
   default: defineComponent({
     props: { withEditor: Boolean, shown: Boolean, wide: Boolean },
-    setup: (props) => () => h('div', { 'data-testid': 'whats-inside', 'data-with-editor': String(props.withEditor), 'data-shown': String(props.shown), 'data-wide': String(props.wide) }),
+    emits: ['pointAtWayIn'],
+    setup: (props, { emit }) => () =>
+      h('div', { 'data-testid': 'whats-inside', 'data-with-editor': String(props.withEditor), 'data-shown': String(props.shown), 'data-wide': String(props.wide) }, [
+        h('button', { 'data-testid': 'demo-way-out', onClick: () => emit('pointAtWayIn') }),
+      ]),
   }),
 }))
 
@@ -150,6 +154,21 @@ describe('HomePage', () => {
     const item = wrapper.get('[data-testid="menu-item-homepage"]')
     expect(item.attributes('aria-current')).toBe('page')
     expect(item.attributes('href')).toContain('homepage/')
+  })
+
+  it.each([
+    [0, en.homepage.inside.demoOnly.new],
+    [3, en.homepage.inside.demoOnly.back],
+  ])("says in a toast that the demo's Menu is the tour's, ringing the way in, with %i Projects saved (ticket 0841)", async (count, said) => {
+    vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => setTimeout(() => run(0), 0))
+    const wrapper = page(count)
+    const strip = wrapper.get('[data-testid="canvas-strip"]')
+    expect(strip.classes()).not.toContain('homepage__strip-pointing')
+    await wrapper.get('[data-testid="demo-way-out"]').trigger('click')
+    await vi.waitFor(() => expect(strip.classes()).toContain('homepage__strip-pointing'))
+    expect(wrapper.get('[data-testid="toast-region"]').text()).toContain(said)
+    expect(wrapper.emitted('makeFirstProject')).toBeUndefined()
+    expect(wrapper.emitted('openEditor')).toBeUndefined()
   })
 
   it('sends a general Report from the Menu’s Send feedback, and thanks with a toast of its own', async () => {
