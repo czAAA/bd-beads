@@ -334,9 +334,8 @@ export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout
 }
 
 /** A Kite row's beads a wing, its spine bead included (ticket 0874): a wing gains a bead every two rows, so the rows from
- * the point (row 0 first) hold 2, 2, 4, 4, 6 … beads.
- * @internal Tests check the Kite's rows bead by bead. */
-export function kiteWingBeads(row: number): number {
+ * the point (row 0 first) hold 2, 2, 4, 4, 6 … beads. */
+function kiteWingBeads(row: number): number {
   return Math.floor(row / 2) + 1
 }
 

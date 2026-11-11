@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import chart from './fixtures/warpedSquareChart.json'
-import { fringeLayout, kaleidocycleLayout, type FringeTop, kiteLayout, kiteWingBeads, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import { fringeLayout, kaleidocycleLayout, type FringeTop, kiteLayout, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 
 /** A Delica 11/0's depth across the thread over its pitch along it (1.6 mm over 1.3 mm). */
 const DELICA = 1.6 / 1.3
@@ -350,10 +350,6 @@ describe('a Kite: two peyote wings on a herringbone spine (ticket 0874)', () => 
     expect(kite.positions).toHaveLength(total)
     expect(box(kite)[0]).toBeCloseTo(wide!, 2)
     expect(box(kite)[1]).toBeCloseTo(tall!, 2)
-  })
-
-  it('gains a bead a wing every two rows, the spine bead included', () => {
-    expect(Array.from({ length: 6 }, (_unused, row) => kiteWingBeads(row))).toEqual([1, 1, 2, 2, 3, 3])
   })
 
   it('lays its first four rows from the point as a Delica 11/0 is beaded', () => {

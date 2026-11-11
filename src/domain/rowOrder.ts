@@ -140,9 +140,9 @@ function facingEdge(last: readonly LayoutPosition[], other: readonly LayoutPosit
   return last.filter((bead) => gap(bead) <= nearest + 1)
 }
 
-/** The passes of a Custom frame (spec 0590, ADR 0077): each part in making order, round by round from its centre, each
- * from its corner pair (ticket 0873), row by row from a Kite's point back and forth across its spine (ticket 0874), or
- * row by row from a Fringe earring's base, read left to right; a strand in one pass strung from the top down; then its joins, each ringing the edges it puts together. */
+/** The passes of a Custom frame (spec 0590, ADR 0077): each part round by round from its corner pair (ticket 0873), rows
+ * from a Kite's point back and forth (ticket 0874) or a Fringe earring's base left to right, a strand from the top down;
+ * then its joins, each ringing the edges it puts together. */
 function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[] {
   const parts = [...new Set(layout.panels.map(({ part }) => part))].sort((a, b) => layout.panels.find((panel) => panel.part === a)!.order - layout.panels.find((panel) => panel.part === b)!.order)
   const strandOf = (part: number) => layout.panels.find((panel) => panel.part === part)!.strand === true
