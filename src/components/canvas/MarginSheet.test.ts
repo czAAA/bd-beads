@@ -91,6 +91,22 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(control(wrapper, 'margin-progress-previous').text()).toBe('')
   })
 
+  it('is a Tab stop each for Row progress, the Move bar and the tools, ←/→ stepping along the tools, the title block\'s name next (ticket 0857)', async () => {
+    const wrapper = mountSheet()
+    const stops = () => wrapper.findAll('button').filter((button) => button.attributes('tabindex') !== '-1')
+    const names = stops().map((button) => button.attributes('aria-label') ?? button.text())
+    expect(names.slice(0, 4)).toEqual(['Turn row direction', 'Move Frame', 'Mirror the whole Frame', 'Name this Frame'])
+
+    const mirror = control(wrapper, 'margin-mirror-frame')
+    ;(mirror.element as HTMLElement).focus()
+    await mirror.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(control(wrapper, 'margin-rotate-frame').element)
+    await control(wrapper, 'margin-rotate-frame').trigger('keydown', { key: 'End' })
+    expect(document.activeElement).toBe(control(wrapper, 'frame-chrome-remove').element)
+    expect(stops().map((button) => button.attributes('data-testid'))).toContain('frame-chrome-remove')
+    expect(stops().map((button) => button.attributes('data-testid'))).not.toContain('margin-mirror-frame')
+  })
+
   it('moves the row from its Row done and Row not done, as the Progress bar does', async () => {
     const wrapper = mountSheet({ project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('3/11')
