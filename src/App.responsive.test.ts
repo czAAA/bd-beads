@@ -51,14 +51,14 @@ describe('one layout at every width (ticket 412, ADR 0046)', () => {
     expect(shell).not.toContain('AppBottomBar')
   })
 
-  it('sizes the Tool pill from the tokens: 48px across, pill-gap in, on the canvas overlay layer, scrolling along its length', () => {
+  it('sizes the Tool pill from the tokens: 48px across, pill-gap in, on the canvas overlay layer, its tools scrolling between its pinned ends (ticket 0837)', () => {
     expect(layoutPx('pill-thickness')).toBe(48)
     expect(layoutPx('pill-gap')).toBe(6)
     const pill = source('tools/ToolPill')
     expect(pill).toContain('z-index: var(--z-canvas-overlay);')
     expect(pill).toContain('bottom: var(--pill-gap);')
     expect(pill).toContain('max-width: calc(100% - 2 * var(--pill-gap));')
-    expect(pill).toMatch(/overflow: auto;\s*scrollbar-width: none;/)
+    expect(pill).toMatch(/\.tool-pill__tools \{[^}]*overflow: auto hidden;[^}]*scrollbar-width: none;/)
   })
 })
 
