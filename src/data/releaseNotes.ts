@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The PDF\'s Specification says Color + letters, as its chart prints',
+      ru: 'Стиль схемы в PDF: «Цвет + буквы», как она и печатается',
+      uk: 'Специфікація в PDF пише «Колір + літери», як і друкує схема',
+      be: 'Спецыфікацыя ў PDF піша «Колер + літары», як і друкуе схема',
+      zh: 'PDF 的规格清单写明“颜色 + 字母”，与图纸一致',
+      es: 'La especificación del PDF dice Color + letras, como imprime el gráfico',
+      pl: 'Specyfikacja w PDF podaje Kolor + litery, tak jak drukuje wykres',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: "The Homepage's demo says it is a demo, and its Menu points you to your own first Project",
       ru: 'Демо на главной странице подписано как демо, а его меню направляет вас к вашему первому проекту',
       uk: 'Демо на головній сторінці підписане як демо, а його меню скеровує вас до вашого першого проєкту',
