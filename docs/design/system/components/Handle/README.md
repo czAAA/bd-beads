@@ -1,0 +1,13 @@
+# Handle
+
+The one resize handle (ticket 0867): the hot corner that resizes the Frame, a rectangle Selection, the Mirror's Canvas Area, the converter's crop and the reference image. Each of those cards says where its handles stand and in what colour; this card is what a handle is.
+
+- **Look:** at a corner, a bracket of two `--handle-arm` (14px) arms, `--handle-line` (3px) thick, the corner rounded `--handle-radius` (4px), its outside `--handle-offset` (3px) off the line; at an edge's middle, a `--handle-bar-length` × `--handle-bar-thickness` (12 × 4) bar just outside the line, its ends round. Both in the handle's colour, with no fill or halo.
+- **Hot:** the corner under a mouse or pen, or being dragged, grows to `--handle-hot-arm` (18px) arms, `--handle-hot-line` (4px) thick, on a disc of `--handle-hot-disc` (16px) radius filled with its colour at `--handle-hot-disc-alpha` (18%). An edge's bar does not grow.
+- **Colour:** the area's own: `accent` for the Frame (Edit Frame) and the crop, `marker` for a Selection, `mirror` for the Mirror's Area, `ink` for the reference image.
+- **Reach:** a press within `--handle-reach` (14px) of the handle's point grabs it for a mouse or pen, within `--handle-reach-touch` (22px) for a finger: a 44px (`touch-target`) touch area. The reach is never more than a third of the area's shorter side on screen, so a small area keeps an inside to move. Where two handles reach, a corner beats an edge, then the nearest wins.
+- **Grabbed where drawn:** the point is the corner or edge middle of the line, the mark is drawn round it inside the reach, and nothing laid over the area (a bar, a sheet's controls) covers a drawn handle (ticket 0833).
+- **Cursor:** the diagonal resize cursors at the corners, the straight ones at the edges, turned with the area when it is turned.
+- **Keyboard and names:** a handle a key moves is a Tab stop with the focus ring (`focus-ring`, KeyboardFocus card) round its reach, and arrows move its edge or corner (the crop); one with no keys (the reference image's) is a button out of the Tab order. Each is named by its card ("Crop: top-left corner", "Resize from the top-left corner"). The Frame's, a Selection's and the Mirror's Area's are drawn on the Canvas and take no focus; their keys are the Move handle's and the Selection's.
+- **Touch:** the Frame, a Selection and the Mirror's Area show only the four corners on touch; the crop and the reference image keep all of theirs.
+- **Built as:** the Canvas draws it from `HANDLE_PX` (`src/rendering/handleSizes.ts`), the page lays it as `AppHandle` (`src/components/ui/`), and `handleSizes.test.ts` holds the two to the same values.

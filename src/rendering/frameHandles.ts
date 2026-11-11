@@ -1,6 +1,7 @@
 import type { Rect } from '../domain/canvas'
 import type { FrameEdge } from '../domain/frame'
 import type { Rotation } from '../domain/grid'
+import { HANDLE_PX, reachLimit } from './handleSizes'
 import type { SurfaceView } from './surfaceView'
 
 // The handles a Frame carries while being set (Frame card): eight with a mouse or pen, four corners on touch, named by
@@ -64,20 +65,20 @@ export function areaHandles(box: { x: number; y: number; width: number; height: 
   return frameHandles(outsetBox(box, outset), touch)
 }
 
-/** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target
- * does not. */
-const HIT_RADIUS_PX = 14
-const TOUCH_HIT_RADIUS_PX = 24
+/** How far from a handle's centre a press still grabs it (ticket 414; Handle card, ticket 0867): the drawn handle
+ * stays small, the target does not. */
+const HIT_RADIUS_PX = HANDLE_PX.reach.fine
+const TOUCH_HIT_RADIUS_PX = HANDLE_PX.reach.touch
 
 /** How far an Area's bar stands off its sheet's edge, `--area-bar-gap` (ContextBar card, Area sheet): a mouse or pen's
  * reach of the handles there, so they are drawn whole beside the bar and grabbed where drawn, its touch targets too. */
 export const AREA_BAR_GAP_PX = HIT_RADIUS_PX
 
-/** The reach of a handle on a rectangle: 14px for a mouse or pen, 24px for touch, never more than a third of the
+/** The reach of a handle on a rectangle: 14px for a mouse or pen, 22px for touch, never more than a third of the
  * shorter side so a small rectangle keeps an inside to move.
  * @internal Tests check a handle's reach on its own. */
 export function hitRadius(box: { width: number; height: number }, touch: boolean): number {
-  return Math.min(touch ? TOUCH_HIT_RADIUS_PX : HIT_RADIUS_PX, Math.min(box.width, box.height) / 3)
+  return Math.min(touch ? TOUCH_HIT_RADIUS_PX : HIT_RADIUS_PX, reachLimit(box))
 }
 
 /** The handle a press grabs, if any: the nearest within `radius`, except that a corner in reach beats a nearer edge

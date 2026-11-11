@@ -4,6 +4,7 @@ import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
 import { MARGIN_PX } from './marginSizes'
+import { HANDLE_HOT_DISC_ALPHA, HANDLE_PX } from './handleSizes'
 import type { Region, SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
@@ -238,19 +239,19 @@ const TOOLTIP_PAD_X = 8
 const TOOLTIP_HEIGHT = 24
 const TOOLTIP_GAP = 10
 
-// Edit Frame's hot corners (MarginSheet card, ticket 0657), in screen px: an `accent` bracket at each corner of the
-// Frame's line, a bar at each edge's middle, and the corner under the pointer grown on a faint disc.
-const BRACKET_ARM_PX = 14
-const BRACKET_LINE_PX = 3
-const HOT_ARM_PX = 18
-const HOT_LINE_PX = 4
-const HOT_DISC_RADIUS_PX = 16
-const HOT_DISC_ALPHA = 0.18
-const BRACKET_RADIUS_PX = 4
+// The handle (Handle card, ticket 0867), in screen px: a bracket at each corner of the line, a bar at each edge's
+// middle, and the corner under the pointer grown on a faint disc.
+const BRACKET_ARM_PX = HANDLE_PX.bracket.arm
+const BRACKET_LINE_PX = HANDLE_PX.bracket.line
+const HOT_ARM_PX = HANDLE_PX.hot.arm
+const HOT_LINE_PX = HANDLE_PX.hot.line
+const HOT_DISC_RADIUS_PX = HANDLE_PX.hot.disc
+const HOT_DISC_ALPHA = HANDLE_HOT_DISC_ALPHA
+const BRACKET_RADIUS_PX = HANDLE_PX.bracket.radius
 /** How far outside the line a bracket's stroke starts. */
-const BRACKET_OFFSET_PX = 3
-const EDGE_BAR_LENGTH_PX = 12
-const EDGE_BAR_THICKNESS_PX = 4
+const BRACKET_OFFSET_PX = HANDLE_PX.bracket.offset
+const EDGE_BAR_LENGTH_PX = HANDLE_PX.bar.length
+const EDGE_BAR_THICKNESS_PX = HANDLE_PX.bar.thickness
 
 /** Which way a handle's corner opens, toward the Frame's inside: +1 or -1 on each axis, 0 along an edge. */
 function inward(id: HandleId): { x: number; y: number } {

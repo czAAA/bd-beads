@@ -16,12 +16,15 @@ import { beadCell } from '../../domain/weave'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { LIGHT_THEME } from '../../rendering/beadLook'
+import type { HandleId } from '../../rendering/frameHandles'
+import { reachLimit } from '../../rendering/handleSizes'
 import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from '../canvas/eyedropperCursor'
 import AppButton from '../ui/AppButton.vue'
+import AppHandle from '../ui/AppHandle.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 
@@ -241,6 +244,21 @@ function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
 }
 
 // --- Drawing, moving and pulling the part ------------------------------------------------------------------------------
+
+/** Each crop handle as the shared handle's corner or edge (Handle card, ticket 0867). */
+const HANDLE_PLACES: Record<CropHandle, HandleId> = {
+  topLeft: 'top-left',
+  top: 'top',
+  topRight: 'top-right',
+  right: 'right',
+  bottomRight: 'bottom-right',
+  bottom: 'bottom',
+  bottomLeft: 'bottom-left',
+  left: 'left',
+}
+
+/** A handle's reach on the part as it is on screen (Handle card). */
+const handleLimit = computed(() => (frameBox.value ? reachLimit(frameBox.value) : undefined))
 
 function handleStyle(handle: CropHandle) {
   const box = frameBox.value
@@ -627,12 +645,14 @@ onBeforeUnmount(() => {
               <div v-if="keptStyle && !wizard.comparing.value" class="convert-preview__kept" :style="keptStyle" data-testid="convert-kept" />
             </div>
             <template v-if="wizard.weave.value === 'part' && !ringed && !wizard.comparing.value">
-              <button
+              <AppHandle
                 v-for="handle in CROP_HANDLES"
                 :key="handle"
-                type="button"
+                :place="HANDLE_PLACES[handle]"
+                :hot="drag?.kind === 'handle' && drag.handle === handle"
+                :limit="handleLimit"
                 class="convert-preview__handle"
-                :class="`convert-preview__handle--${handle.length > 6 ? 'corner' : handle === 'left' || handle === 'right' ? 'side' : 'edge'}`"
+                :class="{ 'convert-preview__handle--corner': HANDLE_PLACES[handle].includes('-') }"
                 :style="handleStyle(handle)"
                 :aria-label="cropName(handle)"
                 :data-testid="`convert-crop-${handle}`"
@@ -864,39 +884,14 @@ onBeforeUnmount(() => {
   cursor: move;
 }
 
+/* The crop's handles are the shared handle (Handle card), over the clipped picture; a corner wins where it and an
+   edge's reach meet, as on the Canvas. */
 .convert-preview__handle {
-  position: absolute;
   z-index: 2;
-  box-sizing: border-box;
-  padding: 0;
-  background: var(--canvas);
-  border: 2px solid var(--ink);
-  border-radius: var(--crop-handle-radius);
-  transform: translate(-50%, -50%);
-  touch-action: none;
-  cursor: move;
 }
 
 .convert-preview__handle--corner {
-  width: var(--crop-handle);
-  height: var(--crop-handle);
-}
-
-.convert-preview__handle--edge {
-  width: var(--crop-bar-length);
-  height: var(--crop-bar-width);
-  cursor: ns-resize;
-}
-
-.convert-preview__handle--side {
-  width: var(--crop-bar-width);
-  height: var(--crop-bar-length);
-  cursor: ew-resize;
-}
-
-.convert-preview__handle:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  z-index: 3;
 }
 
 .convert-preview__ring {
