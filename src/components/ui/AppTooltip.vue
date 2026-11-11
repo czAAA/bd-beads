@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId } from 'vue'
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import KeyChip from './KeyChip.vue'
@@ -16,6 +16,7 @@ const props = withDefaults(defineProps<TooltipProps>(), {
   meta: undefined,
   announce: true,
   opensOnClick: false,
+  suppressed: false,
 })
 
 /** What the bubble's second line says: the reason when disabled, the body otherwise. */
@@ -134,7 +135,7 @@ function clearHover() {
 
 function show() {
   clearHover()
-  if (open.value) return
+  if (open.value || props.suppressed) return
   open.value = true
   follow(true)
   void openBubble()
@@ -234,6 +235,13 @@ function onFocusOut() {
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && open.value) hide()
 }
+
+watch(
+  () => props.suppressed,
+  (suppressed) => {
+    if (suppressed) hide()
+  },
+)
 
 onBeforeUnmount(hide)
 
