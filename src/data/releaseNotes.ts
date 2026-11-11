@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'On a phone Export stays at the end of the Canvas strip, its other buttons fade where they scroll on, and Project offers Picture and Printable chart',
+      ru: 'На телефоне экспорт всегда в конце полосы холста, остальные кнопки затухают у края, где их можно прокрутить, а в проекте есть «Картинка» и «Схема для печати»',
+      uk: 'На телефоні експорт завжди в кінці смуги полотна, інші кнопки згасають біля краю, де їх можна прокрутити, а в проєкті є «Картинка» і «Схема для друку»',
+      be: 'На тэлефоне экспарт заўсёды ў канцы паласы палатна, астатнія кнопкі згасаюць ля краю, дзе іх можна пракруціць, а ў праекце ёсць «Карцінка» і «Схема для друку»',
+      zh: '在手机上，导出始终在画布栏的末端，其他按钮在可滚动的一侧渐隐，项目面板里也有“图片”和“可打印图表”',
+      es: 'En el móvil Exportar se queda al final de la barra del lienzo, los demás botones se desvanecen donde siguen y Proyecto ofrece Imagen y Gráfico para imprimir',
+      pl: 'Na telefonie Eksport zostaje na końcu paska płótna, pozostałe przyciski zanikają tam, gdzie można je przewinąć, a Projekt ma Obraz i Wykres do druku',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Every way out of the converter asks first, the browser’s Back and a reload too, and Close goes back to the New Project form',
       ru: 'Любой выход из конвертера сначала спрашивает, и кнопка «Назад» браузера, и перезагрузка тоже, а «Закрыть» возвращает к форме нового проекта',
       uk: 'Будь-який вихід із конвертера спершу питає, і кнопка «Назад» браузера, і перезавантаження теж, а «Закрити» повертає до форми нового проєкту',

@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
-import type { ExportOpener, OpenPanel } from './openPanel'
+import type { ExportChoice, ExportOpener, OpenPanel } from './openPanel'
 
 // The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project panels. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
 // worth extracting.
@@ -10,17 +10,22 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
 
   /** The button the Export panel hangs from (ticket 0657): the Canvas strip's or the margin sheet's own. */
   const exportOpener = ref<ExportOpener>('strip-export')
+  /** The row the Export panel opens on (ticket 0843): the Project panel's Picture or Printable chart; none from a button. */
+  const exportChoice = ref<ExportChoice>()
 
-  function onSelectPanel(sheet: OpenPanel) {
-    if (sheet === 'export') return onOpenExport('strip-export')
+  /** A strip button's panel; the Project panel's Picture and Printable chart open Export as the strip's button does, on
+   * their choice (ticket 0843). */
+  function onSelectPanel(sheet: OpenPanel, choice?: ExportChoice) {
+    if (sheet === 'export') return onOpenExport('strip-export', choice)
     openPanel.value = openPanel.value === sheet ? null : sheet
   }
 
   /** Export from the strip or from the margin sheet: the same panel, hung from the button pressed. Pressing the
    * button it hangs from again closes it; the other one moves it there. */
-  function onOpenExport(from: ExportOpener) {
+  function onOpenExport(from: ExportOpener, choice?: ExportChoice) {
     const shown = openPanel.value === 'export' && exportOpener.value === from
     exportOpener.value = from
+    exportChoice.value = choice
     openPanel.value = shown ? null : 'export'
   }
 
@@ -63,6 +68,7 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     onSelectPanel,
     exportOpener,
     onOpenExport,
+    exportChoice,
     menuOpensOnForm,
     openMenuOnForm,
     openMenuOnSavedProjects,
