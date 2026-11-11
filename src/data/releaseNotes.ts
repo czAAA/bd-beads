@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'With Select, a tap beside the Selection lets go of it; a drag still makes a new one',
+      ru: 'Касание рядом с выделением снимает его, а протягивание создаёт новое',
+      uk: 'Дотик поруч із виділенням знімає його, а протягування створює нове',
+      be: 'Дотык побач з вылучэннем здымае яго, а працягванне стварае новае',
+      zh: '使用选择工具时，在选区旁轻点即可取消选区，拖动仍会建立新选区',
+      es: 'Con Seleccionar, un toque junto a la selección la quita; arrastrar sigue creando una nueva',
+      pl: 'Z narzędziem Zaznacz dotknięcie obok zaznaczenia je usuwa, a przeciągnięcie nadal tworzy nowe',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Make your first Project opens straight on the Canvas, and a Project you don\'t name is Project 1, then Project 2',
       ru: '«Сделать первый проект» сразу открывает холст, а проект без названия называется «Проект 1», затем «Проект 2»',
       uk: '«Створити перший проєкт» одразу відкриває полотно, а проєкт без назви називається «Проєкт 1», потім «Проєкт 2»',

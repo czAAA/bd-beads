@@ -71,8 +71,9 @@ export function useSelectionGesture(
     | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool?: 'select' | 'piece' }
     | undefined
 
-  // Where a Select press started and whether it has left that cell. Dragging marks a new Selection, a click in place
-  // stamps the copy, so the press only records its anchor here and endPress decides which it was.
+  // Where a Select press started and whether it has left that cell. Dragging marks a new Selection; a click in place
+  // stamps the copy, or with none drops the Selection, so the press only records its anchor here and endPress decides
+  // which it was.
   const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean; marking: boolean } | null>(null)
 
   /** The last drag that marked out or resized the Selection, kept while the Selection is still the one it made, so a
@@ -104,23 +105,19 @@ export function useSelectionGesture(
     if (refusesSelection(project, at, marking)) {
       return
     }
-    const layer = layerAt(project, at)
-    selectPress.value = { anchor: at, focus: at, layer, moved: false, marking }
-
-    // With no active projection the press can only start a selection, so the marquee appears from the first cell. With
-    // one active Paste claims the gesture, hence re-selecting a single cell takes a drag out and back: a click must
-    // mean one thing, and stamping is it.
-    if (!pasteProjectionActive.value) {
-      selection.value = selectionBetween({ row, column }, { row, column }, layer)
-    }
+    // Nothing is marked yet (ticket 0868): a press that never leaves its bead is a tap, which drops the Selection (see
+    // endPress), so the marquee appears only once the drag reaches another bead, and a one-bead Selection takes a drag
+    // out and back.
+    selectPress.value = { anchor: at, focus: at, layer: layerAt(project, at), moved: false, marking }
   }
 
   // Grows the in-progress Selection to the cell the drag reached. A drag replaces the previous Selection and the copy
-  // with it (ticket 92). Returns false when no Selection grew, which a key step takes as a refusal.
+  // with it (ticket 92). A move still on the press's own bead is a finger's wobble, not a drag (ticket 0868). Returns
+  // false when no Selection grew, which a key step takes as a refusal.
   function extendPress(row: number, column: number): boolean {
     const project = currentProject()
     const press = selectPress.value
-    if (!project || !press) {
+    if (!project || !press || (!press.moved && row === press.anchor.row && column === press.anchor.column)) {
       return false
     }
 
@@ -136,11 +133,12 @@ export function useSelectionGesture(
   }
 
   /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag
-   * has already updated the Selection as it went. */
+   * has already updated the Selection as it went, and a tap drops it, selecting nothing (ticket 0868). */
   function endPress() {
     const project = currentProject()
     const press = selectPress.value
     selectPress.value = null
+    if (press && !press.moved && !pasteProjectionActive.value) selection.value = undefined
     if (press) lastDrag = press.moved && !pasteProjectionActive.value && selection.value ? { kind: 'mark', press, made: selection.value } : undefined
 
     if (!project || !press || !pasteProjectionActive.value) {
@@ -149,6 +147,13 @@ export function useSelectionGesture(
 
     const block = copiedBlock.value!
     stamp(block, press.anchor)
+  }
+
+  /** Forgets a Select press that was never a gesture, the first finger of a pinch (ticket 0868): unlike a tap it leaves
+   * the Selection, and unlike a release it stamps nothing. */
+  function cancelPress() {
+    selectPress.value = null
+    lastDrag = undefined
   }
 
   /** One Paste as one Edit; a Message says how many beads the Frame's edge clipped (ticket 491) or a Custom frame's
@@ -224,7 +229,9 @@ export function useSelectionGesture(
     selection.value = movedSelection(adjust.start, rows, columns)
   }
 
-  /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
+  /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens: Piece's
+   * selects the bead's Piece, Select's drops the Selection, as a tap beside it does (ticket 0868). A handle's press
+   * resizes, so a tap on one keeps the Selection. */
   function endAdjust() {
     const done = adjust
     adjust = undefined
@@ -232,13 +239,8 @@ export function useSelectionGesture(
     if (done?.kind !== 'move' || done.moved || !done.tool) {
       return
     }
-    if (done.tool === 'piece') {
-      tapPiece(done.origin.row, done.origin.column)
-    } else {
-      dropClipboard()
-      const project = currentProject()
-      selection.value = selectionBetween(done.origin, done.origin, project && layerAt(project, done.origin))
-    }
+    if (done.tool === 'piece') tapPiece(done.origin.row, done.origin.column)
+    else selection.value = undefined
   }
 
   /** Picks the last drag of this kind back up, as if it had never ended (ticket 0805): iPadOS ends a touch that slides
@@ -411,6 +413,7 @@ export function useSelectionGesture(
     beginPress,
     extendPress,
     endPress,
+    cancelPress,
     cancel,
     leaveSelectTool,
     copy,
