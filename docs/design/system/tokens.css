@@ -15,7 +15,7 @@
   --line: #e5e5e5; /* Hairlines. */
   --line-soft: #ededed; /* Header bottom border; row dividers inside boxes (Beads needed rows, the Saved Patterns footer). */
   --line-strong: #c7c7c7; /* Button and select borders on the page, expand buttons, the Tools tab rule, thin scrollbar thumb; the overlay border in dark. Fields and Steppers use field-line. */
-  --field-line: #858585; /* Borders that are the only edge of a control: TextField, NumberField, Select, Stepper (3.7:1 light, 3.6:1 dark). */
+  --field-line: #858585; /* Borders that are the only edge of a control: TextField, NumberField, Select, Stepper (3.7:1 light, 3.6:1 dark); the ring of a recent colour (PaletteSwatches, ToolPill). */
   --accent: #fa520f; /* The one accent: the single most likely next action in a region (New Pattern, Replace bead, Save Pattern, Row done), the active tool, the current row, the brand mark, the selected Saved Pattern. Nothing else is accent-colored. As a fill and in the logo; for text and thin marks on light surfaces use accent-strong. */
   --accent-hover: #ff6a2b; /* Primary button hover and pressed fill and border. Light is lighter than accent (#ff6a2b) so the dark label keeps 5.8:1. */
   --accent-strong: #c23604; /* Accent as text and thin marks on light surfaces: the active tool label and underline, the open Saved Pattern ring and name, message edges and accent icons, links (4.9:1 on panel). Dark: the same yellow as accent. */

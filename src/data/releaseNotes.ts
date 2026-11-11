@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A color you used stays in its place in the Palette, ringed, so the grid never shifts',
+      ru: 'Цвет, которым вы рисовали, остаётся на своём месте в палитре, с кольцом, и сетка больше не сдвигается',
+      uk: 'Колір, яким ви малювали, лишається на своєму місці в палітрі, з кільцем, і сітка більше не зсувається',
+      be: 'Колер, якім вы малявалі, застаецца на сваім месцы ў палітры, з кольцам, і сетка больш не зрушваецца',
+      zh: '用过的颜色留在调色板中原来的位置并带有圆环，网格不再移动',
+      es: 'Un color que usaste se queda en su sitio en la paleta, con un anillo, y la cuadrícula ya no se mueve',
+      pl: 'Kolor, którego użyłeś, zostaje na swoim miejscu w palecie, z obwódką, i siatka już się nie przesuwa',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Convert image opens on a small piece in your Bead\'s colors, says what each choice does, and counts colors as Beads needed does',
       ru: 'Конвертер изображений открывается на небольшой работе в цветах вашего бисера, объясняет каждый вариант и считает цвета так же, как «Нужно бисера»',
       uk: 'Конвертер зображень відкривається на невеликій роботі в кольорах вашого бісеру, пояснює кожен варіант і рахує кольори так само, як «Потрібно бісеру»',
