@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { customFrameSize, followsWeave, FRAME_SHAPE_IDS, frameAllows, frameGeometry, frameLayoutOf, frameShapeOf, frameSizeMm, isFrameShape, rowOrderOf, techniquesOf, type FrameSettings } from './frameShape'
+import { layoutNeighbors, type FrameLayout, type LayoutPosition } from './frameLayout'
 import { beadCell, TECHNIQUES } from './weave'
 import type { Weave } from './weave'
 
@@ -119,8 +120,8 @@ describe('the Row order of a Frame without a shape', () => {
 })
 
 /** A Custom frame of a Frame shape and size as Row progress reads it: its rectangle does not matter to its Row order. */
-const custom = (shape: 'triangle' | 'kite' | 'star' | 'kaleidocycle', size: number) => {
-  const name = shape === 'kite' ? 'rows' : shape === 'triangle' ? 'rounds' : 'partSize'
+const custom = (shape: 'triangle' | 'warpedSquare' | 'kite' | 'star' | 'kaleidocycle', size: number) => {
+  const name = shape === 'kite' ? 'rows' : shape === 'triangle' || shape === 'warpedSquare' ? 'rounds' : 'partSize'
   return { shape, settings: { [name]: size }, rows: 1, columns: 1, technique: 'peyote' as const }
 }
 
@@ -129,7 +130,8 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     const order = rowOrderOf(custom('triangle', 4), { direction: 'rows' })
     expect(order.count).toBe(4)
     expect(order.turns).toBe(false)
-    expect(order.positionsOf(1)).toEqual(Array.from({ length: 6 }, (_unused, column) => ({ row: 1, column })))
+    // From the corner pair: the last side's last bead, then round the shape from the first side's first.
+    expect(order.positionsOf(1)).toEqual([5, 0, 1, 2, 3, 4].map((column) => ({ row: 1, column })))
     expect(order.passAt({ row: 2, column: 5 })).toBe(2)
     expect(order.lineOf(0)).toBeUndefined()
     expect(order.stepOf?.(3)).toEqual({ kind: 'round', number: 4 })
@@ -149,7 +151,7 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(order.count).toBe(5 * 3 + 5)
     // Part 2's second round: its four sides' two beads each, named on after parts 0 and 1.
     expect(order.stepOf?.(7)).toEqual({ kind: 'round', number: 2, part: 3 })
-    expect(order.positionsOf(7)).toEqual(Array.from({ length: 8 }, (_unused, place) => ({ row: 1, column: 16 + place })))
+    expect(order.positionsOf(7)).toEqual([7, 0, 1, 2, 3, 4, 5, 6].map((place) => ({ row: 1, column: 16 + place })))
     expect(order.passAt({ row: 1, column: 16 })).toBe(7)
     expect(order.stepOf?.(15)).toEqual({ kind: 'join', step: 'zip', parts: [1, 2] })
     expect(order.stepOf?.(19)).toEqual({ kind: 'join', step: 'close', parts: [5, 1] })
@@ -168,6 +170,67 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(order.positionsOf(18)).toEqual([])
     expect(order.stepOf?.(24)).toEqual({ kind: 'join', step: 'hinge', parts: [1, 2] })
     expect(order.positionsOf(24).length).toBeGreaterThan(0)
+  })
+
+  describe('a round starts with its corner pair and reads side by side (ticket 0873)', () => {
+    /** Each round's beads as the layout names them, in Row progress's order. */
+    const roundsOf = (shape: 'triangle' | 'warpedSquare' | 'star' | 'kaleidocycle', size: number, rounds: number) => {
+      const sheet = custom(shape, size)
+      const layout = frameLayoutOf(sheet)!
+      const order = rowOrderOf(sheet, { direction: 'rows' })
+      const named = (position: { row: number; column: number }) => layout.positions.find(({ row, column }) => row === position.row && column === position.column)!
+      return { layout, order, rounds: Array.from({ length: rounds }, (_unused, pass) => order.positionsOf(pass).map(named)) }
+    }
+    const touch = (layout: FrameLayout, a: LayoutPosition, b: LayoutPosition) => layoutNeighbors(layout, a).some(({ row, column }) => row === b.row && column === b.column)
+
+    for (const [shape, corners] of [['warpedSquare', 4], ['triangle', 3]] as const) {
+      it(`steps a ${shape} of 3 rounds as ${corners}, ${2 * corners} and ${3 * corners} beads, rounds 2 and 3 led by one corner pair across a Seam`, () => {
+        const { layout, rounds } = roundsOf(shape, 3, 3)
+        expect(rounds.map((round) => round.length)).toEqual([corners, 2 * corners, 3 * corners])
+        for (const round of rounds.slice(1)) {
+          const [first, second] = round
+          expect(first!.panel).not.toBe(second!.panel)
+          expect(touch(layout, first!, second!)).toBe(true)
+        }
+      })
+    }
+
+    it('starts every round at the same corner, the Seam into the first side', () => {
+      const { rounds } = roundsOf('warpedSquare', 5, 5)
+      // Each round's first bead is its last side's, the next its first side's.
+      expect(rounds.map(([first, second]) => [first!.panel, second?.panel])).toEqual([[3, 0], [3, 0], [3, 0], [3, 0], [3, 0]])
+    })
+
+    it('ends a round on the last single of the last side, or the second bead of the last pair in round 2, never half its first pair', () => {
+      const { rounds } = roundsOf('warpedSquare', 4, 4)
+      const last = (round: LayoutPosition[]) => round[round.length - 1]!
+      // Round 2's last bead is the last side's first: the second of the pair it shares with the side before.
+      expect([last(rounds[1]!).panel, last(rounds[1]!).column]).toEqual([3, 6])
+      // Round 4's is the last side's third bead of four: its last single, its fourth the first of the round's first pair.
+      expect([last(rounds[3]!).panel, last(rounds[3]!).column]).toEqual([3, 14])
+      expect(rounds[3]![0]!.column).toBe(15)
+    })
+
+    it('gives a round its sides, each a corner pair and its singles, and a ring none', () => {
+      const { order } = roundsOf('triangle', 4, 4)
+      expect(order.sidesOf?.(0)).toBeUndefined()
+      expect(order.sidesOf?.(1)).toEqual([0, 1, 2].map(() => ({ corner: 2, singles: 0 })))
+      expect(order.sidesOf?.(3)).toEqual([0, 1, 2].map(() => ({ corner: 2, singles: 2 })))
+    })
+
+    it('reads each Kaleidocycle triangle and Star square the same way, a Kite\'s rows and its joins with no sides', () => {
+      const kaleidocycle = roundsOf('kaleidocycle', 3, 6)
+      // The second triangle's third round: led by its own corner pair, three sides of a pair and a single.
+      expect(kaleidocycle.order.stepOf?.(5)).toEqual({ kind: 'round', number: 3, part: 2 })
+      expect(kaleidocycle.order.sidesOf?.(5)).toEqual([0, 1, 2].map(() => ({ corner: 2, singles: 1 })))
+      const [first, second] = kaleidocycle.rounds[5]!
+      expect(first!.panel).not.toBe(second!.panel)
+      expect(touch(kaleidocycle.layout, first!, second!)).toBe(true)
+      expect(rowOrderOf(custom('star', 3), { direction: 'rows' }).sidesOf?.(2)).toEqual([0, 1, 2, 3].map(() => ({ corner: 2, singles: 1 })))
+      expect(kaleidocycle.order.sidesOf?.(18)).toBeUndefined()
+      const kite = rowOrderOf(custom('kite', 21), { direction: 'rows' })
+      expect(kite.sidesOf?.(4)).toBeUndefined()
+    })
   })
 
   it('steps a Fringe earring through its top from the base row up, then strand by strand from the first (ticket 0597)', () => {
