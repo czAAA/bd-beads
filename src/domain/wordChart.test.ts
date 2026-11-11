@@ -100,12 +100,12 @@ describe('Word chart (ticket 0574)', () => {
 
 describe('Word chart of a Custom frame (ticket 0594)', () => {
   /** An open Canvas with a Custom frame of a Frame shape and size, Letters on, its beads painted A where `paint` says. */
-  function shaped(shape: 'triangle' | 'kite' | 'star', size: number, paint: (position: { row: number; column: number }) => boolean): Project {
+  function shaped(shape: 'triangle' | 'warpedSquare' | 'kite' | 'star' | 'kaleidocycle', size: number, paint: (position: { row: number; column: number }) => boolean, hex = HEX.A): Project {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
-    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, frameLayoutOf(frameOf(placed.project)!)!.positions.filter(paint), HEX.A))
-    return withLayers(painted, { letters: true, paletteLetters: { [HEX.A]: 'A' } })
+    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, frameLayoutOf(frameOf(placed.project)!)!.positions.filter(paint), hex))
+    return withLayers(painted, { letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B' } })
   }
   const words = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.number} ${JSON.stringify(row.step)}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
 
@@ -114,10 +114,40 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     expect(chart.start).toBe('centre')
     expect(chart.marked).toBe(false)
     expect(words(shaped('triangle', 3, ({ column }) => column % 3 === 0))).toEqual([
-      '1 {"kind":"round","number":1}: 1A,2*',
-      '2 {"kind":"round","number":2}: 1A,2*,1A,2*',
-      '3 {"kind":"round","number":3}: 1A,2*,1A,2*,1A,2*',
+      '1 {"kind":"round","number":1}: 1*,1A,1*',
+      '2 {"kind":"round","number":2}: 1*,1A,2*,1A,1*',
+      '3 {"kind":"round","number":3}: 1*,1A,2*,1A,2*,1A,1*',
     ])
+  })
+
+  /** A round's sides as a beader reads them: `(pair)` and the singles' runs, sides apart. */
+  const sided = (project: Project, number: number) => wordChartOf(project)!.rows[number - 1]!.sides?.map(({ corner, singles }) => [`(${corner.map((run) => `${run.count}${run.letter ?? '*'}`).join(' ')})`, ...singles.map((run) => `${run.count}${run.letter ?? '*'}`)].join(','))
+
+  it('writes a Warped Square in one color side by side from its corner pairs (ticket 0873)', () => {
+    const square = shaped('warpedSquare', 5, () => true)
+    // Round 1 is the ring, a run with no pairs.
+    expect(wordChartOf(square)!.rows[0]).toMatchObject({ runs: [{ count: 4, letter: 'A' }] })
+    expect(sided(square, 1)).toBeUndefined()
+    expect(sided(square, 2)).toEqual(['(2A)', '(2A)', '(2A)', '(2A)'])
+    expect(sided(square, 3)).toEqual(['(2A),1A', '(2A),1A', '(2A),1A', '(2A),1A'])
+    expect(sided(square, 5)).toEqual(['(2A),3A', '(2A),3A', '(2A),3A', '(2A),3A'])
+  })
+
+  it('writes a Triangle\'s round 4 as a pair and two singles, three times (ticket 0873)', () => {
+    expect(sided(shaped('triangle', 4, () => true), 4)).toEqual(['(2A),2A', '(2A),2A', '(2A),2A'])
+  })
+
+  it('writes a pair of two colors with both, in the order they are picked up (ticket 0873)', () => {
+    // Round 3 of a Triangle: the first side's beads are panel 0's, its pair's first bead the last panel's last.
+    const triangle = shaped('triangle', 3, ({ row, column }) => row === 2 && column < 3, HEX.B)
+    expect(sided(triangle, 3)).toEqual(['(1* 1B),1B', '(1B 1*),1*', '(2*),1*'])
+  })
+
+  it('writes a Kaleidocycle triangle\'s rounds side by side as a Triangle\'s (ticket 0873)', () => {
+    const ring = shaped('kaleidocycle', 3, () => true)
+    expect(wordChartOf(ring)!.rows[4]).toMatchObject({ step: { kind: 'round', number: 2, part: 2 } })
+    expect(sided(ring, 5)).toEqual(['(2A)', '(2A)', '(2A)'])
+    expect(sided(ring, 19)).toBeUndefined()
   })
 
   it('lists a Kite row by row from its point', () => {

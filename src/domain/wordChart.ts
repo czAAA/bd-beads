@@ -6,15 +6,22 @@ import { beadsOfLayer, frameOf, lettersOn, quarterTurnOf } from './layerRecord'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
-import type { OrderStep, RowOrder } from './rowOrder'
+import type { OrderStep, RoundSide, RowOrder } from './rowOrder'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
  * line per row in the order Row progress counts them. Pure data here; the words and the drawing are the export's. */
 
 /** A run of beads of one color in a row; no letter for empty cells. */
-interface WordRun {
+export interface WordRun {
   count: number
   letter: string | undefined
+}
+
+/** One side of a round (ticket 0873): the runs of its corner pair's beads, picked up together (none at a corner of one
+ * bead), then of its singles. */
+export interface WordSide {
+  corner: WordRun[]
+  singles: WordRun[]
 }
 
 interface WordRow {
@@ -27,6 +34,9 @@ interface WordRow {
   /** A Custom frame's pass (ticket 0594): the round, row, part's round or join it is. A join lists no runs. */
   step?: OrderStep
   runs: WordRun[]
+  /** A round's sides, each from its corner pair (ticket 0873), the same beads as `runs` cut where a side starts; none
+   * for a ring, a row, a strand or a join. */
+  sides?: WordSide[]
 }
 
 type Edge = 'top' | 'right' | 'bottom' | 'left'
@@ -120,6 +130,18 @@ function runsOf(letters: readonly (string | undefined)[]): WordRun[] {
   return runs
 }
 
+/** A round's letters cut into its sides (ticket 0873), each its corner pair's beads and then its singles, as runs; a
+ * corner of one bead is a single. */
+function sidesOf(letters: readonly (string | undefined)[], sides: readonly RoundSide[]): WordSide[] {
+  let at = 0
+  return sides.map(({ corner, singles }) => {
+    const pair = corner > 1 ? corner : 0
+    const side = { corner: runsOf(letters.slice(at, at + pair)), singles: runsOf(letters.slice(at + pair, at + corner + singles)) }
+    at += corner + singles
+    return side
+  })
+}
+
 /** A Custom frame's Word chart (ticket 0594): one line per pass of its Row order, numbered from 1, each round read round
  * the shape and each Kite row left to right; a join is a line of its own with no runs. */
 function customWordChart(project: Project, order: RowOrder): WordChart {
@@ -139,7 +161,8 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
           return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
         })
     hasEmpty ||= letters.includes(undefined)
-    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters) })
+    const sides = order.sidesOf?.(pass)
+    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters), ...(sides ? { sides: sidesOf(letters, sides) } : {}) })
   }
   const first = order.stepOf!(0)
   return {
