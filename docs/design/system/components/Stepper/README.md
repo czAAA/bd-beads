@@ -7,6 +7,7 @@ The − value + control for every counted setting on desktop: Size, Drop.
 - The Drop stepper (tickets 0477, 0691; brick stitch's was called Brick block) sits in each layer's Layer settings (LayerSettings card, ticket 0670) for peyote and for brick stitch, the Canvas's enabled at any time. Its buttons are "Fewer beads in each stitch" and "More beads in each stitch".
 - Each button has its own name for screen readers: "Fewer columns", "More columns".
 - Holding a button repeats (ticket 355): one step at once, after 400ms it keeps stepping, from every 160ms down to every 30ms, until release, pointer leave or the limit. Mouse, touch and Enter/Space all hold; a held press adds no step on release.
+- The Frame panel's edge cells (Frame card) use the compact form: a joined − | + pair with no value, `picker-height` tall, 26px halves sharing a border, shaped as a pill (`radius-full` outer ends, each sign set 2px in from its round end; ticket 0864).
 - The number is a button named for the setting ("Width"); tapping it turns it into a numeric input in place, same size and look. Enter or blur commits, Escape cancels, an out-of-range number is clamped to min/max, empty or invalid input reverts. A locked stepper cannot be edited. The New Project number fields already take typing, so their compact up/down buttons only repeat.
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.

@@ -1,5 +1,7 @@
 import { defineComponent, h, provide, ref, type Component } from 'vue'
-import { describeFits, inShell, type FitCase } from '../testUtils/browserFit'
+import { describe, expect, it } from 'vitest'
+import { LOCALES } from '../domain/locale'
+import { describeFits, fitProblems, inShell, mountAt, tooltipProblems, type FitCase } from '../testUtils/browserFit'
 import ShortcutsHelp from './shell/ShortcutsHelp.vue'
 import MenuPanel from './shell/MenuPanel.vue'
 import { PANEL_CONTEXT } from './shell/panelContext'
@@ -51,6 +53,9 @@ const inPanel = (component: Component, props: Record<string, unknown>, width?: s
   })
 
 const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
+/** The Frame panel's content: `panel-width`, on a phone the screen less the dropdown's 8px gutters, less its padding and
+ * hairline border (AppPanel), so a phone's width is the room its rows really have (ticket 0864). */
+const framePanel = 'calc(min(var(--panel-width), 100vw - 2 * var(--frame-panel-gap)) - 2 * var(--space-8) - 2px)'
 
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, referenceImage: 'shown', canUndo: true, canRedo: true, zoomPercent: 125 }],
@@ -91,3 +96,14 @@ const CASES: FitCase[] = [
 ]
 
 describeFits(CASES)
+
+// The Frame panel on a phone in every real language too (ticket 0864): "longest" puts each edge's widest word in its cell,
+// but a word that has no room leaves its cell for the glyph's Tooltip, so each language's own words are tried as well.
+describe('FramePanel on a phone', () => {
+  for (const locale of LOCALES) {
+    it(`fits its box at 390px in ${locale}`, async () => {
+      const { root } = await mountAt(inPanel(FramePanel, { project: painted }, framePanel), {}, { locale, width: 390 })
+      expect([...(await fitProblems('FramePanel', locale, 390)), ...(await tooltipProblems(root, ['hover']))]).toEqual([])
+    })
+  }
+})
