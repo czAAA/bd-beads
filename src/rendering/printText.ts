@@ -75,7 +75,7 @@ export interface PrintText {
   totalGrams?: string
   /** The Total row's tubes: the colors' tubes added up. */
   totalTubes?: string
-  /** "Color only" or "Color + letters". */
+  /** "Color + letters": every chart page letters every bead, whatever the Letters switch says (ticket 0869). */
   chartStyle: string
   gramsNote?: string
   wordChart?: PrintedWordChart
@@ -170,7 +170,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     totalBeadsCount: groupThousands(total, locale),
     totalGrams: grams(total),
     ...(tubeTotal === undefined ? {} : { totalTubes: tubes(tubeTotal) }),
-    chartStyle: lettersOn(project) ? t.print.chartStyleLetters : t.print.chartStyleColor,
+    chartStyle: t.print.chartStyleLetters,
     gramsNote:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`

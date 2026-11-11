@@ -662,7 +662,6 @@ export const en: Translations = {
     continuesBelow: 'Continues below on page {below} →',
     continuesOn: 'Continues on page {next} →',
     lastPart: 'Last part',
-    chartStyleColor: 'Color only',
     chartStyleLetters: 'Color + letters',
     keyOnPage: 'Colors on this page',
     wordChart: {

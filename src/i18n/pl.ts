@@ -670,7 +670,6 @@ export const pl: Translations = {
     continuesBelow: 'Ciąg dalszy poniżej na stronie {below} →',
     continuesOn: 'Ciąg dalszy na stronie {next} →',
     lastPart: 'Ostatnia część',
-    chartStyleColor: 'Tylko kolor',
     chartStyleLetters: 'Kolor + litery',
     keyOnPage: 'Kolory na tej stronie',
     wordChart: {
