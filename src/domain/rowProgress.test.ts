@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsHold, finishedRowsOf, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
+import { finishedRowsHold, finishedRowsOf, passLine, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -373,5 +373,24 @@ describe('resetRowProgress (ticket 455)', () => {
     expect(rowProgressOf(reset)).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
     expect(beadsOfLayer(reset, 'canvas')).toBe(beadsOfLayer(woven, 'canvas'))
     expect(rowProgressStarted(reset)).toBe(false)
+  })
+})
+
+describe('passLine (ticket 0849)', () => {
+  it('names the ruler line of the pass where a line takes two passes, on peyote only (ticket 0849, F-04-03)', () => {
+    const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } })
+    const lines = frameOf(peyote)!.rows
+    expect(rowProgressPosition(peyote).total).toBe(1 + (lines - 1) * 2)
+    // Pass 1 is the first line; passes 2 and 3 the second; pass 4 the third.
+    expect(passLine(peyote)).toEqual({ line: 1, lines })
+    expect(passLine(moveToRow(peyote, 1))).toEqual({ line: 2, lines })
+    expect(passLine(moveToRow(peyote, 2))).toEqual({ line: 2, lines })
+    expect(passLine(moveToRow(peyote, 3))).toEqual({ line: 3, lines })
+    // Counted as the rulers number them: from the top, whichever way the rows run.
+    const upward = toggleRowDirection(toggleRowDirection(peyote))
+    expect(passLine(upward)).toEqual({ line: lines, lines })
+    // None once every pass is done, and none where a pass is a whole line.
+    expect(passLine(moveToRow(peyote, rowProgressPosition(peyote).total))).toBeUndefined()
+    expect(passLine(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } }))).toBeUndefined()
   })
 })
