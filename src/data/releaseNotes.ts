@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Every field says what goes in it, and a tap outside keeps a new name',
+      ru: 'Поля говорят, что в них вписать, а касание мимо сохраняет новое название',
+      uk: 'Поля кажуть, що в них вписати, а дотик повз зберігає нову назву',
+      be: 'Палі кажуць, што ў іх упісаць, а дотык міма захоўвае новую назву',
+      zh: '每个输入框都会提示该填什么，点击别处也会保留新名称',
+      es: 'Cada campo dice qué va en él, y tocar fuera guarda el nombre nuevo',
+      pl: 'Każde pole mówi, co w nie wpisać, a dotknięcie obok zachowuje nową nazwę',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'On a phone Export stays at the end of the Canvas strip, its other buttons fade where they scroll on, and Project offers Picture and Printable chart',
       ru: 'На телефоне экспорт всегда в конце полосы холста, остальные кнопки затухают у края, где их можно прокрутить, а в проекте есть «Картинка» и «Схема для печати»',
       uk: 'На телефоні експорт завжди в кінці смуги полотна, інші кнопки згасають біля краю, де їх можна прокрутити, а в проєкті є «Картинка» і «Схема для друку»',
