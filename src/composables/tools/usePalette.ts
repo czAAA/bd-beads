@@ -125,8 +125,8 @@ export function usePalette(): ComputedRef<Palette> {
 
 const recentsKey: InjectionKey<Readonly<Ref<readonly string[]>>> = Symbol('recentColors')
 
-/** The app shell hands out the recents the Tool pill shows as chips (ticket 529): the Palette leaves those colors out
- * while they are there. */
+/** The app shell hands out the recents the Tool pill shows as chips (ticket 529): the Palette keeps those colors in
+ * their slots and rings them (ticket 0865). */
 export function provideRecentColors(recents: Readonly<Ref<readonly string[]>>) {
   provide(recentsKey, recents)
 }

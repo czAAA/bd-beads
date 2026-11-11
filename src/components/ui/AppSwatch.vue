@@ -25,8 +25,11 @@ const props = withDefaults(
     lockedBody?: string
     /** The Tooltip's name in place of "Color", e.g. the margin picker's Canvas color swatch (ticket 0684). */
     tooltipName?: string
+    /** One of the Tool pill's recent colors (ticket 0865): a thin `field-line` ring, so a used color is found in its
+     * place. The selected ring wins. */
+    recent?: boolean
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined, recent: false },
 )
 const emit = defineEmits<{
   select: []
@@ -52,7 +55,7 @@ const tooltip = computed(() => {
           v-bind="$attrs"
           type="button"
           class="swatch__chip"
-          :class="{ 'swatch__chip--selected': selected }"
+          :class="{ 'swatch__chip--selected': selected, 'swatch__chip--recent': recent && !selected }"
           :style="{ backgroundColor: color }"
           :role="role === 'radio' ? 'radio' : undefined"
           :aria-label="label"
@@ -102,6 +105,14 @@ const tooltip = computed(() => {
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
   cursor: pointer;
   transition: transform var(--duration-instant) var(--ease-standard);
+}
+
+/* A recent color (ticket 0865): the selected ring's gap, then 1px of `field-line`, thinner and quieter than it. */
+.swatch__chip--recent {
+  box-shadow:
+    inset 0 0 0 1px var(--swatch-edge),
+    0 0 0 2px var(--swatch-gap, var(--panel)),
+    0 0 0 3px var(--field-line);
 }
 
 .swatch__chip--selected {

@@ -80,7 +80,8 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
   { code: 'Digit0', keyLabel: '0' },
 ]
 
-/** The first keys, Shift+1…3, pick the recent colors, not Palette slots (ticket 529). */
+/** The first keys, Shift+1…3, pick the recent colors (ticket 529); the keys after them, Shift+4…0, pick the first
+ * Palette slots, a recent one included, so a slot's key never changes with what was used (ticket 0865). */
 export const RECENT_SHORTCUTS = 3
 
 const ADDED_PREFIX = 'added-'
@@ -158,10 +159,6 @@ export interface Palette {
   nearest: (hex: string) => PaletteColor | undefined
   /** The color a Project opens ready to paint with: the first built-in swatch (the first of any, if none is). */
   defaultColorId: string | undefined
-  /** The swatches the colour popover shows and Shift+4…0 reach (ticket 529): every slot but the ones holding one of the
-   * `recents` (the pill's chips show and key those instead), in slot order, each with the slot it stands in. A Palette
-   * longer than the keys has swatches without one. */
-  besideRecents: (recents: readonly string[]) => { color: PaletteColor; slot: number }[]
 }
 
 /** The catalog code of each swatch that has one, by the swatch's hex (ticket 0538): a hex is a swatch's identity whether
@@ -180,8 +177,6 @@ export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[]
       return colors.find((color) => color.hex === nearest)
     },
     defaultColorId: (colors.find((color) => !isAddedColorId(color.id)) ?? colors[0])?.id,
-    besideRecents: (recents) =>
-      colors.flatMap((color, slot) => (recents.includes(color.hex) ? [] : [{ color, slot }])),
   }
 }
 

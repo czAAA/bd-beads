@@ -1,5 +1,4 @@
 import type { mount } from '@vue/test-utils'
-import { findBuiltInColor } from '../domain/palette'
 import type { Locale } from '../domain/locale'
 import type { Tool } from '../domain/tool'
 import { chooseLanguage } from './chooseLanguage'
@@ -48,21 +47,10 @@ export async function openColorPopover(wrapper: Wrapper): Promise<void> {
 }
 
 /** Picks a palette color through the colour popover (PalettePicker card), opening it first when it is not showing.
- * A color that is one of the pill's recent chips is not in the popover (ticket 529): its chip is pressed instead. */
+ * Every Palette color is there, a recent one too (ticket 0865). */
 export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void> {
-  const swatch = () => wrapper.find(`[data-color-id="${colorId}"]`)
-  if (!swatch().exists()) {
-    await openColorPopover(wrapper)
-  }
-  if (swatch().exists()) {
-    await swatch().trigger('click')
-    return
-  }
-  const hex = findBuiltInColor(colorId)?.hex
-  const chip = wrapper.findAll('[data-testid="pill-recent"]').find((candidate) => candidate.attributes('aria-label')?.includes(hex ?? '?'))
-  if (!chip) throw new Error(`no swatch or recent chip for ${colorId}`)
-  await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
-  await chip.trigger('click')
+  if (!wrapper.find(`[data-color-id="${colorId}"]`).exists()) await openColorPopover(wrapper)
+  await wrapper.get(`[data-color-id="${colorId}"]`).trigger('click')
 }
 
 /** Raises the New Project form (the Menu panel's subpanel) via the project bar's button, or Menu's when a Project is open; no-op
