@@ -542,6 +542,9 @@ export const pl: Translations = {
     namePieceButton: 'Nazwij kawałek',
     fillOpenMessage: 'Nic nie otacza tego miejsca. Zaznacz obszar, aby go wypełnić.',
     fillTooBigMessage: 'Za duży obszar do wypełnienia. Powiększ widok lub zaznacz obszar.',
+    mirrorArmedHint: 'Przeciągnij po płótnie, by zaznaczyć obszar odbicia.',
+    pasteArmedHint: 'Dotknij płótna, by położyć kopię. Wybierz narzędzie, by skończyć.',
+    pickArmedHint: 'Dotknij koralika, by użyć jego koloru.',
   },
   inputMode: {
     penLabel: 'Tryb rysika',
@@ -1083,7 +1086,7 @@ export const pl: Translations = {
     namePieceDisabled: 'Najpierw zaznacz jeden kawałek.',
     clear: 'Czyści wszystko z płótna.',
     customColor: 'Dodaj kolor do palety; Enter przyjmuje kolor.',
-    pickFromCanvas: 'Kliknij koralik na płótnie, by użyć jego koloru; trafi do palety, jeśli jest wolne miejsce.',
+    pickFromCanvas: 'Użyj koloru koralika z płótna. Trafi do palety.',
     nothingToUndo: 'Nie ma czego cofnąć.',
     zoomOutLimit: 'Pomniejszono już maksymalnie.',
     zoomInLimit: 'Powiększono już maksymalnie.',
@@ -1125,6 +1128,7 @@ export const pl: Translations = {
     rowDirection: 'Zmienia kierunek rzędów: z góry na dół, od lewej do prawej, z dołu do góry lub od prawej do lewej.',
     rowHighlight: 'Pokazuje lub ukrywa oznaczenia na bieżącym rzędzie i na rzędach oznaczonych jako gotowe.',
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
+    pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountWithProject } from './testUtils/seedProject'
 import { beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
 import { beadsOfLayer, frameOf, withFrameSheet } from './domain/layerRecord'
@@ -13,10 +13,11 @@ import App from './App.vue'
 import { flushPromises } from '@vue/test-utils'
 import { loadProjects } from './services/libraryStore'
 import { choosePanelOption } from './testUtils/choosePanelOption'
-import { copySelection, openPanel, pickColor, pickTool, selectAll } from './testUtils/pill'
+import { copySelection, openColorPopover, openPanel, pickColor, pickTool, selectAll, toolState } from './testUtils/pill'
 import { withMirrorPlace } from './domain/mirror'
 import type { GridPosition } from './domain/grid'
 import { frameGrid } from './testUtils/frameGrid'
+import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 
 // The Tool pill's wiring (ticket 439, ADR 0046): one test per control → flow. Where it docks and how it reads and keeps
 // the edge are in ToolPill and devicePreferences, the recents and color keys in toolPill and useToolPill, the popover's
@@ -86,9 +87,10 @@ describe('the Tool pill', () => {
     return { row: frame.row - 12, column: frame.column }
   }
 
-  it('Mirror (ADR 0082): key 7 enters Mirror mode, a drag on the Canvas makes the Mirror there, saved, with its bar, and a Canvas stroke lands inside it', async () => {
+  it('Mirror (ADR 0082): key 7 enters Mirror mode, a drag on the Canvas makes the Mirror there, saved, with its bar, hands back the tool lit before (ticket 0845), and a Canvas stroke lands inside it', async () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     const top = aboveFrame(wrapper)
+    await pickColor(wrapper, 'red')
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '7', bubbles: true }))
     await flushPromises()
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').attributes('aria-pressed')).toBe('true')
@@ -96,13 +98,27 @@ describe('the Tool pill', () => {
     await dragOn(wrapper, top, { row: top.row + 1, column: top.column + 3 })
     expect(loadProjects()[0]!.mirror?.place).toEqual({ layer: 'canvas', area: { ...top, rows: 2, columns: 4 } })
     expect(wrapper.find('[data-testid="mirror-bar"]').exists()).toBe(true)
+    expect(toolState(wrapper, 'paint').pressed).toBe(true)
 
-    await pickColor(wrapper, 'red')
-    await pickTool(wrapper, 'paint')
     await pressBead(wrapper, top)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(beadsOfLayer(drawnProject(wrapper), 'canvas')[top.row]).toEqual({ [top.column]: '#e63746', [top.column + 3]: '#e63746' })
     wrapper.unmount()
+  })
+
+  it('on touch, the eyedropper says what to tap and lights no tool while it waits (ticket 0845)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    try {
+      await openColorPopover(wrapper)
+      await wrapper.get('[data-testid="pick-color-button"]').trigger('click')
+      await flushPromises()
+      expect(wrapper.find('[data-testid="pick-armed"]').exists()).toBe(true)
+      expect(toolState(wrapper, 'paint').pressed).toBe(false)
+    } finally {
+      wrapper.unmount()
+      vi.unstubAllGlobals()
+    }
   })
 
   it('Mirror mode (ADR 0082): its drag is the Mirror\'s, so the clipboard stays and Paste with it', async () => {
