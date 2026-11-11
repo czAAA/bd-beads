@@ -26,6 +26,42 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A new Project starts on a color that shows on its background: gold on a dark one, red on a light one',
+      ru: 'Новый проект начинается с цвета, который виден на его фоне: золотого на тёмном, красного на светлом',
+      uk: 'Новий проєкт починається з кольору, який видно на його тлі: золотого на темному, червоного на світлому',
+      be: 'Новы праект пачынаецца з колеру, які відаць на яго фоне: залатога на цёмным, чырвонага на светлым',
+      zh: '新项目从一种在背景上看得清的颜色开始：深色背景上是金色，浅色背景上是红色',
+      es: 'Un proyecto nuevo empieza con un color que se ve sobre su fondo: dorado sobre uno oscuro, rojo sobre uno claro',
+      pl: 'Nowy projekt zaczyna się od koloru widocznego na jego tle: złotego na ciemnym, czerwonego na jasnym',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'The strip shows your Project’s name, the Project panel says in words that it is saved, and a reload asks first while a save has failed',
+      ru: 'Полоса показывает имя проекта, панель проекта пишет словами, что он сохранён, а перезагрузка сначала спрашивает, пока сохранение не удалось',
+      uk: 'Смуга показує назву проєкту, панель проєкту пише словами, що його збережено, а перезавантаження спершу питає, поки збереження не вдалося',
+      be: 'Паласа паказвае назву праекта, панэль праекта піша словамі, што ён захаваны, а перазагрузка спачатку пытаецца, пакуль захаванне не ўдалося',
+      zh: '顶栏显示项目名称，项目面板用文字说明已保存，保存失败时重新加载会先询问',
+      es: 'La barra muestra el nombre de tu proyecto, el panel del proyecto dice con palabras que está guardado y recargar pregunta antes mientras un guardado ha fallado',
+      pl: 'Pasek pokazuje nazwę projektu, panel projektu pisze słowami, że jest zapisany, a przeładowanie najpierw pyta, gdy zapis się nie udał',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'A Project opens from the library at once, a taken name gets a number, and Duplicate says which one is open',
+      ru: 'Проект из библиотеки открывается сразу, занятое название получает номер, а после копии видно, какой открыт',
+      uk: 'Проєкт із бібліотеки відкривається одразу, зайнята назва отримує номер, а після копії видно, який відкрито',
+      be: 'Праект з бібліятэкі адкрываецца адразу, занятая назва атрымлівае нумар, а пасля копіі відаць, які адкрыты',
+      zh: '从项目库打开项目不再询问，已被占用的名称会加上编号，复制后会说明现在打开的是哪个',
+      es: 'Un proyecto se abre desde la biblioteca al instante, un nombre ya usado recibe un número y Duplicar dice cuál está abierto',
+      pl: 'Projekt z biblioteki otwiera się od razu, zajęta nazwa dostaje numer, a Duplikuj mówi, który jest otwarty',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The row counter goes to any row you type, names the row on peyote, says rows done are kept when you turn the direction, and reads Pattern done at the end',
       ru: 'Счётчик рядов переходит к ряду, который вы введёте, называет ряд в мозаичном плетении, говорит, что готовые ряды сохраняются при повороте направления, и в конце показывает «Схема готова»',
       uk: 'Лічильник рядів переходить до ряду, який ви введете, називає ряд у мозаїчному плетінні, каже, що готові ряди зберігаються під час повороту напрямку, і наприкінці показує «Схема готова»',

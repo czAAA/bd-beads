@@ -165,7 +165,7 @@ export const en: Translations = {
       saveFileAs: 'Save Project file as…',
       duplicate: 'Duplicate',
       duplicateTitle: 'Duplicate Project',
-      duplicateNote: 'Everything is copied, including Row progress, so the copy works as a snapshot.',
+      duplicateNote: 'Everything is copied, including Row progress. The copy opens; the original stays as it is now.',
       nameField: 'Name',
       duplicateHint: 'Suggested: the current name and the next free number.',
       deleteThis: 'Delete Project',
@@ -175,7 +175,7 @@ export const en: Translations = {
       cancel: 'Cancel',
       save: 'Save',
       tooltipRename: "Change this Project's name.",
-      tooltipDuplicate: 'Make a copy of this Project to keep as a snapshot.',
+      tooltipDuplicate: 'Copy this Project and open the copy.',
       tooltipDelete: 'Remove this Project from this device.',
       titleLabel: 'Project',
       nameLabel: 'name:',
@@ -188,6 +188,7 @@ export const en: Translations = {
       beadBrand: 'Brand',
       beadType: 'Type',
       beadSize: 'Size',
+      duplicatedToast: 'Now in “{copy}”. “{original}” stays as it was.',
     },
   },
   theme: {
@@ -336,6 +337,7 @@ export const en: Translations = {
     homepageItem: 'Homepage',
     sourceItem: 'Source code',
     projectPanelLabel: 'Project',
+    projectButtonNamed: 'Project: {name}',
   },
   homepage: {
     pageTitle: 'Homepage',
@@ -707,6 +709,7 @@ export const en: Translations = {
     lastFile: 'Last file: {when}',
     noFile: 'No Project file yet',
     announce: 'Beads since last file: {count}. Save a Project file to keep them.',
+    since: { one: '{count} bead since the last file', other: '{count} beads since the last file' },
   },
   transfer: {
     exportLibraryButton: 'Save all Projects to a Project file',
@@ -856,22 +859,20 @@ export const en: Translations = {
     lockedReason: 'Rows are marked done. Reset progress to change the size.',
   },
   importSwitch: {
-    title: 'Switch to the Project you opened?',
-    messageOne:
-      '“{imported}” is now in the Projects library. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
-    messageMany:
-      '{count} Projects are now in the Projects library. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
+    title: 'Open “{imported}”?',
+    messageOne: '“{imported}” is now in the Projects library. Your progress on “{current}” is saved.',
+    messageMany: '{count} Projects are now in the Projects library. Your progress on “{current}” is saved.',
     unsavedMessage:
       '“{current}” is not saved on this device yet. Save it first, or switch anyway and risk losing your latest change.',
-    switchButton: 'Switch',
+    switchButton: 'Open',
     switchAnywayButton: 'Switch anyway',
-    keepButton: 'Keep current',
+    keepButton: 'Stay here',
     saveButton: 'Save current',
+    messageTaken: '“{taken}” is already in the Projects library, so the file came in as “{imported}”.',
+    messageManyTaken: '{count} Projects are now in the Projects library. Names already in the library got the next free number.',
   },
   switchProject: {
     title: 'Switch Project?',
-    message: 'Leave “{current}” and open “{picked}”? Your progress on “{current}” is saved.',
-    confirmButton: 'Switch',
     cancelButton: 'Keep current',
     saveButton: 'Save first',
   },

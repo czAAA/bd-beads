@@ -167,7 +167,7 @@ export const pl: Translations = {
       saveFileAs: 'Zapisz plik projektu jako…',
       duplicate: 'Duplikuj',
       duplicateTitle: 'Duplikuj projekt',
-      duplicateNote: 'Kopiowane jest wszystko, także postęp rzędów, więc kopia działa jak migawka.',
+      duplicateNote: 'Kopiowane jest wszystko, także postęp rzędów. Otworzy się kopia, a oryginał zostanie taki, jak teraz.',
       nameField: 'Nazwa',
       duplicateHint: 'Propozycja: obecna nazwa i następny wolny numer.',
       deleteThis: 'Usuń projekt',
@@ -177,7 +177,7 @@ export const pl: Translations = {
       cancel: 'Anuluj',
       save: 'Zapisz',
       tooltipRename: 'Zmień nazwę tego projektu.',
-      tooltipDuplicate: 'Zrób kopię tego projektu jako migawkę.',
+      tooltipDuplicate: 'Skopiuj ten projekt i otwórz kopię.',
       tooltipDelete: 'Usuń ten projekt z tego urządzenia.',
       titleLabel: 'projekt',
       nameLabel: 'nazwa:',
@@ -190,6 +190,7 @@ export const pl: Translations = {
       beadBrand: 'Marka',
       beadType: 'Typ',
       beadSize: 'Rozmiar',
+      duplicatedToast: 'Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian.',
     },
   },
   theme: {
@@ -338,6 +339,7 @@ export const pl: Translations = {
     homepageItem: 'Strona główna',
     sourceItem: 'Kod źródłowy',
     projectPanelLabel: 'Projekt',
+    projectButtonNamed: 'Projekt: {name}',
   },
   homepage: {
     pageTitle: 'Strona główna',
@@ -715,6 +717,7 @@ export const pl: Translations = {
     lastFile: 'Ostatni plik: {when}',
     noFile: 'Nie ma jeszcze pliku projektu',
     announce: 'Koralików od ostatniego pliku: {count}. Zapisz plik projektu, żeby je zachować.',
+    since: { one: '{count} koralik od ostatniego pliku', few: '{count} koraliki od ostatniego pliku', many: '{count} koralików od ostatniego pliku', other: '{count} koralika od ostatniego pliku' },
   },
   transfer: {
     exportLibraryButton: 'Zapisz wszystko w pliku projektu',
@@ -868,22 +871,20 @@ export const pl: Translations = {
     lockedReason: 'Rzędy są oznaczone jako gotowe. Zresetuj postęp, aby zmienić rozmiar.',
   },
   importSwitch: {
-    title: 'Przełączyć na otwarty projekt?',
-    messageOne:
-      'Dodano „{imported}” do biblioteki projektów. Twój postęp w „{current}” jest zapisany. Przełączyć na „{imported}” czy zostawić otwarty „{current}”?',
-    messageMany:
-      'Dodano projekty do biblioteki: {count}. Twój postęp w „{current}” jest zapisany. Przełączyć na „{imported}” czy zostawić otwarty „{current}”?',
+    title: 'Otworzyć „{imported}”?',
+    messageOne: 'Dodano „{imported}” do biblioteki projektów. Twój postęp w „{current}” jest zapisany.',
+    messageMany: 'Dodano projekty do biblioteki: {count}. Twój postęp w „{current}” jest zapisany.',
     unsavedMessage:
       '„{current}” nie jest jeszcze zapisany na tym urządzeniu. Najpierw go zapisz albo przełącz mimo to i zaryzykuj utratę ostatniej zmiany.',
-    switchButton: 'Przełącz',
+    switchButton: 'Otwórz',
     switchAnywayButton: 'Przełącz mimo to',
-    keepButton: 'Zostaw bieżący',
+    keepButton: 'Zostań tutaj',
     saveButton: 'Zapisz bieżący',
+    messageTaken: '„{taken}” jest już w bibliotece projektów, więc plik dodano jako „{imported}”.',
+    messageManyTaken: 'Dodano projekty do biblioteki: {count}. Nazwy, które już były zajęte, dostały następny wolny numer.',
   },
   switchProject: {
     title: 'Przełączyć projekt?',
-    message: 'Opuścić „{current}” i otworzyć „{picked}”? Twój postęp w „{current}” jest zapisany.',
-    confirmButton: 'Przełącz',
     cancelButton: 'Zostaw bieżący',
     saveButton: 'Najpierw zapisz',
   },

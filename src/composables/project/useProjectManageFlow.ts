@@ -2,6 +2,9 @@ import type { Project } from '../../domain/project'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from '../../domain/projectName'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 import { projectNameOf } from '../../domain/layerRecord'
+import { fillBlanks } from '../../domain/fillBlanks'
+import type { Translations } from '../../i18n/translations'
+import type { MessageTone } from '../ui/useToasts'
 
 /** What managing the open Project needs from the app shell: the library and its commit points. */
 export interface ProjectManageDeps {
@@ -12,6 +15,9 @@ export interface ProjectManageDeps {
   /** Adds the copy and opens it. */
   addProject: (project: Project) => void
   removeAllProjects: () => void
+  /** Says after Duplicate which Project is open now (ticket 0860). */
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
@@ -41,13 +47,16 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
     duplicating.value = undefined
   }
 
-  /** Adds the copy under the chosen name, with Row progress and everything else, and opens it; false when the name
-   * is empty. */
+  /** Adds the copy under the chosen name, with Row progress and everything else, opens it and says so, as nothing
+   * else on screen changes (ticket 0860); false when the name is empty. */
   function onConfirmDuplicate(name: string): boolean {
     const project = deps.currentProject()
     if (!project || !normalizeProjectName(name)) return false
     duplicating.value = undefined
-    deps.addProject(duplicateProject(project, name))
+    const copy = duplicateProject(project, name)
+    deps.addProject(copy)
+    const said = fillBlanks(deps.messages().panels.project.duplicatedToast, { copy: projectNameOf(copy), original: projectNameOf(project) })
+    deps.showToast('duplicated', said, 'success')
     return true
   }
 

@@ -52,3 +52,29 @@ describe('CanvasStrip on a phone (ticket 0843)', () => {
     }
   })
 })
+
+// The Project button shows the open Project's name (ticket 0858): one line, cut with an ellipsis, never into the Brand
+// on a laptop, and hidden with the other words on a phone, so Export keeps its corner.
+describe('CanvasStrip Project name (ticket 0858)', () => {
+  const named = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'A sunflower bracelet for my grandmother', size: { width: 12, height: 12, unit: 'beads' } })
+  const longName = { ...props, project: named }
+  const LongInShell = inShell(CanvasStrip, longName)
+
+  it.each(['en', 'longest'] as const)('cuts a long name before it reaches the Brand from 1024px up, in %s', async (locale) => {
+    const { root } = await mountAt(LongInShell, {}, { locale, width: 1024 })
+    for (const width of [1024, 1280]) {
+      await resizeTo(width)
+      const name = root.querySelector<HTMLElement>('[data-testid="strip-project"] .canvas-strip__label')!
+      expect(name.getBoundingClientRect().height, `${width}px`).toBeLessThan(24)
+      expect(name.scrollWidth, `${width}px`).toBeGreaterThan(name.clientWidth)
+      expect(rectOf(root, '[data-testid="strip-frame"]').right, `${width}px`).toBeLessThanOrEqual(rectOf(root, '[data-testid="canvas-brand"]').left)
+    }
+  })
+
+  it('keeps Export whole at 390px with a long name', async () => {
+    const { root } = await mountAt(LongInShell, {}, { locale: 'en', width: 390 })
+    const exportButton = rectOf(root, '[data-testid="strip-export"]')
+    expect(exportButton.right).toBeLessThanOrEqual(Math.min(rectOf(root, '[data-testid="canvas-strip"]').right, window.innerWidth))
+    expect(rectOf(root, '[data-testid="strip-project"]').width).toBeLessThan(60)
+  })
+})

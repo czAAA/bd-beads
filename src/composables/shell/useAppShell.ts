@@ -149,7 +149,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** The device's last Background pick (ticket 0666): a new Project's layers start on it, and keep it on every device. */
   const backgrounds = useCanvasBackground(currentProject, services.devicePreferences)
-  const addNewProject = (project: Parameters<typeof addProject>[0]) => addProject(withStartBackground(project, backgrounds.start.value))
+  /** A new Project opens on the device's last Background with a first color that shows on it (ticket 0838). */
+  const addNewProject = (project: Parameters<typeof addProject>[0]) => {
+    addProject(withStartBackground(project, backgrounds.start.value))
+    onStartOn(backgrounds.projectTheme.value.canvas)
+  }
 
   // Convert image (spec 0645, ADR 0010, ADR 0086): an App page creating a new Project, independent of the open one, so
   // nothing here touches replaceProject, undo or the Row lock.
@@ -304,6 +308,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onSelectColor,
     onSelectCustomColor: selectCustomColor,
     onCustomColorAdded,
+    onStartOn,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
 
   /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0046). */
@@ -727,7 +732,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
   const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale, dialogs })
 
-  /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
+  /** Project import, under free names, and whether to open what came in (tickets 154, 168, 200, 0860). */
   const importSwitch = useImportSwitchFlow({
     currentProject,
     addProjects,
@@ -781,11 +786,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
     openProject(id)
   }
 
-  /** Saved Projects asks before switching to a thumbnail's Project (ticket 232). */
+  /** A pick in the Projects library opens at once; only a failed last save asks first (tickets 232, 0860). */
   const savedProjectConfirms = useSavedProjectConfirms({
     currentProject,
     findProject: entryOf,
     openProject: onSelectProject,
+    saveFailed: () => saveFailed.value,
     saveNow,
     dialogs,
   })
@@ -816,6 +822,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       addProject(copy)
     },
     removeAllProjects,
+    showToast,
+    messages,
     dialogs,
   })
 
@@ -845,7 +853,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     useViewportGuard()
     // The browser's Back is the converter's Close, and a reload or closing the tab asks while it holds a setup (0861).
     useBackClosesPage({ page: appPage.page, close: convertImage.onClose })
-    useUnloadGuard().askWhile(() => appPage.guarded.value)
+    const unloadGuard = useUnloadGuard()
+    unloadGuard.askWhile(() => appPage.guarded.value)
+    // While the last save failed the latest change is only on screen, so a reload or closing the tab asks too (0858).
+    unloadGuard.askWhile(() => saveFailed.value)
   }
   useAppShortcutTable({
     activeProject: currentProject,

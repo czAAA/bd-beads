@@ -168,7 +168,7 @@ export const be: Translations = {
       saveFileAs: 'Захаваць файл праекта як…',
       duplicate: 'Дубліраваць',
       duplicateTitle: 'Дубліраваць праект',
-      duplicateNote: 'Капіруецца ўсё, у тым ліку прагрэс па радах, таму копія працуе як здымак.',
+      duplicateNote: 'Капіруецца ўсё, у тым ліку прагрэс па радах. Адкрыецца копія, а арыгінал застанецца такім, як зараз.',
       nameField: 'Назва',
       duplicateHint: 'Прапанавана: бягучая назва і наступны вольны нумар.',
       deleteThis: 'Выдаліць праект',
@@ -178,7 +178,7 @@ export const be: Translations = {
       cancel: 'Скасаваць',
       save: 'Захаваць',
       tooltipRename: 'Змяніць назву гэтага праекта.',
-      tooltipDuplicate: 'Зрабіць копію праекта, каб захаваць здымак.',
+      tooltipDuplicate: 'Скапіраваць праект і адкрыць копію.',
       tooltipDelete: 'Выдаліць гэты праект з гэтай прылады.',
       titleLabel: 'праект',
       nameLabel: 'назва:',
@@ -191,6 +191,7 @@ export const be: Translations = {
       beadBrand: 'Бренд',
       beadType: 'Тып',
       beadSize: 'Памер',
+      duplicatedToast: 'Цяпер адкрыты «{copy}». «{original}» застаўся як быў.',
     },
   },
   theme: {
@@ -339,6 +340,7 @@ export const be: Translations = {
     homepageItem: 'Галоўная',
     sourceItem: 'Зыходны код',
     projectPanelLabel: 'Праект',
+    projectButtonNamed: 'Праект: {name}',
   },
   homepage: {
     pageTitle: 'Галоўная',
@@ -716,6 +718,7 @@ export const be: Translations = {
     lastFile: 'Апошні файл: {when}',
     noFile: 'Файла праекта яшчэ няма',
     announce: 'Бісерын з апошняга файла: {count}. Захавайце файл праекта, каб яны засталіся.',
+    since: { one: '{count} бісерынка з апошняга файла', few: '{count} бісерынкі з апошняга файла', many: '{count} бісерынак з апошняга файла', other: '{count} бісерынкі з апошняга файла' },
   },
   transfer: {
     exportLibraryButton: 'Захаваць усё ў файл праекта',
@@ -869,22 +872,20 @@ export const be: Translations = {
     lockedReason: 'Рады пазначаны як гатовыя. Скіньце прагрэс, каб змяніць памер.',
   },
   importSwitch: {
-    title: 'Перайсці да адкрытага праекта?',
-    messageOne:
-      'Праект «{imported}» дададзены ў бібліятэку праектаў. Ваш прагрэс у праекце «{current}» захаваны. Перайсці да «{imported}» ці пакінуць адкрытым «{current}»?',
-    messageMany:
-      'Дададзена праектаў у бібліятэку: {count}. Ваш прагрэс у праекце «{current}» захаваны. Перайсці да «{imported}» ці пакінуць адкрытым «{current}»?',
+    title: 'Адкрыць «{imported}»?',
+    messageOne: 'Праект «{imported}» дададзены ў бібліятэку праектаў. Ваш прагрэс у праекце «{current}» захаваны.',
+    messageMany: 'Дададзена праектаў у бібліятэку: {count}. Ваш прагрэс у праекце «{current}» захаваны.',
     unsavedMessage:
       'Праект «{current}» яшчэ не захаваны на гэтай прыладзе. Спачатку захавайце яго або перайдзіце, рызыкуючы страціць апошнюю змену.',
-    switchButton: 'Перайсці',
+    switchButton: 'Адкрыць',
     switchAnywayButton: 'Усё роўна перайсці',
-    keepButton: 'Пакінуць бягучы',
+    keepButton: 'Застацца тут',
     saveButton: 'Захаваць бягучы',
+    messageTaken: '«{taken}» ужо ёсць у бібліятэцы праектаў, таму файл дададзены як «{imported}».',
+    messageManyTaken: 'Дададзена праектаў у бібліятэку: {count}. Назвы, якія ўжо былі занятыя, атрымалі наступны вольны нумар.',
   },
   switchProject: {
     title: 'Перайсці да іншага праекта?',
-    message: 'Закрыць «{current}» і адкрыць «{picked}»? Ваш прагрэс у праекце «{current}» захаваны.',
-    confirmButton: 'Перайсці',
     cancelButton: 'Пакінуць бягучы',
     saveButton: 'Спачатку захаваць',
   },

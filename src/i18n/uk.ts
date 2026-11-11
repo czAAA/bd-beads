@@ -167,7 +167,7 @@ export const uk: Translations = {
       saveFileAs: 'Зберегти файл проєкту як…',
       duplicate: 'Дублювати',
       duplicateTitle: 'Дублювати проєкт',
-      duplicateNote: 'Копіюється все, зокрема прогрес за рядами, тож копія працює як знімок.',
+      duplicateNote: 'Копіюється все, зокрема прогрес за рядами. Відкриється копія, а оригінал залишиться таким, як зараз.',
       nameField: 'Назва',
       duplicateHint: 'Запропоновано: поточна назва й наступний вільний номер.',
       deleteThis: 'Видалити проєкт',
@@ -177,7 +177,7 @@ export const uk: Translations = {
       cancel: 'Скасувати',
       save: 'Зберегти',
       tooltipRename: 'Змінити назву цього проєкту.',
-      tooltipDuplicate: 'Зробити копію проєкту, щоб зберегти знімок.',
+      tooltipDuplicate: 'Скопіювати проєкт і відкрити копію.',
       tooltipDelete: 'Видалити цей проєкт із цього пристрою.',
       titleLabel: 'проєкт',
       nameLabel: 'назва:',
@@ -190,6 +190,7 @@ export const uk: Translations = {
       beadBrand: 'Бренд',
       beadType: 'Тип',
       beadSize: 'Розмір',
+      duplicatedToast: 'Тепер відкрито «{copy}». «{original}» залишився як був.',
     },
   },
   theme: {
@@ -338,6 +339,7 @@ export const uk: Translations = {
     homepageItem: 'Головна',
     sourceItem: 'Вихідний код',
     projectPanelLabel: 'Проєкт',
+    projectButtonNamed: 'Проєкт: {name}',
   },
   homepage: {
     pageTitle: 'Головна',
@@ -715,6 +717,7 @@ export const uk: Translations = {
     lastFile: 'Останній файл: {when}',
     noFile: 'Файлу проєкту ще немає',
     announce: 'Бісеринок з останнього файлу: {count}. Збережіть файл проєкту, щоб вони залишилися.',
+    since: { one: '{count} бісеринка з останнього файлу', few: '{count} бісеринки з останнього файлу', many: '{count} бісеринок з останнього файлу', other: '{count} бісеринки з останнього файлу' },
   },
   transfer: {
     exportLibraryButton: 'Зберегти все у файл проєкту',
@@ -868,22 +871,20 @@ export const uk: Translations = {
     lockedReason: 'Ряди позначено як готові. Скиньте прогрес, щоб змінити розмір.',
   },
   importSwitch: {
-    title: 'Перейти до відкритого проєкту?',
-    messageOne:
-      'Проєкт «{imported}» додано до бібліотеки проєктів. Ваш прогрес у проєкті «{current}» збережено. Перейти до «{imported}» чи залишити відкритим «{current}»?',
-    messageMany:
-      'Додано проєктів до бібліотеки: {count}. Ваш прогрес у проєкті «{current}» збережено. Перейти до «{imported}» чи залишити відкритим «{current}»?',
+    title: 'Відкрити «{imported}»?',
+    messageOne: 'Проєкт «{imported}» додано до бібліотеки проєктів. Ваш прогрес у проєкті «{current}» збережено.',
+    messageMany: 'Додано проєктів до бібліотеки: {count}. Ваш прогрес у проєкті «{current}» збережено.',
     unsavedMessage:
       'Проєкт «{current}» ще не збережено на цьому пристрої. Спершу збережіть його або перейдіть, ризикуючи втратити останню зміну.',
-    switchButton: 'Перейти',
+    switchButton: 'Відкрити',
     switchAnywayButton: 'Все одно перейти',
-    keepButton: 'Залишити поточний',
+    keepButton: 'Залишитися тут',
     saveButton: 'Зберегти поточний',
+    messageTaken: '«{taken}» уже є в бібліотеці проєктів, тому файл додано як «{imported}».',
+    messageManyTaken: 'Додано проєктів до бібліотеки: {count}. Назви, які вже були зайняті, отримали наступний вільний номер.',
   },
   switchProject: {
     title: 'Перейти до іншого проєкту?',
-    message: 'Закрити «{current}» і відкрити «{picked}»? Ваш прогрес у проєкті «{current}» збережено.',
-    confirmButton: 'Перейти',
     cancelButton: 'Залишити поточний',
     saveButton: 'Спершу зберегти',
   },
