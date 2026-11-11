@@ -17,6 +17,8 @@ import { en } from '../../i18n/en'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
 import { layersView } from '../../testUtils/layerFields'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
+import { resetKeyHintsDevice } from '../../composables/ui/useKeyHints'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -106,14 +108,45 @@ describe('ConvertImageWizard before a picture is set', () => {
   })
 
   it('lists every way in and the limits in the Note, until the first picture', async () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
     const { wrapper } = open()
-    expect(wrapper.get('[data-testid="convert-picture-note"]').text()).toBe(formatImageLimits(en.convertImage.wizard.pictureNote))
+    expect(wrapper.get('[data-testid="convert-picture-note"]').text()).toBe(formatImageLimits(en.convertImage.wizard.pictureNote, { pasteKey: 'Ctrl+V' }))
 
     await chooseFile(wrapper, picture())
 
     expect(wrapper.find('[data-testid="convert-picture-note"]').exists()).toBe(false)
     expect(dotDisabled(wrapper, 'size')).toBe(false)
     expect(wrapper.get('[data-testid="convert-picture-size"]').text()).toBe('4×2 px · png')
+    vi.restoreAllMocks()
+  })
+})
+
+describe('ConvertImageWizard help lines by device (ticket 0846)', () => {
+  const realMatchMedia = window.matchMedia
+  function onDevice(media: Record<string, boolean>, userAgent: string) {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(userAgent)
+    window.matchMedia = fakeMatchMedia(media).matchMedia
+    resetKeyHintsDevice()
+  }
+  afterEach(() => {
+    window.matchMedia = realMatchMedia
+    vi.restoreAllMocks()
+    resetKeyHintsDevice()
+  })
+  const emptyLines = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-drop-zone"]').findAll('span').map((line) => line.text())
+
+  it('names ⌘V on an Apple keyboard, in the empty preview and in the Note', () => {
+    onDevice({ '(any-pointer: fine) and (any-hover: hover)': true }, 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)')
+    const { wrapper } = open()
+    expect(emptyLines(wrapper)).toEqual(['Drop a picture here', 'or paste one with ⌘V'])
+    expect(wrapper.get('[data-testid="convert-picture-note"]').text()).toContain('paste one with ⌘V.')
+  })
+
+  it('offers nothing to drop on touch: where the picture shows and the ways in', () => {
+    onDevice({ '(pointer: coarse)': true }, 'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X)')
+    const { wrapper } = open()
+    expect(emptyLines(wrapper)).toEqual(['Your picture shows here', 'Choose a file, paste or take a photo'])
+    expect(wrapper.get('[data-testid="convert-picture-note"]').text()).toBe(formatImageLimits(en.convertImage.wizard.pictureNoteTouch))
   })
 })
 
