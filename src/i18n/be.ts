@@ -142,7 +142,7 @@ export const be: Translations = {
       themeDark: 'Цёмная',
       tooltipDeleteAll: 'Выдаліць усе праекты з гэтай прылады.',
       deleteAllTitle: 'Выдаліць усе праекты?',
-      deleteAllMessage: 'Усе праекты будуць выдалены з гэтай прылады. Гэта нельга адмяніць. Спачатку націсніце «Экспарт усіх», калі хочаце захаваць копіі.',
+      deleteAllMessage: 'Усе праекты будуць выдалены з гэтай прылады. Гэта нельга адмяніць. Спачатку націсніце «Захаваць усё ў файл праекта», калі хочаце захаваць копіі.',
       deleteAllConfirm: 'Выдаліць усе праекты',
       sendFeedback: 'Адправіць водгук',
       reportTranslation: 'Паведаміць пра памылку перакладу',
@@ -238,7 +238,7 @@ export const be: Translations = {
     removeButton: 'Выдаліць',
     unknownBeadLabel: 'Невядомая бісерына',
     emptyTitle: 'Праектаў пакуль няма',
-    emptyBody: 'Праекты захоўваюцца на гэтай прыладзе. Імпартуйце файл .openbeads, каб дадаць праект.',
+    emptyBody: 'Праекты захоўваюцца на гэтай прыладзе. Адкрыйце файл праекта, каб дадаць праект.',
     pieces: { one: '{count} частка', few: '{count} часткі', many: '{count} частак', other: '{count} часткі' },
     unnamedPieces: 'без назвы: {count}',
     frameSize: 'Рамка {width} × {height} бісерын',
@@ -305,11 +305,11 @@ export const be: Translations = {
     },
     firstRun: {
       storageLead: 'Вашы праекты захаваны толькі ў гэтым браўзеры, на гэтай прыладзе.',
-      storage: 'Калі даныя браўзера ачысцяцца, праекты знікнуць разам з імі.\nЗахавайце ў файл тыя, што вам дарагія:',
+      storage: 'Калі даныя браўзера ачысцяцца, праекты знікнуць разам з імі.\nЗахавайце файл праекта для кожнага, які вам дарагі:',
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Стварыце яго кнопкай «Новы праект», адкрыйце праект з бібліятэкі праектаў або імпартуйце файл.',
+    canvasPlaceholderHint: 'Стварыце яго кнопкай «Новы праект», адкрыйце праект з бібліятэкі праектаў або з файла праекта.',
     canvasPlaceholder: 'Праект яшчэ не адкрыты',
     updateReady: 'Абнаўленне гатова',
     updateReload: 'Перазагрузіць',
@@ -319,7 +319,7 @@ export const be: Translations = {
   },
   storage: {
     saveFailedMessage:
-      'Не атрымалася захаваць на гэтай прыладзе. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або экспартуйце праект у файл, каб яго захаваць.',
+      'Не атрымалася захаваць на гэтай прыладзе. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або захавайце файл праекта, каб не страціць змены.',
     /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
       title: 'Папрасіць браўзер захоўваць вашы праекты?',
@@ -676,12 +676,8 @@ export const be: Translations = {
     formatsHint: 'png · pdf',
     makingPng: 'Рыхтуем PNG-выяву · {name}',
     makingPdf: 'Рыхтуем PDF · {name}',
-    readyPng: 'PNG гатовы',
-    readyPdf: 'PDF гатовы',
-    readyFile: 'Файл гатовы',
     savedFile: 'Захавана: {file}',
     readySave: 'Захаваць',
-    exportProjectFile: 'Экспартаваць праект',
     nameOnExports: 'Імя на экспарце',
     changeName: 'Змяніць',
     addName: 'Дадаць',
@@ -689,21 +685,23 @@ export const be: Translations = {
     nameHint: 'Друкуецца на PDF і PNG гэтага праекта.',
     saveName: 'Захаваць',
     cancelName: 'Скасаваць',
+    readyToSave: 'Гатовы да захавання: {file}',
   },
   saveReminder: {
-    label: 'Захаваць копію',
+    label: 'Захаваць файл праекта',
     body: 'Браўзер захоўвае працу, але можа яе ачысціць. Файл праекта застанецца.',
     count: 'Бісерын з апошняга файла: {count}',
     lastFile: 'Апошні файл: {when}',
     noFile: 'Файла праекта яшчэ няма',
-    announce: 'Бісерын з апошняга файла: {count}. Захавайце копію, каб яны засталіся.',
+    announce: 'Бісерын з апошняга файла: {count}. Захавайце файл праекта, каб яны засталіся.',
   },
   transfer: {
-    exportProjectButton: 'Экспартаваць праект',
-    exportLibraryButton: 'Экспартаваць усе праекты',
-    importLabel: 'Імпартаваць праект',
-    importedLabel: 'Праектаў імпартавана',
-    importErrorLabel: 'Не атрымалася імпартаваць гэты файл .openbeads',
+    exportLibraryButton: 'Захаваць усё ў файл праекта',
+    importLabel: 'Адкрыць файл праекта',
+    importedLabel: 'Праектаў дададзена',
+    notProjectFile: 'Гэта не файл праекта. Выберыце файл, які заканчваецца на .openbeads.',
+    pictureFile: 'Гэта малюнак. Каб ператварыць яго ў бісер, скарыстайцеся «З малюнка».',
+    damagedFile: 'Гэты файл праекта пашкоджаны, яго не ўдаецца адкрыць.',
   },
   toolbox: {
     groups: {
@@ -840,6 +838,7 @@ export const be: Translations = {
     progressSelectToSet: 'Вылучыце, каб задаць',
     progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Павернуты фрагмент апынуўся паверх існуючых бусін.',
+    fitAndExport: 'Рамка і экспарт карцінкі',
   },
   size: {
     estimateLabel: 'Прыблізны памер',
@@ -848,11 +847,11 @@ export const be: Translations = {
     lockedReason: 'Рады пазначаны як гатовыя. Скіньце прагрэс, каб змяніць памер.',
   },
   importSwitch: {
-    title: 'Перайсці да імпартаванага праекта?',
+    title: 'Перайсці да адкрытага праекта?',
     messageOne:
-      'Праект «{imported}» імпартаваны. Ваш прагрэс у праекце «{current}» захаваны. Перайсці да «{imported}» ці пакінуць адкрытым «{current}»?',
+      'Праект «{imported}» дададзены ў бібліятэку праектаў. Ваш прагрэс у праекце «{current}» захаваны. Перайсці да «{imported}» ці пакінуць адкрытым «{current}»?',
     messageMany:
-      'Імпартавана праектаў: {count}. Ваш прагрэс у праекце «{current}» захаваны. Перайсці да «{imported}» ці пакінуць адкрытым «{current}»?',
+      'Дададзена праектаў у бібліятэку: {count}. Ваш прагрэс у праекце «{current}» захаваны. Перайсці да «{imported}» ці пакінуць адкрытым «{current}»?',
     unsavedMessage:
       'Праект «{current}» яшчэ не захаваны на гэтай прыладзе. Спачатку захавайце яго або перайдзіце, рызыкуючы страціць апошнюю змену.',
     switchButton: 'Перайсці',
@@ -1127,6 +1126,7 @@ export const be: Translations = {
     rulers: 'Лінейкі нумаруюць вашы бісерынкі і рамку.',
     rowDirection: 'Мяняе кірунак радоў: зверху ўніз, злева направа, знізу ўверх або справа налева.',
     rowHighlight: 'Паказвае або хавае адзнакі на бягучым радзе і на радах, пазначаных як гатовыя.',
+    fitAndExport: 'Падагнаць рамку пад усе бісерыны і адкрыць экспарт карцінкі.',
     pasteToolTouch: 'Націсніце там, куды паставіць копію.',
   },
   layerSettings: {
@@ -1194,7 +1194,6 @@ export const be: Translations = {
   opening: {
     didNotOpen: 'Праект «{name}» не адкрыўся ў мінулы раз.',
     removeButton: 'Выдаліць',
-    exportButton: 'Экспартаваць',
     largeTitle: 'Адкрыць «{name}»?',
     largeMessage: '{count} млн бісерынак. Адкрыццё можа быць павольным або не атрымацца.',
     openAnyway: 'Усё адно адкрыць',

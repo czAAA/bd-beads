@@ -44,16 +44,18 @@ export function useBeadsSinceFile(deps: BeadsSinceFileDeps) {
     if (project && changed > 0) write({ ...records.value, [project.id]: countedBeads(recordOf(project.id), sign * changed) })
   }
 
-  /** A Project file of these Projects reached the device: each counts from 0 again, as of now. */
-  function fileSaved(projectIds: readonly string[]) {
+  /** A Project file of these Projects reached the device: each counts from 0 again, as of now, with that file's name. */
+  function fileSaved(projectIds: readonly string[], fileName: string) {
     const at = now()
-    write({ ...records.value, ...Object.fromEntries(projectIds.map((id) => [id, { beads: 0, lastFileAt: at }])) })
+    write({ ...records.value, ...Object.fromEntries(projectIds.map((id) => [id, { beads: 0, lastFileAt: at, fileName }])) })
   }
 
-  /** A duplicate starts with its original's count and last-file time. */
+  /** A duplicate starts with its original's count and last-file time, but no file's name: that file holds the original. */
   function duplicated(sourceId: string, copyId: string) {
     const source = records.value[sourceId]
-    if (source) write({ ...records.value, [copyId]: source })
+    if (!source) return
+    const { fileName: _, ...counted } = source
+    write({ ...records.value, [copyId]: counted })
   }
 
   /** An imported Project came from a file: it starts at 0, with no file saved on this device yet. */

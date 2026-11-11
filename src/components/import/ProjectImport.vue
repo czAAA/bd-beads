@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import type { Project } from '../../domain/project'
-import { importedPictures, importProjects } from '../../domain/projectFile'
-import { readImportedFile } from '../../composables/import/readImportedFile'
+import { importedPictures, importProjects, whyNotOpened, type UnopenedFile } from '../../domain/projectFile'
+import { projectFileAccept, readImportedFile } from '../../composables/import/readImportedFile'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -40,7 +40,13 @@ const { t } = useI18n()
 const importFile = controlAction('import-file')
 
 const importedCount = ref<number | null>(null)
-const importFailed = ref(false)
+/** Why the last file didn't open, if it didn't: each says what to do instead (ticket 0859). */
+const failure = ref<UnopenedFile>()
+const failureText = computed(() => {
+  const { transfer } = t.value
+  return failure.value && { picture: transfer.pictureFile, damaged: transfer.damagedFile, 'not-project': transfer.notProjectFile }[failure.value]
+})
+const accept = projectFileAccept()
 
 async function onImportFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
@@ -50,19 +56,23 @@ async function onImportFile(event: Event): Promise<void> {
   }
 
   importedCount.value = null
-  importFailed.value = false
+  failure.value = undefined
 
+  let read: { added: Project[]; pictures: ReadonlyMap<string, Blob> }
   try {
     const contents = await readImportedFile(file)
     const added = importProjects(contents.projects, props.projects)
-    importedCount.value = added.length
-    emit('import', added, importedPictures(contents.projects, added, contents.pictures))
+    read = { added, pictures: importedPictures(contents.projects, added, contents.pictures) }
   } catch {
-    importFailed.value = true
+    // Only a file that didn't read is blamed: what the app does with the Projects is no fault of the file.
+    failure.value = whyNotOpened(file)
+    return
   } finally {
     // Clear the input so re-picking the same file still counts as a change.
     input.value = ''
   }
+  importedCount.value = read.added.length
+  emit('import', read.added, read.pictures)
 }
 
 </script>
@@ -82,6 +92,7 @@ async function onImportFile(event: Event): Promise<void> {
         class="project-import__input"
         :data-testid="`${testidPrefix}import-file`"
         :aria-label="t.transfer.importLabel"
+        :accept="accept"
         @change="onImportFile"
       />
       <AppIcon name="import" :size="15" />
@@ -94,6 +105,7 @@ async function onImportFile(event: Event): Promise<void> {
         type="file"
         class="project-import__input"
         :data-testid="`${testidPrefix}import-file`"
+        :accept="accept"
         @change="onImportFile"
       />
       <AppIcon name="import" :size="15" />
@@ -103,15 +115,15 @@ async function onImportFile(event: Event): Promise<void> {
   </AppTooltip>
 
   <!--
-    One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is
-    announced as it appears, since the file picker has already closed by then. The Menu panel stays open after an
+    A line of its own under the control, no shadow and no close (ImportResult card); role="status" / "alert" so it
+    is announced as it appears, since the file picker has already closed by then. The Menu panel stays open after an
     import so this is where the person reads the result (ticket 523).
   -->
   <p v-if="importedCount !== null" class="project-import__result" role="status" data-testid="import-result">
     {{ t.transfer.importedLabel }}: {{ importedCount }}
   </p>
-  <p v-if="importFailed" class="project-import__error" role="alert" data-testid="import-error">
-    <AppIcon name="warning" :size="16" />{{ t.transfer.importErrorLabel }}
+  <p v-if="failureText" class="project-import__error" role="alert" data-testid="import-error">
+    <AppIcon name="warning" :size="16" />{{ failureText }}
   </p>
 </template>
 
@@ -185,16 +197,21 @@ async function onImportFile(event: Event): Promise<void> {
   outline-offset: var(--focus-offset);
 }
 
+/* On a line of its own under the control, wrapping (ticket 0859): an error says what to do, in a sentence or two. */
 .project-import__result,
 .project-import__error {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
+  display: flex;
+  flex: 1 0 100%;
+  align-items: flex-start;
   gap: var(--space-6);
   margin: 0;
   font: var(--type-body);
   color: var(--body);
-  white-space: nowrap;
+}
+
+.project-import__error :deep(svg) {
+  flex: none;
+  margin-top: var(--space-2);
 }
 
 .project-import__error {

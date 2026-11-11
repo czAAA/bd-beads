@@ -26,6 +26,30 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Project file has one name, Save Project file and Open Project file, every saved file is named in one toast, and a file that won’t open says why',
+      ru: 'У файла проекта одно имя, «Сохранить файл проекта» и «Открыть файл проекта», каждый сохранённый файл назван в одном сообщении, а файл, который не открылся, объясняет почему',
+      uk: 'У файлу проєкту одна назва, «Зберегти файл проєкту» і «Відкрити файл проєкту», кожен збережений файл названо в одному повідомленні, а файл, що не відкрився, пояснює чому',
+      be: 'У файла праекта адна назва, «Захаваць файл праекта» і «Адкрыць файл праекта», кожны захаваны файл названы ў адным паведамленні, а файл, які не адкрыўся, тлумачыць чаму',
+      zh: '项目文件只有一个名字：“保存项目文件”和“打开项目文件”，每个保存的文件都在同一条提示里写出名字，打不开的文件会说明原因',
+      es: 'El archivo de proyecto tiene un solo nombre, Guardar archivo de proyecto y Abrir archivo de proyecto, cada archivo guardado se nombra en un aviso y un archivo que no se abre dice por qué',
+      pl: 'Plik projektu ma jedną nazwę, Zapisz plik projektu i Otwórz plik projektu, każdy zapisany plik jest nazwany w jednym komunikacie, a plik, który się nie otwiera, mówi dlaczego',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'The first beads lead to a picture: one button fits a Frame and opens Export, and a Frame selected from Export brings it back',
+      ru: 'Первые бусины ведут к картинке: одна кнопка задаёт рамку и открывает экспорт, а рамка, выделенная из экспорта, возвращает к нему',
+      uk: 'Перші намистини ведуть до картинки: одна кнопка задає рамку й відкриває експорт, а рамка, виділена з експорту, повертає до нього',
+      be: 'Першыя бусіны вядуць да карцінкі: адна кнопка задае рамку і адкрывае экспарт, а рамка, выдзеленая з экспарту, вяртае да яго',
+      zh: '最初的几颗珠子就能变成图片：一个按钮即可设置边框并打开导出，从导出里框选的边框设好后也会回到导出',
+      es: 'Las primeras cuentas llevan a una imagen: un botón ajusta un marco y abre Exportar, y un marco elegido desde Exportar vuelve a él',
+      pl: 'Pierwsze koraliki prowadzą do obrazu: jeden przycisk ustawia ramkę i otwiera Eksport, a ramka zaznaczona z Eksportu do niego wraca',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'On touch, Mirror, Copy and the eyedropper say what to tap next',
       ru: 'На сенсорном экране Отражение, Копировать и пипетка подскажут, куда нажать',
       uk: 'На сенсорному екрані Відображення, Копіювати й піпетка підкажуть, де торкнутися',

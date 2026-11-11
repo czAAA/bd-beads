@@ -44,14 +44,14 @@ const {
         <!-- Under the line, not beside it: two buttons beside a long name leave the line no room on a phone. -->
         <span class="app-shell__notice-actions">
           <AppButton variant="in-box" size="sm" icon="delete" data-testid="missed-project-remove" @click="onRemoveMissed">{{ t.opening.removeButton }}</AppButton>
-          <AppButton variant="in-box" size="sm" icon="export" data-testid="missed-project-export" @click="onExportMissed">{{ t.opening.exportButton }}</AppButton>
+          <AppButton variant="in-box" size="sm" icon="save" data-testid="missed-project-export" @click="onExportMissed">{{ t.panels.project.saveFile }}</AppButton>
         </span>
       </AppMessage>
       <AppMessage v-if="saveFailed" tone="danger" placement="notice" :closable="false">
         <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
         <template #actions>
-          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onSaveProjectFile">
-            {{ t.saveBox.exportProjectFile }}
+          <AppButton variant="in-box" size="sm" icon="save" data-testid="save-failed-export" @click="onSaveProjectFile">
+            {{ t.panels.project.saveFile }}
           </AppButton>
         </template>
       </AppMessage>

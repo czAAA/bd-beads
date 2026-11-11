@@ -19,7 +19,7 @@ describe('EmptyCanvas (EmptyCanvas card)', () => {
 
     expect(message.get('.empty-canvas__title').text()).toBe('No Project open yet')
     expect(message.get('.empty-canvas__hint').text()).toBe(
-      'Make one with New Project, open one from the Projects library, or import a file. Drag the Canvas around with the right mouse button or Space.',
+      'Make one with New Project, open one from the Projects library, or open a Project file. Drag the Canvas around with the right mouse button or Space.',
     )
     expect(message.find('[data-testid="empty-canvas-library"]').exists()).toBe(false)
     expect(message.find('[data-testid="slotted"]').exists()).toBe(true)

@@ -141,7 +141,7 @@ export const ru: Translations = {
       themeDark: 'Тёмная',
       tooltipDeleteAll: 'Удалить все проекты с этого устройства.',
       deleteAllTitle: 'Удалить все проекты?',
-      deleteAllMessage: 'Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии.',
+      deleteAllMessage: 'Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Сохранить всё в файл проекта», если хотите сохранить копии.',
       deleteAllConfirm: 'Удалить все проекты',
       sendFeedback: 'Отправить отзыв',
       reportTranslation: 'Сообщить об ошибке перевода',
@@ -237,7 +237,7 @@ export const ru: Translations = {
     removeButton: 'Удалить',
     unknownBeadLabel: 'Неизвестная бисеринка',
     emptyTitle: 'Проектов пока нет',
-    emptyBody: 'Проекты хранятся на этом устройстве. Импортируйте файл .openbeads, чтобы добавить проект.',
+    emptyBody: 'Проекты хранятся на этом устройстве. Откройте файл проекта, чтобы добавить проект.',
     pieces: { one: '{count} часть', few: '{count} части', many: '{count} частей', other: '{count} части' },
     unnamedPieces: 'без названия: {count}',
     frameSize: 'Рамка {width} × {height} бусин',
@@ -304,11 +304,11 @@ export const ru: Translations = {
     },
     firstRun: {
       storageLead: 'Ваши проекты сохранены только в этом браузере, на этом устройстве.',
-      storage: 'Если данные браузера очистятся, проекты исчезнут вместе с ними.\nСохраните в файл те, что вам дороги:',
+      storage: 'Если данные браузера очистятся, проекты исчезнут вместе с ними.\nСохраните файл проекта для каждого, который вам дорог:',
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Создайте его кнопкой «Новый проект», откройте проект из библиотеки проектов или импортируйте файл.',
+    canvasPlaceholderHint: 'Создайте его кнопкой «Новый проект», откройте проект из библиотеки проектов или из файла проекта.',
     canvasPlaceholder: 'Проект пока не открыт',
     updateReady: 'Обновление готово',
     updateReload: 'Перезагрузить',
@@ -318,7 +318,7 @@ export const ru: Translations = {
   },
   storage: {
     saveFailedMessage:
-      'Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или экспортируйте проект в файл, чтобы его сохранить.',
+      'Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или сохраните файл проекта, чтобы не потерять изменения.',
     /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
     keepNote: {
       title: 'Попросить браузер хранить ваши проекты?',
@@ -675,12 +675,8 @@ export const ru: Translations = {
     formatsHint: 'png · pdf',
     makingPng: 'Готовим PNG-изображение · {name}',
     makingPdf: 'Готовим PDF · {name}',
-    readyPng: 'PNG готов',
-    readyPdf: 'PDF готов',
-    readyFile: 'Файл готов',
     savedFile: 'Сохранено: {file}',
     readySave: 'Сохранить',
-    exportProjectFile: 'Экспортировать проект',
     nameOnExports: 'Имя на экспорте',
     changeName: 'Изменить',
     addName: 'Добавить',
@@ -688,21 +684,23 @@ export const ru: Translations = {
     nameHint: 'Печатается на PDF и PNG этого проекта.',
     saveName: 'Сохранить',
     cancelName: 'Отмена',
+    readyToSave: 'Готов к сохранению: {file}',
   },
   saveReminder: {
-    label: 'Сохранить копию',
+    label: 'Сохранить файл проекта',
     body: 'Браузер хранит работу, но может её очистить. Файл проекта останется.',
     count: 'Бисеринок с последнего файла: {count}',
     lastFile: 'Последний файл: {when}',
     noFile: 'Файла проекта ещё нет',
-    announce: 'Бисеринок с последнего файла: {count}. Сохраните копию, чтобы они остались.',
+    announce: 'Бисеринок с последнего файла: {count}. Сохраните файл проекта, чтобы они остались.',
   },
   transfer: {
-    exportProjectButton: 'Экспортировать проект',
-    exportLibraryButton: 'Экспортировать все проекты',
-    importLabel: 'Импортировать проект',
-    importedLabel: 'Проектов импортировано',
-    importErrorLabel: 'Не удалось импортировать этот файл .openbeads',
+    exportLibraryButton: 'Сохранить всё в файл проекта',
+    importLabel: 'Открыть файл проекта',
+    importedLabel: 'Проектов добавлено',
+    notProjectFile: 'Это не файл проекта. Выберите файл, который заканчивается на .openbeads.',
+    pictureFile: 'Это картинка. Чтобы превратить её в бисер, воспользуйтесь «Из картинки».',
+    damagedFile: 'Этот файл проекта повреждён, его не удаётся открыть.',
   },
   toolbox: {
     groups: {
@@ -839,6 +837,7 @@ export const ru: Translations = {
     progressSelectToSet: 'Выделите, чтобы задать',
     progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Повёрнутый фрагмент оказался поверх существующих бусин.',
+    fitAndExport: 'Рамка и экспорт картинки',
   },
   size: {
     estimateLabel: 'Примерный размер',
@@ -849,9 +848,9 @@ export const ru: Translations = {
   importSwitch: {
     title: 'Перейти к новому проекту?',
     messageOne:
-      'Проект «{imported}» импортирован. Ваш прогресс в проекте «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
+      'Проект «{imported}» добавлен в библиотеку проектов. Ваш прогресс в проекте «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
     messageMany:
-      'Импортировано проектов: {count}. Ваш прогресс в проекте «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
+      'Добавлено проектов в библиотеку: {count}. Ваш прогресс в проекте «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
     unsavedMessage:
       'Проект «{current}» ещё не сохранён на этом устройстве. Сначала сохраните его или перейдите, рискуя потерять последнее изменение.',
     switchButton: 'Перейти',
@@ -1126,6 +1125,7 @@ export const ru: Translations = {
     rulers: 'Линейки нумеруют ваши бусины и рамку.',
     rowDirection: 'Меняет направление рядов: сверху вниз, слева направо, снизу вверх или справа налево.',
     rowHighlight: 'Показывает или скрывает отметки на текущем ряду и на рядах, отмеченных как готовые.',
+    fitAndExport: 'Подогнать рамку под все бусины и открыть экспорт картинки.',
     pasteToolTouch: 'Нажмите там, куда поставить копию.',
   },
   layerSettings: {
@@ -1193,7 +1193,6 @@ export const ru: Translations = {
   opening: {
     didNotOpen: 'Проект «{name}» не открылся в прошлый раз.',
     removeButton: 'Удалить',
-    exportButton: 'Экспортировать',
     largeTitle: 'Открыть «{name}»?',
     largeMessage: '{count} млн бисеринок. Открытие может быть медленным или не удаться.',
     openAnyway: 'Всё равно открыть',

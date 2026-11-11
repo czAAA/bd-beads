@@ -26,8 +26,9 @@ const props = defineProps<{
   /** The reference image's picture as the app holds it (ticket 0790): its thumbnail, whether one is being made ready,
    * why the last file was refused, and whether the device keeps it. */
   reference?: { thumbnail?: string; preparing: boolean; refusal?: ImageRejection; notSaved: boolean }
-  /** The Project's Linked file's name (ADR 0090), the Save row's value; none without one. */
-  linkedFileName?: string
+  /** The Save row's value: the Project's Linked file's name (ADR 0090), else its last saved file's (ticket 0859); none
+   * before its first. */
+  lastFileName?: string
   /** Save as is offered only where the browser can link a file (ADR 0090). */
   canSaveAs?: boolean
 }>()
@@ -105,7 +106,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
       <PanelItem icon="image" value=".png" data-testid="project-export-png" @select="emit('export', 'png')">{{ t.frame.exportPicture }}</PanelItem>
       <PanelItem icon="pdf" value=".pdf" data-testid="project-export-pdf" @select="emit('export', 'pdf')">{{ t.frame.exportChart }}</PanelItem>
-      <PanelItem :icon="save.icon" :value="linkedFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
+      <PanelItem :icon="save.icon" :value="lastFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
     </PanelSection>
 

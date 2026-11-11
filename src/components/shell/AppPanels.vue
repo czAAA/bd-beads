@@ -53,7 +53,7 @@ const {
   onSaveProjectFile,
   onSaveProjectFileAs,
   canSaveAs,
-  linkedFileName,
+  lastFileName,
   onExportLibraryFile,
   saveNow,
   onSaveMakerName,
@@ -152,7 +152,7 @@ const chosenStarter = ref<StarterId>()
       :exporting="exporting"
       :opens-on="exportChoice"
       @fit="onFitFrame"
-      @select-frame="onSelectFrame"
+      @select-frame="onSelectFrame('export')"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
     />
@@ -198,7 +198,7 @@ const chosenStarter = ref<StarterId>()
       :save-failed="saveFailed"
       :unsaved="unsaved"
       :reference="referencePanel"
-      :linked-file-name="linkedFileName"
+      :last-file-name="lastFileName"
       :can-save-as="canSaveAs"
       @rename="onRenameProject"
       @pick-reference-image="referenceImage.pick($event, 'panel')"
