@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A row marked done says why it won’t take a bead, and whatever it holds still offers Reset progress right there',
+      ru: 'Ряд, отмеченный как готовый, говорит, почему не берёт бусину, а всё, что он держит, сразу предлагает сбросить прогресс',
+      uk: 'Ряд, позначений як готовий, каже, чому не бере намистину, а все, що він тримає, одразу пропонує скинути прогрес',
+      be: 'Рад, пазначаны як гатовы, кажа, чаму не бярэ пацерку, а ўсё, што ён трымае, адразу прапануе скінуць прагрэс',
+      zh: '已标记为完成的行会说明为什么放不进珠子，被它锁住的地方也就近提供“重置进度”',
+      es: 'Una fila marcada como terminada dice por qué no admite cuentas, y lo que bloquea ofrece ahí mismo Reiniciar progreso',
+      pl: 'Rząd oznaczony jako gotowy mówi, czemu nie przyjmuje koralika, a to, co blokuje, od razu proponuje Zresetuj postęp',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The Theme’s first choice is now called Match device, and the app writes Project, Frame and Canvas the same way everywhere',
       ru: 'Первый вариант темы теперь называется «Как на устройстве», а проект, рамка и холст везде называются одинаково',
       uk: 'Перший варіант теми тепер називається «Як на пристрої», а проєкт, рамка й полотно скрізь називаються однаково',
