@@ -84,6 +84,8 @@ const {
   onOpenFeedback,
   projectsKept,
   onAskToKeep,
+  onSelectPanel,
+  exportChoice,
 } = usePanelsContext()
 
 /** The reference image's state the Project panel shows (ticket 0790). */
@@ -148,6 +150,7 @@ const chosenStarter = ref<StarterId>()
     <ExportPanel
       :project="activeProject"
       :exporting="exporting"
+      :opens-on="exportChoice"
       @fit="onFitFrame"
       @select-frame="onSelectFrame"
       @export-png="onExportPng"
@@ -209,6 +212,7 @@ const chosenStarter = ref<StarterId>()
       @save="saveNow"
       @save-project-file="onSaveProjectFile"
       @save-project-file-as="onSaveProjectFileAs"
+      @export="onSelectPanel('export', $event)"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"

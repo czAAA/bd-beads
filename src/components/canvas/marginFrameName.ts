@@ -11,6 +11,7 @@ export function frameNameLine(t: Translations, name: string | undefined) {
     editLabel: t.frame.nameEdit,
     editTooltip: t.frame.nameTooltip,
     emptyText: t.frame.nameEmpty,
+    placeholder: t.fields.frameName,
     maxlength: MAX_PIECE_NAME,
     normalize: (raw: string) => raw.trim(),
     testid: 'margin-frame-name',

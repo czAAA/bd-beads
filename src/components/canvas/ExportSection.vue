@@ -14,6 +14,7 @@ import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
+import type { ExportChoice } from '../../composables/shell/openPanel'
 
 // The export rows (tickets 568, 576, 0588, 0652; ExportPanel and QualitySlider cards): Picture and Printable chart with
 // their File size estimates, then Export quality. One component for the Frame panel's Export section and the Export panel;
@@ -21,7 +22,9 @@ import { frameOf, projectNameOf } from '../../domain/layerRecord'
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
-  exporting?: 'png' | 'pdf'
+  exporting?: ExportChoice
+  /** The row its panel opens on (ticket 0843), marked as the panel's entry so it takes the focus. */
+  opensOn?: ExportChoice
 }>()
 
 const emit = defineEmits<{
@@ -73,8 +76,8 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
 </script>
 
 <template>
-  <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
-  <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
+  <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'png' || undefined" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
+  <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
   <QualitySlider
     class="export-section__quality"
     :label="t.frame.exportQuality"

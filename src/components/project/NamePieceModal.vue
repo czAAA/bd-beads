@@ -4,6 +4,7 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppModal from '../ui/AppModal.vue'
+import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 
@@ -25,9 +26,11 @@ const draft = ref(props.name)
           v-model="draft"
           type="text"
           :maxlength="MAX_PIECE_NAME"
+          :placeholder="t.fields.pieceName"
           data-autofocus
           data-testid="piece-name-input"
         />
+        <template #after><FieldCounter :length="draft.length" :max="MAX_PIECE_NAME" /></template>
       </FormField>
     </form>
     <template #actions>

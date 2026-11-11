@@ -50,18 +50,17 @@ const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent
 
 
 describe('FramePanel (ticket 473)', () => {
-  it('shows the size as two empty fields with the current size as placeholders, then the unit, Rotate and Remove Frame', () => {
+  it('shows the size as the two fields\' values, then the unit, Rotate and Remove Frame (ticket 0854)', () => {
     const wrapper = mountBar()
     const width = wrapper.get('[data-testid="frame-panel-width"]')
     const height = wrapper.get('[data-testid="frame-panel-height"]')
-    expect([(width.element as HTMLInputElement).value, (height.element as HTMLInputElement).value]).toEqual(['', ''])
-    expect([width.attributes('placeholder'), height.attributes('placeholder')]).toEqual(['5', '6'])
+    expect([(width.element as HTMLInputElement).value, (height.element as HTMLInputElement).value]).toEqual(['5', '6'])
     expect(wrapper.text()).toContain('beads')
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
   })
 
-  it('takes digits only, no zero, on Enter; an empty field keeps its side; the fields empty again', async () => {
+  it('takes digits only, no zero, on Enter; an empty field keeps its side, its placeholder still the size', async () => {
     const wrapper = mountBar()
     const width = wrapper.get('[data-testid="frame-panel-width"]')
     const height = wrapper.get('[data-testid="frame-panel-height"]')
@@ -69,9 +68,10 @@ describe('FramePanel (ticket 473)', () => {
     expect((width.element as HTMLInputElement).value).toBe('20')
     await height.setValue('0')
     expect((height.element as HTMLInputElement).value).toBe('')
+    expect(height.attributes('placeholder')).toBe('6')
     await width.trigger('keydown', { key: 'Enter' })
     expect(wrapper.emitted('resize')).toEqual([[20, 6]])
-    expect((width.element as HTMLInputElement).value).toBe('')
+    expect((width.element as HTMLInputElement).value).toBe('5')
     await height.setValue('12')
     await height.trigger('keydown', { key: 'Enter' })
     expect(wrapper.emitted('resize')).toEqual([[20, 6], [5, 12]])
@@ -92,14 +92,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('resize')).toHaveLength(1)
   })
 
-  it('clears what was typed on Escape, and closes on the next', async () => {
+  it('puts the size back on Escape, and closes on the next', async () => {
     const wrapper = mountPanel()
     const width = wrapper.get('[data-testid="frame-panel-width"]')
     await width.setValue('9')
     ;(width.element as HTMLInputElement).focus()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
-    expect((width.element as HTMLInputElement).value).toBe('')
+    expect((width.element as HTMLInputElement).value).toBe('5')
     expect(closed(wrapper)).toBeUndefined()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(closed(wrapper)).toHaveLength(1)
@@ -172,8 +172,8 @@ describe('FramePanel (ticket 473)', () => {
 
   it('shows a turned Frame\'s size as seen, off until it is upright, and keeps Rotate Frame (ticket 0667)', () => {
     const wrapper = mountBar(rotateFrame(framed())!)
-    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('placeholder')).toBe('6')
-    expect(wrapper.get('[data-testid="frame-panel-height"]').attributes('placeholder')).toBe('5')
+    expect((wrapper.get('[data-testid="frame-panel-width"]').element as HTMLInputElement).value).toBe('6')
+    expect((wrapper.get('[data-testid="frame-panel-height"]').element as HTMLInputElement).value).toBe('5')
     expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-turned"]').text()).toBe(en.frame.sizeTurnedLine)
