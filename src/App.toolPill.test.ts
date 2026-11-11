@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mountWithProject } from './testUtils/seedProject'
+import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { beadColor, beadColors, drawnProject, hoverBead, pressBead } from './testUtils/beads'
 import { beadsOfLayer, frameOf, withFrameSheet } from './domain/layerRecord'
 import { colorAt } from './domain/canvas'
@@ -194,6 +194,15 @@ describe('the Tool pill', () => {
     // The stroke reaches the other arms (which beads, and how many, is the domain's test).
     const beads = beadsOfLayer(drawnProject(wrapper), 'frame')!
     expect([0, 4, 8, 12, 16].map((column) => colorAt(beads, 0, column))).toEqual(['#e63746', '#e63746', '#e63746', '#e63746', '#e63746'])
+    wrapper.unmount()
+  })
+
+  it('shows a new Project\'s first color, the one that stands off its Background, before the first tap (ticket 0838)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await pickColor(wrapper, 'black')
+    await createProjectViaForm(wrapper)
+    // The light theme's first Background is Studio, near white: red shows on it.
+    expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Red')
     wrapper.unmount()
   })
 
