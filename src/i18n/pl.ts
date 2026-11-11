@@ -309,10 +309,13 @@ export const pl: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz zapisany projekt albo zaimportuj plik. Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
+    canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo zaimportuj plik.',
     canvasPlaceholder: 'Nie otwarto jeszcze żadnego projektu',
     updateReady: 'Aktualizacja gotowa',
     updateReload: 'Załaduj ponownie',
+    canvasPlaceholderPan: 'Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
+    canvasDeleted: 'Projekt „{name}” został usunięty.',
+    canvasDeletedHint: 'Otwórz inny z biblioteki projektów albo utwórz nowy.',
   },
   storage: {
     saveFailedMessage:

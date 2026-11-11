@@ -310,10 +310,13 @@ export const be: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Стварыце яго кнопкай «Новы праект», адкрыйце захаваны праект або імпартуйце файл. Перасоўвайце палатно правай кнопкай мышы або прабелам.',
+    canvasPlaceholderHint: 'Стварыце яго кнопкай «Новы праект», адкрыйце праект з бібліятэкі праектаў або імпартуйце файл.',
     canvasPlaceholder: 'Праект яшчэ не адкрыты',
     updateReady: 'Абнаўленне гатова',
     updateReload: 'Перазагрузіць',
+    canvasPlaceholderPan: 'Перасоўвайце палатно правай кнопкай мышы або прабелам.',
+    canvasDeleted: 'Праект «{name}» выдалены.',
+    canvasDeletedHint: 'Адкрыйце іншы з бібліятэкі праектаў або стварыце новы.',
   },
   storage: {
     saveFailedMessage:

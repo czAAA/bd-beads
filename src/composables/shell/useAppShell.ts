@@ -745,7 +745,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
   })
 
   /** Delete “{name}”?, from the library's ×, the Project panel and the missed Project notice alike (ticket 0842). */
-  const deleteProject = useDeleteProjectFlow({ findProject: entryOf, removeProject, saveProjectFile: exportFlow.onSaveFileOf, dialogs })
+  const deleteProject = useDeleteProjectFlow({
+    findProject: entryOf,
+    removeProject,
+    saveProjectFile: exportFlow.onSaveFileOf,
+    openProjectId: () => activeProjectId.value,
+    dialogs,
+  })
   const onRequestDeleteOpen = () => {
     const project = currentProject()
     if (project) deleteProject.onRequestDelete(project.id)
@@ -907,6 +913,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       openPanel,
       onSelectPanel: overlays.onSelectPanel,
       openMenuOnForm: overlays.openMenuOnForm,
+      /** The empty Canvas's message after a delete (ticket 0840): the deleted Project's name, and its Projects library link. */
+      deletedProjectName: deleteProject.deletedName,
+      openMenuOnSavedProjects: overlays.openMenuOnSavedProjects,
       onImportProjects,
       toasts,
       dismissToast,

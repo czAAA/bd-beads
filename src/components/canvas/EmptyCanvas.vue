@@ -11,11 +11,12 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /** The canvas box with no Project open (tickets 158, 0748, 0840; EmptyCanvas card): the empty positions of New Project's
  * default Technique and Bead at 100%, on the Canvas's last Background, then the message and the slot. The message says
- * what was deleted when a delete emptied it, and is hidden while the Menu is over it. */
+ * what was deleted when a delete emptied it, and is hidden while a panel is over it. */
 const props = defineProps<{
   /** The name of the Project whose delete left no Project open, if one did. */
   deleted?: string
-  /** The Menu is open (on its New Project form, as it opens here): the form is the message, so none shows behind it. */
+  /** A panel is over the Canvas (the Menu opens here on its New Project form): the panel is the message, so none shows
+   * cut behind it. */
   quiet?: boolean
 }>()
 const emit = defineEmits<{
@@ -25,6 +26,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const savedProjects = controlAction('saved-projects')
 const title = computed(() => (props.deleted === undefined ? t.value.shell.canvasPlaceholder : fillBlanks(t.value.shell.canvasDeleted, { name: props.deleted })))
+/** What to do: after a delete, open another or make one; otherwise make, open or import, then how to move the Canvas. */
+const hint = computed(() =>
+  props.deleted === undefined ? `${t.value.shell.canvasPlaceholderHint} ${t.value.shell.canvasPlaceholderPan}` : t.value.shell.canvasDeletedHint,
+)
 const canvasBackground = useCanvasBackground()
 const DEFAULT_CELL = beadCell(DEFAULT_BEAD, DEFAULT_TECHNIQUE)
 const boardStyle = computed(() => {
@@ -46,7 +51,7 @@ const boardStyle = computed(() => {
     <span class="empty-canvas__board" :style="boardStyle" aria-hidden="true" />
     <div v-if="!quiet" class="empty-canvas__message" data-testid="empty-canvas-message">
       <p class="empty-canvas__title">{{ title }}</p>
-      <p class="empty-canvas__hint">{{ deleted === undefined ? t.shell.canvasPlaceholderHint : t.shell.canvasDeletedHint }}</p>
+      <p class="empty-canvas__hint">{{ hint }}</p>
       <AppButton v-if="deleted !== undefined" variant="link" :action="savedProjects" data-testid="empty-canvas-library" @click="emit('library')" />
       <slot />
     </div>

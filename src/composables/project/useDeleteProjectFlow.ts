@@ -9,8 +9,9 @@ export interface DeleteProjectDeps {
   removeProject: (id: string) => void
   /** Save Project file for that Project, open or not: the Project panel's own action. */
   saveProjectFile: (id: string) => unknown
-  /** The open Project's id, or none: whether a delete left the Canvas empty. */
-  openProjectId: () => string | undefined
+  /** The open Project's id, or none: whether a delete left the Canvas empty. Left out where no Canvas tells it (the
+   * Homepage's Menu). */
+  openProjectId?: () => string | undefined
   /** The dialog registry its question opens through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
@@ -25,9 +26,12 @@ export function useDeleteProjectFlow(deps: DeleteProjectDeps) {
   /** The name of the Project whose delete left no Project open, which the empty Canvas tells (ticket 0840); cleared once
    * a Project opens. */
   const deletedName = ref<string>()
-  watch(deps.openProjectId, (id) => {
-    if (id) deletedName.value = undefined
-  })
+  const { openProjectId } = deps
+  if (openProjectId) {
+    watch(openProjectId, (id) => {
+      if (id) deletedName.value = undefined
+    })
+  }
 
   function onRequestDelete(id: string) {
     const entry = deps.findProject(id)
@@ -51,7 +55,7 @@ export function useDeleteProjectFlow(deps: DeleteProjectDeps) {
     pendingDelete.value = undefined
     if (!entry) return
     deps.removeProject(entry.id)
-    deletedName.value = deps.openProjectId() ? undefined : entry.name
+    if (openProjectId) deletedName.value = openProjectId() ? undefined : entry.name
   }
 
   return { deletedName, pendingDelete, onRequestDelete, onCancelDelete, onSaveFileBeforeDelete, onConfirmDelete }

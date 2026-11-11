@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The empty Canvas no longer shows its message cut behind the New Project form, and after a delete it names the Project that was deleted',
+      ru: 'Пустой холст больше не показывает обрезанный текст за формой нового проекта, а после удаления называет удалённый проект',
+      uk: 'Порожнє полотно більше не показує обрізаний текст за формою нового проєкту, а після видалення називає видалений проєкт',
+      be: 'Пустое палатно больш не паказвае абрэзаны тэкст за формай новага праекта, а пасля выдалення называе выдалены праект',
+      zh: '空画布的提示不再被新建项目表单挡住一半，删除后会说出被删除的项目名称',
+      es: 'El lienzo vacío ya no muestra su mensaje cortado tras el formulario de Nuevo proyecto y, tras borrar, nombra el proyecto borrado',
+      pl: 'Puste płótno nie pokazuje już uciętego tekstu za formularzem nowego projektu, a po usunięciu podaje nazwę usuniętego projektu',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Keeping your Projects is now asked at your first saved file, the browser’s answer is shown, and the Menu asks again',
       ru: 'О хранении проектов теперь спрашивают при первом сохранении файла, показывают ответ браузера, а в меню можно спросить снова',
       uk: 'Про зберігання проєктів тепер питають під час першого збереження файлу, показують відповідь браузера, а в меню можна запитати знову',

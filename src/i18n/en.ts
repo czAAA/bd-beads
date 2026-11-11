@@ -307,10 +307,13 @@ export const en: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Make one with New Project, open a Saved Project, or import a file. Drag the Canvas around with the right mouse button or Space.',
+    canvasPlaceholderHint: 'Make one with New Project, open one from the Projects library, or import a file.',
     canvasPlaceholder: 'No Project open yet',
     updateReady: 'Update ready',
     updateReload: 'Reload',
+    canvasPlaceholderPan: 'Drag the Canvas around with the right mouse button or Space.',
+    canvasDeleted: '“{name}” was deleted.',
+    canvasDeletedHint: 'Open another from the Projects library, or make a new one.',
   },
   storage: {
     saveFailedMessage:
