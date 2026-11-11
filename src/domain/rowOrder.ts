@@ -32,6 +32,9 @@ export interface RowOrder {
   /** A round's sides in the order `positionsOf` lists its beads (ticket 0873), or `wordsOf` where it has them, for the
    * Word chart; none for a ring, a row, a strand, a join or a Frame without a shape. */
   sidesOf?(pass: number): readonly RoundSide[] | undefined
+  /** A row worked across a spine (ticket 0874): the end it starts from and where its spine pair is, for the Word chart;
+   * none for any other pass. */
+  spineOf?(pass: number): SpineRow | undefined
   /** The positions the Word chart reads for a pass where the face shows only part of it (ticket 0875): a Star's round
    * round its front and its mirrored back, a face bead read once on each side; none where it reads `positionsOf`. */
   wordsOf?(pass: number): GridPosition[] | undefined
@@ -42,6 +45,13 @@ export interface RowOrder {
 export interface RoundSide {
   corner: number
   singles: number
+}
+
+/** A Kite row as it is beaded (ticket 0874): the wing's end it starts from, as the shape stands upright, and where among
+ * the beads `positionsOf` lists its spine pair comes, the two beads picked up together. */
+export interface SpineRow {
+  from: 'left' | 'right'
+  pair: number
 }
 
 /** A pass of a Custom frame's Row order (ticket 0594), numbered from 1 as a pattern counts: a round from the centre or a
@@ -95,6 +105,7 @@ interface LayoutPass {
   step: OrderStep
   positions: GridPosition[]
   sides?: RoundSide[]
+  spine?: SpineRow
   words?: GridPosition[]
 }
 
@@ -114,6 +125,15 @@ function fromCornerPair(round: readonly LayoutPosition[]): { positions: LayoutPo
     sides.push({ corner, singles })
   }
   return { positions, sides }
+}
+
+/** A Kite row as it is beaded (ticket 0874): an odd row from the left wing's end in to the spine pair, the beads named 0
+ * and 1, and out along the right wing; an even row back. */
+function acrossSpine(row: readonly LayoutPosition[], number: number): { positions: LayoutPosition[]; spine: SpineRow } {
+  const wing = (side: number) => row.filter(({ column }) => column % 2 === side).sort((a, b) => a.column - b.column)
+  const fromLeft = number % 2 === 1
+  const leftToRight = [...wing(0).reverse(), ...wing(1)]
+  return { positions: fromLeft ? leftToRight : leftToRight.reverse(), spine: { from: fromLeft ? 'left' : 'right', pair: wing(fromLeft ? 0 : 1).length - 1 } }
 }
 
 /** A Star square's round as beaded (ticket 0875), front and mirrored back: from the centre front's corner pair out arm
@@ -139,9 +159,9 @@ function facingEdge(last: readonly LayoutPosition[], other: readonly LayoutPosit
   return last.filter((bead) => gap(bead) <= nearest + 1)
 }
 
-/** The passes of a Custom frame (spec 0590, ADR 0077): each part in making order, round by round from its centre, each
- * from its corner pair (ticket 0873), or row by row from a Kite's point or a Fringe earring's base, read left to right;
- * a strand in one pass strung from the top down; then its joins, each ringing the edges it puts together. */
+/** The passes of a Custom frame (spec 0590, ADR 0077): each part round by round from its corner pair (ticket 0873), rows
+ * from a Kite's point back and forth (ticket 0874) or a Fringe earring's base left to right, a strand from the top down;
+ * then its joins, each ringing the edges it puts together. */
 function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[] {
   const parts = [...new Set(layout.panels.map(({ part }) => part))].sort((a, b) => layout.panels.find((panel) => panel.part === a)!.order - layout.panels.find((panel) => panel.part === b)!.order)
   const strandOf = (part: number) => layout.panels.find((panel) => panel.part === part)!.strand === true
@@ -172,11 +192,13 @@ function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[]
       const lower = new Set(layout.twoPasses?.lower)
       const halves = layout.twoPasses && index > 0 ? [false, true].map((low) => positions.filter(({ column }) => lower.has(column) === low)) : [positions]
       for (const half of halves.filter((each) => each.length > 0)) {
-        const reading: { positions: LayoutPosition[]; sides?: RoundSide[]; words?: LayoutPosition[] } = lines !== 'round' ? { positions: half } : layout.back ? frontAndBack(half) : fromCornerPair(half)
-        const { positions: read, sides, words } = reading
-        const step: OrderStep = { kind: lines, number: passes.length - first + 1, ...(several ? { part: part + 1 } : {}) }
+        const number = passes.length - first + 1
+        const reading: { positions: LayoutPosition[]; sides?: RoundSide[]; words?: LayoutPosition[]; spine?: SpineRow } =
+          lines !== 'round' ? (layout.acrossSpine ? acrossSpine(half, number) : { positions: half }) : layout.back ? frontAndBack(half) : fromCornerPair(half)
+        const { positions: read, sides, words, spine } = reading
+        const step: OrderStep = { kind: lines, number, ...(several ? { part: part + 1 } : {}) }
         const named = (beads: readonly LayoutPosition[]) => beads.map(({ row, column }) => ({ row, column }))
-        passes.push({ step, positions: named(read), ...(sides ? { sides } : {}), ...(words ? { words: named(words) } : {}) })
+        passes.push({ step, positions: named(read), ...(sides ? { sides } : {}), ...(words ? { words: named(words) } : {}), ...(spine ? { spine } : {}) })
       }
     }
   }
@@ -210,6 +232,7 @@ export function layoutOrder(layout: FrameLayout, lines: 'round' | 'row'): RowOrd
     lineOf: () => undefined,
     stepOf: (pass) => passes[pass]?.step,
     sidesOf: (pass) => passes[pass]?.sides,
+    spineOf: (pass) => passes[pass]?.spine,
     wordsOf: (pass) => passes[pass]?.words,
   }
   layoutOrders.set(layout, order)

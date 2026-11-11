@@ -6,7 +6,7 @@ import { beadsOfLayer, frameOf, lettersOn, quarterTurnOf } from './layerRecord'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
-import type { OrderStep, RoundSide, RowOrder } from './rowOrder'
+import type { OrderStep, RoundSide, RowOrder, SpineRow } from './rowOrder'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
  * line per row in the order Row progress counts them. Pure data here; the words and the drawing are the export's. */
@@ -24,12 +24,20 @@ export interface WordSide {
   singles: WordRun[]
 }
 
+/** A Kite row (ticket 0874): the runs of its beads before the spine pair, of the pair's two, picked up together, and of
+ * those after it. */
+export interface WordSpine {
+  before: WordRun[]
+  pair: WordRun[]
+  after: WordRun[]
+}
+
 interface WordRow {
   /** The row's number; the first row of a peyote chart holds rows 1 and 2 and is numbered 1. */
   number: number
   /** Peyote's first line, `Rows 1&2`. */
   both: boolean
-  /** Which end the row starts from, for peyote and brick stitch: L reads left to right, R right to left. */
+  /** Which end the row starts from, for peyote, brick stitch and a Kite: L reads left to right, R right to left. */
   marker?: 'L' | 'R'
   /** A Custom frame's pass (ticket 0594): the round, row, part's round or join it is. A join lists no runs. */
   step?: OrderStep
@@ -37,12 +45,15 @@ interface WordRow {
   /** A round's sides, each from its corner pair (ticket 0873), the same beads as `runs` cut where a side starts; none
    * for a ring, a row, a strand or a join. */
   sides?: WordSide[]
+  /** A Kite row's beads round its spine pair (ticket 0874), the same beads as `runs`. */
+  spine?: WordSpine
 }
 
 type Edge = 'top' | 'right' | 'bottom' | 'left'
 
 export interface WordChart {
-  /** Whether rows carry an (L) or (R): the Technique's own; the others all read left to right. */
+  /** Whether rows carry an (L) or (R): the Technique's own, or a Kite's rows back and forth (ticket 0874); the others all
+   * read left to right. */
   marked: boolean
   /** Where on the picture Row 1 is, as it is displayed (rotation included). */
   firstEdge: Edge
@@ -142,8 +153,14 @@ function cutIntoSides(letters: readonly (string | undefined)[], sides: readonly 
   })
 }
 
+/** A Kite row's letters cut round its spine pair (ticket 0874), as runs. */
+function roundThePair(letters: readonly (string | undefined)[], { pair }: SpineRow): WordSpine {
+  return { before: runsOf(letters.slice(0, pair)), pair: runsOf(letters.slice(pair, pair + 2)), after: runsOf(letters.slice(pair + 2)) }
+}
+
 /** A Custom frame's Word chart (ticket 0594): one line per pass of its Row order, numbered from 1, each round read round
- * the shape and each Kite row left to right; a join is a line of its own with no runs. */
+ * the shape and each Kite row back and forth from the wing it starts at (ticket 0874); a join is a line of its own with
+ * no runs. */
 function customWordChart(project: Project, order: RowOrder): WordChart {
   const beads = beadsOfLayer(project, 'frame')!
   let hasEmpty = false
@@ -162,11 +179,13 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
         })
     hasEmpty ||= letters.includes(undefined)
     const sides = order.sidesOf?.(pass)
-    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters), ...(sides ? { sides: cutIntoSides(letters, sides) } : {}) })
+    const spine = order.spineOf?.(pass)
+    const across = spine ? { marker: spine.from === 'left' ? ('L' as const) : ('R' as const), spine: roundThePair(letters, spine) } : {}
+    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters), ...(sides ? { sides: cutIntoSides(letters, sides) } : {}), ...across })
   }
   const first = order.stepOf!(0)
   return {
-    marked: false,
+    marked: rows.some(({ marker }) => marker !== undefined),
     firstEdge: 'top',
     rows,
     lastNumber: rows.length,

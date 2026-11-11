@@ -88,7 +88,7 @@ export interface FrameShape extends FrameRules {
    * without it every value in range is one. */
   settle?(read: NumberedSettings, weave: Weave, before?: FrameSettings): NumberedSettings
   /** Built from its settings as `settingsOf` reads them, every one the shape has, and its Bead's depth across the
-   * thread over its pitch along it, which only a round shape's packing reads (ticket 0723). */
+   * thread over its pitch along it, which a round shape packs by (ticket 0723) and a Kite draws (ticket 0874). */
   layout(settings: FrameSettings, depth: number, weave: Weave): FrameLayout
 }
 
@@ -114,7 +114,7 @@ const ROUNDS: FrameSetting = { id: 'rounds', labelKey: 'rounds', min: 2, max: 40
 const STAR_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', min: 2, max: 30, step: 1, default: 10, presets: [6, 8, 10], lossOnChange: true }
 /** A Kaleidocycle's triangles, beads a side: 9 in the primer, which finds smaller ones fold badly (research). */
 const KALEIDOCYCLE_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', min: 3, max: 30, step: 1, default: 9, presets: [7, 9, 12], lossOnChange: true }
-/** A Kite's Rows from its point (inferred: the reference gives no size). */
+/** A Kite's Rows from its point: 21 rows are 242 beads (ticket 0874). */
 const KITE_ROWS: FrameSetting = { id: 'rows', labelKey: 'rows', min: 4, max: 60, step: 1, default: 21, presets: [15, 21, 30], lossOnChange: true }
 /** A Fringe earring's base row, its rows up to a pair at the top, and its longest strand (StarterGallery card). */
 const TOP_WIDTH: FrameSetting = { id: 'topWidth', labelKey: 'topWidth', min: 2, max: 30, step: 1, default: 7, presets: [5, 7, 9], lossOnChange: true }
@@ -207,7 +207,7 @@ const FRAME_SHAPES: Readonly<Record<FrameShapeId, FrameShape>> = {
     settings: [KALEIDOCYCLE_PART],
     layout: ({ partSize }, depth) => kaleidocycleLayout(partSize!, depth),
   }),
-  kite: frameShape('kite', 'row', { techniques: ['peyote'], settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) }),
+  kite: frameShape('kite', 'row', { techniques: ['peyote'], settings: [KITE_ROWS], layout: ({ rows }, depth) => kiteLayout(rows!, depth) }),
   fringeEarring: frameShape('fringeEarring', 'row', {
     techniques: ['brick', 'peyote', 'loom'],
     settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],

@@ -188,6 +188,25 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2*' })
   })
 
+  it('writes a Kite\'s rows back and forth, each marked with its end, its middle pair in brackets (ticket 0874)', () => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'kite', size: 5, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Kite')
+    const { row, column } = frameOf(placed.project)!
+    // The right wing's beads of row 3.
+    const cells = frameLayoutOf(frameOf(placed.project)!)!.positions.filter((position) => position.row === 2 && position.panel === 1).map((position) => ({ row: row + position.row, column: column + position.column, layer: 'frame' as const }))
+    const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at).wordChart!
+
+    expect(chart.notes).toEqual([en.print.wordChart.firstPoint, en.print.wordChart.sides, en.print.wordChart.runNote, en.print.wordChart.middlePairNote])
+    expect(chart.rows.map(({ marker, runs }) => `(${marker}) ${runs}`)).toEqual([
+      '(L) Row 1: (2*)',
+      '(R) Row 2: (2*)',
+      '(L) Row 3: 1*, (1*\u00a01C), 1C',
+      '(R) Row 4: 1*, (2*), 1*',
+      '(L) Row 5: 2*, (2*), 2*',
+    ])
+  })
+
   it('says a Kaleidocycle\'s Word chart is one face of its 24 triangles, each other face a Frame of its own (ticket 0876)', () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })

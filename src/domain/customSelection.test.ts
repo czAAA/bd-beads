@@ -6,7 +6,7 @@ import { cellOfBead } from './customSelection'
 import { customFrameSize, frameLayoutOf, type FrameShapeId } from './frameShape'
 import { layerSheet, onLayer, positionOnCanvas } from './layers'
 import { parseProjectsFile, serializeProject } from './projectFile'
-import { canvasDistance } from './layerWeave'
+import { canvasDistance, frameWeave } from './layerWeave'
 import { createProject } from './createProject'
 import { isInFinishedRow, keepFinishedRows, moveToRow, rowProgressStarted } from './rowProgress'
 import { paintCells } from './drawing'
@@ -128,6 +128,21 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
   })
 })
 
+describe('a Selection, Copy and Paste on a Kite (ticket 0874)', () => {
+  it('selects the whole Kite, and pastes it back onto itself, every bead on its own position and none lost', () => {
+    const kite = custom('kite', 9)
+    const project = paintFrame(paintFrame(kite, allPositions(kite).filter(({ column }) => column % 2 === 0), RED), allPositions(kite).filter(({ column }) => column % 2 === 1), BLUE)
+    expect(beadCount(frameOf(project)!.beads)).toBe(50)
+    const block = copyLayerSelection(project, everything(project))!
+    expect(block.points).toHaveLength(50)
+    const cleared = paintLayerSelection(project, everything(project), null)
+    expect(beadCount(frameOf(cleared)!.beads)).toBe(0)
+    const at = aimedAt(project, anchorOf(project))
+    expect(frameOf(pasteOnLayer(cleared, block, at))!.beads).toEqual(frameOf(project)!.beads)
+    expect(pasteLostCount(cleared, block, at)).toEqual({ count: 0, loss: 'shape' })
+  })
+})
+
 describe('Rotate on a Custom frame (ticket 0594)', () => {
   it('turns a Warped Square\'s beads a quarter onto its own positions, each round onto itself, none dropped', () => {
     const project = paintFrame(custom('warpedSquare', 4), [{ row: 3, column: 0 }, { row: 3, column: 1 }, { row: 1, column: 2 }], RED)
@@ -155,7 +170,8 @@ describe('Rotate Frame on a Custom frame (ticket 0594)', () => {
     const before = frameOf(project)!
     const after = frameOf(turned)!
     expect(after).toMatchObject({ shape: 'kite', quarterTurns: 1, beads: before.beads })
-    expect({ rows: after.rows, columns: after.columns }).toEqual(customFrameSize('kite', { rows: 12 }, 1))
+    // Laid by its layer's Bead, a Cube here (ticket 0874).
+    expect({ rows: after.rows, columns: after.columns }).toEqual(customFrameSize('kite', { rows: 12 }, 1, {}, frameWeave(project).cell))
     const turnedLayout = frameLayoutOf(after)!
     const layout = frameLayoutOf(before)!
     expect(turnedLayout.width).toBeCloseTo(layout.height)

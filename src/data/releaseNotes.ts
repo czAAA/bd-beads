@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Kite is two peyote wings on a spine, as wide as it is tall, its rows read back and forth',
+      ru: 'Воздушный змей это два крыла мозаичного плетения на центральной паре, ширина как высота, ряды туда и обратно',
+      uk: 'Повітряний змій це два крила мозаїчного плетіння на центральній парі, ширина як висота, ряди туди й назад',
+      be: 'Паветраны змей гэта два крылы мазаічнага пляцення на цэнтральнай пары, шырыня як вышыня, рады туды і назад',
+      zh: '风筝由中线两侧的两片佩奥翼组成，宽高相近，各行来回往返',
+      es: 'La Cometa son dos alas de peyote sobre un eje, tan ancha como alta, sus filas de ida y vuelta',
+      pl: 'Latawiec to dwa skrzydła peyote na grzbiecie, szeroki jak wysoki, rzędy tam i z powrotem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The Star is five warped squares, each centred between two arms, and counts the whole star front and back',
       ru: 'Звезда собрана из пяти изогнутых квадратов, каждый между двумя лучами, и считается целиком, на обе стороны',
       uk: 'Зірка складається з п’яти вигнутих квадратів, кожен між двома променями, і рахується цілою, на обидва боки',

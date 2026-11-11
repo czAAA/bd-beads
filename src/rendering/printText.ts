@@ -13,7 +13,7 @@ import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
-import { wordChartOf, type WordChart, type WordRun, type WordSide } from '../domain/wordChart'
+import { wordChartOf, type WordChart, type WordRun, type WordSide, type WordSpine } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
@@ -101,15 +101,21 @@ function runsText(runs: readonly WordRun[]): string {
 // Kept together when a row wraps at its spaces: a corner pair's two colors, and a side's mark with the side it ends.
 const NO_BREAK_SPACE = '\u00a0'
 
+/** A pair's beads in brackets, `(2A)` or `(1A 1B)` (ticket 0873); none for no pair. */
+function pairText(runs: readonly WordRun[]): string {
+  return runs.length > 0 ? `(${runs.map((run) => runsText([run])).join(NO_BREAK_SPACE)})` : ''
+}
+
 /** A round side by side (ticket 0873): each side its corner pair in brackets, `(2A)` or `(1A 1B)`, then its singles'
  * runs, the sides apart at a `|`. */
 function sidesText(sides: readonly WordSide[]): string {
-  return sides
-    .map(({ corner, singles }) => {
-      const pair = corner.length > 0 ? `(${corner.map((run) => runsText([run])).join(NO_BREAK_SPACE)})` : ''
-      return [pair, runsText(singles)].filter(Boolean).join(', ')
-    })
-    .join(`${NO_BREAK_SPACE}| `)
+  return sides.map(({ corner, singles }) => [pairText(corner), runsText(singles)].filter(Boolean).join(', ')).join(`${NO_BREAK_SPACE}| `)
+}
+
+/** A Kite row (ticket 0874): its runs up to the middle pair, the pair in brackets as a corner pair is, then the rest:
+ * `1A, (2B), 1A`. */
+function spineText({ before, pair, after }: WordSpine): string {
+  return [runsText(before), pairText(pair), runsText(after)].filter(Boolean).join(', ')
 }
 
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
@@ -121,6 +127,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
   if (chart.marked) notes.push(t.sides)
   notes.push(t.runNote)
   if (chart.rows.some((row) => row.sides)) notes.push(t.pairNote)
+  if (chart.rows.some((row) => row.spine)) notes.push(t.middlePairNote)
   return {
     title: t.title,
     ...(chart.hasEmpty ? { empty: t.empty } : {}),
@@ -130,7 +137,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
       first: row.number,
       last: row.both ? 2 : row.number,
       ...(row.marker ? { marker: row.marker } : {}),
-      runs: [row.step && orderStepLabel(steps, row.step), row.sides ? sidesText(row.sides) : runsText(row.runs)].filter(Boolean).join(': '),
+      runs: [row.step && orderStepLabel(steps, row.step), row.sides ? sidesText(row.sides) : row.spine ? spineText(row.spine) : runsText(row.runs)].filter(Boolean).join(': '),
     })),
   }
 }
