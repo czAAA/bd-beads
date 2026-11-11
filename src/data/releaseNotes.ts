@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Every way out of the converter asks first, the browser’s Back and a reload too, and Close goes back to the New Project form',
+      ru: 'Любой выход из конвертера сначала спрашивает, и кнопка «Назад» браузера, и перезагрузка тоже, а «Закрыть» возвращает к форме нового проекта',
+      uk: 'Будь-який вихід із конвертера спершу питає, і кнопка «Назад» браузера, і перезавантаження теж, а «Закрити» повертає до форми нового проєкту',
+      be: 'Любы выхад з канвертара спачатку пытае, і кнопка «Назад» браўзера, і перазагрузка таксама, а «Закрыць» вяртае да формы новага праекта',
+      zh: '离开转换器的每种方式都会先询问，浏览器的返回和重新加载也是，关闭会回到新项目表单',
+      es: 'Toda salida del conversor pregunta antes, también Atrás del navegador y recargar, y Cerrar vuelve al formulario de nuevo proyecto',
+      pl: 'Każde wyjście z konwertera najpierw pyta, także Wstecz przeglądarki i przeładowanie, a Zamknij wraca do formularza nowego projektu',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A row marked done says why it won’t take a bead, and whatever it holds still offers Reset progress right there',
       ru: 'Ряд, отмеченный как готовый, говорит, почему не берёт бусину, а всё, что он держит, сразу предлагает сбросить прогресс',
       uk: 'Ряд, позначений як готовий, каже, чому не бере намистину, а все, що він тримає, одразу пропонує скинути прогрес',
