@@ -1,4 +1,5 @@
 import { shallowRef, watch, type ShallowRef } from 'vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf } from '../../domain/layerRecord'
 import { moveToRow, resetRowProgress, rowProgressOf, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
@@ -62,21 +63,35 @@ export function useRowOps(deps: RowOpsDeps) {
         rows: reversed ? t.directionToastRowsReversed : t.directionToastRows,
         columns: reversed ? t.directionToastColumnsReversed : t.directionToastColumns,
       }[direction]
-      deps.showToast('row-direction', toast, 'success')
+      // The way left keeps its own pointer: said, so its rows marked done don't look lost (ticket 0849, F-04-04).
+      const kept = rowProgressPosition(project).current > 0 ? (rowProgressOf(project).direction === 'columns' ? t.columnsKeptToast : t.rowsKeptToast) : undefined
+      deps.showToast('row-direction', kept ? fillBlanks(t.directionKeptToast, { toast, kept }) : toast, 'success')
     }
+  }
+
+  /** Points the row pointer at a pass: a press of Row done or Row not done (`pressed`), or Go to row's jump. */
+  function moveTo(pass: (from: number) => number, pressed: boolean) {
+    const project = deps.currentProject()
+    if (!project) return
+    const { current: from, total } = rowProgressPosition(project)
+    const moved = moveToRow(project, pass(from))
+    const to = rowProgressPosition(moved).current
+    if (to === from) return
+    // Said before the write, so the surface that redraws for it already knows the press. A jump plays nothing.
+    if (pressed) rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
+    else stopRowMotion()
+    deps.replaceProject(moved)
   }
 
   /** Steps the row pointer forward as a row is finished, or back to revisit an earlier one. */
   function onMoveRow(delta: number) {
-    const project = deps.currentProject()
-    if (!project) return
-    const { current: from, total } = rowProgressPosition(project)
-    const moved = moveToRow(project, from + delta)
-    const to = rowProgressPosition(moved).current
-    if (to === from) return
-    // Said before the write, so the surface that redraws for it already knows the press.
-    rowPress.value = { id: ++presses, done: to > from, from, to, patternDone: to === total }
-    deps.replaceProject(moved)
+    moveTo((from) => from + delta, true)
+  }
+
+  /** Go to row (ticket 0849, F-04-14): the pointer straight to a pass, zero-based, for a weaver who started from a
+   * printed chart; every pass before it is then marked done. Not an undo step, as Row done isn't. */
+  function onGoToRow(pass: number) {
+    moveTo(() => pass, false)
   }
 
   /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so
@@ -108,5 +123,5 @@ export function useRowOps(deps: RowOpsDeps) {
     deps.showToast('marked-done', rowProgressOf(project).direction === 'columns' ? t.columnMarkedDoneToast : t.markedDoneToast, 'info')
   }
 
-  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onMoveRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
+  return { rowPress, stopRowMotion, tellMarkedDone, onToggleRowDirection, onMoveRow, onGoToRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
 }

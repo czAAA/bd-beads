@@ -13,6 +13,9 @@ const props = withDefaults(defineProps<{
   compact?: boolean
   /** Only the spark's tail is drawn: the Homepage's current step is its dot (ticket 0744). */
   ringed?: boolean
+  /** The dot shows only as it flares, then fades (ticket 0849, F-04-14): Row progress's track is no control, so no
+   * handle rests on it. */
+  glints?: boolean
   /** The share follows a scroll, set on every scroll event: the fill and the spark move with no transition, since
    * Safari restarts an interrupted one from a stale place and flickers (ticket 0786). Off, they ease a step at a time. */
   following?: boolean
@@ -21,13 +24,13 @@ const props = withDefaults(defineProps<{
   max: number
   now: number
   testid: string
-}>(), { flares: 0, compact: false, ringed: false, following: false })
+}>(), { flares: 0, compact: false, ringed: false, glints: false, following: false })
 
 /** The fill and the spark at its edge are the track's width moved left by the share still to go: they grow by
  * `transform`. */
 const fillShift = computed(() => ({ transform: `translateX(${(props.share - 1) * 100}%)` }))
 
-const sparkLook = computed(() => ({ 'progress-track__spark--compact': props.compact, 'progress-track__spark--ringed': props.ringed }))
+const sparkLook = computed(() => ({ 'progress-track__spark--compact': props.compact, 'progress-track__spark--ringed': props.ringed, 'progress-track__spark--glints': props.glints }))
 
 /** Two names for one animation, swapped on each step forward so the next one restarts it; a step back moves the spark
  * with none. */
@@ -149,6 +152,49 @@ watch(
 
 .progress-track__spark--flaring-alt > b {
   animation: progress-track-tail-alt var(--spark-flare-duration) var(--ease-out) both;
+}
+
+/* Glinting, the dot rests unseen and each flare lights it and lets it fade. */
+.progress-track__spark--glints > i {
+  opacity: 0;
+}
+
+.progress-track__spark--glints.progress-track__spark--flaring > i {
+  animation-name: progress-track-glint;
+}
+
+.progress-track__spark--glints.progress-track__spark--flaring-alt > i {
+  animation-name: progress-track-glint-alt;
+}
+
+@keyframes progress-track-glint {
+  0% {
+    opacity: 1;
+  }
+
+  30% {
+    opacity: 1;
+    transform: scale(var(--spark-flare));
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes progress-track-glint-alt {
+  0% {
+    opacity: 1;
+  }
+
+  30% {
+    opacity: 1;
+    transform: scale(var(--spark-flare));
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes progress-track-flare {

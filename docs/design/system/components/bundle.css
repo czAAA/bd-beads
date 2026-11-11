@@ -686,6 +686,12 @@ body {
 @keyframes bb-spark-flare-alt{30%{transform:scale(var(--spark-flare))}}
 @keyframes bb-spark-tail{0%{transform:scaleX(1.8)}100%{transform:none;opacity:.7}}
 @keyframes bb-spark-tail-alt{0%{transform:scaleX(1.8)}100%{transform:none;opacity:.7}}
+/* Row progress's track (ticket 0849): no handle at rest; the dot lights as it flares and fades with it. */
+.bb-spark--glints>i{opacity:0}
+.bb-spark--glints.is-flaring>i{animation-name:bb-spark-glint}
+.bb-spark--glints.is-flaring-alt>i{animation-name:bb-spark-glint-alt}
+@keyframes bb-spark-glint{0%{opacity:1}30%{opacity:1;transform:scale(var(--spark-flare))}100%{opacity:0}}
+@keyframes bb-spark-glint-alt{0%{opacity:1}30%{opacity:1;transform:scale(var(--spark-flare))}100%{opacity:0}}
 /* Pattern done: one layer over the Frame, mounted --pattern-done-delay after the press that marks the last pass and removed after about 2.6s. */
 .bb-pattern-done{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bb-pattern-done-burst{position:absolute;width:0;height:0}

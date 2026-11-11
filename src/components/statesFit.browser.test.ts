@@ -16,6 +16,7 @@ import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
 import FirstRunHints from './canvas/FirstRunHints.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
+import ProgressBar from './canvas/ProgressBar.vue'
 import ContextBar from './tools/ContextBar.vue'
 import SchemaTags from './canvas/SchemaTags.vue'
 import { withPieceName } from '../domain/pieceNames'
@@ -193,6 +194,8 @@ const CASES: FitCase[] = [
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
   ['MarginSheet (bare)', marginSheetHost(0.25), {}],
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
+  // Go to row, opened from the Progress bar's counter (ticket 0849).
+  ['Go to row', ProgressBar, { project: framed }, (root: HTMLElement) => press(root, 'progress-bar-compact-position')],
   [
     'ContextBar',
     ContextBar,

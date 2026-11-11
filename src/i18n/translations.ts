@@ -704,6 +704,31 @@ export interface Translations {
     /** The toast when rows marked done take a drawing back (ticket 0848), naming Row not done, or Column not done. */
     markedDoneToast: string
     columnMarkedDoneToast: string
+    /** The counter's Tooltip where a line takes two passes (peyote, ticket 0849): what it counts, passes, not rows. */
+    passesBody: string
+    columnPassesBody: string
+    /** After the counter there: the rulers' row of the pass, "3/27 · row 2". */
+    passLine: string
+    columnPassLine: string
+    /** The counter once every pass is done (ticket 0849), with a check, and the Tooltip of it and of the greyed Row done. */
+    patternDone: string
+    everyRowDone: string
+    everyColumnDone: string
+    /** The track's accessible name while rows run down the columns. */
+    columnFinishedLabel: string
+    /** After the Turn row direction toast, while the way left has rows marked done: they are kept, not lost. */
+    rowsKeptToast: string
+    columnsKeptToast: string
+    /** Go to row (ticket 0849): the counter opens it; a field for the row (or the pass, on peyote) and Go. */
+    goToRow: string
+    goToColumn: string
+    goToRowBody: string
+    goToColumnBody: string
+    passLabel: string
+    columnLabel: string
+    goButton: string
+    /** The Turn row direction toast with the kept sentence after it: `{toast} {kept}`, with no space in Chinese. */
+    directionKeptToast: string
   }
   quantities: {
     heading: string
@@ -717,8 +742,10 @@ export interface Translations {
     totalLabel: string
     showAll: string
     showFewer: string
-    /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
+    /** The Estimated weight's Info button body (tickets 155, 328, 0852); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
+    /** The accessible name of that Info button, in Beads needed's header (ticket 0852). */
+    weightInfoLabel: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {

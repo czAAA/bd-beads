@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { frameRowOrder, rowProgressOf, rowProgressPosition, shownWay } from '../../domain/rowProgress'
+import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { orderStepLabel } from '../../i18n/orderStep'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { RowPress } from '../../composables/project/useRowOps'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import GoToRowPopover from './GoToRowPopover.vue'
 import ProgressMoves from './ProgressMoves.vue'
 import ProgressTrack from './ProgressTrack.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
@@ -40,6 +41,8 @@ const emit = defineEmits<{
   'reset-progress': []
   'toggle-row-direction': []
   'toggle-row-highlight': []
+  /** Go to row, from the bar's counter (ticket 0849): the pass to point at, from 0. */
+  'go-to-row': [pass: number]
 }>()
 
 const { t } = useI18n()
@@ -52,6 +55,7 @@ const actions = {
   rowHighlight: controlAction('row-highlight'),
   notDone: controlAction('row-not-done'),
   done: controlAction('row-done'),
+  goToRow: controlAction('go-to-row'),
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
@@ -77,6 +81,41 @@ const notDoneLabel = computed(() => (columnWise.value ? t.value.rowProgress.colu
 
 /** The row shown as current: the last one once every pass is done. */
 const shownRow = computed(() => Math.min(position.value.current + 1, position.value.total))
+
+/** Every pass is done (ticket 0849, F-04-09): the bar says Pattern done, so it can't be read as the last row or as
+ * never started. */
+const allDone = computed(() => position.value.total > 0 && position.value.current >= position.value.total)
+const allDoneBody = computed(() => (columnWise.value ? t.value.rowProgress.everyColumnDone : t.value.rowProgress.everyRowDone))
+
+/** On peyote a line takes two passes, so the counter adds the rulers' row ("3/27 · row 2") and its Tooltip says it
+ * counts passes (ticket 0849, F-04-03). */
+const line = computed(() => passLine(props.project))
+const lineText = computed(() => {
+  const words = t.value.rowProgress
+  return line.value ? fillBlanks(columnWise.value ? words.columnPassLine : words.passLine, { line: line.value.line }) : undefined
+})
+const counterBody = computed(() => {
+  const words = t.value.rowProgress
+  if (allDone.value) return allDoneBody.value
+  if (line.value) return fillBlanks(columnWise.value ? words.columnPassesBody : words.passesBody, { passes: position.value.total, lines: line.value.lines })
+  return columnWise.value ? words.goToColumnBody : words.goToRowBody
+})
+
+/** Go to row, opened by the bar's counter (ticket 0849, F-04-14): its number counts what the counter does, passes
+ * where a line takes two or the Frame is a Custom frame. */
+const goToOpen = ref(false)
+/** The counter's button, which Go to row hangs from: taken from its press, as a ref inside the items' loop is a list. */
+const counterButton = ref<HTMLElement>()
+function toggleGoTo(event: MouseEvent) {
+  counterButton.value = event.currentTarget as HTMLElement
+  goToOpen.value = !goToOpen.value
+}
+const goToTitle = computed(() => (columnWise.value ? t.value.rowProgress.goToColumn : t.value.rowProgress.goToRow))
+const goToUnit = computed(() => {
+  const words = t.value.rowProgress
+  if (line.value || frameRowOrder(props.project).stepOf) return words.passLabel
+  return columnWise.value ? words.columnLabel : words.positionLabel
+})
 
 /** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): "Round 3 of 9", or where
  * its passes are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3 · 8 of 20". None for a
@@ -160,6 +199,24 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         customPosition?.of ?? fillBlanks(t.rowProgress.ofTotal, { total: position.total, direction: directionLabel })
       }}</span>
     </p>
+    <!-- In the bar the counter is Go to row's button (ticket 0849), and once every pass is done it reads Pattern done. -->
+    <AppButton
+      v-else-if="item === 'counter' && !margin"
+      class="row-progress__counter-button"
+      variant="text"
+      size="sm"
+      :icon="allDone ? 'check' : undefined"
+      :action="actions.goToRow"
+      :label="goToTitle"
+      :tooltip="{ body: counterBody }"
+      aria-haspopup="dialog"
+      :aria-expanded="goToOpen"
+      :data-testid="`${testid}-compact-position`"
+      @click="toggleGoTo"
+    >
+      <template v-if="allDone">{{ t.rowProgress.patternDone }}</template>
+      <template v-else>{{ shownRow }}/{{ position.total }}<span v-if="lineText" class="row-progress__line">&nbsp;{{ lineText }}</span></template>
+    </AppButton>
     <!-- The compact counter (ticket 188): "1/222" in place of the spelled-out row count; the buttons keep their text (ticket 411). -->
     <p v-else-if="item === 'counter'" class="row-progress__counter" :data-testid="`${testid}-compact-position`">
       {{ shownRow }}/{{ position.total }}
@@ -171,7 +228,8 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
       :share="finishedShare"
       :flares="flares"
       :compact="margin"
-      :label="t.rowProgress.finishedLabel"
+      glints
+      :label="columnWise ? t.rowProgress.columnFinishedLabel : t.rowProgress.finishedLabel"
       :min="0"
       :max="position.total"
       :now="position.current"
@@ -185,7 +243,7 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
       v-else-if="item === 'steps' && !margin"
       :class="`row-progress__steps--${arrowTurn}`"
       :back="{ action: actions.notDone, label: notDoneLabel, icon: 'arrow-up', disabled: position.current === 0, testid: `${testid}-previous` }"
-      :forward="{ action: actions.done, label: doneLabel, trailingIcon: 'arrow-down', disabled: position.current >= position.total, testid: `${testid}-next` }"
+      :forward="{ action: actions.done, label: doneLabel, trailingIcon: 'arrow-down', disabled: position.current >= position.total, disabledBody: allDoneBody, testid: `${testid}-next` }"
       @back="emit('move-row', -1)"
       @forward="emit('move-row', 1)"
     />
@@ -207,11 +265,22 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
         :label="doneLabel"
         trailing-icon="arrow-down"
         :disabled="position.current >= position.total"
+        :disabled-body="allDoneBody"
         :data-testid="`${testid}-next`"
         @click="emit('move-row', 1)"
       />
     </div>
   </template>
+  <GoToRowPopover
+    v-if="goToOpen && counterButton"
+    :anchor="counterButton"
+    :title="goToTitle"
+    :unit="goToUnit"
+    :current="shownRow"
+    :total="position.total"
+    @close="goToOpen = false"
+    @go="emit('go-to-row', $event)"
+  />
   </div>
 </template>
 
@@ -251,6 +320,23 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   font: var(--type-control);
   color: var(--ink);
   white-space: nowrap;
+}
+
+/* The bar's counter is Go to row's quiet button (ticket 0849): the counter's type, with 6px either side. */
+.row-progress--bar :deep(.row-progress__counter-button) {
+  flex: none;
+  padding-inline: var(--space-6);
+  gap: var(--space-4);
+}
+
+/* A bar too narrow for it on one row (the Homepage demo's on a tablet) leaves the rulers' row to the Tooltip; on a phone
+ * the bar wraps, so it has the room. */
+@media (min-width: 30.01rem) {
+  @container (max-width: 40rem) {
+    .row-progress__line {
+      display: none;
+    }
+  }
 }
 
 /* The wide row count stays out of the bar: the short counter stands in for it at every width (ticket 188, 295; ADR

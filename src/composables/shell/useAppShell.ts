@@ -1088,6 +1088,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onToggleRowDirection: rowOps.onToggleRowDirection,
       onMoveRow: rowOps.onMoveRow,
       onResetProgress: rowOps.onResetProgress,
+      onGoToRow: rowOps.onGoToRow,
       // The margin sheet's tools and title block (ticket 0657): the flows the Frame and Project panels ask too
       onRotateFrame: rotateFrameFlow.onRotateFrame,
       onRenameFrame: frameFlow.rename,

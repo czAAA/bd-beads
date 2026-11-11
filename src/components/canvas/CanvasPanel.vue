@@ -139,6 +139,7 @@ const {
   onSelectCustomColor,
   onToggleRowDirection,
   onMoveRow,
+  onGoToRow,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
   locale,
@@ -549,6 +550,7 @@ const drawingStyle = computed(() => {
         @toggle-row-direction="onToggleRowDirection"
         @toggle-row-highlight="toggleRowHighlight"
         @fit-and-export="onFitAndExport"
+        @go-to-row="onGoToRow"
       />
 
       <!--

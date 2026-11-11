@@ -131,11 +131,18 @@ describe('ProgressBar', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
   })
 
-  it('shows the last row as the current one once every pass is done (ticket 411)', () => {
+  it('shows the last row as the current one on it, and Pattern done with a check once every pass is done (tickets 411, 0849)', () => {
     const project = makeProject()
-    const wrapper = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
+    const last = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows - 1) } })
+    expect(last.find('[data-testid="progress-bar-compact-position"]').text()).toBe('20/20')
 
-    expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('20/20')
+    const done = mount(ProgressBar, { props: { project: moveToRow(project, frameOf(project)!.rows) } })
+    const counter = done.get('[data-testid="progress-bar-compact-position"]')
+    expect(counter.text()).toBe(ru.rowProgress.patternDone)
+    expect(counter.find('svg').exists()).toBe(true)
+    // Its Tooltip and the greyed Row done's say why (F-04-09).
+    expect(done.text()).toContain(ru.rowProgress.everyRowDone)
+    expect(done.get('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('puts Turn row direction and Reset progress ahead of the do/undo pair (tickets 411, 455)', () => {
@@ -287,5 +294,40 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 1) } }))).toBe('Ряд 2 · 2 из 9')
     expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6) } }))).toBe('Нить 3 · 7 из 9')
+  })
+})
+
+describe('ProgressBar counter (ticket 0849)', () => {
+  it('adds the rulers\' row on peyote and says in its Tooltip that it counts passes (F-04-03)', () => {
+    const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 6, height: 14, unit: 'beads' } })
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(peyote, 2) } })
+
+    expect(wrapper.get('[data-testid="progress-bar-compact-position"]').text().replace(/\s+/g, ' ')).toBe('3/27 · ряд 2')
+    expect(wrapper.text()).toContain('проходов: 27, рядов: 14')
+  })
+
+  it('names the track after a column while rows run down the columns (F-04-05)', () => {
+    const wrapper = mount(ProgressBar, { props: { project: toggleRowDirection(makeProject()) } })
+    expect(wrapper.get('[data-testid="progress-bar-track"]').attributes('aria-label')).toBe(ru.rowProgress.columnFinishedLabel)
+  })
+
+  it('opens Go to row from the counter, and Go points at the row typed (F-04-14)', async () => {
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) }, attachTo: document.body })
+    const counter = wrapper.get('[data-testid="progress-bar-compact-position"]')
+    expect(counter.attributes('aria-expanded')).toBe('false')
+
+    await counter.trigger('click')
+    const field = wrapper.get<HTMLInputElement>('[data-testid="go-to-row-field"]')
+    expect(field.element.value).toBe('5')
+    expect(wrapper.get('[data-testid="go-to-row"]').text()).toContain(ru.rowProgress.goToRow)
+
+    // A number out of range can't be set; one in range goes, and closes it.
+    await field.setValue('21')
+    expect(wrapper.get('[data-testid="go-to-row-go"]').attributes('aria-disabled')).toBe('true')
+    await field.setValue('12')
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.emitted('go-to-row')).toEqual([[11]])
+    expect(wrapper.find('[data-testid="go-to-row"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 })

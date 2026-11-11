@@ -28,6 +28,8 @@ const emit = defineEmits<{
   'reset-progress': []
   'toggle-row-direction': []
   'toggle-row-highlight': []
+  /** Go to row, from the counter (ticket 0849): the pass to point at, from 0. */
+  'go-to-row': [pass: number]
   /** The bar's own way to a Frame and a picture, shown while there is none to count rows on (ticket 0847, O-03): Fit
    * to drawing, then Export opened on Picture. */
   'fit-and-export': []
@@ -72,6 +74,7 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
       @reset-progress="emit('reset-progress')"
       @toggle-row-direction="emit('toggle-row-direction')"
       @toggle-row-highlight="emit('toggle-row-highlight')"
+      @go-to-row="emit('go-to-row', $event)"
     />
     </slot>
   </div>
