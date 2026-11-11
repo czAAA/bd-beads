@@ -1122,3 +1122,5 @@ body {
 [data-theme="contrast"] .bb-save-ring-arc, [data-theme="contrast"] .bb-save-ring.is-due .bb-save-ring-arc { stroke: var(--ink); }
 [data-theme="contrast"] .bb-save-ring-halo, [data-theme="contrast"] .bb-save-ring.is-due .bb-save-ring-halo { color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { .bb-save-ring-label, .bb-save-ring-arc { transition: opacity var(--duration-base) linear; } }
+/* KeyboardFocus (ticket 0857): on a lit (ink-filled) control the ring is surface, inside its ink edge. */
+:where(.bb-theme button[aria-pressed="true"], .bb-theme button[aria-checked="true"], .e-theme4 button[aria-checked="true"], .bb-margin-tool[aria-pressed="true"], .bb-strip-toggle[aria-pressed="true"]):focus-visible, .ix-seg.is-on:focus-visible, .ix-seg.is-on.is-focus { outline-color: var(--surface); outline-offset: calc(var(--focus-offset) - var(--focus-width, 2px)); }
