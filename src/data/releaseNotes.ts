@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Kaleidocycle says its Frame is one face of four and counts the whole piece too',
+      ru: 'Калейдоцикл говорит, что его рамка это одна грань из четырёх, и считает всё изделие',
+      uk: 'Калейдоцикл каже, що його рамка це одна грань із чотирьох, і рахує весь виріб',
+      be: 'Калейдацыкл кажа, што яго рамка гэта адна грань з чатырох, і лічыць увесь выраб',
+      zh: '万花筒环说明边框只是四面中的一面，并给出整件的数量',
+      es: 'El caleidociclo dice que su marco es una cara de cuatro y cuenta también la pieza entera',
+      pl: 'Kalejdocykl mówi, że jego ramka to jedna ściana z czterech, i liczy też całą pracę',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A first visit ends on what is free, not on Coming soon',
       ru: 'Новый гость видит, что бесплатно, а не «Скоро»',
       uk: 'Новий гість бачить, що безплатне, а не «Незабаром»',

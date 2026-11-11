@@ -179,4 +179,14 @@ describe('the Starter setup', () => {
     await wrapper.get('form').trigger('submit')
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ sizes: { width: 11, wrist: 16 }, picks: { fit: 'loose' }, useDesign: false })
   })
+
+  it('says a Kaleidocycle is one face of four and counts the face and the whole piece (ticket 0876)', async () => {
+    const wrapper = mountSetup('kaleidocycle', delica())
+    const counts = () => text(wrapper, 'starter-count').replace(/\s/g, ' ')
+    expect(counts()).toContain('one face of 4: 6 of 24 triangles · 810 beads a face · 3 240 for the whole piece')
+    await wrapper.get('[data-testid="starter-size-preset-partSize-11"]').trigger('click')
+    expect(counts()).toContain('1 188 beads a face · 4 752 for the whole piece')
+    expect(counts()).toContain('To give another face its own design, make a Frame for it.')
+    expect(mountSetup('triangle').find('[data-testid="starter-face-info"]').exists()).toBe(false)
+  })
 })

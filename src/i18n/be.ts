@@ -282,6 +282,11 @@ export const be: Translations = {
     rowsRound: { one: 'радоў па крузе: {count}', few: 'радоў па крузе: {count}', many: 'радоў па крузе: {count}', other: 'радоў па крузе: {count}' },
     bandRows: { one: 'радоў: {count}', few: 'радоў: {count}', many: 'радоў: {count}', other: 'радоў: {count}' },
     claspLeft: '{clasp} на зашпільку',
+    faceOfPiece: 'адна грань з {faces}: {parts} з {total} трохвугольнікаў',
+    beadsFace: { one: '{count} на грань', few: '{count} на грань', many: '{count} на грань', other: '{count} на грань' },
+    forPiece: { one: '{count} на ўвесь выраб', few: '{count} на ўвесь выраб', many: '{count} на ўвесь выраб', other: '{count} на ўвесь выраб' },
+    faceInfoLabel: 'Што ўваходзіць у падлік',
+    faceInfo: 'Калейдацыкл складаецца з {total} трохвугольнікаў: {faces} грані па {parts}. Гэтая рамка паказвае адну грань. Увесь выраб лічыцца так, быццам кожная грань сплецена як гэтая. Каб даць іншай грані свой дызайн, зрабіце для яе асобную рамку. Лічацца толькі трохвугольнікі, без бісерын краю, кончыкаў і шарніраў.',
   },
   canvas: {
     zoomInLabel: 'Павялічыць',
@@ -614,6 +619,7 @@ export const be: Translations = {
     columnLabel: 'Слупок',
     goButton: 'Перайсці',
     directionKeptToast: '{toast} {kept}',
+    faceBody: 'Кожны трохвугольнік тут пляцецца для гэтай грані: {parts} з {total} у вырабе. {then}',
   },
   quantities: {
     heading: 'Патрэбна бісеру',
@@ -629,6 +635,7 @@ export const be: Translations = {
     weightInfo:
       'Вага = колькасць бісерын × каля {grams} г. Сярэдняе ўзята з колькасці бісерын на кілаграм у вытворцы, а дзе ён яе не дае, з абвестак прадаўцоў. Бісер розных колераў і пакрыццяў важыць па-рознаму.',
     weightInfoLabel: 'Як лічыцца вага',
+    pieceTotal: 'Гэта падлік для адной грані з {faces}. Увесь выраб: {count}',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -693,6 +700,7 @@ export const be: Translations = {
       firstPoint: 'Рад 1 ля вастрыя, кожны рад чытаецца злева направа.',
       firstBase: 'Рад 1 гэта ніжні рад верху; кожны рад чытаецца злева направа, потым кожная нітка злева, зверху ўніз.',
       partsThenJoins: 'Кожная частка плятзецца кругамі ад свайго цэнтра, у парадку зборкі, потым злучэнні.',
+      faceNote: 'Гэтая схема паказвае адну грань: {parts} з {total} трохвугольнікаў калейдацыкла. Для кожнай іншай грані зрабіце сваю рамку.',
     },
   },
   saveBox: {

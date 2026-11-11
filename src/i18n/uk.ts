@@ -281,6 +281,11 @@ export const uk: Translations = {
     rowsRound: { one: 'рядів по колу: {count}', few: 'рядів по колу: {count}', many: 'рядів по колу: {count}', other: 'рядів по колу: {count}' },
     bandRows: { one: 'рядів: {count}', few: 'рядів: {count}', many: 'рядів: {count}', other: 'рядів: {count}' },
     claspLeft: '{clasp} на застібку',
+    faceOfPiece: 'одна грань із {faces}: {parts} із {total} трикутників',
+    beadsFace: { one: '{count} на грань', few: '{count} на грань', many: '{count} на грань', other: '{count} на грань' },
+    forPiece: { one: '{count} на весь виріб', few: '{count} на весь виріб', many: '{count} на весь виріб', other: '{count} на весь виріб' },
+    faceInfoLabel: 'Що входить у підрахунок',
+    faceInfo: 'Калейдоцикл складається з {total} трикутників: {faces} грані по {parts}. Ця рамка показує одну грань. Увесь виріб рахується так, ніби кожну грань сплетено як цю. Щоб дати іншій грані власний дизайн, зробіть для неї окрему рамку. Рахуються лише трикутники, без бісерин краю, кінчиків і шарнірів.',
   },
   canvas: {
     zoomInLabel: 'Збільшити',
@@ -613,6 +618,7 @@ export const uk: Translations = {
     columnLabel: 'Стовпець',
     goButton: 'Перейти',
     directionKeptToast: '{toast} {kept}',
+    faceBody: 'Кожен трикутник тут плететься для цієї грані: {parts} із {total} у виробі. {then}',
   },
   quantities: {
     heading: 'Потрібно бісеру',
@@ -628,6 +634,7 @@ export const uk: Translations = {
     weightInfo:
       'Вага = кількість бісерин × близько {grams} г. Середнє взято з кількості бісерин на кілограм у виробника, а де він її не дає, з оголошень продавців. Бісер різних кольорів і покриттів важить по-різному.',
     weightInfoLabel: 'Як рахується вага',
+    pieceTotal: 'Це підрахунок для однієї грані з {faces}. Увесь виріб: {count}',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -692,6 +699,7 @@ export const uk: Translations = {
       firstPoint: 'Ряд 1 біля вістря, кожен ряд читається зліва направо.',
       firstBase: 'Ряд 1 це нижній ряд верху; кожен ряд читається зліва направо, потім кожна нитка зліва, згори вниз.',
       partsThenJoins: 'Кожна частина плететься колами від свого центру, у порядку складання, потім зʼєднання.',
+      faceNote: 'Ця схема показує одну грань: {parts} із {total} трикутників калейдоцикла. Для кожної іншої грані зробіть свою рамку.',
     },
   },
   saveBox: {

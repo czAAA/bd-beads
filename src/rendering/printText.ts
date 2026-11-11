@@ -17,6 +17,7 @@ import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
 import { frameOf, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
+import { pieceFaceOf } from '../domain/pieceFaces'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -114,6 +115,14 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
   }
 }
 
+/** A Kaleidocycle's Word chart says, after where it starts, that it is one face of the piece (ticket 0876). */
+function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations['print']['wordChart']): PrintedWordChart {
+  const face = pieceFaceOf(frameOf(project)?.shape)
+  if (!face) return chart
+  const note = fillBlanks(t.faceNote, { parts: face.parts, total: face.total })
+  return { ...chart, notes: [...chart.notes.slice(0, 1), note, ...chart.notes.slice(1)] }
+}
+
 /** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). */
 export function printText(project: Project, t: Translations, locale: Locale, at: Date): PrintText {
   const bead = resolveProjectBead(project)
@@ -175,7 +184,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
-    wordChart: wordChart && wordChartText(wordChart, t.print.wordChart, t.rowProgress),
+    wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     labels: t.print,
   }
 }
