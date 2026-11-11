@@ -48,11 +48,17 @@ function setup(project: Project | null = makeProject(), mirror: MirrorSetting = 
   return { gesture, commitGridChange: harness.replaceProject, harness, clipped, losses }
 }
 
+/** A one-bead Selection the only way a press makes one (ticket 0868): a drag out to the next bead and back. */
+function dragOneBead(gesture: ReturnType<typeof setup>['gesture'], row: number, column: number) {
+  gesture.beginPress(row, column)
+  gesture.extendPress(row, column + 1)
+  gesture.extendPress(row, column)
+  gesture.endPress()
+}
+
 /** Drags a Selection over the top-left cell and copies it, which arms paste mode (ticket 437). */
 function copyTopLeft(gesture: ReturnType<typeof setup>['gesture']) {
-  gesture.beginPress(0, 0)
-  gesture.extendPress(0, 0)
-  gesture.endPress()
+  dragOneBead(gesture, 0, 0)
   gesture.copy()
 }
 
@@ -62,12 +68,72 @@ describe('useSelectionGesture', () => {
   })
 
   describe('a Select press', () => {
-    it('marks a single-cell Selection as soon as it begins', () => {
+    it('marks nothing while the press stays on its bead, a wobble on it included (ticket 0868)', () => {
       const { gesture } = setup()
 
       gesture.beginPress(1, 2)
+      expect(gesture.extendPress(1, 2)).toBe(false)
 
-      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('a tap beside the Selection drops it and selects nothing (ticket 0868)', () => {
+      const { gesture } = setup()
+      gesture.beginPress(0, 0)
+      gesture.extendPress(1, 1)
+      gesture.endPress()
+
+      gesture.beginPress(3, 3)
+      gesture.extendPress(3, 3)
+      gesture.endPress()
+
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('a press the first finger of a pinch began is forgotten, the Selection kept (ticket 0868)', () => {
+      const { gesture } = setup()
+      gesture.beginPress(0, 0)
+      gesture.extendPress(1, 1)
+      gesture.endPress()
+      const before = gesture.selection.value
+
+      gesture.beginPress(3, 3)
+      gesture.cancelPress()
+      gesture.endPress()
+
+      expect(gesture.selection.value).toBe(before)
+    })
+
+    it('a tap with no Selection does nothing (ticket 0868)', () => {
+      const { gesture, commitGridChange } = setup(paintedProject())
+
+      gesture.beginPress(0, 0)
+      gesture.endPress()
+
+      expect(gesture.selection.value).toBeUndefined()
+      expect(commitGridChange).not.toHaveBeenCalled()
+    })
+
+    it('a drag beside the Selection starts a new one from the press\'s bead (ticket 0868)', () => {
+      const { gesture } = setup()
+      gesture.beginPress(0, 0)
+      gesture.extendPress(1, 1)
+      gesture.endPress()
+
+      gesture.beginPress(3, 3)
+      gesture.extendPress(3, 4)
+      gesture.endPress()
+
+      expect(gesture.selection.value).toMatchObject({ top: 3, left: 3, rows: 1, columns: 2 })
+    })
+
+    it('a drag out and back to the press\'s bead selects that one bead (ticket 0868)', () => {
+      const { gesture } = setup()
+
+      dragOneBead(gesture, 2, 1)
+
+      expect(gesture.selection.value).toMatchObject({ top: 2, left: 1, rows: 1, columns: 1 })
+      expect(gesture.resume('mark')).toBe(true)
     })
 
     it('grows the Selection to wherever the drag has reached, in either direction', () => {
@@ -129,9 +195,7 @@ describe('useSelectionGesture', () => {
     it('Copy clears the Selection and arms paste mode at once (ticket 437)', () => {
       const project = paintedProject()
       const { gesture } = setup(project)
-      gesture.beginPress(0, 0)
-      gesture.extendPress(0, 0)
-      gesture.endPress()
+      dragOneBead(gesture, 0, 0)
 
       expect(gesture.copy()).toBe(true)
 
@@ -144,9 +208,7 @@ describe('useSelectionGesture', () => {
 
     it('Copy of a Selection with no drawn bead copies nothing and keeps the Selection', () => {
       const { gesture } = setup(paintedProject())
-      gesture.beginPress(3, 3)
-      gesture.extendPress(3, 3)
-      gesture.endPress()
+      dragOneBead(gesture, 3, 3)
 
       expect(gesture.copy()).toBe(false)
 
@@ -157,9 +219,7 @@ describe('useSelectionGesture', () => {
 
     it('Cut copies, clears the Selection and arms paste mode, as Copy does (ticket 447)', () => {
       const { gesture } = setup(paintedProject())
-      gesture.beginPress(0, 0)
-      gesture.extendPress(0, 0)
-      gesture.endPress()
+      dragOneBead(gesture, 0, 0)
 
       expect(gesture.cut()).toBe(true)
 
@@ -171,9 +231,7 @@ describe('useSelectionGesture', () => {
     it('armPaste turns paste mode back on without stamping, and refuses with an empty clipboard (ticket 447)', () => {
       const { gesture, harness } = setup(paintedProject())
       expect(gesture.armPaste()).toBe(false)
-      gesture.beginPress(0, 0)
-      gesture.extendPress(0, 0)
-      gesture.endPress()
+      dragOneBead(gesture, 0, 0)
       gesture.copy()
       gesture.dismissPaste()
       expect(gesture.pasteProjectionActive.value).toBe(false)
@@ -275,9 +333,7 @@ describe('useSelectionGesture', () => {
   describe('Cut and Fill (ticket 415)', () => {
     it('Cut copies the Selection and empties it as one Undo step, then clears the Selection', () => {
       const { gesture, harness } = setup(paintedProject())
-      gesture.beginPress(0, 0)
-      gesture.extendPress(0, 0)
-      gesture.endPress()
+      dragOneBead(gesture, 0, 0)
 
       gesture.cut()
 
@@ -347,13 +403,15 @@ describe('useSelectionGesture', () => {
       expect(commitGridChange).toHaveBeenCalledTimes(1)
     })
 
-    it('a click after cancelling marks a Selection rather than stamping', () => {
+    it('a click after cancelling stamps nothing, and a drag marks a Selection again', () => {
       const { gesture, commitGridChange } = setup(paintedProject())
       copyTopLeft(gesture)
       gesture.cancel()
 
       gesture.beginPress(1, 1)
       gesture.endPress()
+      expect(gesture.selection.value).toBeUndefined()
+      dragOneBead(gesture, 1, 1)
 
       expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 1, columns: 1 })
       expect(commitGridChange).not.toHaveBeenCalled()
@@ -361,7 +419,7 @@ describe('useSelectionGesture', () => {
 
     it('clears the Selection when no projection is armed', () => {
       const { gesture } = setup()
-      gesture.beginPress(0, 0)
+      dragOneBead(gesture, 0, 0)
 
       gesture.cancel()
 
@@ -507,6 +565,7 @@ describe('useSelectionGesture', () => {
     it('clears a marked Selection', () => {
       const { gesture } = setup()
       gesture.beginPress(1, 1)
+      gesture.extendPress(2, 2)
 
       gesture.clearSelection()
 
@@ -762,6 +821,16 @@ describe('useSelectionGesture', () => {
       return harness.gesture
     }
 
+    it('a tap on a handle, a top one included, grabs it and keeps the Selection (tickets 0833, 0868)', () => {
+      const gesture = selected()
+      const before = gesture.selection.value
+
+      gesture.beginAdjust({ kind: 'handle', edges: ['top'] }, { row: 1, column: 1 }, 'select')
+      gesture.endAdjust()
+
+      expect(gesture.selection.value).toBe(before)
+    })
+
     it('dragging a handle resizes the Selection by the sides it stands on', () => {
       const gesture = selected()
 
@@ -790,11 +859,11 @@ describe('useSelectionGesture', () => {
       expect(beadsOfLayer(harness.currentProject()!, 'canvas')).toBe(before)
     })
 
-    it('a press inside that never moves is a tap: one bead under Select, the bead\'s Piece under Piece', () => {
+    it('a press inside that never moves is a tap: it drops the Selection under Select (ticket 0868), selects the bead\'s Piece under Piece', () => {
       const gesture = selected()
       gesture.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 }, 'select')
       gesture.endAdjust()
-      expect(gesture.selection.value).toMatchObject({ top: 2, left: 1, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toBeUndefined()
 
       const piece = selected()
       piece.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 }, 'piece')

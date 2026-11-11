@@ -19,6 +19,8 @@ export interface PaintStrokeDeps {
   activeTool: () => Tool
   /** A Select press ends on the same mouseup as a stroke does. */
   endSelectPress: () => void
+  /** The first finger of a pinch was never a Select press either: it is forgotten, not taken for a tap (ticket 0868). */
+  cancelSelectPress: () => void
   /** The Mirror setting (ticket 0703): a stroke and a Fill land at their counterparts too. */
   mirror: () => MirrorSetting
   /** The Canvas positions on screen at a Fill press (Fill reach, ticket 0715); nothing until the view is measured. */
@@ -59,7 +61,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   /** Drops the stroke in progress with what it painted: the first finger of a pinch was never a stroke
    * (usePinchPan). */
   function cancelStroke() {
-    deps.endSelectPress()
+    deps.cancelSelectPress()
     strokeMode.value = null
     deps.edit.cancelStroke()
   }
