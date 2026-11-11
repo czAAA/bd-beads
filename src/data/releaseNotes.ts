@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A new Project starts on a color that shows on its background: gold on a dark one, red on a light one',
+      ru: 'Новый проект начинается с цвета, который виден на его фоне: золотого на тёмном, красного на светлом',
+      uk: 'Новий проєкт починається з кольору, який видно на його тлі: золотого на темному, червоного на світлому',
+      be: 'Новы праект пачынаецца з колеру, які відаць на яго фоне: залатога на цёмным, чырвонага на светлым',
+      zh: '新项目从一种在背景上看得清的颜色开始：深色背景上是金色，浅色背景上是红色',
+      es: 'Un proyecto nuevo empieza con un color que se ve sobre su fondo: dorado sobre uno oscuro, rojo sobre uno claro',
+      pl: 'Nowy projekt zaczyna się od koloru widocznego na jego tle: złotego na ciemnym, czerwonego na jasnym',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Beads needed sits right after the Frame size, and how the weight is worked out is behind its info button',
       ru: 'Нужно бисера стоит сразу после размера рамки, а как считается вес, подскажет кнопка с информацией',
       uk: 'Потрібно бісеру стоїть одразу після розміру рамки, а як рахується вага, підкаже кнопка з інформацією',
