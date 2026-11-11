@@ -24,6 +24,10 @@ const props = defineProps<{
   /** Whether the box is 1000px wide or more: the list stands beside the demo, which offers Expand. */
   wide: boolean
 }>()
+const emit = defineEmits<{
+  /** The beader pressed the demo's Menu or Project, which are the tour's (ticket 0841): the page points at its way in. */
+  pointAtWayIn: []
+}>()
 
 const { t, locale } = useI18n()
 const chapters = computed(() => insideChapters(t.value, locale.value))
@@ -164,7 +168,7 @@ watch(layout, async () => {
           </p>
         </div>
       </div>
-      <InsideEditor ref="editor" class="inside__editor" :taken-over="tour.takenOver.value" :expand="expand" @take-over="tour.takeOver" @toggle-expand="toggleExpand" />
+      <InsideEditor ref="editor" class="inside__editor" :taken-over="tour.takenOver.value" :expand="expand" @take-over="tour.takeOver" @toggle-expand="toggleExpand" @point-at-way-in="emit('pointAtWayIn')" />
     </template>
 
     <template v-else>

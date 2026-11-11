@@ -145,7 +145,7 @@ const sections = computed<HomepageSection[]>(() => [
     heading: t.value.homepage.whatsInside,
     title: 'inside',
     shows: WhatsInside,
-    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, wide: wide.value, shown: sections.value[section.value]?.id === 'inside' }),
+    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, wide: wide.value, shown: sections.value[section.value]?.id === 'inside', onPointAtWayIn: pointAtWayIn }),
   },
   {
     id: 'coffee',
@@ -309,6 +309,15 @@ function goIn() {
   if (isNew.value) emit('makeFirstProject')
   else emit('openEditor')
 }
+/** The demo's Menu and Project are the tour's (ticket 0841): a beader's press on them says so in a toast and rings the
+ * strip's way in, which keeps doing what it does. The ring is taken off and put back a frame later, so it plays again. */
+const pointing = ref(false)
+function pointAtWayIn() {
+  const said = t.value.homepage.inside.demoOnly
+  showToast('demo-only', isNew.value ? said.new : said.back, 'info')
+  pointing.value = false
+  requestAnimationFrame(() => requestAnimationFrame(() => (pointing.value = true)))
+}
 /** The Menu row's action, whose name the strip's library button shows with the count (tickets 0716, 0822). */
 const savedProjects = controlAction('saved-projects')
 </script>
@@ -336,6 +345,7 @@ const savedProjects = controlAction('saved-projects')
         <div class="homepage__strip">
           <CanvasStrip
             page="homepage"
+            :class="{ 'homepage__strip-pointing': pointing }"
             :open-panel="menuOpen ? 'menu' : null"
             :zoom-percent="zoom.percent.value"
             :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
@@ -622,6 +632,27 @@ const savedProjects = controlAction('saved-projects')
 
 .homepage__section--shown {
   transition-delay: 0s;
+}
+
+/* A press on the demo's Menu or Project (ticket 0841): the way in's primary button rings twice in `accent`. */
+.homepage__strip-pointing :deep(.canvas-strip__way-in .app-button--primary) {
+  animation: way-in-pulse var(--way-in-pulse) var(--ease-out) 2;
+}
+
+@keyframes way-in-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+
+  to {
+    box-shadow: 0 0 0 var(--way-in-pulse-ring) transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage__strip-pointing :deep(.canvas-strip__way-in .app-button--primary) {
+    animation: none;
+  }
 }
 
 /* The nudge (ticket 0784): the first section lifts and settles once, the way it starts to turn. */
