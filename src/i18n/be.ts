@@ -432,6 +432,7 @@ export const be: Translations = {
         more: 'Хутка будзе больш',
         showAll: 'Паказаць усе {count}',
       },
+      alone: { heading: 'Бясплатна', why: 'Акаўнты і Pro з’явяцца пазней; усё працуе і без іх.' },
     },
     library: '{library}, {count}',
   },

@@ -429,6 +429,7 @@ export const en: Translations = {
         more: 'More on the way',
         showAll: 'Show all {count}',
       },
+      alone: { heading: 'Free to use', why: 'Accounts and Pro come later; everything works without them.' },
     },
     library: '{library}, {count}',
   },

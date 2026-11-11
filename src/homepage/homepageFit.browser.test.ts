@@ -176,12 +176,15 @@ describe("What's inside fits its room", () => {
 describe('HomePage text fit with Projects saved', () => {
   for (const width of WIDTHS) {
     for (const locale of FIT_LOCALES) {
-      it(`${locale} at ${width}px, the strip's two buttons`, async () => {
+      it(`${locale} at ${width}px, the strip's two buttons and the three plans`, async () => {
         const mounted = await mountAt(HomePage, { projectCount: 128, feedback: fakeFeedback() }, { locale, width })
         const labels = ['homepage-open-editor', 'homepage-phone-way-in', 'homepage-saved-projects']
           .filter((id) => mounted.root.querySelector(`[data-testid="${id}"]`)).map((id) => mounted.root.querySelector(`[data-testid="${id}"]`)!.textContent!.trim())
-        // The rest of the page is the case above's; only what these two buttons hold is checked here.
+        // The rest of the page is the case above's; only what these two buttons hold, and the plans a new visitor never
+        // sees (ticket 0871), are checked here.
         expect((await misfitsNow()).filter((misfit) => labels.some((label) => misfit.includes(label)))).toEqual([])
+        await turnToSection(mounted.root, 'plans')
+        expect(unexplainedFit('HomePage with Projects saved', locale, width, await misfitsNow())).toEqual([])
       })
     }
   }

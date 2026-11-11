@@ -118,6 +118,12 @@ const boxStyle = computed(() => {
   }
 })
 
+/** The library, once the Menu's Saved Projects opened it (ticket 0716); until then the count read at the start. */
+const library = shallowRef<HomepageLibrary>()
+const count = computed(() => (library.value ? library.value.projects.value.length + library.value.sealed.value.length : props.projectCount))
+/** No Projects saved: Welcome's way in makes the first, and the plans show No account alone (ticket 0871). */
+const isNew = computed(() => count.value === 0)
+
 // The sections (tickets 0739, 0744, 0801): one at a time in the box, which never moves; the page itself never scrolls.
 // This list is the one place they are named and ordered: the page draws them and turns between them, the Progress bar
 // its steps.
@@ -158,12 +164,14 @@ const sections = computed<HomepageSection[]>(() => [
   },
   {
     id: 'plans',
-    heading: t.value.homepage.plans.heading,
+    // A new visitor's plans are No account alone, under its own heading (ticket 0871).
+    heading: isNew.value ? t.value.homepage.plans.alone.heading : t.value.homepage.plans.heading,
     title: 'inside',
     shows: PlanTiles,
     // A phone's list has no growing and no fade: Show all opens it (ticket 0827).
     with: () => ({
       phone: narrow.value,
+      isNew: isNew.value,
       freeHeight: narrow.value ? undefined : freeGrowth.height.value,
       freeOpen: narrow.value || freeGrowth.open.value,
       onOpenEditor: () => emit('openEditor'),
@@ -286,8 +294,6 @@ function onSectionScroll(id: string, event: Event) {
 
 // The Menu's Saved Projects (ticket 0716): the editor's list, its × asking the editor's Delete question first (ticket
 // 0842), a pick opening the editor on it.
-const library = shallowRef<HomepageLibrary>()
-const count = computed(() => (library.value ? library.value.projects.value.length + library.value.sealed.value.length : props.projectCount))
 const deleteProject = useDeleteProjectFlow({
   findProject: (id) => library.value?.entryOf(id),
   removeProject: (id) => library.value?.removeProject(id),
@@ -301,8 +307,6 @@ const deleteProject = useDeleteProjectFlow({
 function showSavedProjects() {
   library.value ??= props.openLibrary?.()
 }
-
-const isNew = computed(() => count.value === 0)
 
 /** The phone bar's main button: into the editor as the strip's way in goes, a new visitor making their first Project. */
 function goIn() {

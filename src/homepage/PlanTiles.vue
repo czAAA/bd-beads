@@ -17,9 +17,14 @@ const props = defineProps<{
   freeOpen?: boolean
   /** Drawn for a phone: stacked, the phone bar's main button the way in. */
   phone?: boolean
+  /** No Projects saved: No account alone, its own heading and line, so a first visit doesn't end on Coming soon (ticket
+   * 0871); Free account and Pro come back once the visitor has stayed. */
+  isNew?: boolean
 }>()
 const emit = defineEmits<{ openEditor: [] }>()
 const { t, locale } = useI18n()
+/** The heading and its line: the three plans' and their reason, or No account's alone. */
+const headingCopy = computed(() => (props.isNew ? t.value.homepage.plans.alone : t.value.homepage.plans))
 const rows = computed(() => freeListRows(t.value, locale.value))
 /** The free list's rows a phone shows before Show all opens the rest in place. */
 const PHONE_ROWS = 6
@@ -32,6 +37,8 @@ const OFF = [
   { id: 'free-account', frequency: '0.85 0.6', seed: 4 },
   { id: 'pro', frequency: '0.8 0.65', seed: 11 },
 ] as const
+/** The switched-off tiles shown: none to a new visitor (ticket 0871). */
+const offShown = computed(() => (props.isNew ? [] : OFF))
 /** The free list's window and its tile, for the page to measure the growth from. */
 const freeWindow = shallowRef<HTMLElement>()
 const freeTile = shallowRef<HTMLElement>()
@@ -41,8 +48,8 @@ defineExpose({ freeWindow, freeTile })
 <template>
   <section class="plans" :class="{ 'plans--phone': phone }" aria-labelledby="homepage-plans" data-testid="homepage-plans">
     <header class="plans__head">
-      <h2 id="homepage-plans" class="plans__heading">{{ t.homepage.plans.heading }}</h2>
-      <p class="plans__why"><AppIcon name="info" :size="16" />{{ t.homepage.plans.why }}</p>
+      <h2 id="homepage-plans" class="plans__heading">{{ headingCopy.heading }}</h2>
+      <p class="plans__why" data-testid="plans-why"><AppIcon name="info" :size="16" />{{ headingCopy.why }}</p>
     </header>
     <div class="plans__grid">
       <article ref="freeTile" class="plan plan--current" aria-current="true" data-testid="plan-no-account">
@@ -82,7 +89,7 @@ defineExpose({ freeWindow, freeTile })
           {{ fillBlanks(t.homepage.plans.free.showAll, { count: rows.length }) }}
         </AppButton>
       </article>
-      <article v-for="(off, i) in OFF" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
+      <article v-for="(off, i) in offShown" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
         <span class="plan__strand" aria-hidden="true">
           <template v-for="bead in i + 2" :key="bead">
             <span v-if="bead > 1" class="plan__thread" />

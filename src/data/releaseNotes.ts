@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A first visit ends on what is free, not on Coming soon',
+      ru: 'Новый гость видит, что бесплатно, а не «Скоро»',
+      uk: 'Новий гість бачить, що безплатне, а не «Незабаром»',
+      be: 'Новы госць бачыць, што бясплатна, а не «Хутка»',
+      zh: '首次访问以免费内容收尾，不再显示“即将推出”',
+      es: 'Una primera visita acaba en lo gratis, no en «Pronto»',
+      pl: 'Pierwsza wizyta kończy się na tym, co darmowe, nie na „Wkrótce”',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The PDF\'s Specification says Color + letters, as its chart prints',
       ru: 'Стиль схемы в PDF: «Цвет + буквы», как она и печатается',
       uk: 'Специфікація в PDF пише «Колір + літери», як і друкує схема',
