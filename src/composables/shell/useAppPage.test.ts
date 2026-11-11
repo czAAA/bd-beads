@@ -40,4 +40,15 @@ describe('useAppPage', () => {
     old()
     expect(await pages.leave()).toBe(false)
   })
+
+  it('says it is guarded only while a page other than the editor holds a guard', () => {
+    const pages = useAppPage()
+    expect(pages.guarded.value).toBe(false)
+    pages.open('convert-image')
+    expect(pages.guarded.value).toBe(false)
+    const unregister = pages.registerLeaveGuard(() => true)
+    expect(pages.guarded.value).toBe(true)
+    unregister()
+    expect(pages.guarded.value).toBe(false)
+  })
 })

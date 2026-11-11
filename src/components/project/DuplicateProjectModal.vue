@@ -4,12 +4,13 @@ import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppModal from '../ui/AppModal.vue'
+import FieldCounter from '../ui/form/FieldCounter.vue'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 
 // Duplicate Project (ProjectPanel and ConfirmDialogs cards, ticket 443): asks for the copy's name (the current name and
 // the next free number suggested); the copy keeps everything, Row progress included. Enter or Duplicate makes it; an
-// empty name is refused.
+// empty name is refused. The name takes New Project's and Rename's one limit and counter (ticket 0854).
 const props = defineProps<{ suggested: string }>()
 const emit = defineEmits<{ confirm: [name: string]; cancel: [] }>()
 const { t } = useI18n()
@@ -39,10 +40,12 @@ function submit() {
           v-model="draft"
           type="text"
           :maxlength="MAX_PROJECT_NAME"
+          :placeholder="t.fields.projectName"
           :invalid="tried && empty"
           data-autofocus
           data-testid="duplicate-name-input"
         />
+        <template #after><FieldCounter :length="draft.length" :max="MAX_PROJECT_NAME" /></template>
       </FormField>
     </form>
     <template #actions>

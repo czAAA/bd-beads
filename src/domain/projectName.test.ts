@@ -23,6 +23,12 @@ describe('suggestCopyName', () => {
   it('keeps the suggestion inside 40 characters', () => {
     expect(suggestCopyName('x'.repeat(40), [])).toBe(`${'x'.repeat(38)} 2`)
   })
+
+  it('shortens a long name at a word, not inside one (ticket 0854)', () => {
+    const long = 'A sunflower bracelet for my grandmother and her garden'
+    expect(suggestCopyName(long, [])).toBe('A sunflower bracelet for my 2')
+    expect(suggestCopyName(long, ['A sunflower bracelet for my 2'])).toBe('A sunflower bracelet for my 3')
+  })
 })
 
 describe('naming a Project', () => {

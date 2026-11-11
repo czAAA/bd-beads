@@ -14,6 +14,8 @@ import type { SheetArea } from '../tools/selectionBarPlacement'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
+import { useBackClosesPage } from './useBackClosesPage'
+import { useUnloadGuard } from './useUnloadGuard'
 import { useViewportGuard } from './useViewportGuard'
 import { usePenInputMode } from './usePenInputMode'
 import { useProjectManageFlow } from '../project/useProjectManageFlow'
@@ -153,6 +155,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     addProject: addNewProject,
     decodeImage: services.decodeImage,
     loadCatalog: loadColorCatalog,
+    // Close with no Project open goes back to the New Project form the converter was opened from (ticket 0861).
+    onClosed: () => {
+      if (!activeProject.value) overlays.openMenuOnForm()
+    },
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
@@ -798,6 +804,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   if (!demo) {
     usePageZoomLock()
     useViewportGuard()
+    // The browser's Back is the converter's Close, and a reload or closing the tab asks while it holds a setup (0861).
+    useBackClosesPage({ page: appPage.page, close: convertImage.onClose })
+    useUnloadGuard().askWhile(() => appPage.guarded.value)
   }
   useAppShortcutTable({
     activeProject: currentProject,
@@ -1087,9 +1096,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
       // New Project
       onNewProjectDraft: convertImage.onNewProjectDraft,
-      onCreateProject,
-      onCreateFromStarter,
-      onOpenConvertImage: convertImage.open,
+      // Each leaves the page first, as the Menu's rows do, should the form show over one (ticket 0861)
+      onCreateProject: afterLeaving(onCreateProject),
+      onCreateFromStarter: afterLeaving(onCreateFromStarter),
+      onOpenConvertImage: afterLeaving(convertImage.open),
       // Project
       activeProject,
       saveFailed,
@@ -1132,6 +1142,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // Menu: whether the browser keeps the Projects, and asking it again (ticket 0839)
       projectsKept: storageAsk.kept,
       onAskToKeep: storageAsk.onAskToKeep,
+      // Project's Picture and Printable chart open Export as the strip's button does, on their row (ticket 0843)
+      onSelectPanel: overlays.onSelectPanel,
+      exportChoice: overlays.exportChoice,
     },
     /** The dialogs (AppDialogs): which one the registry shows, what each asks about, and its answers. */
     dialogs: {

@@ -76,6 +76,16 @@ describe('Menu', () => {
     expect(mounted.wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
   })
 
+  it('opens on its root list over the converter, even with an empty library, so leaving asks first (ticket 0861)', async () => {
+    saveProjects([])
+    const mounted = mountPanels()
+    mounted.panels.onOpenConvertImage()
+    await flushPromises()
+    await mounted.openPanel('menu')
+    expect(mounted.wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(true)
+    expect(mounted.wrapper.find('[data-testid="create-project"]').exists()).toBe(false)
+  })
+
   it('deletes every Project after a confirmation, leaving none open; Cancel keeps them', async () => {
     saveProjects([moth(), other()])
     const mounted = mountPanels()
@@ -377,6 +387,18 @@ describe('Backgrounds (ticket 0666)', () => {
 })
 
 describe('The Export panel', () => {
+  it('opens from the Project panel\'s Picture and Printable chart, focused on the row chosen (ticket 0843)', async () => {
+    const mounted = mountPanels()
+    for (const [row, chosen] of [['project-export-png', 'export-png'], ['project-export-pdf', 'export-pdf']]) {
+      await mounted.openPanel('project')
+      await click(mounted, row)
+      await nextTick()
+
+      expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
+      expect(document.activeElement?.getAttribute('data-testid')).toBe(chosen)
+    }
+  })
+
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {
     const open = withFrameSheet(moth(), undefined)
     saveProjects([withLayers(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])

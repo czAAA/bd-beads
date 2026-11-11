@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { useScrollEdges } from '../../composables/ui/useScrollEdges'
+import { useScrollCut } from '../../composables/ui/useScrollCut'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect } from '../../domain/toolPill'
@@ -112,7 +112,7 @@ const drag = useToolPillDrag(pillEl, layerEl, gripEl, {
 })
 
 /** Which ends of the scrolling tools are cut, so that end fades (ticket 0837). */
-const toolsCut = useScrollEdges(toolsEl, () => (vertical.value ? 'vertical' : 'horizontal'))
+const toolsCut = useScrollCut(toolsEl, () => (vertical.value ? 'vertical' : 'horizontal'))
 
 const pillStyle = computed(() => (drag.dragging.value ? { left: `${drag.corner.value.left}px`, top: `${drag.corner.value.top}px` } : undefined))
 

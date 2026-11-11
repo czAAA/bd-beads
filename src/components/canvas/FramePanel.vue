@@ -103,19 +103,22 @@ const cells = FRAME_EDGES.map((edge) => {
   })
   return { edge, out: controlAction(`frame-edge-${edge}-out`), in: controlAction(`frame-edge-${edge}-in`), shrink: hold.handlers(-1), grow: hold.handlers(1) }
 })
-/** The width and height fields start empty (their placeholders show the current size), so a tablet's keyboard only opens
- * on a tap. They take whole numbers from 1 up; Enter or leaving both takes them, an empty one keeps its side, Escape clears. */
-const typedWidth = ref('')
-const typedHeight = ref('')
-const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
+/** The width and height fields hold the Frame's size as values, selected on focus so typing replaces it (ticket 0854);
+ * what is typed (`null` while untouched) stands in for it. They take whole numbers from 1 up; Enter or leaving both takes
+ * them, an empty one keeps its side (its placeholder still reads the size), Escape puts the size back. */
+const typedWidth = ref<string | null>(null)
+const typedHeight = ref<string | null>(null)
+const sizeEdited = computed(() => typedWidth.value !== null || typedHeight.value !== null)
 const counted = computed(() => (frame.value ? seenSize(frame.value) : { columns: 0, rows: 0 }))
+const shownWidth = computed(() => typedWidth.value ?? String(counted.value.columns))
+const shownHeight = computed(() => typedHeight.value ?? String(counted.value.rows))
 function clearSize(): void {
-  typedWidth.value = ''
-  typedHeight.value = ''
+  typedWidth.value = null
+  typedHeight.value = null
 }
 function commitSize(): void {
-  const columns = Number(typedWidth.value) || counted.value.columns
-  const rows = Number(typedHeight.value) || counted.value.rows
+  const columns = Number(typedWidth.value ?? '') || counted.value.columns
+  const rows = Number(typedHeight.value ?? '') || counted.value.rows
   // The size it already has is no step: re-centring it would shift a Frame whose rows alternate by a pair.
   if (sizeEdited.value && columns && rows && (columns !== counted.value.columns || rows !== counted.value.rows)) emit('resize', columns, rows)
   clearSize()
@@ -217,6 +220,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           :edit-label="t.frame.nameEdit"
           :edit-tooltip="t.frame.nameTooltip"
           :empty-text="t.frame.nameEmpty"
+          :placeholder="t.fields.frameName"
           :maxlength="MAX_PIECE_NAME"
           :normalize="(raw) => raw.trim()"
           testid="frame-name"
@@ -235,7 +239,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           </div>
         </div>
         <div v-else class="frame-panel__body">
-          <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
+          <!-- Escape during an edit in a field puts the size back; otherwise it closes the panel (PanelHost). -->
           <!-- Once a pass is done, or while the Frame lies turned, the fields are shown but off, and a Tooltip says why and how to unblock. -->
           <component
             :is="sizeHeld ? AppTooltip : 'div'"
@@ -247,7 +251,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             @focusout="onSizeFocusOut"
           >
             <TextField
-              :model-value="typedWidth"
+              :model-value="shownWidth"
               compact
               select-on-focus
               type="text"
@@ -265,7 +269,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             />
             <span class="frame-panel__times" aria-hidden="true">×</span>
             <TextField
-              :model-value="typedHeight"
+              :model-value="shownHeight"
               compact
               select-on-focus
               type="text"
