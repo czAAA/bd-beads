@@ -26,6 +26,30 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The crop\'s and the Reference image\'s handles are the Frame\'s, easy to catch with a finger',
+      ru: 'Ручки обрезки и подложки теперь как у рамки и легко ловятся пальцем',
+      uk: 'Ручки обрізки й підкладки тепер як у рамки й легко хапаються пальцем',
+      be: 'Ручкі абрэзкі і падкладкі цяпер як у рамкі і лёгка ловяцца пальцам',
+      zh: '裁剪框和参考图的手柄与画框相同，手指也能轻松抓住',
+      es: 'Los tiradores del recorte y de la imagen de referencia son los del Marco, fáciles de tomar con el dedo',
+      pl: 'Uchwyty kadrowania i obrazu pomocniczego są jak w ramce, łatwe do złapania palcem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'The PDF\'s Specification says Color + letters, as its chart prints',
+      ru: 'Стиль схемы в PDF: «Цвет + буквы», как она и печатается',
+      uk: 'Специфікація в PDF пише «Колір + літери», як і друкує схема',
+      be: 'Спецыфікацыя ў PDF піша «Колер + літары», як і друкуе схема',
+      zh: 'PDF 的规格清单写明“颜色 + 字母”，与图纸一致',
+      es: 'La especificación del PDF dice Color + letras, como imprime el gráfico',
+      pl: 'Specyfikacja w PDF podaje Kolor + litery, tak jak drukuje wykres',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: "The Homepage's demo says it is a demo, and its Menu points you to your own first Project",
       ru: 'Демо на главной странице подписано как демо, а его меню направляет вас к вашему первому проекту',
       uk: 'Демо на головній сторінці підписане як демо, а його меню скеровує вас до вашого першого проєкту',

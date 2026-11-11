@@ -87,6 +87,7 @@
     "components/Toolbox/README.md",
     "components/ValueSlider/README.md",
     "components/WritingPatterns/README.md",
+    "components/Handle/README.md",
     "components/bundle.css",
     "forms-and-states.md",
     "interaction-and-motion.md",
@@ -501,6 +502,11 @@
       "name": "WritingPatterns",
       "group": "Writing",
       "summary": "How the app talks: the voice, and one sentence pattern for each kind of message, in English and Russian."
+    },
+    {
+      "name": "Handle",
+      "group": "Canvas",
+      "summary": "The one resize handle of the Frame, a Selection, the Mirror's Area, the converter's crop and the reference image: its brackets and bars, hot corner, reach and touch area."
     }
   ],
   "assetGroups": [
