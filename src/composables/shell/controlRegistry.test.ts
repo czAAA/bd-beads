@@ -133,7 +133,7 @@ describe('the control registry', () => {
   it('writes every body as one sentence ending in a full stop, without "Click to"', () => {
     for (const control of CONTROLS) {
       for (const [locale, t] of Object.entries(LANGUAGES)) {
-        const bodies = [control.body?.(t)].filter((body): body is string => body !== undefined)
+        const bodies = [control.body?.(t), control.touchBody?.(t)].filter((body): body is string => body !== undefined)
         for (const body of bodies) {
           expect(body, `${control.id} in ${locale}`).toMatch(/[.。]$/)
           expect(body, control.id).not.toMatch(/click to/i)

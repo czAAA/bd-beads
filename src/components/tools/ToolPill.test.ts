@@ -57,6 +57,11 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('false')
   })
 
+  it('lights no tool while Pick color from canvas waits for a bead, Paint included (ticket 0845)', () => {
+    const wrapper = mount(ToolPill, { props: { ...base, picking: true } })
+    for (const id of TOOL_IDS) expect(wrapper.get(`[data-testid="pill-tool-${id}"]`).attributes('aria-pressed'), id).toBe('false')
+  })
+
   it('shows a Paste tile right after the Mirror tile only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
     expect(mount(ToolPill, { props: base }).find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
 
