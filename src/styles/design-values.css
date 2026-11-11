@@ -56,6 +56,8 @@
   --slider-label-gap: 12px; /* ValueSlider card (ticket 0862): the least room between two labels under the track. */
   --picture-drop-width: 400px; /* ConvertImage card: the card a picture dragged over the app shows. */
   --picture-drop-height: 220px; /* ConvertImage card: its height. */
+  --focus-ring-lit: var(--surface); /* KeyboardFocus card (ticket 0857): the ring on a lit (ink-filled) control, the surface color, so it shows against the fill. */
+  --focus-offset-lit: calc(var(--focus-offset) - var(--focus-width)); /* KeyboardFocus card (ticket 0857): that ring inside the control's ink edge, which stays. */
 }
 
 :root,

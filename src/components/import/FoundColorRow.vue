@@ -314,6 +314,12 @@ useRevealWhenOpen(rowEl, () => props.open)
   background: var(--ink);
 }
 
+/* Lit with ink: the ring is the surface color, inside the edge (KeyboardFocus card, ticket 0857). */
+.found-color__row :deep(.found-color__action--on:focus-visible) {
+  outline-color: var(--focus-ring-lit);
+  outline-offset: var(--focus-offset-lit);
+}
+
 .found-color__picker {
   display: flex;
   flex-direction: column;

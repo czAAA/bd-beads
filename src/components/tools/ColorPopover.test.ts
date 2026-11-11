@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import { findBead } from '../../domain/beads'
@@ -82,6 +82,57 @@ describe('ColorPopover, picking (tickets 397, 398, 444)', () => {
     expect(popover.emitted('select-custom-color')).toEqual([['#123456']])
     expect(popover.emitted('close')).toHaveLength(2)
     wrapper.unmount()
+  })
+})
+
+describe('ColorPopover, by keyboard (ticket 0857)', () => {
+  const cleanups: (() => void)[] = []
+  afterEach(() => cleanups.splice(0).forEach((cleanup) => cleanup()))
+
+  /** Opens the popover from a tile that holds focus, as the Tool pill's does. */
+  function openFromTile(focusSwatch: boolean) {
+    const tile = document.body.appendChild(document.createElement('button'))
+    tile.focus()
+    const host = mountWithPalette(ColorPopover, defaultPaletteIds(), { tile, pill: undefined, position: 'bottom', selectedColorId: 'blue', focusSwatch }, { attachTo: document.body })
+    cleanups.push(() => {
+      host.wrapper.unmount()
+      tile.remove()
+    })
+    const swatches = () => host.wrapper.findAll<HTMLElement>('[data-testid="palette-swatch"]').map((swatch) => swatch.element)
+    return { ...host, tile, swatches, popover: host.wrapper.findComponent(ColorPopover) }
+  }
+
+  it('walks in on the chosen swatch, steps with the arrows, chooses with Enter and gives focus back to the tile', () => {
+    const { swatches, tile, popover } = openFromTile(true)
+    const blue = swatches().findIndex((swatch) => swatch.dataset.colorId === 'blue')
+    expect(document.activeElement).toBe(swatches()[blue])
+
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
+    const next = swatches()[blue + 1]!
+    expect(document.activeElement).toBe(next)
+    // Enter on a button is its click, with no pointer detail.
+    ;(document.activeElement as HTMLElement).click()
+    expect(popover.emitted('select-color')).toEqual([[next.dataset.colorId]])
+    expect(popover.emitted('close')).toHaveLength(1)
+    expect(document.activeElement).toBe(tile)
+  })
+
+  it('gives focus back to the tile on Escape', () => {
+    const { tile, popover } = openFromTile(true)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(popover.emitted('close')).toHaveLength(1)
+    expect(document.activeElement).toBe(tile)
+  })
+
+  it('takes no focus when opened by a pointer, and moves none on closing from outside it', () => {
+    const { tile, popover } = openFromTile(false)
+    expect(document.activeElement).toBe(tile)
+    const elsewhere = document.body.appendChild(document.createElement('button'))
+    cleanups.push(() => elsewhere.remove())
+    elsewhere.focus()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(popover.emitted('close')).toHaveLength(1)
+    expect(document.activeElement).toBe(elsewhere)
   })
 })
 

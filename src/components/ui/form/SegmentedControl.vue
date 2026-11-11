@@ -185,6 +185,12 @@ function onKeydown(event: KeyboardEvent) {
   outline-offset: var(--focus-offset);
 }
 
+/* The chosen option is lit with ink: its ring is the surface color, inside the edge (KeyboardFocus card, ticket 0857). */
+.segmented__option[aria-checked='true']:focus-visible {
+  outline-color: var(--focus-ring-lit);
+  outline-offset: var(--focus-offset-lit);
+}
+
 .segmented--disabled {
   background: var(--surface);
   border-color: var(--line);

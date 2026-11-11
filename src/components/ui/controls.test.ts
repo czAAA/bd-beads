@@ -509,6 +509,19 @@ describe('AppTooltip', () => {
     await button.trigger('keydown', { key: 'Escape' })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
   })
+
+  it('shows nothing while suppressed, and hides a showing tip once it is (ticket 0857)', async () => {
+    const wrapper = tooltip()
+    const button = wrapper.get('button')
+    await button.trigger('focusin')
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+
+    await wrapper.setProps({ suppressed: true })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+    await hover(wrapper)
+    await button.trigger('focusin')
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+  })
 })
 
 describe('the controls follow the interaction rules and use only tokens', () => {

@@ -11,6 +11,8 @@ export type TooltipProps = {
   announce?: boolean
   /** A click or tap opens the tip and keeps it open until the next press anywhere: the Info button's help (ticket 0844). */
   opensOnClick?: boolean
+  /** No tip while set, and a showing one hides: the Colors tile while its popover is open (ticket 0857). */
+  suppressed?: boolean
 } & (
   | { hotkey?: string; disabled?: false; disabledBody?: undefined }
   | { hotkey?: undefined; disabled: true; disabledBody: string }

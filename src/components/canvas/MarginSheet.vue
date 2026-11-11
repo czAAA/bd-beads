@@ -274,6 +274,8 @@ function onMovePress(event: PointerEvent): void {
 
 /** The Margin color popover, hung from its button, or from the Frame tools menu where that holds it. */
 const toolsEl = ref<HTMLElement>()
+/** The tools are one Tab stop too, ←/→ along them (ticket 0857), so the title block's name is the next stop. */
+const toolsRoving = useRovingFocus(toolsEl, { selector: '.margin-sheet__tool', axis: () => 'horizontal', managesTabIndex: true })
 const colorOpen = ref(false)
 const colorButton = computed(() =>
   colorOpen.value ? (toolsEl.value?.querySelector<HTMLElement>('[data-testid="margin-color"], [data-testid="margin-frame-tools"]') ?? undefined) : undefined,
@@ -334,12 +336,12 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         />
       </div>
       <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
-      <div ref="toolsEl" class="margin-sheet__tools">
+      <div ref="toolsEl" class="margin-sheet__tools" @keydown="toolsRoving.onKeydown" @focusin="toolsRoving.onFocusin">
         <template v-if="row === 'full' || row === 'compact'">
           <IconButton
             v-if="rotatable"
             variant="plain"
-            class="margin-sheet__mirror"
+            class="margin-sheet__tool margin-sheet__mirror"
             :class="{ 'margin-sheet__mirror--on': mirrorOnFrame }"
             :icon-size="iconSize"
             :action="actions.mirror"
@@ -348,10 +350,11 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             data-testid="margin-mirror-frame"
             @click="emit('mirror')"
           />
-          <IconButton v-if="rotatable" variant="plain" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
+          <IconButton v-if="rotatable" variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
           <IconButton
             v-if="editable"
             variant="plain"
+            class="margin-sheet__tool"
             :icon-size="iconSize"
             :action="actions.edit"
             :deps="deps"
@@ -359,11 +362,12 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
             data-testid="frame-edit-toggle"
             @click="emit('toggle-edit')"
           />
-          <IconButton variant="plain" :icon-size="iconSize" :action="actions.export" :selected="exportOpen" data-testid="margin-export" @click="emit('export', 'margin-export')" />
+          <IconButton variant="plain" class="margin-sheet__tool" :icon-size="iconSize" :action="actions.export" :selected="exportOpen" data-testid="margin-export" @click="emit('export', 'margin-export')" />
         </template>
         <IconButton
           v-if="row !== 'narrow'"
           variant="plain"
+          class="margin-sheet__tool"
           :icon-size="iconSize"
           :action="actions.color"
           :selected="colorOpen"
@@ -374,9 +378,9 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         />
         <template v-if="row === 'full' || row === 'compact'">
           <span class="margin-sheet__divider" aria-hidden="true" />
-          <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
+          <IconButton variant="plain" :icon-size="iconSize" :action="actions.remove" :deps="deps" class="margin-sheet__tool margin-sheet__remove" data-testid="frame-chrome-remove" @click="emit('remove')" />
         </template>
-        <MenuButton v-else variant="plain" icon="more" icon-only :label="t.frame.margin.frameTools" align="end" data-testid="margin-frame-tools">
+        <MenuButton v-else variant="plain" class="margin-sheet__tool" icon="more" icon-only :label="t.frame.margin.frameTools" align="end" data-testid="margin-frame-tools">
           <AppMenuItem
             v-for="item in menuItems"
             :key="item.id"

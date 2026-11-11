@@ -216,6 +216,12 @@ function swallowClick(event: MouseEvent) {
   border-color: var(--ink);
 }
 
+/* Lit with ink, the ring's own color: the ring is the surface color, inside the edge (KeyboardFocus card, ticket 0857). */
+.app-button--selected:focus-visible {
+  outline-color: var(--focus-ring-lit);
+  outline-offset: var(--focus-offset-lit);
+}
+
 /* Hover exists only with a mouse or trackpad: on touch the pressed state is the only feedback. */
 @media (hover: hover) {
   .app-button:hover:not([aria-disabled='true']) {

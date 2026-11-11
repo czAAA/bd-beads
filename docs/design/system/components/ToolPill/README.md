@@ -45,6 +45,7 @@ Replaces the Colour sheet on every device, phones included.
 - **Contents, top to bottom:** a head (the chosen colour as a 20px `radius-sm` swatch, its name, its hex in `meta-small` `muted`, the **Edit Palette** pencil, Close); "palette" (in Edit Palette followed by the **Remove all** bin), the PaletteSwatches grid (without the colours that are one of the pill's three recents while they are; no recents row here) with Pick color from canvas as its last tile; then Custom and Image colors side by side (ColorPickers).
 - **Its body is one component** (ticket 0758, `ColorPopoverBody`): the head with the chosen colour, then the Palette with Pick color, Custom color and the Bead's palette. Convert image's Change picker (FoundColorRow card) shows the same body in a row, with Keep exact added to its head.
 - Picking a colour chooses it and closes the popover; Escape, Close, or a press outside close it too, and a press outside only closes.
+- **Keyboard (ticket 0857):** opened from the keyboard (Enter or Space on the tile), focus goes to the chosen swatch, or the first where the chosen colour is not in the grid; the arrows, Home and End move among the swatches (the Palette's one Tab stop), Enter chooses. Choosing, Escape or Close gives focus back to the colour tile. Opened by a pointer, focus stays where it was. While the popover is open the tile shows no Tooltip, so nothing covers the popover's head.
 
 ## Moving the pill
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide, ref } from 'vue'
+import { onMounted, provide, ref } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { usePillPopoverPlacement } from '../../composables/tools/usePillPopoverPlacement'
 import type { PillPosition } from '../../domain/toolPill'
@@ -8,8 +8,8 @@ import { PICK_CLOSE } from '../shell/pickContext'
 import ColorPopoverBody from './ColorPopoverBody.vue'
 
 // The colour popover (ticket 439, ADR 0046; ToolPill card): the Colour sheet's replacement on every device. Its body
-// (ColorPopoverBody) is the head with the chosen colour, then the Palette with Pick color and Custom color.
-// Beside the pill, clamped to the screen. Choosing, Close, Escape or a press outside closes it.
+// (ColorPopoverBody) is the head with the chosen colour, then the Palette with Pick color and Custom color. Beside the
+// pill, clamped to the screen. Choosing, Close, Escape or a press outside closes it, focus inside going to the tile.
 const props = defineProps<{
   /** The colour tile that opened it, and the pill it is part of: where the popover is placed. */
   tile: HTMLElement | undefined
@@ -19,6 +19,8 @@ const props = defineProps<{
   colorName?: string
   selectedColorId?: string
   customColor?: string
+  /** Opened from the keyboard: focus goes to the chosen swatch, the Palette's Tab stop (ticket 0857). */
+  focusSwatch?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -34,11 +36,21 @@ const editing = ref(false)
 /** The Bead's palette is open (ticket 0746): the popover is as wide as the panel, no wider than the screen. */
 const wide = ref(false)
 
-provide(PICK_CLOSE, () => emit('close'))
+/** Closes; focus that was inside goes back to the tile rather than dropping to the page with the popover. */
+function close() {
+  if (rootEl.value?.contains(document.activeElement)) props.tile?.focus()
+  emit('close')
+}
+
+onMounted(() => {
+  if (props.focusSwatch) rootEl.value?.querySelector<HTMLElement>('.palette-picker [tabindex="0"]')?.focus()
+})
+
+provide(PICK_CLOSE, close)
 useOverlayLayer({
   isOpen: () => true,
   root: () => rootEl.value,
-  close: () => (editing.value ? (editing.value = false) : emit('close')),
+  close: () => (editing.value ? (editing.value = false) : close()),
   isOpener: (target) => props.tile?.contains(target) ?? false,
 })
 
@@ -53,7 +65,7 @@ const style = usePillPopoverPlacement(rootEl, () => ({ tile: props.tile, pill: p
       :color-name="colorName"
       :selected-color-id="selectedColorId"
       :custom-color="customColor"
-      @close="emit('close')"
+      @close="close"
       @select-color="(id) => emit('select-color', id)"
       @select-custom-color="(hex) => emit('select-custom-color', hex)"
       @wide-change="wide = $event"
