@@ -52,7 +52,7 @@ describe('App select, copy and paste', () => {
     await click(wrapper, 5)
     expect(selectedCount(wrapper)).toBe(4)
 
-    // Inside a rectangle Selection the press goes to it, and is still a Piece tap, not Select's single bead.
+    // Inside a rectangle Selection the press goes to it, and is still a Piece tap, not Select's tap, which drops it.
     await selectAll(wrapper)
     await pickTool(wrapper, 'piece')
     await pressBead(wrapper, 5)
@@ -109,7 +109,7 @@ describe('App select, copy and paste', () => {
     expect(wrapper.findComponent(ProjectSurface).props('selection')).toMatchObject({ top: 0, left: 0, rows: 3, columns: 3 })
   })
 
-  it('moves the Selection by a drag from inside it, and a press there that never moves selects that bead (ticket 414)', async () => {
+  it('moves the Selection by a drag from inside it, and a press there that never moves drops it (tickets 414, 0868)', async () => {
     const wrapper = await mountWithProject(6, 6) // 4x4
     await projectWithMotif(wrapper) // the blue (1,1) is the colour chosen
     await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1): four beads, too few for handles
@@ -127,7 +127,20 @@ describe('App select, copy and paste', () => {
 
     await pressBead(wrapper, { row: 2, column: 2 })
     await wrapper.find('[data-testid="project-surface"]').trigger('pointerup')
-    expect(selectedCount(wrapper)).toBe(1)
+    expect(selectedCount(wrapper)).toBe(0)
+  })
+
+  it('a tap beside the Selection drops it and selects nothing, and a drag makes a new one (ticket 0868)', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1)
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await click(wrapper, 15) // (3,3)
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+
+    await drag(wrapper, [10, 11]) // (2,2) -> (2,3)
+    expect(selectedCount(wrapper)).toBe(2)
   })
 
   it('stamps the copied block where it is clicked', async () => {
@@ -231,7 +244,7 @@ describe('App select, copy and paste', () => {
   it('Ctrl/Cmd+V under another tool pastes at the pointer and turns paste mode back on under Select (tickets 92, 437)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
-    await drag(wrapper, [0])
+    await drag(wrapper, [0, 1, 0]) // out and back: a one-bead Selection (ticket 0868)
     await copySelection(wrapper)
     await pickTool(wrapper, 'paint') // leaves paste mode
     await hoverBead(wrapper, 10) // (2,2)

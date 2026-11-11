@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'With Select, a tap beside the Selection lets go of it; a drag still makes a new one',
+      ru: 'Касание рядом с выделением снимает его, а протягивание создаёт новое',
+      uk: 'Дотик поруч із виділенням знімає його, а протягування створює нове',
+      be: 'Дотык побач з вылучэннем здымае яго, а працягванне стварае новае',
+      zh: '使用选择工具时，在选区旁轻点即可取消选区，拖动仍会建立新选区',
+      es: 'Con Seleccionar, un toque junto a la selección la quita; arrastrar sigue creando una nueva',
+      pl: 'Z narzędziem Zaznacz dotknięcie obok zaznaczenia je usuwa, a przeciągnięcie nadal tworzy nowe',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'In Russian and Ukrainian Row done says a row is done, Russian has one word for each thing, and the Frame’s edges have pill steppers and names that are never cut short',
       ru: 'Вместо «Готово» кнопка пишет «Ряд готов», у каждой вещи одно слово (бисеринка, холст, автор), а у краёв рамки круглые кнопки и названия, которые не обрезаются',
       uk: 'Замість «Готово» кнопка пише «Ряд готовий», а в країв рамки круглі кнопки й назви, які не обрізаються',
