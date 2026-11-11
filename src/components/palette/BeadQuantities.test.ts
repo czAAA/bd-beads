@@ -170,24 +170,41 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('10')
     expect(wrapper.find('[data-testid="quantity-weight-red"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total-weight"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
   })
 
   it('shows no weight for a Project with no colors painted', () => {
     const wrapper = mountQuantities(project())
 
-    expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total"]').exists()).toBe(false)
   })
 
-  it('explains the estimate in an always-visible Note, with the Bead\'s average weight and no (i) button (ticket 328)', () => {
+  it('explains the estimate behind an Info button in the header, with the Bead\'s average weight and no advice (ticket 0852)', () => {
     const wrapper = mountQuantities(wide('toho-round-11-0', 10))
-    const note = wrapper.find('[data-testid="quantities-weight-note"]')
+    const info = wrapper.get('[data-testid="bead-quantities"] .panel-section__heading [data-testid="quantities-weight-info"]')
 
-    expect(note.text()).toBe(
-      'This is bead count × about 0.0095 g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
+    expect(info.attributes('aria-label')).toBe('How the weight is worked out')
+    expect(wrapper.get('[role="tooltip"]').text()).toContain(
+      "This is bead count × about 0.0095 g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
     )
-    expect(note.find('button[aria-describedby], [role="tooltip"]').exists()).toBe(false)
+    expect(wrapper.find('.app-note').exists()).toBe(false)
+  })
+
+  it('writes the average with the language\'s decimal sign (ticket 0852)', () => {
+    localStorage.setItem('openbeads:locale', 'ru')
+    const wrapper = mountQuantities(wide('toho-cube-1.5mm', 10))
+
+    expect(wrapper.get('[role="tooltip"]').text()).toContain('около 0,0108 г')
+  })
+
+  it('keeps the total beside the Info button while open, and names it to a screen reader (ticket 0852)', () => {
+    const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
+    const header = wrapper.get('[data-testid="bead-quantities"] button[aria-expanded]')
+
+    expect(header.attributes('aria-expanded')).toBe('true')
+    expect(header.attributes('aria-label')).toBe('Beads needed, 100 · ≈ 1.08 g')
+    expect(wrapper.get('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1.08 g')
   })
 
   describe('Show all (ticket 555)', () => {

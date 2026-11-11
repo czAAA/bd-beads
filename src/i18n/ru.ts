@@ -301,6 +301,8 @@ export const ru: Translations = {
       scrollToZoom: 'прокрутка: масштаб',
       hand: 'Рука',
       rulers: 'Линейки',
+      twoFingersToMove: 'два пальца: сдвиг',
+      pinchToZoom: 'сведение пальцев: масштаб',
     },
     firstRun: {
       storageLead: 'Ваши проекты сохранены только в этом браузере, на этом устройстве.',
@@ -315,6 +317,7 @@ export const ru: Translations = {
     canvasPlaceholderPan: 'Двигайте холст, перетаскивая его правой кнопкой мыши или с пробелом.',
     canvasDeleted: 'Проект «{name}» удалён.',
     canvasDeletedHint: 'Откройте другой из библиотеки проектов или создайте новый.',
+    canvasPlaceholderPanTouch: 'Двигайте холст двумя пальцами.',
   },
   storage: {
     saveFailedMessage:
@@ -617,7 +620,8 @@ export const ru: Translations = {
     showAll: 'Показать все цвета ({count})',
     showFewer: 'Показать меньше',
     weightInfo:
-      'Вес = число бисеринок × около {grams} г. Среднее из объявлений продавцов, точность не подтверждена. Бисер бывает разным, берите с запасом.',
+      'Вес = число бисеринок × около {grams} г. Среднее взято из числа бисеринок на килограмм у производителя, а где он его не даёт, из объявлений продавцов. Бисер разных цветов и покрытий весит по-разному.',
+    weightInfoLabel: 'Как считается вес',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -984,12 +988,11 @@ export const ru: Translations = {
       turn: 'Повернуть на 90°',
       flip: 'Отразить',
       replace: 'Заменить',
-      pictureNote: 'Перетащите изображение в любое место приложения, выберите файл или вставьте его через Ctrl+V. {formats}, до {maxSizeMb} МБ и {maxMegapixels} мегапикселей.',
+      pictureNote: 'Перетащите изображение в любое место приложения, выберите файл или вставьте его через {pasteKey}. {formats}, до {maxSizeMb} МБ и {maxMegapixels} мегапикселей.',
       pictureNoteTouch: 'Выберите файл, вставьте изображение или сфотографируйте. {formats}, до {maxSizeMb} МБ и {maxMegapixels} мегапикселей.',
       pictureSize: '{width}×{height} px · {format}',
       dropHere: 'Перетащите изображение сюда',
-      dropOrPaste: 'или вставьте его через Ctrl+V',
-      dropOrChoose: 'или выберите файл ниже',
+      dropOrPaste: 'или вставьте его через {pasteKey}',
       dropToUse: 'Отпустите, чтобы взять это изображение',
       dropToConvert: 'Отпустите, чтобы конвертировать изображение',
       dropLimits: '{formats} · до {maxSizeMb} МБ',
@@ -1038,6 +1041,8 @@ export const ru: Translations = {
       pictureColor: 'Цвет изображения',
       newPalette: 'палитра нового проекта',
       rowName: { one: '{hex} в {name}, {count} бисерина', few: '{hex} в {name}, {count} бисерины', many: '{hex} в {name}, {count} бисерин', other: '{hex} в {name}, {count} бисерины' },
+      emptyTouchTitle: 'Здесь появится ваше изображение',
+      emptyTouchLine: 'Выберите файл, вставьте или сфотографируйте',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

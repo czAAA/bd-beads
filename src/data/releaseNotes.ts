@@ -26,6 +26,30 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Beads needed sits right after the Frame size, and how the weight is worked out is behind its info button',
+      ru: 'Нужно бисера стоит сразу после размера рамки, а как считается вес, подскажет кнопка с информацией',
+      uk: 'Потрібно бісеру стоїть одразу після розміру рамки, а як рахується вага, підкаже кнопка з інформацією',
+      be: 'Патрэбна бісеру стаіць адразу пасля памеру рамкі, а як лічыцца вага, падкажа кнопка з інфармацыяй',
+      zh: '所需珠子紧跟在边框尺寸之后，重量如何计算可在它的信息按钮里查看',
+      es: 'Cuentas necesarias va justo después del tamaño del marco, y cómo se calcula el peso está en su botón de información',
+      pl: 'Potrzebne koraliki są zaraz po rozmiarze ramki, a jak liczona jest waga, podpowie przycisk informacji',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
+      en: 'Help lines fit your device: finger words on touch, no key numbers there, and ⌘V on a Mac',
+      ru: 'Подсказки подходят устройству: на сенсорном экране говорят о пальцах и без цифр клавиш, а на Mac пишут ⌘V',
+      uk: 'Підказки пасують пристрою: на сенсорному екрані говорять про пальці й без цифр клавіш, а на Mac пишуть ⌘V',
+      be: 'Падказкі пасуюць прыладзе: на сэнсарным экране кажуць пра пальцы і без лічбаў клавіш, а на Mac пішуць ⌘V',
+      zh: '提示文字随设备而变：触屏上讲手指操作、不显示按键数字，Mac 上显示 ⌘V',
+      es: 'Las ayudas se ajustan a tu dispositivo: en táctil hablan de dedos y sin números de teclas, y en Mac dicen ⌘V',
+      pl: 'Podpowiedzi pasują do urządzenia: na ekranie dotykowym mówią o palcach i bez cyfr klawiszy, a na Macu piszą ⌘V',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'With a keyboard, the colors open with focus on your color, the Frame’s tools are one Tab stop, and focus shows on dark buttons',
       ru: 'С клавиатуры цвета открываются с фокусом на вашем цвете, инструменты рамки стали одной остановкой Tab, а фокус виден на тёмных кнопках',
       uk: 'З клавіатури кольори відкриваються з фокусом на вашому кольорі, інструменти рамки стали однією зупинкою Tab, а фокус видно на темних кнопках',
