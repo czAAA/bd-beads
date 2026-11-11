@@ -1,12 +1,14 @@
 import { computed, ref } from 'vue'
 import { mostRecentlyUpdated } from '../../domain/projectLibrary'
+import { projectNameOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What importing needs from the app shell: the library's add and open, and its manual save. */
 export interface ImportSwitchFlowDeps {
   currentProject: () => Project | undefined
-  addProjects: (projects: Project[]) => void
+  /** Adds the Projects to the library under names it doesn't hold yet and hands back what joined (ticket 0860). */
+  addProjects: (projects: Project[]) => Project[]
   /** Opens a Project by id, the same switch the library list makes. */
   openProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
@@ -15,54 +17,54 @@ export interface ImportSwitchFlowDeps {
   dialogs?: Dialogs
 }
 
-/** Project import and the keep / save-and-switch / switch decision when a Project is open (tickets 154, 200; ADR
- * 0020). Touches no history. Deps are lazy. */
+/** An import that joined the library while a Project was open, until the person says whether to open it. */
+export interface JoinedImport {
+  /** The Projects as they joined. */
+  projects: Project[]
+  /** The name a Project came with, by its id, where the library already held that name (ticket 0860). */
+  takenNames: ReadonlyMap<string, string>
+}
+
+/** Project import and the question whether to open it when a Project is open (tickets 154, 200, 0860; ADR 0020): the
+ * import joins the library at once, so the question only asks where to be. Touches no history. Deps are lazy. */
 export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
-  /** Imported Projects held back until the person says whether to switch (ticket 154); undefined when nothing to
-   * ask. They join the library either way, as they are: the registry holds them shallowly, like the library (ticket
-   * 0616). */
-  const pendingImport = (deps.dialogs ?? useDialogs()).question<Project[]>('import-switch')
+  /** What joined, while the question is open; the registry holds it shallowly, like the library (ticket 0616). */
+  const pendingImport = (deps.dialogs ?? useDialogs()).question<JoinedImport>('import-switch')
 
   /** Whether Save current, offered when the last save failed, was tried and the device refused it too. */
   const importSaveRefused = ref(false)
 
-  /** The Project the import would open: the most recently updated of what came in, the same pick the library makes
-   * for an empty library. */
-  const pendingImportOpens = computed(() => (pendingImport.value ? mostRecentlyUpdated(pendingImport.value) : undefined))
+  /** The Project the question offers: the most recently updated of what came in, the same pick the library makes for
+   * an empty library. */
+  const pendingImportOpens = computed(() => (pendingImport.value ? mostRecentlyUpdated(pendingImport.value.projects) : undefined))
 
-  /** Imported Projects (ticket 154): with none open they join the library, which opens one; otherwise they wait for
-   * the answer so nothing changes first. */
+  /** Imported Projects join the library (which opens one when none is open); with a Project open, the question asks
+   * whether to open what came in. */
   function onImportProjects(imported: Project[]) {
-    if (!deps.currentProject() || imported.length === 0) {
-      deps.addProjects(imported)
-      return
+    const wasOpen = deps.currentProject() !== undefined
+    const joined = deps.addProjects(imported)
+    if (!wasOpen || joined.length === 0) return
+    const cameAs = new Map(imported.map((project) => [project.id, projectNameOf(project)]))
+    const takenNames = new Map<string, string>()
+    for (const project of joined) {
+      const name = cameAs.get(project.id)
+      if (name !== undefined && name !== projectNameOf(project)) takenNames.set(project.id, name)
     }
     importSaveRefused.value = false
-    pendingImport.value = imported
+    pendingImport.value = { projects: joined, takenNames }
   }
 
-  /** Keep current (and Escape): the import joins the library and the open Project stays open, as importing always
-   * did. */
+  /** Stay here (and Escape): the open Project stays open; the import is already in the library. */
   function onKeepCurrentAfterImport() {
-    const imported = pendingImport.value
     pendingImport.value = undefined
-    if (imported) {
-      deps.addProjects(imported)
-    }
   }
 
-  /** Switch: the import joins the library and its most recent Project opens (Undo history and Selection reset, the
-   * clipboard survives, as on any Project switch). */
+  /** Open: the import's most recent Project opens (Undo history and Selection reset, the clipboard survives, as on any
+   * Project switch). */
   function onSwitchToImported() {
-    const imported = pendingImport.value
     const opens = pendingImportOpens.value
     pendingImport.value = undefined
-    if (imported) {
-      deps.addProjects(imported)
-      if (opens) {
-        deps.openProject(opens.id)
-      }
-    }
+    if (opens) deps.openProject(opens.id)
   }
 
   /** Save current: writes the library as it stands now; the modal turns to the plain question once that gets through

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A Project opens from the library at once, a taken name gets a number, and Duplicate says which one is open',
+      ru: 'Проект из библиотеки открывается сразу, занятое название получает номер, а после копии видно, какой открыт',
+      uk: 'Проєкт із бібліотеки відкривається одразу, зайнята назва отримує номер, а після копії видно, який відкрито',
+      be: 'Праект з бібліятэкі адкрываецца адразу, занятая назва атрымлівае нумар, а пасля копіі відаць, які адкрыты',
+      zh: '从项目库打开项目不再询问，已被占用的名称会加上编号，复制后会说明现在打开的是哪个',
+      es: 'Un proyecto se abre desde la biblioteca al instante, un nombre ya usado recibe un número y Duplicar dice cuál está abierto',
+      pl: 'Projekt z biblioteki otwiera się od razu, zajęta nazwa dostaje numer, a Duplikuj mówi, który jest otwarty',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The Project file has one name, Save Project file and Open Project file, every saved file is named in one toast, and a file that won’t open says why',
       ru: 'У файла проекта одно имя, «Сохранить файл проекта» и «Открыть файл проекта», каждый сохранённый файл назван в одном сообщении, а файл, который не открылся, объясняет почему',
       uk: 'У файлу проєкту одна назва, «Зберегти файл проєкту» і «Відкрити файл проєкту», кожен збережений файл названо в одному повідомленні, а файл, що не відкрився, пояснює чому',

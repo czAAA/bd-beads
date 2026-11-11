@@ -1,5 +1,5 @@
 import { MAX_MAKER_NAME } from './makerName'
-import { withLayer } from './layerRecord'
+import { projectNameOf, withLayer } from './layerRecord'
 import type { Project } from './project'
 
 /** A Project's own name (spec 0440, ticket 443): up to 40 characters, never empty. New Project, Rename and Duplicate
@@ -40,8 +40,21 @@ export function suggestCopyName(name: string, existingNames: readonly string[]):
   }
 }
 
-/** A copy of the Project under a new id and name, everything else kept, Row progress included, so it works as a
- * snapshot. */
+/** Projects joining a library under names it doesn't hold yet (ticket 0860): a taken one, by the library or by one
+ * arriving before it, gets Duplicate's next free number, so no two rows share a name. A free one comes as it is. */
+export function withFreeNames(arriving: readonly Project[], existingNames: readonly string[]): Project[] {
+  const names = [...existingNames]
+  return arriving.map((project) => {
+    const name = projectNameOf(project)
+    const key = name.trim().toLowerCase()
+    const free = names.some((existing) => existing.trim().toLowerCase() === key) ? suggestCopyName(name, names) : name
+    names.push(free)
+    return free === name ? project : withProjectName(project, free)
+  })
+}
+
+/** A copy of the Project under a new id and name, everything else kept, Row progress included; the copy is what
+ * opens, the original stays as it was (ticket 0860). */
 export function duplicateProject(project: Project, name: string, id: string = crypto.randomUUID(), now = Date.now()): Project {
   return { ...withProjectName(structuredClone(project), name), id, createdAt: now, updatedAt: now }
 }

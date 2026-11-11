@@ -285,6 +285,8 @@ export interface Translations {
       beadBrand: string
       beadType: string
       beadSize: string
+      /** After Duplicate (ticket 0860): `{copy}` is the Project now open, `{original}` the one it was copied from. */
+      duplicatedToast: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -977,12 +979,13 @@ export interface Translations {
     /** Hover/focus text on the Frame's controls while Row progress is on and they are disabled. */
     lockedReason: string
   }
-  /** Importing while a Project is open asks first whether to switch to what came in (ticket 154). */
+  /** Importing while a Project is open: what came in is in the library, and the question is whether to open it
+   * (tickets 154, 0860). `{imported}` is the Project that would open. */
   importSwitch: {
     title: string
     /** `{current}` and `{imported}` are Project names. */
     messageOne: string
-    /** `{count}` Projects came in, and `{imported}` is the one that would open. */
+    /** `{count}` Projects came in; `{current}` is the open Project. */
     messageMany: string
     /** The open Project's last save didn't get through. */
     unsavedMessage: string
@@ -990,12 +993,15 @@ export interface Translations {
     switchAnywayButton: string
     keepButton: string
     saveButton: string
+    /** One Project whose name `{taken}` the library already had, so it came in as `{imported}` (ticket 0860). */
+    messageTaken: string
+    /** `{count}` Projects came in, and some names were taken. */
+    messageManyTaken: string
   }
+  /** A pick in the Projects library asks only when the last save failed (ticket 0860); its message is
+   * importSwitch.unsavedMessage. */
   switchProject: {
     title: string
-    /** `{current}` is the open Project and `{picked}` the one being opened. */
-    message: string
-    confirmButton: string
     cancelButton: string
     saveButton: string
   }

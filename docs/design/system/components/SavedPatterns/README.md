@@ -9,6 +9,7 @@ The fourth box of the left column: the five most recently saved Projects as roun
 - **Expanded footer:** 1px `line-soft` rule, 12px above and 14px inside: Save Project file and Save all Projects to a Project file (secondary in a box, 32px, 13px text). As built in the Projects library: Open Project file and Save all Projects to a Project file (MenuPanel card; ticket 0859, the file's one name).
 - The consumer provides the thumbnails; the preview's striped circles are placeholders.
 - **No Frame (v16):** a saved Project with no Frame shows "no Frame" where the size goes (`meta-tiny`, `muted`). Its thumbnail is drawn from every Piece on the Canvas; with a Frame, from the Frame.
+- **A pick:** a thumbnail (or a row of the Projects library) opens its Project at once; "Switch Project?" is asked only while the last save failed (ticket 0860, ConfirmDialogs card). A Project file whose name is taken joins under the next free number, so no two Projects share a name.
 
 **Superseded (ticket 0553):** saved projects are listed in the Projects library subpanel of the Menu (MenuPanel card), one PanelListRow per project. This card stays as the record.
 
