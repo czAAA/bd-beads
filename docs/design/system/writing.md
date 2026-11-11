@@ -827,6 +827,8 @@ The ring at the drawing area's top-right that offers to save a Project file (Sav
 | Beads since last file: {count}. Save a Project file to keep them. (live region) | Бисеринок с последнего файла: {count}. Сохраните файл проекта, чтобы они остались. | Бісеринок з останнього файлу: {count}. Збережіть файл проєкту, щоб вони залишилися. | Koralików od ostatniego pliku: {count}. Zapisz plik projektu, żeby je zachować. |
 | Saved: {file} (toast) | Сохранено: {file} | Збережено: {file} | Zapisano: {file} |
 | Save Project file · Save Project file as… (Project panel rows, the Save and Save as actions; they replace the row "Project file") | Сохранить файл проекта · Сохранить файл проекта как… | Зберегти файл проєкту · Зберегти файл проєкту як… | Zapisz plik projektu · Zapisz plik projektu jako… |
+| {count} beads since the last file (the label's count, a counted word, ticket 0858; one: {count} bead since the last file) | {count} бисеринка / бисеринки / бисеринок с последнего файла | {count} бісеринка / бісеринки / бісеринок з останнього файлу | {count} koralik / koraliki / koralików od ostatniego pliku |
+| Project: {name} (the strip's Project button, its accessible name and Tooltip name, ticket 0858) | Проект: {name} | Проєкт: {name} | Projekt: {name} |
 
 | English | Беларуская | Español | 中文 |
 |---|---|---|---|
@@ -837,6 +839,8 @@ The ring at the drawing area's top-right that offers to save a Project file (Sav
 | Beads since last file: {count}. Save a Project file to keep them. | Бісерын з апошняга файла: {count}. Захавайце файл праекта, каб яны засталіся. | Cuentas desde el último archivo: {count}. Guarda un archivo de proyecto para conservarlas. | 自上次保存文件后的珠子：{count}。保存项目文件以留住它们。 |
 | Saved: {file} | Захавана: {file} | Guardado: {file} | 已保存：{file} |
 | Save Project file · Save Project file as… | Захаваць файл праекта · Захаваць файл праекта як… | Guardar archivo de proyecto · Guardar archivo de proyecto como… | 保存项目文件 · 项目文件另存为… |
+| {count} beads since the last file | {count} бісерынка / бісерынкі / бісерынак з апошняга файла | {count} cuenta / cuentas / de cuentas desde el último archivo | 自上次文件后 {count} 颗珠子 |
+| Project: {name} | Праект: {name} | Proyecto: {name} | 项目：{name} |
 
 ## Keep Projects copy (ticket 0839)
 
