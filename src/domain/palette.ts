@@ -1,6 +1,6 @@
 import { BEAD_CATALOG, findBead, findBrand } from './beads'
 import type { ColorCatalog } from './colorCatalog'
-import { normalizeHex } from './color'
+import { BLACK_WHITE_BALANCE, channelsOf, contrastRatio, normalizeHex, relativeLuminance } from './color'
 import { nearestColor } from './imageColors'
 import { beadIdOfLayer, type Layered } from './layerRecord'
 
@@ -183,6 +183,27 @@ export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[]
     besideRecents: (recents) =>
       colors.flatMap((color, slot) => (recents.includes(color.hex) ? [] : [{ color, slot }])),
   }
+}
+
+/** The least a new Project's first color keeps against its Background: WCAG's 3:1 for a meaningful mark. */
+const START_COLOR_CONTRAST = 3
+
+/** The colors a new Project starts painting with (ticket 0838), first choice first: gold on a dark Background (yellow
+ * where the Palette has no gold, as the twelve), red on a light one. */
+const START_COLORS = { dark: ['gold', 'yellow'], light: ['red'] } as const
+
+/** The swatch a new Project starts painting with on its Background's hex (ticket 0838): gold on a dark one, red on a
+ * light one, so the first bead shows. Where neither of those is in the Palette or stands 3:1 off the Background (a
+ * Custom color close to it), the swatch that stands off it most. Undefined for an empty Palette. */
+export function startColorId(palette: Palette, background: string): string | undefined {
+  const under = channelsOf(background)
+  const contrast = (color: PaletteColor) => contrastRatio(channelsOf(color.hex), under)
+  const look = relativeLuminance(under) < BLACK_WHITE_BALANCE ? 'dark' : 'light'
+  const picked = START_COLORS[look]
+    .map((id) => palette.byId(id))
+    .find((color) => color !== undefined && contrast(color) >= START_COLOR_CONTRAST)
+  if (picked) return picked.id
+  return palette.colors.reduce<PaletteColor | undefined>((best, color) => (!best || contrast(color) > contrast(best) ? color : best), undefined)?.id
 }
 
 export type AddUsedColorOutcome = 'added' | 'known'
