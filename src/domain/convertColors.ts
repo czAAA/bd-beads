@@ -69,6 +69,43 @@ export function matchFoundColors(reduced: ReducedColors, targets: readonly Targe
   })
 }
 
+/** One row of Color by color (FoundColorRow card, ticket 0863): the found colors that become the same bead color, joined,
+ * so the rows and their count are the bead colors Beads needed lists. */
+export interface BeadColorRow {
+  /** The found colors it joins, most beads first: a choice made on the row applies to every one. */
+  pictureHexes: readonly string[]
+  count: number
+  /** Undefined when the colors are set to empty. */
+  result: TargetColor | undefined
+  /** The choice the joined colors share, none when they differ. */
+  choice: FoundColorChoice | undefined
+}
+
+/** The found colors as Color by color's rows (ticket 0863): one per bead color they become, the colors set to empty
+ * joined by the bead color they matched (so a row emptied stays one row), most beads first. Under Exact every found
+ * color is its own. */
+export function beadColorRows(found: readonly FoundColor[]): BeadColorRow[] {
+  const groups = new Map<string, FoundColor[]>()
+  for (const color of found) {
+    const key = color.result ? `bead ${color.result.hex}` : `empty ${color.match.hex}`
+    const group = groups.get(key)
+    if (group) group.push(color)
+    else groups.set(key, [color])
+  }
+  return [...groups.values()]
+    .map((colors) => {
+      const [first] = colors as [FoundColor, ...FoundColor[]]
+      const shared = colors.every((color) => color.choice?.kind === first.choice?.kind)
+      return {
+        pictureHexes: colors.map((color) => color.pictureHex),
+        count: colors.reduce((sum, color) => sum + color.count, 0),
+        result: first.result,
+        choice: shared ? first.choice : undefined,
+      }
+    })
+    .sort((a, b) => b.count - a.count)
+}
+
 /** What each sampled hex becomes: its found color's result, or no bead. */
 function resultLookup(reduced: ReducedColors, found: readonly FoundColor[]): (hex: string) => string | null {
   const byPicture = new Map(found.map((color) => [color.pictureHex, color.result?.hex ?? null]))

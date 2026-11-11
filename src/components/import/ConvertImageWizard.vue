@@ -7,10 +7,10 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { formFactorName } from '../../domain/beads'
 import { CONVERT_STEPS, type ConvertStep } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { formatImageLimits } from '../../domain/imageConversion'
 import { scrollPosition, stepAnchors } from '../../domain/scrollSteps'
 import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
+import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
@@ -84,7 +84,7 @@ function onDrop(event: DragEvent) {
   event.preventDefault()
   void wizard.setFile(file)
 }
-const dropLimits = computed(() => formatImageLimits(words.value.dropLimits))
+const dropLimits = computed(() => imageLimitsText(locale.value, words.value.dropLimits))
 
 // --- The steps' headers ------------------------------------------------------------------------------------------------
 

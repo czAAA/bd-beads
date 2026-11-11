@@ -167,6 +167,16 @@ describe('the preview’s overlays on the canvas', () => {
     }
     return { width: 40, height: 40, data }
   }
+  /** Every pixel 4 × 4 beads in its own color: the widest Width and Exact, where the converter opens smaller and on the
+   * Bead's palette (ticket 0863). */
+  const atEveryPixel = async (root: HTMLElement) => {
+    await pictureSet(root)
+    const slider = root.querySelector<HTMLInputElement>('[data-testid="convert-width-range"]')!
+    slider.value = slider.max
+    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    root.querySelector<HTMLElement>('[data-testid="convert-color-source"] [data-value="exact"]')!.click()
+    await settleForMeasuring()
+  }
   const topRightPixel = (root: HTMLElement) => {
     const canvas = root.querySelector<HTMLCanvasElement>('[data-testid="convert-image-canvas"]')!
     return Array.from(canvas.getContext('2d')!.getImageData(canvas.width - 4, 4, 1, 1).data)
@@ -174,7 +184,7 @@ describe('the preview’s overlays on the canvas', () => {
 
   it('fades and hatches the found beads where they are, to the picture’s far corner', async () => {
     const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
-    await pictureSet(mounted.root)
+    await atEveryPixel(mounted.root)
     mounted.root.querySelector<HTMLElement>('[data-testid="convert-remove-background"]')!.click()
     await settleForMeasuring()
     const [r, g, b] = topRightPixel(mounted.root)
@@ -185,7 +195,7 @@ describe('the preview’s overlays on the canvas', () => {
 
   it('keeps the patch under a tap of the Background tool, through the pointer, with Undo then on show', async () => {
     const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
-    await pictureSet(mounted.root)
+    await atEveryPixel(mounted.root)
     const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)
     find('convert-tool-background')!.click()
     await settleForMeasuring()
@@ -207,7 +217,7 @@ describe('the preview’s overlays on the canvas', () => {
 
   it('shows the original picture where the beads are while Compare is held', async () => {
     const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
-    await pictureSet(mounted.root)
+    await atEveryPixel(mounted.root)
     const compare = mounted.root.querySelector<HTMLElement>('[data-testid="convert-compare"]')!
     await userEvent.hover(compare)
     compare.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
