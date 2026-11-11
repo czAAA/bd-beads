@@ -266,7 +266,7 @@ export const en: Translations = {
     pictureWithDesign: '{option}, with design',
     pictureEmpty: '{option}, empty shape with seams',
     sizes: { topWidth: { one: '{count} wide', other: '{count} wide' }, topRows: { one: '{count} top row', other: '{count} top rows' }, fringeLength: { one: 'fringe {count}', other: 'fringe {count}' }, width: { one: '{count} wide', other: '{count} wide' }, ringSize: { one: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'wrist {count} cm', other: 'wrist {count} cm' }, rounds: { one: '{count} round', other: '{count} rounds' }, partSize: { one: 'part size {count}', other: 'part size {count}' }, rows: { one: '{count} row', other: '{count} rows' } },
-    hints: { fringeEarring: 'beads in the base row', triangle: 'from the centre', warpedSquare: 'from the centre', kite: 'from the point', star: 'rounds an arm', kaleidocycle: 'rounds a triangle' },
+    hints: { fringeEarring: 'beads in the base row', triangle: 'from the centre', warpedSquare: 'from the centre', kite: 'from the point', star: 'rounds a square', kaleidocycle: 'rounds a triangle' },
     sizeHints: { topRows: 'one bead fewer each', fringeLength: 'beads, longest strand', width: 'beads', ringSize: 'mm round the finger', ringSizeUs: 'us size', wrist: 'cm, measured snug' },
     setupSizes: { width: { label: 'Width', less: 'One bead narrower', more: 'One bead wider' }, ringSize: { label: 'Ring size', less: 'One size smaller', more: 'One size larger' }, wrist: { label: 'Wrist', less: 'One centimetre less', more: 'One centimetre more' } },
     picks: { fringeStyle: { label: 'Fringe style', options: { straight: 'Straight fringe', v: 'V fringe' } }, fit: { label: 'Fit', options: { snug: 'Snug', comfortable: 'Comfortable', loose: 'Loose' } } },
@@ -284,6 +284,7 @@ export const en: Translations = {
     forPiece: { one: '{count} for the whole piece', other: '{count} for the whole piece' },
     faceInfoLabel: 'What the counts cover',
     faceInfo: 'A Kaleidocycle is {total} triangles, {faces} faces of {parts}, and this Frame is one face. The whole piece counts every face beaded like this one. To give another face its own design, make a Frame for it. Only the triangles are counted, not the edge, tip or hinge beads.',
+    beadsFrontBack: { one: '{count} bead, front and back', other: '{count} beads, front and back' },
   },
   canvas: {
     zoomInLabel: 'Zoom in',
@@ -627,6 +628,7 @@ export const en: Translations = {
       "This is bead count × about {grams} g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
     weightInfoLabel: 'How the weight is worked out',
     pieceTotal: 'These counts are one face of {faces}. Whole piece: {count}',
+    frontBackNote: 'These counts are the whole star, front and back.',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

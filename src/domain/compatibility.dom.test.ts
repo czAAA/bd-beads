@@ -45,6 +45,7 @@ import projectFileV13MirrorArea from './fixtures/project-file-v13-mirror-area.js
 import projectFileV13MirrorPlace from './fixtures/project-file-v13-mirror-place.json?raw'
 import projectFileV14Reference from './fixtures/project-file-v14-reference.json?raw'
 import projectFileV14Progress from './fixtures/project-file-v14-warped-square-progress.json?raw'
+import projectFileV14OldStar from './fixtures/project-file-v14-old-star.json?raw'
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
@@ -55,6 +56,10 @@ import projectFile from './fixtures/project-file.json?raw'
 import { backgroundOf, beadsOfLayer, canvasOf, frameOf } from './layerRecord'
 import { currentPass, frameRowOrder, rowProgressOf } from './rowProgress'
 import { frameSheetOf, layersView } from '../testUtils/layerFields'
+import { frameGeometryOf } from './layers'
+import { computeColorQuantities } from './beadQuantities'
+import { projectPalette } from './palette'
+import { wordChartOf } from './wordChart'
 
 // Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn, not how it is
 // kept, so every library and file format the app has written must keep opening as exactly the Projects it held.
@@ -621,6 +626,21 @@ describe('stored-data compatibility', () => {
       expect(canvasOf(block!)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
       const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
       expect(canvasOf(plain).techniqueSettings?.brickDrop ?? 1).toBe(1)
+    })
+
+    it('opens a Star saved on the old layout of whole-square arms on the new one at the same Part size, keeping what colours it can place (ticket 0875)', () => {
+      const [opened] = parseProjectsFile(projectFileV14OldStar).projects
+      expect(frameOf(opened!)).toMatchObject({ shape: 'star', settings: { partSize: 5 } })
+      expect(frameGeometryOf(opened!).positions()).toHaveLength(125)
+      // A bead keeps its name: a square's round keeps its colours where the new round has that name.
+      const beads = beadsOfLayer(opened!, 'frame')!
+      expect([0, 9].map((column) => beads[0]![column])).toEqual(['#d9b94f', '#d9b94f'])
+      expect(beads[3]![1]).toBe('#f2c94c')
+      // The old names the new layout lacks are kept as Folded beads: not counted, and written back the same.
+      expect(Object.keys(beads[0]!)).toHaveLength(20)
+      expect(computeColorQuantities(opened!, projectPalette(opened!)).reduce((sum, { count }) => sum + count, 0)).toBe(245)
+      expect(wordChartOf(opened!)!.rows).toHaveLength(5 * 5 + 5)
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
   })
 })

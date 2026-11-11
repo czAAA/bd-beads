@@ -200,4 +200,12 @@ describe('the Starter setup', () => {
     expect(counts()).toContain('To give another face its own design, make a Frame for it.')
     expect(mountSetup('triangle').find('[data-testid="starter-face-info"]').exists()).toBe(false)
   })
+
+  it('counts a Star front and back in its estimate (ticket 0875)', async () => {
+    const wrapper = mountSetup('star', delica())
+    const counts = () => text(wrapper, 'starter-count').replace(/\s/g, ' ')
+    expect(counts()).toBe('245 beads, front and back')
+    await wrapper.get('[data-testid="starter-size-preset-partSize-3"]').trigger('click')
+    expect(counts()).toBe('85 beads, front and back')
+  })
 })

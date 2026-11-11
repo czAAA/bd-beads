@@ -182,4 +182,26 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     expect(chart.rows[10]).toMatchObject({ number: 11, step: { kind: 'join', step: 'zip', parts: [1, 2] }, runs: [] })
     expect(chart.lastNumber).toBe(15)
   })
+
+  it('writes a Star square\'s whole rounds, front and back: 4, 8, 12, 16 beads and a partial last round of 9 (ticket 0875)', () => {
+    const chart = wordChartOf(shaped('star', 5, () => true))!
+    expect(chart.rows.slice(0, 5).map((row) => row.runs)).toEqual([4, 8, 12, 16, 9].map((count) => [{ count, letter: 'A' }]))
+    const star = shaped('star', 5, () => true)
+    expect(sided(star, 1)).toBeUndefined()
+    expect(sided(star, 2)).toEqual(['(2A)', '(2A)', '(2A)', '(2A)'])
+    expect(sided(star, 3)).toEqual(['(2A),1A', '(2A),1A', '(2A),1A', '(2A),1A'])
+    expect(sided(star, 4)).toEqual(['(2A),2A', '(2A),2A', '(2A),2A', '(2A),2A'])
+    // The last round's corners, at the centre front, the tip and the centre back, are single beads.
+    expect(chart.rows[4]!.sides).toEqual([4, 4, 1].map((count) => ({ corner: [], singles: [{ count, letter: 'A' }] })))
+  })
+
+  it('writes the back\'s letters as the front\'s in mirror order (ticket 0875)', () => {
+    // Square 1's round 4 with its second bead out from the centre B, and its ridge's second bead B.
+    const star = shaped('star', 5, ({ row, column }) => !((row === 3 || row === 4) && column === 1))
+    const marked = withLayers(onLayer(star, 'frame', (view) => paintCells(view, [{ row: 3, column: 1 }, { row: 4, column: 1 }], HEX.B)), {})
+    // Out along arm 1's half on the front, then back in on the back: B second out, then second from last in.
+    expect(sided(marked, 4)).toEqual(['(2A),1B,1A', '(2A),1A,1B', '(2A),2A', '(2A),2A'])
+    const last = wordChartOf(marked)!.rows[4]!.sides!.map(({ singles }) => singles.map((run) => `${run.count}${run.letter}`).join(','))
+    expect(last).toEqual(['1A,1B,2A', '3A,1B', '1A'])
+  })
 })

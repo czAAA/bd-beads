@@ -30,6 +30,9 @@ interface LayoutPanel {
 export interface LayoutJoin {
   step: 'zip' | 'hinge' | 'close'
   parts: readonly number[]
+  /** The beads it rings, as indexes into `positions`, where they are not its parts' last rounds facing each other: a
+   * Star's ridge row and the round beside it (ticket 0875). */
+  beads?: readonly number[]
 }
 
 /** A layout's own symmetry (ticket 0706), what Mirror finds a Custom frame's counterparts by: how many turns about its
@@ -68,6 +71,10 @@ export interface FrameLayout {
   /** Its rows woven as peyote's lines are (ticket 0814): the first in one pass, every later one in two, the beads of the
    * columns that sit higher, then those of the columns half a bead lower, named here; a Fringe earring's peyote top. */
   twoPasses?: { lower: readonly number[] }
+  /** The finished face of a piece whose back is beaded as its mirror (ticket 0875, a Star): each round goes round front
+   * and back, so Row order reads the back from the face, and a count takes each bead twice but these, on both (the
+   * tips), as indexes into `positions`. */
+  back?: { shared: readonly number[] }
 }
 
 /** Beads whose outlines lie this close touch, in bead widths (ticket 0723): side by side, end to end, a corner pair at
@@ -188,7 +195,7 @@ function joinedParts(parts: readonly RoundsPart[]): { positions: LayoutPosition[
 /** A layout worked out round 0, 0, moved so its beads sit in the middle of a box hugging them: half a bead's diagonal
  * round their centres, not the empty points of the shape's corners. Its Seams stop at the box. */
 function boxed(
-  raw: Pick<FrameLayout, 'positions' | 'panels' | 'seams' | 'beadDepth' | 'links' | 'symmetry' | 'twoPasses'> & { joins?: readonly LayoutJoin[] },
+  raw: Pick<FrameLayout, 'positions' | 'panels' | 'seams' | 'beadDepth' | 'links' | 'symmetry' | 'twoPasses' | 'back'> & { joins?: readonly LayoutJoin[] },
   middle: LayoutPoint = { x: 0, y: 0 },
 ): FrameLayout {
   const pad = Math.hypot(0.5, raw.beadDepth / 2)
@@ -216,6 +223,7 @@ function boxed(
     ...(raw.links ? { links: raw.links } : {}),
     ...(raw.symmetry ? { symmetry: raw.symmetry } : {}),
     ...(raw.twoPasses ? { twoPasses: raw.twoPasses } : {}),
+    ...(raw.back ? { back: raw.back } : {}),
   }
 }
 
@@ -231,64 +239,59 @@ export function roundsLayout(corners: number, rounds: number, depth: number): Fr
 }
 
 /** A Star's five arms meet at its centre with this angle each. */
-const STAR_ARM = (2 * Math.PI) / 5
+const STAR_ARMS = 5
+const STAR_ARM = (2 * Math.PI) / STAR_ARMS
 
-/** A bead's outline: one width across its panel and `depth` out from the centre, turned to its panel. */
-function outlineOf({ x, y, angle }: LayoutPosition, depth: number): LayoutPoint[] {
-  const along = { x: Math.cos(angle) / 2, y: Math.sin(angle) / 2 }
-  const out = { x: (-Math.sin(angle) * depth) / 2, y: (Math.cos(angle) * depth) / 2 }
-  return [1, -1].flatMap((a) => [1, -1].map((o) => ({ x: x + a * along.x + o * out.x, y: y + a * along.y + o * out.y })))
-}
-
-/** How far from a point beads reach in a direction (a unit vector): the farthest corner of their outlines, of those
- * within a bead of the line from the point, or of all when `near` is not asked. */
-function reachFrom(points: readonly LayoutPoint[], from: LayoutPoint, direction: LayoutPoint, near?: true): number {
-  let farthest = 0
-  for (const { x, y } of points) {
-    const [dx, dy] = [x - from.x, y - from.y]
-    if (!near || Math.abs(dx * direction.y - dy * direction.x) <= 1) farthest = Math.max(farthest, dx * direction.x + dy * direction.y)
-  }
-  return farthest
-}
-
-/** A Star (research: the MiniStar): five Warped Squares, each beaded on its own in Part size rounds, then zipped
- * together one pair at a time, the last to the first closed last. Drawn flat, each square's packed beads (ticket 0723)
- * make a rhombus with 72° tips at the centre and out, each arm as near the centre as its fifth of the Star lets it. */
+/** A Star (research: the MiniStar; ticket 0875) as its finished face: five arms, one up, each rows of 1 … R … 1 along
+ * its ridge. Square j, centred on a notch, is arm j's half facing arm j + 1, arm j's ridge (its partial last round) and
+ * arm j + 1's half facing it, round n n beads a half; the back mirrors the face, the squares zipped along the ridges. */
 export function starLayout(partSize: number, depth: number): FrameLayout {
   return remembered(`star:${partSize}:${depth}`, () => {
-    // Packed, a square's beads reach farther along a Seam the wider its panels' corner: they make a 72° tip where the
-    // panels meet at 108°.
-    const square = roundsPart([Math.PI - STAR_ARM, STAR_ARM, Math.PI - STAR_ARM, STAR_ARM], partSize, depth)
-    const centre = { x: 0, y: 0 }
-    // The arm's axis, out from the Star's centre through its own, and across it.
-    const tip = square.corners[0]!
-    const axis = { x: -tip.x / Math.hypot(tip.x, tip.y), y: -tip.y / Math.hypot(tip.x, tip.y) }
-    const points = square.positions.flatMap((position) => outlineOf(position, depth))
-    const distance = Math.max(...points.map(({ x, y }) => Math.abs(x * axis.y - y * axis.x) / Math.tan(STAR_ARM / 2) - (x * axis.x + y * axis.y)))
-    // The first arm points up, the rest round clockwise.
-    const outwards = (arm: number) => -Math.PI / 2 + arm * STAR_ARM
-    const arms = Array.from({ length: 5 }, (_unused, arm) => placedPart(square, 0, centre, outwards(arm), distance))
-    const outlines = arms.map((arm) => arm.positions.flatMap((position) => outlineOf(position, depth)))
-    const ray = (from: LayoutPoint, angle: number, points: readonly LayoutPoint[], near?: true): [LayoutPoint, LayoutPoint] => {
-      const direction = { x: Math.cos(angle), y: Math.sin(angle) }
-      const length = reachFrom(points, from, direction, near)
-      return [from, { x: from.x + direction.x * length, y: from.y + direction.y * length }]
+    const slope = Math.tan(STAR_ARM / 2)
+    // The ridge's first bead, where the first beads of neighbouring arms touch at their corners. Rows lie a little
+    // further apart than peyote's, as far as lets five arms fill a flat circle.
+    const first = 0.5 + depth / 2 / slope
+    const outwards = (arm: number) => -Math.PI / 2 + (arm % STAR_ARMS) * STAR_ARM
+    const bead = (arm: number, along: number, across: number, row: number, column: number, panel: number): LayoutPosition => {
+      const angle = outwards(arm)
+      return { row, column, panel, angle, x: along * Math.cos(angle) - across * Math.sin(angle), y: along * Math.sin(angle) + across * Math.cos(angle) }
     }
-    const seams = arms.flatMap((arm, index) => {
-      const middle = { x: centre.x + distance * Math.cos(outwards(index)), y: centre.y + distance * Math.sin(outwards(index)) }
-      return [
-        ...arm.corners.map((corner) => ray(middle, Math.atan2(corner.y - middle.y, corner.x - middle.x), outlines[index]!)),
-        // The edge it shares with the next arm, from the centre as far as their beads.
-        ray(centre, outwards(index) + STAR_ARM / 2, [...outlines[index]!, ...outlines[(index + 1) % 5]!], true),
-      ]
+    const positions: LayoutPosition[] = []
+    const panels: LayoutPanel[] = []
+    const ridges: number[][] = []
+    const besideRidge: number[][] = []
+    for (let square = 0; square < STAR_ARMS; square += 1) {
+      const [own, next] = [2 * square, 2 * square + 1]
+      panels.push({ part: square, order: square }, { part: square, order: square })
+      for (let round = 1; round < partSize; round += 1) {
+        // Round n lies k = R - n rows off the ridges, named round the square: arm j's half out from the centre, then arm
+        // j + 1's back in.
+        const off = partSize - round
+        const column = square * 2 * round
+        for (let place = 0; place < round; place += 1) positions.push(bead(square, first + off + 2 * place, off * slope, round - 1, column + place, own))
+        if (round === partSize - 1) besideRidge[(square + 1) % STAR_ARMS] = Array.from({ length: round }, (_unused, place) => positions.length + place)
+        for (let place = 0; place < round; place += 1) positions.push(bead(square + 1, first + off + 2 * (round - 1 - place), -off * slope, round - 1, column + round + place, next))
+      }
+      // Its last round, arm j's ridge, named as its round's first half would be.
+      ridges[square] = Array.from({ length: partSize }, (_unused, place) => positions.length + place)
+      for (let place = 0; place < partSize; place += 1) positions.push(bead(square, first + 2 * place, 0, partSize - 1, square * 2 * partSize + place, own))
+    }
+    // A Seam down each valley, from the centre to the notch, where the outlines of the arms either side meet.
+    const notch = (first + partSize - 1) / Math.cos(STAR_ARM / 2)
+    const seams = Array.from({ length: STAR_ARMS }, (_unused, arm): [LayoutPoint, LayoutPoint] => {
+      const valley = outwards(arm) + STAR_ARM / 2
+      return [{ x: 0, y: 0 }, { x: notch * Math.cos(valley), y: notch * Math.sin(valley) }]
     })
+    // Squares j and j + 1 are zipped along arm j + 1's ridges: its ridge row and square j's round beside it.
+    const zip = (square: number): number[] => [...ridges[(square + 1) % STAR_ARMS]!, ...besideRidge[(square + 1) % STAR_ARMS]!]
     const joins: LayoutJoin[] = [
-      ...[0, 1, 2, 3].map((arm): LayoutJoin => ({ step: 'zip', parts: [arm, arm + 1] })),
-      { step: 'close', parts: [4, 0] },
+      ...[0, 1, 2, 3].map((square): LayoutJoin => ({ step: 'zip', parts: [square, square + 1], beads: zip(square) })),
+      { step: 'close', parts: [4, 0], beads: zip(4) },
     ]
-    // The Seam between two arms is a mirror line of the Star, through the arm across from it.
-    const symmetry = { fold: arms.length, line: STAR_ARM / 2 }
-    return boxed({ ...joinedParts(arms), joins, seams, beadDepth: square.beadDepth, symmetry }, centre)
+    const back = { shared: ridges.map((ridge) => ridge[ridge.length - 1]!) }
+    // A valley is a mirror line of the Star, through the arm across from it.
+    const symmetry = { fold: STAR_ARMS, line: STAR_ARM / 2 }
+    return boxed({ positions, panels, joins, seams, beadDepth: depth, symmetry, back })
   })
 }
 

@@ -156,7 +156,7 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
     strands ||= step.kind === 'strand'
     const letters = step.kind === 'join'
       ? []
-      : order.positionsOf(pass).map(({ row, column }) => {
+      : (order.wordsOf?.(pass) ?? order.positionsOf(pass)).map(({ row, column }) => {
           const hex = colorAt(beads, row, column)
           return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
         })

@@ -11,6 +11,7 @@ import { quarterTurnOf, withBackground, withCanvas, withLayer } from './layerRec
 import type { Background, Project } from './project'
 import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
+import { backBeadsAt } from './pieceFaces'
 import type { SettingSpec } from './settingSpec'
 import { beadCell, describeWeave, withCell, type Weave } from './weave'
 import categories from '../data/starters/categories.json'
@@ -316,10 +317,23 @@ export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: 
   return runsDown(weave) ? { rows: length, columns: width } : { rows: width, columns: length }
 }
 
-/** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
+/** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has, a Star's front and
+ * back (ticket 0875). */
 export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: Bead): number {
   const size = starterFrameSize(starter, choice, bead)
-  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...withCell(weaveIn(starter, choice), beadCell(bead, weaveIn(starter, choice).technique)) }).positions().length
+  const positions = frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, ...withCell(weaveIn(starter, choice), beadCell(bead, weaveIn(starter, choice).technique)) }).positions()
+  const back = starterBack(starter, choice)
+  return back ? positions.reduce((sum, position) => sum + back(position), 0) : positions.length
+}
+
+/** How a Starter's Frame counts its back, where its back mirrors its face (ticket 0875, a Star): see `backBeadsAt`. */
+function starterBack(starter: Starter, choice: StarterChoice): ReturnType<typeof backBeadsAt> {
+  return backBeadsAt({ shape: starter.shape, settings: customSettings(starter, choice) })
+}
+
+/** Whether a Starter's bead count is its piece's front and back (ticket 0875): a Star's back mirrors its face. */
+export function starterCountsBack(starter: Starter, choice: StarterChoice): boolean {
+  return starterBack(starter, choice) !== undefined
 }
 
 /** What a Starter's setup measures with a Bead (StarterGallery card, Setup): a Shape's or earring's width and height; a

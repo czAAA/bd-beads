@@ -268,7 +268,7 @@ export const uk: Translations = {
     pictureWithDesign: '{option}, з дизайном',
     pictureEmpty: '{option}, порожня форма зі швами',
     sizes: { topWidth: { one: 'ширина {count}', few: 'ширина {count}', many: 'ширина {count}', other: 'ширина {count}' }, topRows: { one: 'рядів верху: {count}', few: 'рядів верху: {count}', many: 'рядів верху: {count}', other: 'рядів верху: {count}' }, fringeLength: { one: 'бахрома {count}', few: 'бахрома {count}', many: 'бахрома {count}', other: 'бахрома {count}' }, width: { one: 'ширина {count}', few: 'ширина {count}', many: 'ширина {count}', other: 'ширина {count}' }, ringSize: { one: 'eu {count}', few: 'eu {count}', many: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'зап’ястя {count} см', few: 'зап’ястя {count} см', many: 'зап’ястя {count} см', other: 'зап’ястя {count} см' }, rounds: { one: 'кіл: {count}', few: 'кіл: {count}', many: 'кіл: {count}', other: 'кіл: {count}' }, partSize: { one: 'розмір частини {count}', few: 'розмір частини {count}', many: 'розмір частини {count}', other: 'розмір частини {count}' }, rows: { one: 'рядів: {count}', few: 'рядів: {count}', many: 'рядів: {count}', other: 'рядів: {count}' } },
-    hints: { fringeEarring: 'бісеринок у нижньому ряду', triangle: 'від центру', warpedSquare: 'від центру', kite: 'від вістря', star: 'кіл у промені', kaleidocycle: 'кіл у трикутнику' },
+    hints: { fringeEarring: 'бісеринок у нижньому ряду', triangle: 'від центру', warpedSquare: 'від центру', kite: 'від вістря', star: 'кіл у квадраті', kaleidocycle: 'кіл у трикутнику' },
     sizeHints: { topRows: 'кожен на бісеринку коротший', fringeLength: 'бісеринок у найдовшій нитці', width: 'бісеринок', ringSize: 'мм по колу пальця', ringSizeUs: 'розмір us', wrist: 'см, обхват щільно' },
     setupSizes: { width: { label: 'Ширина', less: 'На бісеринку вужче', more: 'На бісеринку ширше' }, ringSize: { label: 'Розмір каблучки', less: 'На розмір менше', more: 'На розмір більше' }, wrist: { label: 'Зап’ястя', less: 'На сантиметр менше', more: 'На сантиметр більше' } },
     picks: { fringeStyle: { label: 'Вид бахроми', options: { straight: 'Пряма бахрома', v: 'V-подібна бахрома' } }, fit: { label: 'Посадка', options: { snug: 'Щільно', comfortable: 'Зручно', loose: 'Вільно' } } },
@@ -286,6 +286,7 @@ export const uk: Translations = {
     forPiece: { one: '{count} на весь виріб', few: '{count} на весь виріб', many: '{count} на весь виріб', other: '{count} на весь виріб' },
     faceInfoLabel: 'Що входить у підрахунок',
     faceInfo: 'Калейдоцикл складається з {total} трикутників: {faces} грані по {parts}. Ця рамка показує одну грань. Увесь виріб рахується так, ніби кожну грань сплетено як цю. Щоб дати іншій грані власний дизайн, зробіть для неї окрему рамку. Рахуються лише трикутники, без бісерин краю, кінчиків і шарнірів.',
+    beadsFrontBack: { one: '{count} бісеринка на обидва боки', few: '{count} бісеринки на обидва боки', many: '{count} бісеринок на обидва боки', other: '{count} бісеринки на обидва боки' },
   },
   canvas: {
     zoomInLabel: 'Збільшити',
@@ -635,6 +636,7 @@ export const uk: Translations = {
       'Вага = кількість бісерин × близько {grams} г. Середнє взято з кількості бісерин на кілограм у виробника, а де він її не дає, з оголошень продавців. Бісер різних кольорів і покриттів важить по-різному.',
     weightInfoLabel: 'Як рахується вага',
     pieceTotal: 'Це підрахунок для однієї грані з {faces}. Увесь виріб: {count}',
+    frontBackNote: 'Це підрахунок для всієї зірки, на обидва боки.',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

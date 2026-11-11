@@ -777,7 +777,7 @@ describe('renderOverlay', () => {
       expect(strokes(calls).every((call) => call.globalAlpha === 1)).toBe(true)
     })
 
-    /** A Star Frame of three rounds an arm, drawn alone; where its layout's centre is, in the Frame's px at zoom 1. */
+    /** A Star Frame of three rounds a square, drawn alone; where its layout's centre is, in the Frame's px at zoom 1. */
     const star = () => {
       const blank = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
       const placed = changeFrame(blank, { custom: { shape: 'star', size: 3, centre: { row: 20, column: 20 } } })

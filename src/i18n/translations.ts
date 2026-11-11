@@ -391,6 +391,8 @@ export interface Translations {
     forPiece: PluralForms
     faceInfoLabel: string
     faceInfo: string
+    /** A Star's count is the whole star, its back beaded as the face's mirror (ticket 0875): "245 beads, front and back". */
+    beadsFrontBack: PluralForms
   }
   canvas: {
     zoomInLabel: string
@@ -768,6 +770,8 @@ export interface Translations {
     weightInfoLabel: string
     /** Under the table on a Kaleidocycle (ticket 0876): the counts are one face, `{count}` the whole piece's total. */
     pieceTotal: string
+    /** Under the table on a Star (ticket 0875): the counts are the whole star, front and back. */
+    frontBackNote: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {

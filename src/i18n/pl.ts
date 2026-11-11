@@ -268,7 +268,7 @@ export const pl: Translations = {
     pictureWithDesign: '{option}, ze wzorem',
     pictureEmpty: '{option}, pusty kształt ze szwami',
     sizes: { topWidth: { one: 'szerokość {count}', few: 'szerokość {count}', many: 'szerokość {count}', other: 'szerokość {count}' }, topRows: { one: '{count} rząd góry', few: '{count} rzędy góry', many: '{count} rzędów góry', other: '{count} rzędu góry' }, fringeLength: { one: 'frędzle {count}', few: 'frędzle {count}', many: 'frędzle {count}', other: 'frędzle {count}' }, width: { one: 'szerokość {count}', few: 'szerokość {count}', many: 'szerokość {count}', other: 'szerokość {count}' }, ringSize: { one: 'eu {count}', few: 'eu {count}', many: 'eu {count}', other: 'eu {count}' }, wrist: { one: 'nadgarstek {count} cm', few: 'nadgarstek {count} cm', many: 'nadgarstek {count} cm', other: 'nadgarstek {count} cm' }, rounds: { one: '{count} okrążenie', few: '{count} okrążenia', many: '{count} okrążeń', other: '{count} okrążenia' }, partSize: { one: 'rozmiar części {count}', few: 'rozmiar części {count}', many: 'rozmiar części {count}', other: 'rozmiar części {count}' }, rows: { one: '{count} rząd', few: '{count} rzędy', many: '{count} rzędów', other: '{count} rzędu' } },
-    hints: { fringeEarring: 'koralików w dolnym rzędzie', triangle: 'od środka', warpedSquare: 'od środka', kite: 'od czubka', star: 'okrążeń w ramieniu', kaleidocycle: 'okrążeń w trójkącie' },
+    hints: { fringeEarring: 'koralików w dolnym rzędzie', triangle: 'od środka', warpedSquare: 'od środka', kite: 'od czubka', star: 'okrążeń w kwadracie', kaleidocycle: 'okrążeń w trójkącie' },
     sizeHints: { topRows: 'każdy o koralik krótszy', fringeLength: 'koralików w najdłuższej nitce', width: 'koralików', ringSize: 'mm wokół palca', ringSizeUs: 'rozmiar us', wrist: 'cm, obwód na ścisło' },
     setupSizes: { width: { label: 'Szerokość', less: 'O koralik węziej', more: 'O koralik szerzej' }, ringSize: { label: 'Rozmiar pierścionka', less: 'O rozmiar mniejszy', more: 'O rozmiar większy' }, wrist: { label: 'Nadgarstek', less: 'O centymetr mniej', more: 'O centymetr więcej' } },
     picks: { fringeStyle: { label: 'Rodzaj frędzli', options: { straight: 'Proste frędzle', v: 'Frędzle w kształcie V' } }, fit: { label: 'Dopasowanie', options: { snug: 'Ciasno', comfortable: 'Wygodnie', loose: 'Luźno' } } },
@@ -286,6 +286,7 @@ export const pl: Translations = {
     forPiece: { one: '{count} na całą pracę', few: '{count} na całą pracę', many: '{count} na całą pracę', other: '{count} na całą pracę' },
     faceInfoLabel: 'Co obejmuje liczenie',
     faceInfo: 'Kalejdocykl to {total} trójkątów: {faces} ściany po {parts}. Ta ramka to jedna ściana. Cała praca liczy każdą ścianę wyplecioną tak jak ta. Aby dać innej ścianie własny wzór, zrób dla niej osobną ramkę. Liczone są tylko trójkąty, bez koralików brzegu, czubków i zawiasów.',
+    beadsFrontBack: { one: '{count} koralik, przód i tył', few: '{count} koraliki, przód i tył', many: '{count} koralików, przód i tył', other: '{count} koralika, przód i tył' },
   },
   canvas: {
     zoomInLabel: 'Powiększ',
@@ -635,6 +636,7 @@ export const pl: Translations = {
       'To liczba koralików × około {grams} g na koralik. Średnia pochodzi z liczby koralików na kilogram podanej przez producenta, a gdy jej nie podaje, z ofert sprzedawców. Prawdziwe koraliki różnią się zależnie od koloru i wykończenia.',
     weightInfoLabel: 'Jak liczona jest waga',
     pieceTotal: 'To liczby dla jednej ściany z {faces}. Cała praca: {count}',
+    frontBackNote: 'To liczby dla całej gwiazdy, przód i tył.',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

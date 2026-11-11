@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The Star is five warped squares, each centred between two arms, and counts the whole star front and back',
+      ru: 'Звезда собрана из пяти изогнутых квадратов, каждый между двумя лучами, и считается целиком, на обе стороны',
+      uk: 'Зірка складається з п’яти вигнутих квадратів, кожен між двома променями, і рахується цілою, на обидва боки',
+      be: 'Зорка складаецца з пяці выгнутых квадратаў, кожны паміж двума праменямі, і лічыцца цалкам, на абодва бакі',
+      zh: '星形由五个弯曲方块组成，每个位于两角之间，并按正反两面计算整颗星',
+      es: 'La Estrella son cinco cuadrados curvados, cada uno entre dos brazos, y cuenta la estrella entera por ambas caras',
+      pl: 'Gwiazda to pięć wygiętych kwadratów, każdy między dwoma ramionami, i liczy całą gwiazdę, przód i tył',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Shapes from a starter open upright: the Triangle point up, a Star arm up, the Kite standing',
       ru: 'Фигуры-стартеры открываются прямо: Треугольник остриём вверх, луч Звезды вверх, Воздушный змей стоя',
       uk: 'Фігури-стартери відкриваються прямо: Трикутник вістрям угору, промінь Зірки вгору, Повітряний змій стоячи',

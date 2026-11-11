@@ -227,32 +227,105 @@ describe('a layout built by Rounds (spec 0590, ticket 0592)', () => {
   })
 })
 
-describe('a Star (ticket 0593)', () => {
-  it('is five Warped Square arms of Part size rounds, each 4, 8, 12… beads a round, drawn flat as rhombi (inferred: no source charts a flat Star)', () => {
-    const star = starLayout(5, DELICA)
-    expect(new Set(star.panels.map(({ part }) => part))).toEqual(new Set([0, 1, 2, 3, 4]))
-    for (const part of [0, 1, 2, 3, 4]) expect(rowSizes(star, part)).toEqual([4, 8, 12, 16, 20])
-    expect(star.positions).toHaveLength(5 * 60)
+describe('a Star of five warped squares centred on its notches (ticket 0875)', () => {
+  /** The arm a bead lies on: the one whose direction from the centre its angle points along. */
+  const armOf = ({ angle }: LayoutPosition) => Math.round((((angle + Math.PI / 2) / ((2 * Math.PI) / 5)) % 5) + 5) % 5
+  /** How far a bead lies along its arm from the centre, and across it (towards the next arm clockwise). */
+  const onArm = (star: FrameLayout, position: LayoutPosition) => {
+    const [dx, dy] = [position.x - star.centre.x, position.y - star.centre.y]
+    return { along: dx * Math.cos(position.angle) + dy * Math.sin(position.angle), across: -dx * Math.sin(position.angle) + dy * Math.cos(position.angle) }
+  }
+
+  it('holds 5 R² beads on its face, its bead centres in the box and its tip as far out as the ticket measures them', () => {
+    const measured = [
+      { size: 3, beads: 45, wide: 10.17, tall: 9.67, tip: 5.35 },
+      { size: 5, beads: 125, wide: 17.78, tall: 16.91, tip: 9.35 },
+      { size: 10, beads: 500, wide: 36.8, tall: 35, tip: 19.35 },
+    ]
+    for (const { size, beads, wide, tall, tip } of measured) {
+      const star = starLayout(size, DELICA)
+      const [xs, ys] = [star.positions.map(({ x }) => x), star.positions.map(({ y }) => y)]
+      expect(star.positions).toHaveLength(beads)
+      expect(Math.abs(Math.max(...xs) - Math.min(...xs) - wide)).toBeLessThan(0.01)
+      expect(Math.abs(Math.max(...ys) - Math.min(...ys) - tall)).toBeLessThan(0.01)
+      expect(Math.abs(Math.max(...star.positions.map(({ x, y }) => Math.hypot(x - star.centre.x, y - star.centre.y))) - tip)).toBeLessThan(0.01)
+    }
   })
 
-  it('beads each arm in turn, then zips them pair by pair, the last seam closed last', () => {
+  it('makes each arm straight rows of 1 … R … 1 beads along its ridge, the ridge row\'s first bead 1.347 out', () => {
+    const star = starLayout(5, DELICA)
+    for (const arm of [0, 1, 2, 3, 4]) {
+      const rows = new Map<number, number[]>()
+      for (const position of star.positions.filter((each) => armOf(each) === arm)) {
+        const { along, across } = onArm(star, position)
+        const row = Math.round(across / Math.tan(Math.PI / 5))
+        // Every bead lies along its ridge: on its row's straight line.
+        expect(Math.abs(across - row * Math.tan(Math.PI / 5))).toBeLessThan(1e-9)
+        rows.set(row, [...(rows.get(row) ?? []), along])
+      }
+      expect([...rows.keys()].sort((a, b) => a - b).map((row) => rows.get(row)!.length)).toEqual([1, 2, 3, 4, 5, 4, 3, 2, 1])
+      for (const [row, alongs] of rows) expect(Math.min(...alongs)).toBeCloseTo(1.347 + Math.abs(row), 3)
+    }
+  })
+
+  it('shares no position between panels or squares, lies inside its bounding rectangle, and packs no bead across a Seam', () => {
+    for (const depth of DEPTHS) {
+      sharesNothing(starLayout(7, depth))
+      liesInside(starLayout(7, depth))
+      expect(crossingSeams(starLayout(7, depth))).toEqual([])
+    }
+  })
+
+  it('has 5 Seams, one down each valley from the centre to the notch, where the arms\' outlines meet', () => {
+    const star = starLayout(5, DELICA)
+    expect(star.seams).toHaveLength(5)
+    star.seams.forEach(([from, to], valley) => {
+      expect(Math.hypot(from.x - star.centre.x, from.y - star.centre.y)).toBeLessThan(1e-9)
+      // Clockwise from straight up: valley j lies between arms j and j + 1.
+      const length = Math.hypot(to.x - from.x, to.y - from.y)
+      const turn = ((2 * valley + 1) * Math.PI) / 5
+      expect((to.x - from.x) / length).toBeCloseTo(Math.sin(turn), 6)
+      expect((to.y - from.y) / length).toBeCloseTo(-Math.cos(turn), 6)
+      expect(length).toBeCloseTo((1.347 + 4) / Math.cos(Math.PI / 5), 2)
+    })
+  })
+
+  it('centres each square on a notch: arm j\'s half facing arm j + 1, arm j\'s ridge row and arm j + 1\'s half facing it', () => {
+    const star = starLayout(5, DELICA)
+    expect(new Set(star.panels.map(({ part }) => part))).toEqual(new Set([0, 1, 2, 3, 4]))
+    for (const square of [0, 1, 2, 3, 4]) {
+      expect(rowSizes(star, square)).toEqual([2, 4, 6, 8, 5])
+      const beads = star.positions.filter(({ panel }) => star.panels[panel]!.part === square)
+      for (let round = 1; round < 5; round += 1) {
+        const halves = beads.filter(({ row }) => row === round - 1).map((each) => ({ arm: armOf(each), ...onArm(star, each) }))
+        expect(halves.filter(({ arm, across }) => arm === square && across > 0)).toHaveLength(round)
+        expect(halves.filter(({ arm, across }) => arm === (square + 1) % 5 && across < 0)).toHaveLength(round)
+      }
+      const ridge = beads.filter(({ row }) => row === 4)
+      expect(ridge.every((each) => armOf(each) === square && Math.abs(onArm(star, each).across) < 1e-9)).toBe(true)
+    }
+  })
+
+  it('beads each square in turn, then zips them along the ridges pair by pair, 5 to 1 last', () => {
     const star = starLayout(4, DELICA)
-    expect(star.panels.filter(({ part }) => part === 3)).toEqual([0, 1, 2, 3].map(() => ({ part: 3, order: 3 })))
-    expect(star.joins).toEqual([
+    expect(star.panels.filter(({ part }) => part === 3)).toEqual([0, 1].map(() => ({ part: 3, order: 3 })))
+    expect(star.joins.map(({ step, parts }) => ({ step, parts }))).toEqual([
       { step: 'zip', parts: [0, 1] },
       { step: 'zip', parts: [1, 2] },
       { step: 'zip', parts: [2, 3] },
       { step: 'zip', parts: [3, 4] },
       { step: 'close', parts: [4, 0] },
     ])
+    // Squares 1 and 2 meet along arm 2's ridge: square 2's ridge row and square 1's round 3 beside it.
+    const zipped = star.joins[1]!.beads!.map((index) => star.positions[index]!)
+    expect(zipped.map(({ row, column }) => `${row}:${column}`)).toEqual([0, 1, 2, 3].map((place) => `3:${16 + place}`).concat([3, 4, 5].map((place) => `2:${6 + place}`)))
   })
 
-  it('shares no position between panels or arms, lies inside its bounding rectangle, and packs no bead across a Seam', () => {
-    for (const depth of DEPTHS) {
-      sharesNothing(starLayout(7, depth))
-      liesInside(starLayout(7, depth))
-      expect(crossingSeams(starLayout(7, depth))).toEqual([])
-    }
+  it('takes each tip bead as on both front and back, and every other bead as the back\'s too', () => {
+    const star = starLayout(5, DELICA)
+    const tips = star.back!.shared.map((index) => star.positions[index]!)
+    expect(tips.map(({ row, column }) => `${row}:${column}`)).toEqual([0, 1, 2, 3, 4].map((square) => `4:${10 * square + 4}`))
+    for (const tip of tips) expect(Math.hypot(tip.x - star.centre.x, tip.y - star.centre.y)).toBeCloseTo(9.347, 3)
   })
 
   it('mirrors onto itself left to right, and turns onto itself by a fifth, as Mirror finds each bead\'s counterpart', () => {
@@ -275,22 +348,24 @@ describe('a Star (ticket 0593)', () => {
     expect(layoutPositionAt(star, star.centre.x, star.height - 0.5)).toBeUndefined()
   })
 
-  it('stands with an arm straight up', () => {
+  it('stands with an arm straight up, square 1\'s ridge', () => {
     const star = starLayout(6, DELICA)
     const top = star.positions.reduce((highest, position) => (position.y < highest.y ? position : highest))
     expect(star.panels[top.panel]!.part).toBe(0)
-    expect(Math.abs(top.x - star.centre.x)).toBeLessThan(1)
+    expect(Math.abs(top.x - star.centre.x)).toBeLessThan(1e-9)
   })
 
-  it('fills from one arm into the next, where their beads touch', () => {
+  it('fills from one square into the next across a ridge and across a valley, where their beads touch', () => {
     const star = starLayout(4, DELICA)
     const parts = (positions: { row: number; column: number }[]) =>
       new Set(positions.map((neighbour) => star.panels[star.positions.find(({ row, column }) => row === neighbour.row && column === neighbour.column)!.panel]!.part))
-    const outer = star.positions.filter(({ row, panel }) => row === 3 && star.panels[panel]!.part === 0)
-    expect(outer.some((position) => parts(layoutNeighbors(star, position)).has(1))).toBe(true)
+    const ridge = star.positions.filter(({ row, panel }) => row === 3 && star.panels[panel]!.part === 1)
+    expect(ridge.some((position) => parts(layoutNeighbors(star, position)).has(0))).toBe(true)
+    const nearCentre = star.positions.find(({ row, column }) => row === 3 && column === 0)!
+    expect(parts(layoutNeighbors(star, nearCentre))).toContain(4)
   })
 
-  it('keeps a bead\'s name when the Part size grows', () => {
+  it('keeps a bead\'s name and square when the Part size changes: a square\'s rounds from its notch', () => {
     const small = starLayout(3, DELICA)
     const big = starLayout(6, DELICA)
     for (const position of small.positions) {

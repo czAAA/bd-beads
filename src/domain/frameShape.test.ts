@@ -146,20 +146,24 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(order.stepOf?.(4)).toEqual({ kind: 'row', number: 5 })
   })
 
-  it('steps a Star part by part in making order, round by round, and then through its joins', () => {
+  it('steps a Star square by square, rounds 1 to R, then zips them 1–2, 2–3, 3–4, 4–5 and closes 5–1 (ticket 0875)', () => {
     const order = rowOrderOf(custom('star', 3), { direction: 'rows' })
     expect(order.count).toBe(5 * 3 + 5)
-    // Part 2's second round: its four sides' two beads each, named on after parts 0 and 1.
     expect(order.stepOf?.(7)).toEqual({ kind: 'round', number: 2, part: 3 })
-    expect(order.positionsOf(7)).toEqual([7, 0, 1, 2, 3, 4, 5, 6].map((place) => ({ row: 1, column: 16 + place })))
-    expect(order.passAt({ row: 1, column: 16 })).toBe(7)
-    expect(order.stepOf?.(15)).toEqual({ kind: 'join', step: 'zip', parts: [1, 2] })
-    expect(order.stepOf?.(19)).toEqual({ kind: 'join', step: 'close', parts: [5, 1] })
-    // A zip rings the edges it puts together: beads of both parts' last rounds, none of their first.
-    const zipped = order.positionsOf(15)
-    expect(zipped.length).toBeGreaterThan(0)
-    expect(zipped.every(({ row }) => row === 2)).toBe(true)
-    expect(new Set(zipped.map(({ column }) => Math.floor(column / 12)))).toEqual(new Set([0, 1]))
+    // Square 3's round 2 on the face: two beads in arm 3's half out from the centre, two in arm 4's back in.
+    expect(order.positionsOf(7)).toEqual([8, 9, 10, 11].map((column) => ({ row: 1, column })))
+    expect(order.passAt({ row: 1, column: 8 })).toBe(7)
+    // Its whole round, front and back: each face bead read on both, from the corner pair at the centre front.
+    expect(order.wordsOf?.(7)).toEqual([11, 8, 9, 9, 8, 11, 10, 10].map((column) => ({ row: 1, column })))
+    // Its partial last round: arm 3's ridge out on the front and in on the back, the tip bead once.
+    expect(order.wordsOf?.(8)).toEqual([12, 13, 14, 13, 12].map((column) => ({ row: 2, column })))
+    expect([15, 16, 17, 18, 19].map((pass) => order.stepOf?.(pass))).toEqual([
+      ...[[1, 2], [2, 3], [3, 4], [4, 5]].map((parts) => ({ kind: 'join', step: 'zip', parts })),
+      { kind: 'join', step: 'close', parts: [5, 1] },
+    ])
+    // Squares 1 and 2 are zipped along arm 2's ridge: square 2's ridge row and square 1's round beside it.
+    expect(order.positionsOf(15)).toEqual([...[6, 7, 8].map((column) => ({ row: 2, column })), ...[2, 3].map((column) => ({ row: 1, column }))])
+    expect(order.wordsOf?.(15)).toBeUndefined()
   })
 
   it('goes through a Kaleidocycle\'s zips, hinges and closing joins after its six triangles', () => {
@@ -226,7 +230,11 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
       const [first, second] = kaleidocycle.rounds[5]!
       expect(first!.panel).not.toBe(second!.panel)
       expect(touch(kaleidocycle.layout, first!, second!)).toBe(true)
-      expect(rowOrderOf(custom('star', 3), { direction: 'rows' }).sidesOf?.(2)).toEqual([0, 1, 2, 3].map(() => ({ corner: 2, singles: 1 })))
+      const star = rowOrderOf(custom('star', 4), { direction: 'rows' })
+      // A Star square's round goes round its front and back; its partial last round has a single bead at each corner.
+      expect(star.sidesOf?.(0)).toBeUndefined()
+      expect(star.sidesOf?.(2)).toEqual([0, 1, 2, 3].map(() => ({ corner: 2, singles: 1 })))
+      expect(star.sidesOf?.(3)).toEqual([{ corner: 1, singles: 2 }, { corner: 1, singles: 2 }, { corner: 1, singles: 0 }])
       expect(kaleidocycle.order.sidesOf?.(18)).toBeUndefined()
       const kite = rowOrderOf(custom('kite', 21), { direction: 'rows' })
       expect(kite.sidesOf?.(4)).toBeUndefined()

@@ -953,12 +953,12 @@ describe('useSelectionGesture', () => {
 })
 
 describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
-  /** A peyote Star on a loom Canvas, its first arm's last round painted. */
+  /** A peyote Star on a loom Canvas, its first two squares' round 3 painted. */
   function star(): Project {
     const open = withFrameSheet(makeProject(), undefined)
     const placed = changeFrame(open, { custom: { shape: 'star', size: 4, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
-    const arm = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row, column }) => row === 3 && column < 16)
+    const arm = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row, column }) => row === 2 && column < 12)
     return onLayer(placed.project, 'frame', (view) => paintCells(view, arm, RED))
   }
 
@@ -969,7 +969,7 @@ describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
     gesture.deleteSelection()
     expect(beadCount(frameOf(harness.project)!.beads)).toBe(0)
     harness.history.onUndo()
-    expect(beadCount(frameOf(harness.project)!.beads)).toBe(16)
+    expect(beadCount(frameOf(harness.project)!.beads)).toBe(12)
   })
 
   it('pastes into the shape and says how many beads its Seams and Off-shape dropped, in one Undo step', () => {
