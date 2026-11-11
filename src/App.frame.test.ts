@@ -217,6 +217,33 @@ describe('A Frame from the panel with no Frame', () => {
     expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
   })
 
+  it('selects a frame from the Export panel: Escape drops the notice; once one is set the notice goes and Export comes back (ticket 0847)', async () => {
+    const wrapper = await mountOpen()
+    const selectFromExport = async () => {
+      await wrapper.get('[data-testid="strip-export"]').trigger('click')
+      await flushPromises()
+      await wrapper.get('[data-testid="export-select-frame"]').trigger('click')
+      await flushPromises()
+    }
+    await selectFromExport()
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="select-frame"]').exists()).toBe(true)
+    await key({ key: 'Escape' })
+    expect(wrapper.find('[data-testid="select-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
+
+    await selectFromExport()
+
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+
+    expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
+    expect(wrapper.find('[data-testid="select-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-panel"] [data-testid="export-png"]').exists()).toBe(true)
+  })
+
 })
 
 describe('Painting a Custom frame', () => {
@@ -239,16 +266,18 @@ describe('Painting a Custom frame', () => {
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   const savedProgress = () => rowProgressOf(loadProjects()[0])
 
-  it('turns on with the first Frame, fitted from the Progress bar, and one Undo takes both back', async () => {
+  it('turns on with the first Frame, fitted from the Progress bar, which opens Export on Picture; one Undo takes both back (ticket 0847)', async () => {
     const wrapper = await mountOpen()
     expect(savedFrame()).toBeUndefined()
     expect(savedProgress()).not.toHaveProperty('enabled')
 
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
+    await flushPromises()
 
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(savedProgress()).toMatchObject({ currentRow: 0, currentColumn: 0 })
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="export-panel"] [data-testid="export-png"]').attributes('data-panel-entry')).toBe('true')
 
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toBeUndefined()

@@ -539,6 +539,9 @@ export const es: Translations = {
     namePieceButton: 'Nombrar trozo',
     fillOpenMessage: 'Nada rodea este punto. Selecciona un área para rellenarla.',
     fillTooBigMessage: 'Demasiado grande para rellenar. Acerca la vista o selecciona un área.',
+    mirrorArmedHint: 'Arrastra sobre el lienzo para marcar el área que se refleja.',
+    pasteArmedHint: 'Toca el lienzo para colocar la copia. Elige una herramienta para terminar.',
+    pickArmedHint: 'Toca una cuenta para usar su color.',
   },
   inputMode: {
     penLabel: 'Modo lápiz',
@@ -829,6 +832,7 @@ export const es: Translations = {
     progressSelectToSet: 'Selecciona para definir el',
     progressFrameWord: 'marco',
     rotateCoveredMessage: 'El fragmento girado quedó sobre cuentas existentes.',
+    fitAndExport: 'Ajustar marco y exportar imagen',
   },
   size: {
     estimateLabel: 'Tamaño estimado',
@@ -1073,7 +1077,7 @@ export const es: Translations = {
     namePieceDisabled: 'Selecciona primero un trozo.',
     clear: 'Vacía todo el lienzo.',
     customColor: 'Añade un color a la paleta; Enter toma el color.',
-    pickFromCanvas: 'Haz clic en una cuenta del lienzo para usar su color; se añade a la paleta si hay un hueco libre.',
+    pickFromCanvas: 'Usa el color de una cuenta del lienzo. Se añade a la paleta.',
     nothingToUndo: 'No hay nada que deshacer.',
     zoomOutLimit: 'Ya está alejado al máximo.',
     zoomInLimit: 'Ya está acercado al máximo.',
@@ -1114,6 +1118,8 @@ export const es: Translations = {
     rulers: 'Las reglas numeran tus cuentas y el marco.',
     rowDirection: 'Cambia el sentido de las filas: de arriba abajo, de izquierda a derecha, de abajo arriba o de derecha a izquierda.',
     rowHighlight: 'Muestra u oculta las marcas en la fila actual y en las filas marcadas como terminadas.',
+    fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
+    pasteToolTouch: 'Toca donde va la copia.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

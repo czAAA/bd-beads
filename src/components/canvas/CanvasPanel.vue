@@ -147,7 +147,7 @@ const {
   onToggleFramePanel,
   surfaceInputMode,
   handedness,
-  onFitFrame,
+  onFitAndExport,
   onEditFrame,
   onFrameKey,
   onRemoveFrame,
@@ -497,6 +497,7 @@ const drawingStyle = computed(() => {
           v-model:popover-open="toolPillPopoverOpen"
           :mirror-on="mirrorOn"
           :mirror-marking="mirrorMarking"
+          :picking="colorPick?.picking.value"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"
@@ -547,7 +548,7 @@ const drawingStyle = computed(() => {
         @reset-progress="onResetProgress"
         @toggle-row-direction="onToggleRowDirection"
         @toggle-row-highlight="toggleRowHighlight"
-        @fit-frame="onFitFrame"
+        @fit-and-export="onFitAndExport"
       />
 
       <!--

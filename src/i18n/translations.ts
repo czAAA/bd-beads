@@ -643,6 +643,11 @@ export interface Translations {
     /** A Fill tool press refused by Fill reach (ticket 0715): open space nothing encloses, or more than the Fill cap. */
     fillOpenMessage: string
     fillTooBigMessage: string
+    /** On touch, the toast that says what an armed mode waits for (ticket 0845): Mirror mode with no Area, paste mode,
+     * Pick color from canvas. */
+    mirrorArmedHint: string
+    pasteArmedHint: string
+    pickArmedHint: string
   }
   /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
   inputMode: {
@@ -960,6 +965,8 @@ export interface Translations {
     progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
+    /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
+    fitAndExport: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
@@ -1315,6 +1322,10 @@ export interface Translations {
     rulers: string
     rowDirection: string
     rowHighlight: string
+    /** The Progress bar's Fit a Frame and export a picture (ticket 0847). */
+    fitAndExport: string
+    /** The Paste tile's line on touch, which has no hover or click (ticket 0845). */
+    pasteToolTouch: string
   }
   /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
    * in every layer's. */

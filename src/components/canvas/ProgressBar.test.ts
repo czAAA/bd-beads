@@ -154,7 +154,7 @@ describe('ProgressBar', () => {
     expect(columns.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.leftToRight)
   })
 
-  it('has no Row progress switch, and shows no Fit to drawing while there is a Frame (ticket 426)', () => {
+  it('has no Row progress switch, and no way to a Frame while there is one (tickets 426, 0847)', () => {
     const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
 
     expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
@@ -222,7 +222,7 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     return rest
   }
 
-  it('shows "Select to set a Frame" and a Fit to drawing button, and no row buttons (ticket 426)', async () => {
+  it('shows "Select to set a Frame" and Fit a Frame and export a picture, and no row buttons (tickets 426, 0847)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
     expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
@@ -231,12 +231,14 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
 
-    // Fit to drawing needs something drawn; with a bead it asks the app to frame it.
-    await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
-    expect(wrapper.emitted('fit-frame')).toBeUndefined()
+    // It needs something drawn; with a bead it asks the app to frame it and export a picture.
+    const button = () => wrapper.get('[data-testid="progress-bar-fit-frame"]')
+    expect(button().text()).toBe(ru.frame.fitAndExport)
+    await button().trigger('click')
+    expect(wrapper.emitted('fit-and-export')).toBeUndefined()
     await wrapper.setProps({ project: withLayers(unframedProject(), { beads: { 0: { 0: '#e63746' } } }) })
-    await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
-    expect(wrapper.emitted('fit-frame')).toHaveLength(1)
+    await button().trigger('click')
+    expect(wrapper.emitted('fit-and-export')).toHaveLength(1)
   })
 })
 

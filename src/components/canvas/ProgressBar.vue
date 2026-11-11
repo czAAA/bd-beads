@@ -11,8 +11,8 @@ import type { RowPress } from '../../composables/project/useRowOps'
 import { frameOf } from '../../domain/layerRecord'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control along the canvas box's
-// bottom; with no Frame (ADR 0055) it offers Fit to drawing, with one its RowProgressControls (ticket 0657). The Homepage
-// fills the same bar with its sections through the slot, with no Project (0739); the editor with none leaves it empty (0748).
+// bottom; with no Frame (ADR 0055) Fit a Frame and export a picture (0847), with one its RowProgressControls (0657). The
+// Homepage fills it with its sections through the slot, with no Project (0739); the editor with none leaves it empty (0748).
 const props = withDefaults(defineProps<{
   /** The Project whose Row progress it shows; none where the slot fills the bar, or where the bar is empty. */
   project?: Project
@@ -28,8 +28,9 @@ const emit = defineEmits<{
   'reset-progress': []
   'toggle-row-direction': []
   'toggle-row-highlight': []
-  /** The bar's own way to a Frame, shown while there is none to count rows on: Fit to drawing. */
-  'fit-frame': []
+  /** The bar's own way to a Frame and a picture, shown while there is none to count rows on (ticket 0847, O-03): Fit
+   * to drawing, then Export opened on Picture. */
+  'fit-and-export': []
 }>()
 
 const { t } = useI18n()
@@ -38,7 +39,7 @@ const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
 const roving = useRovingFocus(rootEl, { axis: () => 'horizontal', managesTabIndex: true })
 
-const fitFrame = controlAction('fit-to-drawing')
+const fitAndExport = controlAction('fit-and-export')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
@@ -57,7 +58,7 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
         {{ t.frame.progressFrameWord }}
       </p>
       <span class="progress-bar__fit-frame">
-        <AppButton variant="box" :action="fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
+        <AppButton variant="box" :action="fitAndExport" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-and-export')" />
       </span>
     </template>
     <RowProgressControls
@@ -77,8 +78,8 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): "Select to set a Frame" set like the CanvasHint, and the Fit to drawing button pushed
- * to the right. */
+/* No Frame (ProgressBar card): "Select to set a Frame" set like the CanvasHint, and Fit a Frame and export a picture
+ * pushed to the right. */
 .progress-bar__need {
   display: flex;
   align-items: center;

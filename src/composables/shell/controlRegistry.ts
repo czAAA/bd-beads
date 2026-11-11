@@ -112,6 +112,8 @@ export type ControlAction = Disableable & {
   icon?: IconName
   name: (t: Translations) => string
   body?: (t: Translations) => string
+  /** The body on a touch device, where `body` would speak of hovering or clicking (ticket 0845). */
+  touchBody?: (t: Translations) => string
   group: ControlGroup
   chords: readonly Chord[]
   /** A key the action shows without owning it (Done, Cancel and Clear selection show Back out's `Esc`). */
@@ -160,6 +162,11 @@ const hasFrame = (deps: ControlDeps) => frameOf(deps.activeProject()) !== undefi
 const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
+}
+/** When Fit to drawing can frame the beads, and why not: its own and the Progress bar's way to a picture (ticket 0847). */
+const fitsDrawing: Disableable = {
+  enabled: (deps: ControlDeps) => !frameLocked(deps) && hasBeads(deps),
+  disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
 }
 
 /** One of the Frame panel's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops
@@ -245,6 +252,7 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'paste',
     name: (t) => t.tools.pasteLabel,
     body: (t) => t.tooltips.pasteTool,
+    touchBody: (t) => t.tooltips.pasteToolTouch,
     group: 'canvas',
     chords: [tileChord('paste')],
     run: (deps) => deps.onPasteMode(),
@@ -597,8 +605,7 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('fit-to-drawing', (t) => t.frame.fitToDrawing, 'canvas', {
     body: (t) => t.tooltips.fitToDrawing,
-    enabled: (deps: ControlDeps) => !frameLocked(deps) && hasBeads(deps),
-    disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
+    ...fitsDrawing,
   }),
   unkeyed('clear', (t) => t.deleteAll.button, 'edit', { icon: 'delete', body: (t) => t.tooltips.clear }),
   unkeyed('custom-color', (t) => t.palette.customColorLabel, 'colors', { body: (t) => t.tooltips.customColor }),
@@ -615,7 +622,7 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'menu',
     body: (t) => t.tooltips.list([t.projects.newProjectButton, t.convertImage.fileLabel, t.projects.heading, t.languageSwitcher.ariaLabel, t.theme.groupLabel]),
   }),
-  unkeyed('strip-export', (t) => t.panels.project.exportHeading, 'edit', { icon: 'share' }),
+  unkeyed('strip-export', (t) => t.panels.project.exportHeading, 'edit', { icon: 'export' }),
   unkeyed('strip-coffee', (t) => t.panels.menu.coffee, 'edit', { icon: 'coffee' }),
   unkeyed('pen-mode', (t) => t.inputMode.penLabel, 'canvas', { icon: 'pen-mode', body: (t) => t.inputMode.penHint }),
   unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),
@@ -655,6 +662,12 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
   ...CONVERT_STEPS.map((step) => unkeyed(`convert-step-${step}`, (t) => t.convertImage.wizard.rail[step], 'edit')),
   ...CROP_HANDLES.map((handle) => unkeyed(`crop-${handle}`, (t) => t.convertImage.wizard.crop[handle], 'edit')),
+  // The Progress bar's way from the first beads to a picture (ticket 0847): Fit to drawing, then Export on Picture.
+  unkeyed('fit-and-export', (t) => t.frame.fitAndExport, 'canvas', {
+    icon: 'image',
+    body: (t) => t.tooltips.fitAndExport,
+    ...fitsDrawing,
+  }),
 ]
 
 /** The gestures with no key the dialog still lists beside the keys (ticket 95): not actions, so not in CONTROLS. */
