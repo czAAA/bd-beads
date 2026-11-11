@@ -49,6 +49,8 @@ const BURST_SPAN = { x: 100, y: 160, width: 120, height: 0 }
 
 <template>
   <StepBar
+    role="navigation"
+    :aria-label="t.homepage.sections.label"
     :class="{ 'section-bar--nudging': nudging }"
     :step="section"
     :steps="steps"

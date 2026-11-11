@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <span class="slogan" aria-label="openbeads" :data-word="word" data-testid="homepage-slogan">
+  <span class="slogan" role="img" aria-label="openbeads" :data-word="word" data-testid="homepage-slogan">
     <span class="slogan__open" aria-hidden="true">open</span>
     <span class="slogan__slot" aria-hidden="true">
       <span

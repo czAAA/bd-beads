@@ -18,6 +18,12 @@ const reached = (wrapper: ReturnType<typeof bar>) =>
 beforeEach(() => localStorage.clear())
 
 describe('PhoneBar (ticket 0827)', () => {
+  it('is a navigation landmark named Sections (ticket 0856)', () => {
+    const wrapper = bar()
+    expect(wrapper.element.tagName).toBe('NAV')
+    expect(wrapper.attributes('aria-label')).toBe('Sections')
+  })
+
   it("names the section shown, its segments reached so far and its place, then ↑, the way in and ↓", () => {
     const wrapper = bar(1)
     expect(wrapper.get('[data-testid="phone-bar-name"]').text()).toBe('Made by one family')

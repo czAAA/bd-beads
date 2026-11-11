@@ -1,4 +1,4 @@
-import { defineComponent, h, provide, ref, type Component } from 'vue'
+import { defineComponent, h, provide, type Component } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { LOCALES } from '../domain/locale'
 import { describeFits, fitProblems, inShell, mountAt, tooltipProblems, type FitCase } from '../testUtils/browserFit'
@@ -47,7 +47,7 @@ const showAll = (root: HTMLElement): void => {
 const inPanel = (component: Component, props: Record<string, unknown>, width?: string): Component =>
   defineComponent({
     setup() {
-      provide(PANEL_CONTEXT, { itemRole: ref(undefined), close: () => {}, openSub: () => {} })
+      provide(PANEL_CONTEXT, { close: () => {}, openSub: () => {} })
       return () => (width ? h('div', { style: { width, maxWidth: '100%' } }, [h(component, props)]) : h(component, props))
     },
   })

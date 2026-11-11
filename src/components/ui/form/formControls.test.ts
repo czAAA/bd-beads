@@ -334,9 +334,10 @@ describe('AppStepper', () => {
       return { ...mounted, input: mounted.wrapper.find<HTMLInputElement>('input') }
     }
 
-    it('names the number and opens it as a numeric input with the current value', async () => {
-      const { wrapper, input } = await open()
-      expect(wrapper.find('.stepper__value-button').attributes('aria-label')).toBe('Colors')
+    it('names the number by what it counts and what it shows, and opens it as a numeric input with the current value', async () => {
+      expect(mountStepper(3).wrapper.get('.stepper__value-button').attributes('aria-label')).toBe('Colors: 3')
+      expect(mountStepper(3, { display: '6 mm' }).wrapper.get('.stepper__value-button').attributes('aria-label')).toBe('Colors: 6 mm')
+      const { input } = await open()
       expect(input.attributes('inputmode')).toBe('numeric')
       expect(input.attributes('aria-label')).toBe('Colors')
       expect(input.element.value).toBe('3')

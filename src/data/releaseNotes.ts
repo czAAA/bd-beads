@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A screen reader finds one main area and one header on each page, and hears each button by the words it shows',
+      ru: 'Программа чтения с экрана находит на каждой странице одну основную область и один заголовок и называет каждую кнопку словами, которые на ней видны',
+      uk: 'Програма читання з екрана знаходить на кожній сторінці одну основну область і один заголовок і називає кожну кнопку словами, які на ній видно',
+      be: 'Праграма чытання з экрана знаходзіць на кожнай старонцы адну асноўную вобласць і адзін загаловак і называе кожную кнопку словамі, якія на ёй відаць',
+      zh: '屏幕阅读器在每个页面只找到一个主要区域和一个页眉，并按按钮上显示的文字读出每个按钮',
+      es: 'Un lector de pantalla encuentra una sola zona principal y una sola cabecera en cada página, y nombra cada botón con las palabras que muestra',
+      pl: 'Czytnik ekranu znajduje na każdej stronie jeden główny obszar i jeden nagłówek, a każdy przycisk nazywa słowami, które na nim widać',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A color you used stays in its place in the Palette, ringed, so the grid never shifts',
       ru: 'Цвет, которым вы рисовали, остаётся на своём месте в палитре, с кольцом, и сетка больше не сдвигается',
       uk: 'Колір, яким ви малювали, лишається на своєму місці в палітрі, з кільцем, і сітка більше не зсувається',
