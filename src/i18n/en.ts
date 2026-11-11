@@ -38,6 +38,7 @@ export const en: Translations = {
     openCanvasSubtitle: 'Draw anywhere on the Canvas, and set a Frame when you want a picture or a PDF.',
     pickStarter: 'Pick a starter',
     estimateBeads: '≈ {columns}×{rows} beads',
+    unnamedProject: 'Project {number}',
   },
   a11y: {
     toolsLandmark: 'Tools',

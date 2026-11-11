@@ -51,10 +51,10 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | --- | --- | --- |
 | Project | проект | Saved Projects / Сохранённые проекты; New Project / Новый проект |
 | Schema | схема | The beads inside the Frame; Schema rotated / Схема повёрнута (ADR 0050) |
-| Bead / beads | бисеринка / бисер | One bead is бисеринка; the material and amounts are бисер |
+| Bead / beads | бисеринка / бисер | One bead is бисеринка everywhere, never бусина («4 бисеринки», «Бисеринок»); the material and amounts are бисер (ticket 0864) |
 | Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
 | Palette | палитра |  |
-| Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов |
+| Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов; never a bare «Готово», which reads as closing something. Where a pair has no room in the Progress bar it becomes Следующий / Предыдущий (ticket 0864) |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
 | Clear | Очистить; confirm Очистить? | Empties the cells; the Schema stays. Not «Очистить всё», which was Delete all |
 | Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
@@ -63,9 +63,11 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Folded beads | свёрнутые бисерины | The Frame's own beads beyond its edge, out of sight (ADR 0066); proposed, ticket 0641 |
-| Canvas · Hand · Rulers | Холст · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
+| Canvas · Hand · Rulers | Холст · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers; the Canvas is холст everywhere, never полотно (ticket 0864) |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | A Project made from a picture |
+| Maker | автор | The name on exports: Имя автора, автор: {maker}, Изменить имя автора; never мастер (ticket 0864) |
+| The Frame's edges | Сверху · Снизу · Слева · Справа | The edge cells of the Frame panel's size; a word with no room moves to its glyph's Tooltip (ticket 0864) |
 
 ## Ukrainian, Belarusian, Chinese, Spanish and Polish (ticket 368)
 
@@ -86,6 +88,8 @@ The same voice and sentence patterns in each language; domain words are never re
 | Canvas · Hand · Rulers | Полотно · Рука · Лінійки | Палатно · Рука · Лінейкі |
 | Mirror | Відображення | Адлюстраванне |
 | Convert image | Конвертувати зображення | Канвертаваць выяву |
+| Row done · Row not done | Ряд готовий · Ряд не готовий; by columns Наступний · Попередній, as «Стовпець не готовий» has no room at 320px (ticket 0864) | Рад гатовы · Рад не гатовы; Слупок гатовы · Слупок не гатовы |
+| The Frame's edges | Зверху · Знизу · Зліва · Справа | Верх · Ніз · Злева · Справа |
 
 | English | Chinese | Spanish | Polish |
 | --- | --- | --- | --- |
@@ -244,7 +248,7 @@ The cards and the list of What's inside (Homepage card). Every shipped language 
 | For iPad and Pencil · Pen mode, Pencil hover and big buttons for your finger. | Для iPad и Pencil · Режим пера, наведение Pencil и крупные кнопки под палец. |
 | Free forever · All you need is free, and nothing is paid for now. Professional extras will come later. | Бесплатно навсегда · Всё нужное бесплатно, платного сейчас нет. Позже появятся профессиональные дополнения. |
 | Keyboard shortcuts · Every edit has its own key. Find them all in {menu} → {help} → {shortcuts}. | Горячие клавиши · У каждой правки есть своя клавиша. Все они в {menu} → {help} → {shortcuts}. |
-| Canvas and Frame · Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count. | Полотно и рамка · Рисуйте где угодно: у полотна нет краёв. Рамка задаёт размер, экспорт и количество бисерин. |
+| Canvas and Frame · Draw anywhere: the Canvas has no edges. A Frame sets the size, the exports and the bead count. | Холст и рамка · Рисуйте где угодно: у холста нет краёв. Рамка задаёт размер, экспорт и количество бисерин. |
 | Techniques · Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения · Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
 | Project editing · Paint, fill, erase, select, copy, paste, undo. | Правка проекта · Кисть, заливка, ластик, выделение, копирование, вставка, отмена. |
 | Mirror · Draw one side, the other follows. | Отражение · Рисуете одну сторону, вторая повторяет. |
@@ -291,7 +295,7 @@ The free list (ticket 0740), one row each, in this order. It names the app's fea
 | English | Russian |
 | --- | --- |
 | Runs in your browser, and your work stays on your device | Работает в браузере, а ваши работы остаются на вашем устройстве |
-| An open Canvas: draw anywhere, it has no edges | Открытое полотно: рисуйте где угодно, у него нет краёв |
+| An open Canvas: draw anywhere, it has no edges | Открытый холст: рисуйте где угодно, у него нет краёв |
 | {n} Techniques: {techniques} (a counted word: one Technique, many Techniques) | {n} техника / техники / техник: {techniques} |
 | As many Projects as you like | Сколько угодно проектов |
 | Turn a picture into beads | Картинка превращается в бисер |
@@ -393,7 +397,7 @@ The Frame panel, the Move handle and the edit pencil (Frame card). The Russian i
 | Remove Frame · Remove Frame? | Убрать рамку · Убрать рамку? |
 | 24 × 30 beads | 24 × 30 бисерин |
 | Frame size, width × height (the size field's name) | Размер рамки, ширина × высота |
-| Top · Bottom · Left · Right (the edge cells) | Верх · Низ · Слева · Справа |
+| Top · Bottom · Left · Right (the edge cells) | Сверху · Снизу · Слева · Справа |
 | Top edge: add one row · Top edge: remove one row | Верхний край: добавить ряд · Верхний край: убрать ряд |
 | Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |
 | The Frame can’t get any smaller on this side. | Рамку нельзя сделать меньше с этой стороны. |
@@ -404,7 +408,7 @@ Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is 
 
 | English | Russian |
 | --- | --- |
-| Rows marked done will be cleared with the Frame. Its beads stay on the Canvas. This can be undone. | Ряды, отмеченные как готовые, сотрутся вместе с рамкой. Её бусины останутся на холсте. Это действие можно отменить. |
+| Rows marked done will be cleared with the Frame. Its beads stay on the Canvas. This can be undone. | Ряды, отмеченные как готовые, сотрутся вместе с рамкой. Её бисеринки останутся на холсте. Это действие можно отменить. |
 
 ## Template copy (ticket 0493)
 
@@ -459,13 +463,13 @@ Russian here is a proposal for review, like the section below.
 |---|---|
 | Projects library · Open Project file · Save all Projects to a Project file · Delete all Projects | Библиотека проектов · Открыть файл проекта · Сохранить всё в файл проекта · Удалить все проекты |
 | No Projects yet · Projects you make are kept on this device. Open a Project file to bring one in. | Проектов пока нет · Проекты хранятся на этом устройстве. Откройте файл проекта, чтобы добавить проект. |
-| {n} pieces · {n} unnamed · Frame {w} × {h} beads | Частей: {n} · без названия: {n} · Рамка {w} × {h} бусин |
+| {n} pieces · {n} unnamed · Frame {w} × {h} beads | Частей: {n} · без названия: {n} · Рамка {w} × {h} бисеринок |
 | Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
 | Project · name: · maker: · Add your name for exports · Change the maker's name | проект · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
 | Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
 | Brand · Type · Size | Бренд · Тип · Размер |
-| Project file · Picture · Printable chart · Clear all beads · Delete Project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
-| Frame · Name this Frame · Rename Frame · Frame from template · Fit a Frame to the drawing · A Frame sets the size, the exports and the bead count. | рамка · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
+| Project file · Picture · Printable chart · Clear all beads · Delete Project | Файл проекта · Картинка · Схема для печати · Очистить все бисеринки · Удалить проект |
+| Frame · Name this Frame · Rename Frame · Frame from template · Fit a Frame to the drawing · A Frame sets the size, the exports and the bead count. | рамка · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бисеринок. |
 | Estimated size · An estimate. · Rows are marked done. Reset progress to change the size. · Show all colors ({n}) | Примерный размер · Это оценка. · Ряды отмечены как готовые. Сбросьте прогресс, чтобы изменить размер. · Показать все цвета ({n}) |
 | Stone · Fog · Pebble · Slate | Камень · Туман · Галька · Сланец |
 
@@ -597,7 +601,7 @@ The Frame's margin as a drafting sheet (MarginSheet card). The tools on the shee
 | Auto · Auto, one step off the Canvas color (its accessible name) | Авто · Авто, на шаг от цвета холста | Авто · Авто, на крок від кольору полотна | Auto · Auto, o krok od koloru płótna |
 | {color}, the Canvas color (the swatch equal to it) | {color}, цвет холста | {color}, колір полотна | {color}, kolor płótna |
 | Name and size on the margin | Имя и размер на полях | Назва й розмір на полях | Nazwa i rozmiar na marginesie |
-| The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Поля — 4 бусины с каждой стороны. На них ничего нельзя поставить, и в экспорт они не попадают. | Поля — 4 бісеринки з кожного боку. На них нічого не можна поставити, і в експорт вони не потрапляють. | Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu. |
+| The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Поля — 4 бисеринки с каждой стороны. На них ничего нельзя поставить, и в экспорт они не попадают. | Поля — 4 бісеринки з кожного боку. На них нічого не можна поставити, і в експорт вони не потрапляють. | Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu. |
 | Fold the title block · Show the title block | Свернуть штамп · Показать штамп | Згорнути штамп · Показати штамп | Zwiń tabliczkę · Pokaż tabliczkę |
 | Change Technique (the title block's pencil) | Сменить технику | Змінити техніку | Zmień technikę |
 | Frame tools (the folded form's ··· menu) | Инструменты рамки | Інструменти рамки | Narzędzia ramki |
@@ -635,7 +639,7 @@ Built by ticket 0698 (a Technique's settings in the title block): each setting's
 | {count}-drop (Drop, in short) | {count}-дроп | {count}-дроп | {count}-дроп | {count}-drop | {count}-drop | 每针{count}珠 |
 | Change {setting} (the setting's pencil) | Изменить «{setting}» | Змінити «{setting}» | Змяніць «{setting}» | Zmień: {setting} | Cambiar {setting} | 更改{setting} |
 
-The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
+The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бисеринки…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.
 
@@ -788,7 +792,7 @@ Russian, Ukrainian, Belarusian, Spanish, Polish and Chinese are proposals for re
 
 ## Reference image copy (ticket 0790)
 
-The Project's one picture to bead over (ReferenceImage card). Russian and Ukrainian call it the underlay a tracer puts under the paper, «подложка» and «підкладка»; Polish «obraz pomocniczy». The Canvas is «полотно» / «полотно» / «płótno» (ADR 0050). Belarusian, Spanish and Chinese were written with the build, below the first table; all are draft words, to be checked by a speaker of each.
+The Project's one picture to bead over (ReferenceImage card). Russian and Ukrainian call it the underlay a tracer puts under the paper, «подложка» and «підкладка»; Polish «obraz pomocniczy». The Canvas is «холст» / «полотно» / «płótno» (ADR 0050; Russian since ticket 0864). Belarusian, Spanish and Chinese were written with the build, below the first table; all are draft words, to be checked by a speaker of each.
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
@@ -800,10 +804,10 @@ The Project's one picture to bead over (ReferenceImage card). Russian and Ukrain
 | Opacity | Непрозрачность | Непрозорість | Krycie |
 | Adjust on Canvas · move · resize · turn | Настроить на полотне · сдвиг · размер · поворот | Налаштувати на полотні · зсув · розмір · поворот | Dopasuj na płótnie · przesuń · rozmiar · obróć |
 | Replace image · Remove image (Replace image also on the Adjust bar, ticket 0799; on a phone the name of its icon button) | Заменить картинку · Убрать картинку | Замінити зображення · Прибрати зображення | Zamień obraz · Usuń obraz |
-| Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Убрать подложку? · Картинка будет убрана из проекта. Бусины останутся как есть. · Убрать | Прибрати підкладку? · Зображення буде прибрано з проєкту. Бісеринки залишаться як є. · Прибрати | Usunąć obraz pomocniczy? · Obraz zostanie usunięty z projektu. Koraliki zostaną bez zmian. · Usuń |
+| Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Убрать подложку? · Картинка будет убрана из проекта. Бисеринки останутся как есть. · Убрать | Прибрати підкладку? · Зображення буде прибрано з проєкту. Бісеринки залишаться як є. · Прибрати | Usunąć obraz pomocniczy? · Obraz zostanie usunięty z projektu. Koraliki zostaną bez zmian. · Usuń |
 | This file can't be used: {reason} | Этот файл не подходит: {reason} | Цей файл не підходить: {reason} | Tego pliku nie można użyć: {reason} |
 | Preparing the picture… | Готовим картинку… | Готуємо зображення… | Przygotowujemy obraz… |
-| Fit to Canvas · Fit (phone) · Done | Вписать в полотно · Вписать · Готово | Вписати в полотно · Вписати · Готово | Dopasuj do płótna · Dopasuj · Gotowe |
+| Fit to Canvas · Fit (phone) · Done | Вписать в холст · Вписать · Готово | Вписати в полотно · Вписати · Готово | Dopasuj do płótna · Dopasuj · Gotowe |
 | Resize from the top-left corner (and the other three) · Turn · Turned {n}° | Изменить размер за левый верхний угол · Повернуть · Повёрнуто на {n}° | Змінити розмір за лівий верхній кут · Повернути · Повернуто на {n}° | Zmień rozmiar z lewego górnego rogu · Obróć · Obrócono o {n}° |
 | Reference image not saved on this device | Подложка не сохранена на этом устройстве | Підкладку не збережено на цьому пристрої | Obraz pomocniczy nie jest zapisany na tym urządzeniu |
 | not a picture · over {maxSizeMb} MB · over {maxMegapixels} megapixels · it couldn't be read (the refusal's reasons) | это не картинка · больше {maxSizeMb} МБ · больше {maxMegapixels} мегапикселей · его не удалось прочитать | це не зображення · більше {maxSizeMb} МБ · більше {maxMegapixels} мегапікселів · його не вдалося прочитати | to nie jest obraz · ponad {maxSizeMb} MB · ponad {maxMegapixels} megapikseli · nie udało się go odczytać |
@@ -941,3 +945,11 @@ Opening, duplicating and switching Projects say what happened and ask only when 
 | Now in “{copy}”. “{original}” stays as it was. (the toast after Duplicate) | Теперь открыт «{copy}». «{original}» остался как был. | Тепер відкрито «{copy}». «{original}» залишився як був. | Цяпер адкрыты «{copy}». «{original}» застаўся як быў. | 现在打开的是“{copy}”。“{original}”保持原样。 | Ahora estás en “{copy}”. “{original}” se queda como estaba. | Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian. |
 | Everything is copied, including Row progress. The copy opens; the original stays as it is now. (Duplicate's note) | Копируется всё, включая прогресс по рядам. Откроется копия, а оригинал останется таким, как сейчас. | Копіюється все, зокрема прогрес за рядами. Відкриється копія, а оригінал залишиться таким, як зараз. | Капіруецца ўсё, у тым ліку прагрэс па радах. Адкрыецца копія, а арыгінал застанецца такім, як зараз. | 所有内容都会被复制，包括行进度。复制后打开副本，原项目保持现状。 | Se copia todo, incluido el progreso por filas. Se abre la copia; el original se queda como está ahora. | Kopiowane jest wszystko, także postęp rzędów. Otworzy się kopia, a oryginał zostanie taki, jak teraz. |
 | Copy this Project and open the copy. (Duplicate's Tooltip) | Скопировать проект и открыть копию. | Скопіювати проєкт і відкрити копію. | Скапіраваць праект і адкрыць копію. | 复制此项目并打开副本。 | Copia este proyecto y abre la copia. | Skopiuj ten projekt i otwórz kopię. |
+
+## Unnamed Project copy (ticket 0866)
+
+A Project left unnamed is "Project 1", then the next free number as Duplicate counts ("Project 2" once "Project 1" is taken), never the Bead's name, which belongs in the Bead row. The same words are New Project's Name placeholder, so the grey text is the name the Project gets. The number always ends the name, after a space, in every language.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Project {number} (an unnamed Project's name and New Project's Name placeholder) | Проект {number} | Проєкт {number} | Праект {number} | 项目 {number} | Proyecto {number} | Projekt {number} |

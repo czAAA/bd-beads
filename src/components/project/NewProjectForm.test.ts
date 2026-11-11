@@ -10,6 +10,9 @@ import { IMAGE_MAX_MEGABYTES, IMAGE_MAX_MEGAPIXELS } from '../../domain/imageCon
 import { imageLimitsText } from '../../i18n/imageLimits'
 import { ru } from '../../i18n/ru'
 
+/** What the shell passes as the Name's placeholder: the library's next "Project {number}" (ticket 0866). */
+const props = { namePlaceholder: 'Проект 2' }
+
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
@@ -17,31 +20,35 @@ beforeEach(() => {
 
 describe('NewProjectForm', () => {
   it('starts on the default Bead in the shared bead section (tickets 535, 568)', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     expect(panelOptionShown(wrapper, 'bead-brand')).toBe(BEAD_CATALOG[0]!.brand.name)
     expect(panelOptionShown(wrapper, 'bead-size')).toBe(BEAD_CATALOG[0]!.size)
   })
 
-  it('opens with the Open canvas title and its subtitle, then the three accent buttons in order (ticket 568)', () => {
-    const wrapper = mount(NewProjectForm)
+  it('opens with the Open canvas title and its subtitle, then Create Project, the one primary, before Convert image and Pick a starter (tickets 568, 0866)', () => {
+    const wrapper = mount(NewProjectForm, { props })
 
     expect(wrapper.get('[data-testid="open-canvas-title"]').text()).toBe(ru.form.openCanvasTitle)
     expect(wrapper.text()).toContain(ru.form.openCanvasSubtitle)
     const buttons = [...wrapper.element.querySelectorAll('[data-testid="create-project"], [data-testid="convert-image"], [data-testid="pick-starter"]')]
-    expect(buttons.map((button) => button.getAttribute('data-testid'))).toEqual(['create-project', 'convert-image', 'pick-starter'])
+    expect(buttons.map((button) => [button.getAttribute('data-testid'), button.classList.contains('app-button--primary')])).toEqual([
+      ['create-project', true],
+      ['convert-image', false],
+      ['pick-starter', false],
+    ])
   })
 
   it('opens the Starter gallery one level deeper from Pick a starter, focus to come back to it (ticket 0596)', async () => {
     const openSub = vi.fn()
-    const wrapper = mount(NewProjectForm, { global: { provide: { [PANEL_CONTEXT as symbol]: { close: vi.fn(), openSub } } } })
+    const wrapper = mount(NewProjectForm, { props, global: { provide: { [PANEL_CONTEXT as symbol]: { close: vi.fn(), openSub } } } })
     expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
     await wrapper.get('[data-testid="pick-starter"]').trigger('click')
     expect(openSub).toHaveBeenCalledWith(ru.starters.title, { opener: 'pick-starter' })
   })
 
   it('focuses and selects the Name input as soon as the form opens (ticket 181)', () => {
-    const wrapper = mount(NewProjectForm, { attachTo: document.body })
+    const wrapper = mount(NewProjectForm, { props, attachTo: document.body })
     const input = wrapper.find('[data-testid="name-input"]').element as HTMLInputElement
 
     expect(document.activeElement).toBe(input)
@@ -53,7 +60,7 @@ describe('NewProjectForm', () => {
 
   it('leaves the Name unfocused on a touch device until it is tapped, so the keyboard stays down (ticket 515)', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
-    const wrapper = mount(NewProjectForm, { attachTo: document.body })
+    const wrapper = mount(NewProjectForm, { props, attachTo: document.body })
     const input = wrapper.find('[data-testid="name-input"]')
 
     expect(document.activeElement).not.toBe(input.element)
@@ -66,7 +73,7 @@ describe('NewProjectForm', () => {
   })
 
   it('has no Frame, Unit, Width or Height fields: the size is set afterwards in the Frame section (ticket 342)', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     for (const id of ['width-input', 'height-input', 'unit-select', 'new-project-frame-heading', 'size-conversion']) {
       expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false)
@@ -75,7 +82,7 @@ describe('NewProjectForm', () => {
   })
 
   it('emits submit with the chosen bead and technique, and no size: a new Project is a Canvas', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     await chooseBeadInSection(wrapper, BEAD_CATALOG[1]!.id)
     await wrapper.find('form').trigger('submit')
@@ -85,16 +92,16 @@ describe('NewProjectForm', () => {
     ])
   })
 
-  it('shows the selected bead label as the name placeholder, its Form factor untranslated (ticket 0692)', async () => {
-    const wrapper = mount(NewProjectForm)
+  it('shows the name it is given as the Name placeholder, never the Bead\'s (ticket 0866)', async () => {
+    const wrapper = mount(NewProjectForm, { props })
 
     await chooseBeadInSection(wrapper, BEAD_CATALOG[1]!.id)
 
-    expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe('TOHO Round 11/0')
+    expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe('Проект 2')
   })
 
   it('emits the trimmed custom name when one is typed', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     await wrapper.find('[data-testid="name-input"]').setValue('  My Bracelet  ')
     await wrapper.find('form').trigger('submit')
@@ -104,7 +111,7 @@ describe('NewProjectForm', () => {
   })
 
   it('lists Peyote and Brick stitch alongside Loom, and nothing else (ticket 0644)', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     await wrapper.get('[data-testid="new-project-technique"] button[aria-haspopup]').trigger('click')
     const options = wrapper.findAll('[data-testid="new-project-technique"] [role="menuitemradio"]')
@@ -112,7 +119,7 @@ describe('NewProjectForm', () => {
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
     await wrapper.find('form').trigger('submit')
@@ -122,7 +129,7 @@ describe('NewProjectForm', () => {
   })
 
   it('offers no Bead shape and sends none (ticket 0724)', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     expect(wrapper.find('[data-testid="bead-shape"]').exists()).toBe(false)
     await wrapper.find('form').trigger('submit')
@@ -130,7 +137,7 @@ describe('NewProjectForm', () => {
   })
 
   it('starts on the device\'s Background and sends one only when it is picked, for both layers (ticket 0670)', async () => {
-    const wrapper = mount(NewProjectForm, { attachTo: document.body })
+    const wrapper = mount(NewProjectForm, { props, attachTo: document.body })
 
     expect(wrapper.find('[data-testid="canvas-section"]').exists()).toBe(true)
     await wrapper.find('form').trigger('submit')
@@ -144,7 +151,7 @@ describe('NewProjectForm', () => {
   })
 
   it("emits the trimmed maker's name when one is typed, keeping it apart from the device-wide one (ticket 182)", async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     await wrapper.find('[data-testid="maker-name-input"]').setValue('  Bead Master  ')
     await wrapper.find('form').trigger('submit')
@@ -154,7 +161,7 @@ describe('NewProjectForm', () => {
   })
 
   it("leaves the maker's name blank by default", () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     expect((wrapper.find('[data-testid="maker-name-input"]').element as HTMLInputElement).value).toBe('')
   })
@@ -162,7 +169,7 @@ describe('NewProjectForm', () => {
 
 describe('NewProjectForm draft (ticket 58)', () => {
   it('reports its values straight away, so Convert image has a frame before anything is touched', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     expect(wrapper.emitted('draft')![0]![0]).toEqual({
       name: '',
@@ -173,7 +180,7 @@ describe('NewProjectForm draft (ticket 58)', () => {
   })
 
   it('reports every later change, so the frame follows the fields as they are edited', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
 
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
     await chooseBeadInSection(wrapper, BEAD_CATALOG[2]!.id)
@@ -193,7 +200,7 @@ describe('NewProjectForm Drop (tickets 477, 0691)', () => {
   const peyoteField = '[data-testid="new-project-peyote-drop"]'
 
   it('shows brick stitch\'s stepper only for brick stitch and peyote\'s only for peyote', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
     expect(wrapper.find(field).exists()).toBe(false)
     expect(wrapper.find(peyoteField).exists()).toBe(false)
 
@@ -208,7 +215,7 @@ describe('NewProjectForm Drop (tickets 477, 0691)', () => {
   })
 
   it('steps from 1 to 20, and sends the number with the draft and the submit', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
     expect(wrapper.find('[data-testid="new-project-brick-drop-less"]').attributes('disabled')).toBeDefined()
 
@@ -221,7 +228,7 @@ describe('NewProjectForm Drop (tickets 477, 0691)', () => {
   })
 
   it('keeps each Technique\'s own number while another is chosen, and sends only the chosen one\'s', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
     await choosePanelOption(wrapper, 'new-project-technique', 'brick')
     await wrapper.find('[data-testid="new-project-brick-drop-more"]').trigger('pointerdown')
     await wrapper.find('[data-testid="new-project-brick-drop-more"]').trigger('pointerup')
@@ -246,7 +253,7 @@ describe('NewProjectForm Drop (tickets 477, 0691)', () => {
 
 describe('NewProjectForm Convert image (spec 0645)', () => {
   it('advertises the limits as visible helper text and from the shared constants', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
     const expected = imageLimitsText('ru', ru.convertImage.limitsHint)
 
     expect(expected).toContain('PNG, JPEG, GIF или WebP')
@@ -256,7 +263,7 @@ describe('NewProjectForm Convert image (spec 0645)', () => {
   })
 
   it('opens Convert image on the form’s values, which never carry a size', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props })
     await wrapper.find('[data-testid="name-input"]').setValue('Fox')
     await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
 

@@ -5,7 +5,7 @@ import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
 import { downloadFile } from './services/fileDownload'
 import { loadProjects } from './services/libraryStore'
-import { projectAddress, savedProjectsAddress } from './domain/openingAddress'
+import { firstProjectAddress, projectAddress, savedProjectsAddress } from './domain/openingAddress'
 import { storedHugeProject, storeLibrary } from './testUtils/hugeProject'
 import { withLayers } from './testUtils/layerFields'
 import { closePanel, openPanel, openSavedProjects } from './testUtils/pill'
@@ -104,6 +104,31 @@ describe('opening the editor (ticket 0716)', () => {
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="project-list"]').exists()).toBe(true)
     expect(location.search).toBe('')
+  })
+
+  it('makes the first Project at once at Make your first Project\'s address, on the Canvas with no panel open (ticket 0866)', async () => {
+    storeLibrary([])
+    history.replaceState(null, '', firstProjectAddress('/'))
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Project 1')
+    expect(wrapper.find('[data-testid="pill-tool-paint"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    expect(loadProjects()).toHaveLength(1)
+    expect(location.search).toBe('')
+  })
+
+  it('makes no Project at that address once the library has one, and opens as usual', async () => {
+    storeLibrary([project('Scarf', 1000)])
+    history.replaceState(null, '', firstProjectAddress('/'))
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Scarf')
+    expect(loadProjects()).toHaveLength(1)
   })
 
   it('opens the Project its address names rather than the most recently saved', async () => {

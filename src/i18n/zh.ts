@@ -40,6 +40,7 @@ export const zh: Translations = {
     openCanvasSubtitle: '在开放画布上自由绘制，需要导出图片或 PDF 时再设边框',
     pickStarter: '选择起始方案',
     estimateBeads: '≈ {columns}×{rows} 颗',
+    unnamedProject: '项目 {number}',
   },
   a11y: {
     toolsLandmark: '工具',

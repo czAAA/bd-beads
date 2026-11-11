@@ -122,7 +122,7 @@ export function memoryServices(projects: readonly Project[], options: MemoryServ
     persistentStorage: { persisted: async () => true, persist: async () => undefined },
     feedback: browserFeedback,
     openingNote: { read: () => undefined, write: () => undefined, clear: () => undefined },
-    openingAddress: () => ({ savedProjects: false }),
+    openingAddress: () => ({ savedProjects: false, firstProject: false }),
     pictureStore: memoryKeyed<Blob>(),
     fileWriter: browserFileWriter,
     linkedFiles: memoryKeyed(),
