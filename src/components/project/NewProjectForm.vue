@@ -3,9 +3,9 @@ import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
 import { DEFAULT_TECHNIQUE, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
-import { formatImageLimits } from '../../domain/imageConversion'
 import type { Background } from '../../domain/project'
 import { controlAction } from '../../composables/shell/controlRegistry'
+import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import LayerSettings from './LayerSettings.vue'
@@ -13,7 +13,7 @@ import NamesSection from './NamesSection.vue'
 import AppButton from '../ui/AppButton.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const emit = defineEmits<{
   submit: [payload: CreateProjectInput]
@@ -79,8 +79,8 @@ function onSubmit() {
 
 const convertAction = controlAction('convert-image')
 
-/** The limits, filled in from the constants the validation enforces (see formatImageLimits), always under the button. */
-const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsHint))
+/** The limits, filled in from the constants the validation enforces (see imageLimitsText), always under the button. */
+const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertImage.limitsHint))
 </script>
 
 <template>

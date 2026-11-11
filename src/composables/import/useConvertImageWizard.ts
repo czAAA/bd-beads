@@ -6,6 +6,7 @@ import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import {
+  beadColorRows,
   beadColorTargets,
   convertFrame,
   matchFoundColors,
@@ -381,9 +382,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const rest = computed(() => removedFrom(rawRest.value, restBackground.value?.found))
 
   const hasCatalog = computed(() => !!catalogId.value)
-  /** What the found colors are matched to: Exact until a source is chosen (ticket 0758). */
+  /** What the found colors are matched to: the Bead's colors until a source is chosen, the Default Palette for a Bead
+   * with no Color catalog (ticket 0863). */
   const source = computed<ColorSource>(() => {
-    const wanted = chosenSource.value ?? 'exact'
+    const wanted = chosenSource.value ?? 'bead-colors'
     return wanted === 'bead-colors' && !hasCatalog.value ? 'default' : wanted
   })
   const builtIns = computed(() => defaultPalette(bead.value.id))
@@ -408,6 +410,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
   const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
   const reduced = computed(() => reducePictureColors(frameSampled.value?.counts ?? new Map(), maxColors.value))
   const found = computed(() => matchFoundColors(reduced.value, targets.value, choices.value))
+  /** Color by color's rows: the found colors joined by the bead color they become (ticket 0863). */
+  const rows = computed(() => beadColorRows(found.value))
   const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(frameSampled.value.raw, reduced.value, found.value) : []))
   const held = computed(() => heldColorLookup(found.value))
   const palette = computed(() => newProjectPalette(builtIns.value, found.value))
@@ -460,26 +464,32 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     { immediate: true },
   )
 
-  function setChoice(pictureHex: string, choice: FoundColorChoice | undefined) {
+  /** A choice made on a row of Color by color: every found color the row joins takes it (ticket 0863). */
+  function setChoice(pictureHexes: readonly string[], choice: FoundColorChoice | undefined) {
     const next = new Map(choices.value)
-    if (choice) next.set(pictureHex, choice)
-    else next.delete(pictureHex)
+    for (const pictureHex of pictureHexes) {
+      if (choice) next.set(pictureHex, choice)
+      else next.delete(pictureHex)
+    }
     choices.value = next
   }
 
-  /** Empty on a row: on, the found color makes no bead; pressed again, it is back to its match. */
-  function toggleEmpty(pictureHex: string) {
-    setChoice(pictureHex, choices.value.get(pictureHex)?.kind === 'empty' ? undefined : { kind: 'empty' })
+  /** Empty on a row: on, its found colors make no bead; pressed again, they are back to their match. */
+  function toggleEmpty(pictureHexes: readonly string[]) {
+    const empty = pictureHexes.every((pictureHex) => choices.value.get(pictureHex)?.kind === 'empty')
+    setChoice(pictureHexes, empty ? undefined : { kind: 'empty' })
   }
 
-  /** Make empty (ConvertImage card): a tap on a bead makes its found color empty everywhere, and a tap on an empty place
-   * of that color brings it back. A place the background left is not a color to tap. */
+  /** Make empty (ConvertImage card): a tap on a bead makes its bead color empty everywhere (its row of Color by color,
+   * ticket 0863), and a tap on an empty place of that color brings it back. A place the background left is not a color
+   * to tap. */
   function toggleEmptyAtBead(index: number) {
     const shown = live.value
     const packed = shown?.sampled[index]
     if (packed === undefined || packed === NO_COLOR) return
     const pictureHex = reduced.value.byHex.get(packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
-    if (pictureHex) toggleEmpty(pictureHex)
+    const row = pictureHex && rows.value.find((candidate) => candidate.pictureHexes.includes(pictureHex))
+    if (row) toggleEmpty(row.pictureHexes)
   }
 
   /** Pressing the tool that is on turns it off; the tools wait for a picture. Picking Background turns Remove background
@@ -745,10 +755,11 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     maxColors,
     setMaxColors: (next: number) => (chosenColors.value = clamp(Math.round(next), MIN_IMAGE_COLORS, colorsMax.value)),
     found,
-    /** How many colors the beads use: found colors not set to empty. */
-    usedColorCount: computed(() => found.value.filter((color) => color.result).length),
-    /** How many found colors are set to empty (the Color by color summary). */
-    emptyColorCount: computed(() => found.value.filter((color) => !color.result).length),
+    rows,
+    /** How many bead colors the beads use, counted after the match (ticket 0863): the rows not set to empty. */
+    usedColorCount: computed(() => rows.value.filter((row) => row.result).length),
+    /** How many rows are set to empty (the Color by color summary). */
+    emptyColorCount: computed(() => rows.value.filter((row) => !row.result).length),
     choices,
     setChoice,
     toggleEmpty,

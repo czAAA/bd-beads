@@ -4,8 +4,9 @@ import { useConvertImageWizardState, type ConvertWeave } from '../../composables
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useHelpDevice } from '../../composables/ui/useKeyHints'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { formatImageLimits, imageInputAccept } from '../../domain/imageConversion'
+import { imageInputAccept } from '../../domain/imageConversion'
 import { offeredBeads } from '../../domain/beads'
+import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
@@ -23,7 +24,7 @@ import TechniqueSection from '../project/TechniqueSection.vue'
 // Whole picture or A part of the picture. Turn 90° and Flip are on the preview's floating bar.
 const emit = defineEmits<{ paste: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 /** Take photo is offered where the main pointer is a finger (a phone's or a tablet's camera), keyboard or not. */
 const touch = useMediaQuery('(pointer: coarse)')
@@ -53,9 +54,9 @@ const replaceEl = ref<HTMLElement>()
 const chooseReplacement = () => replaceEl.value?.querySelector<HTMLInputElement>('input[type="file"]')?.click()
 
 const note = computed(() =>
-  help.device.value === 'touch' ? formatImageLimits(words.value.pictureNoteTouch) : formatImageLimits(words.value.pictureNote, { pasteKey: help.modKey('V') }),
+  help.device.value === 'touch' ? imageLimitsText(locale.value, words.value.pictureNoteTouch) : imageLimitsText(locale.value, words.value.pictureNote, { pasteKey: help.modKey('V') }),
 )
-const error = computed(() => (wizard.rejection.value ? formatImageLimits(t.value.convertImage.errors[wizard.rejection.value]) : undefined))
+const error = computed(() => (wizard.rejection.value ? imageLimitsText(locale.value, t.value.convertImage.errors[wizard.rejection.value]) : undefined))
 const facts = computed(() => {
   const image = wizard.image.value
   return image ? fillBlanks(t.value.convertImage.wizard.pictureSize, { width: image.width, height: image.height, format: wizard.fileFormat.value }) : ''
@@ -144,8 +145,8 @@ watchPostEffect(() => {
     <TechniqueSection v-model:technique="wizard.technique.value" :settings="wizard.settings.value" testid="convert" @set-setting="wizard.setSetting" />
 
     <div v-if="wizard.hasPicture.value" class="convert-picture__weave">
-      <span class="convert-picture__label">{{ words.weave }}</span>
-      <div class="convert-picture__choices" role="radiogroup" :aria-label="words.weave" data-testid="convert-weave" @keydown="onWeaveKey">
+      <span class="convert-picture__label">{{ words.convert }}</span>
+      <div class="convert-picture__choices" role="radiogroup" :aria-label="words.convert" data-testid="convert-weave" @keydown="onWeaveKey">
         <button
           v-for="option in weaveOptions"
           :key="option.value"

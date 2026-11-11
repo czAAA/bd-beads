@@ -6,10 +6,11 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { providePalette } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useRevealWhenOpen } from '../../composables/ui/useRevealWhenOpen'
-import type { FoundColor, TargetColor } from '../../domain/convertColors'
+import type { BeadColorRow, TargetColor } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { isAddedColorId } from '../../domain/palette'
 import { colorLabel, type LabelledColor } from '../../i18n/colorLabel'
+import { formatList } from '../../i18n/listFormat'
 import { pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { groupThousands } from '../../domain/formatNumber'
@@ -20,11 +21,11 @@ import ColorLabel from '../palette/ColorLabel.vue'
 import { PICK_CLOSE } from '../shell/pickContext'
 import ColorPopoverBody from '../tools/ColorPopoverBody.vue'
 
-// One color Convert image found (FoundColorRow card): picture color → what it became, its bead count, Change and Empty.
-// Change (the palette icon) opens the Tool pill's colour popover body (ColorPopoverBody) in the row, with Keep exact in
-// its head; a pick applies at once and leaves it open. Its Close, Escape or Change again closes it and returns to Change.
+// One bead color Convert image's found colors become (FoundColorRow card; ticket 0863 joins the colors that become one):
+// picture colors → what they became, the beads, Change and Empty, each on every joined color. Change opens the Tool pill's
+// colour popover body in the row, Keep exact in its head; a pick applies and leaves it open; Close or Escape returns to Change.
 const props = defineProps<{
-  color: FoundColor
+  row: BeadColorRow
   open: boolean
 }>()
 
@@ -45,9 +46,9 @@ function linesOf(target: TargetColor): { color: LabelledColor; source: string } 
   return { color, source: t.value.palette.customColorLabel }
 }
 
-const state = computed(() => props.color.choice?.kind)
+const state = computed(() => props.row.choice?.kind)
 const lines = computed<{ color?: LabelledColor; source: string }>(() => {
-  const result = props.color.result
+  const result = props.row.result
   if (!result) return { source: words.value.noBead }
   const own = linesOf(result)
   if (state.value === 'exact') return { ...own, source: `${words.value.keptExact} · ${own.source}` }
@@ -58,19 +59,32 @@ const lines = computed<{ color?: LabelledColor; source: string }>(() => {
 const nameText = computed(() => (lines.value.color ? colorLabel(t.value, lines.value.color, wizard.catalog.value).text : words.value.empty))
 
 const rowName = computed(() =>
-  fillBlanks(pluralForm(locale.value, props.color.count, words.value.rowName), { hex: props.color.pictureHex, name: nameText.value }, { count: groupThousands(props.color.count, locale.value) }),
+  fillBlanks(
+    pluralForm(locale.value, props.row.count, words.value.rowName),
+    { hex: formatList(locale.value, props.row.pictureHexes), name: nameText.value },
+    { count: groupThousands(props.row.count, locale.value) },
+  ),
 )
+
+/** The picture's color, or a joined row's colors as equal bands across the one swatch (FoundColorRow card, ticket 0863). */
+const pictureSwatch = computed(() => {
+  const hexes = props.row.pictureHexes
+  if (hexes.length === 1) return { backgroundColor: hexes[0] }
+  const band = 100 / hexes.length
+  const stops = hexes.map((hex, index) => `${hex} ${index * band}% ${(index + 1) * band}%`)
+  return { backgroundImage: `linear-gradient(to right, ${stops.join(', ')})` }
+})
 
 const remapOn = computed(() => state.value === 'remap' || state.value === 'exact')
 
 /** Change pressed while on puts the row back to its match; off, it opens the picker in the row. */
 function onRemap() {
-  if (remapOn.value && !props.open) wizard.setChoice(props.color.pictureHex, undefined)
+  if (remapOn.value && !props.open) wizard.setChoice(props.row.pictureHexes, undefined)
   else emit('toggle-remap')
 }
 
 function choose(target: TargetColor) {
-  wizard.setChoice(props.color.pictureHex, { kind: 'remap', target })
+  wizard.setChoice(props.row.pictureHexes, { kind: 'remap', target })
 }
 
 /** A swatch of the new Palette picked: the found color remapped (or merged with another that uses it). */
@@ -81,16 +95,16 @@ function pickSwatch(colorId: string) {
 }
 
 function keepExact() {
-  wizard.setChoice(props.color.pictureHex, state.value === 'exact' ? undefined : { kind: 'exact' })
+  wizard.setChoice(props.row.pictureHexes, state.value === 'exact' ? undefined : { kind: 'exact' })
 }
 
 const selectedColorId = computed(() => {
-  const hex = props.color.result?.hex
+  const hex = props.row.result?.hex
   return hex ? wizard.remapPalette.value.byHex(hex)?.id : undefined
 })
 
 /** The found color's hex, which the picker marks as the Custom color's when no Palette swatch holds it. */
-const customColor = computed(() => props.color.result?.hex)
+const customColor = computed(() => props.row.result?.hex)
 
 /** The Bead colors list, as the popover's own: picking a code remaps to it, and the code joins the grid. */
 const beadColors: BeadColors = {
@@ -125,17 +139,17 @@ useRevealWhenOpen(rowEl, () => props.open)
 </script>
 
 <template>
-  <li ref="rowEl" class="found-color" :class="{ 'found-color--open': open }" data-testid="found-color" :data-picture-hex="color.pictureHex">
+  <li ref="rowEl" class="found-color" :class="{ 'found-color--open': open }" data-testid="found-color" :data-picture-hex="row.pictureHexes.join(' ')">
     <div class="found-color__row" role="group" :aria-label="rowName">
       <span class="found-color__from" aria-hidden="true">
-        <span class="found-color__swatch" :style="{ backgroundColor: color.pictureHex }" />
+        <span class="found-color__swatch" :style="pictureSwatch" data-testid="found-color-picture" />
         <AppIcon class="found-color__arrow" name="arrow-down" :size="12" />
       </span>
       <span class="found-color__becomes">
         <span
           class="found-color__swatch"
-          :class="{ 'found-color__swatch--empty': !color.result, 'found-color__swatch--approximate': !!color.result?.code }"
-          :style="color.result ? { backgroundColor: color.result.hex } : undefined"
+          :class="{ 'found-color__swatch--empty': !row.result, 'found-color__swatch--approximate': !!row.result?.code }"
+          :style="row.result ? { backgroundColor: row.result.hex } : undefined"
           aria-hidden="true"
         />
         <span class="found-color__lines">
@@ -144,7 +158,7 @@ useRevealWhenOpen(rowEl, () => props.open)
           <span class="found-color__source" data-testid="found-color-source">{{ lines.source }}</span>
         </span>
       </span>
-      <span class="found-color__count">{{ groupThousands(color.count, locale) }}</span>
+      <span class="found-color__count">{{ groupThousands(row.count, locale) }}</span>
       <span class="found-color__action">
         <IconButton
           ref="changeButton"
@@ -164,14 +178,14 @@ useRevealWhenOpen(rowEl, () => props.open)
           :pressed="state === 'empty'"
           :class="{ 'found-color__action--on': state === 'empty' }"
           data-testid="found-color-empty"
-          @click="wizard.toggleEmpty(color.pictureHex)"
+          @click="wizard.toggleEmpty(row.pictureHexes)"
         />
       </span>
     </div>
 
     <div v-if="open" class="found-color__picker" data-testid="found-color-picker">
       <ColorPopoverBody
-        :color-hex="color.result?.hex"
+        :color-hex="row.result?.hex"
         :color-name="nameText"
         :selected-color-id="selectedColorId"
         :custom-color="customColor"
