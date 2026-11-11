@@ -5,12 +5,14 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
+import { plural } from '../../i18n/plural'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import { actionKey } from '../ui/controlAction'
 
 // The save ring (SaveReminder card, ticket 0796): at the drawing area's top-right once the open Project's Project file is
-// well behind. A press runs Save, the Project panel's row; its label "Save Project file +n" opens leftwards for a moment.
+// well behind. A press runs Save, the Project panel's row; its label "Save Project file · n beads since the last file"
+// opens leftwards for a moment.
 const props = defineProps<{
   /** The open Project's Beads since last file. */
   beads: number
@@ -30,6 +32,8 @@ const save = controlAction('save-project-file')
 const countId = useId()
 
 const count = computed(() => groupThousands(props.beads, locale.value))
+/** What the count counts, said in the label itself (ticket 0858), not a bare "+n" read as "n beads not saved". */
+const since = computed(() => plural(locale.value, props.beads, t.value.saveReminder.since))
 const countLine = computed(() => fillBlanks(t.value.saveReminder.count, { count: count.value }))
 const lastLine = computed(() => {
   if (props.lastFileAt === undefined) return t.value.saveReminder.noFile
@@ -63,7 +67,7 @@ const lastLine = computed(() => {
     >
       <span class="save-ring__label" aria-hidden="true" data-testid="save-ring-label">
         <span class="save-ring__text">{{ t.saveReminder.label }}</span>
-        <span class="save-ring__count">+{{ count }}</span>
+        <span class="save-ring__count" data-testid="save-ring-count">{{ since }}</span>
       </span>
       <span class="save-ring__halo"><AppIcon name="save" :size="16" /></span>
     </button>
@@ -129,7 +133,7 @@ const lastLine = computed(() => {
   border-radius: var(--radius-full);
 }
 
-/* "Save Project file" then "+n"; a count with no room wraps onto the hidden second line, leaving the words. */
+/* "Save Project file" then "n beads since the last file"; a count with no room wraps onto the hidden second line, leaving the words. */
 .save-ring__label {
   display: flex;
   flex-wrap: wrap;
@@ -149,7 +153,7 @@ const lastLine = computed(() => {
 }
 
 .save-ring--open .save-ring__label {
-  max-width: 20rem;
+  max-width: 32rem;
   padding: 0 var(--space-12) 0 var(--space-4);
   opacity: 1;
 }
@@ -162,6 +166,8 @@ const lastLine = computed(() => {
 .save-ring__count {
   font: var(--type-meta-small);
   color: var(--muted);
+  /* Too long for any line, it breaks on the hidden lines rather than running off the screen. */
+  white-space: normal;
 }
 
 .save-ring__described {

@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'The strip shows your Project’s name, the Project panel says in words that it is saved, and a reload asks first while a save has failed',
+      ru: 'Полоса показывает имя проекта, панель проекта пишет словами, что он сохранён, а перезагрузка сначала спрашивает, пока сохранение не удалось',
+      uk: 'Смуга показує назву проєкту, панель проєкту пише словами, що його збережено, а перезавантаження спершу питає, поки збереження не вдалося',
+      be: 'Паласа паказвае назву праекта, панэль праекта піша словамі, што ён захаваны, а перазагрузка спачатку пытаецца, пакуль захаванне не ўдалося',
+      zh: '顶栏显示项目名称，项目面板用文字说明已保存，保存失败时重新加载会先询问',
+      es: 'La barra muestra el nombre de tu proyecto, el panel del proyecto dice con palabras que está guardado y recargar pregunta antes mientras un guardado ha fallado',
+      pl: 'Pasek pokazuje nazwę projektu, panel projektu pisze słowami, że jest zapisany, a przeładowanie najpierw pyta, gdy zapis się nie udał',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A Project opens from the library at once, a taken name gets a number, and Duplicate says which one is open',
       ru: 'Проект из библиотеки открывается сразу, занятое название получает номер, а после копии видно, какой открыт',
       uk: 'Проєкт із бібліотеки відкривається одразу, зайнята назва отримує номер, а після копії видно, який відкрито',

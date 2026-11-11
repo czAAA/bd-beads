@@ -848,7 +848,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
     useViewportGuard()
     // The browser's Back is the converter's Close, and a reload or closing the tab asks while it holds a setup (0861).
     useBackClosesPage({ page: appPage.page, close: convertImage.onClose })
-    useUnloadGuard().askWhile(() => appPage.guarded.value)
+    const unloadGuard = useUnloadGuard()
+    unloadGuard.askWhile(() => appPage.guarded.value)
+    // While the last save failed the latest change is only on screen, so a reload or closing the tab asks too (0858).
+    unloadGuard.askWhile(() => saveFailed.value)
   }
   useAppShortcutTable({
     activeProject: currentProject,
