@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Make your first Project opens straight on the Canvas, and a Project you don\'t name is Project 1, then Project 2',
+      ru: '«Сделать первый проект» сразу открывает холст, а проект без названия называется «Проект 1», затем «Проект 2»',
+      uk: '«Створити перший проєкт» одразу відкриває полотно, а проєкт без назви називається «Проєкт 1», потім «Проєкт 2»',
+      be: '«Стварыць першы праект» адразу адкрывае палатно, а праект без назвы называецца «Праект 1», потым «Праект 2»',
+      zh: '“创建你的第一个项目”直接打开画布，未命名的项目叫“项目 1”，然后是“项目 2”',
+      es: 'Crea tu primer proyecto abre directamente el Lienzo, y un proyecto sin nombre se llama Proyecto 1, luego Proyecto 2',
+      pl: 'Utwórz swój pierwszy projekt otwiera od razu płótno, a projekt bez nazwy nazywa się Projekt 1, potem Projekt 2',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'In Russian and Ukrainian Row done says a row is done, Russian has one word for each thing, and the Frame’s edges have pill steppers and names that are never cut short',
       ru: 'Вместо «Готово» кнопка пишет «Ряд готов», у каждой вещи одно слово (бисеринка, холст, автор), а у краёв рамки круглые кнопки и названия, которые не обрезаются',
       uk: 'Замість «Готово» кнопка пише «Ряд готовий», а в країв рамки круглі кнопки й назви, які не обрізаються',

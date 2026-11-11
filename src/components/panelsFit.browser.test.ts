@@ -91,7 +91,7 @@ const CASES: FitCase[] = [
     },
   ],
   ['ReferenceAdjustBar', ReferenceAdjustBar, {}],
-  ['NewProjectForm', NewProjectForm, {}],
+  ['NewProjectForm', NewProjectForm, { namePlaceholder: 'Project 1' }],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
 ]
 

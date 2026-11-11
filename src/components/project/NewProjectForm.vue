@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { DEFAULT_BEAD, beadLabel, findBead } from '../../domain/beads'
-import type { CreateProjectInput } from '../../domain/createProject'
-import { DEFAULT_TECHNIQUE, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { findBead } from '../../domain/beads'
+import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from '../../domain/createProject'
+import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import type { Background } from '../../domain/project'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { imageLimitsText } from '../../i18n/imageLimits'
@@ -15,6 +15,11 @@ import { PANEL_CONTEXT } from '../shell/panelContext'
 
 const { t, locale } = useI18n()
 
+defineProps<{
+  /** What the Project is called if Name stays empty (ticket 0866): "Project 1", or the next free number. */
+  namePlaceholder: string
+}>()
+
 const emit = defineEmits<{
   submit: [payload: CreateProjectInput]
   // The form's current values, emitted on any change (and once on mount): what a picture dropped on the app later
@@ -25,8 +30,8 @@ const emit = defineEmits<{
 }>()
 
 const name = ref('')
-const beadId = ref(DEFAULT_BEAD.id)
-const technique = ref<Technique>(DEFAULT_TECHNIQUE)
+const beadId = ref(NEW_PROJECT_DEFAULTS.beadId)
+const technique = ref<Technique>(NEW_PROJECT_DEFAULTS.technique)
 /** The Technique settings' values by id (tickets 477, 485, 0626): each kept while another Technique is chosen, used by
  * the Technique that describes it only; one never changed is its default. */
 const settings = ref<TechniqueSettings>({})
@@ -49,7 +54,6 @@ defineExpose({ focusName })
 onMounted(focusName)
 
 const selectedBead = computed(() => findBead(beadId.value))
-const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
 
 const panel = inject(PANEL_CONTEXT, undefined)
 
@@ -86,8 +90,9 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
 <template>
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
-    it is for, Name (optional), Maker's name (ticket 182, also optional), the Layer settings both layers start from (the
-    section the Project and Frame panels share, ticket 0670), then three accent buttons: Create Project, Convert image and Pick a starter. It states no
+    it is for, Name (optional, "Project 1" when left empty), Maker's name (ticket 182, also optional), the Layer settings
+    both layers start from (the section the Project and Frame panels share, ticket 0670), then the primary Create Project
+    and the secondary Convert image and Pick a starter (ticket 0866). It states no
     size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image opens its own
     popup on a copy of these values (spec 0645).
   -->
@@ -124,7 +129,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
     <div class="new-project-form__convert" data-testid="convert-image-field">
       <AppButton
         class="new-project-form__convert-button"
-        variant="primary"
+        variant="secondary"
         icon="image"
         :action="convertAction"
         data-testid="convert-image"
@@ -137,7 +142,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
 
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
     <div class="new-project-form__starters">
-      <AppButton variant="primary" icon="frame" data-testid="pick-starter" @click="pickStarter">
+      <AppButton variant="secondary" icon="frame" data-testid="pick-starter" @click="pickStarter">
         {{ t.form.pickStarter }}
       </AppButton>
     </div>

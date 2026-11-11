@@ -5,6 +5,7 @@ import { starterById, starterDesign } from '../../domain/starters'
 import { useNewProjectFlow } from './useNewProjectFlow'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
 import { layersView } from '../../testUtils/layerFields'
+import { en } from '../../i18n/en'
 
 const draft: CreateProjectInput = {
   technique: 'loom',
@@ -12,8 +13,8 @@ const draft: CreateProjectInput = {
   size: { width: 3, height: 2, unit: 'beads' },
 }
 
-function setup() {
-  const deps = { addProject: vi.fn<(project: Project) => void>() }
+function setup(names: string[] = []) {
+  const deps = { addProject: vi.fn<(project: Project) => void>(), projectNames: () => names, messages: () => en }
   return { deps, flow: useNewProjectFlow(deps) }
 }
 
@@ -39,5 +40,21 @@ describe('useNewProjectFlow', () => {
     const created = deps.addProject.mock.calls[0][0]
     expect(frameOf(created)).toBeUndefined()
     expect(beadsOfLayer(created, 'canvas')).toEqual({})
+  })
+
+  it('names a Project left unnamed "Project 1", then the next free number, never the Bead (ticket 0866)', () => {
+    const { deps, flow } = setup(['Project 1', 'Moth'])
+    expect(flow.unnamedName()).toBe('Project 2')
+    flow.onCreateProject({ ...draft, name: '  ' })
+    flow.onCreateProject({ ...draft, name: 'Owl' })
+    expect(deps.addProject.mock.calls.map(([created]) => layersView(created).name)).toEqual(['Project 2', 'Owl'])
+  })
+
+  it('makes the first Project on the form\'s presets, through Create Project (ticket 0866)', () => {
+    const { deps, flow } = setup()
+    flow.onCreateFirstProject()
+    const created = deps.addProject.mock.calls[0][0]
+    expect(layersView(created)).toMatchObject({ name: 'Project 1', technique: 'loom', beadId: 'toho/cube/1.5mm' })
+    expect(frameOf(created)).toBeUndefined()
   })
 })
