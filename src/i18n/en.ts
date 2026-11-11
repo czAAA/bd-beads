@@ -279,6 +279,11 @@ export const en: Translations = {
     rowsRound: { one: '{count} row round', other: '{count} rows round' },
     bandRows: { one: '{count} row', other: '{count} rows' },
     claspLeft: '{clasp} left for the clasp',
+    faceOfPiece: 'one face of {faces}: {parts} of {total} triangles',
+    beadsFace: { one: '{count} bead a face', other: '{count} beads a face' },
+    forPiece: { one: '{count} for the whole piece', other: '{count} for the whole piece' },
+    faceInfoLabel: 'What the counts cover',
+    faceInfo: 'A Kaleidocycle is {total} triangles, {faces} faces of {parts}, and this Frame is one face. The whole piece counts every face beaded like this one. To give another face its own design, make a Frame for it. Only the triangles are counted, not the edge, tip or hinge beads.',
   },
   canvas: {
     zoomInLabel: 'Zoom in',
@@ -605,6 +610,7 @@ export const en: Translations = {
     columnLabel: 'Column',
     goButton: 'Go',
     directionKeptToast: '{toast} {kept}',
+    faceBody: 'Each triangle here is beaded for this face, {parts} of the piece\'s {total}. {then}',
   },
   quantities: {
     heading: 'Beads needed',
@@ -620,6 +626,7 @@ export const en: Translations = {
     weightInfo:
       "This is bead count × about {grams} g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
     weightInfoLabel: 'How the weight is worked out',
+    pieceTotal: 'These counts are one face of {faces}. Whole piece: {count}',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -684,6 +691,7 @@ export const en: Translations = {
       firstPoint: 'Row 1 is at the point; each row reads left to right.',
       firstBase: 'Row 1 is the top\'s base row; each row reads left to right, then each strand from the left, top to bottom.',
       partsThenJoins: 'Each part is beaded round by round from its centre, in making order, then the joins.',
+      faceNote: 'This chart is one face: {parts} of the Kaleidocycle\'s {total} triangles. Make a Frame for each other face to chart its design.',
       pairNote: '(2A) is a corner pair: two beads picked up together. A side ends at |.',
     },
   },
