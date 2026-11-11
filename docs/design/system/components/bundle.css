@@ -90,12 +90,20 @@
   --tooltip-muted: var(--muted);
 }
 
-/* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar is light, so danger as is) */
+/* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar is light, so danger darkened: 4.7:1 on it) */
 :root, [data-theme="light"], [data-theme="contrast"] {
   --selbar-danger: color-mix(in srgb, var(--danger) 55%, #fff);
 }
 [data-theme="dark"] {
-  --selbar-danger: var(--danger);
+  --selbar-danger: color-mix(in srgb, var(--danger) 75%, #000);
+}
+
+/* Message card: the danger tone, edge and icon alike: red in light and high contrast, gold (accent-strong) in dark */
+:root, [data-theme="light"], [data-theme="contrast"] {
+  --message-danger: var(--danger);
+}
+[data-theme="dark"] {
+  --message-danger: var(--accent-strong);
 }
 
 :root, [data-theme="light"], [data-theme="dark"] { --focus-offset: -2px; }
@@ -108,6 +116,7 @@
   --selbar-radius: 8px;
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
+  --pill-fade: 1.5rem;
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
   --mirror-bar-control-touch: 30px;
@@ -353,8 +362,8 @@ body {
 .bb-message .bb-icon { width: 16px; height: 16px; margin-top: 2px; color: var(--accent-strong); }
 .bb-message--warning { border-left-color: var(--warning) !important; }
 .bb-message--warning .bb-icon { color: var(--warning); }
-.bb-message--danger { border-left-color: var(--danger) !important; }
-.bb-message--danger .bb-icon { color: var(--danger); }
+.bb-message--danger { border-left-color: var(--message-danger) !important; }
+.bb-message--danger .bb-icon { color: var(--message-danger); }
 .bb-message-text { flex: 1; }
 .bb-message-close { width: 28px; height: 28px; margin: -4px -8px -4px 0; border: 0; background: none; border-radius: var(--radius-md); color: var(--ink); display: grid; place-items: center; cursor: pointer; padding: 0; }
 
