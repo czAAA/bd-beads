@@ -15,8 +15,9 @@ function setup() {
   const dialogs = useDialogs()
   const appPage = useAppPage()
   const addProject = vi.fn<(project: Project) => void>()
-  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => pixels(), loadCatalog: () => Promise.reject(new Error('none')) })
-  return { dialogs, appPage, addProject, flow }
+  const onClosed = vi.fn()
+  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => pixels(), loadCatalog: () => Promise.reject(new Error('none')), onClosed })
+  return { dialogs, appPage, addProject, onClosed, flow }
 }
 
 /** Opens the converter and sets a picture, as the person does. */
@@ -116,5 +117,33 @@ describe('useConvertImageFlow', () => {
     flow.onConfirmLeave()
     await left
     expect(await appPage.leave()).toBe(true)
+  })
+
+  it('goes on to where the person came from once Close has left, at once with nothing set up', async () => {
+    const { dialogs, onClosed, flow } = setup()
+    flow.open(formValues)
+    expect(await flow.onClose()).toBe(true)
+    expect(dialogs.open.value).toBeUndefined()
+    expect(onClosed).toHaveBeenCalledOnce()
+  })
+
+  it('goes nowhere when Close is answered with Back to converter, and on after Leave', async () => {
+    const { appPage, onClosed, flow } = await openWithPicture()
+    const stayed = flow.onClose()
+    flow.onCancelLeave()
+    expect(await stayed).toBe(false)
+    expect(onClosed).not.toHaveBeenCalled()
+    const left = flow.onClose()
+    flow.onConfirmLeave()
+    expect(await left).toBe(true)
+    expect(appPage.page.value).toBe('editor')
+    expect(onClosed).toHaveBeenCalledOnce()
+  })
+
+  it('goes nowhere after a Menu action leaves: that action says where', async () => {
+    const { appPage, onClosed, flow } = setup()
+    flow.open(formValues)
+    await appPage.leave()
+    expect(onClosed).not.toHaveBeenCalled()
   })
 })

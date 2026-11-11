@@ -12,8 +12,10 @@ Built in ticket 0780 (As built, below). The phone and tablet layout of the redes
 - Opens from New Project's Convert image, the Menu's Convert image row, or by dropping or pasting a picture on the editor, which opens it with the picture set. Escape belongs to the page: it asks to leave, like Close, except while a preview tool is on, when it turns the tool off first.
 
 ## Leaving
-- **Close (×) in the strip, Escape, and every Menu action that leaves** (New Project, a pick from the Projects library, Import, Homepage) go through the page's leave guard (ADR 0085). With no picture set, the page closes at once.
+- **Close (×) in the strip, Escape, the browser's Back, and every Menu action that leaves** (New Project, a pick from the Projects library, Import, Homepage) go through the page's leave guard (ADR 0085). With no picture set, the page closes at once. Over the page the Menu opens on its root list, never on the New Project form, even with an empty library, so the form's buttons are only reached through New Project's question (ticket 0861).
+- **The browser's Back is Close** (ticket 0861): opening the page puts one entry on the tab's history, so Back stays in the app and asks as Close does; Back to converter keeps Back the page's Close, and a page that goes any other way takes its entry off, so the next Back goes where it went before. **A reload or closing the tab** asks the browser's own "Leave site?" while a picture is set, and nothing with none.
 - **Once a picture is set** the guard asks in a confirmation (ConfirmDialogs card): the title "Leave the converter?", the message "Everything you set up here will be lost.", **Back to converter** (the default: it takes focus, and Escape means it) and **Leave** (danger-filled). Leave closes the page and the Menu action goes on; Back to converter stays with everything as it was.
+- **Close with no Project open** (Close, Escape or Back, then Leave) lands on the New Project form, where the person came from, not on the empty Canvas (ticket 0861). A Menu action that leaves goes where it says.
 - **Either way the person lands on the Project that was open before**, with its Undo and Redo untouched: converting makes no Undo step, and nothing the page does touches the open Project. Create Project adds the new Project and opens it, as New Project does.
 
 ## Steps

@@ -17,6 +17,8 @@ export interface ConvertImageFlowDeps {
   addProject: (project: Project) => void
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
+  /** What Close goes on to once the page has gone: the New Project form while no Project is open (ticket 0861). */
+  onClosed?: () => void
 }
 
 /** Convert image (spec 0645, ADR 0010, ADR 0086): an App page that makes a new Project, its setup its own. Open it from
@@ -91,6 +93,14 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     { flush: 'sync' },
   )
 
+  /** Close (×), Escape and the browser's Back on the page: the same way out as a Menu action that leaves, then on to
+   * where the person came from. True once the page has gone, false when the person stayed. */
+  async function close(): Promise<boolean> {
+    if (!(await appPage.leave())) return false
+    deps.onClosed?.()
+    return true
+  }
+
   /** Create Project: the Project the wizard made joins the library and opens, and the page goes. */
   function onCreate() {
     const project = session.value?.createProject()
@@ -105,8 +115,7 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     open,
     onPicture,
     onCreate,
-    /** Close (×) and Escape on the page: the same way out as a Menu action that leaves. */
-    onClose: () => void appPage.leave(),
+    onClose: close,
     onConfirmLeave: () => settleLeave(true),
     onCancelLeave: () => settleLeave(false),
     onNewProjectDraft: (draft: CreateProjectInput) => (lastDraft.value = draft),

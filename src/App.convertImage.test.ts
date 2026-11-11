@@ -162,7 +162,7 @@ describe('App Convert image as an App page (ADR 0086)', () => {
 })
 
 describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
-  it('closes at once with no picture set, asking nothing, and gives the empty canvas back', async () => {
+  it('closes at once with no picture set, asking nothing, back on the New Project form it came from (ticket 0861)', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await openWizard(wrapper)
     await wrapper.get('[data-testid="convert-close"]').trigger('click')
@@ -172,6 +172,22 @@ describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
     expect(page(wrapper).exists()).toBe(false)
     expect(loadProjects()).toEqual([])
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="create-project"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('takes the browser’s Back as Close, and a reload asks first while a picture is set (ticket 0861)', async () => {
+    const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
+    const reloadAsks = () => !window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    await openFromMenu(wrapper)
+    await chooseImage(wrapper)
+    expect(reloadAsks()).toBe(true)
+
+    history.back()
+    await vi.waitFor(() => expect(leaveModal(wrapper).exists()).toBe(true))
+    await leaveModal(wrapper).get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+    expect(page(wrapper).exists()).toBe(false)
     wrapper.unmount()
   })
 
