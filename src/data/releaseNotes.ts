@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A new Project starts on a color that shows on its background: gold on a dark one, red on a light one',
+      ru: 'Новый проект начинается с цвета, который виден на его фоне: золотого на тёмном, красного на светлом',
+      uk: 'Новий проєкт починається з кольору, який видно на його тлі: золотого на темному, червоного на світлому',
+      be: 'Новы праект пачынаецца з колеру, які відаць на яго фоне: залатога на цёмным, чырвонага на светлым',
+      zh: '新项目从一种在背景上看得清的颜色开始：深色背景上是金色，浅色背景上是红色',
+      es: 'Un proyecto nuevo empieza con un color que se ve sobre su fondo: dorado sobre uno oscuro, rojo sobre uno claro',
+      pl: 'Nowy projekt zaczyna się od koloru widocznego na jego tle: złotego na ciemnym, czerwonego na jasnym',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'A Project opens from the library at once, a taken name gets a number, and Duplicate says which one is open',
       ru: 'Проект из библиотеки открывается сразу, занятое название получает номер, а после копии видно, какой открыт',
       uk: 'Проєкт із бібліотеки відкривається одразу, зайнята назва отримує номер, а після копії видно, який відкрито',
