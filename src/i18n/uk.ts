@@ -431,6 +431,7 @@ export const uk: Translations = {
         more: 'Далі буде більше',
         showAll: 'Показати всі {count}',
       },
+      alone: { heading: 'Безкоштовно', why: 'Акаунти та Pro з’являться пізніше; усе працює й без них.' },
     },
     library: '{library}, {count}',
   },

@@ -430,6 +430,7 @@ export const zh: Translations = {
         more: '更多功能即将推出',
         showAll: '显示全部 {count} 项',
       },
+      alone: { heading: '免费使用', why: '账户和专业版稍后推出；没有它们，一切照常使用。' },
     },
     library: '{library}，{count}',
   },

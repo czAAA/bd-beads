@@ -231,6 +231,7 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Pro · Price later · Same as Free account, plus more · Coming later (ticket 0740: no "coming later" beside the price, no list) | Pro · Цена позже · Всё, что в бесплатном аккаунте, и больше · Появится позже |
 | COMING SOON (the stamp on Free account and Pro; its image name "Coming soon") | СКОРО (название картинки «Скоро») |
 | forever free: (No account's list; "what you get" and the two "everything in …, plus" lines are gone, ticket 0740) | бесплатно навсегда: |
+| Free to use · Accounts and Pro come later; everything works without them. (a new visitor's plans: No account alone, its heading and the line in the reason's place, ticket 0871) | Бесплатно · Аккаунты и Pro появятся позже; всё работает и без них. |
 
 Free account and Pro list nothing until their features are known: the stamp stands where the list was.
 

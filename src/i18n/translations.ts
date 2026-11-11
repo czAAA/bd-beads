@@ -525,6 +525,8 @@ export interface Translations {
       /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them; a
        * phone's Show all opens the rows past its first (ticket 0827). */
       free: { heading: string; rows: FreeRows; more: string; showAll: string }
+      /** A new visitor's plans (ticket 0871): No account alone, its heading and the one line in place of the reason. */
+      alone: { heading: string; why: string }
     }
     /** The phone strip's library button's name (ticket 0827): {library} is the Menu row's, "Projects library, 28". */
     library: string

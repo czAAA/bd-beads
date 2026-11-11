@@ -431,6 +431,7 @@ export const es: Translations = {
         more: 'Y vendrá más',
         showAll: 'Mostrar las {count}',
       },
+      alone: { heading: 'De uso gratuito', why: 'Las cuentas de usuario y Pro llegarán más adelante; todo funciona sin ellas.' },
     },
     library: '{library}, {count}',
   },

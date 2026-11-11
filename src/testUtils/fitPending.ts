@@ -13,10 +13,12 @@ export interface FitPending {
 }
 
 export const FIT_PENDING: FitPending[] = [
-  { case: 'HomePage', texts: ['Бесплатный аккаунт'], at: { longest: [1900, 1280, 1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820] }, fixedBy: '231' },
   { case: 'HomePage', texts: ['Без аккаунта'], at: { longest: [844, 820] }, fixedBy: '231' },
-  { case: 'HomePage', texts: ['Три способа работать'], at: { longest: [390, 360, 320] }, fixedBy: '231' },
+  // Free account and Pro, and the three plans' heading, show only with Projects saved (ticket 0871).
+  { case: 'HomePage with Projects saved', texts: ['Бесплатный аккаунт'], at: { longest: [1900, 1280, 1024, 844, 820, 390, 360, 320] }, fixedBy: '231' },
+  { case: 'HomePage with Projects saved', texts: ['Создать бесплатный аккаунт'], at: { longest: [1024, 844, 820] }, fixedBy: '231' },
+  { case: 'HomePage with Projects saved', texts: ['Без аккаунта'], at: { longest: [844, 820] }, fixedBy: '231' },
+  { case: 'HomePage with Projects saved', texts: ['Три способа работать'], at: { longest: [390, 360, 320] }, fixedBy: '231' },
 ]
 
 const quoted = (text: string) => `"${text}"`
