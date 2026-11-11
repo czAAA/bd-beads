@@ -200,6 +200,10 @@ test('the Tool pill and its color popover are drawn over the margin sheet, whose
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 30, rows: 30 })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  // Fit keeps the sheet clear of the pill (ticket 0850): the Canvas is moved down by hand until its title block lies under it.
+  const surface = await box(page, 'project-surface')
+  await page.mouse.move(surface.x + surface.width / 2, surface.y + surface.height / 2)
+  await page.mouse.wheel(0, -60)
   await settle(page)
   await openColorPopover(page)
 

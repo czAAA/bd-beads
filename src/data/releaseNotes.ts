@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'Fit keeps the whole Frame clear of the tools, and Row done works with the Frame panel open',
+      ru: '«Вписать» больше не прячет рамку под кнопками, а «Ряд готов» работает при открытой панели рамки',
+      uk: '«Вписати» більше не ховає рамку під кнопками, а «Ряд готовий» працює з відкритою панеллю рамки',
+      be: '«Упісаць» больш не хавае рамку пад кнопкамі, а «Рад гатовы» працуе з адкрытай панэллю рамкі',
+      zh: '“适应”完整显示边框，不被工具遮住；边框面板打开时“行已完成”也能用',
+      es: 'Ajustar deja el marco entero sobre las herramientas, y Fila terminada funciona con el panel del marco abierto',
+      pl: 'Dopasuj pokazuje całą ramkę nad narzędziami, a Rząd gotowy działa przy otwartym panelu ramki',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: "The Homepage's demo says it is a demo, and its Menu points you to your own first Project",
       ru: 'Демо на главной странице подписано как демо, а его меню направляет вас к вашему первому проекту',
       uk: 'Демо на головній сторінці підписане як демо, а його меню скеровує вас до вашого першого проєкту',

@@ -56,6 +56,32 @@ export interface PillRect {
   height: number
 }
 
+/** How far in from each edge of the drawing area something lies over it (ticket 0850). */
+export interface Insets {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+/** Nothing over any edge. */
+export const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 }
+
+/** The room the pill takes from the edge it docks to (ticket 0850): from that edge to the pill's far side, nothing from
+ * the other three. What a Fit leaves clear, so no part of the Frame's sheet lies under the pill. */
+export function pillInsets(pill: PillRect, area: { width: number; height: number }, position: PillPosition): Insets {
+  switch (position) {
+    case 'bottom':
+      return { ...NO_INSETS, bottom: Math.max(0, area.height - pill.top) }
+    case 'top':
+      return { ...NO_INSETS, top: Math.max(0, pill.top + pill.height) }
+    case 'left':
+      return { ...NO_INSETS, left: Math.max(0, pill.left + pill.width) }
+    case 'right':
+      return { ...NO_INSETS, right: Math.max(0, area.width - pill.left) }
+  }
+}
+
 /** The edge of `area` nearest to `point`: where a dragged pill snaps on release. */
 export function nearestPillEdge(point: { x: number; y: number }, area: PillRect): PillPosition {
   const distances: Record<PillPosition, number> = {
