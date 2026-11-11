@@ -3,6 +3,7 @@ import { inSavedOrder, markSaved, mergeLibrary, mostRecentlyUpdated } from '../.
 import type { Project } from '../../domain/project'
 import { gated, type ProjectSummary, type SealedProject } from '../../domain/sealedProject'
 import { projectNameOf } from '../../domain/layerRecord'
+import { withFreeNames } from '../../domain/projectName'
 import type { LibraryEntry } from './useSavedProjectConfirms'
 import { browserLibraryStore, type HeldProject, type LibraryStore } from '../../services/libraryStore'
 import type { ProjectLocks } from '../../services/projectLocks'
@@ -37,7 +38,8 @@ export interface ProjectLibrary {
    * Project panel's "unsaved". */
   unsaved: Ref<boolean>
   addProject: (project: Project) => void
-  addProjects: (projects: Project[]) => void
+  /** Adds imported Projects under names the library doesn't hold yet and hands back what joined (ticket 0860). */
+  addProjects: (projects: Project[]) => Project[]
   replaceProject: (project: Project, options?: ReplaceOptions) => void
   removeProject: (id: string) => void
   /** Removes every Project from this device and leaves none open (Menu's Delete all Projects, ticket 443). */
@@ -233,12 +235,15 @@ export function useProjectLibrary(
     },
 
     /** Adds imported Projects (ticket 15's Project file); opens one only when nothing is open. Saved now, so they go
-     * to the front. */
+     * to the front; a taken name gets Duplicate's next free number (ticket 0860). */
     addProjects(imported: Project[]) {
       const now = Date.now()
-      projects.value = [...inSavedOrder(imported.map((project) => markSaved(project, now))), ...projects.value]
+      const taken = [...projects.value.map(projectNameOf), ...sealed.value.map((kept) => kept.name)]
+      const joined = inSavedOrder(withFreeNames(imported, taken).map((project) => markSaved(project, now)))
+      projects.value = [...joined, ...projects.value]
       activeProjectId.value ??= mostRecentlyUpdated(imported)?.id
       commit()
+      return joined
     },
 
     /** The single commit point for a change to an existing Project: every edit in the editor lands here. */

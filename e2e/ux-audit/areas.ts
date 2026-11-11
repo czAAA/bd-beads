@@ -83,7 +83,7 @@ async function openSavedProjectsList(page: Page): Promise<void> {
 async function openSavedProject(page: Page, name: string): Promise<void> {
   await openSavedProjectsList(page)
   await page.getByTestId('project-item').filter({ hasText: name }).first().click()
-  // Leaving the open Project asks "Switch Project?"; the stranger switches.
+  // Leaving the open Project asks "Switch Project?" only after a failed save (ticket 0860); the stranger switches.
   await clickIfVisible(page, 'confirm-modal-confirm')
   await page.waitForTimeout(REDRAW_MS)
 }

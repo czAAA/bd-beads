@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'A Project opens from the library at once, a taken name gets a number, and Duplicate says which one is open',
+      ru: 'Проект из библиотеки открывается сразу, занятое название получает номер, а после копии видно, какой открыт',
+      uk: 'Проєкт із бібліотеки відкривається одразу, зайнята назва отримує номер, а після копії видно, який відкрито',
+      be: 'Праект з бібліятэкі адкрываецца адразу, занятая назва атрымлівае нумар, а пасля копіі відаць, які адкрыты',
+      zh: '从项目库打开项目不再询问，已被占用的名称会加上编号，复制后会说明现在打开的是哪个',
+      es: 'Un proyecto se abre desde la biblioteca al instante, un nombre ya usado recibe un número y Duplicar dice cuál está abierto',
+      pl: 'Projekt z biblioteki otwiera się od razu, zajęta nazwa dostaje numer, a Duplikuj mówi, który jest otwarty',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'The row counter goes to any row you type, names the row on peyote, says rows done are kept when you turn the direction, and reads Pattern done at the end',
       ru: 'Счётчик рядов переходит к ряду, который вы введёте, называет ряд в мозаичном плетении, говорит, что готовые ряды сохраняются при повороте направления, и в конце показывает «Схема готова»',
       uk: 'Лічильник рядів переходить до ряду, який ви введете, називає ряд у мозаїчному плетінні, каже, що готові ряди зберігаються під час повороту напрямку, і наприкінці показує «Схема готова»',
