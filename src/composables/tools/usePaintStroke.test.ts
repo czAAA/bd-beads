@@ -19,19 +19,21 @@ function setup(tool: Tool = 'paint', initial?: Project, mirror: MirrorSetting = 
     initial ?? createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }),
   )
   const endSelectPress = vi.fn()
+  const cancelSelectPress = vi.fn()
   const showToast = vi.fn()
   const stroke = usePaintStroke({
     currentProject: harness.currentProject,
     edit: harness.editing,
     activeTool: () => tool,
     endSelectPress,
+    cancelSelectPress,
     mirror: () => mirror,
     onScreen: () => onScreen,
     showToast,
     messages: () => en,
   })
   const at = (row: number, column: number) => beadColorAt(harness.project, frameOf(harness.project)!.row + row, frameOf(harness.project)!.column + column)
-  return { stroke, harness, endSelectPress, showToast, at, frame: frameOf(harness.project)! }
+  return { stroke, harness, endSelectPress, cancelSelectPress, showToast, at, frame: frameOf(harness.project)! }
 }
 
 describe('usePaintStroke', () => {
@@ -48,8 +50,8 @@ describe('usePaintStroke', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('cancels an erase stroke and a drag over several beads, and ends a Select press', () => {
-    const { stroke, harness, endSelectPress, at, frame } = setup('paint', undefined)
+  it('cancels an erase stroke and a drag over several beads, and forgets a Select press rather than ending it (ticket 0868)', () => {
+    const { stroke, harness, endSelectPress, cancelSelectPress, at, frame } = setup('paint', undefined)
     const { row, column } = frame
     harness.edit('drawing', (project) => paintAt(project, [{ row, column }], '#0000ff'))
     const painted = frameOf(harness.project)!.beads
@@ -62,7 +64,8 @@ describe('usePaintStroke', () => {
 
     expect(frameOf(harness.project)!.beads).toEqual(painted)
     expect(at(0, 0)).toBe('#0000ff')
-    expect(endSelectPress).toHaveBeenCalled()
+    expect(cancelSelectPress).toHaveBeenCalled()
+    expect(endSelectPress).not.toHaveBeenCalled()
   })
 
   it('turns a whole drag into one undo step and one save', () => {
