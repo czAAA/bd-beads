@@ -50,6 +50,8 @@ const {
   projects,
   onImportProjects,
   openMenuOnForm,
+  deletedProjectName,
+  openMenuOnSavedProjects,
   activeProject,
   projectLabel,
   toasts,
@@ -462,7 +464,7 @@ const drawingStyle = computed(() => {
               @commit="referenceImage.commit"
               @done="referenceImage.endAdjust"
             />
-            <EmptyCanvas v-else-if="!activeProject">
+            <EmptyCanvas v-else-if="!activeProject" :deleted="deletedProjectName" :quiet="openPanel !== null" @library="openMenuOnSavedProjects">
               <div class="app-shell__empty-actions" data-testid="phone-project-bar">
                 <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
                 <ProjectImport compact :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" />

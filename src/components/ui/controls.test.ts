@@ -10,6 +10,7 @@ import IconButton from './IconButton.vue'
 import InfoButton from './InfoButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
 import type { TooltipProps } from './tooltipProps'
+import { closePanel } from '../../testUtils/pill'
 
 describe('AppButton', () => {
   it.each(['primary', 'secondary', 'in-box', 'toolbox', 'text', 'danger', 'link'] as const)('draws the %s variant', (variant) => {
@@ -532,7 +533,10 @@ describe('the controls follow the interaction rules and use only tokens', () => 
 describe('New Project', () => {
   it('is the primary Button with the plus icon', async () => {
     const { default: App } = await import('../../App.vue')
-    const button = mount(App).get('[data-testid="phone-bar-new-project"]')
+    const wrapper = mount(App)
+    // The Menu opens on its New Project form over the empty Canvas, which shows its buttons once it is put away.
+    await closePanel(wrapper)
+    const button = wrapper.get('[data-testid="phone-bar-new-project"]')
     expect(button.classes()).toEqual(expect.arrayContaining(['app-button', 'app-button--primary']))
     expect(button.get('svg').attributes('data-icon')).toBe('plus')
   })

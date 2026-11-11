@@ -8,7 +8,7 @@ import { loadProjects } from './services/libraryStore'
 import { projectAddress, savedProjectsAddress } from './domain/openingAddress'
 import { storedHugeProject, storeLibrary } from './testUtils/hugeProject'
 import { withLayers } from './testUtils/layerFields'
-import { openSavedProjects } from './testUtils/pill'
+import { closePanel, openPanel, openSavedProjects } from './testUtils/pill'
 
 // How the editor opens (ticket 0716): safe start, the size gate and its own addresses, wired from storage to screen.
 // What each decides is in useSafeStart, useProjectLibrary and useSavedProjectConfirms's tests.
@@ -62,6 +62,23 @@ describe('opening the editor (ticket 0716)', () => {
 
     expect(loadProjects().map((each) => each.id)).toEqual([other.id])
     expect(wrapper.find('[data-testid="missed-project"]').exists()).toBe(false)
+  })
+
+  it('names the last Project after its delete on the empty Canvas, whose link opens the Projects library (ticket 0840)', async () => {
+    storeLibrary([project('Sunflower', 1000)])
+    const wrapper = mount(App)
+    await flushPromises()
+
+    await openPanel(wrapper, 'strip-project')
+    await wrapper.get('[data-testid="project-delete"]').trigger('click')
+    await wrapper.get('[data-testid="delete-project-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+    await closePanel(wrapper)
+
+    const message = wrapper.get('[data-testid="empty-canvas-message"]')
+    expect(message.get('.empty-canvas__title').text()).toBe('“Sunflower” was deleted.')
+    await message.get('[data-testid="empty-canvas-library"]').trigger('click')
+    expect(wrapper.find('[data-testid="project-list"]').exists()).toBe(true)
   })
 
   it('never opens a Project over the size gate at load, and warns before opening it from Saved Projects', async () => {
