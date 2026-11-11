@@ -6,7 +6,7 @@ The word is **Reference image** everywhere (glossary, Canvas and Frame). Not "ba
 
 ## On the canvas
 
-- **Where it is drawn:** over every layer's Background (the Canvas's and the Frame's, a Custom frame's Off-shape included) and under every bead, every layer's. The rulers, the margin sheet, the Frame line and its gutter controls are drawn over it. It is in Canvas coordinates: it pans and zooms with the beads and turns with Rotate canvas (its own turn adds to the Canvas's).
+- **Where it is drawn:** over every layer's Background (the Canvas's and the Frame's, a Custom frame's Off-shape included) and under every bead, every layer's. The rulers, the margin sheet, the Frame line and its gutter controls are drawn over it. It is in Canvas coordinates: it pans and zooms with the beads and turns with Rotate Canvas (its own turn adds to the Canvas's).
 - **Opacity:** four steps, 25%, 50% (a new picture's), 75% and 100%, stored as the step. No slider.
 - **Painted beads** cover it as they are. **Empty beads** become see-through so the picture reads between them: their fill (the background's empty bead) drawn at 50% under the 25% step, 37% under 50%, 25% under 75% and 12% under 100%, always with the `bead-rim`, so the grid stays readable. With the picture hidden, empty beads are drawn as before. On the Canvas outside the Frame the empty positions are the Position marks, outlines with no fill, drawn over the picture as they are; the steps are the Frame's empty beads', in the full look and the draft look at small zoom alike.
 - **Two uses, no mode:** over the bead area at 25 or 50% it is a tracing guide; moved beside the pattern at 100% it is an example to copy from. Nothing covers it outside the bead area.
@@ -42,7 +42,7 @@ A PanelSection **reference image** between canvas and export (ProjectPanel card)
 - **With a picture**, in this order:
   1. A PanelListRow (no trailing facts): the 28px thumbnail (the picture cropped square, on `board`), the file name (one line, ellipsis) over "2048 × 1536 · 412 KB" (the stored picture, its size in whole KB) in `small` / `muted`. Not a button: the row's `still` form, with no hover.
   2. **Opacity:** a row with the label in `body` and, at its right, a four-choice SegmentedControl in the PanelPicker's height (`picker-height`), the values in `pill` type: 25%, 50%, 75%, 100%. Arrows move and apply at once. Named "Opacity", each choice "50%".
-  3. **Adjust on canvas** (`size` icon, value "move · resize · turn" in `meta`): puts the panel away and opens Adjust (below). While the picture is hidden it shows it first, so Adjust never handles an unseen picture.
+  3. **Adjust on Canvas** (`size` icon, value "move · resize · turn" in `meta`): puts the panel away and opens Adjust (below). While the picture is hidden it shows it first, so Adjust never handles an unseen picture.
   4. **Replace image** (`image`): the file picker; the new picture keeps the place, the turn and the width, its height following its own shape.
   5. **Remove image** (`delete`, `danger`): asks "Remove the reference image?", "The picture is taken off this Project. Your beads stay as they are.", Cancel and a `danger`-filled "Remove" (ConfirmDialogs card). Not an Undo step.
 - Show and hide is not repeated here: it is the strip button (MenuPanel card: nothing repeats a tool).
@@ -74,6 +74,6 @@ A state of the canvas, not a mode of a tool: the tools rest, pinch, two-finger p
 
 ## Copy
 
-English: Reference image, Add a reference image., Show reference image., Hide reference image. (the Tooltip bodies), reference image (section label), {opacity}% · {state}, Add reference image, {width} × {height} · {size}, {count} KB, Opacity, {count}%, Adjust on canvas, move · resize · turn, Replace image, Remove image, Remove the reference image?, The picture is taken off this Project. Your beads stay as they are., Remove, Cancel, This file can't be used: {reason} and its six reasons (above), Preparing the picture…, Fit to Canvas, Fit, Done, shown, hidden, Reference image, {opacity}%, turned {angle}°, Resize from the top-left corner (and the other three), Turn, Turned {n}°, Moved, Resized, Reference image not saved on this device. Every language is in `writing.md` (Reference image copy).
+English: Reference image, Add a reference image., Show reference image., Hide reference image. (the Tooltip bodies), reference image (section label), {opacity}% · {state}, Add reference image, {width} × {height} · {size}, {count} KB, Opacity, {count}%, Adjust on Canvas, move · resize · turn, Replace image, Remove image, Remove the reference image?, The picture is taken off this Project. Your beads stay as they are., Remove, Cancel, This file can't be used: {reason} and its six reasons (above), Preparing the picture…, Fit to Canvas, Fit, Done, shown, hidden, Reference image, {opacity}%, turned {angle}°, Resize from the top-left corner (and the other three), Turn, Turned {n}°, Moved, Resized, Reference image not saved on this device. Every language is in `writing.md` (Reference image copy).
 
 Hand-written from the ticket 0790 mockups; static rendition.

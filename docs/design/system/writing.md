@@ -10,6 +10,7 @@ How the app talks in English and Russian: the voice, sentence patterns, one glos
 - Russian: product nouns are lowercase like any noun (схема, бисер, палитра); a button quoted in a sentence goes in «ёлочки»; ё is always written (сохранённые, всё).
 - Labels and meta are lowercased by style, never in the string (as today).
 - **No em dashes**, in either language: use a colon, a comma, brackets or two sentences. Russian rewrites the sentence instead of the dash between subject and predicate ("Эти размеры приблизительные.", not a dash before "оценка").
+- **One colon rule for labels** (ticket 0853): a key before its value takes a colon ("name: Moth", "maker:", "codes: {count}"); a section header never does ("project", "frame", "export", "this Project"), in every language, the Chinese full-width colon too.
 
 ## Sentence patterns
 
@@ -210,7 +211,7 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | Menu | Меню |
 | Homepage (menu link) | Главная |
 | open + beads · draw · joy · weave · create · art · canvas · possibility · play · wonder · pattern · ideas (the rolling slogan, ticket 550) | the same, not translated: it is the brand |
-| Make your first Pattern · Open the editor | Сделать первую схему · Открыть редактор |
+| Make your first Project · Open the editor | Сделать первый проект · Открыть редактор |
 | Patterns saved: 3 | Схем сохранено: 3 |
 | What's inside | Что внутри |
 | Made by one family | Делает одна семья |
@@ -341,7 +342,7 @@ The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone n
 | not set · no Frame | не задана · без рамки |
 | Fit to drawing · Remove Frame · Done | По рисунку · Убрать рамку · Готово |
 | Set Frame to export | Задайте рамку для экспорта |
-| The Frame marks which beads become the Pattern. Beads outside it stay on the canvas. | Рамка отмечает, какие бисеринки войдут в схему. Бисеринки за рамкой остаются на холсте. |
+| The Frame marks which beads become the Pattern. Beads outside it stay on the Canvas. | Рамка отмечает, какие бисеринки войдут в схему. Бисеринки за рамкой остаются на холсте. |
 | Set Frame to count beads. | Задайте рамку, чтобы посчитать бисер. |
 | Row progress · Set Frame to start | Прогресс по рядам · Задайте рамку, чтобы начать |
 | Canvas · 3 pieces · no Frame | Холст · 3 фрагмента · без рамки |
@@ -363,7 +364,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 |---|---|
 | Menu · Project · Projects · New Project · Import · Export all · Saved Projects · Delete all Projects | Меню · Проект · Проекты · Новый проект · Импорт · Экспортировать все · Сохранённые проекты · Удалить все проекты |
 | Preferences · Language · Theme · Tools position · Input · Pen · Mouse | Настройки · Язык · Тема · Положение инструментов · Ввод · Перо · Мышь |
-| Left · Top · Right · Bottom · Light · Dark · System · High contrast | Слева · Сверху · Справа · Снизу · Светлая · Тёмная · Как в системе · Высокий контраст |
+| Left · Top · Right · Bottom · Light · Dark · Match device · High contrast | Слева · Сверху · Справа · Снизу · Светлая · Тёмная · Как на устройстве · Высокий контраст |
 | Help · Keyboard shortcuts · Homepage · About · Source code · Version | Справка · Сочетания клавиш · Главная · О приложении · Исходный код · Версия |
 | Rename {name} · Technique · Bead: · Replace bead · Canvas | Переименовать «{name}» · Техника · Бисер: · Заменить бисер · Холст |
 | saved · this device · unsaved changes · Not saved. {reason} · Try again | сохранено · на этом устройстве · есть несохранённые изменения · Не сохранено. {reason} · Повторить |
@@ -373,7 +374,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Delete all Projects? · Every Project is removed from this device. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
 | Delete this Project · Delete “{name}”? · “{name}” and its Row progress are removed from this device. This can't be undone. Save its Project file first if you want to keep it. · Save Project file · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены с этого устройства. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта. · Сохранить файл проекта · Удалить проект |
 | A Project needs a name. · Enter saves · Escape cancels | У проекта должно быть название. · Enter сохраняет · Esc отменяет |
-| The canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
+| The Canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
 
 Russian here is a proposal for review. The Technique explanation in Project is the app's existing note.
 
@@ -402,7 +403,7 @@ Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is 
 
 | English | Russian |
 | --- | --- |
-| The Frame goes, and its beads go with it. Rows marked as done are cleared too. This can be undone. | Рамка уйдёт, и её бусины вместе с ней. Отмеченные готовыми ряды сотрутся тоже. Это действие можно отменить. |
+| Rows marked as done will be cleared with the Frame. Its beads stay on the Canvas. This can be undone. | Отмеченные готовыми ряды сотрутся вместе с рамкой. Её бусины останутся на холсте. Это действие можно отменить. |
 
 ## Template copy (ticket 0493)
 
@@ -451,20 +452,20 @@ Russian here is a proposal for review, like the section below.
 
 ## Panels redesign (tickets 0553 to 0555)
 
-`.openbeads` is named wherever a project file is read or written (Import a project, Export all projects, Project file, the file picker's Tooltip, the import error). The `project:`, `frame:`, `name:` and `maker:` labels are lowercase in every language, like the section labels.
+`.openbeads` is named wherever a project file is read or written (Import a Project, Export all Projects, Project file, the file picker's Tooltip, the import error). The `project`, `frame`, `name:` and `maker:` labels are lowercased by style in every language, like the section labels; `project` and `frame` are section headers, so they take no colon (ticket 0853).
 
 | English | Русский |
 |---|---|
-| Projects library · Import a project · Export all projects · Delete all projects | Библиотека проектов · Импортировать проект · Экспортировать все проекты · Удалить все проекты |
-| No projects yet · Projects you make are kept on this device. Import a .openbeads file to bring one in. | Проектов пока нет · Проекты хранятся на этом устройстве. Импортируйте файл .openbeads, чтобы добавить проект. |
+| Projects library · Import a Project · Export all Projects · Delete all Projects | Библиотека проектов · Импортировать проект · Экспортировать все проекты · Удалить все проекты |
+| No Projects yet · Projects you make are kept on this device. Import a .openbeads file to bring one in. | Проектов пока нет · Проекты хранятся на этом устройстве. Импортируйте файл .openbeads, чтобы добавить проект. |
 | {n} pieces · {n} unnamed · Frame {w} × {h} beads | Частей: {n} · без названия: {n} · Рамка {w} × {h} бусин |
 | Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
-| project: · name: · maker: · Add your name for exports · Change the maker's name | проект: · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
+| Project · name: · maker: · Add your name for exports · Change the maker's name | проект · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
 | Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
 | Brand · Type · Size | Бренд · Тип · Размер |
-| Project file · Picture · Printable chart · Clear all beads · Delete project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
-| frame: · Name this frame · Rename the frame · Frame from template · Fit a frame to the drawing · A frame sets the size, the exports and the bead count. | рамка: · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
-| Estimated size · An estimate. · Rows are marked done. Remove the frame to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Уберите рамку, чтобы изменить размер. · Показать все цвета ({n}) |
+| Project file · Picture · Printable chart · Clear all beads · Delete Project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
+| Frame · Name this Frame · Rename Frame · Frame from template · Fit a Frame to the drawing · A Frame sets the size, the exports and the bead count. | рамка · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
+| Estimated size · An estimate. · Rows are marked done. Remove the Frame to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Уберите рамку, чтобы изменить размер. · Показать все цвета ({n}) |
 | Stone · Fog · Pebble · Slate | Камень · Туман · Галька · Сланец |
 
 Russian here is a proposal for review; the other five languages follow it in the app change.
@@ -515,7 +516,7 @@ The popup of spec 0645 (ConvertImage, ValueSlider and FoundColorRow cards; ticke
 | colors found · Treat as empty (a switch in the Colors step) | найдено цветов · Считать пустым | знайдено кольорів · Вважати порожнім | znalezione kolory · Traktuj jako puste |
 | From picture · Becomes · Beads · Change · Empty (the found-colors table's heading) | Из картинки · Станет · Бисерин · Изменить · Пусто | Із картинки · Стане · Бісерин · Змінити · Порожньо | Z obrazu · Wynik · Koraliki · Zmień · Puste |
 | Keep exact (in the Change picker's head) · Change · Empty · No bead · Kept exact · Remapped · Custom color | Оставить точный · Изменить · Пусто · Без бисерины · Точный цвет · Заменён · Свой цвет | Залишити точний · Змінити · Порожньо · Без бісерини · Точний колір · Замінено · Власний колір | Zachowaj dokładny · Zmień · Puste · Bez koralika · Dokładny kolor · Zamieniony · Własny kolor |
-| Picture color · palette of the new Project · In the Palette · Leave the wheel to take the color. | Цвет изображения · палитра нового проекта · В палитре · Цвет берётся, когда уходите с круга. | Колір зображення · палітра нового проєкту · У палітрі · Колір береться, коли залишаєте коло. | Kolor obrazu · paleta nowego projektu · W palecie · Kolor zostaje wybrany po opuszczeniu koła. |
+| Picture color · Palette of the new Project · In the Palette · Leave the wheel to take the color. | Цвет изображения · палитра нового проекта · В палитре · Цвет берётся, когда уходите с круга. | Колір зображення · палітра нового проєкту · У палітрі · Колір береться, коли залишаєте коло. | Kolor obrazu · paleta nowego projektu · W palecie · Kolor zostaje wybrany po opuszczeniu koła. |
 | ≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares. | ≈ 200 Delica 11/0 в грамме, с округлением вверх. Купите примерно на 10 % больше про запас. | ≈ 200 Delica 11/0 у грамі, з округленням угору. Купіть приблизно на 10 % більше про запас. | ≈ 200 Delica 11/0 na gram, w górę. Kup około 10% więcej na zapas. |
 | There is no picture to paste. Copy one first. · Steps (the step rail's name) | В буфере обмена нет изображения. Сначала скопируйте его. · Шаги | У буфері обміну немає зображення. Спочатку скопіюйте його. · Кроки | W schowku nie ma obrazu. Najpierw go skopiuj. · Kroki |
 | No picture yet · Create Project | Изображения пока нет · Создать проект | Зображення ще немає · Створити проєкт | Brak obrazu · Utwórz projekt |
@@ -567,7 +568,7 @@ Built by ticket 0780. The Russian, Ukrainian and Polish proposals were reviewed 
 
 ## Margin sheet copy (ticket 0655)
 
-The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
+The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
@@ -777,7 +778,7 @@ The Project's one picture to bead over (ReferenceImage card). Russian and Ukrain
 | reference image (section) · shown · hidden (its summary) | подложка · видна · скрыта | підкладка · видно · сховано | obraz pomocniczy · widoczny · ukryty |
 | PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF или WebP, до 10 МБ. Хранится с этим проектом и в его файле .openbeads, не печатается. Большие картинки уменьшаются. | PNG, JPEG, GIF або WebP, до 10 МБ. Зберігається з цим проєктом і в його файлі .openbeads, не друкується. Великі зображення зменшуються. | PNG, JPEG, GIF lub WebP, do 10 MB. Zapisany z tym projektem i w jego pliku .openbeads, nigdy nie drukowany. Duże obrazy są zmniejszane. |
 | Opacity | Непрозрачность | Непрозорість | Krycie |
-| Adjust on canvas · move · resize · turn | Настроить на полотне · сдвиг · размер · поворот | Налаштувати на полотні · зсув · розмір · поворот | Dopasuj na płótnie · przesuń · rozmiar · obróć |
+| Adjust on Canvas · move · resize · turn | Настроить на полотне · сдвиг · размер · поворот | Налаштувати на полотні · зсув · розмір · поворот | Dopasuj na płótnie · przesuń · rozmiar · obróć |
 | Replace image · Remove image (Replace image also on the Adjust bar, ticket 0799; on a phone the name of its icon button) | Заменить картинку · Убрать картинку | Замінити зображення · Прибрати зображення | Zamień obraz · Usuń obraz |
 | Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Убрать подложку? · Картинка будет убрана из проекта. Бусины останутся как есть. · Убрать | Прибрати підкладку? · Зображення буде прибрано з проєкту. Бісеринки залишаться як є. · Прибрати | Usunąć obraz pomocniczy? · Obraz zostanie usunięty z projektu. Koraliki zostaną bez zmian. · Usuń |
 | This file can't be used: {reason} | Этот файл не подходит: {reason} | Цей файл не підходить: {reason} | Tego pliku nie można użyć: {reason} |
@@ -800,7 +801,7 @@ Belarusian, Spanish and Chinese, written with the build (ticket 0790):
 | reference image · shown · hidden | падкладка · бачная · схаваная | imagen de referencia · visible · oculta | 参考图 · 显示中 · 已隐藏 |
 | PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit. | PNG, JPEG, GIF або WebP, да 10 МБ. Захоўваецца з гэтым праектам і ў яго файле .openbeads, не друкуецца. Вялікія выявы памяншаюцца. | PNG, JPEG, GIF o WebP, hasta 10 MB. Se guarda con este proyecto y en su archivo .openbeads, nunca se imprime. Las imágenes grandes se reducen. | PNG、JPEG、GIF 或 WebP，最大 10 MB。随此项目保存，也存在其 .openbeads 文件中，不会打印。较大的图片会被缩小。 |
 | Opacity | Непразрыстасць | Opacidad | 不透明度 |
-| Adjust on canvas · move · resize · turn | Наладзіць на палатне · зрух · памер · паварот | Ajustar en el lienzo · mover · tamaño · girar | 在画布上调整 · 移动 · 缩放 · 旋转 |
+| Adjust on Canvas · move · resize · turn | Наладзіць на палатне · зрух · памер · паварот | Ajustar en el lienzo · mover · tamaño · girar | 在画布上调整 · 移动 · 缩放 · 旋转 |
 | Replace image · Remove image | Замяніць выяву · Прыбраць выяву | Reemplazar imagen · Quitar imagen | 替换图片 · 移除图片 |
 | Remove the reference image? · The picture is taken off this Project. Your beads stay as they are. · Remove | Прыбраць падкладку? · Выява будзе прыбрана з праекта. Бісерыны застануцца як ёсць. · Прыбраць | ¿Quitar la imagen de referencia? · La imagen se quita de este proyecto. Tus cuentas quedan como están. · Quitar | 移除参考图？ · 图片将从此项目中移除。你的珠子保持不变。 · 移除 |
 | This file can't be used: {reason} | Гэты файл не падыходзіць: {reason} | Este archivo no se puede usar: {reason} | 此文件无法使用：{reason} |

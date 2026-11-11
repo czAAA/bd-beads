@@ -12,7 +12,7 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 
 - The shell, density and parts of Menu, Project and Frame (MenuPanel card): one of the four open at a time, Escape or a press outside closes it, focus returns to the button. It opens without focusing a field, like the Frame panel.
 - `panel-width-small` (360px) wide, never wider than the screen less its 8px gutters. It hangs 4px under the button with its **right** edge on the button's, since the button is in the strip's right corner.
-- A `dialog` named "Export". Its title line is `export:` in the `label` style, `muted`, as the Frame panel's `frame:`. No section header and no collapse: it holds one section.
+- A `dialog` named "Export". Its title line is `export` in the `label` style, `muted`, lowercased by style, as the Frame panel's `frame` (a section header takes no colon, `writing.md`). No section header and no collapse: it holds one section.
 
 ### With a Frame
 
@@ -27,22 +27,22 @@ The Frame panel's export section, the same component, under the title line:
 
 No export buttons and no slider. Under the title line:
 
-- One `meta-small` `muted` line: "Set a frame around the drawing you want to export."
-- **Select a frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568).
-- **Fit a frame to the drawing** (`fit`): disabled with "Nothing is drawn yet to fit a frame to." while nothing is drawn.
+- One `meta-small` `muted` line: "Set a Frame around the drawing you want to export."
+- **Select a Frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568).
+- **Fit a Frame to the drawing** (`fit`): disabled with "Nothing is drawn yet to fit a Frame to." while nothing is drawn.
 
-The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a frame closes it.
+The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a Frame closes it.
 
 ## Copy
 
-Every string is the Frame panel's: Export, Picture, Printable chart, Export quality, Set a frame around the drawing you want to export., Select a frame, Fit a frame to the drawing. No new copy.
+Every string is the Frame panel's: Export, Picture, Printable chart, Export quality, Set a Frame around the drawing you want to export., Select a Frame, Fit a Frame to the drawing. No new copy.
 
 ## Acceptance
 
 - [ ] The Export button is the strip's last button, `share` icon, Tooltip "Export", lit while its panel is open.
 - [ ] The panel is 360px, 4px under the button, right edges aligned, and closes Menu, Project and Frame (and they close it).
 - [ ] With a Frame: Picture and Printable chart with their sizes, then Export quality, all working as in the Frame panel.
-- [ ] With no Frame: the line, Select a frame and Fit a frame to the drawing; no export buttons.
+- [ ] With no Frame: the line, Select a Frame and Fit a Frame to the drawing; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
 
 **From the margin too (ticket 0655; MarginSheet card):** the Frame's margin carries an Export button (`share`) in its top band. It opens this same panel, hanging 4px under that button with right edges aligned, kept inside the screen.

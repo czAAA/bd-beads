@@ -88,7 +88,7 @@ const actions = {
 
 const frame = computed(() => frameOf(props.project))
 const nameLine = computed(() => frameNameLine(t.value, frame.value?.name))
-/** The name the tab reads and is named by, or "Name this frame". */
+/** The name the tab reads and is named by, or "Name this Frame". */
 const tabName = computed(() => frame.value?.name || t.value.frame.nameEmpty)
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 /** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
@@ -419,7 +419,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         @fold="fold.fold()"
       />
       <!-- Folded, the title block is its name on a tab; where the sheet has room, the tab unfolds it. Unnamed, the tab
-           invites a name: "Name this frame" opens the name field and its chevron unfolds (ticket 0803). -->
+           invites a name: "Name this Frame" opens the name field and its chevron unfolds (ticket 0803). -->
       <span v-else-if="!frame?.name" class="margin-sheet__tab margin-sheet__tab--unnamed" data-testid="margin-title-tab">
         <EditableLine v-bind="nameLine" invite-only class="margin-sheet__tab-name" @save="emit('rename', $event)" />
         <IconButton
@@ -601,7 +601,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   background: color-mix(in srgb, var(--ink) 10%, var(--margin-title));
 }
 
-/* Unnamed, the tab holds "Name this frame" and, where it unfolds, an 18px chevron button (ticket 0803). */
+/* Unnamed, the tab holds "Name this Frame" and, where it unfolds, an 18px chevron button (ticket 0803). */
 .margin-sheet__tab--unnamed :deep(.icon-btn) {
   width: var(--margin-pencil);
   height: var(--margin-pencil);

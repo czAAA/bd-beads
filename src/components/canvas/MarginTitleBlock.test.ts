@@ -43,7 +43,7 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
 
   it('invites a name and a maker while they are empty', () => {
     const wrapper = mountBlock(framed())
-    expect(text(wrapper, 'margin-frame-name')).toBe('Name this frame')
+    expect(text(wrapper, 'margin-frame-name')).toBe('Name this Frame')
     expect(text(wrapper, 'margin-maker')).toBe('Your name')
   })
 
@@ -62,8 +62,8 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(wrapper.emitted('rename')).toHaveLength(1)
   })
 
-  // "Name this frame" reads as an invitation, so pressing it opens the name field, compact too (ticket 0803).
-  it('opens the name field from "Name this frame" in the compact block', async () => {
+  // "Name this Frame" reads as an invitation, so pressing it opens the name field, compact too (ticket 0803).
+  it('opens the name field from "Name this Frame" in the compact block', async () => {
     const wrapper = mount(MarginTitleBlock, { props: { project: framed(), form: 'compact' }, attachTo: document.body })
     await wrapper.get('[data-testid="margin-frame-name"]').trigger('click')
     await wrapper.get('[data-testid="margin-frame-name-input"]').setValue('Sun band')

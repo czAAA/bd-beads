@@ -35,7 +35,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'reference image', 'Export', 'This project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'reference image', 'Export', 'This Project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)

@@ -91,7 +91,7 @@ describe('BackgroundSection (ticket 0666)', () => {
     await flush()
     const wrapper = render()
 
-    expect(wrapper.get('[data-testid="canvas-stays-white"]').text()).toBe('The canvas stays white in high contrast.')
+    expect(wrapper.get('[data-testid="canvas-stays-white"]').text()).toBe('The Canvas stays white in high contrast.')
     expect(wrapper.find('[role="radiogroup"]').exists()).toBe(false)
   })
 })

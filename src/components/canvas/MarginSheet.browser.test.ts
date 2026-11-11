@@ -123,7 +123,7 @@ describe('the margin sheet at each zoom (tickets 0658, 0698, 0851)', () => {
       }
     })
 
-    it(`fits an unnamed Frame's tab, "Name this frame" and its chevron, folded by hand at 100% and 60%, in ${locale}`, async () => {
+    it(`fits an unnamed Frame's tab, "Name this Frame" and its chevron, folded by hand at 100% and 60%, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       frameName.value = ''
