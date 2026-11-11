@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-11',
     line: {
+      en: 'On a phone Paint and Colors stay in view, and a swipe shows the other tools',
+      ru: 'На телефоне Кисть и Цвета всегда на экране, прочее листается свайпом',
+      uk: 'На телефоні Пензель і Кольори завжди на екрані, решта гортається свайпом',
+      be: 'На тэлефоне Пэндзаль і Колеры заўсёды на экране, астатняе гартаецца свайпам',
+      zh: '在手机上，涂色和颜色始终可见，其余工具滑动查看',
+      es: 'En el móvil Pintar y Colores siempre se ven; desliza para ver el resto',
+      pl: 'Na telefonie Maluj i Kolory są zawsze widoczne, resztę przewiń palcem',
+    },
+  },
+  {
+    date: '2026-11-11',
+    line: {
       en: 'Every field says what goes in it, and a tap outside keeps a new name',
       ru: 'Поля говорят, что в них вписать, а касание мимо сохраняет новое название',
       uk: 'Поля кажуть, що в них вписати, а дотик повз зберігає нову назву',
