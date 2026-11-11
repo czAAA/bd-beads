@@ -156,7 +156,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(painted), en, 'en', at).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, en.print.wordChart.runNote, en.print.wordChart.pairNote])
-    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1*, 1C, 2*' })
+    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1*, 2C, 1*' })
     expect(chart.rows[10]).toEqual({ label: '11', first: 11, last: 11, runs: 'Zip 1–2' })
   })
 

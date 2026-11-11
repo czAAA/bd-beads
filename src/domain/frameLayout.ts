@@ -239,7 +239,8 @@ export function roundsLayout(corners: number, rounds: number, depth: number): Fr
 }
 
 /** A Star's five arms meet at its centre with this angle each. */
-const STAR_ARM = (2 * Math.PI) / 5
+const STAR_ARMS = 5
+const STAR_ARM = (2 * Math.PI) / STAR_ARMS
 
 /** A Star (research: the MiniStar; ticket 0875) as its finished face: five arms, one up, each rows of 1 … R … 1 along
  * its ridge. Square j, centred on a notch, is arm j's half facing arm j + 1, arm j's ridge (its partial last round) and
@@ -250,7 +251,7 @@ export function starLayout(partSize: number, depth: number): FrameLayout {
     // The ridge's first bead, where the first beads of neighbouring arms touch at their corners. Rows lie a little
     // further apart than peyote's, as far as lets five arms fill a flat circle.
     const first = 0.5 + depth / 2 / slope
-    const outwards = (arm: number) => -Math.PI / 2 + (arm % 5) * STAR_ARM
+    const outwards = (arm: number) => -Math.PI / 2 + (arm % STAR_ARMS) * STAR_ARM
     const bead = (arm: number, along: number, across: number, row: number, column: number, panel: number): LayoutPosition => {
       const angle = outwards(arm)
       return { row, column, panel, angle, x: along * Math.cos(angle) - across * Math.sin(angle), y: along * Math.sin(angle) + across * Math.cos(angle) }
@@ -259,7 +260,7 @@ export function starLayout(partSize: number, depth: number): FrameLayout {
     const panels: LayoutPanel[] = []
     const ridges: number[][] = []
     const besideRidge: number[][] = []
-    for (let square = 0; square < 5; square += 1) {
+    for (let square = 0; square < STAR_ARMS; square += 1) {
       const [own, next] = [2 * square, 2 * square + 1]
       panels.push({ part: square, order: square }, { part: square, order: square })
       for (let round = 1; round < partSize; round += 1) {
@@ -268,7 +269,7 @@ export function starLayout(partSize: number, depth: number): FrameLayout {
         const off = partSize - round
         const column = square * 2 * round
         for (let place = 0; place < round; place += 1) positions.push(bead(square, first + off + 2 * place, off * slope, round - 1, column + place, own))
-        if (round === partSize - 1) besideRidge[(square + 1) % 5] = Array.from({ length: round }, (_unused, place) => positions.length + place)
+        if (round === partSize - 1) besideRidge[(square + 1) % STAR_ARMS] = Array.from({ length: round }, (_unused, place) => positions.length + place)
         for (let place = 0; place < round; place += 1) positions.push(bead(square + 1, first + off + 2 * (round - 1 - place), -off * slope, round - 1, column + round + place, next))
       }
       // Its last round, arm j's ridge, named as its round's first half would be.
@@ -277,19 +278,19 @@ export function starLayout(partSize: number, depth: number): FrameLayout {
     }
     // A Seam down each valley, from the centre to the notch, where the outlines of the arms either side meet.
     const notch = (first + partSize - 1) / Math.cos(STAR_ARM / 2)
-    const seams = Array.from({ length: 5 }, (_unused, arm): [LayoutPoint, LayoutPoint] => {
+    const seams = Array.from({ length: STAR_ARMS }, (_unused, arm): [LayoutPoint, LayoutPoint] => {
       const valley = outwards(arm) + STAR_ARM / 2
       return [{ x: 0, y: 0 }, { x: notch * Math.cos(valley), y: notch * Math.sin(valley) }]
     })
     // Squares j and j + 1 are zipped along arm j + 1's ridges: its ridge row and square j's round beside it.
-    const zip = (square: number): number[] => [...ridges[(square + 1) % 5]!, ...(besideRidge[(square + 1) % 5] ?? [])]
+    const zip = (square: number): number[] => [...ridges[(square + 1) % STAR_ARMS]!, ...besideRidge[(square + 1) % STAR_ARMS]!]
     const joins: LayoutJoin[] = [
       ...[0, 1, 2, 3].map((square): LayoutJoin => ({ step: 'zip', parts: [square, square + 1], beads: zip(square) })),
       { step: 'close', parts: [4, 0], beads: zip(4) },
     ]
     const back = { shared: ridges.map((ridge) => ridge[ridge.length - 1]!) }
     // A valley is a mirror line of the Star, through the arm across from it.
-    const symmetry = { fold: 5, line: STAR_ARM / 2 }
+    const symmetry = { fold: STAR_ARMS, line: STAR_ARM / 2 }
     return boxed({ positions, panels, joins, seams, beadDepth: depth, symmetry, back })
   })
 }

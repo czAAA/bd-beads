@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
-import { FRAME_SHAPE_IDS } from './frameShape'
-import { frameLayoutOf } from './frameShape'
+import { FRAME_SHAPE_IDS, frameLayoutOf } from './frameShape'
 import { backBeadsAt, pieceFaceOf, wholePieceBeads } from './pieceFaces'
 import { STARTER_BEAD_ID, starterBeadCount, starterById } from './starters'
 
@@ -41,8 +40,8 @@ describe('a Frame whose back mirrors its face (ticket 0875)', () => {
 
   it('takes a Star\'s tip as one bead on both sides and every other bead as two, and no other shape\'s at all', () => {
     const layout = frameLayoutOf({ shape: 'star', settings: { partSize: 5 } })!
-    const counted = backBeadsAt(layout)!
+    const counted = backBeadsAt({ shape: 'star', settings: { partSize: 5 } })!
     expect(layout.positions.filter((position) => counted(position) === 1).map(({ row, column }) => `${row}:${column}`)).toEqual(['4:4', '4:14', '4:24', '4:34', '4:44'])
-    expect(FRAME_SHAPE_IDS.filter((shape) => backBeadsAt(frameLayoutOf({ shape })))).toEqual(['star'])
+    expect(FRAME_SHAPE_IDS.filter((shape) => backBeadsAt({ shape }))).toEqual(['star'])
   })
 })

@@ -2,7 +2,7 @@ import { findBead, type Bead } from './beads'
 import { forEachBead, type BeadMap } from './canvas'
 import { changeFrame, type FrameChange, type FrameChangeResult } from './changeFrame'
 import { laidSize } from './frameOrientation'
-import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameLayoutOf, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
+import { changedSettings, customFrameSize, followsWeave, frameGeometry, frameShapeOf, settingsOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings, type QuarterTurns } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead, withWovenPalette } from './projectBead'
@@ -328,7 +328,7 @@ export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: 
 
 /** How a Starter's Frame counts its back, where its back mirrors its face (ticket 0875, a Star): see `backBeadsAt`. */
 function starterBack(starter: Starter, choice: StarterChoice): ReturnType<typeof backBeadsAt> {
-  return starter.shape ? backBeadsAt(frameLayoutOf({ shape: starter.shape, settings: customSettings(starter, choice) })) : undefined
+  return backBeadsAt({ shape: starter.shape, settings: customSettings(starter, choice) })
 }
 
 /** Whether a Starter's bead count is its piece's front and back (ticket 0875): a Star's back mirrors its face. */
