@@ -40,6 +40,8 @@ export interface ProjectLibrary {
   addProject: (project: Project) => void
   /** Adds imported Projects under names the library doesn't hold yet and hands back what joined (ticket 0860). */
   addProjects: (projects: Project[]) => Project[]
+  /** Every name the library holds, sealed Projects' too: what a new or imported name must not repeat (tickets 0860, 0866). */
+  names: () => string[]
   replaceProject: (project: Project, options?: ReplaceOptions) => void
   removeProject: (id: string) => void
   /** Removes every Project from this device and leaves none open (Menu's Delete all Projects, ticket 443). */
@@ -205,8 +207,11 @@ export function useProjectLibrary(
     if (getCurrentScope()) onScopeDispose(() => letGo?.())
   }
 
+  const names = () => [...projects.value.map(projectNameOf), ...sealed.value.map((kept) => kept.name)]
+
   return {
     projects,
+    names,
     sealed,
     openSealed,
     openElsewhere: computed(() => heldElsewhere.value !== undefined && heldElsewhere.value === activeProjectId.value),
@@ -238,8 +243,7 @@ export function useProjectLibrary(
      * to the front; a taken name gets Duplicate's next free number (ticket 0860). */
     addProjects(imported: Project[]) {
       const now = Date.now()
-      const taken = [...projects.value.map(projectNameOf), ...sealed.value.map((kept) => kept.name)]
-      const joined = inSavedOrder(withFreeNames(imported, taken).map((project) => markSaved(project, now)))
+      const joined = inSavedOrder(withFreeNames(imported, names()).map((project) => markSaved(project, now)))
       projects.value = [...joined, ...projects.value]
       activeProjectId.value ??= mostRecentlyUpdated(imported)?.id
       commit()

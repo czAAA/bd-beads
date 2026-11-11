@@ -27,6 +27,7 @@ const {
   unsaved,
   settledProject,
   onNewProjectDraft,
+  unnamedProjectName,
   onCreateProject,
   onCreateFromStarter,
   onPlaceFrameFromStarter,
@@ -234,6 +235,7 @@ const chosenStarter = ref<StarterId>()
         then a Starter's setup (ticket 0596). -->
       <template v-else-if="depth === 1">
         <NewProjectForm
+          :name-placeholder="unnamedProjectName"
           @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
           @convert-image="(draft) => { onOpenConvertImage(draft); openPanel = null }"

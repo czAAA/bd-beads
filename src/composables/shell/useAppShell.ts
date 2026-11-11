@@ -123,6 +123,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     unsaved,
     addProject,
     addProjects,
+    names: projectNames,
     replaceProject,
     removeProject,
     removeAllProjects,
@@ -177,7 +178,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
     }
 
   /** New-Project creation, blank or from a Starter (tickets 196, 0596). */
-  const { onCreateProject, onCreateFromStarter } = useNewProjectFlow({ addProject: addNewProject })
+  const { onCreateProject, onCreateFirstProject, onCreateFromStarter, unnamedName } = useNewProjectFlow({
+    addProject: addNewProject,
+    projectNames,
+    messages,
+  })
+  /** New Project's Name placeholder: what the Project is called if it stays empty (ticket 0866). */
+  const unnamedProjectName = computed(unnamedName)
 
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
@@ -832,6 +839,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   // A Project the address names opens as a pick from Saved Projects does (a gated one asks first); a load that opened
   // none of a library that has some lands on Saved Projects (ticket 0716).
   if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
+  // Make your first Project (ticket 0866): with none in the library it is made on New Project's presets and opens on the
+  // Canvas, no panel open; with some, the editor opens as usual.
+  if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) onCreateFirstProject()
   if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
@@ -1147,6 +1157,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
       // New Project
       onNewProjectDraft: convertImage.onNewProjectDraft,
+      unnamedProjectName,
       // Each leaves the page first, as the Menu's rows do, should the form show over one (ticket 0861)
       onCreateProject: afterLeaving(onCreateProject),
       onCreateFromStarter: afterLeaving(onCreateFromStarter),
