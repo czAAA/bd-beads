@@ -839,6 +839,7 @@ export const pl: Translations = {
     progressSelectToSet: 'Zaznacz, aby ustawić',
     progressFrameWord: 'ramkę',
     rotateCoveredMessage: 'Obrócony fragment wylądował na istniejących koralikach.',
+    fitAndExport: 'Dopasuj ramkę i wyeksportuj obraz',
   },
   size: {
     estimateLabel: 'Szacunkowy rozmiar',
@@ -1126,6 +1127,7 @@ export const pl: Translations = {
     rulers: 'Linijki numerują twoje koraliki i ramkę.',
     rowDirection: 'Zmienia kierunek rzędów: z góry na dół, od lewej do prawej, z dołu do góry lub od prawej do lewej.',
     rowHighlight: 'Pokazuje lub ukrywa oznaczenia na bieżącym rzędzie i na rzędach oznaczonych jako gotowe.',
+    fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
     pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
   },
   layerSettings: {

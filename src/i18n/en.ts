@@ -827,6 +827,7 @@ export const en: Translations = {
     progressSelectToSet: 'Select to set a',
     progressFrameWord: 'Frame',
     rotateCoveredMessage: 'The turned fragment landed on top of existing beads.',
+    fitAndExport: 'Fit a Frame and export a picture',
   },
   size: {
     estimateLabel: 'Estimated size',
@@ -1110,6 +1111,7 @@ export const en: Translations = {
     rulers: 'Rulers number your beads and the Frame.',
     rowDirection: 'Turn the way the rows run: top to bottom, left to right, bottom to top or right to left.',
     rowHighlight: 'Show or hide the marks on the current row and the rows marked done.',
+    fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
   },
   layerSettings: {

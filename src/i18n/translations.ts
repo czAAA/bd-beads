@@ -965,6 +965,8 @@ export interface Translations {
     progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
+    /** The Progress bar's button with no Frame (ticket 0847): fits a Frame and opens Export on Picture. */
+    fitAndExport: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
@@ -1320,6 +1322,8 @@ export interface Translations {
     rulers: string
     rowDirection: string
     rowHighlight: string
+    /** The Progress bar's Fit a Frame and export a picture (ticket 0847). */
+    fitAndExport: string
     /** The Paste tile's line on touch, which has no hover or click (ticket 0845). */
     pasteToolTouch: string
   }

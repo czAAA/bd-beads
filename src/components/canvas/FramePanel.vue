@@ -196,19 +196,17 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
     </div>
 
-    <!-- Export always shown (ticket 568), off with no Frame. -->
-    <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
+    <!-- Export (ticket 568), with a Frame only (ticket 0847): with none, the Export panel's way, no export rows. -->
+    <PanelSection v-if="frame" id="frame:export" :label="t.panels.project.exportHeading">
       <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
         <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
-        <template v-if="frame">
-          <div class="frame-panel__letters">
-            <span class="frame-panel__letters-label">
-              {{ t.frame.lettersLabel }}
-              <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
-            </span>
-            <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
-          </div>
-        </template>
+        <div class="frame-panel__letters">
+          <span class="frame-panel__letters-label">
+            {{ t.frame.lettersLabel }}
+            <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
+          </span>
+          <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
+        </div>
       </ExportSection>
     </PanelSection>
 
