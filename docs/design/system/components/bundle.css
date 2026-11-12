@@ -20,6 +20,17 @@
   --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
   --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
   --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
+  --convert-column-width: 344px; /* ConvertImage card (DS-1, ticket 0895): the quiet converter's column beside the preview. */
+  --convert-column-width-narrow: 328px; /* ConvertImage card (ticket 0895): the column while the page is under 1200px wide (the iPad in landscape). */
+  --convert-fit-top: 72px; /* ConvertImage card (ticket 0895): room above the beads when the preview is at Fit. */
+  --convert-fit-side: 40px; /* ConvertImage card (ticket 0895): room at each side of the beads at Fit. */
+  --convert-fit-bottom: 90px; /* ConvertImage card (ticket 0895): room under the beads at Fit, so the floating bar never covers them. */
+  --convert-fit-bottom-touch: 96px; /* ConvertImage card (ticket 0895): the same on a coarse pointer, whose bar is taller. */
+  --convert-popover-width: 340px; /* ConvertImage card (ticket 0895): the Bead and Technique and the Size popovers. */
+  --convert-colors-popover-width: 452px; /* ConvertImage card (ticket 0895): the Colors popover (match to, Color by color). */
+  --convert-colors-popover-width-narrow: 440px; /* ConvertImage card (ticket 0895): the Colors popover while the page is under 1200px wide. */
+  --convert-background-popover-width: 380px; /* ConvertImage card (ticket 0895): the Background popover over the floating bar. */
+  --convert-background-popover-width-touch: 400px; /* ConvertImage card (ticket 0895): the Background popover on a coarse pointer. */
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */

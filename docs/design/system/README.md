@@ -126,6 +126,8 @@ The claude.ai project was last brought up to the repo on 2026-10-13, through tic
 
 A card removed since v19, which the claude.ai copy still has: **PrintSpecification** (ticket 0914, 2026-11-12). Page 1 of the PDF is now the whole piece with one Beads needed table (PrintPage1, `printed-output.md`), and the PDF has no Specification page.
 
+- Repo, 2026-11-12, ticket 0895 (DS-1): the quiet converter is signed off (canvas "Quiet Convert image"). The ConvertImage card leads with it (the beads are the page, a short column of four decisions, Create Project from the first second, the crop first on the picture, settings in popovers, no steps or Progress bar); ValueSlider gains the doubling scale; ProgressBar notes the converter's bar goes with ticket 0896; eleven new `--convert-*` values in `bundle.css` and `design-values.css`; the copy in every app language in `writing.md`. No token value, colour or icon changes.
+
 ---
 
 ## Consuming this system
