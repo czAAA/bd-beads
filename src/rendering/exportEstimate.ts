@@ -3,7 +3,7 @@ import type { Project } from '../domain/project'
 import { pageOneLayout } from './pageOneLayout'
 import { chartOnPageOne } from './printPlan'
 import type { PrintText } from './printText'
-import { wordChartPageCount } from './wordChartPages'
+import { pdfPageCount } from './wordChartPages'
 import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 
 // The File size estimate (tickets 0588, 0914, 0915, ADR 0076): each page by its kind and content, every figure lifted to sit at or
@@ -28,10 +28,12 @@ export interface ExportFacts {
   /** The chart pages after page 1, and the area of every part of the chart, on page 1 or on them, in grid units. */
   sheets: number
   partArea: number
-  /** The Word chart: its pages, rows and characters in the rows (0 without Letters). */
+  /** The Word chart: its pages, rows and characters in the rows (0 without Row by row, ticket 0916). */
   wordPages: number
   wordRows: number
   wordChars: number
+  /** The PDF's pages, all of the above (pdfPageCount): the Printable chart row's count. */
+  pdfPages: number
 }
 
 /** One export's size: its bytes and how many files (PNG) or pages (PDF) it comes to. */
@@ -61,6 +63,7 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
   const pageOne = pageOneLayout(project, words)
   const { plan } = pageOne
   const { filled, edges } = beadsOf(frame, beadsOfLayer(project, 'frame')!)
+  const pdfPages = pdfPageCount(plan, words)
   return {
     colors: words.colors.length,
     cells: frame.columns * frame.rows,
@@ -71,9 +74,10 @@ export function exportFacts(project: Project, words: PrintText): ExportFacts | u
     lists: pageOne.lists.map((list) => list.count),
     sheets: chartOnPageOne(plan) ? 0 : new Set(plan.parts.map((part) => part.page)).size,
     partArea: plan.parts.reduce((sum, part) => sum + (part.lastAcross - part.firstAcross + 1) * (part.lastDown - part.firstDown + 1), 0),
-    wordPages: wordChartPageCount(words, plan.page),
+    wordPages: pdfPages - plan.pageCount,
     wordRows: words.wordChart?.rows.length ?? 0,
     wordChars: words.wordChart?.rows.reduce((sum, row) => sum + row.runs.length, 0) ?? 0,
+    pdfPages,
   }
 }
 
@@ -158,7 +162,7 @@ export function estimatePng(facts: ExportFacts, dpi: number): SizeEstimate {
  * Word chart as pictures drawn at `dpi`, and its chart pages vector over a picture of their text (ticket 0914). */
 export function estimatePdf(facts: ExportFacts, dpi: number): SizeEstimate {
   const text = textAtDpi(dpi)
-  const count = 1 + facts.lists.length + facts.sheets + facts.wordPages
+  const count = facts.pdfPages
   const pageOne = pageOneBytes(facts, dpi, false) + (facts.overviewZoom === undefined ? CHART_DRAWING : 0)
   const charts = facts.sheets * (CHART_PICTURE * text + CHART_DRAWING) + CHART_PER_BEAD * facts.filled + CHART_PER_AREA * facts.partArea
   const wordPages = facts.wordPages * (WORD_PAGE + WORD_PAGE_PER_COLOR * Math.min(facts.colors, WORD_COLORS))

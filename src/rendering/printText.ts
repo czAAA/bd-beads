@@ -16,7 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart, type WordRun, type WordSide, type WordSpine } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
-import { frameOf, lettersOn, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
+import { frameOf, quarterTurnOf, projectNameOf } from '../domain/layerRecord'
 import { pieceFaceOf } from '../domain/pieceFaces'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
@@ -29,7 +29,7 @@ interface PrintedColor {
   code?: string
   /** "2 × 5 g": tubes to buy; none for an unknown Bead. */
   tubes?: string
-  /** The color's Swatch letter, only when Letters is on (ticket 0573): printed on its swatch. */
+  /** The color's Swatch letter (ticket 0573), printed on its swatch: every printed chart is lettered (ticket 0914). */
   letter?: string
 }
 
@@ -42,7 +42,7 @@ export interface PrintedWordRow {
   runs: string
 }
 
-/** The Word chart as words (ticket 0574), only when Letters is on and the Technique has one. */
+/** The Word chart as words (ticket 0574), only with Row by row on (ticket 0916). */
 interface PrintedWordChart {
   title: string
   /** The key's last item, "empty", when the Schema has empty positions. */
@@ -52,8 +52,15 @@ interface PrintedWordChart {
   rows: PrintedWordRow[]
 }
 
+/** The Export panel's print choices (ticket 0916), both off until switched on and kept on the device: Large beads keeps
+ * every bead of the chart at 3 mm or more, Row by row adds the Word chart's pages. */
+export interface PrintChoices {
+  largeBeads?: boolean
+  rowByRow?: boolean
+}
+
 // Everything the PDF and PNG print, worked out as words before drawing (tickets 162, 164); maker's name omitted when
-// empty.
+// empty. It carries the print choices too, so the page count, the File size estimate and the export read one plan.
 export interface PrintText {
   locale: Locale
   /** The title: the Frame's name, else the Project's (ticket 0720). */
@@ -73,6 +80,8 @@ export interface PrintText {
   totalTubes?: string
   gramsNote?: string
   wordChart?: PrintedWordChart
+  /** Large beads (ticket 0916): page 1's layout plans no bead under 3 mm. */
+  largeBeads?: boolean
   labels: Translations['print']
 }
 
@@ -143,8 +152,9 @@ function withFaceNote(chart: PrintedWordChart, project: Project, t: Translations
   return { ...chart, notes: [...chart.notes.slice(0, 1), note, ...chart.notes.slice(1)] }
 }
 
-/** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). */
-export function printText(project: Project, t: Translations, locale: Locale, at: Date): PrintText {
+/** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). The Word chart
+ * follows Row by row, never Letters (ticket 0916). */
+export function printText(project: Project, t: Translations, locale: Locale, at: Date, choices: PrintChoices = {}): PrintText {
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
   const { columns, rows } = shownDimensions(project)
@@ -159,7 +169,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
   }
 
   const tubes = (count: number) => fillBlanks(t.print.tubes, { count: groupThousands(count, locale) })
-  const wordChart = wordChartOf(project)
+  const wordChart = choices.rowByRow ? wordChartOf(project) : undefined
   const palette = projectPalette(project)
   const quantities = computeColorQuantities(project, palette)
   // Tubes come from each color's rounded grams and the Total adds the rows up (ticket 0581).
@@ -189,7 +199,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       grams: grams(quantity.count),
       ...(palette.byId(quantity.colorId)?.code ? { code: palette.byId(quantity.colorId)!.code } : {}),
       ...(tubeCounts[index] === undefined ? {} : { tubes: tubes(tubeCounts[index]!) }),
-      ...(lettersOn(project) && project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
+      ...(project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
     })),
     colorsCount: plural(locale, quantities.length, t.a11y.colorsCount),
     totalBeads: plural(locale, total, t.print.beadsCount),
@@ -200,6 +210,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
+    ...(choices.largeBeads ? { largeBeads: true } : {}),
     labels: t.print,
   }
 }

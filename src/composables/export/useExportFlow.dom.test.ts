@@ -1,5 +1,5 @@
 import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectFileNameOf, projectListFileName } from '../../domain/projectFile'
@@ -20,6 +20,7 @@ vi.mock('../../rendering/projectExport', () => ({
   projectPageCount: vi.fn(() => 1),
 }))
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
+import { usePrintChoices } from './usePrintChoices'
 import { canvasOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
@@ -34,6 +35,12 @@ beforeEach(() => {
   vi.mocked(exportProjectPdf).mockClear()
   vi.mocked(projectPageCount).mockReturnValue(1)
   localStorage.clear()
+})
+
+afterEach(() => {
+  const { largeBeads, rowByRow } = usePrintChoices()
+  largeBeads.value = false
+  rowByRow.value = false
 })
 
 function setup(options: { open?: boolean; project?: Project } = {}) {
@@ -85,10 +92,29 @@ describe('useExportFlow Letters (ticket 0573)', () => {
 })
 
 describe('useExportFlow Word chart (ticket 0586)', () => {
-  it('makes only the pattern PNG with Letters on: the Word chart is PDF pages, not a picture', async () => {
-    await setup({ project: withLayers(project, { letters: true }) }).onExportPng()
+  it('makes only the pattern PNG with Row by row on: the Word chart is PDF pages, not a picture', async () => {
+    usePrintChoices().rowByRow.value = true
+    await setup().onExportPng()
 
     expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png')])
+  })
+})
+
+describe('useExportFlow print choices (ticket 0916)', () => {
+  it('prints neither with both off, as they are at first', async () => {
+    await setup().onExportPdf()
+    const [, words] = vi.mocked(exportProjectPdf).mock.lastCall!
+    expect([words.largeBeads, words.wordChart]).toEqual([undefined, undefined])
+  })
+
+  it('prints with Large beads and Row by row as this device has them, page 1 of the PNG with Large beads too', async () => {
+    const { largeBeads, rowByRow } = usePrintChoices()
+    largeBeads.value = true
+    rowByRow.value = true
+    await setup().onExportPdf()
+    await setup().onExportPng()
+    expect(exportProjectPdf).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ largeBeads: true, wordChart: expect.anything() }), 300)
+    expect(exportProjectPng).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ largeBeads: true }), expect.anything())
   })
 })
 

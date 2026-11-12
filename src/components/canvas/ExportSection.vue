@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import PanelItem from '../shell/PanelItem.vue'
+import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import { useExportQuality } from '../../composables/export/useExportQuality'
+import { usePrintChoices } from '../../composables/export/usePrintChoices'
 import type { Project } from '../../domain/project'
 import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, parseExportQuality, shownMegabytes } from '../../domain/exportQuality'
 import { decimalSign } from '../../domain/formatNumber'
@@ -16,9 +18,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
-// The export rows (tickets 568, 576, 0588, 0652; ExportPanel and QualitySlider cards): Picture and Printable chart with
-// their File size estimates, then Export quality. One component for the Frame panel's Export section and the Export panel;
-// the slot holds what a panel adds under the slider (the Frame panel's Letters).
+// The export rows (tickets 568, 576, 0588, 0652, 0916; ExportPanel and QualitySlider cards): Picture, Printable chart and
+// its Large beads and Row by row, then Export quality. One component for the Frame panel's Export section and the Export
+// panel; the slot holds what a panel adds under the slider (the Frame panel's Letters).
 const props = defineProps<{
   project: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
@@ -37,8 +39,10 @@ const { t, locale } = useI18n()
 const frame = computed(() => frameOf(props.project))
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
-/** What an export is made of, for its File size estimate (ticket 0588): read once for the buttons. */
-const exportFactsNow = computed(() => exportFacts(props.project, printText(props.project, t.value, locale.value, new Date())))
+/** Large beads and Row by row on this device (ticket 0916): the PDF's pages and its count follow them at once. */
+const { largeBeads, rowByRow, choices } = usePrintChoices()
+/** What an export is made of, for its File size estimate (ticket 0588) and the PDF's page count: read once for the buttons. */
+const exportFactsNow = computed(() => exportFacts(props.project, printText(props.project, t.value, locale.value, new Date(), choices.value)))
 /** A size as the buttons show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
 function sizeText(bytes: number): string {
   const megabytes = shownMegabytes(bytes)
@@ -78,6 +82,8 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
 <template>
   <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'png' || undefined" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
   <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" :data-panel-entry="opensOn === 'pdf' || undefined" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
+  <PanelSwitchRow v-model="largeBeads" :label="t.frame.largeBeadsLabel" :info-label="t.frame.largeBeadsInfoLabel" :body="t.frame.largeBeadsLine" testid="export-large-beads" />
+  <PanelSwitchRow v-model="rowByRow" :label="t.frame.rowByRowLabel" :info-label="t.frame.rowByRowInfoLabel" :body="t.frame.rowByRowLine" testid="export-row-by-row" />
   <QualitySlider
     class="export-section__quality"
     :label="t.frame.exportQuality"

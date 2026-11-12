@@ -1,6 +1,6 @@
 # PrintWordChart
 
-The Word chart pages of the PDF, after the chart, only when Letters is on: the written rows a weaver follows beside the chart (tickets 0574, 0586; glossary: Word chart). There is no Word chart PNG.
+The Word chart pages of the PDF, after the chart, only when Row by row is on in the Export panel (ticket 0916; it was Letters until then): the written rows a weaver follows beside the chart (tickets 0574, 0586; glossary: Word chart). There is no Word chart PNG.
 
 Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed chart pages"). Sizes are on A4 portrait, measured from the page's top left corner; colors are tokens. The page is a picture like the list pages (300 dpi, 150 where the device cannot allocate it).
 
@@ -45,7 +45,7 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
 
 ## Acceptance
 
-A build agent checks on a 35 × 120 loom bracelet and a 100 × 100 loom Schema, Letters on:
+A build agent checks on a 35 × 120 loom bracelet and a 100 × 100 loom Schema, Row by row on:
 
 - [ ] No `_instructions` PNG is made. The Word chart pages are the last of the PDF.
 - [ ] Each page's title names its own rows: 35 × 120 gives "Row by row 1–82" then "83–120".

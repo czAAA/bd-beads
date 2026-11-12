@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
 import { en } from '../i18n/en'
 import { estimatePdf, estimatePng, exportFacts, type ExportFacts } from './exportEstimate'
-import { printText } from './printText'
+import { printText, type PrintChoices } from './printText'
 import type { Technique } from '../domain/weave'
 import { withLayers } from '../testUtils/layerFields'
 
-const factsOf = (technique: Technique, columns: number, rows: number, letters = false): ExportFacts => {
+const factsOf = (technique: Technique, columns: number, rows: number, choices: PrintChoices = {}, letters = false): ExportFacts => {
   const project = withLayers(fixtureProject({ technique, columns, rows }), { letters })
-  return exportFacts(project, printText(project, en, 'en', new Date()))!
+  return exportFacts(project, printText(project, en, 'en', new Date(), choices))!
 }
+const ROW_BY_ROW = { rowByRow: true }
 
 describe('exportFacts', () => {
   it('has none for a Project with no Frame', () => {
@@ -17,10 +18,21 @@ describe('exportFacts', () => {
     expect(exportFacts(project, printText(project, en, 'en', new Date()))).toBeUndefined()
   })
 
-  it('counts page 1 alone for a small Schema, its chart there, and the Word chart only with Letters (ticket 0914)', () => {
-    expect(factsOf('loom', 20, 30)).toMatchObject({ lists: [], sheets: 0, wordPages: 0 })
+  it('counts page 1 alone for a small Schema, its chart there (ticket 0914)', () => {
+    expect(factsOf('loom', 20, 30)).toMatchObject({ lists: [], sheets: 0, wordPages: 0, pdfPages: 1 })
     expect(factsOf('loom', 20, 30).overviewZoom).toBeUndefined()
-    expect(factsOf('loom', 20, 30, true)).toMatchObject({ lists: [], sheets: 0, wordPages: 1 })
+  })
+
+  it('counts the Word chart pages with Row by row on, whatever Letters says, and none with it off (ticket 0916)', () => {
+    expect(factsOf('loom', 20, 30, ROW_BY_ROW)).toMatchObject({ wordPages: 1, pdfPages: 2 })
+    expect(factsOf('loom', 20, 30, ROW_BY_ROW, true)).toMatchObject({ wordPages: 1, pdfPages: 2 })
+    expect(factsOf('loom', 20, 30, {}, true)).toMatchObject({ wordPages: 0, pdfPages: 1 })
+  })
+
+  it('counts the chart pages Large beads adds (ticket 0916)', () => {
+    const large = factsOf('loom', 100, 100, { largeBeads: true })
+    expect(large.sheets).toBeGreaterThan(1)
+    expect(large.pdfPages).toBe(1 + large.sheets)
   })
 
   it('counts a chart page for every sheet a big Schema takes after its overview', () => {
@@ -54,9 +66,10 @@ describe('estimatePng (QualitySlider card)', () => {
 
 describe('estimatePdf', () => {
   it('counts every page: page 1, its list pages, the chart pages and the Word chart pages', () => {
-    const plain = factsOf('loom', 150, 150)
-    expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 4 + 0)
-    expect(estimatePdf({ ...plain, lists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 2)
+    expect(estimatePdf(factsOf('loom', 150, 150), 300).count).toBe(1 + 0 + 4 + 0)
+    const rows = factsOf('loom', 150, 150, ROW_BY_ROW)
+    expect(rows.wordPages).toBeGreaterThan(0)
+    expect(estimatePdf(rows, 300).count).toBe(1 + 0 + 4 + rows.wordPages)
   })
 
   it('adds a chart page as drawing and its text, far smaller than a picture page (ticket 0585)', () => {
@@ -65,14 +78,12 @@ describe('estimatePdf', () => {
     expect(estimatePdf(four, 300).bytes - estimatePdf(one, 300).bytes).toBeGreaterThan(3 * 90_000)
   })
 
-  it('weighs the Word chart pages Letters add', () => {
-    const without = factsOf('loom', 20, 30)
-    const withLetters = factsOf('loom', 20, 30, true)
-    expect(estimatePdf(withLetters, 300).bytes).toBeGreaterThan(estimatePdf(without, 300).bytes)
+  it('weighs the Word chart pages Row by row adds (ticket 0916)', () => {
+    expect(estimatePdf(factsOf('loom', 20, 30, ROW_BY_ROW), 300).bytes).toBeGreaterThan(estimatePdf(factsOf('loom', 20, 30), 300).bytes)
   })
 
   it('is smaller where the pictures are drawn at 150 dpi', () => {
-    const facts = factsOf('loom', 40, 60, true)
+    const facts = factsOf('loom', 40, 60, ROW_BY_ROW)
     expect(estimatePdf(facts, 150).bytes).toBeLessThan(estimatePdf(facts, 300).bytes)
   })
 })

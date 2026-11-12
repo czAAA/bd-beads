@@ -1,7 +1,7 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { drawMark, font, MONO, SANS, SERIF, text, wrap } from './printPages'
-import { mm, PRINT_MARGIN, type PageSize } from './printPlan'
+import { mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintedWordRow, type PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 
@@ -120,10 +120,17 @@ function layoutWordChart(context: CanvasRenderingContext2D, words: PrintText, pa
   return { columnWidth, runsX, notes, keyColors, keyHeight, rowsTop, pages }
 }
 
-/** How many sheets the Word chart takes in the PDF (0 when there is none). */
+/** How many sheets the Word chart takes in the PDF (0 when there is none). @internal Its browser test counts the sheets it
+ * draws against it; the app reads it through pdfPageCount. */
 export function wordChartPageCount(words: PrintText, page: PageSize): number {
   if (!words.wordChart) return 0
   return layoutWordChart(scratch(), words, page).pages.length
+}
+
+/** The PDF's pages (ticket 0916): the plan's (page 1, its list pages, the chart pages) and the Word chart's after them. The
+ * Export panel's count, the File size estimate and the export all read it, so they cannot disagree. */
+export function pdfPageCount(plan: Pick<PrintPlan, 'pageCount' | 'page'>, words: PrintText): number {
+  return plan.pageCount + wordChartPageCount(words, plan.page)
 }
 
 function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: string, pageNumber: number, total: number, left: number, width: number): void {

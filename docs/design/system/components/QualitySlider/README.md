@@ -16,7 +16,7 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 - Each export button (PanelItem) shows its size in its **value slot**, replacing ".png" and ".pdf", in DM Mono 12 `muted`: "PNG ≈ 1.4 MB · 2 files" and "PDF ≈ 3.2 MB · 9 pages". The format word comes first, so the extension is still there.
 - The figure is the File size estimate (glossary), an upper bound. It is rounded **up** to 0.1 MB ("≈ 0.3 MB"); under 0.1 MB it reads "< 0.1 MB" with no "≈"; from 10 MB it is whole MB, rounded up ("≈ 12 MB").
 - The count is every file or page the button gives: "1 file", "2 files"; "4 pages", "9 pages", with singular and plural from the language.
-- The PNG line follows the slider's stop. The PDF line follows only the Frame, Letters (the Word chart pages) and the colors (list pages).
+- The PNG line follows the slider's stop. The PDF line follows only the Frame, the colors (list pages) and the Printable chart's two switches (ticket 0916): Large beads (more chart pages) and Row by row (the Word chart pages). The PNG line follows Large beads too, as its picture is page 1. Letters changes neither.
 - With no Frame the buttons are disabled and the value slot shows ".png" and ".pdf" as before.
 - At narrow widths, a value that does not fit beside its label moves under it as a second line, left-aligned with the label, never truncated. The figures never wrap inside themselves.
 

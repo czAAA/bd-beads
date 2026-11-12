@@ -249,6 +249,7 @@
   --print-part-overlap: 2; /* Columns or rows of the neighbouring part repeated, shaded, at the start of a part so the sheets line up. */
   --print-bead-min: 1.8mm; /* Smallest bead on a chart page: the Schema is cut into equal parts on the fewest sheets that keep it at least this, then at the largest bead those sheets allow (3 mm at most when there are several). 2.2 mm with two-letter Swatch letters. */
   --print-bead-stretch: 1.6mm; /* Smallest bead on a chart page that holds the whole Schema, used only to keep it on one sheet. */
+  --print-bead-large: 3mm; /* Smallest bead on a chart page with Large beads on (Export panel, ticket 0916): every chart page, page 1's whole chart and its strips too, keeps the bead at least this; more pages, never a smaller bead. */
   --print-bead-max: 9mm; /* Largest bead on a chart page: a small Schema fills the width of the sheet up to it, and one too narrow to fill it is centred. */
   --print-ruler: 5mm; /* Ruler band on each side of a chart part: upright numbers at every 5th row and column on all four sides, tens bold. */
   --print-letter: 6.5pt; /* Ruler numbers (Helvetica, tens Helvetica-Bold), and Swatch letters (Helvetica-Bold) on a 3 mm chart bead; the letters scale with the bead, about 4.3 pt at 1.8 mm. */

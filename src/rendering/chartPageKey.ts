@@ -62,13 +62,14 @@ function twoLetterMarks(project: Counted, parts: readonly PrintPart[]): boolean 
   return colors.length > 26 || colors.some((hex) => (project.paletteLetters?.[hex]?.length ?? 1) > 1)
 }
 
-/** The plan with a key tall enough for the chart page with the most colors, at a bead two-letter Swatch letters read on
- * (ticket 0913). The key's height sets the parts' size, which sets the colors per page, so the rows grow from one until
- * they hold the busiest page. A chart on page 1 has no key: Beads needed is under it (ticket 0914). */
-export function planWithKey(project: Counted, options: Omit<PlanOptions, 'keyRows' | 'floorMm'> = {}): PrintPlan {
-  let plan = planPrint(project, options)
-  const floorMm = twoLetterMarks(project, plan.parts) ? PRINT_BEAD_TWO_LETTER_MM : PRINT_BEAD_MIN_MM
-  if (floorMm !== PRINT_BEAD_MIN_MM) plan = planPrint(project, { ...options, floorMm })
+/** The plan with a key as tall as the busiest chart page needs, at a bead two-letter Swatch letters read on (ticket 0913)
+ * and never under the floor asked for (Large beads, ticket 0916). The key sets the parts' size, so its rows grow from one
+ * until they hold the busiest page. A chart on page 1 has no key: Beads needed is under it (ticket 0914). */
+export function planWithKey(project: Counted, options: Omit<PlanOptions, 'keyRows'> = {}): PrintPlan {
+  const askedFloorMm = Math.max(PRINT_BEAD_MIN_MM, options.floorMm ?? PRINT_BEAD_MIN_MM)
+  let plan = planPrint(project, { ...options, floorMm: askedFloorMm })
+  const floorMm = twoLetterMarks(project, plan.parts) ? Math.max(askedFloorMm, PRINT_BEAD_TWO_LETTER_MM) : askedFloorMm
+  if (floorMm !== askedFloorMm) plan = planPrint(project, { ...options, floorMm })
   for (;;) {
     const sheets = new Map<number, PrintPart[]>()
     for (const part of plan.parts) if (part.page > 1) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])

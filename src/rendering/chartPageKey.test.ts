@@ -75,3 +75,13 @@ describe('planWithKey: two-letter Swatch letters keep a bigger bead (ticket 0913
     expect(planWithKey(square(3, { [first!]: 'AB', ...Object.fromEntries(rest.map((hex, index) => [hex, String.fromCharCode(66 + index)])) })).beadMm).toBeGreaterThanOrEqual(2.2)
   })
 })
+
+describe('planWithKey: Large beads raise the floor (ticket 0916)', () => {
+  const square = (columns: number, rows: number) => bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns, rows, beads: {} } })
+
+  it('plans no bead under the floor it is given, and keeps the higher of it and the two-letter floor', () => {
+    expect(planWithKey(square(100, 100)).beadMm).toBeCloseTo(1.8, 1)
+    expect(planWithKey(square(100, 100), { floorMm: 3 }).beadMm).toBeCloseTo(3, 1)
+    expect(planWithKey(square(150, 150), { floorMm: 1 }).beadMm).toBeGreaterThanOrEqual(1.8)
+  })
+})

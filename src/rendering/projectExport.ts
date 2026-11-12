@@ -71,10 +71,10 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const { blankPage, loadPrintFonts } = await import('./printPages')
   const { drawChartPage } = await import('./chartPage')
   const { drawNeededListPage, drawPageOne } = await import('./pageOnePage')
-  const { drawWordChartPages, wordChartPageCount } = await import('./wordChartPages')
+  const { drawWordChartPages, pdfPageCount } = await import('./wordChartPages')
   await loadPrintFonts()
   // The Word chart (ticket 0574) follows the chart pages and counts in every page's "of N".
-  const plan = { ...layout.plan, pageCount: layout.plan.pageCount + wordChartPageCount(words, layout.plan.page) }
+  const plan = { ...layout.plan, pageCount: pdfPageCount(layout.plan, words) }
 
   const pages: PdfPage[] = []
   const add = async (canvas: HTMLCanvasElement, drawing?: string) => {
