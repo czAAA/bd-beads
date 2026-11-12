@@ -3,7 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import { findBead } from '../../domain/beads'
 import { followsWeave, frameShapeOf, techniquesOf, type FrameSettingName } from '../../domain/frameShape'
 import type { Background, Project } from '../../domain/project'
-import { pieceFaceOf, wholePieceBeads } from '../../domain/pieceFaces'
+import { pieceFaceOf, wholePieceOf } from '../../domain/pieceFaces'
 import { MAX_PROJECT_NAME } from '../../domain/projectName'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {
@@ -45,6 +45,7 @@ import TextField from '../ui/form/TextField.vue'
 import LayerSettings from './LayerSettings.vue'
 import StarterPicture from './StarterPicture.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { groupThousands } from '../../domain/formatNumber'
 
 // A Starter's setup (tickets 0596, 0597, 0671; StarterGallery card, Setup): the live picture, Name on New Project only,
 // the Frame's Layer settings, Use design or Start empty, its sizes and choices, and the Estimated size. Moving any size
@@ -204,7 +205,8 @@ const pickOptions = (pick: StarterPick) =>
 
 const bead = computed(() => findBead(beadId.value))
 
-/** The piece a Kaleidocycle's Frame is one face of (ticket 0876): its estimate gives the face's beads and the piece's. */
+/** The piece a Kaleidocycle's Frame is one face of (ticket 0876): its estimate gives the face's beads and the piece's,
+ * the whole piece's as Beads needed counts it, its joins' 15/0s apart (ticket 0877). */
 const face = computed(() => pieceFaceOf(props.starter.shape))
 const faceInfo = computed(() => face.value && faceInfoWords(t.value, face.value))
 
@@ -226,9 +228,10 @@ const estimate = computed(() => {
     return { value, lines: [count, plural(locale.value, measure.rows, words.bandRows), fillBlanks(words.claspLeft, { clasp })] }
   }
   const value = formatSizeMm(measure, units, locale.value)
-  if (face.value) {
-    const whole = wholePieceBeads(face.value, starterBeadCount(props.starter, choice.value, bead.value))
-    return { value, lines: [faceOfPieceWords(t.value, face.value), count, plural(locale.value, whole, words.forPiece)] }
+  const whole = face.value && wholePieceOf({ shape: props.starter.shape, settings: choice.value.sizes }, starterBeadCount(props.starter, choice.value, bead.value))
+  if (face.value && whole) {
+    const small = fillBlanks(words.smallForPiece, { count: groupThousands(whole.small, locale.value) })
+    return { value, lines: [faceOfPieceWords(t.value, face.value), count, plural(locale.value, whole.beads, words.forPiece), small] }
   }
   if (!props.starter.pair) return { value, lines: [count] }
   return { value, lines: [count, plural(locale.value, 2 * starterBeadCount(props.starter, choice.value, bead.value), words.forPair)] }

@@ -389,6 +389,8 @@ export interface Translations {
     faceOfPiece: string
     beadsFace: PluralForms
     forPiece: PluralForms
+    /** The whole piece's 15/0s, their own bead size (ticket 0877). */
+    smallForPiece: string
     faceInfoLabel: string
     faceInfo: string
     /** A Star's count is the whole star, its back beaded as the face's mirror (ticket 0875): "245 beads, front and back". */
@@ -495,17 +497,16 @@ export interface Translations {
       demo: { ring: string; heart: string; bracelet: string }
       /** The playing row's place in the caption, "4 / 13" (ticket 0825). */
       place: string
-      /** The four chapters, the tour's Pause and Play, Try it yourself, and the demo's Expand and Collapse (ticket 0830). */
+      /** The four chapters, the tour's Pause and Play, Open editor from here (ticket 0879), and the demo's Expand and
+       * Collapse (ticket 0830). */
       chapters: Record<InsideChapterId, string>
       pause: string
       play: string
-      tryIt: string
+      openFromHere: string
       expand: string
       collapse: string
-      /** The demo's tag in its Canvas strip, and the toast a press on its Menu or Project shows, with no Projects saved
-       * or with some (ticket 0841). */
+      /** The demo's tag in its Canvas strip (ticket 0841). */
       demoTag: string
-      demoOnly: { new: string; back: string }
     }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each
      * step's name for screen readers (ticket 0744); the Welcome section's step, its heading being a sentence (ticket 0830). */
@@ -717,7 +718,10 @@ export interface Translations {
     stepRow: string
     stepPartRound: string
     stepZip: string
-    stepHinge: string
+    /** A Kaleidocycle's joins (ticket 0877): a triangle's Strip and Tetra, a Mirror pair, two pairs joined into the ring. */
+    stepTetra: string
+    stepPair: string
+    stepRing: string
     stepClose: string
     ofSteps: string
     stepOfSteps: string
@@ -770,6 +774,8 @@ export interface Translations {
     weightInfoLabel: string
     /** Under the table on a Kaleidocycle (ticket 0876): the counts are one face, `{count}` the whole piece's total. */
     pieceTotal: string
+    /** The whole piece's lines under a Kaleidocycle's counts (ticket 0877): its triangles and the beads that join them. */
+    pieceLines: Record<'triangles' | 'edgeBeads' | 'hingeBeads' | 'tips' | 'hingePins', string>
     /** Under the table on a Star (ticket 0875): the counts are the whole star, front and back. */
     frontBackNote: string
   }

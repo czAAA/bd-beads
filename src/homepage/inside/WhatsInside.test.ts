@@ -7,17 +7,19 @@ import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import WhatsInside from './WhatsInside.vue'
 import { TOUR_TIMING } from './useInsideTour'
 
-const demo = vi.hoisted(() => ({ fresh: vi.fn(async () => undefined), refit: vi.fn(async () => undefined), takeFocus: vi.fn() }))
+/** What the stand-in demo's snapshot gives: its Project as the press found it. */
+const taken = vi.hoisted(() => ({ project: { id: 'ring' } }))
+const demo = vi.hoisted(() => ({ fresh: vi.fn(async () => undefined), refit: vi.fn(async () => undefined), snapshot: vi.fn(async () => taken) }))
 
 // The editor and what the ghost does in it have tests of their own: here they stand in, the rows doing nothing.
 vi.mock('./InsideEditor.vue', () => ({
   default: defineComponent({
-    props: { takenOver: Boolean, expand: String },
-    emits: ['takeOver', 'toggleExpand'],
+    props: { expand: String },
+    emits: ['toggleExpand'],
     setup(props, { expose, emit }) {
       expose({ ...demo, hand: () => ({}), hideGhost: () => undefined, giveFocusBack: () => undefined })
       return () =>
-        h('div', { 'data-testid': 'inside-editor', 'data-taken-over': props.takenOver || undefined }, [
+        h('div', { 'data-testid': 'inside-editor' }, [
           props.expand ? h('button', { 'data-testid': 'strip-expand', onClick: () => emit('toggleExpand') }, props.expand) : undefined,
         ])
     },
@@ -138,16 +140,19 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(lit(wrapper)).toEqual(['inside-chapter-beadColors'])
   })
 
-  it('Try it yourself hands the editor over: the chapters unlit, Pause reading Play, the focus in the editor', async () => {
+  it('Open editor from here takes what the demo shows at the press, then stops the tour, and hands it to the page (ticket 0879)', async () => {
     const wrapper = section({ withEditor: true })
     await press(wrapper, 'inside-chapter-draw')
-    expect(find(wrapper, 'inside-try-it').text()).toBe('Try it yourself')
-    await press(wrapper, 'inside-try-it')
-    expect(lit(wrapper)).toEqual([])
+    expect(find(wrapper, 'inside-open-from-here').text()).toBe('Open editor from here')
+    await press(wrapper, 'inside-open-from-here')
+    expect(demo.snapshot).toHaveBeenCalledTimes(1)
+    expect(wrapper.emitted('openFromHere')).toEqual([[taken]])
+    await press(wrapper, 'inside-open-from-here')
+    expect(wrapper.emitted('openFromHere')).toHaveLength(1)
     expect(find(wrapper, 'inside-pause').text()).toBe('Play')
-    expect(find(wrapper, 'inside-editor').attributes('data-taken-over')).toBe('true')
-    expect(demo.takeFocus).toHaveBeenCalledTimes(1)
-    expect(caption(wrapper)).toContain('1 / 13')
+    const before = demo.fresh.mock.calls.length
+    await vi.advanceTimersByTimeAsync(ROW_MS * 13)
+    expect(demo.fresh).toHaveBeenCalledTimes(before)
   })
 
   it('stands beside the demo where the box is wide, which offers Expand; Expand puts it in a band and reads Collapse', async () => {
@@ -179,7 +184,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(find(wrapper, 'inside-pause').text()).toBe('Pause')
   })
 
-  it('Expand keeps a paused tour paused and a taken-over editor as it is, only setting its view again', async () => {
+  it('Expand keeps a paused tour paused, only setting its view again', async () => {
     const wrapper = section({ withEditor: true })
     await press(wrapper, 'inside-chapter-startFrom')
     await press(wrapper, 'inside-pause')
@@ -189,12 +194,6 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(lit(wrapper)).toEqual(['inside-chapter-startFrom'])
     expect(demo.fresh).not.toHaveBeenCalled()
     expect(demo.refit).toHaveBeenCalledTimes(1)
-
-    await press(wrapper, 'inside-try-it')
-    await press(wrapper, 'strip-expand')
-    expect(demo.fresh).not.toHaveBeenCalled()
-    expect(demo.refit).toHaveBeenCalledTimes(1)
-    expect(find(wrapper, 'inside-editor').attributes('data-taken-over')).toBe('true')
   })
 
   it('a page that crosses 1000px resizes the demo as Expand does: the playing row starts again, a paused tour has its view set again', async () => {
@@ -222,7 +221,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     await vi.advanceTimersByTimeAsync(0)
     await flushPromises()
     expect(find(wrapper, 'inside-pause').exists()).toBe(false)
-    expect(find(wrapper, 'inside-try-it').exists()).toBe(true)
+    expect(find(wrapper, 'inside-open-from-here').exists()).toBe(true)
     expect(find(wrapper, 'strip-expand').exists()).toBe(true)
     expect(lit(wrapper)).toEqual(['inside-chapter-draw'])
     expect(caption(wrapper)).toContain('1 / 13')
@@ -258,6 +257,6 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   it('speaks Russian', () => {
     const wrapper = section({ withEditor: true }, 'ru')
     expect(wrapper.findAll('ul[data-testid="inside-chapters"] > li > button')).toHaveLength(4)
-    expect(find(wrapper, 'inside-try-it').text()).not.toBe('Try it yourself')
+    expect(find(wrapper, 'inside-open-from-here').text()).not.toBe('Open editor from here')
   })
 })

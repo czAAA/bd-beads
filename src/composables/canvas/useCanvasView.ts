@@ -8,6 +8,7 @@ import { withMargin } from '../../domain/margin'
 import { NO_INSETS, type Insets } from '../../domain/toolPill'
 import { nearestQuarterTurn, settledOrientation, tiltOf, turnedOrientation } from '../../domain/canvasOrientation'
 import { placedFrame } from '../../domain/layerWeave'
+import type { OpeningView } from '../../domain/openingAddress'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { SNAP_MS } from '../../rendering/gestureView'
@@ -71,6 +72,9 @@ export interface CanvasViewOptions {
   keepTwist?: (orientation: number) => void
   /** What lies over the drawing area's edges (the Tool pill, ticket 0850): a fit leaves it clear. */
   covered?: () => Insets
+  /** The view a Project opens at in place of its fit, this once (What's inside's Open editor from here, ticket 0879):
+   * the first fit the view makes once measured takes it, if it is that Project's. */
+  opening?: { project: string; view: OpeningView }
 }
 
 // Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
@@ -85,6 +89,8 @@ export function useCanvasView(
   const scroll = ref<Scroll>({ x: 0, y: 0 })
   /** Whether the view still tracks the fit rather than a place the person chose. */
   const isAtFit = ref(true)
+  /** The view the first measured fit opens at, until it has. */
+  let opening = options.opening
   /** The Canvas's orientation while two fingers twist it, before the Project keeps where it settles. */
   const twisting = ref<number>()
   const twistPhase = ref<TwistPhase>()
@@ -128,7 +134,15 @@ export function useCanvasView(
       // Nothing to fit to until the drawing area has a size: look at the origin at 100% and fit when it is measured.
       zoom.value = clampZoom(1)
       scroll.value = { x: 0, y: 0 }
+    } else if (opening?.project === project.id) {
+      // The bead the opening names in the middle of the whole drawing area, as the middle of the view is counted.
+      zoom.value = clampZoom(opening.view.zoom)
+      scroll.value = surfaceOf(project).scrollToCentre({ ...opening.view.at, rows: 1, columns: 1 }, 'canvas')
+      opening = undefined
+      isAtFit.value = false
+      return
     } else {
+      opening = undefined
       const { area, corner } = fitRoom()
       zoom.value = clampZoom(target ? surfaceOf(project, scroll.value, area).zoomToFit(target.box, target.margin, 'canvas') : 1)
       const centred = surfaceOf(project, scroll.value, area).scrollToCentre(target?.box, 'canvas')

@@ -9,14 +9,17 @@ import { findBead } from '../domain/beads'
 import { beadCell } from '../domain/weave'
 import { fakeFeedback } from '../testUtils/fakeFeedback'
 
+/** What the stand-in What's inside's Open editor from here gives. */
+const demoSnapshot = vi.hoisted(() => ({ value: undefined as unknown }))
+
 // What's inside stands in for itself here, saying what the page asks of it: its own tests mount the demo editor.
 vi.mock('./inside/WhatsInside.vue', () => ({
   default: defineComponent({
     props: { withEditor: Boolean, shown: Boolean, wide: Boolean },
-    emits: ['pointAtWayIn'],
+    emits: ['openFromHere'],
     setup: (props, { emit }) => () =>
       h('div', { 'data-testid': 'whats-inside', 'data-with-editor': String(props.withEditor), 'data-shown': String(props.shown), 'data-wide': String(props.wide) }, [
-        h('button', { 'data-testid': 'demo-way-out', onClick: () => emit('pointAtWayIn') }),
+        h('button', { 'data-testid': 'demo-open-from-here', onClick: () => emit('openFromHere', demoSnapshot.value) }),
       ]),
   }),
 }))
@@ -156,19 +159,25 @@ describe('HomePage', () => {
     expect(item.attributes('href')).toContain('homepage/')
   })
 
-  it.each([
-    [0, en.homepage.inside.demoOnly.new],
-    [3, en.homepage.inside.demoOnly.back],
-  ])("says in a toast that the demo's Menu is the tour's, ringing the way in, with %i Projects saved (ticket 0841)", async (count, said) => {
-    vi.stubGlobal('requestAnimationFrame', (run: FrameRequestCallback) => setTimeout(() => run(0), 0))
-    const wrapper = page(count)
-    const strip = wrapper.get('[data-testid="canvas-strip"]')
-    expect(strip.classes()).not.toContain('homepage__strip-pointing')
-    await wrapper.get('[data-testid="demo-way-out"]').trigger('click')
-    await vi.waitFor(() => expect(strip.classes()).toContain('homepage__strip-pointing'))
-    expect(wrapper.get('[data-testid="toast-region"]').text()).toContain(said)
+  it("opens the editor on a copy of What's inside's Project at the demo's bead size on screen, the page's zoom taken in (ticket 0879)", async () => {
+    const project = createProject({ name: 'Ring', technique: 'peyote', beadId: 'miyuki/delica/11-0' })
+    demoSnapshot.value = { project, view: { zoom: 1.5, at: { row: 4, column: 9 } } }
+    const wrapper = page()
+    await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+    await wrapper.get('[data-testid="demo-open-from-here"]').trigger('click')
+    const [[copied]] = wrapper.emitted('openDemoCopy') as [[{ project: unknown; view: { zoom: number; at: unknown } }]]
+    expect(copied.project).toBe(project)
+    expect(copied.view.zoom).toBeCloseTo(1.65)
+    expect(copied.view.at).toEqual({ row: 4, column: 9 })
     expect(wrapper.emitted('makeFirstProject')).toBeUndefined()
-    expect(wrapper.emitted('openEditor')).toBeUndefined()
+  })
+
+  it('opens the editor plainly should the demo have no Project yet (ticket 0879)', async () => {
+    demoSnapshot.value = undefined
+    const wrapper = page(3)
+    await wrapper.get('[data-testid="demo-open-from-here"]').trigger('click')
+    expect(wrapper.emitted('openEditor')).toHaveLength(1)
+    expect(wrapper.emitted('openDemoCopy')).toBeUndefined()
   })
 
   it('sends a general Report from the Menu’s Send feedback, and thanks with a toast of its own', async () => {

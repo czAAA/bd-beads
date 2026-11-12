@@ -333,7 +333,7 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 | Peacock feather eyes, in peyote (the piece, an image's name for screen readers) | Павлиньи перья, мозаичное плетение |
 | Draw · Start from something · Real bead colors · Weave and keep (What's inside's chapters) | Рисуйте · Начните с готового · Настоящие цвета бисера · Плетите и сохраняйте |
 | Pause · Play (the tour) | Пауза · Продолжить |
-| Try it yourself | Попробуйте сами |
+| Open editor from here (into the editor on a copy of the demo's Project) | Открыть редактор отсюда |
 | Expand · Collapse (the demo's width) | Развернуть · Свернуть |
 
 The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.
@@ -978,3 +978,21 @@ A Star's Frame is its finished face, and its back is beaded as the face's mirror
 |---|---|---|---|---|---|---|
 | {count} beads, front and back (the count on the card and in the setup) | {count} бисеринок на обе стороны | {count} бісеринок на обидва боки | {count} бісерынак на абодва бакі | 正反两面共 {count} 颗珠子 | {count} cuentas, anverso y reverso | {count} koralików, przód i tył |
 | These counts are the whole star, front and back. (under Beads needed) | Это подсчёт для всей звезды, на обе стороны. | Це підрахунок для всієї зірки, на обидва боки. | Гэта падлік для ўсёй зоркі, на абодва бакі. | 这些是整颗星星正反两面的数量。 | Estas cifras son de la estrella entera, anverso y reverso. | To liczby dla całej gwiazdy, przód i tył. |
+
+## Kaleidocycle joins and the whole piece's beads (ticket 0877)
+
+A Kaleidocycle's Row progress ends with the joins of the Kali Primer, named in its words: Strip, Tetra, Mirror pair, Hinge Pins, ring. A triangle of the face is zipped into its Strip of four and closed into a Tetra; the face's triangles are hinged in Mirror pairs, laced with Hinge Pins; the three ring joins are named by the two Mirror pairs each joins, never by a gap, since they are made on triangles of other faces. Beads needed and the setup's estimate count the beads of the joins: the whole piece's count is the face's Bead (triangles, Edge Beads, Hinge Beads), and the 15/0s, another bead size, get their own count as "15/0: {count}". "15/0" is a bead size, written as the maker writes it, never translated. The 0876 rows "These counts are one face of {faces}. Whole piece: {count}" and the Info body's last sentence ("Only the triangles are counted, …") are replaced by the rows below. English is the ticket's; the other languages are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Strip and Tetra {parts} (a triangle's join step) | Полоса и тетраэдр {parts} | Смуга й тетраедр {parts} | Паласа і тэтраэдр {parts} | 条带与四面体 {parts} | Tira y tetraedro {parts} | Pasek i czworościan {parts} |
+| Mirror pair {parts}, Hinge Pins (a hinged gap's join step) | Зеркальная пара {parts}, штифты шарнира | Дзеркальна пара {parts}, шпильки шарніра | Люстраная пара {parts}, шпількі шарніра | 镜像对 {parts}，铰链销 | Par espejo {parts}, pasadores de bisagra | Para lustrzana {parts}, sworznie zawiasu |
+| Ring: pairs {first} and {second} (a ring join step) | Кольцо: пары {first} и {second} | Кільце: пари {first} і {second} | Кальцо: пары {first} і {second} | 环：{first} 对与 {second} 对 | Anillo: pares {first} y {second} | Pierścień: pary {first} i {second} |
+| These counts are one face of {faces}. Whole piece: {count} · 15/0: {small} (under Beads needed) | Это подсчёт для одной грани из {faces}. Всё изделие: {count} · 15/0: {small} | Це підрахунок для однієї грані з {faces}. Увесь виріб: {count} · 15/0: {small} | Гэта падлік для адной грані з {faces}. Увесь выраб: {count} · 15/0: {small} | 这些是 {faces} 面中一面的数量。整件：{count} · 15/0：{small} | Estas cifras son de una cara de {faces}. Pieza entera: {count} · 15/0: {small} | To liczby dla jednej ściany z {faces}. Cała praca: {count} · 15/0: {small} |
+| 15/0: {count} (the setup's estimate, after the whole piece) | 15/0: {count} | 15/0: {count} | 15/0: {count} | 15/0：{count} | 15/0: {count} | 15/0: {count} |
+| Triangles (a whole-piece line) | Треугольники | Трикутники | Трохвугольнікі | 三角形 | Triángulos | Trójkąty |
+| Edge Beads | Бисеринки края | Бісерини краю | Бісерыны краю | 边缘珠 | Cuentas del borde | Koraliki brzegu |
+| Hinge Beads | Бисеринки шарниров | Бісерини шарнірів | Бісерыны шарніраў | 铰链珠 | Cuentas de bisagra | Koraliki zawiasów |
+| Triangle Tips (shown "Triangle Tips · 15/0") | Кончики треугольников | Кінчики трикутників | Кончыкі трохвугольнікаў | 三角形尖端 | Puntas de triángulo | Czubki trójkątów |
+| Hinge Pins (shown "Hinge Pins · 15/0") | Штифты шарниров | Шпильки шарнірів | Шпількі шарніраў | 铰链销 | Pasadores de bisagra | Sworznie zawiasów |
+| The whole piece also counts the beads that join the triangles: Edge Beads, Hinge Beads, and the 15/0 Triangle Tips and Hinge Pins. (the Info body's last sentence) | Всё изделие учитывает и бисер соединений: бисеринки края, бисеринки шарниров, а также 15/0 на кончиках треугольников и штифты шарниров. | Увесь виріб ураховує й бісер з’єднань: бісерини краю, бісерини шарнірів, а також 15/0 на кінчиках трикутників і шпильки шарнірів. | Увесь выраб улічвае і бісер злучэнняў: бісерыны краю, бісерыны шарніраў, а таксама 15/0 на кончыках трохвугольнікаў і шпількі шарніраў. | 整件还计入连接三角形的珠子：边缘珠、铰链珠，以及三角形尖端和铰链销用的 15/0。 | La pieza entera cuenta también las cuentas que unen los triángulos: las del borde, las de las bisagras y las 15/0 de las puntas y de los pasadores de bisagra. | Cała praca liczy też koraliki łączeń: koraliki brzegu, koraliki zawiasów oraz 15/0 na czubkach trójkątów i sworznie zawiasów. |
