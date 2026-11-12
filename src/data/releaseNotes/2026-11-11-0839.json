@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-11",
+  "line": {
+    "en": "Keeping your Projects is now asked at your first saved file, the browser’s answer is shown, and the Menu asks again",
+    "ru": "О хранении проектов теперь спрашивают при первом сохранении файла, показывают ответ браузера, а в меню можно спросить снова",
+    "uk": "Про зберігання проєктів тепер питають під час першого збереження файлу, показують відповідь браузера, а в меню можна запитати знову",
+    "be": "Пра захоўванне праектаў цяпер пытаюць пры першым захаванні файла, паказваюць адказ браўзера, а ў меню можна спытаць зноў",
+    "zh": "现在第一次保存文件时才询问是否保留项目，会显示浏览器的回答，也可以在菜单里再问一次",
+    "es": "Conservar tus proyectos se pregunta ahora al guardar tu primer archivo, se muestra la respuesta del navegador y el Menú vuelve a preguntar",
+    "pl": "O zachowanie projektów pytamy teraz przy pierwszym zapisie pliku, pokazujemy odpowiedź przeglądarki, a w menu można zapytać ponownie"
+  }
+}
