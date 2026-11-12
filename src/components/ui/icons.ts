@@ -22,6 +22,7 @@ export const ICON_NAMES = [
   'code',
   'coffee',
   'contrast',
+  'convert-to-beads',
   'copy',
   'cut',
   'delete',

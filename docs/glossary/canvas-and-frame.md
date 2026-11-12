@@ -140,5 +140,16 @@ The color a layer is drawn on, one of its Layer settings (ADR 0079, ticket 0666;
 _Avoid_: board color, background theme, Canvas color (for any layer's)
 
 **Reference image** (ticket 0790):
-One picture a Project may hold, laid on the Canvas over every layer's Background and under every bead, to bead over (tracing) or keep beside the pattern as an example. It pans, zooms and turns with the Canvas; its opacity is one of four steps (25, 50, 75, 100%). Shown and hidden from the Canvas strip, set in the Project panel; resized and turned from its corner and Turn handles whenever it is shown (ticket 0799), moved on the canvas only in **Adjust**, so no tool's press on it moves it. Replace image is in the Project panel and on the Adjust bar. A view, like Background: saved with the Project and in its file, not an Undo step, never printed. ReferenceImage card.
+One picture a Project may hold, laid on the Canvas over every layer's Background and under every bead, to bead over (tracing) or keep beside the pattern as an example. It pans, zooms and turns with the Canvas; its opacity is one of four steps (25, 50, 75, 100%). Shown and hidden from the Canvas strip, set in the Project panel; resized and turned from its corner and Turn handles whenever it is shown (ticket 0799), moved by its **Picture bar**'s Move grip (ticket 0883) or in **Adjust**, so no tool's press on the picture itself moves it. Replace image is in the Project panel and on the Adjust bar. A view, like Background: saved with the Project and in its file, not an Undo step, never printed. ReferenceImage card.
 _Avoid_: background image (Background is a layer's color), underlay, tracing image, template
+
+**Picture bar** (ticket 0883):
+The small pill over a shown Reference image's top edge: the Move grip, Set Frame around the picture, Convert to beads and ··· (Opacity, Replace, Remove). It moves the picture without Adjust. ReferenceImage card.
+_Avoid_: image toolbar, picture menu
+
+**Set Frame around the picture** (ticket 0883):
+The picture bar's action that sets the Frame to the beads the Reference image covers: Add Frame or Replace Frame, one Undo step.
+
+**Convert to beads** (ticket 0883):
+The picture bar's action that turns the Reference image into beads where it lies, at the size it covers on the Canvas, in Exact colors by default: one Undo step. Not Convert image, which is the full page; All settings opens that page from here.
+_Avoid_: trace, auto-bead, import picture
