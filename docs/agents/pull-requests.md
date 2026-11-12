@@ -19,4 +19,4 @@ Only code and the public docs (`docs/design/system/`, `docs/agents/`, `docs/glos
 
 ## Release notes
 
-A PR that ships a user-facing change adds a release note at the top of `src/data/releaseNotes.ts`: the day it ships and one short line in every shipped language, in the product's voice (`docs/design/system/writing.md`), no full stop. The Homepage's What's new tile shows the newest three; `releaseNotes.test.ts` keeps every language and the order.
+A PR that ships a user-facing change adds a release note as a new file, `src/data/releaseNotes/YYYY-MM-DD-NNNN.json` (the day it ships and the PR's ticket), never by editing another note's file, so PRs open at once don't conflict: `{ "date": "YYYY-MM-DD", "line": { "en": "…", … } }`, one short line in every shipped language, in the product's voice (`docs/design/system/writing.md`), no full stop. `RELEASE_NOTES` lists them newest first by file name; the Homepage's What's new tile shows the newest three; `releaseNotes.test.ts` checks every language and that each file's name matches its date.
