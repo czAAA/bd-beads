@@ -189,3 +189,22 @@ describe('An open chip, resized (ticket 0880)', () => {
     expect(face.right).toBeLessThanOrEqual(edge.right + 0.5)
   })
 })
+
+// On a phone, Open source's and Say hello's actions keep to their rows (ticket 0880), on the narrowest under the whole
+// row: "Ver el código fuente" is wider than the words beside the icon tile at 320.
+describe("A phone's actions", () => {
+  for (const locale of FIT_LOCALES) {
+    for (const width of [390, 320]) {
+      it(`keep to their rows, ${locale} at ${width}px`, async () => {
+        const root = await coffeeAt(width, locale)
+        const actions = [...root.querySelectorAll('[data-testid="homepage-promises"] .grouped-list__action > *')]
+        expect(actions).toHaveLength(2)
+        for (const action of actions) {
+          const row = action.closest('li')!
+          const inside = row.getBoundingClientRect().right - Number.parseFloat(getComputedStyle(row).paddingRight)
+          expect(action.getBoundingClientRect().right, `${action.textContent} within its row`).toBeLessThanOrEqual(inside + 0.5)
+        }
+      })
+    }
+  }
+})

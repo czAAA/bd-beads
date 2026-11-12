@@ -22,8 +22,8 @@ defineProps<{
         <!-- The stop keeps a screen reader from running the name into its line. -->
         <span class="grouped-list__stop">. </span>
         <span class="grouped-list__line">{{ row.text }}</span>
-        <span v-if="$slots[`action-${row.id}`]" class="grouped-list__action"><slot :name="`action-${row.id}`" /></span>
       </span>
+      <span v-if="$slots[`action-${row.id}`]" class="grouped-list__action"><slot :name="`action-${row.id}`" /></span>
     </li>
   </ul>
 </template>
@@ -90,9 +90,17 @@ defineProps<{
   color: var(--body);
 }
 
-/* A row's action, 6px under its line, at its own width. */
+/* A row's action, 6px under its line, at its own width; on the narrowest phones under the whole row, so a long one
+   ("Ver el código fuente") keeps to it. */
 .grouped-list__action {
   display: flex;
+  grid-column: 2;
   margin-top: var(--space-6);
+}
+
+@container homepage (max-width: 340px) {
+  .grouped-list__action {
+    grid-column: 1 / -1;
+  }
 }
 </style>
