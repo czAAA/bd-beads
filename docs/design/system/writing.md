@@ -591,6 +591,29 @@ The converter in a beginner's words (ConvertImage and FoundColorRow cards; UX au
 
 "{n} colors" in the Colors step's summary, Color by color's summary and the preview's name counts the bead colors after the match, one per row of Color by color, so it is the count Beads needed lists; the Colors slider's own value is still what it asks for.
 
+## Quiet converter copy (ticket 0895)
+
+The quiet converter of DS-1 (ConvertImage card's first section; tickets 0896, 0897, 0898). Strings the table does not list keep their words from the tables above; "Keep exact", "Turn 90°", "keeping {columns}×{rows}", "Keep all", "Add to Canvas", "Add a picture first.", "Reading the picture" and "no picture yet" are reused as they are, "More for the picture" is the reference image's (ticket 0883), and the crop's size chip is that ticket's resize chip without "· shape kept". An Info button's body is the sentence it replaces, unchanged. Counts take the "Label: number" form, as above. English is from the design; the other languages are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| picture · bead and technique (the column's labels) | изображение · бисер и техника | зображення · бісер і техніка | выява · бісер і тэхніка | 图片 · 珠子和技法 | imagen · cuenta y técnica | obraz · koralik i technika |
+| More for the size · More for the colors (the buttons beside Width and Colors) | Ещё для размера · Ещё для цветов | Ще для розміру · Ще для кольорів | Яшчэ для памеру · Яшчэ для колераў | 尺寸的更多选项 · 颜色的更多选项 | Más opciones del tamaño · Más opciones de los colores | Więcej dla rozmiaru · Więcej dla kolorów |
+| matched to the {bead} palette · matched to the default palette · the picture's own colors (under Colors) | подобрано по палитре {bead} · подобрано по палитре по умолчанию · собственные цвета изображения | підібрано з палітри {bead} · підібрано з типової палітри · власні кольори зображення | падабрана з палітры {bead} · падабрана з тыповай палітры · уласныя колеры выявы | 按 {bead} 色板匹配 · 按默认色板匹配 · 图片自身的颜色 | ajustado a la paleta {bead} · ajustado a la paleta predeterminada · los colores propios de la imagen | dopasowane do palety {bead} · dopasowane do domyślnej palety · własne kolory obrazu |
+| Size (the popover's title) | Размер | Розмір | Памер | 尺寸 | Tamaño | Rozmiar |
+| What Width and Height do (Info) | Что делают Ширина и Высота | Що роблять Ширина й Висота | Што робяць Шырыня і Вышыня | 宽度和高度的作用 | Qué hacen Ancho y Alto | Co robią Szerokość i Wysokość |
+| What {name} does (Info: Colors, Keep the picture's shape, Remove background) | Что делает «{name}» | Що робить «{name}» | Што робіць «{name}» | {name}的作用 | Qué hace {name} | Co robi {name} |
+| Where colors come from (Info beside match to) | Откуда берутся цвета | Звідки беруться кольори | Адкуль бяруцца колеры | 颜色从哪里来 | De dónde salen los colores | Skąd biorą się kolory |
+| What pictures work (Info beside Drop a picture here) | Какие изображения подходят | Які зображення підходять | Якія выявы падыходзяць | 支持哪些图片 | Qué imágenes sirven | Jakie obrazy pasują |
+| found · {pct}% of the picture | найдено · {pct}% изображения | знайдено · {pct}% зображення | знойдзена · {pct}% выявы | 已找到 · 图片的 {pct}% | encontrado · {pct}% de la imagen | znaleziono · {pct}% obrazu |
+| {n} beads left out | Убрано бисерин: {n} | Прибрано бісерин: {n} | Прыбрана бісерын: {n} | 已去掉 {n} 颗珠子 | Cuentas quitadas: {n} | Pominięto koralików: {n} |
+| Flip left to right (the ··· menu) | Отразить слева направо | Віддзеркалити зліва направо | Адлюстраваць злева направа | 左右翻转 | Voltear de izquierda a derecha | Odbij w poziomie |
+| project · adds to (the foot's label) | проект · добавить в | проєкт · додати до | праект · дадаць у | 项目 · 添加到 | proyecto · añadir a | projekt · dodaj do |
+| goes where the picture lies on the Canvas | встанет там, где на холсте лежит картинка | стане там, де на полотні лежить зображення | стане там, дзе на палатне ляжыць выява | 放在画布上图片所在的位置 | va donde está la imagen en el lienzo | trafi tam, gdzie na płótnie leży obraz |
+| {n} colors · kept from {size} (the result's second line) | цветов: {n} · из {size} | кольорів: {n} · з {size} | колераў: {n} · з {size} | {n} 种颜色 · 取自 {size} | {n} colores · de {size} | kolorów: {n} · z {size} |
+
+"800×977 px" drops "· jpg" (the name says it) and "{file} · {size}" under Reading the picture has no words to translate. Gone with ticket 0896, in every language: the step titles and summaries, "add a picture first" as a summary, "convert" with Whole picture and A part of the picture, the counter, Back and Next on this page, the band's drag lines, "To leave a color out, pick Make empty …", "To fix what was found, pick Background …", "Turn it off to keep the whole picture." and "Colors follow the crop. …"; with ticket 0897, Name, Maker's name and "optional" on this page.
+
 ## Margin sheet copy (ticket 0655)
 
 The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
