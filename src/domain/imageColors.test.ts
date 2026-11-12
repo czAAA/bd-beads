@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { toHex } from './color'
-import { nearestColor, reducePictureColors } from './imageColors'
+import { channelsOf, colorDistance, toHex, toOklab } from './color'
+import { LEAST_COLOR_DISTANCE, nearestColor, reducePictureColors } from './imageColors'
 
 function counts(entries: Record<string, number>): Map<string, number> {
   return new Map(Object.entries(entries))
@@ -77,13 +77,14 @@ describe('reducePictureColors (ticket 177, ADR 0010)', () => {
     expect(reduced.byHex.size).toBe(0)
   })
 
-  // Ticket 0747: the Colors slider goes up to every color the picture has, so a photo asks for thousands.
-  it('takes any count, keeping that many of a photo', () => {
+  // Ticket 0747: the Colors slider goes up to 256; ticket 0890: that is an upper bound, as the least distance holds.
+  it('takes the most the slider offers on a photo, keeping as many colors as fit apart', () => {
     // 20 000 distinct colors, spread over the cube.
     const photo = new Map(Array.from({ length: 20000 }, (_unused, i) => [toHex({ r: i & 255, g: (i >> 8) & 255, b: (i * 37) & 255 }), 1]))
 
-    const reduced = reducePictureColors(photo, 10000)
-    expect(reduced.colors).toHaveLength(10000)
+    const reduced = reducePictureColors(photo, 256)
+    expect(reduced.colors.length).toBeGreaterThan(12)
+    expect(reduced.colors.length).toBeLessThanOrEqual(256)
     expect(reduced.colors.reduce((sum, color) => sum + color.count, 0)).toBe(20000)
   })
 
@@ -92,5 +93,69 @@ describe('reducePictureColors (ticket 177, ADR 0010)', () => {
     const reduced = reducePictureColors(counts({ '#000000': 99, '#ffffff': 1 }), 1)
 
     expect(reduced.colors).toEqual([{ hex: '#030303', count: 100 }])
+  })
+
+  // Ticket 0890: a color earns its place by how far it is from the others as well as by how much it covers.
+  describe('chooses colors by how different they are (ticket 0890)', () => {
+    /** A deterministic stand-in for a photo's noise: the same picture every run. */
+    function noise(seed: number): () => number {
+      let state = seed
+      return () => {
+        state = (state * 1103515245 + 12345) % 2147483648
+        return state / 2147483648 - 0.5
+      }
+    }
+
+    const FIGURE = ['#e0b090', '#3c64c8', '#e6c83c', '#f0f0f0', '#c83232', '#3ca03c']
+    const GROUND = '#1e1e1e'
+
+    /** Cells sampled around `hex`, each channel off by up to `spread`. */
+    function region(hex: string, cells: number, spread: number, random: () => number): string[] {
+      const { r, g, b } = channelsOf(hex)
+      const off = (channel: number) => Math.max(0, Math.min(255, Math.round(channel + random() * 2 * spread)))
+      return Array.from({ length: cells }, () => toHex({ r: off(r), g: off(g), b: off(b) }))
+    }
+
+    /** A synthetic portrait: a large dark ground with noise, a small figure in several distinct colors. */
+    function portrait(): { counts: Map<string, number>; regions: Map<string, string[]> } {
+      const random = noise(7)
+      const regions = new Map([[GROUND, region(GROUND, 2500, 22, random)], ...FIGURE.map((hex) => [hex, region(hex, 120, 10, random)] as const)])
+      const counts = new Map<string, number>()
+      for (const cells of regions.values()) for (const hex of cells) counts.set(hex, (counts.get(hex) ?? 0) + 1)
+      return { counts, regions }
+    }
+
+    const distance = (a: string, b: string) => colorDistance(toOklab(channelsOf(a)), toOklab(channelsOf(b)))
+
+    it('gives a noisy dark ground one color and each of the figure’s colors a place', () => {
+      const { counts, regions } = portrait()
+      const reduced = reducePictureColors(counts, 12)
+
+      const ground = new Set(regions.get(GROUND)!.map((hex) => reduced.byHex.get(hex)))
+      expect(ground.size).toBe(1)
+      const kept = reduced.colors.map((color) => color.hex)
+      for (const hex of FIGURE) {
+        expect(Math.min(...kept.map((color) => distance(color, hex)))).toBeLessThan(0.03)
+      }
+    })
+
+    it('blends no two regions into one color between them', () => {
+      const { counts, regions } = portrait()
+      const reduced = reducePictureColors(counts, regions.size)
+
+      for (const [hex, cells] of regions) {
+        const became = new Set(cells.map((cell) => reduced.byHex.get(cell)!))
+        expect(became.size).toBe(1)
+        expect(distance([...became][0]!, hex)).toBeLessThan(0.03)
+      }
+    })
+
+    it('keeps no two colors closer than the least distance', () => {
+      const { counts } = portrait()
+      for (const asked of [4, 12, 30, 256]) {
+        const kept = reducePictureColors(counts, asked).colors.map((color) => color.hex)
+        for (const a of kept) for (const b of kept) if (a !== b) expect(distance(a, b)).toBeGreaterThanOrEqual(LEAST_COLOR_DISTANCE)
+      }
+    })
   })
 })
