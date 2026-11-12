@@ -3,8 +3,8 @@ import type { Translations } from '../i18n/translations'
 import type { IconName } from '../components/ui/icons'
 import { controlAction } from '../composables/shell/controlRegistry'
 
-// The coffee screen's words (Homepage card, ticket 0823): its six promises, each with its icon, and the Say hello tile's
-// line. The Menu's labels they point at come from the app, never typed into the copy.
+// The coffee screen's words (Homepage card, tickets 0823, 0880): its six promises, each with its icon, and its chips, the
+// promises then Open source and Say hello. The Menu's labels they point at come from the app, never typed into the copy.
 
 /** One promise as shown: its icon, its name, and its line for screen readers. */
 export interface CoffeePromise {
@@ -32,7 +32,20 @@ export function coffeePromises(t: Translations): CoffeePromise[] {
   })
 }
 
-/** Say hello's line, pointing at the Menu's own Send feedback row. */
-export function sayHelloText(t: Translations): string {
-  return fillBlanks(t.homepage.sayHello.text, { menu: controlAction('strip-menu').name(t), feedback: t.panels.menu.sendFeedback })
+/** One chip under the coffee screen's band: a promise, Open source or Say hello, its line for screen readers. */
+export interface CoffeeChip {
+  id: CoffeePromise['id'] | 'openSource' | 'sayHello'
+  icon: IconName
+  name: string
+  text: string
+}
+
+/** The chips in a language, in the band's order: the six promises, then Open source and Say hello, the two that act. */
+export function coffeeChips(t: Translations): CoffeeChip[] {
+  const sayHello = fillBlanks(t.homepage.sayHello.text, { menu: controlAction('strip-menu').name(t), feedback: t.panels.menu.sendFeedback })
+  return [
+    ...coffeePromises(t),
+    { id: 'openSource', icon: 'code', name: t.homepage.openSource.name, text: t.homepage.openSource.text },
+    { id: 'sayHello', icon: 'message', name: t.homepage.sayHello.name, text: sayHello },
+  ]
 }
