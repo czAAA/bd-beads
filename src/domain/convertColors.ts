@@ -1,7 +1,7 @@
 import { catalogSwatches, type CatalogSwatch } from './beadSwatch'
 import type { ColorCatalog } from './colorCatalog'
-import type { ReducedColors } from './imageColors'
-import { nearestColor } from './imageColors'
+import { channelsOf, colorDistance, toOklab, type Oklab } from './color'
+import { LEAST_COLOR_DISTANCE, nearestColor, type ReducedColors } from './imageColors'
 import { addedColorId, type PaletteCodes, type PaletteColor } from './palette'
 import type { Cell, Grid } from './project'
 
@@ -57,12 +57,28 @@ function matchOf(hex: string, targets: readonly TargetColor[] | undefined, neare
   return targets.find((target) => target.hex === hit) ?? { hex }
 }
 
-/** Each found color matched to the source and given the maker's choice, most beads first. */
-export function matchFoundColors(reduced: ReducedColors, targets: readonly TargetColor[] | undefined, choices: ColorChoices): FoundColor[] {
+/** Each found color's match, kept the least distance apart for a reduced picture (ticket 0890): a color whose match is
+ * that close to a bigger color's match takes it, so two codes that look alike never both come out. */
+function apartMatches(reduced: ReducedColors, targets: readonly TargetColor[] | undefined): TargetColor[] {
   const hexes = targets?.map((target) => target.hex) ?? []
   const nearest = (hex: string) => nearestColor(hexes, hex)
-  return reduced.colors.map(({ hex, count }) => {
+  const kept: { match: TargetColor; lab: Oklab }[] = []
+  return reduced.colors.map(({ hex }) => {
     const match = matchOf(hex, targets, nearest)
+    if (!reduced.keptApart) return match
+    const lab = toOklab(channelsOf(match.hex))
+    const near = kept.find((other) => colorDistance(other.lab, lab) < LEAST_COLOR_DISTANCE)
+    if (near) return near.match
+    kept.push({ match, lab })
+    return match
+  })
+}
+
+/** Each found color matched to the source and given the maker's choice, most beads first. */
+export function matchFoundColors(reduced: ReducedColors, targets: readonly TargetColor[] | undefined, choices: ColorChoices): FoundColor[] {
+  const matches = apartMatches(reduced, targets)
+  return reduced.colors.map(({ hex, count }, at) => {
+    const match = matches[at]!
     const choice = choices.get(hex)
     const result = !choice ? match : choice.kind === 'exact' ? { hex } : choice.kind === 'remap' ? choice.target : undefined
     return { pictureHex: hex, count, match, choice, result }

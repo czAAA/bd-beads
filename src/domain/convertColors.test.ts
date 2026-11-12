@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import type { ColorCatalog } from './colorCatalog'
 import { BUILT_IN_COLORS, addedColorId } from './palette'
-import { reducePictureColors } from './imageColors'
+import { channelsOf, colorDistance, toOklab } from './color'
+import { LEAST_COLOR_DISTANCE, reducePictureColors, type ReducedColors } from './imageColors'
 import {
   beadColorRows,
   beadColorTargets,
@@ -148,5 +149,59 @@ describe('newProjectPalette', () => {
   it('adds nothing for an emptied color', () => {
     const found = matchFoundColors(reduced({ '#123456': 1 }), undefined, choices({ '#123456': { kind: 'empty' } }))
     expect(newProjectPalette(BUILT_IN_COLORS, found).ids).toEqual(BUILT_IN_COLORS.map((color) => color.id))
+  })
+})
+
+// Ticket 0890: the least distance holds for what is delivered, after the match, so two look-alike codes never both come out.
+describe('the least distance between delivered colors (ticket 0890)', () => {
+  /** A reduced picture of these colors, as the reduction hands it over. */
+  const reducedPicture = (entries: Record<string, number>): ReducedColors => ({
+    colors: Object.entries(entries).map(([hex, count]) => ({ hex, count })),
+    byHex: new Map(Object.keys(entries).map((hex) => [hex, hex])),
+    keptApart: true,
+  })
+  const apart = (hexes: readonly string[]) =>
+    hexes.every((a) => hexes.every((b) => a === b || colorDistance(toOklab(channelsOf(a)), toOklab(channelsOf(b))) >= LEAST_COLOR_DISTANCE))
+  const delivered = (found: ReturnType<typeof matchFoundColors>) => [...new Set(found.map((color) => color.result!.hex))]
+
+  const lookAlikes = [
+    { hex: '#202020', code: 'DB10' },
+    { hex: '#303030', code: 'DB2394' },
+    { hex: '#e0e0e0', code: 'DB200' },
+  ]
+  // Two dark picture colors far enough apart to be kept, matching two black codes that look alike.
+  const picture = reducedPicture({ '#1a1a1a': 50, '#383838': 20, '#e8e8e8': 10 })
+
+  it('joins a found color whose code looks like a bigger one’s into it, with the Bead’s colors', () => {
+    const found = matchFoundColors(picture, lookAlikes, choices())
+    expect(found.map((color) => color.result?.code)).toEqual(['DB10', 'DB10', 'DB200'])
+    expect(apart(delivered(found))).toBe(true)
+  })
+
+  it('keeps the colors apart with the Default Palette and with Exact too', () => {
+    for (const targets of [defaults, undefined]) {
+      const found = matchFoundColors(reducedPicture({ '#1a1a1a': 50, '#262626': 20, '#e8e8e8': 10 }), targets, choices())
+      expect(found[1]!.result).toEqual(found[0]!.result)
+      expect(apart(delivered(found))).toBe(true)
+    }
+  })
+
+  it('shows the joined colors as one row of Color by color and one color of Beads needed', () => {
+    const found = matchFoundColors(picture, lookAlikes, choices())
+    expect(beadColorRows(found).map(({ pictureHexes, count, result }) => [pictureHexes, count, result?.code])).toEqual([
+      [['#1a1a1a', '#383838'], 70, 'DB10'],
+      [['#e8e8e8'], 10, 'DB200'],
+    ])
+    expect(newProjectPalette([], found).codes).toEqual({ '#202020': 'DB10', '#e0e0e0': 'DB200' })
+  })
+
+  it('leaves a picture kept as it is with its own colors, however alike', () => {
+    const found = matchFoundColors(reduced({ '#1a1a1a': 50, '#383838': 20 }), lookAlikes, choices())
+    expect(found.map((color) => color.result?.code)).toEqual(['DB10', 'DB2394'])
+  })
+
+  it('still lets the maker remap a color onto a look-alike', () => {
+    const found = matchFoundColors(picture, lookAlikes, choices({ '#383838': { kind: 'remap', target: lookAlikes[1]! } }))
+    expect(found.map((color) => color.result?.code)).toEqual(['DB10', 'DB2394', 'DB200'])
   })
 })
