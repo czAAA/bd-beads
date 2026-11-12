@@ -8,11 +8,13 @@ import { fixtureProject } from '../support/projects'
 const FRAME_TOOLS = { button: 'margin-frame-tools', item: 'margin-frame-tools-mirror' }
 
 /** Opens a popup inside `scope` from its button (the Frame tools menu unless named) and checks it hangs under the button
- * and stays inside `room`. */
-async function expectUnderButton(page: Page, scope: string, room?: string, { button: buttonId, item } = FRAME_TOOLS) {
+ * and stays inside `room`. `byGhost` presses it as the demo's ghost does, the control's own click: the demo is inert to
+ * a visitor's press (ticket 0879). */
+async function expectUnderButton(page: Page, scope: string, room?: string, { button: buttonId, item, byGhost = false }: { button: string; item: string; byGhost?: boolean } = FRAME_TOOLS) {
   const button = page.locator(`${scope} [data-testid="${buttonId}"]`).first()
   await expect(button).toBeVisible()
-  await button.click()
+  if (byGhost) await button.evaluate((element: HTMLElement) => element.click())
+  else await button.click()
   const menu = page.locator(`${scope} [data-testid="${item}"], [data-testid="${item}"]`).first()
   await expect(menu).toBeVisible()
   const list = menu.locator('xpath=ancestor-or-self::*[@popover][1]')
@@ -43,5 +45,5 @@ test('the Margin color popover stays inside the What\'s inside box', async ({ pa
   // Welcome comes first (ticket 0830): the demo shows once the page is turned to What's inside.
   await page.locator('[data-testid="section-step"][data-step="inside"]').click()
   await expect(page.getByTestId('inside-editor')).toBeVisible()
-  await expectUnderButton(page, '[data-testid="inside-editor"]', '[data-testid="inside-editor"]', { button: 'margin-color', item: 'margin-color-popover' })
+  await expectUnderButton(page, '[data-testid="inside-editor"]', '[data-testid="inside-editor"]', { button: 'margin-color', item: 'margin-color-popover', byGhost: true })
 })
