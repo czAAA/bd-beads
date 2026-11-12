@@ -284,8 +284,9 @@ export const zh: Translations = {
     faceOfPiece: '{faces} 面之一：{total} 个三角形中的 {parts} 个',
     beadsFace: { other: '每面 {count} 颗' },
     forPiece: { other: '整件 {count} 颗' },
+    smallForPiece: '15/0：{count}',
     faceInfoLabel: '计数包括哪些',
-    faceInfo: '万花筒环由 {total} 个三角形组成，共 {faces} 面，每面 {parts} 个。此边框是其中一面。整件按每一面都像这一面来计算。若要给另一面单独的图案，请为它新建一个边框。只计三角形，不含边缘、尖端和铰链处的珠子。',
+    faceInfo: '万花筒环由 {total} 个三角形组成，共 {faces} 面，每面 {parts} 个。此边框是其中一面。整件按每一面都像这一面来计算。若要给另一面单独的图案，请为它新建一个边框。整件还计入连接三角形的珠子：边缘珠、铰链珠，以及三角形尖端和铰链销用的 15/0。',
     beadsFrontBack: { other: '正反两面共 {count} 颗珠子' },
   },
   canvas: {
@@ -583,7 +584,9 @@ export const zh: Translations = {
     stepStrand: '第 {number} 条流苏',
     stepPartRound: '第 {part} 部件 · 第 {number} 圈',
     stepZip: '拼接 {parts}',
-    stepHinge: '铰接 {parts}',
+    stepTetra: '条带与四面体 {parts}',
+    stepPair: '镜像对 {parts}，铰链销',
+    stepRing: '环：{first} 对与 {second} 对',
     stepClose: '闭合 {parts}',
     ofSteps: '共 {total}',
     stepOfSteps: '· {current} / {total}',
@@ -623,7 +626,8 @@ export const zh: Translations = {
     weightInfo:
       '这是珠子数量 × 每颗约 {grams} 克。该平均值来自厂家公布的每公斤颗数，厂家未公布时来自卖家的商品信息。实际的珠子会因颜色和表面处理而有差异。',
     weightInfoLabel: '重量如何计算',
-    pieceTotal: '这些是 {faces} 面中一面的数量。整件：{count}',
+    pieceTotal: '这些是 {faces} 面中一面的数量。整件：{count} · 15/0：{small}',
+    pieceLines: { triangles: '三角形', edgeBeads: '边缘珠', hingeBeads: '铰链珠', tips: '三角形尖端', hingePins: '铰链销' },
     frontBackNote: '这些是整颗星星正反两面的数量。',
   },
   print: {

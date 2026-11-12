@@ -284,8 +284,9 @@ export const pl: Translations = {
     faceOfPiece: 'jedna ściana z {faces}: {parts} z {total} trójkątów',
     beadsFace: { one: '{count} na ścianę', few: '{count} na ścianę', many: '{count} na ścianę', other: '{count} na ścianę' },
     forPiece: { one: '{count} na całą pracę', few: '{count} na całą pracę', many: '{count} na całą pracę', other: '{count} na całą pracę' },
+    smallForPiece: '15/0: {count}',
     faceInfoLabel: 'Co obejmuje liczenie',
-    faceInfo: 'Kalejdocykl to {total} trójkątów: {faces} ściany po {parts}. Ta ramka to jedna ściana. Cała praca liczy każdą ścianę wyplecioną tak jak ta. Aby dać innej ścianie własny wzór, zrób dla niej osobną ramkę. Liczone są tylko trójkąty, bez koralików brzegu, czubków i zawiasów.',
+    faceInfo: 'Kalejdocykl to {total} trójkątów: {faces} ściany po {parts}. Ta ramka to jedna ściana. Cała praca liczy każdą ścianę wyplecioną tak jak ta. Aby dać innej ścianie własny wzór, zrób dla niej osobną ramkę. Cała praca liczy też koraliki łączeń: koraliki brzegu, koraliki zawiasów oraz 15/0 na czubkach trójkątów i sworznie zawiasów.',
     beadsFrontBack: { one: '{count} koralik, przód i tył', few: '{count} koraliki, przód i tył', many: '{count} koralików, przód i tył', other: '{count} koralika, przód i tył' },
   },
   canvas: {
@@ -595,7 +596,9 @@ export const pl: Translations = {
     stepStrand: 'Nitka {number}',
     stepPartRound: 'Część {part}, okrążenie {number}',
     stepZip: 'Zszyj {parts}',
-    stepHinge: 'Zawias {parts}',
+    stepTetra: 'Pasek i czworościan {parts}',
+    stepPair: 'Para lustrzana {parts}, sworznie zawiasu',
+    stepRing: 'Pierścień: pary {first} i {second}',
     stepClose: 'Zamknij {parts}',
     ofSteps: 'z {total}',
     stepOfSteps: '· {current} z {total}',
@@ -635,7 +638,8 @@ export const pl: Translations = {
     weightInfo:
       'To liczba koralików × około {grams} g na koralik. Średnia pochodzi z liczby koralików na kilogram podanej przez producenta, a gdy jej nie podaje, z ofert sprzedawców. Prawdziwe koraliki różnią się zależnie od koloru i wykończenia.',
     weightInfoLabel: 'Jak liczona jest waga',
-    pieceTotal: 'To liczby dla jednej ściany z {faces}. Cała praca: {count}',
+    pieceTotal: 'To liczby dla jednej ściany z {faces}. Cała praca: {count} · 15/0: {small}',
+    pieceLines: { triangles: 'Trójkąty', edgeBeads: 'Koraliki brzegu', hingeBeads: 'Koraliki zawiasów', tips: 'Czubki trójkątów', hingePins: 'Sworznie zawiasów' },
     frontBackNote: 'To liczby dla całej gwiazdy, przód i tył.',
   },
   print: {
