@@ -4,7 +4,7 @@ The thin bar anchored to a Selection, or to the Mirror's Area, that offers what 
 
 ## Area sheet (tickets 0806–0809)
 
-The look a rectangle Selection and the Mirror's Canvas Area share, after the Frame's margin sheet (MarginSheet card). Approved from the claude.ai mockups "Select & Mirror areas — 5 mockups", variant D "Area sheet" (https://claude.ai/artifact/S6dWAQvPPgb31DBvEPFMQJ), 2026-11-06. A Piece's shape Selection and the whole-Frame Area have no sheet.
+The look a rectangle Selection and the Mirror's Canvas Area share, after the Frame's margin sheet (MarginSheet card). Approved from the claude.ai mockups "Select & Mirror areas — 5 mockups", variant D "Area sheet" (link on ticket 0806 in the private docs repo), 2026-11-06. A Piece's shape Selection and the whole-Frame Area have no sheet.
 
 - **The area's colour:** a Selection is `marker`, the Mirror's Area `mirror` (tokens.json). Everything of an area below is drawn in its own colour, so the two are told apart at a glance, by lightness as well as hue (ticket 0806).
 - **Line:** 1.5px (`--mirror-area-line`) in the area's colour on the rectangle's edge, as before.
@@ -39,7 +39,7 @@ Design reference: the "Selection bar on the canvas" board of the design canvas (
 
 ## Mirror bar (ticket 0750, ADR 0082)
 
-The Mirror's own bar: the Selection bar's component (same look, sizes, hover and press, dividers, Tooltips, `role="toolbar"`), with Mirror's items. Every control on either bar has the same states: hover and press mix `canvas` into the bar at 12% and 20%, the focus ring is `canvas`, and an "on" control (an Axis chip that is on, the chosen Mode) is `canvas` with `ink` on it, which hover and press only dim (to 86% and 72%), so its icon or text stays readable. It replaces the Mirror popover, which is retired with its card. Approved from the claude.ai mockups "Mirror bar mockups", variant B (https://claude.ai/artifact/YDqoGhLJKvK1ZWjtiE2phV), 2026-10-31.
+The Mirror's own bar: the Selection bar's component (same look, sizes, hover and press, dividers, Tooltips, `role="toolbar"`), with Mirror's items. Every control on either bar has the same states: hover and press mix `canvas` into the bar at 12% and 20%, the focus ring is `canvas`, and an "on" control (an Axis chip that is on, the chosen Mode) is `canvas` with `ink` on it, which hover and press only dim (to 86% and 72%), so its icon or text stays readable. It replaces the Mirror popover, which is retired with its card. Approved from the claude.ai mockups "Mirror bar mockups", variant B (link on ticket 0750 in the private docs repo), 2026-10-31.
 
 ### The Mirror and its Area
 

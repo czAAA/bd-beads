@@ -1,6 +1,6 @@
 # SaveReminder
 
-A quiet reminder to save the open Project's Project file on the device: a round save button that appears at the drawing area's top-right once enough has been drawn since the last file (ticket 0796). Picked from five forms and five places on the design canvas "Save reminders" (form E, Ring; place 3, Canvas top right): https://claude.ai/artifact/MJPo9Q8YKiNsbDDGYV3YTC. The canvas shows the ring filling from the first bead, but it was then decided that nothing shows before the threshold. This card wins.
+A quiet reminder to save the open Project's Project file on the device: a round save button that appears at the drawing area's top-right once enough has been drawn since the last file (ticket 0796). Picked from five forms and five places on the design canvas "Save reminders" (form E, Ring; place 3, Canvas top right): link on ticket 0796 in the private docs repo. The canvas shows the ring filling from the first bead, but it was then decided that nothing shows before the threshold. This card wins.
 
 ## Why it exists
 
