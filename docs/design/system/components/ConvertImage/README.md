@@ -6,7 +6,7 @@ Built in ticket 0780 (As built, below). The phone and tablet layout is signed of
 
 ## The quiet converter (DS-1, ticket 0895)
 
-Signed off on 2026-11-12 in the design canvas "Quiet Convert image" (https://claude.ai/artifact/Vpis2unJ82Q7PLAg7B79yE), for the desktop and the landscape tablet; built by tickets 0896 (the page), 0897 (Create Project) and 0898 (the crop), whose `### From the design (DS-1)` sections hold every size, state and check. **This section and the next (DS-3) win over the sections below** wherever they differ; those describe the page as built by ticket 0780 and stay true until those tickets land, for everything this section does not change (the background's find rule, the Width and Height rules, Color by color's rows, the errors, leaving). The phone is ticket 0911.
+Signed off on 2026-11-12 in the design canvas "Quiet Convert image" (its link is on ticket 0895's Design result line, in the private docs repo), for the desktop and the landscape tablet; built by tickets 0896 (the page), 0897 (Create Project) and 0898 (the crop), whose `### From the design (DS-1)` sections hold every size, state and check. **This section and the next (DS-3) win over the sections below** wherever they differ; those describe the page as built by ticket 0780 and stay true until those tickets land, for everything this section does not change (the background's find rule, the Width and Height rules, Color by color's rows, the errors, leaving). The phone is ticket 0911.
 
 **The beads are the page.** No step pane, no numbered steps, no step headers and no Progress bar. The preview takes the room; a short **column** beside it (`--convert-column-width`, 344; `--convert-column-width-narrow`, 328, under 1200 wide; on `canvas`, a 1px `panel-rule` edge) holds the four decisions most pictures need, in the order they are made, with the result and Create Project at its foot. Nothing scrolls at 1440 × 900 or 1180 × 820. Under 1024 px or in portrait the page takes DS-4's layout (On a phone and a tablet, below).
 
@@ -34,7 +34,7 @@ Signed off on 2026-11-12 in the design canvas "Quiet Convert image" (https://cla
 
 ## Colors that are real beads (DS-2, ticket 0899)
 
-Signed off on 2026-11-12 in the design canvas "Colors that are real beads" (https://claude.ai/artifact/7WKsBePyW1iRRhkW4pJ2oY). It is placed into DS-1's column and Colors popover above. It is built by tickets:
+Signed off on 2026-11-12 in the design canvas "Colors that are real beads" (its link is on ticket 0899's Design result line, in the private docs repo). It is placed into DS-1's column and Colors popover above. It is built by tickets:
 - 0901: the line at rest, match to and Finish;
 - 0902: My beads as a source and its view;
 - 0903: finding, filtering and pasting in it;
@@ -98,7 +98,7 @@ New values: `--convert-neighbour-width` (96), `--convert-count-field-width` (64)
 
 ## Before and after, and Clean up (DS-3, ticket 0900)
 
-Signed off on 2026-11-12 in the design canvas "Before and after, and Clean up" (https://claude.ai/artifact/DF5GRgEHgMgfdvuUCwBYLy), placed in the quiet converter above and changing nothing of it but what it adds; built by tickets 0906 (Clean up stray beads), 0907 (Auto-fix lighting), 0908 (Brightness, Contrast and Saturation) and 0909 (the picture beside the beads), whose `### From the design (DS-3)` sections hold every size, state and check. The phone's page round these parts is ticket 0911.
+Signed off on 2026-11-12 in the design canvas "Before and after, and Clean up" (its link is on ticket 0900's Design result line, in the private docs repo), placed in the quiet converter above and changing nothing of it but what it adds; built by tickets 0906 (Clean up stray beads), 0907 (Auto-fix lighting), 0908 (Brightness, Contrast and Saturation) and 0909 (the picture beside the beads), whose `### From the design (DS-3)` sections hold every size, state and check. The phone's page round these parts is ticket 0911.
 
 **Helpers met as results.** Four helpers and no new block: each sits beside what it changes, says what it did in a few words, and opens its settings in one press, in a popover beside the column (a sheet under 1024 px). With a picture the first window holds **15 controls**: DS-1's 12, the Auto-fix lighting switch, More for the lighting, and the Clean up button.
 
@@ -125,7 +125,7 @@ New values: `--convert-result-button-height`, `--convert-result-button-height-to
 
 ## On a phone and a tablet (DS-4, ticket 0910)
 
-Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" (https://claude.ai/artifact/K7fpjABA1D9toqPn4sXEx5); built by tickets 0911 (the page, the dock, the sheet and its rules, the Width, Size, Colors, Bead and Technique, Picture and Background sheets, the tools on the beads, Create Project, leaving) and 0919 (the Colors list with My beads, Clean up and Lighting as sheets), whose `### From the design (DS-4)` sections hold every size, state and check. It lays out DS-1, DS-2 and DS-3 and ranks nothing again: what is always on at the desktop is one press on a phone, what is one press there is two. No control is added or taken away. **This section wins over "Frame" and "Steps" below and over the PhoneForms card's Convert image part** under 1024 px or in portrait.
+Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" (its link is on ticket 0910's Design result line, in the private docs repo); built by tickets 0911 (the page, the dock, the sheet and its rules, the Width, Size, Colors, Bead and Technique, Picture and Background sheets, the tools on the beads, Create Project, leaving) and 0919 (the Colors list with My beads, Clean up and Lighting as sheets), whose `### From the design (DS-4)` sections hold every size, state and check. It lays out DS-1, DS-2 and DS-3 and ranks nothing again: what is always on at the desktop is one press on a phone, what is one press there is two. No control is added or taken away. **This section wins over "Frame" and "Steps" below and over the PhoneForms card's Convert image part** under 1024 px or in portrait.
 
 **Four layouts**, chosen from the page's own size on every resize and turn (landscape: wider than tall; a square page counts as landscape): portrait under 600 (`--convert-tablet-min`) wide, **Phone**; portrait from 600, **Tablet**; landscape under 1024, **Side**; landscape from 1024, **Desktop** (DS-1, above). Nothing sits under the notch or the home bar: the strip starts under `env(safe-area-inset-top)`, the dock and every sheet pad their foot by `env(safe-area-inset-bottom)` (the sheet's surface runs on under the home bar), Side keeps clear of the side insets; the page needs `viewport-fit=cover`.
 
