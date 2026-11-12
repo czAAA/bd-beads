@@ -124,6 +124,8 @@ Current: **v19**: v18 (Oct 4, 2026) plus the repo changes since. From v18 on the
 
 The claude.ai project was last brought up to the repo on 2026-10-13, through ticket 398 (commit `f496da58`). The changes since are in git, one squash commit per ticket: `git log --format='%cs %s' f496da58.. -- docs/design/system/`. When the claude.ai copy is next brought up, move that commit forward. The hand-written log of v14 to v19 that used to stand here is in git history and in the claude.ai README.
 
+- Repo, 2026-11-12, ticket 0895 (DS-1): the quiet converter is signed off (canvas "Quiet Convert image"). The ConvertImage card leads with it (the beads are the page, a short column of four decisions, Create Project from the first second, the crop first on the picture, settings in popovers, no steps or Progress bar); ValueSlider gains the doubling scale; ProgressBar notes the converter's bar goes with ticket 0896; eleven new `--convert-*` values in `bundle.css` and `design-values.css`; the copy in every app language in `writing.md`. No token value, colour or icon changes.
+
 ---
 
 ## Consuming this system
