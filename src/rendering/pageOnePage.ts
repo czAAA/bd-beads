@@ -1,17 +1,25 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
-import { drawChartParts } from './chartVector'
-import { listHeader, TABLE_COLUMN_GAP, type ColorsSlice } from './coverLayout'
-import { drawTitleBlock, drawWholeBoard } from './coverPage'
+import { CanvasDrawing } from './canvasDrawing'
+import { drawChartParts, K } from './chartVector'
+import { listHeader, TABLE_COLUMN_GAP, TITLE_MAKER_ROW, TITLE_NAME_ROW, titleRows, type ColorsSlice } from './coverLayout'
 import { NEEDED_COLUMNS, NEEDED_HEADING, type PageOneLayout } from './pageOneLayout'
-import { blankPage, drawMark, font, MONO, partLabel, pt, SANS, text, wrap } from './printPages'
+import { blankPage, drawBoard, drawMark, drawParts, drawRulers, font, MONO, partLabel, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
-import { mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
+import { displayedGrid, mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
+import { geometryDrawnAlone } from './space'
+import { displayedExtentPx } from './surfaceView'
+import { fillBlanks } from '../domain/fillBlanks'
+import { quarterTurnOf } from '../domain/layerRecord'
+import { frameWeave } from '../domain/layerWeave'
+import { PdfContent } from '../domain/pdfContent'
 import type { Project } from '../domain/project'
+import { projectDimensions } from '../domain/projectExtent'
 import type { SwatchLetters } from '../domain/swatchLetters'
 
 // Page 1 of the PDF and the list pages after it (ticket 0914; PrintPage1 card): the title block, the whole piece (the
-// working chart as PDF drawing, ADR 0043, or the overview of its parts), one Beads needed table and the footer.
+// working chart as PDF drawing, ADR 0043, or the overview of its parts), one Beads needed table and the footer. The PNG is
+// the same page as a picture (ticket 0915; PngExport card): its chart painted from the same drawing, its list pages the same.
 
 const RULE = pt(0.75)
 /** A row's swatch, drawn like a bead with its Swatch letter on it. */
@@ -26,6 +34,41 @@ const NAME_LEFT = mm(5.5)
 /** The room each column head has, the code's and the beads' shared between them.
  * @internal Its test checks every language's column heads against it. */
 export const NEEDED_ROOM = { toBuy: GRAMS_RIGHT - mm(1), grams: BEADS_RIGHT - GRAMS_RIGHT - mm(1), codeAndBeads: CODE_LEFT - BEADS_RIGHT - mm(1) }
+
+/** Ruler numbers on the overview every 10 instead of every 5 when 5 beads are narrower than this. */
+const MIN_FIVE_STEP = mm(5.5)
+
+/** The Frame's name (else the Project's) as the title, "by {maker}" under it and one line of technique, bead, grid and
+ * size; the title and the maker are left out when empty. */
+function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words: PrintText): void {
+  const width = page.width - PRINT_MARGIN * 2
+  const rows = titleRows(words)
+  let y = PRINT_MARGIN
+  if (rows.name) {
+    text(context, words.name.trim(), PRINT_MARGIN, y + pt(19), font('700', 22, SANS), PRINT_COLORS.ink, 'left', width)
+    y += TITLE_NAME_ROW
+  }
+  if (rows.maker) {
+    text(context, fillBlanks(words.labels.byMaker, { maker: words.maker }), PRINT_MARGIN, y + pt(11), font('italic 400', 13, SERIF), PRINT_COLORS.muted, 'left', width)
+    y += TITLE_MAKER_ROW
+  }
+  text(context, [words.techniqueWord, words.metaLine].join(' · '), PRINT_MARGIN, y + pt(6), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width)
+}
+
+/** The overview (ticket 0914): the whole piece on its board without letters, rulers with a number every 5 (10 when the
+ * beads are too small for that) and an empty position under its cross. With `plan` the lines where the chart parts meet
+ * and their page pills are drawn too; the PNG has no pages to point at. */
+function drawOverview(context: CanvasRenderingContext2D, project: Project, overview: NonNullable<PageOneLayout['overview']>, plan: PrintPlan | undefined, labels: PrintText['labels']): void {
+  const board = { ...overview.board, ...overview.extent }
+  const { columns, rows } = projectDimensions(project)
+  const whole = displayedExtentPx(frameWeave(project).technique, columns, rows, overview.zoom, quarterTurnOf(project), frameWeave(project).cell)
+  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, overview.zoom, board)
+  const grid = displayedGrid(project)
+  const every = grid.stepAcross * overview.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
+  // A Custom frame's beads keep no rows and columns to number (ticket 0594).
+  if (geometryDrawnAlone(project).grid) drawRulers(context, project, overview.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
+  if (plan && plan.parts.length > 1) drawParts(context, project, plan, labels, overview.zoom, board)
+}
 
 /** The footer of page 1 and the list pages: the mark, the brand and the date and time on the left, the page number on the
  * right ("1 / 3"). */
@@ -123,22 +166,23 @@ function drawNeeded(context: CanvasRenderingContext2D, page: PageSize, words: Pr
   }
 }
 
-/** Page 1 of the PDF (ticket 0914): the title block, then the chart whole as PDF drawing (lettered, numbered, with the
- * lines every 5 and 10; strips each under their label) or, when it is cut into parts, the overview without letters with
- * the parts marked; Beads needed under it, and the footer. The drawing is in points, laid over the page's picture. */
-export function drawPageOne(project: Project, words: PrintText, layout: PageOneLayout, plan: PrintPlan, scale = 1): { canvas: HTMLCanvasElement; drawing?: string } {
+/** Page 1 (ticket 0914): the title block, the chart whole (strips each under their label) or the overview with the parts
+ * marked, Beads needed and the footer. For the PDF the chart is drawing in points laid over the picture; for the PNG
+ * (ticket 0915) the same chart is painted on the picture itself, and the overview leaves out the parts. */
+export function drawPageOne(project: Project, words: PrintText, layout: PageOneLayout, plan: PrintPlan, scale = 1, as: 'pdf' | 'png' = 'pdf'): { canvas: HTMLCanvasElement; drawing?: string } {
   const { page } = plan
   const { canvas, context } = blankPage(page, scale)
   drawTitleBlock(context, page, words)
   let drawing: string | undefined
   if (layout.overview) {
-    drawWholeBoard(context, project, layout.overview, undefined, plan, words.labels)
+    drawOverview(context, project, layout.overview, as === 'pdf' ? plan : undefined, words.labels)
   } else {
-    const { content, pads } = drawChartParts(project, plan, plan.parts, page.height, project.paletteLetters ?? {}, layout.area)
+    const pdf = as === 'pdf' ? new PdfContent(page.height * K) : undefined
+    const pads = drawChartParts(pdf ?? new CanvasDrawing(context, scale), project, plan, plan.parts, project.paletteLetters ?? {}, layout.area)
     if (plan.parts.length > 1) {
       plan.parts.forEach((part, index) => text(context, partLabel(project, words.labels, part), pads[index]!.x, pads[index]!.y - mm(2), font('400', 7.5, MONO), PRINT_COLORS.muted))
     }
-    drawing = content.toString()
+    drawing = pdf?.toString()
   }
   drawNeeded(context, page, words, project.paletteLetters ?? {}, layout.needed, layout.needed.y)
   drawFooter(context, page, words, 1, plan.pageCount)

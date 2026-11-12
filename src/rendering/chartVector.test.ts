@@ -9,6 +9,7 @@ import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, K, letterColor, letterPt, placeBeads } from './chartVector'
 import { helveticaWidth } from '../domain/helvetica'
+import { PdfContent } from '../domain/pdfContent'
 import { EMPTY_CROSS_SHARE } from './printPages'
 import { displayedGrid, planPrint, mm } from './printPlan'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
@@ -50,10 +51,16 @@ function crossArms(content: string): number[][] {
 
 const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) Tf ([\d.]+) Tz ([\d.-]+) ([\d.-]+) Td \(([^)]*)\) Tj ET/g)].map((match) => ({ font: match[1]!, size: Number(match[2]), scale: Number(match[3]), x: Number(match[4]), y: Number(match[5]), value: match[6]! }))
 
+/** The parts drawn as PDF operators. */
+function pdfOf(project: Project, plan: ReturnType<typeof planPrint>, parts: ReturnType<typeof planPrint>['parts'], letters: Record<string, string>, height = plan.page.height) {
+  const content = new PdfContent(height * K)
+  return { content, pads: drawChartParts(content, project, plan, parts, letters) }
+}
+
 function chartOf(project: Project, part = 0) {
   const plan = planPrint(project, { keyRows: 2 })
   const parts = [plan.parts[part]!]
-  return { plan, part: parts[0]!, ...drawChartParts(project, plan, parts, plan.page.height, LETTERS) }
+  return { plan, part: parts[0]!, ...pdfOf(project, plan, parts, LETTERS) }
 }
 
 describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', () => {
@@ -85,7 +92,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(part.firstAcross).toBe(0)
     expect(letters).toHaveLength(painted)
     expect(new Set(letters.map((text) => text.value))).toEqual(new Set(['A', 'B', 'AA']))
-    expect(texts(drawChartParts(withLayers(project, { letters: true }), planPrint(project, { keyRows: 2 }), [part], 1754, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
+    expect(texts(pdfOf(withLayers(project, { letters: true }), planPrint(project, { keyRows: 2 }), [part], LETTERS, 1754).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
   })
 
   it('scales the Swatch letter with the bead: 6.5 pt at 3 mm, about 4.3 pt at 1.8 mm, larger above 3 mm (ticket 0913)', () => {
@@ -98,7 +105,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
   it('keeps a two-letter Swatch letter inside its cell, setting a wide one smaller', () => {
     const wide = { [DARK]: 'WM', '#ffffff': 'A', '#f2c94c': 'AA' }
     const plan = planPrint(schema(), { keyRows: 2 })
-    const pdf = drawChartParts(schema(), plan, plan.parts, plan.page.height, wide).content.toString()
+    const pdf = pdfOf(schema(), plan, plan.parts, wide).content.toString()
     const cell = plan.beadMm * (72 / 25.4)
     const marks = texts(pdf).filter((text) => text.value.length === 2 && /^[A-Z]+$/.test(text.value))
 
@@ -278,7 +285,7 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
   it('tiles the bounding rectangle and letters every painted bead once, across the parts', () => {
     const project = triangle()
     const plan = planPrint(project, { keyRows: 2 })
-    const lettered = plan.parts.flatMap((part) => texts(drawChartParts(project, plan, [part], plan.page.height, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value)))
+    const lettered = plan.parts.flatMap((part) => texts(pdfOf(project, plan, [part], LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value)))
     // 3 + 6 + 9 dark and 12 White, the overlap's repeats aside: at least each once.
     expect(lettered.filter((text) => text.value === 'B').length).toBeGreaterThanOrEqual(18)
     expect(lettered.filter((text) => text.value === 'A').length).toBeGreaterThanOrEqual(12)
@@ -329,7 +336,7 @@ describe('every bead shape at the smallest and the largest bead (ticket 0913)', 
   ])('draws a %s chart at %s mm a bead, every painted bead lettered inside its cell', (_, beadMm, make, planned = make) => {
     const project = make()
     const plan = planPrint(planned(), { keyRows: 2 })
-    const pdf = plan.parts.map((part) => drawChartParts(project, plan, [part], plan.page.height, LETTERS).content.toString()).join('\n')
+    const pdf = plan.parts.map((part) => pdfOf(project, plan, [part], LETTERS).content.toString()).join('\n')
     const letters = texts(pdf).filter((text) => /^[A-Z]+$/.test(text.value))
     const cell = plan.beadMm * (72 / 25.4)
 

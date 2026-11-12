@@ -325,7 +325,7 @@
     {
       "name": "PngExport",
       "group": "Print",
-      "summary": "The PNG export: one portrait picture, the whole framed Schema at full width with the story under it."
+      "summary": "The PNG export: page 1 of the PDF as a picture, drawn by the same code at the Export quality's dpi."
     },
     {
       "name": "PrintChartPage",

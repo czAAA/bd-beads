@@ -28,7 +28,7 @@ export interface PageOneLayout {
   /** The top left corner of page 1's chart area, under the title block. */
   area: { x: number; y: number }
   /** Page 1 as the overview of a chart cut into parts (no letters, the parts marked): its zoom, size and where its beads
-   * begin, as the Cover places them. */
+   * begin (coverLayout). */
   overview?: { zoom: number; extent: { width: number; height: number }; board: { x: number; y: number } }
   /** Beads needed on page 1, and its top. */
   needed: ColorsSlice & { y: number }
@@ -66,7 +66,7 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
     return { plan, titleHeight, area, needed: { from: 0, count, rowHeight: NEEDED_TABLE.row, rows: Math.ceil(count / 2), total: whole, y: top }, lists }
   }
 
-  const cover = coverLayout(project, words, page, NEEDED_TABLE)
+  const cover = coverLayout(project, words, NEEDED_TABLE, page)
   const plan = planWithKey(project, { page, pageOne: under(least), listPages: cover.lists.length })
   return { plan, titleHeight, area, overview: { zoom: cover.zoom, extent: cover.extent, board: cover.board }, needed: cover.cover, lists: cover.lists }
 }

@@ -2,13 +2,11 @@ import { PDF_PAGE_DPI } from '../domain/exportQuality'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { deflateRgb, deflateText, encodePng } from '../domain/pngEncoder'
-import { coverLayout } from './coverLayout'
 import { pageOneLayout } from './pageOneLayout'
-import { PRINT_DPI, type PrintPart } from './printPlan'
+import { PRINT_DPI, type PrintPart, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
-import { withLetters } from '../domain/layerRecord'
 
-// Project exports (tickets 73, 74, 0583, 0914): drawn onto page canvases made here, one page at a time and compressed strip by
+// Project exports (tickets 73, 74, 0583, 0914, 0915): drawn onto page canvases made here, one page at a time and compressed strip by
 // strip, so memory is bounded by the page, not the Project (ADR 0018, 250 × 250).
 
 function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -24,14 +22,9 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 /** How many pixels one strip of a page holds while it is compressed. */
 const STRIP_PIXELS = 1_000_000
 
-/** The words of the PNG: it is the picture, so no Swatch letters, whatever the Letters toggle says (ticket 0587). */
-function withoutLetters(words: PrintText): PrintText {
-  return { ...words, colors: words.colors.map(({ letter: _letter, ...color }) => color) }
-}
-
-/** The cover as a PNG page and the list pages Beads needed runs over onto, in order after it (ticket 0583). */
+/** The PNG's files (ticket 0915): page 1 of the PDF, then the list pages Beads needed runs over onto, in order after it. */
 export function projectPageCount(project: Project, words: PrintText): number {
-  return 1 + coverLayout(project, withoutLetters(words)).lists.length
+  return 1 + pageOneLayout(project, words).lists.length
 }
 
 /** The page as a PNG, compressed strip by strip. */
@@ -41,17 +34,17 @@ function pngOf(canvas: HTMLCanvasElement): Promise<Blob> {
   return encodePng(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data)
 }
 
-// The Project as a PNG (tickets 164, 0583; printed-output.md): the Cover page, or list page `page` (1, 2 ...) after it,
-// drawn like a PDF page at `dpi`.
+// The Project as a PNG (tickets 164, 0583, 0915; printed-output.md): page 1 of the PDF as a picture, or list page `page`
+// (1, 2 ...) after it, drawn at `dpi`. It has no pages to point at, so its footer counts its own files.
 export async function exportProjectPng(project: Project, words: PrintText, dpi = PRINT_DPI, page = 0): Promise<Blob> {
   // Loaded when a PNG is asked for: the page drawing (and the mark it reads from the design system) isn't needed before.
-  const { drawCoverPage, drawListPage } = await import('./coverPage')
+  const { drawNeededListPage, drawPageOne } = await import('./pageOnePage')
   const { loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
-  const bare = withoutLetters(words)
-  const layout = coverLayout(project, bare)
+  const layout = pageOneLayout(project, words)
+  const plan: PrintPlan = { ...layout.plan, pageCount: 1 + layout.lists.length }
   const scale = dpi / PRINT_DPI
-  const canvas = page === 0 ? drawCoverPage(withLetters(project, false), bare, layout, scale) : drawListPage(bare, layout, page - 1, scale)
+  const canvas = page === 0 ? drawPageOne(project, words, layout, plan, scale, 'png').canvas : drawNeededListPage(project, words, layout, page - 1, plan, scale)
   const blob = await pngOf(canvas)
   canvas.width = 0
   canvas.height = 0

@@ -24,7 +24,29 @@ export interface TextStyle {
   scale?: number
 }
 
-export class PdfContent {
+/** How to paint a closed shape: filled, outlined, or both. */
+export interface Paint {
+  fill?: string
+  stroke?: string
+  lineWidth?: number
+}
+
+/** A page's drawing (ticket 0915): fills, lines, shapes and Helvetica text in points from the page's top left corner. Page 1
+ * and the chart pages describe themselves through it once; `PdfContent` writes it as PDF operators, and the PNG paints it
+ * on its canvas (`rendering/canvasDrawing.ts`). */
+export interface PageDrawing {
+  fillRect(x: number, y: number, width: number, height: number, color: string): void
+  /** Straight lines `[x1, y1, x2, y2]`, all in one path. */
+  lines(segments: readonly (readonly [number, number, number, number])[], width: number, color: string): void
+  /** A rounded rectangle (a circle when `radius` is half its side), filled and/or outlined. */
+  roundRect(x: number, y: number, width: number, height: number, radius: number, paint: Paint): void
+  /** A closed polygon through `points` (a turned bead of a Custom frame, ticket 0594), filled and/or outlined. */
+  polygon(points: readonly (readonly [number, number])[], paint: Paint): void
+  /** `value` in Helvetica with its baseline at `baseline`, starting at `x` (`align` left), or centred or ending there. */
+  text(value: string, x: number, baseline: number, style: TextStyle, align?: 'left' | 'center' | 'right'): void
+}
+
+export class PdfContent implements PageDrawing {
   private readonly operators: string[] = []
   private fill = ''
   private stroke = ''
@@ -66,7 +88,7 @@ export class PdfContent {
   }
 
   /** A rounded rectangle (a circle when `radius` is half its side), filled and/or outlined. */
-  roundRect(x: number, y: number, width: number, height: number, radius: number, paint: { fill?: string; stroke?: string; lineWidth?: number }): void {
+  roundRect(x: number, y: number, width: number, height: number, radius: number, paint: Paint): void {
     const r = Math.min(radius, width / 2, height / 2)
     const k = r * KAPPA
     const right = x + width
@@ -89,7 +111,7 @@ export class PdfContent {
   }
 
   /** A closed polygon through `points` (a turned bead of a Custom frame, ticket 0594), filled and/or outlined. */
-  polygon(points: readonly (readonly [number, number])[], paint: { fill?: string; stroke?: string; lineWidth?: number }): void {
+  polygon(points: readonly (readonly [number, number])[], paint: Paint): void {
     const path = points.map(([x, y], index) => `${number(x)} ${this.y(y)} ${index === 0 ? 'm' : 'l'}`).join(' ')
     if (paint.fill) this.fillColor(paint.fill)
     if (paint.stroke) this.strokeColor(paint.stroke, paint.lineWidth ?? 1)

@@ -1,6 +1,6 @@
 import { BLACK_WHITE_BALANCE, fromHex, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
 import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
-import { PdfContent } from '../domain/pdfContent'
+import type { PageDrawing } from '../domain/pdfContent'
 import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
@@ -15,9 +15,9 @@ import { customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
-// A chart page as PDF operators (ticket 0585, ADR 0043; PrintChartPage card): sharp at any zoom. The Layer geometry places
-// every bead of every Technique (ticket 0630) and this draws what it is told. Layout is in the plan's px (150 dpi); the
-// operators are in points.
+// A chart as drawing (ticket 0585, ADR 0043; PrintChartPage card): PDF operators on a chart page and page 1, sharp at any
+// zoom, and the same calls painted on the PNG's canvas (ticket 0915). The Layer geometry places every bead of every
+// Technique (ticket 0630) and this draws what it is told. Layout is in the plan's px (150 dpi); the drawing is in points.
 
 /** Points per layout px, and per millimetre. */
 export const K = 72 / PRINT_DPI
@@ -184,7 +184,7 @@ const LETTER_ROOM = 0.9
 
 /** A Swatch letter set centred in a box at `size` pt, or smaller where it would be wider than the box: Helvetica-Bold,
  * its baseline the cap height's half below the middle. */
-function letterAt(content: PdfContent, letter: string, box: Box, color: string, largest: number): void {
+function letterAt(content: PageDrawing, letter: string, box: Box, color: string, largest: number): void {
   const squeeze = letter.length > 1 ? LETTER_SQUEEZE : 100
   const wide = (helveticaWidth(letter, 'bold', largest) * squeeze) / 100
   const size = Math.min(largest, (largest * box.width * K * LETTER_ROOM) / wide)
@@ -194,7 +194,7 @@ function letterAt(content: PdfContent, letter: string, box: Box, color: string, 
 }
 
 /** A swatch drawn like a bead on the page: its fill, a hairline edge and its letter (the key's). */
-export function drawKeySwatch(content: PdfContent, x: number, y: number, hex: string, letter: string, round: boolean): void {
+export function drawKeySwatch(content: PageDrawing, x: number, y: number, hex: string, letter: string, round: boolean): void {
   const size = mm(KEY_SWATCH_MM)
   const inset = round ? (size * (1 - ROUND_SHARE)) / 2 : 0
   content.roundRect((x + inset) * K, (y + inset) * K, (size - inset * 2) * K, (size - inset * 2) * K, round ? size : 0, { fill: hex, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
@@ -202,7 +202,7 @@ export function drawKeySwatch(content: PdfContent, x: number, y: number, hex: st
 }
 
 /** One part: its pad outline, beads, lines, letters, rulers and the overlap line, on the page at `pad`. */
-function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters): void {
+function drawPart(content: PageDrawing, project: Project, plan: PrintPlan, part: PrintPart, pad: Box, letters: SwatchLetters): void {
   const grid = displayedGrid(project)
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
@@ -314,7 +314,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
 }
 
 /** Where the part itself begins: the line past the overlap it repeats from the part before. */
-function drawOverlapLine(content: PdfContent, part: PrintPart, pad: Box, chart: Box, stepAcross: number, stepDown: number): void {
+function drawOverlapLine(content: PageDrawing, part: PrintPart, pad: Box, chart: Box, stepAcross: number, stepDown: number): void {
   const seam: [number, number, number, number][] = []
   if (part.overlapAcross) seam.push([(chart.x + part.overlapAcross * stepAcross) * K, pad.y * K, (chart.x + part.overlapAcross * stepAcross) * K, (pad.y + pad.height) * K])
   if (part.overlapDown) seam.push([pad.x * K, (chart.y + part.overlapDown * stepDown) * K, (pad.x + pad.width) * K, (chart.y + part.overlapDown * stepDown) * K])
@@ -339,7 +339,7 @@ function clippedTo(box: Box, [from, to]: readonly [LayoutPoint, LayoutPoint]): [
   return start <= end ? [from.x + start * dx, from.y + start * dy, from.x + end * dx, from.y + end * dy] : undefined
 }
 
-/** An empty position's cross (ticket 0818; the Cover's, ticket 0719), centred at `x`, `y` in layout px, in points. */
+/** An empty position's cross (ticket 0818; the overview's, ticket 0719), centred at `x`, `y` in layout px, in points. */
 function emptyCross(x: number, y: number, size: number): [number, number, number, number][] {
   return emptyCrossArms(x * K, y * K, size * K)
 }
@@ -347,7 +347,7 @@ function emptyCross(x: number, y: number, size: number): [number, number, number
 /** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls on the part, turned as it lies, with
  * its Swatch letter upright; empty positions outlined so the shape reads, each with its cross; its Seams as lines. No cell lines or rulers:
  * its beads keep no rows and columns. */
-function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }, letterSize: number): void {
+function drawCustomPart(content: PageDrawing, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }, letterSize: number): void {
   const own = (bead: ChartBead) => bead.x >= 0 && bead.y >= 0 && bead.x <= part.region.width && bead.y <= part.region.height
   const inOverlap = (bead: ChartBead) => bead.x < overlap.across || bead.y < overlap.down
   const round = beadsAreRound(project)
@@ -381,12 +381,11 @@ function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, 
   }
 }
 
-/** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, as PDF operators, and where each pad
- * sits (the caller's labels and key go by them). */
-export function drawChartParts(project: Project, plan: PrintPlan, parts: PrintPart[], pageHeight: number, letters: SwatchLetters, area = CHART_PAGE_AREA): { content: PdfContent; pads: Box[] } {
-  const content = new PdfContent(pageHeight * K)
+/** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, into `content` (PDF operators, or the
+ * PNG's canvas), and where each pad sits (the caller's labels and key go by them). */
+export function drawChartParts(content: PageDrawing, project: Project, plan: PrintPlan, parts: PrintPart[], letters: SwatchLetters, area = CHART_PAGE_AREA): Box[] {
   const shared = parts.length > 1
   const pads = parts.map((part) => padOf(part, shared, area))
   parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters))
-  return { content, pads }
+  return pads
 }

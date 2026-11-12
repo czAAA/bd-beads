@@ -109,7 +109,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     return true
   }
 
-  /** `more` are the files made, in order, after the first is handed over (the cover PNG's list pages, ticket 0583, and the
+  /** `more` are the files made, in order, after the first is handed over (the PNG's list pages after page 1, tickets 0583, 0915, and the
    * Word chart's PNG, ticket 0574): none when there is nothing more to make. */
   async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => { fileName: string; make: () => Promise<Blob> }[]) {
     const project = deps.currentProject()
@@ -120,7 +120,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     exporting.value = extension
     try {
       const handed = await makeAndHandOver(projectExportFileName(project, extension), () => make(project), type)
-      // Each further page stacks a toast of its own, so every name is read; the cover is page 1.
+      // Each further page stacks a toast of its own, so every name is read; the first is page 1.
       const further = handed ? (more?.(project) ?? []) : []
       for (const [index, next] of further.entries()) {
         const page = index + 2
@@ -229,7 +229,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   function onExportPng() {
     // The words the pictures print (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
-    // The cover is the first; Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
+    // Page 1 is the first (ticket 0915); Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
     // 0586).
     const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date())
     const dpi = pngDpiFor(quality.value)
