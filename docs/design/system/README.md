@@ -128,6 +128,8 @@ A card removed since v19, which the claude.ai copy still has: **PrintSpecificati
 
 - Repo, 2026-11-12, ticket 0895 (DS-1): the quiet converter is signed off (canvas "Quiet Convert image"). The ConvertImage card leads with it (the beads are the page, a short column of four decisions, Create Project from the first second, the crop first on the picture, settings in popovers, no steps or Progress bar); ValueSlider gains the doubling scale; ProgressBar notes the converter's bar goes with ticket 0896; eleven new `--convert-*` values in `bundle.css` and `design-values.css`; the copy in every app language in `writing.md`. No token value, colour or icon changes.
 
+- Repo, 2026-11-12, ticket 0910 (DS-4): the converter on a phone and a portrait tablet is signed off (canvas "Converter on a phone and tablet"). The ConvertImage card gains "On a phone and a tablet" (four layouts from 600 and 1024 px, the beads with a dock at the thumb, one sheet at a time in the dock's place that never takes the beads under half the page, the tools on the beads, the Tablet card and the Side column); the PhoneForms card's Convert image part points to it; fifteen new `--convert-*` values in `bundle.css` and `design-values.css`; the copy in every app language in `writing.md`. No token value, colour or icon changes.
+
 ---
 
 ## Consuming this system

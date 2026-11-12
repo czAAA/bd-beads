@@ -7,6 +7,8 @@ New Project and the Convert image wizard on a phone (and, for Convert image, a p
 
 ## Convert image page (tickets 0646, 0756)
 
+**Replaced by DS-4 (ticket 0910), built by tickets 0911 and 0919:** the ConvertImage card's "On a phone and a tablet" wins over this part. There is no preview above a scrolling step: the beads take the page, a dock at the thumb holds the result, five settings and Create Project, and each setting opens as a sheet in the dock's place that never takes the beads under half the page. The text below is the page as built by tickets 0756 and 0780 and stays true until ticket 0911 lands.
+
 Under 1024 px wide, or in portrait, the Convert image page (ConvertImage card) keeps the canvas box it has at every size (ADR 0086): there is no full-screen sheet and no header of its own. The strip above it holds Menu and Close, the Progress bar below it the five steps.
 
 - **Preview**, above the step: at most 300 tall on a phone (`--convert-preview-phone`), 440 on a portrait tablet (`--convert-preview-tablet`), never under 160 (`--convert-preview-min`), a 1px `panel-rule` under it. It gives way to the step when the box is short: at most half the box, and down to 40% of it under 160 (ticket 0820). It does not shrink as the step scrolls: the step scrolls on its own, under the preview.
