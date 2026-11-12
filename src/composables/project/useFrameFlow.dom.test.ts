@@ -220,6 +220,16 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(false)
   })
 
+  it('sets the Frame round the reference image: Add Frame with none, in the old one\'s place with one, one Undo step (ticket 0883)', () => {
+    const { deps, setAround } = setup(open)
+    setAround({ row: 2, column: 3, rows: 4, columns: 5 })
+    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5 })
+    setAround({ row: 0, column: 0, rows: 6, columns: 6 })
+    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 0, column: 0, rows: 6, columns: 6 })
+    deps.harness.history.onUndo()
+    expect(rect(frameOf(deps.harness.project)!)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5 })
+  })
+
   describe('explains a snap that grew the Frame (ticket 570)', () => {
     const woven = (technique: 'brick') =>
       withFrame(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), undefined)
@@ -664,6 +674,18 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     deps.harness.history.onUndo()
     expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(painted))
     expect(deps.harness.history.canUndo.value).toBe(false)
+  })
+
+  it('replaces it by a rectangular Frame round the reference image, its beads on the Canvas, one Undo step (ticket 0883)', () => {
+    const { deps, setAround } = setup(custom('triangle', 9))
+    deps.harness.replaceProject(withLayers(deps.harness.project, { frame: { ...frameOf(deps.harness.project)!, beads: { 8: { 0: '#ff0000' } } } }))
+    const painted = deps.harness.project
+    setAround({ row: 2, column: 3, rows: 4, columns: 5 })
+    expect(frameOf(deps.harness.project)).toMatchObject({ row: 2, column: 3, rows: 4, columns: 5 })
+    expect(frameOf(deps.harness.project)?.shape).toBeUndefined()
+    expect(Object.keys(beadsOfLayer(deps.harness.project, 'canvas')).length).toBeGreaterThan(0)
+    deps.harness.history.onUndo()
+    expect(frameSheetOf(deps.harness.project)).toEqual(frameSheetOf(painted))
   })
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {

@@ -25,6 +25,22 @@ async function bar(withPicture = true) {
 const dots = (wrapper: Awaited<ReturnType<typeof bar>>['wrapper']) => wrapper.findAll('.step-dot')
 
 describe('ConvertStepBar', () => {
+  it('ends in Add to Canvas when opened from the reference image\'s All settings (ticket 0883)', async () => {
+    const wizard = effectScope().run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
+        decodeImage: async () => picture(),
+        loadCatalog: () => Promise.reject(new Error('none')),
+        addsToCanvas: true,
+      }),
+    )!
+    await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
+    const wrapper = mount(ConvertStepBar, { props: { wizard } })
+    wizard.setScroll(4)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="convert-image-create"]').text()).toBe(en.convertImage.addToCanvas)
+  })
+
   it('holds the five steps as named dots on the Progress bar, with a counter and Back and Next', async () => {
     const { wrapper } = await bar()
     expect(dots(wrapper).map((dot) => dot.text())).toEqual(['picture & bead', 'background', 'size', 'colors', 'review'])

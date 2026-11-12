@@ -7,13 +7,12 @@ import {
   frameWithEdgeStep,
   frameWithSize,
   movedFrame,
-  snapColumn,
-  snapRow,
+  snappedFrame,
   type FrameEdge,
 } from '../../domain/frame'
 import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
-import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
+import { changeCanvasWeave, changeFrame, frameChangeRefusal, framedAround } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, settingsOf, settingValuesOf, sizeSettingOf, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
@@ -154,10 +153,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
    * A resize stopped at a named Schema's edge says which (ticket 0639). */
-  function commit(frame: Rect | undefined, how: 'set' | 'make' = 'set'): boolean {
+  function commit(frame: Rect | undefined, how: 'set' | 'make' | 'around' = 'set'): boolean {
     const before = deps.currentProject()
     const stoppedAt = frame && how === 'set' && before ? grownFrame(before, frame).stoppedAt : undefined
-    const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }))
+    const outcome = deps.edit('frame', (project) =>
+      frame && how === 'around' ? framedAround(project, frame) : changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }),
+    )
     if (stoppedAt !== undefined && outcome.kind !== 'refused') deps.showToast('frame-cuts-schema', fillBlanks(deps.messages().frame.refusedCutsSchema, { name: stoppedAt }), 'info')
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
@@ -303,14 +304,20 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   // columns do (ticket 0734); with a Frame already set, it moves it there.
   function setTo(frame: Rect): void {
     const project = deps.currentProject()
-    const canvas = project && heldWeave(project, 'canvas')
-    const top = canvas ? snapRow(canvas, frame.row) : frame.row
-    const left = canvas ? snapColumn(canvas, frame.column) : frame.column
-    const applied = commit({ row: top, column: left, rows: frame.row + frame.rows - top, columns: frame.column + frame.columns - left }, 'make')
+    const snapped = project ? snappedFrame(heldWeave(project, 'canvas'), frame) : frame
+    const top = snapped.row
+    const left = snapped.column
+    const applied = commit(snapped, 'make')
     // Ticket 570: a toast saying how many rows or columns the snap added to what was picked.
     const words = deps.messages().frame
     if (applied && top < frame.row) deps.showToast('frame-snapped', plural(deps.locale(), frame.row - top, words.snapAddedTop), 'info')
     else if (applied && left < frame.column) deps.showToast('frame-snapped', plural(deps.locale(), frame.column - left, words.snapAddedLeft), 'info')
+  }
+
+  /** Set Frame around the picture (ticket 0883): the Frame becomes the rectangle round the reference image's beads,
+   * already snapped where a Frame may start (domain's framedAround: a Custom frame becomes rectangular). One Undo step. */
+  function setAround(frame: Rect): void {
+    commit(frame, 'around')
   }
 
   function fit(): void {
@@ -431,6 +438,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   return {
+    setAround,
     settingFrame,
     barShown,
     /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling
@@ -467,3 +475,4 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     bringIntoView,
   }
 }
+

@@ -15,6 +15,11 @@ import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ReferenceAdjust from './ReferenceAdjust.vue'
 import ReferenceAdjustBar from './ReferenceAdjustBar.vue'
+import ReferencePictureBar from './ReferencePictureBar.vue'
+import ReferencePreviews from './ReferencePreviews.vue'
+import ConvertToBeadsPopover from './ConvertToBeadsPopover.vue'
+import { usePictureBarLayout } from '../../composables/canvas/usePictureBarLayout'
+import { rowProgressStarted } from '../../domain/rowProgress'
 import ProgressBar from './ProgressBar.vue'
 import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
@@ -73,6 +78,7 @@ const {
   stroking,
   toggleRulers,
   referenceImage,
+  pictureBar,
   rowHighlight,
   toggleRowHighlight,
   rowPress,
@@ -238,7 +244,55 @@ const handled = computed(() => {
   return { image, limits, aspect: image.picture.height / image.picture.width, bead: cellSizePx(weave.technique, weave.cell).width, view: surfaceView.value }
 })
 
-const shownProject = frameDraftProject
+/** The Project as drawn: Convert to beads' preview while its popover is open (ticket 0883), else the Frame mid-drag. */
+const shownProject = computed(() => pictureBar.previewProject.value ?? frameDraftProject.value)
+
+const pictureBarRef = ref<InstanceType<typeof ReferencePictureBar>>()
+/** Convert to beads' popover closed: focus goes back to its button on the bar. */
+function closeConvert() {
+  pictureBar.close()
+  pictureBarRef.value?.focusConvert()
+}
+/** A handle of the picture is pressed: its bar hides meanwhile (ticket 0883). */
+const referencePressing = ref(false)
+/** Set Frame around the picture is hovered or focused: its new Frame is previewed. */
+const framePreviewOn = ref(false)
+const pictureLayout = usePictureBarLayout({
+  project: () => activeProject.value,
+  view: () => surfaceView.value,
+  place: () => referenceImage.place.value,
+  covered: () => pictureBar.box.value,
+  framed: () => pictureBar.frameBox.value,
+  sheet: () => frameAnchor.value?.sheet,
+  framePreviewOn,
+  converting: () => pictureBar.converting.value,
+  messages: () => t.value,
+})
+/** The shown picture's own controls stand outside Adjust (ticket 0883): Convert to beads' popover and preview stay
+ * through a corner drag, which updates them live; the bar hides while a handle is dragged. */
+const pictureOnEditor = computed(() => !!handled.value && onEditor.value && !referenceImage.adjusting.value && !!pictureLayout.picture.value)
+const barShown = computed(() => pictureOnEditor.value && !referencePressing.value)
+watch(barShown, (shown) => shown || (framePreviewOn.value = false))
+/** The size while a corner is dragged: "28×19 beads" over its measure. */
+const referenceSize = computed(() => {
+  const size = pictureBar.size.value
+  const words = t.value.referenceImage.bar
+  return size && { beads: fillBlanks(words.sizeBeads, { size: size.grid }), measure: fillBlanks(words.sizeMeasure, { measure: size.measure }) }
+})
+/** Set Frame around the picture's and Convert to beads' Tooltip bodies, and why each is off. */
+const barTooltips = computed(() => {
+  const words = t.value.referenceImage
+  const size = pictureBar.size.value?.grid ?? ''
+  const project = activeProject.value
+  const off = pictureBar.convertOff.value
+  const framed = pictureBar.frameBox.value
+  return {
+    frame: fillBlanks(frameOf(project) ? words.frameAround.body : words.frameAround.bodyNew, { size: framed ? `${framed.columns}×${framed.rows}` : size }),
+    frameOff: project && rowProgressStarted(project) ? t.value.tooltips.rowProgressLockedFrame : !pictureBar.box.value ? words.convert.tooSmall : undefined,
+    convert: fillBlanks(words.convert.body, { size }),
+    convertOff: off === 'too-small' ? words.convert.tooSmall : off === 'too-big' ? words.convert.tooBig : undefined,
+  }
+})
 
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
@@ -436,7 +490,7 @@ const drawingStyle = computed(() => {
                 :selection-refusals="selectionRefusals"
                 :fill-refusals="fillRefusals"
                 :label="projectLabel"
-                :reference="referenceImage.drawn.value"
+                :reference="pictureBar.converting.value ? undefined : referenceImage.drawn.value"
                 @surface-view="surfaceView = $event"
                 @cell-primary-down="onCellPrimaryDown"
                 @cell-primary-move="onCellPrimaryMove"
@@ -461,6 +515,12 @@ const drawingStyle = computed(() => {
                 @pressing="surfacePressing = $event"
                 @drawn="onSurfaceDrawn"
               />
+              <!-- What Set Frame around the picture and Convert to beads would make, under the picture's handles (ticket 0883). -->
+              <ReferencePreviews
+                v-if="pictureOnEditor && (pictureLayout.framePreview.value || pictureLayout.convertPreview.value)"
+                :frame="pictureLayout.framePreview.value"
+                :convert="pictureLayout.convertPreview.value"
+              />
               <!-- The reference image's handles over the drawing whenever it is shown, its outline in Adjust (tickets 0790,
                 0799), outside its image role. -->
               <ReferenceAdjust
@@ -474,7 +534,10 @@ const drawingStyle = computed(() => {
                 :adjusting="referenceImage.adjusting.value"
                 @preview="referenceImage.preview"
                 @commit="referenceImage.commit"
+                :size="referenceSize"
+                :sheet="frameAnchor?.sheet"
                 @done="referenceImage.endAdjust"
+                @pressing="referencePressing = $event"
               />
               <EmptyCanvas v-else-if="!activeProject" :deleted="deletedProjectName" :quiet="openPanel !== null" @library="openMenuOnSavedProjects">
                 <div class="app-shell__empty-actions" data-testid="phone-project-bar">
@@ -482,6 +545,53 @@ const drawingStyle = computed(() => {
                   <ProjectImport compact :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" />
                 </div>
               </EmptyCanvas>
+              <!-- The picture bar over the shown reference image's top edge, and Convert to beads beside it (ticket 0883). -->
+              <ReferencePictureBar
+                v-if="barShown && handled"
+                ref="pictureBarRef"
+                :place="handled.image.place"
+                :picture="pictureLayout.picture.value!"
+                :bar-height="pictureLayout.barHeight.value"
+                :sheet="frameAnchor?.sheet"
+                :view="handled.view"
+                :bead="handled.bead"
+                :opacity="handled.image.opacity"
+                :frame-body="barTooltips.frame"
+                :frame-off="barTooltips.frameOff"
+                :convert-body="barTooltips.convert"
+                :convert-off="barTooltips.convertOff"
+                :converting="pictureBar.converting.value"
+                @preview="referenceImage.preview"
+                @commit="referenceImage.commit"
+                @frame-preview="framePreviewOn = $event"
+                @frame="pictureBar.frameAround"
+                @convert="pictureBar.converting.value ? pictureBar.close() : pictureBar.open()"
+                @opacity="referenceImage.setOpacity"
+                @replace="referenceImage.pick($event, 'bar')"
+                @remove="referenceImage.requestRemove"
+              />
+              <ConvertToBeadsPopover
+                v-if="pictureOnEditor && pictureBar.converting.value && pictureBar.size.value && surfaceView"
+                :picture="pictureLayout.picture.value!"
+                :bar-top="pictureLayout.barTop.value"
+                :viewport="surfaceView.viewport"
+                :size="pictureBar.size.value"
+                :source="pictureBar.source.value"
+                :bead-name="pictureBar.hasCatalog.value ? pictureBar.beadName.value : undefined"
+                :colors="pictureBar.colors.value"
+                :colors-max="pictureBar.colorsMax.value"
+                :swatches="pictureBar.conversion.value?.colors ?? []"
+                :hide-after="pictureBar.hideAfter.value"
+                :convert-label="pictureBar.convertLabel.value"
+                :replaced-label="pictureBar.replacedLabel.value"
+                :ready="!!pictureBar.conversion.value"
+                @close="closeConvert"
+                @source="pictureBar.setSource"
+                @colors="pictureBar.setColors"
+                @hide-after="pictureBar.hideAfter.value = $event"
+                @all-settings="pictureBar.allSettings"
+                @convert="pictureBar.convert"
+              />
             </div>
 
             <!-- The unframed Schemas' names on tags (tickets 0721, 0733, SchemaTag card): over the beads, one Tab stop after
