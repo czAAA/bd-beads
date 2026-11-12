@@ -32,6 +32,70 @@ Signed off on 2026-11-12 in the design canvas "Quiet Convert image" (https://cla
 
 **Retired with ticket 0896:** the step pane and its `convert-sections-width`, `--convert-sections-width-narrow`, `--convert-band-height`, `--convert-step-head`, `--convert-step-end` and `--step-disc`; the band; the five steps' headers and summaries; the converter's Progress bar (the Homepage keeps its own, ProgressBar card); Review's Name, Maker's name and Beads needed box. New values: `--convert-column-width`, `--convert-column-width-narrow`, `--convert-fit-top` (72), `--convert-fit-side` (40), `--convert-fit-bottom` (90), `--convert-fit-bottom-touch` (96), `--convert-popover-width`, `--convert-colors-popover-width`, `--convert-colors-popover-width-narrow`, `--convert-background-popover-width`, `--convert-background-popover-width-touch`. The thumbnail becomes 44 × 54 (`--convert-thumb-width`, `--convert-thumb-height` change with 0896). Copy: writing.md, "Quiet converter copy (ticket 0895)".
 
+## Colors that are real beads (DS-2, ticket 0899)
+
+Signed off on 2026-11-12 in the design canvas "Colors that are real beads" (https://claude.ai/artifact/7WKsBePyW1iRRhkW4pJ2oY). It is placed into DS-1's column and Colors popover above. It is built by tickets:
+- 0901: the line at rest, match to and Finish;
+- 0902: My beads as a source and its view;
+- 0903: finding, filtering and pasting in it;
+- 0904: the neighbours and the slider's range;
+- 0905: the mark for an approximate swatch;
+- 0918: My beads in the Palette popover.
+
+Each ticket's `### From the design (DS-2)` section holds every size, state and check. The first window keeps DS-1's 12 controls: only the line under Colors changes.
+
+**The line at rest.** Under the Colors slider, in `meta-small` `muted`, the source and the Finishes in one line, in place of DS-1's "matched to the {bead} palette":
+- "miyuki delica 11/0 · opaque, matte";
+- "miyuki delica 11/0" with no Finish on;
+- "{bead} · {n} finishes" with four or more;
+- "my beads · 40 codes", "default palette", "the picture's own colors".
+
+When fewer colors come out than asked, the result's second line at the column's foot says why: "8 colors (your list has 8)", "9 colors (only 9 codes left)". The slider stays at the count asked.
+
+**The number of colors and its neighbours** (0904):
+- The Colors slider runs 1 to 40 on the doubling scale (ValueSlider card), marks at 5, 10 and 20, ends "1" and "40+".
+- While the slider has focus or is held, and while focus is inside it, the **neighbours' card** stands beside it over the preview's right edge, 12 left of the column. It is `elevated`, `radius-lg`, `elevation-3`, padding 12 12 10. It holds:
+  - three real conversions, one color fewer, the count shown and one more, each `--convert-neighbour-width` (96) wide and as tall as the picture's shape, captioned "11 colors". The middle one carries the selected `ring`.
+  - under a rule, "type a number", the field (`--convert-count-field-width`, 64) and "1 to 256".
+- A tap takes a neighbour's count and the three shift.
+- At 1 the left place is an empty dashed card "no fewer"; at 256 the right is "no more".
+- A neighbour the codes cap to the same beads is faded and not pressable.
+- The card leaves when focus leaves, on Escape, or on a press outside.
+- On a phone it is a sheet holding the slider too (ticket 0911).
+
+**match to and Finish** (0901), in the Colors popover's head, in place of DS-1's segmented control:
+- The **match to** menu button fills the row and shows the source.
+- Its listbox lists "{Bead} palette" with its count, My beads (once the list holds a code) with its count, Default Palette and Exact. Under a rule comes "Edit My beads", or "Choose My beads" while the list is empty.
+- Beside it is the **Finish** button, with the BeadColors Filters badge. It opens the BeadColors card's Finish list itself (`--convert-finish-list-width`, 232): the nine Finishes with live counts, Clear filters, and at its foot "codes in 11/0: 412".
+- When fewer codes are left than the colors asked, a line follows: "Only 9 codes left: 9 colors, not 12."
+- Finish applies to the Bead's palette and to My beads. It is off for Default Palette and Exact, with the reason in its Tooltip.
+- The (i) "Where colors come from" gains paragraphs for My beads and Finish.
+- The Change picker's "Palette {bead}" opens with the same Finishes on, or on My beads.
+
+**My beads** (0902, 0903): one list of owned codes per Color catalog, yes or no, kept on the device (as Export quality is), never sent.
+- "Edit My beads" turns the Colors popover into its **My beads view**, with a back arrow ("Back to Colors"). It is not a popover or panel of its own.
+- The view's head: "My beads" with (i) "What My beads is", "40 codes", and "color catalog · miyuki delica".
+- Then:
+  - the empty state "No codes yet. Tick the codes you own, or paste a list of them.";
+  - the switch "All codes | My beads" with counts;
+  - the BeadColors search and Filters, and the count line;
+  - the rows, each one button that ticks the code (a 20 tick box at its right, `aria-pressed`). A discontinued code stays greyed: "· discontinued, never matched".
+- The foot holds:
+  - **Paste codes**, which opens a field that takes codes one a line or between commas or spaces, with or without the catalog's letters, then **Add codes**; ⌘V in the view does the same;
+  - the result "32 added" and "2 not known: …";
+  - **Clear list**, which confirms in place: "Clear all 40 codes?".
+- A list shorter than the count asked gives fewer colors; nothing is taken from outside it.
+- **Outside the converter** the same list lives with the Bead's colors in the editor's Palette popover (BeadColors card; ticket 0918).
+
+**Measured and approximate** (0905):
+- An approximate Bead color's swatch carries a 1px dashed `field-line` outline, 1px out; a measured one is plain. The mark is the same at 16 and 24, light and dark, and it is a shape, so it reads without color.
+- It shows on Color by color's "becomes" swatch, in the Change picker (head, grid, list) and in the My beads rows. It never shows on a Default Palette, Exact, kept exact or empty swatch.
+- The count line reads "codes in 11/0: 412 · 96 measured", with a legend at its right: a 12 marked swatch and "approximate".
+- Tooltips: "Approximate color" ("Made from the color family and the Finish. The real bead may look different.") and "Measured color" ("Read from a photo of this bead.").
+- A row's accessible name gains ", approximate color".
+
+New values: `--convert-neighbour-width` (96), `--convert-count-field-width` (64), `--convert-finish-list-width` (232). Copy: writing.md, "Colors that are real beads copy (ticket 0899)".
+
 ## On a phone and a tablet (DS-4, ticket 0910)
 
 Signed off on 2026-11-12 in the design canvas "Converter on a phone and tablet" (https://claude.ai/artifact/K7fpjABA1D9toqPn4sXEx5); built by tickets 0911 (the page, the dock, the sheet and its rules, the Width, Size, Colors, Bead and Technique, Picture and Background sheets, the tools on the beads, Create Project, leaving) and 0919 (the Colors list with My beads, Clean up and Lighting as sheets), whose `### From the design (DS-4)` sections hold every size, state and check. It lays out DS-1, DS-2 and DS-3 and ranks nothing again: what is always on at the desktop is one press on a phone, what is one press there is two. No control is added or taken away. **This section wins over "Frame" and "Steps" below and over the PhoneForms card's Convert image part** under 1024 px or in portrait.
