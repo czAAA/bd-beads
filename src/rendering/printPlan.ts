@@ -6,8 +6,8 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
 import { heldWeave, type Layered, quarterTurnOf } from '../domain/layerRecord'
 
-// PDF page layout (ticket 162, 185, 578, 0584): the Cover page whole, then parts of as many beads as fill a chart page at
-// one bead size, small parts sharing a sheet; page px at 150 dpi.
+// PDF page layout (ticket 162, 185, 578, 0584, 0913): the Cover page whole, then the chart, whole on one sheet or cut into
+// equal parts, at the largest bead the sheets allow and the same on every chart page; page px at 150 dpi.
 
 export const PRINT_DPI = 150
 /** Millimetres as page px. */
@@ -15,9 +15,16 @@ export function mm(value: number): number {
   return (value * PRINT_DPI) / 25.4
 }
 
-/** One bead on every chart page (`print-chart-cell`), a size a weaver can work from (ticket 0584).
- * @internal Tests size a chart page's pads by it. */
-export const PRINT_CHART_CELL_MM = 3
+/** The chart's bead (ticket 0913, PrintChartPage card): at least `print-bead-min`, or `print-bead-stretch` only to keep the
+ * whole Schema on one sheet, and at most `print-bead-max`; a PDF of several chart pages keeps its bead to 3 mm. */
+export const PRINT_BEAD_MIN_MM = 1.8
+/** @internal The token test holds it to `print-bead-stretch`. */
+export const PRINT_BEAD_STRETCH_MM = 1.6
+/** @internal The token test holds it to `print-bead-max`. */
+export const PRINT_BEAD_MAX_MM = 9
+const PART_BEAD_MAX_MM = 3
+/** Two-letter Swatch letters (more than 26 colors) do not read on a smaller bead. */
+export const PRINT_BEAD_TWO_LETTER_MM = 2.2
 export const PRINT_MARGIN = mm(10)
 export const PRINT_HEADER = mm(12)
 /** The gap between the header and the first pad. */
@@ -80,8 +87,9 @@ export interface PrintPart {
 export interface PrintPlan {
   /** Always A4 portrait (printed-output.md, Wide and long Schemas). */
   page: PageSize
-  /** One bead is CELL_SIZE_PX × zoom px on every chart page. */
+  /** One bead is CELL_SIZE_PX × zoom px on every chart page, `beadMm` millimetres. */
   zoom: number
+  beadMm: number
   partsAcross: number
   partsDown: number
   parts: PrintPart[]
@@ -135,15 +143,18 @@ interface Shelf {
 }
 
 /** Puts boxes on sheets: left to right along a shelf, a new shelf below, a new sheet when none has room (first fit, so
- * a small part fills a gap on an earlier sheet). A box too big for an empty sheet still gets one. */
+ * a small part fills a gap on an earlier sheet). A sheet's last shelf grows for a taller box where the sheet has room,
+ * so a strip that repeats rows of the one before still stands beside it. A box too big for an empty sheet still gets one. */
 function packSheets(sizes: PageSize[], area: PageSize): { sheet: number; x: number; y: number }[] {
   const sheets: Shelf[][] = []
   return sizes.map((size) => {
     for (const [sheet, shelves] of sheets.entries()) {
       for (const shelf of shelves) {
-        if (shelf.used + size.width <= area.width + FIT_SLOP && size.height <= shelf.height + FIT_SLOP) {
+        const tall = shelf === shelves.at(-1) ? area.height - shelf.y : shelf.height
+        if (shelf.used + size.width <= area.width + FIT_SLOP && size.height <= tall + FIT_SLOP) {
           const x = shelf.used
           shelf.used += size.width + PRINT_PART_GAP
+          shelf.height = Math.max(shelf.height, size.height)
           return { sheet, x, y: shelf.y }
         }
       }
@@ -159,81 +170,194 @@ function packSheets(sizes: PageSize[], area: PageSize): { sheet: number; x: numb
   })
 }
 
-/** How many beads of a side fill `room` px at `zoom`, or the whole `total` when they all fit. */
-function beadsThatFit(extentOf: (beads: number) => number, zoom: number, room: number, total: number): number {
-  const fits = (beads: number) => extentOf(beads) * zoom <= room + FIT_SLOP / 2 /* half a px: A4 is 1240.2 px, and the page is 1240 */
-  let beads = 1
-  while (beads < total && fits(beads + 1)) beads += 1
-  return beads
+interface Span {
+  first: number
+  last: number
 }
 
-/** The beads each part owns along a side that holds `full` beads: the first fills the side, the rest give `print-part-overlap`
- * of it to the beads they repeat from the part before ("60 + 40" for a 100 side, PrintChartPage card). */
-function cutSide(total: number, full: number): { first: number; last: number }[] {
-  const cuts = [{ first: 0, last: Math.min(total, full) - 1 }]
-  while (cuts.at(-1)!.last < total - 1) {
-    const first = cuts.at(-1)!.last + 1
-    cuts.push({ first, last: Math.min(total, first + Math.max(1, full - PRINT_PART_OVERLAP)) - 1 })
-  }
-  return cuts
+/** How the chart is cut: the beads each part owns along each side. */
+interface Cut {
+  across: Span[]
+  down: Span[]
 }
 
-/** Cuts the displayed chart into parts of the most beads a chart page holds across and down (3 mm a bead, rulers and
- * overlap included), from the top left, and lays them on sheets in reading order (tickets 578, 0584). */
-export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPages = 0, keyRows = 1): PrintPlan {
+/** `count` parts of a side of `total` beads, as equal as whole beads allow: a 150 side is "75 + 75", never "100 + 50"
+ * (ticket 0913). Each part but the first also repeats `print-part-overlap` beads of the one before. */
+function cutSide(total: number, count: number): Span[] {
+  return Array.from({ length: count }, (_, index) => ({ first: Math.round((total * index) / count), last: Math.round((total * (index + 1)) / count) - 1 }))
+}
+
+/** Where a cut prefers to fall: on a ruler's ten, the heavy line. */
+const CUT_STEP = 10
+
+/** The same cuts moved to the nearest multiple of `CUT_STEP`, or none when they are there already or a part would be
+ * left under half the size of another. */
+function snappedSide(sides: Span[], total: number): Span[] | undefined {
+  const edges = [0, ...sides.slice(1).map((side) => Math.round(side.first / CUT_STEP) * CUT_STEP), total]
+  const owned = sides.map((_, index) => edges[index + 1]! - edges[index]!)
+  if (owned.some((beads) => beads * 2 < Math.max(...owned))) return undefined
+  if (sides.every((side, index) => side.first === edges[index])) return undefined
+  return sides.map((_, index) => ({ first: edges[index]!, last: edges[index + 1]! - 1 }))
+}
+
+/** A part as cut, with where it sits in the whole chart at zoom 1, its overlap included. */
+type Block = Omit<PrintPart, 'page' | 'place'>
+
+function blocksOf(project: Shape, cut: Cut): Block[] {
   const grid = displayedGrid(project)
   // Measured in the Canvas's Weave as held, without its Bead's cell.
   const canvas = heldWeave(project, 'canvas')
-  const zoom = mm(PRINT_CHART_CELL_MM) / CELL_SIZE_PX
-  const inset = PRINT_RULER
-  const area = chartArea(page, keyRows)
-  // Two rows (columns) are counted so a brick or peyote part's half-bead offset is in the width (height).
-  const fullAcross = beadsThatFit((beads) => blockExtent(canvas, quarterTurnOf(project), beads, 2).width, zoom, area.width - inset * 2, grid.across)
-  const fullDown = beadsThatFit((beads) => blockExtent(canvas, quarterTurnOf(project), 2, beads).height, zoom, area.height - inset * 2, grid.down)
-  const sidesAcross = cutSide(grid.across, fullAcross)
-  const sidesDown = cutSide(grid.down, fullDown)
-  const partsAcross = sidesAcross.length
-  const partsDown = sidesDown.length
-
-  const cut: Omit<PrintPart, 'page' | 'place'>[] = []
-  for (let down = 0; down < partsDown; down += 1) {
-    for (let across = 0; across < partsAcross; across += 1) {
-      const { first: firstAcross, last: lastAcross } = sidesAcross[across]!
-      const { first: firstDown, last: lastDown } = sidesDown[down]!
+  const blocks: Block[] = []
+  cut.down.forEach(({ first: firstDown, last: lastDown }, down) => {
+    cut.across.forEach(({ first: firstAcross, last: lastAcross }, across) => {
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown)
       const extent = blockExtent(canvas, quarterTurnOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
-      cut.push({
-        across,
-        down,
-        letter: partLetter(cut.length),
-        firstAcross,
-        lastAcross,
-        firstDown,
-        lastDown,
-        overlapAcross,
-        overlapDown,
-        region: {
-          x: (firstAcross - overlapAcross) * grid.stepAcross * zoom,
-          y: (firstDown - overlapDown) * grid.stepDown * zoom,
-          width: Math.ceil(extent.width * zoom),
-          height: Math.ceil(extent.height * zoom),
-        },
-      })
+      const region = { x: (firstAcross - overlapAcross) * grid.stepAcross, y: (firstDown - overlapDown) * grid.stepDown, ...extent }
+      blocks.push({ across, down, letter: partLetter(blocks.length), firstAcross, lastAcross, firstDown, lastDown, overlapAcross, overlapDown, region })
+    })
+  })
+  return blocks
+}
+
+/** A block's region at `zoom`, whole px across and down. */
+function regionAt(block: Block, zoom: number): Region {
+  const { x, y, width, height } = block.region
+  return { x: x * zoom, y: y * zoom, width: Math.ceil(width * zoom), height: Math.ceil(height * zoom) }
+}
+
+/** The largest zoom at which every block, with its rulers, fits a chart area on its own. */
+function largestZoom(blocks: Block[], area: PageSize): number {
+  const room = { width: area.width - PRINT_RULER * 2, height: area.height - PRINT_RULER * 2 }
+  return Math.min(...blocks.map(({ region }) => Math.min(room.width / region.width, room.height / region.height)))
+}
+
+/** Each block's box on a sheet at `zoom`: its pad and room for the label a shared sheet puts above it; a pad as tall as
+ * the sheet has none to spare and is alone on it. */
+function boxesAt(blocks: Block[], zoom: number, area: PageSize): PageSize[] {
+  return blocks.map((block) => {
+    const { width, height } = regionAt(block, zoom)
+    return { width: width + PRINT_RULER * 2, height: Math.min(height + PRINT_RULER * 2 + PRINT_PART_LABEL, area.height) }
+  })
+}
+
+/** How many sheets packed boxes take. */
+function sheetCount(placed: { sheet: number }[]): number {
+  return placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
+}
+
+function sheetsAt(blocks: Block[], zoom: number, area: PageSize): number {
+  return sheetCount(packSheets(boxesAt(blocks, zoom, area), area))
+}
+
+/** Halvings of the search for the largest bead: far finer than a print can show. */
+const SEARCH_STEPS = 16
+
+/** The largest zoom in `low`–`high` that `holds`, or none when not even `low` does. */
+function largestWhere(holds: (zoom: number) => boolean, low: number, high: number): number | undefined {
+  if (!holds(low)) return undefined
+  if (holds(high)) return high
+  let [yes, no] = [low, high]
+  for (let step = 0; step < SEARCH_STEPS; step += 1) {
+    const middle = (yes + no) / 2
+    if (holds(middle)) yes = middle
+    else no = middle
+  }
+  return yes
+}
+
+/** One way to print the chart: its cut, its bead and the sheets it takes. */
+interface Choice {
+  cut: Cut
+  zoom: number
+  sheets: number
+}
+
+/** The most strips a long narrow Schema is folded into, and the further part counts tried past the fewest that fit. */
+const MOST_STRIPS = 16
+const MORE_PARTS = 3
+/** A bead gain too small to see on paper: a plan of more parts must beat a plan of fewer by more than this. */
+const BEAD_GAIN_MM = 0.05
+
+/** How the chart is printed (ticket 0913; printed-output.md, Chart pages): whole on one sheet at `print-bead-stretch` or
+ * more, else equal parts on the fewest sheets that keep the bead at `floorMm` or more, then at the largest bead they allow;
+ * cuts on a multiple of 10 where the parts still fit, and a long narrow Schema folded into strips when that is bigger. */
+export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPages = 0, keyRows = 1, floorMm = PRINT_BEAD_MIN_MM): PrintPlan {
+  const grid = displayedGrid(project)
+  const area = chartArea(page, keyRows)
+  const zoomOf = (beadMm: number) => mm(beadMm) / CELL_SIZE_PX
+  // A raised floor (two-letter Swatch letters) has no stretch.
+  const stretch = floorMm > PRINT_BEAD_MIN_MM ? floorMm : Math.min(floorMm, PRINT_BEAD_STRETCH_MM)
+  const floor = zoomOf(floorMm)
+  const cutInto = (across: number, down: number): Cut => ({ across: cutSide(grid.across, across), down: cutSide(grid.down, down) })
+  const choices: Choice[] = []
+
+  // The whole Schema on one sheet, down to the stretch.
+  const whole = cutInto(1, 1)
+  const wholeZoom = Math.min(zoomOf(PRINT_BEAD_MAX_MM), largestZoom(blocksOf(project, whole), area))
+  if (wholeZoom >= zoomOf(stretch)) choices.push({ cut: whole, zoom: wholeZoom, sheets: 1 })
+
+  // A Schema under a part page's bead whole may fold into strips side by side, or stacked, on one sheet.
+  const onOneSheet = (blocks: Block[]) => (zoom: number) => zoom <= largestZoom(blocks, area) && sheetsAt(blocks, zoom, area) === 1
+  if (wholeZoom < zoomOf(PART_BEAD_MAX_MM)) {
+    for (let count = 2; count <= MOST_STRIPS; count += 1) {
+      for (const cut of [count <= grid.down ? cutInto(1, count) : undefined, count <= grid.across ? cutInto(count, 1) : undefined]) {
+        if (!cut) continue
+        const zoom = largestWhere(onOneSheet(blocksOf(project, cut)), floor, zoomOf(PRINT_BEAD_MAX_MM))
+        if (zoom !== undefined) choices.push({ cut, zoom, sheets: 1 })
+      }
     }
   }
 
-  // Each box holds room for the label a shared sheet puts above its pad; a pad as tall as the sheet has none to spare and
-  // is alone on it.
-  const sizes = cut.map(({ region }) => ({ width: region.width + inset * 2, height: Math.min(region.height + inset * 2 + PRINT_PART_LABEL, area.height) }))
+  // Equal parts on several sheets, each at the largest bead a sheet allows up to a part page's; small parts share one.
+  const partCap = zoomOf(Math.max(PART_BEAD_MAX_MM, floorMm))
+  const fewest = (total: number, fits: (count: number) => boolean) => {
+    let count = 1
+    while (count < total && !fits(count)) count += 1
+    return count
+  }
+  const fewestAcross = fewest(grid.across, (count) => largestZoom(blocksOf(project, cutInto(count, 1)), { width: area.width, height: Infinity }) >= floor)
+  const fewestDown = fewest(grid.down, (count) => largestZoom(blocksOf(project, cutInto(1, count)), { width: Infinity, height: area.height }) >= floor)
+  for (let across = fewestAcross; across <= Math.min(grid.across, fewestAcross + MORE_PARTS); across += 1) {
+    for (let down = fewestDown; down <= Math.min(grid.down, fewestDown + MORE_PARTS); down += 1) {
+      if (across * down === 1) continue
+      const cut = cutInto(across, down)
+      const blocks = blocksOf(project, cut)
+      const zoom = Math.min(partCap, largestZoom(blocks, area))
+      if (zoom >= floor) choices.push({ cut, zoom, sheets: sheetsAt(blocks, zoom, area) })
+    }
+  }
+
+  // The fewest sheets, then the largest bead, and of beads alike the fewest parts.
+  const partsIn = (choice: Choice) => choice.cut.across.length * choice.cut.down.length
+  const best = [...choices].sort((a, b) => partsIn(a) - partsIn(b)).reduce<Choice | undefined>((most, choice) =>
+    !most || choice.sheets < most.sheets || (choice.sheets === most.sheets && choice.zoom > most.zoom + zoomOf(BEAD_GAIN_MM)) ? choice : most, undefined)
+    ?? { cut: whole, zoom: wholeZoom, sheets: 1 }
+
+  // Cuts on a multiple of 10 where the parts still fit at that bead on as many sheets.
+  let { cut } = best
+  const keeps = (tried: Cut) => {
+    const blocks = blocksOf(project, tried)
+    return best.zoom <= largestZoom(blocks, area) && sheetsAt(blocks, best.zoom, area) === best.sheets
+  }
+  const across = snappedSide(cut.across, grid.across)
+  if (across && keeps({ ...cut, across })) cut = { ...cut, across }
+  const down = snappedSide(cut.down, grid.down)
+  if (down && keeps({ ...cut, down })) cut = { ...cut, down }
+
+  const { zoom } = best
+  const blocks = blocksOf(project, cut)
+  const sizes = boxesAt(blocks, zoom, area)
   const placed = packSheets(sizes, area)
-  const parts = cut.map((part, index) => {
+  const sheets = sheetCount(placed)
+  // A Schema whole on one sheet is centred across it (a small one at the largest bead); parts keep the left margin.
+  const centred = blocks.length === 1
+  const parts = blocks.map((block, index) => {
     const { sheet, x, y } = placed[index]!
     const size = sizes[index]!
-    return { ...part, page: sheet + 2 + listPages, place: { x, y, ...size } }
+    return { ...block, region: regionAt(block, zoom), page: sheet + 2 + listPages, place: { x: centred ? Math.max(0, (area.width - size.width) / 2) : x, y, ...size } }
   })
-  const sheets = placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
-  return { page, zoom, partsAcross, partsDown, parts, specificationPage: 2 + sheets + listPages, pageCount: 2 + sheets + listPages, keyRows }
+  return { page, zoom, beadMm: (zoom * CELL_SIZE_PX) / mm(1), partsAcross: cut.across.length, partsDown: cut.down.length, parts, specificationPage: 2 + sheets + listPages, pageCount: 2 + sheets + listPages, keyRows }
 }
 
 /** Where the chart goes on from a part: the page to its right and the page below, if there are any. */

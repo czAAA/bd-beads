@@ -23,8 +23,9 @@ describe('exportFacts', () => {
   })
 
   it('counts a chart page for every sheet a big Schema takes', () => {
-    // 100 × 100 takes three sheets where 20 × 20 takes one (ticket 0585).
-    expect(factsOf('loom', 100, 100).sheets).toBe(3)
+    // 150 × 150 takes four sheets where 100 × 100 takes one (tickets 0585, 0913).
+    expect(factsOf('loom', 100, 100).sheets).toBe(1)
+    expect(factsOf('loom', 150, 150).sheets).toBe(4)
   })
 })
 
@@ -51,15 +52,15 @@ describe('estimatePng (QualitySlider card)', () => {
 
 describe('estimatePdf', () => {
   it('counts every page: the Cover, list pages, chart pages, the Specification and the Word chart pages', () => {
-    const plain = factsOf('loom', 100, 100)
-    expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 3 + 1 + 0)
-    expect(estimatePdf({ ...plain, lists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 3 + 1 + 2)
+    const plain = factsOf('loom', 150, 150)
+    expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 4 + 1 + 0)
+    expect(estimatePdf({ ...plain, lists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 1 + 2)
   })
 
   it('adds a chart page as drawing and its text, far smaller than a picture page (ticket 0585)', () => {
     const one = factsOf('loom', 20, 20)
-    const three = factsOf('loom', 100, 100)
-    expect(estimatePdf(three, 300).bytes - estimatePdf(one, 300).bytes).toBeGreaterThan(2 * 90_000)
+    const four = factsOf('loom', 150, 150)
+    expect(estimatePdf(four, 300).bytes - estimatePdf(one, 300).bytes).toBeGreaterThan(3 * 90_000)
   })
 
   it('weighs the Word chart pages Letters add', () => {

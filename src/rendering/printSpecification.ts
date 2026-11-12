@@ -4,6 +4,7 @@ import { blankPage, drawMark, font, MONO, pt, SANS, text, wrap } from './printPa
 import { mm, PRINT_MARGIN, PRINT_PART_OVERLAP, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
+import { formatMm } from '../domain/projectSize'
 
 // The Specification page of the PDF (ticket 0581; PrintSpecification card): the full Beads needed table a weaver takes
 // to the shop, then the Schema's facts and where each part is.
@@ -181,7 +182,7 @@ function drawPartMap(context: CanvasRenderingContext2D, words: PrintText, plan: 
   })
   if (plan.parts.length < 2) return
   const block = Math.max(...plan.parts.map((part) => Math.max(part.lastAcross - part.firstAcross, part.lastDown - part.firstDown) + 1))
-  const note = fillBlanks(labels.partsNote, { beads: block, overlap: PRINT_PART_OVERLAP })
+  const note = fillBlanks(labels.partsNote, { beads: block, size: formatMm(plan.beadMm, words.locale), overlap: PRINT_PART_OVERLAP })
   let y = gridTop + plan.partsDown * cell + mm(2)
   for (const line of wrap(context, note, font('400', 6.5, SANS), width)) {
     y += pt(9)

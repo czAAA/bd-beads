@@ -660,7 +660,7 @@ export const pl: Translations = {
     chartStyleFact: 'Styl wykresu',
     pagesFact: 'Strony',
     wherePartsAre: 'Gdzie jest każda część',
-    partsNote: 'Część ma do {beads} koralików na bok. Części na jednym arkuszu mają wspólny numer strony; każda powtarza {overlap} koralików sąsiedniej, zacieniowane.',
+    partsNote: 'Część ma do {beads} koralików na bok, {size} mm na koralik. Części na jednym arkuszu mają wspólny numer strony; każda powtarza {overlap} koralików sąsiedniej, zacieniowane.',
     rowByRowOn: 'Rząd po rzędzie na stronie {page} →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'część {part} · str. {page}',

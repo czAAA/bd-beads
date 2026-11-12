@@ -652,7 +652,7 @@ export const en: Translations = {
     chartStyleFact: 'Chart style',
     pagesFact: 'Pages',
     wherePartsAre: 'Where each part is',
-    partsNote: 'Parts hold up to {beads} beads a side. Parts on one sheet share its page number; each repeats {overlap} beads of its neighbour, shaded.',
+    partsNote: 'Parts hold up to {beads} beads a side, {size} mm a bead. Parts on one sheet share its page number; each repeats {overlap} beads of its neighbour, shaded.',
     rowByRowOn: 'Row by row on page {page} →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'part {part} · page {page}',

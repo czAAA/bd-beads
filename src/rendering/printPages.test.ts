@@ -7,7 +7,7 @@ import { COVER_BEAD_MAX } from './coverLayout'
 import { loadPrintFonts, lineBetween, partLabel, rulerLevel } from './printPages'
 import { en } from '../i18n/en'
 import { PRINT_COLORS } from './printColors'
-import { mm, planPrint, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
+import { mm, planPrint, PRINT_BEAD_MAX_MM, PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
@@ -28,8 +28,9 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     const size = (name: string) => mm(Number.parseFloat(String(print(name))))
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
-    expect(COVER_BEAD_MAX).toBeCloseTo(size('print-bead-max'))
-    expect(PRINT_CHART_CELL_MM).toBe(Number.parseFloat(String(print('print-chart-cell'))))
+    expect(COVER_BEAD_MAX).toBeCloseTo(size('print-cover-bead-max'))
+    const bead = (name: string) => Number.parseFloat(String(print(name)))
+    expect([PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_BEAD_MAX_MM]).toEqual([bead('print-bead-min'), bead('print-bead-stretch'), bead('print-bead-max')])
   })
 })
 
@@ -41,12 +42,12 @@ describe('partLabel: the label above each pad (ticket 578)', () => {
   }
 
   it('names the part and the Schema’s own columns and rows', () => {
-    expect(label(100, 40, 0, 1)).toBe('Part B · columns 61–100 · rows 1–40')
+    expect(label(150, 40, 0, 1)).toBe('Part B · columns 76–150 · rows 1–40')
   })
 
   it('counts a turned Schema from its far end, lowest number first, with rows running across', () => {
     // A quarter turn: the 130 rows run across, so part B holds the last rows, counted from the far end, and all 40 columns.
-    expect(label(40, 130, 90, 1)).toBe('Part B · columns 1–40 · rows 13–70')
+    expect(label(40, 130, 90, 1)).toBe('Part B · columns 1–40 · rows 1–65')
   })
 })
 
