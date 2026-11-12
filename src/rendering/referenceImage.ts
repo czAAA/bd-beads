@@ -93,3 +93,16 @@ export function placeOnScreen(view: ReferenceView, place: ReferencePlace, height
   const width = Math.hypot(across.x - centre.x, across.y - centre.y)
   return { centre, width, height: (width * height) / place.width, angle: (Math.atan2(across.y - centre.y, across.x - centre.x) * 180) / Math.PI }
 }
+
+const ARROW_STEPS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
+
+/** How far an arrow key moves the picture, in grid px: one bead the way it points on screen, ten with Shift (Adjust and
+ * the picture bar's Move grip, tickets 0790, 0883); none for another key. */
+export function arrowMove(view: ReferenceView, bead: number, event: Pick<KeyboardEvent, 'key' | 'shiftKey'>): ScreenPoint | undefined {
+  const step = ARROW_STEPS[event.key]
+  if (!step) return undefined
+  const origin = view.gridToPoint(0, 0)
+  const along = view.gridToPoint(1, 0)
+  const reach = bead * (event.shiftKey ? 10 : 1) * Math.hypot(along.x - origin.x, along.y - origin.y)
+  return screenToGrid(view, { x: origin.x + step[0] * reach, y: origin.y + step[1] * reach })
+}

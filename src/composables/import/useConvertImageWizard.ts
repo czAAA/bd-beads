@@ -58,6 +58,8 @@ export interface ConvertImageWizardDeps {
   start: CreateProjectInput
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
+  /** Opened from the reference image's All settings (ticket 0883): the beads go on the open Project, Add to Canvas. */
+  addsToCanvas?: boolean
 }
 
 /** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
@@ -89,7 +91,7 @@ const PAUSE_MS = 150
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
  * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
  * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
-export function useConvertImageWizard({ start, decodeImage, loadCatalog }: ConvertImageWizardDeps) {
+export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToCanvas = false }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -625,6 +627,13 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     return projectAtRest()
   }
 
+  /** Add to Canvas (ticket 0883): the beads at rest, the kept part's where one is kept, whatever was moving settled. */
+  function canvasGrid(): Grid {
+    settle()
+    const part = kept.value
+    return part ? keptGrid(grid.value, part) : grid.value
+  }
+
   /** The Project as it would be created now, for Review's counts; none without a picture. */
   const draftProject = computed(() => projectAtRest())
   /** How many beads the Project will hold: the kept part's, with no empty place counted (Review's summary). */
@@ -771,6 +780,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     draftProject,
     beadCount,
     createProject,
+    addsToCanvas,
+    canvasGrid,
   }
 }
 

@@ -1090,6 +1090,8 @@ export interface Translations {
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
     createButton: string
+    /** The last button when opened from the reference image's All settings (ticket 0883). */
+    addToCanvas: string
     /** The converter's leave confirmation (ADR 0086): asked once a picture is set. */
     leave: {
       title: string
@@ -1543,6 +1545,49 @@ export interface Translations {
     resized: string
     /** The Project panel's save icon while the picture is not kept on this device. */
     notSaved: string
+    /** The picture bar (ticket 0883): the Move grip's name and Tooltip, ··· and its pressed face, the opened part's short
+     * Replace and Remove, and the size chip while a corner is dragged ({size} a Grid size, {measure} its measure). */
+    bar: {
+      move: string
+      moveBody: string
+      more: string
+      close: string
+      replace: string
+      remove: string
+      sizeBeads: string
+      sizeMeasure: string
+    }
+    /** Set Frame around the picture (ticket 0883): its name, Tooltip with and without a Frame, and the preview's tag. */
+    frameAround: {
+      name: string
+      body: string
+      bodyNew: string
+      tag: string
+    }
+    /** Convert to beads (ticket 0883): the button, the popover, the preview's pill, the toast and why it is off. */
+    convert: {
+      name: string
+      body: string
+      size: string
+      sizeInfoName: string
+      sizeInfo: string
+      /** The size's measure, with {measure}. */
+      measure: string
+      /** The colors' count, with {count} and {max}. */
+      colorsCount: string
+      colorsLess: string
+      colorsMore: string
+      hideAfter: string
+      allSettings: string
+      button: PluralForms
+      replaces: PluralForms
+      preview: string
+      /** The toast, with {n} and {colors}, its form chosen by {colors}. */
+      made: PluralForms
+      hidden: string
+      tooSmall: string
+      tooBig: string
+    }
   }
   /** What an empty field says goes in it (ticket 0854, TextField card): a placeholder, never a value. */
   fields: {

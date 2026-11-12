@@ -11,8 +11,8 @@ beforeEach(() => {
 const view = { gridToPoint: (x: number, y: number) => ({ x: x * 2 + 10, y: y * 2 + 20 }), viewport: { width: 400, height: 400 } }
 const place = { x: 50, y: 50, width: 40, angle: 0 }
 
-function mountAdjust({ adjusting = true } = {}) {
-  return mount(ReferenceAdjust, { props: { place, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, bead: 20, adjusting }, attachTo: document.body })
+function mountAdjust({ adjusting = true, size = undefined as { beads: string; measure: string } | undefined } = {}) {
+  return mount(ReferenceAdjust, { props: { place, aspect: 0.5, limits: { min: 10, max: 400 }, opacity: 50, view, bead: 20, adjusting, size }, attachTo: document.body })
 }
 
 const pointer = (x: number, y: number, extra: Record<string, unknown> = {}) => ({ clientX: x, clientY: y, button: 0, pointerId: 1, ...extra })
@@ -65,13 +65,14 @@ describe('ReferenceAdjust (ReferenceImage card, ticket 0790)', () => {
     wrapper.unmount()
   })
 
-  it('turns from the Turn handle toward the pointer, snapping to a quarter turn', async () => {
+  it('turns from the Turn handle below the picture toward the pointer, snapping to a quarter turn (ticket 0883)', async () => {
     const wrapper = mountAdjust()
-    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(110, 40))
+    expect(wrapper.get('.reference-adjust__turn').classes()).toContain('reference-adjust__turn--below')
+    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(110, 200))
     const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
-    await picture.trigger('pointermove', pointer(210, 122))
+    await picture.trigger('pointermove', pointer(10, 118))
     expect(wrapper.get('[data-testid="reference-adjust-angle"]').text()).toBe('90°')
-    await picture.trigger('pointerup', pointer(210, 122))
+    await picture.trigger('pointerup', pointer(10, 118))
     expect(wrapper.emitted('commit')).toEqual([[{ ...place, angle: 90 }, 'Turned 90°']])
     wrapper.unmount()
   })
@@ -120,15 +121,28 @@ describe('The handles outside Adjust (ticket 0799)', () => {
   it('resize from a corner and turn from the Turn handle', async () => {
     const wrapper = mountAdjust({ adjusting: false })
     const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
-    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(110, 40))
-    await picture.trigger('pointermove', pointer(210, 122))
-    await picture.trigger('pointerup', pointer(210, 122))
+    await wrapper.get('[data-testid="reference-adjust-turn"]').trigger('pointerdown', pointer(110, 200))
+    await picture.trigger('pointermove', pointer(10, 118))
+    await picture.trigger('pointerup', pointer(10, 118))
     await wrapper.get('[data-testid="reference-adjust-bottom-right"]').trigger('pointerdown', pointer(150, 140))
     await picture.trigger('pointermove', pointer(190, 160))
     await picture.trigger('pointerup', pointer(190, 160))
     const commits = wrapper.emitted('commit')!
     expect(commits[0]).toEqual([{ ...place, angle: 90 }, 'Turned 90°'])
     expect(commits[1]![1]).toBe('Resized')
+    wrapper.unmount()
+  })
+
+  it('show the size chip while a corner is dragged, and say a handle is pressed (ticket 0883)', async () => {
+    const wrapper = mountAdjust({ adjusting: false, size: { beads: '28×19 beads', measure: '≈ 4.2 × 2.9 cm · shape kept' } })
+    const picture = wrapper.get('[data-testid="reference-adjust-picture"]')
+    expect(wrapper.find('[data-testid="reference-adjust-size"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="reference-adjust-bottom-right"]').trigger('pointerdown', pointer(150, 140))
+    await picture.trigger('pointermove', pointer(190, 160))
+    expect(wrapper.get('[data-testid="reference-adjust-size"]').text()).toBe('28×19 beads≈ 4.2 × 2.9 cm · shape kept')
+    await picture.trigger('pointerup', pointer(190, 160))
+    expect(wrapper.find('[data-testid="reference-adjust-size"]').exists()).toBe(false)
+    expect(wrapper.emitted('pressing')).toEqual([[true], [false]])
     wrapper.unmount()
   })
 
