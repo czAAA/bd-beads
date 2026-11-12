@@ -12,4 +12,16 @@ describe('the editor\'s addresses (ticket 0716)', () => {
     expect(parseOpeningAddress('')).toEqual({ savedProjects: false, firstProject: false })
     expect(parseOpeningAddress('?open=other')).toEqual({ savedProjects: false, firstProject: false })
   })
+
+  it('carries the view a Project opens at once, from What\'s inside\'s Open editor from here (ticket 0879)', () => {
+    const view = { zoom: 1.375, at: { row: 12, column: -3 } }
+    const search = new URL(projectAddress('/', 'p1', view), 'https://x.test').search
+    expect(parseOpeningAddress(search)).toEqual({ savedProjects: false, firstProject: false, project: 'p1', view })
+  })
+
+  it('opens at the usual view when the address\'s view is not one', () => {
+    for (const search of ['?project=p1&zoom=abc&at=1,2', '?project=p1&zoom=1&at=1', '?project=p1&zoom=0&at=1,2', '?project=p1&at=1,2', '?zoom=1&at=1,2', '?project=p1&zoom=1&at=1.5,2']) {
+      expect(parseOpeningAddress(search).view).toBeUndefined()
+    }
+  })
 })

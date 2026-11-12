@@ -8,8 +8,8 @@ export interface ShellScope {
   root: () => HTMLElement | null | undefined
   /** Where the shell's popovers are teleported to, as a selector. */
   teleportTo: string
-  /** Whether something in the box is the page's own control, not the shell's (the demo strip's Expand, ticket 0830):
-   * a press on it is no press outside the shell's overlays. */
+  /** Whether something in the box is the page's own, not the shell's (the demo strip's Expand, ticket 0830; all of the
+   * demo's box, ticket 0879): a press or key on it is none of the shell's business, nor a press outside its overlays. */
   pagesOwn?: (target: Element) => boolean
 }
 
@@ -36,11 +36,12 @@ export function useShellScope(): ShellScope {
   return (hasInjectionContext() ? inject(shellScopeKey, undefined) : undefined) ?? PAGE_SCOPE
 }
 
-/** Whether an event's target is the scope's business: anywhere for the whole page, inside its box for a boxed one. */
+/** Whether an event's target is the scope's business: anywhere for the whole page, inside its box for a boxed one but
+ * for what in it is the page's own. */
 export function inScope(scope: ShellScope, target: EventTarget | null): boolean {
   const root = scope.root()
   if (!root) return true
-  return target instanceof Node && root.contains(target)
+  return target instanceof Node && root.contains(target) && !(target instanceof Element && scope.pagesOwn?.(target))
 }
 
 /** The room overlays have: the window, or a boxed shell's box. */

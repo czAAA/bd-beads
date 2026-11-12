@@ -1,38 +1,32 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
-import { PANELS, type PanelId } from '../../components/shell/panels'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { provideShellScope } from '../../composables/ui/shellScope'
 import { useI18n } from '../../i18n/useI18n'
+import type { DemoSnapshot } from '../demoCopy'
 import GhostPointer from './GhostPointer.vue'
 import InsideShell from './InsideShell.vue'
 import { DEMO_CUFF, DEMO_VIEW_MARGIN, demoLibrary } from './demoProjects'
 import { createHand, ghostState, type Hand } from './hand'
-import { useTakeOver } from './useTakeOver'
+import { watchOnly } from './watchOnly'
 
 // The box What's inside's editor lives in (Homepage card, ticket 0797): its shell takes keys and presses only inside
 // it, and its panels, popovers and dialogs stay in it, so the page around it works as before. Starting afresh mounts
-// a new shell on a fresh demo library. The ghost's hand works in it; a press, drag or key of the beader's takes it over.
-const props = defineProps<{
-  /** The beader took the editor over: the focus may come into it. */
-  takenOver?: boolean
+// a new shell on a fresh demo library. The ghost's hand works in it; the beader only watches (ticket 0879).
+defineProps<{
   /** Which word its Canvas strip's Expand button reads (ticket 0830); none where the demo has the width already. */
   expand?: 'expand' | 'collapse'
 }>()
 const emit = defineEmits<{
-  /** The beader pressed, dragged or typed in the editor. */
-  takeOver: []
   /** Expand or Collapse pressed in its Canvas strip. */
   toggleExpand: []
-  /** The beader pressed the demo's Menu or Project, which open nothing for them (ticket 0841): the page's way in is theirs. */
-  pointAtWayIn: []
 }>()
 
 const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
-/** Expand in the demo's strip is the page's own control (ticket 0830): a press on it neither takes the editor over nor
- * closes what the ghost opened. */
-const pagesOwn = (target: Element) => !!target.closest('.canvas-strip__expand')
-provideShellScope({ root: () => rootEl.value, teleportTo: '.inside-editor', pagesOwn })
+/** Expand in the demo's strip is the page's own control (ticket 0830), the one thing in the box a beader can press. */
+const EXPAND = '.canvas-strip__expand'
+// Every press in the box is the page's, never the shell's: none closes what the ghost opened (ticket 0879).
+provideShellScope({ root: () => rootEl.value, teleportTo: '.inside-editor', pagesOwn: () => true })
 
 /** Each fresh demo is a new shell, keyed by its session. */
 const session = ref(0)
@@ -41,40 +35,19 @@ const shell = shallowRef<InstanceType<typeof InsideShell>>()
 const library = computed(() => (void session.value, demoLibrary(t.value)))
 const ghost = ghostState()
 
-useTakeOver(() => rootEl.value, () => emit('takeOver'), pagesOwn)
-
-/** The demo's ways out, Menu and Project (and through the Menu the library), are the ghost's (ticket 0841). */
-const WAY_OUT_PANELS: readonly PanelId[] = ['menu', 'project']
-const WAYS_OUT = WAY_OUT_PANELS.flatMap((id) => PANELS[id].openers.map((opener) => `[data-testid="${opener}"]`)).join(', ')
-
-/** A press on Menu or Project, by a click, Enter, Space or ↓, opens nothing unless the ghost's hand made it. */
-function onClick(event: MouseEvent) {
-  if (ghost.pressing) return
-  if (!(event.target instanceof Element) || !event.target.closest(WAYS_OUT)) return
-  event.preventDefault()
-  event.stopPropagation()
-  emit('pointAtWayIn')
-}
-
-/** Taking over closes a Menu or Project panel the ghost left open, so the beader never meets the demo's library. */
-watch(
-  () => props.takenOver,
-  (now) => {
-    const open = shell.value?.wired.canvas.openPanel
-    if (!now || !open?.value || !WAY_OUT_PANELS.includes(open.value)) return
-    open.value = null
-    emit('pointAtWayIn')
-  },
-)
+/** Only to watch (ticket 0879): all of the box but Expand is inert, whatever the ghost opens in it. */
+let stopWatchOnly: (() => void) | undefined
+onMounted(() => (stopWatchOnly = rootEl.value && watchOnly(rootEl.value, EXPAND)))
+onBeforeUnmount(() => stopWatchOnly?.())
 
 /** Where the focus was when something the ghost opened took it. */
 let focusBefore: HTMLElement | undefined
 
-/** The ghost never takes the focus from the page (Homepage card, Screen readers): a panel it opens focuses itself, so
- * until the beader takes over (their press or key comes first) it lets go, which closes nothing, and the focus goes
- * back where it was once the row is done. */
+/** The ghost never takes the focus from the page (Homepage card, Screen readers): a panel it opens may focus itself
+ * before the box makes it inert, so it lets go at once, which closes nothing, and the focus goes back where it was once
+ * the row is done. */
 function onFocusIn(event: FocusEvent) {
-  if (props.takenOver) return
+  if (event.target instanceof Element && event.target.closest(EXPAND)) return
   const from = event.relatedTarget
   if (from instanceof HTMLElement && !rootEl.value?.contains(from)) focusBefore = from
   if (event.target instanceof HTMLElement) event.target.blur()
@@ -169,9 +142,16 @@ async function refit(): Promise<void> {
   await settle()
 }
 
-/** Try it yourself (ticket 0830): the focus goes into the editor's region, which is the beader's now. */
-function takeFocus(): void {
-  rootEl.value?.focus({ preventScroll: true })
+/** What Open editor from here takes (ticket 0879): the Project on the demo's Canvas, its zoom and the bead in the middle
+ * of its drawing area as they are at the call, then its reference image's picture; none before the demo has a Project. */
+async function snapshot(): Promise<DemoSnapshot | undefined> {
+  const canvas = shell.value?.wired.canvas
+  const project = canvas?.activeProject.value
+  if (!canvas || !project) return undefined
+  const at = canvas.visibleCentre()
+  const view = at && { zoom: canvas.zoom.value, at: { row: at.row, column: at.column } }
+  const picture = project.referenceImage ? (await canvas.referenceImage.picturesOf([project.id])).get(project.id) : undefined
+  return { project, ...(picture ? { picture } : {}), ...(view ? { view } : {}) }
 }
 
 /** The ghost's hand for a run of the tour. */
@@ -193,7 +173,7 @@ function hand(instant: boolean, signal: AbortSignal): Hand {
   })
 }
 
-defineExpose({ fresh, refit, takeFocus, hand, hideGhost: () => void (ghost.shown = false), giveFocusBack })
+defineExpose({ fresh, refit, snapshot, hand, hideGhost: () => void (ghost.shown = false), giveFocusBack })
 </script>
 
 <template>
@@ -201,12 +181,9 @@ defineExpose({ fresh, refit, takeFocus, hand, hideGhost: () => void (ghost.shown
     ref="rootEl"
     class="inside-editor"
     role="region"
-    tabindex="-1"
     :aria-label="t.homepage.inside.editor"
     data-testid="inside-editor"
-    :data-taken-over="takenOver || undefined"
     @focusin="onFocusIn"
-    @click.capture="onClick"
   >
     <InsideShell :key="session" ref="shell" :projects="library" :expand="expand" @start-afresh="fresh" @toggle-expand="emit('toggleExpand')" />
     <GhostPointer :ghost="ghost" />
@@ -225,11 +202,5 @@ defineExpose({ fresh, refit, takeFocus, hand, hideGhost: () => void (ghost.shown
   min-width: 0;
   min-height: 0;
   border-radius: var(--canvas-box-radius);
-}
-
-/* Try it yourself puts the focus on the region itself; the ring is drawn inside, where the box doesn't clip it. */
-.inside-editor:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: calc(-1 * var(--focus-width));
 }
 </style>

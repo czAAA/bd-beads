@@ -3,13 +3,15 @@ import type { Project } from '../../domain/project'
 import { NO_INSETS, pillInsets, type Insets, type PillPosition, type PillRect } from '../../domain/toolPill'
 import type { Size } from '../../rendering/cellSize'
 import { useElementSize } from '../ui/useElementSize'
-import { useCanvasView } from './useCanvasView'
+import { useCanvasView, type CanvasViewOptions } from './useCanvasView'
 
 /** What the canvas view needs from the app shell: the open Project. */
 export interface CanvasFramingDeps {
   currentProject: () => Project | undefined
   /** Saves the Canvas's orientation a two-finger twist settled on (ticket 0672). */
   keepTwist?: (orientation: number) => void
+  /** The view a Project opens at this once, in place of its fit (ticket 0879). */
+  opening?: CanvasViewOptions['opening']
 }
 
 /** How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the measured area, fit zoom and the strip's
@@ -23,7 +25,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** What the Tool pill takes from the edge it docks to (ticket 0850), kept while it is away (the Adjust bar's turn). */
   const toolPillCover = ref<Insets>(NO_INSETS)
 
-  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value })
+  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, orientation, twistPhase, pinchStep, endTwist } = useCanvasView(deps.currentProject, viewport, { keepTwist: deps.keepTwist, covered: () => toolPillCover.value, opening: deps.opening })
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
    * threaded down as a second prop. */

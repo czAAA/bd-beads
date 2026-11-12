@@ -18,6 +18,7 @@ import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeScreen from './CoffeeScreen.vue'
 import { wheelPixels } from './wheelTurn'
+import type { DemoSnapshot } from './demoCopy'
 import WhatsInside from './inside/WhatsInside.vue'
 import MoreBelow from './MoreBelow.vue'
 import NextLine from './NextLine.vue'
@@ -63,6 +64,8 @@ const emit = defineEmits<{
   exportAll: [projects: Project[], sealed: SealedProject[]]
   /** The Delete dialog's Save Project file (ticket 0842): one Project's file, a sealed one in its stored form. */
   saveProjectFile: [project: Project | SealedProject]
+  /** What's inside's Open editor from here (ticket 0879): the editor on a copy of the demo's Project, kept in the library. */
+  openDemoCopy: [snapshot: DemoSnapshot]
 }>()
 
 /** What the Homepage's Saved Projects needs of the library (ticket 0716). */
@@ -151,7 +154,7 @@ const sections = computed<HomepageSection[]>(() => [
     heading: t.value.homepage.whatsInside,
     title: 'inside',
     shows: WhatsInside,
-    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, wide: wide.value, shown: sections.value[section.value]?.id === 'inside', onPointAtWayIn: pointAtWayIn }),
+    with: (): Record<string, unknown> => ({ class: narrow.value ? undefined : 'homepage__fill', withEditor: !narrow.value, wide: wide.value, shown: sections.value[section.value]?.id === 'inside', onOpenFromHere: openFromHere }),
   },
   {
     id: 'coffee',
@@ -210,10 +213,10 @@ const input = useSectionInput({
 })
 const nudge = useScrollNudge({ onFirst: () => section.value === 0, reducedMotion })
 
-/** The demo editor in What's inside pans on a wheel and holds it from the page; until the beader takes it over the wheel
- * is the page's own, so a section taller than its room scrolls (and turns) over the editor too. */
+/** The demo editor in What's inside is only to watch (ticket 0879): a wheel over it is the page's own, never the editor's
+ * pan, so a section taller than its room scrolls (and turns) over the editor too. */
 function onWheelFirst(event: WheelEvent) {
-  if (!(event.target instanceof Element) || !event.target.closest('.inside-editor:not([data-taken-over])')) return
+  if (!(event.target instanceof Element) || !event.target.closest('.inside-editor')) return
   event.stopPropagation()
   onWheel(event)
   // The editor's panel lets no scroll chain past it, so the section is scrolled by hand.
@@ -308,14 +311,12 @@ function goIn() {
   if (isNew.value) emit('makeFirstProject')
   else emit('openEditor')
 }
-/** The demo's Menu and Project are the tour's (ticket 0841): a beader's press on them says so in a toast and rings the
- * strip's way in, which keeps doing what it does. The ring is taken off and put back a frame later, so it plays again. */
-const pointing = ref(false)
-function pointAtWayIn() {
-  const said = t.value.homepage.inside.demoOnly
-  showToast('demo-only', isNew.value ? said.new : said.back, 'info')
-  pointing.value = false
-  requestAnimationFrame(() => requestAnimationFrame(() => (pointing.value = true)))
+/** What's inside's Open editor from here (ticket 0879): the demo's Project, kept and opened at the demo's bead size on
+ * screen, the page's zoom taken in; the plain way in should the demo have none yet. */
+function openFromHere(snapshot: DemoSnapshot | undefined) {
+  if (!snapshot) return emit('openEditor')
+  const scale = zoomPercent.value / 100
+  emit('openDemoCopy', snapshot.view ? { ...snapshot, view: { ...snapshot.view, zoom: snapshot.view.zoom * scale } } : snapshot)
 }
 /** The Menu row's action, whose name the strip's library button shows with the count (tickets 0716, 0822). */
 const savedProjects = controlAction('saved-projects')
@@ -344,7 +345,6 @@ const savedProjects = controlAction('saved-projects')
         <div class="homepage__strip">
           <CanvasStrip
             page="homepage"
-            :class="{ 'homepage__strip-pointing': pointing }"
             :open-panel="menuOpen ? 'menu' : null"
             :zoom-percent="zoom.percent.value"
             :zoom-min-percent="HOMEPAGE_MIN_ZOOM_PERCENT"
@@ -631,27 +631,6 @@ const savedProjects = controlAction('saved-projects')
 
 .homepage__section--shown {
   transition-delay: 0s;
-}
-
-/* A press on the demo's Menu or Project (ticket 0841): the way in's primary button rings twice in `accent`. */
-.homepage__strip-pointing :deep(.canvas-strip__way-in .app-button--primary) {
-  animation: way-in-pulse var(--way-in-pulse) var(--ease-out) 2;
-}
-
-@keyframes way-in-pulse {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
-  }
-
-  to {
-    box-shadow: 0 0 0 var(--way-in-pulse-ring) transparent;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .homepage__strip-pointing :deep(.canvas-strip__way-in .app-button--primary) {
-    animation: none;
-  }
 }
 
 /* The nudge (ticket 0784): the first section lifts and settles once, the way it starts to turn. */

@@ -333,7 +333,7 @@ The Homepage's first section and What's inside's chapters (Homepage card). Engli
 | Peacock feather eyes, in peyote (the piece, an image's name for screen readers) | Павлиньи перья, мозаичное плетение |
 | Draw · Start from something · Real bead colors · Weave and keep (What's inside's chapters) | Рисуйте · Начните с готового · Настоящие цвета бисера · Плетите и сохраняйте |
 | Pause · Play (the tour) | Пауза · Продолжить |
-| Try it yourself | Попробуйте сами |
+| Open editor from here (into the editor on a copy of the demo's Project) | Открыть редактор отсюда |
 | Expand · Collapse (the demo's width) | Развернуть · Свернуть |
 
 The way in (Make your first Project, Open the editor, Projects library · {n}) and the three promises (Yours, on this device · Works offline · Free forever, with their lines) are the strings the Homepage already has. A phone's "Next · What's inside" is "Next · {section}". A chapter is described to screen readers by its rows' names, joined as the language joins a list.

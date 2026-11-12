@@ -6,7 +6,7 @@ import { paintAt } from '../../testUtils/layers'
 import { orientationOf } from '../../domain/layerRecord'
 import { rotateCanvas, turnCanvasTo } from '../../domain/rotate'
 import { SNAP_MS } from '../../rendering/gestureView'
-import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
+import { FIT_MARGIN_PX, fitBox, useCanvasView, type CanvasViewOptions } from './useCanvasView'
 import { NO_INSETS } from '../../domain/toolPill'
 import { surfaceView } from '../../rendering/surfaceView'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -17,7 +17,7 @@ function projectOf(columns: number, rows: number, extra: LayersChange = {}): Pro
   return withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), extra)
 }
 
-function setup(project: Project | undefined, size = { width: 1000, height: 800 }, pill = NO_INSETS) {
+function setup(project: Project | undefined, size = { width: 1000, height: 800 }, pill = NO_INSETS, opening?: CanvasViewOptions['opening']) {
   const current = ref(project)
   const viewport = ref(size)
   const covered = ref(pill)
@@ -27,7 +27,7 @@ function setup(project: Project | undefined, size = { width: 1000, height: 800 }
     kept.push(orientation)
     current.value = turnCanvasTo(current.value!, orientation)
   }
-  const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist, covered: () => covered.value }))!
+  const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist, covered: () => covered.value, opening }))!
   return { current, viewport, covered, view, kept }
 }
 
@@ -224,6 +224,46 @@ describe('useCanvasView', () => {
 
     expect(view.scroll.value).toEqual(before)
     expect(view.zoom.value).toBe(1)
+  })
+
+  describe("the view a Project opens at, this once (What's inside's Open editor from here, ticket 0879)", () => {
+    it('opens the Project the address names at its zoom, the bead it names in the middle, once the area is measured', async () => {
+      const project = projectOf(20, 10)
+      const { viewport, view } = setup(project, { width: 0, height: 0 }, NO_INSETS, { project: project.id, view: { zoom: 1.5, at: { row: 40, column: -7 } } })
+      view.fit()
+      viewport.value = { width: 1000, height: 800 }
+      await nextTick()
+
+      expect(view.zoom.value).toBe(1.5)
+      expect(view.visibleCentre()).toEqual({ row: 40, column: -7 })
+      expect(view.isAtFit.value).toBe(false)
+    })
+
+    it('keeps to the zoom limits', () => {
+      const project = projectOf(20, 10)
+      const { view } = setup(project, undefined, NO_INSETS, { project: project.id, view: { zoom: 99, at: { row: 0, column: 0 } } })
+      view.fit()
+      expect(view.zoom.value).toBe(4)
+      expect(view.visibleCentre()).toEqual({ row: 0, column: 0 })
+    })
+
+    it('is for that opening only: Fit fits, and another Project opens at its fit', async () => {
+      const project = projectOf(20, 10)
+      const { current, view } = setup(projectOf(6, 6), undefined, NO_INSETS, { project: project.id, view: { zoom: 2, at: { row: 30, column: 30 } } })
+      view.fit()
+      expect(view.zoom.value).toBe(1)
+
+      current.value = project
+      await nextTick()
+      expect(view.isAtFit.value).toBe(true)
+      expect(view.scroll.value).toEqual({ x: -300, y: -300 })
+
+      const { view: opened } = setup(project, undefined, NO_INSETS, { project: project.id, view: { zoom: 2, at: { row: 30, column: 30 } } })
+      opened.fit()
+      opened.fit()
+      expect(opened.zoom.value).toBe(1)
+      expect(opened.scroll.value).toEqual({ x: -300, y: -300 })
+    })
   })
 
   it('centres on a block of beads without changing the zoom', () => {

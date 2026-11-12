@@ -49,6 +49,18 @@ function roomOf(element: Element): { left: number; top: number; right: number; b
   return room
 }
 
+/** What shows at a point: the demo is inert all through (ticket 0879), which hit-testing passes over, so it is looked at
+ * as a visitor's eye sees it, with its `inert` taken off for the look. */
+function shownAt(x: number, y: number): Element | null {
+  const sealed = [...document.querySelectorAll('[inert]')]
+  for (const each of sealed) each.removeAttribute('inert')
+  try {
+    return document.elementFromPoint(x, y)
+  } finally {
+    for (const each of sealed) each.setAttribute('inert', '')
+  }
+}
+
 /** What is wrong with what the ghost does to `control` now: nothing when it shows whole, uncovered, under the ghost, the
  * ghost above its menu, and every panel and popover open ends inside the demo's box. */
 function unseen(editor: Element, control: Element, doing: string): string[] {
@@ -74,7 +86,7 @@ function unseen(editor: Element, control: Element, doing: string): string[] {
   if (!tip) problems.push(`${name}: no ghost`)
   else {
     if (tip.x < box.left - SLACK || tip.x > box.right + SLACK || tip.y < box.top - SLACK || tip.y > box.bottom + SLACK) problems.push(`${name}: the ghost is not on it`)
-    const top = document.elementFromPoint(tip.x, tip.y)
+    const top = shownAt(tip.x, tip.y)
     if (top && !control.contains(top)) problems.push(`${name}: covered by ${top.tagName.toLowerCase()} in ${top.closest('[data-testid]')?.getAttribute('data-testid')}`)
   }
   return problems

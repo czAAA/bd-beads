@@ -2,7 +2,7 @@ import { onBeforeUnmount, readonly, ref, watch, type Ref } from 'vue'
 
 // What's inside's tour (Homepage card, tickets 0797, 0802): the rows in order, each done in the demo editor and lit while
 // it plays, then a rest and the loop again. A row pressed plays from there on a fresh demo, the rows before it applied at
-// once; one that can't be done is skipped. It plays only while seen, until the beader takes over or pauses it (0830).
+// once; one that can't be done is skipped. It plays only while seen, until the beader pauses it (0830).
 
 /** The tour's timing, in ms (Homepage card): 1.2 times its first pace (ticket 0802).
  * @internal Its test steps the clock by it. */
@@ -38,15 +38,13 @@ export interface InsideTourDeps<Row extends string, Hand> {
   timing?: typeof TOUR_TIMING
 }
 
-/** The tour: the row playing, whether the beader took it over, and its controls. */
+/** The tour: the row playing, whether it is paused, and its controls. */
 export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row, Hand>) {
   const timing = deps.timing ?? TOUR_TIMING
   /** The row lit in the list: the one playing, or under reduced motion the one shown. */
   const playing = ref<Row>()
   /** The row the caption shows: the one last lit, the first before any is (ticket 0825), so it stays still unlit. */
   const captioned = ref<Row>(deps.rows[0]!) as Ref<Row>
-  /** The beader took the editor over: the tour stays stopped until a row is pressed. */
-  const takenOver = ref(false)
   /** The beader paused it (ticket 0830): stopped at its row, still lit, until Play or a row is pressed. */
   const paused = ref(false)
   let run: AbortController | undefined
@@ -136,26 +134,16 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
   /** Plays from a row, lit at once: a fresh demo, the rows before it applied at once. */
   function choose(row: Row): void {
     stop()
-    takenOver.value = false
     paused.value = false
     light(row)
     const current = new AbortController()
     run = current
     void playFrom(row, current.signal).catch((error: unknown) => {
       if (error instanceof Stopped || deps.isStop(error)) return
-      // The demo itself could not start afresh: the tour stops, the row lit and the editor left to the beader.
+      // The demo itself could not start afresh: the tour stops, the row lit and the editor left as it is.
       console.warn(error)
       if (run === current) stop()
     })
-  }
-
-  /** The beader pressed, dragged or typed in the editor: it is theirs for the visit, the list unlit. */
-  function takeOver(): void {
-    if (takenOver.value) return
-    stop()
-    takenOver.value = true
-    paused.value = false
-    playing.value = undefined
   }
 
   /** Pause (ticket 0830): the tour stops where it is, its row still lit and the editor as it is. */
@@ -170,17 +158,17 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
   }
 
   /** Plays only while `seen()`: the first time after a moment, again from the first row each time it comes back, unless
-   * the beader took it over or paused it. */
+   * the beader paused it. */
   function follow(seen: () => boolean): void {
     watch(
       seen,
       (now) => {
         if (!now) {
           stop()
-          if (!takenOver.value && !paused.value) playing.value = undefined
+          if (!paused.value) playing.value = undefined
           return
         }
-        if (takenOver.value || paused.value) return
+        if (paused.value) return
         const delay = everShown || deps.reducedMotion() ? 0 : timing.start
         everShown = true
         clearStart()
@@ -192,5 +180,5 @@ export function useInsideTour<Row extends string, Hand>(deps: InsideTourDeps<Row
 
   onBeforeUnmount(stop)
 
-  return { playing: readonly(playing), captioned: readonly(captioned), takenOver: readonly(takenOver), paused: readonly(paused), choose, takeOver, pause, resume, follow }
+  return { playing: readonly(playing), captioned: readonly(captioned), paused: readonly(paused), choose, pause, resume, follow }
 }
