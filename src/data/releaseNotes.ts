@@ -12,6 +12,18 @@ export interface ReleaseNote {
 // (writing.md), no full stop. releaseNotes.test.ts fails on a missing language or one out of order.
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    date: '2026-11-12',
+    line: {
+      en: "The Homepage's demo is only to watch: Open editor from here takes the piece it shows into your own Projects",
+      ru: 'Демо на главной странице только для просмотра: «Открыть редактор отсюда» добавит показанную работу в ваши проекты',
+      uk: 'Демо на головній сторінці лише для перегляду: «Відкрити редактор звідси» додасть показану роботу до ваших проєктів',
+      be: 'Дэма на галоўнай старонцы толькі для прагляду: «Адкрыць рэдактар адсюль» дадасць паказаную працу ў вашы праекты',
+      zh: '首页演示仅供观看：“从这里打开编辑器”会把演示中的作品加入你自己的项目',
+      es: 'La demo de la página de inicio es solo para mirar: Abrir el editor desde aquí lleva la pieza que muestra a tus proyectos',
+      pl: 'Demo na stronie głównej jest tylko do oglądania: Otwórz edytor stąd dodaje pokazaną pracę do twoich projektów',
+    },
+  },
+  {
     date: '2026-11-11',
     line: {
       en: 'The Kaleidocycle’s joins follow the Kali Primer, and its whole piece counts their beads',

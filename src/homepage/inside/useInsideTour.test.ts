@@ -130,29 +130,6 @@ describe("What's inside's tour (ticket 0797)", () => {
     expect(done).not.toContain('play canvas')
   })
 
-  it('stops for the visit once the beader takes the editor over, the list unlit, until a row is pressed', async () => {
-    const { done, seen, tour } = tourHost()
-    await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before)
-    tour.takeOver()
-    expect(tour.playing.value).toBeUndefined()
-    expect(tour.takenOver.value).toBe(true)
-    const before = done.length
-    await vi.advanceTimersByTimeAsync(10_000)
-    expect(done.filter((step) => step.startsWith('play'))).toEqual(['play canvas'])
-
-    // Turning away and back does not start it again: the beader's editor is kept as they left it.
-    seen.value = false
-    await vi.advanceTimersByTimeAsync(0)
-    seen.value = true
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(done.slice(before).filter((step) => step === 'fresh')).toEqual([])
-
-    tour.choose('techniques')
-    await vi.advanceTimersByTimeAsync(0)
-    expect(tour.takenOver.value).toBe(false)
-    expect(tour.playing.value).toBe('techniques')
-  })
-
   it('plays only while seen, and starts again from the first row when seen again', async () => {
     const { steps, seen, tour } = tourHost()
     await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before + 1000 + TOUR_TIMING.after + TOUR_TIMING.before)
@@ -183,13 +160,12 @@ describe("What's inside's tour (ticket 0797)", () => {
     expect(tour.playing.value).toBe('editing')
   })
 
-  it('captions the row last lit: the first before the tour starts, kept through the rest and a take-over (ticket 0825)', async () => {
+  it('captions the row last lit: the first before the tour starts, kept through the rest and a pause (ticket 0825)', async () => {
     const { tour } = tourHost()
     expect(tour.captioned.value).toBe('canvas')
     await vi.advanceTimersByTimeAsync(TOUR_TIMING.start + TOUR_TIMING.before + 1000 + TOUR_TIMING.after + TOUR_TIMING.before)
     expect(tour.captioned.value).toBe('techniques')
-    tour.takeOver()
-    expect(tour.playing.value).toBeUndefined()
+    tour.pause()
     expect(tour.captioned.value).toBe('techniques')
 
     tour.choose('mirror')
@@ -251,25 +227,6 @@ describe("What's inside's Pause and Play (ticket 0830)", () => {
     expect(tour.paused.value).toBe(false)
     await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
     expect(tour.playing.value).toBe('mirror')
-  })
-
-  it('plays on from the row that was playing after the beader took the editor over', async () => {
-    const { steps, tour } = await onSecondRow()
-    tour.takeOver()
-    const before = steps().length
-    tour.resume()
-    expect(tour.takenOver.value).toBe(false)
-    await vi.advanceTimersByTimeAsync(TOUR_TIMING.before)
-    expect(steps().slice(before)).toEqual(['fresh', 'apply canvas', 'play techniques'])
-  })
-
-  it('unlights a paused tour the beader takes over', async () => {
-    const { tour } = await onSecondRow()
-    tour.pause()
-    tour.takeOver()
-    expect(tour.playing.value).toBeUndefined()
-    expect(tour.takenOver.value).toBe(true)
-    expect(tour.paused.value).toBe(false)
   })
 
   it('paused before it has started, plays from the first row', async () => {

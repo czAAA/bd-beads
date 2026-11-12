@@ -5,6 +5,7 @@ import AppIcon from '../../components/ui/AppIcon.vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
+import type { DemoSnapshot } from '../demoCopy'
 import GroupedList from '../GroupedList.vue'
 import InsideEditor from './InsideEditor.vue'
 import { TourStopped } from './hand'
@@ -13,9 +14,9 @@ import { scrollToShow } from './tabScroll'
 import { TOUR_SCRIPTS } from './tourScripts'
 import { useInsideTour } from './useInsideTour'
 
-// What's inside (Homepage card, tickets 0797, 0825, 0830): the heading, four chapters, the playing row's caption, Pause
-// and Try it yourself, in a list beside the framed demo editor from 1000px and in a band over it under that or while
-// the demo is expanded. The editor plays the 13 rows in turn. On a phone there is no editor: the rows are one list.
+// What's inside (Homepage card, tickets 0797, 0825, 0830, 0879): the heading, chapters, caption, Pause and Open editor
+// from here, in a list beside the framed demo editor from 1000px and in a band over it under that or while expanded. The
+// editor plays the 13 rows in turn, only to watch. On a phone there is no editor: the rows are one list.
 const props = defineProps<{
   /** Whether there is room for the editor: none on a phone. */
   withEditor: boolean
@@ -25,8 +26,9 @@ const props = defineProps<{
   wide: boolean
 }>()
 const emit = defineEmits<{
-  /** The beader pressed the demo's Menu or Project, which are the tour's (ticket 0841): the page points at its way in. */
-  pointAtWayIn: []
+  /** Open editor from here (ticket 0879): what the demo shows at the press, for the page to keep and open; none before
+   * the demo has a Project. */
+  openFromHere: [snapshot: DemoSnapshot | undefined]
 }>()
 
 const { t, locale } = useI18n()
@@ -76,26 +78,29 @@ watch(lit, (id) => {
   if (left !== list.scrollLeft) list.scrollTo?.({ left, behavior: reducedMotion.value ? 'instant' : 'smooth' })
 })
 
-/** A chapter pressed plays from its first row, even paused or after the beader took the editor over. Under reduced
- * motion, where nothing plays on, a press on the lit chapter shows its next row, round to its first. */
+/** A chapter pressed plays from its first row, even paused. Under reduced motion, where nothing plays on, a press on the
+ * lit chapter shows its next row, round to its first. */
 function choose(chapter: InsideChapter) {
   const ids = chapter.rows.map((row) => row.id)
   const shown = tour.playing.value ? ids.indexOf(tour.playing.value) : -1
   tour.choose(reducedMotion.value && shown >= 0 ? ids[(shown + 1) % ids.length]! : ids[0]!)
 }
 
-/** The tour stands still, paused or taken over: Pause reads Play. */
-const still = computed(() => tour.paused.value || tour.takenOver.value)
+/** Pause, or Play while paused. */
 function onPause() {
-  if (still.value) tour.resume()
+  if (tour.paused.value) tour.resume()
   else tour.pause()
 }
 
-/** Try it yourself: the demo is the beader's, as a press in it makes it, and the focus goes into it. */
-async function tryIt() {
-  tour.takeOver()
-  await nextTick()
-  editor.value?.takeFocus()
+/** Open editor from here (ticket 0879): what the demo shows is taken at the press, then the tour stops, the ghost hidden.
+ * Once only: the page is leaving, and a second press would keep a second copy. */
+let leaving = false
+async function openFromHere() {
+  if (leaving) return
+  leaving = true
+  const taken = editor.value?.snapshot()
+  tour.pause()
+  emit('openFromHere', await taken)
 }
 
 /** Expand or Collapse: the demo's size changes at once. */
@@ -104,10 +109,9 @@ function toggleExpand() {
 }
 
 /** The demo's size changed (Expand, Collapse, or the page crossing 1000px). A playing row starts again in the new size; a
- * paused tour only has its view set again, and a beader who took over keeps the editor as it is. */
+ * paused tour only has its view set again. */
 watch(layout, async () => {
   await nextTick()
-  if (tour.takenOver.value) return
   if (tour.playing.value && !tour.paused.value) tour.choose(tour.playing.value)
   else await editor.value?.refit()
 })
@@ -145,9 +149,11 @@ watch(layout, async () => {
         <!-- Each button keeps the width of the wider word it reads, which its `data-other` holds. -->
         <div class="inside__controls">
           <AppButton v-if="!reducedMotion" class="inside__control" size="sm" data-testid="inside-pause" @click="onPause">
-            <span class="inside__word" :data-other="still ? t.homepage.inside.pause : t.homepage.inside.play">{{ still ? t.homepage.inside.play : t.homepage.inside.pause }}</span>
+            <span class="inside__word" :data-other="tour.paused.value ? t.homepage.inside.pause : t.homepage.inside.play">{{
+              tour.paused.value ? t.homepage.inside.play : t.homepage.inside.pause
+            }}</span>
           </AppButton>
-          <AppButton class="inside__control" size="sm" data-testid="inside-try-it" @click="tryIt">{{ t.homepage.inside.tryIt }}</AppButton>
+          <AppButton class="inside__control" size="sm" data-testid="inside-open-from-here" @click="openFromHere">{{ t.homepage.inside.openFromHere }}</AppButton>
         </div>
         <!-- Every row's caption in one cell, the one shown on top: it keeps the tallest's height, so nothing moves and
              the editor never changes size as the tour plays. Not a live region: it would speak every few seconds. -->
@@ -168,7 +174,7 @@ watch(layout, async () => {
           </p>
         </div>
       </div>
-      <InsideEditor ref="editor" class="inside__editor" :taken-over="tour.takenOver.value" :expand="expand" @take-over="tour.takeOver" @toggle-expand="toggleExpand" @point-at-way-in="emit('pointAtWayIn')" />
+      <InsideEditor ref="editor" class="inside__editor" :expand="expand" @toggle-expand="toggleExpand" />
     </template>
 
     <template v-else>
@@ -203,7 +209,7 @@ watch(layout, async () => {
 }
 
 /* The list or the band: its own background, never the canvas grid. As a band under 1000px: the heading over the
- * chapters, Pause and Try it yourself at the end of their line or under it, the caption under them. */
+ * chapters, Pause and Open editor from here at the end of their line or under it, the caption under them. */
 .inside__guide {
   display: flex;
   flex: none;
@@ -290,7 +296,8 @@ watch(layout, async () => {
 }
 
 /* The list: padding 12 16 16; the heading, 8px under it the chapters one under another, a hairline with 12px over and
- * under it, the caption, and at its foot Pause and Try it yourself. */
+ * under it, the caption, and at its foot Pause and Open editor from here, the second under the first where the words
+ * don't fit beside it. */
 .inside--beside .inside__guide {
   flex-flow: column nowrap;
   gap: 0;
