@@ -2,7 +2,7 @@
 
 The one section that sets a layer (ADR 0079, ticket 0670): the Canvas or a Frame, each a sub-canvas with everything a canvas has. Given a layer it sets its Technique and that Technique's settings, a Custom frame's shape settings, its Bead and its Background. The same section wherever a layer is set, so a new layer property is added here once and shows up everywhere:
 
-- **New Project form** (NewPatternForm card): both layers of the new Project start from it. Nothing is asked; each pick is kept in the form.
+- **New Project form** (NewPatternForm card): both layers of the new Project start from it. Nothing is asked; each pick is kept in the form. It has no Background (ticket 0881): a new Project starts on the device's last pick, set later in the Project panel.
 - **Project panel, canvas section** (ProjectPanel card): the Canvas's. It changes any time, with a Frame and once Row progress has started, as Row progress belongs to the Frame.
 - **Frame panel, settings section** (Frame card): the Frame's.
 - **Starter setup** (StarterGallery card, ticket 0671): the Starter's Frame, pre-filled from the Starter. Nothing is asked; each pick is kept in the setup. Its shape's sizes are the setup's own rows, so no shape settings show here.

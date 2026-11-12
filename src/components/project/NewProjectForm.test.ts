@@ -136,18 +136,14 @@ describe('NewProjectForm', () => {
     expect(wrapper.emitted('submit')![0]![0]).not.toHaveProperty('beadShape')
   })
 
-  it('starts on the device\'s Background and sends one only when it is picked, for both layers (ticket 0670)', async () => {
-    const wrapper = mount(NewProjectForm, { props, attachTo: document.body })
+  it('offers no Background and sends none, so both layers start on the device\'s last pick (ticket 0881)', async () => {
+    const wrapper = mount(NewProjectForm, { props })
 
-    expect(wrapper.find('[data-testid="canvas-section"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="canvas-section"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Background')
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')![0]![0]).not.toHaveProperty('background')
-
-    await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
-    await wrapper.find('form').trigger('submit')
-    expect(wrapper.emitted('submit')![1]![0]).toMatchObject({ background: 2 })
-    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ background: 2 })
-    wrapper.unmount()
+    expect(wrapper.emitted('draft')!.at(-1)![0]).not.toHaveProperty('background')
   })
 
   it("emits the trimmed maker's name when one is typed, keeping it apart from the device-wide one (ticket 182)", async () => {
