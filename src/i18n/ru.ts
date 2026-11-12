@@ -660,7 +660,7 @@ export const ru: Translations = {
     chartStyleFact: 'Стиль схемы',
     pagesFact: 'Страниц',
     wherePartsAre: 'Где какая часть',
-    partsNote: 'В части до {beads} бисеринок по стороне. Части на одном листе делят номер страницы; каждая повторяет {overlap} бисеринки соседней, они затенены.',
+    partsNote: 'В части до {beads} бисеринок по стороне, {size} мм на бисеринку. Части на одном листе делят номер страницы; каждая повторяет {overlap} бисеринки соседней, они затенены.',
     rowByRowOn: 'Построчно на странице {page} →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'часть {part} · стр. {page}',

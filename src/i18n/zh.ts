@@ -648,7 +648,7 @@ export const zh: Translations = {
     chartStyleFact: '图纸样式',
     pagesFact: '页数',
     wherePartsAre: '各部分位置',
-    partsNote: '每部分每边最多 {beads} 颗珠子。同一页上的部分共用页码；每部分重复相邻部分的 {overlap} 颗珠子，并加了底色。',
+    partsNote: '每部分每边最多 {beads} 颗珠子，每颗 {size} 毫米。同一页上的部分共用页码；每部分重复相邻部分的 {overlap} 颗珠子，并加了底色。',
     rowByRowOn: '逐行说明见第 {page} 页 →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: '第 {part} 部分 · 第 {page} 页',

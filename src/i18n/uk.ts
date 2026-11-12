@@ -660,7 +660,7 @@ export const uk: Translations = {
     chartStyleFact: 'Стиль схеми',
     pagesFact: 'Сторінок',
     wherePartsAre: 'Де яка частина',
-    partsNote: 'У частині до {beads} бісерин по стороні. Частини на одному аркуші мають спільний номер сторінки; кожна повторює {overlap} бісерини сусідньої, вони затемнені.',
+    partsNote: 'У частині до {beads} бісерин по стороні, {size} мм на бісерину. Частини на одному аркуші мають спільний номер сторінки; кожна повторює {overlap} бісерини сусідньої, вони затемнені.',
     rowByRowOn: 'Рядок за рядком на сторінці {page} →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'частина {part} · стор. {page}',

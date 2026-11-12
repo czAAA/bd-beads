@@ -88,7 +88,7 @@ test('PDF export holds the legend and the chart, and splits a large Project over
 
   expect(name).toBe('fixture-brick.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
-  // A legend page, then the chart at 3 mm a bead: 120 columns are several parts.
+  // A legend page, then the chart: 120 × 120 does not fit one sheet at 1.6 mm a bead, so it is cut into parts.
   const plan = planPrint(project)
   expect(plan.parts.length).toBeGreaterThan(1)
   expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)

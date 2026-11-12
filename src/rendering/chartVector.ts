@@ -1,5 +1,5 @@
 import { BLACK_WHITE_BALANCE, fromHex, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
-import { HELVETICA_CAP_HEIGHT } from '../domain/helvetica'
+import { HELVETICA_CAP_HEIGHT, helveticaWidth } from '../domain/helvetica'
 import { PdfContent } from '../domain/pdfContent'
 import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
@@ -28,13 +28,26 @@ const LINE_FIVE = mmPt(0.18)
 const LINE_TEN = mmPt(0.3)
 const PAD_LINE = mmPt(0.2)
 const OVERLAP_LINE = mmPt(0.5)
-/** `print-letter`, in points, and the share of its bead a round bead's circle takes (2.6 of 3 mm). */
+/** `print-letter`, in points: the ruler numbers, and the Swatch letter on a 3 mm bead. The share of its bead a round
+ * bead's circle takes (2.6 of 3 mm). */
 const LETTER_PT = 6.5
 const ROUND_SHARE = 2.6 / 3
+/** The key's swatch, drawn like a 3 mm bead whatever the chart's bead. */
+const KEY_SWATCH_MM = 3
+/** Rulers number every 5th row and column from this bead up, and every 10th under it (ticket 0913). */
+const RULER_FIVES_FROM_MM = 2.2
 /** `print-overlap-tint`: how far toward white an overlap bead is mixed. */
 const OVERLAP_TINT = 0.6
 /** `--print-letter-squeeze`: horizontal scale of a two-letter Swatch letter. */
 const LETTER_SQUEEZE = 72
+
+/** The Swatch letter's size on a bead of `beadMm` (ticket 0913): `print-letter` on 3 mm, scaled with the bead, its cap
+ * height a little more of a small bead (0.6 at 1.8 mm, 0.55 from 3 mm) so it still reads: about 4.3 pt at 1.8 mm.
+ * @internal Its test checks the sizes on their own. */
+export function letterPt(beadMm: number): number {
+  const share = 0.6 - 0.05 * Math.min(1, Math.max(0, (beadMm - 1.8) / 1.2))
+  return (LETTER_PT * (beadMm / 3) * share) / 0.55
+}
 
 /** A color mixed toward white. */
 function tint(hex: string, amount: number): string {
@@ -163,20 +176,26 @@ function padOf(part: PrintPart, shared: boolean): Box {
   }
 }
 
-/** A Swatch letter set centred in a box: Helvetica-Bold, its baseline the cap height's half below the middle. */
-function letterAt(content: PdfContent, letter: string, box: Box, color: string): void {
-  const size = LETTER_PT
+/** The share of its cell's width a Swatch letter may take, so a two-letter one stays inside it. */
+const LETTER_ROOM = 0.9
+
+/** A Swatch letter set centred in a box at `size` pt, or smaller where it would be wider than the box: Helvetica-Bold,
+ * its baseline the cap height's half below the middle. */
+function letterAt(content: PdfContent, letter: string, box: Box, color: string, largest: number): void {
+  const squeeze = letter.length > 1 ? LETTER_SQUEEZE : 100
+  const wide = (helveticaWidth(letter, 'bold', largest) * squeeze) / 100
+  const size = Math.min(largest, (largest * box.width * K * LETTER_ROOM) / wide)
   const x = (box.x + box.width / 2) * K
   const baseline = (box.y + box.height / 2) * K + (HELVETICA_CAP_HEIGHT * size) / 2
-  content.text(letter, x, baseline, { face: 'bold', size, color, ...(letter.length > 1 ? { scale: LETTER_SQUEEZE } : {}) }, 'center')
+  content.text(letter, x, baseline, { face: 'bold', size, color, ...(letter.length > 1 ? { scale: squeeze } : {}) }, 'center')
 }
 
 /** A swatch drawn like a bead on the page: its fill, a hairline edge and its letter (the key's). */
 export function drawKeySwatch(content: PdfContent, x: number, y: number, hex: string, letter: string, round: boolean): void {
-  const size = mm(3)
+  const size = mm(KEY_SWATCH_MM)
   const inset = round ? (size * (1 - ROUND_SHARE)) / 2 : 0
   content.roundRect((x + inset) * K, (y + inset) * K, (size - inset * 2) * K, (size - inset * 2) * K, round ? size : 0, { fill: hex, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
-  letterAt(content, letter, { x, y, width: size, height: size }, letterColor(hex))
+  letterAt(content, letter, { x, y, width: size, height: size }, letterColor(hex), letterPt(KEY_SWATCH_MM))
 }
 
 /** One part: its pad outline, beads, lines, letters, rulers and the overlap line, on the page at `pad`. */
@@ -195,7 +214,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
 
   const custom = customChart(project, part.region, plan.zoom)
   if (custom) {
-    drawCustomPart(content, project, part, chart, custom, letters, { across: part.overlapAcross * stepAcross, down: part.overlapDown * stepDown })
+    drawCustomPart(content, project, part, chart, custom, letters, { across: part.overlapAcross * stepAcross, down: part.overlapDown * stepDown }, letterPt(plan.beadMm))
     drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
     return
   }
@@ -259,12 +278,14 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   for (const bead of beads) {
     if (bead.color === null) continue
     const { x, y, width, height } = round ? bead.box : bead.cell
-    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color))
+    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color), letterPt(plan.beadMm))
   }
 
   drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
 
-  // Rulers: upright numbers at every 5th, on all four sides, tens bold in ink, fives regular in muted, overlap faint.
+  // Rulers: upright numbers at every 5th (every 10th on a small bead), on all four sides, tens bold in ink, fives regular
+  // in muted, overlap faint.
+  const shown = (value: number) => rulerLevel(value) === 'tenth' || (rulerLevel(value) === 'fifth' && plan.beadMm >= RULER_FIVES_FROM_MM)
   const size = LETTER_PT
   const cap = HELVETICA_CAP_HEIGHT * size
   const number = (value: number, x: number, baseline: number, align: 'left' | 'center' | 'right', overlap: boolean) => {
@@ -273,7 +294,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   }
   for (let index = 0; index <= lastAcross; index += 1) {
     const value = acrossNumber(project, firstIndexAcross + index)
-    if (rulerLevel(value) === 'plain') continue
+    if (!shown(value)) continue
     const x = (chart.x + index * stepAcross + (grid.beadAcross * plan.zoom) / 2) * K
     const overlap = index < part.overlapAcross
     number(value, x, (chart.y - mm(1.5)) * K, 'center', overlap)
@@ -281,7 +302,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   }
   for (let index = 0; index <= lastDown; index += 1) {
     const value = downNumber(project, firstIndexDown + index)
-    if (rulerLevel(value) === 'plain') continue
+    if (!shown(value)) continue
     const baseline = (chart.y + index * stepDown + (grid.beadDown * plan.zoom) / 2) * K + cap / 2
     const overlap = index < part.overlapDown
     number(value, (chart.x - mm(1.3)) * K, baseline, 'right', overlap)
@@ -323,7 +344,7 @@ function emptyCross(x: number, y: number, size: number): [number, number, number
 /** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls on the part, turned as it lies, with
  * its Swatch letter upright; empty positions outlined so the shape reads, each with its cross; its Seams as lines. No cell lines or rulers:
  * its beads keep no rows and columns. */
-function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }): void {
+function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }, letterSize: number): void {
   const own = (bead: ChartBead) => bead.x >= 0 && bead.y >= 0 && bead.x <= part.region.width && bead.y <= part.region.height
   const inOverlap = (bead: ChartBead) => bead.x < overlap.across || bead.y < overlap.down
   const round = beadsAreRound(project)
@@ -353,7 +374,7 @@ function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, 
   for (const bead of beads) {
     if (bead.color === null) continue
     const size = Math.min(bead.width, bead.height)
-    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + bead.x - size / 2, y: chart.y + bead.y - size / 2, width: size, height: size }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color))
+    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + bead.x - size / 2, y: chart.y + bead.y - size / 2, width: size, height: size }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color), letterSize)
   }
 }
 
