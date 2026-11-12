@@ -30,3 +30,5 @@ The Colors group: the Pattern's Palette as an 8-column grid of square swatches t
 - The swatch colors are the Pattern's bead colors (user data), never brand colors. The consumer provides them and the selected index.
 
 Hand-written from DESIGN.md §5.5 and the v16 Palette change; static rendition. The preview shows 12, 16 and 40 swatches at the Toolbox's 264px content width, then the touch layout, with an Edit Palette row (centered × on added swatches, faded built-in ones). The first 12 are the built-in Palette colors (see the Glossary card); the added ones are sample bead colors.
+
+- **Approximate Bead colors** (DS-2, ticket 0905; ConvertImage card): in the Convert image Change picker's grid, a Bead color whose swatch is approximate carries the 1px dashed `field-line` outline 1px out; a measured one is plain. The selected `ring` draws outside it.
