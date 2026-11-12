@@ -614,6 +614,21 @@ The quiet converter of DS-1 (ConvertImage card's first section; tickets 0896, 08
 
 "800×977 px" drops "· jpg" (the name says it) and "{file} · {size}" under Reading the picture has no words to translate. Gone with ticket 0896, in every language: the step titles and summaries, "add a picture first" as a summary, "convert" with Whole picture and A part of the picture, the counter, Back and Next on this page, the band's drag lines, "To leave a color out, pick Make empty …", "To fix what was found, pick Background …", "Turn it off to keep the whole picture." and "Colors follow the crop. …"; with ticket 0897, Name, Maker's name and "optional" on this page.
 
+## Converter on a phone copy (ticket 0910)
+
+The converter on a phone and a portrait tablet (DS-4; ConvertImage card, "On a phone and a tablet"; tickets 0911 and 0919). Every other string on these screens is DS-1's, DS-2's or DS-3's as they are. The five settings' names keep to 9 letters in every language, so they fit a fifth of a 360 px page under their icon (Russian "Картинка", not "Изображение"). English is from the design; the other languages are proposals for review with the build.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Picture (the setting, and the Picture sheet's title) | Картинка | Картинка | Выява | 图片 | Imagen | Obraz |
+| Bead (the setting; its sheet keeps "Bead and Technique") | Бисер | Бісер | Бісер | 珠子 | Cuenta | Koralik |
+| {setting}: {value} (each setting's accessible name, "Width: 60 beads") | {setting}: {value} | {setting}: {value} | {setting}: {value} | {setting}：{value} | {setting}: {value} | {setting}: {value} |
+| {w}×{h} beads · {cm} · {n} colors (the phone dock's first line: DS-1's first two result lines joined) | {w}×{h} бисерин · {cm} · цветов: {n} | {w}×{h} бісерин · {cm} · кольорів: {n} | {w}×{h} бісерын · {cm} · колераў: {n} | {w}×{h} 颗珠子 · {cm} · {n} 种颜色 | {w}×{h} cuentas · {cm} · {n} colores | {w}×{h} koralików · {cm} · kolorów: {n} |
+| brand · type · size · technique · drop (labels above the pickers in the Bead and Technique sheet: the New Project form's own names, lowercased by style) | бренд · тип · размер · техника плетения · дроп | бренд · тип · розмір · техніка плетіння · дроп | брэнд · тып · памер · тэхніка пляцення · дроп | 品牌 · 类型 · 尺寸 · 编织技法 · 每针珠数 | marca · tipo · tamaño · técnica · drop | marka · typ · rozmiar · technika · drop |
+| Back to the number of colors (the Colors list's back arrow) | Назад к числу цветов | Назад до кількості кольорів | Назад да колькасці колераў | 返回颜色数量 | Volver al número de colores | Wróć do liczby kolorów |
+
+Left out under 600 px wide, in every language (no new words): the strip's "Convert image" (the page's accessible name keeps it), the words of the bar's Background and Make empty (their accessible names and Tooltips keep them), DS-1's "project · {name}" line, DS-2's "type a number" (the field is "Number of colors") and DS-1's "goes where the picture lies on the Canvas" (Add to Canvas's Tooltip instead). "tap or drag over beads to keep them or take them away" moves from the Background sheet into the tool's chip on the beads, unchanged.
+
 ## Margin sheet copy (ticket 0655)
 
 The Frame's margin as a drafting sheet (MarginSheet card). The tools on the sheet keep their existing names, Tooltips and confirmations (Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this Frame, Your name, Custom color). The margin is "поля" in Russian and Ukrainian, as the margins of a sheet of paper, and "margines" in Polish. Belarusian, Spanish and Chinese are written with the build (tickets 0656 to 0658).
