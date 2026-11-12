@@ -16,7 +16,7 @@ import TechniqueSection from './TechniqueSection.vue'
 
 // Layer settings (ADR 0079, ticket 0670; LayerSettings card): the one section that sets a layer, wherever a layer is
 // set (the New Project form, the Project panel's Canvas section, the Frame panel). Its Technique and that Technique's
-// settings, a Custom frame's shape settings, its Bead, and its Background. It only asks; the caller works.
+// settings, a Custom frame's shape settings, its Bead, and its Background (none in the New Project form, ticket 0881). It only asks.
 const props = defineProps<{
   layer: Layer
   technique: Technique
@@ -28,8 +28,9 @@ const props = defineProps<{
   withoutTechniqueSettings?: boolean
   /** The layer's Bead, or nothing for one that is no longer offered. */
   bead: Bead | undefined
-  /** Its Background as it shows: its own, or the device's last pick where it has none. */
-  background: Background
+  /** Its Background as it shows: its own, or the device's last pick where it has none. None for the New Project form,
+   * which offers no picker: a Project starts on the device's last pick, set later in the Project panel (ticket 0881). */
+  background?: Background
   /** The Frame it sets, for a Custom frame's shape settings; none for the Canvas, a draft or a Frame with no shape. */
   frame?: Pick<FrameSheet, 'shape' | 'settings'>
   /** A Row progress pass is done: what moves positions (the Technique, its settings, the shape settings) waits. */
@@ -116,7 +117,7 @@ const outdated = computed(() => candidates.value.some((bead) => bead.id === prop
       <BeadSection :bead="bead" :candidates="candidates" :outdated="outdated" @pick="emit('pick-bead', $event)" />
     </div>
 
-    <div class="layer-settings__group" role="group" :aria-labelledby="backgroundLabelId">
+    <div v-if="background !== undefined" class="layer-settings__group" role="group" :aria-labelledby="backgroundLabelId">
       <span :id="backgroundLabelId" class="layer-settings__label layer-settings__heading">{{ t.layerSettings.background }}</span>
       <BackgroundSection :background="background" :layer="layer" @pick="emit('set-background', $event)" />
     </div>

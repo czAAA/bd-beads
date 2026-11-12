@@ -3,11 +3,9 @@ import { computed, inject, onMounted, ref, watch } from 'vue'
 import { findBead } from '../../domain/beads'
 import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from '../../domain/createProject'
 import { weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
-import type { Background } from '../../domain/project'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
-import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import LayerSettings from './LayerSettings.vue'
 import NamesSection from './NamesSection.vue'
 import AppButton from '../ui/AppButton.vue'
@@ -37,9 +35,6 @@ const technique = ref<Technique>(NEW_PROJECT_DEFAULTS.technique)
 const settings = ref<TechniqueSettings>({})
 /** The chosen Technique's settings at their values, each within its range. */
 const techniqueSettings = computed(() => weaveSettings({ technique: technique.value, techniqueSettings: settings.value }))
-/** The Background picked (ticket 0670), which both layers start on; none until one is, so the device's last pick shows. */
-const background = ref<Background>()
-const deviceBackground = useCanvasBackground().start
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 
@@ -63,19 +58,19 @@ function pickStarter() {
 }
 
 /** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342), both layers from the
- * form's Layer settings (ADR 0079). */
+ * form's Layer settings (ADR 0079). It sends no Background: both layers show the device's last pick, set later in the
+ * Project panel (ticket 0881). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
     ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
     beadId: beadId.value,
-    ...(background.value !== undefined ? { background: background.value } : {}),
     makerName: makerName.value.trim(),
   }
 }
 
-watch([name, beadId, technique, settings, background, makerName], () => emit('draft', currentInput()), { immediate: true })
+watch([name, beadId, technique, settings, makerName], () => emit('draft', currentInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -91,7 +86,8 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
     it is for, Name (optional, "Project 1" when left empty), Maker's name (ticket 182, also optional), the Layer settings
-    both layers start from (the section the Project and Frame panels share, ticket 0670), then the primary Create Project
+    both layers start from (the section the Project and Frame panels share, ticket 0670) without its Background (ticket
+    0881), then the primary Create Project
     and the secondary Convert image and Pick a starter (ticket 0866). It states no
     size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image opens its own
     popup on a copy of these values (spec 0645).
@@ -109,12 +105,10 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
       :technique="technique"
       :technique-settings="settings"
       :bead="selectedBead"
-      :background="background ?? deviceBackground"
       testid="new-project"
       @set-technique="technique = $event"
       @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
       @pick-bead="beadId = $event"
-      @set-background="background = $event"
     />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" data-testid="create-project">
