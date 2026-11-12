@@ -10,9 +10,9 @@
   --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
   --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
   --convert-sections-width-narrow: 400px; /* ConvertImage card: the step pane while the page is under 1100px wide. */
-  --convert-preview-phone: 300px; /* PhoneForms card: the converter's preview above the step on a phone, at most (it gives way to the step). */
-  --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step. */
-  --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. */
+  --convert-preview-phone: 300px; /* PhoneForms card: the converter's preview above the step on a phone, at most (it gives way to the step). Goes with ticket 0911 (DS-4). */
+  --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step; from ticket 0911 (DS-4) the beads at a sheet's full detent. */
+  --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. Goes with ticket 0911 (DS-4). */
   --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
   --convert-band-height: 48px; /* ConvertImage card (ticket 0778): the preview's band of facts above the picture. */
   --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
@@ -38,6 +38,20 @@
   --convert-compare-side: 24px; /* ConvertImage card (ticket 0900): room at each side of the picture and the beads in each half of Compare. */
   --convert-chip-height: 30px; /* ConvertImage card (ticket 0900): a chip over the preview ("picture", "beads", "picture · let go to see the beads"). */
   --convert-chip-height-touch: 32px; /* ConvertImage card (ticket 0900): the same chip on a coarse pointer. */
+  --convert-tablet-min: 600px; /* ConvertImage card (DS-4, ticket 0910): from this width a portrait page takes the Tablet layout; under it, the Phone. */
+  --convert-settings-height: 60px; /* ConvertImage card (ticket 0910): the phone dock's row of five settings (icon over name). */
+  --convert-sheet-grab: 12px; /* ConvertImage card (ticket 0910): a phone sheet's grab zone, holding the 36 x 4 pill. */
+  --convert-sheet-head: 44px; /* ConvertImage card (ticket 0910): a sheet's head (name, value, More for ..., Close). */
+  --convert-fit-phone: 16px; /* ConvertImage card (ticket 0910): room above and at each side of the beads at Fit on a phone. */
+  --convert-fit-bottom-phone: 64px; /* ConvertImage card (ticket 0910): room under the beads at Fit on a phone, the bar's 44 and 10 either side. */
+  --convert-fit-tablet: 24px; /* ConvertImage card (ticket 0910): the same above and at the sides on a portrait tablet. */
+  --convert-fit-bottom-tablet: 76px; /* ConvertImage card (ticket 0910): room under the beads at Fit on a portrait tablet. */
+  --convert-tools-lift-phone: 10px; /* ConvertImage card (ticket 0910): how far the bar on the beads stands above the preview's bottom on a phone. */
+  --convert-neighbour-phone-width: 63px; /* ConvertImage card (ticket 0910): a neighbour's frame in the phone's Colors sheet (one fewer, shown, one more). */
+  --convert-neighbour-phone-height: 76px; /* ConvertImage card (ticket 0910): its height. */
+  --convert-sheet-card-width: 560px; /* ConvertImage card (ticket 0910): a sheet on a portrait tablet, a card above the dock. */
+  --convert-sheet-card-max: 360px; /* ConvertImage card (ticket 0910): the tallest that card opens; taller content scrolls inside it. */
+  --convert-side-column-width: 320px; /* ConvertImage card (ticket 0910): the dock's column (or a sheet) at the right of a phone on its side. */
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
@@ -188,6 +202,16 @@
 }
 :root[data-theme="dark"] {
   --message-danger: var(--accent-strong);
+}
+
+/* ConvertImage card (DS-4, ticket 0910): a phone sheet's shadow, cast upward over the beads; flat in dark and high contrast, as the elevations are */
+:root,
+:root[data-theme="light"] {
+  --convert-sheet-shadow: 0 -8px 32px -8px rgba(0, 0, 0, 0.16);
+}
+:root[data-theme="dark"],
+:root[data-theme="contrast"] {
+  --convert-sheet-shadow: none;
 }
 
 :root {
