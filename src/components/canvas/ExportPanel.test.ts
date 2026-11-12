@@ -67,3 +67,41 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('fit')).toBeUndefined()
   })
 })
+
+describe('ExportPanel print choices (ticket 0916)', () => {
+  const pages = (wrapper: ReturnType<typeof mountPanel>) => /· (\d+) pages?$/.exec(wrapper.get('[data-testid="export-pdf"]').text())?.[1]
+  const big = (): Project => withLayers(empty(), { frame: { row: 0, column: 0, rows: 100, columns: 100, technique: 'loom', beads: {} } })
+
+  it('offers Large beads and Row by row, both off, each with what it does behind its Info button', () => {
+    const wrapper = mountPanel(framed())
+
+    for (const [id, label] of [['export-large-beads', en.frame.largeBeadsInfoLabel], ['export-row-by-row', en.frame.rowByRowInfoLabel]] as const) {
+      expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-checked')).toBe('false')
+      expect(wrapper.get(`[data-testid="${id}-info"]`).attributes('aria-label')).toBe(label)
+    }
+  })
+
+  it('counts the PDF\'s pages on the Printable chart row, following each switch at once', async () => {
+    const wrapper = mountPanel(big())
+    expect(pages(wrapper)).toBe('1')
+
+    await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
+    const large = Number(pages(wrapper))
+    expect(large).toBeGreaterThan(2)
+
+    await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
+    expect(Number(pages(wrapper))).toBeGreaterThan(large)
+  })
+
+  it('remembers both switches on the device', async () => {
+    const wrapper = mountPanel(framed())
+    await wrapper.get('[data-testid="export-large-beads"]').trigger('click')
+    await wrapper.get('[data-testid="export-row-by-row"]').trigger('click')
+    expect([localStorage.getItem('openbeads:print-large-beads'), localStorage.getItem('openbeads:print-row-by-row')]).toEqual(['on', 'on'])
+    wrapper.unmount()
+
+    const again = mountPanel(framed())
+    expect(again.get('[data-testid="export-large-beads"]').attributes('aria-checked')).toBe('true')
+    expect(again.get('[data-testid="export-row-by-row"]').attributes('aria-checked')).toBe('true')
+  })
+})

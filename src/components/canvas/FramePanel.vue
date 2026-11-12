@@ -9,10 +9,10 @@ import { layerSettingsOf, layerSummary } from '../project/layerSettingsOf'
 import MarginSection from './MarginSection.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
+import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
-import AppSwitch from '../ui/AppSwitch.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
@@ -204,14 +204,15 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
     <!-- Export (ticket 568), with a Frame only (ticket 0847): with none, the Export panel's way, no export rows. -->
     <PanelSection v-if="frame" id="frame:export" :label="t.panels.project.exportHeading">
       <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
-        <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
-        <div class="frame-panel__letters">
-          <span class="frame-panel__letters-label">
-            {{ t.frame.lettersLabel }}
-            <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
-          </span>
-          <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
-        </div>
+        <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads; saved with the Project. Printed charts are always lettered (ticket 0914). -->
+        <PanelSwitchRow
+          :model-value="lettersOn(project)"
+          :label="t.frame.lettersLabel"
+          :info-label="t.frame.lettersInfoLabel"
+          :body="t.frame.lettersLine"
+          testid="frame-letters"
+          @update:model-value="emit('set-letters', $event)"
+        />
       </ExportSection>
     </PanelSection>
 
@@ -409,20 +410,6 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   flex-direction: column;
 }
 
-.frame-panel__letters {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  min-height: var(--panel-item-height);
-  padding: 0 var(--space-10);
-}
-.frame-panel__letters-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-  font: var(--type-control);
-}
 .frame-panel__line {
   margin: 0;
   padding: var(--space-4) var(--space-10);
