@@ -1,6 +1,6 @@
 # PrintChartPage
 
-A chart page of the PDF: the whole Schema or one equal part of it, at the largest bead the sheet allows, every bead lettered and every 5th (or 10th) row and column numbered. It is for working from at the craft table, and it has to read in black-and-white print and zoomed in on a screen.
+A chart page of the PDF: one equal part of the Schema, at the largest bead the sheet allows, or the whole Schema drawn the same way on page 1 when it fits there (PrintPage1, ticket 0914), every bead lettered and every 5th (or 10th) row and column numbered. It is for working from at the craft table, and it has to read in black-and-white print and zoomed in on a screen.
 
 Signed off in the design session of 2026-10-27 (tickets 0585, 0586, 0588; the claude.ai canvas "Printed chart pages"). Sizes are on A4 portrait, measured from the page's top left corner; colors are tokens.
 
@@ -79,7 +79,7 @@ The lines count from the Schema's first bead, not the part's. On part B of a 150
 
 - The key starts 4 mm under the pad. The label "Colors on this page" is Inter 600 7 pt `ink`, baseline 6.3 mm under the pad.
 - Then the colors on this page (overlap included), in Swatch letter order, reading across. They sit in `print-key-columns` (6) columns of 31.67 mm, rows 4.5 mm apart; the first row's top is 8 mm under the pad.
-- Each color has a 3 mm swatch drawn like a bead on this page, whatever the chart's bead: its fill, a 0.1 mm `line-strong` edge, and its letter by the rule above (a round bead on a round-bead page). Then 1.6 mm, then the color name in Inter 400 7 pt `ink`, its baseline level with the letter's. No counts: the totals are on the Specification.
+- Each color has a 3 mm swatch drawn like a bead on this page, whatever the chart's bead: its fill, a 0.1 mm `line-strong` edge, and its letter by the rule above (a round bead on a round-bead page). Then 1.6 mm, then the color name in Inter 400 7 pt `ink`, its baseline level with the letter's. No counts: the totals are in Beads needed on page 1.
 - Nothing else goes under the board. The line on how to read the numbers is gone: numbers every 5 need no explanation.
 
 ## Footer

@@ -56,7 +56,6 @@
     "components/PngExport/README.md",
     "components/PrintChartPage/README.md",
     "components/PrintPage1/README.md",
-    "components/PrintSpecification/README.md",
     "components/PrintStrips/README.md",
     "components/PrintWordChart/README.md",
     "components/PrintWide/README.md",
@@ -336,12 +335,7 @@
     {
       "name": "PrintPage1",
       "group": "Print",
-      "summary": "The first page of the PDF: the whole framed Schema across the full width, the facts above it and Beads needed under it."
-    },
-    {
-      "name": "PrintSpecification",
-      "group": "Print",
-      "summary": "The Specification page of the PDF: the full legend with beads, grams and tubes to buy, the facts and the page map."
+      "summary": "The first page of the PDF: the whole piece (the chart itself when it fits, else the overview of its parts) and one Beads needed table; for most pieces the whole PDF."
     },
     {
       "name": "PrintStrips",

@@ -166,11 +166,14 @@ class Edges {
 
 const SHARED_LABEL = PRINT_PART_LABEL
 
+/** Where a chart page's chart area begins, under its header; page 1's begins under its title block (ticket 0914). */
+const CHART_PAGE_AREA = { x: PRINT_MARGIN, y: PRINT_MARGIN + PRINT_HEADER + PRINT_HEADER_GAP }
+
 /** Where a part's pad sits on the page, in px: its top left corner and size (rulers included). */
-function padOf(part: PrintPart, shared: boolean): Box {
+function padOf(part: PrintPart, shared: boolean, area: { x: number; y: number }): Box {
   return {
-    x: PRINT_MARGIN + part.place.x,
-    y: PRINT_MARGIN + PRINT_HEADER + PRINT_HEADER_GAP + part.place.y + (shared ? SHARED_LABEL : 0),
+    x: area.x + part.place.x,
+    y: area.y + part.place.y + (shared ? SHARED_LABEL : 0),
     width: part.region.width + PRINT_RULER * 2,
     height: part.region.height + PRINT_RULER * 2,
   }
@@ -378,11 +381,12 @@ function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, 
   }
 }
 
-/** Every part on a chart page as PDF operators, and where each pad sits (the caller's labels and key go by them). */
-export function drawChartParts(project: Project, plan: PrintPlan, parts: PrintPart[], pageHeight: number, letters: SwatchLetters): { content: PdfContent; pads: Box[] } {
+/** Every part on a chart page, or page 1's whole chart from `area`'s top left corner, as PDF operators, and where each pad
+ * sits (the caller's labels and key go by them). */
+export function drawChartParts(project: Project, plan: PrintPlan, parts: PrintPart[], pageHeight: number, letters: SwatchLetters, area = CHART_PAGE_AREA): { content: PdfContent; pads: Box[] } {
   const content = new PdfContent(pageHeight * K)
   const shared = parts.length > 1
-  const pads = parts.map((part) => padOf(part, shared))
+  const pads = parts.map((part) => padOf(part, shared, area))
   parts.forEach((part, index) => drawPart(content, project, plan, part, pads[index]!, letters))
   return { content, pads }
 }

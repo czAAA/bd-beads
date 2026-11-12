@@ -3,6 +3,7 @@ import { fixtureProject } from '../../e2e/support/projects'
 import { en } from '../i18n/en'
 import { drawChartPage } from './chartPage'
 import { planWithKey } from './chartPageKey'
+import { pageOneLayout } from './pageOneLayout'
 import { loadPrintFonts } from './printPages'
 import { printText } from './printText'
 import { exportProjectPdf } from './projectExport'
@@ -11,7 +12,7 @@ import { exportProjectPdf } from './projectExport'
 describe('chart pages of the PDF', () => {
   it('is a text picture at the page size with the drawing beside it', async () => {
     await loadPrintFonts()
-    const project = fixtureProject({ technique: 'loom', columns: 100, rows: 100 })
+    const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
     const plan = planWithKey(project)
     const page = drawChartPage(project, printText(project, en, 'en', new Date()), plan, [plan.parts[0]!], 2)
 
@@ -20,13 +21,14 @@ describe('chart pages of the PDF', () => {
   })
 
   it('writes every chart page with one picture, its text, and the letters and lines as drawing, tens of kB each', async () => {
-    const project = fixtureProject({ technique: 'loom', columns: 100, rows: 100 })
-    const pdf = await exportProjectPdf(project, printText(project, en, 'en', new Date()), 150)
+    const project = fixtureProject({ technique: 'loom', columns: 150, rows: 150 })
+    const words = printText(project, en, 'en', new Date())
+    const pdf = await exportProjectPdf(project, words, 150)
     const bytes = new TextDecoder('latin1').decode(await pdf.arrayBuffer())
-    const plan = planWithKey(project)
+    const { plan } = pageOneLayout(project, words)
     const chartPages = new Set(plan.parts.map((part) => part.page)).size
 
-    // One picture on every page: the Cover, the chart pages and the Specification.
+    // One picture on every page: the overview on page 1 and the chart pages.
     const pages = (bytes.match(/\/Type \/Page /g) ?? []).length
     expect((bytes.match(/\/Subtype \/Image/g) ?? []).length).toBe(pages)
     expect((bytes.match(/\/Filter \/FlateDecode \/Length \d+ >>\nstream/g) ?? []).length).toBe(chartPages)

@@ -2,6 +2,7 @@ import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
 import { shownLetters } from '../domain/paletteEdits'
 import type { Project } from '../domain/project'
+import type { SwatchLetters } from '../domain/swatchLetters'
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { TABLE_COLUMN_GAP, TABLE_HEAD, TITLE_MAKER_ROW, TITLE_NAME_ROW, listHeader, titleRows, type ColorsSlice, type CoverLayout } from './coverLayout'
 import { blankPage, drawBoard, drawMark, drawParts, drawRulers, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
@@ -13,8 +14,8 @@ import { displayedExtentPx } from './surfaceView'
 import { fillBlanks } from '../domain/fillBlanks'
 import { quarterTurnOf } from '../domain/layerRecord'
 
-// The Cover page (ticket 0583; printed-output.md, PrintPage1 and PngExport cards): the one A4 portrait page that opens the
-// PDF and is the PNG, and the list pages Beads needed continues on. Drawn here once for both formats.
+// The Cover page (ticket 0583; printed-output.md, PngExport card): the PNG's page, and the list pages Beads needed continues
+// on. Its title block and whole board are also page 1 of the PDF's (pageOnePage.ts, ticket 0914).
 
 /** Rulers number every 10 instead of every 5 when 5 beads are narrower than this. */
 const MIN_FIVE_STEP = mm(5.5)
@@ -29,7 +30,7 @@ function drawFooter(context: CanvasRenderingContext2D, page: PageSize, words: Pr
 
 /** The Frame's name (else the Project's) as the title, "by {maker}" under it and one line of technique, bead, grid and
  * size; the title and the maker are left out when empty. */
-function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words: PrintText): void {
+export function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words: PrintText): void {
   const width = page.width - PRINT_MARGIN * 2
   const rows = titleRows(words)
   let y = PRINT_MARGIN
@@ -105,22 +106,28 @@ function drawColors(context: CanvasRenderingContext2D, page: PageSize, words: Pr
   }
 }
 
-/** The Cover page: title block, the framed Schema with its rulers, Beads needed and the footer. `plan` is the PDF's: with
- * it the lines where the chart parts meet are drawn too (the PNG has no pages to point at). */
-export function drawCoverPage(project: Project, words: PrintText, layout: CoverLayout, scale = 1, plan?: PrintPlan): HTMLCanvasElement {
-  const { canvas, context } = blankPage(A4_PORTRAIT, scale)
-  drawTitleBlock(context, A4_PORTRAIT, words)
+/** Where the whole Schema sits on a page: its zoom, size and the top left corner of its beads. */
+type WholeBoard = Pick<CoverLayout, 'zoom' | 'extent' | 'board'>
 
-  // The whole Project on its board, rulers with a number every 5 (10 when the beads are too small for that).
+/** The whole Project on its board, rulers with a number every 5 (10 when the beads are too small for that), an empty
+ * position under its cross, and Swatch letters when given. With `plan` the lines where the chart parts meet are drawn
+ * too: page 1 of the PDF as its overview (ticket 0914); the PNG has no pages to point at. */
+export function drawWholeBoard(context: CanvasRenderingContext2D, project: Project, layout: WholeBoard, letters?: SwatchLetters, plan?: PrintPlan, labels?: PrintText['labels']): void {
   const board = { ...layout.board, ...layout.extent }
   const whole = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, quarterTurnOf(project), frameWeave(project).cell)
-  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board, shownLetters(project), true)
+  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board, letters, true)
   const grid = displayedGrid(project)
   const every = grid.stepAcross * layout.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
   if (geometryDrawnAlone(project).grid) drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
-  if (plan && plan.parts.length > 1) drawParts(context, project, plan, words.labels, layout.zoom, board)
+  if (plan && labels && plan.parts.length > 1) drawParts(context, project, plan, labels, layout.zoom, board)
+}
 
+/** The Cover page: title block, the framed Schema with its rulers, Beads needed and the footer. */
+export function drawCoverPage(project: Project, words: PrintText, layout: CoverLayout, scale = 1): HTMLCanvasElement {
+  const { canvas, context } = blankPage(A4_PORTRAIT, scale)
+  drawTitleBlock(context, A4_PORTRAIT, words)
+  drawWholeBoard(context, project, layout, shownLetters(project))
   drawColors(context, A4_PORTRAIT, words, layout.cover, layout.cover.y)
   drawFooter(context, A4_PORTRAIT, words)
   return canvas

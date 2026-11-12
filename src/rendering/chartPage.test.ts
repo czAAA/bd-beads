@@ -19,9 +19,11 @@ describe('miniMapRects: the header’s mini map (ticket 0585)', () => {
   })
 
   it('marks every part of a shared sheet', () => {
-    // A 35 × 120 bracelet is two strips side by side on one sheet (ticket 0913).
+    // A 35 × 120 bracelet is two strips side by side on one sheet (ticket 0913), a chart page when page 1 has no room.
     const project = shape(35, 120)
+    const plan = planPrint(project, { pageOne: { width: mm(190), height: mm(20) } })
 
-    expect(miniMapRects(planPrint(project), project, 2).filter((rect) => rect.here)).toHaveLength(2)
+    expect(plan.parts.map((part) => part.page)).toEqual([2, 2])
+    expect(miniMapRects(plan, project, 2).filter((rect) => rect.here)).toHaveLength(2)
   })
 })

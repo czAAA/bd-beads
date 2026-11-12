@@ -246,7 +246,7 @@
   --print-margin: 10mm; /* Page margin on every side. */
   --print-header: 12mm; /* Chart page header: technique word and name, part, page number, mini map; a 3 mm gap follows it. */
   --print-footer: 6mm; /* Footer: the brand and the date, and where the chart continues. */
-  --print-cover-bead-max: 6mm; /* Largest bead on the Cover page, where a small Schema is not enlarged past it; chart pages size their bead from print-bead-min to print-bead-max. */
+  --print-cover-bead-max: 6mm; /* Largest bead on the Cover page (the PNG), where a small Schema is not enlarged past it; chart pages size their bead from print-bead-min to print-bead-max. */
   --print-part-overlap: 2; /* Columns or rows of the neighbouring part repeated, shaded, at the start of a part so the sheets line up. */
   --print-bead-min: 1.8mm; /* Smallest bead on a chart page: the Schema is cut into equal parts on the fewest sheets that keep it at least this, then at the largest bead those sheets allow (3 mm at most when there are several). 2.2 mm with two-letter Swatch letters. */
   --print-bead-stretch: 1.6mm; /* Smallest bead on a chart page that holds the whole Schema, used only to keep it on one sheet. */

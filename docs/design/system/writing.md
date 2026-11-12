@@ -190,7 +190,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | For the picture. The printable chart is drawn in lines and stays sharp at any zoom. | Для картинки. Схема для печати нарисована линиями и остаётся чёткой при любом увеличении. |
 | High is {n} DPI in the picture on this device. | На этом устройстве «Высокое» для картинки — {n} DPI. |
 | Beads needed: {n} colors · {beads} beads · ≈ {g} · see page {p} | Нужно бисера: цветов — {n} · {beads} бисеринок · ≈ {g} · см. страницу {p} |
-| Specification · Color key · To buy · {n} × 5 g | Спецификация · Ключ цветов · Купить · {n} × 5 г |
+| Color key · To buy · {n} × 5 g | Ключ цветов · Купить · {n} × 5 г |
 | Continues right on page {n}, below on page {m} → · Last part · chart from page 2 → | Продолжение справа на странице {n}, ниже на странице {m} → · Последняя часть · схема со страницы 2 → |
 | No. · Custom | № · Свой цвет |
 | Match device · Light · Dark · High contrast | Как на устройстве · Светлая · Тёмная · Высокий контраст |

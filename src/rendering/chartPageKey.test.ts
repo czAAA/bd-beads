@@ -32,12 +32,18 @@ describe('colorsOnPage: the color key of a chart page (tickets 579, 0585)', () =
   })
 })
 
-describe('planWithKey: the key is as tall as the busiest chart page needs (ticket 0585)', () => {
+describe('planWithKey: the key is as tall as the busiest chart page after page 1 needs (ticket 0585)', () => {
   const palette = (count: number) => Array.from({ length: count }, (_, index) => `#${(index + 1).toString(16).padStart(2, '0')}0000`)
   const shapeOf = (count: number) => {
     const row = Object.fromEntries(palette(count).map((hex, column) => [column, hex]))
-    return bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 20, rows: 10, beads: { 0: row } } })
+    return bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 250, rows: 100, beads: { 0: row } } })
   }
+
+  it('has no key for a chart whole on page 1, where Beads needed is (ticket 0914)', () => {
+    const small = bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 20, rows: 10, beads: { 0: Object.fromEntries(palette(13).map((hex, column) => [column, hex])) } } })
+
+    expect(planWithKey(small).keyRows).toBe(1)
+  })
 
   it('gives one row for up to 6 colors, two up to 12 and three up to 18', () => {
     expect([1, 6, 7, 12, 13, 18].map((count) => planWithKey(shapeOf(count)).keyRows)).toEqual([1, 1, 2, 2, 3, 3])

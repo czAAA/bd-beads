@@ -27,7 +27,7 @@ const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => {
   return toHex({ r: r!, g: g!, b: b! })
 }
 
-// The Cover page drawn for real (ticket 0583): one A4 portrait page for both formats.
+// The Cover page drawn for real (ticket 0583): the PNG's one A4 portrait page.
 describe('Cover page', () => {
   beforeAll(loadPrintFonts)
 

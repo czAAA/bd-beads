@@ -23,7 +23,6 @@ describe('printText (tickets 162, 164)', () => {
     const text = printText(delicaProject(10), en, 'en', at)
 
     expect(text.techniqueWord).toBe('Loom')
-    expect(text.size).toBe('80×60')
     expect(text.metaLine).toMatch(/^80×60 · Miyuki Delica 11\/0 · ≈ .+ cm$/)
     expect(text.exportedAt).toBe('Sep 26, 2026 · 14:32')
     expect(text.maker).toBe('')
@@ -113,12 +112,6 @@ describe('printText with Letters (ticket 0573)', () => {
     expect(printText(project, en, 'en', at).colors.map((color) => color.letter)).toEqual([undefined])
     const lettered = printText(withLetters(project, true), en, 'en', at)
     expect(lettered.colors.map((color) => color.letter)).toEqual([project.paletteLetters!['#e63746']])
-  })
-
-  it('calls the chart style what the chart pages print, color with letters, whatever Letters says (ticket 0869)', () => {
-    const project = delicaProject(1)
-    expect(printText(project, en, 'en', at).chartStyle).toBe('Color + letters')
-    expect(printText(withLetters(project, true), en, 'en', at).chartStyle).toBe('Color + letters')
   })
 })
 
