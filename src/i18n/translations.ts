@@ -495,17 +495,16 @@ export interface Translations {
       demo: { ring: string; heart: string; bracelet: string }
       /** The playing row's place in the caption, "4 / 13" (ticket 0825). */
       place: string
-      /** The four chapters, the tour's Pause and Play, Try it yourself, and the demo's Expand and Collapse (ticket 0830). */
+      /** The four chapters, the tour's Pause and Play, Open editor from here (ticket 0879), and the demo's Expand and
+       * Collapse (ticket 0830). */
       chapters: Record<InsideChapterId, string>
       pause: string
       play: string
-      tryIt: string
+      openFromHere: string
       expand: string
       collapse: string
-      /** The demo's tag in its Canvas strip, and the toast a press on its Menu or Project shows, with no Projects saved
-       * or with some (ticket 0841). */
+      /** The demo's tag in its Canvas strip (ticket 0841). */
       demoTag: string
-      demoOnly: { new: string; back: string }
     }
     /** The Homepage's Progress bar (ticket 0739): the track's name, Back and Next, and why each is disabled at its end; each
      * step's name for screen readers (ticket 0744); the Welcome section's step, its heading being a sentence (ticket 0830). */

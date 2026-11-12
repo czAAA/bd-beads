@@ -197,7 +197,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, canvasOnScreen, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
-    useCanvasFraming({ currentProject, keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned) })
+    useCanvasFraming({
+      currentProject,
+      keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
+      // The address's view, for the Project it names (What's inside's Open editor from here, ticket 0879).
+      opening: openingAddress.project && openingAddress.view ? { project: openingAddress.project, view: openingAddress.view } : undefined,
+    })
 
   /** Every Project in the library, sealed ones too: what a Project's records beside the library are kept for. */
   const libraryIds = () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)]
@@ -1017,6 +1022,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */
       rowPress: rowOps.rowPress,
       panBy,
+      /** The bead in the middle of the view: what the Homepage's demo opens the editor on (ticket 0879). */
+      visibleCentre,
       scrollBy,
       setZoom,
       zoomIn,

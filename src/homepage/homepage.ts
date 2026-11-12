@@ -21,7 +21,9 @@ import { firstProjectAddress, projectAddress, savedProjectsAddress } from '../do
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import { browserFeedback } from '../services/feedback'
+import { browserPictureStore } from '../services/pictureStore'
 import { leaveWithBox } from './boxHandoff'
+import { keepDemoCopy, type DemoSnapshot } from './demoCopy'
 import { markEditorChosen } from './homepageRoute'
 import HomePage from './HomePage.vue'
 
@@ -37,6 +39,18 @@ async function goToEditor(address = base) {
   markEditorChosen()
   await leaveWithBox(document.querySelector('.homepage'))
   location.assign(address)
+}
+
+/** The beader's library, opened once: by the Menu's Saved Projects (ticket 0716) or by Open editor from here. A gated
+ * Project, or one that didn't open, stays stored. */
+let library: ReturnType<typeof useProjectLibrary> | undefined
+const openLibrary = () => (library ??= useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }))
+
+/** What's inside's Open editor from here (ticket 0879): the demo's Project kept in the library, its picture beside it,
+ * and the editor opened on it at the demo's view, as every way in leaves. */
+async function openDemoCopy(snapshot: DemoSnapshot) {
+  const id = await keepDemoCopy(snapshot, { library: openLibrary(), pictures: browserPictureStore })
+  await goToEditor(projectAddress(base, id, snapshot.view))
 }
 
 /** Export all from the Menu's Saved Projects: a sealed Project is written from its stored form (ticket 0716). */
@@ -60,13 +74,14 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
       h(HomePage, {
         projectCount: storedProjectCount(),
         feedback: browserFeedback,
-        // Decoded only when the Menu shows Saved Projects; a gated Project, or one that didn't open, stays stored.
-        openLibrary: () => useProjectLibrary(browserLibraryStore, { held: browserOpeningNote.read()?.id }),
+        // Decoded only when the Menu shows Saved Projects or Open editor from here keeps the demo's Project.
+        openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).
         onMakeFirstProject: () => goToEditor(firstProjectAddress(base)),
         onOpenEditor: () => goToEditor(),
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(base)),
         onOpenProject: (id: string) => goToEditor(projectAddress(base, id)),
+        onOpenDemoCopy: openDemoCopy,
         onExportAll: exportAll,
         onSaveProjectFile: saveProjectFile,
       }),
