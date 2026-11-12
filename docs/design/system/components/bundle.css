@@ -34,6 +34,12 @@
   --convert-neighbour-width: 96px; /* ConvertImage card (DS-2, ticket 0899): one place in the neighbours' card (one color fewer, the count, one more); its height follows the picture. */
   --convert-count-field-width: 64px; /* ConvertImage card (ticket 0899): the "type a number" field for the number of colors, 1 to 256. */
   --convert-finish-list-width: 232px; /* ConvertImage card (ticket 0899): the Finish list under the Colors popover's Finish button. */
+  --convert-result-button-height: 48px; /* ConvertImage card (DS-3, ticket 0900): the Clean up button under Colors, at least this tall. */
+  --convert-result-button-height-touch: 52px; /* ConvertImage card (ticket 0900): the Clean up button on a coarse pointer. */
+  --convert-cleaned-ring: 2px; /* ConvertImage card (ticket 0900): the marker ring round each bead Clean up changed, while its popover is open. */
+  --convert-compare-side: 24px; /* ConvertImage card (ticket 0900): room at each side of the picture and the beads in each half of Compare. */
+  --convert-chip-height: 30px; /* ConvertImage card (ticket 0900): a chip over the preview ("picture", "beads", "picture · let go to see the beads"). */
+  --convert-chip-height-touch: 32px; /* ConvertImage card (ticket 0900): the same chip on a coarse pointer. */
   --convert-tablet-min: 600px; /* ConvertImage card (DS-4, ticket 0910): from this width a portrait page takes the Tablet layout; under it, the Phone. */
   --convert-settings-height: 60px; /* ConvertImage card (ticket 0910): the phone dock's row of five settings (icon over name). */
   --convert-sheet-grab: 12px; /* ConvertImage card (ticket 0910): a phone sheet's grab zone, holding the 36 x 4 pill. */
