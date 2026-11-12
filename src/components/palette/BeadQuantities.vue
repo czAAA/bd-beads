@@ -5,7 +5,7 @@ import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/us
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { frameOf } from '../../domain/layerRecord'
-import { backBeadsAt, pieceFaceOf, wholePieceBeads } from '../../domain/pieceFaces'
+import { backBeadsAt, pieceFaceOf, wholePieceOf } from '../../domain/pieceFaces'
 import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
@@ -72,12 +72,21 @@ const countsBack = computed(() => {
 })
 
 /** On a Kaleidocycle the counts are one face (ticket 0876): the line under them gives the whole piece's, every face
- * beaded like this one, with an Info button saying what they cover. */
+ * beaded like this one, with an Info button saying what they cover, then a line each for its triangles and the beads that
+ * join them, a 15/0 named by its size (ticket 0877). */
 const piece = computed(() => {
-  const face = pieceFaceOf(props.project && frameOf(props.project)?.shape)
-  if (!face) return undefined
-  const count = groupThousands(wholePieceBeads(face, totalCount.value), locale.value)
-  return { line: fillBlanks(t.value.quantities.pieceTotal, { faces: face.faces, count }), info: faceInfoWords(t.value, face) }
+  const frame = props.project && frameOf(props.project)
+  const face = pieceFaceOf(frame?.shape)
+  const whole = frame && wholePieceOf(frame, totalCount.value)
+  if (!face || !whole) return undefined
+  const words = t.value.quantities
+  const grouped = (beads: number) => groupThousands(beads, locale.value)
+  const lines = [{ id: 'triangles' as const, count: whole.triangles, size: undefined }, ...whole.joins].map(({ id, count, size }) => ({
+    id,
+    label: size ? `${words.pieceLines[id]} · ${size}` : words.pieceLines[id],
+    count: grouped(count),
+  }))
+  return { line: fillBlanks(words.pieceTotal, { faces: face.faces, count: grouped(whole.beads), small: grouped(whole.small) }), info: faceInfoWords(t.value, face), lines }
 })
 
 const expanded = ref(false)
@@ -136,6 +145,12 @@ const total = computed(() => {
         <span>{{ piece.line }}</span>
         <InfoButton :label="t.starters.faceInfoLabel" :body="piece.info" data-testid="quantities-piece-info" />
       </p>
+      <ul v-if="piece && quantities.length > 0" class="bead-quantities__piece-lines">
+        <li v-for="line in piece.lines" :key="line.id" class="bead-quantities__piece-line" data-testid="quantities-piece-line">
+          <span>{{ line.label }}</span>
+          <span class="bead-quantities__piece-count">{{ line.count }}</span>
+        </li>
+      </ul>
       <p v-if="countsBack && quantities.length > 0" class="bead-quantities__piece" data-testid="quantities-front-back">{{ t.quantities.frontBackNote }}</p>
     </div>
   </PanelSection>
@@ -154,6 +169,26 @@ const total = computed(() => {
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
+}
+
+/* The whole piece's lines (ticket 0877): a label and its count, the count right-aligned as the rows' are. */
+.bead-quantities__piece-lines {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+
+.bead-quantities__piece-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.bead-quantities__piece-count {
+  font-variant-numeric: tabular-nums;
 }
 
 .bead-quantities__empty {

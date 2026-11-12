@@ -284,8 +284,9 @@ export const es: Translations = {
     faceOfPiece: 'una cara de {faces}: {parts} de {total} triángulos',
     beadsFace: { one: '{count} por cara', many: '{count} por cara', other: '{count} por cara' },
     forPiece: { one: '{count} la pieza entera', many: '{count} la pieza entera', other: '{count} la pieza entera' },
+    smallForPiece: '15/0: {count}',
     faceInfoLabel: 'Qué cuentan las cifras',
-    faceInfo: 'Un caleidociclo tiene {total} triángulos, {faces} caras de {parts}, y este marco es una cara. La pieza entera cuenta cada cara tejida como esta. Para dar a otra cara su propio diseño, haz un marco para ella. Solo se cuentan los triángulos, no las cuentas del borde, de las puntas ni de las bisagras.',
+    faceInfo: 'Un caleidociclo tiene {total} triángulos, {faces} caras de {parts}, y este marco es una cara. La pieza entera cuenta cada cara tejida como esta. Para dar a otra cara su propio diseño, haz un marco para ella. La pieza entera cuenta también las cuentas que unen los triángulos: las del borde, las de las bisagras y las 15/0 de las puntas y de los pasadores de bisagra.',
     beadsFrontBack: { one: '{count} cuenta, anverso y reverso', many: '{count} de cuentas, anverso y reverso', other: '{count} cuentas, anverso y reverso' },
   },
   canvas: {
@@ -592,7 +593,9 @@ export const es: Translations = {
     stepStrand: 'Fleco {number}',
     stepPartRound: 'Parte {part}, vuelta {number}',
     stepZip: 'Unir {parts}',
-    stepHinge: 'Bisagra {parts}',
+    stepTetra: 'Tira y tetraedro {parts}',
+    stepPair: 'Par espejo {parts}, pasadores de bisagra',
+    stepRing: 'Anillo: pares {first} y {second}',
     stepClose: 'Cerrar {parts}',
     ofSteps: 'de {total}',
     stepOfSteps: '· {current} de {total}',
@@ -632,7 +635,8 @@ export const es: Translations = {
     weightInfo:
       'Es el número de cuentas × unos {grams} g por cuenta. El promedio sale de las cuentas por kilo que publica el fabricante, o de anuncios de vendedores si el fabricante no lo da. Las cuentas reales varían según el color y el acabado.',
     weightInfoLabel: 'Cómo se calcula el peso',
-    pieceTotal: 'Estas cifras son de una cara de {faces}. Pieza entera: {count}',
+    pieceTotal: 'Estas cifras son de una cara de {faces}. Pieza entera: {count} · 15/0: {small}',
+    pieceLines: { triangles: 'Triángulos', edgeBeads: 'Cuentas del borde', hingeBeads: 'Cuentas de bisagra', tips: 'Puntas de triángulo', hingePins: 'Pasadores de bisagra' },
     frontBackNote: 'Estas cifras son de la estrella entera, anverso y reverso.',
   },
   print: {

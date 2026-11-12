@@ -397,11 +397,11 @@ describe('a Kaleidocycle (ticket 0593)', () => {
     }
   })
 
-  it('beads the triangles first, then (inferred from the primer) zips each into its strip, hinges the mirror pairs and closes the ring', () => {
+  it('beads the triangles first, then joins them as the Kali Primer does: Strip and Tetra, Mirror pairs, the ring (ticket 0877)', () => {
     const cycle = kaleidocycleLayout(5, DELICA)
     expect(cycle.panels.filter(({ part }) => part === 4).map(({ order }) => order)).toEqual([4, 4, 4])
-    expect(cycle.joins.map(({ step }) => step)).toEqual(['zip', 'zip', 'zip', 'zip', 'zip', 'zip', 'hinge', 'hinge', 'hinge', 'close', 'close', 'close'])
-    expect(cycle.joins.at(-1)).toEqual({ step: 'close', parts: [5, 0] })
+    expect(cycle.joins.map(({ step }) => step)).toEqual(['tetra', 'tetra', 'tetra', 'tetra', 'tetra', 'tetra', 'pair', 'pair', 'pair', 'ring', 'ring', 'ring'])
+    expect(cycle.joins.at(-1)).toEqual({ step: 'ring', parts: [4, 5, 0, 1], beads: [] })
   })
 })
 

@@ -194,9 +194,10 @@ describe('the Starter setup', () => {
   it('says a Kaleidocycle is one face of four and counts the face and the whole piece (ticket 0876)', async () => {
     const wrapper = mountSetup('kaleidocycle', delica())
     const counts = () => text(wrapper, 'starter-count').replace(/\s/g, ' ')
-    expect(counts()).toContain('one face of 4: 6 of 24 triangles · 810 beads a face · 3 240 for the whole piece')
+    // The whole piece as Beads needed counts it (ticket 0877): the triangles, Edge and Hinge Beads, and the 15/0s apart.
+    expect(counts()).toContain('one face of 4: 6 of 24 triangles · 810 beads a face · 3 612 for the whole piece · 15/0: 120')
     await wrapper.get('[data-testid="starter-size-preset-partSize-11"]').trigger('click')
-    expect(counts()).toContain('1 188 beads a face · 4 752 for the whole piece')
+    expect(counts()).toContain('1 188 beads a face · 5 220 for the whole piece · 15/0: 132')
     expect(counts()).toContain('To give another face its own design, make a Frame for it.')
     expect(mountSetup('triangle').find('[data-testid="starter-face-info"]').exists()).toBe(false)
   })

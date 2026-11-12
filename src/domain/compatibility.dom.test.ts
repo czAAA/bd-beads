@@ -47,6 +47,7 @@ import projectFileV14Reference from './fixtures/project-file-v14-reference.json?
 import projectFileV14Progress from './fixtures/project-file-v14-warped-square-progress.json?raw'
 import projectFileV14OldKite from './fixtures/project-file-v14-old-kite.json?raw'
 import projectFileV14OldStar from './fixtures/project-file-v14-old-star.json?raw'
+import projectFileV14OldKaleidocycle from './fixtures/project-file-v14-old-kaleidocycle-joins.json?raw'
 import { MIRROR_OFF, mirrorSettingOf } from './mirror'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
@@ -417,6 +418,17 @@ describe('stored-data compatibility', () => {
     it('opens a version 9 Custom frame turned by Rotate Frame with its turn, and writes it back the same (ticket 0594)', () => {
       const [opened] = parseProjectsFile(projectFileV9Turned).projects
       expect(frameOf(opened)).toMatchObject({ rows: 10, columns: 12, shape: 'triangle', settings: { rounds: 4 }, quarterTurns: 1 })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('keeps a Kaleidocycle\'s Row progress on the join it was on, its old "Close 4–5" now the ring join of pairs 3–4 and 5–6 (ticket 0877)', () => {
+      const [opened] = parseProjectsFile(projectFileV14OldKaleidocycle).projects
+      expect(frameOf(opened!)).toMatchObject({ shape: 'kaleidocycle', settings: { partSize: 3 } })
+      // Saved on the second of the three joins that closed the ring: the Tetras of triangles 4 and 5, one of each pair.
+      expect(currentPass(rowProgressOf(opened!))).toBe(28)
+      const order = frameRowOrder(opened!)
+      expect(order.count).toBe(30)
+      expect(order.stepOf?.(28)).toEqual({ kind: 'join', step: 'ring', parts: [3, 4, 5, 6] })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 

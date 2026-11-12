@@ -389,6 +389,8 @@ export interface Translations {
     faceOfPiece: string
     beadsFace: PluralForms
     forPiece: PluralForms
+    /** The whole piece's 15/0s, their own bead size (ticket 0877). */
+    smallForPiece: string
     faceInfoLabel: string
     faceInfo: string
     /** A Star's count is the whole star, its back beaded as the face's mirror (ticket 0875): "245 beads, front and back". */
@@ -717,7 +719,10 @@ export interface Translations {
     stepRow: string
     stepPartRound: string
     stepZip: string
-    stepHinge: string
+    /** A Kaleidocycle's joins (ticket 0877): a triangle's Strip and Tetra, a Mirror pair, two pairs joined into the ring. */
+    stepTetra: string
+    stepPair: string
+    stepRing: string
     stepClose: string
     ofSteps: string
     stepOfSteps: string
@@ -770,6 +775,8 @@ export interface Translations {
     weightInfoLabel: string
     /** Under the table on a Kaleidocycle (ticket 0876): the counts are one face, `{count}` the whole piece's total. */
     pieceTotal: string
+    /** The whole piece's lines under a Kaleidocycle's counts (ticket 0877): its triangles and the beads that join them. */
+    pieceLines: Record<'triangles' | 'edgeBeads' | 'hingeBeads' | 'tips' | 'hingePins', string>
     /** Under the table on a Star (ticket 0875): the counts are the whole star, front and back. */
     frontBackNote: string
   }

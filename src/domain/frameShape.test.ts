@@ -174,13 +174,19 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(order.wordsOf?.(15)).toBeUndefined()
   })
 
-  it('goes through a Kaleidocycle\'s zips, hinges and closing joins after its six triangles', () => {
+  it('ends a Kaleidocycle with the Kali Primer\'s joins: each triangle\'s Strip and Tetra, the Mirror pairs, then the ring (ticket 0877)', () => {
     const order = rowOrderOf(custom('kaleidocycle', 3), { direction: 'rows' })
+    // As many joins as before (ticket 0876), so a saved place stays on the same step.
     expect(order.count).toBe(6 * 3 + 6 + 3 + 3)
-    expect(order.stepOf?.(18)).toEqual({ kind: 'join', step: 'zip', parts: [1] })
-    // A triangle zipped into its own strip shows no edge on the face.
-    expect(order.positionsOf(18)).toEqual([])
-    expect(order.stepOf?.(24)).toEqual({ kind: 'join', step: 'hinge', parts: [1, 2] })
+    expect(Array.from({ length: 12 }, (_unused, join) => order.stepOf?.(18 + join))).toEqual([
+      ...[1, 2, 3, 4, 5, 6].map((part) => ({ kind: 'join', step: 'tetra', parts: [part] })),
+      ...[[1, 2], [3, 4], [5, 6]].map((parts) => ({ kind: 'join', step: 'pair', parts })),
+      // The ring is joined on Hinges of triangles not on this face: each join names the two Mirror pairs it joins.
+      ...[[1, 2, 3, 4], [3, 4, 5, 6], [5, 6, 1, 2]].map((parts) => ({ kind: 'join', step: 'ring', parts })),
+    ])
+    // A triangle's Strip and Tetra, and the ring, are made on triangles off this face: they show no edge here.
+    for (const join of [18, 23, 27, 28, 29]) expect(order.positionsOf(join)).toEqual([])
+    // A Mirror pair is laced on the gap between its two triangles: both their edges there.
     expect(order.positionsOf(24).length).toBeGreaterThan(0)
   })
 

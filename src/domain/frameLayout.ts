@@ -25,10 +25,11 @@ interface LayoutPanel {
   strand?: true
 }
 
-/** A join between parts, in making order: a zip of two parts' edges, a hinge laced between them, or the join that
- * closes the piece, made last. A zip of one part closes it on itself or into the strip it belongs to. */
+/** A join between parts, in making order: a zip of two parts' edges, or the join that closes the piece, made last; on a
+ * Kaleidocycle (ticket 0877, the Kali Primer) a triangle zipped into its Strip of four and closed into a Tetra, two
+ * triangles' Mirror pair laced with Hinge Pins, or two Mirror pairs joined into the ring (its parts both pairs'). */
 export interface LayoutJoin {
-  step: 'zip' | 'hinge' | 'close'
+  step: 'zip' | 'close' | 'tetra' | 'pair' | 'ring'
   parts: readonly number[]
   /** The beads it rings, as indexes into `positions`, where they are not its parts' last rounds facing each other: a
    * Star's ridge row and the round beside it (ticket 0875). */
@@ -307,8 +308,8 @@ function middleOf(part: RoundsPart): LayoutPoint {
 const KALEIDOCYCLE_HOLE = 1
 
 /** A Kaleidocycle (research: the CGB Kali Primer) drawn as its finished face: six peyote Triangles of Part size beads a
- * side round a hole, each beaded on its own, then (inferred: the face shows one triangle of each tetrahedron) each zipped
- * into its strip and tetrahedron, mirror tetrahedra hinged in pairs, and the pairs joined into the ring. */
+ * side round a hole, each beaded on its own, then joined as the primer joins them (ticket 0877): each zipped into its
+ * Strip and Tetra, the face's Mirror pairs laced on gaps 1–2, 3–4, 5–6, then the pairs joined into the ring off this face. */
 export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout {
   return remembered(`kaleidocycle:${partSize}:${depth}`, () => {
     const triangle = roundsPart([Math.PI / 3, Math.PI / 3, Math.PI / 3], partSize, depth)
@@ -324,11 +325,9 @@ export function kaleidocycleLayout(partSize: number, depth: number): FrameLayout
       return [from, { x: from.x + side * Math.cos(towards), y: from.y + side * Math.sin(towards) }]
     })
     const joins: LayoutJoin[] = [
-      ...parts.map((_part, part): LayoutJoin => ({ step: 'zip', parts: [part] })),
-      ...[0, 2, 4].map((part): LayoutJoin => ({ step: 'hinge', parts: [part, part + 1] })),
-      { step: 'close', parts: [1, 2] },
-      { step: 'close', parts: [3, 4] },
-      { step: 'close', parts: [5, 0] },
+      ...parts.map((_part, part): LayoutJoin => ({ step: 'tetra', parts: [part] })),
+      ...[0, 2, 4].map((part): LayoutJoin => ({ step: 'pair', parts: [part, part + 1] })),
+      ...[0, 2, 4].map((part): LayoutJoin => ({ step: 'ring', parts: [part, part + 1, (part + 2) % 6, (part + 3) % 6], beads: [] })),
     ]
     // The gap between two triangles is a mirror line of the ring, through the gap across from it.
     const symmetry = { fold: parts.length, line: Math.PI / 6 }

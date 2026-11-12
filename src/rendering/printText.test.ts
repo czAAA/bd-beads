@@ -217,6 +217,23 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, face, en.print.wordChart.runNote, en.print.wordChart.pairNote])
   })
 
+  it('names a Kaleidocycle\'s joins as the Kali Primer does, the PDF\'s words too: Strip and Tetra, Mirror pair, the ring (ticket 0877)', () => {
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
+    const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
+    const chart = printText(letters(placed.project), en, 'en', at).wordChart!
+
+    expect(chart.rows.slice(18).map(({ runs }) => runs)).toEqual([
+      ...[1, 2, 3, 4, 5, 6].map((part) => `Strip and Tetra ${part}`),
+      'Mirror pair 1–2, Hinge Pins',
+      'Mirror pair 3–4, Hinge Pins',
+      'Mirror pair 5–6, Hinge Pins',
+      'Ring: pairs 1–2 and 3–4',
+      'Ring: pairs 3–4 and 5–6',
+      'Ring: pairs 5–6 and 1–2',
+    ])
+  })
+
   it('has none with Letters off', () => {
     expect(printText(delicaProject(3), en, 'en', at).wordChart).toBeUndefined()
   })
