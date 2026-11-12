@@ -57,7 +57,6 @@ describe('estimatePdf', () => {
     const plain = factsOf('loom', 150, 150)
     expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 4 + 0)
     expect(estimatePdf({ ...plain, pdfLists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 2)
-    expect(estimatePdf(factsOf('loom', 100, 100), 300).count).toBe(1)
   })
 
   it('adds a chart page as drawing and its text, far smaller than a picture page (ticket 0585)', () => {

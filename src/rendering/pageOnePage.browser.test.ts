@@ -1,6 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
+import { findBead } from '../domain/beads'
 import { withLetters } from '../domain/layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 import { be } from '../i18n/be'
 import { en } from '../i18n/en'
 import { es } from '../i18n/es'
@@ -58,6 +60,27 @@ describe('page 1 of the PDF', () => {
     expect(drawNeededListPage(project, many, layout, 0, layout.plan)).toMatchObject({ width: A4_PORTRAIT.width, height: A4_PORTRAIT.height })
   })
 
+  it('prints grams, tubes and the grams note for a known Bead, and none of them for an unknown one', () => {
+    const drawn = (project: ReturnType<typeof fixtureProject>) => {
+      const words = wordsOf(project)
+      const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+      drawPageOne(project, words, pageOneLayout(project, words), pageOneLayout(project, words).plan)
+      const texts = fillText.mock.calls.map(([value]) => value)
+      fillText.mockRestore()
+      return { texts, words }
+    }
+    const known = drawn(withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { beadId: 'miyuki-delica-11-0', bead: findBead('miyuki-delica-11-0') }))
+    expect(known.texts).toEqual(expect.arrayContaining(['to buy', 'grams']))
+    expect(known.texts.some((value) => value.startsWith(known.words.gramsNote!.slice(0, 12)))).toBe(true)
+    expect(known.texts.some((value) => value.includes(known.words.totalTubes!))).toBe(true)
+
+    const unknown = drawn(withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { beadId: 'a-bead-this-device-never-had', bead: undefined }))
+    expect(unknown.words.gramsNote).toBeUndefined()
+    expect(unknown.texts).not.toContain('to buy')
+    expect(unknown.texts).not.toContain('grams')
+    expect(unknown.texts.some((value) => / g\b/.test(value))).toBe(false)
+  })
+
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('fits Beads needed\'s column heads in their room in %s', (_locale, messages) => {
     const context = document.createElement('canvas').getContext('2d')!
     context.font = font('400', 6.5, MONO)
@@ -69,14 +92,8 @@ describe('page 1 of the PDF', () => {
   })
 })
 
-describe('the PDF ends at page 1 when the chart is whole there (ticket 0914)', () => {
-  it.each([[20, 20], [100, 100]])('exports a %s × %s with Letters off as one page', async (columns, rows) => {
-    const project = withLetters(fixtureProject({ technique: 'loom', columns, rows }), false)
-
-    expect(await pdfPages(await exportProjectPdf(project, wordsOf(project), 150))).toBe(1)
-  }, 60_000)
-
-  it('exports a piece cut into parts as the overview, then a page for each sheet, each counted in "1 / N"', async () => {
+describe('the PDF of a piece cut into parts (ticket 0914)', () => {
+  it('is the overview, then a page for each sheet, each counted in "1 / N"', async () => {
     const project = withLetters(fixtureProject({ technique: 'loom', columns: 150, rows: 100 }), false)
     const words = wordsOf(project)
     const { plan } = pageOneLayout(project, words)

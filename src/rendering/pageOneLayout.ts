@@ -15,6 +15,8 @@ export const NEEDED_COLUMNS = mm(4.5)
 const NEEDED_TABLE: TableRows = { head: NEEDED_HEADING + NEEDED_COLUMNS, row: mm(5), end: mm(14) }
 /** Between the chart's pad (its rulers) and Beads needed. */
 const NEEDED_GAP = mm(4)
+/** Slack for the rounding of a table that exactly fills its room. */
+const FIT_SLOP = 1
 
 type Counted = Layered & Pick<Project, 'paletteLetters'>
 type PageOneWords = Pick<PrintText, 'name' | 'maker' | 'colors'>
@@ -56,7 +58,7 @@ export function pageOneLayout(project: Counted, words: PageOneWords, page: PageS
     // A pad's own bottom: a whole chart has no label above it to leave room for.
     const label = chart.plan.parts.length > 1 ? PRINT_PART_LABEL : 0
     const top = area.y + Math.max(...chart.plan.parts.map((part) => part.place.y + label + part.region.height + PRINT_RULER * 2)) + NEEDED_GAP
-    const whole = colorsHeight(colors, NEEDED_TABLE, true) <= bottom - top + 1
+    const whole = full <= bottom - top + FIT_SLOP
     const fitting = Math.max(1, Math.floor((bottom - top - NEEDED_TABLE.head) / NEEDED_TABLE.row)) * 2
     const count = whole ? colors : Math.min(colors, fitting)
     const lists = whole ? [] : listSlices(words, NEEDED_TABLE, count, page)
