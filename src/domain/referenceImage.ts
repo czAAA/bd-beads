@@ -113,6 +113,21 @@ export function turnedBy(place: ReferencePlace, degrees: number): ReferencePlace
   return { ...place, angle: normalized(place.angle + degrees) }
 }
 
+/** Where a grid point lies on the picture, as fractions of its width and height from its own top-left (0 up to 1), or
+ * undefined off it: what Convert to beads samples and what decides the positions the picture covers (ticket 0883). */
+export function pointOnPicture(place: ReferencePlace, height: number, point: Point): { u: number; v: number } | undefined {
+  const local = turned({ x: point.x - place.x, y: point.y - place.y }, -place.angle)
+  const u = local.x / place.width + 0.5
+  const v = local.y / height + 0.5
+  return u >= 0 && u < 1 && v >= 0 && v < 1 ? { u, v } : undefined
+}
+
+/** The width and height of the box round a rectangle turned by `angle` degrees. */
+export function turnedExtent(width: number, height: number, angle: number): { width: number; height: number } {
+  const [cos, sin] = [Math.abs(Math.cos(radians(angle))), Math.abs(Math.sin(radians(angle)))]
+  return { width: width * cos + height * sin, height: width * sin + height * cos }
+}
+
 const CORNER_SIGNS: Record<ReferenceCorner, Point> = {
   'top-left': { x: -1, y: -1 },
   'top-right': { x: 1, y: -1 },
@@ -145,8 +160,8 @@ export function snappedAngle(angle: number, fine: boolean): number {
   return normalized(Math.abs(angle - quarter) <= QUARTER_SNAP_DEGREES ? quarter : Math.round(angle))
 }
 
-/** The picture turned so its Turn handle points at `point`: the handle stands above the picture's top edge, or below its
- * bottom edge where there was no room above. */
+/** The picture turned so its Turn handle points at `point`: the handle stands below the picture's bottom edge (ticket
+ * 0883), or above its top edge where there was no room below. */
 export function turnedToward(place: ReferencePlace, point: Point, { below, fine }: { below: boolean; fine: boolean }): ReferencePlace {
   const pointing = (Math.atan2(point.y - place.y, point.x - place.x) * 180) / Math.PI
   return { ...place, angle: snappedAngle(pointing + (below ? -90 : 90), fine) }

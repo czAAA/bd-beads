@@ -3,7 +3,8 @@ import { DEFAULT_BEAD } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
 import type { DecodeImage } from '../../domain/imageConversion'
-import type { Project } from '../../domain/project'
+import type { Grid, Project } from '../../domain/project'
+import type { AllSettingsRequest } from '../project/usePictureBarFlow'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import type { AppPage } from '../shell/useAppPage'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
@@ -19,6 +20,8 @@ export interface ConvertImageFlowDeps {
   loadCatalog: (id: string) => Promise<ColorCatalog>
   /** What Close goes on to once the page has gone: the New Project form while no Project is open (ticket 0861). */
   onClosed?: () => void
+  /** Add to Canvas (ticket 0883): the converted beads put on the open Project where the reference image lies. */
+  addToCanvas?: (grid: Grid, request: AllSettingsRequest) => void
 }
 
 /** Convert image (spec 0645, ADR 0010, ADR 0086): an App page that makes a new Project, its setup its own. Open it from
@@ -33,13 +36,32 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
   /** The form's last values, for a picture dropped while the form is not shown. */
   const lastDraft = shallowRef<CreateProjectInput>({ name: '', technique: DEFAULT_TECHNIQUE, beadId: DEFAULT_BEAD.id, makerName: '' })
 
-  function open(draft: CreateProjectInput = lastDraft.value, file?: File) {
+  /** The reference image's All settings that opened the page, whose beads Add to Canvas puts on the open Project. */
+  let fromReference: AllSettingsRequest | undefined
+
+  function open(draft: CreateProjectInput = lastDraft.value, file?: File, request?: AllSettingsRequest): ConvertImageWizard {
     scope?.stop()
     scope = effectScope()
-    const wizard = scope.run(() => useConvertImageWizard({ start: draft, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog }))!
+    fromReference = request
+    const wizard = scope.run(() => useConvertImageWizard({ start: draft, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, addsToCanvas: !!request }))!
     session.value = wizard
     if (file) void wizard.setFile(file)
     appPage.open('convert-image')
+    return wizard
+  }
+
+  /** All settings in the reference image's Convert to beads (ticket 0883, ConvertImage card): the page opens with the
+   * picture, the size it covers, the open Project's Bead and Weave, the match and the color count set, and ends in Add to
+   * Canvas. */
+  async function openFromReference(request: AllSettingsRequest, draft: CreateProjectInput): Promise<void> {
+    const wizard = open(draft, undefined, request)
+    await wizard.setFile(new File([request.picture], request.name, { type: request.picture.type }))
+    if (session.value !== wizard || !wizard.hasPicture.value) return
+    wizard.setLinked(false)
+    wizard.setWidth(request.box.columns)
+    wizard.setHeight(request.box.rows)
+    wizard.setSource(request.source)
+    wizard.setMaxColors(request.colors)
   }
 
   // However the page goes (Create, or a leave the guard allowed), what was set up on it goes with it.
@@ -50,6 +72,7 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
       scope?.stop()
       scope = undefined
       session.value = undefined
+      fromReference = undefined
     },
     { flush: 'sync' },
   )
@@ -103,6 +126,13 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
 
   /** Create Project: the Project the wizard made joins the library and opens, and the page goes. */
   function onCreate() {
+    const request = fromReference
+    if (request && session.value) {
+      const grid = session.value.canvasGrid()
+      appPage.open('editor')
+      deps.addToCanvas?.(grid, request)
+      return
+    }
     const project = session.value?.createProject()
     if (!project) return
     appPage.open('editor')
@@ -113,6 +143,7 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     session,
     leaving,
     open,
+    openFromReference,
     onPicture,
     onCreate,
     onClose: close,

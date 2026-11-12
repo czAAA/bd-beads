@@ -18,7 +18,7 @@ import {
 } from '../../domain/referenceImage'
 import { useI18n } from '../../i18n/useI18n'
 import { reachLimit } from '../../rendering/handleSizes'
-import { placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
+import { arrowMove, placeOnScreen, REFERENCE_TURN_OFFSET_PX, screenToGrid, type ReferenceView } from '../../rendering/referenceImage'
 import AppHandle from '../ui/AppHandle.vue'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -37,6 +37,10 @@ const props = defineProps<{
   bead: number
   /** Adjust is on: the outline, the move, the keys, and Escape or a press outside to end it. */
   adjusting: boolean
+  /** While a corner is dragged, the beads the picture covers and their measure (ticket 0883). */
+  size?: { beads: string; measure: string }
+  /** The Frame's margin sheet on screen: the Turn handle stands below it where the picture lies under it (ticket 0883). */
+  sheet?: { left: number; top: number; width: number; height: number }
 }>()
 const emit = defineEmits<{
   /** A drag as it goes, drawn but not saved. */
@@ -44,6 +48,8 @@ const emit = defineEmits<{
   /** A change to save, and what to announce of it. */
   commit: [place: ReferencePlace, announcement: string]
   done: []
+  /** A handle is pressed or let go: the picture bar hides meanwhile (ticket 0883). */
+  pressing: [on: boolean]
 }>()
 
 const { t } = useI18n()
@@ -52,19 +58,41 @@ const rootEl = ref<HTMLElement>()
 const groupEl = ref<HTMLElement>()
 
 /** The press under way: what it works, where it started and the place it started from. */
-const press = ref<{ kind: 'move' | 'turn' | ReferenceCorner; pointer: number; start: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace }>()
+const press = ref<{ kind: 'move' | 'turn' | ReferenceCorner; pointer: number; start: { x: number; y: number }; at: { x: number; y: number }; from: ReferencePlace; place: ReferencePlace }>()
 const shown = computed(() => press.value?.place ?? props.place)
 const onScreen = computed(() => placeOnScreen(props.view, shown.value, shown.value.width * props.aspect))
 
-/** The Turn handle stands above the picture's top edge, or below its bottom edge where there is no room above. */
+/** How far past the picture's edge the Turn handle stands below it: its offset, and on beyond the Frame's margin sheet
+ * where the handle would land on it (ticket 0883). */
+const turnReach = computed(() => {
+  const { centre, height, angle } = onScreen.value
+  const turn = radians(angle)
+  const down = { x: -Math.sin(turn), y: Math.cos(turn) }
+  const handle = height / 2 + REFERENCE_TURN_OFFSET_PX
+  const sheet = props.sheet
+  const at = { x: centre.x + down.x * handle, y: centre.y + down.y * handle }
+  if (!sheet || down.y < 0.7 || at.x < sheet.left || at.x > sheet.left + sheet.width || at.y < sheet.top || at.y > sheet.top + sheet.height) return REFERENCE_TURN_OFFSET_PX
+  return REFERENCE_TURN_OFFSET_PX + (sheet.top + sheet.height - at.y) / down.y + REFERENCE_TURN_OFFSET_PX / 2
+})
+
+/** The Turn handle stands below the picture's bottom edge (ticket 0883), or above its top edge where there is no room
+ * below, so the top edge is free for the picture bar. */
 const turnBelow = computed(() => {
   const { centre, height, angle } = onScreen.value
-  const reach = height / 2 + REFERENCE_TURN_OFFSET_PX
+  const reach = height / 2 + turnReach.value
   const turn = radians(angle)
-  const above = { x: centre.x + Math.sin(turn) * reach, y: centre.y - Math.cos(turn) * reach }
+  const below = { x: centre.x - Math.sin(turn) * reach, y: centre.y + Math.cos(turn) * reach }
   const { width, height: tall } = props.view.viewport
-  return above.x < 0 || above.y < 0 || above.x > width || above.y > tall
+  return below.x >= 0 && below.y >= 0 && below.x <= width && below.y <= tall
 })
+const stemStyle = computed(() => ({ height: `calc(${turnBelow.value ? turnReach.value : REFERENCE_TURN_OFFSET_PX}px - var(--reference-turn) / 2)` }))
+
+/** The size chip beside the pointer while a corner is dragged (ticket 0883). */
+const sizeChipStyle = computed(() => {
+  const at = press.value?.at
+  return at && { left: `${at.x + 16}px`, top: `${at.y + 16}px` }
+})
+const resizing = computed(() => !!press.value && press.value.kind !== 'move' && press.value.kind !== 'turn')
 
 const pictureStyle = computed(() => {
   const { centre, width, height, angle } = onScreen.value
@@ -97,7 +125,8 @@ function begin(event: PointerEvent, kind: 'move' | 'turn' | ReferenceCorner) {
   }
   event.stopPropagation()
   ;(event.currentTarget as Element).setPointerCapture?.(event.pointerId)
-  press.value = { kind, pointer: event.pointerId, start: local(event), from: props.place, place: props.place }
+  press.value = { kind, pointer: event.pointerId, start: local(event), at: local(event), from: props.place, place: props.place }
+  emit('pressing', true)
 }
 
 function drag(event: PointerEvent) {
@@ -113,7 +142,7 @@ function drag(event: PointerEvent) {
   } else {
     place = resizedFromCorner(pressed.from, props.aspect, pressed.kind, point, props.limits)
   }
-  press.value = { ...pressed, place }
+  press.value = { ...pressed, place, at: local(event) }
   emit('preview', place)
 }
 
@@ -121,6 +150,7 @@ function end(event: PointerEvent) {
   const pressed = press.value
   if (!pressed || event.pointerId !== pressed.pointer) return
   press.value = undefined
+  emit('pressing', false)
   if (pressed.place === pressed.from) return
   emit('commit', pressed.place, announcementOf(pressed.kind === 'move' ? 'move' : pressed.kind === 'turn' ? 'turn' : 'resize', pressed.place))
 }
@@ -128,7 +158,9 @@ function end(event: PointerEvent) {
 function cancel() {
   const pressed = press.value
   press.value = undefined
-  if (pressed) emit('preview', pressed.from)
+  if (!pressed) return
+  emit('pressing', false)
+  emit('preview', pressed.from)
 }
 
 function announcementOf(change: 'move' | 'resize' | 'turn', place: ReferencePlace): string {
@@ -140,14 +172,9 @@ function announcementOf(change: 'move' | 'resize' | 'turn', place: ReferencePlac
  * turn it 15°. */
 function onKeydown(event: KeyboardEvent) {
   if (!props.adjusting) return
-  const steps: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
-  const step = steps[event.key]
+  const moved = arrowMove(props.view, props.bead, event)
   let change: { place: ReferencePlace; kind: 'move' | 'resize' | 'turn' } | undefined
-  if (step) {
-    const origin = props.view.gridToPoint(0, 0)
-    const along = props.view.gridToPoint(1, 0)
-    const reach = props.bead * (event.shiftKey ? 10 : 1) * Math.hypot(along.x - origin.x, along.y - origin.y)
-    const moved = screenToGrid(props.view, { x: origin.x + step[0] * reach, y: origin.y + step[1] * reach })
+  if (moved) {
     change = { place: movedBy(props.place, moved.x, moved.y), kind: 'move' }
   } else if (event.key === '+' || event.key === '=') {
     change = { place: scaledBy(props.place, 1.1, props.limits), kind: 'resize' }
@@ -211,7 +238,7 @@ watch(
         @pointerdown="begin($event, corner)"
       />
       <span class="reference-adjust__turn" :class="{ 'reference-adjust__turn--below': turnBelow }">
-        <span class="reference-adjust__stem" aria-hidden="true" />
+        <span class="reference-adjust__stem" :style="stemStyle" aria-hidden="true" />
         <button
           class="reference-adjust__turn-handle"
           :class="{ 'reference-adjust__turn-handle--active': press?.kind === 'turn' }"
@@ -225,6 +252,10 @@ watch(
         </button>
         <span v-if="press?.kind === 'turn'" class="reference-adjust__angle" data-testid="reference-adjust-angle">{{ angleText }}</span>
       </span>
+    </div>
+    <div v-if="resizing && size && sizeChipStyle" class="reference-adjust__size" :style="sizeChipStyle" data-testid="reference-adjust-size">
+      <span class="reference-adjust__size-beads">{{ size.beads }}</span>
+      <span class="reference-adjust__size-measure">{{ size.measure }}</span>
     </div>
   </div>
 </template>
@@ -292,7 +323,7 @@ watch(
   left: calc(-1 * var(--reference-outline));
 }
 
-/* The Turn handle on its dashed stem, above the top edge's middle (below the bottom edge where there is no room). */
+/* The Turn handle on its dashed stem, below the bottom edge's middle (above the top edge where there is no room). */
 .reference-adjust__turn {
   position: absolute;
   bottom: 100%;
@@ -309,9 +340,30 @@ watch(
   flex-direction: column;
 }
 
+/* The size while a corner is dragged (ticket 0883): the angle chip's look, beads over their measure. */
+.reference-adjust__size {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-8);
+  white-space: nowrap;
+  background: var(--tooltip-fill);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-3);
+}
+
+.reference-adjust__size-beads {
+  font: var(--type-small);
+  color: var(--ink);
+}
+
+.reference-adjust__size-measure {
+  font: var(--type-meta-small);
+  color: var(--muted);
+}
+
 .reference-adjust__stem {
   width: 0;
-  height: calc(var(--frame-control-offset) - var(--reference-turn) / 2);
   border-left: var(--reference-outline) dashed var(--ink);
 }
 

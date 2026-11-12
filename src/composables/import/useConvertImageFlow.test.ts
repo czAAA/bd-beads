@@ -9,15 +9,16 @@ import { useConvertImageFlow } from './useConvertImageFlow'
 
 const formValues: CreateProjectInput = { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: 'Fox' }
 const picture = new File(['x'], 'fox.png', { type: 'image/png' })
-const pixels = (): PixelData => ({ width: 8, height: 8, data: new Uint8ClampedArray(8 * 8 * 4).fill(200) })
+const pixels = (width = 8, height = 8): PixelData => ({ width, height, data: new Uint8ClampedArray(width * height * 4).fill(200) })
 
-function setup() {
+function setup(decoded = pixels()) {
   const dialogs = useDialogs()
   const appPage = useAppPage()
   const addProject = vi.fn<(project: Project) => void>()
   const onClosed = vi.fn()
-  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => pixels(), loadCatalog: () => Promise.reject(new Error('none')), onClosed })
-  return { dialogs, appPage, addProject, onClosed, flow }
+  const addToCanvas = vi.fn()
+  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas })
+  return { dialogs, appPage, addProject, onClosed, addToCanvas, flow }
 }
 
 /** Opens the converter and sets a picture, as the person does. */
@@ -30,6 +31,21 @@ async function openWithPicture() {
 }
 
 describe('useConvertImageFlow', () => {
+  it('opens from the reference image\'s All settings with its size, match and colors set, and adds the beads to the Canvas (ticket 0883)', async () => {
+    const { appPage, addProject, addToCanvas, flow } = setup(pixels(120, 80))
+    const request = { picture: new Blob(['x'], { type: 'image/png' }), name: 'fox.png', box: { row: 2, column: 3, rows: 20, columns: 30 }, source: 'exact' as const, colors: 1, hideAfter: true }
+    await flow.openFromReference(request, formValues)
+    const wizard = flow.session.value!
+    expect(appPage.page.value).toBe('convert-image')
+    expect(wizard.addsToCanvas).toBe(true)
+    expect(wizard.dimensions.value).toEqual({ columns: 30, rows: 20 })
+    expect(wizard.source.value).toBe('exact')
+    flow.onCreate()
+    expect(addProject).not.toHaveBeenCalled()
+    expect(addToCanvas).toHaveBeenCalledWith(expect.objectContaining({ length: 20 }), request)
+    expect(appPage.page.value).toBe('editor')
+  })
+
   it('opens the converter page on the New Project form’s values', () => {
     const { appPage, flow } = setup()
     flow.open(formValues)

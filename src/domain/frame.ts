@@ -31,6 +31,14 @@ export function snapColumn(weave: Weave, column: number): number {
   return column - (((column % cycle) + cycle) % cycle)
 }
 
+/** A rectangle with its top and left moved back to where a Frame may start (snapRow, snapColumn), its bottom and right
+ * kept: Frame from Selection's, and Set Frame around the picture's (ticket 0883). */
+export function snappedFrame(weave: Weave, frame: Rect): Rect {
+  const top = snapRow(weave, frame.row)
+  const left = snapColumn(weave, frame.column)
+  return { row: top, column: left, rows: frame.row + frame.rows - top, columns: frame.column + frame.columns - left }
+}
+
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
 // the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
 // least one bead each way. Worked out in the Frame's own rows and columns, whose first are always unshifted (ticket 492).

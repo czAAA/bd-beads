@@ -38,7 +38,8 @@ import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { frameOf, projectNameOf, withStartBackground } from '../../domain/layerRecord'
+import { canvasOf, frameOf, projectNameOf, withStartBackground } from '../../domain/layerRecord'
+import { canvasWeave } from '../../domain/layerWeave'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -78,6 +79,7 @@ import { useAppPage } from './useAppPage'
 import { useDialogs } from './useDialogs'
 import { useFeedbackFlow } from './useFeedbackFlow'
 import { REFERENCE_SECTION_ID, useReferenceImageFlow } from '../project/useReferenceImageFlow'
+import { usePictureBarFlow } from '../project/usePictureBarFlow'
 
 /** The panel whose Select a frame armed the framing drag (ticket 0847): Export comes back once the Frame is set. */
 type FramingFrom = 'frame' | 'export'
@@ -168,6 +170,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onClosed: () => {
       if (!activeProject.value) overlays.openMenuOnForm()
     },
+    // Opened from the reference image's All settings, Add to Canvas puts the beads on the open Project (ticket 0883).
+    addToCanvas: (grid, request) => pictureBar.addGrid(grid, request),
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
@@ -699,6 +703,32 @@ function wireAppShell(services: Services, options: ShellOptions) {
     closePanel: () => void (openPanel.value = null),
     dialogs,
   })
+  /** The reference image's picture bar (ticket 0883): the size it covers, Set Frame around the picture and Convert to
+   * beads, whose All settings opens Convert image to add to this Project. */
+  const pictureBar = usePictureBarFlow({
+    currentProject,
+    edit,
+    onUndo,
+    place: () => referenceImage.place.value,
+    picture: () => referenceImage.blob.value,
+    decodePixels: services.decodeImage,
+    loadCatalog: loadColorCatalog,
+    setShown: referenceImage.setShown,
+    setFrameAround: frameFlow.setAround,
+    openAllSettings: (request) => {
+      const project = currentProject()
+      if (!project) return
+      const { technique, techniqueSettings } = canvasWeave(project)
+      const draft = { name: request.name.replace(/\.[^.]*$/, ''), technique, ...(techniqueSettings ? { techniqueSettings } : {}), beadId: canvasOf(project).beadId, makerName: '' }
+      void convertImage.openFromReference(request, draft)
+    },
+    showToast,
+    announce,
+    messages,
+    locale: () => locale.value,
+  })
+  // Adjust has its own bar: the popover folds away as it opens.
+  watch(referenceImage.adjusting, (on) => on && pictureBar.close())
   /** Imported Projects bring their reference images' pictures, kept under the ids they came in under. */
   const onImportProjects = (imported: Project[], pictures: ReadonlyMap<string, Blob> = new Map()) => {
     void referenceImage.keepImported(pictures)
@@ -1017,6 +1047,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       toggleRulers,
       /** The reference image (ticket 0790): what the surface draws, the strip button, Adjust and its bar. */
       referenceImage,
+      /** The reference image's picture bar (ticket 0883): its size, Set Frame around the picture and Convert to beads. */
+      pictureBar,
       rowHighlight,
       toggleRowHighlight,
       /** The last press of Row done or Row not done, which the Pattern's motion plays from (ticket 0730). */

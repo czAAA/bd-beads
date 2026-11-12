@@ -44,8 +44,9 @@ export interface ReferenceImageFlowDeps {
 /** The Project panel's reference image section, by its fold id (usePanelSection). */
 export const REFERENCE_SECTION_ID = 'project:reference'
 
-/** Where a file was picked: the strip button, the Project panel's section, or the Adjust bar's Replace image. */
-export type PickedFrom = 'strip' | 'panel' | 'adjust'
+/** Where a file was picked: the strip button, the Project panel's section, the Adjust bar's Replace image, or the
+ * picture bar's Replace (ticket 0883). */
+export type PickedFrom = 'strip' | 'panel' | 'adjust' | 'bar'
 
 /** The open Project's picture as the flow holds it: its bytes, and once decoded, what draws it. */
 interface LoadedPicture {
@@ -92,6 +93,11 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     const place = draft.value ?? shown.place
     return { image: picture.drawable.image, place, height: referenceHeight({ picture: shown.picture, place }), opacity: shown.opacity }
   })
+
+  /** Where the picture lies now: a drag's place as it goes, else the saved one (the picture bar's size, ticket 0883). */
+  const place = computed(() => draft.value ?? image.value?.place)
+  /** The open Project's picture, its stored bytes, once held: what Convert to beads reads. */
+  const blob = computed(() => (loaded.value?.projectId === deps.currentProject()?.id ? loaded.value?.blob : undefined))
 
   /** The Project panel's thumbnail: the kept picture's address. */
   const thumbnail = computed(() => (loaded.value?.projectId === deps.currentProject()?.id ? loaded.value?.drawable?.url : undefined))
@@ -180,6 +186,14 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     if (!project?.referenceImage) return
     if (project.referenceImage.shown) adjusting.value = false
     save(project, { ...project.referenceImage, shown: !project.referenceImage.shown })
+  }
+
+  /** Shows or hides the picture: Convert to beads hides it after, and its toast's Undo shows it again (ticket 0883). */
+  function setShown(shown: boolean): void {
+    const project = deps.currentProject()
+    if (!project?.referenceImage || project.referenceImage.shown === shown) return
+    if (!shown) adjusting.value = false
+    save(project, { ...project.referenceImage, shown })
   }
 
   function setOpacity(opacity: OpacityStep): void {
@@ -307,7 +321,10 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     removing,
     pick,
     toggleShown,
+    setShown,
     setOpacity,
+    place,
+    blob,
     requestRemove,
     cancelRemove,
     confirmRemove,

@@ -235,6 +235,14 @@
   --reference-outline: 1.5px; /* ReferenceImage card: the picture's outline in Adjust, and the Turn handle's and its stem's lines. */
   --reference-turn: 28px; /* ReferenceImage card: the Turn handle's circle, a 12px turning arrow inside (AppIcon's 12 size). */
   --reference-bar-bottom: 14px; /* ReferenceImage card: the Adjust bar above the drawing area's bottom, over the Tool pill's place. */
+  --picture-bar-height: 40px; /* ReferenceImage card (ticket 0883): the picture bar, the Tool pill's look; 52 on a coarse pointer. */
+  --picture-bar-button: 32px; /* ReferenceImage card: the bar's round icon buttons and the Move grip's height; 44 on a coarse pointer. */
+  --picture-bar-grip: 52px; /* ReferenceImage card: the Move grip's hit width, its 32 × 6 pill inside. */
+  --picture-bar-grip-line: 32px; /* ReferenceImage card: the Move grip's `ink` pill, 6px thick (the Frame's handle thickness). */
+  --convert-popover-width: 360px; /* ReferenceImage card: the Convert to beads popover beside the picture. */
+  --convert-swatch: 18px; /* ReferenceImage card: a color's swatch in the popover, four rows shown before it scrolls. */
+  --picture-bar-divider: 18px; /* ReferenceImage card: the bar's 1px `line` dividers. */
+  --frame-preview-line: 2px; /* ReferenceImage card: Set Frame around the picture's preview of the Frame's line. */
   /* The MarginSheet card's px the canvas and the sheet's script use too: `MARGIN_PX` (src/rendering/marginSizes.ts) holds
    * them, and marginSizes.test.ts fails if these drift from it (ticket 0683). */
   --margin-border-inset: 10px; /* MarginSheet card: the inner border's inset from the sheet's edge (6px in the compact form). */
