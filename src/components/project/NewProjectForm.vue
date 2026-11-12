@@ -87,8 +87,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
     The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
     it is for, Name (optional, "Project 1" when left empty), Maker's name (ticket 182, also optional), the Layer settings
     both layers start from (the section the Project and Frame panels share, ticket 0670) without its Background (ticket
-    0881), then the primary Create Project
-    and the secondary Convert image and Pick a starter (ticket 0866). It states no
+    0881), then the primary Create Project and the secondary Convert image and Pick a starter (ticket 0866). It states no
     size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image opens its own
     popup on a copy of these values (spec 0645).
   -->
