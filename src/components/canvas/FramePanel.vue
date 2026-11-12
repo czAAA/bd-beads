@@ -306,7 +306,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
               <span class="frame-panel__edge-name" :class="{ 'frame-panel__edge-name--cut': edgeNameCut[cell.edge] }" :data-fit-label="cell.edge">{{ t.frame.edgeName[cell.edge] }}</span>
               <span class="frame-panel__pair">
                 <AppButton
-                  class="frame-panel__step"
+                  class="frame-panel__step frame-panel__step--in"
                   variant="secondary"
                   :action="cell.in"
                   :deps="deps"
@@ -315,7 +315,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
                   v-on="cell.shrink"
                 >−</AppButton>
                 <AppButton
-                  class="frame-panel__step"
+                  class="frame-panel__step frame-panel__step--out"
                   variant="secondary"
                   :action="cell.out"
                   :deps="deps"
@@ -539,7 +539,8 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   visibility: hidden;
 }
 
-/* The − | + pair is one joined pill (Stepper card): the halves share a border, the outer ends are round. */
+/* The − | + pair is one joined control (Stepper card): the halves share a square seam, the outer ends take the buttons'
+ * `radius-md`. Each half is shaped by its own class, as each button sits in its own Tooltip wrapper (ticket 0878). */
 .frame-panel__pair {
   display: flex;
   flex: none;
@@ -553,20 +554,16 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   padding: 0;
   font: var(--type-control);
   line-height: 1;
-  border-radius: 0;
   touch-action: manipulation;
 }
 
-/* Each sign sits a little in from its round end, so it looks centred in what the curve leaves. */
-.frame-panel__cell :deep(.frame-panel__step:first-child) {
-  padding-left: var(--space-2);
-  border-radius: var(--radius-full) 0 0 var(--radius-full);
+.frame-panel__cell :deep(.frame-panel__step--in) {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
-.frame-panel__cell :deep(.frame-panel__step:last-child) {
+.frame-panel__cell :deep(.frame-panel__step--out) {
   margin-left: -1px;
-  padding-right: var(--space-2);
-  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .frame-panel__cell :deep(.frame-panel__step[aria-disabled='true']) {
