@@ -1028,7 +1028,7 @@ export const es: Translations = {
       beadPalette: 'Paleta {bead}',
       defaultPalette: 'Paleta predeterminada',
       exact: 'Exactos',
-      beadPaletteNote: 'Cada color de la imagen se ajusta al color más cercano del catálogo de {bead}.',
+      beadPaletteNote: 'Los códigos son cuentas reales de {bead}. Sus colores son aproximados, hechos con la familia de color y el acabado.',
       codesInSize: 'códigos en {size}: {count}',
       colorsFound: 'colores encontrados',
       fromPicture: 'De la imagen',

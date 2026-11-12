@@ -1035,7 +1035,7 @@ export const pl: Translations = {
       beadPalette: 'Paleta {bead}',
       defaultPalette: 'Domyślna paleta',
       exact: 'Dokładne',
-      beadPaletteNote: 'Każdy kolor obrazu jest dopasowywany do najbliższego koloru z katalogu {bead}.',
+      beadPaletteNote: 'Kody to prawdziwe koraliki {bead}. Kolory są przybliżone, powstają z rodziny koloru i wykończenia.',
       codesInSize: 'kodów w {size}: {count}',
       colorsFound: 'znalezione kolory',
       fromPicture: 'Z obrazu',
