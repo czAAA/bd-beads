@@ -1010,7 +1010,7 @@ export const zh: Translations = {
       beadPalette: '{bead} 调色板',
       defaultPalette: '默认调色板',
       exact: '原色',
-      beadPaletteNote: '图片中的每种颜色都会匹配到 {bead} 色卡中最接近的颜色。',
+      beadPaletteNote: '色号是真实的 {bead} 珠子。颜色为近似值，由色系和表面处理生成。',
       codesInSize: '{size} 的色号：{count}',
       colorsFound: '找到的颜色',
       fromPicture: '来自图片',
