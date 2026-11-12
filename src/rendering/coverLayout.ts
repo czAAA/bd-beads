@@ -2,28 +2,22 @@ import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
 import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER, type PageSize } from './printPlan'
 import type { PrintText } from './printText'
-import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx } from './surfaceView'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
-// Where everything sits on the Cover page (ticket 0583; glossary: Cover page), worked out without a canvas so the drawing and
-// the page count agree: the PNG, and the PDF's page 1 when it is the overview (ticket 0914, its own Beads needed table).
-// Page px at 150 dpi, like the rest of the print layout.
+// Where everything sits on page 1 when it is the overview of a piece cut into parts (tickets 0583, 0914; it began as the
+// Cover page, which the PNG was until ticket 0915), and how Beads needed is cut into list pages, worked out without a canvas
+// so the drawing and the page count agree. Page px at 150 dpi, like the rest of the print layout.
 
-/** A bead on the cover is never larger than this across, so a ring is not blown up to the page.
- * @internal Tests check a small Schema's beads stop at it. */
-export const COVER_BEAD_MAX = mm(6)
 /** Between the framed Schema and Beads needed. */
 const COVER_GAP = mm(8)
 /** The band above the board's top ruler that the "101 →" cut labels of the PDF sit in. */
 export const COVER_CUT_LABEL = mm(3.5)
-/** The footer row (wordmark, date and time) at the bottom of every cover and list page. */
+/** The footer row (wordmark, date and time, page number) at the bottom of page 1 and the list pages. */
 export const COVER_FOOTER = mm(6)
 /** Beads needed takes at most this share of the room under the title block; the rest of the colors go on list pages. */
 export const TABLE_SHARE = 0.4
-/** The heading of Beads needed, and the Total line and grams note that end it. */
-export const TABLE_HEAD = mm(6)
-const TABLE_END = mm(15)
+/** Beads needed with no colors: the line saying so. */
 const TABLE_EMPTY = mm(6)
 export const TABLE_COLUMN_GAP = mm(8)
 
@@ -36,12 +30,6 @@ export interface TableRows {
   row: number
   end: number
 }
-
-/** The Cover's own Beads needed: swatch, name, beads and grams, a row taller when the swatches carry letters. */
-function coverTable(words: Pick<PrintText, 'colors'>): TableRows {
-  return { head: TABLE_HEAD, row: words.colors.some((color) => color.letter) ? mm(5.2) : mm(4.4), end: TABLE_END }
-}
-type CoverShape = Layered
 
 /** One page's share of Beads needed: which colors it lists, and whether the Total line ends it. */
 export interface ColorsSlice {
@@ -61,9 +49,9 @@ export interface CoverLayout {
   extent: { width: number; height: number }
   /** Where the beads' own top-left corner lands, the framed Schema centred in the room it has. */
   board: { x: number; y: number }
-  /** Beads needed on the cover, and the top of it. */
+  /** Beads needed under the overview, and the top of it. */
   cover: ColorsSlice & { y: number }
-  /** Beads needed on each list page that follows the cover (none when it all fits). */
+  /** Beads needed on each list page that follows (none when it all fits). */
   lists: ColorsSlice[]
 }
 
@@ -107,8 +95,9 @@ export function listSlices(words: CoverWords, table: TableRows, from: number, pa
   return lists
 }
 
-/** The page's Cover (and list pages) layout for a Project's words, with the Cover's Beads needed or the table given. */
-export function coverLayout(project: CoverShape, words: CoverWords, page: PageSize = A4_PORTRAIT, table: TableRows = coverTable(words)): CoverLayout {
+/** Page 1 as the overview (and its list pages) for a Project's words, with Beads needed as `table`: the whole piece as large
+ * as the room the title block and Beads needed (at most its share) leave, centred in it. */
+export function coverLayout(project: Layered, words: CoverWords, table: TableRows, page: PageSize = A4_PORTRAIT): CoverLayout {
   const rowHeight = table.row
   const titleHeight = titleHeightOf(words)
   const top = PRINT_MARGIN + titleHeight
@@ -128,7 +117,7 @@ export function coverLayout(project: CoverShape, words: CoverWords, page: PageSi
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const room = available - tableHeight - COVER_GAP
   const widthRoom = page.width - PRINT_MARGIN * 2 - inset * 2
-  const zoom = Math.max(0.01, Math.min(COVER_BEAD_MAX / CELL_SIZE_PX, widthRoom / wide.width, (room - COVER_CUT_LABEL - inset * 2) / wide.height))
+  const zoom = Math.max(0.01, Math.min(widthRoom / wide.width, (room - COVER_CUT_LABEL - inset * 2) / wide.height))
   const extent = { width: wide.width * zoom, height: wide.height * zoom }
   const framed = COVER_CUT_LABEL + inset * 2 + extent.height
   const board = { x: PRINT_MARGIN + inset + (widthRoom - extent.width) / 2, y: top + (room - framed) / 2 + COVER_CUT_LABEL + inset }

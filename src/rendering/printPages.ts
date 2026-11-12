@@ -2,7 +2,6 @@ import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
-import { type SwatchLetters } from '../domain/swatchLetters'
 import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { renderProject } from './projectRenderer'
@@ -131,7 +130,7 @@ export interface Board {
   height: number
 }
 
-/** How much of an empty position's bead its cross spans, on the Cover and on a chart page.
+/** How much of an empty position's bead its cross spans, on the overview and on a chart.
  * @internal Tests measure the chart's cross against it. */
 export const EMPTY_CROSS_SHARE = 0.4
 /** The cross's line (`print-line-cell`). */
@@ -164,9 +163,9 @@ function crossWhereEmpty(lineWidth: number): BeadDrawer {
   }
 }
 
-/** The pale rounded board and the beads of `region` on it (the whole chart on page 1, a part on a chart page). With
- * `markEmpty` an empty position is the bare board under a faint cross (the Cover page, tickets 0587, 0719, 0818). */
-export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, letters?: SwatchLetters, markEmpty = false): void {
+/** The pale rounded board and the beads of `region` on it, without letters: page 1's overview (ticket 0914). An empty
+ * position is the bare board under a faint cross (tickets 0587, 0719, 0818). */
+export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
@@ -182,7 +181,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
   // The cross's line is `print-line-cell` and at least a device pixel, so it prints at 150 dpi too.
   const crossLine = Math.max(CROSS_LINE * scale, 1) / (zoom * scale)
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, letters, drawBead: markEmpty ? crossWhereEmpty(crossLine) : undefined })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, drawBead: crossWhereEmpty(crossLine) })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 

@@ -112,7 +112,7 @@ export function projectExportFileName(project: Project, extension: 'png' | 'pdf'
   return `${fileStem([projectNameOf(project), frameOf(project)?.name, project.makerName])}.${extension}`
 }
 
-/** A further page of the cover PNG (Beads needed running over, ticket 0583), e.g. `summer-rose-ada_2.png` for the second. */
+/** A further page of the PNG, a list page after page 1 (Beads needed running over, tickets 0583, 0915), e.g. `summer-rose-ada_2.png` for the second. */
 export function projectListFileName(project: Project, page: number): string {
   return projectExportFileName(project, 'png').replace(/\.png$/, `_${page}.png`)
 }

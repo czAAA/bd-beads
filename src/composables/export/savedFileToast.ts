@@ -5,7 +5,7 @@ import type { MessageTone, Toast } from '../ui/useToasts'
 /** The id every saved-file toast shows under, so a new save replaces the last one's toast. */
 export const SAVED_FILE_TOAST = 'saved-file'
 
-/** The id of a further page's toast (a PNG's list pages, `_2`, `_3`), so it stacks under the cover's. */
+/** The id of a further page's toast (a PNG's list pages, `_2`, `_3`), so it stacks under page 1's. */
 export const savedPageToast = (page: number) => `${SAVED_FILE_TOAST}-${page}`
 
 type ShowToast = (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
