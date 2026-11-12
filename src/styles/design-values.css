@@ -18,6 +18,17 @@
   --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
   --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
   --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
+  --convert-column-width: 344px; /* ConvertImage card (DS-1, ticket 0895): the quiet converter's column beside the preview. */
+  --convert-column-width-narrow: 328px; /* ConvertImage card (ticket 0895): the column while the page is under 1200px wide (the iPad in landscape). */
+  --convert-fit-top: 72px; /* ConvertImage card (ticket 0895): room above the beads when the preview is at Fit. */
+  --convert-fit-side: 40px; /* ConvertImage card (ticket 0895): room at each side of the beads at Fit. */
+  --convert-fit-bottom: 90px; /* ConvertImage card (ticket 0895): room under the beads at Fit, so the floating bar never covers them. */
+  --convert-fit-bottom-touch: 96px; /* ConvertImage card (ticket 0895): the same on a coarse pointer, whose bar is taller. */
+  --convert-popover-width: 340px; /* ConvertImage card (ticket 0895): the Bead and Technique and the Size popovers. */
+  --convert-colors-popover-width: 452px; /* ConvertImage card (ticket 0895): the Colors popover (match to, Color by color). */
+  --convert-colors-popover-width-narrow: 440px; /* ConvertImage card (ticket 0895): the Colors popover while the page is under 1200px wide. */
+  --convert-background-popover-width: 380px; /* ConvertImage card (ticket 0895): the Background popover over the floating bar. */
+  --convert-background-popover-width-touch: 400px; /* ConvertImage card (ticket 0895): the Background popover on a coarse pointer. */
   --step-bar-height: 64px; /* ProgressBar card (tickets 0778, 0780): a Progress bar of named steps (Convert image, the Homepage), the names under the track. */
   --step-bar-gap: 28px; /* ProgressBar card (ticket 0780): between a bar of steps' counter, track and buttons. */
   --step-names-inset: 52px; /* ProgressBar card (ticket 0778): how far a bar of steps' first and last dots stand in from the track's ends, so their names stay inside it. */
@@ -224,6 +235,14 @@
   --reference-outline: 1.5px; /* ReferenceImage card: the picture's outline in Adjust, and the Turn handle's and its stem's lines. */
   --reference-turn: 28px; /* ReferenceImage card: the Turn handle's circle, a 12px turning arrow inside (AppIcon's 12 size). */
   --reference-bar-bottom: 14px; /* ReferenceImage card: the Adjust bar above the drawing area's bottom, over the Tool pill's place. */
+  --picture-bar-height: 40px; /* ReferenceImage card (ticket 0883): the picture bar, the Tool pill's look; 52 on a coarse pointer. */
+  --picture-bar-button: 32px; /* ReferenceImage card: the bar's round icon buttons and the Move grip's height; 44 on a coarse pointer. */
+  --picture-bar-grip: 52px; /* ReferenceImage card: the Move grip's hit width, its 32 × 6 pill inside. */
+  --picture-bar-grip-line: 32px; /* ReferenceImage card: the Move grip's `ink` pill, 6px thick (the Frame's handle thickness). */
+  --convert-popover-width: 360px; /* ReferenceImage card: the Convert to beads popover beside the picture. */
+  --convert-swatch: 18px; /* ReferenceImage card: a color's swatch in the popover, four rows shown before it scrolls. */
+  --picture-bar-divider: 18px; /* ReferenceImage card: the bar's 1px `line` dividers. */
+  --frame-preview-line: 2px; /* ReferenceImage card: Set Frame around the picture's preview of the Frame's line. */
   /* The MarginSheet card's px the canvas and the sheet's script use too: `MARGIN_PX` (src/rendering/marginSizes.ts) holds
    * them, and marginSizes.test.ts fails if these drift from it (ticket 0683). */
   --margin-border-inset: 10px; /* MarginSheet card: the inner border's inset from the sheet's edge (6px in the compact form). */

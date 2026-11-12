@@ -584,6 +584,8 @@ export const CONTROLS: readonly ControlAction[] = [
   // The area bars' move grips (ContextBar card, Area sheet, ticket 0808): a drag moves the area, arrows a bead.
   unkeyed('move-selection', (t) => t.contextBar.moveSelection, 'canvas', { body: (t) => t.contextBar.moveSelectionBody }),
   unkeyed('move-mirror-area', (t) => t.mirror.moveArea, 'canvas', { body: (t) => t.mirror.moveAreaBody }),
+  // The picture bar's Move grip (ReferenceImage card, ticket 0883): a drag moves the reference image, arrows a bead.
+  unkeyed('move-reference-image', (t) => t.referenceImage.bar.move, 'canvas', { body: (t) => t.referenceImage.bar.moveBody }),
   // The margin sheet's Margin color button (ticket 0657, MarginSheet card): opens the margin color's picker under it.
   unkeyed('margin-color', (t) => t.frame.margin.colorLabel, 'canvas', { icon: 'palette' }),
   unkeyed('fold-title-block', (t) => t.frame.margin.foldTitleBlock, 'canvas', { icon: 'chevron-down' }),

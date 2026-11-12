@@ -65,6 +65,19 @@ A small pill that stands over the picture's top edge whenever the picture is sho
 - **Then a toast** (Message card, success, top-right of the canvas box): "{n} beads made from the picture, {colors} colors.", followed when it was hidden by "The picture is hidden: show it from the Canvas strip.", with the text action **Undo**, which undoes the conversion and shows the picture again. It goes after 5s like other toasts.
 - **Off** (`aria-disabled`, its Tooltip saying why) while the picture covers fewer than 4 positions a side ("The picture is too small to bead. Make it bigger first.") or more than 300 ("Too big to convert here. Use Convert image.", the Large Schema limit).
 
+## As built (ticket 0883)
+
+Where the build differs from the sections above, and why:
+
+- **The bar with no room above:** where neither the picture's top edge nor its margin sheet leaves room for the bar above them, it stands 14px inside the picture's top edge as it shows, over the picture, not below it: below are the Turn handle and the Tool pill.
+- **Keyboard:** ←/→, Home and End move along the bar's buttons; while the Move grip has focus its arrows move the picture instead (Home and End still leave it). The opened part's Opacity control keeps its own Tab stop, as a SegmentedControl's arrows choose its step.
+- **Set Frame around the picture** makes the Frame as Frame from Selection does: the Canvas's beads inside the box move into it, and a Frame already there lays its beads back on the Canvas first, so no bead is lost and nothing is asked. A Custom frame is taken off as Remove Frame takes it (its beads on the Canvas) and the rectangular Frame made, one Undo step. The preview shows the Frame and sheet that press makes.
+- **Convert to beads under a Frame:** positions under a Frame woven and beaded as the Canvas, without a Frame shape, get their beads on the Frame in its own positions; under any other Frame they get none, as it hides the Canvas there and has no positions to match. Where the picture lets the Canvas through, a bead already there stays.
+- **The measure** in the size chip and the popover is the app's estimate ("≈ 4.2 × 2.9 cm", in mm under a centimetre); the Colors stepper's buttons are named "One color fewer" and "One color more".
+- **The match to control's options** share the row by their text and keep to one line; a long Bead's palette takes a row of its own.
+- **Set Frame around the picture's Frame** starts on a row (and column) where a Frame may start in the Canvas's Technique, as Frame from Selection's does, so on alternating rows it can be a row taller than the box the picture covers; the Tooltip's size, the preview and its tag show that Frame.
+- **All settings** opens Convert image, whose own limits apply: at least 8 beads a side. Convert image has no turn of its own, so it converts the picture upright at the size the turned picture covers; the bar's own Convert to beads takes it as it lies.
+
 ## Canvas strip button
 
 - The `reference-image` icon (the `image` picture with a dashed edge), plain look, right after the Rulers toggle, before Undo (CanvasStrip card). Name "Reference image". Shown only with a Project open; at every width, scrolling with the tools on a phone.

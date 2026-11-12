@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-12',
     line: {
+      en: 'The reference image has its own bar: move it, set a Frame around it, or convert it to beads in its own colors',
+      ru: 'У подложки своя панель: сдвиньте её, поставьте вокруг неё рамку или переведите в бисер в её собственных цветах',
+      uk: 'Підкладка має власну панель: зсуньте її, поставте навколо неї рамку або перетворіть на бісер у її власних кольорах',
+      be: 'У падкладкі свая панэль: зрушце яе, пастаўце вакол яе рамку або перавядзіце ў бісер у яе ўласных колерах',
+      zh: '参考图有了自己的工具条：移动它、给它加画框，或按它自己的颜色转换为珠子',
+      es: 'La imagen de referencia tiene su propia barra: muévela, ponle un marco alrededor o conviértela en cuentas con sus propios colores',
+      pl: 'Obraz pomocniczy ma własny pasek: przesuń go, ustaw wokół niego ramkę albo zamień go na koraliki w jego własnych kolorach',
+    },
+  },
+  {
+    date: '2026-11-12',
+    line: {
       en: 'The PDF opens with the whole piece and the beads to buy on one page, and for most pieces that page is the whole PDF',
       ru: 'PDF начинается со всей работы и списка бисера на одной странице, и для большинства работ эта страница и есть весь PDF',
       uk: 'PDF починається з усієї роботи та списку бісеру на одній сторінці, і для більшості робіт ця сторінка і є весь PDF',

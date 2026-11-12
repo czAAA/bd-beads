@@ -580,3 +580,15 @@ export function changeCanvasWeave(project: Project, change: WeaveChange): Projec
   const rewoven = withWeave(project, 'canvas', change)
   return rewoven === project ? project : carryNames(project, rewoven)
 }
+
+/** Set Frame around the picture (ticket 0883): the Frame made round `frame` as Frame from Selection makes it; a Custom
+ * frame is first taken off as Remove Frame takes it, its beads laid on the Canvas, so the new Frame is rectangular. */
+export function framedAround(project: Project, frame: Rect): FrameChangeResult {
+  if (!frameOf(project)?.shape) return changeFrame(project, { make: frame })
+  const refused = frameChangeRefusal(project, { make: frame })
+  if (refused) return { kind: 'refused', reason: refused }
+  const removed = changeFrame(project, { remove: true })
+  if (removed.kind !== 'changed') return removed
+  const made = changeFrame(removed.project, { make: frame })
+  return made.kind === 'unchanged' ? removed : made
+}

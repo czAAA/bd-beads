@@ -26,7 +26,8 @@ const steps = computed(() =>
   })),
 )
 const finish = computed(() => ({
-  label: t.value.convertImage.createButton,
+  // Opened from the reference image's All settings, its beads go on the open Project (ticket 0883).
+  label: props.wizard.addsToCanvas ? t.value.convertImage.addToCanvas : t.value.convertImage.createButton,
   disabled: !props.wizard.hasPicture.value,
   disabledBody: words.value.addPictureFirst,
   testid: 'convert-image-create',
