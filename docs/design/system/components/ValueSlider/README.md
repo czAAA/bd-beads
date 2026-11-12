@@ -2,7 +2,7 @@
 
 A slider that picks one whole number over a range and writes the value above it: the Convert image wizard's Width and Colors (ConvertImage card, ticket 0747). It has QualitySlider's track and thumb, but it moves through every whole number in its range rather than between three stops, and it may carry marks.
 
-Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · sliders", https://claude.ai/artifact/W8sTQApy6JYsF2RBkGFdDA).
+Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · sliders", link on ticket 0747 in the private docs repo).
 
 ## Parts
 
