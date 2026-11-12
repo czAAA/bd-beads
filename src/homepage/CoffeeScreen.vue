@@ -1,54 +1,52 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import AppButton from '../components/ui/AppButton.vue'
-import { SOURCE_URL } from '../data/sourceLink'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '../i18n/useI18n'
+import CoffeeAction from './CoffeeAction.vue'
 import CoffeeBand from './CoffeeBand.vue'
+import CoffeeChips from './CoffeeChips.vue'
 import GroupedList from './GroupedList.vue'
-import CoffeeScreenTile from './CoffeeScreenTile.vue'
-import WhatsNewTile from './WhatsNewTile.vue'
-import { coffeePromises, sayHelloText } from './coffeeCopy'
+import WhatsNewFold from './WhatsNewFold.vue'
+import { coffeeChips } from './coffeeCopy'
 
-/** The Homepage's coffee screen (tickets 0811, 0823, 0824; Homepage card): the band, then the tiles in a row under it;
- * on a phone the promises as a grouped list between them (0827). Send feedback only asks for the Feedback sheet; the
- * page opens it as the Menu's row does. */
-defineProps<{
-  /** Drawn for a phone: the promises apart from the band, with their lines. */
+/** The Homepage's coffee screen (tickets 0811, 0823, 0880; Homepage card): the band with its row of chips, then What's
+ * new folded under it; on a phone the chips as a grouped list between them (0827). Send feedback only asks for the
+ * Feedback sheet; the page opens it as the Menu's row does. */
+const props = defineProps<{
+  /** Drawn for a phone: the chips apart from the band, as rows with their lines. */
   phone?: boolean
+  /** Whether the Homepage shows this section: a chip or What's new left open is closed again once it is turned away. */
+  shown?: boolean
 }>()
 const emit = defineEmits<{ feedback: [] }>()
 
 const { t } = useI18n()
-const sayHello = computed(() => sayHelloText(t.value))
-/** The promises a phone lists: not Keyboard shortcuts, as a phone has no keyboard to speak of. */
-const phonePromises = computed(() => coffeePromises(t.value).filter((promise) => promise.id !== 'shortcuts'))
+/** The rows a phone lists: not Keyboard shortcuts, as a phone has no keyboard to speak of. */
+const phoneRows = computed(() => coffeeChips(t.value).filter((chip) => chip.id !== 'shortcuts'))
+/** How many times the screen was turned away: the chips and What's new are drawn afresh, closed, each time. */
+const leftTimes = ref(0)
+watch(
+  () => props.shown,
+  (shown) => {
+    if (shown === false) leftTimes.value++
+  },
+)
 </script>
 
 <template>
   <div class="coffee-screen" data-testid="homepage-coffee">
-    <CoffeeBand :promises-apart="phone" />
-    <GroupedList v-if="phone" :rows="phonePromises" testid="homepage-promises" row-testid="homepage-promise" />
-    <div class="coffee-screen__tiles" data-testid="homepage-tiles">
-      <WhatsNewTile />
-      <CoffeeScreenTile icon="code" :name="t.homepage.openSource.name" data-testid="homepage-tile-open-source">
-        <p>{{ t.homepage.openSource.text }}</p>
-        <template #foot>
-          <AppButton size="sm" trailing-icon="external" :href="SOURCE_URL" data-testid="homepage-coffee-source">{{ t.homepage.coffee.source }}</AppButton>
-          <small class="coffee-screen__star">{{ t.homepage.coffee.star }}</small>
-        </template>
-      </CoffeeScreenTile>
-      <CoffeeScreenTile icon="message" :name="t.homepage.sayHello.name" data-testid="homepage-tile-say-hello">
-        <p>{{ sayHello }}</p>
-        <template #foot>
-          <AppButton size="sm" data-testid="homepage-send-feedback" @click="emit('feedback')">{{ t.panels.menu.sendFeedback }}</AppButton>
-        </template>
-      </CoffeeScreenTile>
-    </div>
+    <CoffeeBand>
+      <CoffeeChips v-if="!phone" :key="leftTimes" @feedback="emit('feedback')" />
+    </CoffeeBand>
+    <GroupedList v-if="phone" :rows="phoneRows" testid="homepage-promises" row-testid="homepage-promise">
+      <template #action-openSource><CoffeeAction of="openSource" /></template>
+      <template #action-sayHello><CoffeeAction of="sayHello" @feedback="emit('feedback')" /></template>
+    </GroupedList>
+    <WhatsNewFold :key="leftTimes" />
   </div>
 </template>
 
 <style scoped>
-/* The band, then the tiles, 12px apart, at most 60rem wide, centred. */
+/* The band, then What's new, 12px apart, at most 60rem wide, centred. */
 .coffee-screen {
   display: flex;
   flex-direction: column;
@@ -56,26 +54,5 @@ const phonePromises = computed(() => coffeePromises(t.value).filter((promise) =>
   width: 100%;
   max-width: 60rem;
   margin: 0 auto;
-}
-
-/* The tiles one under another on a phone, side by side from 481, top-aligned: a tile added is one more column. */
-.coffee-screen__tiles {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-12);
-}
-
-@container homepage (min-width: 481px) {
-  .coffee-screen__tiles {
-    grid-template-columns: none;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
-  }
-}
-
-.coffee-screen__star {
-  font: var(--type-meta-small);
-  color: var(--muted);
 }
 </style>

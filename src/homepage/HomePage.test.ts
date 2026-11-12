@@ -264,6 +264,19 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
     ['welcome', 'inside', 'coffee', 'plans'].filter((id) => wrapper.get(`[data-testid="homepage-section-${id}"]`).classes().includes('homepage__section--shown'))
   const step = (wrapper: ReturnType<typeof page>, index: number) => wrapper.findAll('[data-testid="section-step"]')[index]!.trigger('click')
 
+  it("closes What's new once the coffee screen is turned away (ticket 0880)", async () => {
+    const wrapper = page()
+    await step(wrapper, 2)
+    const toggle = () => wrapper.get('[data-testid="homepage-whats-new-toggle"]')
+    await toggle().trigger('click')
+    expect(toggle().attributes('aria-expanded')).toBe('true')
+    await step(wrapper, 3)
+    await step(wrapper, 2)
+    expect(shown(wrapper)).toEqual(['coffee'])
+    expect(toggle().attributes('aria-expanded')).toBe('false')
+    wrapper.unmount()
+  })
+
   it('shows one section at a time, Welcome first (ticket 0830), the others slid away', () => {
     const wrapper = page()
     expect(shown(wrapper)).toEqual(['welcome'])

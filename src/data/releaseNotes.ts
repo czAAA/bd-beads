@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-12',
     line: {
+      en: "Made by one family is calmer: one row of icons that open to their names, and What's new folded under it",
+      ru: '«Делает одна семья» стал спокойнее: один ряд значков, которые раскрываются до названия, и «Что нового» свёрнуто под ним',
+      uk: '«Робить одна родина» став спокійнішим: один ряд значків, що розкриваються до назви, і «Що нового» згорнуто під ним',
+      be: '«Робіць адна сям’я» стаў спакайнейшым: адзін рад значкоў, якія раскрываюцца да назвы, і «Што новага» згорнута пад ім',
+      zh: '“一家人做的”更简洁了：一排图标，点开即见名称，“更新内容”折叠在下方',
+      es: 'Hecho por una familia es más tranquilo: una fila de iconos que se abren a su nombre, y Novedades plegado debajo',
+      pl: 'Robi to jedna rodzina jest spokojniejsze: jeden rząd ikon, które rozwijają się do nazwy, i Co nowego zwinięte pod spodem',
+    },
+  },
+  {
+    date: '2026-11-12',
+    line: {
       en: "The Homepage's demo is only to watch: Open editor from here takes the piece it shows into your own Projects",
       ru: 'Демо на главной странице только для просмотра: «Открыть редактор отсюда» добавит показанную работу в ваши проекты',
       uk: 'Демо на головній сторінці лише для перегляду: «Відкрити редактор звідси» додасть показану роботу до ваших проєктів',

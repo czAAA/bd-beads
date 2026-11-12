@@ -113,7 +113,7 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           found.push(...(await misfitsNow()))
 
           // The coffee screen: the band in one column, its button the band's width and 44px tall; the promises a grouped
-          // list under it, Keyboard shortcuts left out; then the tiles one under another.
+          // list under it, Keyboard shortcuts left out, then Open source and Say hello; then What's new, folded.
           await next()
           insideTheSection()
           const band = box('[data-testid="homepage-coffee-band"]')
@@ -122,11 +122,15 @@ describe('The Homepage on a phone (ticket 0827)', () => {
           expect(coffee.width).toBeGreaterThan(band.width * 0.8)
           const promises = box('[data-testid="homepage-promises"]')
           expect(promises.top).toBeGreaterThanOrEqual(band.bottom)
-          expect(mounted.root.querySelectorAll('[data-testid="homepage-promises"] > li')).toHaveLength(5)
+          expect(mounted.root.querySelectorAll('[data-testid="homepage-promises"] > li')).toHaveLength(7)
           expect(mounted.root.querySelector('[data-testid="homepage-promise-shortcuts"]')).toBeNull()
-          const tiles = [...mounted.root.querySelectorAll('[data-testid="homepage-tiles"] > *')].map((tile) => tile.getBoundingClientRect())
-          expect(tiles[0]!.top).toBeGreaterThanOrEqual(promises.bottom)
-          expect(new Set(tiles.map((tile) => Math.round(tile.left))).size, 'the tiles one under another').toBe(1)
+          const whatsNew = box('[data-testid="homepage-whats-new"]')
+          expect(whatsNew.top).toBeGreaterThanOrEqual(promises.bottom)
+          expect(whatsNew.width, "What's new as wide as the list").toBeCloseTo(promises.width, 0)
+          expect(el('[data-testid="homepage-whats-new-toggle"]').getAttribute('aria-expanded')).toBe('false')
+          el('[data-testid="homepage-whats-new-toggle"]').click()
+          await nextTick()
+          found.push(...(await misfitsNow()))
           endsWithNext(mounted.root.querySelector('#homepage-plans')!.textContent!)
           found.push(...(await misfitsNow()))
 

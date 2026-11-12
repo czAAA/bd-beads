@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppIcon from '../components/ui/AppIcon.vue'
 import { COFFEE_URL } from '../data/coffeeLink'
 import { useI18n } from '../i18n/useI18n'
-import { coffeePromises } from './coffeeCopy'
 
-// The coffee screen's band (tickets 219, 0823; Homepage card): a decorative beaded cup, who made the app, a few lines and
-// a button opening the Coffee link in a new tab (ticket 560), inert while empty; under them the promises. Only the cup
-// and the button take a click (ticket 0813). No donation-service name, logo or colours.
-defineProps<{
-  /** On a phone the screen lists the promises under the band, each with its line (ticket 0827): none in the band. */
-  promisesApart?: boolean
-}>()
+// The coffee screen's band (tickets 219, 0823, 0880; Homepage card): a decorative beaded cup, who made the app, a few
+// lines and Buy me a coffee (a new tab, ticket 560; inert while empty), then past a hairline the slot's chips. Only the
+// cup and the button take a click (ticket 0813). No donation-service name, logo or colours.
 const { t } = useI18n()
-const promises = computed(() => coffeePromises(t.value))
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */
 const CUP = ['.AAAAA..', '.AAAAAAA', '.AAAAA.A', '.AAAAAA.', '..AAA...', 'SSSSSSS.']
@@ -75,21 +67,15 @@ const steam = [
         <AppButton variant="primary" :href="COFFEE_URL || undefined" data-testid="homepage-coffee-button">{{ t.homepage.coffee.button }}</AppButton>
       </div>
     </div>
-    <!-- The promises (ticket 0823): an icon and a name each, nothing to press; the line is there for screen readers. -->
-    <ul v-if="!promisesApart" class="coffee__promises" data-testid="homepage-promises">
-      <li v-for="promise in promises" :key="promise.id" class="coffee__promise" :data-testid="`homepage-promise-${promise.id}`">
-        <AppIcon class="coffee__promise-icon" :name="promise.icon" :size="18" />
-        <span class="coffee__promise-name">{{ promise.name }}</span>
-        <!-- The stop keeps a screen reader from running the name into its line. -->
-        <span class="coffee__promise-text">. {{ promise.text }}</span>
-      </li>
-    </ul>
+    <div v-if="$slots.default" class="coffee__under">
+      <slot />
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* The band (ticket 0823): from 1000px the cup and title on the left, the text and its button on the right; one column,
- * centred, below. The promises run under a hairline across both. */
+ * centred, below. The chips run under a hairline across both. */
 .coffee {
   /* The cup, 64px (ticket 0819). */
   --coffee-cup-width: 4rem;
@@ -263,42 +249,10 @@ a.coffee__cup:hover .coffee-cup {
   color: var(--body);
 }
 
-/* In one row, centred, wrapping to centred rows where there is no room; 16px apart, not the prototype's 20, so the six
- * keep to one row in the 60rem band on every platform's text rendering. */
-.coffee__promises {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-6) var(--space-16);
+/* What stands under the story, past a 1px `panel-rule` hairline. */
+.coffee__under {
   margin: var(--space-20) 0 0;
   padding: var(--space-14) 0 0;
-  list-style: none;
   border-top: 1px solid var(--panel-rule);
-}
-
-.coffee__promise {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  /* 7px, as the card has it. */
-  gap: 7px;
-  font: var(--type-promise);
-  color: var(--body);
-  white-space: nowrap;
-}
-
-.coffee__promise-icon {
-  flex: none;
-  color: var(--accent-strong);
-}
-
-/* The promise's line, for screen readers only. */
-.coffee__promise-text {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
 }
 </style>
