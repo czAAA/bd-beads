@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { A4_PORTRAIT, type PrintPart, PRINT_BEAD_TWO_LETTER_MM, PRINT_PART_OVERLAP, chartArea, continuation, mm, partLetter, planPrint } from './printPlan'
+import { A4_PORTRAIT, type PrintPart, PRINT_BEAD_TWO_LETTER_MM, PRINT_PART_OVERLAP, chartArea, chartOnPageOne, continuation, mm, partLetter, planPrint } from './printPlan'
 import { CELL_SIZE_PX } from './cellSize'
 import { bareProject, withLayers } from '../testUtils/layerFields'
 
@@ -18,11 +18,13 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(plan.page).toEqual({ width: 1240, height: 1754 })
   })
 
-  it.each([[20, 20], [50, 50], [60, 75], [80, 80], [100, 100]])('puts a %s × %s loom Schema whole on one sheet (ticket 0913)', (columns, rows) => {
+  it.each([[20, 20], [50, 50], [60, 75], [80, 80], [100, 100]])('puts a %s × %s loom Schema whole on page 1, the whole PDF (tickets 0913, 0914)', (columns, rows) => {
     const plan = planPrint(shape('loom', columns, rows))
 
     expect([plan.partsAcross, plan.partsDown]).toEqual([1, 1])
-    expect(plan.parts).toEqual([expect.objectContaining({ firstAcross: 0, lastAcross: columns - 1, firstDown: 0, lastDown: rows - 1, page: 2 })])
+    expect(plan.parts).toEqual([expect.objectContaining({ firstAcross: 0, lastAcross: columns - 1, firstDown: 0, lastDown: rows - 1, page: 1 })])
+    expect(chartOnPageOne(plan)).toBe(true)
+    expect(plan.pageCount).toBe(1)
   })
 
   it('returns the bead it plans: the largest the sheet allows, 9 mm at most, 1.8 mm for a 100 × 100 and 1.6 mm, the stretch, for a 110 × 110', () => {
@@ -79,11 +81,11 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
   })
 
   it('never plans a bead under the floor it is given, with no stretch below it (two-letter Swatch letters)', () => {
-    const plan = planPrint(shape('loom', 100, 100), undefined, 0, 1, PRINT_BEAD_TWO_LETTER_MM)
+    const plan = planPrint(shape('loom', 100, 100), { floorMm: PRINT_BEAD_TWO_LETTER_MM })
 
     expect(plan.beadMm).toBeGreaterThanOrEqual(2.2)
     expect(plan.parts.length).toBeGreaterThan(1)
-    expect(planPrint(shape('loom', 110, 110), undefined, 0, 1, PRINT_BEAD_TWO_LETTER_MM).beadMm).toBeGreaterThanOrEqual(2.2)
+    expect(planPrint(shape('loom', 110, 110), { floorMm: PRINT_BEAD_TWO_LETTER_MM }).beadMm).toBeGreaterThanOrEqual(2.2)
   })
 
   it('draws every part at one bead size, with Letters or not', () => {
@@ -134,29 +136,43 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(Math.abs(own.region.width - (block + 2) * bead)).toBeLessThan(1)
   })
 
-  it('numbers the chart pages from 2, after page 1, with none left empty', () => {
+  it('numbers the chart pages from 2, after the overview on page 1, with none left empty and the last the last page (ticket 0914)', () => {
     const plan = planPrint(shape('loom', 150, 220))
     const pages = new Set(plan.parts.map((part) => part.page))
 
+    expect(chartOnPageOne(plan)).toBe(false)
     expect(Math.min(...pages)).toBe(2)
-    expect([...pages].sort((a, b) => a - b)).toEqual(Array.from({ length: plan.specificationPage - 2 }, (_, index) => index + 2))
+    expect([...pages].sort((a, b) => a - b)).toEqual(Array.from({ length: plan.pageCount - 1 }, (_, index) => index + 2))
   })
 
-  it('numbers the chart pages and the Specification after the list pages that follow the Cover page (ticket 0583)', () => {
+  it('numbers the chart pages after the list pages that follow page 1 (ticket 0583)', () => {
     const project = shape('loom', 150, 220)
     const without = planPrint(project)
-    const withLists = planPrint(project, undefined, 2)
+    const withLists = planPrint(project, { listPages: 2 })
 
     expect(withLists.parts.map((part) => part.page)).toEqual(without.parts.map((part) => part.page + 2))
-    expect(withLists.specificationPage).toBe(without.specificationPage + 2)
     expect(withLists.pageCount).toBe(without.pageCount + 2)
   })
 
-  it('puts the Specification on the page after the last chart page, counted in the total (ticket 0581)', () => {
-    const plan = planPrint(shape('loom', 150, 220))
+  it('counts the list pages after a chart that is whole on page 1 (ticket 0914)', () => {
+    const plan = planPrint(shape('loom', 40, 40), { listPages: 2 })
 
-    expect(plan.specificationPage).toBe(Math.max(...plan.parts.map((part) => part.page)) + 1)
-    expect(plan.pageCount).toBe(plan.specificationPage)
+    expect(plan.parts.map((part) => part.page)).toEqual([1])
+    expect(plan.pageCount).toBe(3)
+  })
+
+  it('plans page 1 in the room it leaves the chart: a Schema whole on a chart page but not under page 1\'s title and Beads needed is cut into parts after it (ticket 0914)', () => {
+    const project = shape('loom', 100, 100)
+    const pageOne = { width: chartArea(A4_PORTRAIT).width, height: mm(120) }
+
+    expect(chartOnPageOne(planPrint(project))).toBe(true)
+    const plan = planPrint(project, { pageOne })
+    expect(chartOnPageOne(plan)).toBe(false)
+    expect(plan.pageCount).toBe(1 + sheetsOf(plan))
+    // A small Schema is still whole on page 1, at the bead that room allows.
+    const small = planPrint(shape('loom', 20, 20), { pageOne })
+    expect(chartOnPageOne(small)).toBe(true)
+    expect(small.parts[0]!.place.height).toBeLessThanOrEqual(mm(120) + 1)
   })
 
   it('says where the chart continues from each part', () => {
@@ -191,7 +207,7 @@ describe('planPrint: equal parts fit their sheets (ticket 0913)', () => {
   })
 
   it('makes the key\'s rows take room from the chart: a taller key, a smaller bead', () => {
-    const bead = (keyRows: number) => planPrint(shape('loom', 80, 110), undefined, 0, keyRows).beadMm
+    const bead = (keyRows: number) => planPrint(shape('loom', 80, 110), { keyRows }).beadMm
 
     expect(bead(1)).toBeGreaterThan(bead(3))
   })
@@ -203,12 +219,12 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
 
     expect([plan.partsAcross, plan.partsDown]).toEqual([1, 2])
     expect(plan.parts.map((part) => part.letter)).toEqual(['A', 'B'])
-    expect(plan.parts.map((part) => part.page)).toEqual([2, 2])
+    expect(plan.parts.map((part) => part.page)).toEqual([1, 1])
     expect(plan.parts[1]!.place.y).toBe(plan.parts[0]!.place.y)
     expect(plan.parts[1]!.place.x - (plan.parts[0]!.place.x + plan.parts[0]!.place.width)).toBeCloseTo(mm(6), 3)
     expect(plan.beadMm).toBeGreaterThan(2.15)
     expect(plan.beadMm).toBeLessThan(2.4)
-    expect(plan.pageCount).toBe(3)
+    expect(plan.pageCount).toBe(1)
   })
 
   it('keeps a Schema whole rather than fold it into strips for a bead no bigger, or when it is 3 mm or more whole', () => {
@@ -243,7 +259,7 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
     const pages = plan.parts.map((part) => part.page)
 
     expect(plan.partsDown).toBe(1)
-    expect(plan.specificationPage - 2).toBeLessThan(plan.parts.length)
+    expect(sheetsOf(plan)).toBeLessThan(plan.parts.length)
     expect(pages).toEqual([...pages].sort((a, b) => a - b))
     expect(plan.parts.at(-1)!.lastAcross).toBe(299)
   })
@@ -252,8 +268,8 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
     const plan = planPrint(shape('loom', 40, 40))
 
     expect(plan.parts).toHaveLength(1)
-    expect(plan.parts[0]).toMatchObject({ letter: 'A', page: 2 })
-    expect(plan.pageCount).toBe(3)
+    expect(plan.parts[0]).toMatchObject({ letter: 'A', page: 1 })
+    expect(plan.pageCount).toBe(1)
   })
 
   it('stays A4 portrait for a Schema wider than tall', () => {

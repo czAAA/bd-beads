@@ -25,7 +25,7 @@ interface PrintedColor {
   name: string
   beads: string
   grams?: string
-  /** The catalog code, which the Specification prints in its own column (it is also in `name`). */
+  /** The catalog code, which page 1's Beads needed prints in its own column (it is also in `name`). */
   code?: string
   /** "2 × 5 g": tubes to buy; none for an unknown Bead. */
   tubes?: string
@@ -63,21 +63,14 @@ export interface PrintText {
   /** "Sep 26, 2026 · 14:32" */
   exportedAt: string
   metaLine: string
-  bead: string
-  size: string
-  estimatedSize: string
   colors: PrintedColor[]
   /** "22 colors" */
   colorsCount: string
   /** "4 800 beads" and "≈ 24 g": the Total both ways. */
   totalBeads: string
-  /** The Total's count alone ("4 800"), for the Specification's beads column. */
-  totalBeadsCount: string
   totalGrams?: string
   /** The Total row's tubes: the colors' tubes added up. */
   totalTubes?: string
-  /** "Color + letters": every chart page letters every bead, whatever the Letters switch says (ticket 0869). */
-  chartStyle: string
   gramsNote?: string
   wordChart?: PrintedWordChart
   labels: Translations['print']
@@ -189,9 +182,6 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     metaLine: estimate
       ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
       : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
-    bead: beadName,
-    size,
-    estimatedSize: estimate ? `≈ ${estimate}` : '',
     colors: quantities.map((quantity, index) => ({
       hex: quantity.hex,
       name: listedColorName(t, palette.byId(quantity.colorId), quantity.hex),
@@ -203,10 +193,8 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     })),
     colorsCount: plural(locale, quantities.length, t.a11y.colorsCount),
     totalBeads: plural(locale, total, t.print.beadsCount),
-    totalBeadsCount: groupThousands(total, locale),
     totalGrams: grams(total),
     ...(tubeTotal === undefined ? {} : { totalTubes: tubes(tubeTotal) }),
-    chartStyle: t.print.chartStyleLetters,
     gramsNote:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`

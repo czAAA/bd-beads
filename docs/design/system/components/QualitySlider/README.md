@@ -30,7 +30,7 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 
 The stops carry no size: the Picture button's value slot is the one place the PNG's size is shown, and it follows the chosen stop.
 
-The PDF is not on the slider: its picture pages (Cover, list pages, Specification, Word chart) and the text picture under each chart page are 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. The choice is remembered per device; `print-png-bead` (60px) is the Medium PNG value.
+The PDF is not on the slider: its picture pages (the overview on page 1, list pages, Word chart) and the text picture under each chart page are 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. The choice is remembered per device; `print-png-bead` (60px) is the Medium PNG value.
 
 ## Parts
 

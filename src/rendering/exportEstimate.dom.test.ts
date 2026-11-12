@@ -17,15 +17,17 @@ describe('exportFacts', () => {
     expect(exportFacts(project, printText(project, en, 'en', new Date()))).toBeUndefined()
   })
 
-  it('counts the Cover and a chart page for a small Schema, and the Word chart only with Letters', () => {
-    expect(factsOf('loom', 20, 30)).toMatchObject({ lists: [], sheets: 1, wordPages: 0 })
-    expect(factsOf('loom', 20, 30, true)).toMatchObject({ lists: [], sheets: 1, wordPages: 1 })
+  it('counts page 1 alone for a small Schema, its chart there, and the Word chart only with Letters (ticket 0914)', () => {
+    expect(factsOf('loom', 20, 30)).toMatchObject({ pdfLists: [], sheets: 0, wordPages: 0 })
+    expect(factsOf('loom', 20, 30).overviewZoom).toBeUndefined()
+    expect(factsOf('loom', 20, 30, true)).toMatchObject({ pdfLists: [], sheets: 0, wordPages: 1 })
   })
 
-  it('counts a chart page for every sheet a big Schema takes', () => {
-    // 150 × 150 takes four sheets where 100 × 100 takes one (tickets 0585, 0913).
-    expect(factsOf('loom', 100, 100).sheets).toBe(1)
+  it('counts a chart page for every sheet a big Schema takes after its overview', () => {
+    // 150 × 150 takes four sheets where 100 × 100 is whole on page 1 (tickets 0585, 0913, 0914).
+    expect(factsOf('loom', 100, 100).sheets).toBe(0)
     expect(factsOf('loom', 150, 150).sheets).toBe(4)
+    expect(factsOf('loom', 150, 150).overviewZoom).toBeGreaterThan(0)
   })
 })
 
@@ -51,10 +53,10 @@ describe('estimatePng (QualitySlider card)', () => {
 })
 
 describe('estimatePdf', () => {
-  it('counts every page: the Cover, list pages, chart pages, the Specification and the Word chart pages', () => {
+  it('counts every page: page 1, its list pages, the chart pages and the Word chart pages', () => {
     const plain = factsOf('loom', 150, 150)
-    expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 4 + 1 + 0)
-    expect(estimatePdf({ ...plain, lists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 1 + 2)
+    expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 4 + 0)
+    expect(estimatePdf({ ...plain, pdfLists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 2)
   })
 
   it('adds a chart page as drawing and its text, far smaller than a picture page (ticket 0585)', () => {
