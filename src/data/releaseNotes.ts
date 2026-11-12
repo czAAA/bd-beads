@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-12',
     line: {
+      en: 'The PNG is the first page of the PDF as a picture: the chart with a letter on every bead, and the beads to buy',
+      ru: 'PNG теперь та же первая страница PDF, только картинкой: схема с буквой на каждой бисеринке и список бисера',
+      uk: 'PNG тепер та сама перша сторінка PDF, тільки картинкою: схема з літерою на кожній бісеринці та список бісеру',
+      be: 'PNG цяпер тая ж першая старонка PDF, толькі карцінкай: схема з літарай на кожнай бісерынцы і спіс бісеру',
+      zh: 'PNG 就是 PDF 第一页的图片：每颗珠子都标有字母的图样，以及要买的珠子',
+      es: 'El PNG es la primera página del PDF como imagen: el esquema con una letra en cada cuenta y las cuentas que comprar',
+      pl: 'PNG to pierwsza strona PDF jako obraz: schemat z literą na każdym koraliku i koraliki do kupienia',
+    },
+  },
+  {
+    date: '2026-11-12',
+    line: {
       en: 'The PDF opens with the whole piece and the beads to buy on one page, and for most pieces that page is the whole PDF',
       ru: 'PDF начинается со всей работы и списка бисера на одной странице, и для большинства работ эта страница и есть весь PDF',
       uk: 'PDF починається з усієї роботи та списку бісеру на одній сторінці, і для більшості робіт ця сторінка і є весь PDF',

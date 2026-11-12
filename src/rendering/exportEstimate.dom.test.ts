@@ -18,9 +18,9 @@ describe('exportFacts', () => {
   })
 
   it('counts page 1 alone for a small Schema, its chart there, and the Word chart only with Letters (ticket 0914)', () => {
-    expect(factsOf('loom', 20, 30)).toMatchObject({ pdfLists: [], sheets: 0, wordPages: 0 })
+    expect(factsOf('loom', 20, 30)).toMatchObject({ lists: [], sheets: 0, wordPages: 0 })
     expect(factsOf('loom', 20, 30).overviewZoom).toBeUndefined()
-    expect(factsOf('loom', 20, 30, true)).toMatchObject({ pdfLists: [], sheets: 0, wordPages: 1 })
+    expect(factsOf('loom', 20, 30, true)).toMatchObject({ lists: [], sheets: 0, wordPages: 1 })
   })
 
   it('counts a chart page for every sheet a big Schema takes after its overview', () => {
@@ -47,7 +47,7 @@ describe('estimatePng (QualitySlider card)', () => {
     expect(over.bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
   })
 
-  it('grows with the beads on the Cover', () => {
+  it('grows with the beads on page 1', () => {
     expect(estimatePng({ ...facts, filled: facts.filled * 2, edges: facts.edges * 2 }, 300).bytes).toBeGreaterThan(estimatePng(facts, 300).bytes)
   })
 })
@@ -56,7 +56,7 @@ describe('estimatePdf', () => {
   it('counts every page: page 1, its list pages, the chart pages and the Word chart pages', () => {
     const plain = factsOf('loom', 150, 150)
     expect(estimatePdf(plain, 300).count).toBe(1 + 0 + 4 + 0)
-    expect(estimatePdf({ ...plain, pdfLists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 2)
+    expect(estimatePdf({ ...plain, lists: [20], wordPages: 2 }, 300).count).toBe(1 + 1 + 4 + 2)
   })
 
   it('adds a chart page as drawing and its text, far smaller than a picture page (ticket 0585)', () => {

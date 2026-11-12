@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { COVER_BEAD_MAX, coverLayout } from './coverLayout'
+import { coverLayout as layoutOf, type TableRows } from './coverLayout'
 import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER } from './printPlan'
-import { CELL_SIZE_PX } from './cellSize'
 import { bareProject } from '../testUtils/layerFields'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 const colorsOf = (count: number, letter?: string) => Array.from({ length: count }, (_, index) => ({ hex: '#000000', name: `Color ${index}`, beads: '10', ...(letter ? { letter } : {}) }))
 const words = (colors: number, name = 'Scarf', maker = '') => ({ name, maker, colors: colorsOf(colors) })
+/** Page 1's Beads needed: its heading and column heads, a row, and the Total with the grams note. */
+const TABLE: TableRows = { head: mm(10.5), row: mm(5), end: mm(14) }
+const coverLayout = (project: Parameters<typeof layoutOf>[0], wordsOf: Parameters<typeof layoutOf>[1]) => layoutOf(project, wordsOf, TABLE)
 
 const page = A4_PORTRAIT
 const inset = PRINT_RULER + PRINT_BOARD_PAD
 const fullWidth = page.width - PRINT_MARGIN * 2 - inset * 2
 
-// The Cover page's layout for both formats (ticket 0583; glossary: Cover page).
+// Page 1 as the overview of a piece cut into parts, and its list pages (tickets 0583, 0914).
 describe('coverLayout: the title block', () => {
   it('leaves out the name and the maker when they are empty, so Schema and Beads needed rise', () => {
     const both = coverLayout(shape('loom', 20, 20), words(5, 'Scarf', 'Ada'))
@@ -28,23 +30,20 @@ describe('coverLayout: the title block', () => {
 })
 
 describe('coverLayout: the Schema', () => {
-  it('caps a small Schema’s bead at about 6 mm and centres the picture in its area', () => {
-    const layout = coverLayout(shape('loom', 8, 8), words(3))
+  it('centres the piece in its area, Beads needed under it', () => {
+    const layout = coverLayout(shape('loom', 150, 150), words(3))
 
-    expect(layout.zoom).toBeCloseTo(COVER_BEAD_MAX / CELL_SIZE_PX)
     expect(layout.board.x + layout.extent.width / 2).toBeCloseTo(page.width / 2)
-    const above = layout.board.y - inset - PRINT_MARGIN - layout.titleHeight
-    const below = layout.cover.y - (layout.board.y + layout.extent.height + inset)
-    expect(above).toBeGreaterThan(below)
+    expect(layout.cover.y).toBeGreaterThan(layout.board.y + layout.extent.height)
   })
 
-  it('moves Beads needed up under a small Schema at an even gap, whatever its size', () => {
-    const gap = (columns: number) => {
-      const layout = coverLayout(shape('loom', columns, columns), words(3))
+  it('keeps Beads needed under the piece at an even gap, whatever its size', () => {
+    const gap = (rows: number) => {
+      const layout = coverLayout(shape('loom', 300, rows), words(3))
       return layout.cover.y - (layout.board.y + layout.extent.height + inset)
     }
 
-    expect(gap(6)).toBeCloseTo(gap(12))
+    expect(gap(24)).toBeCloseTo(gap(40))
   })
 
   it('fits a wide flat Schema to the page width', () => {
@@ -56,7 +55,6 @@ describe('coverLayout: the Schema', () => {
   it('scales a big Schema down to fit, with no minimum bead, inside the margins', () => {
     const layout = coverLayout(shape('peyote', 250, 250), words(12))
 
-    expect(layout.zoom).toBeLessThan(COVER_BEAD_MAX / CELL_SIZE_PX)
     expect(layout.board.x + layout.extent.width).toBeLessThanOrEqual(page.width - PRINT_MARGIN)
     expect(layout.cover.y).toBeGreaterThan(layout.board.y + layout.extent.height)
     expect(layout.board.y - inset).toBeGreaterThanOrEqual(PRINT_MARGIN + layout.titleHeight)
