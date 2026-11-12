@@ -21,7 +21,7 @@ import type { PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
 import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
-// Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; the Cover page is coverPage.ts). The chart first,
+// Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; page 1 is pageOnePage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
 // 150 dpi; beads are drawn by the Project renderer in the light print theme.
 

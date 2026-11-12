@@ -25,7 +25,7 @@ export function formatPrintedGrams(grams: number, locale: Locale, unit: string):
   return `${groupThousands(whole, locale)}${tenth ? `${decimal}${tenth}` : ''} ${unit}`
 }
 
-/** The size of the tubes the Specification counts in. */
+/** The size of the tubes Beads needed counts in. */
 const TUBE_GRAMS = 5
 /** The spare the grams note suggests, as a factor. */
 const SPARE = 1.1

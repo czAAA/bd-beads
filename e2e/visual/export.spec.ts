@@ -2,7 +2,11 @@ import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PRINT_COLORS } from '../../src/rendering/printColors'
-import { A4_PORTRAIT, planPrint, PRINT_DPI } from '../../src/rendering/printPlan'
+import { A4_PORTRAIT, chartOnPageOne, PRINT_DPI } from '../../src/rendering/printPlan'
+import { pageOneLayout } from '../../src/rendering/pageOneLayout'
+import { printText } from '../../src/rendering/printText'
+import { en } from '../../src/i18n/en'
+import type { Project } from '../../src/domain/project'
 import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
@@ -20,6 +24,16 @@ async function downloadOf(page: Page, testId: string): Promise<{ name: string; b
 function hex(png: PNG, x: number, y: number): string {
   const at = (y * png.width + x) * 4
   return `#${[0, 1, 2].map((channel) => png.data[at + channel]!.toString(16).padStart(2, '0')).join('')}`
+}
+
+/** The PDF's plan as the export makes it: page 1 under the title block and Beads needed (ticket 0914). */
+function pdfPlan(project: Project) {
+  return pageOneLayout(project, printText(project, en, 'en', new Date())).plan
+}
+
+/** The pages the PDF says it has. */
+function pageCountOf(pdf: string): number {
+  return Number(/\/Count (\d+)/.exec(pdf)![1])
 }
 
 /** Whether any pixel in the box isn't plain white — the story column has drawn something there, wherever its lines
@@ -88,10 +102,19 @@ test('PDF export holds the legend and the chart, and splits a large Project over
 
   expect(name).toBe('fixture-brick.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
-  // A legend page, then the chart: 120 × 120 does not fit one sheet at 1.6 mm a bead, so it is cut into parts.
-  const plan = planPrint(project)
+  // The overview on page 1, then the chart: 120 × 120 does not fit page 1 at 1.6 mm a bead, so it is cut into parts.
+  const plan = pdfPlan(project)
+  expect(chartOnPageOne(plan)).toBe(false)
   expect(plan.parts.length).toBeGreaterThan(1)
-  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
+  expect(pageCountOf(pdf)).toBe(plan.pageCount)
+})
+
+test('PDF export: a 100 × 100 with Letters off is one page, the chart whole on page 1 (ticket 0914)', async ({ page }) => {
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 100, rows: 100 })])
+
+  const { bytes } = await downloadOf(page, 'export-pdf')
+
+  expect(pageCountOf(bytes.toString('latin1'))).toBe(1)
 })
 
 /** The size (in pt) of the PDF's first page, from its MediaBox: [0 0 width height]. */
@@ -109,9 +132,9 @@ test('PDF export: a wide Project stays portrait (ticket 578, PrintWide)', async 
 
   const [width, height] = firstPageSize(pdf)
   expect(height).toBeGreaterThan(width)
-  const plan = planPrint(project)
+  const plan = pdfPlan(project)
   expect(plan.page).toEqual(A4_PORTRAIT)
-  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
+  expect(pageCountOf(pdf)).toBe(plan.pageCount)
 })
 
 test('PDF export: a taller-or-square Project prints portrait', async ({ page }) => {
@@ -125,14 +148,14 @@ test('PDF export: a taller-or-square Project prints portrait', async ({ page }) 
   expect([width, height].map(Math.round)).toEqual([Math.round((A4_PORTRAIT.width * 72) / 150), Math.round((A4_PORTRAIT.height * 72) / 150)])
 })
 
-test('PDF export: a bracelet-length Project shares sheets between its parts (ticket 578, PrintStrips)', async ({ page }) => {
+test('PDF export: a bracelet-length Project is folded into strips on page 1 (tickets 578, 0914, PrintStrips)', async ({ page }) => {
   const project = fixtureProject({ technique: 'loom', columns: 300, rows: 8 })
   await openApp(page, [project])
 
   const { bytes } = await downloadOf(page, 'export-pdf')
-  const pdf = bytes.toString('latin1')
 
-  const plan = planPrint(project)
-  expect(plan.partsAcross).toBeGreaterThan(plan.pageCount - 1) // fewer sheets than parts: some sheets share several
-  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
+  const plan = pdfPlan(project)
+  expect(plan.partsAcross).toBeGreaterThan(1)
+  expect(chartOnPageOne(plan)).toBe(true)
+  expect(pageCountOf(bytes.toString('latin1'))).toBe(plan.pageCount)
 })
