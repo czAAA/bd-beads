@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-04",
+  "line": {
+    "en": "Convert image finds the background, and a tap fixes what it missed",
+    "ru": "«Из картинки» находит фон, а касание исправляет пропущенное",
+    "uk": "«З картинки» знаходить тло, а дотик виправляє пропущене",
+    "be": "«З малюнка» знаходзіць фон, а дотык выпраўляе прапушчанае",
+    "zh": "转换图片会找出背景，点一下就能修正漏掉的部分",
+    "es": "Convertir imagen encuentra el fondo, y un toque corrige lo que se le escapó",
+    "pl": "Konwertuj obraz znajduje tło, a dotknięcie poprawia to, co pominął"
+  }
+}

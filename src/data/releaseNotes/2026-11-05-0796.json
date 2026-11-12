@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-05",
+  "line": {
+    "en": "Save writes back into the same Project file",
+    "ru": "Сохранение записывает в тот же файл проекта",
+    "uk": "Збереження записує в той самий файл проєкту",
+    "be": "Захаванне запісвае ў той самы файл праекта",
+    "zh": "保存会写回同一个项目文件",
+    "es": "Guardar escribe en el mismo archivo de proyecto",
+    "pl": "Zapis trafia do tego samego pliku projektu"
+  }
+}

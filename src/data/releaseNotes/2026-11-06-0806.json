@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-06",
+  "line": {
+    "en": "The mirror area has its own color, so it is never taken for a Selection",
+    "ru": "У области отражения свой цвет, её не спутать с выделением",
+    "uk": "Область відображення має свій колір, її не сплутати з виділенням",
+    "be": "Вобласць адлюстравання мае свой колер, яе не зблытаць з вылучэннем",
+    "zh": "镜像区域有自己的颜色，不会被当成选区",
+    "es": "El área del espejo tiene su propio color y no se confunde con una selección",
+    "pl": "Obszar odbicia ma własny kolor, więc nie pomylisz go z zaznaczeniem"
+  }
+}
