@@ -1,6 +1,6 @@
 # MarginSheet
 
-The Frame's keep-out margin drawn as a sheet of drafting paper: its own background and inner border, the Frame's tools and Row progress in its top band, a title block in the Frame's own bottom-right corner, and the rulers on three sides (ticket 0655; design canvas "Keep-out margin variants", variant A "Drafting sheet", https://claude.ai/artifact/Aj9Tmr8xpdTfaaKBzLYzeh). It replaces the flat margin and the gutter controls of the Frame card. Built by tickets 0656 (width and color), 0657 (tools, title block, Row progress) and 0658 (zoom forms and folding).
+The Frame's keep-out margin drawn as a sheet of drafting paper: its own background and inner border, the Frame's tools and Row progress in its top band, a title block in the Frame's own bottom-right corner, and the rulers on three sides (ticket 0655; design canvas "Keep-out margin variants", variant A "Drafting sheet", link on ticket 0655 in the private docs repo). It replaces the flat margin and the gutter controls of the Frame card. Built by tickets 0656 (width and color), 0657 (tools, title block, Row progress) and 0658 (zoom forms and folding).
 
 ## Width
 

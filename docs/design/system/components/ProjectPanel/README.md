@@ -1,6 +1,6 @@
 # ProjectPanel
 
-The body of Project: everything about the open Project, and nothing the Selection bar, the Progress bar, the tool pill or the Frame panel already does. A dropdown on every screen size. Hidden, not disabled, while no Project is open. Menu is the MenuPanel card. (Spec 0440, tickets 0441 to 0443; redesigned in tickets 0553 and 0554, design canvas https://claude.ai/artifact/DtuwrYB8pNEabwFCYCC8wB.)
+The body of Project: everything about the open Project, and nothing the Selection bar, the Progress bar, the tool pill or the Frame panel already does. A dropdown on every screen size. Hidden, not disabled, while no Project is open. Menu is the MenuPanel card. (Spec 0440, tickets 0441 to 0443; redesigned in tickets 0553 and 0554, design canvas link on ticket 0553 in the private docs repo.)
 
 The panel shell (width, edge, radius, motion, closing, focus), the density and the four shared parts (PanelSection, PanelItem, PanelPicker, PanelListRow) are the MenuPanel card's. The Project button sits on `ink` while the panel is open.
 

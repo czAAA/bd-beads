@@ -1,6 +1,6 @@
 # ExportPanel
 
-The Export panel: a small panel from the **Export** button in the Canvas strip's right corner, so a finished drawing is exported without opening the Frame panel (ticket 0652; design canvas "Share panel", https://claude.ai/artifact/GyXNWnYHVSMEiA67SZreJ3). Designed for desktop; it shows at every width the strip does.
+The Export panel: a small panel from the **Export** button in the Canvas strip's right corner, so a finished drawing is exported without opening the Frame panel (ticket 0652; design canvas "Share panel", link on ticket 0652 in the private docs repo). Designed for desktop; it shows at every width the strip does.
 
 ## The button
 

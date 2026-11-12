@@ -1,6 +1,6 @@
 # StarterGallery
 
-The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Frame panel: **Frame from starter** with no Frame, or the **Replace Frame** row under the Frame's size when there is one (held still once a pass is done), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas https://claude.ai/artifact/Lz2xUWXXF6KpFkgxS39WJB.)
+The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Frame panel: **Frame from starter** with no Frame, or the **Replace Frame** row under the Frame's size when there is one (held still once a pass is done), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas link on ticket 0595 in the private docs repo.)
 
 Built by ticket 0596 (step 1, the Shapes and the setup) and ticket 0597 (Earrings, Rings and Bands).
 

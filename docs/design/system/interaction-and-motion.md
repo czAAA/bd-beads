@@ -46,7 +46,7 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 
 ## Row progress (ticket 0729)
 
-Approved on the claude.ai design canvas "OpenBeads progress & done animations" (https://claude.ai/artifact/T4bQzgU9sWKBibYfjnLo5g): variant 6 in the Progress bar, variant 7 on the keep-out margin. The values are in `components/bundle.css` and `src/styles/design-values.css`, the spark and Pattern done classes (`.bb-spark`, `.bb-pattern-done-*`) in `bundle.css`.
+Approved on the claude.ai design canvas "OpenBeads progress & done animations" (link on ticket 0729 in the private docs repo): variant 6 in the Progress bar, variant 7 on the keep-out margin. The values are in `components/bundle.css` and `src/styles/design-values.css`, the spark and Pattern done classes (`.bb-spark`, `.bb-pattern-done-*`) in `bundle.css`.
 
 **Row done** (the button or its key, in the Progress bar or on the margin sheet):
 
