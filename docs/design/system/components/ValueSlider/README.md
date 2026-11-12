@@ -25,6 +25,8 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 - Optional, and the converter's Width, Height and Colors take it (DS-1, ConvertImage card): the thumb stands at log(value ÷ min) ÷ log(max ÷ min) of the track instead of in proportion, so marks that each double the one before (Width's 25, 50, 100, 200; Colors' 4, 16, 64) stand evenly apart and the small values a beginner wants get most of the track (12 colors near the middle of 1 to 256, not at 4%).
 - Only the thumb's place changes: the value is still a whole number, keys still step by 1 (Page Up and Page Down a tenth of the range, in value), a drag still settles on a mark within `--slider-mark-snap`, and `aria-valuetext` is unchanged.
 
+- The converter's Colors slider runs 1 to 40 since DS-2 (ticket 0904): marks at 5, 10 and 20, ends "1" and "40+". A larger count, to 256, is typed in the neighbours' card (ConvertImage card). Above 40 the thumb rests at the right end with the track filled; Left steps down from the typed value.
+
 ## Layout and text
 
 - Full width of its column, with the thumb's half-width kept free at each end so the ends' labels sit under the thumb's centre.
