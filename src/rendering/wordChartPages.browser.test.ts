@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
-import { withLetters } from '../domain/layerRecord'
 import { be } from '../i18n/be'
 import { en } from '../i18n/en'
 import { es } from '../i18n/es'
@@ -17,8 +16,8 @@ import { drawWordChartPages, wordChartPageCount } from './wordChartPages'
 
 // The Word chart drawn for real (ticket 0574): how many sheets it takes, and that its picture is a PNG.
 function wordsOf(technique: 'loom' | 'peyote' | 'brick', columns: number, rows: number) {
-  const project = withLetters(fixtureProject({ technique, columns, rows }), true)
-  return printText(project, en, 'en', new Date())
+  const project = fixtureProject({ technique, columns, rows })
+  return printText(project, en, 'en', new Date(), { rowByRow: true })
 }
 
 /** What each drawn sheet says: its title with its own rows, and how many columns of rows it runs in (the row numbers'
@@ -67,8 +66,8 @@ describe('Word chart pages', () => {
     await loadPrintFonts()
     // Three colors keep the key to one strip row, so the card's 41 rows a column fit.
     const painted = ['#e63746', '#2a9d8f', '#264653'].map((color, index) => ({ row: index, column: index, color }))
-    const project = withLetters(fixtureProject({ technique: 'loom', columns: 35, rows: 120, blank: true, override: painted }), true)
-    const words = printText(project, en, 'en', new Date())
+    const project = fixtureProject({ technique: 'loom', columns: 35, rows: 120, blank: true, override: painted })
+    const words = printText(project, en, 'en', new Date(), { rowByRow: true })
     expect(drawnSheets(words)).toEqual([
       { title: 'Row by row 1–82', columns: 2 },
       { title: 'Row by row 83–120', columns: 1 },
@@ -90,8 +89,8 @@ describe('Word chart pages', () => {
   // Text fit (ticket 552): the page lays out and draws in every language, with the longest label "250 (R)".
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('lays the page out in %s', async (locale, messages) => {
     await loadPrintFonts()
-    const project = withLetters(fixtureProject({ technique: 'brick', columns: 8, rows: 250 }), true)
-    const words = printText(project, messages, locale, new Date())
+    const project = fixtureProject({ technique: 'brick', columns: 8, rows: 250 })
+    const words = printText(project, messages, locale, new Date(), { rowByRow: true })
 
     expect(Math.max(...drawnSheets(words).map((sheet) => sheet.columns))).toBe(2)
   })

@@ -31,7 +31,7 @@ describe('printText (tickets 162, 164)', () => {
   it('writes Beads needed in beads and grams, the Total from the total count, with the note', () => {
     const text = printText(delicaProject(4800), en, 'en', at)
 
-    expect(text.colors).toEqual([{ hex: '#e63746', name: 'Red', beads: '4 800', grams: '24 g', tubes: '6 × 5 g' }])
+    expect(text.colors).toEqual([{ hex: '#e63746', name: 'Red', beads: '4 800', grams: '24 g', tubes: '6 × 5 g', letter: 'C' }])
     expect(text.totalBeads).toBe('4 800 beads')
     expect(text.totalGrams).toBe('24 g')
     expect(text.gramsNote).toBe('≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares.')
@@ -107,13 +107,16 @@ describe('printText (tickets 162, 164)', () => {
 })
 
 describe('printText with Letters (ticket 0573)', () => {
-  it('gives each color of Beads needed its Swatch letter only when Letters is on', () => {
+  it('gives each color of Beads needed its Swatch letter, Letters on or off: every printed chart is lettered (ticket 0916)', () => {
     const project = delicaProject(10)
-    expect(printText(project, en, 'en', at).colors.map((color) => color.letter)).toEqual([undefined])
-    const lettered = printText(withLetters(project, true), en, 'en', at)
-    expect(lettered.colors.map((color) => color.letter)).toEqual([project.paletteLetters!['#e63746']])
+    const letter = [project.paletteLetters!['#e63746']]
+    expect(printText(withLetters(project, false), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
+    expect(printText(withLetters(project, true), en, 'en', at).colors.map((color) => color.letter)).toEqual(letter)
   })
 })
+
+/** Row by row on (ticket 0916): the Word chart is printed. */
+const ROW_BY_ROW = { rowByRow: true }
 
 describe('printText Word chart (ticket 0574)', () => {
   const letters = (project: ReturnType<typeof delicaProject>) => withLetters({ ...project, paletteLetters: { '#e63746': 'C' } }, true)
@@ -121,7 +124,7 @@ describe('printText Word chart (ticket 0574)', () => {
   it('writes the rows as words with the range, the notes and the runs', () => {
     const base = createProject({ technique: 'brick', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 2, unit: 'beads' } })
     const painted = paintAt(base, [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], '#e63746')
-    const chart = printText(letters(painted), en, 'en', at).wordChart!
+    const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.title).toBe('Row by row')
     expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, en.print.wordChart.runNote])
@@ -133,7 +136,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
-    const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }], '#e63746')), ru, 'ru', at).wordChart!
+    const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }], '#e63746')), ru, 'ru', at, ROW_BY_ROW).wordChart!
 
     expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 3*' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)
@@ -146,7 +149,7 @@ describe('printText Word chart (ticket 0574)', () => {
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const { row, column } = frameOf(placed.project)!
     const painted = paintAt(placed.project, [{ row, column, layer: 'frame' }], '#e63746')
-    const chart = printText(letters(painted), en, 'en', at).wordChart!
+    const chart = printText(letters(painted), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, en.print.wordChart.runNote, en.print.wordChart.pairNote])
     expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1*, 2C, 1*' })
@@ -162,7 +165,7 @@ describe('printText Word chart (ticket 0574)', () => {
     // Round 3's first side's beads, its first pair's second bead among them.
     const cells = layout.positions.filter((position) => position.row === 2 && position.panel === 0).map((position) => ({ row: row + position.row, column: column + position.column, layer: 'frame' as const }))
     expect(cells.length).toBe(3)
-    const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at).wordChart!
+    const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at, ROW_BY_ROW).wordChart!
     expect(chart.notes).toEqual([en.print.wordChart.firstCentre, en.print.wordChart.runNote, en.print.wordChart.pairNote])
     expect(chart.rows[0]!.runs).toBe('Round 1: 4*')
     expect(chart.rows[1]!.runs).toBe('Round 2: (2*)\u00a0| (2*)\u00a0| (2*)\u00a0| (2*)')
@@ -175,7 +178,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const settings = { topWidth: 3, topRows: 2, fringeStyle: 'straight', fringeLength: 2 } as const
     const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
-    const chart = printText(letters(placed.project), en, 'en', at).wordChart!
+    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.firstBase, en.print.wordChart.runNote])
     expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2*' })
@@ -188,7 +191,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const { row, column } = frameOf(placed.project)!
     // The right wing's beads of row 3.
     const cells = frameLayoutOf(frameOf(placed.project)!)!.positions.filter((position) => position.row === 2 && position.panel === 1).map((position) => ({ row: row + position.row, column: column + position.column, layer: 'frame' as const }))
-    const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at).wordChart!
+    const chart = printText(letters(paintAt(placed.project, cells, '#e63746')), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.notes).toEqual([en.print.wordChart.firstPoint, en.print.wordChart.sides, en.print.wordChart.runNote, en.print.wordChart.middlePairNote])
     expect(chart.rows.map(({ marker, runs }) => `(${marker}) ${runs}`)).toEqual([
@@ -204,7 +207,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
-    const chart = printText(letters(placed.project), en, 'en', at).wordChart!
+    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
 
     const face = "This chart is one face: 6 of the Kaleidocycle's 24 triangles. Make a Frame for each other face to chart its design."
     expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, face, en.print.wordChart.runNote, en.print.wordChart.pairNote])
@@ -214,7 +217,7 @@ describe('printText Word chart (ticket 0574)', () => {
     const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'kaleidocycle', size: 3, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Kaleidocycle')
-    const chart = printText(letters(placed.project), en, 'en', at).wordChart!
+    const chart = printText(letters(placed.project), en, 'en', at, ROW_BY_ROW).wordChart!
 
     expect(chart.rows.slice(18).map(({ runs }) => runs)).toEqual([
       ...[1, 2, 3, 4, 5, 6].map((part) => `Strip and Tetra ${part}`),
@@ -227,7 +230,16 @@ describe('printText Word chart (ticket 0574)', () => {
     ])
   })
 
-  it('has none with Letters off', () => {
-    expect(printText(delicaProject(3), en, 'en', at).wordChart).toBeUndefined()
+  it('follows Row by row, whatever Letters says (ticket 0916)', () => {
+    for (const on of [false, true]) {
+      const project = withLetters(delicaProject(3), on)
+      expect(printText(project, en, 'en', at).wordChart).toBeUndefined()
+      expect(printText(project, en, 'en', at, ROW_BY_ROW).wordChart).toBeDefined()
+    }
+  })
+
+  it('carries Large beads for the layout to plan with', () => {
+    expect(printText(delicaProject(3), en, 'en', at).largeBeads).toBeUndefined()
+    expect(printText(delicaProject(3), en, 'en', at, { largeBeads: true }).largeBeads).toBe(true)
   })
 })

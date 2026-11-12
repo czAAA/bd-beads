@@ -32,6 +32,11 @@ function onUntilOff(key: string): Preference<boolean> {
   return preference({ key, fallback: true, parse: (raw) => raw !== 'off', write: (on) => (on ? 'on' : 'off') })
 }
 
+/** An on/off choice that is off until it is switched on. */
+function offUntilOn(key: string): Preference<boolean> {
+  return preference({ key, fallback: false, parse: (raw) => raw === 'on', write: (on) => (on ? 'on' : null) })
+}
+
 // Every preference kept on this device (ADR 0020), declared once; keys and values are the long-standing ones so saved
 // data survives. To add one, declare it here and read it with `devicePreferences.get('name')`; validating, fallback and
 // saving are handled below.
@@ -143,6 +148,9 @@ export const PREFERENCES = {
     parse: parseExportQuality,
     write: (quality) => (quality === DEFAULT_EXPORT_QUALITY ? null : quality),
   }),
+  /** Large beads and Row by row, the Export panel's print choices (ticket 0916): off until switched on. */
+  printLargeBeads: offUntilOn('openbeads:print-large-beads'),
+  printRowByRow: offUntilOn('openbeads:print-row-by-row'),
   // Which edge the Tool pill is docked to (ticket 439): bottom until it is moved, and a stored value that is not an
   // edge is bottom too.
   toolPillPosition: preference<PillPosition>({

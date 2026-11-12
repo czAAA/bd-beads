@@ -942,6 +942,13 @@ export interface Translations {
     lettersLabel: string
     lettersLine: string
     lettersInfoLabel: string
+    /** The Printable chart's two switches (ticket 0916, ExportPanel card): each name, its Info button's name and what it does. */
+    largeBeadsLabel: string
+    largeBeadsInfoLabel: string
+    largeBeadsLine: string
+    rowByRowLabel: string
+    rowByRowInfoLabel: string
+    rowByRowLine: string
     /** The Frame panel's margin section and the margin color picker (ticket 0656, MarginSheet card): its heading, the
      * picker's name, the Auto swatch's name and accessible name, the name of the swatch that is the Canvas color, and the
      * line under the picker. */
