@@ -838,6 +838,52 @@ Belarusian, Spanish and Chinese, written with the build (ticket 0790):
 | Reference image, {opacity}%, turned {angle}° · Moved · Resized | Падкладка, {opacity}%, павернута на {angle}° · Зрушана · Памер зменены | Imagen de referencia, {opacity}%, girada {angle}° · Movida · Tamaño cambiado | 参考图，{opacity}%，旋转 {angle}° · 已移动 · 已调整大小 |
 | Reference image not saved on this device | Падкладка не захавана на гэтай прыладзе | Imagen de referencia no guardada en este dispositivo | 参考图未保存在此设备上 |
 
+### The picture bar, Set Frame around the picture and Convert to beads (ticket 0883)
+
+The picture bar on the reference image and its two actions (ReferenceImage card). "match to", "Colors", the Note under Exact and "Preview: {size} beads, {colors} colors" are Convert image's own strings, reused. Draft words, written with the design, to be checked by a speaker of each. Counted words give their plural forms (one / few / many).
+
+| English | Русский | Українська | Polski |
+|---|---|---|---|
+| Move the picture · Drag to move the reference image. (the Move grip's name and Tooltip) | Сдвинуть картинку · Перетащите, чтобы сдвинуть подложку. | Зсунути зображення · Перетягніть, щоб зсунути підкладку. | Przesuń obraz · Przeciągnij, aby przesunąć obraz pomocniczy. |
+| More for the picture · Close (··· and its pressed face) | Ещё для картинки · Закрыть | Ще для зображення · Закрити | Więcej dla obrazu · Zamknij |
+| Replace · Remove (the bar's short labels) | Заменить · Убрать | Замінити · Прибрати | Zamień · Usuń |
+| Set Frame around the picture (name and Tooltip) | Рамка вокруг картинки | Рамка навколо зображення | Ramka wokół obrazu |
+| A {size} Frame where the picture lies. Replaces the Frame you have. · A {size} Frame where the picture lies. | Рамка {size} там, где лежит картинка. Заменит вашу рамку. · Рамка {size} там, где лежит картинка. | Рамка {size} там, де лежить зображення. Замінить вашу рамку. · Рамка {size} там, де лежить зображення. | Ramka {size} tam, gdzie leży obraz. Zastąpi Twoją ramkę. · Ramka {size} tam, gdzie leży obraz. |
+| new Frame · {size} (the preview's tag) | новая рамка · {size} | нова рамка · {size} | nowa ramka · {size} |
+| {size} beads · ≈ {width} × {height} cm · shape kept (the resize chip; {size} is a Grid size, "28×19") | {size} бисеринок · ≈ {width} × {height} см · пропорции сохранены | {size} бісеринок · ≈ {width} × {height} см · пропорції збережено | {size} koralików · ≈ {width} × {height} cm · proporcje zachowane |
+| Convert to beads (name, Tooltip, popover title, Undo step) | Перевести в бисер | Перетворити на бісер | Zamień na koraliki |
+| Turns the picture into {size} beads, the size it has on the Canvas, in its own colors. | Делает из картинки бисер {size}, по её размеру на холсте, в её собственных цветах. | Робить із зображення бісер {size}, за його розміром на полотні, у його власних кольорах. | Zamienia obraz na koraliki {size}, w rozmiarze, jaki ma na płótnie, w jego własnych kolorach. |
+| size · Where the size comes from · The picture's size on the Canvas. Drag a corner of the picture to change it. | размер · Откуда размер · Размер картинки на холсте. Потяните за угол картинки, чтобы его изменить. | розмір · Звідки розмір · Розмір зображення на полотні. Потягніть за кут зображення, щоб його змінити. | rozmiar · Skąd ten rozmiar · Rozmiar obrazu na płótnie. Przeciągnij róg obrazu, aby go zmienić. |
+| {count} of {max} (the colors' count) | {count} из {max} | {count} з {max} | {count} z {max} |
+| Hide the picture after | Потом скрыть картинку | Потім сховати зображення | Potem ukryj obraz |
+| All settings · Add to Canvas (Convert image's last button when opened from here) | Все настройки · Добавить на холст | Усі налаштування · Додати на полотно | Wszystkie ustawienia · Dodaj na płótno |
+| Convert {n} beads (one: Convert {n} bead) | Перевести {n} бисеринку / бисеринки / бисеринок | Перетворити {n} бісеринку / бісеринки / бісеринок | Zamień {n} koralik / koraliki / koralików |
+| Replaces {n} beads already there. | Заменит {n} бисеринку / бисеринки / бисеринок, которые уже там. | Замінить {n} бісеринку / бісеринки / бісеринок, що вже там. | Zastąpi {n} koralik / koraliki / koralików, które już tam są. |
+| preview (the preview's pill) | превью | перегляд | podgląd |
+| {n} beads made from the picture, {colors} colors. · The picture is hidden: show it from the Canvas strip. · Undo | Из картинки сделано бисеринок: {n}, цветов: {colors}. · Картинка скрыта: показать её можно на панели холста. · Отменить | Із зображення зроблено бісеринок: {n}, кольорів: {colors}. · Зображення сховано: показати його можна на панелі полотна. · Скасувати | Z obrazu zrobiono koralików: {n}, kolorów: {colors}. · Obraz jest ukryty: pokaż go z paska płótna. · Cofnij |
+| The picture is too small to bead. Make it bigger first. · Too big to convert here. Use Convert image. (why Convert to beads is off) | Картинка слишком мала для бисера. Сначала увеличьте её. · Слишком большая для этого. Используйте «Из картинки». | Зображення замале для бісеру. Спершу збільште його. · Завелике для цього. Скористайтеся «З картинки». | Obraz jest za mały na koraliki. Najpierw go powiększ. · Za duży, by zamienić go tutaj. Użyj „Konwertuj obraz”. |
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Move the picture · Drag to move the reference image. | Зрушыць выяву · Перацягніце, каб зрушыць падкладку. | Mover la imagen · Arrastra para mover la imagen de referencia. | 移动图片 · 拖动以移动参考图。 |
+| More for the picture · Close | Яшчэ для выявы · Закрыць | Más opciones de la imagen · Cerrar | 图片的更多操作 · 关闭 |
+| Replace · Remove | Замяніць · Прыбраць | Reemplazar · Quitar | 替换 · 移除 |
+| Set Frame around the picture | Рамка вакол выявы | Marco alrededor de la imagen | 给图片加画框 |
+| A {size} Frame where the picture lies. Replaces the Frame you have. · A {size} Frame where the picture lies. | Рамка {size} там, дзе ляжыць выява. Заменіць вашу рамку. · Рамка {size} там, дзе ляжыць выява. | Un marco de {size} donde está la imagen. Sustituye tu marco actual. · Un marco de {size} donde está la imagen. | 在图片所在处放一个 {size} 的画框。会替换你现有的画框。 · 在图片所在处放一个 {size} 的画框。 |
+| new Frame · {size} | новая рамка · {size} | marco nuevo · {size} | 新画框 · {size} |
+| {size} beads · ≈ {width} × {height} cm · shape kept | {size} бісерын · ≈ {width} × {height} см · прапорцыі захаваны | {size} cuentas · ≈ {width} × {height} cm · forma mantenida | {size} 颗珠子 · ≈ {width} × {height} 厘米 · 保持比例 |
+| Convert to beads | Перавесці ў бісер | Convertir en cuentas | 转换为珠子 |
+| Turns the picture into {size} beads, the size it has on the Canvas, in its own colors. | Робіць з выявы бісер {size}, па яе памеры на палатне, у яе ўласных колерах. | Convierte la imagen en {size} cuentas, al tamaño que tiene en el lienzo, con sus propios colores. | 按图片在画布上的大小，用它自己的颜色，把它变成 {size} 的珠子。 |
+| size · Where the size comes from · The picture's size on the Canvas. Drag a corner of the picture to change it. | памер · Адкуль памер · Памер выявы на палатне. Пацягніце за кут выявы, каб яго змяніць. | tamaño · De dónde sale el tamaño · El tamaño de la imagen en el lienzo. Arrastra una esquina de la imagen para cambiarlo. | 尺寸 · 尺寸从哪里来 · 图片在画布上的大小。拖动图片的一角来更改。 |
+| {count} of {max} | {count} з {max} | {count} de {max} | {count} / {max} |
+| Hide the picture after | Потым схаваць выяву | Ocultar la imagen después | 之后隐藏图片 |
+| All settings · Add to Canvas | Усе налады · Дадаць на палатно | Todos los ajustes · Añadir al lienzo | 全部设置 · 添加到画布 |
+| Convert {n} beads | Перавесці {n} бісерыну / бісерыны / бісерын | Convertir {n} cuenta / cuentas | 转换 {n} 颗珠子 |
+| Replaces {n} beads already there. | Заменіць {n} бісерыну / бісерыны / бісерын, што ўжо там. | Sustituye {n} cuenta / cuentas que ya hay ahí. | 将替换那里已有的 {n} 颗珠子。 |
+| preview | папярэдні прагляд | vista previa | 预览 |
+| {n} beads made from the picture, {colors} colors. · The picture is hidden: show it from the Canvas strip. · Undo | З выявы зроблена бісерын: {n}, колераў: {colors}. · Выява схавана: паказаць яе можна на панэлі палатна. · Адмяніць | {n} cuentas hechas con la imagen, {colors} colores. · La imagen está oculta: muéstrala desde la barra del lienzo. · Deshacer | 已用图片做出 {n} 颗珠子，{colors} 种颜色。 · 图片已隐藏：可在画布栏中显示。 · 撤销 |
+| The picture is too small to bead. Make it bigger first. · Too big to convert here. Use Convert image. | Выява занадта малая для бісеру. Спачатку павялічце яе. · Занадта вялікая для гэтага. Скарыстайцеся «З малюнка». | La imagen es demasiado pequeña para cuentas. Hazla más grande primero. · Demasiado grande para convertirla aquí. Usa Convertir imagen. | 图片太小，无法做成珠子。请先放大。 · 太大，无法在这里转换。请使用“转换图片”。 |
+
 ## Save reminder copy (ticket 0796)
 
 The ring at the drawing area's top-right that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
