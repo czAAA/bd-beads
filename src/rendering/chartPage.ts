@@ -28,7 +28,7 @@ function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: P
   if (Number.isFinite(right) && Number.isFinite(below)) return fillBlanks(labels.continuesBoth, { right, below })
   if (Number.isFinite(right)) return fillBlanks(labels.continuesRight, { right })
   if (Number.isFinite(below)) return fillBlanks(labels.continuesBelow, { below })
-  return here < plan.specificationPage - 1 ? fillBlanks(labels.continuesOn, { next: here + 1 }) : labels.lastPart
+  return here < Math.max(...plan.parts.map((part) => part.page)) ? fillBlanks(labels.continuesOn, { next: here + 1 }) : labels.lastPart
 }
 
 /** The mini map's rectangles in px from its top left corner: every part of the Schema to scale in a 9.4 mm square, 0.4 mm

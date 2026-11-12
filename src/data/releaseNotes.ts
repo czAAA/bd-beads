@@ -26,6 +26,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-12',
     line: {
+      en: 'The PDF opens with the whole piece and the beads to buy on one page, and for most pieces that page is the whole PDF',
+      ru: 'PDF начинается со всей работы и списка бисера на одной странице, и для большинства работ эта страница и есть весь PDF',
+      uk: 'PDF починається з усієї роботи та списку бісеру на одній сторінці, і для більшості робіт ця сторінка і є весь PDF',
+      be: 'PDF пачынаецца з усёй работы і спісу бісеру на адной старонцы, і для большасці работ гэтая старонка і ёсць увесь PDF',
+      zh: 'PDF 第一页就是整件作品和要买的珠子，大多数作品整份 PDF 只有这一页',
+      es: 'El PDF empieza con la pieza entera y las cuentas que comprar en una página, y para la mayoría de las piezas esa página es todo el PDF',
+      pl: 'PDF zaczyna się od całej pracy i koralików do kupienia na jednej stronie, a dla większości prac ta strona to cały PDF',
+    },
+  },
+  {
+    date: '2026-11-12',
+    line: {
       en: "The PDF's chart beads are as big as the sheet allows: a Schema up to about 100 × 100 is one chart page, and a bigger one is cut into equal parts",
       ru: 'Бисер на страницах PDF теперь такой крупный, как позволяет лист: схема примерно до 100 × 100 помещается на одну страницу, а большая делится на равные части',
       uk: 'Бісер на сторінках PDF тепер такий великий, як дозволяє аркуш: схема приблизно до 100 × 100 вміщується на одну сторінку, а більша ділиться на рівні частини',
