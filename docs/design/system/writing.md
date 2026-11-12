@@ -221,7 +221,7 @@ The Homepage and the header menu, as signed off. The same rules: plain and short
 | What's inside | Что внутри |
 | Made by one family | Делает одна семья |
 | openbeads stays free and fully local, with no ads and no tracking. If it helps your work, you can support its development through Buy Me a Coffee. | openbeads остаётся бесплатным и полностью локальным, без рекламы и отслеживания. Если приложение вам помогает, поддержать его развитие можно через Buy Me a Coffee. |
-| A star on GitHub helps too. · View the source | Звезда на GitHub тоже помогает. · Исходный код |
+| View the source | Исходный код |
 | Buy me a coffee | Угостить кофе |
 | Three ways to use it (the "plans" label is gone, ticket 0739) | Три способа работать |
 | Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
@@ -276,8 +276,8 @@ Since ticket 0819 the cards above are the coffee screen's promises, in this orde
 | Next · {section} (a phone section's last line; `{section}` the next section's heading) | Дальше · {section} |
 | Projects library, {n} (the phone strip's library button, for screen readers) | Библиотека проектов, {n} |
 | What's new · Every change | Что нового · Все изменения |
-| Open source · All of openbeads is public under the AGPL-3.0 licence. Read the code, report a bug or suggest a change. · View the source · A star on GitHub helps too. | Открытый код · Весь openbeads открыт по лицензии AGPL-3.0. Читайте код, сообщайте об ошибках, предлагайте изменения. · Исходный код · Звезда на GitHub тоже помогает. |
-| Say hello · A bug, an idea, a pattern you made: send it to the family. It's also in {menu} → {feedback}. · Send feedback | Напишите нам · Ошибка, идея, ваша работа: отправьте семье. Это есть и в {menu} → {feedback}. · Отправить отзыв |
+| Open source · All of openbeads is public under the AGPL-3.0 licence. Read the code, report a bug or suggest a change. (the chip's line, for screen readers) · View the source | Открытый код · Весь openbeads открыт по лицензии AGPL-3.0. Читайте код, сообщайте об ошибках, предлагайте изменения. · Исходный код |
+| Say hello · A bug, an idea, a pattern you made: send it to the family. It's also in {menu} → {feedback}. (the chip's line, for screen readers) · Send feedback | Напишите нам · Ошибка, идея, ваша работа: отправьте семье. Это есть и в {menu} → {feedback}. · Отправить отзыв |
 | Coming soon (a phone's chip in place of the stamp) · you are here (its chip) | Скоро · вы здесь |
 | Show all {n} (a phone's free list, past its first six rows) | Показать все {n} |
 

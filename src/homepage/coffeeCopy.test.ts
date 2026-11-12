@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
-import { coffeePromises, sayHelloText } from './coffeeCopy'
+import { coffeeChips, coffeePromises } from './coffeeCopy'
 
 describe("The coffee screen's copy (ticket 0823)", () => {
   it('has the six promises in order, each with its icon', () => {
@@ -24,8 +24,17 @@ describe("The coffee screen's copy (ticket 0823)", () => {
     expect(coffeePromises(ru)[5].text).toContain(`${ru.panels.menu.help} → ${ru.shortcutsHelp.title}`)
   })
 
+  it('has the chips: the six promises, then Open source and Say hello (ticket 0880)', () => {
+    expect(coffeeChips(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'pencil', 'free', 'shortcuts', 'openSource', 'sayHello'])
+    expect(coffeeChips(en).slice(6).map(({ icon, name }) => [icon, name])).toEqual([
+      ['code', 'Open source'],
+      ['message', 'Say hello'],
+    ])
+  })
+
   it("points Say hello at the Menu's own Send feedback row", () => {
-    expect(sayHelloText(en)).toBe("A bug, an idea, a pattern you made: send it to the family. It's also in Menu → Send feedback.")
-    expect(sayHelloText(ru)).toContain(`→ ${ru.panels.menu.sendFeedback}.`)
+    const sayHello = (t: typeof en) => coffeeChips(t).find((chip) => chip.id === 'sayHello')!.text
+    expect(sayHello(en)).toBe("A bug, an idea, a pattern you made: send it to the family. It's also in Menu → Send feedback.")
+    expect(sayHello(ru)).toContain(`→ ${ru.panels.menu.sendFeedback}.`)
   })
 })

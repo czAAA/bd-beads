@@ -3,7 +3,8 @@ import AppIcon from '../components/ui/AppIcon.vue'
 import type { IconName } from '../components/ui/icons'
 
 // A phone's grouped list (ticket 0827; Homepage card): What's inside's rows and the coffee screen's promises, one panel
-// of rows parted by hairlines, each an icon tile beside its name over its line. Nothing to press.
+// of rows parted by hairlines, each an icon tile beside its name over its line. Nothing to press but a row's action, from
+// its `action-<id>` slot under its line (the coffee screen's Open source and Say hello, ticket 0880).
 defineProps<{
   rows: readonly { id: string; icon: IconName; name: string; text: string }[]
   /** Prefix of the test ids: the list is `<testid>`'s, each row `<rowTestid>-<id>`. */
@@ -21,6 +22,7 @@ defineProps<{
         <!-- The stop keeps a screen reader from running the name into its line. -->
         <span class="grouped-list__stop">. </span>
         <span class="grouped-list__line">{{ row.text }}</span>
+        <span v-if="$slots[`action-${row.id}`]" class="grouped-list__action"><slot :name="`action-${row.id}`" /></span>
       </span>
     </li>
   </ul>
@@ -86,5 +88,11 @@ defineProps<{
 .grouped-list__line {
   font: var(--type-body);
   color: var(--body);
+}
+
+/* A row's action, 6px under its line, at its own width. */
+.grouped-list__action {
+  display: flex;
+  margin-top: var(--space-6);
 }
 </style>

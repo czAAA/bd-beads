@@ -511,7 +511,7 @@ export interface Translations {
      * step's name for screen readers (ticket 0744); the Welcome section's step, its heading being a sentence (ticket 0830). */
     sections: { label: string; welcome: string; back: string; next: string; firstBody: string; lastBody: string; goTo: string; moreBelow: string }
     /** The coffee tile (ticket 219; Homepage card). */
-    coffee: { title: string; text: string; button: string; star: string; source: string }
+    coffee: { title: string; text: string; button: string; source: string }
     /** The coffee screen's promises (ticket 0823; Homepage card), in the order shown; the shortcuts one's {menu}, {help}
      * and {shortcuts} come from the app. */
     promises: Record<'device' | 'offline' | 'noAds' | 'pencil' | 'free' | 'shortcuts', InsideCopy>

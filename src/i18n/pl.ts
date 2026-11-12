@@ -391,7 +391,7 @@ export const pl: Translations = {
       demoOnly: { new: 'To jest demo. Utwórz swój pierwszy projekt, aby zachować własny.', back: 'To jest demo. Twoje projekty są w edytorze.' },
     },
     sections: { label: 'Sekcje', welcome: 'Powitanie', back: 'Wstecz', next: 'Dalej', firstBody: 'To pierwsza sekcja.', lastBody: 'To ostatnia sekcja.', goTo: 'Przejdź do: {section}', moreBelow: 'Więcej poniżej' },
-    coffee: { title: 'Robi to jedna rodzina', text: 'openbeads pozostaje darmowe i w pełni lokalne, bez reklam i śledzenia. Jeśli aplikacja ci pomaga, możesz wesprzeć jej rozwój przez Buy Me a Coffee.', button: 'Postaw mi kawę', star: 'Gwiazdka na GitHubie też pomaga.', source: 'Kod źródłowy' },
+    coffee: { title: 'Robi to jedna rodzina', text: 'openbeads pozostaje darmowe i w pełni lokalne, bez reklam i śledzenia. Jeśli aplikacja ci pomaga, możesz wesprzeć jej rozwój przez Buy Me a Coffee.', button: 'Postaw mi kawę', source: 'Kod źródłowy' },
     promises: {
       device: { name: 'Twoje, na tym urządzeniu', text: 'Działa w przeglądarce. Bez konta i bez instalacji.' },
       offline: { name: 'Działa offline', text: 'Raz otwarte, działa także bez internetu.' },

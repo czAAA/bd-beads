@@ -160,7 +160,7 @@ const sections = computed<HomepageSection[]>(() => [
     centred: true,
     shows: CoffeeScreen,
     // Say hello's Send feedback opens the Feedback sheet as the Menu's row does (ticket 0823).
-    with: () => ({ phone: narrow.value, onFeedback: () => feedback.onOpenFeedback('general') }),
+    with: (): Record<string, unknown> => ({ phone: narrow.value, shown: sections.value[section.value]?.id === 'coffee', onFeedback: () => feedback.onOpenFeedback('general') }),
   },
   {
     id: 'plans',
