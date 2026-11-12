@@ -1036,7 +1036,7 @@ export const be: Translations = {
       beadPalette: 'Палітра {bead}',
       defaultPalette: 'Тыповая палітра',
       exact: 'Дакладныя',
-      beadPaletteNote: 'Кожны колер выявы падбіраецца да найбліжэйшага колеру з каталога {bead}.',
+      beadPaletteNote: 'Коды сапраўдныя, гэта бісер {bead}. Колеры прыблізныя, складзеныя з сямейства колеру і пакрыцця.',
       codesInSize: 'кодаў у {size}: {count}',
       colorsFound: 'знойдзена колераў',
       fromPicture: 'З выявы',

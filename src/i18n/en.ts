@@ -1019,7 +1019,7 @@ export const en: Translations = {
       beadPalette: '{bead} palette',
       defaultPalette: 'Default Palette',
       exact: 'Exact',
-      beadPaletteNote: 'Each color in the picture is matched to the closest color in {bead}’s catalog.',
+      beadPaletteNote: 'The codes are real {bead} beads. Their colors are approximate, made from the color family and the finish.',
       codesInSize: 'codes in {size}: {count}',
       colorsFound: 'colors found',
       fromPicture: 'From picture',

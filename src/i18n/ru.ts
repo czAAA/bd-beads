@@ -1035,7 +1035,7 @@ export const ru: Translations = {
       beadPalette: 'Палитра {bead}',
       defaultPalette: 'Палитра по умолчанию',
       exact: 'Точные',
-      beadPaletteNote: 'Каждый цвет изображения подбирается к ближайшему цвету из каталога {bead}.',
+      beadPaletteNote: 'Коды настоящие, это бисер {bead}. Цвета приблизительные, собраны из семейства цвета и покрытия.',
       codesInSize: 'кодов в {size}: {count}',
       colorsFound: 'найдено цветов',
       fromPicture: 'Из картинки',

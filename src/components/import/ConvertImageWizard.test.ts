@@ -275,7 +275,7 @@ describe('ConvertImageWizard setup', () => {
     const note = () => wrapper.get('[data-testid="convert-source-note"]').text()
     const hint = () => wrapper.get('[data-testid="convert-colors-slider"]').text()
 
-    expect(note()).toBe('Each color in the picture is matched to the closest color in Miyuki Delica 11/0’s catalog.')
+    expect(note()).toBe('The codes are real Miyuki Delica 11/0 beads. Their colors are approximate, made from the color family and the finish.')
     expect(hint()).toContain(fillBlanks(words.colorsHint, { n: '2' }))
     await matchTo(wrapper, 'default')
     expect(note()).toBe(words.defaultPaletteNote)
