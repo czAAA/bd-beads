@@ -93,3 +93,24 @@ describe('pageOneLayout: the overview', () => {
     expect(layout.plan.pageCount).toBe(1 + layout.lists.length + 2)
   })
 })
+
+describe('pageOneLayout: Large beads (ticket 0916)', () => {
+  const large = (colors: number) => ({ ...words(colors), largeBeads: true })
+
+  it('makes a 100 × 100 the overview and parts, no bead under 3 mm', () => {
+    const layout = pageOneLayout(shape('loom', 100, 100), large(8))
+
+    expect(chartOnPageOne(layout.plan)).toBe(false)
+    expect(layout.overview).toBeDefined()
+    expect(layout.plan.beadMm).toBeGreaterThanOrEqual(3 - 1e-9)
+    expect(layout.plan.pageCount).toBeGreaterThan(1)
+  })
+
+  it('keeps a piece whole on page 1 while it fits there at 3 mm, at the same bead as without', () => {
+    const plain = pageOneLayout(shape('loom', 40, 40), words(4))
+    const layout = pageOneLayout(shape('loom', 40, 40), large(4))
+
+    expect(chartOnPageOne(layout.plan)).toBe(true)
+    expect(layout.plan.beadMm).toBeCloseTo(plain.plan.beadMm, 6)
+  })
+})

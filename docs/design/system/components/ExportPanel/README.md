@@ -18,7 +18,11 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 
 The Frame panel's export section, the same component, under the title line:
 
-- **Picture** (`image`) and **Printable chart** (`pdf`) PanelItems, each with its File size estimate in the value slot ("PNG ≈ 1.4 MB · 1 file", "PDF ≈ 3.2 MB · 9 pages"; QualitySlider card).
+- **Picture** (`image`) and **Printable chart** (`pdf`) PanelItems, each with its File size estimate in the value slot ("PNG ≈ 1.4 MB · 1 file", "PDF ≈ 3.2 MB · 9 pages"; QualitySlider card). The Printable chart's count is what will come out, "1 page", "3 pages", read from the PDF's own plan (`pdfPageCount`: page 1, its list pages, the chart pages, the Word chart pages), so it is the count the PDF's footers print. It changes at once with the Frame, the colors and either switch below (ticket 0916).
+- **Large beads** and **Row by row** (ticket 0916), the Printable chart's two switches, right under it, before Export quality: each a PanelSwitchRow, as Letters is in the Frame panel (the name in `control`, an Info button right after it, the AppSwitch at the right, the panel's item height and 10px side padding). Both off at first, and remembered on the device (not with the Project), so the next export of any Project keeps them. They stay live while an export runs: an export reads them when it starts. No line under either switch; what each does is behind its Info button (read once).
+  - **Large beads** ("What Large beads does"): every bead on the PDF's charts, page 1's whole chart and strips included, is `print-bead-large` (3 mm) or more, at the cost of more pages: a 100 × 100 becomes the overview and parts. The PNG is page 1, so it follows too.
+  - **Row by row** ("What Row by row does"): the Word chart pages follow the chart (PrintWordChart card), whatever Letters says; off, there are none. PDF only.
+- No other print setting (paper, margins, overlap, symbols): those belong to pattern sellers' tools (research: PDF export rework, section 3).
 - The **Export quality** QualitySlider under them, `space-8` below the last row.
 - While an export runs the buttons and the slider are disabled and the LoadingState line shows, as in the Frame panel.
 - Once the file is handed over, the saved-file toast names it ("Saved: sunflower.png", Message card) and starts 8px under this panel, never over its rows (ticket 0859), on a phone too.
@@ -36,13 +40,15 @@ The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame
 
 ## Copy
 
-Every string is the Frame panel's: Export, Picture, Printable chart, Export quality, Set a Frame around the drawing you want to export., Select a Frame, Fit a Frame to the drawing. No new copy.
+Every string is the Frame panel's: Export, Picture, Printable chart, Export quality, Set a Frame around the drawing you want to export., Select a Frame, Fit a Frame to the drawing. The two switches' names, Info button names and bodies are in `writing.md` (Print choices copy, ticket 0916), in both panels.
 
 ## Acceptance
 
 - [ ] The Export button is the strip's last button, `export` icon, Tooltip "Export", lit while its panel is open.
 - [ ] The panel is 360px, 4px under the button, right edges aligned, and closes Menu, Project and Frame (and they close it).
 - [ ] With a Frame: Picture and Printable chart with their sizes, then Export quality, all working as in the Frame panel.
+- [ ] Printable chart says how many pages the PDF will have, and the count changes at once with Large beads, Row by row, the Frame and the colors.
+- [ ] Large beads and Row by row are off at first and remembered on the device; Letters adds or removes no page.
 - [ ] With no Frame: the line, Select a Frame and Fit a Frame to the drawing; no export buttons.
 - [ ] The Frame panel's export section and this panel render one shared component.
 

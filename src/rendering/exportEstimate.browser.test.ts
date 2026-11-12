@@ -12,7 +12,7 @@ import { withLayers } from '../testUtils/layerFields'
 
 // The size each export shows against the real files (ticket 0588, ADR 0076): never less than the file and under about twice
 // it, for a small drawing, a long narrow one, a big symmetric one, a photograph, a conversion in many colors and a Schema
-// with a large empty background, with Letters off and on, at every Export quality.
+// with a large empty background, with the print choices off and on (Large beads and Row by row, ticket 0916), at every Export quality.
 
 const COLORS = BUILT_IN_COLORS.map((color) => color.hex)
 
@@ -68,21 +68,21 @@ describe('the File size estimate against real exports (QualitySlider card, ADR 0
     const check = (what: string, estimate: number, real: number) => {
       if (estimate < real || estimate > real * 2.2) off.push(`${what}: estimate ${estimate} B is ${(estimate / real).toFixed(2)} × the ${real} B file`)
     }
-    for (const letters of [false, true]) {
-      const project = withLayers(make(), { letters })
-      const words = printText(project, en, 'en', new Date())
+    for (const on of [false, true]) {
+      const project = make()
+      const words = printText(project, en, 'en', new Date(), { largeBeads: on, rowByRow: on })
       const facts = exportFacts(project, words)!
       for (const [quality, dpi] of Object.entries(PNG_DPI_BY_QUALITY)) {
         const estimate = estimatePng(facts, dpi)
         expect(estimate.count).toBe(projectPageCount(project, words))
         let real = 0
         for (let page = 0; page < estimate.count; page += 1) real += (await exportProjectPng(project, words, dpi, page)).size
-        check(`PNG at ${quality}, Letters ${letters}`, estimate.bytes, real)
+        check(`PNG at ${quality}, choices ${on ? 'on' : 'off'}`, estimate.bytes, real)
       }
       const pdf = await exportProjectPdf(project, words, PDF_PAGE_DPI)
       const estimate = estimatePdf(facts, PDF_PAGE_DPI)
       expect(estimate.count).toBe(await pdfPages(pdf))
-      check(`PDF, Letters ${letters}`, estimate.bytes, pdf.size)
+      check(`PDF, choices ${on ? 'on' : 'off'}`, estimate.bytes, pdf.size)
     }
     expect(off).toEqual([])
   }, 300_000)

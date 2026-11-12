@@ -13,6 +13,7 @@ import type { FileWriter, PickedFile } from '../../services/fileWriter'
 import type { LinkedFileStore } from '../../services/linkedFileStore'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
+import { usePrintChoices } from './usePrintChoices'
 import { SAVED_FILE_TOAST, savedFileToast, savedPageToast } from './savedFileToast'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { frameOf } from '../../domain/layerRecord'
@@ -53,6 +54,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
   const picturesOf = (ids: readonly string[]): Promise<ReadonlyMap<string, Blob>> => deps.picturesOf?.(ids) ?? Promise.resolve(new Map())
   const quality = useExportQuality()
+  /** Large beads and Row by row (ticket 0916): page 1 of both formats follows the first, the PDF's pages the second. */
+  const { choices: printChoices } = usePrintChoices()
   const toast = savedFileToast(deps.showToast, deps.messages)
 
   /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
@@ -231,7 +234,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     // The words the pictures print (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
     // Page 1 is the first (ticket 0915); Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
     // 0586).
-    const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date())
+    const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value)
     const dpi = pngDpiFor(quality.value)
     return runExport(
       (project) => exportProjectPng(project, wordsOf(project), dpi),
@@ -250,7 +253,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPdf() {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
-      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date()), pdfPageDpi()),
+      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value), pdfPageDpi()),
       'pdf',
       'application/pdf',
     )

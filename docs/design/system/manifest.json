@@ -350,7 +350,7 @@
     {
       "name": "PrintWordChart",
       "group": "Print",
-      "summary": "The Word chart pages of the PDF, with Letters on: one 10 pt line per row with a tick box, in two columns when the rows fit, titled with the page's own rows."
+      "summary": "The Word chart pages of the PDF, with Row by row on: one 10 pt line per row with a tick box, in two columns when the rows fit, titled with the page's own rows."
     },
     {
       "name": "ProgressBar",

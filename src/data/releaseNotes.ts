@@ -14,6 +14,18 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     date: '2026-11-12',
     line: {
+      en: 'Export says how many pages the PDF will have, and offers Large beads and Row by row pages',
+      ru: 'Экспорт показывает, сколько страниц будет в PDF, и предлагает Крупные бисеринки и страницы Ряд за рядом',
+      uk: 'Експорт показує, скільки сторінок буде в PDF, і пропонує Великі намистини та сторінки Рядок за рядком',
+      be: 'Экспарт паказвае, колькі старонак будзе ў PDF, і прапануе Буйныя бісерынкі і старонкі Рад за радам',
+      zh: '导出会显示 PDF 有几页，并提供大珠子和逐行说明页',
+      es: 'Exportar dice cuántas páginas tendrá el PDF y ofrece Cuentas grandes y páginas Fila por fila',
+      pl: 'Eksport mówi, ile stron będzie miał PDF, i oferuje Duże koraliki oraz strony Rząd po rzędzie',
+    },
+  },
+  {
+    date: '2026-11-12',
+    line: {
       en: 'The PNG is the first page of the PDF as a picture: the chart with a letter on every bead, and the beads to buy',
       ru: 'PNG теперь та же первая страница PDF, только картинкой: схема с буквой на каждой бисеринке и список бисера',
       uk: 'PNG тепер та сама перша сторінка PDF, тільки картинкою: схема з літерою на кожній бісеринці та список бісеру',

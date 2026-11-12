@@ -23,6 +23,8 @@ export const PRINT_BEAD_STRETCH_MM = 1.6
 /** @internal The token test holds it to `print-bead-max`. */
 export const PRINT_BEAD_MAX_MM = 9
 const PART_BEAD_MAX_MM = 3
+/** The smallest bead with Large beads on (ticket 0916, `print-bead-large`): the chart size before ticket 0913. */
+export const PRINT_BEAD_LARGE_MM = 3
 /** Two-letter Swatch letters (more than 26 colors) do not read on a smaller bead. */
 export const PRINT_BEAD_TWO_LETTER_MM = 2.2
 export const PRINT_MARGIN = mm(10)

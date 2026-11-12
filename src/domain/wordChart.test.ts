@@ -28,9 +28,9 @@ function framed(technique: Technique, rows: string[], changes: LayersChange = {}
 const lines = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.both ? '1&2' : row.number}${row.marker ? `(${row.marker})` : ''}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
 
 describe('Word chart (ticket 0574)', () => {
-  it('has none with Letters off or no Frame', () => {
-    expect(wordChartOf(framed('loom', ['AB'], { letters: false }))).toBeUndefined()
+  it('has none with no Frame, and one with Letters off: Row by row asks for it (ticket 0916)', () => {
     expect(wordChartOf(withLayers(framed('loom', ['AB']), { frame: undefined }))).toBeUndefined()
+    expect(lines(framed('loom', ['AB'], { letters: false }))).toEqual(['1: 1A,1B'])
   })
 
   it('writes a loom row per line, left to right, without a marker', () => {
