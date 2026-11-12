@@ -789,9 +789,6 @@ export interface Translations {
     readParts: string
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: string
-    /** The Specification page after the chart pages (ticket 0581). */
-    specification: string
-    columnLetter: string
     columnColor: string
     columnCode: string
     columnBeads: string
@@ -799,13 +796,6 @@ export interface Translations {
     columnToBuy: string
     /** "2 × 5 g": the tubes to buy. */
     tubes: string
-    schemaFacts: string
-    factBeads: string
-    chartStyleFact: string
-    pagesFact: string
-    wherePartsAre: string
-    partsNote: string
-    rowByRowOn: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
     partPageShort: string
@@ -818,14 +808,8 @@ export interface Translations {
     gramsNote: string
     spares: string
     noColors: string
-    madeBy: string
-    technique: string
-    bead: string
-    size: string
-    estimatedSize: string
     /** On the PNG: "by Maria". */
     byMaker: string
-    page: string
     /** A part's label above its board (ticket 578): "Part B · columns 101–130 · rows 1–100". */
     partArea: string
     continuesBoth: string
@@ -834,8 +818,6 @@ export interface Translations {
     /** A sheet whose parts continue on the next sheet, not to the right or below. */
     continuesOn: string
     lastPart: string
-    /** The Specification's chart style: color with letters, as every chart page prints it (ticket 0869). */
-    chartStyleLetters: string
     /** The heading over a chart page's color key. */
     keyOnPage: string
     /** The line on how the numbers on a chart page read. */

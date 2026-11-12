@@ -1,13 +1,13 @@
 import { forEachBead } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
 import { projectDimensions } from '../domain/projectExtent'
-import { displayedGrid, planPrint, PRINT_BEAD_MIN_MM, PRINT_BEAD_TWO_LETTER_MM, type PrintPart, type PrintPlan } from './printPlan'
+import { displayedGrid, planPrint, PRINT_BEAD_MIN_MM, PRINT_BEAD_TWO_LETTER_MM, type PlanOptions, type PrintPart, type PrintPlan } from './printPlan'
 import { chartCellOf, customChart } from './customChart'
 import { beadsOfLayer, frameOf, type Layered, quarterTurnOf } from '../domain/layerRecord'
 import type { Project } from '../domain/project'
 
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
-// no counts (the Specification has the totals). Its height is set once for the PDF, from the page with the most colors.
+// no counts (page 1's Beads needed has them). Its height is set once for the PDF, from the chart page with the most colors.
 
 type Counted = Layered & Pick<Project, 'paletteLetters'>
 
@@ -64,17 +64,17 @@ function twoLetterMarks(project: Counted, parts: readonly PrintPart[]): boolean 
 
 /** The plan with a key tall enough for the chart page with the most colors, at a bead two-letter Swatch letters read on
  * (ticket 0913). The key's height sets the parts' size, which sets the colors per page, so the rows grow from one until
- * they hold the busiest page. */
-export function planWithKey(project: Counted, listPages = 0): PrintPlan {
-  let plan = planPrint(project, undefined, listPages, 1)
-  const floor = twoLetterMarks(project, plan.parts) ? PRINT_BEAD_TWO_LETTER_MM : PRINT_BEAD_MIN_MM
-  if (floor !== PRINT_BEAD_MIN_MM) plan = planPrint(project, undefined, listPages, 1, floor)
+ * they hold the busiest page. A chart on page 1 has no key: Beads needed is under it (ticket 0914). */
+export function planWithKey(project: Counted, options: Omit<PlanOptions, 'keyRows' | 'floorMm'> = {}): PrintPlan {
+  let plan = planPrint(project, options)
+  const floorMm = twoLetterMarks(project, plan.parts) ? PRINT_BEAD_TWO_LETTER_MM : PRINT_BEAD_MIN_MM
+  if (floorMm !== PRINT_BEAD_MIN_MM) plan = planPrint(project, { ...options, floorMm })
   for (;;) {
     const sheets = new Map<number, PrintPart[]>()
-    for (const part of plan.parts) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
+    for (const part of plan.parts) if (part.page > 1) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
     const busiest = Math.max(0, ...[...sheets.values()].map((parts) => colorsOnPage(project, parts).length))
-    const rows = Math.min(MAX_KEY_ROWS, Math.max(1, Math.ceil(busiest / KEY_COLUMNS)))
-    if (rows <= plan.keyRows) return plan
-    plan = planPrint(project, undefined, listPages, rows, floor)
+    const keyRows = Math.min(MAX_KEY_ROWS, Math.max(1, Math.ceil(busiest / KEY_COLUMNS)))
+    if (keyRows <= plan.keyRows) return plan
+    plan = planPrint(project, { ...options, keyRows, floorMm })
   }
 }
