@@ -5,6 +5,7 @@ import { PRINT_COLORS } from './printColors'
 import { continuation, displayedGrid, mm, PRINT_MARGIN, type PrintPart, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
 import type { Project } from '../domain/project'
+import { PdfContent } from '../domain/pdfContent'
 import { fillBlanks } from '../domain/fillBlanks'
 import { type Layered } from '../domain/layerRecord'
 
@@ -63,7 +64,8 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const { labels } = words
   const letters = project.paletteLetters ?? {}
   const here = parts[0]!
-  const { content, pads } = drawChartParts(project, plan, parts, page.height, letters)
+  const content = new PdfContent(page.height * K)
+  const pads = drawChartParts(content, project, plan, parts, letters)
   const right = page.width - PRINT_MARGIN
 
   // Header: the page number, then the mini map to its left, then the technique word and name, and the part line under them.

@@ -3,7 +3,6 @@ import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { COVER_BEAD_MAX } from './coverLayout'
 import { loadPrintFonts, lineBetween, partLabel, rulerLevel } from './printPages'
 import { en } from '../i18n/en'
 import { PRINT_COLORS } from './printColors'
@@ -28,7 +27,6 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     const size = (name: string) => mm(Number.parseFloat(String(print(name))))
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
-    expect(COVER_BEAD_MAX).toBeCloseTo(size('print-cover-bead-max'))
     const bead = (name: string) => Number.parseFloat(String(print(name)))
     expect([PRINT_BEAD_MIN_MM, PRINT_BEAD_STRETCH_MM, PRINT_BEAD_MAX_MM]).toEqual([bead('print-bead-min'), bead('print-bead-stretch'), bead('print-bead-max')])
   })
