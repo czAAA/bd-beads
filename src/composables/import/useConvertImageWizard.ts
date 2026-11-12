@@ -40,6 +40,7 @@ import {
   frameColors,
   packedToHex,
   sampleLatticePacked,
+  type SamplingRule,
   validateImageFile,
   type DecodeImage,
   type ImageRejection,
@@ -316,12 +317,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToC
 
   // --- The preview's beads ------------------------------------------------------------------------------------------
 
-  function sample(at: PixelCrop) {
+  /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as the
+   * full rule is too slow for every move (ticket 0888). */
+  function sample(at: PixelCrop, rule: SamplingRule = 'area') {
     const picture = image.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    return { grid, lattice, part: at, pixelsPerBead, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
+    return { grid, lattice, part: at, pixelsPerBead, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule }) }
   }
   type Sample = NonNullable<ReturnType<typeof sample>>
 
@@ -422,7 +425,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToC
   const approximate = computed(() => moving.value && part.value !== restPart.value)
   const live = computed(() => {
     if (!approximate.value) return rest.value
-    const moved = sample(part.value)
+    const moved = sample(part.value, 'centre')
     return removedFrom(moved, foundIn(moved)?.found)
   })
 
