@@ -282,9 +282,11 @@
   --print-margin: 10mm;
   --print-header: 12mm;
   --print-footer: 6mm;
-  --print-bead-max: 6mm;
+  --print-cover-bead-max: 6mm;
   --print-part-overlap: 2;
-  --print-chart-cell: 3mm;
+  --print-bead-min: 1.8mm;
+  --print-bead-stretch: 1.6mm;
+  --print-bead-max: 9mm;
   --print-ruler: 5mm;
   --print-letter: 6.5pt;
   --print-line-cell: 0.1mm;

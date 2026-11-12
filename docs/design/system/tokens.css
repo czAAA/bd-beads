@@ -246,11 +246,13 @@
   --print-margin: 10mm; /* Page margin on every side. */
   --print-header: 12mm; /* Chart page header: technique word and name, part, page number, mini map; a 3 mm gap follows it. */
   --print-footer: 6mm; /* Footer: the brand and the date, and where the chart continues. */
-  --print-bead-max: 6mm; /* Largest bead on the Cover page, where a small Schema is not enlarged past it; chart pages use print-chart-cell. */
+  --print-cover-bead-max: 6mm; /* Largest bead on the Cover page, where a small Schema is not enlarged past it; chart pages size their bead from print-bead-min to print-bead-max. */
   --print-part-overlap: 2; /* Columns or rows of the neighbouring part repeated, shaded, at the start of a part so the sheets line up. */
-  --print-chart-cell: 3mm; /* Bead size on every chart page, Letters or not: a weaver can follow it, and a part is as many beads as fill the chart area at it. */
+  --print-bead-min: 1.8mm; /* Smallest bead on a chart page: the Schema is cut into equal parts on the fewest sheets that keep it at least this, then at the largest bead those sheets allow (3 mm at most when there are several). 2.2 mm with two-letter Swatch letters. */
+  --print-bead-stretch: 1.6mm; /* Smallest bead on a chart page that holds the whole Schema, used only to keep it on one sheet. */
+  --print-bead-max: 9mm; /* Largest bead on a chart page: a small Schema fills the width of the sheet up to it, and one too narrow to fill it is centred. */
   --print-ruler: 5mm; /* Ruler band on each side of a chart part: upright numbers at every 5th row and column on all four sides, tens bold. */
-  --print-letter: 6.5pt; /* Swatch letters on chart beads (Helvetica-Bold) and ruler numbers (Helvetica, tens Helvetica-Bold); the print text floor. */
+  --print-letter: 6.5pt; /* Ruler numbers (Helvetica, tens Helvetica-Bold), and Swatch letters (Helvetica-Bold) on a 3 mm chart bead; the letters scale with the bead, about 4.3 pt at 1.8 mm. */
   --print-line-cell: 0.1mm; /* Line between chart cells, in line-strong. */
   --print-line-five: 0.18mm; /* Chart line after every 5th bead, in field-line. */
   --print-line-ten: 0.3mm; /* Chart line after every 10th bead and the chart's outer edge, in ink. */

@@ -657,7 +657,7 @@ export const es: Translations = {
     chartStyleFact: 'Estilo del gráfico',
     pagesFact: 'Páginas',
     wherePartsAre: 'Dónde está cada parte',
-    partsNote: 'Cada parte tiene hasta {beads} cuentas por lado. Las partes de una hoja comparten su número de página; cada una repite {overlap} cuentas de la vecina, sombreadas.',
+    partsNote: 'Cada parte tiene hasta {beads} cuentas por lado, a {size} mm por cuenta. Las partes de una hoja comparten su número de página; cada una repite {overlap} cuentas de la vecina, sombreadas.',
     rowByRowOn: 'Fila por fila en la página {page} →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'parte {part} · pág. {page}',

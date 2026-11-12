@@ -50,3 +50,22 @@ describe('planWithKey: the key is as tall as the busiest chart page needs (ticke
     expect(new Set(plan.parts.map((part) => part.region.height)).size).toBe(1)
   })
 })
+
+describe('planWithKey: two-letter Swatch letters keep a bigger bead (ticket 0913)', () => {
+  const colors = (count: number) => Array.from({ length: count }, (_, index) => `#${(index + 1).toString(16).padStart(2, '0')}00${(index + 1).toString(16).padStart(2, '0')}`)
+  const square = (count: number, letters?: Record<string, string>) => ({
+    ...bareProject({ technique: 'loom', orientation: 0, beads: {}, frame: { technique: 'loom', row: 0, column: 0, columns: 100, rows: 100, beads: { 0: Object.fromEntries(colors(count).map((hex, column) => [column, hex])) } } }),
+    ...(letters ? { paletteLetters: letters } : {}),
+  })
+
+  it('never plans a bead under 2.2 mm for a Schema of 27 colors or more', () => {
+    expect(planWithKey(square(26)).beadMm).toBeCloseTo(1.8, 1)
+    expect(planWithKey(square(27)).beadMm).toBeGreaterThanOrEqual(2.2)
+    expect(planWithKey(square(40)).beadMm).toBeGreaterThanOrEqual(2.2)
+  })
+
+  it('keeps 2.2 mm when a color on the Schema carries a two-letter letter', () => {
+    const [first, ...rest] = colors(3)
+    expect(planWithKey(square(3, { [first!]: 'AB', ...Object.fromEntries(rest.map((hex, index) => [hex, String.fromCharCode(66 + index)])) })).beadMm).toBeGreaterThanOrEqual(2.2)
+  })
+})
