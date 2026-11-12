@@ -661,7 +661,7 @@ export const be: Translations = {
     chartStyleFact: 'Стыль схемы',
     pagesFact: 'Старонак',
     wherePartsAre: 'Дзе якая частка',
-    partsNote: 'У частцы да {beads} бісерын па баку. Часткі на адным аркушы маюць агульны нумар старонкі; кожная паўтарае {overlap} бісерыны суседняй, яны зацемнены.',
+    partsNote: 'У частцы да {beads} бісерын па баку, {size} мм на бісерыну. Часткі на адным аркушы маюць агульны нумар старонкі; кожная паўтарае {overlap} бісерыны суседняй, яны зацемнены.',
     rowByRowOn: 'Радок за радком на старонцы {page} →',
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: 'частка {part} · стар. {page}',
