@@ -37,3 +37,21 @@ describe('FramePanel edge names', () => {
     for (const edge of EDGES) expect(glyphOf(root, edge).classList).not.toContain('app-tooltip')
   })
 })
+
+// Each edge's − | + is one joined control with `radius-md` outer ends and a square shared seam, though each button sits
+// in its own Tooltip wrapper, after which comes its bubble (ticket 0878).
+describe('FramePanel edge steppers', () => {
+  it('rounds only the outer ends of each − | + pair', async () => {
+    const { root } = await mountAt(inBox, {}, { locale: 'en', width: 320 })
+    expect(root.querySelectorAll('.frame-panel__pair > .app-button-wrap')).toHaveLength(EDGES.length * 2)
+    const probe = root.appendChild(Object.assign(document.createElement('div'), { style: 'border-radius: var(--radius-md)' }))
+    const radiusMd = getComputedStyle(probe).borderTopLeftRadius
+    expect(radiusMd).not.toBe('0px')
+    for (const edge of EDGES) {
+      const minus = getComputedStyle(root.querySelector(`[data-testid="frame-edge-${edge}-in"]`)!)
+      const plus = getComputedStyle(root.querySelector(`[data-testid="frame-edge-${edge}-out"]`)!)
+      expect([minus.borderTopLeftRadius, minus.borderBottomLeftRadius, minus.borderTopRightRadius, minus.borderBottomRightRadius]).toEqual([radiusMd, radiusMd, '0px', '0px'])
+      expect([plus.borderTopLeftRadius, plus.borderBottomLeftRadius, plus.borderTopRightRadius, plus.borderBottomRightRadius]).toEqual(['0px', '0px', radiusMd, radiusMd])
+    }
+  })
+})
