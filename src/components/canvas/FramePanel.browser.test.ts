@@ -38,14 +38,16 @@ describe('FramePanel edge names', () => {
   })
 })
 
-// Each edge's − | + is one joined control with `radius-md` outer ends and a square shared seam, though each button sits
-// in its own Tooltip wrapper, after which comes its bubble (ticket 0878).
+// Each edge's − | + is one joined control with `radius-md` outer ends and a square shared seam. Each button sits in its
+// own Tooltip wrapper, so neither is shaped by being the pair's first or last child (ticket 0878).
 describe('FramePanel edge steppers', () => {
   it('rounds only the outer ends of each − | + pair', async () => {
     const { root } = await mountAt(inBox, {}, { locale: 'en', width: 320 })
+    // The case that broke the old shaping: both buttons in Tooltip wrappers.
     expect(root.querySelectorAll('.frame-panel__pair > .app-button-wrap')).toHaveLength(EDGES.length * 2)
     const probe = root.appendChild(Object.assign(document.createElement('div'), { style: 'border-radius: var(--radius-md)' }))
     const radiusMd = getComputedStyle(probe).borderTopLeftRadius
+    probe.remove()
     expect(radiusMd).not.toBe('0px')
     for (const edge of EDGES) {
       const minus = getComputedStyle(root.querySelector(`[data-testid="frame-edge-${edge}-in"]`)!)
