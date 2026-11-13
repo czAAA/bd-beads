@@ -375,3 +375,16 @@ What the build of the Finish filter (DS-2) had to settle:
 - **Remembered at Create Project,** with ticket 0893's other last choices; a converter closed without creating keeps nothing, as for the source.
 - **Change picker:** Color by color's Bead colors list opens with the converter's Finishes on (its Filters badge counts them); a change there is that row's alone.
 - **Only one list open:** match to's menu and the Finish list are each a layer of the overlay registry, so a press on the other button first closes the open one.
+
+## As built (ticket 0903)
+
+What the build of finding, filtering and pasting in My beads (DS-2) had to settle:
+
+- **One picker, not a copy.** The view's switch, find and filter row, count line, rows and foot are `MyBeadsPicker` (`components/palette/`), which takes the Bead, its swatches, its catalog and the list as props and emits a tick, the codes added and Clear list; the converter's view keeps only the head and hands it the wizard's list. The editor's Palette popover (ticket 0918) mounts the same picker. The search and the Color and Finish filters are `useBeadColorFinder`, which the Palette popover's `BeadColorList` now uses too, and the search field with the Filters disclosure is one `BeadColorFindRow`; `searchBeadColors` is generic, like `filterBeadColors` since 0901.
+- **The "first 60 shown" cap is back** on both halves, as in BeadColors; the search finds the rest.
+- **The filters open with the converter's Finishes on** (those applied: none under Default Palette or Exact), as the Change picker does, and reset when the view closes.
+- **A paste reads a code in any size of the catalog:** the Bead's size first, then each other size's shop form, so "DBS22" pasted on a Delica 11/0 is known and kept, though the 11/0 view does not list it. Letters standing alone before a number ("DB 721") are that code's prefix. A code pasted twice counts once; a known code the list held is "already in the list".
+- **A listed code the catalog no longer knows** is greyed like a discontinued one, its second line "not in the color catalog · never matched" (a string the design did not name). Only the My beads half lists these; All codes lists the codes made now.
+- **⌘V** is the view's own `paste` event, ignored inside a text field; a clipboard with no text goes on to the converter's picture paste. Pasting adds to the My beads half and turns the switch to it.
+- **The paste box and the clear confirm are a layer** of the overlay registry over the view: Escape closes them first and keeps nothing; a press in the picker leaves them open, one outside it closes them and goes on.
+- **New value:** `--my-beads-never-opacity` (0.4), a never-matched code's swatch.
