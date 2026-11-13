@@ -1,13 +1,10 @@
 import { computed, ref, type Ref } from 'vue'
 import { clamp } from '../../domain/clamp'
-import { LEAST_COLOR_BEADS, NO_LEAST_COLOR_BEADS, smallColorsJoined, type FoundColor } from '../../domain/convertColors'
+import { LEAST_COLOR_BEADS, MOST_LEAST_COLOR_BEADS, NO_LEAST_COLOR_BEADS, smallColorsJoined, type FoundColor } from '../../domain/convertColors'
 import type { ReducedColors } from '../../domain/imageColors'
 import type { PictureKind } from '../../domain/pictureKind'
-import { cleanUpStrayBeads, loneBeadCount, passesOf, recountReduced, type CleanUpStrength } from '../../domain/strayBeads'
+import { cleanUpStrayBeads, DEFAULT_CLEAN_UP_STRENGTH, loneBeadCount, passesOf, recountReduced, type CleanUpStrength } from '../../domain/strayBeads'
 import type { Weave } from '../../domain/weave'
-
-/** Small colors join's highest step (ConvertImage card DS-3). */
-export const MOST_LEAST_COLOR_BEADS = 50
 
 /** What Clean up needs from the wizard: the picture's kind, the Frame's sampled grid and its reduction, the Weave, and
  * the wizard's own match of a reduction at a minimum (its source and the person's choices). */
@@ -24,7 +21,7 @@ export interface ConvertCleanUpDeps {
  * with both off; what the person sets is kept until a new picture (`reset`). No Undo: each control shows its state. */
 export function useConvertCleanUp({ kind, raw, reduced: sampled, weave, match }: ConvertCleanUpDeps) {
   const chosenOn = ref<boolean>()
-  const strength = ref<CleanUpStrength>('medium')
+  const strength = ref<CleanUpStrength>(DEFAULT_CLEAN_UP_STRENGTH)
   const chosenLeast = ref<number>()
 
   const photo = computed(() => kind.value === 'photo')
@@ -57,7 +54,7 @@ export function useConvertCleanUp({ kind, raw, reduced: sampled, weave, match }:
     /** A new picture opens at its own defaults. */
     reset: () => {
       chosenOn.value = undefined
-      strength.value = 'medium'
+      strength.value = DEFAULT_CLEAN_UP_STRENGTH
       chosenLeast.value = undefined
     },
     /** Whether the picture is flat art, so the page says why the helper is off. */

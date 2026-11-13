@@ -84,6 +84,10 @@ export const LEAST_COLOR_BEADS = 10
 /** Small colors join's lowest step, "off": every color has at least one bead, so none joins (ticket 0906). */
 export const NO_LEAST_COLOR_BEADS = 1
 
+/** Small colors join's highest step (ConvertImage card DS-3), and how far a step with Shift goes. */
+export const MOST_LEAST_COLOR_BEADS = 50
+export const LEAST_COLOR_BEADS_SHIFT_STEP = 10
+
 /** The matches with every code used by fewer than `leastBeads` beads joined into the nearest code that stays (ticket
  * 0891), for a reduced picture only: one whose colors fit the count (flat artwork, pixel art) keeps each. A color the
  * maker chose for is left alone, and when no code reaches the minimum none joins. */

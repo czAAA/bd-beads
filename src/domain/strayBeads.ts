@@ -11,6 +11,9 @@ export type CleanUpStrength = 'light' | 'medium' | 'strong'
 
 export const CLEAN_UP_STRENGTHS: readonly CleanUpStrength[] = ['light', 'medium', 'strong']
 
+/** The step a picture opens on. */
+export const DEFAULT_CLEAN_UP_STRENGTH: CleanUpStrength = 'medium'
+
 /** How many passes a step allows. */
 export function passesOf(strength: CleanUpStrength): number {
   return CLEAN_UP_STRENGTHS.indexOf(strength) + 1

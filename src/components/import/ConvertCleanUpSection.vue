@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
-import { MOST_LEAST_COLOR_BEADS } from '../../composables/import/useConvertCleanUp'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
-import { NO_LEAST_COLOR_BEADS } from '../../domain/convertColors'
+import { LEAST_COLOR_BEADS_SHIFT_STEP, MOST_LEAST_COLOR_BEADS, NO_LEAST_COLOR_BEADS } from '../../domain/convertColors'
 import { CLEAN_UP_STRENGTHS, type CleanUpStrength } from '../../domain/strayBeads'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
@@ -86,7 +85,7 @@ const joinedLine = computed(() => {
             v-model="least"
             :min="NO_LEAST_COLOR_BEADS"
             :max="MOST_LEAST_COLOR_BEADS"
-            :shift-step-by="10"
+            :shift-step-by="LEAST_COLOR_BEADS_SHIFT_STEP"
             :display="least === NO_LEAST_COLOR_BEADS ? words.stepOff : undefined"
             :decrease-label="words.fewer"
             :increase-label="words.more"

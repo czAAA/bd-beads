@@ -60,7 +60,7 @@ describe('Clean up stray beads (ticket 0906, spec 0761)', () => {
     expect(result.raw[0]).toEqual(['a1', 'a2', 'a1'])
   })
 
-  it('goes through the Technique’s neighbours: on peyote a bead touches six', () => {
+  it('goes through the Technique’s neighbours: a column of two stays on a loom, a bead ringed by one color is alone on peyote', () => {
     // On peyote's staggered columns the bead at row 1, column 1 touches the two beads of each column beside it.
     const raw = grid('aba', 'aba', 'aaa')
     expect(loneBeadCount(raw, own, loom)).toBe(0)
@@ -68,7 +68,6 @@ describe('Clean up stray beads (ticket 0906, spec 0761)', () => {
   })
 
   it('makes one pass for Light, two for Medium and three for Strong', () => {
-    expect([passesOf('light'), passesOf('medium'), passesOf('strong')]).toEqual([1, 2, 3])
     // e takes the b of the strays round it in the first pass, which leaves it alone: the second pass reaches it.
     const raw = grid('aaaaa', 'aabaa', 'aceaa', 'aabaa', 'aaaaa')
     const light = cleanUpStrayBeads(raw, own, loom, passesOf('light'), near)

@@ -42,7 +42,7 @@ describe('Clean up in the Convert image wizard (ticket 0906)', () => {
     expect(cleanUp.changedBeads.value).toBeUndefined()
   })
 
-  it('makes Light, Medium and Strong one, two and three passes, the found colors’ counts following', async () => {
+  it('cleans at least as many beads at Strong as at Light, the found colors still counting every bead', async () => {
     const wizard = await convertAt(photoPicture(), 60)
     const counted = () => wizard.found.value.reduce((sum, color) => sum + color.count, 0)
     const beads = counted()
@@ -80,6 +80,17 @@ describe('Clean up in the Convert image wizard (ticket 0906)', () => {
     expect(wizard.cleanUp.on.value).toBe(true)
     expect(wizard.cleanUp.strength.value).toBe('medium')
     expect(wizard.cleanUp.leastBeads.value).toBe(10)
+  })
+
+  it('makes empty, at a tap on a cleaned bead, the color it shows', async () => {
+    const wizard = await convertAt(photoPicture(), 60)
+    // The whole picture has no margin round it: a lattice bead is the Frame's bead of the same index.
+    const index = wizard.cleanUp.changedBeads.value!.indexOf(1)
+    const shown = wizard.beadColors.value[index]!
+    wizard.toggleEmptyAtBead(index)
+    await nextTick()
+    expect(wizard.beadColors.value[index]).toBeUndefined()
+    expect(wizard.beadColors.value).not.toContain(shown)
   })
 
   it('steps Small colors join from off to 50', async () => {

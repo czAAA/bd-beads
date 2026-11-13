@@ -57,8 +57,8 @@ test.describe('Convert image layouts', () => {
       await page.setViewportSize(viewport)
       await openPage(page)
       const shown = await firstWindow(page)
-      // DS-1's dozen, and the helpers DS-3 adds (Clean up, ticket 0906; Auto-fix lighting and More for the lighting, 0907).
-      expect(shown.count, shown.names.join(', ')).toBeLessThanOrEqual(15)
+      // DS-1's dozen and DS-3's Clean up button (ticket 0906).
+      expect(shown.count, shown.names.join(', ')).toBeLessThanOrEqual(13)
       expect(shown.cut).toEqual([])
       expect(shown.columnScrolls).toBe(false)
       await expect(page.getByTestId('convert-bar')).toHaveCount(0)
