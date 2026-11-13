@@ -51,6 +51,7 @@ import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { useConvertCleanUp } from './useConvertCleanUp'
 import { useConvertCrop, type CropBeads } from './useConvertCrop'
 import { useConvertFinishes } from './useConvertFinishes'
 import { useConvertMyBeads } from './useConvertMyBeads'
@@ -78,7 +79,7 @@ export type ConvertTool = 'make-empty' | 'background'
 
 /** The popovers of the quiet converter (ticket 0896, ConvertImage card DS-1): the column's three, each from its own
  * button, and Background's from the floating bar. One is open at a time; Background's is open while its tool is on. */
-export type ConvertPopover = 'bead' | 'size' | 'colors' | 'background'
+export type ConvertPopover = 'bead' | 'size' | 'colors' | 'background' | 'clean-up'
 
 /** Background (ConvertImage card, 2 Background; ticket 0780): off, found and hatched (1 Find), or made empty places
  * (2 Remove). */
@@ -316,6 +317,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
         widthBeads.value = opening.width
         heightBeads.value = opening.height
       }
+      cleanUp.reset()
       restartPart()
     } catch (error) {
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
@@ -450,13 +452,22 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
   /** Fewer codes left in the Finishes on than colors asked: as many colors come out as there are codes (ticket 0901). */
   const finishesShort = computed(() => finishes.on.value && finishes.codesLeft.value > 0 && finishes.codesLeft.value < maxColors.value)
-  const reduced = computed(() =>
+  const sampledReduced = computed(() =>
     reducePictureColors(frameSampled.value?.counts ?? new Map(), finishesShort.value ? finishes.codesLeft.value : maxColors.value),
   )
-  const found = computed(() => matchFoundColors(reduced.value, targets.value, choices.value))
+  // Clean up (ticket 0906): stray beads and small colors, between the reduction and the beads; the found colors follow.
+  const cleanUp = useConvertCleanUp({
+    kind,
+    raw: computed(() => frameSampled.value?.raw),
+    reduced: sampledReduced,
+    weave,
+    match: (at, leastBeads) => matchFoundColors(at, targets.value, choices.value, leastBeads),
+  })
+  const reduced = cleanUp.reduced
+  const found = cleanUp.found
   /** Color by color's rows: the found colors joined by the bead color they become (ticket 0863). */
   const rows = computed(() => beadColorRows(found.value))
-  const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(frameSampled.value.raw, reduced.value, found.value) : []))
+  const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(cleanUp.raw.value, reduced.value, found.value) : []))
   const held = computed(() => heldColorLookup(found.value))
   const palette = computed(() => newProjectPalette(builtIns.value, found.value))
 
@@ -531,7 +542,10 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     const shown = live.value
     const packed = shown?.sampled[index]
     if (packed === undefined || packed === NO_COLOR) return
-    const pictureHex = reduced.value.byHex.get(packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
+    // In the Frame at rest a bead shows its color after Clean up (ticket 0906).
+    const at = approximate.value ? undefined : frameIndexOf(shown!, index)
+    const cleaned = at === undefined ? undefined : cleanUp.raw.value[Math.floor(at / shown!.grid.columns)]?.[at % shown!.grid.columns]
+    const pictureHex = reduced.value.byHex.get(cleaned ?? packedToHex(packed)) ?? nearestColorLookup(found.value.map((color) => color.pictureHex))(packed)
     const row = pictureHex && rows.value.find((candidate) => candidate.pictureHexes.includes(pictureHex))
     if (row) toggleEmpty(row.pictureHexes)
   }
@@ -842,6 +856,8 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     palette,
     remapPalette,
     remapSwatches,
+    /** Clean up (ticket 0906): Clean up stray beads, its strength and Small colors join, with what each did. */
+    cleanUp,
     // My beads (ticket 0902)
     myBeadsCodes: myBeads.codes,
     myBeadsTargets: myBeads.targets,

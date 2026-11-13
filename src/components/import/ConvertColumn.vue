@@ -18,6 +18,8 @@ import ValueSlider from '../ui/form/ValueSlider.vue'
 import BeadSection from '../project/BeadSection.vue'
 import TechniqueSection from '../project/TechniqueSection.vue'
 import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
+import ConvertCleanUpButton from './ConvertCleanUpButton.vue'
+import ConvertCleanUpSection from './ConvertCleanUpSection.vue'
 import ConvertColorsSection from './ConvertColorsSection.vue'
 import ConvertFoot from './ConvertFoot.vue'
 import ConvertPictureSection from './ConvertPictureSection.vue'
@@ -41,6 +43,7 @@ const NONE = '—'
 const beadEl = ref<HTMLElement>()
 const sizeEl = ref<HTMLElement>()
 const colorsEl = ref<HTMLElement>()
+const cleanUpButton = () => colorsEl.value?.querySelector<HTMLElement>('[data-testid="convert-clean-up-button"]') ?? undefined
 /** A popover's own button, where focus goes back when it closes. */
 const button = (section: HTMLElement | undefined, testid: string) => section?.querySelector<HTMLElement>(`[data-testid="${testid}"]`) ?? undefined
 const backgroundButton = () => document.querySelector<HTMLElement>('[data-testid="convert-tool-background"]') ?? undefined
@@ -203,7 +206,20 @@ const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: 
         </template>
       </ValueSlider>
       <p v-if="has" class="convert-column__matched" data-testid="convert-matched">{{ matchedLine }}</p>
+      <!-- Clean up (DS-3, ticket 0906): what the helper did, under Colors; its popover beside the column. -->
+      <ConvertCleanUpButton v-if="has" @toggle="wizard.togglePopover('clean-up')" />
     </section>
+    <ConvertPopover
+      v-if="isOpen('clean-up')"
+      place="level"
+      :label="t.convertImage.wizard.cleanUp.title"
+      :opener="cleanUpButton"
+      :anchor="cleanUpButton"
+      testid="convert-clean-up-popover"
+      @close="wizard.closePopover"
+    >
+      <ConvertCleanUpSection />
+    </ConvertPopover>
     <ConvertPopover
       v-if="isOpen('colors')"
       place="tall"

@@ -1276,6 +1276,41 @@ export interface Translations {
       keeping: string
       keepAll: string
       cropMeasure: string
+      /** Clean up (ticket 0906, DS-3): the popover's title, the button's name (`{line}` its first line), Info, switch,
+       * steps and their off reason, the counts, the pixel-art lines, and Small colors join with its Info, stepper names
+       * and result (`colorsJoined` then `joinedBeads`, joined by " · "). */
+      cleanUp: {
+        title: string
+        buttonName: string
+        whatDoes: string
+        whatDoesBody: string
+        strayBeads: string
+        strength: string
+        light: string
+        medium: string
+        strong: string
+        turnOnFirst: string
+        cleaned: PluralForms
+        none: string
+        smallJoined: PluralForms
+        off: string
+        left: PluralForms
+        offForPixelArt: string
+        everyPixel: string
+        pixelArtLine: string
+        singleKept: PluralForms
+        smallColors: string
+        smallColorsWhat: string
+        smallColorsBody: string
+        under: string
+        leastBeads: string
+        fewer: string
+        more: string
+        stepOff: string
+        colorsJoined: PluralForms
+        joinedBeads: PluralForms
+        everyColorStays: string
+      }
       /** The match kept to chosen Finishes (ticket 0901, DS-2): the line under Colors with Finishes on (`{finishes}` their
        * names in lower case, or `{count}` of them from 4), the Finish button's name with its count, why it is off, the
        * too-few line and the foot's colors line (`{colors}` the colors, `{codes}` codesLeft), and Finish's note. */
