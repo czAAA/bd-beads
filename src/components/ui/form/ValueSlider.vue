@@ -38,6 +38,8 @@ const props = defineProps<{
   origin?: number
   /** Shift and an arrow step by this much (ticket 0908); left out, Shift changes nothing. */
   shiftStep?: number
+  /** What Page Up and Page Down move by, where not a tenth of the range (the Colors slider's 5, ticket 0904). */
+  pageStep?: number
   /** Off, with why (ticket 0896): kept in place in `faint`, `aria-disabled`, still focusable, its reason in a Tooltip. */
   offBody?: string
   testid?: string
@@ -67,9 +69,10 @@ const TRACK_STEPS = 1000
 const rangeValue = computed(() => (logScale.value ? Math.round(at.value * TRACK_STEPS) : props.modelValue))
 const valueAt = (position: number) => (logScale.value ? props.min * (props.max / props.min) ** (position / TRACK_STEPS) : position)
 
-function set(next: number) {
+/** A value typed past the end (the Colors count, ticket 0904) holds the thumb at the end, and a key steps down from it. */
+function set(next: number, upTo = props.max) {
   if (props.offBody !== undefined) return
-  const kept = Math.round(clamp(next, props.min, props.max))
+  const kept = Math.round(clamp(next, props.min, upTo))
   if (kept !== props.modelValue) emit('update:modelValue', kept)
 }
 
@@ -97,16 +100,17 @@ function pxValue(name: string, fallback: number): number {
 /** Page Up and Page Down move a tenth of the range, at least 1 (ValueSlider card); the browser's own page step is
  * left alone for nothing else. */
 function onKeydown(event: KeyboardEvent) {
-  const page = Math.max(1, Math.round(span.value / 10))
+  const page = props.pageStep ?? Math.max(1, Math.round(span.value / 10))
   // Off, or on the doubling scale, the range's own steps are not the value's: every key is the slider's.
-  const own = logScale.value || props.offBody !== undefined
+  const own = logScale.value || props.offBody !== undefined || props.modelValue > props.max
+  const upTo = Math.max(props.max, props.modelValue)
   const shift = event.shiftKey && props.shiftStep !== undefined
-  if (shift && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + props.shiftStep!)
-  else if (shift && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - props.shiftStep!)
-  else if (event.key === 'PageUp') set(props.modelValue + page)
-  else if (event.key === 'PageDown') set(props.modelValue - page)
-  else if (own && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + 1)
-  else if (own && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - 1)
+  if (shift && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + props.shiftStep!, upTo)
+  else if (shift && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - props.shiftStep!, upTo)
+  else if (event.key === 'PageUp') set(props.modelValue + page, upTo)
+  else if (event.key === 'PageDown') set(props.modelValue - page, upTo)
+  else if (own && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + 1, upTo)
+  else if (own && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - 1, upTo)
   else if (own && event.key === 'Home') set(props.min)
   else if (own && event.key === 'End') set(props.max)
   else return

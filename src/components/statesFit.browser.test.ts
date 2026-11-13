@@ -264,6 +264,17 @@ const CASES: FitCase[] = [
       for (const key of ['ArrowLeft', 'ArrowUp']) corner?.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: true, bubbles: true }))
     },
   ],
+  // The neighbours' card beside the Colors slider (ticket 0904): its captions, an end of the range and the field's row.
+  [
+    'Convert image page (number of colors)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      root.querySelector<HTMLElement>('[data-testid="convert-colors-slider-range"]')?.focus()
+      await new Promise((done) => setTimeout(done, 200))
+    },
+  ],
   [
     'Convert image Colors popover (remapping)',
     ConvertSectionHost,
@@ -281,6 +292,33 @@ const CASES: FitCase[] = [
     async (root) => {
       await openMyBeads(root)
       press(root, 'convert-my-beads-row')
+    },
+  ],
+  [
+    'Convert image Colors popover (My beads, pasting codes)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
+    async (root) => {
+      await openMyBeads(root)
+      press(root, 'my-beads-paste')
+    },
+  ],
+  [
+    'Convert image Colors popover (My beads, codes pasted, Clear list asked)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
+    async (root) => {
+      await openMyBeads(root)
+      press(root, 'my-beads-paste')
+      await new Promise((done) => setTimeout(done, 20))
+      const area = root.querySelector<HTMLTextAreaElement>('[data-testid="my-beads-paste-field"]')!
+      area.value = 'DB723, DB726\nDB99999, 11-4562, TO-0000123456789'
+      area.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'my-beads-add')
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'my-beads-clear')
+      await new Promise((done) => setTimeout(done, 20))
     },
   ],
   [

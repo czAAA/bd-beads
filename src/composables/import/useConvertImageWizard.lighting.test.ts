@@ -104,6 +104,14 @@ describe('Brightness, Contrast and Saturation in the Convert image wizard (ticke
     expect(wizard.found.value.map((color) => [color.pictureHex, color.count])).toEqual(foundBefore)
   })
 
+  it('reach the Colors neighbours too, which convert the same lit picture (ticket 0904)', async () => {
+    const wizard = await convertAt(nightPicture(), 30)
+    const fewer = wizard.beadsAtColors(wizard.maxColors.value - 1)
+    wizard.lighting.setSlider('brightness', 40)
+    await nextTick()
+    expect(wizard.beadsAtColors(wizard.maxColors.value - 1)).not.toEqual(fewer)
+  })
+
   it('keep to −50 … +50 in whole steps', async () => {
     const wizard = await convertAt(nightPicture(), 30)
     wizard.lighting.setSlider('saturation', 80)

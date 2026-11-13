@@ -44,6 +44,7 @@
   --my-beads-row-touch: var(--panel-row-two-line-touch); /* ConvertImage card (ticket 0902): the same on a coarse pointer. */
   --my-beads-swatch: 24px; /* ConvertImage card (ticket 0902): a code's swatch in a My beads row. */
   --my-beads-tick: 20px; /* ConvertImage card (ticket 0902): the tick box at a My beads row's right. */
+  --my-beads-never-opacity: 0.4; /* ConvertImage card (ticket 0903): the swatch of a My beads code that is never matched. */
   --convert-compare-side: 24px; /* ConvertImage card (ticket 0900): room at each side of the picture and the beads in each half of Compare. */
   --convert-chip-height: 30px; /* ConvertImage card (ticket 0900): a chip over the preview ("picture", "beads", "picture · let go to see the beads"). */
   --convert-chip-height-touch: 32px; /* ConvertImage card (ticket 0900): the same chip on a coarse pointer. */

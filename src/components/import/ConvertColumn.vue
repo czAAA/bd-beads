@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useConvertImageWizardState, type ConvertPopover as PopoverName } from '../../composables/import/useConvertImageWizard'
+import { useConvertNeighbours } from '../../composables/import/useConvertNeighbours'
 import { useConvertSizeReadings } from '../../composables/import/useConvertSizeReadings'
 import { beadLabel, offeredBeads } from '../../domain/beads'
 import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
@@ -20,6 +21,7 @@ import TechniqueSection from '../project/TechniqueSection.vue'
 import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
 import ConvertCleanUpButton from './ConvertCleanUpButton.vue'
 import ConvertCleanUpSection from './ConvertCleanUpSection.vue'
+import ConvertColorsNeighbours from './ConvertColorsNeighbours.vue'
 import ConvertColorsSection from './ConvertColorsSection.vue'
 import ConvertFoot from './ConvertFoot.vue'
 import ConvertLightingSection from './ConvertLightingSection.vue'
@@ -55,10 +57,13 @@ const isOpen = (name: PopoverName) => wizard.popover.value === name
 
 const beadButton = computed(() => `${beadLabel(wizard.bead.value)} · ${techniqueName(t.value, wizard.technique.value)}`)
 
-/** The Colors slider's marks (DS-1): each doubles the one before twice over, so they stand evenly on its scale. */
-const COLORS_MARKS = [4, 16, 64]
+/** The Colors slider's end (DS-2, ticket 0904): what is woven; a larger count is typed in the neighbours' card. */
+const COLORS_SLIDER_END = 40
+const colorsEnd = computed(() => Math.min(COLORS_SLIDER_END, wizard.colorsMax.value))
+/** The Colors slider's marks (DS-2), on the doubling scale. */
+const COLORS_MARKS = [5, 10, 20]
 const colorsMarks = computed(() =>
-  COLORS_MARKS.filter((value) => value > MIN_IMAGE_COLORS && value < wizard.colorsMax.value).map((value) => ({ value, label: String(value) })),
+  COLORS_MARKS.filter((value) => value > MIN_IMAGE_COLORS && value < colorsEnd.value).map((value) => ({ value, label: String(value) })),
 )
 /** The most Finishes the line under Colors names; more are counted (DS-2). */
 const NAMED_FINISHES = 3
@@ -79,7 +84,56 @@ const matchedLine = computed(() => {
   return fillBlanks(words.value.matchedBead, { bead })
 })
 const colorsValue = computed(() => plural(locale.value, wizard.maxColors.value, words.value.colorsCount))
-const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: groupThousands(wizard.colorsMax.value, locale.value) }))
+/** "40+" where the picture has more colors than the slider reaches, else "max 9" (DS-2). */
+const colorsMaxLabel = computed(() =>
+  wizard.colorsMax.value > colorsEnd.value
+    ? fillBlanks(words.value.neighbours.pastEnd, { value: colorsEnd.value })
+    : fillBlanks(words.value.maxLabel, { value: groupThousands(wizard.colorsMax.value, locale.value) }),
+)
+
+/** The neighbours' card (DS-2, ticket 0904): shown while the Colors slider is focused or pressed, or focus is inside it;
+ * never over an open popover. */
+const neighboursOpen = ref(false)
+const colorsRange = () => colorsEl.value?.querySelector<HTMLElement>('[data-testid="convert-colors-slider-range"]') ?? undefined
+const neighbours = useConvertNeighbours({
+  count: wizard.maxColors,
+  most: wizard.colorsMax,
+  shown: neighboursOpen,
+  beadsAt: wizard.beadsAtColors,
+  beadsShown: wizard.beadsShown,
+})
+/** Whether a target is the slider's range or inside the card. */
+const inNeighbours = (target: EventTarget | null) =>
+  target instanceof Node && (!!colorsRange()?.contains(target) || !!colorsEl.value?.querySelector('[data-testid="convert-neighbours"]')?.contains(target))
+/** Set while Escape gives the slider its focus back, so that focus does not show the card again. */
+let refocusing = false
+function showNeighbours(event: Event) {
+  if (refocusing) return
+  if (has.value && wizard.popover.value === undefined && inNeighbours(event.target)) neighboursOpen.value = true
+}
+/** A press inside the card, which in Safari takes focus from the slider without giving it to the button pressed. */
+let pressingCard = false
+const pressCard = (on: boolean) => (pressingCard = on)
+function leaveNeighbours(event: FocusEvent) {
+  if (pressingCard || inNeighbours(event.relatedTarget)) return
+  // Focus may come back at once (a place drawn anew as it turns off): only focus gone elsewhere closes the card.
+  setTimeout(() => {
+    if (!pressingCard && !inNeighbours(document.activeElement)) neighboursOpen.value = false
+  })
+}
+// A popover opened while the card shows takes its place: the card never stands over one.
+watch(wizard.popover, (open) => {
+  if (open !== undefined) neighboursOpen.value = false
+})
+/** Escape closes the card with focus back on the slider; a press outside closes it where the press went. */
+function closeNeighbours(refocus: boolean) {
+  neighboursOpen.value = false
+  pressingCard = false
+  if (!refocus) return
+  refocusing = true
+  colorsRange()?.focus({ preventScroll: true })
+  refocusing = false
+}
 </script>
 
 <template>
@@ -189,12 +243,18 @@ const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: 
       <ConvertSizeSection />
     </ConvertPopover>
 
-    <section ref="colorsEl" class="convert-column__section">
+    <section
+      ref="colorsEl"
+      class="convert-column__section"
+      @focusin="showNeighbours"
+      @focusout="leaveNeighbours"
+      @pointerdown="showNeighbours"
+    >
       <ValueSlider
         :label="words.colorsLabel"
         :model-value="wizard.maxColors.value"
         :min="MIN_IMAGE_COLORS"
-        :max="wizard.colorsMax.value"
+        :max="colorsEnd"
         :value="has ? colorsValue : NONE"
         :valuetext="has ? colorsValue : NONE"
         :min-label="has ? String(MIN_IMAGE_COLORS) : ''"
@@ -202,6 +262,7 @@ const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: 
         :marks="has ? colorsMarks : undefined"
         :off-body="offBody"
         doubling
+        :page-step="5"
         testid="convert-colors-slider"
         @update:model-value="wizard.setMaxColors"
       >
@@ -219,6 +280,17 @@ const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: 
           />
         </template>
       </ValueSlider>
+      <ConvertColorsNeighbours
+        v-if="neighboursOpen"
+        :fewer="neighbours.fewer.value"
+        :more="neighbours.more.value"
+        :slider="colorsRange"
+        :anchor="() => colorsEl"
+        @pointerdown.capture="pressCard(true)"
+        @pointerup="pressCard(false)"
+        @pointercancel="pressCard(false)"
+        @close="closeNeighbours"
+      />
       <p v-if="has" class="convert-column__matched" data-testid="convert-matched">{{ matchedLine }}</p>
       <!-- Clean up (DS-3, ticket 0906): what the helper did, under Colors; its popover beside the column. -->
       <ConvertCleanUpButton v-if="has" @toggle="wizard.togglePopover('clean-up')" />

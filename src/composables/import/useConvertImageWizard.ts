@@ -452,10 +452,11 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   /** The Colors slider: 12 at first, or every color where that is fewer; a part with fewer colors pulls it down. */
   const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
   /** Fewer codes left in the Finishes on than colors asked: as many colors come out as there are codes (ticket 0901). */
-  const finishesShort = computed(() => finishes.on.value && finishes.codesLeft.value > 0 && finishes.codesLeft.value < maxColors.value)
-  const sampledReduced = computed(() =>
-    reducePictureColors(frameSampled.value?.counts ?? new Map(), finishesShort.value ? finishes.codesLeft.value : maxColors.value),
-  )
+  const shortOf = (count: number) => finishes.on.value && finishes.codesLeft.value > 0 && finishes.codesLeft.value < count
+  const finishesShort = computed(() => shortOf(maxColors.value))
+  /** The picture reduced for a number of colors asked, to the codes left where the Finishes leave fewer. */
+  const reducedFor = (count: number) => reducePictureColors(frameSampled.value?.counts ?? new Map(), shortOf(count) ? finishes.codesLeft.value : count)
+  const sampledReduced = computed(() => reducedFor(maxColors.value))
   // Clean up (ticket 0906): stray beads and small colors, between the reduction and the beads; the found colors follow.
   const cleanUp = useConvertCleanUp({
     kind,
@@ -678,7 +679,26 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
    * beads is the source falls back to the Bead's palette. */
   function toggleMyBeadsCode(code: string) {
     myBeads.toggle(code)
+    fallBackFromEmptyList()
+  }
+
+  /** Clear list in the My beads view (ticket 0903): with My beads the source, the match falls back to the Bead's palette. */
+  function clearMyBeads() {
+    myBeads.clear()
+    fallBackFromEmptyList()
+  }
+
+  function fallBackFromEmptyList() {
     if (chosenSource.value === 'my-beads' && myBeads.codes.value.length === 0) chosenSource.value = 'bead-colors'
+  }
+
+  /** The beads the Project would get at another number of colors, every other setting as it stands (the Colors
+   * neighbours, ticket 0904): the page's own path, sampled grid, reduction, Finish cap and Clean up. */
+  function beadsAtColors(count: number): Grid {
+    if (!frameSampled.value) return []
+    const at = cleanUp.cleanedOf(reducedFor(count))
+    const beads = convertFrame(at.raw, at.reduced, at.found)
+    return kept.value ? keptGrid(beads, kept.value) : beads
   }
 
   /** The Project the converted grid at rest makes: the page's own setup, the grid and its Palette (spec 0645). */
@@ -868,6 +888,9 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     myBeadsTargets: myBeads.targets,
     myBeadsOffered: myBeads.offered,
     toggleMyBeadsCode,
+    /** Pasted codes added to My beads (ticket 0903). */
+    addMyBeadsCodes: myBeads.add,
+    clearMyBeads,
     /** With My beads the source, whether its codes are fewer than the colors asked, so fewer come out and the foot says so. */
     myBeadsShort: computed(() => source.value === 'my-beads' && myBeads.targets.value.length > 0 && myBeads.targets.value.length < maxColors.value),
     // The Finish filter (ticket 0901)
@@ -880,6 +903,12 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     sourceBeadTargets,
     codesLeft: finishes.codesLeft,
     finishesShort,
+    // The Colors neighbours (ticket 0904)
+    beadsAtColors,
+    /** The beads the Project would get now (the kept part's where one is kept), as the neighbours' middle shows them. */
+    beadsShown: computed(() => (kept.value ? keptGrid(grid.value, kept.value) : grid.value)),
+    /** A grid of beads as the Project renderer draws it, in this Bead and Weave (the neighbours' small pictures). */
+    drawnBeads: (cells: Grid) => framedGrid(cells, { ...weave.value, beadId: bead.value.id, bead: bead.value }),
     // Review and Create
     draftProject,
     beadCount,

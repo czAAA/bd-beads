@@ -384,6 +384,31 @@ What the build of Auto-fix lighting (DS-3) had to settle:
 - **The row is `ConvertLightingRow.vue`**, in the picture section under the picture row; ticket 0908's sun button goes at its right end.
 - **The column at 1180 × 820 scrolls more**: the row adds its height and 10, so in English the column passes the pinned foot by about 67 px in the browser test (about 20 before). Auto-fix lighting stays in view at the top; the Clean up button is reached by scrolling, as 0906 already noted for the app at 18px. At 1440 × 900, in the app at 18px, the column also passes the foot now, by about 33 px: DS-3's 15 controls in the first window do not fit there without a layout change.
 
+## As built (ticket 0903)
+
+What the build of finding, filtering and pasting in My beads (DS-2) had to settle:
+
+- **One picker, not a copy.** The view's switch, find and filter row, count line, rows and foot are `MyBeadsPicker` (`components/palette/`), which takes the Bead, its swatches, its catalog and the list as props and emits a tick, the codes added and Clear list; the converter's view keeps only the head and hands it the wizard's list. The editor's Palette popover (ticket 0918) mounts the same picker. The search and the Color and Finish filters are `useBeadColorFinder`, which the Palette popover's `BeadColorList` now uses too, and the search field with the Filters disclosure is one `BeadColorFindRow`; `searchBeadColors` is generic, like `filterBeadColors` since 0901.
+- **The "first 60 shown" cap is back** on both halves, as in BeadColors; the search finds the rest.
+- **The filters open with the converter's Finishes on** (those applied: none under Default Palette or Exact), as the Change picker does, and reset when the view closes.
+- **A paste reads a code in any size of the catalog:** the Bead's size first, then each other size's shop form, so "DBS22" pasted on a Delica 11/0 is known and kept, though the 11/0 view does not list it. Letters standing alone before a number ("DB 721") are that code's prefix. A code pasted twice counts once; a known code the list held is "already in the list".
+- **A listed code the catalog no longer knows** is greyed like a discontinued one, its second line "not in the color catalog · never matched" (a string the design did not name). Only the My beads half lists these; All codes lists the codes made now.
+- **⌘V** is the view's own `paste` event, ignored inside a text field; a clipboard with no text goes on to the converter's picture paste. Pasting adds to the My beads half and turns the switch to it.
+- **The paste box and the clear confirm are a layer** of the overlay registry over the view: Escape closes them first and keeps nothing; a press in the picker leaves them open, one outside it closes them and goes on.
+- **New value:** `--my-beads-never-opacity` (0.4), a never-matched code's swatch.
+## As built (ticket 0904)
+
+What the build of the number of colors and its neighbours (DS-2) had to settle:
+
+- **One path, not a copy.** A neighbour is the page's own conversion at that count: the wizard's `beadsAtColors` reduces the sampled Frame for the count (to the codes left where the Finishes leave fewer), and Clean up's `cleanedOf` matches, cleans and matches again, the same function the page's beads go through. A kept part shows only its beads. Measured on the benchmark's photos (Delica 11/0, peyote, 12 colors), one neighbour costs what one step of the slider costs: 4–9 ms at 60 beads wide, 21–87 ms at 200; the slider's own step is unchanged (cat 61 → 59 ms at 200 wide).
+- **At rest, one after the other.** The neighbours are worked out only while the card shows, 150 ms after the count last moved, each in a task of its own. Their captions follow the count at once; the beads last drawn stay in the frame until the new ones are. A place not yet drawn keeps the shape of the count shown's picture, so the card does not jump; a popover opened while the card shows closes it.
+- **"The same beads" is the rule, not only the codes' cap.** A neighbour whose beads are place for place the beads shown is faded and off, with its Tooltip "The same beads as now." (a string the design did not give: an off control says why). This covers the codes' cap (Plated only, 9 codes) and a photo that gives fewer colors than asked (ticket 0890: the cat asked for 12 gives 7, so 11 and 13 give the same beads and both are faded).
+- **The field's range is the picture's.** "1 to {max}" names the most colors the picture has (256 for a photo, 9 for flat art of 9); a number over it becomes it. Under 40 colors the slider ends at the picture's own max ("max 9"), and "40+" shows only when there are more.
+- **The slider's keys.** Page Up and Page Down step 5 (ValueSlider's new `pageStep`); with a count typed past the end, the thumb holds at the end and the arrows step from the count, Right going no higher (ValueSlider holds any value past its max this way).
+- **Showing and leaving.** The column shows the card on focus in the slider or the card and on a press on the slider, and closes it when focus has gone elsewhere (checked a task later, so a place drawn anew as it turns off keeps the card). A press inside the card counts as inside, as Safari gives a pressed button no focus. The card is a layer of the overlay registry: Escape closes it with focus back on the slider, a press outside closes it and goes through.
+- **Under 1024 px or in portrait** the card stands in the column's flow under the slider, its places sharing the width there is, and the field's row wraps under "type a number" where it must (Spanish at 320). The phone's sheet is ticket 0911.
+- **No new values**: `--convert-neighbour-width` and `--convert-count-field-width` came with the design (ticket 0899). The card's edge is `line`, as ConvertPopover's (there is no `pop-line` token), and the field is `--control-height` tall.
+
 ## As built (ticket 0908)
 
 What the build of Brightness, Contrast and Saturation (DS-3) had to settle:

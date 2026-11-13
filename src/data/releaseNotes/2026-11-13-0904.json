@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-13",
+  "line": {
+    "en": "In the converter the Colors slider shows the pattern at one color fewer and one more beside it while you move it, a tap takes that count, and it runs to 40 with a field for a larger number",
+    "ru": "В конвертере рядом с ползунком «Цвета», пока его двигаешь, видна схема на один цвет меньше и на один больше, нажатие берёт это число, а сам ползунок идёт до 40, а большее число можно ввести в поле",
+    "uk": "У конвертері поруч із повзунком «Кольори», поки його рухаєш, видно схему на один колір менше й на один більше, натискання бере це число, а сам повзунок іде до 40, а більше число можна ввести в поле",
+    "be": "У канвертары побач з паўзунком «Колеры», пакуль яго рухаеш, відаць схему на адзін колер менш і на адзін больш, націск бярэ гэты лік, а сам паўзунок ідзе да 40, а большы лік можна ўвесці ў поле",
+    "zh": "转换器里拖动“颜色”滑块时，旁边会显示少一种和多一种颜色的图样，点一下即采用该数量；滑块到 40 为止，更大的数可在输入框里填写",
+    "es": "En el conversor, mientras mueves el control Colores ves al lado el patrón con un color menos y uno más, un toque toma ese número, y el control llega a 40 con un campo para un número mayor",
+    "pl": "W konwerterze obok suwaka Kolory, gdy go przesuwasz, widać wzór z jednym kolorem mniej i jednym więcej, dotknięcie wybiera tę liczbę, a suwak sięga do 40, a większą liczbę można wpisać w polu"
+  }
+}

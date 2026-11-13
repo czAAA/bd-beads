@@ -1266,6 +1266,19 @@ export interface Translations {
         allCodes: string
         shown: string
         rowOwned: string
+        pasteCodes: string
+        pasteLabel: string
+        pastePlaceholder: string
+        addCodes: string
+        cancel: string
+        added: PluralForms
+        already: PluralForms
+        notKnown: PluralForms
+        dismiss: string
+        discontinuedRow: string
+        unknownRow: string
+        clearList: string
+        clearAll: PluralForms
       }
       footProject: string
       footAddsTo: string
@@ -1337,6 +1350,18 @@ export interface Translations {
       }
       /** Auto-fix lighting (ticket 0907, DS-3): the picture section's row and its switch, spec 0761's name. */
       autoFixLighting: string
+      /** One color fewer and one more (ticket 0904, DS-2): the card's and its field's name, the field's label and range
+       * (`{max}` the most colors), the ends in place of a neighbour, the slider's right end past its last value
+       * (`{value}`), and why a neighbour that gives the beads shown is off. */
+      neighbours: {
+        name: string
+        typeNumber: string
+        range: string
+        noFewer: string
+        noMore: string
+        pastEnd: string
+        same: string
+      }
       /** Brightness, Contrast and Saturation behind Auto-fix lighting (ticket 0908, DS-3): the sun button, the Lighting
        * popover, each slider's name, ends (less, more) and reset, and the column's line naming the moved ones. */
       lighting: {
