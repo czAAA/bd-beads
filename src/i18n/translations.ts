@@ -1272,6 +1272,10 @@ export interface Translations {
       resultBeadsNeeded: string
       resultBeadsNeededCount: string
       resultGoesWhere: string
+      /** The crop on the picture (ticket 0898): the kept chip ("keeping 34×38", Keep all) and the size chip's measure. */
+      keeping: string
+      keepAll: string
+      cropMeasure: string
       /** The match kept to chosen Finishes (ticket 0901, DS-2): the line under Colors with Finishes on (`{finishes}` their
        * names in lower case, or `{count}` of them from 4), the Finish button's name with its count, why it is off, the
        * too-few line and the foot's colors line (`{colors}` the colors, `{codes}` codesLeft), and Finish's note. */

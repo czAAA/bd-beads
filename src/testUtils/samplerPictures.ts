@@ -207,11 +207,10 @@ export function previewBeads(wizard: ConvertImageWizard): (string | undefined)[]
 export function centrePixelBeads(wizard: ConvertImageWizard): (string | undefined)[][] {
   const { width, height } = wizard.image.value!
   wizard.beginMove()
-  wizard.setWeave('part')
   wizard.setPart({ x: 0, y: 0, width, height })
   const centre = previewBeads(wizard)
   wizard.endMove()
-  wizard.setWeave('whole')
+  wizard.keepAll()
   return centre
 }
 

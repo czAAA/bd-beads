@@ -1063,6 +1063,9 @@ export const pl: Translations = {
       resultBeadsNeeded: 'potrzebne koraliki {count} · ≈ {grams}',
       resultBeadsNeededCount: 'potrzebne koraliki {count}',
       resultGoesWhere: 'trafi tam, gdzie leży obraz na płótnie',
+      keeping: 'zostaje {columns}×{rows}',
+      keepAll: 'Zostaw wszystko',
+      cropMeasure: '≈ {measure}',
       finish: {
         matched: '{bead} · {finishes}',
         matchedMany: { other: '{bead} · wykończeń: {count}' },

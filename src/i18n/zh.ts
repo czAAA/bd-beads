@@ -1038,6 +1038,9 @@ export const zh: Translations = {
       resultBeadsNeeded: '所需珠子 {count} · ≈ {grams}',
       resultBeadsNeededCount: '所需珠子 {count}',
       resultGoesWhere: '放在画布上图片所在的位置',
+      keeping: '保留 {columns}×{rows}',
+      keepAll: '全部保留',
+      cropMeasure: '≈ {measure}',
       finish: {
         matched: '{bead} · {finishes}',
         matchedMany: { other: '{bead} · {count} 种表面处理' },

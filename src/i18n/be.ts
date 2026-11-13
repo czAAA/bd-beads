@@ -1064,6 +1064,9 @@ export const be: Translations = {
       resultBeadsNeeded: 'патрэбна бісеру {count} · ≈ {grams}',
       resultBeadsNeededCount: 'патрэбна бісеру {count}',
       resultGoesWhere: 'стане там, дзе на палатне ляжыць выява',
+      keeping: 'пакідаем {columns}×{rows}',
+      keepAll: 'Пакінуць усё',
+      cropMeasure: '≈ {measure}',
       finish: {
         matched: '{bead} · {finishes}',
         matchedMany: { other: '{bead} · пакрыццяў: {count}' },

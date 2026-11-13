@@ -329,6 +329,17 @@ What the build of the column's foot had to settle or change:
 - **Pinned for real:** from 1024 px in landscape the foot is `position: sticky` at the column's bottom on `canvas`, so Create Project stays whole on screen. At 1180 × 820, with the root type at 18px and a "matched to the {bead} palette" line long enough to wrap, the column runs about 12px past the window, which only the foot's bottom padding pays. Under 1024 px or in portrait the foot ends the column's flow, as before.
 - **Four clicks** from the Homepage holds only from the New Project form: since ticket 0866 Make your first Project opens the new Project on the Canvas with no form, so Convert image is the Menu's row, one more press (Make your first Project, Menu, Convert image, Choose file, Create Project).
 
+## As built (ticket 0898)
+
+What the build of DS-1's crop had to settle:
+
+- **One crop, two states.** Dragged on the beads as they were converted, the crop is a part of the beads kept as they are (nothing converted again: the colors are matched over the whole, and the result counts those the part uses, "10 colors · kept from 60×59"). Once Width or Height moves, or the picture turns or flips, it becomes the part of the picture it stands on, converted again with its colors counted from it alone. A handle pulled after that moves the part of the picture by whole beads at the bead size on show, so Width follows the part and the beads inside stay where they were; that pull converts the part again on release.
+- **Width while a part is kept** reads the part's columns, with the range and marks of the pixels under it; Height its rows.
+- **Turn 90° and Flip** with a crop take the part with them at the bead size on show, so Width and Height become the turned part's; without one the Width stays as it was. Keep all, after either, puts the whole picture back at the Width before the crop.
+- **A drag outside the part draws nothing**: the crop is pulled by its handles and moved from inside; with nothing cropped a drag on the beads does nothing.
+- **The kept chip hides while a handle is held**, as the size chip stands beside it then.
+- **New values:** `--convert-crop-line` (1.5), `--convert-crop-halo` (4), `--convert-crop-halo-color` (`canvas` at 75%), `--convert-kept-chip-height` (36), `--convert-kept-chip-height-touch` (40), `--convert-keep-all-height` (28), `--convert-size-chip-gap` (26). Under a finger the held corner's disc is `--handle-reach-touch` in radius, the 44 of DS-1.
+
 ## As built (ticket 0901)
 
 What the build of the Finish filter (DS-2) had to settle:
