@@ -1272,6 +1272,22 @@ export interface Translations {
       resultBeadsNeeded: string
       resultBeadsNeededCount: string
       resultGoesWhere: string
+      /** The match kept to chosen Finishes (ticket 0901, DS-2): the line under Colors with Finishes on (`{finishes}` their
+       * names in lower case, or `{count}` of them from 4), the Finish button's name with its count, why it is off, the
+       * too-few line and the foot's colors line (`{colors}` the colors, `{codes}` codesLeft), and Finish's note. */
+      finish: {
+        matched: string
+        matchedMany: PluralForms
+        /** What joins the Finish names in `matched`: a short list, not a sentence, so no "and" (", ", Chinese "、"). */
+        separator: string
+        buttonOn: string
+        offDefault: string
+        offExact: string
+        tooFew: PluralForms
+        colorsShort: string
+        codesLeft: PluralForms
+        note: string
+      }
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {

@@ -328,3 +328,16 @@ What the build of the column's foot had to settle or change:
 - **The off Tooltip** is the Button's own (`AppButton` with `disabledBody`): it flips above the button as there is no room under it, and is centred on the button rather than standing at the column's left edge 20 in. A Tooltip placed at an edge would need a new `align` on the shared Tooltip.
 - **Pinned for real:** from 1024 px in landscape the foot is `position: sticky` at the column's bottom on `canvas`, so Create Project stays whole on screen. At 1180 × 820, with the root type at 18px and a "matched to the {bead} palette" line long enough to wrap, the column runs about 12px past the window, which only the foot's bottom padding pays. Under 1024 px or in portrait the foot ends the column's flow, as before.
 - **Four clicks** from the Homepage holds only from the New Project form: since ticket 0866 Make your first Project opens the new Project on the Canvas with no form, so Convert image is the Menu's row, one more press (Make your first Project, Menu, Convert image, Choose file, Create Project).
+
+## As built (ticket 0901)
+
+What the build of the Finish filter (DS-2) had to settle:
+
+- **One filter, not a copy.** The Finish list is `BeadColorFilters` itself, given no families: its Color part is left out when it has none, so the Finish lines, their live counts, keys and Clear filters are the Palette popover's. `filterBeadColors` keeps the match to the Finishes on, so the converter and the list filter alike. The Finish button is a `MenuButton` popover (aligned to its end, `--convert-finish-list-width`), whose label slot holds the count badge; `MenuButton` gained that `label` slot.
+- **The Finishes apply to a catalog source**: the Bead's palette and My beads. Under Default Palette or Exact the button is off with its `disabledBody` and the Finishes are kept for the Bead's palette again. A Finish line counts the source's codes of it; the lines are the Finishes present in the Bead's size.
+- **Too few:** with fewer codes left than colors asked, the picture is reduced to as many colors as there are codes, so no color is joined after the match; the Colors slider keeps the count asked. The foot's line is "{n} colors (only {m} codes left)", from two counted words, since the colors and the codes are counted apart.
+- **A filter that leaves no code** (a Finish none of My beads has, a dimmed line pressed) matches to the whole source rather than to nothing; the count line says 0.
+- **The line at rest** joins the Finish names with a separator of each language's own (", ", Chinese "、"), not a list with "and": `Intl.ListFormat`'s unit lists are not alike across the app's languages.
+- **Remembered at Create Project,** with ticket 0893's other last choices; a converter closed without creating keeps nothing, as for the source.
+- **Change picker:** Color by color's Bead colors list opens with the converter's Finishes on (its Filters badge counts them); a change there is that row's alone.
+- **Only one list open:** match to's menu and the Finish list are each a layer of the overlay registry, so a press on the other button first closes the open one.

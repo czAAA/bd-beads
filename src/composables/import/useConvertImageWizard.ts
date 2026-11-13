@@ -4,7 +4,7 @@ import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackgroun
 import { keptGrid, type KeptPart } from '../../domain/convertKeep'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
-import type { ColorCatalog } from '../../domain/colorCatalog'
+import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import {
   beadColorRows,
   beadColorTargets,
@@ -52,6 +52,7 @@ import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { useConvertFinishes } from './useConvertFinishes'
 import { useConvertMyBeads } from './useConvertMyBeads'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
@@ -60,6 +61,8 @@ export interface ConvertImageWizardDeps {
   start: CreateProjectInput
   /** The source of the colors to open on, the device's last (ticket 0893); none is Bead colors where the Bead has them. */
   startSource?: ColorSource
+  /** The Finishes to keep the match to, the device's last (ticket 0901); none is every Finish. */
+  startFinishes?: readonly Finish[]
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
   /** Opened from the reference image's All settings (ticket 0883): the beads go on the open Project, Add to Canvas. */
@@ -101,7 +104,7 @@ const PAUSE_MS = 150
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
  * the Width, the colors, and the preview and Project they make. It keeps nothing (the flow keeps the last choices,
  * ticket 0893): leaving drops it all, Create reads `createProject`. Run it in an effect scope, which stops its timers. */
-export function useConvertImageWizard({ start, startSource, decodeImage, loadCatalog, addsToCanvas = false, myBeads: myBeadsList }: ConvertImageWizardDeps) {
+export function useConvertImageWizard({ start, startSource, startFinishes, decodeImage, loadCatalog, addsToCanvas = false, myBeads: myBeadsList }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -408,12 +411,13 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   })
   /** The Bead colors the source names: all the Bead's, or My beads' of them. */
   const sourceBeadTargets = computed(() => (source.value === 'my-beads' ? myBeads.targets.value : beadTargets.value))
+  const finishes = useConvertFinishes({ start: startFinishes, source, sourceTargets: sourceBeadTargets })
   // Until its catalog has loaded, Bead colors (and My beads) match to the Default Palette, so the preview never shows
   // bare pixels.
   const targets = computed(() =>
     source.value !== 'default' && source.value !== 'exact' && sourceBeadTargets.value.length === 0
       ? sourceTargets('default', builtIns.value, [])
-      : sourceTargets(source.value, builtIns.value, sourceBeadTargets.value),
+      : sourceTargets(source.value, builtIns.value, finishes.targets.value),
   )
 
   const frameSampled = computed(() => rest.value && frameColors(rest.value.sampled, rest.value.lattice, rest.value.grid))
@@ -425,7 +429,11 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   const colorsCapped = computed(() => colorsFound.value > MAX_IMAGE_COLORS)
   /** The Colors slider: 12 at first, or every color where that is fewer; a part with fewer colors pulls it down. */
   const maxColors = computed(() => clamp(chosenColors.value, MIN_IMAGE_COLORS, colorsMax.value))
-  const reduced = computed(() => reducePictureColors(frameSampled.value?.counts ?? new Map(), maxColors.value))
+  /** Fewer codes left in the Finishes on than colors asked: as many colors come out as there are codes (ticket 0901). */
+  const finishesShort = computed(() => finishes.on.value && finishes.codesLeft.value > 0 && finishes.codesLeft.value < maxColors.value)
+  const reduced = computed(() =>
+    reducePictureColors(frameSampled.value?.counts ?? new Map(), finishesShort.value ? finishes.codesLeft.value : maxColors.value),
+  )
   const found = computed(() => matchFoundColors(reduced.value, targets.value, choices.value))
   /** Color by color's rows: the found colors joined by the bead color they become (ticket 0863). */
   const rows = computed(() => beadColorRows(found.value))
@@ -814,6 +822,16 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     toggleMyBeadsCode,
     /** With My beads the source, whether its codes are fewer than the colors asked, so fewer come out and the foot says so. */
     myBeadsShort: computed(() => source.value === 'my-beads' && myBeads.targets.value.length > 0 && myBeads.targets.value.length < maxColors.value),
+    // The Finish filter (ticket 0901)
+    finishes: finishes.finishes,
+    /** The Finishes that narrow the match: none under Default Palette or Exact, where they are kept, off. */
+    finishesApplied: finishes.applied,
+    toggleFinish: finishes.toggle,
+    clearFinishes: finishes.clear,
+    /** The source's codes before the Finishes, which their live counts are counted over. */
+    sourceBeadTargets,
+    codesLeft: finishes.codesLeft,
+    finishesShort,
     // Review and Create
     draftProject,
     beadCount,

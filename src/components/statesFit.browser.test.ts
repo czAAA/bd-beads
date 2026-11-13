@@ -29,6 +29,7 @@ import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
 import ConvertSectionHost from '../testUtils/ConvertSectionHost.vue'
 import ConvertBackgroundSection from './import/ConvertBackgroundSection.vue'
 import ConvertColorsSection from './import/ConvertColorsSection.vue'
+import ConvertFinishFilter from './import/ConvertFinishFilter.vue'
 import ConvertSizeSection from './import/ConvertSizeSection.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
@@ -289,6 +290,32 @@ const CASES: FitCase[] = [
       await bodyShown(root)
       await new Promise((done) => setTimeout(done, 20))
       press(root, 'convert-remove-found')
+    },
+  ],
+  // A Finish on (ticket 0901): the head with the Finish badge and the too-few line, the list closed again so the head's
+  // Tooltips are tried; then the Finish list open on its own, its Clear filters and count line.
+  [
+    'Convert image Colors popover (Finish on)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
+    async (root) => {
+      await bodyShown(root)
+      press(root, 'convert-finish')
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'bead-colors-finish')
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'convert-finish')
+    },
+  ],
+  [
+    'Convert image Finish list',
+    ConvertSectionHost,
+    popoverBody(defineComponent(() => () => h(ConvertFinishFilter, { codes: 'codes in 11/0: 1 191' }))),
+    async (root) => {
+      await bodyShown(root)
+      press(root, 'convert-finish')
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'bead-colors-finish')
     },
   ],
 ]
