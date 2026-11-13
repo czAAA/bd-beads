@@ -1101,6 +1101,15 @@ export const en: Translations = {
         codesLeft: { one: 'only {count} code left', other: 'only {count} codes left' },
         note: 'Finish: keeps the match to the Finishes you tick.',
       },
+      neighbours: {
+        name: 'Number of colors',
+        typeNumber: 'type a number',
+        range: '1 to {max}',
+        noFewer: 'no fewer',
+        noMore: 'no more',
+        pastEnd: '{value}+',
+        same: 'The same beads as now.',
+      },
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

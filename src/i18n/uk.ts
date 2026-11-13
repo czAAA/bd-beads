@@ -1117,6 +1117,15 @@ export const uk: Translations = {
         codesLeft: { other: 'залишилося кодів: {count}' },
         note: 'Покриття: підбір лише за позначеними покриттями.',
       },
+      neighbours: {
+        name: 'Кількість кольорів',
+        typeNumber: 'введіть число',
+        range: 'від 1 до {max}',
+        noFewer: 'менше не можна',
+        noMore: 'більше не можна',
+        pastEnd: '{value}+',
+        same: 'Той самий бісер, що й зараз.',
+      },
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',

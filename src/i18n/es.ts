@@ -1114,6 +1114,15 @@ export const es: Translations = {
         codesLeft: { one: 'solo queda {count} código', many: 'solo quedan {count} de códigos', other: 'solo quedan {count} códigos' },
         note: 'Acabado: limita el ajuste a los acabados que marques.',
       },
+      neighbours: {
+        name: 'Número de colores',
+        typeNumber: 'escribe un número',
+        range: 'de 1 a {max}',
+        noFewer: 'no hay menos',
+        noMore: 'no hay más',
+        pastEnd: '{value}+',
+        same: 'Las mismas cuentas que ahora.',
+      },
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

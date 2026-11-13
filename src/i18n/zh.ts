@@ -1092,6 +1092,15 @@ export const zh: Translations = {
         codesLeft: { other: '只剩 {count} 个色号' },
         note: '表面处理：只匹配你勾选的表面处理。',
       },
+      neighbours: {
+        name: '颜色数量',
+        typeNumber: '输入数字',
+        range: '1 到 {max}',
+        noFewer: '不能更少',
+        noMore: '不能更多',
+        pastEnd: '{value}+',
+        same: '珠子与现在相同。',
+      },
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

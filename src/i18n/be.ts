@@ -1118,6 +1118,15 @@ export const be: Translations = {
         codesLeft: { other: 'засталося кодаў: {count}' },
         note: 'Пакрыццё: падбор толькі па адзначаных пакрыццях.',
       },
+      neighbours: {
+        name: 'Колькасць колераў',
+        typeNumber: 'увядзіце лік',
+        range: 'ад 1 да {max}',
+        noFewer: 'менш нельга',
+        noMore: 'больш нельга',
+        pastEnd: '{value}+',
+        same: 'Той жа бісер, што і цяпер.',
+      },
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',
