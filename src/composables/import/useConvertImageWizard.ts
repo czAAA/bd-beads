@@ -80,7 +80,7 @@ export type ConvertTool = 'make-empty' | 'background'
 
 /** The popovers of the quiet converter (ticket 0896, ConvertImage card DS-1): the column's three, each from its own
  * button, and Background's from the floating bar. One is open at a time; Background's is open while its tool is on. */
-export type ConvertPopover = 'bead' | 'size' | 'colors' | 'background' | 'clean-up'
+export type ConvertPopover = 'bead' | 'size' | 'colors' | 'background' | 'clean-up' | 'lighting'
 
 /** Background (ConvertImage card, 2 Background; ticket 0780): off, found and hatched (1 Find), or made empty places
  * (2 Remove). */

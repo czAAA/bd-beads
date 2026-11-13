@@ -1124,6 +1124,23 @@ export const en: Translations = {
         pastEnd: '{value}+',
         same: 'The same beads as now.',
       },
+      lighting: {
+        more: 'More for the lighting',
+        title: 'Lighting',
+        whatDoes: 'What the lighting sliders do',
+        whatDoesBody: 'Brightness, Contrast and Saturation change the picture before it becomes beads, after Auto-fix lighting if it is on. At 0 they change nothing.',
+        brightness: 'Brightness',
+        contrast: 'Contrast',
+        saturation: 'Saturation',
+        ends: {
+          brightness: ['darker', 'lighter'],
+          contrast: ['softer', 'stronger'],
+          saturation: ['greyer', 'brighter colors'],
+        },
+        reset: 'Reset {slider}',
+        atZero: 'Already at 0.',
+        moved: '{slider} {value}',
+      },
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

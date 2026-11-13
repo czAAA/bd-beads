@@ -33,6 +33,11 @@ const props = defineProps<{
   /** The doubling scale (ValueSlider card, ticket 0895): the thumb at log(value ÷ min) ÷ log(max ÷ min), so marks that
    * each double the last stand evenly. The value, the keys and the value as heard are unchanged. */
   doubling?: boolean
+  /** The value the filled part runs from to the thumb, either way (ticket 0908: the Lighting sliders' 0, a middle that
+   * changes nothing); left out, it runs from the min. */
+  origin?: number
+  /** Shift and an arrow step by this much (ticket 0908); left out, Shift changes nothing. */
+  shiftStep?: number
   /** What Page Up and Page Down move by, where not a tenth of the range (the Colors slider's 5, ticket 0904). */
   pageStep?: number
   /** Off, with why (ticket 0896): kept in place in `faint`, `aria-disabled`, still focusable, its reason in a Tooltip. */
@@ -53,6 +58,12 @@ function fraction(value: number): number {
   return clamp(Math.log(Math.max(value, props.min) / props.min) / Math.log(props.max / props.min), 0, 1)
 }
 const at = computed(() => fraction(props.modelValue))
+/** From a middle: the filled part's two ends along the track, from 0 to 1. */
+const fill = computed(() => {
+  if (props.origin === undefined) return undefined
+  const from = fraction(props.origin)
+  return { '--vs-fill-from': Math.min(from, at.value), '--vs-fill-to': Math.max(from, at.value) }
+})
 /** On the doubling scale the native range runs in these steps of the track, and each step is read back as a value. */
 const TRACK_STEPS = 1000
 const rangeValue = computed(() => (logScale.value ? Math.round(at.value * TRACK_STEPS) : props.modelValue))
@@ -93,7 +104,10 @@ function onKeydown(event: KeyboardEvent) {
   // Off, or on the doubling scale, the range's own steps are not the value's: every key is the slider's.
   const own = logScale.value || props.offBody !== undefined || props.modelValue > props.max
   const upTo = Math.max(props.max, props.modelValue)
-  if (event.key === 'PageUp') set(props.modelValue + page, upTo)
+  const shift = event.shiftKey && props.shiftStep !== undefined
+  if (shift && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + props.shiftStep!, upTo)
+  else if (shift && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - props.shiftStep!, upTo)
+  else if (event.key === 'PageUp') set(props.modelValue + page, upTo)
   else if (event.key === 'PageDown') set(props.modelValue - page, upTo)
   else if (own && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + 1, upTo)
   else if (own && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - 1, upTo)
@@ -139,7 +153,7 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
 </script>
 
 <template>
-  <div class="vs" :class="{ 'vs--off': offBody !== undefined }" :style="{ '--vs-at': at }" :data-testid="testid">
+  <div class="vs" :class="{ 'vs--off': offBody !== undefined, 'vs--origin': fill }" :style="{ '--vs-at': at, ...fill }" :data-testid="testid">
     <div class="vs-head">
       <p class="vs-head-line">
         <span class="vs-label">
@@ -239,5 +253,10 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
   .vs-mark-label { position: absolute; top: 0; transform: translateX(-50%); }
   .vs-mark-label--out { visibility: hidden; }
   .vs-hint { margin: 0; font: var(--type-small); color: var(--muted); }
+  /* From a middle (ticket 0908): the filled part between the two ends, on the thumb's travel. */
+  .vs--origin .vs-range { --vs-fill-a: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--vs-fill-from)); --vs-fill-b: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--vs-fill-to)); }
+  .vs--origin .vs-range::-webkit-slider-runnable-track { background: linear-gradient(to right, transparent var(--vs-fill-a), var(--accent) var(--vs-fill-a), var(--accent) var(--vs-fill-b), transparent var(--vs-fill-b)), var(--track); }
+  .vs--origin .vs-range::-moz-range-track { background: linear-gradient(to right, transparent var(--vs-fill-a), var(--accent) var(--vs-fill-a), var(--accent) var(--vs-fill-b), transparent var(--vs-fill-b)), var(--track); }
+  .vs--origin .vs-range::-moz-range-progress { background: none; }
   [data-theme="contrast"] .vs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 </style>

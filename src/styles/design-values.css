@@ -55,6 +55,7 @@
   --convert-sheet-head: 44px; /* ConvertImage card (ticket 0910): a sheet's head (name, value, More for ..., Close). */
   --convert-fit-phone: 16px; /* ConvertImage card (ticket 0910): room above and at each side of the beads at Fit on a phone. */
   --convert-fit-bottom-phone: 64px; /* ConvertImage card (ticket 0910): room under the beads at Fit on a phone, the bar's 44 and 10 either side. */
+  --convert-lighting-track-height: 40px; /* ConvertImage card (DS-3, ticket 0908): a Lighting slider's track, its line at 18. */
   --convert-fit-tablet: 24px; /* ConvertImage card (ticket 0910): the same above and at the sides on a portrait tablet. */
   --convert-fit-bottom-tablet: 76px; /* ConvertImage card (ticket 0910): room under the beads at Fit on a portrait tablet. */
   --convert-tools-lift-phone: 10px; /* ConvertImage card (ticket 0910): how far the bar on the beads stands above the preview's bottom on a phone. */
