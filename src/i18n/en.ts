@@ -1023,6 +1023,9 @@ export const en: Translations = {
       readingDetail: '{file} · {mb} MB',
       readingLine: 'reading the picture',
       flipLeftRight: 'Flip left to right',
+      keeping: 'keeping {columns}×{rows}',
+      keepAll: 'Keep all',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

@@ -1245,6 +1245,10 @@ export interface Translations {
       readingDetail: string
       readingLine: string
       flipLeftRight: string
+      /** The crop on the picture (ticket 0898): the kept chip ("keeping 34×38", Keep all) and the size chip's measure. */
+      keeping: string
+      keepAll: string
+      cropMeasure: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {

@@ -1014,6 +1014,9 @@ export const zh: Translations = {
       readingDetail: '{file} · {mb} MB',
       readingLine: '正在读取图片',
       flipLeftRight: '左右翻转',
+      keeping: '保留 {columns}×{rows}',
+      keepAll: '全部保留',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

@@ -39,7 +39,6 @@ async function setup(picture: PixelData, beadId = 'toho/cube/1.5mm') {
 describe('useConvertImageWizard sizing (ticket 0747)', () => {
   it('starts on the whole picture at a small piece, the mark nearest 60 beads wide, linked (ticket 0863)', async () => {
     const wizard = await setup(flat(240, 160))
-    expect(wizard.weave.value).toBe('whole')
     expect(wizard.linked.value).toBe(true)
     expect(wizard.sizing.value.width).toBe(60)
     expect(wizard.sizing.value.mark).toEqual({ width: 60, pixelsPerBead: 4 })
@@ -81,48 +80,6 @@ describe('useConvertImageWizard sizing (ticket 0747)', () => {
     expect(wizard.dimensions.value).toEqual({ columns: 80, rows: 50 })
     wizard.setLinked(true)
     expect(wizard.dimensions.value).toEqual({ columns: 80, rows: 40 })
-  })
-
-  it('keeps the sizes when the part changes, dropping only to the part\'s pixels', async () => {
-    const wizard = await setup(flat(200, 100))
-    wizard.setWidth(120)
-    wizard.setLinked(false)
-    wizard.setHeight(60)
-    wizard.setWeave('part')
-    wizard.setPart({ x: 10, y: 10, width: 150, height: 80 })
-    expect(wizard.dimensions.value).toEqual({ columns: 120, rows: 60 })
-    wizard.setPart({ x: 40, y: 20, width: 100, height: 10 })
-    expect(wizard.dimensions.value).toEqual({ columns: 100, rows: 40 })
-    // Back to a bigger part: what was set comes back, nothing was lost by passing through a small one.
-    wizard.setPart({ x: 10, y: 10, width: 150, height: 80 })
-    expect(wizard.dimensions.value).toEqual({ columns: 120, rows: 60 })
-  })
-
-  it('weaves A part from 10% in, the range, grid and colors following it', async () => {
-    const wizard = await setup(bands(60, 30))
-    expect(wizard.colorsMax.value).toBe(3)
-
-    wizard.setWeave('part')
-    expect(wizard.part.value).toEqual({ x: 6, y: 3, width: 48, height: 24 })
-    expect(wizard.sizing.value.range).toEqual({ min: 8, max: 192 })
-
-    // The left third of the part is 12 px of red out of 48: still three colors; a part inside the blue band has one.
-    wizard.setPart({ x: 22, y: 3, width: 16, height: 24 })
-    await nextTick()
-    expect(wizard.colorsMax.value).toBe(1)
-    expect(wizard.sizing.value.range.max).toBe(64)
-  })
-
-  it('goes back to the whole picture on a turn and a flip', async () => {
-    const wizard = await setup(flat(60, 30))
-    wizard.setWeave('part')
-    wizard.turn()
-    expect(wizard.weave.value).toBe('whole')
-    expect([wizard.image.value!.width, wizard.image.value!.height]).toEqual([30, 60])
-
-    wizard.setWeave('part')
-    wizard.flip()
-    expect(wizard.weave.value).toBe('whole')
   })
 })
 

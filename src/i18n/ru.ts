@@ -1039,6 +1039,9 @@ export const ru: Translations = {
       readingDetail: '{file} · {mb} МБ',
       readingLine: 'изображение читается',
       flipLeftRight: 'Отразить слева направо',
+      keeping: 'оставляем {columns}×{rows}',
+      keepAll: 'Оставить всё',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

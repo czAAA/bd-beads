@@ -630,41 +630,65 @@ describe('ConvertImageWizard the floating bar (tickets 0780, 0896)', () => {
   })
 })
 
-describe('ConvertImageWizard keeping a part of the beads (ticket 0780)', () => {
-  /** An 80 × 8 picture: past 75 px wide, one pixel one bead at its widest, 80 × 8 beads. */
+describe('ConvertImageWizard the crop on the picture (ticket 0898)', () => {
+  /** An 80 × 40 picture, red left and white right: one pixel one bead at Width 80, 80 × 40 beads. */
   const eightyWide = async (): Promise<PixelData> => {
     const data: number[] = []
-    for (let y = 0; y < 8; y += 1) for (let x = 0; x < 80; x += 1) data.push(...(x < 40 ? [230, 55, 70, 255] : [255, 255, 255, 255]))
-    return { width: 80, height: 8, data: new Uint8ClampedArray(data) }
+    for (let y = 0; y < 40; y += 1) for (let x = 0; x < 80; x += 1) data.push(...(x < 40 ? [230, 55, 70, 255] : [255, 255, 255, 255]))
+    return { width: 80, height: 40, data: new Uint8ClampedArray(data) }
   }
+  const handle = (wrapper: VueWrapper, name: string) => wrapper.get(`[data-testid="convert-crop-${name}"]`)
 
-  // Select has no button since ticket 0896 (the crop on the picture takes its place, ticket 0898): the part is kept here
-  // as a drag with it would keep it.
-  it('makes only the kept beads the Project, the result line saying so', async () => {
+  it('stands its eight named handles on the whole picture, before the Bead and Technique, with no line round it', async () => {
+    const { wrapper } = open({ decodeImage: eightyWide })
+    expect(wrapper.find('[data-testid="convert-crop-topLeft"]').exists()).toBe(false)
+    await chooseFile(wrapper, picture())
+
+    const handles = wrapper.findAll('[data-testid^="convert-crop-"]').filter((found) => found.element.tagName === 'BUTTON')
+    expect(handles.map((found) => found.attributes('aria-label'))).toEqual([
+      'Crop: top-left corner', 'Crop: top edge', 'Crop: top-right corner', 'Crop: right edge',
+      'Crop: bottom-right corner', 'Crop: bottom edge', 'Crop: bottom-left corner', 'Crop: left edge',
+    ])
+    const bead = wrapper.get('[data-testid="convert-bead-button"]').element
+    expect(handles[0]!.element.compareDocumentPosition(bead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(wrapper.find('[data-testid="convert-crop-line"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-kept"]').exists()).toBe(false)
+  })
+
+  it('moves a focused handle a bead per arrow and ten with Shift, keeping only the beads inside, the result reading the part', async () => {
     const { wrapper, wizard } = open({ decodeImage: eightyWide })
     await chooseFile(wrapper, picture())
     wizard.setWidth(80)
-    wizard.setTool('select')
-    wizard.setKept({ row: 1, column: 1, rows: 3, columns: 4 })
     await flushPromises()
+    await handle(wrapper, 'bottomRight').trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
+    await handle(wrapper, 'bottomRight').trigger('keydown', { key: 'ArrowUp' })
 
-    expect(wrapper.find('[data-testid="convert-kept"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('4×3 beads')
-    expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toContain('kept from 80×8')
-    await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
-    expect(frameOf(created(wrapper)!)).toMatchObject({ columns: 4, rows: 3 })
+    expect(wrapper.find('[data-testid="convert-crop-line"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="convert-kept"]').text()).toContain('keeping 70×39')
+    expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('70×39 beads')
+    expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toContain('kept from 80×40')
+    expect(sliderValue(wrapper, 'convert-width')).toBe(70)
   })
 
-  it('clears the kept part when Width changes, and keeps none with A part of the picture', async () => {
+  it('puts the whole picture back at the Width it had with Keep all', async () => {
     const { wrapper, wizard } = open({ decodeImage: eightyWide })
     await chooseFile(wrapper, picture())
-    wizard.setKept({ row: 0, column: 0, rows: 2, columns: 2 })
-    await slide(wrapper, 'convert-width', 40)
-    expect(wizard.kept.value).toBeUndefined()
+    wizard.setWidth(80)
+    await flushPromises()
+    await handle(wrapper, 'left').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    await slide(wrapper, 'convert-width', 35)
+    expect(wizard.dimensions.value.columns).toBe(35)
 
-    wizard.setWeave('part')
-    wizard.setKept({ row: 0, column: 0, rows: 2, columns: 2 })
-    expect(wizard.kept.value).toBeUndefined()
+    await wrapper.get('[data-testid="convert-keep-all"]').trigger('click')
+    expect(wizard.dimensions.value).toEqual({ columns: 80, rows: 40 })
+    expect(wrapper.find('[data-testid="convert-kept"]').exists()).toBe(false)
+  })
+
+  it('hides the handles while Make empty is on', async () => {
+    const { wrapper } = open({ decodeImage: eightyWide })
+    await chooseFile(wrapper, picture())
+    await wrapper.get('[data-testid="convert-tool-make-empty"]').trigger('click')
+    expect(wrapper.find('[data-testid="convert-crop-topLeft"]').exists()).toBe(false)
   })
 })
 

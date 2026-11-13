@@ -1032,6 +1032,9 @@ export const es: Translations = {
       readingDetail: '{file} · {mb} MB',
       readingLine: 'leyendo la imagen',
       flipLeftRight: 'Voltear de izquierda a derecha',
+      keeping: 'te quedas con {columns}×{rows}',
+      keepAll: 'Quedarse con todo',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

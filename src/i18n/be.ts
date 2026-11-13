@@ -1040,6 +1040,9 @@ export const be: Translations = {
       readingDetail: '{file} · {mb} МБ',
       readingLine: 'выява чытаецца',
       flipLeftRight: 'Адлюстраваць злева направа',
+      keeping: 'пакідаем {columns}×{rows}',
+      keepAll: 'Пакінуць усё',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',

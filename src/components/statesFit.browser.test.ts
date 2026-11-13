@@ -244,6 +244,17 @@ const CASES: FitCase[] = [
     },
   ],
   [
+    'Convert image page (a part kept)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      // The bottom-right handle stepped in, as its keys do (ticket 0898): the crop's line and the kept chip show.
+      const corner = root.querySelector<HTMLElement>('[data-testid="convert-crop-bottomRight"]')
+      for (const key of ['ArrowLeft', 'ArrowUp']) corner?.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: true, bubbles: true }))
+    },
+  ],
+  [
     'Convert image Colors popover (remapping)',
     ConvertSectionHost,
     popoverBody(ConvertColorsSection),

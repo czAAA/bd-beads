@@ -1039,6 +1039,9 @@ export const pl: Translations = {
       readingDetail: '{file} · {mb} MB',
       readingLine: 'wczytywanie obrazu',
       flipLeftRight: 'Odbij w poziomie',
+      keeping: 'zostaje {columns}×{rows}',
+      keepAll: 'Zostaw wszystko',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',
