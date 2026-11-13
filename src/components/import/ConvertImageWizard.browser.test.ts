@@ -148,6 +148,9 @@ describe('the preview’s overlays on the canvas', () => {
 
 // The first window (ticket 0896, ConvertImage card DS-1): at a desktop's and an iPad's size the column holds everything
 // whole with no scroll, in the longest wording too, a popover opens beside it, and under 1024 px the column stacks.
+/** The foot's bottom padding (20 at the 18px root is --space-20): what the column may overrun at 1180 × 820, ticket 0897. */
+const FOOT_BOTTOM_PADDING_PX = 20
+
 describe('Convert image, the quiet converter', () => {
   const find = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
   const rect = (root: HTMLElement, testid: string) => find(root, testid).getBoundingClientRect()
@@ -164,12 +167,10 @@ describe('Convert image, the quiet converter', () => {
         await settleForMeasuring()
         const root = mounted.root
         const column = find(root, 'convert-column')
-        // With Clean up's button under Colors (ticket 0906) the longest words wrap past 820 at 1180: the column scrolls
-        // there, nothing cut, and Create Project is reached by scrolling.
-        if (!(width === 1180 && locale === 'longest')) {
-          expect(column.scrollHeight).toBeLessThanOrEqual(column.clientHeight + 1)
-          expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
-        }
+        // At 1180 × 820 the longest wording runs the column past the window by the sticky foot's padding (ticket 0897),
+        // and further with Clean up's button wrapping (ticket 0906): the foot stays pinned, so Create Project is whole.
+        if (!(width === 1180 && locale === 'longest')) expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX)
+        expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
         // The bar's buttons stand whole inside it.
         const bar = rect(root, 'convert-preview-tools')
         for (const button of find(root, 'convert-preview-tools').querySelectorAll('button')) {

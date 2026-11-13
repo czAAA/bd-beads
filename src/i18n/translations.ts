@@ -1267,6 +1267,15 @@ export interface Translations {
         shown: string
         rowOwned: string
       }
+      footProject: string
+      footAddsTo: string
+      resultBeadsNeeded: string
+      resultBeadsNeededCount: string
+      resultGoesWhere: string
+      /** The crop on the picture (ticket 0898): the kept chip ("keeping 34×38", Keep all) and the size chip's measure. */
+      keeping: string
+      keepAll: string
+      cropMeasure: string
       /** Clean up (ticket 0906, DS-3): the popover's title, the button's name (`{line}` its first line), Info, switch,
        * steps and their off reason, the counts, the pixel-art lines, and Small colors join with its Info, stepper names
        * and result (`colorsJoined` then `joinedBeads`, joined by " · "). */

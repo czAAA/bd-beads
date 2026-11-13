@@ -316,6 +316,29 @@ What the build of My beads (DS-2) had to settle:
 - **A press outside the My beads view closes the Colors popover** as one outside the Colors view does; Escape returns to Colors first.
 - **New values:** `--my-beads-row` (`panel-row-two-line` + 4), `--my-beads-row-touch`, `--my-beads-swatch` (24), `--my-beads-tick` (20). SegmentedControl's options take a `meta` count in `meta-small` (the switch's "1 191").
 
+## As built (ticket 0897)
+
+What the build of the column's foot had to settle or change:
+
+- **The foot is its own component,** `ConvertFoot.vue`, in the column after Colors. The project line reads the wizard's `projectName`, the one name the Project gets: the New Project form's Name, else the picture's file name. Opened from the Menu's Convert image or a picture dropped or pasted on the app, the page starts with no Name and no Maker's name, even if the form was filled in earlier. From a reference image's All settings it names the open Project.
+- **Beads needed** counts the beads the Project will hold (a kept part's only, no empty place counted). Its weight is the Frame panel's (`estimatedGrams`, `formatGrams`); for a Bead with no weight the line is "beads needed {n}" alone.
+- **Heard once:** the three lines on screen are `aria-hidden`, and a visually hidden `role="status"` line beside them takes their text 600 ms after the last change, so a screen reader hears the result once a slider is let go, not at every step.
+- **Off while a picture is read,** a replacement too, not only before the first picture.
+- **"Add a picture first."** now ends in a full stop in every language, as a Tooltip body does; the column's off sliders and buttons use the same string.
+- **The off Tooltip** is the Button's own (`AppButton` with `disabledBody`): it flips above the button as there is no room under it, and is centred on the button rather than standing at the column's left edge 20 in. A Tooltip placed at an edge would need a new `align` on the shared Tooltip.
+- **Pinned for real:** from 1024 px in landscape the foot is `position: sticky` at the column's bottom on `canvas`, so Create Project stays whole on screen. At 1180 × 820, with the root type at 18px and a "matched to the {bead} palette" line long enough to wrap, the column runs about 12px past the window, which only the foot's bottom padding pays. Under 1024 px or in portrait the foot ends the column's flow, as before.
+- **Four clicks** from the Homepage holds only from the New Project form: since ticket 0866 Make your first Project opens the new Project on the Canvas with no form, so Convert image is the Menu's row, one more press (Make your first Project, Menu, Convert image, Choose file, Create Project).
+## As built (ticket 0898)
+
+What the build of DS-1's crop had to settle:
+
+- **One crop, two states.** Dragged on the beads as they were converted, the crop is a part of the beads kept as they are (nothing converted again: the colors are matched over the whole, and the result counts those the part uses, "10 colors · kept from 60×59"). Once Width or Height moves, or the picture turns or flips, it becomes the part of the picture it stands on, converted again with its colors counted from it alone. A handle pulled after that moves the part of the picture by whole beads at the bead size on show, so Width follows the part and the beads inside stay where they were; that pull converts the part again on release.
+- **Width while a part is kept** reads the part's columns, with the range and marks of the pixels under it; Height its rows.
+- **Turn 90° and Flip** with a crop take the part with them at the bead size on show, so Width and Height become the turned part's; without one the Width stays as it was. Keep all, after either, puts the whole picture back at the Width before the crop.
+- **A drag outside the part draws nothing**: the crop is pulled by its handles and moved from inside; with nothing cropped a drag on the beads does nothing.
+- **The kept chip hides while a handle is held**, as the size chip stands beside it then.
+- **New values:** `--convert-crop-line` (1.5), `--convert-crop-halo` (4), `--convert-crop-halo-color` (`canvas` at 75%), `--convert-kept-chip-height` (36), `--convert-kept-chip-height-touch` (40), `--convert-keep-all-height` (28), `--convert-size-chip-gap` (26). Under a finger the held corner's disc is `--handle-reach-touch` in radius, the 44 of DS-1.
+
 ## As built (ticket 0906)
 
 What the build of Clean up (DS-3) had to settle:
@@ -325,4 +348,4 @@ What the build of Clean up (DS-3) had to settle:
 - **The popover is ConvertPopover's `level` place**: beside the column, its bottom measured level with the button's when it opens. Under 1024 px it opens in place in the column until ticket 0911's sheet.
 - **Small colors join's stepper is the Stepper with a Shift step**: AppStepper takes `shift-step-by` (10 here), which also makes the arrow keys on the stepper step, Shift by it. Its value button still opens the number for typing.
 - **"Off for pixel art" stays while the switch is off on flat art**, also after the person turned it off again; "Off" over "{n} stray beads left" is a photo's.
-- **At 1180 × 820 the column scrolls in the longest words**: the button's two lines wrap in Russian, Ukrainian and Belarusian and the column passes the window by about 40 px. Nothing is cut; Create Project is reached by scrolling. English, Spanish and Polish still fit.
+- **At 1180 × 820 the column scrolls in the longest words**: the button's two lines wrap in Russian, Ukrainian and Belarusian and the column passes the window by about 40 px. Nothing is cut, and the foot (ticket 0897) stays pinned, so Create Project stays whole; what scrolls is the column above it. English, Spanish and Polish still fit.

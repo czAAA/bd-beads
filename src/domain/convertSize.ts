@@ -30,82 +30,15 @@ export function fullCrop({ width, height }: ImageSize): PixelCrop {
   return { x: 0, y: 0, width, height }
 }
 
-/** The fewest pixels a part has on a side (ConvertImage card). */
-const MIN_PART_PX = 8
-
-/** A part a whole number of pixels, on the picture, at least MIN_PART_PX a side. */
-function clampPart(part: PixelCrop, image: ImageSize): PixelCrop {
-  const axis = (start: number, size: number, length: number) => {
-    const least = Math.min(MIN_PART_PX, length)
-    const extent = clamp(Math.round(size), least, length)
-    return [clamp(Math.round(start), 0, length - extent), extent] as const
-  }
-  const [x, width] = axis(part.x, part.width, image.width)
-  const [y, height] = axis(part.y, part.height, image.height)
-  return { x, y, width, height }
+/** The part turned with the picture a quarter turn clockwise (Turn 90°, ticket 0898): the same piece of the picture,
+ * in the turned picture's pixels. `image` is the picture before the turn. */
+export function partTurned(part: PixelCrop, image: ImageSize): PixelCrop {
+  return { x: image.height - part.y - part.height, y: part.x, width: part.height, height: part.width }
 }
 
-/** Where A part starts (ConvertImage card): 10% in from each edge, so there is something to drag at once. */
-export function partInset(image: ImageSize): PixelCrop {
-  const inX = Math.round(image.width * 0.1)
-  const inY = Math.round(image.height * 0.1)
-  return clampPart({ x: inX, y: inY, width: image.width - inX * 2, height: image.height - inY * 2 }, image)
-}
-
-/** The edges a handle holds. */
-function edgesOf(handle: CropHandle) {
-  const lower = handle.toLowerCase()
-  return {
-    left: lower.includes('left'),
-    right: lower.includes('right'),
-    top: handle.startsWith('top'),
-    bottom: handle.startsWith('bottom'),
-  }
-}
-
-/** The part with a handle's edges moved by picture pixels (ConvertImage card): whole pixels, on the picture, never
- * under MIN_PART_PX a side. */
-export function partMoved(part: PixelCrop, handle: CropHandle, dx: number, dy: number, image: ImageSize): PixelCrop {
-  const edges = edgesOf(handle)
-  let left = part.x
-  let right = part.x + part.width
-  let top = part.y
-  let bottom = part.y + part.height
-  if (edges.left) left = Math.min(left + dx, right - MIN_PART_PX)
-  if (edges.right) right = Math.max(right + dx, left + MIN_PART_PX)
-  if (edges.top) top = Math.min(top + dy, bottom - MIN_PART_PX)
-  if (edges.bottom) bottom = Math.max(bottom + dy, top + MIN_PART_PX)
-  const moved = { x: Math.round(left), y: Math.round(top), width: Math.round(right) - Math.round(left), height: Math.round(bottom) - Math.round(top) }
-  // A moved edge stays put at the picture's edge; the other edges keep their place.
-  return clampPart(
-    {
-      x: edges.left ? clamp(moved.x, 0, part.x + part.width - MIN_PART_PX) : moved.x,
-      y: edges.top ? clamp(moved.y, 0, part.y + part.height - MIN_PART_PX) : moved.y,
-      width: edges.left ? part.x + part.width - clamp(moved.x, 0, part.x + part.width - MIN_PART_PX) : Math.min(moved.width, image.width - moved.x),
-      height: edges.top ? part.y + part.height - clamp(moved.y, 0, part.y + part.height - MIN_PART_PX) : Math.min(moved.height, image.height - moved.y),
-    },
-    image,
-  )
-}
-
-/** The part moved as it is, by picture pixels (ConvertImage card, A part): dragging inside it. Whole pixels, kept on the
- * picture. */
-export function partShifted(part: PixelCrop, dx: number, dy: number, image: ImageSize): PixelCrop {
-  return clampPart({ ...part, x: part.x + dx, y: part.y + dy }, image)
-}
-
-/** The part drawn from the pixel a drag began on to the pixel it is at (ConvertImage card, A part): any corner to the
- * opposite one, kept on the picture, never under MIN_PART_PX a side (it grows the way the drag goes). */
-export function partDrawn(from: { x: number; y: number }, to: { x: number; y: number }, image: ImageSize): PixelCrop {
-  const axis = (start: number, end: number, length: number) => {
-    const a = clamp(start, 0, length)
-    const b = clamp(end, 0, length)
-    const extent = Math.max(Math.abs(b - a), MIN_PART_PX)
-    return [b >= a ? a : a - extent, extent] as const
-  }
-  const [x, width] = axis(from.x, to.x, image.width)
-  const [y, height] = axis(from.y, to.y, image.height)
-  return clampPart({ x, y, width, height }, image)
+/** The part flipped with the picture left to right (Flip left to right, ticket 0898). */
+export function partFlipped(part: PixelCrop, image: ImageSize): PixelCrop {
+  return { ...part, x: image.width - part.x - part.width }
 }
 
 /** Beads on a side beyond which converting and drawing take longer: the Large Schema note, and where the Width slider

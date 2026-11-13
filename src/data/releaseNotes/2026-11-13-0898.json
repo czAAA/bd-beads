@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-13",
+  "line": {
+    "en": "In the converter the crop comes first, on the picture: drag a handle to keep only a part, and Width and Colors follow it; Keep all puts the whole picture back",
+    "ru": "В конвертере обрезка идёт первой, прямо на изображении: потяните маркер, чтобы оставить только часть, и ширина с цветами следуют за ней; «Оставить всё» возвращает всё изображение",
+    "uk": "У конвертері обрізання йде першим, просто на зображенні: потягніть маркер, щоб лишити тільки частину, і ширина та кольори йдуть за нею; «Лишити все» повертає все зображення",
+    "be": "У канвертары абрэзка ідзе першай, проста на выяве: пацягніце маркер, каб пакінуць толькі частку, і шырыня з колерамі ідуць за ёй; «Пакінуць усё» вяртае ўсю выяву",
+    "zh": "转换器里裁剪排在第一，就在图片上：拖动手柄只保留一部分，宽度和颜色随之变化；“全部保留”恢复整张图片",
+    "es": "En el conversor el recorte va primero, sobre la imagen: arrastra un tirador para quedarte solo con una parte, y el ancho y los colores la siguen; Quedarse con todo devuelve la imagen entera",
+    "pl": "W konwerterze kadrowanie jest pierwsze, na samym obrazie: przeciągnij uchwyt, by zostawić tylko część, a szerokość i kolory pójdą za nią; Zostaw wszystko przywraca cały obraz"
+  }
+}
