@@ -264,6 +264,17 @@ const CASES: FitCase[] = [
       for (const key of ['ArrowLeft', 'ArrowUp']) corner?.dispatchEvent(new KeyboardEvent('keydown', { key, shiftKey: true, bubbles: true }))
     },
   ],
+  // The neighbours' card beside the Colors slider (ticket 0904): its captions, an end of the range and the field's row.
+  [
+    'Convert image page (number of colors)',
+    ConvertPageHost,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      root.querySelector<HTMLElement>('[data-testid="convert-colors-slider-range"]')?.focus()
+      await new Promise((done) => setTimeout(done, 200))
+    },
+  ],
   [
     'Convert image Colors popover (remapping)',
     ConvertSectionHost,

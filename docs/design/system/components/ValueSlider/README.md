@@ -7,7 +7,7 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 ## Parts
 
 - **Head line:** the name in `control` (Inter 500 13, `ink`), and right-aligned the value in `meta` `ink`. Where the consumer gives a second unit, it follows in `meta` `muted` after " · " ("32 beads · 51 mm"). The value never wraps.
-- **The range:** a native `<input type="range">`, step 1, its min and max from the consumer, one Tab stop. Arrows step 1, Page Up and Page Down a tenth of the range (at least 1), Home and End go to the ends. `aria-valuetext` is the head's value in words, both units ("32 beads, 51 mm"), and on a mark what the mark means (the consumer's words, "1 bead = 8 × 8 px").
+- **The range:** a native `<input type="range">`, step 1, its min and max from the consumer, one Tab stop. Arrows step 1, Page Up and Page Down a tenth of the range (at least 1) or the consumer's own step (`pageStep`: the converter's Colors, 5; ticket 0904), Home and End go to the ends. A value past the max (typed elsewhere, as the Colors count past 40) holds the thumb at the end with the track filled; the arrows then step from that value, down by 1 and no higher. `aria-valuetext` is the head's value in words, both units ("32 beads, 51 mm"), and on a mark what the mark means (the consumer's words, "1 bead = 8 × 8 px").
 - **Track, filled part and thumb** as QualitySlider: `slider-track` (4px, `radius-full`) in `track`, the filled part in `accent`, the thumb `slider-thumb` (20px) in `ink` with a 2px `canvas` ring; the input `touch-target` (44px) tall. Its states (hover, focus-visible ring 2px outside the thumb, dragging at `slider-thumb-scale`, disabled) are QualitySlider's.
 - **The ends**, `space-4` under the track, each centred under its end of the thumb's travel: the min in `meta-small` `muted`, the max in `meta-small` `ink`, written "max 256" so it reads as a limit, not a reading.
 - **Hint:** optional, one line under the ends in `small` `muted`.
@@ -22,7 +22,7 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 
 ## Doubling scale (ticket 0895)
 
-- Optional, and the converter's Width, Height and Colors take it (DS-1, ConvertImage card): the thumb stands at log(value ÷ min) ÷ log(max ÷ min) of the track instead of in proportion, so marks that each double the one before (Width's 25, 50, 100, 200; Colors' 4, 16, 64) stand evenly apart and the small values a beginner wants get most of the track (12 colors near the middle of 1 to 256, not at 4%).
+- Optional, and the converter's Width, Height and Colors take it (DS-1, ConvertImage card): the thumb stands at log(value ÷ min) ÷ log(max ÷ min) of the track instead of in proportion, so marks that each double the one before (Width's 25, 50, 100, 200; Colors' 5, 10, 20 on 1 to 40 since ticket 0904) stand evenly apart and the small values a beginner wants get most of the track (12 colors near the middle of 1 to 256, not at 4%).
 - Only the thumb's place changes: the value is still a whole number, keys still step by 1 (Page Up and Page Down a tenth of the range, in value), a drag still settles on a mark within `--slider-mark-snap`, and `aria-valuetext` is unchanged.
 
 - The converter's Colors slider runs 1 to 40 since DS-2 (ticket 0904): marks at 5, 10 and 20, ends "1" and "40+". A larger count, to 256, is typed in the neighbours' card (ConvertImage card). Above 40 the thumb rests at the right end with the track filled; Left steps down from the typed value.

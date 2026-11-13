@@ -1350,6 +1350,18 @@ export interface Translations {
       }
       /** Auto-fix lighting (ticket 0907, DS-3): the picture section's row and its switch, spec 0761's name. */
       autoFixLighting: string
+      /** One color fewer and one more (ticket 0904, DS-2): the card's and its field's name, the field's label and range
+       * (`{max}` the most colors), the ends in place of a neighbour, the slider's right end past its last value
+       * (`{value}`), and why a neighbour that gives the beads shown is off. */
+      neighbours: {
+        name: string
+        typeNumber: string
+        range: string
+        noFewer: string
+        noMore: string
+        pastEnd: string
+        same: string
+      }
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
