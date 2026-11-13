@@ -204,6 +204,31 @@ describe('sampleLatticePacked', () => {
     }
   })
 
+  it.each(['loom', 'peyote', 'brick'] as const)(
+    'reads each bead’s centre pixel by either rule at a pixel a bead or less, in %s, for any part (ticket 0888)',
+    (technique) => {
+      const image = busyImage(53, 41)
+
+      for (const part of [{ x: 0, y: 0, width: 53, height: 41 }, { x: 10, y: 7, width: 24, height: 20 }, { x: 40, y: 30, width: 13, height: 11 }]) {
+        for (const pixelsPerBead of [{ x: 1, y: 1 }, { x: 0.5, y: 0.5 }, { x: 1, y: 0.4 }]) {
+          const dimensions = { columns: Math.ceil(part.width / pixelsPerBead.x), rows: Math.ceil(part.height / pixelsPerBead.y) }
+          const input = { image, part, pixelsPerBead, technique, lattice: partLattice({ image, part, pixelsPerBead, dimensions, technique }) }
+
+          expect(sampleLatticePacked({ ...input, rule: 'area' })).toEqual(sampleLatticePacked(input))
+        }
+      }
+    },
+  )
+
+  it('reads a bead’s whole area by the area rule, and its centre pixel by default (ticket 0888)', () => {
+    // Red, with one white pixel at each 4 × 4 bead's centre: the centre pixel says white, the area red.
+    const image = pixels(8, 4, Array.from({ length: 32 }, (_pixel, at) => ((at % 8) % 4 === 2 && Math.floor(at / 8) === 2 ? [255, 255, 255, 255] : [200, 0, 0, 255])))
+    const input = { image, part: { x: 0, y: 0, width: 8, height: 4 }, pixelsPerBead: { x: 4, y: 4 }, technique: 'loom' as const, lattice: { columns: 2, rows: 1, frameColumn: 0, frameRow: 0 } }
+
+    expect(Array.from(sampleLatticePacked(input), packedToHex)).toEqual(['#ffffff', '#ffffff'])
+    expect(Array.from(sampleLatticePacked({ ...input, rule: 'area' }), packedToHex)).toEqual(['#c80000', '#c80000'])
+  })
+
   it('leaves off-picture cells as NO_COLOR', () => {
     const image = flat(2, 2, [10, 20, 30])
 
