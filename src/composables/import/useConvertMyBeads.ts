@@ -1,6 +1,6 @@
 import { computed, type Ref } from 'vue'
 import type { TargetColor } from '../../domain/convertColors'
-import { myBeadsCodes, ownedTargets, withCodeToggled, type MyBeads } from '../../domain/myBeads'
+import { myBeadsCodes, ownedTargets, withCodesAdded, withCodeToggled, withListCleared, type MyBeads } from '../../domain/myBeads'
 
 /** What the converter's My beads reads from the wizard: the device's list, the Bead's Color catalog and its codes. */
 export interface ConvertMyBeadsDeps {
@@ -24,6 +24,14 @@ export function useConvertMyBeads({ list, catalogId, beadTargets }: ConvertMyBea
     /** Ticks a code into the list, or unticks it; the device keeps it at once. */
     toggle(code: string) {
       if (catalogId.value) list.value = withCodeToggled(list.value, catalogId.value, code)
+    },
+    /** Adds pasted codes to the list (ticket 0903); the device keeps it at once. */
+    add(added: readonly string[]) {
+      if (catalogId.value) list.value = withCodesAdded(list.value, catalogId.value, added)
+    },
+    /** Clear list (ticket 0903): the Bead's catalog's codes gone, other catalogs' kept. */
+    clear() {
+      if (catalogId.value) list.value = withListCleared(list.value, catalogId.value)
     },
   }
 }
