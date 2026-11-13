@@ -17,6 +17,14 @@ import {
 const reduced = (entries: Record<string, number>) => reducePictureColors(new Map(Object.entries(entries)), 14)
 const choices = (entries: Record<string, FoundColorChoice> = {}) => new Map(Object.entries(entries))
 const defaults = sourceTargets('default', BUILT_IN_COLORS, [])
+/** A reduced picture of these colors, as the reduction hands it over. */
+const reducedPicture = (entries: Record<string, number>): ReducedColors => ({
+  colors: Object.entries(entries).map(([hex, count]) => ({ hex, count })),
+  byHex: new Map(Object.keys(entries).map((hex) => [hex, hex])),
+  keptApart: true,
+})
+/** The bead colors the found colors deliver, none for an empty. */
+const delivered = (found: ReturnType<typeof matchFoundColors>) => [...new Set(found.flatMap((color) => (color.result ? [color.result.hex] : [])))]
 
 const catalog: ColorCatalog = {
   id: 'test',
@@ -154,15 +162,8 @@ describe('newProjectPalette', () => {
 
 // Ticket 0890: the least distance holds for what is delivered, after the match, so two look-alike codes never both come out.
 describe('the least distance between delivered colors (ticket 0890)', () => {
-  /** A reduced picture of these colors, as the reduction hands it over. */
-  const reducedPicture = (entries: Record<string, number>): ReducedColors => ({
-    colors: Object.entries(entries).map(([hex, count]) => ({ hex, count })),
-    byHex: new Map(Object.keys(entries).map((hex) => [hex, hex])),
-    keptApart: true,
-  })
   const apart = (hexes: readonly string[]) =>
     hexes.every((a) => hexes.every((b) => a === b || colorDistance(toOklab(channelsOf(a)), toOklab(channelsOf(b))) >= LEAST_COLOR_DISTANCE))
-  const delivered = (found: ReturnType<typeof matchFoundColors>) => [...new Set(found.map((color) => color.result!.hex))]
 
   const lookAlikes = [
     { hex: '#202020', code: 'DB10' },
@@ -203,5 +204,80 @@ describe('the least distance between delivered colors (ticket 0890)', () => {
   it('still lets the maker remap a color onto a look-alike', () => {
     const found = matchFoundColors(picture, lookAlikes, choices({ '#383838': { kind: 'remap', target: lookAlikes[1]! } }))
     expect(found.map((color) => color.result?.code)).toEqual(['DB10', 'DB2394', 'DB200'])
+  })
+})
+
+// Ticket 0891: a color used by fewer beads than the minimum is no tube to buy; it joins the nearest color that stays.
+describe('a color used by a handful of beads (ticket 0891)', () => {
+  /** Soft edges: `steps` blends from one flat color to another, each used by `beads` beads. */
+  const blends = (from: string, to: string, steps: number, beads: number): Record<string, number> => {
+    const a = channelsOf(from)
+    const b = channelsOf(to)
+    const hex = (value: number) => Math.round(value).toString(16).padStart(2, '0')
+    return Object.fromEntries(
+      Array.from({ length: steps }, (_, at) => {
+        const t = (at + 1) / (steps + 1)
+        return [`#${hex(a.r + (b.r - a.r) * t)}${hex(a.g + (b.g - a.g) * t)}${hex(a.b + (b.b - a.b) * t)}`, beads]
+      }),
+    )
+  }
+
+  it('joins a color under the minimum into the nearest color that stays', () => {
+    const found = matchFoundColors(reducedPicture({ '#1a1a1a': 50, '#e8e8e8': 40, '#202080': 9, '#d03030': 10 }), undefined, choices())
+    expect(found.map((color) => color.result?.hex)).toEqual(['#1a1a1a', '#e8e8e8', '#1a1a1a', '#d03030'])
+  })
+
+  it('makes the preview, the found colors, Color by color and Beads needed agree', () => {
+    const picture = reducedPicture({ '#1a1a1a': 50, '#e8e8e8': 40, '#202080': 5 })
+    const codes = [{ hex: '#202020', code: 'DB10' }, { hex: '#202080', code: 'DB5' }, { hex: '#e0e0e0', code: 'DB200' }]
+    const found = matchFoundColors(picture, codes, choices())
+    const black = found[0]!.result!
+    expect(found[2]!.result).toEqual(codes[0])
+    expect(beadColorRows(found).map(({ pictureHexes, count }) => [pictureHexes, count])).toEqual([
+      [['#1a1a1a', '#202080'], 55],
+      [['#e8e8e8'], 40],
+    ])
+    expect(convertFrame([['#202080', '#e8e8e8']], picture, found)).toEqual([[{ color: black.hex }, { color: found[1]!.result!.hex }]])
+    expect(newProjectPalette([], found).codes).toEqual({ '#202020': 'DB10', '#e0e0e0': 'DB200' })
+  })
+
+  it('counts the beads of a code, so two small colors that match one code reaching the minimum stay', () => {
+    const found = matchFoundColors(reducedPicture({ '#1a1a1a': 50, '#ff0000': 6, '#e00000': 6 }), [{ hex: '#202020' }, { hex: '#d02020' }], choices())
+    expect(delivered(found)).toEqual(['#202020', '#d02020'])
+  })
+
+  it('gives a synthetic logo with soft edges at 12 colors its 5 colors', () => {
+    const flat = { '#1a237e': 1200, '#2e7d32': 660, '#c62828': 560, '#ffffff': 280, '#fbc02d': 170 }
+    const edges = {
+      ...blends('#1a237e', '#ffffff', 4, 2),
+      ...blends('#2e7d32', '#ffffff', 4, 1),
+      ...blends('#c62828', '#ffffff', 4, 2),
+      ...blends('#fbc02d', '#1a237e', 4, 1),
+      ...blends('#c62828', '#2e7d32', 4, 1),
+    }
+    const found = matchFoundColors(reducePictureColors(new Map(Object.entries({ ...flat, ...edges })), 12), undefined, choices())
+    expect(delivered(found)).toHaveLength(5)
+  })
+
+  it('gives synthetic lettering its 3 colors', () => {
+    const lettering = { '#ffffff': 560, '#6d4c41': 100, '#d32f2f': 60, ...blends('#6d4c41', '#ffffff', 4, 2), ...blends('#d32f2f', '#ffffff', 4, 1), ...blends('#6d4c41', '#d32f2f', 3, 1) }
+    const found = matchFoundColors(reducePictureColors(new Map(Object.entries(lettering)), 12), undefined, choices())
+    expect(delivered(found)).toHaveLength(3)
+  })
+
+  it('keeps every color of pixel art, whose colors fit the count, however few beads use one', () => {
+    const found = matchFoundColors(reduced({ '#1a1a1a': 50, '#e8e8e8': 40, '#ff0000': 1 }), defaults, choices())
+    expect(delivered(found)).toHaveLength(3)
+  })
+
+  it('keeps a color the maker kept exact or changed, however few beads use it', () => {
+    const picture = reducedPicture({ '#1a1a1a': 50, '#e8e8e8': 40, '#202080': 5, '#f0d0d0': 3 })
+    const kept = matchFoundColors(picture, undefined, choices({ '#202080': { kind: 'exact' }, '#f0d0d0': { kind: 'remap', target: { hex: '#ff00ff' } } }))
+    expect(kept.map((color) => color.result?.hex)).toEqual(['#1a1a1a', '#e8e8e8', '#202080', '#ff00ff'])
+  })
+
+  it('leaves the colors as they are when none reaches the minimum', () => {
+    const found = matchFoundColors(reducedPicture({ '#1a1a1a': 5, '#e8e8e8': 4 }), undefined, choices())
+    expect(delivered(found)).toEqual(['#1a1a1a', '#e8e8e8'])
   })
 })
