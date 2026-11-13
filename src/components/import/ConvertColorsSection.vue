@@ -8,26 +8,21 @@ import { beadLabel } from '../../domain/beads'
 import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
-import AppIcon from '../ui/AppIcon.vue'
 import AppNote from '../ui/AppNote.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertDisclosure from './ConvertDisclosure.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
 
-// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758, 0780, 0863): the Colors slider, the line
-// pointing at Make empty, match to (the Bead's palette first, with a Color catalog) with a Note on what each choice does,
-// and Color by color, closed at first: a row per bead color the found colors become, one Change open at a time.
+// Convert image's Colors section (ConvertImage card, 4 Colors; tickets 0747, 0758, 0780, 0863, 0894): the Colors slider,
+// match to (the Bead's palette first, with a Color catalog), each with what it does behind an Info button, and Color by
+// color, closed at first: a row per bead color the found colors become, one Change open at a time.
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const sourceLabelId = useId()
-/** The line pointing at Make empty round the tool's name, which is set in bold. */
-const makeEmptyLine = computed(() => {
-  const [before = '', after = ''] = words.value.makeEmptyLine.split('{tool}')
-  return { before, after }
-})
 
 /** The Bead as the palette's Bead colors entry names it: its maker, name and shape, with no finish. */
 const beadName = computed(() => beadLabel(wizard.bead.value))
@@ -44,14 +39,14 @@ const colorsText = (count: number) => plural(locale.value, count, words.value.co
 const colorsValue = computed(() => colorsText(wizard.maxColors.value))
 const colorsMaxText = computed(() => groupThousands(wizard.colorsMax.value, locale.value))
 const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: colorsMaxText.value }))
-/** Under Exact a color is not a bead to buy, so the hint says what it is instead (ticket 0863). */
-const colorsHint = computed(() => {
+/** Under Exact a color is not a bead to buy, so the Info says what it is instead (tickets 0863, 0894). */
+const colorsInfo = computed(() => {
   const exact = wizard.source.value === 'exact'
   const capped = wizard.colorsCapped.value
   const hint = exact ? (capped ? words.value.colorsHintExactCapped : words.value.colorsHintExact) : capped ? words.value.colorsHintCapped : words.value.colorsHint
-  return fillBlanks(hint, { n: colorsMaxText.value })
+  return { label: fillBlanks(words.value.whatDoes, { name: words.value.sections.colors }), body: fillBlanks(hint, { n: colorsMaxText.value }) }
 })
-/** The line under the choice in hand, saying what it does (ticket 0863). */
+/** What the choice in hand does, behind match to's Info button (tickets 0863, 0894). */
 const sourceNote = computed(() => {
   const chosen = wizard.source.value
   if (chosen === 'bead-colors') return fillBlanks(words.value.beadPaletteNote, { bead: beadName.value })
@@ -83,25 +78,22 @@ const remapping = ref<string>()
       :valuetext="colorsValue"
       :min-label="String(MIN_IMAGE_COLORS)"
       :max-label="colorsMaxLabel"
-      :hint="colorsHint"
+      :info="colorsInfo"
       testid="convert-colors-slider"
       @update:model-value="wizard.setMaxColors"
     />
 
-    <p class="convert-colors__empty" data-testid="convert-make-empty-line">
-      <AppIcon name="eyedropper" :size="16" />
-      <span>{{ makeEmptyLine.before }}<b>{{ words.makeEmpty }}</b>{{ makeEmptyLine.after }}</span>
-    </p>
-
     <div class="convert-colors__source">
-      <span :id="sourceLabelId" class="convert-colors__label">{{ words.matchTo }}</span>
+      <span class="convert-colors__label convert-colors__source-head">
+        <span :id="sourceLabelId">{{ words.matchTo }}</span>
+        <InfoButton :label="words.whereColorsFrom" :body="sourceNote" data-testid="convert-color-source-info" />
+      </span>
       <SegmentedControl v-model="source" :options="sourceOptions" :labelledby="sourceLabelId" data-testid="convert-color-source" />
       <span v-if="wizard.source.value === 'bead-colors'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
     </div>
     <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
       {{ t.palette.beadColors.failed }}
     </AppNote>
-    <AppNote data-testid="convert-source-note">{{ sourceNote }}</AppNote>
 
     <ConvertDisclosure :label="words.colorByColor" :summary="summary" testid="convert-color-by-color">
       <div class="convert-colors__found-head">
@@ -142,18 +134,10 @@ const remapping = ref<string>()
   color: var(--muted);
 }
 
-.convert-colors__empty {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-10);
-  margin: 0;
-  font: var(--type-body);
-  color: var(--body);
-}
-
-.convert-colors__empty > :first-child {
-  flex: none;
-  margin-top: var(--space-2);
+.convert-colors__source-head {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 /* The Bead's palette is named in full, so the options share the row by their text, not equally (ticket 0758). */

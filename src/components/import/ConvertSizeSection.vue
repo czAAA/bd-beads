@@ -10,9 +10,9 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
-// Convert image's Size section (ConvertImage card, 3 Size; tickets 0747, 0757, 0780): slide in, Width and Height with Keep
-// the picture's shape between them (on, the side not moved follows the picture's shape), the result line (a kept part's
-// size beside the whole), the line under it while a crop is woven, and the Large Schema note.
+// Convert image's Size section (ConvertImage card, 3 Size; tickets 0747, 0757, 0780, 0894): slide in, Width and Height with
+// Keep the picture's shape between them (on, the side not moved follows the picture's shape), the result line (a kept
+// part's size beside the whole) and the Large Schema note. What each does is behind an Info button, not under it.
 const { t } = useI18n()
 const wizard = useConvertImageWizardState()
 const result = useConvertResult(wizard)
@@ -58,6 +58,16 @@ const widthMarks = computed(() => markList(sizing.value.marks.map((mark) => ({ a
 const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height })), sizing.value.heightRange, wizard.heightMmOf))
 
 const keepShape = computed({ get: () => wizard.linked.value, set: (next: boolean) => wizard.setLinked(next) })
+const keepShapeInfo = computed(() => ({
+  label: fillBlanks(words.value.whatDoes, { name: words.value.keepShape }),
+  body: keepShape.value ? words.value.keepShapeOn : words.value.keepShapeOff,
+}))
+
+/** Width's Info (ticket 0894): what Width does, what a crop leaves of it, and how much picture one bead takes. */
+const widthInfo = computed(() => ({
+  label: words.value.whatSizeDoes,
+  body: [words.value.widthHint, wizard.weave.value === 'part' && words.value.partFollows, result.value?.ratio].filter(Boolean).join(' '),
+}))
 
 /** With a part of the beads kept, the result is its size and measure, then the whole it was kept from. */
 const keptResult = computed(() => {
@@ -84,7 +94,7 @@ const keptResult = computed(() => {
       :min-label="widthReadings.minLabel"
       :max-label="widthReadings.maxLabel"
       :marks="widthMarks"
-      :hint="words.widthHint"
+      :info="widthInfo"
       testid="convert-width"
       @update:model-value="wizard.setWidth"
     />
@@ -92,7 +102,7 @@ const keptResult = computed(() => {
     <ConvertSwitchRow
       v-model="keepShape"
       :label="words.keepShape"
-      :line="keepShape ? words.keepShapeOn : words.keepShapeOff"
+      :info="keepShapeInfo"
       testid="convert-keep-shape"
     />
 
@@ -119,9 +129,7 @@ const keptResult = computed(() => {
       <p v-else class="convert-size__line" role="status">
         <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }}
       </p>
-      <p class="convert-size__ratio" data-testid="convert-ratio">{{ result.ratio }}</p>
     </div>
-    <p v-if="wizard.weave.value === 'part'" class="convert-size__hint" data-testid="convert-part-follows">{{ words.partFollows }}</p>
 
     <AppNote v-if="wizard.largeSchema.value" data-testid="convert-large-schema">{{ fillBlanks(words.largeSchema, { beads: LARGE_SCHEMA_BEADS }) }}</AppNote>
   </div>
@@ -147,12 +155,6 @@ const keptResult = computed(() => {
   color: var(--muted);
 }
 
-.convert-size__hint {
-  margin: 0;
-  font: var(--type-small);
-  color: var(--muted);
-}
-
 .convert-size__result {
   display: flex;
   flex-direction: column;
@@ -174,12 +176,6 @@ const keptResult = computed(() => {
   margin: 0;
   font: var(--type-meta);
   color: var(--body);
-}
-
-.convert-size__ratio {
-  margin: 0;
-  font: var(--type-small);
-  color: var(--muted);
 }
 
 .convert-size__grid {

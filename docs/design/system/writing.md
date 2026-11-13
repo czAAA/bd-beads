@@ -1170,3 +1170,22 @@ The Printable chart's two switches in the Export panel and the Frame panel's exp
 | What Row by row does (its Info button's name) | Что делает Ряд за рядом | Що робить Рядок за рядком | Што робіць Рад за радам | 逐行说明的作用 | Para qué sirve Fila por fila | Do czego służy Rząd po rzędzie |
 | Adds pages that write out each row as counts of letters, with a box to tick as you finish it. (its Info button's body) | Добавляет страницы, где каждый ряд расписан буквами и числами, с квадратиком, чтобы отметить готовый ряд. | Додає сторінки, де кожен рядок розписано літерами й числами, з квадратиком, щоб позначити готовий рядок. | Дадае старонкі, дзе кожны рад распісаны літарамі і лічбамі, з квадрацікам, каб адзначыць гатовы рад. | 添加几页，把每一行写成字母和数量，并附一个方框，完成后打勾。 | Añade páginas que escriben cada fila con letras y números, con una casilla para marcarla al terminarla. | Dodaje strony, na których każdy rząd jest rozpisany literami i liczbami, z polem do odhaczenia gotowego rzędu. |
 | Show each color's letter on its beads, so colors can be told apart on screen. Printed charts always have the letters. (Letters' Info body; replaces "Print each color's letter on its beads, …") | Показывать букву цвета на каждой бисеринке, чтобы цвета различались на экране. На печатной схеме буквы есть всегда. | Показувати літеру кольору на кожній намистині, щоб кольори розрізнялися на екрані. На друкованій схемі літери є завжди. | Паказваць літару колеру на кожнай бісерынцы, каб колеры адрозніваліся на экране. На друкаванай схеме літары ёсць заўсёды. | 在每颗珠子上显示颜色字母，方便在屏幕上区分颜色。打印的图样总是带有字母。 | Muestra la letra de cada color en sus cuentas, para distinguir los colores en pantalla. Los esquemas impresos siempre llevan las letras. | Pokazuj literę koloru na każdym koraliku, by kolory dało się odróżnić na ekranie. Drukowany schemat zawsze ma litery. |
+
+## Converter settings as a label and a value (ticket 0894)
+
+Under a converter control stand only a result or an error (ConvertImage card). What a setting does is read once, so it sits behind the setting's Info button, its body the sentence it replaces, unchanged; what the preview shows needs no words. The Info buttons' names are DS-1's (Quiet converter copy, above), built here ahead of ticket 0896:
+
+| Line | Now |
+|---|---|
+| "Fewer beads, bigger blocks, …" (under Width) | Width's Info, "What Width and Height do" |
+| "About {x} × {y} px of your picture = 1 bead" and its exact and enlarging forms (the result box) | Width's Info, after the line above |
+| "Colors follow the crop. …" (under the result box with A part of the picture) | Width's Info, between the two above |
+| "Width and height change together, …" / "… set apart, so the picture stretches." | Keep the picture's shape's Info, "What {name} does", for the state in hand |
+| "Each color is a bead to buy. …" and its three other forms (under Colors) | Colors' Info, "What {name} does" |
+| "The codes are real {Bead} beads. …" · "Plain named colors, no brand." · "Keeps the picture's own colors. …" (under match to) | match to's Info, "Where colors come from", for the choice in hand |
+| "Takes away what is round the subject, …" (under Remove background) | Remove background's Info, "What {name} does" |
+| "Turn it off to keep the whole picture." | gone: the switch says it |
+| "To leave a color out, pick Make empty …" | gone: the tool is on the bar under the preview |
+| "Every part of the picture becomes beads." · "Crop the picture with Select …" (in the convert cards) | gone: the preview and its band show it |
+
+Gone strings are removed from every language. "To fix what was found, pick Background …" stays until ticket 0896 removes it with the step pane.

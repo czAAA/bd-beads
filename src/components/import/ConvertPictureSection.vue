@@ -34,8 +34,8 @@ const accept = imageInputAccept()
 const words = computed(() => t.value.convertImage.wizard)
 
 const weaveOptions = computed(() => [
-  { value: 'whole' as const, title: words.value.wholePicture, line: words.value.wholePictureLine },
-  { value: 'part' as const, title: words.value.aPart, line: words.value.aPartLine },
+  { value: 'whole' as const, title: words.value.wholePicture },
+  { value: 'part' as const, title: words.value.aPart },
 ])
 
 /** The weave choices are a radio group: the arrows move the choice, and the chosen card is the one Tab stop. */
@@ -161,10 +161,7 @@ watchPostEffect(() => {
           @click="wizard.setWeave(option.value)"
         >
           <span class="convert-picture__radio" aria-hidden="true" />
-          <span class="convert-picture__choice-text">
-            <span class="convert-picture__choice-title">{{ option.title }}</span>
-            <span class="convert-picture__choice-line">{{ option.line }}</span>
-          </span>
+          <span class="convert-picture__choice-title">{{ option.title }}</span>
         </button>
       </div>
     </div>
@@ -315,19 +312,7 @@ watchPostEffect(() => {
   border-radius: 50%;
 }
 
-.convert-picture__choice-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
 .convert-picture__choice-title {
   font: var(--type-control);
-}
-
-.convert-picture__choice-line {
-  font: var(--type-small);
-  color: var(--muted);
 }
 </style>
