@@ -124,3 +124,13 @@ describe('codeInOtherSizes', () => {
     expect(codeInOtherSizes(delica, 'blue', delica11)).toBeUndefined()
   })
 })
+
+describe('the filter on the codes a conversion matches to (ticket 0901)', () => {
+  const targets = [{ hex: '#e63746', code: 'DB723', family: 'Red', finish: 'opaque' as const }, { hex: '#c0c0c0', colorId: 'silver' }]
+
+  it('keeps a code of a Finish on and leaves out a color with no Finish, and counts only codes with one', () => {
+    expect(filterBeadColors(targets, { families: [], finishes: ['opaque'] })).toEqual([targets[0]])
+    expect(filterBeadColors(targets, { families: [], finishes: [] })).toEqual(targets)
+    expect(beadColorFilterCounts(targets, { families: [], finishes: [] }).finishes).toEqual(new Map([['opaque', 1]]))
+  })
+})

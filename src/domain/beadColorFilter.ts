@@ -35,22 +35,28 @@ export function searchBeadColors(
   return groups.flat()
 }
 
-const passes = (entry: CatalogSwatch, filter: BeadColorFilter) =>
-  (filter.families.length === 0 || filter.families.includes(entry.family)) && (filter.finishes.length === 0 || filter.finishes.includes(entry.finish))
+/** What a filter reads of a code: a swatch of the list, or a code the converter matches to (ticket 0901). */
+type Filtered = { family?: string; finish?: Finish }
 
-/** The swatches of any on family in any on Finish; a row with nothing on keeps every code. */
-export function filterBeadColors(swatches: readonly CatalogSwatch[], filter: BeadColorFilter): CatalogSwatch[] {
+const passes = (entry: Filtered, filter: BeadColorFilter) =>
+  (filter.families.length === 0 || (entry.family !== undefined && filter.families.includes(entry.family))) &&
+  (filter.finishes.length === 0 || (entry.finish !== undefined && filter.finishes.includes(entry.finish)))
+
+/** The codes of any on family in any on Finish; a row with nothing on keeps every code. The converter keeps its match
+ * to the Finishes on through the same filter (ticket 0901). */
+export function filterBeadColors<T extends Filtered>(swatches: readonly T[], filter: BeadColorFilter): T[] {
   return swatches.filter((entry) => passes(entry, filter))
 }
 
 /** Each value's live count: the rows it would show given everything else that is on, so its own row's other values do
  * not narrow it (Blue counts every blue code the Finish row and the search leave). A value absent from the maps has none. */
-export function beadColorFilterCounts(swatches: readonly CatalogSwatch[], filter: BeadColorFilter): { families: Map<string, number>; finishes: Map<Finish, number> } {
+export function beadColorFilterCounts(swatches: readonly Filtered[], filter: BeadColorFilter): { families: Map<string, number>; finishes: Map<Finish, number> } {
   const families = new Map<string, number>()
   const finishes = new Map<Finish, number>()
   for (const entry of swatches) {
-    if (passes(entry, { families: [], finishes: filter.finishes })) families.set(entry.family, (families.get(entry.family) ?? 0) + 1)
-    if (passes(entry, { families: filter.families, finishes: [] })) finishes.set(entry.finish, (finishes.get(entry.finish) ?? 0) + 1)
+    const { family, finish } = entry
+    if (family !== undefined && passes(entry, { families: [], finishes: filter.finishes })) families.set(family, (families.get(family) ?? 0) + 1)
+    if (finish !== undefined && passes(entry, { families: filter.families, finishes: [] })) finishes.set(finish, (finishes.get(finish) ?? 0) + 1)
   }
   return { families, finishes }
 }

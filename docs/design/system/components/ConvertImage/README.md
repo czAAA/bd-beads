@@ -328,6 +328,7 @@ What the build of the column's foot had to settle or change:
 - **The off Tooltip** is the Button's own (`AppButton` with `disabledBody`): it flips above the button as there is no room under it, and is centred on the button rather than standing at the column's left edge 20 in. A Tooltip placed at an edge would need a new `align` on the shared Tooltip.
 - **Pinned for real:** from 1024 px in landscape the foot is `position: sticky` at the column's bottom on `canvas`, so Create Project stays whole on screen. At 1180 × 820, with the root type at 18px and a "matched to the {bead} palette" line long enough to wrap, the column runs about 12px past the window, which only the foot's bottom padding pays. Under 1024 px or in portrait the foot ends the column's flow, as before.
 - **Four clicks** from the Homepage holds only from the New Project form: since ticket 0866 Make your first Project opens the new Project on the Canvas with no form, so Convert image is the Menu's row, one more press (Make your first Project, Menu, Convert image, Choose file, Create Project).
+
 ## As built (ticket 0898)
 
 What the build of DS-1's crop had to settle:
@@ -349,6 +350,7 @@ What the build of Clean up (DS-3) had to settle:
 - **Small colors join's stepper is the Stepper with a Shift step**: AppStepper takes `shift-step-by` (10 here), which also makes the arrow keys on the stepper step, Shift by it. Its value button still opens the number for typing.
 - **"Off for pixel art" stays while the switch is off on flat art**, also after the person turned it off again; "Off" over "{n} stray beads left" is a photo's.
 - **The column scrolls in the longest words**: the button's two lines wrap in Russian, Ukrainian and Belarusian and the column passes the window by about 40 px at 1180 × 820 and about 20 at 1440 × 900 (on Linux's fonts). Nothing is cut, and the foot (ticket 0897) stays pinned, so Create Project stays whole; what scrolls is the column above it. In the app at 1180 × 820, with the root type at 18px, the column is about 80 px short even in English: the Clean up button stands under the pinned foot until the column is scrolled, which brings it whole above the foot. DS-3's "15 controls in the first window" holds at 1440 × 900 only.
+
 ## As built (ticket 0909)
 
 Before and after of DS-3, as designed, with these notes:
@@ -360,3 +362,16 @@ Before and after of DS-3, as designed, with these notes:
 - **Narrow bar:** Background and Make empty are `IconButton`s named by the registry's actions, `--convert-narrow-tool-width` (40, new) × `--ctl`; Beads | Picture is the SegmentedControl ("Show") restyled as DS-3 (`surface` ground, `line` edge, options `--ctl` − 6 tall).
 - **Chips:** every chip over the preview (Make empty's too) is DS-1's chip now: `canvas`, 1px `line`, pill, `--convert-chip-height` (32 coarse), `elevation-3`; dark `line-strong` and no shadow. With Compare on, Make empty's line takes the beads' chip.
 - **Names:** with Compare on, the beads' canvas is named "The picture and the beads side by side: …" and the picture's canvas is hidden from readers; the picture shown alone is "The picture as it becomes beads".
+
+## As built (ticket 0901)
+
+What the build of the Finish filter (DS-2) had to settle:
+
+- **One filter, not a copy.** The Finish list is `BeadColorFilters` itself, given no families: its Color part is left out when it has none, so the Finish lines, their live counts, keys and Clear filters are the Palette popover's. `filterBeadColors` keeps the match to the Finishes on, so the converter and the list filter alike. The Finish button is a `MenuButton` popover (aligned to its end, `--convert-finish-list-width`), whose label slot holds the count badge; `MenuButton` gained that `label` slot.
+- **The Finishes apply to a catalog source**: the Bead's palette and My beads. Under Default Palette or Exact the button is off with its `disabledBody` and the Finishes are kept for the Bead's palette again. A Finish line counts the source's codes of it; the lines are the Finishes present in the Bead's size.
+- **Too few:** with fewer codes left than colors asked, the picture is reduced to as many colors as there are codes, so no color is joined after the match; the Colors slider keeps the count asked. The foot's line is "{n} colors (only {m} codes left)", from two counted words, since the colors and the codes are counted apart.
+- **A filter that leaves no code** (a Finish none of My beads has, a dimmed line pressed) matches to the whole source rather than to nothing; the count line says 0.
+- **The line at rest** joins the Finish names with a separator of each language's own (", ", Chinese "、"), not a list with "and": `Intl.ListFormat`'s unit lists are not alike across the app's languages.
+- **Remembered at Create Project,** with ticket 0893's other last choices; a converter closed without creating keeps nothing, as for the source.
+- **Change picker:** Color by color's Bead colors list opens with the converter's Finishes on (its Filters badge counts them); a change there is that row's alone.
+- **Only one list open:** match to's menu and the Finish list are each a layer of the overlay registry, so a press on the other button first closes the open one.

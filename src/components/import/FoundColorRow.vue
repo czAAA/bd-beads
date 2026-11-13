@@ -113,6 +113,7 @@ const beadColors: BeadColors = {
   swatches: wizard.remapSwatches,
   bead: wizard.bead,
   catalog: computed(() => wizard.catalog.value),
+  finishes: wizard.finishesApplied,
   load: async () => {},
   add: (hex: string, code?: string) => {
     const swatch = wizard.remapSwatches.value.find((entry) => entry.code === code)

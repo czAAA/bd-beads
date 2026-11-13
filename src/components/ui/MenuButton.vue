@@ -190,7 +190,7 @@ function onListKeydown(event: KeyboardEvent) {
       @click="onButtonClick"
       @keydown="onButtonKeydown"
     >
-      {{ label }}
+      <slot name="label">{{ label }}</slot>
     </AppButton>
     <template v-if="open">
       <slot v-if="showsSheet" name="sheet" :close="() => close()" />

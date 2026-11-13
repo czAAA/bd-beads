@@ -134,6 +134,21 @@ describe('useConvertImageFlow', () => {
     expect(flow.session.value!.source.value).toBe('my-beads')
   })
 
+  it('keeps the Finishes the match was kept to, and opens the next converter on them (ticket 0901)', async () => {
+    const { flow, convertChoices } = setup()
+    flow.open({ ...NEW_PROJECT_DEFAULTS })
+    const first = flow.session.value!
+    first.toggleFinish('matte')
+    first.toggleFinish('opaque')
+    await first.setFile(picture)
+    flow.onCreate()
+    expect(convertChoices.value.finishes).toEqual(['opaque', 'matte'])
+
+    flow.onNewProjectDraft({ ...NEW_PROJECT_DEFAULTS })
+    flow.onPicture(picture)
+    expect(flow.session.value!.finishes.value).toEqual(['opaque', 'matte'])
+  })
+
   it('leaves a picture for another dialog that is showing, or for a page that is already open', () => {
     const { dialogs, appPage, flow } = setup()
     dialogs.flag('shortcuts').value = true

@@ -44,6 +44,14 @@ describe('the converter’s remembered choices (ticket 0893, ADR 0010 D-3)', () 
     expect(parseConvertChoices(JSON.stringify({ ...lastUsed, finish: 'matte' }))).toEqual(lastUsed)
     expect(parseConvertChoices(JSON.stringify({ beadId: lastUsed.beadId }))).toEqual({ ...FIRST_CONVERT_CHOICES, beadId: lastUsed.beadId })
   })
+
+  it('read back the Finishes the match was kept to (ticket 0901), in the shared order, leaving out any this build lacks', () => {
+    expect(parseConvertChoices(writeConvertChoices({ ...lastUsed, finishes: ['opaque', 'matte'] }))?.finishes).toEqual(['opaque', 'matte'])
+    const saved = JSON.stringify({ ...lastUsed, finishes: ['matte', 'glow', 'opaque', 'matte', 3] })
+    expect(parseConvertChoices(saved)?.finishes).toEqual(['opaque', 'matte'])
+    expect(parseConvertChoices(JSON.stringify({ ...lastUsed, finishes: 'matte' }))).toEqual(lastUsed)
+    expect(parseConvertChoices(JSON.stringify({ ...lastUsed, finishes: [] }))).toEqual(lastUsed)
+  })
 })
 
 describe('where the converter opens (ticket 0893)', () => {
@@ -54,6 +62,11 @@ describe('where the converter opens (ticket 0893)', () => {
       start: { name: 'Fox', makerName: 'Ann', beadId: lastUsed.beadId, technique: 'brick', techniqueSettings: { brickDrop: 2 } },
       source: 'exact',
     })
+  })
+
+  it('opens on the remembered Finishes (ticket 0901)', () => {
+    expect(converterStart(form, { ...lastUsed, finishes: ['plated'] }).finishes).toEqual(['plated'])
+    expect(converterStart(form, lastUsed).finishes).toBeUndefined()
   })
 
   it('takes a Bead changed on the form over the remembered one, and keeps the remembered Technique', () => {

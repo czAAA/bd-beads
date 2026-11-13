@@ -302,10 +302,10 @@ describe('ConvertImageWizard setup', () => {
 
     // The three notes share one Info, each led by its choice's name (ticket 0896).
     expect(note()).toBe(
-      `Miyuki Delica 11/0 palette: The codes are real Miyuki Delica 11/0 beads. Their colors are approximate, made from the color family and the finish. ${words.defaultPalette}: ${words.defaultPaletteNote} ${words.exact}: ${words.exactNote}`,
+      `Miyuki Delica 11/0 palette: The codes are real Miyuki Delica 11/0 beads. Their colors are approximate, made from the color family and the finish. ${words.defaultPalette}: ${words.defaultPaletteNote} ${words.exact}: ${words.exactNote} ${words.finish.note}`,
     )
     expect(hint()).toBe(fillBlanks(words.colorsHint, { n: '2' }))
-    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('matched to the miyuki delica 11/0 palette')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0')
     await matchTo(wrapper, 'default')
     expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe(words.matchedDefault)
     await matchTo(wrapper, 'exact')
@@ -1006,5 +1006,107 @@ describe('ConvertImageWizard My beads (ticket 0902)', () => {
     expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toBe('1 color (your list has 1)')
     expect(wrapper.findAll('[data-testid="found-color"]')).toHaveLength(1)
     expect(infoBody(wrapper, 'convert-color-source-info')).toContain('My beads: only the codes you ticked as yours, and only those made in 11/0.')
+  })
+})
+
+describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', () => {
+  const words = en.convertImage.wizard.finish
+  /** Delica's catalog with a matte and a plated code beside the opaque red. */
+  const finishes: ColorCatalog = {
+    id: 'miyuki-delica',
+    codes: [
+      ...catalog.codes,
+      { code: 'DB200', family: ['White'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#ffffff' },
+      { code: 'DB351', family: ['White'], finish: 'matte', wording: 'Matte', sizes: ['11/0'], hex: '#f4f4f0' },
+      { code: 'DB378', family: ['Red'], finish: 'matte', wording: 'Matte', sizes: ['11/0'], hex: '#d02838' },
+      { code: 'DB34', family: ['Gold'], finish: 'plated', wording: 'Plated', sizes: ['11/0'], hex: '#c8a040' },
+    ],
+  }
+  async function opened() {
+    const opening = open({ draft: delica, loadCatalog: async () => finishes })
+    await chooseFile(opening.wrapper, picture())
+    await show(opening.wrapper, 'colors')
+    return opening
+  }
+  async function openFinish(wrapper: VueWrapper) {
+    const button = wrapper.get('[data-testid="convert-finish"]')
+    if (button.attributes('aria-expanded') !== 'true') await button.trigger('click')
+    await flushPromises()
+  }
+  const finishLine = (wrapper: VueWrapper, finish: string) => wrapper.get(`[data-testid="convert-finish-list"] [data-testid="bead-colors-finish"][data-value="${finish}"]`)
+  const codesUsed = (wrapper: VueWrapper) => wrapper.findAll('[data-testid="found-color-name"]').map((name) => name.text())
+
+  it('lists the Bead’s Finishes with their counts in the Palette popover’s own filter, and keeps the match to those ticked', async () => {
+    const { wrapper } = await opened()
+    await openFinish(wrapper)
+    const list = wrapper.get('[data-testid="convert-finish-list"]')
+    expect(list.findAll('[data-testid="bead-colors-finish"]').map((line) => line.attributes('aria-label'))).toEqual(['Opaque, 2', 'Matte, 2', 'Plated, 1'])
+    expect(list.find('[data-testid="bead-colors-family"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in 11/0: 5')
+
+    await finishLine(wrapper, 'matte').trigger('click')
+    await flushPromises()
+    expect(finishLine(wrapper, 'matte').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in 11/0: 2')
+    expect(wrapper.get('[data-testid="convert-finish-codes"]').text()).toBe('codes in 11/0: 2')
+    expect(codesUsed(wrapper).every((name) => name.startsWith('DB378') || name.startsWith('DB351'))).toBe(true)
+    expect(wrapper.get('[data-testid="convert-finish"]').attributes('aria-label')).toBe('Finish, 1 on')
+    expect(wrapper.get('[data-testid="convert-finish-badge"]').text()).toBe('1')
+
+    await finishLine(wrapper, 'opaque').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0 · opaque, matte')
+
+    await wrapper.get('[data-testid="convert-finish-list"] [data-testid="bead-colors-filters-clear"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in 11/0: 5')
+    expect(wrapper.find('[data-testid="convert-finish-badge"]').exists()).toBe(false)
+  })
+
+  it('says when too few codes are left, in the head and in the foot', async () => {
+    const { wrapper } = await opened()
+    await openFinish(wrapper)
+    await finishLine(wrapper, 'plated').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="convert-too-few"]').text()).toBe('Only 1 code left: 1 color, not 2.')
+    expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toBe('1 color (only 1 code left)')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0 · plated')
+  })
+
+  it('is off under Default Palette and Exact, saying why, and brings its Finishes back with the Bead’s palette', async () => {
+    const { wrapper } = await opened()
+    await openFinish(wrapper)
+    await finishLine(wrapper, 'matte').trigger('click')
+    await flushPromises()
+
+    await matchTo(wrapper, 'default')
+    await flushPromises()
+    expect(isOff(wrapper, 'convert-finish')).toBe(true)
+    expect(wrapper.findComponent({ name: 'ConvertFinishFilter' }).findComponent({ name: 'AppButton' }).props('disabledBody')).toBe(words.offDefault)
+    await matchTo(wrapper, 'exact')
+    await flushPromises()
+    expect(wrapper.findComponent({ name: 'ConvertFinishFilter' }).findComponent({ name: 'AppButton' }).props('disabledBody')).toBe(words.offExact)
+
+    await matchTo(wrapper, 'bead-colors')
+    await flushPromises()
+    expect(isOff(wrapper, 'convert-finish')).toBe(false)
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0 · matte')
+  })
+
+  it('opens Color by color’s Change picker on the converter’s Finishes, its Filters counting them', async () => {
+    const { wrapper } = await opened()
+    await openFinish(wrapper)
+    await finishLine(wrapper, 'matte').trigger('click')
+    await finishLine(wrapper, 'opaque').trigger('click')
+    await flushPromises()
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+
+    const row = wrapper.findAll('[data-testid="found-color"]')[0]!
+    await row.get('[data-testid="found-color-remap"]').trigger('click')
+    await row.get('[data-testid="bead-colors-toggle"]').trigger('click')
+    expect(row.get('[data-testid="bead-colors-filters-badge"]').text()).toBe('2')
+    expect(row.findAll('[data-testid="bead-colors-finish"][aria-pressed="true"]').map((line) => line.attributes('data-value'))).toEqual(['opaque', 'matte'])
   })
 })

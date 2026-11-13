@@ -5,12 +5,13 @@ import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { beadLabel } from '../../domain/beads'
-import { plural } from '../../i18n/plural'
+import { plural, pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppNote from '../ui/AppNote.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
+import ConvertFinishFilter from './ConvertFinishFilter.vue'
 import ConvertMyBeadsView from './ConvertMyBeadsView.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
@@ -65,13 +66,21 @@ const sourceNote = computed(() =>
         : words.value.exactNote
       return `${option.label}: ${note}`
     })
+    .concat(wizard.hasCatalog.value ? [words.value.finish.note] : [])
     .join(' '),
 )
 
+/** The count line: the source's codes in the Finishes on (ticket 0901). */
 const codes = computed(() =>
   wizard.source.value === 'my-beads'
-    ? fillBlanks(myWords.value.codesInList, { count: count(wizard.myBeadsTargets.value.length) })
-    : fillBlanks(words.value.codesInSize, { size: wizard.bead.value.size, count: count(wizard.beadTargets.value.length) }),
+    ? fillBlanks(myWords.value.codesInList, { count: count(wizard.codesLeft.value) })
+    : fillBlanks(words.value.codesInSize, { size: wizard.bead.value.size, count: count(wizard.codesLeft.value) }),
+)
+/** Fewer codes left in the Finishes on than colors asked: as many colors come out, and the line says so (DS-2). */
+const tooFew = computed(() =>
+  wizard.finishesShort.value
+    ? fillBlanks(pluralForm(locale.value, wizard.codesLeft.value, words.value.finish.tooFew), { asked: count(wizard.maxColors.value) }, { count: count(wizard.codesLeft.value) })
+    : undefined,
 )
 
 /** The popover's two views (DS-2): Colors, or My beads from the menu's last item; Back returns to match to. */
@@ -107,7 +116,7 @@ const remapping = ref<string>()
           <InfoButton :label="words.whereColorsFrom" :body="sourceNote" data-testid="convert-color-source-info" />
         </span>
         <div class="convert-colors__source">
-          <MenuButton :label="sourceLabel" :aria-describedby="sourceLabelId" data-testid="convert-color-source">
+          <MenuButton :label="sourceLabel" :aria-describedby="sourceLabelId" data-wrap-ok data-testid="convert-color-source">
             <AppMenuItem
               v-for="option in sourceOptions"
               :key="option.value"
@@ -127,8 +136,10 @@ const remapping = ref<string>()
               </AppMenuItem>
             </template>
           </MenuButton>
+          <ConvertFinishFilter :codes="codes" />
         </div>
         <span v-if="wizard.source.value === 'bead-colors' || wizard.source.value === 'my-beads'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
+        <span v-if="tooFew" class="convert-colors__too-few" role="status" data-testid="convert-too-few">{{ tooFew }}</span>
         <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
           {{ t.palette.beadColors.failed }}
         </AppNote>
@@ -192,10 +203,27 @@ const remapping = ref<string>()
   gap: var(--space-4);
 }
 
-/* match to fills the row (DS-2); each item's count stands at its right. */
-.convert-colors__source :deep(.menu-button),
-.convert-colors__source :deep(.app-button) {
+/* match to fills the row beside Finish (DS-2); each item's count stands at its right. */
+.convert-colors__source {
+  display: flex;
+  gap: var(--space-8);
+  align-items: flex-start;
+}
+
+.convert-colors__source > :deep(.menu-button) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* A long source wraps to a second line rather than being cut (DS-2). */
+.convert-colors__source > :deep(.menu-button) > .app-button {
   width: 100%;
+  height: auto;
+  min-height: var(--control-height);
+  padding: var(--space-6) var(--space-8) var(--space-6) var(--space-10);
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .convert-colors__source :deep(.app-button) {
@@ -218,6 +246,12 @@ const remapping = ref<string>()
 .convert-colors__codes {
   font: var(--type-meta-small);
   color: var(--muted);
+}
+
+.convert-colors__too-few {
+  font: var(--type-control);
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .convert-colors__found-head {

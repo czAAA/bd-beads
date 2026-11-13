@@ -53,9 +53,9 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     scope = effectScope()
     fromReference = request
     // From the reference image the page keeps what it was opened with; else what this device used last (ticket 0893).
-    const { start, source } = request ? { start: draft, source: undefined } : converterStart(draft, deps.convertChoices.value)
+    const { start, source, finishes } = request ? { start: draft, source: undefined, finishes: undefined } : converterStart(draft, deps.convertChoices.value)
     const wizard = scope.run(() =>
-      useConvertImageWizard({ start, startSource: source, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, addsToCanvas: !!request, myBeads: deps.myBeads }),
+      useConvertImageWizard({ start, startSource: source, startFinishes: finishes, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, addsToCanvas: !!request, myBeads: deps.myBeads }),
     )!
     session.value = wizard
     if (file) void wizard.setFile(file)
@@ -154,6 +154,7 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
       technique: wizard.technique.value,
       techniqueSettings: wizard.techniqueSettings.value,
       ...(wizard.chosenSource.value ? { source: wizard.chosenSource.value } : {}),
+      ...(wizard.finishes.value.length > 0 ? { finishes: [...wizard.finishes.value] } : {}),
     }
     appPage.open('editor')
     deps.addProject(project)

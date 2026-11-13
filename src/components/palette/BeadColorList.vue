@@ -25,7 +25,8 @@ const SHOWN = 60
 const { t, locale } = useI18n()
 const words = computed(() => t.value.palette.beadColors)
 const query = ref('')
-const filter = ref<{ families: string[]; finishes: Finish[] }>({ families: [], finishes: [] })
+// The converter's Change picker opens on its Finishes (ticket 0901); a change here is this list's alone.
+const filter = ref<{ families: string[]; finishes: Finish[] }>({ families: [], finishes: [...(props.colors.finishes?.value ?? [])] })
 const bead = computed(() => props.colors.bead.value)
 
 onMounted(() => void props.colors.load())

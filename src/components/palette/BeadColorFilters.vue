@@ -11,6 +11,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 
 // The Bead colors list's filters as one piece (BeadColors card, ticket 0746): Color swatches, the Finish check list and
 // Clear filters. The list puts it in a column beside the rows or behind its Filters disclosure; it looks the same in both.
+// The converter's Finish list is this piece with no families (ticket 0901): the Finish part and Clear filters alone.
 defineProps<{
   families: { family: string; name: string; hex: string; on: boolean; count: number }[]
   finishes: { finish: Finish; name: string; on: boolean; count: number }[]
@@ -32,7 +33,7 @@ const finishRoving = useRovingFocus(finishRow, { axis: () => 'vertical', manages
 
 <template>
   <div class="bead-color-filters" :class="{ 'bead-color-filters--open': open }" data-testid="bead-colors-filters">
-    <div class="bead-color-filters__part">
+    <div v-if="families.length > 0" class="bead-color-filters__part">
       <span class="bead-color-filters__label" aria-hidden="true">{{ words.colorFilter }}</span>
       <div
         ref="colorRow"

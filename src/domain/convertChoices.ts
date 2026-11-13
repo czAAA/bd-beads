@@ -1,4 +1,5 @@
 import { findBead } from './beads'
+import { FINISHES, type Finish } from './colorCatalog'
 import type { ColorSource } from './convertColors'
 import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from './createProject'
 import { settingsOffDefault, TECHNIQUES, weaveSettings, type Technique, type TechniqueSettings } from './weave'
@@ -12,6 +13,8 @@ export interface ConvertChoices {
   techniqueSettings: TechniqueSettings
   /** None until a conversion has been made: the converter's own first choice (Bead colors) applies. */
   source?: ColorSource
+  /** The Finishes the match was kept to (ticket 0901), in the shared order; none is every Finish. */
+  finishes?: Finish[]
 }
 
 /** The Bead and Technique a device that has converted nothing starts on (ticket 0893, finding CB-09). */
@@ -36,12 +39,15 @@ export function parseConvertChoices(raw: string): ConvertChoices | undefined {
   const bead = typeof fields.beadId === 'string' ? findBead(fields.beadId) : undefined
   const technique = TECHNIQUES.find((known) => known === fields.technique)
   const source = COLOR_SOURCES.find((known) => known === fields.source)
+  const savedFinishes = Array.isArray(fields.finishes) ? (fields.finishes as unknown[]) : []
+  const finishes = FINISHES.filter((finish) => savedFinishes.includes(finish))
   return {
     beadId: bead && !bead.retired ? bead.id : FIRST_CONVERT_CHOICES.beadId,
     ...(technique
       ? { technique, techniqueSettings: weaveSettings({ technique, techniqueSettings: numbersOf(fields.techniqueSettings) }) }
       : { technique: FIRST_CONVERT_CHOICES.technique, techniqueSettings: FIRST_CONVERT_CHOICES.techniqueSettings }),
     ...(source ? { source } : {}),
+    ...(finishes.length > 0 ? { finishes } : {}),
   }
 }
 
@@ -56,8 +62,12 @@ function numbersOf(value: unknown): TechniqueSettings {
 }
 
 /** Where the converter opens (ticket 0893): the New Project form's Bead, and its Technique with its Drop, where the
- * person changed them from the form's defaults in this visit, else the remembered ones; and the remembered source. */
-export function converterStart(form: CreateProjectInput, remembered: ConvertChoices): { start: CreateProjectInput; source?: ColorSource } {
+ * person changed them from the form's defaults in this visit, else the remembered ones; and the remembered source and
+ * Finishes (ticket 0901). */
+export function converterStart(
+  form: CreateProjectInput,
+  remembered: ConvertChoices,
+): { start: CreateProjectInput; source?: ColorSource; finishes?: Finish[] } {
   const beadChanged = form.beadId !== NEW_PROJECT_DEFAULTS.beadId
   const techniqueChanged =
     form.technique !== NEW_PROJECT_DEFAULTS.technique || Object.keys(settingsOffDefault(form.techniqueSettings)).length > 0
@@ -66,5 +76,5 @@ export function converterStart(form: CreateProjectInput, remembered: ConvertChoi
     beadId: beadChanged ? form.beadId : remembered.beadId,
     ...(techniqueChanged ? {} : { technique: remembered.technique, techniqueSettings: remembered.techniqueSettings }),
   }
-  return { start, ...(remembered.source ? { source: remembered.source } : {}) }
+  return { start, ...(remembered.source ? { source: remembered.source } : {}), ...(remembered.finishes?.length ? { finishes: remembered.finishes } : {}) }
 }

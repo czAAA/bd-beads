@@ -1,7 +1,7 @@
 import { computed, inject, provide, ref, shallowRef, watch, type InjectionKey, type Ref } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead } from '../../domain/beads'
-import type { ColorCatalog } from '../../domain/colorCatalog'
+import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
 import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
@@ -81,7 +81,10 @@ export function useBeadColors({ currentProject, palette, addUsed, selectedColorI
   return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog, ...(report ? { report: reportColor } : {}) }
 }
 
-export type BeadColors = ReturnType<typeof useBeadColors>
+export type BeadColors = ReturnType<typeof useBeadColors> & {
+  /** The Finishes the list's filter opens with: the converter's, in Color by color's Change picker (ticket 0901). */
+  finishes?: Readonly<Ref<readonly Finish[]>>
+}
 
 const beadColorsKey: InjectionKey<BeadColors> = Symbol('beadColors')
 
