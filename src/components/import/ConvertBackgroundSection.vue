@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { BACKGROUND_TOLERANCE } from '../../domain/convertBackground'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -9,7 +10,7 @@ import AppIcon from '../ui/AppIcon.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
-// Convert image's Background step (ConvertImage card, 2 Background; tickets 0780, 0787): the Remove background switch, the
+// Convert image's Background step (ConvertImage card, 2 Background; tickets 0780, 0787, 0894): the Remove background switch, the
 // stage in hand as a plain numbered line (ticket 0863), then 1 Find (the preview hatches what the edges inward take, Tolerance, the line pointing at the Background tool, whose steps
 // Start over takes back, and Remove what was found; Undo and Redo are on the Tool pill under the picture) and 2 Remove (empty places; Show what was found goes back).
 const { t, locale } = useI18n()
@@ -36,7 +37,7 @@ const toolLine = computed(() => {
     <ConvertSwitchRow
       v-model="on"
       :label="words.removeBackground"
-      :line="on ? words.removeBackgroundOn : words.removeBackgroundOff"
+      :info="{ label: fillBlanks(words.whatDoes, { name: words.removeBackground }), body: words.removeBackgroundOff }"
       testid="convert-remove-background"
     />
 

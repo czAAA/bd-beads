@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 import AppSwitch from '../ui/AppSwitch.vue'
+import InfoButton from '../ui/InfoButton.vue'
 
-// A switch with a line saying what its state does (ConvertImage card; ticket 0780): Remove background and Keep the
-// picture's shape. A row on `surface`, the label in `control` over the line in `small`, the switch at the right.
-defineProps<{ label: string; line: string; testid: string }>()
+// A converter switch (ConvertImage card; tickets 0780, 0894): Remove background and Keep the picture's shape. A row on
+// `surface`, the label in `control` with an Info button holding what the switch does, the switch at the right.
+defineProps<{
+  label: string
+  /** The Info button's name ("What Remove background does") and its Tooltip: help read once, not a line kept under it. */
+  info: { label: string; body: string }
+  /** The switch's test id; its Info button's is the same with `-info`. */
+  testid: string
+}>()
 const on = defineModel<boolean>({ required: true })
 const labelId = useId()
 </script>
 
 <template>
   <div class="convert-switch-row" :data-testid="`${testid}-row`">
-    <div class="convert-switch-row__text">
-      <span :id="labelId" class="convert-switch-row__label">{{ label }}</span>
-      <p class="convert-switch-row__line" :data-testid="`${testid}-line`">{{ line }}</p>
-    </div>
+    <span class="convert-switch-row__label">
+      <span :id="labelId">{{ label }}</span>
+      <InfoButton :label="info.label" :body="info.body" :data-testid="`${testid}-info`" />
+    </span>
     <AppSwitch v-model="on" :label="label" :aria-labelledby="labelId" :data-testid="testid" />
   </div>
 </template>
@@ -23,6 +30,7 @@ const labelId = useId()
 .convert-switch-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-12);
   padding: var(--space-10) var(--space-12);
   background: var(--surface);
@@ -30,22 +38,12 @@ const labelId = useId()
   border-radius: var(--radius-md);
 }
 
-.convert-switch-row__text {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
 .convert-switch-row__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
   font: var(--type-control);
   color: var(--ink);
-}
-
-.convert-switch-row__line {
-  margin: 0;
-  font: var(--type-small);
-  color: var(--muted);
 }
 </style>

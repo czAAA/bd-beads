@@ -3,6 +3,7 @@ import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-uti
 import { defineComponent, effectScope, h } from 'vue'
 import ConvertImageWizard from './ConvertImageWizard.vue'
 import ConvertStepBar from './ConvertStepBar.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import { useConvertImageWizard, type ConvertImageWizard as Wizard } from '../../composables/import/useConvertImageWizard'
 import type { ConvertStep } from '../../domain/convertSize'
@@ -84,6 +85,9 @@ const dotDisabled = (wrapper: VueWrapper, step: string) => wrapper.get(`[data-te
 const created = (wrapper: VueWrapper) => wrapper.emitted('create')?.[0]?.[0] as Project | undefined
 /** Color by color is closed when the page opens (ticket 0747): the found-color rows are behind it. */
 const openColorByColor = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-color-by-color"]').trigger('click')
+/** The Tooltip body of the Info button with this test id (ticket 0894). */
+const infoBody = (wrapper: VueWrapper, testid: string) =>
+  wrapper.findAllComponents(InfoButton).find((info) => info.vm.$attrs['data-testid'] === testid)?.props('body')
 /** Match to a source, as its option does (the step opens on the Bead's palette, ticket 0863). */
 const matchTo = (wrapper: VueWrapper, value: string) => wrapper.get(`[data-testid="convert-color-source"] [data-value="${value}"]`).trigger('click')
 
@@ -267,21 +271,22 @@ describe('ConvertImageWizard setup', () => {
     expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
   })
 
-  it('says what each choice does in one line, and under Exact that a color is one bead color (tickets 0758, 0863)', async () => {
+  it('says what each choice does behind an Info button, and under Exact that a color is one bead color (tickets 0758, 0863, 0894)', async () => {
     const { wrapper, wizard } = open({ draft: delica })
     await chooseFile(wrapper, picture())
     await show(wizard, 'colors')
     const words = en.convertImage.wizard
-    const note = () => wrapper.get('[data-testid="convert-source-note"]').text()
-    const hint = () => wrapper.get('[data-testid="convert-colors-slider"]').text()
+    const note = () => infoBody(wrapper, 'convert-color-source-info')
+    const hint = () => infoBody(wrapper, 'convert-colors-slider-info')
 
     expect(note()).toBe('The codes are real Miyuki Delica 11/0 beads. Their colors are approximate, made from the color family and the finish.')
-    expect(hint()).toContain(fillBlanks(words.colorsHint, { n: '2' }))
+    expect(hint()).toBe(fillBlanks(words.colorsHint, { n: '2' }))
+    expect(wrapper.find('[data-testid="convert-source-note"]').exists()).toBe(false)
     await matchTo(wrapper, 'default')
     expect(note()).toBe(words.defaultPaletteNote)
     await matchTo(wrapper, 'exact')
     expect(note()).toBe(words.exactNote)
-    expect(hint()).toContain(fillBlanks(words.colorsHintExact, { n: '2' }))
+    expect(hint()).toBe(fillBlanks(words.colorsHintExact, { n: '2' }))
   })
 
   it('matches the found colors to the Bead’s colors at first, and heads their table From picture, Becomes, Beads, Change, Empty (tickets 0758, 0863)', async () => {
@@ -592,10 +597,10 @@ describe('ConvertImageWizard the floating bar (ticket 0780)', () => {
     expect(summary()).toBe(en.convertImage.wizard.summaryOff)
   })
 
-  it('points at Make empty from the Colors step, where Treat as empty’s switch was', async () => {
+  it('leaves Make empty to the tool under the preview: the Colors step has no switch and no line for it (tickets 0780, 0894)', async () => {
     const { wrapper } = open()
     await chooseFile(wrapper, picture())
-    expect(wrapper.get('[data-testid="convert-make-empty-line"]').text()).toBe(fillBlanks(en.convertImage.wizard.makeEmptyLine, { tool: en.convertImage.wizard.makeEmpty }))
+    expect(wrapper.find('[data-testid="convert-make-empty-line"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="convert-colors"] [role="switch"]').exists()).toBe(false)
   })
 
@@ -680,6 +685,9 @@ describe('ConvertImageWizard Background (ticket 0780)', () => {
     wizard.setWidth(24)
     const summary = () => wrapper.get('[data-testid="convert-section-background-summary"]').text()
     expect(summary()).toBe(en.convertImage.wizard.summaryOff)
+    // What the switch does is behind its Info button, not a line under it (ticket 0894).
+    expect(infoBody(wrapper, 'convert-remove-background-info')).toBe(en.convertImage.wizard.removeBackgroundOff)
+    expect(wrapper.find('[data-testid="convert-remove-background-line"]').exists()).toBe(false)
     const colorsBefore = wizard.usedColorCount.value
 
     await wrapper.get('[data-testid="convert-remove-background"]').trigger('click')
@@ -758,7 +766,8 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     expect(wrapper.get('[data-testid="convert-tool-select"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="convert-band-context"]').text()).toBe(en.convertImage.wizard.bandSelectCrop)
     expect(wrapper.get('[data-testid="convert-band-crop"]').text()).toMatch(/^part of picture \d+×\d+ px$/)
-    expect(wrapper.get('[data-testid="convert-part-follows"]').text()).toBe(en.convertImage.wizard.partFollows)
+    expect(infoBody(wrapper, 'convert-width-info')).toContain(en.convertImage.wizard.partFollows)
+    expect(wrapper.find('[data-testid="convert-part-follows"]').exists()).toBe(false)
   })
 
   it('sizes with one Width slider over the picture’s range, read in both units, the height following', async () => {
@@ -774,11 +783,12 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     expect(range.attributes('aria-valuetext')).toBe('8 beads, 12 mm, 1 px of your picture = 2 × 2 beads')
     expect(wrapper.findAll('[data-testid="convert-width-mark"]').map((mark) => mark.attributes('data-value'))).toEqual(['8', '16'])
     expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('8×4 beads')
-    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('1 px of your picture = 2 × 2 beads')
+    expect(infoBody(wrapper, 'convert-width-info')).toBe(`${en.convertImage.wizard.widthHint} 1 px of your picture = 2 × 2 beads`)
+    expect(wrapper.find('[data-testid="convert-ratio"]').exists()).toBe(false)
 
     await range.setValue('12')
     expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('12×6 beads')
-    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('About 0.3 × 0.3 px of your picture = 1 bead')
+    expect(infoBody(wrapper, 'convert-width-info')).toContain('About 0.3 × 0.3 px of your picture = 1 bead')
     expect(range.attributes('aria-valuetext')).toBe('12 beads, 18 mm')
 
     await wrapper.get('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
@@ -797,11 +807,11 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     expect(ends()).toContain('256 beads (all the picture\'s detail)')
     expect(ends()).not.toContain('px')
     await range.setValue('64')
-    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('Each 1×1 px square of your picture = 1 bead')
+    expect(infoBody(wrapper, 'convert-width-info')).toContain('Each 1×1 px square of your picture = 1 bead')
     await range.setValue('16')
-    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('Each 4×4 px square of your picture = 1 bead')
+    expect(infoBody(wrapper, 'convert-width-info')).toContain('Each 4×4 px square of your picture = 1 bead')
     await range.setValue('24')
-    expect(wrapper.get('[data-testid="convert-ratio"]').text()).toBe('About 2.7 × 2.7 px of your picture = 1 bead')
+    expect(infoBody(wrapper, 'convert-width-info')).toContain('About 2.7 × 2.7 px of your picture = 1 bead')
 
     await wrapper.get('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
     expect(ends()).toContain('mm (all the picture\'s detail)')
@@ -818,7 +828,7 @@ describe('ConvertImageWizard weave, Width and Colors (ticket 0747)', () => {
     await show(wizard, 'size')
     const input = (name: string) => wrapper.get(`[data-testid="convert-${name}-range"]`).element as HTMLInputElement
     const keepShape = wrapper.get('[data-testid="convert-keep-shape"]')
-    const line = () => wrapper.get('[data-testid="convert-keep-shape-line"]').text()
+    const line = () => infoBody(wrapper, 'convert-keep-shape-info')
 
     // Opens one bead per pixel, under 60 beads wide (ticket 0863): 40 px goes up to 160 beads. Height has its own range
     // over the picture's 20 px.
