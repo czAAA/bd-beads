@@ -86,7 +86,9 @@ describe('the preview’s overlays on the canvas', () => {
     slider.dispatchEvent(new Event('input', { bubbles: true }))
     root.querySelector<HTMLElement>('[data-testid="convert-colors-more"]')!.click()
     await settleForMeasuring()
-    root.querySelector<HTMLElement>('[data-testid="convert-color-source"] [data-value="exact"]')!.click()
+    root.querySelector<HTMLElement>('[data-testid="convert-color-source"]')!.click()
+    await settleForMeasuring()
+    root.querySelector<HTMLElement>('[data-testid="convert-color-source-option"][data-value="exact"]')!.click()
     // Pressed again, the button closes its popover (ticket 0896), so a press on the beads is not one outside it.
     root.querySelector<HTMLElement>('[data-testid="convert-colors-more"]')!.click()
     await settleForMeasuring()

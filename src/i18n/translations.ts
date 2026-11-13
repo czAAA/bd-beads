@@ -1245,6 +1245,28 @@ export interface Translations {
       readingDetail: string
       readingLine: string
       flipLeftRight: string
+      /** My beads (ticket 0902): the source's name and its note in Where colors come from (`{size}` the Bead's size), the
+       * line under Colors, the foot's colors line when the list is shorter than asked (`{codes}` its codes), the count
+       * line, the match to menu's last item, and the My beads view's head, empty state, switch, count and rows. */
+      myBeads: {
+        name: string
+        note: string
+        matched: PluralForms
+        fewerColors: PluralForms
+        codesInList: string
+        edit: string
+        choose: string
+        codes: PluralForms
+        noCodes: string
+        back: string
+        whatIs: string
+        whatIsBody: string
+        catalog: string
+        empty: string
+        allCodes: string
+        shown: string
+        rowOwned: string
+      }
       footProject: string
       footAddsTo: string
       resultBeadsNeeded: string

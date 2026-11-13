@@ -60,6 +60,7 @@ const matchedLine = computed(() => {
   const source = wizard.source.value
   if (source === 'exact') return words.value.matchedExact
   if (source === 'default') return words.value.matchedDefault
+  if (source === 'my-beads') return plural(locale.value, wizard.myBeadsCodes.value.length, words.value.myBeads.matched)
   return fillBlanks(words.value.matchedBead, { bead: beadLabel(wizard.bead.value).toLocaleLowerCase(locale.value) })
 })
 const colorsValue = computed(() => plural(locale.value, wizard.maxColors.value, words.value.colorsCount))

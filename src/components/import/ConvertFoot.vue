@@ -5,7 +5,7 @@ import { useConvertSizeReadings } from '../../composables/import/useConvertSizeR
 import { estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
-import { plural } from '../../i18n/plural'
+import { plural, pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 
@@ -33,7 +33,11 @@ const beadsNeeded = computed(() => {
 const lines = computed(() => {
   const shown = result.value?.kept ?? result.value
   if (!ready.value || !shown) return undefined
-  const colors = plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount)
+  // A My beads list shorter than the count asked says why fewer come out (ticket 0902).
+  const used = wizard.usedColorCount.value
+  const colors = wizard.myBeadsShort.value
+    ? fillBlanks(pluralForm(locale.value, used, words.value.myBeads.fewerColors), { codes: groupThousands(wizard.myBeadsTargets.value.length, locale.value) }, { count: groupThousands(used, locale.value) })
+    : plural(locale.value, used, words.value.colorsCount)
   const kept = result.value?.kept && fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows })
   return {
     grid: shown.grid,
