@@ -1118,6 +1118,7 @@ export const be: Translations = {
         codesLeft: { other: 'засталося кодаў: {count}' },
         note: 'Пакрыццё: падбор толькі па адзначаных пакрыццях.',
       },
+      autoFixLighting: 'Аўтакарэкцыя асвятлення',
       neighbours: {
         name: 'Колькасць колераў',
         typeNumber: 'увядзіце лік',

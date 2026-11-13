@@ -1117,6 +1117,7 @@ export const pl: Translations = {
         codesLeft: { other: 'zostało kodów: {count}' },
         note: 'Wykończenie: dopasowanie tylko do zaznaczonych wykończeń.',
       },
+      autoFixLighting: 'Automatyczna korekta światła',
       neighbours: {
         name: 'Liczba kolorów',
         typeNumber: 'wpisz liczbę',

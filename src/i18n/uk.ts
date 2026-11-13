@@ -1117,6 +1117,7 @@ export const uk: Translations = {
         codesLeft: { other: 'залишилося кодів: {count}' },
         note: 'Покриття: підбір лише за позначеними покриттями.',
       },
+      autoFixLighting: 'Автокорекція освітлення',
       neighbours: {
         name: 'Кількість кольорів',
         typeNumber: 'введіть число',

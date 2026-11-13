@@ -1117,6 +1117,7 @@ export const ru: Translations = {
         codesLeft: { other: 'осталось кодов: {count}' },
         note: 'Покрытие: подбор только по отмеченным покрытиям.',
       },
+      autoFixLighting: 'Автокоррекция освещения',
       neighbours: {
         name: 'Число цветов',
         typeNumber: 'введите число',

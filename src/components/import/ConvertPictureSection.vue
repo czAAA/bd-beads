@@ -8,10 +8,11 @@ import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppMessage from '../ui/AppMessage.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
+import ConvertLightingRow from './ConvertLightingRow.vue'
 
 // The column's picture section (ConvertImage card DS-1, ticket 0896): the thumbnail, the file's name and size, Replace
-// (Choose file, Paste, and Take photo on touch) and "More for the picture" (Turn 90°, Flip left to right). With no
-// picture yet it says so, and while one is read, that it is being read; the ways in are the drop zone's then.
+// (Choose file, Paste, Take photo on touch), "More for the picture" (Turn 90°, Flip) and Auto-fix lighting's row (DS-3,
+// 0907). With no picture yet it says so, and while one is read, that it is being read; the ways in are the drop zone's.
 const emit = defineEmits<{ paste: [] }>()
 
 const { t } = useI18n()
@@ -87,6 +88,7 @@ watchPostEffect(() => {
         </span>
       </span>
     </div>
+    <ConvertLightingRow v-if="wizard.hasPicture.value" />
 
     <AppMessage v-if="error && wizard.hasPicture.value" tone="danger" placement="notice" :closable="false" data-testid="convert-image-error">{{ error }}</AppMessage>
   </div>

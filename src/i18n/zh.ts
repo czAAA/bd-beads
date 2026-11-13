@@ -1092,6 +1092,7 @@ export const zh: Translations = {
         codesLeft: { other: '只剩 {count} 个色号' },
         note: '表面处理：只匹配你勾选的表面处理。',
       },
+      autoFixLighting: '自动修正光线',
       neighbours: {
         name: '颜色数量',
         typeNumber: '输入数字',
