@@ -1,6 +1,6 @@
 import { type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
-import { CONVERT_STEPS, CROP_HANDLES } from '../../domain/convertSize'
+import { CROP_HANDLES } from '../../domain/convertSize'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { hasProjectBeads } from '../../domain/layerBeads'
@@ -648,21 +648,16 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
   // The Convert image wizard's own controls (ticket 0650): its zoom is the Canvas's, its Close the shared one.
-  // Its floating bar (ticket 0780): Select keeps a part of the beads, or crops the picture with A part of the picture.
-  unkeyed('convert-turn', (t) => t.convertImage.wizard.turn, 'edit', { icon: 'rotate', body: (t) => t.tooltips.convertTurn }),
-  unkeyed('convert-flip', (t) => t.convertImage.wizard.flip, 'edit', { icon: 'flip', body: (t) => t.tooltips.convertFlip }),
-  unkeyed('convert-select-beads', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectBeads }),
-  unkeyed('convert-select-crop', (t) => t.tools.selectLabel, 'edit', { icon: 'select', body: (t) => t.tooltips.selectCrop }),
+  // Its floating bar (ticket 0896): Background, Make empty and Compare; Undo and Redo stand in Background's popover.
   unkeyed('make-empty', (t) => t.convertImage.wizard.makeEmpty, 'edit', { icon: 'eyedropper', body: (t) => t.tooltips.makeEmpty }),
   // The Background tool (ticket 0787): a tap or a drag keeps or removes the patch of background under it.
   unkeyed('convert-background', (t) => t.convertImage.wizard.backgroundTool, 'edit', { icon: 'erase', body: (t) => t.tooltips.backgroundTool }),
-  // Undo and Redo on the wizard's Tool pill (background decisions); the editor's own keys are ignored in a modal.
+  // Undo and Redo of the background decisions, in the Background popover; the editor's own keys are ignored in a modal.
   unkeyed('convert-undo', (t) => t.palette.undoButton, 'edit', { icon: 'undo', disabledBody: (t) => t.tooltips.nothingToUndo }),
   unkeyed('convert-redo', (t) => t.palette.redoButton, 'edit', { icon: 'redo', disabledBody: (t) => t.tooltips.nothingToRedo }),
   unkeyed('convert-compare', (t) => t.convertImage.wizard.compare, 'edit', { icon: 'contrast', body: (t) => t.tooltips.compare }),
   unkeyed('remap-color', (t) => t.convertImage.wizard.change, 'colors', { icon: 'palette', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
-  ...CONVERT_STEPS.map((step) => unkeyed(`convert-step-${step}`, (t) => t.convertImage.wizard.rail[step], 'edit')),
   ...CROP_HANDLES.map((handle) => unkeyed(`crop-${handle}`, (t) => t.convertImage.wizard.crop[handle], 'edit')),
   // The Progress bar's way from the first beads to a picture (ticket 0847): Fit to drawing, then Export on Picture.
   unkeyed('fit-and-export', (t) => t.frame.fitAndExport, 'canvas', {

@@ -10,7 +10,6 @@ import { closePanel, openNewProject, openPanel, pickColor } from './testUtils/pi
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseBeadInSection } from './testUtils/beadPicker'
 import { layersView } from './testUtils/layerFields'
-import { layOutConvertPane } from './testUtils/convertPicture'
 
 // Convert image end to end through the app shell (spec 0645, ADRs 0085, 0086): New Project's button, the Menu's row or a
 // dropped picture opens the page, the Progress bar steps it, Create adds the Project; leaving asks once a picture is set. Only the decode is stubbed (jsdom decodes no image bytes, see
@@ -89,30 +88,22 @@ async function openFromMenu(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('App Convert image as an App page (ADR 0086)', () => {
-  it('opens from New Project on the device’s last Bead, steps through the Progress bar, and creates the Project it shows, kept as the last (ticket 0893)', async () => {
+  it('opens from New Project on the device’s last Bead, and creates the Project it shows from the column’s foot, kept as the last (tickets 0893, 0896)', async () => {
     localStorage.setItem(CHOICES_KEY, JSON.stringify({ beadId: roundBead.id, technique: 'loom' }))
     const wrapper = mount(App, { attachTo: document.body })
     await openWizard(wrapper)
     expect(page(wrapper).exists()).toBe(true)
-    // The page fills the canvas box, the strip above it and the Progress bar its footer, last in its main (ticket 0856);
-    // the modal is gone.
+    // The page fills the canvas box under the strip, to its bottom: no Progress bar of its own (ticket 0896); the modal
+    // is gone.
     const box = wrapper.get('[data-testid="app-canvas"]').element
     expect(box.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
-    expect(wrapper.get('main').element.lastElementChild?.getAttribute('data-testid')).toBe('convert-bar')
+    expect(wrapper.find('[data-testid="convert-bar"]').exists()).toBe(false)
     expect(page(wrapper).element.closest('[data-testid="app-canvas"]')).toBe(box)
     expect(wrapper.find('.app-modal').exists()).toBe(false)
 
     await chooseImage(wrapper)
-    // Every step in one pane (ticket 0780): Next scrolls it to Background, the device's last Bead in Picture & bead.
-    layOutConvertPane(wrapper.element)
-    expect(wrapper.get('[data-testid="convert-section-picture-summary"]').text()).toContain(roundBead.size)
-    await wrapper.get('[data-testid="convert-next"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.get('[data-testid="convert-counter"]').text()).toBe('2/5')
-    // A dot scrolls to its step; Review ends in Create Project.
-    await wrapper.get('[data-testid="convert-step-review"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="convert-next"]').exists()).toBe(false)
+    // The device's last Bead on the column's Bead and Technique button; nothing to set before Create Project.
+    expect(wrapper.get('[data-testid="convert-bead-button"]').text()).toContain(roundBead.size)
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
     await flushPromises()
 
@@ -260,9 +251,6 @@ describe('App Convert image leave guard (ADR 0085, ADR 0086)', () => {
     const wrapper = await mountWithProject(15, 30, { attachTo: document.body })
     await openFromMenu(wrapper)
     await chooseImage(wrapper)
-    layOutConvertPane(wrapper.element)
-    await wrapper.get('[data-testid="convert-step-review"]').trigger('click')
-    await flushPromises()
     await wrapper.get('[data-testid="convert-image-create"]').trigger('click')
     await flushPromises()
 

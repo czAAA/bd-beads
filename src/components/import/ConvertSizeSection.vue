@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 import { useConvertImageWizardState, type ConvertSizeUnit } from '../../composables/import/useConvertImageWizard'
-import { useConvertResult } from '../../composables/import/useConvertResult'
-import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
+import { useConvertSizeReadings } from '../../composables/import/useConvertSizeReadings'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
-import AppNote from '../ui/AppNote.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ValueSlider from '../ui/form/ValueSlider.vue'
 import ConvertSwitchRow from './ConvertSwitchRow.vue'
 
-// Convert image's Size section (ConvertImage card, 3 Size; tickets 0747, 0757, 0780, 0894): slide in, Width and Height with
-// Keep the picture's shape between them (on, the side not moved follows the picture's shape), the result line (a kept
-// part's size beside the whole) and the Large Schema note. What each does is behind an Info button, not under it.
+// The Size popover's body, from "More for the size" beside Width (ConvertImage card DS-1, ticket 0896; tickets 0747, 0757,
+// 0780, 0894): "Size" with what Width and Height do behind an Info button, the units, Height, Keep the picture's shape
+// (on, the side not moved follows the picture's shape), and the result box with how much picture one bead takes.
 const { t } = useI18n()
 const wizard = useConvertImageWizardState()
-const result = useConvertResult(wizard)
+const readings = useConvertSizeReadings(wizard)
+const result = readings.result
 const words = computed(() => t.value.convertImage.wizard)
 const unitLabelId = useId()
 
@@ -25,113 +25,56 @@ const unitOptions = computed(() => [
 ])
 const unit = computed({ get: () => wizard.sizeUnit.value, set: (next: ConvertSizeUnit) => wizard.setSizeUnit(next) })
 
-const sizing = computed(() => wizard.sizing.value)
-const inBeads = (beads: number) => fillBlanks(words.value.widthBeads, { n: beads })
-const inMm = (mm: number) => fillBlanks(words.value.widthMm, { n: mm })
-
-/** One slider's readings in the chosen unit (ValueSlider card): the head's value, the other unit after it, the ends. */
-function readings(beads: number, range: { min: number; max: number }, mmOf: (beads: number) => number, maxWords: string) {
-  const inUnit = (at: number) => (unit.value === 'beads' ? inBeads(at) : inMm(mmOf(at)))
-  const other = (at: number) => (unit.value === 'beads' ? inMm(mmOf(at)) : inBeads(at))
-  return {
-    value: inUnit(beads),
-    secondary: other(beads),
-    valuetext: [inUnit(beads), other(beads), ...(sizing.value.mark && result.value ? [result.value.ratio] : [])].join(', '),
-    minLabel: unit.value === 'beads' ? String(range.min) : String(mmOf(range.min)),
-    maxLabel: fillBlanks(maxWords, { value: unit.value === 'beads' ? inBeads(range.max) : inMm(mmOf(range.max)) }),
-  }
-}
-const widthReadings = computed(() => readings(sizing.value.width, sizing.value.range, wizard.widthMmOf, words.value.widthMaxLabel))
-const heightReadings = computed(() => readings(sizing.value.height, sizing.value.heightRange, wizard.heightMmOf, words.value.maxLabel))
-
-/** The marks with the size they stand for in the chosen unit ("8 beads", "40 mm"); the one at an end has the end's label only. */
-function markList(list: readonly { at: number }[], range: { min: number; max: number }, mmOf: (beads: number) => number) {
-  return list.map((mark) => ({
-    value: mark.at,
-    label:
-      mark.at === range.min || mark.at === range.max
-        ? undefined
-        : unit.value === 'beads' ? inBeads(mark.at) : inMm(mmOf(mark.at)),
-  }))
-}
-const widthMarks = computed(() => markList(sizing.value.marks.map((mark) => ({ at: mark.width })), sizing.value.range, wizard.widthMmOf))
-const heightMarks = computed(() => markList(sizing.value.heightMarks.map((mark) => ({ at: mark.height })), sizing.value.heightRange, wizard.heightMmOf))
-
 const keepShape = computed({ get: () => wizard.linked.value, set: (next: boolean) => wizard.setLinked(next) })
 const keepShapeInfo = computed(() => ({
   label: fillBlanks(words.value.whatDoes, { name: words.value.keepShape }),
   body: keepShape.value ? words.value.keepShapeOn : words.value.keepShapeOff,
 }))
 
-/** Width's Info (ticket 0894): what Width does, what a crop leaves of it, and how much picture one bead takes. */
-const widthInfo = computed(() => ({
-  label: words.value.whatSizeDoes,
-  body: [words.value.widthHint, wizard.weave.value === 'part' && words.value.partFollows, result.value?.ratio].filter(Boolean).join(' '),
-}))
-
 /** With a part of the beads kept, the result is its size and measure, then the whole it was kept from. */
-const keptResult = computed(() => {
-  const kept = result.value?.kept
-  return kept && { ...kept, from: fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows }) }
-})
+const keptFrom = computed(() =>
+  result.value?.kept ? fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows }) : undefined,
+)
+const shown = computed(() => result.value?.kept ?? result.value)
 </script>
 
 <template>
   <div class="convert-size" data-testid="convert-size">
-    <div class="convert-size__row">
-      <span :id="unitLabelId" class="convert-size__label">{{ words.units }}</span>
-      <SegmentedControl v-model="unit" :options="unitOptions" mono small :labelledby="unitLabelId" data-testid="convert-size-unit" />
+    <div class="convert-size__head">
+      <span class="convert-size__title">
+        {{ words.sizeTitle }}
+        <InfoButton :label="words.whatSizeDoes" :body="words.widthHint" data-testid="convert-width-info" />
+      </span>
+      <span class="convert-size__units">
+        <span :id="unitLabelId" class="convert-size__label">{{ words.units }}</span>
+        <SegmentedControl v-model="unit" :options="unitOptions" mono small :labelledby="unitLabelId" data-testid="convert-size-unit" />
+      </span>
     </div>
 
     <ValueSlider
-      :label="t.form.widthLabel"
-      :model-value="sizing.width"
-      :min="sizing.range.min"
-      :max="sizing.range.max"
-      :value="widthReadings.value"
-      :secondary="widthReadings.secondary"
-      :valuetext="widthReadings.valuetext"
-      :min-label="widthReadings.minLabel"
-      :max-label="widthReadings.maxLabel"
-      :marks="widthMarks"
-      :info="widthInfo"
-      testid="convert-width"
-      @update:model-value="wizard.setWidth"
-    />
-
-    <ConvertSwitchRow
-      v-model="keepShape"
-      :label="words.keepShape"
-      :info="keepShapeInfo"
-      testid="convert-keep-shape"
-    />
-
-    <ValueSlider
       :label="t.form.heightLabel"
-      :model-value="sizing.height"
-      :min="sizing.heightRange.min"
-      :max="sizing.heightRange.max"
-      :value="heightReadings.value"
-      :secondary="heightReadings.secondary"
-      :valuetext="heightReadings.valuetext"
-      :min-label="heightReadings.minLabel"
-      :max-label="heightReadings.maxLabel"
-      :marks="heightMarks"
+      :model-value="wizard.sizing.value.height"
+      :min="wizard.sizing.value.heightRange.min"
+      :max="wizard.sizing.value.heightRange.max"
+      :value="readings.height.value.value"
+      :secondary="readings.height.value.secondary"
+      :valuetext="readings.height.value.valuetext"
+      :min-label="readings.height.value.minLabel"
+      :max-label="readings.height.value.maxLabel"
+      :marks="readings.heightMarks.value"
+      doubling
       testid="convert-height"
       @update:model-value="wizard.setHeight"
     />
 
-    <div v-if="result" class="convert-size__result" data-testid="convert-result">
-      <span class="convert-size__label">{{ words.result }}</span>
-      <p v-if="keptResult" class="convert-size__line" role="status">
-        <span class="convert-size__grid">{{ keptResult.grid }}</span> · {{ keptResult.measured }} · {{ keptResult.from }}
-      </p>
-      <p v-else class="convert-size__line" role="status">
-        <span class="convert-size__grid">{{ result.grid }}</span> · {{ result.measured }}
-      </p>
-    </div>
+    <ConvertSwitchRow v-model="keepShape" :label="words.keepShape" :info="keepShapeInfo" testid="convert-keep-shape" />
 
-    <AppNote v-if="wizard.largeSchema.value" data-testid="convert-large-schema">{{ fillBlanks(words.largeSchema, { beads: LARGE_SCHEMA_BEADS }) }}</AppNote>
+    <div v-if="shown" class="convert-size__result" data-testid="convert-size-result">
+      <p class="convert-size__line">
+        <span class="convert-size__grid">{{ shown.grid }}</span> · {{ shown.measured }}<template v-if="keptFrom"> · {{ keptFrom }}</template>
+      </p>
+      <p class="convert-size__ratio" data-testid="convert-size-ratio">{{ result?.ratio }}</p>
+    </div>
   </div>
 </template>
 
@@ -139,15 +82,30 @@ const keptResult = computed(() => {
 .convert-size {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: var(--space-14);
 }
 
-.convert-size__row {
+.convert-size__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-12);
-  min-height: var(--panel-row);
+  gap: var(--space-8) var(--space-12);
+}
+
+.convert-size__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  font: var(--type-control);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.convert-size__units {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
 }
 
 .convert-size__label {
@@ -164,10 +122,6 @@ const keptResult = computed(() => {
   border-radius: var(--radius-lg);
 }
 
-:root[data-theme='dark'] .convert-size__result {
-  background: var(--elevated);
-}
-
 :root[data-theme='contrast'] .convert-size__result {
   border: 2px solid var(--line);
 }
@@ -181,5 +135,11 @@ const keptResult = computed(() => {
 .convert-size__grid {
   font-weight: 500;
   color: var(--ink);
+}
+
+.convert-size__ratio {
+  margin: 0;
+  font: var(--type-small);
+  color: var(--muted);
 }
 </style>

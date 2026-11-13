@@ -110,14 +110,14 @@ onMounted(() => rootEl.value?.querySelector<HTMLElement>('button, [tabindex="0"]
 
     <div class="convert-popover__part">
       <div class="convert-popover__colors">
-        <span class="convert-popover__control">{{ wizard.sections.colors }}</span>
+        <span class="convert-popover__control">{{ wizard.colorsLabel }}</span>
         <span class="convert-popover__count" data-testid="convert-to-beads-count">{{ countText }}</span>
         <AppStepper
           v-model="colorsModel"
           :min="1"
           :max="colorsMax"
           :decrease-label="t.referenceImage.convert.colorsLess"
-          :value-label="wizard.sections.colors"
+          :value-label="wizard.colorsLabel"
           :increase-label="t.referenceImage.convert.colorsMore"
           decrease-testid="convert-to-beads-fewer"
           increase-testid="convert-to-beads-more"

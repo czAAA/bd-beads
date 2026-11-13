@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watchPostEffect } from 'vue'
 import { useConvertImageWizardState, type ConvertTool } from '../../composables/import/useConvertImageWizard'
-import { useConvertResult } from '../../composables/import/useConvertResult'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useActionKeys } from '../../composables/shell/useActionKeys'
 import { useElementSize } from '../../composables/ui/useElementSize'
-import { useHelpDevice } from '../../composables/ui/useKeyHints'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
 import { foundRuns } from '../../domain/convertBackground'
@@ -25,47 +24,46 @@ import { surfaceView } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from '../canvas/eyedropperCursor'
 import AppButton from '../ui/AppButton.vue'
 import AppHandle from '../ui/AppHandle.vue'
-import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
+import ConvertDropZone from './ConvertDropZone.vue'
 
-// Convert image's preview (ConvertImage card, Preview pane; tickets 0747, 0757, 0780, 0787): the band of facts, the beads
-// in the Frame's space with what was found faded and hatched, and the floating bar: Turn 90°, Flip, Select (a kept part,
-// or the crop), Make empty, Background (a tap or a drag keeps or removes a patch), Compare and zoom. Empty, the drop zone.
+// Convert image's preview (ConvertImage card DS-1, tickets 0747, 0780, 0787, 0896): the beads with what was found hatched,
+// a chip while a tool or Compare shows something, and the floating bar: Background (popover and tool in one press), Make
+// empty and Compare, a zoom chip joining it only while zoomed in past Fit. With no picture yet, the drop zone.
+const emit = defineEmits<{ paste: [] }>()
 
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
-const help = useHelpDevice()
-/** The empty preview's two lines by the help lines' one rule (ticket 0846): nothing to drop on touch, else the paste key. */
-const emptyWords = computed(() =>
-  help.device.value === 'touch'
-    ? { title: words.value.emptyTouchTitle, line: words.value.emptyTouchLine }
-    : { title: words.value.dropHere, line: fillBlanks(words.value.dropOrPaste, { pasteKey: help.modKey('V') }) },
-)
 const actions = {
   zoomOut: controlAction('zoom-out'),
   zoomIn: controlAction('zoom-in'),
   zoomFit: controlAction('zoom-fit'),
-  turn: controlAction('convert-turn'),
-  flip: controlAction('convert-flip'),
-  selectBeads: controlAction('convert-select-beads'),
-  selectCrop: controlAction('convert-select-crop'),
   makeEmpty: controlAction('make-empty'),
   background: controlAction('convert-background'),
   compare: controlAction('convert-compare'),
-  undo: controlAction('convert-undo'),
-  redo: controlAction('convert-redo'),
 }
-const result = useConvertResult(wizard)
 const cropName = (handle: CropHandle) => controlAction(`crop-${handle}`).name(t.value)
 
 const paneEl = ref<HTMLElement>()
 const viewportEl = ref<HTMLElement>()
 const { width: viewportWidth, height: viewportHeight } = useElementSize(viewportEl)
 
-/** Room kept round the beads at Fit, in px (ConvertImage card): 20 above, 32 at the sides and 76 below, so the floating
- * bar never covers them. */
-const ROOM = { top: 20, side: 32, bottom: 76 }
+/** Room kept round the beads at Fit, in px (ConvertImage card DS-1): 72 above, 40 at the sides and 90 below (96 on a
+ * coarse pointer), so the floating bar never covers them; read from the design's values, these where none is loaded. */
+const coarse = useMediaQuery('(pointer: coarse)')
+const ROOM = computed(() => {
+  const style = paneEl.value && typeof getComputedStyle === 'function' ? getComputedStyle(paneEl.value) : undefined
+  const px = (name: string, fallback: number) => {
+    const read = Number.parseFloat(style?.getPropertyValue(name) ?? '')
+    return Number.isFinite(read) ? read : fallback
+  }
+  return {
+    top: px('--convert-fit-top', 72),
+    side: px('--convert-fit-side', 40),
+    bottom: coarse.value ? px('--convert-fit-bottom-touch', 96) : px('--convert-fit-bottom', 90),
+  }
+})
 /** The view's own zoom steps, a multiple of the fit. */
 const VIEW_ZOOMS = [1, 1.5, 2, 3, 4, 6, 8]
 const viewZoom = ref(1)
@@ -80,8 +78,8 @@ const space = computed(() => project.value && spaceOf(project.value, false))
 const fitScale = computed(() => {
   const extent = space.value?.extent
   if (!extent || extent.width === 0 || extent.height === 0) return 1
-  const width = Math.max(1, viewportWidth.value - ROOM.side * 2)
-  const height = Math.max(1, viewportHeight.value - ROOM.top - ROOM.bottom)
+  const width = Math.max(1, viewportWidth.value - ROOM.value.side * 2)
+  const height = Math.max(1, viewportHeight.value - ROOM.value.top - ROOM.value.bottom)
   return Math.min(width / extent.width, height / extent.height)
 })
 const scale = computed(() => fitScale.value * viewZoom.value)
@@ -98,9 +96,9 @@ const displayed = computed(() => {
 })
 const boxStyle = computed(() => ({ width: `${displayed.value.width}px`, height: `${displayed.value.height}px` }))
 const stageStyle = computed(() => ({
-  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.side * 2)}px`,
-  height: `${Math.max(viewportHeight.value, displayed.value.height + ROOM.top + ROOM.bottom)}px`,
-  padding: `${ROOM.top}px ${ROOM.side}px ${ROOM.bottom}px`,
+  width: `${Math.max(viewportWidth.value, displayed.value.width + ROOM.value.side * 2)}px`,
+  height: `${Math.max(viewportHeight.value, displayed.value.height + ROOM.value.top + ROOM.value.bottom)}px`,
+  padding: `${ROOM.value.top}px ${ROOM.value.side}px ${ROOM.value.bottom}px`,
 }))
 
 /** The Frame's beads in the box, in px: the line goes round them and everything else is dimmed. */
@@ -397,8 +395,9 @@ function startKeep(event: PointerEvent) {
   window.addEventListener('pointercancel', endKeep)
 }
 
-/** A press on the beads: Make empty's tap, or Select's drag (the crop with A part of the picture, a kept part with Whole
- * picture). With no tool on a press does nothing; the crop's handles still pull. */
+/** A press on the beads: Make empty's tap, the Background tool's mark, or Select's drag (the crop with A part of the
+ * picture, a kept part with Whole picture). Select has no button since ticket 0896: the crop on the picture takes its
+ * place (ticket 0898). With no tool on a press does nothing; the crop's handles still pull. */
 function onBoxDown(event: PointerEvent) {
   if (pinch.value) return
   if (tool.value === 'make-empty') {
@@ -434,6 +433,8 @@ function fit() {
   viewportEl.value?.scrollTo?.({ left: 0, top: 0 })
 }
 const zoomLevel = computed(() => fillBlanks(words.value.zoomLevel, { percent: Math.round(viewZoom.value * 100) }))
+/** The zoom chip joins the bar only while zoomed in past Fit (DS-1): at rest zoom is pinch, wheel and the keys. */
+const zoomed = computed(() => viewZoom.value > VIEW_ZOOMS[0]! + 1e-6)
 useActionKeys({ 'zoom-in': zoomIn, 'zoom-out': zoomOut, 'zoom-fit': fit }, () => wizard.hasPicture.value)
 
 function onWheel(event: WheelEvent) {
@@ -476,7 +477,6 @@ const hovered = ref<number>()
 // Escape turns a tool off first; a press elsewhere (a step's control) goes through and leaves it as it is.
 useOverlayLayer({ isOpen: () => tool.value !== undefined, root: () => paneEl.value, close: () => wizard.setTool(undefined), keepsPress: () => true })
 
-const selectAction = computed(() => (wizard.weave.value === 'part' ? actions.selectCrop : actions.selectBeads))
 const pickTool = (next: ConvertTool) => wizard.setTool(next)
 
 /** Compare is held (ConvertImage card): by a pointer until it lets go, or by Space or Enter until the key is up. */
@@ -547,33 +547,8 @@ const ringStyle = computed(() => {
   return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
 })
 
-// --- The band of facts ------------------------------------------------------------------------------------------------
-
-/** The band's facts (ConvertImage card): the grid, its measure and colors, then a kept part or the crop in pixels. */
-const facts = computed(() => {
-  const size = wizard.dimensions.value
-  const kept = wizard.kept.value
-  const part = wizard.part.value
-  return {
-    grid: fillBlanks(words.value.resultGrid, { columns: size.columns, rows: size.rows }),
-    measured: result.value?.measured ?? '',
-    colors: colorsText.value,
-    keeping: kept && fillBlanks(words.value.keeping, { columns: kept.columns, rows: kept.rows }),
-    crop: wizard.weave.value === 'part' ? fillBlanks(words.value.partOfPicture, { width: Math.round(part.width), height: Math.round(part.height) }) : undefined,
-  }
-})
-
-/** What the preview is showing now, if anything: one line at the band's right. */
-const nowShowing = computed<{ icon?: 'eyedropper' | 'select' | 'erase'; hatch?: boolean; text: string } | undefined>(() => {
-  if (wizard.comparing.value) return { text: words.value.bandCompare }
-  if (tool.value === 'make-empty') return { icon: 'eyedropper', text: words.value.bandMakeEmpty }
-  if (tool.value === 'background') return { icon: 'erase', text: words.value.bandBackground }
-  const found = wizard.backgroundFound.value
-  if (wizard.background.value === 'find' && found) return { hatch: true, text: fillBlanks(words.value.bandFound, { n: found.percent }) }
-  if (wizard.background.value === 'removed') return { text: words.value.bandRemoved }
-  if (tool.value === 'select') return { icon: 'select', text: wizard.weave.value === 'part' ? words.value.bandSelectCrop : words.value.bandSelectBeads }
-  return undefined
-})
+/** What the preview shows now, as a chip over it (DS-1): Make empty's tap, or the original picture while Compare is held. */
+const chip = computed(() => (wizard.comparing.value ? words.value.bandCompare : tool.value === 'make-empty' ? words.value.bandMakeEmpty : undefined))
 
 onBeforeUnmount(() => {
   endDrag()
@@ -585,36 +560,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--select': tool === 'select', 'convert-preview--background': tool === 'background', 'convert-preview--part': wizard.weave.value === 'part' }" data-testid="convert-preview">
-    <div class="convert-preview__band" data-testid="convert-band">
-      <span v-if="!wizard.hasPicture.value" class="convert-preview__facts">{{ words.bandEmpty }}</span>
-      <span v-else class="convert-preview__facts" data-testid="convert-band-facts">
-        <b>{{ facts.grid }}</b>
-        <span class="convert-preview__dot" aria-hidden="true">·</span>
-        <span>{{ facts.measured }}</span>
-        <span class="convert-preview__dot" aria-hidden="true">·</span>
-        <span>{{ facts.colors }}</span>
-        <template v-if="facts.keeping">
-          <span class="convert-preview__dot" aria-hidden="true">·</span>
-          <span data-testid="convert-band-keeping">{{ facts.keeping }}</span>
-          <AppButton size="sm" class="convert-preview__keep-all" data-testid="convert-keep-all" @click="wizard.keepAll">{{ words.keepAll }}</AppButton>
-        </template>
-        <template v-else-if="facts.crop">
-          <span class="convert-preview__dot" aria-hidden="true">·</span>
-          <span data-testid="convert-band-crop">{{ facts.crop }}</span>
-        </template>
-      </span>
-      <span v-if="nowShowing" class="convert-preview__context" data-testid="convert-band-context">
-        <AppIcon v-if="nowShowing.icon" :name="nowShowing.icon" :size="16" />
-        <span v-if="nowShowing.hatch" class="convert-preview__hatch" aria-hidden="true" />
-        {{ nowShowing.text }}
-      </span>
-    </div>
-
-    <div v-if="!wizard.hasPicture.value" class="convert-preview__empty" data-testid="convert-drop-zone">
-      <AppIcon name="image" :size="34" />
-      <span class="convert-preview__empty-title">{{ emptyWords.title }}</span>
-      <span class="convert-preview__empty-line">{{ emptyWords.line }}</span>
-    </div>
+    <ConvertDropZone v-if="!wizard.hasPicture.value" @paste="emit('paste')" />
 
     <div v-else class="convert-preview__room">
       <div
@@ -665,16 +611,19 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <span v-if="chip" class="convert-preview__chip" data-testid="convert-chip">{{ chip }}</span>
+
       <div class="convert-preview__tools" data-testid="convert-preview-tools">
-        <IconButton variant="plain" :icon-size="16" :action="actions.turn" data-testid="convert-turn" @click="wizard.turn" />
-        <IconButton variant="plain" :icon-size="16" :action="actions.flip" data-testid="convert-flip" @click="wizard.flip" />
-        <span class="convert-preview__divider" aria-hidden="true" />
-        <IconButton variant="plain" :icon-size="16" :action="actions.undo" :disabled="!wizard.canUndo.value" :disabled-body="t.tooltips.nothingToUndo" data-testid="convert-undo" @click="wizard.undo" />
-        <IconButton variant="plain" :icon-size="16" :action="actions.redo" :disabled="!wizard.canRedo.value" :disabled-body="t.tooltips.nothingToRedo" data-testid="convert-redo" @click="wizard.redo" />
-        <span class="convert-preview__divider" aria-hidden="true" />
-        <AppButton variant="text" :action="selectAction" :selected="tool === 'select'" data-testid="convert-tool-select" @click="pickTool('select')" />
+        <AppButton
+          variant="text"
+          :action="actions.background"
+          :selected="wizard.popover.value === 'background'"
+          aria-haspopup="dialog"
+          :aria-expanded="wizard.popover.value === 'background'"
+          data-testid="convert-tool-background"
+          @click="wizard.togglePopover('background')"
+        />
         <AppButton variant="text" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
-        <AppButton variant="text" :action="actions.background" :selected="tool === 'background'" data-testid="convert-tool-background" @click="pickTool('background')" />
         <span class="convert-preview__divider" aria-hidden="true" />
         <AppButton
           variant="text"
@@ -689,27 +638,23 @@ onBeforeUnmount(() => {
           @keyup="compareOff($event)"
           @blur="compareOff()"
         />
-        <span class="convert-preview__divider" aria-hidden="true" />
-        <IconButton
-          variant="plain"
-          :icon-size="16"
-          :action="actions.zoomOut"
-          :disabled="viewZoom <= VIEW_ZOOMS[0]!"
-          :disabled-body="t.tooltips.zoomOutLimit"
-          data-testid="convert-zoom-out"
-          @click="zoomOut"
-        />
-        <span class="convert-preview__level" data-testid="convert-zoom-level">{{ zoomLevel }}</span>
-        <IconButton
-          variant="plain"
-          :icon-size="16"
-          :action="actions.zoomIn"
-          :disabled="viewZoom >= VIEW_ZOOMS.at(-1)!"
-          :disabled-body="t.tooltips.zoomInLimit"
-          data-testid="convert-zoom-in"
-          @click="zoomIn"
-        />
-        <IconButton variant="plain" :icon-size="16" :action="actions.zoomFit" data-testid="convert-zoom-fit" @click="fit" />
+        <template v-if="zoomed">
+          <span class="convert-preview__divider" aria-hidden="true" />
+          <span class="convert-preview__zoom" data-testid="convert-zoom-chip">
+            <IconButton variant="plain" :icon-size="16" :action="actions.zoomOut" data-testid="convert-zoom-out" @click="zoomOut" />
+            <span class="convert-preview__level" data-testid="convert-zoom-level">{{ zoomLevel }}</span>
+            <IconButton
+              variant="plain"
+              :icon-size="16"
+              :action="actions.zoomIn"
+              :disabled="viewZoom >= VIEW_ZOOMS.at(-1)!"
+              :disabled-body="t.tooltips.zoomInLimit"
+              data-testid="convert-zoom-in"
+              @click="zoomIn"
+            />
+            <IconButton variant="plain" :icon-size="16" :action="actions.zoomFit" data-testid="convert-zoom-fit" @click="fit" />
+          </span>
+        </template>
       </div>
     </div>
   </div>
@@ -728,92 +673,12 @@ onBeforeUnmount(() => {
   background: var(--box);
 }
 
-/* The band of facts (ConvertImage card): above the picture, so nothing on it is cut off. Where the preview is too narrow
- * for one line, its facts and the context line wrap and the band grows (the build's change to the card). */
-.convert-preview__band {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4) var(--space-16);
-  box-sizing: border-box;
-  min-height: var(--convert-band-height);
-  padding: var(--space-6) var(--space-24);
-  font: var(--type-meta);
-  color: var(--muted);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.convert-preview__facts,
-.convert-preview__context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-6);
-  min-width: 0;
-}
-
-.convert-preview__facts > * {
-  white-space: nowrap;
-}
-
-.convert-preview__context {
-  gap: var(--space-8);
-}
-
-.convert-preview__facts > b {
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.convert-preview__dot {
-  color: var(--faint);
-}
-
-.convert-preview__keep-all {
-  margin-left: var(--space-4);
-}
-
-.convert-preview__hatch {
-  flex: none;
-  box-sizing: border-box;
-  width: var(--space-16);
-  height: var(--space-16);
-  background: var(--found-hatch);
-  border: 1px solid var(--marker);
-  border-radius: var(--radius-xs);
-}
-
 .convert-preview__room {
   position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
-}
-
-.convert-preview__empty {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
-  margin: var(--space-24);
-  color: var(--muted);
-  text-align: center;
-  border: 1.5px dashed var(--line-strong);
-  border-radius: var(--radius-lg);
-}
-
-.convert-preview__empty-title {
-  font: var(--type-control);
-  color: var(--ink);
-}
-
-.convert-preview__empty-line {
-  font: var(--type-meta);
 }
 
 .convert-preview__viewport {
@@ -903,29 +768,36 @@ onBeforeUnmount(() => {
     0 0 0 2px var(--canvas);
 }
 
-/* The floating bar (ConvertImage card): centred 18 above the preview's bottom edge, its groups split by dividers. */
+/* The floating bar (ConvertImage card): centred 18 above the preview's bottom edge, its groups split by dividers. Too
+ * narrow a preview (a phone, until ticket 0911's bar) wraps it rather than cutting a tool. */
 .convert-preview__tools {
   position: absolute;
+  right: var(--space-8);
   bottom: var(--convert-tools-lift);
-  left: 50%;
+  left: var(--space-8);
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  max-width: calc(100% - var(--space-16));
+  width: fit-content;
+  margin-inline: auto;
   padding: var(--space-4);
-  overflow-x: auto;
   background: var(--elevated);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--elevation-3);
-  transform: translateX(-50%);
 }
 
 .convert-preview__tools :deep(.app-button) {
   gap: var(--space-6);
-  padding: 0 var(--space-10);
+  padding: 0 var(--space-12) 0 var(--space-10);
   font: var(--type-tab);
+}
+
+:root[data-theme='dark'] .convert-preview__tools {
+  border-color: var(--line-strong);
 }
 
 .convert-preview__divider {
@@ -944,10 +816,28 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-preview__band {
-    padding-inline: var(--space-16);
-  }
+/* A chip while a tool or Compare shows something, centred 14 below the preview's top (DS-1). */
+.convert-preview__chip {
+  position: absolute;
+  top: var(--space-14);
+  left: 50%;
+  z-index: 3;
+  max-width: calc(100% - var(--space-32));
+  padding: var(--space-4) var(--space-12);
+  font: var(--type-meta);
+  color: var(--ink);
+  text-align: center;
+  pointer-events: none;
+  background: var(--elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  transform: translateX(-50%);
+}
+
+.convert-preview__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 @media (prefers-reduced-motion: reduce) {

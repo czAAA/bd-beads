@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { convertPicture, openApp, openNewProjectForm, setConvertWidth, settle, showConvertStep } from '../support/app'
+import { convertPicture, openApp, openNewProjectForm, setConvertWidth, settle } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
 /** Nothing sits under the Tool pill and the Progress bar (ticket 0850): after Create Project, and on every Fit, the
@@ -35,8 +35,7 @@ for (const [name, viewport, hasTouch] of DEVICES) {
     await openNewProjectForm(page)
     await convertPicture(page, fixturePicture(240, 160))
     await setConvertWidth(page, 60)
-    await showConvertStep(page, 'review')
-    await page.getByTestId('convert-image-create').click()
+      await page.getByTestId('convert-image-create').click()
     await page.getByTestId('margin-sheet').waitFor()
     await settle(page)
     await expectSheetClear(page, 'after Create Project')

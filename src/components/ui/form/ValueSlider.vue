@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useElementSize } from '../../../composables/ui/useElementSize'
 import { clamp } from '../../../domain/clamp'
 import { shownMarkLabels } from '../../../domain/sliderMarkLabels'
+import AppTooltip from '../AppTooltip.vue'
 import InfoButton from '../InfoButton.vue'
 
 // A slider that picks one whole number over a range and writes the value above it (ValueSlider card, ticket 0747):
@@ -29,6 +30,11 @@ const props = defineProps<{
   /** The info button beside the label (ticket 0817): its accessible name ("What Tolerance does") and Tooltip, for help
    * read once rather than a line kept under the slider. */
   info?: { label: string; body: string }
+  /** The doubling scale (ValueSlider card, ticket 0895): the thumb at log(value ÷ min) ÷ log(max ÷ min), so marks that
+   * each double the last stand evenly. The value, the keys and the value as heard are unchanged. */
+  doubling?: boolean
+  /** Off, with why (ticket 0896): kept in place in `faint`, `aria-disabled`, still focusable, its reason in a Tooltip. */
+  offBody?: string
   testid?: string
 }>()
 
@@ -37,12 +43,30 @@ const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 const trackEl = ref<HTMLElement>()
 const { width: trackWidth } = useElementSize(trackEl)
 const span = computed(() => Math.max(1, props.max - props.min))
-const fraction = (value: number) => clamp((value - props.min) / span.value, 0, 1)
+/** Whether the doubling scale applies: it needs a range above 0 that has some length. */
+const logScale = computed(() => props.doubling === true && props.min > 0 && props.max > props.min)
+/** Where a value stands along the track, from 0 to 1. */
+function fraction(value: number): number {
+  if (!logScale.value) return clamp((value - props.min) / span.value, 0, 1)
+  return clamp(Math.log(Math.max(value, props.min) / props.min) / Math.log(props.max / props.min), 0, 1)
+}
 const at = computed(() => fraction(props.modelValue))
+/** On the doubling scale the native range runs in these steps of the track, and each step is read back as a value. */
+const TRACK_STEPS = 1000
+const rangeValue = computed(() => (logScale.value ? Math.round(at.value * TRACK_STEPS) : props.modelValue))
+const valueAt = (position: number) => (logScale.value ? props.min * (props.max / props.min) ** (position / TRACK_STEPS) : position)
 
 function set(next: number) {
+  if (props.offBody !== undefined) return
   const kept = Math.round(clamp(next, props.min, props.max))
   if (kept !== props.modelValue) emit('update:modelValue', kept)
+}
+
+function onInput(event: Event) {
+  const input = event.target as HTMLInputElement
+  set(valueAt(Number(input.value)))
+  // Off, or between two values on the doubling scale: the thumb goes back to where the value stands.
+  input.value = String(rangeValue.value)
 }
 
 /** The design's values where no style is loaded (a test): the thumb's width, the snap distance and the least room
@@ -63,8 +87,14 @@ function pxValue(name: string, fallback: number): number {
  * left alone for nothing else. */
 function onKeydown(event: KeyboardEvent) {
   const page = Math.max(1, Math.round(span.value / 10))
+  // Off, or on the doubling scale, the range's own steps are not the value's: every key is the slider's.
+  const own = logScale.value || props.offBody !== undefined
   if (event.key === 'PageUp') set(props.modelValue + page)
   else if (event.key === 'PageDown') set(props.modelValue - page)
+  else if (own && (event.key === 'ArrowRight' || event.key === 'ArrowUp')) set(props.modelValue + 1)
+  else if (own && (event.key === 'ArrowLeft' || event.key === 'ArrowDown')) set(props.modelValue - 1)
+  else if (own && event.key === 'Home') set(props.min)
+  else if (own && event.key === 'End') set(props.max)
   else return
   event.preventDefault()
 }
@@ -73,10 +103,10 @@ function onKeydown(event: KeyboardEvent) {
 function onPointerUp() {
   const travel = trackWidth.value - pxValue('--slider-thumb', THUMB_PX)
   if (!props.marks?.length || travel <= 0) return
-  const pxPerUnit = travel / span.value
   const snap = pxValue('--slider-mark-snap', SNAP_PX)
-  const nearest = props.marks.reduce((best, mark) => (Math.abs(mark.value - props.modelValue) < Math.abs(best.value - props.modelValue) ? mark : best))
-  if (Math.abs(nearest.value - props.modelValue) * pxPerUnit <= snap) set(nearest.value)
+  const away = (value: number) => Math.abs(fraction(value) - at.value) * travel
+  const nearest = props.marks.reduce((best, mark) => (away(mark.value) < away(best.value) ? mark : best))
+  if (away(nearest.value) <= snap) set(nearest.value)
 }
 
 const endsEl = ref<HTMLElement>()
@@ -105,28 +135,53 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
 </script>
 
 <template>
-  <div class="vs" :style="{ '--vs-at': at }" :data-testid="testid">
-    <p class="vs-head">
-      <span class="vs-label">
-        {{ label }}
-        <InfoButton v-if="info" :label="info.label" :body="info.body" :data-testid="testid && `${testid}-info`" />
-      </span>
-      <span class="vs-value" :data-testid="testid && `${testid}-value`">
-        <b>{{ value }}</b><template v-if="secondary"> · <span class="vs-secondary">{{ secondary }}</span></template>
-      </span>
-    </p>
-    <div ref="trackEl" class="vs-track">
+  <div class="vs" :class="{ 'vs--off': offBody !== undefined }" :style="{ '--vs-at': at }" :data-testid="testid">
+    <div class="vs-head">
+      <p class="vs-head-line">
+        <span class="vs-label">
+          {{ label }}
+          <InfoButton v-if="info" :label="info.label" :body="info.body" :data-testid="testid && `${testid}-info`" />
+        </span>
+        <span class="vs-value" :data-testid="testid && `${testid}-value`">
+          <b>{{ value }}</b><template v-if="secondary"> · <span class="vs-secondary">{{ secondary }}</span></template>
+        </span>
+      </p>
+      <!-- A button at the head's right that opens the slider's more (the converter's "More for the size", ticket 0896). -->
+      <slot name="action" />
+    </div>
+    <AppTooltip v-if="offBody !== undefined" :name="label" disabled :disabled-body="offBody" :announce="false" class="vs-off-tip">
+      <div class="vs-track">
+        <input
+          class="vs-range"
+          type="range"
+          :min="logScale ? 0 : min"
+          :max="logScale ? TRACK_STEPS : max"
+          step="1"
+          :value="rangeValue"
+          :aria-label="label"
+          :aria-valuetext="valuetext"
+          aria-disabled="true"
+          :data-testid="testid && `${testid}-range`"
+          @input="onInput"
+          @keydown="onKeydown"
+        />
+      </div>
+    </AppTooltip>
+    <div v-else ref="trackEl" class="vs-track">
       <input
         class="vs-range"
         type="range"
-        :min="min"
-        :max="max"
+        :min="logScale ? 0 : min"
+        :max="logScale ? TRACK_STEPS : max"
         step="1"
-        :value="modelValue"
+        :value="rangeValue"
         :aria-label="label"
         :aria-valuetext="valuetext"
+        :aria-valuemin="logScale ? min : undefined"
+        :aria-valuemax="logScale ? max : undefined"
+        :aria-valuenow="logScale ? modelValue : undefined"
         :data-testid="testid && `${testid}-range`"
-        @input="set(Number(($event.target as HTMLInputElement).value))"
+        @input="onInput"
         @keydown="onKeydown"
         @pointerup="onPointerUp"
       />
@@ -145,7 +200,16 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
 
 <style scoped>
   .vs { display: flex; flex-direction: column; gap: var(--space-4); color: var(--body); }
-  .vs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; }
+  .vs-head { display: flex; align-items: center; gap: var(--space-8); }
+  .vs-head-line { display: flex; flex: 1 1 auto; align-items: baseline; justify-content: space-between; gap: var(--space-8); min-width: 0; margin: 0; }
+  .vs-off-tip { display: block; }
+  /* Off (ticket 0896): the name and value in faint, the filled part line-strong, the thumb faint. */
+  .vs--off .vs-label, .vs--off .vs-value, .vs--off .vs-ends, .vs--off .vs-max { color: var(--faint); }
+  .vs--off .vs-range { cursor: default; --vs-line: 0%; }
+  .vs--off .vs-range::-webkit-slider-runnable-track { background: var(--line-strong); }
+  .vs--off .vs-range::-moz-range-track, .vs--off .vs-range::-moz-range-progress { background: var(--line-strong); }
+  .vs--off .vs-range::-webkit-slider-thumb, .vs--off .vs-range:hover::-webkit-slider-thumb, .vs--off .vs-range:active::-webkit-slider-thumb { background: var(--faint); transform: none; }
+  .vs--off .vs-range::-moz-range-thumb, .vs--off .vs-range:hover::-moz-range-thumb { background: var(--faint); }
   .vs-label { display: inline-flex; align-items: center; gap: var(--space-4); font: var(--type-control); font-weight: 500; color: var(--ink); }
   .vs-value { font: var(--type-meta); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .vs-value b { font-weight: 500; }

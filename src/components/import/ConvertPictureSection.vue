@@ -1,80 +1,39 @@
 <script setup lang="ts">
 import { computed, ref, watchPostEffect } from 'vue'
-import { useConvertImageWizardState, type ConvertWeave } from '../../composables/import/useConvertImageWizard'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { useHelpDevice } from '../../composables/ui/useKeyHints'
+import { useConvertFileInput } from '../../composables/import/useConvertFileInput'
+import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { imageInputAccept } from '../../domain/imageConversion'
-import { offeredBeads } from '../../domain/beads'
-import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
-import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppMessage from '../ui/AppMessage.vue'
-import AppNote from '../ui/AppNote.vue'
-import LoadingState from '../ui/LoadingState.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
-import FormField from '../ui/form/FormField.vue'
-import BeadSection from '../project/BeadSection.vue'
-import TechniqueSection from '../project/TechniqueSection.vue'
 
-// Convert image's Picture & bead step (ConvertImage card; tickets 0747, 0780): every way in through the wizard's one
-// validation and decode, then the file's row with Replace, the Bead and Technique (open before a picture too), and weave:
-// Whole picture or A part of the picture. Turn 90° and Flip are on the preview's floating bar.
+// The column's picture section (ConvertImage card DS-1, ticket 0896): the thumbnail, the file's name and size, Replace
+// (Choose file, Paste, and Take photo on touch) and "More for the picture" (Turn 90°, Flip left to right). With no
+// picture yet it says so, and while one is read, that it is being read; the ways in are the drop zone's then.
 const emit = defineEmits<{ paste: [] }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const wizard = useConvertImageWizardState()
-/** Take photo is offered where the main pointer is a finger (a phone's or a tablet's camera), keyboard or not. */
-const touch = useMediaQuery('(pointer: coarse)')
-/** The Note speaks to the device by the help lines' one rule (ticket 0846): touch words, or the paste key it has. */
-const help = useHelpDevice()
-const accept = imageInputAccept()
+const { accept, touch, error, onFileChange } = useConvertFileInput(wizard)
 const words = computed(() => t.value.convertImage.wizard)
 
-const weaveOptions = computed(() => [
-  { value: 'whole' as const, title: words.value.wholePicture },
-  { value: 'part' as const, title: words.value.aPart },
-])
-
-/** The weave choices are a radio group: the arrows move the choice, and the chosen card is the one Tab stop. */
-function onWeaveKey(event: KeyboardEvent) {
-  const forward = event.key === 'ArrowDown' || event.key === 'ArrowRight'
-  if (!forward && event.key !== 'ArrowUp' && event.key !== 'ArrowLeft') return
-  event.preventDefault()
-  const values: ConvertWeave[] = ['whole', 'part']
-  const next = values[(values.indexOf(wizard.weave.value) + (forward ? 1 : values.length - 1)) % values.length]!
-  wizard.setWeave(next)
-  ;(event.currentTarget as HTMLElement).querySelector<HTMLElement>(`[data-value="${next}"]`)?.focus()
-}
-
 const replaceEl = ref<HTMLElement>()
-/** Replace's Choose file opens the picker of the file input kept beside the menu. */
-const chooseReplacement = () => replaceEl.value?.querySelector<HTMLInputElement>('input[type="file"]')?.click()
+/** Replace's Choose file and Take photo open the pickers of the file inputs kept beside the menu. */
+const pick = (testid: string) => replaceEl.value?.querySelector<HTMLInputElement>(`input[data-testid="${testid}"]`)?.click()
 
-const note = computed(() =>
-  help.device.value === 'touch' ? imageLimitsText(locale.value, words.value.pictureNoteTouch) : imageLimitsText(locale.value, words.value.pictureNote, { pasteKey: help.modKey('V') }),
-)
-const error = computed(() => (wizard.rejection.value ? imageLimitsText(locale.value, t.value.convertImage.errors[wizard.rejection.value]) : undefined))
-const facts = computed(() => {
+const size = computed(() => {
   const image = wizard.image.value
-  return image ? fillBlanks(t.value.convertImage.wizard.pictureSize, { width: image.width, height: image.height, format: wizard.fileFormat.value }) : ''
+  return image ? fillBlanks(words.value.pictureSize, { width: image.width, height: image.height }) : ''
 })
+const replaceItems = computed(() => [words.value.chooseFile, words.value.paste, ...(touch.value ? [words.value.takePhoto] : [])])
 
-async function onFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  try {
-    if (file) await wizard.setFile(file)
-  } finally {
-    // Clear the input so picking the same file again still counts as a change.
-    input.value = ''
-  }
-}
 
+/** The thumbnail's bitmap, twice its box (`--convert-thumb-width` × `--convert-thumb-height`, 44 × 54) for a sharp picture. */
+const THUMB_BITMAP = { width: 88, height: 108 }
 const thumbEl = ref<HTMLCanvasElement>()
-/** The thumbnail is the picture's own pixels, scaled into the 64 × 48 box. */
+/** The thumbnail is the picture's own pixels, covering its box. */
 watchPostEffect(() => {
   const canvas = thumbEl.value
   const image = wizard.image.value
@@ -84,7 +43,7 @@ watchPostEffect(() => {
   source.width = image.width
   source.height = image.height
   source.getContext('2d')?.putImageData(new ImageData(Uint8ClampedArray.from(image.data), image.width, image.height), 0, 0)
-  const scale = Math.min(canvas.width / image.width, canvas.height / image.height)
+  const scale = Math.max(canvas.width / image.width, canvas.height / image.height)
   context.clearRect(0, 0, canvas.width, canvas.height)
   context.imageSmoothingEnabled = scale < 1
   const width = image.width * scale
@@ -95,76 +54,41 @@ watchPostEffect(() => {
 
 <template>
   <div class="convert-picture" data-testid="convert-picture">
-    <div v-if="!wizard.hasPicture.value" class="convert-picture__ways">
-      <FileButton
-        :label="t.convertImage.wizard.chooseFile"
-        icon="import"
-        accent
-        :accept="accept"
-        data-autofocus
-        data-testid="convert-choose-file"
-        @change="onFileChange"
-        @drop-file="wizard.setFile"
-      />
-      <AppButton icon="paste" data-testid="convert-paste" @click="emit('paste')">{{ t.convertImage.wizard.paste }}</AppButton>
-      <FileButton
-        v-if="touch"
-        :label="t.convertImage.wizard.takePhoto"
-        icon="camera"
-        :accept="accept"
-        capture="environment"
-        data-testid="convert-take-photo"
-        @change="onFileChange"
-      />
+    <span class="convert-picture__label">{{ words.pictureLabel }}</span>
+
+    <div v-if="wizard.reading.value && !wizard.hasPicture.value" class="convert-picture__set">
+      <span class="convert-picture__thumb" aria-hidden="true" />
+      <div class="convert-picture__facts">
+        <span class="convert-picture__name" data-user-text>{{ wizard.readingFile.value?.name }}</span>
+        <span class="convert-picture__size">{{ words.readingLine }}</span>
+      </div>
     </div>
+    <p v-else-if="!wizard.hasPicture.value" class="convert-picture__none" data-testid="convert-no-picture">{{ words.bandEmpty }}</p>
 
     <div v-else class="convert-picture__set">
-      <canvas ref="thumbEl" class="convert-picture__thumb" width="64" height="48" aria-hidden="true" />
+      <canvas ref="thumbEl" class="convert-picture__thumb" :width="THUMB_BITMAP.width" :height="THUMB_BITMAP.height" aria-hidden="true" />
       <div class="convert-picture__facts">
         <span class="convert-picture__name" data-user-text data-testid="convert-file-name">{{ wizard.fileName.value }}</span>
-        <span class="convert-picture__size" data-testid="convert-picture-size">{{ facts }}</span>
+        <span class="convert-picture__size" data-testid="convert-picture-size">{{ size }}</span>
       </div>
-      <span ref="replaceEl" class="convert-picture__replace">
-        <MenuButton :label="words.replace" :items="[words.chooseFile, words.paste]" variant="in-box" align="end" data-testid="convert-replace">
-          <AppMenuItem icon="import" data-testid="convert-replace-file" @select="chooseReplacement">{{ words.chooseFile }}</AppMenuItem>
+      <span ref="replaceEl" class="convert-picture__menus">
+        <MenuButton :label="words.replace" :items="replaceItems" variant="in-box" align="end" data-testid="convert-replace">
+          <AppMenuItem icon="import" data-testid="convert-replace-file" @select="pick('convert-replace-input')">{{ words.chooseFile }}</AppMenuItem>
           <AppMenuItem icon="paste" data-testid="convert-replace-paste" @select="emit('paste')">{{ words.paste }}</AppMenuItem>
+          <AppMenuItem v-if="touch" icon="camera" data-testid="convert-replace-photo" @select="pick('convert-replace-photo-input')">{{ words.takePhoto }}</AppMenuItem>
         </MenuButton>
-        <span class="convert-picture__replace-input" hidden>
+        <MenuButton :label="t.referenceImage.bar.more" icon="more" icon-only variant="in-box" align="end" :items="[words.turn, words.flipLeftRight]" data-testid="convert-picture-more">
+          <AppMenuItem icon="rotate" data-testid="convert-turn" @select="wizard.turn">{{ words.turn }}</AppMenuItem>
+          <AppMenuItem icon="flip" data-testid="convert-flip" @select="wizard.flip">{{ words.flipLeftRight }}</AppMenuItem>
+        </MenuButton>
+        <span class="convert-picture__inputs" hidden>
           <FileButton :label="words.chooseFile" :accept="accept" tabindex="-1" data-testid="convert-replace-input" @change="onFileChange" />
+          <FileButton v-if="touch" :label="words.takePhoto" :accept="accept" capture="environment" tabindex="-1" data-testid="convert-replace-photo-input" @change="onFileChange" />
         </span>
       </span>
     </div>
 
-    <LoadingState v-if="wizard.reading.value" compact :text="t.convertImage.readingPicture" />
-    <AppMessage v-if="error" tone="danger" placement="notice" :closable="false" data-testid="convert-image-error">{{ error }}</AppMessage>
-    <AppNote v-if="!wizard.hasPicture.value" data-testid="convert-picture-note">{{ note }}</AppNote>
-
-    <FormField :label="t.form.beadLabel">
-      <BeadSection :bead="wizard.bead.value" :candidates="offeredBeads()" @pick="wizard.beadId.value = $event" />
-    </FormField>
-    <TechniqueSection v-model:technique="wizard.technique.value" :settings="wizard.settings.value" testid="convert" @set-setting="wizard.setSetting" />
-
-    <div v-if="wizard.hasPicture.value" class="convert-picture__weave">
-      <span class="convert-picture__label">{{ words.convert }}</span>
-      <div class="convert-picture__choices" role="radiogroup" :aria-label="words.convert" data-testid="convert-weave" @keydown="onWeaveKey">
-        <button
-          v-for="option in weaveOptions"
-          :key="option.value"
-          type="button"
-          role="radio"
-          class="convert-picture__choice"
-          data-wrap-ok
-          :aria-checked="wizard.weave.value === option.value"
-          :tabindex="wizard.weave.value === option.value ? 0 : -1"
-          :data-value="option.value"
-          :data-testid="`convert-weave-${option.value}`"
-          @click="wizard.setWeave(option.value)"
-        >
-          <span class="convert-picture__radio" aria-hidden="true" />
-          <span class="convert-picture__choice-title">{{ option.title }}</span>
-        </button>
-      </div>
-    </div>
+    <AppMessage v-if="error && wizard.hasPicture.value" tone="danger" placement="notice" :closable="false" data-testid="convert-image-error">{{ error }}</AppMessage>
   </div>
 </template>
 
@@ -172,41 +96,33 @@ watchPostEffect(() => {
 .convert-picture {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
-}
-
-/* One row of the ways in, shared out evenly (ticket 0862): a button is never narrower than its label, so a pane too
- * narrow for all of them in a row (a phone) stacks them. */
-.convert-picture__ways {
-  display: flex;
-  flex-wrap: wrap;
   gap: var(--space-8);
 }
 
-.convert-picture__ways > * {
-  flex: 1 1 0;
-  min-width: max-content;
+.convert-picture__label {
+  font: var(--type-label);
+  color: var(--muted);
 }
 
-/* Every way in at field-height, Paste with the file buttons, filling its share of the row. */
-.convert-picture__ways :deep(.app-button) {
-  box-sizing: border-box;
-  width: 100%;
-  height: var(--field-height);
+.convert-picture__none {
+  margin: 0;
+  font: var(--type-meta);
+  color: var(--muted);
 }
 
 .convert-picture__set {
   display: flex;
   align-items: center;
-  gap: var(--space-12);
+  gap: var(--space-10);
   min-width: 0;
 }
 
 .convert-picture__thumb {
   flex: none;
+  box-sizing: border-box;
   width: var(--convert-thumb-width);
   height: var(--convert-thumb-height);
-  background: var(--box);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
 }
@@ -219,100 +135,32 @@ watchPostEffect(() => {
   min-width: 0;
 }
 
+/* The name wraps anywhere, never cut. */
 .convert-picture__name {
-  overflow: hidden;
+  overflow-wrap: anywhere;
   font: var(--type-control);
   color: var(--ink);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .convert-picture__size {
+  overflow-wrap: anywhere;
   font: var(--type-meta);
   color: var(--muted);
 }
 
-.convert-picture__replace {
+.convert-picture__menus {
+  display: flex;
   flex: none;
+  gap: var(--space-4);
 }
 
-/* The file input Replace's Choose file opens: kept, not shown. */
-.convert-picture__replace-input {
+/* Replace is kept compact, so the name keeps room: padding 0 8 0 12 (DS-1). */
+.convert-picture__menus :deep(.app-button) {
+  padding: 0 var(--space-8) 0 var(--space-12);
+}
+
+/* The file inputs Replace's items open: kept, not shown. */
+.convert-picture__inputs {
   display: none;
-}
-
-.convert-picture__weave {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.convert-picture__label {
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
-}
-
-.convert-picture__choices {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-/* A radio card (ConvertImage card, weave): the chosen one has its ink edge doubled inside and its radio filled. */
-.convert-picture__choice {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-10);
-  padding: var(--space-10) var(--space-12);
-  font: inherit;
-  color: var(--ink);
-  text-align: left;
-  background: var(--elevated);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.convert-picture__choice:hover {
-  border-color: var(--line-strong);
-}
-
-.convert-picture__choice[aria-checked='true'] {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
-}
-
-.convert-picture__choice:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.convert-picture__radio {
-  display: grid;
-  flex: none;
-  place-items: center;
-  box-sizing: border-box;
-  width: var(--space-16);
-  height: var(--space-16);
-  margin-top: var(--space-2);
-  border: 1.5px solid var(--field-line);
-  border-radius: 50%;
-}
-
-.convert-picture__choice[aria-checked='true'] .convert-picture__radio {
-  border-color: var(--ink);
-}
-
-.convert-picture__choice[aria-checked='true'] .convert-picture__radio::after {
-  width: var(--space-8);
-  height: var(--space-8);
-  content: '';
-  background: var(--ink);
-  border-radius: 50%;
-}
-
-.convert-picture__choice-title {
-  font: var(--type-control);
 }
 </style>

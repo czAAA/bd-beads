@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 /** A wait (ticket 158): nothing for the first `loading-delay` (300ms) so fast work never flashes, then beads or a
  * progress track. */
-defineProps<{ text: string; share?: number; compact?: boolean }>()
+defineProps<{ text: string; share?: number; compact?: boolean; /** A quieter second line under the text (the file being read, ticket 0896). */ detail?: string }>()
 
 /** `--loading-delay` (tokens.json): read from the page when it has one, since a timer can't take a CSS value. */
 function loadingDelayMs(): number {
@@ -30,10 +30,18 @@ onBeforeUnmount(() => clearTimeout(timer))
       <i class="loading__fill" :style="{ width: `${Math.round(share * 100)}%` }" />
     </span>
     <span class="loading__text">{{ text }}</span>
+    <span v-if="detail" class="loading__detail" data-user-text>{{ detail }}</span>
   </div>
 </template>
 
 <style scoped>
+.loading__detail {
+  margin-top: calc(-1 * var(--space-8));
+  font: var(--type-meta);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .loading {
   display: flex;
   flex-direction: column;
