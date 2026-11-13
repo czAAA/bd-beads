@@ -49,6 +49,7 @@
   --convert-compare-side: 24px; /* ConvertImage card (ticket 0900): room at each side of the picture and the beads in each half of Compare. */
   --convert-chip-height: 30px; /* ConvertImage card (ticket 0900): a chip over the preview ("picture", "beads", "picture · let go to see the beads"). */
   --convert-chip-height-touch: 32px; /* ConvertImage card (ticket 0900): the same chip on a coarse pointer. */
+  --convert-narrow-tool-width: 40px; /* ConvertImage card (ticket 0909): Background and Make empty, icon only, on the bar under 1024 px. */
   --convert-tablet-min: 600px; /* ConvertImage card (DS-4, ticket 0910): from this width a portrait page takes the Tablet layout; under it, the Phone. */
   --convert-settings-height: 60px; /* ConvertImage card (ticket 0910): the phone dock's row of five settings (icon over name). */
   --convert-sheet-grab: 12px; /* ConvertImage card (ticket 0910): a phone sheet's grab zone, holding the 36 x 4 pill. */

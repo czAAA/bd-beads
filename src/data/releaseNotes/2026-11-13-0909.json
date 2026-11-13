@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-13",
+  "line": {
+    "en": "In the converter Compare puts the picture beside the beads at the same scale, and zooming or panning moves both; on a narrow screen Beads | Picture switches between them and stays, and holding still shows the picture only until you let go",
+    "ru": "В конвертере «Сравнить» ставит изображение рядом с бисером в том же масштабе, и масштаб и прокрутка двигают оба; на узком экране «Бисер | Изображение» переключает их и остаётся, а удержание по-прежнему показывает изображение, пока не отпустите",
+    "uk": "У конвертері «Порівняти» ставить зображення поруч із бісером у тому ж масштабі, і масштаб та прокрутка рухають обидва; на вузькому екрані «Бісер | Зображення» перемикає їх і лишається, а утримання й далі показує зображення, доки не відпустите",
+    "be": "У канвертары «Параўнаць» ставіць выяву побач з бісерам у тым жа маштабе, і маштаб і пракрутка рухаюць абодва; на вузкім экране «Бісер | Выява» пераключае іх і застаецца, а ўтрыманне па-ранейшаму паказвае выяву, пакуль не адпусціце",
+    "zh": "转换器里“对比”把图片放在珠子旁边，比例相同，缩放和平移会同时移动两边；在窄屏上“珠子 | 图片”切换显示并保持，按住仍只在松开前显示图片",
+    "es": "En el conversor Comparar pone la imagen junto a las cuentas a la misma escala, y el zoom y el desplazamiento mueven las dos; en una pantalla estrecha Cuentas | Imagen cambia entre ellas y se queda, y mantener pulsado sigue mostrando la imagen solo hasta que sueltas",
+    "pl": "W konwerterze Porównaj stawia obraz obok koralików w tej samej skali, a powiększenie i przesuwanie ruszają oba; na wąskim ekranie Koraliki | Obraz przełącza je i zostaje, a przytrzymanie nadal pokazuje obraz tylko do puszczenia"
+  }
+}
