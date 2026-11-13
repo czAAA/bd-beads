@@ -1117,6 +1117,7 @@ export const uk: Translations = {
         codesLeft: { other: 'залишилося кодів: {count}' },
         note: 'Покриття: підбір лише за позначеними покриттями.',
       },
+      autoFixLighting: 'Автокорекція освітлення',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',

@@ -191,6 +191,16 @@ export function createHand(deps: HandDeps) {
     return top
   }
 
+  /** The bottom of a scroller's room above any sticky foot stuck across `bottom` (the converter's Create Project foot). */
+  function aboveStuck(scroller: Element, element: Element, bottom: number): number {
+    for (const foot of scroller.querySelectorAll('*')) {
+      if (foot.contains(element) || getComputedStyle(foot).position !== 'sticky') continue
+      const edge = foot.getBoundingClientRect()
+      if (edge.bottom >= bottom - STUCK_SLACK_PX && edge.top < bottom) bottom = edge.top
+    }
+    return bottom
+  }
+
   /** Waits until an element stops moving (a bar or a panel still sliding in), a few frames at most. */
   async function steady(element: Element): Promise<void> {
     if (instant) return
@@ -206,7 +216,7 @@ export function createHand(deps: HandDeps) {
   }
 
   /** Scrolls each scroller in the editor round `element`, innermost first, so all of it shows, `--ghost-room` clear where
-   * there is room, below sticky headers: at the top with `at` or when taller than the room, else nearest. Smoothly while
+   * there is room, between sticky headers and feet: at the top with `at` or when taller than the room, else nearest. Smoothly while
    * the ghost plays; never the page, which turns its sections when it scrolls. */
   async function bringIntoView(element: Element, at: 'start' | 'nearest' = 'nearest'): Promise<void> {
     for (let scroller = element.parentElement; scroller && scroller !== root; scroller = scroller.parentElement) {
@@ -221,7 +231,7 @@ export function createHand(deps: HandDeps) {
       const room = scroller.getBoundingClientRect()
       const box = root.getBoundingClientRect()
       const top = belowStuck(scroller, element, Math.max(room.top, box.top))
-      const bottom = Math.min(room.bottom, box.bottom)
+      const bottom = aboveStuck(scroller, element, Math.min(room.bottom, box.bottom))
       const target = element.getBoundingClientRect()
       const margin = Math.min(deps.roomPx, Math.max(0, (bottom - top - target.height) / 2))
       let by = 0

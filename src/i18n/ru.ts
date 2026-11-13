@@ -1117,6 +1117,7 @@ export const ru: Translations = {
         codesLeft: { other: 'осталось кодов: {count}' },
         note: 'Покрытие: подбор только по отмеченным покрытиям.',
       },
+      autoFixLighting: 'Автокоррекция освещения',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

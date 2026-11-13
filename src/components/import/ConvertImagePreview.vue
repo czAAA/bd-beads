@@ -234,9 +234,10 @@ watchPostEffect(() => {
   drawPicture(context, fitBitmap(canvas).pixelRatio)
 })
 
-/** The picture's own pixels as a canvas, made once per picture (a turn or a flip is a new one): what Compare shows. */
+/** The picture as the beads are sampled from it, as a canvas, made once per picture (a turn, a flip or Auto-fix lighting,
+ * ticket 0907, is a new one): what Compare shows. */
 const original = computed(() => {
-  const image = wizard.image.value
+  const image = wizard.lighting.picture.value
   if (!image || typeof document === 'undefined' || typeof ImageData === 'undefined') return undefined
   const canvas = document.createElement('canvas')
   canvas.width = image.width

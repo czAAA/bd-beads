@@ -167,6 +167,8 @@ describe('the preview’s overlays on the canvas', () => {
 // whole with no scroll, in the longest wording too, a popover opens beside it, and under 1024 px the column stacks.
 /** The foot's bottom padding (20 at the 18px root is --space-20): what the column may overrun at 1180 × 820, ticket 0897. */
 const FOOT_BOTTOM_PADDING_PX = 20
+/** What Auto-fix lighting's row stands under the picture row by (DS-3: the section's 8 and 2), ticket 0907. */
+const LIGHTING_ROW_GAP_PX = 10
 
 describe('Convert image, the quiet converter', () => {
   const find = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
@@ -184,9 +186,11 @@ describe('Convert image, the quiet converter', () => {
         await settleForMeasuring()
         const root = mounted.root
         const column = find(root, 'convert-column')
-        // At 1180 × 820 the longest wording runs the column past the window by the sticky foot's padding (ticket 0897),
-        // and in the longest words Clean up's button wraps (ticket 0906): the column scrolls above the pinned foot.
-        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX)
+        // At 1180 × 820 the column overruns by the foot's padding (0897) and Auto-fix lighting's row with its 10 (0907), in
+        // the longest words Clean up's button wraps too (0906): it scrolls above the pinned foot, the lighting row in view.
+        const lightingRow = rect(root, 'convert-lighting').height + LIGHTING_ROW_GAP_PX
+        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX + lightingRow)
+        expect(rect(root, 'convert-lighting-switch').bottom).toBeLessThanOrEqual(column.getBoundingClientRect().bottom)
         expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
         // The bar's buttons stand whole inside it.
         const bar = rect(root, 'convert-preview-tools')
