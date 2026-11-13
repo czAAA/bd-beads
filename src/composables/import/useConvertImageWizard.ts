@@ -47,6 +47,7 @@ import {
 import { partLattice } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
+import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
@@ -115,6 +116,8 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   const reading = ref(false)
   /** The file being read, for the slow picture's line ("img_2041.jpg · 9.6 MB", ticket 0896). */
   const readingFile = shallowRef<{ name: string; bytes: number }>()
+  /** Photo or flat art (ticket 0889), told again for each new picture: it sets defaults only (Width, Clean up's in 0906). */
+  const kind = computed(() => (image.value ? pictureKind(image.value) : undefined))
 
   // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
   const weaveChoice = ref<ConvertWeave>('whole')
@@ -291,7 +294,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
       fileName.value = file.name
       fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
       if (first) {
-        const opening = startingSize(decoded)
+        const opening = startingSize(decoded, kind.value)
         widthBeads.value = opening.width
         heightBeads.value = opening.height
       }
@@ -680,6 +683,8 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     setFile,
     turn,
     flip,
+    /** Photo or flat art (ticket 0889): what Clean up stray beads opens at reads it (ticket 0906). */
+    pictureKind: kind,
     weave: computed(() => weaveChoice.value),
     setWeave,
     part,
