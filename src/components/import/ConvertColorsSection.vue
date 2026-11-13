@@ -46,7 +46,7 @@ const myBeadsItem = computed(() => {
 })
 
 const count = (n: number) => groupThousands(n, locale.value)
-const colorsMaxText = computed(() => groupThousands(wizard.colorsMax.value, locale.value))
+const colorsMaxText = computed(() => count(wizard.colorsMax.value))
 /** Under Exact a color is not a bead to buy, so the Info says what it is instead (tickets 0863, 0894). */
 const colorsInfo = computed(() => {
   const exact = wizard.source.value === 'exact'

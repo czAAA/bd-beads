@@ -58,8 +58,8 @@ function nameOf(target: TargetColor): string {
 }
 
 function rowLabel(target: TargetColor): string {
-  const plain = `${target.code} ${nameOf(target)}`
-  return owned.value.has(target.code!) ? fillBlanks(words.value.rowOwned, { code: target.code!, name: nameOf(target) }) : plain
+  const name = nameOf(target)
+  return owned.value.has(target.code!) ? fillBlanks(words.value.rowOwned, { code: target.code!, name }) : `${target.code} ${name}`
 }
 
 // The view is a layer over the Colors popover: Escape comes back to Colors; a press outside closes the popover.

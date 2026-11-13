@@ -810,7 +810,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     myBeadsOffered: myBeads.offered,
     toggleMyBeadsCode,
     /** With My beads the source, whether its codes are fewer than the colors asked, so fewer come out and the foot says so. */
-    myBeadsShort: computed(() => source.value === 'my-beads' && myBeads.targets.value.length < maxColors.value),
+    myBeadsShort: computed(() => source.value === 'my-beads' && myBeads.targets.value.length > 0 && myBeads.targets.value.length < maxColors.value),
     // Review and Create
     draftProject,
     beadCount,
