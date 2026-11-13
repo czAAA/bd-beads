@@ -263,7 +263,7 @@ Takes away what is round the subject, in two stages, so the person sees what was
 - Select and Make empty are toggle buttons (`aria-pressed`). Compare is a button held with Space or Enter. A kept part is read in the band ("keeping 34×38") and Keep all is a button.
 
 ## Nothing remembered
-No choice on the page is kept on the device. Every opening starts from the New Project form and the starting proposal.
+Only the last conversion's Bead, its Technique with its Drop and the source of the colors are kept on the device (ticket 0893, ADR 0010), set by Create Project; the page opens on them, the first time on Miyuki Delica 11/0 in Peyote. A Bead or Technique the person changed on the New Project form in the same visit wins over the kept one; opened from a reference picture's All settings, the page keeps what it was opened with. A kept Bead that left the catalog, or a source this build doesn't know, opens on the first-time choice for that part. Everything else on the page, Width, the number of colors and the crop among it, is never kept: every picture starts from the starting proposal.
 
 Hand-written from the ticket 0646 design session, the ticket 0747 canvas (Picture, Size and Colors), the App page of ticket 0756 (ADR 0085, ADR 0086), and the ticket 0778 canvas "Convert image, desktop redesign" (1280 × 800, light; the other widths, themes and languages follow the rules above until they are designed).
 

@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-13",
+  "line": {
+    "en": "Convert image picks the colors that differ most, so a dark background gets one black instead of several",
+    "ru": "«Из картинки» выбирает самые непохожие цвета, и тёмный фон получает один чёрный, а не несколько",
+    "uk": "«З картинки» вибирає найнесхожіші кольори, і темне тло отримує один чорний, а не кілька",
+    "be": "«З малюнка» выбірае найменш падобныя колеры, і цёмны фон атрымлівае адзін чорны, а не некалькі",
+    "zh": "转换图片会挑选差别最大的颜色，深色背景只用一种黑色，而不是好几种",
+    "es": "Convertir imagen elige los colores más distintos, así un fondo oscuro lleva un solo negro en vez de varios",
+    "pl": "Konwertuj obraz wybiera najbardziej różne kolory, więc ciemne tło dostaje jedną czerń zamiast kilku"
+  }
+}
