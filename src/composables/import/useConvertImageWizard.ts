@@ -49,6 +49,7 @@ import {
 import { partLattice } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
+import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
@@ -111,6 +112,8 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   const fileFormat = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
+  /** Photo or flat art (ticket 0889), told again for each new picture: it sets defaults only (Width, Clean up's in 0906). */
+  const kind = computed(() => (image.value ? pictureKind(image.value) : undefined))
 
   // The step in view (ticket 0780): the pane's scroll sets it and its place between the steps, which the Progress bar
   // follows; a dot, Back or Next asks the pane to scroll to a step.
@@ -292,7 +295,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
       fileName.value = file.name
       fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
       if (first) {
-        const opening = startingSize(decoded)
+        const opening = startingSize(decoded, kind.value)
         widthBeads.value = opening.width
         heightBeads.value = opening.height
       }
@@ -680,6 +683,8 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     setFile,
     turn,
     flip,
+    /** Photo or flat art (ticket 0889): what Clean up stray beads opens at reads it (ticket 0906). */
+    pictureKind: kind,
     weave: computed(() => weaveChoice.value),
     setWeave,
     part,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import { BACKGROUND_TOLERANCE } from '../../domain/convertBackground'
 import type { PixelData } from '../../domain/imageConversion'
+import { photoPictureSized, pixelArtPicture } from '../../testUtils/samplerPictures'
 import { useConvertImageWizard } from './useConvertImageWizard'
 
 /** A flat picture of this size, enough for the size arithmetic. */
@@ -322,5 +323,44 @@ describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', ()
     wizard.endMark()
     expect(wizard.background.value).toBe('find')
     expect(percent(wizard)).toBe(0)
+  })
+})
+
+describe('useConvertImageWizard photo or flat art (ticket 0889)', () => {
+  /** A wizard handed these pictures in turn, one each time a file is set. */
+  async function opening(...pictures: PixelData[]) {
+    const queue = [...pictures]
+    const wizard = effectScope().run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
+        decodeImage: async () => queue.shift()!,
+        loadCatalog: () => Promise.reject(new Error('no catalog')),
+      }),
+    )!
+    const setNext = () => wizard.setFile(new File(['x'], 'picture.jpg', { type: 'image/jpeg' }))
+    await setNext()
+    return { wizard, setNext }
+  }
+
+  it('opens two photos of different pixel widths at the same Width, 60, though one has a mark at 50', async () => {
+    for (const width of [800, 1000]) {
+      const { wizard } = await opening(photoPictureSized(width, 600))
+      expect(wizard.pictureKind.value).toBe('photo')
+      expect(wizard.sizing.value.width).toBe(60)
+    }
+  })
+
+  it('opens flat art on a mark, as before', async () => {
+    const { wizard } = await opening(pixelArtPicture(200))
+    expect(wizard.pictureKind.value).toBe('flat')
+    expect(wizard.sizing.value.mark).toEqual({ width: 50, pixelsPerBead: 4 })
+  })
+
+  it('tells a replaced picture again, and never changes the Width the person set', async () => {
+    const { wizard, setNext } = await opening(pixelArtPicture(200), photoPictureSized(800, 600))
+    wizard.setWidth(42)
+    await setNext()
+    expect(wizard.pictureKind.value).toBe('photo')
+    expect(wizard.sizing.value.width).toBe(42)
   })
 })

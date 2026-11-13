@@ -17,7 +17,7 @@ export interface PixelData extends ImageSize {
 
 /** A pixel this transparent or more leaves its cell unpainted: there is no half-bead, and 50% is the only
  * non-arbitrary line. A transparent-background icon converts to a shape, not a rectangle. */
-const ALPHA_THRESHOLD = 128
+export const ALPHA_THRESHOLD = 128
 
 /** What a packed color holds for a pixel that is too transparent to weave, or a cell that falls off the picture. */
 export const NO_COLOR = -1

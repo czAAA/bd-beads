@@ -161,6 +161,13 @@ describe('Height and the chain (ticket 0757)', () => {
     expect(startingSize({ width: 4, height: 4 })).toEqual({ width: 8, height: 8 })
   })
 
+  it('opens a photo at 60 beads whatever marks its width has, or as wide as it allows if less (ticket 0889)', () => {
+    expect(startingSize({ width: 800, height: 600 }, 'photo')).toEqual({ width: 60, height: 45 })
+    expect(startingSize({ width: 200, height: 100 }, 'photo')).toEqual({ width: 60, height: 30 })
+    expect(startingSize({ width: 40, height: 40 }, 'photo')).toEqual({ width: 60, height: 60 })
+    expect(startingSize({ width: 12, height: 12 }, 'photo')).toEqual({ width: 48, height: 48 })
+  })
+
   describe('linked', () => {
     it('lets Width lead and Height follow the picture\'s shape', () => {
       const sizing = sizingFor({ part: { width: 200, height: 100 }, width: 40, ...loom })

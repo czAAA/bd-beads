@@ -6,6 +6,7 @@ import type { ImageSize } from './imageFraming'
 import { describeWeave, type Technique, type TechniqueSettings } from './weave'
 import { fillBlanks } from './fillBlanks'
 import type { Locale } from './locale'
+import type { PictureKind } from './pictureKind'
 import { estimatedSizeMm, formatMm, formatSizeMm } from './projectSize'
 
 /** How the Convert image wizard sizes a Schema (spec 0645, tickets 0747, 0757): a Width and a Height in beads over the
@@ -282,15 +283,16 @@ const OPENING_WIDTH_BEADS = 60
 /** How far from OPENING_WIDTH_BEADS a mark may be and still be the opening Width: a fifth either way. */
 const OPENING_MARK_REACH = OPENING_WIDTH_BEADS / 5
 
-/** What the converter opens at (ConvertImage card, ticket 0863): a small piece, not the most detailed one. Width opens
- * on the mark nearest 60 beads when one is near it, else at 60; a picture narrower than that opens at one bead per
- * pixel. Height takes the picture's shape, so it reads true if Height is moved or the shape let go. */
-export function startingSize(part: ImageSize): { width: number; height: number } {
+/** What the converter opens at (tickets 0863, 0889): a small piece. Flat art opens on the mark nearest 60 beads wide
+ * if one is near, else at 60, or at one bead per pixel if narrower; a photo at 60 (its marks are no truer than any
+ * Width), or as wide as it allows. Height takes the picture's shape, so it reads true if moved or the shape let go. */
+export function startingSize(part: ImageSize, kind: PictureKind = 'flat'): { width: number; height: number } {
   const widths = widthRange(part)
   const near = sizeMarks(part)
     .filter((mark) => Math.abs(mark.width - OPENING_WIDTH_BEADS) <= OPENING_MARK_REACH)
     .sort((a, b) => Math.abs(a.width - OPENING_WIDTH_BEADS) - Math.abs(b.width - OPENING_WIDTH_BEADS))[0]
-  const wanted = part.width <= OPENING_WIDTH_BEADS ? part.width : (near?.width ?? OPENING_WIDTH_BEADS)
+  const flatWidth = part.width <= OPENING_WIDTH_BEADS ? part.width : (near?.width ?? OPENING_WIDTH_BEADS)
+  const wanted = kind === 'photo' ? OPENING_WIDTH_BEADS : flatWidth
   const width = clamp(wanted, widths.min, widths.max)
   const heights = heightRange(part)
   return { width, height: clamp(Math.round((width * part.height) / part.width), heights.min, heights.max) }

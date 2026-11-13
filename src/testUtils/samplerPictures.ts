@@ -303,3 +303,73 @@ export function enclosedBy(grid: BeadGrid, picked: (hex: string | undefined) => 
   }
   return true
 }
+
+/** A generated "photo" like photoPicture, at any size: its three regions stretched to `width` × `height` px, with the
+ * same noise and shine and shadow on single pixels, so photos of different pixel widths show one scene (ticket 0889). */
+export function photoPictureSized(width: number, height: number, seed = 889): PixelData {
+  const random = seeded(seed)
+  return drawPicture(width, height, (x, y) => {
+    const { r, g, b } = photoRegionAt((x * PHOTO_SIZE) / width, (y * PHOTO_SIZE) / height)
+    const roll = random()
+    const light = roll < 0.03 ? 1.6 : roll < 0.06 ? 0.35 : 1
+    const noise = () => (random() - 0.5) * 28
+    const lit = (channel: number) => (light > 1 ? channel + (255 - channel) * 0.85 : channel * light)
+    return [lit(r) + noise(), lit(g) + noise(), lit(b) + noise()]
+  })
+}
+
+/** The JPEG standard's quantization tables for brightness and color, at quality 50. */
+const JPEG_LUMA = [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22,
+  37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99]
+const JPEG_CHROMA = [17, 18, 24, 47, 99, 99, 99, 99, 18, 21, 26, 66, 99, 99, 99, 99, 24, 26, 56, 99, 99, 99, 99, 99, 47, 66, 99, 99, 99, 99, 99, 99,
+  ...Array<number>(32).fill(99)]
+
+/** A picture as a JPEG saver leaves it (ticket 0889): brightness and color split, color halved each way, each 8 × 8
+ * block's frequencies rounded to the standard tables at `quality` (1 to 100), so flat areas ring and edges smear. */
+export function jpegLike(picture: PixelData, quality = 75): PixelData {
+  const { width, height } = picture
+  const scale = quality < 50 ? 5000 / quality : 200 - quality * 2
+  const table = (base: number[]) => base.map((step) => Math.max(1, Math.floor((step * scale + 50) / 100)))
+  const tables = [table(JPEG_LUMA), table(JPEG_CHROMA), table(JPEG_CHROMA)]
+  const at = (x: number, y: number) => (Math.min(height - 1, y) * width + Math.min(width - 1, x)) * 4
+  const planes = [0, 1, 2].map(() => new Float32Array(width * height))
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const [r, g, b] = [0, 1, 2].map((channel) => picture.data[at(x, y) + channel]!)
+      planes[0]![y * width + x] = 0.299 * r! + 0.587 * g! + 0.114 * b!
+      // Color is kept for each 2 × 2 pixels only, as most savers do.
+      const [cx, cy] = [x - (x % 2), y - (y % 2)]
+      const mean = (channel: number) => [at(cx, cy), at(cx + 1, cy), at(cx, cy + 1), at(cx + 1, cy + 1)].reduce((sum, i) => sum + picture.data[i + channel]!, 0) / 4
+      const [mr, mg, mb] = [mean(0), mean(1), mean(2)]
+      planes[1]![y * width + x] = 128 - 0.168736 * mr - 0.331264 * mg + 0.5 * mb
+      planes[2]![y * width + x] = 128 + 0.5 * mr - 0.418688 * mg - 0.081312 * mb
+    }
+  }
+  const cosines = Array.from({ length: 64 }, (_cell, i) => Math.cos(((2 * (i % 8) + 1) * Math.floor(i / 8) * Math.PI) / 16))
+  const weight = (u: number) => (u === 0 ? Math.SQRT1_2 : 1)
+  planes.forEach((plane, p) => {
+    for (let by = 0; by < height; by += 8) {
+      for (let bx = 0; bx < width; bx += 8) {
+        const block = Array.from({ length: 64 }, (_cell, i) => plane[Math.min(height - 1, by + Math.floor(i / 8)) * width + Math.min(width - 1, bx + (i % 8))]! - 128)
+        const rounded = Array.from({ length: 64 }, (_cell, i) => {
+          const [u, v] = [i % 8, Math.floor(i / 8)]
+          let sum = 0
+          for (let k = 0; k < 64; k += 1) sum += block[k]! * cosines[u * 8 + (k % 8)]! * cosines[v * 8 + Math.floor(k / 8)]!
+          const step = tables[p]![i]!
+          return Math.round((weight(u) * weight(v) * sum) / 4 / step) * step
+        })
+        for (let k = 0; k < 64; k += 1) {
+          const [x, y] = [bx + (k % 8), by + Math.floor(k / 8)]
+          if (x >= width || y >= height) continue
+          let sum = 0
+          for (let i = 0; i < 64; i += 1) sum += weight(i % 8) * weight(Math.floor(i / 8)) * rounded[i]! * cosines[(i % 8) * 8 + (k % 8)]! * cosines[Math.floor(i / 8) * 8 + Math.floor(k / 8)]!
+          plane[y * width + x] = sum / 4 + 128
+        }
+      }
+    }
+  })
+  return drawPicture(width, height, (x, y) => {
+    const [l, cb, cr] = [planes[0]![y * width + x]!, planes[1]![y * width + x]! - 128, planes[2]![y * width + x]! - 128]
+    return [l + 1.402 * cr, l - 0.344136 * cb - 0.714136 * cr, l + 1.772 * cb]
+  })
+}
