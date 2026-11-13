@@ -1141,28 +1141,23 @@ export interface Translations {
       dropToUse: string
       dropToConvert: string
       dropLimits: string
-      /** What to convert (tickets 0747, 0780; the label "convert", ticket 0863): the label, its two choices and the line
-       * under each, and the line under the result box while a crop is woven. */
+      /** What to convert (tickets 0747, 0780; the label "convert", ticket 0863): the label, its two choices, and what a
+       * crop leaves of the size, in Width's Info while a crop is woven (ticket 0894). */
       convert: string
       wholePicture: string
-      wholePictureLine: string
       aPart: string
-      aPartLine: string
       partFollows: string
-      /** Keep the picture's shape (ticket 0780): the switch between Width and Height and its line in each state. */
+      /** Keep the picture's shape (ticket 0780): the switch between Width and Height and its Info in each state. */
       keepShape: string
       keepShapeOn: string
       keepShapeOff: string
-      /** The preview's floating bar (ticket 0780; Select is the editor's tool name): its tools and the Colors step's line
-       * pointing at Make empty, `{tool}` its name. */
+      /** The preview's floating bar (ticket 0780; Select is the editor's tool name): its tools. */
       makeEmpty: string
       compare: string
-      makeEmptyLine: string
-      /** The Background step (ticket 0780): the switch and its line off and on, the stage in hand as a numbered line
+      /** The Background step (ticket 0780): the switch and its Info (ticket 0894), the stage in hand as a numbered line
        * (ticket 0863), what was found, Tolerance and its ends, and what was removed (`{count}` beads). */
       removeBackground: string
       removeBackgroundOff: string
-      removeBackgroundOn: string
       stageFind: string
       stageRemove: string
       foundLine: string
@@ -1261,12 +1256,17 @@ export interface Translations {
       /** The empty preview on touch (ticket 0846): where the picture goes and the ways in, nothing to drop. */
       emptyTouchTitle: string
       emptyTouchLine: string
-      /** The line under match to's Default Palette and Exact (ticket 0863), as beadPaletteNote is the Bead palette's. */
+      /** What match to's Default Palette and Exact do (ticket 0863), as beadPaletteNote is the Bead palette's. */
       defaultPaletteNote: string
       exactNote: string
       /** The Colors slider's hints under Exact (ticket 0863): its colors are not beads to buy. */
       colorsHintExact: string
       colorsHintExactCapped: string
+      /** The Info buttons' names (ticket 0894): Width's, one setting's (`{name}`: Colors, Keep the picture's shape,
+       * Remove background) and match to's. */
+      whatSizeDoes: string
+      whatDoes: string
+      whereColorsFrom: string
       /** The Review summary's rows. */
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
