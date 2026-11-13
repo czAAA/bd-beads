@@ -172,6 +172,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     },
     // Opened from the reference image's All settings, Add to Canvas puts the beads on the open Project (ticket 0883).
     addToCanvas: (grid, request) => pictureBar.addGrid(grid, request),
+    convertChoices: services.devicePreferences.get('convertChoices'),
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
