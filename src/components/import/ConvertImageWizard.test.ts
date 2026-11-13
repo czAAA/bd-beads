@@ -17,6 +17,7 @@ import { frameOf } from '../../domain/layerRecord'
 import { layersView } from '../../testUtils/layerFields'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import { resetKeyHintsDevice } from '../../composables/ui/useKeyHints'
+import { NARROW_CONVERTER } from '../../composables/import/useConvertCompare'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
@@ -537,6 +538,7 @@ describe('ConvertImageWizard the floating bar (tickets 0780, 0896)', () => {
   const tool = (wrapper: VueWrapper, name: string) => wrapper.get(`[data-testid="convert-tool-${name}"]`)
   const box = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-box"]')
   const chip = (wrapper: VueWrapper) => wrapper.find('[data-testid="convert-chip"]')
+  afterEach(() => vi.useRealTimers())
 
   it('holds Background, Make empty and Compare, named from the registry, once a picture is set: no Select, Undo or Redo', async () => {
     const { wrapper } = open()
@@ -620,23 +622,111 @@ describe('ConvertImageWizard the floating bar (tickets 0780, 0896)', () => {
     expect(wizard.background.value).toBe('find')
   })
 
-  it('shows the original picture while Compare is held, by pointer or by Space, with its chip', async () => {
-    const { wrapper, wizard } = open()
+  it('shows the picture in the beads’ place while Compare is held past 300 ms, with its chip, and leaves Compare as it was', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const compare = wrapper.get('[data-testid="convert-compare"]')
+    const canvas = () => wrapper.get('[data-testid="convert-image-canvas"]')
+
+    await compare.trigger('pointerdown', { button: 0 })
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    expect(canvas().attributes('data-comparing')).toBe('true')
+    expect(canvas().attributes('aria-label')).toBe(en.convertImage.wizard.comparePictureName)
+    expect(chip(wrapper).text()).toBe('picture · let go to see the beads')
+    await compare.trigger('pointerup')
+    await compare.trigger('click')
+    expect(canvas().attributes('data-comparing')).toBeUndefined()
+    expect(chip(wrapper).exists()).toBe(false)
+    expect(compare.attributes('aria-pressed')).toBe('false')
+  })
+})
+
+describe('ConvertImageWizard Compare, the picture beside the beads (ticket 0909)', () => {
+  const chips = (wrapper: VueWrapper) => wrapper.findAll('[data-testid="convert-chip"]').map((chip) => [chip.attributes('data-half'), chip.text()])
+  const halves = (wrapper: VueWrapper) => wrapper.findAll('[data-testid^="convert-half-"]').map((half) => half.attributes('data-testid'))
+  const realMatchMedia = window.matchMedia
+  afterEach(() => {
+    window.matchMedia = realMatchMedia
+    vi.useRealTimers()
+  })
+
+  it('puts the picture beside the beads on a press, named together, the crop’s handles on the picture, until pressed again', async () => {
+    const { wrapper } = open()
     await chooseFile(wrapper, picture())
     const compare = wrapper.get('[data-testid="convert-compare"]')
-    const canvas = () => wrapper.get('[data-testid="convert-image-canvas"]').attributes('data-comparing')
+    expect(halves(wrapper)).toEqual(['convert-half-beads'])
 
-    await compare.trigger('pointerdown')
-    expect(canvas()).toBe('true')
-    expect(chip(wrapper).text()).toBe(en.convertImage.wizard.bandCompare)
-    await compare.trigger('pointerup')
-    expect(canvas()).toBeUndefined()
-    expect(chip(wrapper).exists()).toBe(false)
+    await compare.trigger('click')
+    expect(compare.attributes('aria-pressed')).toBe('true')
+    expect(halves(wrapper)).toEqual(['convert-half-picture', 'convert-half-beads'])
+    expect(chips(wrapper)).toEqual([['picture', 'picture'], ['beads', 'beads']])
+    expect(wrapper.get('[data-testid="convert-image-canvas"]').attributes('aria-label')).toBe('The picture and the beads side by side: 8×4 beads, 2 colors')
+    const pictureHalf = wrapper.get('[data-testid="convert-half-picture"]')
+    expect(pictureHalf.find('[data-testid="convert-crop-topLeft"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="convert-half-beads"]').find('[data-testid="convert-crop-topLeft"]').exists()).toBe(false)
+    // The column's result lines do not change with Compare.
+    expect(wrapper.get('[data-testid="convert-result"]').text()).toContain('8×4 beads')
 
-    await compare.trigger('keydown', { key: ' ' })
-    expect(wizard.comparing.value).toBe(true)
-    await compare.trigger('keyup', { key: ' ' })
-    expect(wizard.comparing.value).toBe(false)
+    await compare.trigger('click')
+    expect(compare.attributes('aria-pressed')).toBe('false')
+    expect(halves(wrapper)).toEqual(['convert-half-beads'])
+    expect(chips(wrapper)).toEqual([])
+  })
+
+  it('reaches Compare’s action from the keys', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const compare = wrapper.get('[data-testid="convert-compare"]')
+    await compare.trigger('keydown', { key: 'Enter' })
+    await compare.trigger('keyup', { key: 'Enter' })
+    expect(compare.attributes('aria-pressed')).toBe('true')
+  })
+
+  it('under 1024 px holds Background and Make empty as icons and Beads | Picture, a tap on Picture staying', async () => {
+    const media = fakeMatchMedia({ [NARROW_CONVERTER]: true })
+    window.matchMedia = media.matchMedia
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const bar = wrapper.get('[data-testid="convert-preview-tools"]')
+    expect(bar.find('[data-testid="convert-compare"]').exists()).toBe(false)
+    expect(bar.get('[data-testid="convert-tool-make-empty"]').attributes('aria-label')).toBe(en.convertImage.wizard.makeEmpty)
+    expect(bar.get('[data-testid="convert-tool-make-empty"]').text()).toBe('')
+    const show = bar.get('[data-testid="convert-show"]')
+    expect(show.attributes('aria-label')).toBe('Show')
+    const choice = (value: string) => show.get(`[role="radio"][data-value="${value}"]`)
+    expect([choice('beads').text(), choice('beads').attributes('aria-checked')]).toEqual(['Beads', 'true'])
+
+    await choice('picture').trigger('click')
+    expect(choice('picture').attributes('aria-checked')).toBe('true')
+    expect(chips(wrapper)).toEqual([['beads', 'picture']])
+    expect(wrapper.get('[data-testid="convert-image-canvas"]').attributes('aria-label')).toBe(en.convertImage.wizard.comparePictureName)
+    await choice('beads').trigger('click')
+    expect(chips(wrapper)).toEqual([])
+
+    // A page that widens while Picture is chosen shows the beads alone.
+    await choice('picture').trigger('click')
+    media.set(NARROW_CONVERTER, false)
+    await flushPromises()
+    expect(halves(wrapper)).toEqual(['convert-half-beads'])
+    expect(wrapper.get('[data-testid="convert-compare"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('under 1024 px shows the picture only while Picture is held, Beads staying chosen', async () => {
+    window.matchMedia = fakeMatchMedia({ [NARROW_CONVERTER]: true }).matchMedia
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const picture_ = wrapper.get('[data-testid="convert-show"] [data-value="picture"]')
+    await picture_.trigger('pointerdown', { button: 0 })
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    expect(chips(wrapper)).toEqual([['beads', 'picture · let go to see the beads']])
+    await picture_.trigger('pointerup')
+    await picture_.trigger('click')
+    expect(chips(wrapper)).toEqual([])
+    expect(picture_.attributes('aria-checked')).toBe('false')
   })
 })
 
