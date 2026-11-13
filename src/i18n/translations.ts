@@ -1266,6 +1266,19 @@ export interface Translations {
         allCodes: string
         shown: string
         rowOwned: string
+        pasteCodes: string
+        pasteLabel: string
+        pastePlaceholder: string
+        addCodes: string
+        cancel: string
+        added: PluralForms
+        already: PluralForms
+        notKnown: PluralForms
+        dismiss: string
+        discontinuedRow: string
+        unknownRow: string
+        clearList: string
+        clearAll: PluralForms
       }
       footProject: string
       footAddsTo: string

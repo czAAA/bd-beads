@@ -284,6 +284,33 @@ const CASES: FitCase[] = [
     },
   ],
   [
+    'Convert image Colors popover (My beads, pasting codes)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
+    async (root) => {
+      await openMyBeads(root)
+      press(root, 'my-beads-paste')
+    },
+  ],
+  [
+    'Convert image Colors popover (My beads, codes pasted, Clear list asked)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
+    async (root) => {
+      await openMyBeads(root)
+      press(root, 'my-beads-paste')
+      await new Promise((done) => setTimeout(done, 20))
+      const area = root.querySelector<HTMLTextAreaElement>('[data-testid="my-beads-paste-field"]')!
+      area.value = 'DB723, DB726\nDB99999, 11-4562, TO-0000123456789'
+      area.dispatchEvent(new Event('input', { bubbles: true }))
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'my-beads-add')
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'my-beads-clear')
+      await new Promise((done) => setTimeout(done, 20))
+    },
+  ],
+  [
     'Convert image Size popover (in mm)',
     ConvertSectionHost,
     popoverBody(ConvertSizeSection),

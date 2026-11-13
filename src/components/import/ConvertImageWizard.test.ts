@@ -1007,6 +1007,20 @@ describe('ConvertImageWizard My beads (ticket 0902)', () => {
     expect(wrapper.findAll('[data-testid="found-color"]')).toHaveLength(1)
     expect(infoBody(wrapper, 'convert-color-source-info')).toContain('My beads: only the codes you ticked as yours, and only those made in 11/0.')
   })
+
+  it('adds the clipboard’s codes on ⌘V anywhere in the view, and empties the list on Clear list (ticket 0903)', async () => {
+    const { wrapper } = await opened()
+    await editMyBeads(wrapper)
+    const paste = new Event('paste', { bubbles: true, cancelable: true })
+    Object.defineProperty(paste, 'clipboardData', { value: { getData: () => 'DB723, DB200', files: [] } })
+    wrapper.get('[data-testid="convert-my-beads-back"]').element.dispatchEvent(paste)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="convert-my-beads-count"]').text()).toBe('2 codes')
+
+    await wrapper.get('[data-testid="my-beads-clear"]').trigger('click')
+    await wrapper.get('[data-testid="my-beads-clear-confirm"]').trigger('click')
+    expect(wrapper.get('[data-testid="convert-my-beads-count"]').text()).toBe(words.noCodes)
+  })
 })
 
 describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', () => {
