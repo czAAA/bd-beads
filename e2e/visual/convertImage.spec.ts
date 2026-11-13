@@ -63,17 +63,18 @@ test.describe('Convert image layouts', () => {
       expect(shown.count, shown.names.join(', ')).toBeLessThanOrEqual(14)
       expect(shown.handles).toBe(8)
       expect(shown.cut).toEqual([])
-      // At 1180 × 820, at the 18px root, Clean up's button (ticket 0906) stands under the pinned foot until the column
-      // scrolls: scrolled to its end, the button stands whole above the foot.
-      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(1)
-      else {
-        const above = await page.getByTestId('convert-column').evaluate((column) => {
-          column.scrollTop = column.scrollHeight
-          const button = column.querySelector('[data-testid="convert-clean-up-button"]')!.getBoundingClientRect()
-          return button.bottom <= column.querySelector('[data-testid="convert-foot"]')!.getBoundingClientRect().top + 0.5
-        })
-        expect(above).toBe(true)
-      }
+      // At the 18px root Clean up's button (ticket 0906) stands under the pinned foot until the column scrolls, at 1440 × 900
+      // too since Auto-fix lighting's row (0907), by at most that row and its 10: scrolled, it stands whole above the foot.
+      const lightingRow = (await page.getByTestId('convert-lighting').boundingBox())!.height + 10
+      if (viewport.width === 1440) expect(shown.columnOverflow).toBeLessThanOrEqual(lightingRow)
+      const above = await page.getByTestId('convert-column').evaluate((column) => {
+        column.scrollTop = column.scrollHeight
+        const button = column.querySelector('[data-testid="convert-clean-up-button"]')!.getBoundingClientRect()
+        const whole = button.bottom <= column.querySelector('[data-testid="convert-foot"]')!.getBoundingClientRect().top + 0.5
+        column.scrollTop = 0
+        return whole
+      })
+      expect(above).toBe(true)
       await expect(page.getByTestId('convert-bar')).toHaveCount(0)
 
       // The preview beside the column, both under the strip and down to the bottom of the window.
