@@ -8,8 +8,9 @@ import type { Cell, Grid } from './project'
 // The Convert image wizard's colors (spec 0645, ADR 0010): the picture's reduced colors matched to a source, then the
 // maker's choice for each applied after the match, so changing the source keeps every keep, remap and empty.
 
-/** What found colors are matched to: the Bead's Color catalog, its Brand's built-in colors, or nothing (Exact). */
-export type ColorSource = 'bead-colors' | 'default' | 'exact'
+/** What found colors are matched to: the Bead's Color catalog, the codes of it in My beads (ticket 0902), its Brand's
+ * built-in colors, or nothing (Exact). */
+export type ColorSource = 'bead-colors' | 'my-beads' | 'default' | 'exact'
 
 /** A color a found color becomes. A Bead color carries its code, family and Finish; a built-in color its id; one with
  * neither is a Custom color. */
@@ -44,10 +45,11 @@ export function beadColorTargets(catalog: ColorCatalog, size: string, builtIns: 
     .map(({ hex, code, family, finish }) => ({ hex, code, family, finish }))
 }
 
-/** The colors a source matches to: the Bead colors given, the built-in colors, or none for Exact. */
+/** The colors a source matches to: the Bead colors given (the Bead's, or My beads' of them), the built-in colors, or
+ * none for Exact. */
 export function sourceTargets(source: ColorSource, builtIns: readonly PaletteColor[], beadColors: readonly TargetColor[]): TargetColor[] | undefined {
   if (source === 'exact') return undefined
-  return source === 'bead-colors' ? [...beadColors] : builtIns.map((color) => ({ hex: color.hex, colorId: color.id }))
+  return source === 'default' ? builtIns.map((color) => ({ hex: color.hex, colorId: color.id })) : [...beadColors]
 }
 
 /** The nearest of the targets to `hex`, by how alike they look (OKLab, ticket 0634); itself, a Custom color, under Exact. */

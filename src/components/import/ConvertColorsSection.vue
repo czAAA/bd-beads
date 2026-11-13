@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, nextTick, ref, useId } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import type { ColorSource } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -7,9 +7,11 @@ import { groupThousands } from '../../domain/formatNumber'
 import { beadLabel } from '../../domain/beads'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
+import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppNote from '../ui/AppNote.vue'
 import InfoButton from '../ui/InfoButton.vue'
-import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import MenuButton from '../ui/MenuButton.vue'
+import ConvertMyBeadsView from './ConvertMyBeadsView.vue'
 import FoundColorRow from './FoundColorRow.vue'
 import FoundColorsHeader from './FoundColorsHeader.vue'
 
@@ -23,13 +25,27 @@ const sourceLabelId = useId()
 
 /** The Bead as the palette's Bead colors entry names it: its maker, name and shape, with no finish. */
 const beadName = computed(() => beadLabel(wizard.bead.value))
-const sourceOptions = computed(() => [
-  ...(wizard.hasCatalog.value ? [{ value: 'bead-colors' as const, label: fillBlanks(words.value.beadPalette, { bead: beadName.value }) }] : []),
+const myWords = computed(() => words.value.myBeads)
+/** match to's menu (ConvertImage card DS-2): the Bead's palette and My beads (once the list has a code) with their counts,
+ * Default Palette and Exact. */
+const sourceOptions = computed<{ value: ColorSource; label: string; meta?: string }[]>(() => [
+  ...(wizard.hasCatalog.value
+    ? [{ value: 'bead-colors' as const, label: fillBlanks(words.value.beadPalette, { bead: beadName.value }), meta: count(wizard.beadTargets.value.length) }]
+    : []),
+  ...(wizard.myBeadsOffered.value ? [{ value: 'my-beads' as const, label: myWords.value.name, meta: count(wizard.myBeadsCodes.value.length) }] : []),
   { value: 'default' as const, label: words.value.defaultPalette },
   { value: 'exact' as const, label: words.value.exact },
 ])
-const source = computed({ get: () => wizard.source.value, set: (next: ColorSource) => wizard.setSource(next) })
+const sourceLabel = computed(() => sourceOptions.value.find((option) => option.value === wizard.source.value)?.label ?? '')
+/** The menu's last item, under a rule: Edit My beads with its count, or Choose My beads while the list is empty. */
+const myBeadsItem = computed(() => {
+  const codes = wizard.myBeadsCodes.value.length
+  return codes > 0
+    ? { label: myWords.value.edit, meta: plural(locale.value, codes, myWords.value.codes) }
+    : { label: myWords.value.choose, meta: myWords.value.noCodes }
+})
 
+const count = (n: number) => groupThousands(n, locale.value)
 const colorsMaxText = computed(() => groupThousands(wizard.colorsMax.value, locale.value))
 /** Under Exact a color is not a bead to buy, so the Info says what it is instead (tickets 0863, 0894). */
 const colorsInfo = computed(() => {
@@ -42,15 +58,30 @@ const colorsInfo = computed(() => {
 const sourceNote = computed(() =>
   sourceOptions.value
     .map((option) => {
-      const note = option.value === 'bead-colors' ? fillBlanks(words.value.beadPaletteNote, { bead: beadName.value }) : option.value === 'default' ? words.value.defaultPaletteNote : words.value.exactNote
+      const note =
+        option.value === 'bead-colors' ? fillBlanks(words.value.beadPaletteNote, { bead: beadName.value })
+        : option.value === 'my-beads' ? fillBlanks(myWords.value.note, { size: wizard.bead.value.size })
+        : option.value === 'default' ? words.value.defaultPaletteNote
+        : words.value.exactNote
       return `${option.label}: ${note}`
     })
     .join(' '),
 )
 
 const codes = computed(() =>
-  fillBlanks(words.value.codesInSize, { size: wizard.bead.value.size, count: groupThousands(wizard.beadTargets.value.length, locale.value) }),
+  wizard.source.value === 'my-beads'
+    ? fillBlanks(myWords.value.codesInList, { count: count(wizard.myBeadsTargets.value.length) })
+    : fillBlanks(words.value.codesInSize, { size: wizard.bead.value.size, count: count(wizard.beadTargets.value.length) }),
 )
+
+/** The popover's two views (DS-2): Colors, or My beads from the menu's last item; Back returns to match to. */
+const view = ref<'colors' | 'my-beads'>('colors')
+const rootEl = ref<HTMLElement>()
+async function backToColors() {
+  view.value = 'colors'
+  await nextTick()
+  rootEl.value?.querySelector<HTMLElement>('[data-testid="convert-color-source"]')?.focus()
+}
 
 /** Color by color's count: the colors the beads use, and how many found colors are empty when any are. */
 const summary = computed(() => {
@@ -63,39 +94,63 @@ const remapping = ref<string>()
 </script>
 
 <template>
-  <div class="convert-colors" data-testid="convert-colors">
-    <div class="convert-colors__head">
-      <span class="convert-colors__title">
-        {{ words.colorsLabel }}
-        <InfoButton :label="colorsInfo.label" :body="colorsInfo.body" data-testid="convert-colors-slider-info" />
-      </span>
-      <span class="convert-colors__label convert-colors__source-head">
-        <span :id="sourceLabelId">{{ words.matchTo }}</span>
-        <InfoButton :label="words.whereColorsFrom" :body="sourceNote" data-testid="convert-color-source-info" />
-      </span>
-      <SegmentedControl v-model="source" :options="sourceOptions" :labelledby="sourceLabelId" data-testid="convert-color-source" />
-      <span v-if="wizard.source.value === 'bead-colors'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
-      <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
-        {{ t.palette.beadColors.failed }}
-      </AppNote>
-    </div>
+  <div ref="rootEl" class="convert-colors" data-testid="convert-colors">
+    <ConvertMyBeadsView v-if="view === 'my-beads'" @back="backToColors" />
+    <template v-else>
+      <div class="convert-colors__head">
+        <span class="convert-colors__title">
+          {{ words.colorsLabel }}
+          <InfoButton :label="colorsInfo.label" :body="colorsInfo.body" data-testid="convert-colors-slider-info" />
+        </span>
+        <span class="convert-colors__label convert-colors__source-head">
+          <span :id="sourceLabelId">{{ words.matchTo }}</span>
+          <InfoButton :label="words.whereColorsFrom" :body="sourceNote" data-testid="convert-color-source-info" />
+        </span>
+        <div class="convert-colors__source">
+          <MenuButton :label="sourceLabel" :aria-describedby="sourceLabelId" data-testid="convert-color-source">
+            <AppMenuItem
+              v-for="option in sourceOptions"
+              :key="option.value"
+              :chosen="option.value === wizard.source.value"
+              class="convert-colors__source-item"
+              :data-value="option.value"
+              data-testid="convert-color-source-option"
+              @select="wizard.setSource(option.value)"
+            >
+              <span>{{ option.label }}</span>
+              <span v-if="option.meta" class="convert-colors__source-meta">{{ option.meta }}</span>
+            </AppMenuItem>
+            <template v-if="wizard.hasCatalog.value" #footer>
+              <AppMenuItem icon="pencil" class="convert-colors__source-item" data-testid="convert-edit-my-beads" @select="view = 'my-beads'">
+                <span>{{ myBeadsItem.label }}</span>
+                <span class="convert-colors__source-meta">{{ myBeadsItem.meta }}</span>
+              </AppMenuItem>
+            </template>
+          </MenuButton>
+        </div>
+        <span v-if="wizard.source.value === 'bead-colors' || wizard.source.value === 'my-beads'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
+        <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
+          {{ t.palette.beadColors.failed }}
+        </AppNote>
+      </div>
 
-    <div class="convert-colors__found-head">
-      <span class="convert-colors__title">{{ words.colorByColor }}</span>
-      <span class="convert-colors__count" role="status" data-testid="convert-found-count">{{ summary }}</span>
-    </div>
-    <div class="convert-colors__table">
-      <FoundColorsHeader />
-      <ul class="convert-colors__list" data-testid="convert-found-colors">
-        <FoundColorRow
-          v-for="row in wizard.rows.value"
-          :key="row.pictureHexes[0]"
-          :row="row"
-          :open="!!remapping && row.pictureHexes.includes(remapping)"
-          @toggle-remap="remapping = remapping && row.pictureHexes.includes(remapping) ? undefined : row.pictureHexes[0]"
-        />
-      </ul>
-    </div>
+      <div class="convert-colors__found-head">
+        <span class="convert-colors__title">{{ words.colorByColor }}</span>
+        <span class="convert-colors__count" role="status" data-testid="convert-found-count">{{ summary }}</span>
+      </div>
+      <div class="convert-colors__table">
+        <FoundColorsHeader />
+        <ul class="convert-colors__list" data-testid="convert-found-colors">
+          <FoundColorRow
+            v-for="row in wizard.rows.value"
+            :key="row.pictureHexes[0]"
+            :row="row"
+            :open="!!remapping && row.pictureHexes.includes(remapping)"
+            @toggle-remap="remapping = remapping && row.pictureHexes.includes(remapping) ? undefined : row.pictureHexes[0]"
+          />
+        </ul>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -137,9 +192,27 @@ const remapping = ref<string>()
   gap: var(--space-4);
 }
 
-/* The Bead's palette is named in full, so the options share the row by their text, not equally (ticket 0758). */
-.convert-colors__head :deep(.segmented__option) {
-  flex-basis: auto;
+/* match to fills the row (DS-2); each item's count stands at its right. */
+.convert-colors__source :deep(.menu-button),
+.convert-colors__source :deep(.app-button) {
+  width: 100%;
+}
+
+.convert-colors__source :deep(.app-button) {
+  justify-content: space-between;
+}
+
+.convert-colors__source-item :deep(.app-menu-item__label) {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-12);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.convert-colors__source-meta {
+  font: var(--type-meta-small);
+  color: var(--muted);
 }
 
 .convert-colors__codes {

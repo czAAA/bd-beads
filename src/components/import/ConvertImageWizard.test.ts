@@ -98,8 +98,17 @@ const openColorByColor = (wrapper: VueWrapper) => show(wrapper, 'colors')
 /** The Tooltip body of the Info button with this test id (ticket 0894). */
 const infoBody = (wrapper: VueWrapper, testid: string) =>
   wrapper.findAllComponents(InfoButton).find((info) => info.vm.$attrs['data-testid'] === testid)?.props('body')
-/** Match to a source, as its option does (the step opens on the Bead's palette, ticket 0863). */
-const matchTo = (wrapper: VueWrapper, value: string) => wrapper.get(`[data-testid="convert-color-source"] [data-value="${value}"]`).trigger('click')
+/** The match to menu's items, opened from its button (ConvertImage card DS-2). */
+async function sourceItems(wrapper: VueWrapper) {
+  const button = wrapper.get('[data-testid="convert-color-source"]')
+  if (button.attributes('aria-expanded') !== 'true') await button.trigger('click')
+  return wrapper.findAll('[data-testid="convert-color-source-option"]')
+}
+/** Match to a source, as its menu item does (the step opens on the Bead's palette, ticket 0863). */
+async function matchTo(wrapper: VueWrapper, value: string) {
+  const item = (await sourceItems(wrapper)).find((option) => option.attributes('data-value') === value)!
+  await item.trigger('click')
+}
 
 describe('ConvertImageWizard before a picture is set', () => {
   it('holds the drop zone and the column, Width, Colors, their buttons and Create Project off with why, Bead and Technique live (ticket 0896)', async () => {
@@ -274,11 +283,12 @@ describe('ConvertImageWizard setup', () => {
     const withCatalog = open({ draft: delica })
     await chooseFile(withCatalog.wrapper, picture())
     await show(withCatalog.wrapper, 'colors')
-    const options = () => withCatalog.wrapper.findAll('[data-testid="convert-color-source"] [data-value]')
+    const options = await sourceItems(withCatalog.wrapper)
 
-    expect(options().map((option) => option.attributes('data-value'))).toEqual(['bead-colors', 'default', 'exact'])
-    expect(options().map((option) => option.text())).toEqual(['Miyuki Delica 11/0 palette', en.convertImage.wizard.defaultPalette, en.convertImage.wizard.exact])
-    expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['bead-colors', 'default', 'exact'])
+    expect(options.map((option) => option.text())).toEqual(['Miyuki Delica 11/0 palette1', en.convertImage.wizard.defaultPalette, en.convertImage.wizard.exact])
+    expect(options.find((option) => option.attributes('aria-current') === 'true')!.attributes('data-value')).toBe('bead-colors')
+    expect(withCatalog.wrapper.get('[data-testid="convert-color-source"]').text()).toBe('Miyuki Delica 11/0 palette')
   })
 
   it('says what each choice does behind an Info button, and under Exact that a color is one bead color (tickets 0758, 0863, 0894)', async () => {
@@ -805,5 +815,82 @@ describe('ConvertImageWizard Close', () => {
     outside.dispatchEvent(press)
     expect(press.defaultPrevented).toBe(false)
     expect(wrapper.emitted('close')).toBeUndefined()
+  })
+})
+
+describe('ConvertImageWizard My beads (ticket 0902)', () => {
+  const words = en.convertImage.wizard.myBeads
+  /** Delica's catalog with a second code, so a list of one is shorter than the picture's two colors. */
+  const twoCodes: ColorCatalog = {
+    id: 'miyuki-delica',
+    codes: [...catalog.codes, { code: 'DB200', family: ['White'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#ffffff' }],
+  }
+  async function opened() {
+    const opening = open({ draft: delica, loadCatalog: async () => twoCodes })
+    await chooseFile(opening.wrapper, picture())
+    await show(opening.wrapper, 'colors')
+    return opening
+  }
+  async function editMyBeads(wrapper: VueWrapper) {
+    await sourceItems(wrapper)
+    await wrapper.get('[data-testid="convert-edit-my-beads"]').trigger('click')
+    await flushPromises()
+  }
+  const row = (wrapper: VueWrapper, code: string) => wrapper.get(`[data-testid="convert-my-beads-row"][data-code="${code}"]`)
+
+  it('offers no My beads with an empty list, and Choose My beads opens the view with its empty state', async () => {
+    const { wrapper } = await opened()
+    expect((await sourceItems(wrapper)).map((option) => option.attributes('data-value'))).not.toContain('my-beads')
+    expect(wrapper.get('[data-testid="convert-edit-my-beads"]').text()).toBe(`${words.choose}${words.noCodes}`)
+
+    await editMyBeads(wrapper)
+    expect(wrapper.get('[data-testid="convert-my-beads-empty"]').text()).toBe(words.empty)
+    expect(wrapper.get('[data-testid="convert-my-beads-count"]').text()).toBe(words.noCodes)
+    expect(wrapper.text()).toContain('color catalog · miyuki delica')
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="convert-my-beads-back"]').element)
+  })
+
+  it('ticks a code with a press on its row, which then names it as in My beads, and offers My beads with its count', async () => {
+    const { wrapper } = await opened()
+    await editMyBeads(wrapper)
+    await row(wrapper, 'DB723').trigger('click')
+
+    expect(row(wrapper, 'DB723').attributes('aria-pressed')).toBe('true')
+    expect(row(wrapper, 'DB723').attributes('aria-label')).toBe('DB723 red opaque, in My beads')
+    expect(row(wrapper, 'DB200').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('[data-testid="convert-my-beads-count"]').text()).toBe('1 code')
+
+    await wrapper.get('[data-testid="convert-my-beads-back"]').trigger('click')
+    await flushPromises()
+    const item = (await sourceItems(wrapper)).find((option) => option.attributes('data-value') === 'my-beads')
+    expect(item?.text()).toBe(`${words.name}1`)
+    expect(wrapper.get('[data-testid="convert-edit-my-beads"]').text()).toBe(`${words.edit}1 code`)
+  })
+
+  it('returns to the Colors view on Back and on Escape, focus on match to', async () => {
+    const { wrapper } = await opened()
+    await editMyBeads(wrapper)
+    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="convert-my-beads"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-colors-popover"]').exists()).toBe(true)
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="convert-color-source"]').element)
+  })
+
+  it('matches to the list once chosen: the button, the count line, the line under Colors and the foot say so', async () => {
+    const { wrapper } = await opened()
+    await editMyBeads(wrapper)
+    await row(wrapper, 'DB723').trigger('click')
+    await wrapper.get('[data-testid="convert-my-beads-back"]').trigger('click')
+    await flushPromises()
+    await matchTo(wrapper, 'my-beads')
+
+    expect(wrapper.get('[data-testid="convert-color-source"]').text()).toBe(words.name)
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in my beads: 1')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('my beads · 1 code')
+    expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toBe('1 color (your list has 1)')
+    expect(wrapper.findAll('[data-testid="found-color"]')).toHaveLength(1)
+    expect(infoBody(wrapper, 'convert-color-source-info')).toContain('My beads: only the codes you ticked as yours, and only those made in 11/0.')
   })
 })
