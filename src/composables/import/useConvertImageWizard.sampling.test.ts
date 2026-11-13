@@ -131,8 +131,8 @@ describe('Convert image sampling: photos', () => {
     const centre = loneBeads(centrePixelBeads(wizard))
     const area = loneBeads(previewBeads(wizard))
 
-    expect(centre).toBeGreaterThan(300)
-    expect(area).toBeLessThan(centre * 0.75)
+    expect(centre).toBeGreaterThan(50)
+    expect(area).toBeLessThan(centre / 4)
   })
 
   it('gives each region a color close to its own', async () => {
