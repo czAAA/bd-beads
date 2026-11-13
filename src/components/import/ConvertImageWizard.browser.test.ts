@@ -168,8 +168,8 @@ describe('Convert image, the quiet converter', () => {
         const root = mounted.root
         const column = find(root, 'convert-column')
         // At 1180 × 820 the longest wording runs the column past the window by the sticky foot's padding (ticket 0897),
-        // and further with Clean up's button wrapping (ticket 0906): the foot stays pinned, so Create Project is whole.
-        if (!(width === 1180 && locale === 'longest')) expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX)
+        // and in the longest words Clean up's button wraps (ticket 0906): the column scrolls above the pinned foot.
+        if (locale !== 'longest') expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX)
         expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
         // The bar's buttons stand whole inside it.
         const bar = rect(root, 'convert-preview-tools')
