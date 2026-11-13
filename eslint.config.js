@@ -151,8 +151,8 @@ export default tseslint.config(
       message: 'A press outside an overlay goes through useOverlayLayer (ticket 449, ADR 0061); only canvas gesture code listens to raw presses.',
     };
     // A Technique is named only in its entry (tickets 506, 0611): no other code writes its id as a value or a key, and
-    // the registries that use one (Frame shapes, Starters, the Homepage) name it as their entry's `technique` or in its
-    // `techniques` list.
+    // the registries that use one (Frame shapes, Starters, the Homepage, the converter's first choice) name it as their
+    // entry's `technique` or in its `techniques` list.
     const ids = 'loom|peyote|brick';
     const message = 'Read the Technique from its entry in domain/weave.ts (TECHNIQUES, DEFAULT_TECHNIQUE, describeWeave) instead of writing its id (tickets 506, 0611).';
     const techniqueValue = { selector: `Literal[value=/^(${ids})$/]`, message };
@@ -173,7 +173,7 @@ export default tseslint.config(
     ];
     // What's inside's take-over hears a press into the demo before the overlay registry may swallow it (ticket 0797).
     const takeOver = ['src/homepage/inside/useTakeOver.ts'];
-    const registries = ['src/domain/frameShape.ts', 'src/domain/starters.ts', 'src/homepage/**'];
+    const registries = ['src/domain/frameShape.ts', 'src/domain/starters.ts', 'src/homepage/**', 'src/domain/convertChoices.ts'];
     const block = (files, selectors) => ({
       files,
       ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**'],
