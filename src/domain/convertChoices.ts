@@ -20,7 +20,7 @@ const FIRST_SETUP = { beadId: 'miyuki/delica/11-0', technique: 'peyote' } as con
 /** Where a device that has converted nothing starts: Miyuki Delica 11/0 in peyote, its Drop at its default. */
 export const FIRST_CONVERT_CHOICES: ConvertChoices = { ...FIRST_SETUP, techniqueSettings: weaveSettings(FIRST_SETUP) }
 
-const COLOR_SOURCES: readonly ColorSource[] = ['bead-colors', 'default', 'exact']
+const COLOR_SOURCES: readonly ColorSource[] = ['bead-colors', 'my-beads', 'default', 'exact']
 
 /** The choices a saved string stands for, or undefined when it is not choices at all. Each part that no longer reads (a
  * Bead that left the catalog, a Technique or source this build lacks) is the first-time choice for that part. */

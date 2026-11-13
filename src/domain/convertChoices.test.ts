@@ -18,6 +18,10 @@ describe('the converter’s remembered choices (ticket 0893, ADR 0010 D-3)', () 
     expect(parseConvertChoices(writeConvertChoices(lastUsed))).toEqual(lastUsed)
   })
 
+  it('read back My beads as the last source (ticket 0902)', () => {
+    expect(parseConvertChoices(writeConvertChoices({ ...lastUsed, source: 'my-beads' }))?.source).toBe('my-beads')
+  })
+
   it('read nothing from a saved string that is not choices', () => {
     expect(parseConvertChoices('peyote')).toBeUndefined()
     expect(parseConvertChoices('[1,2]')).toBeUndefined()
@@ -25,7 +29,7 @@ describe('the converter’s remembered choices (ticket 0893, ADR 0010 D-3)', () 
   })
 
   it('fall back part by part to the first-time choice: a Bead that left the catalog, an unknown Technique, a source that is none', () => {
-    const saved = JSON.stringify({ beadId: 'old-maker/cube/2mm', technique: 'knit', techniqueSettings: { brickDrop: 2 }, source: 'my-beads' })
+    const saved = JSON.stringify({ beadId: 'old-maker/cube/2mm', technique: 'knit', techniqueSettings: { brickDrop: 2 }, source: 'my-shop' })
     expect(parseConvertChoices(saved)).toEqual(FIRST_CONVERT_CHOICES)
   })
 
