@@ -8,10 +8,8 @@ import {
   fullCrop,
   heightRange,
   isLargeSchema,
-  partDrawn,
-  partInset,
-  partMoved,
-  partShifted,
+  partFlipped,
+  partTurned,
   proportionalSide,
   sizeMarks,
   sizingFor,
@@ -250,38 +248,17 @@ describe('Height and the chain (ticket 0757)', () => {
   })
 })
 
-describe('the part (weave: A part)', () => {
+describe('the part of the picture (ticket 0898)', () => {
   const image = { width: 200, height: 100 }
 
-  it('starts 10% in from each edge', () => {
-    expect(partInset(image)).toEqual({ x: 20, y: 10, width: 160, height: 80 })
+  it('turns with the picture a quarter turn clockwise, on the same piece of it', () => {
+    // The top-left 40 × 20 of a 200 × 100 picture is, turned, the top-right 20 × 40 of a 100 × 200 one.
+    expect(partTurned({ x: 0, y: 0, width: 40, height: 20 }, image)).toEqual({ x: 80, y: 0, width: 20, height: 40 })
+    expect(partTurned({ x: 50, y: 10, width: 60, height: 30 }, image)).toEqual({ x: 60, y: 50, width: 30, height: 60 })
   })
 
-  it('is at least 8 pixels a side even on a tiny picture', () => {
-    expect(partInset({ width: 10, height: 9 })).toEqual({ x: 1, y: 1, width: 8, height: 8 })
-  })
-
-  it('moves the edges a handle holds, in whole pixels, never off the picture', () => {
-    const part = { x: 20, y: 10, width: 160, height: 80 }
-    expect(partMoved(part, 'topLeft', -5.4, 3.6, image)).toEqual({ x: 15, y: 14, width: 165, height: 76 })
-    expect(partMoved(part, 'right', 50, 50, image)).toEqual({ x: 20, y: 10, width: 180, height: 80 })
-    expect(partMoved(part, 'bottom', 0, -100, image)).toEqual({ x: 20, y: 10, width: 160, height: 8 })
-  })
-
-  it('moves whole, keeping its size and staying on the picture', () => {
-    const part = { x: 20, y: 10, width: 160, height: 80 }
-    expect(partShifted(part, -5.4, 7.6, image)).toEqual({ x: 15, y: 18, width: 160, height: 80 })
-    expect(partShifted(part, 100, -100, image)).toEqual({ x: 40, y: 0, width: 160, height: 80 })
-  })
-
-  it('is drawn from a pixel to another, in any direction, and kept on the picture', () => {
-    expect(partDrawn({ x: 50, y: 30 }, { x: 90, y: 70 }, image)).toEqual({ x: 50, y: 30, width: 40, height: 40 })
-    expect(partDrawn({ x: 90, y: 70 }, { x: 50, y: 30 }, image)).toEqual({ x: 50, y: 30, width: 40, height: 40 })
-    expect(partDrawn({ x: 150, y: 50 }, { x: 400, y: -30 }, image)).toEqual({ x: 150, y: 0, width: 50, height: 50 })
-  })
-
-  it('is never drawn under 8 pixels a side: a click makes a small part, growing the way the drag goes', () => {
-    expect(partDrawn({ x: 50, y: 30 }, { x: 52, y: 29 }, image)).toEqual({ x: 50, y: 22, width: 8, height: 8 })
+  it('flips with the picture left to right', () => {
+    expect(partFlipped({ x: 0, y: 10, width: 40, height: 20 }, image)).toEqual({ x: 160, y: 10, width: 40, height: 20 })
   })
 
   it('is the whole picture when nothing is cropped', () => {

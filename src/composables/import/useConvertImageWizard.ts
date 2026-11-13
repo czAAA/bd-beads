@@ -1,7 +1,7 @@
 import { computed, inject, onScopeDispose, provide, readonly, ref, shallowRef, watch, type InjectionKey, type Ref } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground, type BackgroundMark } from '../../domain/convertBackground'
-import { keptGrid, type KeptPart } from '../../domain/convertKeep'
+import { keptGrid } from '../../domain/convertKeep'
 import { colorCatalogOf, DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { clamp } from '../../domain/clamp'
 import type { ColorCatalog } from '../../domain/colorCatalog'
@@ -19,7 +19,6 @@ import {
   flipPicture,
   fullCrop,
   isLargeSchema,
-  partInset,
   sizingFor,
   startingSize,
   turnPicture,
@@ -52,6 +51,7 @@ import { pictureKind } from '../../domain/pictureKind'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { useConvertCrop, type CropBeads } from './useConvertCrop'
 import { useConvertMyBeads } from './useConvertMyBeads'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
@@ -68,13 +68,10 @@ export interface ConvertImageWizardDeps {
   myBeads?: Ref<MyBeads>
 }
 
-/** What to weave (ConvertImage card, 1 Picture): the whole picture, or a part of it under the preview's handles. */
-export type ConvertWeave = 'whole' | 'part'
-
-/** The preview's tools (ConvertImage card, the floating bar): one or none is on. Select keeps a part of the beads, or
- * draws the crop with A part of the picture (no button since ticket 0896: the crop on the picture takes its place, ticket
- * 0898); Make empty leaves a color out with a tap; Background keeps or removes the patch under a tap or a drag (ticket 0787). */
-export type ConvertTool = 'select' | 'make-empty' | 'background'
+/** The preview's tools (ConvertImage card DS-1, the floating bar): one or none is on. Make empty leaves a color out with
+ * a tap; Background keeps or removes the patch under a tap or a drag (ticket 0787). The crop on the picture took Select's
+ * place (ticket 0898). */
+export type ConvertTool = 'make-empty' | 'background'
 
 /** The popovers of the quiet converter (ticket 0896, ConvertImage card DS-1): the column's three, each from its own
  * button, and Background's from the floating bar. One is open at a time; Background's is open while its tool is on. */
@@ -122,9 +119,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   /** Photo or flat art (ticket 0889), told again for each new picture: it sets defaults only (Width, Clean up's in 0906). */
   const kind = computed(() => (image.value ? pictureKind(image.value) : undefined))
 
-  // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
-  const weaveChoice = ref<ConvertWeave>('whole')
-  const rawPart = shallowRef<PixelCrop>()
+  // How big (ConvertImage card): the Width in beads, and the unit it reads in; the part is the crop's (ticket 0898).
   const widthBeads = ref(0)
   const heightBeads = ref(0)
   // Keep the picture's shape (ticket 0780, was the chain of 0757): on, the side moved last leads and the other follows the
@@ -144,10 +139,9 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   // The preview's tools and Compare (ConvertImage card, the floating bar).
   const tool = ref<ConvertTool>()
   const comparing = ref(false)
-  // Background and the kept part of the beads (ticket 0780).
+  // Background (ticket 0780).
   const background = ref<BackgroundStage>('off')
   const tolerance = ref<number>(BACKGROUND_TOLERANCE.start)
-  const kept = shallowRef<KeptPart>()
   // The Background tool's steps (ticket 0787), oldest first.
   const marks = shallowRef<readonly PixelMark[]>([])
   // Every background decision (the switch, Tolerance, Remove, Show what was found, a step, Start over) is one step of the
@@ -176,11 +170,30 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     lastWasTolerance = false
   }
 
-  /** The part of the picture to weave: the whole picture, or the part under the handles. */
+  // The crop on the picture (ticket 0898): a part of the beads kept as they are, or a part of the picture converted.
+  const beadsOf = (at: Sample | undefined): CropBeads | undefined =>
+    at && { part: at.part, pixelsPerBead: at.pixelsPerBead, frameRow: at.lattice.frameRow, frameColumn: at.lattice.frameColumn, grid: at.grid, lattice: at.lattice }
+  const crop = useConvertCrop({
+    image,
+    rest: () => beadsOf(rest.value),
+    shown: () => beadsOf(live.value),
+    cycles: () => ({ rowCycle: rowCycle(weave.value), columnCycle: columnCycle(weave.value) }),
+    width: widthBeads,
+    height: heightBeads,
+    lead,
+    beginMove: () => (moving.value = true),
+    endMove: () => {
+      moving.value = false
+      settle()
+    },
+  })
+  const kept = crop.kept
+
+  /** The part of the picture to weave: the whole picture, or the part the crop holds once converted again. */
   const part = computed<PixelCrop>(() => {
     const picture = image.value
     if (!picture) return { x: 0, y: 0, width: 1, height: 1 }
-    return weaveChoice.value === 'part' && rawPart.value ? rawPart.value : fullCrop(picture)
+    return crop.cut.value ?? fullCrop(picture)
   })
 
   // What is converted at rest: the live part, held while a handle moves it (until it ends or pauses), so the exact
@@ -208,19 +221,27 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
 
   /** The one sizing rule over a part (convertSize's sizingFor), with the Width and Height asked for. The part only
    * chooses what is woven: both stay as they were, held to the part's pixels. */
-  const sizingOf = (at: PixelCrop) =>
-    sizingFor({
-      part: at,
-      width: widthBeads.value,
-      height: heightBeads.value,
-      linked: linked.value,
-      lead: lead.value,
-      bead: bead.value,
-      technique: technique.value,
-      techniqueSettings: techniqueSettings.value,
-    })
-  const sizing = computed(() => sizingOf(part.value))
-  const dimensions = computed(() => sizing.value.grid)
+  const sizingInputOf = (at: PixelCrop) => ({
+    part: at,
+    width: widthBeads.value,
+    height: heightBeads.value,
+    linked: linked.value,
+    lead: lead.value,
+    bead: bead.value,
+    technique: technique.value,
+    techniqueSettings: techniqueSettings.value,
+  })
+  const sizingOf = (at: PixelCrop) => sizingFor(sizingInputOf(at))
+  const woven = computed(() => sizingOf(part.value))
+  const dimensions = computed(() => woven.value.grid)
+  /** What Width and Height read (ticket 0898): with a part of the beads kept, its size over the pixels it stands on,
+   * with that part's range and marks; else the beads woven. */
+  const sizing = computed(() => {
+    const at = kept.value
+    const pixels = at && crop.cropPixels()
+    if (!at || !pixels) return woven.value
+    return sizingFor({ ...sizingInputOf(pixels), width: at.columns, height: at.rows, linked: false })
+  })
   // A kept part that no longer fits the beads (another Bead or Technique) goes.
   watch(dimensions, (size) => {
     const at = kept.value
@@ -237,49 +258,42 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     return Math.round(estimatedSizeMm({ columns: 1, rows: beads }, bead.value, technique.value).heightMm)
   }
 
+  /** A new Width converts again: after a crop, the part it holds, at more or less detail (ticket 0898). */
   function setWidth(beads: number) {
+    crop.beforeResize()
     widthBeads.value = beads
     lead.value = 'width'
-    kept.value = undefined
   }
 
   function setHeight(beads: number) {
+    crop.beforeResize()
     heightBeads.value = beads
     lead.value = 'height'
-    kept.value = undefined
   }
 
   /** Keep the picture's shape: turning it off keeps the sizes on show, and linking again takes the shape back from the side moved last. */
   function setLinked(next: boolean) {
     if (!next && linked.value) {
-      widthBeads.value = sizing.value.width
-      heightBeads.value = sizing.value.height
+      widthBeads.value = woven.value.width
+      heightBeads.value = woven.value.height
     }
     linked.value = next
   }
 
-  /** A part of the picture draws its crop 10% in and turns Select on to move it; either way a kept part of the beads
-   * goes, as the crop now chooses what is woven. */
-  function setWeave(next: ConvertWeave) {
-    const picture = image.value
-    if (next === 'part' && picture && !rawPart.value) rawPart.value = partInset(picture)
-    if (next === 'part' && weaveChoice.value !== 'part') tool.value = 'select'
-    weaveChoice.value = next
-    kept.value = undefined
-  }
-
   // --- Picture ------------------------------------------------------------------------------------------------------
 
-  /** Weave goes back to the whole picture (a new picture, a turn or a flip), and the Background tool's steps go: their
-   * pixels no longer stand where they were. */
-  function restartPart() {
-    rawPart.value = undefined
-    weaveChoice.value = 'whole'
-    kept.value = undefined
+  /** The Background tool's steps go (a new picture, a turn or a flip): their pixels no longer stand where they were. */
+  function forgetMarks() {
     marks.value = []
     past.value = []
     undone.value = []
     settle()
+  }
+
+  /** A new picture opens on the whole, the crop never kept (ADR 0010, ticket 0898), and the steps go. */
+  function restartPart() {
+    crop.keepAll()
+    forgetMarks()
   }
 
   /** A picture from any way in, through the one validation and decode (spec 0645): the first one sets the starting
@@ -308,17 +322,22 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     }
   }
 
-  /** Turn 90°: the picture's sides swap, before sampling. */
+  /** Turn 90°: the picture's sides swap, before sampling; a crop turns with it, on the same piece (ticket 0898). */
   function turn() {
-    if (!image.value) return
-    image.value = turnPicture(image.value)
-    restartPart()
+    const picture = image.value
+    if (!picture) return
+    crop.moveWith(picture, 'turn')
+    image.value = turnPicture(picture)
+    forgetMarks()
   }
 
+  /** Flip left to right, a crop with it. */
   function flip() {
-    if (!image.value) return
-    image.value = flipPicture(image.value)
-    restartPart()
+    const picture = image.value
+    if (!picture) return
+    crop.moveWith(picture, 'flip')
+    image.value = flipPicture(picture)
+    forgetMarks()
   }
 
   // --- The preview's beads ------------------------------------------------------------------------------------------
@@ -703,10 +722,9 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     flip,
     /** Photo or flat art (ticket 0889): what Clean up stray beads opens at reads it (ticket 0906). */
     pictureKind: kind,
-    weave: computed(() => weaveChoice.value),
-    setWeave,
     part,
-    setPart: (next: PixelCrop) => (rawPart.value = next),
+    /** @internal The sampling tests weave a part of their own while a handle would move one, to see its centre pixels. */
+    setPart: (next: PixelCrop) => (crop.cut.value = next),
     // Background
     background,
     setRemoveBackground,
@@ -745,14 +763,19 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     // Size
     sizing,
     dimensions,
-    /** The part of the beads kept with Select, if any (ticket 0780): only these become the Project. */
+    /** The part of the beads kept with the crop, if any (tickets 0780, 0898): only these become the Project. */
     kept,
-    setKept: (next: KeptPart | undefined) => (kept.value = weaveChoice.value === 'whole' ? next : undefined),
-    keepAll: () => (kept.value = undefined),
+    /** The crop on the picture (ticket 0898): its place in the lattice's beads, a drag's or a key's pull and shift, and
+     * Keep all. */
+    crop: crop.crop,
+    beginCrop: crop.beginCrop,
+    pullCrop: crop.pullCrop,
+    shiftCrop: crop.shiftCrop,
+    endCrop: crop.endCrop,
+    nudgeCrop: crop.nudgeCrop,
+    keepAll: crop.keepAll,
     /** The size the Project will have: the kept part's, or the whole grid's. */
     keptDimensions: computed(() => (kept.value ? { columns: kept.value.columns, rows: kept.value.rows } : dimensions.value)),
-    /** The Weave's stagger cycles, which a kept part starts on. */
-    cycles: computed(() => ({ rowCycle: rowCycle(weave.value), columnCycle: columnCycle(weave.value) })),
     setWidth,
     setHeight,
     linked,
@@ -797,7 +820,11 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     found,
     rows,
     /** How many bead colors the beads use, counted after the match (ticket 0863): the rows not set to empty. */
-    usedColorCount: computed(() => rows.value.filter((row) => row.result).length),
+    usedColorCount: computed(() => {
+      const part = kept.value
+      if (!part) return rows.value.filter((row) => row.result).length
+      return new Set(keptGrid(grid.value, part).flatMap((cells) => cells.map((cell) => cell.color)).filter((color) => color !== null)).size
+    }),
     /** How many rows are set to empty (the Color by color summary). */
     emptyColorCount: computed(() => rows.value.filter((row) => !row.result).length),
     choices,

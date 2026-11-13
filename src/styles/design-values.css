@@ -30,6 +30,13 @@
   --convert-neighbour-width: 96px; /* ConvertImage card (DS-2, ticket 0899): one place in the neighbours' card (one color fewer, the count, one more); its height follows the picture. */
   --convert-count-field-width: 64px; /* ConvertImage card (ticket 0899): the "type a number" field for the number of colors, 1 to 256. */
   --convert-finish-list-width: 232px; /* ConvertImage card (ticket 0899): the Finish list under the Colors popover's Finish button. */
+  --convert-crop-line: 1.5px; /* ConvertImage card (DS-1, ticket 0898): the ink line round a crop on the picture. */
+  --convert-crop-halo: 4px; /* ConvertImage card (ticket 0898): the canvas halo round the crop's line. */
+  --convert-crop-halo-color: color-mix(in srgb, var(--canvas) 75%, transparent); /* ConvertImage card (ticket 0898): the halo's canvas at 75%. */
+  --convert-kept-chip-height: 36px; /* ConvertImage card (ticket 0898): the kept chip on a crop's top edge ("keeping 34×38", Keep all). */
+  --convert-kept-chip-height-touch: 40px; /* ConvertImage card (ticket 0898): the kept chip on a coarse pointer. */
+  --convert-keep-all-height: 28px; /* ConvertImage card (ticket 0898): Keep all in the kept chip. */
+  --convert-size-chip-gap: 26px; /* ConvertImage card (ticket 0898): the size chip's room right of the crop handle held. */
   --convert-result-button-height: 48px; /* ConvertImage card (DS-3, ticket 0900): the Clean up button under Colors, at least this tall. */
   --convert-result-button-height-touch: 52px; /* ConvertImage card (ticket 0900): the Clean up button on a coarse pointer. */
   --convert-cleaned-ring: 2px; /* ConvertImage card (ticket 0900): the marker ring round each bead Clean up changed, while its popover is open. */

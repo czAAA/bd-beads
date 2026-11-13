@@ -8,12 +8,11 @@ import { fixturePicture } from '../support/picture'
 
 const IPAD = { width: 1366, height: 1024 }
 
-/** The crop with A part of the picture, and the top-left handle's point: the crop's corner it is drawn round. */
+/** The crop on the picture, open on the whole (ticket 0898), and the top-left handle's point: the corner it stands on. */
 async function openCrop(page: Page): Promise<{ x: number; y: number }> {
   await openApp(page, [])
   await openNewProjectForm(page)
   await convertPicture(page, fixturePicture())
-  await page.getByTestId('convert-weave').locator('[data-value="part"]').click()
   const box = (await page.getByTestId('convert-crop-topLeft').boundingBox())!
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
@@ -25,9 +24,6 @@ function handleAt(page: Page, point: { x: number; y: number }): Promise<string |
 
 test.describe('the crop handles', () => {
   test.use({ viewport: IPAD })
-  // The crop has no way in on the page between ticket 0896, which took A part of the picture away, and ticket 0898, which
-  // stands the crop on the picture from the start; 0898 brings these back, opening the crop its own way.
-  test.skip(true, 'The crop comes back on the picture with ticket 0898.')
 
   test('take a mouse within 14px of where they are drawn', async ({ page }) => {
     const corner = await openCrop(page)

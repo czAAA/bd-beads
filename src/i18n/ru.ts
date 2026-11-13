@@ -1063,6 +1063,9 @@ export const ru: Translations = {
       resultBeadsNeeded: 'нужно бисера {count} · ≈ {grams}',
       resultBeadsNeededCount: 'нужно бисера {count}',
       resultGoesWhere: 'встанет там, где на холсте лежит изображение',
+      keeping: 'оставляем {columns}×{rows}',
+      keepAll: 'Оставить всё',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

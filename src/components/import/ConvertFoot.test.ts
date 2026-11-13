@@ -100,12 +100,13 @@ describe('ConvertFoot with a picture', () => {
   it('counts only the kept beads, and says what the part was kept from', async () => {
     const { wizard, wrapper } = open()
     await withPicture(wizard)
-    wizard.setTool('select')
-    wizard.setKept({ row: 0, column: 0, rows: 2, columns: 3 })
+    // The left half of 16 × 8 beads kept with the crop's right edge (ticket 0898).
+    wizard.setWidth(16)
+    wizard.nudgeCrop('right', -8, 0)
     await flushPromises()
-    expect(text(wrapper, 'convert-result-size')).toMatch(/^3×2 beads/)
-    expect(text(wrapper, 'convert-result-colors')).toMatch(/ · kept from 8×4$/)
-    expect(text(wrapper, 'convert-result-beads')).toMatch(/^beads needed 6 · ≈/)
+    expect(text(wrapper, 'convert-result-size')).toMatch(/^8×8 beads/)
+    expect(text(wrapper, 'convert-result-colors')).toMatch(/ · kept from 16×8$/)
+    expect(text(wrapper, 'convert-result-beads')).toMatch(/^beads needed 64 · ≈/)
   })
 
   it('opened from a reference image, adds to the open Project where the picture lies, with Add to Canvas', async () => {

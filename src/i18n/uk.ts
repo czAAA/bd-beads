@@ -1063,6 +1063,9 @@ export const uk: Translations = {
       resultBeadsNeeded: 'потрібно бісеру {count} · ≈ {grams}',
       resultBeadsNeededCount: 'потрібно бісеру {count}',
       resultGoesWhere: 'стане там, де на полотні лежить зображення',
+      keeping: 'лишаємо {columns}×{rows}',
+      keepAll: 'Лишити все',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',
