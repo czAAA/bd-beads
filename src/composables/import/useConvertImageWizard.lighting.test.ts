@@ -34,11 +34,17 @@ describe('Auto-fix lighting in the Convert image wizard (ticket 0907)', () => {
     expect(wizard.found.value.map((color) => [color.pictureHex, color.count])).toEqual(foundBefore)
   })
 
-  it('leaves pixel art bead for bead as it was while off', async () => {
+  it('opens off for pixel art, which keeps its own colors bead for bead, and off again after on', async () => {
     const wizard = await convertAt(pixelArtPicture(8 * 6), PIXEL_ART[0]!.length)
     expect(wizard.lighting.on.value).toBe(false)
     const own = new Set(PIXEL_ART_PALETTE.map(toHex))
-    expect(previewBeads(wizard).flat().every((hex) => own.has(hex!))).toBe(true)
+    const before = previewBeads(wizard)
+    expect(before.flat().every((hex) => own.has(hex!))).toBe(true)
+    wizard.lighting.setOn(true)
+    await nextTick()
+    wizard.lighting.setOn(false)
+    await nextTick()
+    expect(previewBeads(wizard)).toEqual(before)
   })
 
   it('works with the background found and removed, a removed background staying empty', async () => {

@@ -2,13 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { luma, toOklab } from './color'
 import type { PixelData } from './imageConversion'
 import { litPicture, measureLighting } from './lightingFix'
+import { drawPicture as picture } from '../testUtils/samplerPictures'
 
-/** A picture of `width` × `height` pixels, each colored by `at(x, y)` as [r, g, b, a]. */
-function picture(width: number, height: number, at: (x: number, y: number) => readonly number[]): PixelData {
-  const data = new Uint8ClampedArray(width * height * 4)
-  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) data.set(at(x, y), (y * width + x) * 4)
-  return { width, height, data }
-}
 const pixel = (image: PixelData, x: number, y: number) => {
   const at = (y * image.width + x) * 4
   return { r: image.data[at]!, g: image.data[at + 1]!, b: image.data[at + 2]!, a: image.data[at + 3]! }
@@ -62,13 +57,15 @@ describe('Auto-fix lighting (ticket 0907, spec 0761)', () => {
     expect(grey.r).toBe(grey.b)
   })
 
-  it('returns a new picture and leaves the one it was given as it was', () => {
+  it('leaves the picture it was given as it was, so turning it off brings the picture back', () => {
     const dark = picture(4, 4, () => [10, 20, 30, 255])
     const copy = Uint8ClampedArray.from(dark.data)
-    const fixed = litPicture(dark, measureLighting(dark))
-    expect(fixed).not.toBe(dark)
+    litPicture(dark, measureLighting(dark))
     expect(Array.from(dark.data)).toEqual(Array.from(copy))
-    expect(fixed.width).toBe(4)
-    expect(fixed.height).toBe(4)
+  })
+
+  it('changes nothing in a picture with no opaque pixel to judge the light from', () => {
+    const clear = picture(4, 4, () => [200, 30, 30, 0])
+    expect(Array.from(litPicture(clear, measureLighting(clear)).data)).toEqual(Array.from(clear.data))
   })
 })

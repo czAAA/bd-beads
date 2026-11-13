@@ -1311,6 +1311,14 @@ export interface Translations {
         joinedBeads: PluralForms
         everyColorStays: string
       }
+      /** Compare (ticket 0909): the chips over its halves, the narrow bar's Beads | Picture ("Show"), the preview's names. */
+      compareChipPicture: string
+      compareChipBeads: string
+      compareShow: string
+      compareBeads: string
+      comparePicture: string
+      compareSideBySideName: string
+      comparePictureName: string
       /** Auto-fix lighting (ticket 0907, DS-3): the picture section's row and its switch, spec 0761's name. */
       autoFixLighting: string
     }

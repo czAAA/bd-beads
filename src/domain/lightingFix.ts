@@ -21,6 +21,8 @@ const MIN_WHITE_POINT = 0.5
 /** The brightness (0 to 1) the middle pixel is lifted to when it is darker, and the strongest lift (the curve's
  * gamma, 1 for none): a dark photo's beads come out of the blacks; a bright one is never darkened. */
 const TARGET_MIDDLE = 0.45
+/** The middle pixel: half of them darker. */
+const MIDDLE_SHARE = 0.5
 const MIN_GAMMA = 0.45
 /** The share of the most saturated pixels whose chroma is stretched to the target. */
 const SATURATED_SHARE = 0.05
@@ -117,7 +119,7 @@ export function measureLighting(picture: PixelData): LightingFix {
   const lumas = colors.map(({ r, g, b }) => luma({ r: r * gains[0], g: g * gains[1], b: b * gains[2] })).sort((a, b) => a - b)
   const black = Math.min(shareOf(lumas, BLACK_SHARE), 255 * MAX_BLACK_POINT)
   const white = Math.max(shareOf(lumas, 1 - WHITE_SHARE), 255 * MIN_WHITE_POINT, black + 1)
-  const middle = Math.min(1, Math.max(0, (shareOf(lumas, 0.5) - black) / (white - black)))
+  const middle = Math.min(1, Math.max(0, (shareOf(lumas, MIDDLE_SHARE) - black) / (white - black)))
   const gamma = middle <= 0 ? MIN_GAMMA : middle >= TARGET_MIDDLE ? 1 : Math.max(MIN_GAMMA, Math.log(TARGET_MIDDLE) / Math.log(middle))
   const toned = { gains, black, white, gamma, stretch: 1 }
   const correction = correctionOf(toned)
