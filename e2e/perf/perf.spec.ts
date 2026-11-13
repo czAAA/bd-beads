@@ -1,6 +1,6 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
 import { busyMs, startFrameCounter, stopFrameCounter, throttle } from './measure'
-import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, setConvertWidth, showConvertStep, settle, convertPicture } from '../support/app'
+import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, setConvertWidth, settle, convertPicture } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 import { frameOf } from '../../src/domain/layerRecord'
@@ -207,18 +207,19 @@ for (const slowdown of SLOWDOWNS) {
     })
   }
 
-  // A part (spec 0645, ticket 0747): one pixel one bead, the bottom-right handle dragged back and forth.
+  // A part (spec 0645, ticket 0747): one pixel one bead, the bottom-right handle dragged back and forth. Left out until
+  // ticket 0898 stands the crop on the picture: ticket 0896 took A part of the picture, its way in, off the page.
   if (wanted('crop')) {
     for (const [technique, size] of TECHNIQUES.flatMap((technique) => FRAMING_SIZES.map((size) => [technique, size] as const))) {
       const name = TECHNIQUES.length > 1 ? `${label(size)} ${technique}` : label(size)
 
       test(`crop ${name} at ${slowdown}× slowdown`, async ({ page }) => {
+        test.skip(true, 'The crop comes back on the picture with ticket 0898.')
         await openApp(page, [])
         await openNewProjectForm(page)
         await chooseNewProjectTechnique(page, technique)
         await convertPicture(page, fixturePicture(size.columns, size.rows))
         await setConvertWidth(page, size.columns)
-        await showConvertStep(page, 'picture')
         await page.getByTestId('convert-weave').locator('[data-value="part"]').click()
         const handle = page.getByTestId('convert-crop-bottomRight')
         const box = (await handle.boundingBox())!

@@ -3,7 +3,7 @@ import { useId } from 'vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import InfoButton from '../ui/InfoButton.vue'
 
-// A converter switch (ConvertImage card; tickets 0780, 0894): Remove background and Keep the picture's shape. A row on
+// A converter switch (ConvertImage card; tickets 0780, 0894): Keep the picture's shape, in the Size popover. A row on
 // `surface`, the label in `control` with an Info button holding what the switch does, the switch at the right.
 defineProps<{
   label: string

@@ -69,3 +69,40 @@ describe('ValueSlider (ValueSlider card, ticket 0747)', () => {
     expect(wrapper.findAll('.vs-mark-label').map((label) => label.text())).toEqual(['16×16 px', '8×8 px'])
   })
 })
+
+describe('ValueSlider on the doubling scale (ValueSlider card, ticket 0896)', () => {
+  const doubling = (props: Partial<InstanceType<typeof ValueSlider>['$props']> = {}) =>
+    slider({ min: 25, max: 200, modelValue: 50, marks: [{ value: 50 }, { value: 100 }], doubling: true, ...props })
+  const at = (wrapper: ReturnType<typeof slider>, value: number) => {
+    const mark = wrapper.findAll('[data-testid="width-mark"]').find((found) => found.attributes('data-value') === String(value))!
+    return Number(/\) \* ([\d.]+)\)/.exec(mark.attributes('style')!)![1])
+  }
+
+  it('stands each doubling an even step along the track, the value as heard unchanged', () => {
+    const wrapper = doubling()
+    expect(at(wrapper, 50)).toBeCloseTo(1 / 3)
+    expect(at(wrapper, 100)).toBeCloseTo(2 / 3)
+    expect(wrapper.get('[data-testid="width-range"]').attributes()).toMatchObject({ 'aria-valuenow': '50', 'aria-valuemin': '25', 'aria-valuemax': '200' })
+  })
+
+  it('reads a drag back as the value at that place, and keys step the value itself', async () => {
+    const wrapper = doubling()
+    const range = wrapper.get('[data-testid="width-range"]')
+    await range.setValue('667')
+    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([100])
+    await range.trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([51])
+    await range.trigger('keydown', { key: 'End' })
+    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([200])
+  })
+
+  it('is off with its reason: nothing moves, and it says why on hover and focus (ticket 0896)', async () => {
+    const wrapper = doubling({ offBody: 'Add a picture first.' })
+    const range = wrapper.get('[data-testid="width-range"]')
+    expect(range.attributes('aria-disabled')).toBe('true')
+    await range.setValue('900')
+    await range.trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.get('.app-tooltip').text()).toContain('Add a picture first.')
+  })
+})

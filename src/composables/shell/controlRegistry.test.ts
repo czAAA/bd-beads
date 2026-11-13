@@ -10,7 +10,7 @@ import type { Translations } from '../../i18n/translations'
 import { actionKey } from '../../components/ui/controlAction'
 import type { Chord } from '../../domain/chord'
 import type { Locale } from '../../domain/locale'
-import { CONVERT_STEPS, CROP_HANDLES } from '../../domain/convertSize'
+import { CROP_HANDLES } from '../../domain/convertSize'
 import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
 import { bareProject } from '../../testUtils/layerFields'
 
@@ -77,21 +77,16 @@ describe('the control registry', () => {
 
   it('has the Convert image wizard\'s controls, none with a key of its own (ticket 0650)', () => {
     const ids = [
-      'convert-turn',
-      'convert-flip',
-      'convert-select-beads',
-      'convert-select-crop',
       'make-empty',
+      'convert-background',
       'convert-undo',
       'convert-redo',
       'convert-compare',
       'remap-color',
       'empty-color',
-      ...CONVERT_STEPS.map((step) => `convert-step-${step}`),
       ...CROP_HANDLES.map((handle) => `crop-${handle}`),
     ]
     for (const id of ids) expect(controlAction(id).chords, id).toEqual([])
-    expect(controlAction('convert-step-size').name(en)).toBe('size')
     expect(controlAction('crop-topLeft').name(en)).toBe('Crop: top-left corner')
   })
 

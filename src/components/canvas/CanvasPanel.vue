@@ -8,7 +8,6 @@ import ContextBar, { type MirrorBarState } from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
-import ConvertStepBar from '../import/ConvertStepBar.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import MarginSheet from './MarginSheet.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
@@ -643,8 +642,9 @@ const drawingStyle = computed(() => {
           v-if="page === 'convert-image' && convertSession"
           :wizard="convertSession"
           :read-clipboard-image="readClipboardImage"
-          class="app-shell__page"
+          class="app-shell__page app-shell__page--to-bottom"
           @close="onCloseConvertImage"
+          @create="onCreateConvertImage"
         />
 
         <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
@@ -659,10 +659,10 @@ const drawingStyle = computed(() => {
           Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
           first control is Remove frame (ticket 426); with none open the Canvas footer stays, empty (ticket 0748).
         -->
-        <ConvertStepBar v-if="page === 'convert-image' && convertSession" class="app-shell__footer" data-bottom-bar :wizard="convertSession" @create="onCreateConvertImage" />
+        <!-- Behind Convert image, which runs to the window's bottom (ticket 0896), it stays laid out, as the drawing area does. -->
         <ProgressBar
-          v-else
           class="app-shell__footer"
+          :class="{ 'app-shell__footer--behind': page === 'convert-image' && convertSession }"
           data-bottom-bar
           :project="activeProject"
           :row-highlight="rowHighlight"
@@ -848,6 +848,15 @@ const drawingStyle = computed(() => {
 
 .app-shell__footer {
   grid-row: 3;
+}
+
+/* Convert image has no Progress bar (ticket 0896): it takes the footer's row too, and the editor's waits beneath it. */
+.app-shell__page--to-bottom {
+  grid-row: 2 / 4;
+}
+
+.app-shell__footer--behind {
+  visibility: hidden;
 }
 
 /* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing

@@ -233,10 +233,10 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.pressWith('convert-choose-file', () => hand.canvas.convertSession.value?.setFile(picture))
     await hand.find('convert-image-canvas')
     await hand.wait(HOLD.convertPicture)
-    await hand.press('convert-step-colors')
-    const colorByColor = await hand.find('convert-color-by-color')
-    if (colorByColor.getAttribute('aria-expanded') !== 'true') await hand.press('convert-color-by-color')
-    await hand.hover('convert-found-colors', HOLD.convertColors)
+    await hand.press('convert-colors-more')
+    await hand.wait(HOLD.convertColors)
+    // Pressed again, the button closes its popover, so the strip's Close is not taken as a press outside it.
+    await hand.press('convert-colors-more')
     await hand.press('convert-close')
     if (await present(hand, 'leave-converter-modal')) await hand.press('confirm-modal-confirm')
   },

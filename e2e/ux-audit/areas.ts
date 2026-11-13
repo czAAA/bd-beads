@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { LOCALES } from '../../src/domain/locale'
 import { fixturePicture } from '../support/picture'
-import { chooseNewProjectTechnique, openColorPopover, openStripPanel, selectTool, settle } from '../support/app'
+import { chooseNewProjectTechnique, openColorPopover, openConvertPopover, openStripPanel, selectTool, setConvertWidth, settle } from '../support/app'
 import { clickIfVisible, escape, openForAudit, surfaceCentre, type State, type Walk } from './support'
 
 /** The audit's areas (docs/research/ux-audit/00-plan.md §4), each the walk stops of its golden path. A stop is a
@@ -234,21 +234,24 @@ const convertImage: AreaWalk = {
       await page.getByTestId('convert-file-name').waitFor()
       await page.waitForTimeout(PANEL_MS)
     })
-    await walk.step('convert-size-step', async () => {
-      await page.getByTestId('convert-step-size').click()
+    await walk.step('convert-size-popover', async () => {
+      await openConvertPopover(page, 'size')
       await settle(page)
     })
     await walk.step('convert-width-changed', async () => {
-      await page.getByTestId('convert-width-range').fill('60')
+      await escape(page)
+      await setConvertWidth(page, 60)
       await page.waitForTimeout(REDRAW_MS)
     })
-    await walk.step('convert-colors-step', async () => {
-      await page.getByTestId('convert-step-colors').click()
+    await walk.step('convert-colors-popover', async () => {
+      await openConvertPopover(page, 'colors')
       await page.waitForTimeout(PANEL_MS)
     })
-    await walk.step('convert-review-step', async () => {
-      await page.getByTestId('convert-step-review').click()
+    await walk.step('convert-background-popover', async () => {
+      await escape(page)
+      await page.getByTestId('convert-tool-background').click()
       await page.waitForTimeout(PANEL_MS)
+      await escape(page)
     })
     await walk.step('convert-created-in-editor', async () => {
       await page.getByTestId('convert-image-create').click()

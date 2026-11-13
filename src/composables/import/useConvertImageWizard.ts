@@ -111,7 +111,6 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   // The picture. shallowRef: megabytes of pixels never changed in place; Turn and Flip make a new one.
   const image = shallowRef<PixelData>()
   const fileName = ref('')
-  const fileFormat = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
   /** The file being read, for the slow picture's line ("img_2041.jpg · 9.6 MB", ticket 0896). */
@@ -171,7 +170,6 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     marks.value = state.marks
     stroke = undefined
     lastWasTolerance = false
-    if (state.background === 'off' && tool.value === 'background') tool.value = undefined
   }
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
@@ -292,7 +290,6 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
       const first = !image.value
       image.value = decoded
       fileName.value = file.name
-      fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
       if (first) {
         const opening = startingSize(decoded, kind.value)
         widthBeads.value = opening.width
@@ -580,12 +577,11 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     if (!picture) tool.value = undefined
   })
 
-  /** Remove background's switch: on, the background is found (1 Find); off, everything is back and the Background tool
-   * goes with it (its steps stay for the next time). */
+  /** Remove background's switch: on, the background is found (1 Find); off, everything is back (the tool's steps stay
+   * for the next time). The switch stands in the tool's popover, so the tool stays on with it (ticket 0896). */
   function setRemoveBackground(on: boolean) {
     if (on !== (background.value !== 'off')) decide()
     background.value = on ? 'find' : 'off'
-    if (!on && tool.value === 'background') tool.value = undefined
   }
 
   // --- The popovers (ticket 0896) -------------------------------------------------------------------------------------
@@ -676,7 +672,6 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     hasPicture: computed(() => !!image.value),
     fileName,
     fileStem,
-    fileFormat,
     rejection,
     reading,
     readingFile,
