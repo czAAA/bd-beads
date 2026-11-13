@@ -11,10 +11,11 @@ import { foundRuns } from '../../domain/convertBackground'
 import { keptDrawn, keptMoved, type KeptPart } from '../../domain/convertKeep'
 import { CROP_HANDLES, partDrawn, partMoved, partShifted, type CropHandle, type PixelCrop } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
-import { beadCell } from '../../domain/weave'
+import { beadCell, beadRoundness } from '../../domain/weave'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
-import { LIGHT_THEME } from '../../rendering/beadLook'
+import { BEAD_GAP_PX, LIGHT_THEME } from '../../rendering/beadLook'
+import { drawCleanedRings } from '../../rendering/cleanedRings'
 import type { HandleId } from '../../rendering/frameHandles'
 import { reachLimit } from '../../rendering/handleSizes'
 import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
@@ -167,7 +168,33 @@ watchPostEffect(() => {
   // The board look in light whatever the app's theme (ticket 150), as the Project will print.
   renderProject(context, { project: drawn, space: at, region: { x: 0, y: 0, width, height }, zoom: scale.value, pixelRatio, theme: LIGHT_THEME, rowMarks: false })
   if (wizard.background.value === 'find') drawFound(context, pixelRatio)
+  if (wizard.popover.value === 'clean-up') drawRings(context, pixelRatio)
 })
+
+/** Clean up's popover open (ticket 0906): every bead it changed ringed in `marker`, a bead's step apart read off the view. */
+function drawRings(context: CanvasRenderingContext2D, pixelRatio: number) {
+  const changed = wizard.cleanUp.changedBeads.value
+  const at = lattice.value
+  const size = grid.value
+  const shown = view.value
+  if (!changed || !at || !size || !shown || !paneEl.value) return
+  const centre = (row: number, column: number) => shown.beadToPoint({ row: at.frameRow + row, column: at.frameColumn + column })
+  const gap = BEAD_GAP_PX * scale.value
+  const step = { width: Math.abs(centre(0, 1).x - centre(0, 0).x), height: Math.abs(centre(1, 0).y - centre(0, 0).y) }
+  const style = getComputedStyle(paneEl.value)
+  // The ring is as thick as it stands off the bead (DS-3: 2px, 2 outside).
+  const ring = parseFloat(style.getPropertyValue('--convert-cleaned-ring'))
+  drawCleanedRings(context, {
+    changed,
+    columns: size.columns,
+    centre: ({ row, column }) => centre(row, column),
+    bead: { width: step.width - gap, height: step.height - gap, roundness: beadRoundness(wizard.technique.value, cell.value) },
+    ring,
+    gap: ring,
+    color: style.getPropertyValue('--marker').trim(),
+    pixelRatio,
+  })
+}
 
 /** The picture's own pixels as a canvas, made once per picture: what Compare shows in the beads' place. */
 const original = computed(() => {

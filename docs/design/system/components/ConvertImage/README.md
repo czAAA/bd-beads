@@ -315,3 +315,14 @@ What the build of My beads (DS-2) had to settle:
 - **The Change picker's list holds only My beads' codes** while My beads is the source; the switch inside the Palette popover's Bead colors list is ticket 0918's.
 - **A press outside the My beads view closes the Colors popover** as one outside the Colors view does; Escape returns to Colors first.
 - **New values:** `--my-beads-row` (`panel-row-two-line` + 4), `--my-beads-row-touch`, `--my-beads-swatch` (24), `--my-beads-tick` (20). SegmentedControl's options take a `meta` count in `meta-small` (the switch's "1 191").
+
+## As built (ticket 0906)
+
+What the build of Clean up (DS-3) had to settle:
+
+- **The rule compares beads by the bead color they become**, after the match and Small colors join, not by the picture's reduced colors, so a bead is a stray exactly when Beads needed would count it alone; a stray takes the picture color of a neighbour of the winning bead color, and the reduction is counted again over the cleaned grid, so the found colors follow (`domain/strayBeads.ts`, `composables/import/useConvertCleanUp.ts`).
+- **Passes are taken at once over the whole grid**, each from the grid the pass before left: a bead that took a stray's color in the first pass is reached by the second (Medium). The ring and the count are the beads whose color differs from before the cleanup.
+- **The popover is ConvertPopover's `level` place**: beside the column, its bottom measured level with the button's when it opens. Under 1024 px it opens in place in the column until ticket 0911's sheet.
+- **Small colors join's stepper is the Stepper with a Shift step**: AppStepper takes `shift-step-by` (10 here), which also makes the arrow keys on the stepper step, Shift by it. Its value button still opens the number for typing.
+- **"Off for pixel art" stays while the switch is off on flat art**, also after the person turned it off again; "Off" over "{n} stray beads left" is a photo's.
+- **At 1180 × 820 the column scrolls in the longest words**: the button's two lines wrap in Russian, Ukrainian and Belarusian and the column passes the window by about 40 px. Nothing is cut; Create Project is reached by scrolling. English, Spanish and Polish still fit.

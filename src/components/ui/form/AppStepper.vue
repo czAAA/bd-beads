@@ -13,6 +13,8 @@ const props = withDefaults(
     max?: number
     /** How far a press moves the number (a setting's step, ticket 0624). */
     stepBy?: number
+    /** How far a press with Shift moves it; with it the arrow keys on the stepper step too, Shift by this (ticket 0906). */
+    shiftStepBy?: number
     decreaseLabel: string
     /** The name of the number for screen readers, e.g. "Width": it is a button that opens the number for typing
      * (ticket 355). */
@@ -29,7 +31,7 @@ const props = withDefaults(
      * 342). */
     display?: string
   }>(),
-  { min: -Infinity, max: Infinity, stepBy: 1, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
+  { min: -Infinity, max: Infinity, stepBy: 1, shiftStepBy: undefined, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
 )
 const value = defineModel<number>({ required: true })
 /** The number's button is named by what it counts and then what it shows, so its name holds its visible text (ticket
@@ -64,7 +66,22 @@ function step(delta: number): boolean {
   return true
 }
 
-const hold = useHoldRepeat((direction) => step(direction * props.stepBy))
+/** Whether Shift is held on the press or key that steps, for `shiftStepBy`. */
+let shifted = false
+const noteShift = (event: MouseEvent | KeyboardEvent) => (shifted = event.shiftKey)
+const stepSize = () => (shifted && props.shiftStepBy !== undefined ? props.shiftStepBy : props.stepBy)
+const hold = useHoldRepeat((direction) => step(direction * stepSize()))
+
+/** The arrow keys on a stepper with `shiftStepBy`: up and right step up, down and left down; not while typing. */
+function onArrow(event: KeyboardEvent) {
+  if (props.shiftStepBy === undefined || editing.value) return
+  const direction = event.key === 'ArrowUp' || event.key === 'ArrowRight' ? 1 : event.key === 'ArrowDown' || event.key === 'ArrowLeft' ? -1 : 0
+  if (!direction) return
+  event.preventDefault()
+  event.stopPropagation()
+  noteShift(event)
+  step(direction * stepSize())
+}
 const decreaseHandlers = hold.handlers(-1)
 const increaseHandlers = hold.handlers(1)
 
@@ -112,7 +129,7 @@ watch(
 </script>
 
 <template>
-  <span class="stepper" :class="{ 'stepper--disabled': disabled }">
+  <span class="stepper" :class="{ 'stepper--disabled': disabled }" @pointerdown.capture="noteShift" @click.capture="noteShift" @keydown="onArrow">
     <component :is="tooltipFor(decreaseLabel, value > min) ? AppTooltip : 'span'" v-bind="tooltipFor(decreaseLabel, value > min) ?? { class: 'stepper__slot' }">
       <button
         class="ui-control stepper__button"
