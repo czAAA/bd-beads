@@ -1,6 +1,7 @@
-import { effectScope, shallowRef, watch, type EffectScope } from 'vue'
+import { effectScope, shallowRef, watch, type EffectScope, type Ref } from 'vue'
 import { DEFAULT_BEAD } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
+import { converterStart, type ConvertChoices } from '../../domain/convertChoices'
 import type { CreateProjectInput } from '../../domain/createProject'
 import type { DecodeImage } from '../../domain/imageConversion'
 import type { Grid, Project } from '../../domain/project'
@@ -22,6 +23,8 @@ export interface ConvertImageFlowDeps {
   onClosed?: () => void
   /** Add to Canvas (ticket 0883): the converted beads put on the open Project where the reference image lies. */
   addToCanvas?: (grid: Grid, request: AllSettingsRequest) => void
+  /** The last conversion's choices, kept on the device (ticket 0893): the converter opens on them, Create Project sets them. */
+  convertChoices: Ref<ConvertChoices>
 }
 
 /** Convert image (spec 0645, ADR 0010, ADR 0086): an App page that makes a new Project, its setup its own. Open it from
@@ -43,7 +46,11 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     scope?.stop()
     scope = effectScope()
     fromReference = request
-    const wizard = scope.run(() => useConvertImageWizard({ start: draft, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, addsToCanvas: !!request }))!
+    // From the reference image the page keeps what it was opened with; else what this device used last (ticket 0893).
+    const { start, source } = request ? { start: draft, source: undefined } : converterStart(draft, deps.convertChoices.value)
+    const wizard = scope.run(() =>
+      useConvertImageWizard({ start, startSource: source, decodeImage: deps.decodeImage, loadCatalog: deps.loadCatalog, addsToCanvas: !!request }),
+    )!
     session.value = wizard
     if (file) void wizard.setFile(file)
     appPage.open('convert-image')
@@ -133,8 +140,15 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
       deps.addToCanvas?.(grid, request)
       return
     }
-    const project = session.value?.createProject()
-    if (!project) return
+    const wizard = session.value
+    const project = wizard?.createProject()
+    if (!wizard || !project) return
+    deps.convertChoices.value = {
+      beadId: wizard.bead.value.id,
+      technique: wizard.technique.value,
+      techniqueSettings: wizard.techniqueSettings.value,
+      ...(wizard.chosenSource.value ? { source: wizard.chosenSource.value } : {}),
+    }
     appPage.open('editor')
     deps.addProject(project)
   }

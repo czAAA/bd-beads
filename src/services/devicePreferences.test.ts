@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { FIRST_CONVERT_CHOICES } from '../domain/convertChoices'
 import { createDevicePreferences, PREFERENCES, type PreferenceName, type PreferenceStorage } from './devicePreferences'
 
 function memory(initial: Record<string, string> = {}): PreferenceStorage & { data: Map<string, string> } {
@@ -91,6 +92,16 @@ describe('the recent colors preference (ticket 439)', () => {
     expect(storage.data.get('openbeads:recent-colors')).toBe('#111111,#222222')
     recents.value = []
     expect(storage.data.has('openbeads:recent-colors')).toBe(false)
+  })
+})
+
+describe('the converter’s remembered choices (ticket 0893)', () => {
+  it('open on Miyuki Delica 11/0 in peyote until something is converted, and keep what Create Project saved', () => {
+    const storage = memory()
+    const choices = createDevicePreferences(storage).get('convertChoices')
+    expect(choices.value).toEqual(FIRST_CONVERT_CHOICES)
+    choices.value = { beadId: 'toho/round/11-0', technique: 'loom', techniqueSettings: {}, source: 'exact' }
+    expect(createDevicePreferences(storage).get('convertChoices').value).toEqual(choices.value)
   })
 })
 
