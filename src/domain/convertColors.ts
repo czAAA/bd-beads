@@ -74,9 +74,34 @@ function apartMatches(reduced: ReducedColors, targets: readonly TargetColor[] | 
   })
 }
 
+/** The fewest beads a bead color of a reduced picture is used by (ticket 0891, ADR 0010), Stitch Fiddle's default
+ * (benchmark CB-16): a color of fewer joins the nearest that stays. Ticket 0906 makes it a control. */
+const LEAST_COLOR_BEADS = 10
+
+/** The matches with every code used by fewer than `leastBeads` beads joined into the nearest code that stays (ticket
+ * 0891), for a reduced picture only: one whose colors fit the count (flat artwork, pixel art) keeps each. A color the
+ * maker chose for is left alone, and when no code reaches the minimum none joins. */
+function withoutFewBeads(reduced: ReducedColors, matches: TargetColor[], choices: ColorChoices, leastBeads: number): TargetColor[] {
+  if (!reduced.keptApart) return matches
+  const open = (at: number) => !choices.has(reduced.colors[at]!.hex)
+  const beads = new Map<string, number>()
+  reduced.colors.forEach(({ count }, at) => {
+    if (open(at)) beads.set(matches[at]!.hex, (beads.get(matches[at]!.hex) ?? 0) + count)
+  })
+  const stays = (at: number) => !open(at) || beads.get(matches[at]!.hex)! >= leastBeads
+  const staying = new Map(matches.filter((_, at) => open(at) && stays(at)).map((match) => [match.hex, match]))
+  if (staying.size === 0) return matches
+  return matches.map((match, at) => (stays(at) ? match : staying.get(nearestColor([...staying.keys()], reduced.colors[at]!.hex)!)!))
+}
+
 /** Each found color matched to the source and given the maker's choice, most beads first. */
-export function matchFoundColors(reduced: ReducedColors, targets: readonly TargetColor[] | undefined, choices: ColorChoices): FoundColor[] {
-  const matches = apartMatches(reduced, targets)
+export function matchFoundColors(
+  reduced: ReducedColors,
+  targets: readonly TargetColor[] | undefined,
+  choices: ColorChoices,
+  leastBeads = LEAST_COLOR_BEADS,
+): FoundColor[] {
+  const matches = withoutFewBeads(reduced, apartMatches(reduced, targets), choices, leastBeads)
   return reduced.colors.map(({ hex, count }, at) => {
     const match = matches[at]!
     const choice = choices.get(hex)
