@@ -614,6 +614,8 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
 
   /** The picture's file name without its extension: Name's placeholder, and the Name when it is left blank. */
   const fileStem = computed(() => fileName.value.replace(/\.[^.]*$/, ''))
+  /** The name the Project gets, asked once (ticket 0897): the New Project form's, else the picture's file name. */
+  const projectName = computed(() => name.value.trim() || fileStem.value)
 
   /** The Palette the remap picker shows (FoundColorRow card): the new Project's, as a Palette. */
   const remapPalette = computed(() => createPalette(palette.value.ids, builtIns.value, palette.value.codes))
@@ -640,7 +642,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     const part = kept.value
     const size = part ? { columns: part.columns, rows: part.rows } : rest.value.grid
     return createProjectFromImage({
-      name: name.value.trim() || fileStem.value,
+      name: projectName.value,
       technique: technique.value,
       ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
       beadId: bead.value.id,
@@ -677,6 +679,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     // Setup
     name,
     makerName,
+    projectName,
     beadId,
     bead,
     technique,

@@ -1267,6 +1267,11 @@ export interface Translations {
         shown: string
         rowOwned: string
       }
+      footProject: string
+      footAddsTo: string
+      resultBeadsNeeded: string
+      resultBeadsNeededCount: string
+      resultGoesWhere: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
