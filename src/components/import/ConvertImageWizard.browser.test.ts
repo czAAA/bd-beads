@@ -205,6 +205,7 @@ describe('Convert image, the quiet converter', () => {
           ['convert-size-more', 'convert-size-popover'],
           ['convert-colors-more', 'convert-colors-popover'],
           ['convert-clean-up-button', 'convert-clean-up-popover'],
+          ['convert-lighting-more', 'convert-lighting-popover'],
         ] as const) {
           find(root, button).click()
           await settleForMeasuring()
@@ -213,6 +214,14 @@ describe('Convert image, the quiet converter', () => {
           expect([box.top >= 0, box.bottom <= height], popover).toEqual([true, true])
           // Clean up's stands with its bottom level with its button's (DS-3).
           if (popover === 'convert-clean-up-popover' && column.scrollHeight <= column.clientHeight + 1) expect(box.bottom).toBeCloseTo(rect(root, button).bottom, 0)
+          // Lighting's top is level with the picture section's content, 16 under the strip (DS-3, ticket 0908).
+          if (popover === 'convert-lighting-popover') {
+            expect(box.top).toBeCloseTo(rect(root, 'convert-picture').top, 0)
+            // Each reset 28 square: --control-height-small (1.75rem) at the root's size.
+            const reset = find(root, 'convert-lighting-brightness-reset')
+            const small = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) * 1.75
+            expect([reset.getBoundingClientRect().width, reset.getBoundingClientRect().height]).toEqual([small, small])
+          }
           expect(await fitProblems(`Convert image ${popover}`, locale, width)).toEqual([])
           find(root, button).click()
           await settleForMeasuring()

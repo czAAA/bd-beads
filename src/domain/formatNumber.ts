@@ -45,3 +45,9 @@ export function inMillions(value: number, locale: Locale = 'en'): string {
   const shown = tenths >= WHOLE_FROM_TENTHS ? Math.floor(tenths / 10) : tenths / 10
   return Number.isInteger(shown) ? groupThousands(shown, locale) : numberFormat(locale, 1).format(shown)
 }
+
+/** A value either side of a middle that changes nothing, as the Lighting sliders write it (ticket 0908, DS-3): "+10",
+ * "−6" with a true minus, and "0". */
+export function signedValue(value: number): string {
+  return value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0'
+}

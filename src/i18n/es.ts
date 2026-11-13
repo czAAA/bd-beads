@@ -1115,6 +1115,23 @@ export const es: Translations = {
         note: 'Acabado: limita el ajuste a los acabados que marques.',
       },
       autoFixLighting: 'Corregir la luz automáticamente',
+      lighting: {
+        more: 'Más opciones de la luz',
+        title: 'Luz',
+        whatDoes: 'Qué hacen los controles de luz',
+        whatDoesBody: 'Brillo, Contraste y Saturación cambian la imagen antes de que se convierta en cuentas, después de Corregir la luz si está activado. En 0 no cambian nada.',
+        brightness: 'Brillo',
+        contrast: 'Contraste',
+        saturation: 'Saturación',
+        ends: {
+          brightness: ['más oscuro', 'más claro'],
+          contrast: ['más suave', 'más fuerte'],
+          saturation: ['más gris', 'colores más vivos'],
+        },
+        reset: 'Restablecer {slider}',
+        atZero: 'Ya está en 0.',
+        moved: '{slider} {value}',
+      },
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

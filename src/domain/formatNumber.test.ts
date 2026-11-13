@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decimalSign, groupThousands, inMillions } from './formatNumber'
+import { decimalSign, groupThousands, inMillions, signedValue } from './formatNumber'
 
 describe('groupThousands', () => {
   it.each([
@@ -43,5 +43,13 @@ describe('inMillions (ticket 0716)', () => {
     expect(inMillions(31_771_024)).toBe('31')
     expect(inMillions(2_512_000, 'ru')).toBe('2,5')
     expect(inMillions(2_000_900)).toBe('2')
+  })
+})
+
+describe('signedValue', () => {
+  it('writes a value off a middle with its sign, a true minus below, the middle bare (ticket 0908)', () => {
+    expect(signedValue(10)).toBe('+10')
+    expect(signedValue(-6)).toBe('−6')
+    expect(signedValue(0)).toBe('0')
   })
 })

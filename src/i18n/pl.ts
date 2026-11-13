@@ -1118,6 +1118,23 @@ export const pl: Translations = {
         note: 'Wykończenie: dopasowanie tylko do zaznaczonych wykończeń.',
       },
       autoFixLighting: 'Automatyczna korekta światła',
+      lighting: {
+        more: 'Więcej dla światła',
+        title: 'Światło',
+        whatDoes: 'Co robią suwaki światła',
+        whatDoesBody: 'Jasność, kontrast i nasycenie zmieniają obraz, zanim stanie się koralikami, po automatycznej korekcie światła, jeśli jest włączona. Na 0 nic nie zmieniają.',
+        brightness: 'Jasność',
+        contrast: 'Kontrast',
+        saturation: 'Nasycenie',
+        ends: {
+          brightness: ['ciemniej', 'jaśniej'],
+          contrast: ['łagodniej', 'mocniej'],
+          saturation: ['szarzej', 'żywsze kolory'],
+        },
+        reset: 'Resetuj: {slider}',
+        atZero: 'Już na 0.',
+        moved: '{slider} {value}',
+      },
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

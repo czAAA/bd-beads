@@ -1337,6 +1337,21 @@ export interface Translations {
       }
       /** Auto-fix lighting (ticket 0907, DS-3): the picture section's row and its switch, spec 0761's name. */
       autoFixLighting: string
+      /** Brightness, Contrast and Saturation behind Auto-fix lighting (ticket 0908, DS-3): the sun button, the Lighting
+       * popover, each slider's name, ends (less, more) and reset, and the column's line naming the moved ones. */
+      lighting: {
+        more: string
+        title: string
+        whatDoes: string
+        whatDoesBody: string
+        brightness: string
+        contrast: string
+        saturation: string
+        ends: Record<'brightness' | 'contrast' | 'saturation', readonly [string, string]>
+        reset: string
+        atZero: string
+        moved: string
+      }
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
