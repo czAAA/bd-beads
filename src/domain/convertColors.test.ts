@@ -10,6 +10,8 @@ import {
   convertFrame,
   matchFoundColors,
   newProjectPalette,
+  NO_LEAST_COLOR_BEADS,
+  smallColorsJoined,
   sourceTargets,
   type FoundColorChoice,
 } from './convertColors'
@@ -279,5 +281,22 @@ describe('a color used by a handful of beads (ticket 0891)', () => {
   it('leaves the colors as they are when none reaches the minimum', () => {
     const found = matchFoundColors(reducedPicture({ '#1a1a1a': 5, '#e8e8e8': 4 }), undefined, choices())
     expect(delivered(found)).toEqual(['#1a1a1a', '#e8e8e8'])
+  })
+})
+
+describe('Small colors join (ticket 0906)', () => {
+  const targets = [{ hex: '#ff0000' }, { hex: '#0000ff' }, { hex: '#00ff00' }]
+  const picture = reducedPicture({ '#ff0000': 40, '#0000ff': 30, '#00ff00': 3 })
+
+  it('says how many colors joined and how many beads they had', () => {
+    const joined = matchFoundColors(picture, targets, choices(), 10)
+    const unjoined = matchFoundColors(picture, targets, choices(), NO_LEAST_COLOR_BEADS)
+    expect(smallColorsJoined(joined, unjoined)).toEqual({ colors: 1, beads: 3 })
+  })
+
+  it('joins nothing at "off"', () => {
+    const unjoined = matchFoundColors(picture, targets, choices(), NO_LEAST_COLOR_BEADS)
+    expect(delivered(unjoined)).toHaveLength(3)
+    expect(smallColorsJoined(unjoined, unjoined)).toEqual({ colors: 0, beads: 0 })
   })
 })

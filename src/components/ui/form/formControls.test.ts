@@ -281,6 +281,23 @@ describe('AppStepper', () => {
     expect(wrapper.find('.stepper__value').text()).toBe('4')
   })
 
+  it('steps by its Shift step with Shift held, and by the arrow keys, given one (ticket 0906)', async () => {
+    const { wrapper, value } = mountStepper(10, { min: 1, max: 50, shiftStepBy: 10 })
+    const [, plus] = wrapper.findAll('.stepper__button')
+    await plus!.trigger('click', { shiftKey: true })
+    expect(value.value).toBe(20)
+    await wrapper.find('.stepper').trigger('keydown', { key: 'ArrowDown' })
+    expect(value.value).toBe(19)
+    await wrapper.find('.stepper').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    expect(value.value).toBe(29)
+  })
+
+  it('leaves the arrow keys alone without a Shift step', async () => {
+    const { wrapper, value } = mountStepper(3)
+    await wrapper.find('.stepper').trigger('keydown', { key: 'ArrowUp' })
+    expect(value.value).toBe(3)
+  })
+
   it('turns a button off at its limit', () => {
     const { wrapper } = mountStepper(2)
     const [minus, plus] = wrapper.findAll<HTMLButtonElement>('.stepper__button')

@@ -128,6 +128,8 @@ describe('Convert image sampling: photos', () => {
 
   it('has fewer lone beads than the centre pixels have, matched to the same colors', async () => {
     const wizard = await convertAt(photo, WIDTH)
+    // The sampler's own measure: Clean up stray beads (ticket 0906) would take the lone beads away after it.
+    wizard.cleanUp.setOn(false)
     const centre = loneBeads(centrePixelBeads(wizard))
     const area = loneBeads(previewBeads(wizard))
 

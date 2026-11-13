@@ -4,16 +4,16 @@ import { wouldRaiseKeyboard } from '../../composables/ui/touchKeyboard'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 
 // A popover of the quiet converter (ConvertImage card DS-1, ticket 0896), from its own button, never a panel: `beside`
-// the column, level with its section; `tall` down the preview (Colors); `bar` over the floating bar (Background). Under
-// 1024 px or in portrait it opens in place in the column. Escape or a press outside closes it, focus back on its button.
+// the column, level with its section; `level` beside it, its bottom level with its button's (Clean up, ticket 0906); `tall`
+// down the preview (Colors); `bar` over the floating bar (Background). Under 1024 px or in portrait it opens in place.
 const props = defineProps<{
   /** Where it stands from 1024 px wide in landscape. */
-  place: 'beside' | 'tall' | 'bar'
+  place: 'beside' | 'tall' | 'bar' | 'level'
   /** Its accessible name. */
   label: string
   /** The button that opened it: its own press toggles, and focus goes back to it on close. */
   opener: () => HTMLElement | undefined
-  /** The section it stands level with (`beside`). */
+  /** The section it stands level with (`beside`), or the button whose bottom its bottom is level with (`level`). */
   anchor?: () => HTMLElement | undefined
   /** A press outside it that still works its own thing, so it stays open (the Background tool's taps on the beads). */
   keepsPress?: (event: PointerEvent) => boolean
@@ -23,6 +23,7 @@ const emit = defineEmits<{ close: [] }>()
 
 const rootEl = ref<HTMLElement>()
 const top = ref<number>()
+const bottom = ref<number>()
 
 function close() {
   emit('close')
@@ -42,7 +43,8 @@ const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not
 onMounted(async () => {
   const section = props.anchor?.()
   const page = rootEl.value?.closest('.convert-page')
-  if (section && page) top.value = section.getBoundingClientRect().top - page.getBoundingClientRect().top
+  if (section && page && props.place === 'level') bottom.value = page.getBoundingClientRect().bottom - section.getBoundingClientRect().bottom
+  else if (section && page) top.value = section.getBoundingClientRect().top - page.getBoundingClientRect().top
   await nextTick()
   // A field first would raise a touch keyboard nobody asked for: the popover itself takes focus then (ticket 0688).
   const first = rootEl.value?.querySelector<HTMLElement>(FOCUSABLE)
@@ -55,7 +57,7 @@ onMounted(async () => {
     ref="rootEl"
     class="convert-popover"
     :class="`convert-popover--${place}`"
-    :style="top === undefined ? undefined : { top: `${top}px` }"
+    :style="top !== undefined ? { top: `${top}px` } : bottom !== undefined ? { bottom: `${bottom}px` } : undefined"
     role="dialog"
     tabindex="-1"
     :aria-label="label"
@@ -90,6 +92,7 @@ onMounted(async () => {
 
 /* To the column's left, over the preview's right edge, 12 from the column; never wider than the preview less 12 a side. */
 .convert-popover--beside,
+.convert-popover--level,
 .convert-popover--tall {
   right: calc(var(--convert-column-width) + var(--space-12));
   max-width: calc(100% - var(--convert-column-width) - var(--space-24));
@@ -98,6 +101,11 @@ onMounted(async () => {
 .convert-popover--beside {
   width: var(--convert-setting-popover-width);
   padding: var(--space-14) var(--space-16) var(--space-16);
+}
+
+.convert-popover--level {
+  width: var(--convert-setting-popover-width);
+  padding: var(--space-14) var(--space-16);
 }
 
 .convert-popover--tall {
@@ -128,6 +136,7 @@ onMounted(async () => {
 
 @media (max-width: 74.99rem) {
   .convert-popover--beside,
+  .convert-popover--level,
   .convert-popover--tall {
     right: calc(var(--convert-column-width-narrow) + var(--space-12));
     max-width: calc(100% - var(--convert-column-width-narrow) - var(--space-24));
