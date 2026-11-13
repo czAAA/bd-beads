@@ -768,23 +768,26 @@ onBeforeUnmount(() => {
     0 0 0 2px var(--canvas);
 }
 
-/* The floating bar (ConvertImage card): centred 18 above the preview's bottom edge, its groups split by dividers. */
+/* The floating bar (ConvertImage card): centred 18 above the preview's bottom edge, its groups split by dividers. Too
+ * narrow a preview (a phone, until ticket 0911's bar) wraps it rather than cutting a tool. */
 .convert-preview__tools {
   position: absolute;
+  right: var(--space-8);
   bottom: var(--convert-tools-lift);
-  left: 50%;
+  left: var(--space-8);
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
-  max-width: calc(100% - var(--space-16));
+  width: fit-content;
+  margin-inline: auto;
   padding: var(--space-4);
-  overflow-x: auto;
   background: var(--elevated);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--elevation-3);
-  transform: translateX(-50%);
 }
 
 .convert-preview__tools :deep(.app-button) {

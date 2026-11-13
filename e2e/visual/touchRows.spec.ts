@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { convertPicture, openApp, openNewProjectForm, openStripPanel, settle } from '../support/app'
+import { convertPicture, openApp, openConvertPopover, openNewProjectForm, openStripPanel, settle } from '../support/app'
 import { fixturePicture } from '../support/picture'
 import { fixtureProject } from '../support/projects'
 
@@ -11,7 +11,7 @@ const IPAD = { width: 1366, height: 1024 }
 const TOUCH_TARGET = 44
 const MIN_ROW = 40
 
-/** The converter's menus on the Picture & bead step: the Bead section's Brand, Type and Size, then the Technique. */
+/** The converter's menus in its Bead and Technique popover (ticket 0896): the Bead's Brand, Type and Size, then the Technique. */
 const PICKERS = ['bead-brand', 'bead-type', 'bead-size', 'convert-technique'] as const
 
 /** What the element at a point on the page is, as one of the given test ids or its own class. */
@@ -44,6 +44,7 @@ test.describe('on touch', () => {
     expect(await page.evaluate(() => matchMedia('(pointer: coarse)').matches)).toBe(true)
     await openNewProjectForm(page)
     await convertPicture(page, fixturePicture())
+    await openConvertPopover(page, 'bead')
 
     for (const picker of PICKERS) {
       const button = page.getByTestId(picker).locator('button[aria-haspopup]')
