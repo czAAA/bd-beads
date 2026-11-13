@@ -1130,6 +1130,7 @@ export const pl: Translations = {
         codesLeft: { other: 'zostało kodów: {count}' },
         note: 'Wykończenie: dopasowanie tylko do zaznaczonych wykończeń.',
       },
+      autoFixLighting: 'Automatyczna korekta światła',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

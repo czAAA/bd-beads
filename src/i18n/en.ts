@@ -1114,6 +1114,7 @@ export const en: Translations = {
         codesLeft: { one: 'only {count} code left', other: 'only {count} codes left' },
         note: 'Finish: keeps the match to the Finishes you tick.',
       },
+      autoFixLighting: 'Auto-fix lighting',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',
