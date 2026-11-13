@@ -207,8 +207,8 @@ useRevealWhenOpen(rowEl, () => props.open)
 
 <style scoped>
 .found-color {
-  /* Revealed clear of the step's pinned header and the table's heading row under it. */
-  scroll-margin-top: calc(var(--convert-step-head) + var(--space-32));
+  /* Revealed clear of the table's heading row, pinned at the top of the list as it scrolls. */
+  scroll-margin-top: var(--space-32);
   list-style: none;
   border-top: 1px solid var(--line-soft);
 }
@@ -339,5 +339,15 @@ useRevealWhenOpen(rowEl, () => props.open)
   flex-direction: column;
   gap: var(--space-12);
   padding: var(--space-4) var(--space-10) var(--space-12);
+}
+
+/* In a narrow Colors list (a phone's column) the head wraps rather than cutting the name: Keep exact goes under it. */
+.found-color__picker :deep(.color-popover-body__head) {
+  flex-wrap: wrap;
+}
+
+.found-color__picker :deep(.color-popover-body__name) {
+  flex: 1 1 auto;
+  min-width: min-content;
 }
 </style>

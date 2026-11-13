@@ -169,15 +169,26 @@ export async function convertPicture(page: Page, buffer: Buffer): Promise<void> 
   await page.getByTestId('convert-file-name').waitFor()
 }
 
-/** Shows a step of the Convert image page by its dot on the Progress bar (ticket 0756). */
-export async function showConvertStep(page: Page, step: 'picture' | 'bead' | 'size' | 'colors' | 'review'): Promise<void> {
-  await page.getByTestId(`convert-step-${step}`).click()
+/** Opens one of the Convert image column's popovers by its button (ticket 0896): Bead and Technique, Size or Colors. */
+export async function openConvertPopover(page: Page, popover: 'bead' | 'size' | 'colors'): Promise<void> {
+  await page.getByTestId(popover === 'bead' ? 'convert-bead-button' : `convert-${popover}-more`).click()
+  await page.getByTestId(`convert-${popover}-popover`).waitFor()
 }
 
-/** Sets the Width slider, on the Size step, to a number of beads (ticket 0747); the height follows the picture. */
+/** Sets the column's Width slider to a number of beads (tickets 0747, 0896); the height follows the picture. The slider
+ * runs on the doubling scale, so the thumb's place is worked out from the value as the slider places it. */
 export async function setConvertWidth(page: Page, beads: number): Promise<void> {
-  await showConvertStep(page, 'size')
-  await page.getByTestId('convert-width-range').fill(String(beads))
+  const range = page.getByTestId('convert-width-range')
+  const place = await range.evaluate((input, value) => {
+    const min = Number(input.getAttribute('aria-valuemin'))
+    const max = Number(input.getAttribute('aria-valuemax'))
+    return Math.round((Math.log(value / min) / Math.log(max / min)) * Number((input as HTMLInputElement).max))
+  }, beads)
+  await range.fill(String(place))
+  // A place on the track can fall between two values: the arrows step the value itself, one bead at a time.
+  const off = beads - Number(await range.getAttribute('aria-valuenow'))
+  for (let step = 0; step < Math.abs(off); step += 1) await range.press(off > 0 ? 'ArrowRight' : 'ArrowLeft')
+  await expect(range).toHaveAttribute('aria-valuenow', String(beads))
 }
 
 /** The Project the app has saved, read back the way it is stored. Edits reach the device on their own (ticket 523). */

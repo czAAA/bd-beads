@@ -1,7 +1,7 @@
 import type { FrameShapeId, FrameSettingName, FringeStyle } from '../domain/frameShape'
 import type { Locale } from '../domain/locale'
 import type { BandFit, StarterCategoryId, StarterSizeName } from '../domain/starters'
-import type { ConvertStep, CropHandle } from '../domain/convertSize'
+import type { CropHandle } from '../domain/convertSize'
 import type { PluralForms } from './plural'
 
 export type { Locale }
@@ -1109,44 +1109,25 @@ export interface Translations {
     /** The Convert image wizard (spec 0645; ConvertImage, ValueSlider, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
-      /** The five steps' titles in the pane, and their names under the Progress bar's dots (ticket 0780). */
-      sections: Record<ConvertStep, string>
-      rail: Record<ConvertStep, string>
-      /** A shut step's summary until a picture is set. */
-      shutSummary: string
-      /** The Progress bar's steps (ticket 0756): the track's accessible name, Back and Next, a dot's name (`{step}`) and
-       * why Back is off on the first step. */
-      railLabel: string
-      stepBack: string
-      stepNext: string
-      goToStep: string
-      firstStepBody: string
-      /** A disabled section's summary until a picture is set. */
+      /** Why Width, Colors, their buttons and Create Project are off until a picture is set. */
       addPictureFirst: string
       chooseFile: string
       paste: string
       takePhoto: string
       turn: string
-      flip: string
       /** The menu beside the picture's file name: Choose file and Paste. */
       replace: string
       /** The Picture section's Note until the first picture: every way in and the limits (formatImageLimits); the
        * keyboard one names the device's paste key, `{pasteKey}` (ticket 0846), as does `dropOrPaste`. */
       pictureNote: string
       pictureNoteTouch: string
-      /** Under the file name: "256×192 px · png". */
+      /** Under the file name: "256×192 px". */
       pictureSize: string
       dropHere: string
       dropOrPaste: string
       dropToUse: string
       dropToConvert: string
       dropLimits: string
-      /** What to convert (tickets 0747, 0780; the label "convert", ticket 0863): the label, its two choices, and what a
-       * crop leaves of the size, in Width's Info while a crop is woven (ticket 0894). */
-      convert: string
-      wholePicture: string
-      aPart: string
-      partFollows: string
       /** Keep the picture's shape (ticket 0780): the switch between Width and Height and its Info in each state. */
       keepShape: string
       keepShapeOn: string
@@ -1171,40 +1152,23 @@ export interface Translations {
       removed: string
       removedLine: PluralForms
       showFound: string
-      /** The Background tool (ticket 0787): its name on the floating bar, the step's line pointing at it (`{tool}` its
-       * name), and the step's Undo, Redo and Start over for its steps. */
+      /** The Background tool (ticket 0787): its name on the floating bar, and Start over for its steps. */
       backgroundTool: string
-      backgroundToolLine: string
       startOver: string
-      /** The band of facts above the preview (ticket 0780): no picture, the kept part and Keep all, the crop in pixels, and
-       * the line on what the preview shows now. */
+      /** No picture yet (the column and its foot), and the lines on what the preview shows now (ticket 0896): Make empty's
+       * and Compare's chips, and the Background popover's tool line. */
       bandEmpty: string
-      keeping: string
-      keepAll: string
-      partOfPicture: string
-      bandFound: string
-      bandRemoved: string
       bandMakeEmpty: string
       bandBackground: string
-      bandSelectBeads: string
-      bandSelectCrop: string
       bandCompare: string
-      /** The step headers' summaries (ticket 0780): Background off, found or removed, a kept part, and Review's bead count. */
-      summaryOff: string
-      summaryFound: string
-      summaryRemoved: string
-      summaryKept: string
-      beadsCount: PluralForms
-      /** The result box's line after a kept part's size: the whole grid it was kept from. */
+      /** The result's line after a kept part's size: the whole grid it was kept from. */
       resultKeptFrom: string
-      /** The Size section (ticket 0747): the unit row's label ("units", ticket 0863), the Width slider's value in each
-       * unit, its max end, its marks (the width they stand for) and the hint under it. */
+      /** Size (ticket 0747): the unit row's label ("units", ticket 0863), a slider's value in each unit, its max end
+       * ("max {value}"), and what Width does, behind its Info. */
       units: string
       widthBeads: string
       widthMm: string
       maxLabel: string
-      /** The Width slider's max end: the width in the chosen unit, `{value}`. */
-      widthMaxLabel: string
       widthHint: string
       /** The Colors slider's hint, `{n}` every color the picture has; the Color by color row and its empty count. */
       colorsHint: string
@@ -1216,8 +1180,7 @@ export interface Translations {
       crop: Record<CropHandle, string>
       /** The Large Schema Note; `{beads}` is the threshold. */
       largeSchema: string
-      /** The result box: its label, then the grid size, and the ratio exact, approximate or one pixel as beads. */
-      result: string
+      /** The result: the grid size, and the ratio exact, approximate or one pixel as beads. */
       resultGrid: string
       resultExact: string
       resultApprox: string
@@ -1237,7 +1200,6 @@ export interface Translations {
       defaultPalette: string
       exact: string
       codesInSize: string
-      colorsFound: string
       /** The found-colors table's headings (Empty and Change are the buttons' names). */
       fromPicture: string
       becomes: string
@@ -1267,7 +1229,22 @@ export interface Translations {
       whatSizeDoes: string
       whatDoes: string
       whereColorsFrom: string
-      /** The Review summary's rows. */
+      /** The quiet converter's column (ticket 0896, DS-1): its labels, the "More for …" buttons beside Width and Colors,
+       * the line under Colors for each source (`{bead}` the Bead in lower case), the Size popover's title, Colors' name,
+       * the drop zone's Info, the file being read (`{file}`, `{mb}`) and the column's line meanwhile, and the ··· menu's Flip. */
+      pictureLabel: string
+      beadAndTechnique: string
+      moreForSize: string
+      moreForColors: string
+      matchedBead: string
+      matchedDefault: string
+      matchedExact: string
+      sizeTitle: string
+      colorsLabel: string
+      whatPictures: string
+      readingDetail: string
+      readingLine: string
+      flipLeftRight: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
@@ -1381,10 +1358,6 @@ export interface Translations {
     convertImage: string
     /** Convert image's floating bar (ticket 0780): Turn 90°, Flip, Select (keeping a part of the beads, or cropping the
      * picture), Make empty and Compare. */
-    convertTurn: string
-    convertFlip: string
-    selectBeads: string
-    selectCrop: string
     makeEmpty: string
     backgroundTool: string
     compare: string

@@ -16,7 +16,6 @@ import {
   type FoundColorChoice,
 } from '../../domain/convertColors'
 import {
-  CONVERT_STEPS,
   flipPicture,
   fullCrop,
   isLargeSchema,
@@ -24,7 +23,6 @@ import {
   sizingFor,
   startingSize,
   turnPicture,
-  type ConvertStep,
   type PixelCrop,
   type SizeSide,
 } from '../../domain/convertSize'
@@ -70,9 +68,13 @@ export interface ConvertImageWizardDeps {
 export type ConvertWeave = 'whole' | 'part'
 
 /** The preview's tools (ConvertImage card, the floating bar): one or none is on. Select keeps a part of the beads, or
- * draws the crop with A part of the picture; Make empty leaves a color out with a tap; Background keeps or removes the
- * patch under a tap or a drag (ticket 0787). */
+ * draws the crop with A part of the picture (no button since ticket 0896: the crop on the picture takes its place, ticket
+ * 0898); Make empty leaves a color out with a tap; Background keeps or removes the patch under a tap or a drag (ticket 0787). */
 export type ConvertTool = 'select' | 'make-empty' | 'background'
+
+/** The popovers of the quiet converter (ticket 0896, ConvertImage card DS-1): the column's three, each from its own
+ * button, and Background's from the floating bar. One is open at a time; Background's is open while its tool is on. */
+export type ConvertPopover = 'bead' | 'size' | 'colors' | 'background'
 
 /** Background (ConvertImage card, 2 Background; ticket 0780): off, found and hatched (1 Find), or made empty places
  * (2 Remove). */
@@ -109,17 +111,12 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   // The picture. shallowRef: megabytes of pixels never changed in place; Turn and Flip make a new one.
   const image = shallowRef<PixelData>()
   const fileName = ref('')
-  const fileFormat = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
+  /** The file being read, for the slow picture's line ("img_2041.jpg · 9.6 MB", ticket 0896). */
+  const readingFile = shallowRef<{ name: string; bytes: number }>()
   /** Photo or flat art (ticket 0889), told again for each new picture: it sets defaults only (Width, Clean up's in 0906). */
   const kind = computed(() => (image.value ? pictureKind(image.value) : undefined))
-
-  // The step in view (ticket 0780): the pane's scroll sets it and its place between the steps, which the Progress bar
-  // follows; a dot, Back or Next asks the pane to scroll to a step.
-  const step = ref<ConvertStep>('picture')
-  const position = ref(0)
-  const scrollRequest = shallowRef<{ step: ConvertStep }>()
 
   // What to weave and how big (ConvertImage card): the part, the Width in beads, and the unit it reads in.
   const weaveChoice = ref<ConvertWeave>('whole')
@@ -173,7 +170,6 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     marks.value = state.marks
     stroke = undefined
     lastWasTolerance = false
-    if (state.background === 'off' && tool.value === 'background') tool.value = undefined
   }
 
   /** The part of the picture to weave: the whole picture, or the part under the handles. */
@@ -288,12 +284,12 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     rejection.value = validateImageFile(file)
     if (rejection.value) return
     reading.value = true
+    readingFile.value = { name: file.name, bytes: file.size }
     try {
       const decoded = await decodeImage(file)
       const first = !image.value
       image.value = decoded
       fileName.value = file.name
-      fileFormat.value = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase() : file.type.replace('image/', '')
       if (first) {
         const opening = startingSize(decoded, kind.value)
         widthBeads.value = opening.width
@@ -304,6 +300,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
     } finally {
       reading.value = false
+      readingFile.value = undefined
     }
   }
 
@@ -506,6 +503,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
    * on, so the tool has something to mark (ticket 0787). */
   function setTool(next: ConvertTool | undefined) {
     tool.value = next === tool.value || !image.value ? undefined : next
+    if (tool.value === 'background') columnPopover.value = undefined
     if (tool.value === 'background' && background.value === 'off') {
       decide()
       background.value = 'find'
@@ -579,25 +577,29 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     if (!picture) tool.value = undefined
   })
 
-  /** Remove background's switch: on, the background is found (1 Find); off, everything is back and the Background tool
-   * goes with it (its steps stay for the next time). */
+  /** Remove background's switch: on, the background is found (1 Find); off, everything is back (the tool's steps stay
+   * for the next time). The switch stands in the tool's popover, so the tool stays on with it (ticket 0896). */
   function setRemoveBackground(on: boolean) {
     if (on !== (background.value !== 'off')) decide()
     background.value = on ? 'find' : 'off'
-    if (!on && tool.value === 'background') tool.value = undefined
   }
 
-  const stepIndex = computed(() => CONVERT_STEPS.indexOf(step.value))
-  /** Every step after Picture & bead waits for a picture. */
-  const canGoTo = (next: ConvertStep) => next === 'picture' || !!image.value
-  /** A dot, Back or Next: the pane scrolls to that step, and the scroll then makes it the one in view. */
-  function goTo(next: ConvertStep | undefined) {
-    if (next && canGoTo(next)) scrollRequest.value = { step: next }
+  // --- The popovers (ticket 0896) -------------------------------------------------------------------------------------
+
+  /** The column's popover that is open, if any: Bead and Technique, Size or Colors. */
+  const columnPopover = ref<Exclude<ConvertPopover, 'background'>>()
+  const popover = computed<ConvertPopover | undefined>(() => (tool.value === 'background' ? 'background' : columnPopover.value))
+  /** A popover's button: opens it, closing any other, and pressed again closes it. Background's turns its tool on with
+   * it, in one press. */
+  function togglePopover(next: ConvertPopover) {
+    if (next === 'background') return setTool('background')
+    columnPopover.value = columnPopover.value === next ? undefined : next
+    if (columnPopover.value && tool.value === 'background') tool.value = undefined
   }
-  /** The pane's scroll, in steps (scrollSteps' scrollPosition): the step in view is the nearest. */
-  function setScroll(at: number) {
-    position.value = at
-    step.value = CONVERT_STEPS[clamp(Math.round(at), 0, CONVERT_STEPS.length - 1)]!
+  /** Closing a popover (Escape, a press outside, its button): Background's turns its tool off and keeps every decision. */
+  function closePopover() {
+    if (tool.value === 'background') tool.value = undefined
+    columnPopover.value = undefined
   }
 
   /** The picture's file name without its extension: Name's placeholder, and the Name when it is left blank. */
@@ -661,25 +663,18 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     settings,
     techniqueSettings,
     setSetting: (id: string, value: number) => (settings.value = { ...settings.value, [id]: value }),
-    // The steps: Picture & bead first, the rest once a picture is set; Next on the last is Create Project
-    step,
-    position,
-    scrollRequest,
-    setScroll,
-    canGoTo,
-    goTo,
-    goBack: () => goTo(CONVERT_STEPS[stepIndex.value - 1]),
-    goNext: () => goTo(CONVERT_STEPS[stepIndex.value + 1]),
-    stepIndex,
-    onLastStep: computed(() => stepIndex.value === CONVERT_STEPS.length - 1),
+    // The popovers, one at a time
+    popover,
+    togglePopover,
+    closePopover,
     // Picture
     image,
     hasPicture: computed(() => !!image.value),
     fileName,
     fileStem,
-    fileFormat,
     rejection,
     reading,
+    readingFile,
     setFile,
     turn,
     flip,

@@ -26,6 +26,10 @@ import { paintAt } from '../testUtils/layers'
 import { marginSheetHost } from '../testUtils/marginSheetHost'
 import { armSelectionBar } from '../testUtils/pill'
 import ConvertPageHost from '../testUtils/ConvertPageHost.vue'
+import ConvertSectionHost from '../testUtils/ConvertSectionHost.vue'
+import ConvertBackgroundSection from './import/ConvertBackgroundSection.vue'
+import ConvertColorsSection from './import/ConvertColorsSection.vue'
+import ConvertSizeSection from './import/ConvertSizeSection.vue'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
@@ -141,6 +145,14 @@ function wizardProps(withPicture: boolean) {
   }
 }
 
+/** One popover's body with a picture set (ticket 0896): tried on its own, as on the page a long press outside an open
+ * popover closes it before its Tooltips can open. */
+const popoverBody = (body: Component, background = false) => ({ ...wizardProps(true), body, background })
+/** Waits until the body's picture is read and it shows. */
+const bodyShown = async (root: HTMLElement) => {
+  for (let tries = 0; tries < 50 && root.textContent?.trim() === '…'; tries += 1) await new Promise((done) => setTimeout(done, 20))
+}
+
 const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
 
 const framed = withLayers(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
@@ -223,55 +235,41 @@ const CASES: FitCase[] = [
   ['Convert image page (no picture)', ConvertPageHost, wizardProps(false)],
   ['PictureDropOverlay', PictureDragged, {}],
   [
-    'Convert image page (remapping)',
+    'Convert image page (Make empty)',
     ConvertPageHost,
     wizardProps(true),
     async (root) => {
       await pictureSet(root)
-      press(root, 'convert-step-colors')
-      press(root, 'convert-color-by-color')
-      press(root, 'found-color-remap')
-    },
-  ],
-  [
-    'Convert image page (a part, in mm)',
-    ConvertPageHost,
-    wizardProps(true),
-    async (root) => {
-      await pictureSet(root)
-      root.querySelector<HTMLElement>('[data-testid="convert-weave"] [data-value="part"]')?.click()
-      press(root, 'convert-step-size')
-      await new Promise((done) => setTimeout(done, 20))
-      root.querySelector<HTMLElement>('[data-testid="convert-size-unit"] [data-value="mm"]')?.click()
-    },
-  ],
-  [
-    'Convert image page (Background found)',
-    ConvertPageHost,
-    wizardProps(true),
-    async (root) => {
-      await pictureSet(root)
-      press(root, 'convert-remove-background')
-    },
-  ],
-  [
-    'Convert image page (Background removed, Make empty)',
-    ConvertPageHost,
-    wizardProps(true),
-    async (root) => {
-      await pictureSet(root)
-      press(root, 'convert-remove-background')
-      press(root, 'convert-remove-found')
       press(root, 'convert-tool-make-empty')
     },
   ],
   [
-    'Convert image page (Review)',
-    ConvertPageHost,
-    wizardProps(true),
+    'Convert image Colors popover (remapping)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
     async (root) => {
-      await pictureSet(root)
-      press(root, 'convert-step-review')
+      await bodyShown(root)
+      press(root, 'found-color-remap')
+    },
+  ],
+  [
+    'Convert image Size popover (in mm)',
+    ConvertSectionHost,
+    popoverBody(ConvertSizeSection),
+    async (root) => {
+      await bodyShown(root)
+      root.querySelector<HTMLElement>('[data-testid="convert-size-unit"] [data-value="mm"]')?.click()
+    },
+  ],
+  ['Convert image Background popover (found)', ConvertSectionHost, popoverBody(ConvertBackgroundSection, true), bodyShown],
+  [
+    'Convert image Background popover (removed)',
+    ConvertSectionHost,
+    popoverBody(ConvertBackgroundSection, true),
+    async (root) => {
+      await bodyShown(root)
+      await new Promise((done) => setTimeout(done, 20))
+      press(root, 'convert-remove-found')
     },
   ],
 ]

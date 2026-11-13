@@ -216,7 +216,6 @@
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
   --panel-width: 520px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
   --panel-width-small: 360px; /* The Export panel dropdown from the Canvas strip's Export button (ExportPanel card); held 8px from the screen's edge on a narrow one. */
-  --convert-sections-width: 440px; /* The Convert image wizard's sections pane beside the preview (ConvertImage card); 400px while the popup is under 1100px wide. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */
   --panel-row: 28px; /* A row of the Menu, Project or Frame panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
   --panel-row-touch: 36px; /* panel-row on a coarse pointer: a deliberate exception to touch-target, since the rows touch and each row is its own hit area (responsive.md). */

@@ -11,22 +11,20 @@
   --starter-press-scale: 0.97; /* StarterGallery card: a card's picture while pressed. */
   --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
   --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
-  --convert-sections-width-narrow: 400px; /* ConvertImage card: the step pane while the page is under 1100px wide. */
   --convert-preview-phone: 300px; /* PhoneForms card: the converter's preview above the step on a phone, at most (it gives way to the step). Goes with ticket 0911 (DS-4). */
   --convert-preview-min: 160px; /* PhoneForms card: the least the preview keeps above the step; from ticket 0911 (DS-4) the beads at a sheet's full detent. */
   --convert-preview-tablet: 440px; /* PhoneForms card: the same preview on a portrait tablet. Goes with ticket 0911 (DS-4). */
-  --step-disc: 20px; /* ConvertImage card: a step's numbered disc in its section header. */
-  --convert-band-height: 48px; /* ConvertImage card (ticket 0778): the preview's band of facts above the picture. */
   --convert-tools-lift: 18px; /* ConvertImage card (ticket 0780): how far the preview's floating bar stands above its bottom edge. */
-  --convert-step-head: 52px; /* ConvertImage card (ticket 0778): a step's header, pinned to the top of the pane while the step is in view. */
-  --convert-step-end: 28px; /* ConvertImage card (ticket 0780): the room under a step's body in the pane, before the next step's rule. */
   --convert-column-width: 344px; /* ConvertImage card (DS-1, ticket 0895): the quiet converter's column beside the preview. */
   --convert-column-width-narrow: 328px; /* ConvertImage card (ticket 0895): the column while the page is under 1200px wide (the iPad in landscape). */
   --convert-fit-top: 72px; /* ConvertImage card (ticket 0895): room above the beads when the preview is at Fit. */
   --convert-fit-side: 40px; /* ConvertImage card (ticket 0895): room at each side of the beads at Fit. */
   --convert-fit-bottom: 90px; /* ConvertImage card (ticket 0895): room under the beads at Fit, so the floating bar never covers them. */
   --convert-fit-bottom-touch: 96px; /* ConvertImage card (ticket 0895): the same on a coarse pointer, whose bar is taller. */
-  --convert-popover-width: 340px; /* ConvertImage card (ticket 0895): the Bead and Technique and the Size popovers. */
+  --convert-setting-popover-width: 340px; /* ConvertImage card (ticket 0895): the Bead and Technique and the Size popovers. */
+  --convert-background-popover-bottom: 78px; /* ConvertImage card (ticket 0896): the Background popover's bottom above the preview's, clear of the floating bar. */
+  --convert-background-popover-bottom-touch: 82px; /* ConvertImage card (ticket 0896): the same on a coarse pointer, whose bar is taller. */
+  --convert-message-width: 440px; /* ConvertImage card (ticket 0896): a refused file's Message in the drop zone at its widest. */
   --convert-colors-popover-width: 452px; /* ConvertImage card (ticket 0895): the Colors popover (match to, Color by color). */
   --convert-colors-popover-width-narrow: 440px; /* ConvertImage card (ticket 0895): the Colors popover while the page is under 1200px wide. */
   --convert-background-popover-width: 380px; /* ConvertImage card (ticket 0895): the Background popover over the floating bar. */
@@ -90,8 +88,8 @@
   --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
   --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
-  --convert-thumb-width: 64px; /* ConvertImage card: the Picture section's thumbnail. */
-  --convert-thumb-height: 48px; /* ConvertImage card: the thumbnail's height. */
+  --convert-thumb-width: 44px; /* ConvertImage card (ticket 0896): the picture row's thumbnail, the picture cover-fitted. */
+  --convert-thumb-height: 54px; /* ConvertImage card: the thumbnail's height. */
   --slider-mark-width: 2px; /* ValueSlider card: a mark across the track. */
   --slider-mark-height: 14px; /* ValueSlider card: a mark's height, taller than the track so it shows over the filled part. */
   --slider-mark-snap: 6px; /* ValueSlider card: a drag released this near a mark lands on it. */

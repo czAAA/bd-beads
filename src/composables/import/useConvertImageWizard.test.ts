@@ -169,26 +169,46 @@ describe('useConvertImageWizard colors (ticket 0747)', () => {
   })
 })
 
-describe('useConvertImageWizard steps (tickets 0756, 0780)', () => {
-  it('waits on Picture & bead until a picture is set, then asks the pane to scroll a step at a time, the scroll setting the step', async () => {
+describe('useConvertImageWizard popovers (ticket 0896)', () => {
+  it('opens one popover at a time, a second press closing it, and Background with its tool in one press', async () => {
+    const wizard = await setup(flat(16, 16))
+    wizard.togglePopover('size')
+    expect(wizard.popover.value).toBe('size')
+    wizard.togglePopover('colors')
+    expect(wizard.popover.value).toBe('colors')
+    wizard.togglePopover('colors')
+    expect(wizard.popover.value).toBeUndefined()
+
+    wizard.togglePopover('bead')
+    wizard.togglePopover('background')
+    expect([wizard.popover.value, wizard.tool.value, wizard.background.value]).toEqual(['background', 'background', 'find'])
+    wizard.togglePopover('size')
+    expect([wizard.popover.value, wizard.tool.value]).toEqual(['size', undefined])
+  })
+
+  it('turns the Background tool off when its popover closes, keeping what was decided', async () => {
+    const wizard = await setup(flat(16, 16))
+    wizard.togglePopover('background')
+    wizard.setTolerance(30)
+    wizard.closePopover()
+    expect([wizard.popover.value, wizard.tool.value, wizard.background.value, wizard.tolerance.value]).toEqual([undefined, undefined, 'find', 30])
+  })
+
+  it('names the file being read while it is read, and nothing once it is', async () => {
+    let decoded: (picture: PixelData) => void = () => {}
     const scope = effectScope()
     const wizard = scope.run(() =>
       useConvertImageWizard({
         start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
-        decodeImage: async () => flat(16, 16),
+        decodeImage: () => new Promise<PixelData>((done) => (decoded = done)),
         loadCatalog: () => Promise.reject(new Error('no catalog')),
       }),
     )!
-    wizard.goNext()
-    expect(wizard.scrollRequest.value).toBeUndefined()
-
-    await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
-    wizard.goNext()
-    expect(wizard.scrollRequest.value).toEqual({ step: 'background' })
-    wizard.setScroll(3.6)
-    expect([wizard.step.value, wizard.position.value, wizard.onLastStep.value]).toEqual(['review', 3.6, true])
-    wizard.goBack()
-    expect(wizard.scrollRequest.value).toEqual({ step: 'colors' })
+    const reading = wizard.setFile(new File(['12345'], 'img_2041.jpg', { type: 'image/jpeg' }))
+    expect(wizard.readingFile.value).toEqual({ name: 'img_2041.jpg', bytes: 5 })
+    decoded(flat(8, 8))
+    await reading
+    expect(wizard.readingFile.value).toBeUndefined()
     scope.stop()
   })
 })
@@ -268,13 +288,15 @@ describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', ()
     expect(wizard.canRedo.value).toBe(false)
   })
 
-  it('turns the Background tool off with the switch when Undo takes the switch back', async () => {
+  it('keeps the Background tool, and so its popover, on when the switch or Undo turns Remove background off (ticket 0896)', async () => {
     const wizard = await wall()
     wizard.setTool('background')
     expect(wizard.background.value).toBe('find')
     wizard.undo()
-    expect(wizard.background.value).toBe('off')
-    expect(wizard.tool.value).toBeUndefined()
+    expect([wizard.background.value, wizard.tool.value]).toEqual(['off', 'background'])
+    wizard.setRemoveBackground(true)
+    wizard.setRemoveBackground(false)
+    expect([wizard.background.value, wizard.popover.value]).toEqual(['off', 'background'])
   })
 
   it('makes the patch under a step on a kept bead background, a drag one step, and replays it on a new Width', async () => {
@@ -317,7 +339,7 @@ describe('useConvertImageWizard the Background tool’s steps (ticket 0787)', ()
     expect(wizard.tool.value).toBe('background')
     expect(wizard.background.value).toBe('find')
     wizard.setRemoveBackground(false)
-    expect(wizard.tool.value).toBeUndefined()
+    expect(wizard.tool.value).toBe('background')
 
     wizard.beginMark(latticeIndex(wizard, 0, 0))
     wizard.endMark()

@@ -12,110 +12,22 @@ const props = {
   readClipboardImage: async () => undefined,
 }
 
-// Create Project has a Tooltip, so AppButton wraps it, and the Progress bar's rules must still reach the button inside
-// (ticket 0679): Back and Create Project are one height, and on a phone they share the row half and half.
-describe('the Convert image Progress bar on Review', () => {
-  it('draws Back and Create Project at one height, and side by side at one width on a phone', async () => {
-    const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width: 1366 })
-    await pictureSet(mounted.root)
-    mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-review"]')?.click()
-    await settleForMeasuring()
-    const size = (testid: string) => {
-      const box = mounted.root.querySelector(`[data-testid="${testid}"]`)!.getBoundingClientRect()
-      return { top: box.top, width: box.width, height: box.height }
-    }
-
-    await page.viewport(1366, 900)
-    await settleForMeasuring()
-    expect(size('convert-image-create').height).toBe(size('convert-back').height)
-
-    await page.viewport(390, 844)
-    await settleForMeasuring()
-    expect(size('convert-image-create')).toEqual({ ...size('convert-back'), width: size('convert-image-create').width })
-    expect(size('convert-image-create').width).toBeCloseTo(size('convert-back').width, 0)
-  })
-})
-
-// A part is drawn like a Selection (ticket 0757): the preview takes real pointer input, and choosing the part leaves
-// the Width in beads as it was.
-describe('A part on the preview', () => {
-  const picture = async () => ({ width: 400, height: 300, data: new Uint8ClampedArray(400 * 300 * 4).fill(200) })
-
-  it('is drawn, moved and pulled by its handles, with the Width unchanged', async () => {
-    const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: picture }, { locale: 'en', width: 1366 })
-    await pictureSet(mounted.root)
-    const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
-    const rect = (testid: string) => find(testid).getBoundingClientRect()
-    const width = () => (find('convert-width-range') as HTMLInputElement).value
-
-    // Width 20 beads, then A part from the Picture step, and back to the Size step to read the Width.
-    find('convert-step-size').click()
-    await settleForMeasuring()
-    const slider = find('convert-width-range') as HTMLInputElement
-    slider.value = '20'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
-    find('convert-step-picture').click()
-    await settleForMeasuring()
-    find('convert-weave').querySelector<HTMLElement>('[data-value="part"]')!.click()
-    find('convert-step-size').click()
-    await settleForMeasuring()
-    expect(width()).toBe('20')
-
-    // Where the part stands on the picture, as fractions of its width and height: the preview re-fits as the part changes.
-    const onPicture = () => {
-      const box = rect('convert-image-box')
-      const part = rect('convert-image-frame-outline')
-      return { left: (part.left - box.left) / box.width, right: (part.right - box.left) / box.width, top: (part.top - box.top) / box.height }
-    }
-    const near = (actual: number, expected: number) => expect(Math.abs(actual - expected)).toBeLessThan(0.04)
-
-    // Drag inside it to move it: the part keeps its size and goes where it is dropped, as far as the picture allows.
-    const before = onPicture()
-    // The Progress bar's Next stands below and right of the picture.
-    await userEvent.dragAndDrop(find('convert-image-frame-outline'), find('convert-next'))
-    const moved = onPicture()
-    expect(moved.left).toBeGreaterThan(before.left + 0.05)
-    near(moved.right - moved.left, before.right - before.left)
-    near(moved.right, 1)
-    expect(width()).toBe('20')
-
-    // Pull its left handle half way across it: the part is narrowed, its right edge kept.
-    await userEvent.dragAndDrop(find('convert-crop-left'), find('convert-crop-top'))
-    const pulled = onPicture()
-    near(pulled.right - pulled.left, (moved.right - moved.left) / 2)
-    near(pulled.right, moved.right)
-    expect(width()).toBe('20')
-
-    // Drag outside it to draw a new one, from where the drag began to where it ended.
-    await userEvent.dragAndDrop(find('convert-image-canvas'), find('convert-next'))
-    const drawn = onPicture()
-    near(drawn.left, 0.5)
-    near(drawn.right, 1)
-    near(drawn.top, 0.5)
-    expect(width()).toBe('20')
-  })
-})
-
-// The found-colors table (ticket 0758): its heading stays at the top of the step as the list scrolls, over the rows' own columns.
+// The found-colors table (tickets 0758, 0896): its heading stays at the top of the Colors popover's list as it scrolls,
+// over the rows' own columns.
 describe('the Convert image found-colors table heading', () => {
-  it('stays in view as the step scrolls and sits over the columns of the rows', async () => {
+  it('stays in view as the list scrolls and sits over the columns of the rows', async () => {
     const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width: 1366 })
+    await page.viewport(1366, 420)
     await pictureSet(mounted.root)
-    mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-colors"]')?.click()
+    mounted.root.querySelector<HTMLElement>('[data-testid="convert-colors-more"]')?.click()
     await settleForMeasuring()
-    mounted.root.querySelector<HTMLElement>('[data-testid="convert-color-by-color"]')?.click()
-    await page.viewport(1366, 240)
-    await settleForMeasuring()
-    const pane = mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-pane"]')!
+    const list = mounted.root.querySelector<HTMLElement>('.convert-colors__table')!
     const heading = () => mounted.root.querySelector<HTMLElement>('[data-testid="found-colors-header"]')!.getBoundingClientRect()
-    // Scrolled until the heading would have gone under the step's pinned header, with the rows still under it.
-    const pinned = mounted.root.querySelector<HTMLElement>('[data-testid="convert-section-colors-header"]')!.parentElement!.getBoundingClientRect().height
-    const target = pane.scrollTop + heading().top - pane.getBoundingClientRect().top - pinned + 24
-    pane.scrollTop = target
+    list.scrollTop = 24
     await settleForMeasuring()
 
-    expect(pane.scrollTop).toBeCloseTo(target, 0)
-    expect(heading().top).toBeCloseTo(pane.getBoundingClientRect().top + pinned, 0)
+    expect(list.scrollTop).toBeGreaterThan(0)
+    expect(heading().top).toBeCloseTo(list.getBoundingClientRect().top, 0)
 
     const cells = [...mounted.root.querySelectorAll<HTMLElement>('[data-testid="found-colors-header"] span')].map((cell) => cell.getBoundingClientRect())
     const row = mounted.root.querySelector('[data-testid="found-color"]')!
@@ -132,9 +44,7 @@ describe('the Convert image found-colors table heading', () => {
     it(`keeps each found color's hex on one line at 320px, under "From picture → Becomes", in ${locale}`, async () => {
       const mounted = await mountAt(ConvertPageHost, props, { locale, width: 1366 })
       await pictureSet(mounted.root)
-      mounted.root.querySelector<HTMLElement>('[data-testid="convert-step-colors"]')?.click()
-      await settleForMeasuring()
-      mounted.root.querySelector<HTMLElement>('[data-testid="convert-color-by-color"]')?.click()
+      mounted.root.querySelector<HTMLElement>('[data-testid="convert-colors-more"]')?.click()
       await page.viewport(320, 640)
       await settleForMeasuring()
 
@@ -174,7 +84,11 @@ describe('the preview’s overlays on the canvas', () => {
     const slider = root.querySelector<HTMLInputElement>('[data-testid="convert-width-range"]')!
     slider.value = slider.max
     slider.dispatchEvent(new Event('input', { bubbles: true }))
+    root.querySelector<HTMLElement>('[data-testid="convert-colors-more"]')!.click()
+    await settleForMeasuring()
     root.querySelector<HTMLElement>('[data-testid="convert-color-source"] [data-value="exact"]')!.click()
+    // Pressed again, the button closes its popover (ticket 0896), so a press on the beads is not one outside it.
+    root.querySelector<HTMLElement>('[data-testid="convert-colors-more"]')!.click()
     await settleForMeasuring()
   }
   const topRightPixel = (root: HTMLElement) => {
@@ -185,7 +99,8 @@ describe('the preview’s overlays on the canvas', () => {
   it('fades and hatches the found beads where they are, to the picture’s far corner', async () => {
     const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
     await atEveryPixel(mounted.root)
-    mounted.root.querySelector<HTMLElement>('[data-testid="convert-remove-background"]')!.click()
+    // Background on the bar turns Remove background on with its tool and popover (ticket 0896).
+    mounted.root.querySelector<HTMLElement>('[data-testid="convert-tool-background"]')!.click()
     await settleForMeasuring()
     const [r, g, b] = topRightPixel(mounted.root)
     // Pure green is the bead as drawn; faded, or under a hatch line, it is not.
@@ -199,8 +114,8 @@ describe('the preview’s overlays on the canvas', () => {
     const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)
     find('convert-tool-background')!.click()
     await settleForMeasuring()
-    expect(find('convert-background-steps')).toBeNull()
-    const share = () => find('convert-section-background-summary')!.textContent
+    expect(find('convert-reset-marks')).toBeNull()
+    const share = () => find('convert-background-found')!.textContent
     const before = share()
     // A tap on the green patch in the top-right corner, found with the wall: its patch is kept.
     const box = find('convert-image-box')!.getBoundingClientRect()
@@ -209,7 +124,7 @@ describe('the preview’s overlays on the canvas', () => {
     window.dispatchEvent(new PointerEvent('pointerup', at))
     await settleForMeasuring()
     expect(share()).not.toBe(before)
-    expect(find('convert-background-steps')).not.toBeNull()
+    expect(find('convert-reset-marks')).not.toBeNull()
     const [r, g, b] = topRightPixel(mounted.root)
     expect(g).toBeGreaterThan(200)
     expect(r! + b!).toBeLessThan(80)
@@ -229,94 +144,95 @@ describe('the preview’s overlays on the canvas', () => {
   })
 })
 
-// An iPad's screen, both ways up (ticket 0862): the floating bar fits its preview, slider labels keep apart, Next lands
-// on its step's header, a picker that opens is brought into view with the counter left as it was, and the text fits.
-describe('Convert image at iPad size', () => {
+// The first window (ticket 0896, ConvertImage card DS-1): at a desktop's and an iPad's size the column holds everything
+// whole with no scroll, in the longest wording too, a popover opens beside it, and under 1024 px the column stacks.
+describe('Convert image, the quiet converter', () => {
   const find = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
   const rect = (root: HTMLElement, testid: string) => find(root, testid).getBoundingClientRect()
-  /** How often, and how many times in a row, the pane's scroll must read the same to count as at rest. */
-  const REST_CHECK_MS = 50
-  const REST_READS = 4
-  /** Waits for the pane's scroll to come to rest (Next and a revealed part scroll it smoothly, and may start a frame late). */
-  async function scrollRests(pane: HTMLElement) {
-    let last = -1
-    let still = 0
-    for (let reads = 0; reads < 100 && still < REST_READS; reads += 1) {
-      still = pane.scrollTop === last ? still + 1 : 0
-      last = pane.scrollTop
-      await new Promise((resolve) => setTimeout(resolve, REST_CHECK_MS))
-    }
-    await settleForMeasuring()
-  }
 
   for (const [width, height] of [
-    [1366, 1024],
-    [1024, 1366],
+    [1440, 900],
+    [1180, 820],
   ] as const) {
-    it(`fits and shows what opens at ${width} × ${height}`, async () => {
-      const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width })
-      await page.viewport(width, height)
-      await pictureSet(mounted.root)
-      await settleForMeasuring()
-      const root = mounted.root
+    for (const locale of ['en', 'longest'] as const) {
+      it(`fits the column with nothing under a fold at ${width} × ${height} in ${locale}, and its popovers beside it`, async () => {
+        const mounted = await mountAt(ConvertPageHost, props, { locale, width })
+        await page.viewport(width, height)
+        await pictureSet(mounted.root)
+        await settleForMeasuring()
+        const root = mounted.root
+        const column = find(root, 'convert-column')
+        expect(column.scrollHeight).toBeLessThanOrEqual(column.clientHeight + 1)
+        expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
+        // The bar's buttons stand whole inside it.
+        const bar = rect(root, 'convert-preview-tools')
+        for (const button of find(root, 'convert-preview-tools').querySelectorAll('button')) {
+          const box = button.getBoundingClientRect()
+          expect([box.left >= bar.left, box.right <= bar.right]).toEqual([true, true])
+        }
+        expect(await fitProblems('Convert image page', locale, width)).toEqual([])
 
-      // The floating bar's buttons, Zoom in and Fit among them, all stand whole inside it; Turn 90° and Flip are icons.
-      const bar = rect(root, 'convert-preview-tools')
-      const buttons = [...find(root, 'convert-preview-tools').querySelectorAll('button')].map((button) => button.getBoundingClientRect())
-      for (const button of buttons) expect([button.left >= bar.left, button.right <= bar.right]).toEqual([true, true])
-      expect([find(root, 'convert-turn').textContent, find(root, 'convert-flip').textContent]).toEqual(['', ''])
-
-      // The Size step's labels under each slider never touch.
-      find(root, 'convert-step-size').click()
-      await scrollRests(find(root, 'convert-step-pane'))
-      for (const ends of root.querySelectorAll('[data-testid="convert-section-size"] .vs-ends')) {
-        const shown = [...ends.children].filter((label) => getComputedStyle(label).visibility !== 'hidden').map((label) => label.getBoundingClientRect())
-        shown.sort((a, b) => a.left - b.left)
-        for (let index = 1; index < shown.length; index += 1) expect(shown[index]!.left).toBeGreaterThan(shown[index - 1]!.right)
-      }
-
-      // Next lands with the Colors step's header at the pane's top.
-      const pane = find(root, 'convert-step-pane')
-      find(root, 'convert-next').click()
-      await scrollRests(pane)
-      expect(Math.abs(rect(root, 'convert-section-colors').top - pane.getBoundingClientRect().top)).toBeLessThan(1)
-      expect(find(root, 'convert-counter').textContent).toBe('4/5')
-
-      // Color by color, then a row's Change: its picker is brought into view, Change shows pressed, the counter stays.
-      find(root, 'convert-color-by-color').click()
-      await scrollRests(pane)
-      const opened = rect(root, 'convert-color-by-color-content')
-      expect(opened.top).toBeLessThan(pane.getBoundingClientRect().bottom)
-      expect(find(root, 'convert-counter').textContent).toBe('4/5')
-      find(root, 'found-color-remap').click()
-      await scrollRests(pane)
-      const picker = rect(root, 'found-color-picker')
-      const shownPane = pane.getBoundingClientRect()
-      expect([picker.top >= shownPane.top - 1, picker.bottom <= shownPane.bottom + 1]).toEqual([true, true])
-      expect(find(root, 'found-color-remap').classList).toContain('found-color__action--on')
-      expect(find(root, 'convert-counter').textContent).toBe('4/5')
-      expect(await fitProblems('Convert image page (iPad)', 'en', width)).toEqual([])
-    })
+        for (const [button, popover] of [
+          ['convert-bead-button', 'convert-bead-popover'],
+          ['convert-size-more', 'convert-size-popover'],
+          ['convert-colors-more', 'convert-colors-popover'],
+        ] as const) {
+          find(root, button).click()
+          await settleForMeasuring()
+          const box = rect(root, popover)
+          expect(box.right, popover).toBeLessThanOrEqual(column.getBoundingClientRect().left)
+          expect([box.top >= 0, box.bottom <= height], popover).toEqual([true, true])
+          expect(await fitProblems(`Convert image ${popover}`, locale, width)).toEqual([])
+          find(root, button).click()
+          await settleForMeasuring()
+        }
+        // The Size popover's slider labels never touch.
+        find(root, 'convert-size-more').click()
+        await settleForMeasuring()
+        for (const ends of root.querySelectorAll('[data-testid="convert-size-popover"] .vs-ends')) {
+          const shown = [...ends.children].filter((label) => getComputedStyle(label).visibility !== 'hidden').map((label) => label.getBoundingClientRect())
+          shown.sort((a, b) => a.left - b.left)
+          for (let index = 1; index < shown.length; index += 1) expect(shown[index]!.left).toBeGreaterThan(shown[index - 1]!.right)
+        }
+      })
+    }
   }
 
-  it('sets the ways in with one height in one row', async () => {
-    const mounted = await mountAt(ConvertPageHost, { ...props, start: { draft: props.start.draft } }, { locale: 'en', width: 1366 })
-    await page.viewport(1366, 1024)
+  it('stands the Colors list’s opened Change in view inside its popover at iPad size', async () => {
+    const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width: 1180 })
+    await page.viewport(1180, 820)
+    await pictureSet(mounted.root)
+    find(mounted.root, 'convert-colors-more').click()
+    await settleForMeasuring()
+    find(mounted.root, 'found-color-remap').click()
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    await settleForMeasuring()
+    const picker = rect(mounted.root, 'found-color-picker')
+    const list = mounted.root.querySelector('.convert-colors__table')!.getBoundingClientRect()
+    expect([picker.top >= list.top - 1, picker.bottom <= list.bottom + 1]).toEqual([true, true])
+    expect(await fitProblems('Convert image page (iPad)', 'en', 1180)).toEqual([])
+  })
+
+  it('stacks the column under the preview in portrait, a popover opening in place in it', async () => {
+    const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1024 })
+    await page.viewport(1024, 1366)
+    await pictureSet(mounted.root)
+    find(mounted.root, 'convert-size-more').click()
+    await settleForMeasuring()
+    const preview = mounted.root.querySelector('.convert-page__preview')!.getBoundingClientRect()
+    expect(preview.bottom).toBeLessThanOrEqual(rect(mounted.root, 'convert-column').top + 1)
+    const popover = rect(mounted.root, 'convert-size-popover')
+    expect(popover.top).toBeGreaterThan(rect(mounted.root, 'convert-size-more').bottom)
+    expect(await fitProblems('Convert image page (portrait)', 'longest', 1024)).toEqual([])
+  })
+
+  it('sets the ways in with one height in one row, and fits the drop zone in the longest wording', async () => {
+    const mounted = await mountAt(ConvertPageHost, { ...props, start: { draft: props.start.draft } }, { locale: 'longest', width: 1180 })
+    await page.viewport(1180, 820)
     await settleForMeasuring()
     const file = find(mounted.root, 'convert-choose-file').closest('label')!.getBoundingClientRect()
     const paste = rect(mounted.root, 'convert-paste')
     expect([paste.top, paste.height]).toEqual([file.top, file.height])
-  })
-
-  it('fits its text in the longest wording at 1366 × 1024', async () => {
-    const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1366 })
-    await page.viewport(1366, 1024)
-    await pictureSet(mounted.root)
-    find(mounted.root, 'convert-step-colors').click()
-    find(mounted.root, 'convert-color-by-color').click()
-    await settleForMeasuring()
-    find(mounted.root, 'found-color-remap').click()
-    await settleForMeasuring()
-    expect(await fitProblems('Convert image page (iPad)', 'longest', 1366)).toEqual([])
+    expect(await fitProblems('Convert image page (no picture)', 'longest', 1180)).toEqual([])
   })
 })

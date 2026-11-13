@@ -27,6 +27,9 @@ Designed in the ticket 0747 session (claude.ai canvas "Convert image wizard · s
 
 - The converter's Colors slider runs 1 to 40 since DS-2 (ticket 0904): marks at 5, 10 and 20, ends "1" and "40+". A larger count, to 256, is typed in the neighbours' card (ConvertImage card). Above 40 the thumb rests at the right end with the track filled; Left steps down from the typed value.
 
+- As built (ticket 0896): `doubling` on ValueSlider. The native range runs in 1 000 steps of the track and each step is read back as the value at that place, so the slider's own keys (the arrows by 1, Home and End to the ends) and `aria-valuenow`, `aria-valuemin` and `aria-valuemax` are the value's, not the steps'.
+- Off, with why (ticket 0896, `offBody`): kept in place, its name and value `faint`, the filled part `line-strong`, the thumb `faint`; `aria-disabled`, still focusable, it takes no drag or key and its Tooltip gives the reason. A button at the head's right (the converter's "More for …") is the `action` slot.
+
 ## Layout and text
 
 - Full width of its column, with the thumb's half-width kept free at each end so the ends' labels sit under the thumb's centre.

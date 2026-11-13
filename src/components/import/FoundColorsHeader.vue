@@ -26,8 +26,8 @@ const words = computed(() => t.value.convertImage.wizard)
 <style scoped>
 .found-colors-header {
   position: sticky;
-  /* Under the Colors step's pinned header (ticket 0780). */
-  top: var(--convert-step-head);
+  /* At the top of the Colors popover's list as it scrolls (ticket 0896). */
+  top: 0;
   z-index: 1;
   display: grid;
   grid-template-columns: var(--found-columns);
@@ -36,7 +36,7 @@ const words = computed(() => t.value.convertImage.wizard)
   padding: var(--space-4) var(--space-4) var(--space-4) var(--space-6);
   font: var(--type-meta-small);
   color: var(--muted);
-  background: var(--box);
+  background: var(--elevated);
   border-bottom: 1px solid var(--line-soft);
   overflow-wrap: anywhere;
 }
