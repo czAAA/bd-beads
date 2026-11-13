@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
+import type { ColorCatalog } from '../../domain/colorCatalog'
+import type { MyBeads } from '../../domain/myBeads'
 import { BACKGROUND_TOLERANCE } from '../../domain/convertBackground'
 import type { PixelData } from '../../domain/imageConversion'
 import { photoPictureSized, pixelArtPicture } from '../../testUtils/samplerPictures'
@@ -341,5 +343,78 @@ describe('useConvertImageWizard photo or flat art (ticket 0889)', () => {
     await setNext()
     expect(wizard.pictureKind.value).toBe('photo')
     expect(wizard.sizing.value.width).toBe(42)
+  })
+})
+
+describe('useConvertImageWizard My beads (ticket 0902)', () => {
+  const catalog: ColorCatalog = {
+    id: 'miyuki-delica',
+    codes: [
+      { code: 'DB723', family: ['Red'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#e63746' },
+      { code: 'DB165', family: ['Blue'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#2f6fdb' },
+      { code: 'DB751', family: ['Yellow'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#fadc3c' },
+      { code: 'DBS1', family: ['Black'], finish: 'opaque', wording: 'Opaque', sizes: ['15/0'], hex: '#000000' },
+    ],
+  }
+
+  async function withList(codes: string[]) {
+    const myBeads = ref<MyBeads>(codes.length ? { 'miyuki-delica': codes } : {})
+    const wizard = effectScope().run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
+        decodeImage: async () => bands(30, 10),
+        loadCatalog: async () => catalog,
+        myBeads,
+      }),
+    )!
+    await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
+    await nextTick()
+    return { wizard, myBeads }
+  }
+  const codesUsed = (wizard: Awaited<ReturnType<typeof withList>>['wizard']) => wizard.rows.value.map((row) => row.result?.code).sort()
+
+  it('is offered as a source once the list has a code, and not before', async () => {
+    const { wizard } = await withList([])
+    expect(wizard.myBeadsOffered.value).toBe(false)
+    wizard.setSource('my-beads')
+    expect(wizard.source.value).toBe('bead-colors')
+
+    wizard.toggleMyBeadsCode('DB723')
+    expect(wizard.myBeadsCodes.value).toEqual(['DB723'])
+    expect(wizard.myBeadsOffered.value).toBe(true)
+  })
+
+  it('names only the list’s codes made in the Bead’s size, fewer colors than asked when the list is shorter', async () => {
+    const { wizard } = await withList(['DB723', 'DB751', 'DBS1'])
+    wizard.setSource('my-beads')
+
+    expect(wizard.source.value).toBe('my-beads')
+    expect(wizard.myBeadsTargets.value.map((target) => target.code)).toEqual(['DB723', 'DB751'])
+    expect(codesUsed(wizard)).toEqual(['DB723', 'DB751'])
+    expect(wizard.usedColorCount.value).toBe(2)
+    expect(wizard.maxColors.value).toBe(3)
+    expect(wizard.myBeadsShort.value).toBe(true)
+  })
+
+  it('matches again at once on a tick, and falls back to the Bead’s palette when the last code is unticked', async () => {
+    const { wizard, myBeads } = await withList(['DB723'])
+    wizard.setSource('my-beads')
+    expect(codesUsed(wizard)).toEqual(['DB723'])
+
+    wizard.toggleMyBeadsCode('DB165')
+    expect(codesUsed(wizard)).toEqual(['DB165', 'DB723'])
+    expect(myBeads.value).toEqual({ 'miyuki-delica': ['DB723', 'DB165'] })
+
+    wizard.toggleMyBeadsCode('DB723')
+    wizard.toggleMyBeadsCode('DB165')
+    expect(wizard.source.value).toBe('bead-colors')
+    expect(wizard.chosenSource.value).toBe('bead-colors')
+  })
+
+  it('keeps Color by color’s Change picker to the list while My beads is the source', async () => {
+    const { wizard } = await withList(['DB165'])
+    expect(wizard.remapSwatches.value.map((swatch) => swatch.code)).toEqual(['DB723', 'DB165', 'DB751'])
+    wizard.setSource('my-beads')
+    expect(wizard.remapSwatches.value.map((swatch) => swatch.code)).toEqual(['DB165'])
   })
 })

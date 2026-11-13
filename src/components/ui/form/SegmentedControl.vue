@@ -16,7 +16,8 @@ interface OptionTooltip {
 
 const props = withDefaults(
   defineProps<{
-    options: readonly { value: T; label: string; icon?: IconName; tooltip?: OptionTooltip }[]
+    /** `meta`: a count after the label, in `meta-small` (BeadColors' switch, ticket 0902). */
+    options: readonly { value: T; label: string; icon?: IconName; meta?: string; tooltip?: OptionTooltip }[]
     labelledby?: string
     mono?: boolean
     small?: boolean
@@ -88,6 +89,7 @@ function onKeydown(event: KeyboardEvent) {
           <span class="segmented__face">
             <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
             {{ option.label }}
+            <span v-if="option.meta" class="segmented__meta">{{ option.meta }}</span>
           </span>
         </button>
       </AppTooltip>
@@ -105,6 +107,7 @@ function onKeydown(event: KeyboardEvent) {
         <span class="segmented__face">
           <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
           {{ option.label }}
+          <span v-if="option.meta" class="segmented__meta">{{ option.meta }}</span>
         </span>
       </button>
     </template>
@@ -135,6 +138,10 @@ function onKeydown(event: KeyboardEvent) {
   gap: var(--space-6);
   align-items: center;
   justify-content: center;
+}
+
+.segmented__meta {
+  font: var(--type-meta-small);
 }
 
 .segmented__tip > .segmented__option {
