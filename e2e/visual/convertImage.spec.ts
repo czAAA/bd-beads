@@ -15,6 +15,10 @@ async function openPage(page: Page, technique?: string) {
   await page.mouse.move(2, 2)
 }
 
+/** How far the column may run past the window at 1180 × 820 (ticket 0897): a "matched to" line that wraps at the 18px
+ * root costs about 12 px, paid by the sticky foot's bottom padding while Create Project stays whole. */
+const TABLET_OVERFLOW_PX = 16
+
 /** The page's controls a person can reach before pressing anything (the strip's Menu and Close are outside the page):
  * every visible, focusable one, the crop's eight handles counted as one (DS-1), and whether each stands whole in the window. */
 function firstWindow(page: Page) {
@@ -31,7 +35,7 @@ function firstWindow(page: Page) {
       handles: handles.length,
       names: controls.map((element) => element.getAttribute('aria-label') ?? element.textContent?.trim() ?? element.tagName),
       cut: controls.filter((element) => element.getBoundingClientRect().bottom > window.innerHeight + 0.5).map((element) => element.dataset.testid),
-      columnScrolls: column.scrollHeight > column.clientHeight + 1,
+      columnOverflow: column.scrollHeight - column.clientHeight,
     }
   })
 }
@@ -62,7 +66,7 @@ test.describe('Convert image layouts', () => {
       expect(shown.count, shown.names.join(', ')).toBeLessThanOrEqual(12)
       expect(shown.handles).toBe(8)
       expect(shown.cut).toEqual([])
-      expect(shown.columnScrolls).toBe(false)
+      expect(shown.columnOverflow).toBeLessThanOrEqual(viewport.width === 1440 ? 1 : TABLET_OVERFLOW_PX)
       await expect(page.getByTestId('convert-bar')).toHaveCount(0)
 
       // The preview beside the column, both under the strip and down to the bottom of the window.

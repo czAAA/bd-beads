@@ -1267,6 +1267,11 @@ export interface Translations {
         shown: string
         rowOwned: string
       }
+      footProject: string
+      footAddsTo: string
+      resultBeadsNeeded: string
+      resultBeadsNeededCount: string
+      resultGoesWhere: string
       /** The crop on the picture (ticket 0898): the kept chip ("keeping 34×38", Keep all) and the size chip's measure. */
       keeping: string
       keepAll: string
