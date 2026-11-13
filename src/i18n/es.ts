@@ -1056,6 +1056,9 @@ export const es: Translations = {
       resultBeadsNeeded: 'cuentas necesarias {count} · ≈ {grams}',
       resultBeadsNeededCount: 'cuentas necesarias {count}',
       resultGoesWhere: 'va donde está la imagen en el lienzo',
+      keeping: 'te quedas con {columns}×{rows}',
+      keepAll: 'Quedarse con todo',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

@@ -1038,6 +1038,9 @@ export const zh: Translations = {
       resultBeadsNeeded: '所需珠子 {count} · ≈ {grams}',
       resultBeadsNeededCount: '所需珠子 {count}',
       resultGoesWhere: '放在画布上图片所在的位置',
+      keeping: '保留 {columns}×{rows}',
+      keepAll: '全部保留',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

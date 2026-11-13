@@ -1047,6 +1047,9 @@ export const en: Translations = {
       resultBeadsNeeded: 'beads needed {count} · ≈ {grams}',
       resultBeadsNeededCount: 'beads needed {count}',
       resultGoesWhere: 'goes where the picture lies on the Canvas',
+      keeping: 'keeping {columns}×{rows}',
+      keepAll: 'Keep all',
+      cropMeasure: '≈ {measure}',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',
