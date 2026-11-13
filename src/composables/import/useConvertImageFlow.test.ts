@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
-import type { CreateProjectInput } from '../../domain/createProject'
+import { nextTick, ref } from 'vue'
+import { FIRST_CONVERT_CHOICES, type ConvertChoices } from '../../domain/convertChoices'
+import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from '../../domain/createProject'
 import type { PixelData } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { useAppPage } from '../shell/useAppPage'
@@ -11,14 +12,15 @@ const formValues: CreateProjectInput = { technique: 'peyote', beadId: 'miyuki/de
 const picture = new File(['x'], 'fox.png', { type: 'image/png' })
 const pixels = (width = 8, height = 8): PixelData => ({ width, height, data: new Uint8ClampedArray(width * height * 4).fill(200) })
 
-function setup(decoded = pixels()) {
+function setup(decoded = pixels(), remembered: ConvertChoices = FIRST_CONVERT_CHOICES) {
+  const convertChoices = ref(remembered)
   const dialogs = useDialogs()
   const appPage = useAppPage()
   const addProject = vi.fn<(project: Project) => void>()
   const onClosed = vi.fn()
   const addToCanvas = vi.fn()
-  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas })
-  return { dialogs, appPage, addProject, onClosed, addToCanvas, flow }
+  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas, convertChoices })
+  return { dialogs, appPage, addProject, onClosed, addToCanvas, convertChoices, flow }
 }
 
 /** Opens the converter and sets a picture, as the person does. */
@@ -32,7 +34,8 @@ async function openWithPicture() {
 
 describe('useConvertImageFlow', () => {
   it('opens from the reference image\'s All settings with its size, match and colors set, and adds the beads to the Canvas (ticket 0883)', async () => {
-    const { appPage, addProject, addToCanvas, flow } = setup(pixels(120, 80))
+    const remembered: ConvertChoices = { beadId: 'toho/round/11-0', technique: 'loom', techniqueSettings: {} }
+    const { appPage, addProject, addToCanvas, convertChoices, flow } = setup(pixels(120, 80), remembered)
     const request = { picture: new Blob(['x'], { type: 'image/png' }), name: 'fox.png', box: { row: 2, column: 3, rows: 20, columns: 30 }, source: 'exact' as const, colors: 1, hideAfter: true }
     await flow.openFromReference(request, formValues)
     const wizard = flow.session.value!
@@ -40,10 +43,12 @@ describe('useConvertImageFlow', () => {
     expect(wizard.addsToCanvas).toBe(true)
     expect(wizard.dimensions.value).toEqual({ columns: 30, rows: 20 })
     expect(wizard.source.value).toBe('exact')
+    expect(wizard.technique.value).toBe('peyote')
     flow.onCreate()
     expect(addProject).not.toHaveBeenCalled()
     expect(addToCanvas).toHaveBeenCalledWith(expect.objectContaining({ length: 20 }), request)
     expect(appPage.page.value).toBe('editor')
+    expect(convertChoices.value).toEqual(remembered)
   })
 
   it('opens the converter page on the New Project form’s values', () => {
@@ -63,10 +68,30 @@ describe('useConvertImageFlow', () => {
     expect(flow.session.value?.technique.value).toBe('peyote')
   })
 
-  it('opens on a new Project’s defaults when the form was never shown', () => {
+  it('opens on Miyuki Delica 11/0 in peyote on a device that has converted nothing, the form left alone (ticket 0893)', () => {
     const { flow } = setup()
     flow.open()
-    expect(flow.session.value?.technique.value).toBe('loom')
+    expect(flow.session.value?.beadId.value).toBe('miyuki/delica/11-0')
+    expect(flow.session.value?.technique.value).toBe('peyote')
+  })
+
+  it('keeps the last Create Project’s Bead, Technique with its Drop and source, and opens the next one on them (ticket 0893)', async () => {
+    const { flow, convertChoices } = setup()
+    flow.open({ ...NEW_PROJECT_DEFAULTS, beadId: 'toho/round/11-0', technique: 'brick' })
+    const first = flow.session.value!
+    first.setSetting('brickDrop', 2)
+    first.setSource('exact')
+    await first.setFile(picture)
+    flow.onCreate()
+    expect(convertChoices.value).toEqual({ beadId: 'toho/round/11-0', technique: 'brick', techniqueSettings: { brickDrop: 2 }, source: 'exact' })
+
+    flow.onNewProjectDraft({ ...NEW_PROJECT_DEFAULTS })
+    expect(flow.onPicture(picture)).toBe(true)
+    const next = flow.session.value!
+    expect(next).not.toBe(first)
+    expect(next.beadId.value).toBe('toho/round/11-0')
+    expect(next.techniqueSettings.value).toEqual({ brickDrop: 2 })
+    expect(next.source.value).toBe('exact')
   })
 
   it('leaves a picture for another dialog that is showing, or for a page that is already open', () => {

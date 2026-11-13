@@ -1,4 +1,4 @@
-import { computed, inject, onScopeDispose, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
+import { computed, inject, onScopeDispose, provide, readonly, ref, shallowRef, watch, type InjectionKey } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { BACKGROUND_TOLERANCE, backgroundShare, findBackground, withoutBackground, type BackgroundMark } from '../../domain/convertBackground'
 import { keptGrid, type KeptPart } from '../../domain/convertKeep'
@@ -40,6 +40,7 @@ import {
   frameColors,
   packedToHex,
   sampleLatticePacked,
+  type SamplingRule,
   validateImageFile,
   type DecodeImage,
   type ImageRejection,
@@ -56,6 +57,8 @@ import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSet
  * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
 export interface ConvertImageWizardDeps {
   start: CreateProjectInput
+  /** The source of the colors to open on, the device's last (ticket 0893); none is Bead colors where the Bead has them. */
+  startSource?: ColorSource
   decodeImage: DecodeImage
   loadCatalog: (id: string) => Promise<ColorCatalog>
   /** Opened from the reference image's All settings (ticket 0883): the beads go on the open Project, Add to Canvas. */
@@ -89,9 +92,9 @@ export type ConvertSizeUnit = 'beads' | 'mm'
 const PAUSE_MS = 150
 
 /** The Convert image wizard's state (spec 0645, ADR 0010; ticket 0747): its own copy of the setup, the picture, the part,
- * the Width, the colors, and the preview and Project they make. Nothing is kept: leaving drops it all, Create reads
- * `createProject`. Run it in an effect scope (the flow's session), which stops its timers. */
-export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToCanvas = false }: ConvertImageWizardDeps) {
+ * the Width, the colors, and the preview and Project they make. It keeps nothing (the flow keeps the last choices,
+ * ticket 0893): leaving drops it all, Create reads `createProject`. Run it in an effect scope, which stops its timers. */
+export function useConvertImageWizard({ start, startSource, decodeImage, loadCatalog, addsToCanvas = false }: ConvertImageWizardDeps) {
   // The setup, a copy of the form's: Cancel leaves the form as it was.
   const name = ref(start.name ?? '')
   const makerName = ref(start.makerName ?? '')
@@ -130,7 +133,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToC
   const catalogId = computed(() => colorCatalogOf(bead.value.id))
   const catalog = shallowRef<ColorCatalog>()
   const catalogState = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
-  const chosenSource = ref<ColorSource>()
+  const chosenSource = ref<ColorSource | undefined>(startSource)
   const chosenColors = ref(DEFAULT_MAX_IMAGE_COLORS)
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
 
@@ -316,12 +319,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToC
 
   // --- The preview's beads ------------------------------------------------------------------------------------------
 
-  function sample(at: PixelCrop) {
+  /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as the
+   * full rule is too slow for every move (ticket 0888). */
+  function sample(at: PixelCrop, rule: SamplingRule = 'area') {
     const picture = image.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
-    return { grid, lattice, part: at, pixelsPerBead, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice }) }
+    return { grid, lattice, part: at, pixelsPerBead, sampled: sampleLatticePacked({ image: picture, ...weave.value, part: at, pixelsPerBead, lattice, rule }) }
   }
   type Sample = NonNullable<ReturnType<typeof sample>>
 
@@ -422,7 +427,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToC
   const approximate = computed(() => moving.value && part.value !== restPart.value)
   const live = computed(() => {
     if (!approximate.value) return rest.value
-    const moved = sample(part.value)
+    const moved = sample(part.value, 'centre')
     return removedFrom(moved, foundIn(moved)?.found)
   })
 
@@ -757,6 +762,9 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog, addsToC
     /** The Color catalog of the Bead in hand, none while another Bead's (or none) is loaded: names Review's coded colors (ticket 0759). */
     beadCatalog: computed(() => (catalog.value?.id === catalogId.value ? catalog.value : undefined)),
     source,
+    /** The source the person chose or the page opened on, none for Bead colors where the Bead has them: what the device
+     * keeps (ticket 0893), not a fallback forced by a Bead without a Color catalog. */
+    chosenSource: readonly(chosenSource),
     setSource: (next: ColorSource) => (chosenSource.value = next),
     beadTargets,
     colorsMax,
