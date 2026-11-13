@@ -411,6 +411,20 @@ describe('useConvertImageWizard My beads (ticket 0902)', () => {
     expect(wizard.chosenSource.value).toBe('bead-colors')
   })
 
+  it('matches again at once when codes are pasted, and falls back to the Bead’s palette when the list is cleared (ticket 0903)', async () => {
+    const { wizard, myBeads } = await withList(['DB723'])
+    wizard.setSource('my-beads')
+
+    wizard.addMyBeadsCodes(['DB165', 'DB723'])
+    expect(myBeads.value).toEqual({ 'miyuki-delica': ['DB723', 'DB165'] })
+    expect(codesUsed(wizard)).toEqual(['DB165', 'DB723'])
+
+    wizard.clearMyBeads()
+    expect(myBeads.value).toEqual({})
+    expect(wizard.myBeadsOffered.value).toBe(false)
+    expect(wizard.chosenSource.value).toBe('bead-colors')
+  })
+
   it('keeps Color by color’s Change picker to the list while My beads is the source', async () => {
     const { wizard } = await withList(['DB165'])
     expect(wizard.remapSwatches.value.map((swatch) => swatch.code)).toEqual(['DB723', 'DB165', 'DB751'])

@@ -678,6 +678,16 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
    * beads is the source falls back to the Bead's palette. */
   function toggleMyBeadsCode(code: string) {
     myBeads.toggle(code)
+    fallBackFromEmptyList()
+  }
+
+  /** Clear list in the My beads view (ticket 0903): with My beads the source, the match falls back to the Bead's palette. */
+  function clearMyBeads() {
+    myBeads.clear()
+    fallBackFromEmptyList()
+  }
+
+  function fallBackFromEmptyList() {
     if (chosenSource.value === 'my-beads' && myBeads.codes.value.length === 0) chosenSource.value = 'bead-colors'
   }
 
@@ -868,6 +878,9 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     myBeadsTargets: myBeads.targets,
     myBeadsOffered: myBeads.offered,
     toggleMyBeadsCode,
+    /** Pasted codes added to My beads (ticket 0903). */
+    addMyBeadsCodes: myBeads.add,
+    clearMyBeads,
     /** With My beads the source, whether its codes are fewer than the colors asked, so fewer come out and the foot says so. */
     myBeadsShort: computed(() => source.value === 'my-beads' && myBeads.targets.value.length > 0 && myBeads.targets.value.length < maxColors.value),
     // The Finish filter (ticket 0901)

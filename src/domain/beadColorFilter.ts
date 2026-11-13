@@ -10,25 +10,28 @@ export interface BeadColorFilter {
   finishes: readonly Finish[]
 }
 
+/** What a search reads of a code: a swatch of the list, or a My beads code the catalog no longer knows (ticket 0903). */
+type Searched = Pick<CatalogSwatch, 'code'> & { family?: string }
+
 /** The codes of `swatches` that `typed` finds, in groups, each in catalog order (ticket 0713): the code `typed` names
  * normalized as a shop writes it (`makerCodeOf`, ticket 0696), the codes that code is a prefix of, the codes the raw
  * text is a part of, then those whose family name contains it. Nothing typed lists all; no Bead reads no shop code. */
-export function searchBeadColors(
-  swatches: readonly CatalogSwatch[],
+export function searchBeadColors<T extends Searched>(
+  swatches: readonly T[],
   typed: string,
   bead: Pick<Bead, 'formFactor' | 'size'> | undefined,
   familyName: (family: string) => string,
-): CatalogSwatch[] {
+): T[] {
   const needle = typed.trim().toLowerCase()
   if (!needle) return [...swatches]
   const code = bead && makerCodeOf(typed, bead)
-  const groups: CatalogSwatch[][] = [[], [], [], []]
+  const groups: T[][] = [[], [], [], []]
   for (const entry of swatches) {
     const group =
       code && entry.code === code ? 0
       : code && entry.code.startsWith(code) ? 1
       : entry.code.toLowerCase().includes(needle) ? 2
-      : familyName(entry.family).toLowerCase().includes(needle) ? 3
+      : entry.family !== undefined && familyName(entry.family).toLowerCase().includes(needle) ? 3
       : undefined
     if (group !== undefined) groups[group]!.push(entry)
   }
