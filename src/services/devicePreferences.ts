@@ -8,6 +8,7 @@ import type { ThemePick } from '../theme/theme'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
+import { FIRST_CONVERT_CHOICES, parseConvertChoices, writeConvertChoices, type ConvertChoices } from '../domain/convertChoices'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -181,6 +182,14 @@ export const PREFERENCES = {
     fallback: 'en',
     parse: (raw) => LOCALES.find((locale) => locale === raw),
     write: (locale) => locale,
+  }),
+  /** The last conversion's Bead, Technique with its Drop and source of the colors (ticket 0893): the converter opens on
+   * them; Miyuki Delica 11/0 in peyote until something is converted. */
+  convertChoices: preference<ConvertChoices>({
+    key: 'openbeads:convert-choices',
+    fallback: FIRST_CONVERT_CHOICES,
+    parse: parseConvertChoices,
+    write: writeConvertChoices,
   }),
 }
 

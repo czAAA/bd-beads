@@ -38,6 +38,8 @@ vi.mock('./services/imageDecode', async (importOriginal) => {
 vi.mock('./services/colorCatalogs', () => ({ loadColorCatalog: () => new Promise(() => undefined) }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
+const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
+const CHOICES_KEY = 'openbeads:convert-choices'
 
 /** A picture of two flat blocks: the left half red, the right half blue. */
 function twoBlocks(width = 8, height = 8): PixelData {
@@ -68,6 +70,8 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', 
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
+  // The converter opens on the device's last choices (ticket 0893): here the 1.5 mm cube on a loom these tests draw on.
+  localStorage.setItem(CHOICES_KEY, JSON.stringify({ beadId: cubeBead.id, technique: 'loom' }))
   decodeState.image = twoBlocks()
   decodeState.error = undefined
 })
@@ -85,7 +89,8 @@ async function openFromMenu(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('App Convert image as an App page (ADR 0086)', () => {
-  it('opens from New Project on the form’s Bead, steps through the Progress bar, and creates the Project it shows', async () => {
+  it('opens from New Project on the device’s last Bead, steps through the Progress bar, and creates the Project it shows, kept as the last (ticket 0893)', async () => {
+    localStorage.setItem(CHOICES_KEY, JSON.stringify({ beadId: roundBead.id, technique: 'loom' }))
     const wrapper = mount(App, { attachTo: document.body })
     await openWizard(wrapper)
     expect(page(wrapper).exists()).toBe(true)
@@ -98,9 +103,9 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     expect(wrapper.find('.app-modal').exists()).toBe(false)
 
     await chooseImage(wrapper)
-    // Every step in one pane (ticket 0780): Next scrolls it to Background, the form's Bead carried over in Picture & bead.
+    // Every step in one pane (ticket 0780): Next scrolls it to Background, the device's last Bead in Picture & bead.
     layOutConvertPane(wrapper.element)
-    expect(wrapper.get('[data-testid="convert-section-picture-summary"]').text()).toContain(cubeBead.size)
+    expect(wrapper.get('[data-testid="convert-section-picture-summary"]').text()).toContain(roundBead.size)
     await wrapper.get('[data-testid="convert-next"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('[data-testid="convert-counter"]').text()).toBe('2/5')
@@ -112,9 +117,10 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     await flushPromises()
 
     expect(page(wrapper).exists()).toBe(false)
-    // An 8 px picture opens one bead per pixel, under 60 beads wide (ticket 0863): 8 × 8 beads of 1.5 mm cubes, the left
+    // An 8 px picture opens one bead per pixel, under 60 beads wide (ticket 0863): 8 × 8 beads of 11/0 rounds, the left
     // half one bead color and the right half another, matched to the Bead's colors.
-    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 8, columns: 8 } })
+    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: roundBead.id, frame: { technique: 'loom' as const, rows: 8, columns: 8 } })
+    expect(JSON.parse(localStorage.getItem(CHOICES_KEY)!)).toMatchObject({ beadId: roundBead.id, technique: 'loom' })
     expect(beadColor(wrapper, 0)).toBeTruthy()
     expect(beadColor(wrapper, 7)).toBeTruthy()
     expect(beadColor(wrapper, 7)).not.toBe(beadColor(wrapper, 0))

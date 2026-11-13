@@ -20,6 +20,12 @@ export async function openApp(
   if (!options.storageNote) {
     await page.addInitScript(() => localStorage.setItem('openbeads:storage-note-seen', 'yes'))
   }
+  // The converter opens on what the device converted last (ticket 0893); these checks were drawn on the New Project
+  // form's own Bead and Technique, so the device last converted those. Only until the app saves its own.
+  await page.addInitScript(() => {
+    const key = 'openbeads:convert-choices'
+    if (localStorage.getItem(key) === null) localStorage.setItem(key, JSON.stringify({ beadId: 'toho/cube/1.5mm', technique: 'loom' }))
+  })
   if (projects.length > 0) {
     const stored = storedLibrary(projects)
     await page.addInitScript(
