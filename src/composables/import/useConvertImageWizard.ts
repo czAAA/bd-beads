@@ -140,9 +140,8 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
   const chosenColors = ref(DEFAULT_MAX_IMAGE_COLORS)
   const choices = shallowRef<ReadonlyMap<string, FoundColorChoice>>(new Map())
 
-  // The preview's tools and Compare (ConvertImage card, the floating bar).
+  // The preview's tools (ConvertImage card, the floating bar); Compare is the preview's own (ticket 0909).
   const tool = ref<ConvertTool>()
-  const comparing = ref(false)
   // Background (ticket 0780).
   const background = ref<BackgroundStage>('off')
   const tolerance = ref<number>(BACKGROUND_TOLERANCE.start)
@@ -810,7 +809,6 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     // The preview
     tool,
     setTool,
-    comparing,
     moving,
     beginMove: () => (moving.value = true),
     endMove: () => {

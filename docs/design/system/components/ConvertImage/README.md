@@ -351,6 +351,18 @@ What the build of Clean up (DS-3) had to settle:
 - **"Off for pixel art" stays while the switch is off on flat art**, also after the person turned it off again; "Off" over "{n} stray beads left" is a photo's.
 - **The column scrolls in the longest words**: the button's two lines wrap in Russian, Ukrainian and Belarusian and the column passes the window by about 40 px at 1180 × 820 and about 20 at 1440 × 900 (on Linux's fonts). Nothing is cut, and the foot (ticket 0897) stays pinned, so Create Project stays whole; what scrolls is the column above it. In the app at 1180 × 820, with the root type at 18px, the column is about 80 px short even in English: the Clean up button stands under the pinned foot until the column is scrolled, which brings it whole above the foot. DS-3's "15 controls in the first window" holds at 1440 × 900 only.
 
+## As built (ticket 0909)
+
+Before and after of DS-3, as designed, with these notes:
+
+- **One action, its triggers:** `useConvertCompare` (composables/import) holds Compare for the preview. A press (pointer, Enter, Space, or a screen reader's click) toggles the picture beside the beads, or under 1024 px chooses Picture; a press held 300 ms shows the picture in the beads' place until let go and does not toggle (the click a hold ends with is swallowed). Enter and Space toggle on the key's release, so a held key is a hold too. Crossing 1024 px (or turning to portrait) drops Compare, so Beads is chosen narrow and the beads stand alone wide.
+- **The halves** are the same box twice: the picture is laid so the part woven covers the Frame's beads, at the beads' fit with `--convert-compare-side` at the sides, so one zoom and one scroll position serve both. The 1px `line` is the gap between them, so each is (width − 1) ÷ 2. A scroll of either half sets the other's, and a picture's half that opens while zoomed starts where the beads' stand; a mouse's drag pans the zoomed view where nothing else takes it (a finger scrolls natively), in one look or two.
+- **The crop beside the beads:** the handles, the line, the kept chip and the size chip stand on the picture's half and move the crop there whatever tool is on; the beads' half shows only the kept beads (the rest is `box`). Under 1024 px with Picture chosen the handles stand on the picture; while a hold shows it they hide.
+- **Which picture:** the picture as it is now (turned, flipped), the beads the background removed cut out of it so the `box` ground shows. Lighting (tickets 0907, 0908) is not in the app yet; its lit picture is what this half must draw once it lands.
+- **Narrow bar:** Background and Make empty are `IconButton`s named by the registry's actions, `--convert-narrow-tool-width` (40, new) × `--ctl`; Beads | Picture is the SegmentedControl ("Show") restyled as DS-3 (`surface` ground, `line` edge, options `--ctl` − 6 tall).
+- **Chips:** every chip over the preview (Make empty's too) is DS-1's chip now: `canvas`, 1px `line`, pill, `--convert-chip-height` (32 coarse), `elevation-3`; dark `line-strong` and no shadow. With Compare on, Make empty's line takes the beads' chip.
+- **Names:** with Compare on, the beads' canvas is named "The picture and the beads side by side: …" and the picture's canvas is hidden from readers; the picture shown alone is "The picture as it becomes beads".
+
 ## As built (ticket 0901)
 
 What the build of the Finish filter (DS-2) had to settle:

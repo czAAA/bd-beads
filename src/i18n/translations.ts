@@ -1311,6 +1311,14 @@ export interface Translations {
         joinedBeads: PluralForms
         everyColorStays: string
       }
+      /** Compare (ticket 0909): the chips over its halves, the narrow bar's Beads | Picture ("Show"), the preview's names. */
+      compareChipPicture: string
+      compareChipBeads: string
+      compareShow: string
+      compareBeads: string
+      comparePicture: string
+      compareSideBySideName: string
+      comparePictureName: string
       /** The match kept to chosen Finishes (ticket 0901, DS-2): the line under Colors with Finishes on (`{finishes}` their
        * names in lower case, or `{count}` of them from 4), the Finish button's name with its count, why it is off, the
        * too-few line and the foot's colors line (`{colors}` the colors, `{codes}` codesLeft), and Finish's note. */
