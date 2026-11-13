@@ -720,7 +720,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       const project = currentProject()
       if (!project) return
       const { technique, techniqueSettings } = canvasWeave(project)
-      const draft = { name: request.name.replace(/\.[^.]*$/, ''), technique, ...(techniqueSettings ? { techniqueSettings } : {}), beadId: canvasOf(project).beadId, makerName: '' }
+      // The page names the Project its beads go on (ticket 0897): Add to Canvas makes none.
+      const draft = { name: canvasOf(project).name, technique, ...(techniqueSettings ? { techniqueSettings } : {}), beadId: canvasOf(project).beadId, makerName: '' }
       void convertImage.openFromReference(request, draft)
     },
     showToast,

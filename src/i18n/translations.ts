@@ -1245,6 +1245,11 @@ export interface Translations {
       readingDetail: string
       readingLine: string
       flipLeftRight: string
+      footProject: string
+      footAddsTo: string
+      resultBeadsNeeded: string
+      resultBeadsNeededCount: string
+      resultGoesWhere: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {

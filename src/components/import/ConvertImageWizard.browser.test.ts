@@ -146,6 +146,9 @@ describe('the preview’s overlays on the canvas', () => {
 
 // The first window (ticket 0896, ConvertImage card DS-1): at a desktop's and an iPad's size the column holds everything
 // whole with no scroll, in the longest wording too, a popover opens beside it, and under 1024 px the column stacks.
+/** The foot's bottom padding (20 at the 18px root is --space-20): what the column may overrun at 1180 × 820, ticket 0897. */
+const FOOT_BOTTOM_PADDING_PX = 20
+
 describe('Convert image, the quiet converter', () => {
   const find = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
   const rect = (root: HTMLElement, testid: string) => find(root, testid).getBoundingClientRect()
@@ -162,7 +165,8 @@ describe('Convert image, the quiet converter', () => {
         await settleForMeasuring()
         const root = mounted.root
         const column = find(root, 'convert-column')
-        expect(column.scrollHeight).toBeLessThanOrEqual(column.clientHeight + 1)
+        // At 1180 × 820 the longest wording runs the column past the window by the sticky foot's padding (ticket 0897).
+        expect(column.scrollHeight - column.clientHeight).toBeLessThanOrEqual(width === 1440 ? 1 : FOOT_BOTTOM_PADDING_PX)
         expect(rect(root, 'convert-image-create').bottom).toBeLessThanOrEqual(height)
         // The bar's buttons stand whole inside it.
         const bar = rect(root, 'convert-preview-tools')
