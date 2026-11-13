@@ -24,6 +24,7 @@ import ConvertCleanUpSection from './ConvertCleanUpSection.vue'
 import ConvertColorsNeighbours from './ConvertColorsNeighbours.vue'
 import ConvertColorsSection from './ConvertColorsSection.vue'
 import ConvertFoot from './ConvertFoot.vue'
+import ConvertLightingSection from './ConvertLightingSection.vue'
 import ConvertPictureSection from './ConvertPictureSection.vue'
 import ConvertPopover from './ConvertPopover.vue'
 import ConvertSizeSection from './ConvertSizeSection.vue'
@@ -42,6 +43,7 @@ const offBody = computed(() => (has.value ? undefined : words.value.addPictureFi
 /** A value an off slider shows before a picture (DS-1). */
 const NONE = '—'
 
+const pictureEl = ref<HTMLElement>()
 const beadEl = ref<HTMLElement>()
 const sizeEl = ref<HTMLElement>()
 const colorsEl = ref<HTMLElement>()
@@ -148,9 +150,21 @@ function closeNeighbours(refocus: boolean) {
       <ConvertBackgroundSection />
     </ConvertPopover>
 
-    <section class="convert-column__section">
+    <section ref="pictureEl" class="convert-column__section">
       <ConvertPictureSection @paste="emit('paste')" />
     </section>
+    <!-- Lighting (DS-3, ticket 0908): from the sun button, its top level with the picture section's, 16 under the strip. -->
+    <ConvertPopover
+      v-if="isOpen('lighting')"
+      place="beside"
+      :label="t.convertImage.wizard.lighting.title"
+      :opener="() => button(pictureEl, 'convert-lighting-more')"
+      :anchor="() => button(pictureEl, 'convert-picture')"
+      testid="convert-lighting-popover"
+      @close="wizard.closePopover"
+    >
+      <ConvertLightingSection />
+    </ConvertPopover>
 
     <section ref="beadEl" class="convert-column__section">
       <span class="convert-column__label">{{ words.beadAndTechnique }}</span>

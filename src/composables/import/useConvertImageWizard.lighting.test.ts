@@ -78,3 +78,71 @@ describe('Auto-fix lighting in the Convert image wizard (ticket 0907)', () => {
     expect(wizard.lighting.on.value).toBe(false)
   })
 })
+
+describe('Brightness, Contrast and Saturation in the Convert image wizard (ticket 0908)', () => {
+  it('open at 0, and at 0 the picture converts exactly as without them', async () => {
+    const wizard = await convertAt(nightPicture(), 30)
+    expect(wizard.lighting.sliders.value).toEqual({ brightness: 0, contrast: 0, saturation: 0 })
+    expect(wizard.lighting.picture.value).toBe(wizard.image.value)
+  })
+
+  it('redraw the beads as one moves, the found colors following, and its reset puts back only its own', async () => {
+    const wizard = await convertAt(nightPicture(), 30)
+    const before = previewBeads(wizard)
+    const foundBefore = wizard.found.value.map((color) => [color.pictureHex, color.count])
+    wizard.lighting.setSlider('brightness', 30)
+    wizard.lighting.setSlider('contrast', 18)
+    await nextTick()
+    expect(lightness(previewBeads(wizard))).toBeGreaterThan(lightness(before) * 1.3)
+    expect(wizard.found.value.map((color) => color.pictureHex)).not.toEqual(foundBefore.map(([hex]) => hex))
+
+    wizard.lighting.resetSlider('brightness')
+    expect(wizard.lighting.sliders.value).toEqual({ brightness: 0, contrast: 18, saturation: 0 })
+    wizard.lighting.resetSlider('contrast')
+    await nextTick()
+    expect(previewBeads(wizard)).toEqual(before)
+    expect(wizard.found.value.map((color) => [color.pictureHex, color.count])).toEqual(foundBefore)
+  })
+
+  it('reach the Colors neighbours too, which convert the same lit picture (ticket 0904)', async () => {
+    const wizard = await convertAt(nightPicture(), 30)
+    const fewer = wizard.beadsAtColors(wizard.maxColors.value - 1)
+    wizard.lighting.setSlider('brightness', 40)
+    await nextTick()
+    expect(wizard.beadsAtColors(wizard.maxColors.value - 1)).not.toEqual(fewer)
+  })
+
+  it('keep to −50 … +50 in whole steps', async () => {
+    const wizard = await convertAt(nightPicture(), 30)
+    wizard.lighting.setSlider('saturation', 80)
+    expect(wizard.lighting.sliders.value.saturation).toBe(50)
+    wizard.lighting.setSlider('saturation', -12.4)
+    expect(wizard.lighting.sliders.value.saturation).toBe(-12)
+  })
+
+  it('stack on Auto-fix lighting when it is on', async () => {
+    const wizard = await convertAt(nightPicture(), 30)
+    wizard.lighting.setOn(true)
+    await nextTick()
+    const lit = lightness(previewBeads(wizard))
+    wizard.lighting.setSlider('brightness', -30)
+    await nextTick()
+    expect(lightness(previewBeads(wizard))).toBeLessThan(lit)
+  })
+
+  it('belong to the picture: a new picture opens with all three at 0', async () => {
+    const pictures = [nightPicture(), nightPicture()]
+    let next = 0
+    const wizard = effectScope().run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'toho/cube/1.5mm', name: '', makerName: '' },
+        decodeImage: async () => pictures[next++]!,
+        loadCatalog: () => Promise.reject(new Error('no catalog')),
+      }),
+    )!
+    await wizard.setFile(new File(['x'], 'night.png', { type: 'image/png' }))
+    wizard.lighting.setSlider('saturation', -20)
+    await wizard.setFile(new File(['x'], 'night.png', { type: 'image/png' }))
+    expect(wizard.lighting.sliders.value).toEqual({ brightness: 0, contrast: 0, saturation: 0 })
+  })
+})

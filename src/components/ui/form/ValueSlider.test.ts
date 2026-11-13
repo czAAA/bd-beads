@@ -124,3 +124,32 @@ describe('ValueSlider on the doubling scale (ValueSlider card, ticket 0896)', ()
     expect(wrapper.get('.app-tooltip').text()).toContain('Add a picture first.')
   })
 })
+
+describe('ValueSlider from a middle (ValueSlider card, ticket 0908)', () => {
+  const centred = (modelValue: number) =>
+    slider({ modelValue, min: -50, max: 50, origin: 0, shiftStep: 10, marks: [{ value: 0 }], value: String(modelValue), valuetext: String(modelValue), secondary: undefined })
+
+  it('fills from the middle to the thumb, either way, and nothing at the middle', () => {
+    const fill = (modelValue: number) => {
+      const style = centred(modelValue).get('.vs').attributes('style')!
+      return [style.match(/--vs-fill-from: ([\d.]+)/)![1], style.match(/--vs-fill-to: ([\d.]+)/)![1]]
+    }
+    expect(fill(20)).toEqual(['0.5', '0.7'])
+    expect(fill(-20)).toEqual(['0.3', '0.5'])
+    expect(fill(0)).toEqual(['0.5', '0.5'])
+  })
+
+  it('steps by the Shift step with Shift and an arrow', async () => {
+    const wrapper = centred(5)
+    const range = wrapper.get('[data-testid="width-range"]')
+    await range.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    await range.trigger('keydown', { key: 'ArrowDown', shiftKey: true })
+    expect(wrapper.emitted('update:modelValue')).toEqual([[15], [-5]])
+  })
+
+  it('leaves Shift alone where no Shift step is given', async () => {
+    const wrapper = slider()
+    await wrapper.get('[data-testid="width-range"]').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+})

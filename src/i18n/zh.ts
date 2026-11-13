@@ -1115,6 +1115,23 @@ export const zh: Translations = {
         pastEnd: '{value}+',
         same: '珠子与现在相同。',
       },
+      lighting: {
+        more: '光线的更多选项',
+        title: '光线',
+        whatDoes: '光线滑块的作用',
+        whatDoesBody: '亮度、对比度和饱和度会在图片变成珠子之前调整图片；如果打开了自动修正光线，则在它之后调整。为 0 时不做任何改变。',
+        brightness: '亮度',
+        contrast: '对比度',
+        saturation: '饱和度',
+        ends: {
+          brightness: ['更暗', '更亮'],
+          contrast: ['更柔和', '更强'],
+          saturation: ['更灰', '颜色更鲜艳'],
+        },
+        reset: '重置{slider}',
+        atZero: '已经是 0。',
+        moved: '{slider} {value}',
+      },
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

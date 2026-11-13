@@ -35,7 +35,7 @@ const MIN_CHROMA = 0.02
 const SHADOW = 0.08
 
 /** Auto-fix lighting as measured from one picture: each channel's gain (white balance), the tone curve (black and
- * white points, 0 to 255, and the gamma lifting the middle) and the chroma stretch. Ticket 0908's sliders add theirs. */
+ * white points, 0 to 255, and the gamma lifting the middle) and the chroma stretch. */
 export interface LightingFix {
   gains: readonly [number, number, number]
   black: number
@@ -113,8 +113,7 @@ const correctionOf = (fix: LightingFix): Correction => ({ gains: fix.gains, tabl
  * saturated few percent reach a set target, never lessened (ticket 0907 adds the lift: chroma alone missed a dark photo). */
 export function measureLighting(picture: PixelData): LightingFix {
   const colors = referencePixels(picture)
-  const none: LightingFix = { gains: [1, 1, 1], black: 0, white: 255, gamma: 1, stretch: 1 }
-  if (colors.length === 0) return none
+  if (colors.length === 0) return { gains: [1, 1, 1], black: 0, white: 255, gamma: 1, stretch: 1 }
   const gains = whiteGains(colors)
   const lumas = colors.map(({ r, g, b }) => luma({ r: r * gains[0], g: g * gains[1], b: b * gains[2] })).sort((a, b) => a - b)
   const black = Math.min(shareOf(lumas, BLACK_SHARE), 255 * MAX_BLACK_POINT)
@@ -132,12 +131,41 @@ export function measureLighting(picture: PixelData): LightingFix {
   return { ...toned, stretch }
 }
 
-/** The picture with Auto-fix lighting applied: a new picture of the same size, each pixel's transparency kept. What
- * the beads are sampled from while the switch is on (and Compare shows), so the found colors and counts follow. */
-export function litPicture(picture: PixelData, fix: LightingFix): PixelData {
-  const correction = correctionOf(fix)
+/** The Lighting popover's sliders (ticket 0908, ConvertImage card DS-3): set by hand, after Auto-fix lighting. */
+export type LightingSlider = 'brightness' | 'contrast' | 'saturation'
+export const LIGHTING_SLIDERS: readonly LightingSlider[] = ['brightness', 'contrast', 'saturation']
+export type LightingSliders = Readonly<Record<LightingSlider, number>>
+/** Each slider's ends, and its middle, which changes nothing. */
+export const LIGHTING_SLIDER_LEAST = -50
+export const LIGHTING_SLIDER_MOST = 50
+export const SLIDERS_AT_REST: LightingSliders = { brightness: 0, contrast: 0, saturation: 0 }
+/** Whether every slider stands at its middle. */
+export const slidersAtRest = (sliders: LightingSliders) => LIGHTING_SLIDERS.every((name) => sliders[name] === 0)
+
+/** Brightness and Contrast as one table, 0 to 255 in and out, the same for each channel: Brightness bends the middle
+ * (a gamma from 2 to 0.5 over the slider), black and white kept; Contrast then scales the distance from the middle grey,
+ * halved to doubled. */
+function toneTable({ brightness, contrast }: LightingSliders): Uint8ClampedArray {
+  const gamma = 2 ** (-brightness / LIGHTING_SLIDER_MOST)
+  const scale = 2 ** (contrast / LIGHTING_SLIDER_MOST)
+  const table = new Uint8ClampedArray(256)
+  for (let value = 0; value < 256; value += 1) table[value] = Math.round(255 * (0.5 + ((value / 255) ** gamma - 0.5) * scale))
+  return table
+}
+
+/** The picture with Auto-fix lighting applied (no fix while it is off), then the sliders: a new picture of the
+ * same size, each pixel's transparency kept. What the beads are sampled from (and Compare shows), so the found colors
+ * and counts follow. Sliders at rest add nothing, so the picture comes out exactly as without them. */
+export function litPicture(picture: PixelData, fix: LightingFix | undefined, sliders: LightingSliders = SLIDERS_AT_REST): PixelData {
   const source = picture.data
-  const data = new Uint8ClampedArray(picture.width * picture.height * 4)
+  const data = fix ? fixedData(source, correctionOf(fix)) : Uint8ClampedArray.from(source)
+  if (!slidersAtRest(sliders)) adjust(data, toneTable(sliders), 1 + sliders.saturation / LIGHTING_SLIDER_MOST)
+  return { width: picture.width, height: picture.height, data }
+}
+
+/** Every pixel through Auto-fix lighting, its transparency kept. */
+function fixedData(source: ArrayLike<number>, correction: Correction): Uint8ClampedArray {
+  const data = new Uint8ClampedArray(source.length)
   for (let index = 0; index < data.length; index += 4) {
     const color = corrected(correction, { r: source[index]!, g: source[index + 1]!, b: source[index + 2]! })
     data[index] = color.r
@@ -145,5 +173,25 @@ export function litPicture(picture: PixelData, fix: LightingFix): PixelData {
     data[index + 2] = color.b
     data[index + 3] = source[index + 3]!
   }
-  return { width: picture.width, height: picture.height, data }
+  return data
+}
+
+/** Every pixel through the sliders, in place: the tone table, then its distance from its own grey scaled by Saturation.
+ * The grey is `luma`'s, written out with no color object, as it runs on every step of a drag over the whole picture. */
+function adjust(data: Uint8ClampedArray, tone: Uint8ClampedArray, saturation: number): void {
+  for (let index = 0; index < data.length; index += 4) {
+    const red = tone[data[index]!]!
+    const green = tone[data[index + 1]!]!
+    const blue = tone[data[index + 2]!]!
+    if (saturation === 1) {
+      data[index] = red
+      data[index + 1] = green
+      data[index + 2] = blue
+      continue
+    }
+    const grey = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    data[index] = Math.round(grey + (red - grey) * saturation)
+    data[index + 1] = Math.round(grey + (green - grey) * saturation)
+    data[index + 2] = Math.round(grey + (blue - grey) * saturation)
+  }
 }
