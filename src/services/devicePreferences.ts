@@ -9,6 +9,7 @@ import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPos
 import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
 import { FIRST_CONVERT_CHOICES, parseConvertChoices, writeConvertChoices, type ConvertChoices } from '../domain/convertChoices'
+import { parseMyBeads, writeMyBeads, type MyBeads } from '../domain/myBeads'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -191,6 +192,8 @@ export const PREFERENCES = {
     parse: parseConvertChoices,
     write: writeConvertChoices,
   }),
+  /** My beads (ticket 0902, ADR 0010 D-3): the codes owned, one list per Color catalog; none until one is ticked. */
+  myBeads: preference<MyBeads>({ key: 'openbeads:my-beads', fallback: {}, parse: parseMyBeads, write: writeMyBeads }),
 }
 
 /** The theme the person was seeing: their pick, or the device's when they never picked (high contrast counts as light,

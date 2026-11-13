@@ -155,6 +155,15 @@ const bodyShown = async (root: HTMLElement) => {
 
 const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
 
+/** The Colors popover's My beads view (ticket 0902), from match to's menu. */
+const openMyBeads = async (root: HTMLElement) => {
+  await bodyShown(root)
+  press(root, 'convert-color-source')
+  await new Promise((done) => setTimeout(done, 20))
+  press(root, 'convert-edit-my-beads')
+  await new Promise((done) => setTimeout(done, 20))
+}
+
 const framed = withLayers(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
 
 /** The Margin color popover, hung from a button at the screen's right edge as the sheet's tools are. */
@@ -250,6 +259,16 @@ const CASES: FitCase[] = [
     async (root) => {
       await bodyShown(root)
       press(root, 'found-color-remap')
+    },
+  ],
+  ['Convert image Colors popover (My beads, the first time)', ConvertSectionHost, popoverBody(ConvertColorsSection), (root) => openMyBeads(root)],
+  [
+    'Convert image Colors popover (My beads, a code ticked)',
+    ConvertSectionHost,
+    popoverBody(ConvertColorsSection),
+    async (root) => {
+      await openMyBeads(root)
+      press(root, 'convert-my-beads-row')
     },
   ],
   [

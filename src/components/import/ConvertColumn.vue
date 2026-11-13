@@ -7,7 +7,7 @@ import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
-import { plural } from '../../i18n/plural'
+import { plural, pluralForm } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -60,6 +60,7 @@ const matchedLine = computed(() => {
   const source = wizard.source.value
   if (source === 'exact') return words.value.matchedExact
   if (source === 'default') return words.value.matchedDefault
+  if (source === 'my-beads') return plural(locale.value, wizard.myBeadsCodes.value.length, words.value.myBeads.matched)
   return fillBlanks(words.value.matchedBead, { bead: beadLabel(wizard.bead.value).toLocaleLowerCase(locale.value) })
 })
 const colorsValue = computed(() => plural(locale.value, wizard.maxColors.value, words.value.colorsCount))
@@ -69,7 +70,11 @@ const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: 
 const resultLines = computed(() => {
   const shown = result.value?.kept ?? result.value
   if (!shown) return undefined
-  const colors = plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount)
+  // A My beads list shorter than the count asked says why fewer come out (ticket 0902).
+  const used = wizard.usedColorCount.value
+  const colors = wizard.myBeadsShort.value
+    ? fillBlanks(pluralForm(locale.value, used, words.value.myBeads.fewerColors), { codes: groupThousands(wizard.myBeadsTargets.value.length, locale.value) }, { count: groupThousands(used, locale.value) })
+    : plural(locale.value, used, words.value.colorsCount)
   const kept = result.value?.kept && fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows })
   return { grid: shown.grid, measured: shown.measured, colors: kept ? `${colors} · ${kept}` : colors }
 })

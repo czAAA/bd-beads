@@ -33,6 +33,10 @@
   --convert-result-button-height: 48px; /* ConvertImage card (DS-3, ticket 0900): the Clean up button under Colors, at least this tall. */
   --convert-result-button-height-touch: 52px; /* ConvertImage card (ticket 0900): the Clean up button on a coarse pointer. */
   --convert-cleaned-ring: 2px; /* ConvertImage card (ticket 0900): the marker ring round each bead Clean up changed, while its popover is open. */
+  --my-beads-row: calc(var(--panel-row-two-line) + var(--space-4)); /* ConvertImage card (DS-2, ticket 0902): a row of the My beads view, at least this tall. */
+  --my-beads-row-touch: var(--panel-row-two-line-touch); /* ConvertImage card (ticket 0902): the same on a coarse pointer. */
+  --my-beads-swatch: 24px; /* ConvertImage card (ticket 0902): a code's swatch in a My beads row. */
+  --my-beads-tick: 20px; /* ConvertImage card (ticket 0902): the tick box at a My beads row's right. */
   --convert-compare-side: 24px; /* ConvertImage card (ticket 0900): room at each side of the picture and the beads in each half of Compare. */
   --convert-chip-height: 30px; /* ConvertImage card (ticket 0900): a chip over the preview ("picture", "beads", "picture · let go to see the beads"). */
   --convert-chip-height-touch: 32px; /* ConvertImage card (ticket 0900): the same chip on a coarse pointer. */

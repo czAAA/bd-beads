@@ -302,3 +302,16 @@ What the build of DS-1's first window had to settle or change:
 - **Off sliders** before a picture show "—" with no ends; the slider takes no move and its Tooltip says "Add a picture first". The zoom chip's zoom out is never off, as the chip shows only past Fit.
 - **The first window, with a picture: 11 controls** at 1440 × 900 and 1180 × 820 (Replace, More for the picture, Bead and Technique, Width, More for the size, Colors, More for the colors, Create Project, Background, Make empty, Compare); the crop's handles (0898) make DS-1's 12. With no picture: 9 (Choose file, Paste, What pictures work, Bead and Technique, Width, More for the size, Colors, More for the colors, Create Project).
 
+
+## As built (ticket 0902)
+
+What the build of My beads (DS-2) had to settle:
+
+- **match to became the menu here, not in 0901.** Four sources do not fit DS-1's segmented control, so the menu button and its listbox (the Bead's palette and My beads with their counts at the right, Default Palette, Exact, and under a rule Edit My beads or Choose My beads) are built with My beads; ticket 0901 adds the Finish button beside it. The menu is the app's MenuButton with AppMenuItems, the chosen source checked.
+- **The list is one device preference** (`myBeads`, `openbeads:my-beads`, a JSON object of code lists by Color catalog id), beside the converter's remembered choices; `domain/myBeads.ts` holds its rules. An empty list keeps nothing.
+- **A list with no code in the Bead's size** (a Delica 11/0 list on a 15/0) is not a source: the match falls back to the Bead's palette, as an empty list does. The menu still counts every code of the list.
+- **The view lists every code of the Bead's size** with no "first 60 shown" cap, so a code can be ticked before ticket 0903 brings the search. Discontinued codes are left out until 0903 greys them in.
+- **The My beads half keeps its rows** while the view is open: a code unticked there stays in place, unticked, as the design asks.
+- **The Change picker's list holds only My beads' codes** while My beads is the source; the switch inside the Palette popover's Bead colors list is ticket 0918's.
+- **A press outside the My beads view closes the Colors popover** as one outside the Colors view does; Escape returns to Colors first.
+- **New values:** `--my-beads-row` (`panel-row-two-line` + 4), `--my-beads-row-touch`, `--my-beads-swatch` (24), `--my-beads-tick` (20). SegmentedControl's options take a `meta` count in `meta-small` (the switch's "1 191").
