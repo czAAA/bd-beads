@@ -1082,6 +1082,7 @@ export const en: Translations = {
         joinedBeads: { one: '{count} bead', other: '{count} beads' },
         everyColorStays: 'every color stays',
       },
+      autoFixLighting: 'Auto-fix lighting',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

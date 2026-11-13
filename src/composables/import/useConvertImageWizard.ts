@@ -53,6 +53,7 @@ import { estimatedSizeMm } from '../../domain/projectSize'
 import { columnCycle, rowCycle, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { useConvertCleanUp } from './useConvertCleanUp'
 import { useConvertCrop, type CropBeads } from './useConvertCrop'
+import { useConvertLighting } from './useConvertLighting'
 import { useConvertMyBeads } from './useConvertMyBeads'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
@@ -315,6 +316,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
         heightBeads.value = opening.height
       }
       cleanUp.reset()
+      lighting.reset()
       restartPart()
     } catch (error) {
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
@@ -347,7 +349,7 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   /** The beads over a part: each the color most of its area has at rest, its centre pixel while a handle moves, as the
    * full rule is too slow for every move (ticket 0888). */
   function sample(at: PixelCrop, rule: SamplingRule = 'area') {
-    const picture = image.value
+    const picture = lighting.picture.value
     if (!picture) return undefined
     const { grid, pixelsPerBead } = sizingOf(at)
     const lattice = partLattice({ image: picture, part: at, pixelsPerBead, dimensions: grid, ...weave.value })
@@ -457,6 +459,9 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
   })
   const reduced = cleanUp.reduced
   const found = cleanUp.found
+  // Auto-fix lighting (ticket 0907): the picture corrected before the sampler reads it, so Clean up and the found colors
+  // follow the lit beads. Off until the person turns it on.
+  const lighting = useConvertLighting(image)
   /** Color by color's rows: the found colors joined by the bead color they become (ticket 0863). */
   const rows = computed(() => beadColorRows(found.value))
   const grid = computed<Grid>(() => (frameSampled.value ? convertFrame(cleanUp.raw.value, reduced.value, found.value) : []))
@@ -850,6 +855,8 @@ export function useConvertImageWizard({ start, startSource, decodeImage, loadCat
     remapSwatches,
     /** Clean up (ticket 0906): Clean up stray beads, its strength and Small colors join, with what each did. */
     cleanUp,
+    /** Auto-fix lighting (ticket 0907): its switch, and the picture the beads are sampled from (what Compare shows). */
+    lighting,
     // My beads (ticket 0902)
     myBeadsCodes: myBeads.codes,
     myBeadsTargets: myBeads.targets,

@@ -1098,6 +1098,7 @@ export const pl: Translations = {
         joinedBeads: { one: 'koralików: {count}', few: 'koralików: {count}', many: 'koralików: {count}', other: 'koralików: {count}' },
         everyColorStays: 'wszystkie kolory zostają',
       },
+      autoFixLighting: 'Automatyczna korekta światła',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

@@ -1091,6 +1091,7 @@ export const es: Translations = {
         joinedBeads: { one: '{count} cuenta', many: '{count} cuentas', other: '{count} cuentas' },
         everyColorStays: 'se quedan todos los colores',
       },
+      autoFixLighting: 'Corregir la luz automáticamente',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

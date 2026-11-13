@@ -1073,6 +1073,7 @@ export const zh: Translations = {
         joinedBeads: { other: '{count} 颗珠子' },
         everyColorStays: '所有颜色都保留',
       },
+      autoFixLighting: '自动修正光线',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

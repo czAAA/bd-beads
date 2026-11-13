@@ -1099,6 +1099,7 @@ export const be: Translations = {
         joinedBeads: { one: 'бісерын: {count}', few: 'бісерын: {count}', many: 'бісерын: {count}', other: 'бісерын: {count}' },
         everyColorStays: 'усе колеры застаюцца',
       },
+      autoFixLighting: 'Аўтакарэкцыя асвятлення',
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',

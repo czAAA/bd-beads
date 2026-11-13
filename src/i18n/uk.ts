@@ -1098,6 +1098,7 @@ export const uk: Translations = {
         joinedBeads: { one: 'бісерин: {count}', few: 'бісерин: {count}', many: 'бісерин: {count}', other: 'бісерин: {count}' },
         everyColorStays: 'усі кольори лишаються',
       },
+      autoFixLighting: 'Автокорекція освітлення',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',
