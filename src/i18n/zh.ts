@@ -1092,6 +1092,7 @@ export const zh: Translations = {
         codesLeft: { other: '只剩 {count} 个色号' },
         note: '表面处理：只匹配你勾选的表面处理。',
       },
+      autoFixLighting: '自动修正光线',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

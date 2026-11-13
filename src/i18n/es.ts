@@ -1114,6 +1114,7 @@ export const es: Translations = {
         codesLeft: { one: 'solo queda {count} código', many: 'solo quedan {count} de códigos', other: 'solo quedan {count} códigos' },
         note: 'Acabado: limita el ajuste a los acabados que marques.',
       },
+      autoFixLighting: 'Corregir la luz automáticamente',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',

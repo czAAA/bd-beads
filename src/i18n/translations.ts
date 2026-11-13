@@ -1335,6 +1335,8 @@ export interface Translations {
         codesLeft: PluralForms
         note: string
       }
+      /** Auto-fix lighting (ticket 0907, DS-3): the picture section's row and its switch, spec 0761's name. */
+      autoFixLighting: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
