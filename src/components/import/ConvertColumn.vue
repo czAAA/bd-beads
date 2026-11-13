@@ -7,7 +7,7 @@ import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
-import { plural, pluralForm } from '../../i18n/plural'
+import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -19,12 +19,13 @@ import BeadSection from '../project/BeadSection.vue'
 import TechniqueSection from '../project/TechniqueSection.vue'
 import ConvertBackgroundSection from './ConvertBackgroundSection.vue'
 import ConvertColorsSection from './ConvertColorsSection.vue'
+import ConvertFoot from './ConvertFoot.vue'
 import ConvertPictureSection from './ConvertPictureSection.vue'
 import ConvertPopover from './ConvertPopover.vue'
 import ConvertSizeSection from './ConvertSizeSection.vue'
 
 // The quiet converter's column (ConvertImage card DS-1, ticket 0896): the picture, the Bead and Technique, Width and
-// Colors in the order they are decided, then the result and Create Project at its foot (its own lines are ticket 0897).
+// Colors in the order they are decided, then the result and Create Project at its foot (ConvertFoot, ticket 0897).
 // Each one's more is a popover of its own button; Background's lives here too, so it stacks in the column under 1024 px.
 const emit = defineEmits<{ paste: []; create: [] }>()
 
@@ -32,7 +33,6 @@ const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const readings = useConvertSizeReadings(wizard)
-const result = readings.result
 const has = computed(() => wizard.hasPicture.value)
 const offBody = computed(() => (has.value ? undefined : words.value.addPictureFirst))
 /** A value an off slider shows before a picture (DS-1). */
@@ -65,19 +65,6 @@ const matchedLine = computed(() => {
 })
 const colorsValue = computed(() => plural(locale.value, wizard.maxColors.value, words.value.colorsCount))
 const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: groupThousands(wizard.colorsMax.value, locale.value) }))
-
-/** The result over Create Project: the size, then the colors (a kept part's, with the whole it was kept from). */
-const resultLines = computed(() => {
-  const shown = result.value?.kept ?? result.value
-  if (!shown) return undefined
-  // A My beads list shorter than the count asked says why fewer come out (ticket 0902).
-  const used = wizard.usedColorCount.value
-  const colors = wizard.myBeadsShort.value
-    ? fillBlanks(pluralForm(locale.value, used, words.value.myBeads.fewerColors), { codes: groupThousands(wizard.myBeadsTargets.value.length, locale.value) }, { count: groupThousands(used, locale.value) })
-    : plural(locale.value, used, words.value.colorsCount)
-  const kept = result.value?.kept && fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows })
-  return { grid: shown.grid, measured: shown.measured, colors: kept ? `${colors} · ${kept}` : colors }
-})
 </script>
 
 <template>
@@ -218,24 +205,7 @@ const resultLines = computed(() => {
       <ConvertColorsSection />
     </ConvertPopover>
 
-    <div class="convert-column__foot">
-      <p v-if="resultLines" class="convert-column__result" role="status" data-testid="convert-result">
-        <span><b>{{ resultLines.grid }}</b> · {{ resultLines.measured }}</span>
-        <span data-testid="convert-result-colors">{{ resultLines.colors }}</span>
-      </p>
-      <p v-else class="convert-column__result convert-column__result--none">{{ wizard.reading.value ? words.readingLine : words.bandEmpty }}</p>
-      <AppButton
-        variant="primary"
-        class="convert-column__create"
-        :disabled="!has"
-        :disabled-body="words.addPictureFirst"
-        :label="wizard.addsToCanvas ? t.convertImage.addToCanvas : t.convertImage.createButton"
-        data-testid="convert-image-create"
-        @click="emit('create')"
-      >
-        {{ wizard.addsToCanvas ? t.convertImage.addToCanvas : t.convertImage.createButton }}
-      </AppButton>
-    </div>
+    <ConvertFoot @create="emit('create')" />
   </div>
 </template>
 
@@ -316,44 +286,6 @@ const resultLines = computed(() => {
   margin: 0;
   font: var(--type-meta-small);
   color: var(--muted);
-}
-
-/* The foot, pinned to the column's bottom whatever the column holds above. */
-.convert-column__foot {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-  margin-top: auto;
-  padding: var(--space-14) var(--space-20) var(--space-20);
-  border-top: 1px solid var(--line-soft);
-}
-
-.convert-column__result {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  font: var(--type-meta);
-  color: var(--body);
-}
-
-.convert-column__result b {
-  font-weight: 500;
-  color: var(--ink);
-}
-
-.convert-column__result--none {
-  color: var(--muted);
-}
-
-.convert-column__create :deep(.app-button),
-:deep(.convert-column__create.app-button) {
-  width: 100%;
-  height: var(--field-height);
-}
-
-.convert-column__foot :deep(.app-button-wrap) {
-  display: block;
 }
 
 @media (max-width: 63.99rem), (orientation: portrait) {

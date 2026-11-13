@@ -5,6 +5,7 @@ import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from '../../domain/crea
 import type { PixelData } from '../../domain/imageConversion'
 import type { MyBeads } from '../../domain/myBeads'
 import type { Project } from '../../domain/project'
+import { layersView } from '../../testUtils/layerFields'
 import { useAppPage } from '../shell/useAppPage'
 import { useDialogs } from '../shell/useDialogs'
 import { useConvertImageFlow } from './useConvertImageFlow'
@@ -68,6 +69,27 @@ describe('useConvertImageFlow', () => {
     expect(appPage.page.value).toBe('convert-image')
     await vi.waitFor(() => expect(flow.session.value?.hasPicture.value).toBe(true))
     expect(flow.session.value?.technique.value).toBe('peyote')
+  })
+
+  it('asks the names once: the form’s go to the Project, and opened from the Menu or a drop it is named after the file (ticket 0897)', async () => {
+    const { addProject, flow } = setup()
+    flow.open({ ...formValues, makerName: 'Olga' })
+    await flow.session.value!.setFile(picture)
+    flow.onCreate()
+    expect(layersView(addProject.mock.lastCall![0])).toMatchObject({ name: 'Fox', makerName: 'Olga' })
+
+    flow.onNewProjectDraft({ ...formValues, makerName: 'Olga' })
+    flow.open()
+    await flow.session.value!.setFile(new File(['x'], 'tabby.jpeg', { type: 'image/jpeg' }))
+    flow.onCreate()
+    expect(layersView(addProject.mock.lastCall![0])).toMatchObject({ name: 'tabby' })
+    expect(addProject.mock.lastCall![0].makerName ?? '').toBe('')
+
+    expect(flow.onPicture(new File(['x'], 'spring.png', { type: 'image/png' }))).toBe(true)
+    await vi.waitFor(() => expect(flow.session.value?.hasPicture.value).toBe(true))
+    flow.onCreate()
+    expect(layersView(addProject.mock.lastCall![0])).toMatchObject({ name: 'spring' })
+    expect(addProject.mock.lastCall![0].makerName ?? '').toBe('')
   })
 
   it('opens on Miyuki Delica 11/0 in peyote on a device that has converted nothing, the form left alone (ticket 0893)', () => {

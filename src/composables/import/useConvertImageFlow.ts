@@ -41,11 +41,14 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
   let scope: EffectScope | undefined
   /** The form's last values, for a picture dropped while the form is not shown. */
   const lastDraft = shallowRef<CreateProjectInput>({ name: '', technique: DEFAULT_TECHNIQUE, beadId: DEFAULT_BEAD.id, makerName: '' })
+  /** Opened with no form (the Menu's row, a drop or paste): its Bead and Technique, but the names are asked only on the
+   * form, so the Project is named after the file and has no maker's name (ticket 0897). */
+  const withoutForm = (): CreateProjectInput => ({ ...lastDraft.value, name: '', makerName: '' })
 
   /** The reference image's All settings that opened the page, whose beads Add to Canvas puts on the open Project. */
   let fromReference: AllSettingsRequest | undefined
 
-  function open(draft: CreateProjectInput = lastDraft.value, file?: File, request?: AllSettingsRequest): ConvertImageWizard {
+  function open(draft: CreateProjectInput = withoutForm(), file?: File, request?: AllSettingsRequest): ConvertImageWizard {
     scope?.stop()
     scope = effectScope()
     fromReference = request
@@ -90,7 +93,7 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
   /** A picture dropped or pasted on the app with no dialog and no other page showing: the converter opens with it set. */
   function onPicture(file: File): boolean {
     if (dialogs.open.value || appPage.page.value !== 'editor') return false
-    open(lastDraft.value, file)
+    open(withoutForm(), file)
     return true
   }
 
