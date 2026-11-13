@@ -1131,6 +1131,15 @@ export const ru: Translations = {
         note: 'Покрытие: подбор только по отмеченным покрытиям.',
       },
       autoFixLighting: 'Автокоррекция освещения',
+      neighbours: {
+        name: 'Число цветов',
+        typeNumber: 'введите число',
+        range: 'от 1 до {max}',
+        noFewer: 'меньше нельзя',
+        noMore: 'больше нельзя',
+        pastEnd: '{value}+',
+        same: 'Тот же бисер, что сейчас.',
+      },
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

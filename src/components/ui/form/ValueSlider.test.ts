@@ -96,6 +96,24 @@ describe('ValueSlider on the doubling scale (ValueSlider card, ticket 0896)', ()
     expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([200])
   })
 
+  it('pages by its own step where given one (the Colors slider, ticket 0904)', async () => {
+    const wrapper = slider({ modelValue: 12, min: 1, max: 40, pageStep: 5 })
+    await wrapper.get('[data-testid="width-range"]').trigger('keydown', { key: 'PageUp' })
+    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([17])
+  })
+
+  it('holds a value typed past its end at the end, and steps down from it one at a time (ticket 0904)', async () => {
+    const wrapper = doubling({ modelValue: 248 })
+    const range = wrapper.get('[data-testid="width-range"]')
+    expect((range.element as HTMLInputElement).value).toBe('1000')
+    await range.trigger('keydown', { key: 'ArrowLeft' })
+    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([247])
+    await range.trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.emitted('update:modelValue')).toHaveLength(1)
+    await range.trigger('keydown', { key: 'End' })
+    expect(wrapper.emitted('update:modelValue')!.at(-1)).toEqual([200])
+  })
+
   it('is off with its reason: nothing moves, and it says why on hover and focus (ticket 0896)', async () => {
     const wrapper = doubling({ offBody: 'Add a picture first.' })
     const range = wrapper.get('[data-testid="width-range"]')

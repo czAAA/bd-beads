@@ -1131,6 +1131,15 @@ export const pl: Translations = {
         note: 'Wykończenie: dopasowanie tylko do zaznaczonych wykończeń.',
       },
       autoFixLighting: 'Automatyczna korekta światła',
+      neighbours: {
+        name: 'Liczba kolorów',
+        typeNumber: 'wpisz liczbę',
+        range: 'od 1 do {max}',
+        noFewer: 'mniej się nie da',
+        noMore: 'więcej się nie da',
+        pastEnd: '{value}+',
+        same: 'Te same koraliki co teraz.',
+      },
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',
