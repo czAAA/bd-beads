@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
-import type { ColorCatalog } from '../../domain/colorCatalog'
+import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import type { MyBeads } from '../../domain/myBeads'
 import { BACKGROUND_TOLERANCE } from '../../domain/convertBackground'
 import type { PixelData } from '../../domain/imageConversion'
@@ -416,5 +416,76 @@ describe('useConvertImageWizard My beads (ticket 0902)', () => {
     expect(wizard.remapSwatches.value.map((swatch) => swatch.code)).toEqual(['DB723', 'DB165', 'DB751'])
     wizard.setSource('my-beads')
     expect(wizard.remapSwatches.value.map((swatch) => swatch.code)).toEqual(['DB165'])
+  })
+})
+
+describe('useConvertImageWizard the match kept to chosen Finishes (ticket 0901)', () => {
+  const catalog: ColorCatalog = {
+    id: 'miyuki-delica',
+    codes: [
+      { code: 'DB723', family: ['Red'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#e63746' },
+      { code: 'DB795', family: ['Red'], finish: 'matte', wording: 'Matte', sizes: ['11/0'], hex: '#e43a48' },
+      { code: 'DB165', family: ['Blue'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#2f6fdb' },
+      { code: 'DB377', family: ['Blue'], finish: 'matte', wording: 'Matte', sizes: ['11/0'], hex: '#3070d8' },
+      { code: 'DB751', family: ['Yellow'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'], hex: '#fadc3c' },
+      { code: 'DB33', family: ['Yellow'], finish: 'plated', wording: 'Plated', sizes: ['11/0'], hex: '#f8da40' },
+    ],
+  }
+
+  async function opened(startFinishes?: Finish[]) {
+    const wizard = effectScope().run(() =>
+      useConvertImageWizard({
+        start: { technique: 'loom', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
+        ...(startFinishes ? { startFinishes } : {}),
+        decodeImage: async () => bands(30, 10),
+        loadCatalog: async () => catalog,
+      }),
+    )!
+    await wizard.setFile(new File(['x'], 'art.png', { type: 'image/png' }))
+    await nextTick()
+    return wizard
+  }
+  const finishesUsed = (wizard: Awaited<ReturnType<typeof opened>>) => [...new Set(wizard.rows.value.map((row) => row.result?.finish))].sort()
+
+  it('names only codes of the one Finish on, or of one of several', async () => {
+    const wizard = await opened()
+    expect(wizard.codesLeft.value).toBe(6)
+    wizard.toggleFinish('matte')
+    expect(wizard.finishes.value).toEqual(['matte'])
+    expect(wizard.codesLeft.value).toBe(2)
+    expect(finishesUsed(wizard)).toEqual(['matte'])
+
+    wizard.toggleFinish('plated')
+    expect(wizard.finishes.value).toEqual(['matte', 'plated'])
+    expect(wizard.rows.value.map((row) => row.result?.code).sort()).toEqual(['DB33', 'DB377', 'DB795'])
+    expect(wizard.finishesShort.value).toBe(false)
+  })
+
+  it('brings fewer colors out when fewer codes are left than asked, the count asked kept', async () => {
+    const wizard = await opened()
+    wizard.toggleFinish('plated')
+    expect(wizard.codesLeft.value).toBe(1)
+    expect(wizard.usedColorCount.value).toBe(1)
+    expect(wizard.rows.value.map((row) => row.result?.code)).toEqual(['DB33'])
+    expect(wizard.maxColors.value).toBe(3)
+    expect(wizard.finishesShort.value).toBe(true)
+
+    wizard.clearFinishes()
+    expect(wizard.finishes.value).toEqual([])
+    expect(wizard.usedColorCount.value).toBe(3)
+  })
+
+  it('does not apply under Default Palette or Exact, and keeps its Finishes for the Bead’s palette again', async () => {
+    const wizard = await opened(['matte'])
+    expect(wizard.finishesApplied.value).toEqual(['matte'])
+    expect(finishesUsed(wizard)).toEqual(['matte'])
+
+    wizard.setSource('default')
+    expect(wizard.finishesApplied.value).toEqual([])
+    expect(wizard.finishesShort.value).toBe(false)
+    expect(wizard.finishes.value).toEqual(['matte'])
+
+    wizard.setSource('bead-colors')
+    expect(finishesUsed(wizard)).toEqual(['matte'])
   })
 })

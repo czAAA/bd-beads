@@ -7,7 +7,7 @@ import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { MIN_IMAGE_COLORS } from '../../domain/imageConversion'
-import { plural } from '../../i18n/plural'
+import { plural, pluralForm } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -58,13 +58,23 @@ const COLORS_MARKS = [4, 16, 64]
 const colorsMarks = computed(() =>
   COLORS_MARKS.filter((value) => value > MIN_IMAGE_COLORS && value < wizard.colorsMax.value).map((value) => ({ value, label: String(value) })),
 )
+/** The most Finishes the line under Colors names; more are counted (DS-2). */
+const NAMED_FINISHES = 3
 /** Under Colors, where they are matched (DS-1): the Bead's palette, the Default Palette, or the picture's own. */
 const matchedLine = computed(() => {
   const source = wizard.source.value
   if (source === 'exact') return words.value.matchedExact
   if (source === 'default') return words.value.matchedDefault
   if (source === 'my-beads') return plural(locale.value, wizard.myBeadsCodes.value.length, words.value.myBeads.matched)
-  return fillBlanks(words.value.matchedBead, { bead: beadLabel(wizard.bead.value).toLocaleLowerCase(locale.value) })
+  const bead = beadLabel(wizard.bead.value).toLocaleLowerCase(locale.value)
+  const on = wizard.finishesApplied.value
+  // With Finishes on (ticket 0901, DS-2): their names, or past three their count, so the line stays two lines at most.
+  if (on.length > NAMED_FINISHES) return fillBlanks(pluralForm(locale.value, on.length, words.value.finish.matchedMany), { bead }, { count: on.length })
+  if (on.length > 0) {
+    const names = on.map((finish) => t.value.palette.beadColors.finishes[finish].toLocaleLowerCase(locale.value))
+    return fillBlanks(words.value.finish.matched, { bead, finishes: names.join(words.value.finish.separator) })
+  }
+  return fillBlanks(words.value.matchedBead, { bead })
 })
 const colorsValue = computed(() => plural(locale.value, wizard.maxColors.value, words.value.colorsCount))
 const colorsMaxLabel = computed(() => fillBlanks(words.value.maxLabel, { value: groupThousands(wizard.colorsMax.value, locale.value) }))

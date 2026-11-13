@@ -33,9 +33,13 @@ const beadsNeeded = computed(() => {
 const lines = computed(() => {
   const shown = result.value?.kept ?? result.value
   if (!ready.value || !shown) return undefined
-  // A My beads list shorter than the count asked says why fewer come out (ticket 0902).
+  // Too few codes in the Finishes on (ticket 0901), or a My beads list shorter than the count asked (ticket 0902), says
+  // why fewer come out.
   const used = wizard.usedColorCount.value
-  const colors = wizard.myBeadsShort.value
+  const finish = words.value.finish
+  const colors = wizard.finishesShort.value
+    ? fillBlanks(finish.colorsShort, { colors: plural(locale.value, used, words.value.colorsCount), codes: plural(locale.value, wizard.codesLeft.value, finish.codesLeft) })
+    : wizard.myBeadsShort.value
     ? fillBlanks(pluralForm(locale.value, used, words.value.myBeads.fewerColors), { codes: groupThousands(wizard.myBeadsTargets.value.length, locale.value) }, { count: groupThousands(used, locale.value) })
     : plural(locale.value, used, words.value.colorsCount)
   const kept = result.value?.kept && fillBlanks(words.value.resultKeptFrom, { columns: wizard.dimensions.value.columns, rows: wizard.dimensions.value.rows })
