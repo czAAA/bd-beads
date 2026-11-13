@@ -132,17 +132,34 @@ describe('the preview’s overlays on the canvas', () => {
     expect(r! + b!).toBeLessThan(80)
   })
 
-  it('shows the original picture where the beads are while Compare is held', async () => {
+  it('shows the picture where the beads are while Compare is held', async () => {
     const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
     await atEveryPixel(mounted.root)
     const compare = mounted.root.querySelector<HTMLElement>('[data-testid="convert-compare"]')!
     await userEvent.hover(compare)
     compare.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 350))
     await settleForMeasuring()
     const [r, g, b] = topRightPixel(mounted.root)
     expect(g).toBeGreaterThan(200)
     expect(r! + b!).toBeLessThan(80)
     compare.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
+  })
+
+  it('leaves a removed background empty on the picture’s half (ticket 0909)', async () => {
+    const mounted = await mountAt(ConvertPageHost, { ...props, decodeImage: cornered }, { locale: 'en', width: 1366 })
+    await atEveryPixel(mounted.root)
+    const find = (testid: string) => mounted.root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)!
+    find('convert-tool-background').click()
+    await settleForMeasuring()
+    find('convert-remove-found').click()
+    find('convert-compare').click()
+    await settleForMeasuring()
+    const canvas = mounted.root.querySelector<HTMLCanvasElement>('[data-testid="convert-picture-canvas"]')!
+    const pixel = (x: number, y: number) => Array.from(canvas.getContext('2d')!.getImageData(x, y, 1, 1).data)
+    // The black wall is the background: gone; the red square in the middle stays.
+    expect(pixel(4, 4)[3]).toBe(0)
+    expect(pixel(canvas.width / 2, canvas.height / 2)).toEqual([255, 0, 0, 255])
   })
 })
 
@@ -203,6 +220,72 @@ describe('Convert image, the quiet converter', () => {
       })
     }
   }
+
+  // Compare on (ticket 0909, DS-3): two equal halves split by a 1px line, the picture and the beads at one scale and in
+  // the same place, the chips whole over them and the bar's buttons inside it, zoom and pan moving both.
+  for (const [width, height] of [
+    [1440, 900],
+    [1180, 820],
+  ] as const) {
+    for (const locale of ['en', 'longest'] as const) {
+      it(`sets the picture beside the beads at one scale at ${width} × ${height} in ${locale}`, async () => {
+        const mounted = await mountAt(ConvertPageHost, props, { locale, width })
+        await page.viewport(width, height)
+        await pictureSet(mounted.root)
+        const root = mounted.root
+        find(root, 'convert-compare').click()
+        await settleForMeasuring()
+        const preview = rect(root, 'convert-preview')
+        const [left, right] = [rect(root, 'convert-half-picture'), rect(root, 'convert-half-beads')]
+        expect(left.width).toBeCloseTo((preview.width - 1) / 2, 0)
+        expect(right.width).toBeCloseTo(left.width, 0)
+        const [picture, beads] = [rect(root, 'convert-picture-canvas'), rect(root, 'convert-image-canvas')]
+        expect([picture.width, picture.height]).toEqual([beads.width, beads.height])
+        const [pictureView, beadsView] = [...root.querySelectorAll('.convert-preview__viewport')].map((viewport) => viewport.getBoundingClientRect())
+        expect(pictureView!.width).toBeCloseTo(beadsView!.width, 0)
+        expect(picture.left - pictureView!.left).toBeCloseTo(beads.left - beadsView!.left, 0)
+        expect(picture.top).toBeCloseTo(beads.top, 0)
+        for (const chip of root.querySelectorAll<HTMLElement>('[data-testid="convert-chip"]')) {
+          const box = chip.getBoundingClientRect()
+          const half = chip.dataset.half === 'picture' ? pictureView! : beadsView!
+          expect(box.left + box.width / 2).toBeCloseTo(half.left + half.width / 2, 0)
+        }
+        const bar = rect(root, 'convert-preview-tools')
+        expect(bar.left + bar.width / 2).toBeCloseTo(preview.left + preview.width / 2, 0)
+        expect(await fitProblems('Convert image page, Compare on', locale, width)).toEqual([])
+
+        // Zoomed to 200%, a scroll of one half moves the other with it.
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: '+', ctrlKey: true, cancelable: true }))
+        await settleForMeasuring()
+        find(root, 'convert-zoom-in').click()
+        await settleForMeasuring()
+        expect(find(root, 'convert-zoom-level').textContent).toMatch(/^200\s?%$/)
+        expect(root.querySelectorAll('[data-testid="convert-zoom-chip"]')).toHaveLength(1)
+        const viewports = [...root.querySelectorAll<HTMLElement>('.convert-preview__viewport')]
+        viewports[1]!.scrollLeft = 40
+        viewports[1]!.dispatchEvent(new Event('scroll'))
+        await settleForMeasuring()
+        expect(viewports[0]!.scrollLeft).toBe(viewports[1]!.scrollLeft)
+      })
+    }
+  }
+
+  it('holds Background, Make empty and Beads | Picture in the bar under 1024 px, whole in the longest wording', async () => {
+    const mounted = await mountAt(ConvertPageHost, props, { locale: 'longest', width: 1024 })
+    await page.viewport(1024, 1366)
+    await pictureSet(mounted.root)
+    await settleForMeasuring()
+    const root = mounted.root
+    expect(root.querySelector('[data-testid="convert-compare"]')).toBeNull()
+    root.querySelector<HTMLElement>('[data-testid="convert-show"] [data-value="picture"]')!.click()
+    await settleForMeasuring()
+    const bar = rect(root, 'convert-preview-tools')
+    for (const button of find(root, 'convert-preview-tools').querySelectorAll('button')) {
+      const box = button.getBoundingClientRect()
+      expect([box.left >= bar.left, box.right <= bar.right, box.top >= bar.top, box.bottom <= bar.bottom]).toEqual([true, true, true, true])
+    }
+    expect(await fitProblems('Convert image page, Picture chosen (portrait)', 'longest', 1024)).toEqual([])
+  })
 
   it('stands the Colors list’s opened Change in view inside its popover at iPad size', async () => {
     const mounted = await mountAt(ConvertPageHost, props, { locale: 'en', width: 1180 })

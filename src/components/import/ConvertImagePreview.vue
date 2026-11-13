@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watchPostEffect } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watchPostEffect } from 'vue'
+import { NARROW_CONVERTER, useConvertCompare, type CompareView } from '../../composables/import/useConvertCompare'
 import { useConvertImageWizardState, type ConvertTool } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -25,11 +26,12 @@ import { EYEDROPPER_CURSOR } from '../canvas/eyedropperCursor'
 import AppButton from '../ui/AppButton.vue'
 import AppHandle from '../ui/AppHandle.vue'
 import IconButton from '../ui/IconButton.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import ConvertDropZone from './ConvertDropZone.vue'
 
-// Convert image's preview (ConvertImage card DS-1, tickets 0747, 0780, 0787, 0896, 0898): the beads with the crop's
-// handles round them from the start, what was found hatched, a chip while a tool or Compare shows something, and the
-// floating bar (Background, Make empty, Compare; a zoom chip past Fit). With no picture yet, the drop zone.
+// Convert image's preview (ConvertImage card DS-1, DS-3; tickets 0747, 0780, 0787, 0896, 0898, 0909): the beads with
+// the crop's handles, what was found hatched, a chip while a tool or Compare shows something, the floating bar, and with
+// Compare on the picture beside the beads in two halves at one scale. With no picture yet, the drop zone.
 const emit = defineEmits<{ paste: [] }>()
 
 const { t, locale } = useI18n()
@@ -46,11 +48,40 @@ const actions = {
 const cropName = (handle: CropHandle) => controlAction(`crop-${handle}`).name(t.value)
 
 const paneEl = ref<HTMLElement>()
+
+// --- Compare (ticket 0909): the picture beside the beads from 1024 px wide in landscape, Beads | Picture under it ----
+
+const narrow = useMediaQuery(NARROW_CONVERTER)
+const compare = useConvertCompare({ narrow })
+const sideBySide = compare.sideBySide
+/** The preview's halves: the picture's and the beads' while Compare is on, wide; else the beads' alone. */
+type Half = CompareView
+const halves = computed<Half[]>(() => (sideBySide.value ? ['picture', 'beads'] : ['beads']))
+/** Where the crop's handles stand: on the picture's half while it has one, else on the beads. */
+const cropHalf = computed<Half>(() => (sideBySide.value ? 'picture' : 'beads'))
+
+// Each half's viewport (it scrolls), box and canvas; the beads' half is the one measured and always on.
 const viewportEl = ref<HTMLElement>()
+const boxEl = ref<HTMLElement>()
+const canvasEl = ref<HTMLCanvasElement>()
+const pictureViewportEl = ref<HTMLElement>()
+const pictureCanvasEl = ref<HTMLCanvasElement>()
+const elements = {
+  beads: { viewport: viewportEl, box: boxEl, canvas: canvasEl },
+  picture: { viewport: pictureViewportEl, canvas: pictureCanvasEl },
+}
+/** A template ref of a half's element (the picture's half keeps no box: nothing measures it). */
+function place(half: Half, part: 'viewport' | 'box' | 'canvas', element: unknown) {
+  const slot = (elements[half] as Partial<Record<typeof part, { value: unknown }>>)[part]
+  if (!slot || slot.value === (element ?? undefined)) return
+  slot.value = element ?? undefined
+  // A picture's half that opens while zoomed starts where the beads' half stands.
+  if (half === 'picture' && part === 'viewport') void nextTick(() => onScroll('beads'))
+}
 const { width: viewportWidth, height: viewportHeight } = useElementSize(viewportEl)
 
-/** Room kept round the beads at Fit, in px (ConvertImage card DS-1): 72 above, 40 at the sides and 90 below (96 on a
- * coarse pointer), so the floating bar never covers them; read from the design's values, these where none is loaded. */
+/** Room kept round the beads at Fit, in px (ConvertImage card DS-1, DS-3): 72 above, 40 at the sides (24 in each half
+ * of Compare) and 90 below (96 on a coarse pointer), so the bar never covers them; these where no design value loads. */
 const coarse = useMediaQuery('(pointer: coarse)')
 const ROOM = computed(() => {
   const style = paneEl.value && typeof getComputedStyle === 'function' ? getComputedStyle(paneEl.value) : undefined
@@ -60,7 +91,7 @@ const ROOM = computed(() => {
   }
   return {
     top: px('--convert-fit-top', 72),
-    side: px('--convert-fit-side', 40),
+    side: sideBySide.value ? px('--convert-compare-side', 24) : px('--convert-fit-side', 40),
     bottom: coarse.value ? px('--convert-fit-bottom-touch', 96) : px('--convert-fit-bottom', 90),
   }
 })
@@ -111,25 +142,22 @@ const frameBox = computed(() => {
 const boxPlace = (box: { x: number; y: number; width: number; height: number }) => ({ left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` })
 
 const colorsText = computed(() => plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount))
+/** The beads' canvas's name: the beads, the two side by side, or the picture shown in their place (ticket 0909). */
 const previewName = computed(() => {
   const size = grid.value
-  return wizard.hasPicture.value && size
-    ? fillBlanks(words.value.previewName, { size: fillBlanks(words.value.resultGrid, { columns: size.columns, rows: size.rows }), colors: colorsText.value })
-    : words.value.previewEmpty
+  if (!wizard.hasPicture.value || !size) return words.value.previewEmpty
+  if (compare.pictureAlone.value) return words.value.comparePictureName
+  if (sideBySide.value) return fillBlanks(words.value.compareSideBySideName, { grid: `${size.columns}×${size.rows}`, colors: colorsText.value })
+  return fillBlanks(words.value.previewName, { size: fillBlanks(words.value.resultGrid, { columns: size.columns, rows: size.rows }), colors: colorsText.value })
 })
 
 // --- Drawing ----------------------------------------------------------------------------------------------------------
 
 /** The largest bitmap side the preview draws, so a zoomed view stays within what a canvas holds. */
 const MAX_BITMAP_PX = 8192
-const canvasEl = ref<HTMLCanvasElement>()
 
-watchPostEffect(() => {
-  const canvas = canvasEl.value
-  const drawn = project.value
-  const at = space.value
-  const context = canvas?.getContext('2d')
-  if (!canvas || !drawn || !at || !context || !lattice.value) return
+/** Sizes a canvas's bitmap to the box at the screen's pixel ratio, kept within what a canvas holds; returns the ratio. */
+function fitBitmap(canvas: HTMLCanvasElement) {
   const { width, height } = displayed.value
   const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_BITMAP_PX / Math.max(1, width, height))
   const bitmapWidth = Math.max(1, Math.round(width * pixelRatio))
@@ -138,6 +166,18 @@ watchPostEffect(() => {
     canvas.width = bitmapWidth
     canvas.height = bitmapHeight
   }
+  return { pixelRatio, bitmapWidth, bitmapHeight }
+}
+
+watchPostEffect(() => {
+  const canvas = canvasEl.value
+  const drawn = project.value
+  const at = space.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !drawn || !at || !context || !lattice.value) return
+  const { width, height } = displayed.value
+  const { pixelRatio, bitmapWidth, bitmapHeight } = fitBitmap(canvas)
+  if (compare.pictureAlone.value) return drawPicture(context, pixelRatio)
   // While a handle moves the part, a block too big to draw bead by bead is drawn coarsely (draftRenderer).
   const { columns, rows } = lattice.value
   if (wizard.approximate.value && usesDraftLook(wizard.technique.value, columns * rows)) {
@@ -154,13 +194,20 @@ watchPostEffect(() => {
     if (wizard.background.value === 'find') drawFound(context, pixelRatio)
     return
   }
-  if (wizard.comparing.value) return drawOriginal(context, pixelRatio)
   // The board look in light whatever the app's theme (ticket 150), as the Project will print.
   renderProject(context, { project: drawn, space: at, region: { x: 0, y: 0, width, height }, zoom: scale.value, pixelRatio, theme: LIGHT_THEME, rowMarks: false })
   if (wizard.background.value === 'find') drawFound(context, pixelRatio)
 })
 
-/** The picture's own pixels as a canvas, made once per picture: what Compare shows in the beads' place. */
+/** The picture's half (ticket 0909): the same box as the beads', so both stand at one scale and in the same place. */
+watchPostEffect(() => {
+  const canvas = pictureCanvasEl.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context || !sideBySide.value || !lattice.value) return
+  drawPicture(context, fitBitmap(canvas).pixelRatio)
+})
+
+/** The picture's own pixels as a canvas, made once per picture (a turn or a flip is a new one): what Compare shows. */
 const original = computed(() => {
   const image = wizard.image.value
   if (!image || typeof document === 'undefined' || typeof ImageData === 'undefined') return undefined
@@ -171,11 +218,13 @@ const original = computed(() => {
   return canvas
 })
 
-/** Compare (ConvertImage card): the original picture, smoothed, laid so the part woven covers the Frame's beads. */
-function drawOriginal(context: CanvasRenderingContext2D, pixelRatio: number) {
+/** Compare (ConvertImage card DS-3): the picture as it becomes beads, smoothed, laid so the part woven covers the Frame's
+ * beads, a removed background left empty so the `box` ground shows through it. */
+function drawPicture(context: CanvasRenderingContext2D, pixelRatio: number) {
   const picture = original.value
   const frame = frameBox.value
   const part = wizard.part.value
+  context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, context.canvas.width, context.canvas.height)
   if (!picture || !frame) return
   const scaleX = frame.width / part.width
@@ -188,14 +237,31 @@ function drawOriginal(context: CanvasRenderingContext2D, pixelRatio: number) {
     picture.width * scaleX * pixelRatio,
     picture.height * scaleY * pixelRatio,
   )
+  const removed = wizard.background.value === 'removed' ? foundPath(pixelRatio) : undefined
+  if (!removed) return
+  context.globalCompositeOperation = 'destination-out'
+  context.fill(removed)
+  context.globalCompositeOperation = 'source-over'
+}
+
+/** The found background's beads as one path in bitmap px, run by run (ticket 0785): a fill per bead stalls Safari. */
+function foundPath(pixelRatio: number) {
+  const found = wizard.backgroundFound.value?.found
+  const at = lattice.value
+  const size = grid.value
+  if (!found || !at || !size || !view.value) return undefined
+  const path = new Path2D()
+  for (const run of foundRuns({ found, ...size })) {
+    const box = view.value.beadBox({ row: at.frameRow + run.row, column: at.frameColumn + run.column, rows: 1, columns: run.columns })
+    path.rect(box.x * pixelRatio, box.y * pixelRatio, box.width * pixelRatio, box.height * pixelRatio)
+  }
+  return path
 }
 
 /** Background found (1 Find): every bead it takes hatched over its own color with `--found-hatch`'s lines. */
 function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
-  const found = wizard.backgroundFound.value?.found
-  const at = lattice.value
-  const size = grid.value
-  if (!found || !at || !size || !view.value || !paneEl.value) return
+  const path = foundPath(pixelRatio)
+  if (!path || !paneEl.value) return
   // The Project renderer leaves its grid transform on the context (ticket 0787): the boxes are in CSS px, so draw plain.
   context.setTransform(1, 0, 0, 1, 0, 0)
   // The canvas draws `--found-hatch` from its parts, so the preview and the step's swatch are one look.
@@ -219,12 +285,6 @@ function drawFound(context: CanvasRenderingContext2D, pixelRatio: number) {
   pen.stroke()
   const hatch = context.createPattern(tile, 'repeat')
   if (!hatch) return
-  // The found beads' runs as one path, filled once (ticket 0785): a fill per bead stalls Safari for seconds.
-  const path = new Path2D()
-  for (const run of foundRuns({ found, ...size })) {
-    const box = view.value.beadBox({ row: at.frameRow + run.row, column: at.frameColumn + run.column, rows: 1, columns: run.columns })
-    path.rect(box.x * pixelRatio, box.y * pixelRatio, box.width * pixelRatio, box.height * pixelRatio)
-  }
   // Faded first (ticket 0787), then hatched: the background reads as gone whatever the bead's color.
   context.fillStyle = value('--found-dim')
   context.fill(path)
@@ -309,14 +369,17 @@ function beginDrag(event: PointerEvent, gesture: { kind: 'handle'; handle: CropH
   window.addEventListener('pointercancel', endDrag)
 }
 
-/** A press inside a crop moves it whole (the `move` pointer over it); with nothing cropped there is nothing to move. */
+/** A press inside a crop moves it whole (the `move` pointer over it); with nothing cropped there is nothing to move.
+ * Returns whether it took the press. */
 function startMoveDrag(event: PointerEvent) {
-  const box = boxEl.value?.getBoundingClientRect()
+  const box = (event.currentTarget as HTMLElement | null)?.getBoundingClientRect()
   const at = cropBox.value
-  if (!crop.value?.cropped || !box || !at) return
+  if (!crop.value?.cropped || !box || !at) return false
   const x = event.clientX - box.left
   const y = event.clientY - box.top
-  if (x >= at.x && x <= at.x + at.width && y >= at.y && y <= at.y + at.height) beginDrag(event, { kind: 'move' })
+  if (x < at.x || x > at.x + at.width || y < at.y || y > at.y + at.height) return false
+  beginDrag(event, { kind: 'move' })
+  return true
 }
 
 /** A focused handle moves one bead per arrow, ten with Shift (ConvertImage card DS-1). */
@@ -329,22 +392,24 @@ function onHandleKey(event: KeyboardEvent, handle: CropHandle) {
   wizard.nudgeCrop(handle, columns, rows)
 }
 
-/** A press on the beads: Make empty's tap, the Background tool's mark, or with neither on, inside a crop, its move. */
-function onBoxDown(event: PointerEvent) {
+/** A press on a half: on the beads Make empty's tap or the Background tool's mark; where the crop stands, inside it,
+ * its move; else, zoomed in, a mouse's drag pans both halves (ticket 0909). */
+function onBoxDown(event: PointerEvent, half: Half) {
   if (pinch.value) return
-  if (tool.value === 'make-empty') {
+  if (half === 'beads' && tool.value === 'make-empty') {
     event.preventDefault()
     emptyAt(event)
-  } else if (tool.value === 'background') {
+  } else if (half === 'beads' && tool.value === 'background') {
     startMark(event)
-  } else {
-    startMoveDrag(event)
+  } else if (!(half === cropHalf.value && showCrop.value && startMoveDrag(event))) {
+    startPan(event)
   }
 }
 
-const boxEl = ref<HTMLElement>()
-/** The handles, the line and the kept chip stand on the beads unless a tool or Compare is showing something else. */
-const showCrop = computed(() => !!cropBox.value && !ringed.value && !wizard.comparing.value)
+/** The handles, the line and the kept chip stand where the crop is shown: not while a hold shows the picture, nor on the
+ * beads while a tool rings them. */
+const showCrop = computed(() => !!cropBox.value && !compare.held.value && (cropHalf.value === 'picture' || !ringed.value))
+const cropOn = (half: Half) => showCrop.value && half === cropHalf.value
 
 const result = useConvertResult(wizard)
 /** The kept chip on the crop's top edge ("keeping 34×38", Keep all). */
@@ -377,7 +442,40 @@ const zoomIn = () => zoomTo(VIEW_ZOOMS.find((level) => level > viewZoom.value + 
 const zoomOut = () => zoomTo([...VIEW_ZOOMS].reverse().find((level) => level < viewZoom.value - 1e-6) ?? viewZoom.value)
 function fit() {
   viewZoom.value = 1
-  viewportEl.value?.scrollTo?.({ left: 0, top: 0 })
+  for (const half of halves.value) elements[half].viewport.value?.scrollTo?.({ left: 0, top: 0 })
+}
+
+/** Panning either half pans both (ticket 0909): the same part of the picture is in the middle of each. */
+function onScroll(half: Half) {
+  const from = elements[half].viewport.value
+  const to = elements[half === 'beads' ? 'picture' : 'beads'].viewport.value
+  if (!from || !to || (to.scrollLeft === from.scrollLeft && to.scrollTop === from.scrollTop)) return
+  to.scrollLeft = from.scrollLeft
+  to.scrollTop = from.scrollTop
+}
+
+/** A mouse's drag pans the zoomed view; a finger scrolls it natively. */
+let pan: { pointerId: number; x: number; y: number; left: number; top: number } | undefined
+function onPanMove(event: PointerEvent) {
+  const viewport = viewportEl.value
+  if (!pan || event.pointerId !== pan.pointerId || !viewport) return
+  viewport.scrollLeft = pan.left - (event.clientX - pan.x)
+  viewport.scrollTop = pan.top - (event.clientY - pan.y)
+}
+function endPan() {
+  pan = undefined
+  window.removeEventListener('pointermove', onPanMove)
+  window.removeEventListener('pointerup', endPan)
+  window.removeEventListener('pointercancel', endPan)
+}
+function startPan(event: PointerEvent) {
+  const viewport = viewportEl.value
+  if (pan || !zoomed.value || !viewport || event.pointerType === 'touch' || event.button !== 0) return
+  event.preventDefault()
+  pan = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop }
+  window.addEventListener('pointermove', onPanMove)
+  window.addEventListener('pointerup', endPan)
+  window.addEventListener('pointercancel', endPan)
 }
 const zoomLevel = computed(() => fillBlanks(words.value.zoomLevel, { percent: Math.round(viewZoom.value * 100) }))
 /** The zoom chip joins the bar only while zoomed in past Fit (DS-1): at rest zoom is pinch, wheel and the keys. */
@@ -426,18 +524,30 @@ useOverlayLayer({ isOpen: () => tool.value !== undefined, root: () => paneEl.val
 
 const pickTool = (next: ConvertTool) => wizard.setTool(next)
 
-/** Compare is held (ConvertImage card): by a pointer until it lets go, or by Space or Enter until the key is up. */
-function compareOn(event?: KeyboardEvent) {
-  if (event) {
-    if ((event.key !== ' ' && event.key !== 'Enter') || event.repeat) return
-    event.preventDefault()
-  }
-  wizard.comparing.value = true
+/** Where a finger holds Compare or Picture, in the preview's px: a disc stands under it while the hold shows the
+ * picture (DS-3). */
+const pressedAt = ref<{ x: number; y: number }>()
+/** A press of Compare, or of Picture under 1024 px: the one action's hold begins (useConvertCompare). */
+function onComparePress(event: PointerEvent) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  const pane = paneEl.value?.getBoundingClientRect()
+  pressedAt.value = event.pointerType === 'touch' && pane ? { x: event.clientX - pane.left, y: event.clientY - pane.top } : undefined
+  compare.pressStart()
 }
-function compareOff(event?: KeyboardEvent) {
-  if (event && event.key !== ' ' && event.key !== 'Enter') return
-  wizard.comparing.value = false
+/** Beads | Picture: a press of Picture may be a hold; the click a hold ends with is its own, not a choice. */
+function onChoicePress(event: PointerEvent) {
+  if ((event.target as Element | null)?.closest('[data-value="picture"]')) onComparePress(event)
 }
+function onChoiceClick(event: MouseEvent) {
+  if (!compare.isOwnClick()) return
+  event.preventDefault()
+  event.stopPropagation()
+}
+const shownView = computed({ get: () => compare.shown.value, set: (view: CompareView) => compare.choose(view) })
+const showOptions = computed(() => [
+  { value: 'beads' as const, label: words.value.compareBeads, icon: 'bead' as const },
+  { value: 'picture' as const, label: words.value.comparePicture, icon: 'image' as const },
+])
 
 /** The lattice bead under a point on screen, none off the beads. */
 function beadIndexAt(clientX: number, clientY: number): number | undefined {
@@ -494,13 +604,19 @@ const ringStyle = computed(() => {
   return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
 })
 
-/** What the preview shows now, as a chip over it (DS-1): Make empty's tap, or the original picture while Compare is held. */
-const chip = computed(() => (wizard.comparing.value ? words.value.bandCompare : tool.value === 'make-empty' ? words.value.bandMakeEmpty : undefined))
+/** What a half shows now, as a chip over it (DS-1, DS-3): the picture held in the beads' place, the halves' names, the
+ * picture chosen under 1024 px, or Make empty's tap. */
+function chipFor(half: Half) {
+  if (compare.held.value) return words.value.bandCompare
+  if (half === 'picture' || compare.pictureAlone.value) return words.value.compareChipPicture
+  if (tool.value === 'make-empty') return words.value.bandMakeEmpty
+  return sideBySide.value ? words.value.compareChipBeads : undefined
+}
 
 onBeforeUnmount(() => {
   endDrag()
   endMark()
-  wizard.comparing.value = false
+  endPan()
 })
 </script>
 
@@ -508,88 +624,141 @@ onBeforeUnmount(() => {
   <div ref="paneEl" class="convert-preview" :class="{ 'convert-preview--eyedropper': eyedropper, 'convert-preview--background': tool === 'background' }" data-testid="convert-preview">
     <ConvertDropZone v-if="!wizard.hasPicture.value" @paste="emit('paste')" />
 
-    <div v-else class="convert-preview__room">
-      <div
-        ref="viewportEl"
-        class="convert-preview__viewport"
-        @wheel="onWheel"
-        @pointerdown.capture="onViewportDown"
-        @pointermove="onViewportMove"
-        @pointerup="onViewportUp"
-        @pointercancel="onViewportUp"
-      >
-        <div class="convert-preview__stage" :style="stageStyle">
-          <div ref="boxEl" class="convert-preview__box" :style="eyedropper ? { ...boxStyle, cursor: EYEDROPPER_CURSOR } : boxStyle" data-testid="convert-image-box" @pointerdown="onBoxDown" @pointermove="onBoxHover" @pointerleave="hovered = undefined">
-            <!-- The beads and the crop's dimming are clipped to the box; the handles and the chips may stand past it. -->
-            <div class="convert-preview__clip">
-              <canvas
-                ref="canvasEl"
-                class="convert-preview__canvas"
-                role="img"
-                :aria-label="previewName"
-                :style="boxStyle"
-                :data-columns="lattice?.columns"
-                :data-rows="lattice?.rows"
-                :data-comparing="wizard.comparing.value || undefined"
-                data-testid="convert-image-canvas"
-              />
-              <div v-if="showCrop && crop?.cropped" class="convert-preview__crop" :style="cropStyle" data-testid="convert-crop-line" />
+    <div v-else class="convert-preview__room" :class="{ 'convert-preview__room--split': sideBySide }">
+      <div class="convert-preview__halves">
+        <div v-for="half in halves" :key="half" class="convert-preview__half" :class="`convert-preview__half--${half}`" :data-testid="`convert-half-${half}`">
+          <div
+            :ref="(element) => place(half, 'viewport', element)"
+            class="convert-preview__viewport"
+            @wheel="onWheel"
+            @scroll="onScroll(half)"
+            @pointerdown.capture="onViewportDown"
+            @pointermove="onViewportMove"
+            @pointerup="onViewportUp"
+            @pointercancel="onViewportUp"
+          >
+            <div class="convert-preview__stage" :style="stageStyle">
+              <div
+                :ref="(element) => place(half, 'box', element)"
+                class="convert-preview__box"
+                :style="half === 'beads' && eyedropper ? { ...boxStyle, cursor: EYEDROPPER_CURSOR } : boxStyle"
+                :data-testid="half === 'beads' ? 'convert-image-box' : 'convert-picture-box'"
+                @pointerdown="onBoxDown($event, half)"
+                @pointermove="half === 'beads' && onBoxHover($event)"
+                @pointerleave="hovered = undefined"
+              >
+                <!-- The beads and the crop's dimming are clipped to the box; the handles and the chips may stand past it. -->
+                <div class="convert-preview__clip">
+                  <canvas
+                    v-if="half === 'beads'"
+                    :ref="(element) => place(half, 'canvas', element)"
+                    class="convert-preview__canvas"
+                    role="img"
+                    :aria-label="previewName"
+                    :style="boxStyle"
+                    :data-columns="lattice?.columns"
+                    :data-rows="lattice?.rows"
+                    :data-comparing="compare.pictureAlone.value || undefined"
+                    data-testid="convert-image-canvas"
+                  />
+                  <!-- The picture's half is named with the beads' canvas ("side by side"), so a reader hears it once. -->
+                  <canvas v-else :ref="(element) => place(half, 'canvas', element)" class="convert-preview__canvas" aria-hidden="true" :style="boxStyle" data-testid="convert-picture-canvas" />
+                  <div v-if="cropOn(half) && crop?.cropped" class="convert-preview__crop" :style="cropStyle" data-testid="convert-crop-line" />
+                  <!-- Beside the picture the beads show only what is kept. -->
+                  <div v-if="half === 'beads' && sideBySide && crop?.cropped" class="convert-preview__kept-only" :style="cropStyle" aria-hidden="true" />
+                </div>
+                <template v-if="cropOn(half)">
+                  <AppHandle
+                    v-for="handle in CROP_HANDLES"
+                    :key="handle"
+                    :place="HANDLE_PLACES[handle]"
+                    :hot="drag?.kind === 'handle' && drag.handle === handle"
+                    :limit="handleLimit"
+                    class="convert-preview__handle"
+                    :class="{ 'convert-preview__handle--corner': HANDLE_PLACES[handle].includes('-') }"
+                    :style="handleStyle(handle)"
+                    :aria-label="cropName(handle)"
+                    :data-testid="`convert-crop-${handle}`"
+                    @pointerdown="beginDrag($event, { kind: 'handle', handle })"
+                    @keydown="onHandleKey($event, handle)"
+                  />
+                  <div v-if="keptChip" class="convert-preview__kept-chip" :style="keptChip.style" data-testid="convert-kept">
+                    <span>{{ keptChip.text }}</span>
+                    <AppButton size="sm" class="convert-preview__keep-all" data-testid="convert-keep-all" @click="wizard.keepAll">{{ words.keepAll }}</AppButton>
+                  </div>
+                  <div v-if="sizeChip" class="convert-preview__size-chip" :style="sizeChip.style" role="status" data-testid="convert-crop-size">
+                    <span class="convert-preview__size-grid">{{ sizeChip.grid }}</span>
+                    <span class="convert-preview__size-measure">{{ sizeChip.measure }}</span>
+                  </div>
+                </template>
+                <span v-if="half === 'beads' && ringStyle" class="convert-preview__ring" :style="ringStyle" aria-hidden="true" />
+              </div>
             </div>
-            <template v-if="showCrop">
-              <AppHandle
-                v-for="handle in CROP_HANDLES"
-                :key="handle"
-                :place="HANDLE_PLACES[handle]"
-                :hot="drag?.kind === 'handle' && drag.handle === handle"
-                :limit="handleLimit"
-                class="convert-preview__handle"
-                :class="{ 'convert-preview__handle--corner': HANDLE_PLACES[handle].includes('-') }"
-                :style="handleStyle(handle)"
-                :aria-label="cropName(handle)"
-                :data-testid="`convert-crop-${handle}`"
-                @pointerdown="beginDrag($event, { kind: 'handle', handle })"
-                @keydown="onHandleKey($event, handle)"
-              />
-              <div v-if="keptChip" class="convert-preview__kept-chip" :style="keptChip.style" data-testid="convert-kept">
-                <span>{{ keptChip.text }}</span>
-                <AppButton size="sm" class="convert-preview__keep-all" data-testid="convert-keep-all" @click="wizard.keepAll">{{ words.keepAll }}</AppButton>
-              </div>
-              <div v-if="sizeChip" class="convert-preview__size-chip" :style="sizeChip.style" role="status" data-testid="convert-crop-size">
-                <span class="convert-preview__size-grid">{{ sizeChip.grid }}</span>
-                <span class="convert-preview__size-measure">{{ sizeChip.measure }}</span>
-              </div>
-            </template>
-            <span v-if="ringStyle" class="convert-preview__ring" :style="ringStyle" aria-hidden="true" />
           </div>
+          <span
+            v-if="chipFor(half)"
+            class="convert-preview__chip"
+            :class="{ 'convert-preview__chip--compare': chipFor(half) !== words.bandMakeEmpty }"
+            :data-half="half" data-testid="convert-chip">{{ chipFor(half) }}</span>
         </div>
       </div>
 
-      <span v-if="chip" class="convert-preview__chip" data-testid="convert-chip">{{ chip }}</span>
+      <span v-if="compare.held.value && pressedAt" class="convert-preview__press" :style="{ left: `${pressedAt.x}px`, top: `${pressedAt.y}px` }" aria-hidden="true" />
 
-      <div class="convert-preview__tools" data-testid="convert-preview-tools">
-        <AppButton
-          variant="text"
-          :action="actions.background"
-          :selected="wizard.popover.value === 'background'"
-          aria-haspopup="dialog"
-          :aria-expanded="wizard.popover.value === 'background'"
-          data-testid="convert-tool-background"
-          @click="wizard.togglePopover('background')"
-        />
-        <AppButton variant="text" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
+      <div class="convert-preview__tools" :class="{ 'convert-preview__tools--narrow': narrow }" data-testid="convert-preview-tools">
+        <template v-if="narrow">
+          <IconButton
+            variant="plain"
+            :icon-size="16"
+            :action="actions.background"
+            :selected="wizard.popover.value === 'background'"
+            aria-haspopup="dialog"
+            :aria-expanded="wizard.popover.value === 'background'"
+            data-testid="convert-tool-background"
+            @click="wizard.togglePopover('background')"
+          />
+          <IconButton variant="plain" :icon-size="16" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
+        </template>
+        <template v-else>
+          <AppButton
+            variant="text"
+            :action="actions.background"
+            :selected="wizard.popover.value === 'background'"
+            aria-haspopup="dialog"
+            :aria-expanded="wizard.popover.value === 'background'"
+            data-testid="convert-tool-background"
+            @click="wizard.togglePopover('background')"
+          />
+          <AppButton variant="text" :action="actions.makeEmpty" :selected="tool === 'make-empty'" data-testid="convert-tool-make-empty" @click="pickTool('make-empty')" />
+        </template>
         <span class="convert-preview__divider" aria-hidden="true" />
+        <SegmentedControl
+          v-if="narrow"
+          v-model="shownView"
+          :options="showOptions"
+          class="convert-preview__show"
+          :aria-label="words.compareShow"
+          data-testid="convert-show"
+          @pointerdown="onChoicePress"
+          @pointerup="compare.pressEnd()"
+          @pointercancel="compare.pressEnd()"
+          @pointerleave="compare.pressEnd()"
+          @click.capture="onChoiceClick"
+        />
         <AppButton
+          v-else
           variant="text"
           :action="actions.compare"
-          :selected="wizard.comparing.value"
+          :selected="compare.on.value"
           data-testid="convert-compare"
-          @pointerdown="compareOn()"
-          @pointerup="compareOff()"
-          @pointercancel="compareOff()"
-          @pointerleave="compareOff()"
-          @keydown="compareOn($event)"
-          @keyup="compareOff($event)"
-          @blur="compareOff()"
+          @pointerdown="onComparePress"
+          @pointerup="compare.pressEnd()"
+          @pointercancel="compare.pressEnd()"
+          @pointerleave="compare.pressEnd()"
+          @keydown="compare.keyDown"
+          @keyup="compare.keyUp"
+          @blur="compare.pressEnd()"
+          @click="compare.clicked()"
         />
         <template v-if="zoomed">
           <span class="convert-preview__divider" aria-hidden="true" />
@@ -634,6 +803,31 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
+.convert-preview__halves {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Compare on (DS-3): two equal halves, the picture's left and the beads' right, a 1px line between them full height. */
+.convert-preview__half {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.convert-preview__room--split .convert-preview__halves {
+  gap: 1px;
+  background: var(--line);
+}
+
+.convert-preview__room--split .convert-preview__half {
+  background: var(--box);
+}
+
 .convert-preview__viewport {
   flex: 1;
   min-height: 0;
@@ -658,12 +852,12 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
 }
 
-.convert-preview--background .convert-preview__box {
+.convert-preview--background .convert-preview__half--beads .convert-preview__box {
   cursor: crosshair;
 }
 
 /* Background draws by a drag, so a touch on the beads does not scroll the view. */
-.convert-preview--background .convert-preview__box {
+.convert-preview--background .convert-preview__half--beads .convert-preview__box {
   touch-action: none;
 }
 
@@ -683,9 +877,16 @@ onBeforeUnmount(() => {
     0 0 0 9999px var(--found-dim);
 }
 
-.convert-preview--eyedropper .convert-preview__crop,
-.convert-preview--background .convert-preview__crop {
+.convert-preview--eyedropper .convert-preview__half--beads .convert-preview__crop,
+.convert-preview--background .convert-preview__half--beads .convert-preview__crop {
   pointer-events: none;
+}
+
+/* Beside the picture, the beads outside the crop are not shown: the `box` ground stands in for them. */
+.convert-preview__kept-only {
+  position: absolute;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px var(--box);
 }
 
 /* The crop's handles are the shared handle (Handle card), over the clipped picture; a corner wins where it and an
@@ -826,22 +1027,76 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* A chip while a tool or Compare shows something, centred 14 below the preview's top (DS-1). */
+/* A chip while a tool or Compare shows something, centred 14 below its half's top (DS-1, DS-3); Compare's never wrap,
+   Make empty's line may on a phone. */
 .convert-preview__chip {
   position: absolute;
   top: var(--space-14);
   left: 50%;
   z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
   max-width: calc(100% - var(--space-32));
+  min-height: var(--convert-chip-height);
   padding: var(--space-4) var(--space-12);
   font: var(--type-meta);
   color: var(--ink);
   text-align: center;
   pointer-events: none;
-  background: var(--elevated);
+  background: var(--canvas);
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
+  box-shadow: var(--elevation-3);
   transform: translateX(-50%);
+}
+
+:root[data-theme='dark'] .convert-preview__chip {
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+
+.convert-preview__chip--compare {
+  max-width: none;
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .convert-preview__chip {
+    min-height: var(--convert-chip-height-touch);
+  }
+}
+
+/* Under a finger that holds Compare or Picture, a 44 disc in accent at 18% (DS-3). */
+.convert-preview__press {
+  position: absolute;
+  z-index: 4;
+  width: calc(var(--handle-reach-touch) * 2);
+  height: calc(var(--handle-reach-touch) * 2);
+  pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: var(--radius-full);
+  transform: translate(-50%, -50%);
+}
+
+/* Under 1024 px (DS-3): Background and Make empty icon only, 40 × --ctl, then Beads | Picture ("Show"). */
+.convert-preview__tools--narrow :deep(.icon-btn) {
+  width: var(--convert-narrow-tool-width);
+  height: var(--control-height);
+}
+
+.convert-preview__tools .convert-preview__show {
+  flex-wrap: nowrap;
+  padding: var(--space-2);
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.convert-preview__show :deep(.segmented__option) {
+  min-height: calc(var(--control-height) - var(--space-6));
+  padding: 0 var(--space-12) 0 var(--space-10);
+  font: var(--type-tab);
+  white-space: nowrap;
 }
 
 .convert-preview__zoom {

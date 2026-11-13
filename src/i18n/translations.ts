@@ -1276,6 +1276,14 @@ export interface Translations {
       keeping: string
       keepAll: string
       cropMeasure: string
+      /** Compare (ticket 0909): the chips over its halves, the narrow bar's Beads | Picture ("Show"), the preview's names. */
+      compareChipPicture: string
+      compareChipBeads: string
+      compareShow: string
+      compareBeads: string
+      comparePicture: string
+      compareSideBySideName: string
+      comparePictureName: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
