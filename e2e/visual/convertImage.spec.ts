@@ -59,8 +59,8 @@ test.describe('Convert image layouts', () => {
       await page.setViewportSize(viewport)
       await openPage(page)
       const shown = await firstWindow(page)
-      // DS-1's dozen and DS-3's Clean up button (ticket 0906).
-      expect(shown.count, shown.names.join(', ')).toBeLessThanOrEqual(13)
+      // DS-1's dozen, DS-3's Clean up button (ticket 0906) and Auto-fix lighting's switch (ticket 0907).
+      expect(shown.count, shown.names.join(', ')).toBeLessThanOrEqual(14)
       expect(shown.handles).toBe(8)
       expect(shown.cut).toEqual([])
       // At 1180 × 820, at the 18px root, Clean up's button (ticket 0906) stands under the pinned foot until the column
