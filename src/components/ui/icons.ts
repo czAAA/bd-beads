@@ -63,6 +63,7 @@ export const ICON_NAMES = [
   'pdf',
   'pen-mode',
   'pen-mode-off',
+  'picture-over-beads',
   'piece',
   'plus',
   'position-bottom',
