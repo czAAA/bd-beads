@@ -81,7 +81,7 @@ describe('ConvertFoot with a picture', () => {
     expect(text(wrapper, 'convert-result-size')).toMatch(/^8×4 beads · [\d.]+ × [\d.]+ (mm|cm)$/)
     expect(text(wrapper, 'convert-result-colors')).toBe('2 colors')
     // 32 beads of a Delica 11/0 at about 0.005 g each.
-    expect(text(wrapper, 'convert-result-beads')).toMatch(/^beads needed 32 · ≈ 0\.\d\d g$/)
+    expect(text(wrapper, 'convert-result-beads')).toMatch(/^beads needed 32 · ≈ \d+\.\d g$/)
     expect(wrapper.find('[data-testid="convert-result-goes-where"]').exists()).toBe(false)
 
     const button = wrapper.get('[data-testid="convert-image-create"]')

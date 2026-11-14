@@ -636,6 +636,10 @@ export const zh: Translations = {
     pieceTotal: '这些是 {faces} 面中一面的数量。整件：{count} · 15/0：{small}',
     pieceLines: { triangles: '三角形', edgeBeads: '边缘珠', hingeBeads: '铰链珠', tips: '三角形尖端', hingePins: '铰链销' },
     frontBackNote: '这些是整颗星星正反两面的数量。',
+    paletteNote: '调色板颜色，不是珠子色号',
+    paletteInfo:
+      '没有色号的颜色来自调色板，是在屏幕上选的，不是从珠子的颜色目录中选的，所以没有对应的珠子。从颜色目录中选的颜色会在这里显示色号。',
+    infoLabel: '这些数量的说明',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
