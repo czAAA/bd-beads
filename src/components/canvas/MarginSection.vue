@@ -8,7 +8,8 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import MarginColorPicker from './MarginColorPicker.vue'
 
 // The Frame panel's last section, margin (tickets 0656, 0657; MarginSheet and Frame cards): the margin color, the Switch
-// that shows or hides the sheet's title block, and the line on what the margin is. High contrast keeps the sheet white.
+// that shows or hides the sheet's title block, and the line on what the margin is; closed as it opens (ticket 0932). High
+// contrast keeps the sheet white.
 const props = defineProps<{
   /** The Project whose Canvas's Background the margin's Auto follows (ticket 0666). */
   project: Project
@@ -19,7 +20,7 @@ const margin = useCanvasBackground(() => props.project).margin
 </script>
 
 <template>
-  <PanelSection id="frame:margin" :label="t.frame.margin.heading" :summary="picker.summary.value" data-testid="margin-section">
+  <PanelSection id="frame:margin" :label="t.frame.margin.heading" :summary="picker.summary.value" closed-first data-testid="margin-section">
     <div class="margin-section">
       <MarginColorPicker :project="project" />
       <div class="margin-section__switch">

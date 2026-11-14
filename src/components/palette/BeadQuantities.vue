@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import { loadCatalogWhen, useBeadColorsList } from '../../composables/palette/useBeadColors'
-import { gramsPerBead } from '../../domain/beads'
-import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
+import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { frameOf } from '../../domain/layerRecord'
 import { backBeadsAt, pieceFaceOf, wholePieceOf } from '../../domain/pieceFaces'
-import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
 import { faceInfoWords } from '../../i18n/pieceFaceWords'
@@ -19,7 +16,7 @@ import type { LabelledColor } from '../../i18n/colorLabel'
 import ColorLabel from './ColorLabel.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's section after the size (ticket 0852), with the
+// Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's section under its closed Export row (0932), with the
 // total and the weight ("1 512 · ≈ 7.6 g", none when the Bead has none) in its header, and an Info button there saying how
 // the weight is worked out. Five colors show, then "Show all colors (n)" opens the rest; the rows are a table.
 const props = defineProps<{
@@ -33,30 +30,14 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 
-// Read from the Project itself, not through the library's reactive wrapper: a Project is replaced whole by every edit,
-// so its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is
-// slow.
-const palette = computed(() => (props.project ? projectPalette(props.project) : createPalette(defaultPaletteIds())))
-const quantities = computed(() => (props.project ? computeColorQuantities(props.project, palette.value) : []))
-
 /** How many colors show before "Show all". */
 const SUMMARY_ROWS = 5
 
-/** Estimated weight (ticket 155, CONTEXT.md): count × average weight of the woven layer's Bead, the Frame's (ticket
- * 0665), never stored; no weight column if the Bead has none. */
-const projectBead = computed(() => (props.project ? resolveProjectBead(props.project) : undefined))
-const averageGrams = computed(() => gramsPerBead(projectBead.value))
+const { palette, quantities, averageGrams, weightOf, count: totalCount, total } = useBeadsNeeded(() => props.project)
 /** The weight's Info button: how it is worked out, the average with the language's decimal sign (ticket 0852). */
 const weightInfo = computed(() =>
   averageGrams.value === undefined ? undefined : fillBlanks(t.value.quantities.weightInfo, { grams: String(averageGrams.value).replace('.', decimalSign(locale.value)) }),
 )
-
-function weightOf(count: number): string | undefined {
-  const grams = estimatedGrams(count, projectBead.value)
-  return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit, locale.value)
-}
-
-const totalCount = computed(() => quantities.value.reduce((sum, quantity) => sum + quantity.count, 0))
 
 /** The palette color of a row, with its catalog code when it was picked from the Color catalog (ticket 538). */
 const colorOf = (colorId: string | null, hex: string): LabelledColor => palette.value.byId(colorId) ?? { hex }
@@ -91,14 +72,10 @@ const piece = computed(() => {
 
 const expanded = ref(false)
 const shown = computed(() => (expanded.value ? quantities.value : quantities.value.slice(0, SUMMARY_ROWS)))
-const total = computed(() => {
-  const grams = weightOf(totalCount.value)
-  return `${groupThousands(totalCount.value, locale.value)}${grams ? ` · ≈ ${grams}` : ''}`
-})
 </script>
 
 <template>
-  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="quantities.length > 0 ? total : undefined" keep-summary :closed-first="closedFirst" data-testid="bead-quantities">
+  <PanelSection id="frame:beads" :label="t.quantities.heading" :summary="total || undefined" keep-summary :closed-first="closedFirst" data-testid="bead-quantities">
     <template v-if="quantities.length > 0 && weightInfo" #info>
       <InfoButton :label="t.quantities.weightInfoLabel" :body="weightInfo" data-testid="quantities-weight-info" />
     </template>

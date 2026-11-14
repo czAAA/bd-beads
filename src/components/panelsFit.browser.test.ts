@@ -41,6 +41,12 @@ const showAll = (root: HTMLElement): void => {
   if (!button) throw new Error('Beads needed has no Show all button')
   button.click()
 }
+/** The Frame panel's Export and margin unfolded, as each opens closed (ticket 0932). */
+const unfold = (root: HTMLElement): void => {
+  const headers = root.querySelectorAll<HTMLElement>('[data-testid="frame-export"] .panel-section__header, [data-testid="margin-section"] .panel-section__header')
+  if (headers.length !== 2) throw new Error('The Frame panel has no Export or margin header')
+  headers.forEach((header) => header.click())
+}
 
 /** A component inside a panel shell's context, as the Menu panel needs; given a width, as wide as that panel's content
  * (the Export panel's small one, ticket 0652). */
@@ -67,7 +73,8 @@ const CASES: FitCase[] = [
   ['ProjectPanel (technique locked)', ProjectPanel, { project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 1 } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePanel', inPanel(FramePanel, { project: painted }), {}],
   ['FramePanel (all colors shown)', inPanel(FramePanel, { project: painted }), {}, showAll],
-  ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}],
+  ['FramePanel (Export and margin unfolded)', inPanel(FramePanel, { project: painted }), {}, unfold],
+  ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}, unfold],
   ['FramePanel (rows done)', inPanel(FramePanel, { project: withLayers(painted, { rowProgress: { ...rowProgressOf(painted), currentRow: 1 } }) }), {}],
   ['FramePanel (turned)', inPanel(FramePanel, { project: rotateFrame(painted)! }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],

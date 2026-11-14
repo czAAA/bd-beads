@@ -752,7 +752,7 @@ export const es: Translations = {
     fromStarter: 'Marco desde un punto de partida',
     fitAFrame: 'Ajustar un marco al dibujo',
     fitNothing: 'Todavía no hay nada dibujado a lo que ajustar un marco.',
-    noFrameLine: 'Un marco fija el tamaño, las exportaciones y el número de cuentas.',
+    noFrameLine: 'Un marco fija el tamaño, las exportaciones y Cuentas necesarias.',
     selectAFrame: 'Seleccionar un marco',
     selectFrameHint: 'Arrastra sobre el lienzo para seleccionar el marco. Esc cancela.',
     exportNeedsFrame: 'Pon un marco alrededor del dibujo que quieras exportar.',
@@ -1267,6 +1267,7 @@ export const es: Translations = {
     noBeadsToNumber: 'No hay cuentas que numerar.',
     gridFocus: 'Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto.',
     noWorkToFocus: 'Todavía no hay trabajo en el que centrarse.',
+    framePanelBeads: 'Abre Cuentas necesarias ({total}), el tamaño del marco, girar y quitar.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

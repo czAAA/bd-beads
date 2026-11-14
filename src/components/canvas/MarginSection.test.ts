@@ -14,9 +14,11 @@ function setTheme(theme: 'light' | 'dark' | 'contrast') {
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 
 const mounted: ReturnType<typeof mount>[] = []
-function render() {
+/** The section unfolded, as it opens closed (ticket 0932). */
+async function render() {
   const wrapper = mount(MarginSection, { props: { project }, attachTo: document.body })
   mounted.push(wrapper)
+  await wrapper.get('.panel-section__header').trigger('click')
   return wrapper
 }
 
@@ -25,7 +27,7 @@ async function flush() {
   await new Promise((resolve) => setTimeout(resolve))
 }
 
-const radios = (wrapper: ReturnType<typeof render>) => wrapper.findAll('[role="radio"]')
+const radios = (wrapper: Awaited<ReturnType<typeof render>>) => wrapper.findAll('[role="radio"]')
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
@@ -40,8 +42,8 @@ afterEach(() => {
 })
 
 describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
-  it('offers Auto, then the theme\'s three Canvas colors, then Custom color, with Auto chosen and the Canvas color dotted', () => {
-    const wrapper = render()
+  it('offers Auto, then the theme\'s three Canvas colors, then Custom color, with Auto chosen and the Canvas color dotted', async () => {
+    const wrapper = await render()
     expect(wrapper.get('[role="radiogroup"]').attributes('aria-label')).toBe('Margin color')
     expect(radios(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
       'Auto, one step off the Canvas color',
@@ -57,7 +59,7 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
   })
 
   it('follows the Canvas\'s Background with Auto, on the swatch and on the sheet (ticket 0666)', async () => {
-    const wrapper = render()
+    const wrapper = await render()
     const stone = withBackground(project, 'canvas', 2)
     await wrapper.setProps({ project: stone })
     expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Auto #dbd8d3')
@@ -66,7 +68,7 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
   })
 
   it('stores the position of a Canvas color picked, and keeps it when the theme changes', async () => {
-    const wrapper = render()
+    const wrapper = await render()
     await wrapper.get('[data-testid="background-color-pebble"]').trigger('click')
     expect(localStorage.getItem(PREFERENCES.marginColor.key)).toBe('3')
     expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#cdcac4')
@@ -78,7 +80,7 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
   })
 
   it('stores a Custom color taken, and goes back to Auto', async () => {
-    const wrapper = render()
+    const wrapper = await render()
     await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
     const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
     await field.setValue('#7a2e8c')
@@ -91,16 +93,16 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
     expect(localStorage.getItem(PREFERENCES.marginColor.key)).toBe('auto')
   })
 
-  it('shows Auto while Custom is stored with no Custom color taken yet', () => {
+  it('shows Auto while Custom is stored with no Custom color taken yet', async () => {
     localStorage.setItem(PREFERENCES.marginColor.key, 'custom')
     useCanvasBackground().margin.setChoice('custom')
-    const wrapper = render()
+    const wrapper = await render()
     expect(radios(wrapper)[0].attributes('aria-checked')).toBe('true')
     expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#eeeeee')
   })
 
   it('sums itself up as "Auto" or the color\'s name while folded', async () => {
-    const wrapper = render()
+    const wrapper = await render()
     await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
     await wrapper.get('button[aria-expanded="true"]').trigger('click')
     expect(wrapper.text()).toContain('Stone')
@@ -111,7 +113,7 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
   })
 
   it('shows the title block on the sheet until its Switch is turned off, remembered on the device (ticket 0657)', async () => {
-    const wrapper = render()
+    const wrapper = await render()
     const toggle = wrapper.get('[data-testid="margin-title-block-switch"]')
     expect(toggle.attributes('aria-label')).toBe('Name and size on the margin')
     expect(toggle.attributes('aria-checked')).toBe('true')
@@ -125,8 +127,18 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
   it('in high contrast offers no colors, the sheet being white', async () => {
     setTheme('contrast')
     await flush()
-    const wrapper = render()
+    const wrapper = await render()
     expect(wrapper.find('[role="radiogroup"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-line"]').exists()).toBe(true)
+  })
+
+  it('opens closed every time, kept nowhere (ticket 0932)', async () => {
+    const wrapper = await render()
+    wrapper.unmount()
+    mounted.splice(mounted.indexOf(wrapper), 1)
+    const again = mount(MarginSection, { props: { project }, attachTo: document.body })
+    mounted.push(again)
+    expect(again.get('.panel-section__header').attributes('aria-expanded')).toBe('false')
+    expect(again.find('[data-testid="margin-title-block-switch"]').exists()).toBe(false)
   })
 })

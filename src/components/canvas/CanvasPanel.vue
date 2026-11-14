@@ -56,6 +56,7 @@ const {
   deletedProjectName,
   openMenuOnSavedProjects,
   activeProject,
+  settledProject,
   openElsewhere,
   projectLabel,
   toasts,
@@ -409,6 +410,7 @@ const drawingStyle = computed(() => {
         :demo="demo"
         :expand="demoExpand"
         :project="onEditor ? activeProject : undefined"
+        :settled-project="onEditor ? settledProject : undefined"
         :rulers="showRulers"
         :grid-focus="gridFocus"
         :reference-image="onEditor && activeProject ? referenceState : undefined"

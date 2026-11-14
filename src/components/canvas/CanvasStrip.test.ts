@@ -422,3 +422,16 @@ describe('CanvasStrip save ring (ticket 0922, SaveReminder card)', () => {
     wrapper.unmount()
   })
 })
+
+describe('CanvasStrip Frame button (ticket 0932)', () => {
+  const framedWith = (beads: Record<number, Record<number, string>>) =>
+    bareProject({ technique: 'loom', frame: { row: 0, column: 0, rows: 4, columns: 4, technique: 'loom', beads } })
+
+  it('says Beads needed’s total in its Tooltip, counted on the settled Project, and the plain line while nothing is painted', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project: framedWith({}) } })
+    expect(wrapper.text()).toContain(en.tooltips.framePanel)
+    await wrapper.setProps({ settledProject: framedWith({ 1: { 1: '#ff0000', 2: '#00ff00' }, 2: { 1: '#ff0000' } }) })
+    expect(wrapper.text()).not.toContain(en.tooltips.framePanel)
+    expect(wrapper.text()).toMatch(/Open Beads needed \(3( · ≈ [^)]+)?\), the Frame’s size, Rotate and Remove\./)
+  })
+})
