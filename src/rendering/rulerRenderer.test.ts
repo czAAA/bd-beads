@@ -102,6 +102,12 @@ describe('drawRulers', () => {
     expect(texts).toEqual(kept.texts)
   })
 
+  it('keeps the Piece rectangle in the draft look, which draws no contour (ticket 1004)', () => {
+    const { context, strokes } = fakeContext()
+    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 0.1, numbers: true }))
+    expect(strokes.length).toBeGreaterThan(0)
+  })
+
   it('numbers the box round every bead of a layer whose Pieces are not counted yet, without its line (ticket 0716)', () => {
     const surface = surfaceAt(1)
     const pieces = { beads: beadsOfLayer(twoPieces, 'canvas'), touch: 1, areas: [{ row: 0, column: 0, rows: 13, columns: 13 }], named: [], uncounted: true as const }

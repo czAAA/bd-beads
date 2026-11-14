@@ -68,7 +68,7 @@ function flatCentre(project: Project, row: number, column: number, own: [number,
  * so its centre is not the tile's color. Its neighbours' own centres are still checked. */
 function underPiece(project: Project, row: number, column: number): boolean {
   if (beadColorAt(project, row, column) !== null) return false
-  return [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (dx || dy) && beadColorAt(project, row + dy, column + dx) !== null))
+  return [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (dx !== 0 || dy !== 0) && beadColorAt(project, row + dy, column + dx) !== null))
 }
 
 // The beads whose centre is not the right color in a screenshot taken from `origin` (page position of its top-left
