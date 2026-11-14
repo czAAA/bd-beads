@@ -177,6 +177,7 @@ const sections = computed<HomepageSection[]>(() => [
       isNew: isNew.value,
       freeHeight: narrow.value ? undefined : freeGrowth.height.value,
       freeOpen: narrow.value || freeGrowth.open.value,
+      onMakeFirstProject: () => emit('makeFirstProject'),
       onOpenEditor: () => emit('openEditor'),
     }),
   },

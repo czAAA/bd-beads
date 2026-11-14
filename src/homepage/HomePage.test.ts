@@ -484,13 +484,14 @@ describe('HomePage coffee tile', () => {
 })
 
 describe('HomePage plan tiles', () => {
-  it('sit below the coffee tile, and their Open the editor opens the editor like the hero button', async () => {
-    for (const count of [0, 3]) {
+  // Ticket 0923: No account's button runs the strip's way in, Make your first Project for a new visitor.
+  it('sit below the coffee tile, and their button makes the first Project, or opens the editor once Projects are saved', async () => {
+    for (const [count, event] of [[0, 'makeFirstProject'], [3, 'openEditor']] as const) {
       const wrapper = page(count)
       const html = wrapper.html()
       expect(html.indexOf('data-testid="homepage-plans"')).toBeGreaterThan(html.indexOf('data-testid="homepage-coffee"'))
-      await wrapper.find('[data-testid="plan-no-account"] button').trigger('click')
-      expect(wrapper.emitted('openEditor')).toHaveLength(1)
+      await wrapper.get('[data-testid="plan-no-account"] button').trigger('click')
+      expect(wrapper.emitted(event)).toHaveLength(1)
     }
   })
   // Ticket 0871: a first visit doesn't end on Coming soon; the step is named by the section's heading.

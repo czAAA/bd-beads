@@ -7,9 +7,9 @@ import { useI18n } from '../i18n/useI18n'
 import FreeList from './FreeList.vue'
 import { freeListRows } from './freeList'
 
-// The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account opens the editor, like the hero's
-// button, and lists everything free; the page grows its list as it scrolls (ticket 0742). Free account and Pro are
-// greyed out and list nothing, a Coming soon stamp where the list was; on a phone they are stacked (ticket 0827).
+// The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account's button is the strip's way in, Make
+// your first Project with none saved and Open the editor once there are (ticket 0923); it lists everything free, grown
+// as the page scrolls (0742). Free account and Pro are greyed out, a Coming soon stamp for a list; stacked on a phone.
 const props = defineProps<{
   /** The free list's height, in the tile's own px, as far as the page has grown it; unset, the whole list. */
   freeHeight?: number
@@ -21,7 +21,7 @@ const props = defineProps<{
    * 0871); Free account and Pro come back once the visitor has stayed. */
   isNew?: boolean
 }>()
-const emit = defineEmits<{ openEditor: [] }>()
+const emit = defineEmits<{ makeFirstProject: []; openEditor: [] }>()
 const { t, locale } = useI18n()
 /** The heading and its line: the three plans' and their reason, or No account's alone. */
 const headingCopy = computed(() => (props.isNew ? t.value.homepage.plans.alone : t.value.homepage.plans))
@@ -67,7 +67,15 @@ defineExpose({ freeWindow, freeTile })
           ><span>{{ t.homepage.plans.tiles[0].meta }}</span>
         </p>
         <p class="plan__text">{{ t.homepage.plans.tiles[0].text }}</p>
-        <AppButton v-if="!phone" class="plan__button" variant="primary" @click="emit('openEditor')">{{ t.homepage.plans.tiles[0].button }}</AppButton>
+        <template v-if="!phone">
+          <!-- The longer label may take two lines in the tile's third of a tablet's width: `data-wrap-ok` tells the fit check so. -->
+          <AppButton v-if="isNew" class="plan__button" variant="primary" data-wrap-ok @click="emit('makeFirstProject')">
+            {{ t.homepage.makeFirstProject }}
+          </AppButton>
+          <AppButton v-else class="plan__button" variant="primary" @click="emit('openEditor')">
+            {{ t.homepage.plans.tiles[0].button }}
+          </AppButton>
+        </template>
         <p id="homepage-free" class="plan__free-head">{{ t.homepage.plans.free.heading }}</p>
         <div
           ref="freeWindow"
@@ -314,7 +322,8 @@ defineExpose({ freeWindow, freeTile })
 
 .plan__button {
   width: 100%;
-  height: 2.75rem;
+  height: auto;
+  min-height: 2.75rem;
   white-space: normal;
 }
 
