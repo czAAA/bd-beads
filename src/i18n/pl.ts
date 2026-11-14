@@ -317,6 +317,7 @@ export const pl: Translations = {
       storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
       storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi.\nZapisz plik projektu każdego, którego nie chcesz stracić:',
     },
+    gridFocusLabel: 'Fokus siatki',
   },
   shell: {
     canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo z pliku projektu.',
@@ -1263,6 +1264,8 @@ export const pl: Translations = {
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
     pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
     noBeadsToNumber: 'Nie ma koralików do ponumerowania.',
+    gridFocus: 'Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej.',
+    noWorkToFocus: 'Nie ma jeszcze pracy, na której można się skupić.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',

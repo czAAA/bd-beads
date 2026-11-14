@@ -85,6 +85,8 @@ export interface BeadLayerDeps {
   onDrawn?: () => void
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference: Ref<DrawnReference | undefined>
+  /** Grid focus's work in grid px (ticket 1002): the gap is eased round it; undefined while Grid focus is off. */
+  workBoxes?: Ref<readonly Region[] | undefined>
 }
 
 /** Whether two reference images draw the same: the same picture in the same place at the same opacity. A new object
@@ -178,9 +180,9 @@ function beadCost(project: Project): number {
 
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference }: BeadLayerDeps): void {
+export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn, reference, workBoxes }: BeadLayerDeps): void {
   /** What the cells were last drawn from, to draw only what an edit changed. */
-  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean; reference: DrawnReference | undefined } | undefined
+  let drawn: { project: Project; zoom: number; scroll: Scroll; box: Region; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean; reference: DrawnReference | undefined; gridFocus: readonly Region[] | undefined } | undefined
 
   /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just
    * those. */
@@ -204,7 +206,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
     }
 
     const before = drawn
-    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, reference: reference.value }
+    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, box, width: size.value.width, height: size.value.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, reference: reference.value, gridFocus: workBoxes?.value }
     const bands =
       !resized &&
       before &&
@@ -219,17 +221,18 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
       sameReference(before.reference, reference.value) &&
+      before.gridFocus === workBoxes?.value &&
       sameDrawing(before.project, project)
         ? changedBands(before.project, project)
         : undefined
 
     if (bands === undefined) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value, gridFocus: workBoxes?.value })
       onDrawn?.()
       return
     }
     for (const rows of bands) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true, opaque: true, reference: reference.value, gridFocus: workBoxes?.value })
     }
   }
 
@@ -307,6 +310,7 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
       sameReference(before.reference, reference.value) &&
+      before.gridFocus === workBoxes?.value &&
       props.zoom > 0 &&
       before.zoom > 0
     // The draft look moves its image too (ticket 0689): a live redraw is sharp but held about 40 fps, a move keeps 60.
@@ -340,6 +344,6 @@ export function useBeadLayer({ props, canvas: canvasEl, standIn: standInEl, size
 
   // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make
   // the draw depend on every bead's property.
-  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown, reference], oncePerFrame(drawCellsOrMove), { flush: 'post' })
+  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown, reference, () => workBoxes?.value], oncePerFrame(drawCellsOrMove), { flush: 'post' })
   onBeforeUnmount(() => clearTimeout(settleTimer))
 }

@@ -315,6 +315,7 @@ export const en: Translations = {
       storageLead: 'Your Projects are saved only in this browser, on this device.',
       storage: "If the browser's data is cleared, they go with it.\nSave a Project file of each one you don't want to lose:",
     },
+    gridFocusLabel: 'Grid focus',
   },
   shell: {
     canvasPlaceholderHint: 'Make one with New Project, open one from the Projects library, or open a Project file.',
@@ -1247,6 +1248,8 @@ export const en: Translations = {
     fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
     noBeadsToNumber: 'There are no beads to number.',
+    gridFocus: 'Keeps the grid clear around your work and calmer everywhere else.',
+    noWorkToFocus: 'There is no work to focus on yet.',
   },
   layerSettings: {
     frameHeading: 'Settings',

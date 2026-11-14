@@ -353,6 +353,23 @@ describe('ProjectSurface', () => {
       expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
     })
 
+    it('with Grid focus on, holds the work through a stroke, drawing its rows, and draws all again with its end (ticket 1002)', async () => {
+      viewport = { width: 400, height: 600 }
+      const project = projectOf(20, 30, { frame: undefined, beads: { 0: { 0: '#ff0000' } } })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { stroking: true, gridFocus: true })
+      context.calls.length = 0
+
+      // A bead painted far from the rest is drawn in its rows alone while the stroke goes on.
+      await wrapper.setProps({ project: painted(project, 12, 15) })
+      expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
+
+      // Its end brings the bead its own near area: the whole view is drawn again.
+      context.calls.length = 0
+      await wrapper.setProps({ stroking: false })
+      await nextTick()
+      expect(context.named('clearRect').map((call) => call.args)).toContainEqual([0, 0, 400, 600])
+    })
+
     it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
