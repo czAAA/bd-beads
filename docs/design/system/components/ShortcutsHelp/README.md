@@ -7,5 +7,6 @@ The Keyboard shortcuts modal: every shortcut, grouped as in the Toolbox.
 - "Previous row" is written "Row not done" here too (DESIGN.md §8). Shown only when a keyboard is present; opened by its header button or `?`.
 - **Ticket 0796 adds Save Project file** (`Ctrl/Cmd+S`) **and Save Project file as…** (`Ctrl/Cmd+Shift+S`) to the Edit group (the dialog has no Project group), read from the control registry like every row.
 - **v16 adds a Canvas group:** `6` Set Frame, `5` Hand, `R` Rulers, Space + drag or the wheel to move the canvas, ⌘ or Ctrl + wheel to zoom. Not drawn in the preview yet.
+- **Ticket 1002 adds Grid focus** (`G`) to the Canvas group, read from the control registry like every row (approved 2026-11-14, not yet in the app).
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.
