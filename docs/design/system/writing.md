@@ -1015,6 +1015,7 @@ The ring on the Canvas strip, beside the Project button, that offers to save a P
 | Save Project file · Save Project file as… (Project panel rows, the Save and Save as actions; they replace the row "Project file") | Сохранить файл проекта · Сохранить файл проекта как… | Зберегти файл проєкту · Зберегти файл проєкту як… | Zapisz plik projektu · Zapisz plik projektu jako… |
 | {count} beads since the last file (the label's count, a counted word, ticket 0858; one: {count} bead since the last file) | {count} бисеринка / бисеринки / бисеринок с последнего файла | {count} бісеринка / бісеринки / бісеринок з останнього файлу | {count} koralik / koraliki / koralików od ostatniego pliku |
 | Project: {name} (the strip's Project button, its accessible name and Tooltip name, ticket 0858) | Проект: {name} | Проєкт: {name} | Projekt: {name} |
+| the browser can clear your work, a file stays (the label's second line in place of the count while the Project has never had a file, ticket 0987) | браузер может очистить работу, файл останется | браузер може очистити роботу, файл залишиться | przeglądarka może wyczyścić twoją pracę, plik zostanie |
 
 | English | Беларуская | Español | 中文 |
 |---|---|---|---|
@@ -1027,6 +1028,7 @@ The ring on the Canvas strip, beside the Project button, that offers to save a P
 | Save Project file · Save Project file as… | Захаваць файл праекта · Захаваць файл праекта як… | Guardar archivo de proyecto · Guardar archivo de proyecto como… | 保存项目文件 · 项目文件另存为… |
 | {count} beads since the last file | {count} бісерынка / бісерынкі / бісерынак з апошняга файла | {count} cuenta / cuentas / de cuentas desde el último archivo | 自上次文件后 {count} 颗珠子 |
 | Project: {name} | Праект: {name} | Proyecto: {name} | 项目：{name} |
+| the browser can clear your work, a file stays | браўзер можа ачысціць працу, файл застанецца | el navegador puede borrar tu trabajo, un archivo se queda | 浏览器可能清除作品，文件会一直保留 |
 
 ## Keep Projects copy (ticket 0839)
 
