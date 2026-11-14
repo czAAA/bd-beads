@@ -29,6 +29,7 @@ import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, markLookOf } from './tonalTiles'
 import { canvasLiftCells, drawLift, liftCollector, liftRows, paintedOnly } from './liftedPiece'
+import { drawGapEasing } from './gridFocus'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -131,6 +132,9 @@ export interface RenderInput {
   /** The reference image (ticket 0790): drawn over every layer's Background and under every bead, the Frame's empty
    * beads see-through over it. Only the editor's surface hands one in, so no export, thumbnail or example prints it. */
   reference?: DrawnReference
+  /** Grid focus (ticket 1002): the work's boxes in grid px, which the gap between tonal tiles stays full round and is
+   * calmer far from. Only the editor's surface hands them in, so no export, thumbnail or example eases its grid. */
+  gridFocus?: readonly Region[]
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -709,6 +713,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   if (space.open) {
     // The reference image over the Canvas's Background and under its Position marks and every bead (ticket 0790).
     if (drawn) drawReference(context, drawn)
+    if (positionMarks && tiles && input.gridFocus && theme.tonalTiles) {
+      drawGapEasing(context, { boxes: input.gridFocus, toRegion: gridToRegion(extent, region, zoom, rotation), pixelRatio, width: region.width, height: region.height, background: theme.canvas })
+    }
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
     if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio)
     drawCanvasLayer(context, draw, space)

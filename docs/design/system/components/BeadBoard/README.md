@@ -25,7 +25,7 @@ Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mock
 
 ## Canvas look (approved 2026-11-14; tickets 1001 to 1004)
 
-Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), the tonal tiles (ticket 1001) and the Lifted piece (ticket 1004), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
+Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), the tonal tiles (ticket 1001), Grid focus (ticket 1002) and the Lifted piece (ticket 1004), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
 
 ### Tonal tiles (ticket 1001)
 
@@ -44,6 +44,7 @@ Approved in the Canvas look study and **not yet in the app**, save the own-color
 - **The work** is the Frame's margin sheet, and each Piece area on the Canvas, corners rounded. It follows what is painted: a new bead far from the rest brings its own near area at the next draw.
 - With no bead and no Frame there is no work, and the grid is full everywhere. Off, the grid is full everywhere.
 - The empty canvas laid under the drawing uses the far gap while Grid focus is on.
+- **As built:** the easing is a field of the far gap, sampled coarsely and drawn up to the screen smoothly under the tiles, never a canvas `filter` (iPad Safari has none); made once a view, so a band redrawn after an edit reuses it. Through a stroke the work is held, and its end draws the view again with the new bead's own near area. Only the editor's drawing has it: no export, thumbnail or example.
 
 ### Beads: own-color rim and satin light (ticket 1003)
 

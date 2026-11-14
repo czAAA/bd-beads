@@ -22,6 +22,7 @@ const blocked: PreferenceStorage = {
 const CASES = [
   { name: 'rulers', key: 'openbeads:rulers', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
   { name: 'rowHighlight', key: 'openbeads:row-highlight', saved: 'off', read: false, other: true, stored: 'on', invalid: null, fallback: true },
+  { name: 'gridFocus', key: 'openbeads:grid-focus', saved: 'off', read: false, other: true, stored: 'on', invalid: null, fallback: true },
   { name: 'canvasBackground', key: 'openbeads:canvas-background-3', saved: '3', read: 3, other: 2, stored: '2', invalid: '4', fallback: 1 },
   { name: 'canvasBackground', key: 'openbeads:canvas-background-3', saved: 'custom', read: 'custom', other: 'custom', stored: 'custom', invalid: 'mine', fallback: 1 },
   { name: 'canvasCustomColor', key: 'openbeads:canvas-custom-color', saved: '#7A2E8C', read: '#7a2e8c', other: '#14213d', stored: '#14213d', invalid: 'purple', fallback: undefined },

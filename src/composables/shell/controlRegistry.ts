@@ -53,6 +53,8 @@ export interface ControlDeps {
   onFillSelection: () => void
   onFrameFromSelection: () => void
   onToggleRulers: () => void
+  /** The strip's Grid focus toggle and `G` (ticket 1002): calms the grid away from the work, or gives it back. */
+  onToggleGridFocus: () => void
   /** The strip's Reference image button and `I` (ticket 0790): shows or hides the reference image. */
   onToggleReferenceImage: () => void
   /** The edit pencil: shows or hides the Frame's handles (tickets 417, 510). */
@@ -295,6 +297,20 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations) => t.tooltips.noBeadsToNumber,
     run: (deps) => {
       if (hasRuled(deps)) deps.onToggleRulers()
+    },
+  },
+  {
+    // Grid focus (ticket 1002, CanvasStrip card): held, G too, while there is no bead and no Frame to focus on.
+    id: 'grid-focus',
+    icon: 'grid-focus',
+    name: (t) => t.canvas.gridFocusLabel,
+    body: (t) => t.tooltips.gridFocus,
+    group: 'canvas',
+    chords: [{ key: 'g', label: 'G' }],
+    enabled: hasRuled,
+    disabledBody: (t: Translations) => t.tooltips.noWorkToFocus,
+    run: (deps) => {
+      if (hasRuled(deps)) deps.onToggleGridFocus()
     },
   },
   {

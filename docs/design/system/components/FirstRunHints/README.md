@@ -1,6 +1,6 @@
 # FirstRunHints
 
-What an empty Project says: only where Projects are kept and how not to lose them. Nothing else is written over the Canvas: no caption beside a control, no arrow, no ring. Approved on the claude.ai canvas "openbeads first-run: decluttered welcome" (ticket 0738), then cut down to the welcome alone in the repo (tickets 0795 and 0798, from the user's screenshot of the welcome by itself). It replaces the hand-drawn notes and arrows of ticket 0725.
+What an empty Project says: the next step, how to place a bead, and under it one quiet line on where Projects are kept (ticket 0920). Nothing else is written over the Canvas: no caption beside a control, no arrow, no ring. The full advice on keeping a Project file is where it is acted on: the Project panel (Save Project file) and the Save reminder on the Canvas strip (SaveReminder card). Approved on the claude.ai canvas "openbeads first-run: decluttered welcome" (ticket 0738), then cut down to the welcome alone in the repo (tickets 0795 and 0798, from the user's screenshot of the welcome by itself). It replaces the hand-drawn notes and arrows of ticket 0725.
 
 ## When it shows
 
@@ -12,14 +12,14 @@ What an empty Project says: only where Projects are kept and how not to lose the
 
 ## Welcome
 
-Centred on the drawing area, under the CanvasHint line. The risk is plain but calm: a fact and what to do, no alarm words, no warning colour or icon.
+Centred on the drawing area, under the CanvasHint line. What to do comes first; where the work lives is a calm fact under it, no alarm words, no warning colour or icon.
 
-- The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: "Your Projects are saved only in this browser, on this device."
-- 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide, in two lines on purpose: "If the browser's data is cleared, they go with it." and under it "Keep a file of each one you don't want to lose:" (ticket 0839: the string breaks after its first sentence, so no word sits alone on a line; a screen too narrow for a line balances it, `text-wrap: balance`).
-- 10px under it the way to a Project file, the Project panel's own labels in the CanvasHint's chips (DM Mono on `.hint-chip`) joined by "›": `Project › Export › Save Project file`.
+- The lead line in Inter 16px medium (`--hint-storage-lead`), `body`, at most 36rem wide: the next step in the Paint tool's own Tooltip words, "Tap or drag to place beads in the chosen color." on touch, and in mouse words, "Click or drag to place beads in the chosen color.", with a mouse (ticket 0920). Touch or mouse is the one rule for every help line (`useHelpDevice`, writing.md "A help line fits the device in hand").
+- 6px under it the storage line in Inter 14px (`--hint-storage`), `muted`, at most 36rem wide, one line: "Your Projects are saved only in this browser, on this device." A screen too narrow for it balances it (`text-wrap: balance`).
+- No path to the Project file and no chips (ticket 0920): the welcome says no more about keeping a file than where the work lives; the Save reminder asks for the file once there is work to keep.
 - No buttons: opening a file, Convert image and Keyboard shortcuts stay in Menu.
 - It sits on the canvas overlay layer (`z-canvas-overlay`), under the Tool pill, the strip and every popover, and does not move with the canvas.
-- Nothing covers it when a Project is created (ticket 0839): the question "Ask the browser to keep your Projects?" waits for the first Project file or export (the Keep note, `docs/glossary/`), so the welcome alone carries the advice to keep a file.
+- Nothing covers it when a Project is created (ticket 0839): the question "Ask the browser to keep your Projects?" waits for the first Project file or export (the Keep note, `docs/glossary/`).
 
 ## Phone (30rem and under)
 
@@ -32,4 +32,4 @@ The same welcome, at the desktop sizes. No CanvasHint line.
 
 The copy in every language is in `writing.md`, "First-run welcome copy".
 
-Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition. The welcome cut down to the storage lines in the repo (2026-11-05, tickets 0795 and 0798).
+Hand-written from the approved canvas (2026-10-31, ticket 0738); static rendition. The welcome cut down to the storage lines in the repo (2026-11-05, tickets 0795 and 0798), then led by the next step with the storage as one quiet line under it (2026-11-14, ticket 0920, Impeccable UX audit UX-001).

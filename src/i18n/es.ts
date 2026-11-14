@@ -314,9 +314,10 @@ export const es: Translations = {
       pinchToZoom: 'pellizca para hacer zoom',
     },
     firstRun: {
-      storageLead: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
-      storage: 'Si se borran los datos del navegador, se van con ellos.\nGuarda un archivo de proyecto de cada uno que no quieras perder:',
+      storage: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
+      paintMouse: 'Haz clic o arrastra para poner cuentas del color elegido.',
     },
+    gridFocusLabel: 'Foco de cuadrícula',
   },
   shell: {
     canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto.',
@@ -721,6 +722,7 @@ export const es: Translations = {
     noFile: 'Aún no hay archivo de proyecto',
     announce: 'Cuentas desde el último archivo: {count}. Guarda un archivo de proyecto para conservarlas.',
     since: { one: '{count} cuenta desde el último archivo', many: '{count} de cuentas desde el último archivo', other: '{count} cuentas desde el último archivo' },
+    noFileWhy: 'el navegador puede borrar tu trabajo, un archivo se queda',
   },
   transfer: {
     exportLibraryButton: 'Guardar todo en un archivo de proyecto',
@@ -1260,6 +1262,8 @@ export const es: Translations = {
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
     noBeadsToNumber: 'No hay cuentas que numerar.',
+    gridFocus: 'Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto.',
+    noWorkToFocus: 'Todavía no hay trabajo en el que centrarse.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

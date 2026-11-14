@@ -314,9 +314,10 @@ export const pl: Translations = {
       pinchToZoom: 'uszczypnij, aby powiększyć',
     },
     firstRun: {
-      storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
-      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi.\nZapisz plik projektu każdego, którego nie chcesz stracić:',
+      storage: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
+      paintMouse: 'Kliknij lub przeciągnij, aby kłaść koraliki wybranego koloru.',
     },
+    gridFocusLabel: 'Fokus siatki',
   },
   shell: {
     canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz projekt z biblioteki projektów albo z pliku projektu.',
@@ -724,6 +725,7 @@ export const pl: Translations = {
     noFile: 'Nie ma jeszcze pliku projektu',
     announce: 'Koralików od ostatniego pliku: {count}. Zapisz plik projektu, żeby je zachować.',
     since: { one: '{count} koralik od ostatniego pliku', few: '{count} koraliki od ostatniego pliku', many: '{count} koralików od ostatniego pliku', other: '{count} koralika od ostatniego pliku' },
+    noFileWhy: 'przeglądarka może wyczyścić twoją pracę, plik zostanie',
   },
   transfer: {
     exportLibraryButton: 'Zapisz wszystko w pliku projektu',
@@ -1263,6 +1265,8 @@ export const pl: Translations = {
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
     pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
     noBeadsToNumber: 'Nie ma koralików do ponumerowania.',
+    gridFocus: 'Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej.',
+    noWorkToFocus: 'Nie ma jeszcze pracy, na której można się skupić.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',
