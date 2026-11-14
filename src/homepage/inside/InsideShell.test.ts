@@ -194,6 +194,13 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     })
   })
 
+  it("answers none of the ghost's presses: its clicks are the controls' own, never trusted (ticket 0950)", async () => {
+    const wrapper = mount(InsideEditor, { attachTo: document.body })
+    mounted.push(wrapper)
+    await wrapper.get('[data-testid="inside-editor"]').trigger('click')
+    expect(wrapper.emitted('pressed')).toBeUndefined()
+  })
+
   it('is a region named "What\'s inside: the editor", its ghost hidden from screen readers', () => {
     const wrapper = mount(InsideEditor, { attachTo: document.body })
     mounted.push(wrapper)

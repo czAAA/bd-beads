@@ -192,13 +192,13 @@ describe('the Homepage turned by wheel, swipe and keys (tickets 0784, 0801)', ()
       expect(turns).toEqual([1])
     })
 
-    it('leaves a swipe in the demo editor to the editor', () => {
+    it('turns on a swipe over the demo editor, which is only to watch (ticket 0950)', () => {
       const { turns } = turning()
       const editor = document.createElement('div')
       editor.className = 'inside-editor'
       room.appendChild(editor)
-      swipe(200, 0, editor)
-      expect(turns).toEqual([])
+      swipe(48, 0, editor)
+      expect(turns).toEqual([1])
     })
   })
 
