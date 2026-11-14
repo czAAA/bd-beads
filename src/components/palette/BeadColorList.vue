@@ -49,6 +49,12 @@ const highlighted = ref<{ code: string; hex: string }>()
 /** The highlighted swatch while the list still shows it: a search or filter that hid it leaves no code to start from. */
 const highlightedShown = computed(() => (shown.value.some((entry) => entry.code === highlighted.value?.code) ? highlighted.value : undefined))
 
+/** A row's name starts with the words it shows (ticket 0940, WCAG 2.5.3): code, family, finish and Discontinued. */
+function rowName(entry: (typeof shown.value)[number]): string {
+  const name = fillBlanks(words.value.rowName, { code: entry.code, family: familyName(entry.family), finish: words.value.finishes[entry.finish] })
+  return entry.discontinued ? fillBlanks(words.value.rowNote, { name, note: words.value.discontinued }) : name
+}
+
 function add(hex: string, code: string) {
   if (props.colors.add(hex, code) === 'added') emit('added', hex)
 }
@@ -96,7 +102,7 @@ function add(hex: string, code: string) {
               class="bead-color-list__row"
               :class="{ 'bead-color-list__row--taken': entry.taken }"
               :aria-disabled="entry.taken ? 'true' : undefined"
-              :aria-label="fillBlanks(entry.taken ? words.takenLabel : words.add, { code: entry.code })"
+              :aria-label="fillBlanks(entry.taken ? words.takenLabel : words.add, { name: rowName(entry) })"
               data-testid="bead-color"
               :data-code="entry.code"
               :data-taken="entry.taken || undefined"
@@ -106,11 +112,13 @@ function add(hex: string, code: string) {
               <span class="bead-color-list__chip" :class="{ 'bead-color-list__chip--approximate': entry.approximate }" :style="{ backgroundColor: entry.hex }" />
               <span class="bead-color-list__text">
                 <span class="bead-color-list__code">{{ entry.code }}</span>
+                {{ ' ' }}
                 <span class="bead-color-list__meta">
                   {{ familyName(entry.family) }} · {{ words.finishes[entry.finish] }}
                   <span v-if="entry.discontinued" class="bead-color-list__note"> · {{ words.discontinued }}</span>
                 </span>
               </span>
+              {{ ' ' }}
               <span v-if="entry.taken" class="bead-color-list__taken">{{ words.inPalette }}</span>
             </button>
             <button

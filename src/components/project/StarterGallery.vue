@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, useId } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { DEFAULT_BEAD, findBead } from '../../domain/beads'
 import { pieceFaceOf } from '../../domain/pieceFaces'
 import { designSizes, STARTER_BEAD_ID, STARTER_CATEGORIES, type Starter, type StarterCategoryId, type StarterId } from '../../domain/starters'
@@ -18,7 +18,6 @@ const emit = defineEmits<{ 'choose-category': [id: StarterCategoryId]; choose: [
 
 const { t, locale } = useI18n()
 const panel = inject(PANEL_CONTEXT, undefined)
-const id = useId()
 
 /** What a card shows: its name, its caption lines and the Starter whose design is its picture, drawn as a pair on a
  * category card when that Starter is made as one (the Earrings'). */
@@ -106,8 +105,6 @@ function onKeydown(event: KeyboardEvent, index: number) {
         class="starter-card"
         type="button"
         :tabindex="index === current ? 0 : -1"
-        :aria-labelledby="`${id}-${index}-name`"
-        :aria-describedby="`${id}-${index}-caption`"
         :data-testid="card.testid"
         data-wrap-ok
         @click="card.open"
@@ -118,9 +115,13 @@ function onKeydown(event: KeyboardEvent, index: number) {
           <StarterPicture :starter="card.starter" :pair="card.pair" upright />
         </span>
         <span class="starter-card__caption">
-          <span :id="`${id}-${index}-name`" class="starter-card__name">{{ card.name }}</span>
-          <span :id="`${id}-${index}-caption`" class="starter-card__lines">
-            <span v-for="line in card.lines" :key="line" class="starter-card__meta">{{ line }}</span>
+          <span class="starter-card__name">{{ card.name }}</span>
+          {{ ' ' }}
+          <span class="starter-card__lines">
+            <template v-for="line in card.lines" :key="line">
+              <span class="starter-card__meta">{{ line }}</span>
+              {{ ' ' }}
+            </template>
           </span>
         </span>
       </button>

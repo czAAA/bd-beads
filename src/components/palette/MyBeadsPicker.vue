@@ -84,10 +84,6 @@ function nameOf(row: Row): string {
   const name = `${row.family ? familyName(row.family) : ''} ${finish}`.trim().toLocaleLowerCase(locale.value)
   return row.discontinued ? fillBlanks(words.value.discontinuedRow, { name }) : name
 }
-function rowLabel(row: Row): string {
-  const name = nameOf(row)
-  return owned.value.has(row.code) ? fillBlanks(words.value.rowOwned, { code: row.code, name }) : `${row.code} ${name}`
-}
 
 /** Paste codes: the box open, its text, and what the last paste did. */
 const pasting = ref(false)
@@ -248,7 +244,6 @@ defineExpose({ onPaste })
           class="ui-control my-beads-picker__row"
           :class="{ 'my-beads-picker__row--never': row.discontinued || row.unknown }"
           :aria-pressed="owned.has(row.code)"
-          :aria-label="rowLabel(row)"
           :data-code="row.code"
           data-testid="convert-my-beads-row"
           @click="emit('toggle', row.code)"
@@ -256,6 +251,7 @@ defineExpose({ onPaste })
           <span class="my-beads-picker__swatch" :style="row.hex ? { backgroundColor: row.hex } : undefined" aria-hidden="true" />
           <span class="my-beads-picker__lines">
             <span class="my-beads-picker__code">{{ row.code }}</span>
+            {{ ' ' }}
             <span class="my-beads-picker__name">{{ nameOf(row) }}</span>
           </span>
           <span class="my-beads-picker__tick" aria-hidden="true">
