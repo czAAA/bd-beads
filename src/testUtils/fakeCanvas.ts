@@ -38,6 +38,7 @@ export function installFakeCanvas(): {
     roundRect: () => undefined,
     drawImage: () => undefined,
     createPattern: () => null,
+    createRadialGradient: () => ({ addColorStop: () => undefined }) as unknown as CanvasGradient,
     imageSmoothingEnabled: true,
     closePath: () => undefined,
     fill: () => undefined,

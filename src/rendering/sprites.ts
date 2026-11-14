@@ -8,12 +8,13 @@ const sprites = new Map<string, Sprite | null>()
 const MAX_SPRITES = 512
 
 // The picture for `key`, made by `draw` once and kept; undefined where there is no canvas. `draw`'s context is scaled
-// so `size` fills `pixels`.
+// so `size` fills `pixels` across; a picture taller or shorter than wide is `pixelsDown` high (a Bead's own cell).
 export function cachedSprite(
   key: string,
   pixels: number,
   size: number,
   draw: (context: DrawingContext) => void,
+  pixelsDown = pixels,
 ): Sprite | undefined {
   if (typeof document === 'undefined') {
     return undefined
@@ -26,7 +27,7 @@ export function cachedSprite(
     }
     const canvas = document.createElement('canvas')
     canvas.width = pixels
-    canvas.height = pixels
+    canvas.height = pixelsDown
     const context = canvas.getContext('2d')
     if (context) {
       const scale = pixels / size

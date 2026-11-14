@@ -135,7 +135,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `ProjectTheme` field | Token |
 |---|---|
 | `background` | `board` (on screen) / `print-board` (PDF and PNG) |
-| `rim` | `bead-rim` |
+| `rim` | `bead-rim` (exports and high contrast; light and dark draw a bead in a rim of its own color, `ownColorRim`, ticket 1003) |
 | `emptyBead` | `bead-empty` |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |

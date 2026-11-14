@@ -100,7 +100,7 @@ describe('Canvas color backgrounds', () => {
 
   it('never changes the print board that exports use', () => {
     expect(PRINT_THEME.background).toBe('#f7f3ec')
-    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: '#f7f3ec' })
+    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: '#f7f3ec', ownColorRim: false })
   })
 
   it.each([
