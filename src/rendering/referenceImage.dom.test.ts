@@ -77,10 +77,11 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
   })
 
   it('keeps the Frame\'s empty beads and the outlines under it, where with none shown they are tonal tiles (ticket 1001)', () => {
-    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(0)
+    // The Lifted piece's shadows are one picture laid down either way (ticket 1004).
+    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(1)
     const without = render(framedProject())
     expect(without.beads.filter((bead) => bead.color === null)).toHaveLength(0)
-    expect(canvasBlits(without.calls)).toBe(3)
+    expect(canvasBlits(without.calls)).toBe(4)
   })
 
   it('is never drawn where none is handed in, nor in the Frame on its own', () => {

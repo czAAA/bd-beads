@@ -18,14 +18,15 @@ import { workBoxesOf } from './workBoxes'
 const PIXEL_RATIO = 4
 const REGION = { x: -100, y: -100, width: 800, height: 240 }
 
-/** The color at a grid px of the open Canvas, drawn on Night round one bead at the origin. */
+/** The color at a grid px of the open Canvas, drawn on Night round one bead at the origin. The Lifted piece (ticket
+ * 1004) is off: its shadow darkens the gap beside the bead, and only Grid focus is measured here. */
 function drawn(gridFocus: boolean, region = REGION): (x: number, y: number) => string {
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
   const canvas = document.createElement('canvas')
   canvas.width = REGION.width * PIXEL_RATIO
   canvas.height = REGION.height * PIXEL_RATIO
   const context = canvas.getContext('2d')! as unknown as DrawingContext
-  const theme = canvasTheme('dark', 1)
+  const theme = { ...canvasTheme('dark', 1), liftedPiece: false }
   renderProject(context, {
     project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: PIXEL_RATIO, theme, opaque: true, rowMarks: false,
     drawBead: () => undefined, ...(gridFocus ? { gridFocus: workBoxesOf(project) } : {}),
