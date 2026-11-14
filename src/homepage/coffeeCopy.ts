@@ -7,7 +7,7 @@ import { controlAction } from '../composables/shell/controlRegistry'
 // promises then Open source and Say hello. The Menu's labels they point at come from the app, never typed into the copy.
 
 /** One promise as shown: its icon, its name, and its line for screen readers. */
-export interface CoffeePromise {
+interface CoffeePromise {
   id: keyof Translations['homepage']['promises']
   icon: IconName
   name: string
@@ -24,7 +24,7 @@ const PROMISES = [
 ] as const satisfies readonly { id: CoffeePromise['id']; icon: IconName }[]
 
 /** The six promises in a language, in the order the band shows them. */
-export function coffeePromises(t: Translations): CoffeePromise[] {
+function coffeePromises(t: Translations): CoffeePromise[] {
   const blanks = { menu: controlAction('strip-menu').name(t), help: t.panels.menu.help, shortcuts: t.shortcutsHelp.title }
   return PROMISES.map(({ id, icon }) => {
     const copy = t.homepage.promises[id]

@@ -357,6 +357,11 @@ export const zh: Translations = {
       starters: { other: '{count} 个起始方案' },
       caption: '{technique} · {size}',
       piece: '孔雀羽眼，佩奥特编织',
+      promises: {
+        free: { name: '这里的一切都免费', text: '无需账户，没有试用期。作品留在你的设备上。' },
+        picture: { name: '从一张图片开始', text: '把照片变成串珠图样。' },
+        weave: { name: '计数并编织', text: '每种颜色都已计数；边编织边标记已完成的行。' },
+      },
     },
     inside: {
       rows: {
@@ -432,7 +437,7 @@ export const zh: Translations = {
         more: '更多功能即将推出',
         showAll: '显示全部 {count} 项',
       },
-      alone: { heading: '免费使用', why: '账户和专业版稍后推出；没有它们，一切照常使用。' },
+      alone: { heading: '免费使用', why: '账户和专业版稍后推出；没有它们，一切照常使用。', info: '关于账户和专业版' },
     },
     library: '{library}，{count}',
   },

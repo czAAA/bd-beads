@@ -358,6 +358,11 @@ export const es: Translations = {
       starters: { one: '{count} punto de partida', many: '{count} puntos de partida', other: '{count} puntos de partida' },
       caption: '{technique} · {size}',
       piece: 'Ojos de pluma de pavo real, en peyote',
+      promises: {
+        free: { name: 'Aquí todo es gratis', text: 'Sin cuenta y sin periodo de prueba. Tu trabajo se queda en este dispositivo.' },
+        picture: { name: 'Empieza con una imagen', text: 'Convierte una foto en un patrón de cuentas.' },
+        weave: { name: 'Cuenta y teje', text: 'Cada color contado; marca las filas terminadas mientras tejes.' },
+      },
     },
     inside: {
       rows: {
@@ -433,7 +438,7 @@ export const es: Translations = {
         more: 'Y vendrá más',
         showAll: 'Mostrar las {count}',
       },
-      alone: { heading: 'De uso gratuito', why: 'Las cuentas de usuario y Pro llegarán más adelante; todo funciona sin ellas.' },
+      alone: { heading: 'De uso gratuito', why: 'Las cuentas de usuario y Pro llegarán más adelante; todo funciona sin ellas.', info: 'Sobre las cuentas y Pro' },
     },
     library: '{library}, {count}',
   },
