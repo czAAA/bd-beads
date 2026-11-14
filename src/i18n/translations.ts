@@ -293,6 +293,8 @@ export interface Translations {
       beadSize: string
       /** After Duplicate (ticket 0860): `{copy}` is the Project now open, `{original}` the one it was copied from. */
       duplicatedToast: string
+      /** Said under 1024px, where the strip shows no name, when a Project opens from the library (ticket 0986). */
+      openedToast: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -435,8 +437,6 @@ export interface Translations {
       storage: string
       paintMouse: string
     }
-    /** The Grid focus toggle's name (CanvasStrip card, ticket 1002). */
-    gridFocusLabel: string
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
@@ -1531,9 +1531,6 @@ export interface Translations {
     pasteToolTouch: string
     /** Why the Rulers toggle is held while the Canvas is empty (ticket 0921). */
     noBeadsToNumber: string
-    /** Grid focus's second Tooltip line, and why it is held with no bead and no Frame (ticket 1002). */
-    gridFocus: string
-    noWorkToFocus: string
     /** The Frame button's Tooltip with Beads needed's total, while there is one (ticket 0932). */
     framePanelBeads: string
   }
@@ -1693,6 +1690,8 @@ export interface Translations {
       moveBody: string
       more: string
       close: string
+      /** Picture over the beads (ticket 1009): its name and Tooltip body. */
+      over: { name: string; body: string }
       replace: string
       remove: string
       sizeBeads: string

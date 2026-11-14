@@ -195,6 +195,7 @@ export const es: Translations = {
       beadType: 'Tipo',
       beadSize: 'Tamaño',
       duplicatedToast: 'Ahora estás en “{copy}”. “{original}” se queda como estaba.',
+      openedToast: 'Ahora estás en “{name}”.',
     },
   },
   theme: {
@@ -320,7 +321,6 @@ export const es: Translations = {
       storage: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
       paintMouse: 'Haz clic o arrastra para poner cuentas del color elegido.',
     },
-    gridFocusLabel: 'Foco de cuadrícula',
   },
   shell: {
     canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto.',
@@ -1269,8 +1269,6 @@ export const es: Translations = {
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
     noBeadsToNumber: 'No hay cuentas que numerar.',
-    gridFocus: 'Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto.',
-    noWorkToFocus: 'Todavía no hay trabajo en el que centrarse.',
     framePanelBeads: 'Abre Cuentas necesarias ({total}), el tamaño del marco, girar y quitar.',
   },
   layerSettings: {
@@ -1396,6 +1394,7 @@ export const es: Translations = {
       moveBody: 'Arrastra para mover la imagen de referencia.',
       more: 'Más opciones de la imagen',
       close: 'Cerrar',
+      over: { name: 'Imagen sobre las cuentas', body: 'Pone la imagen sobre tus cuentas con su opacidad, para compararlas. Pulsa de nuevo para volver a ponerla debajo.' },
       replace: 'Reemplazar',
       remove: 'Quitar',
       sizeBeads: '{size} cuentas',

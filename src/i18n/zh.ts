@@ -195,6 +195,7 @@ export const zh: Translations = {
       beadType: '类型',
       beadSize: '尺寸',
       duplicatedToast: '现在打开的是“{copy}”。“{original}”保持原样。',
+      openedToast: '现在打开的是“{name}”。',
     },
   },
   theme: {
@@ -320,7 +321,6 @@ export const zh: Translations = {
       storage: '你的项目只保存在这台设备的浏览器里。',
       paintMouse: '点击或拖动，放上所选颜色的珠子。',
     },
-    gridFocusLabel: '网格聚焦',
   },
   shell: {
     canvasPlaceholderHint: '用“新建项目”创建一个，从项目库打开一个，或打开项目文件。',
@@ -1247,8 +1247,6 @@ export const zh: Translations = {
     fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
     noBeadsToNumber: '没有可编号的珠子。',
-    gridFocus: '让作品周围的网格保持清晰，其他地方更安静。',
-    noWorkToFocus: '还没有可以聚焦的作品。',
     framePanelBeads: '打开所需珠子（{total}）、边框的大小、旋转和移除。',
   },
   layerSettings: {
@@ -1374,6 +1372,7 @@ export const zh: Translations = {
       moveBody: '拖动以移动参考图。',
       more: '图片的更多操作',
       close: '关闭',
+      over: { name: '图片置于珠子上方', body: '按其不透明度把图片放在珠子上方，便于对照。再按一次放回下方。' },
       replace: '替换',
       remove: '移除',
       sizeBeads: '{size} 颗珠子',

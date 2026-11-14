@@ -78,8 +78,6 @@ const {
   showRulers,
   stroking,
   toggleRulers,
-  gridFocus,
-  toggleGridFocus,
   referenceImage,
   pictureBar,
   rowHighlight,
@@ -413,7 +411,6 @@ const drawingStyle = computed(() => {
         :project="onEditor ? activeProject : undefined"
         :settled-project="onEditor ? settledProject : undefined"
         :rulers="showRulers"
-        :grid-focus="gridFocus"
         :reference-image="onEditor && activeProject ? referenceState : undefined"
         :frame-open="framePanelOpen"
         :can-undo="canUndo"
@@ -427,7 +424,6 @@ const drawingStyle = computed(() => {
         @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
-        @toggle-grid-focus="toggleGridFocus"
         @toggle-reference-image="referenceImage.toggleShown"
         @pick-reference-image="referenceImage.pick($event, 'strip')"
         @undo="onUndo"
@@ -476,7 +472,6 @@ const drawingStyle = computed(() => {
                 :orientation="canvasOrientation"
                 :twist="twistPhase"
                 :show-rulers="showRulers"
-                :grid-focus="gridFocus && !demo"
                 :stroking="stroking"
                 :row-marks="rowHighlight"
                 :row-press="rowPress"
@@ -561,12 +556,14 @@ const drawingStyle = computed(() => {
                 :convert-body="barTooltips.convert"
                 :convert-off="barTooltips.convertOff"
                 :converting="pictureBar.converting.value"
+                :over="referenceImage.over.value"
                 @preview="referenceImage.preview"
                 @commit="referenceImage.commit"
                 @frame-preview="framePreviewOn = $event"
                 @frame="pictureBar.frameAround"
                 @convert="pictureBar.converting.value ? pictureBar.close() : pictureBar.open()"
                 @opacity="referenceImage.setOpacity"
+                @over="referenceImage.setOver"
                 @replace="referenceImage.pick($event, 'bar')"
                 @remove="referenceImage.requestRemove"
               />

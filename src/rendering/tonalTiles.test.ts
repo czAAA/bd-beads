@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { channelsOf, toCielab } from '../domain/color'
 import { PRINT_THEME, PROJECT_THEMES } from './beadLook'
 import { canvasTheme } from './canvasBackgrounds'
-import { markLookAt, markLookOf, TILE_STEP_L } from './tonalTiles'
+import { gapColorOf, markLookAt, markLookOf, TILE_STEP_L, tileColorOf } from './tonalTiles'
 
 describe('the tile color', () => {
   it.each([
@@ -42,8 +42,18 @@ describe('markLookOf', () => {
   it('gives a page laid beside the drawing the marks the renderer draws at its scale', () => {
     const look = PROJECT_THEMES.dark
     expect(markLookAt(look, 2).tiles).toBe(true)
-    expect(markLookAt(look, 2, true).tiles).toBe(false)
     // Under 5 device px a bead, the draft look.
     expect(markLookAt(look, 0.2).tiles).toBe(false)
+  })
+})
+
+describe('the calm gap', () => {
+  it('lies between the Background and its tile, never on either, so the grid shows everywhere', () => {
+    expect(gapColorOf('#202020')).toBe('#262626')
+    expect(gapColorOf('#fafafa')).toBe('#f2f2f2')
+    for (const background of ['#202020', '#fafafa', '#3a5f8c']) {
+      expect(gapColorOf(background)).not.toBe(background)
+      expect(gapColorOf(background)).not.toBe(tileColorOf(background))
+    }
   })
 })

@@ -33,7 +33,8 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
-import { useShellScope } from '../ui/shellScope'
+import { scopeRoom, useShellScope } from '../ui/shellScope'
+import { useDocumentTitle } from './useDocumentTitle'
 import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
@@ -84,6 +85,8 @@ import { usePictureBarFlow } from '../project/usePictureBarFlow'
 /** The panel whose Select a frame armed the framing drag (ticket 0847): Export comes back once the Frame is set. */
 type FramingFrom = 'frame' | 'export'
 
+/** The shell width from which the strip shows the Project's name, as its CSS asks (CanvasStrip card, ticket 0986). */
+const STRIP_NAME_FROM = 1024
 /** The rows and columns an arrow moves an area by (ticket 0808). */
 const ARROW_STEPS: Readonly<Record<string, readonly [number, number]>> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
 
@@ -148,6 +151,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
+  /** The tab names the open Project at every width (ticket 0986); the demo's box leaves the page's title alone. */
+  if (!demo) useDocumentTitle({ projectName: () => activeProject.value && projectNameOf(activeProject.value), appTitle: () => t.value.app.title })
+
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
   if (!demo) useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
 
@@ -196,9 +202,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
   const toggleRulers = () => void (showRulers.value = !showRulers.value)
-  /** Grid focus (G, the canvas strip's button, ticket 1002): on by default and kept on the device; a view, no Undo step. */
-  const gridFocus = services.devicePreferences.get('gridFocus')
-  const toggleGridFocus = () => void (gridFocus.value = !gridFocus.value)
   const rowHighlight = services.devicePreferences.get('rowHighlight')
   const toggleRowHighlight = () => void (rowHighlight.value = !rowHighlight.value)
 
@@ -846,6 +849,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
     openProject: onSelectProject,
     saveFailed: () => saveFailed.value,
     saveNow,
+    nameHidden: () => {
+      const room = scopeRoom(scope)
+      return room.right - room.left < STRIP_NAME_FROM
+    },
+    showToast,
+    messages,
     dialogs,
   })
 
@@ -944,7 +953,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
-    onToggleGridFocus: toggleGridFocus,
     onToggleReferenceImage: referenceImage.toggleShown,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
@@ -1071,8 +1079,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
       stroking: computed(() => strokeMode.value !== null),
       toggleRulers,
-      gridFocus,
-      toggleGridFocus,
       /** The reference image (ticket 0790): what the surface draws, the strip button, Adjust and its bar. */
       referenceImage,
       /** The reference image's picture bar (ticket 0883): its size, Set Frame around the picture and Convert to beads. */

@@ -17,6 +17,7 @@ import { pngDpiFor } from '../../rendering/exportDpi'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { withProjectName } from '../../domain/projectName'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -349,6 +350,12 @@ describe('FramePanel (ticket 473)', () => {
     const painted = mountBar(framed({ row: 2, column: 3, rows: 6, columns: 5, beads: { 2: { 3: '#ff0000', 4: '#ff0000' } } }))
     expect(painted.get('[data-testid="frame-panel-total"]').text()).toBe(painted.get('[data-testid="quantity-total"]').text())
     expect(painted.get('[data-testid="frame-panel-total"]').text()).toMatch(/^2 · ≈ /)
+  })
+
+  it("names the open Project on the title line, as typed, for where the strip shows no name (ticket 0986)", () => {
+    const named = mountBar(withProjectName(framed(), 'Loom cuff'))
+    expect(named.get('.frame-panel__title [data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
+    expect(mountBar(withProjectName(withFrameSheet(framed(), undefined), 'Loom cuff')).get('[data-testid="frame-panel-project"]').text()).toBe('· Loom cuff')
   })
 
   it('sets the Frame in its Layer settings: each ask names the Frame, and its summary is its Technique and Bead (ticket 0670)', async () => {

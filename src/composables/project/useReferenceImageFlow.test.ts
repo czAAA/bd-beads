@@ -95,6 +95,23 @@ describe('useReferenceImageFlow (ReferenceImage card, ticket 0790)', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
+  it('lays the picture over the beads for the session, not saved nor an Undo step, back under in another Project (ticket 1009)', async () => {
+    const { harness, flow } = setup()
+    await flow.pick(file(), 'panel')
+    expect(flow.drawn.value!.over).toBe(false)
+    flow.setOver(true)
+    expect(flow.over.value).toBe(true)
+    expect(flow.drawn.value!.over).toBe(true)
+    expect(harness.project.referenceImage).not.toHaveProperty('over')
+    expect(harness.history.canUndo.value).toBe(false)
+    const first = harness.project
+    harness.replaceProject(framed())
+    await flushPromises()
+    harness.replaceProject(first)
+    await flushPromises()
+    expect(flow.over.value).toBe(false)
+  })
+
   it('asks before removing the picture, then takes it off the Project and the device', async () => {
     const { harness, store, flow, dialogs } = setup()
     await flow.pick(file(), 'panel')

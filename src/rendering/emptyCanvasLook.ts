@@ -3,8 +3,7 @@ import type { ProjectTheme } from './beadLook'
 import { cellSizePx } from './cellSize'
 import { positionMarkImage, type MarkTileInput, type QuarterTurn } from './positionMarks'
 import type { Scroll, SurfaceView } from './surfaceView'
-import { farGapOf } from './gridFocus'
-import { markLookAt } from './tonalTiles'
+import { gapColorOf, markLookAt } from './tonalTiles'
 
 // The empty Canvas under the editor's drawing (ticket 0717): the Position marks' tile as a repeating CSS background on
 // the drawing area, so whatever a moved bitmap uncovers during a pan or pinch, or before the first draw, already looks
@@ -44,8 +43,6 @@ export function emptyCanvasPlacement(weave: MarkWeave, surface: Pick<SurfaceView
 export interface EmptyCanvasInput {
   weave: MarkWeave
   theme: ProjectTheme
-  /** Whether a reference image shows, under which the renderer keeps the outline (ticket 1001). */
-  overPicture?: boolean
   surface: Pick<SurfaceView, 'gridToPoint'>
   zoom: number
   /** The zoom the tile's image is made at: the last settled one, so a pinch scales one image instead of making many. */
@@ -53,21 +50,19 @@ export interface EmptyCanvasInput {
   pixelRatio: number
   /** How far the pattern reaches past the drawing area's box on every side, in px, for a box moved by a twist. */
   reach: number
-  /** Whether Grid focus calms the gap, as it does far from the work (ticket 1002): the tiles then lie on the far gap. */
-  farGap?: boolean
 }
 
 /** The empty Canvas look as the CSS variables the drawing area's pattern reads (ticket 0717), or undefined where there
  * is no canvas to make the tile on. */
-export function emptyCanvasLook({ weave, theme, overPicture, surface, zoom, tileZoom, pixelRatio, reach, farGap }: EmptyCanvasInput): Record<string, string> | undefined {
+export function emptyCanvasLook({ weave, theme, surface, zoom, tileZoom, pixelRatio, reach }: EmptyCanvasInput): Record<string, string> | undefined {
   if (zoom <= 0 || tileZoom <= 0) return undefined
   const { turn, at, size } = emptyCanvasPlacement(weave, surface, zoom)
   const deviceScale = tileZoom * pixelRatio
-  const mark = markLookAt(theme, deviceScale, overPicture)
+  const mark = markLookAt(theme, deviceScale)
   const url = positionMarkImage({ ...weave, deviceScale, pixelRatio, ...mark }, turn)
   if (!url) return undefined
   return {
-    ...(farGap && mark.tiles ? { '--empty-gap': farGapOf(theme.canvas) } : {}),
+    ...(mark.tiles ? { '--empty-gap': gapColorOf(theme.canvas) } : {}),
     '--empty-marks': `url(${url})`,
     '--empty-marks-size': `${size.width}px ${size.height}px`,
     '--empty-marks-at': `${at.x + reach}px ${at.y + reach}px`,
