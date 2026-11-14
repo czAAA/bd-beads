@@ -1259,6 +1259,7 @@ export const es: Translations = {
     rowHighlight: 'Muestra u oculta las marcas en la fila actual y en las filas marcadas como terminadas.',
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
+    noBeadsToNumber: 'No hay cuentas que numerar.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

@@ -108,7 +108,7 @@ The input mode: which pointer draws with the current Tool and which one moves th
 _Avoid_: stylus mode, touch mode, palm rejection
 
 **Rulers toggle**:
-The button (and R, and the Canvas strip's Rulers button) that shows or hides every ruler and size marking on the canvas, and the Piece areas' rectangles — each Piece area's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece area, from 1, or the Frame's on all four sides once a Frame is set.
+The button (and R, and the Canvas strip's Rulers button) that shows or hides every ruler and size marking on the canvas, and the Piece areas' rectangles — each Piece area's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Off until switched on; held, R too, while the Canvas has no bead and no Frame (ticket 0921). Rulers show column numbers above and row numbers left of each Piece area, from 1, or the Frame's on all four sides once a Frame is set.
 _Avoid_: ruler switch, numbers toggle
 
 **Canvas zoom**:

@@ -1237,6 +1237,7 @@ export const zh: Translations = {
     rowHighlight: '显示或隐藏当前行和已标记完成的行上的标记。',
     fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
+    noBeadsToNumber: '没有可编号的珠子。',
   },
   layerSettings: {
     frameHeading: '设置',
