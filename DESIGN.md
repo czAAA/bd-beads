@@ -294,6 +294,10 @@ When a change touches how something looks, reads or behaves, edit `docs/design/s
 If the app deliberately differs from a card, fix the card to say what the app does (and why, in one line), not the
 other way round.
 
+One exception, by the owner's choice: a look approved as a whole may be written into the cards before it is built, so its
+tickets build from one text. Each such part says "approved <date>, not yet in the app" and names the ticket that builds it,
+and that ticket removes the note when it lands. First used for the Canvas look (ticket 0999; BeadBoard card).
+
 **Version in the repo:** design system **v19** is the baseline. Changes since are in git history (the Version section of
 [`docs/design/system/README.md`](docs/design/system/README.md) gives the command); there is no hand-written changelog. v17 is vocabulary only (Project and Pattern); v18 adds
 the Frame margin and the icon-tile Toolbox; v19 is vocabulary only again (Piece, Schema, Project and Canvas in

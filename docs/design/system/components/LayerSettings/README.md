@@ -28,6 +28,8 @@ Where the section is a PanelSection, its folded summary is the layer's Technique
 
 ## Copy
 
+**Three colors (ticket 1000; approved 2026-11-14, not yet in the app):** the Background picker shows the theme's three colors and the Custom color tile (CanvasBackground card).
+
 English: Technique, Drop, Bead, Brand, Type, Size, Background, Canvas color, Frame background, Settings (the Frame panel's section). Every language: `writing.md` (Layer settings copy, ticket 0670).
 
 Hand-written for ticket 0670; static rendition.
