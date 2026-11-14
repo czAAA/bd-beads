@@ -199,6 +199,8 @@ export const PREFERENCES = {
   }),
   /** My beads (ticket 0902, ADR 0010 D-3): the codes owned, one list per Color catalog; none until one is ticked. */
   myBeads: preference<MyBeads>({ key: 'openbeads:my-beads', fallback: {}, parse: parseMyBeads, write: writeMyBeads }),
+  /** Whether Grid focus is on (ticket 1002, CanvasStrip card): on until switched off; a view setting only. */
+  gridFocus: onUntilOff('openbeads:grid-focus'),
 }
 
 /** The theme the person was seeing: their pick, or the device's when they never picked (high contrast counts as light,

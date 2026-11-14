@@ -136,7 +136,12 @@ export const waysIn = (locale: FitLocale): readonly Way[] => (locale === 'en' ? 
 /** Opens every Tooltip on the page by the given ways, and reports those that are cut off, or
  * do not open. Triggers are found by the page (`.app-tooltip`), so a Tooltip a component adds is checked with no list. */
 export async function tooltipProblems(root: HTMLElement, ways: readonly Way[]): Promise<string[]> {
-  const triggers = [...root.querySelectorAll<HTMLElement>('.app-tooltip')].filter((trigger) => trigger.getClientRects().length > 0)
+  // A trigger off the screen's side (a strip control scrolled past it, ticket 0843) is reached by a swipe first.
+  const onScreen = (trigger: HTMLElement) => {
+    const box = trigger.getBoundingClientRect()
+    return box.right > 0 && box.left < window.innerWidth
+  }
+  const triggers = [...root.querySelectorAll<HTMLElement>('.app-tooltip')].filter((trigger) => trigger.getClientRects().length > 0 && onScreen(trigger))
   triggers.forEach((trigger, index) => trigger.setAttribute('data-hover-probe', String(index)))
   const problems: string[] = []
   for (const [way, open, close] of WAYS.filter(([way]) => ways.includes(way))) {

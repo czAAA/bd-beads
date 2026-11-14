@@ -8,6 +8,7 @@ import type { Project } from '../../domain/project'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { projectNameOf } from '../../domain/layerRecord'
 import { useI18n } from '../../i18n/useI18n'
+import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { homepageUrl } from '../../homepage/homepageRoute'
 import RollingSlogan from '../../homepage/RollingSlogan.vue'
@@ -20,7 +21,7 @@ import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
-// Project (the save ring beside it while due, ticket 0922) · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Undo · Redo, zoom
+// Project (the save ring beside it while due, ticket 0922) · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Grid focus · Undo · Redo, zoom
 // and Export, never scrolled away, on the right (tickets 543, 0652, 0843); the Homepage's way in, its slogan as the wordmark.
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page, and
@@ -30,6 +31,8 @@ const props = defineProps<{
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openPanel?: OpenPanel | null
   rulers?: boolean
+  /** Whether Grid focus is on (ticket 1002). */
+  gridFocus?: boolean
   /** The reference image (ticket 0790): none yet, or shown or hidden; left out off the editor. */
   referenceImage?: 'none' | 'shown' | 'hidden'
   /** Whether the Frame panel is open, so the Frame button shows lit. */
@@ -59,6 +62,7 @@ const emit = defineEmits<{
   close: []
   'rotate-canvas': []
   'toggle-rulers': []
+  'toggle-grid-focus': []
   /** The Reference image button with a picture: show or hide it. */
   'toggle-reference-image': []
   /** The Reference image button with none: the file picked in the picker it opened. */
@@ -86,6 +90,7 @@ const actions = {
   export: controlAction('strip-export'),
   rotateCanvas: controlAction('rotate-canvas'),
   rulers: controlAction('rulers'),
+  gridFocus: controlAction('grid-focus'),
   referenceImage: controlAction('reference-image'),
   undo: controlAction('undo'),
   redo: controlAction('redo'),
@@ -99,6 +104,9 @@ const projectNamed = computed(() => fillBlanks(t.value.header.projectButtonNamed
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 /** Rulers is lit only while it can be pressed: on an empty Canvas it is held and plain, whatever the device keeps (ticket 0921). */
 const rulersLit = computed(() => !!props.rulers && !!actions.rulers.enabled?.(deps.value))
+/** Grid focus is lit as Rulers is, only while it can be pressed (ticket 1002); high contrast has no tiles to calm. */
+const gridFocusLit = computed(() => !!props.gridFocus && !!actions.gridFocus.enabled?.(deps.value))
+const theme = useResolvedTheme()
 const onHomepage = computed(() => props.page === 'homepage')
 /** The Brand is a link only on the editor. */
 const brandLinks = computed(() => !props.demo && (props.page === undefined || props.page === 'editor'))
@@ -246,6 +254,16 @@ function onPanelsKeydown(event: KeyboardEvent) {
           <template v-if="!demo">
             <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
             <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+            <IconButton
+              v-if="theme !== 'contrast'"
+              variant="plain"
+              :icon-size="18"
+              :action="actions.gridFocus"
+              :deps="deps"
+              :selected="gridFocusLit"
+              data-testid="strip-grid-focus"
+              @click="emit('toggle-grid-focus')"
+            />
           </template>
           <template v-if="referenceImage">
             <IconButton
