@@ -7,7 +7,7 @@ import { MARGIN } from '../domain/margin'
 import { MIRROR_OFF, withMirror } from '../domain/mirror'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
-import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
+import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, flatLook, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
@@ -594,7 +594,11 @@ describe('visibleBeads', () => {
   })
 })
 
-describe('the bead look', () => {
+describe('the flat bead (exports and high contrast)', () => {
+  // The bead with its faint `bead-rim`, as exports and high contrast draw it; light and dark draw the own-color bead.
+  const LIGHT_FLAT = flatLook(DEFAULT_THEME)
+  const DARK_FLAT = flatLook(DARK_THEME)
+
   it('greys a color with the weights CSS grayscale() uses', () => {
     expect(greyscale('#ff0000')).toBe('rgb(54, 54, 54)')
     expect(greyscale('#00ff00')).toBe('rgb(182, 182, 182)')
@@ -614,7 +618,7 @@ describe('the bead look', () => {
     color: '#e63746',
     dimmed: false,
     deviceScale: 1,
-    theme: DEFAULT_THEME,
+    theme: LIGHT_FLAT,
     ...overrides,
   })
 
@@ -624,7 +628,7 @@ describe('the bead look', () => {
     drawFlatBead(context, bead())
 
     expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([
-      [blendOver(DEFAULT_THEME.rim, '#e63746'), 40.5, 20.5, 19, 19],
+      [blendOver(LIGHT_FLAT.rim, '#e63746'), 40.5, 20.5, 19, 19],
       ['#e63746', 41.25, 21.25, 17.5, 17.5],
     ])
     expect(named('fill')).toHaveLength(0)
@@ -633,30 +637,30 @@ describe('the bead look', () => {
   it('draws a white rim in dark, so two beads of one color stay apart (ticket 0460)', () => {
     const { context, named } = recordingContext()
 
-    drawFlatBead(context, bead({ theme: DARK_THEME }))
+    drawFlatBead(context, bead({ theme: DARK_FLAT }))
 
     expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([
-      [blendOver(DARK_THEME.rim, '#e63746'), 40.5, 20.5, 19, 19],
+      [blendOver(DARK_FLAT.rim, '#e63746'), 40.5, 20.5, 19, 19],
       ['#e63746', 41.25, 21.25, 17.5, 17.5],
     ])
   })
 
   it('draws a white rim on a near-black bead in light, where the dark rim would vanish, but not on a dark navy', () => {
-    const rims = (color: string, theme = DEFAULT_THEME) => {
+    const rims = (color: string, theme = LIGHT_FLAT) => {
       const { context, named } = recordingContext()
       drawFlatBead(context, bead({ color, theme }))
       return named('fillRect')[0]!.fillStyle
     }
 
-    expect(rims('#1a1a1a')).toBe(blendOver(DARK_THEME.rim, '#1a1a1a'))
-    expect(rims('#2c2c2c')).toBe(blendOver(DARK_THEME.rim, '#2c2c2c'))
-    expect(rims('#2d2d2d')).toBe(blendOver(DEFAULT_THEME.rim, '#2d2d2d'))
-    expect(rims('#2e2e2e')).toBe(blendOver(DEFAULT_THEME.rim, '#2e2e2e'))
+    expect(rims('#1a1a1a')).toBe(blendOver(DARK_FLAT.rim, '#1a1a1a'))
+    expect(rims('#2c2c2c')).toBe(blendOver(DARK_FLAT.rim, '#2c2c2c'))
+    expect(rims('#2d2d2d')).toBe(blendOver(LIGHT_FLAT.rim, '#2d2d2d'))
+    expect(rims('#2e2e2e')).toBe(blendOver(LIGHT_FLAT.rim, '#2e2e2e'))
     // Near-black is judged on the channels as stored, not WCAG luminance: full blue counts, a mid green does not.
-    expect(rims('#0000ff')).toBe(blendOver(DARK_THEME.rim, '#0000ff'))
-    expect(rims('#003e00')).toBe(blendOver(DARK_THEME.rim, '#003e00'))
-    expect(rims('#004000')).toBe(blendOver(DEFAULT_THEME.rim, '#004000'))
-    expect(rims('#1f3f8a')).toBe(blendOver(DEFAULT_THEME.rim, '#1f3f8a'))
+    expect(rims('#0000ff')).toBe(blendOver(DARK_FLAT.rim, '#0000ff'))
+    expect(rims('#003e00')).toBe(blendOver(DARK_FLAT.rim, '#003e00'))
+    expect(rims('#004000')).toBe(blendOver(LIGHT_FLAT.rim, '#004000'))
+    expect(rims('#1f3f8a')).toBe(blendOver(LIGHT_FLAT.rim, '#1f3f8a'))
     expect(rims('#1a1a1a', PROJECT_THEMES.contrast)).toBe(blendOver(PROJECT_THEMES.contrast.rim, '#1a1a1a'))
   })
 
@@ -674,7 +678,7 @@ describe('the bead look', () => {
       [40.5, 20.5, 19, 19, 5.5],
       [41.25, 21.25, 17.5, 17.5, 4.75],
     ])
-    expect(named('fill').map((call) => call.fillStyle)).toEqual([blendOver(DEFAULT_THEME.rim, '#e63746'), '#e63746'])
+    expect(named('fill').map((call) => call.fillStyle)).toEqual([blendOver(LIGHT_FLAT.rim, '#e63746'), '#e63746'])
   })
 
   it('draws a rounded bead from arcs where the browser has no roundRect', () => {
@@ -691,7 +695,7 @@ describe('the bead look', () => {
 
     drawFlatBead(context, bead({ color: null }))
 
-    expect(named('fillRect')[1]!.fillStyle).toBe(DEFAULT_THEME.emptyBead)
+    expect(named('fillRect')[1]!.fillStyle).toBe(LIGHT_FLAT.emptyBead)
   })
 
   it('draws a finished bead in light as its own color at 50% over the board, opaque', () => {
@@ -699,9 +703,9 @@ describe('the bead look', () => {
 
     drawFlatBead(context, bead({ dimmed: true }))
 
-    const faded = fadeOver('#e63746', DEFAULT_THEME.background, 0.5)
+    const faded = fadeOver('#e63746', LIGHT_FLAT.background, 0.5)
     expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha])).toEqual([
-      [blendOver(DEFAULT_THEME.rim, faded), 1],
+      [blendOver(LIGHT_FLAT.rim, faded), 1],
       [faded, 1],
     ])
   })
@@ -709,10 +713,10 @@ describe('the bead look', () => {
   it('draws a finished bead in dark as its own color at 50% over the board, not grey (ticket 352)', () => {
     const { context, named } = recordingContext()
 
-    drawFlatBead(context, bead({ dimmed: true, theme: DARK_THEME }))
+    drawFlatBead(context, bead({ dimmed: true, theme: DARK_FLAT }))
 
-    const faded = fadeOver('#e63746', DARK_THEME.background, 0.5)
-    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([blendOver(DARK_THEME.rim, faded), faded])
+    const faded = fadeOver('#e63746', DARK_FLAT.background, 0.5)
+    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([blendOver(DARK_FLAT.rim, faded), faded])
   })
 
   it('leaves the context as it found it', () => {
@@ -800,7 +804,7 @@ describe('the bead look', () => {
 
       const faded = fadeOver('#e63746', '#ffffff', 0.5)
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [blendOver(DEFAULT_THEME.rim, faded), 1, 40.5, 20.5, 19, 19],
+        [blendOver(LIGHT_FLAT.rim, faded), 1, 40.5, 20.5, 19, 19],
         [faded, 1, 41.25, 21.25, 17.5, 17.5],
       ])
       expect(named('fill')).toHaveLength(0)

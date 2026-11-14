@@ -9,7 +9,7 @@ import type { Project, RowProgress } from '../../domain/project'
 import { rotateFrame } from '../../domain/rotate'
 import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
-import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
+import { DARK_THEME, DEFAULT_THEME, fadeOver, PROJECT_THEMES } from '../../rendering/beadLook'
 import { SETTLE_MS } from '../../rendering/gestureView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
@@ -64,6 +64,13 @@ afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
+
+/** Runs a describe's tests in high contrast's flat bead, drawn as rectangles a test can read: the own-color bead of
+ * light and dark is a bitmap (ticket 1003). */
+function inHighContrast(): void {
+  beforeEach(() => (document.documentElement.dataset.theme = 'contrast'))
+  afterEach(() => (document.documentElement.dataset.theme = 'light'))
+}
 
 /** Mounts the surface over a drawing area of the given size, looking at the canvas from `scroll` at `zoom`. */
 async function mountSurface(project: Project, zoom = 1, scroll = { x: 0, y: 0 }, extra: Record<string, unknown> = {}) {
@@ -964,6 +971,7 @@ describe('ProjectSurface', () => {
         const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
         return withLayers(painted, { rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
       }
+      inHighContrast()
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
       const finishedCentre = (project: Project) => centreOf(project, frameOf(project)!.row, frameOf(project)!.column)
 
@@ -1082,7 +1090,7 @@ describe('ProjectSurface', () => {
         await surface.trigger('pointerdown', { clientX: 900, clientY: 700, pointerType: 'mouse', pointerId: 1, isPrimary: true, button: 1, buttons: 4 })
         await moveTo(surface, centreOf(project, frameOf(project)!.row + 5, frameOf(project)!.column))
         await nextTick()
-        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.5))).toBe(false)
+        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', PROJECT_THEMES.contrast.canvas, 0.5))).toBe(false)
       })
 
       it('does not count a finger\'s touch as a hover', async () => {
@@ -2009,6 +2017,7 @@ describe('ProjectSurface with a Frame', () => {
       const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
       return moveToRow(painted, row)
     }
+    inHighContrast()
     const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
     const lastPass: RowPress = { id: 1, done: true, from: 9, to: 10, patternDone: true }
     const patternDone = (wrapper: VueWrapper) => wrapper.find('[data-testid="pattern-done"]')
