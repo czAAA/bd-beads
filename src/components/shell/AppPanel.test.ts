@@ -35,6 +35,7 @@ const escape = async () => {
 afterEach(() => {
   document.body.innerHTML = ''
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('AppSubpanel', () => {
@@ -274,5 +275,25 @@ describe('the canvas box\'s bottom bar (ticket 0850)', () => {
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     await nextTick()
     expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+})
+
+describe('AppPanel opened on a section (ticket 0935)', () => {
+  it('scrolls its body until the section it opens on starts at the top, and focuses that section\'s first control', async () => {
+    const rect = (top: number, bottom: number) => ({ top, bottom, left: 0, right: 100, width: 100, height: bottom - top, x: 0, y: top }) as DOMRect
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.dataset.testid === 'panel-body') return rect(100, 400)
+      if (this.hasAttribute('data-panel-entry')) return rect(700, 900)
+      return rect(0, 0)
+    })
+    const wrapper = mount(AppPanel, {
+      attachTo: document.body,
+      props: { title: 'Frame', anchor: 'strip-frame' },
+      slots: { default: () => [h('button', { type: 'button' }, 'Top'), h('section', { 'data-panel-entry': '' }, [h('p', 'Settings'), h('button', { type: 'button', 'data-testid': 'section-header' }, 'Settings')])] },
+    })
+    await nextTick()
+    await nextTick()
+    expect((wrapper.get('[data-testid="panel-body"]').element as HTMLElement).scrollTop).toBe(600)
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="section-header"]').element)
   })
 })

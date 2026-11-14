@@ -1280,6 +1280,10 @@ export const uk: Translations = {
   layerSettings: {
     frameHeading: 'Налаштування',
     background: 'Фон',
+    canvasOutsideFrame: 'Полотно поза рамкою',
+    frameStays: 'Полотно тепер: {canvas}. Рамка лишається: {frame}.',
+    changeFrameToo: 'Змінити й рамку',
+    openFrame: 'Відкрити рамку',
   },
   schemaTag: {
     group: 'Назви схем',

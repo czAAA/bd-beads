@@ -762,3 +762,16 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     expect(frameOf(deps.harness.project)).toBeUndefined()
   })
 })
+
+describe('useFrameFlow opening on its settings (ticket 0935)', () => {
+  it('opens the Frame panel on its settings, and the next opening from the strip at its top', () => {
+    const { openOnSettings, opensOnSettings, barOpen, toggleBar, closeBar } = setup()
+    openOnSettings()
+    expect(barOpen.value).toBe(true)
+    expect(opensOnSettings.value).toBe(true)
+    closeBar()
+    toggleBar()
+    expect(barOpen.value).toBe(true)
+    expect(opensOnSettings.value).toBe(false)
+  })
+})

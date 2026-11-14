@@ -21,6 +21,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { useLabelsThatFit } from '../../composables/ui/useLabelsThatFit'
 import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
+import { usePanelSection } from '../../composables/shell/usePanelSection'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
@@ -45,6 +46,8 @@ const props = defineProps<{
   settledProject?: Project
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one. */
   exporting?: 'png' | 'pdf'
+  /** Opens on its settings (ticket 0935), unfolded and in view, as the Frame stays toast's Open Frame asks. */
+  opensOnSettings?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -83,6 +86,9 @@ const backgrounds = useCanvasBackground(() => props.project)
 /** The Frame's Layer settings (ticket 0670) and its folded summary: its Technique and Bead. */
 const frameSettings = computed(() => (frame.value ? layerSettingsOf(props.project, 'frame') : undefined))
 const settingsSummary = computed(() => (frameSettings.value ? layerSummary(t.value, frameSettings.value) : ''))
+const SETTINGS_SECTION = 'frame:settings'
+const settingsSection = usePanelSection(() => SETTINGS_SECTION)
+if (props.opensOnSettings && !settingsSection.open.value) settingsSection.toggle()
 /** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
 const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
 /** Whether the size fields are off, and why: finished rows, or a turned Frame. */
@@ -360,7 +366,14 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
       </PanelSection>
     </template>
 
-    <PanelSection v-if="frameSettings" id="frame:settings" :label="t.layerSettings.frameHeading" :summary="settingsSummary">
+    <!-- The entry the panel opens on, scrolled into view and focused, when Open Frame opened it (ticket 0935). -->
+    <PanelSection
+      v-if="frameSettings"
+      :id="SETTINGS_SECTION"
+      :label="t.layerSettings.frameHeading"
+      :summary="settingsSummary"
+      :data-panel-entry="opensOnSettings || undefined"
+    >
       <LayerSettings
         v-bind="frameSettings"
         :background="backgrounds.shownOf('frame').background"

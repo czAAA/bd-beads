@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Layer } from '../../domain/grid'
+import { frameOf } from '../../domain/layerRecord'
 import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import type { ImageRejection } from '../../domain/imageConversion'
@@ -66,6 +67,8 @@ const save = controlAction('save-project-file')
 const saveAs = controlAction('save-project-file-as')
 
 const canvas = computed(() => layerSettingsOf(props.project, 'canvas'))
+/** The Canvas section's header (ticket 0935): with a Frame on the Canvas it says it sets the Canvas outside it. */
+const canvasLabel = computed(() => (frameOf(props.project) ? t.value.layerSettings.canvasOutsideFrame : t.value.panels.project.canvas))
 /** The folded Canvas section's summary: its Technique and Bead. */
 const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
 </script>
@@ -83,7 +86,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       @save="emit('save')"
     />
 
-    <PanelSection id="project:canvas" :label="t.panels.project.canvas" :summary="canvasSummary">
+    <PanelSection id="project:canvas" :label="canvasLabel" :summary="canvasSummary">
       <LayerSettings
         v-bind="canvas"
         :background="backgrounds.shownOf('canvas').background"

@@ -1211,3 +1211,16 @@ Draft words (ticket 1002), to be checked by a speaker of each:
 | Grid focus | Фокус сітки | Фокус сеткі | 网格聚焦 | Foco de cuadrícula | Fokus siatki |
 | Keeps the grid clear around your work and calmer everywhere else. | Сітка чітка навколо вашої роботи й спокійніша на решті полотна. | Сетка выразная вакол вашай працы і спакайнейшая на астатнім палатне. | 让作品周围的网格保持清晰，其他地方更安静。 | Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto. | Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej. |
 | There is no work to focus on yet. | Поки немає роботи, навколо якої тримати фокус. | Пакуль няма працы, вакол якой трымаць фокус. | 还没有可以聚焦的作品。 | Todavía no hay trabajo en el que centrarse. | Nie ma jeszcze pracy, na której można się skupić. |
+
+## Frame stays copy (ticket 0935)
+
+The Project panel's canvas section says which layer it sets while a Frame is on the Canvas, and the toast after a change there that leaves the Frame on another Technique or Bead (Message card). `{canvas}` and `{frame}` are a Technique's name or a Bead's label.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Canvas, outside the Frame (section header) | Холст вне рамки | Полотно поза рамкою | Палатно па-за рамкай | 画布（边框之外） | Lienzo, fuera del marco | Płótno poza ramką |
+| The Canvas is {canvas} now. The Frame stays {frame}. (toast) | Холст теперь: {canvas}. Рамка остаётся: {frame}. | Полотно тепер: {canvas}. Рамка лишається: {frame}. | Палатно цяпер: {canvas}. Рамка застаецца: {frame}. | 画布现在是{canvas}，边框仍是{frame}。 | El lienzo ahora es {canvas}. El marco sigue en {frame}. | Płótno to teraz: {canvas}. Ramka zostaje: {frame}. |
+| Change the Frame too (its first action) | Изменить и рамку | Змінити й рамку | Змяніць і рамку | 边框也一起改 | Cambiar también el marco | Zmień też ramkę |
+| Open Frame (its second action) | Открыть рамку | Відкрити рамку | Адкрыць рамку | 打开边框 | Abrir marco | Otwórz ramkę |
+
+English follows the audit's proposal (UX-018); the other languages are proposals for review with the build.
