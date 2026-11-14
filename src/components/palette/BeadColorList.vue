@@ -6,7 +6,9 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import AppNote from '../ui/AppNote.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BeadColorFilters from './BeadColorFilters.vue'
 import BeadColorFindRow from './BeadColorFindRow.vue'
 
@@ -18,8 +20,27 @@ const emit = defineEmits<{ added: [hex: string] }>()
 
 const { t, locale } = useI18n()
 const words = computed(() => t.value.palette.beadColors)
+// My beads (tickets 0902, 0918): the same device list the converter ticks into. Once it holds a code the list opens on
+// My beads; the half keeps the rows it opened with, so a code unticked there stays to be ticked again.
+const mine = computed(() => props.colors.myBeads)
+const owned = computed(() => new Set(mine.value?.codes.value))
+const listed = computed(() => owned.value.size)
+const half = ref<'all' | 'mine'>(listed.value > 0 ? 'mine' : 'all')
+const mineShown = ref(new Set(mine.value?.codes.value))
+const onMine = computed(() => listed.value > 0 && half.value === 'mine')
+const setHalf = (next: 'all' | 'mine') => {
+  if (next === 'mine') mineShown.value = new Set(owned.value)
+  half.value = next
+}
+const rows = computed(() => (onMine.value ? props.colors.swatches.value.filter((swatch) => mineShown.value.has(swatch.code)) : props.colors.swatches.value))
+const halves = computed(() => [
+  { value: 'all' as const, label: t.value.convertImage.wizard.myBeads.allCodes, meta: groupThousands(props.colors.swatches.value.length, locale.value) },
+  { value: 'mine' as const, label: t.value.convertImage.wizard.myBeads.name, meta: groupThousands(props.colors.swatches.value.filter((swatch) => owned.value.has(swatch.code)).length, locale.value) },
+])
+const measured = computed(() => matches.value.filter((swatch) => !swatch.approximate).length)
+
 // The converter's Change picker opens on its Finishes (ticket 0901); a change here is this list's alone.
-const { query, familyName, matches, shown, families, finishes, filtersOnCount, filtersOn, filtersOpen, emptyText, toggleFamily, toggleFinish, clearFilters } = useBeadColorFinder({ swatches: props.colors.swatches, bead: props.colors.bead, catalog: props.colors.catalog, startFinishes: props.colors.finishes?.value })
+const { query, familyName, matches, shown, families, finishes, filtersOnCount, filtersOn, filtersOpen, emptyText, toggleFamily, toggleFinish, clearFilters } = useBeadColorFinder({ swatches: rows, bead: props.colors.bead, catalog: props.colors.catalog, startFinishes: props.colors.finishes?.value })
 
 onMounted(() => void props.colors.load())
 
@@ -38,6 +59,16 @@ function add(hex: string, code: string) {
     <AppNote v-if="colors.state.value === 'loading'" role="status">{{ words.loading }}</AppNote>
     <AppNote v-else-if="colors.state.value === 'failed'" role="alert" data-testid="bead-colors-failed">{{ words.failed }}</AppNote>
     <div v-else class="bead-color-list__layout">
+      <SegmentedControl
+        v-if="listed > 0"
+        class="bead-color-list__switch"
+        :model-value="half"
+        :options="halves"
+        :aria-label="t.convertImage.wizard.myBeads.name"
+        small
+        data-testid="bead-colors-switch"
+        @update:model-value="setHalf"
+      />
       <BeadColorFindRow v-model:query="query" v-model:open="filtersOpen" class="bead-color-list__search" :filters-on-count="filtersOnCount" />
       <BeadColorFilters
         class="bead-color-list__filters"
@@ -52,11 +83,14 @@ function add(hex: string, code: string) {
       />
       <div class="bead-color-list__results">
         <p class="bead-color-list__count" data-testid="bead-colors-count">
-          <span>{{ fillBlanks(words.codeCount, { count: groupThousands(matches.length, locale) }) }}</span>
+          <span>
+            {{ fillBlanks(words.codeCount, { count: groupThousands(matches.length, locale) }) }}
+            <template v-if="onMine"> · {{ fillBlanks(words.measuredCount, { count: groupThousands(measured, locale) }) }}</template>
+          </span>
           <span v-if="matches.length > SHOWN">{{ fillBlanks(words.firstShown, { count: SHOWN }) }}</span>
         </p>
         <ul class="bead-color-list__rows">
-          <li v-for="entry in shown" :key="entry.code">
+          <li v-for="entry in shown" :key="entry.code" class="bead-color-list__item">
             <button
               type="button"
               class="bead-color-list__row"
@@ -78,6 +112,20 @@ function add(hex: string, code: string) {
                 </span>
               </span>
               <span v-if="entry.taken" class="bead-color-list__taken">{{ words.inPalette }}</span>
+            </button>
+            <button
+              v-if="mine"
+              type="button"
+              class="bead-color-list__tick"
+              :aria-pressed="owned.has(entry.code)"
+              :aria-label="fillBlanks(words.inMyBeads, { code: entry.code })"
+              data-testid="bead-color-tick"
+              :data-code="entry.code"
+              @click="mine.toggle(entry.code)"
+            >
+              <span class="bead-color-list__box" aria-hidden="true">
+                <AppIcon v-if="owned.has(entry.code)" name="check" :size="14" />
+              </span>
             </button>
           </li>
         </ul>
@@ -190,12 +238,68 @@ function add(hex: string, code: string) {
   }
 }
 
+.bead-color-list__item {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+/* The tick of My beads (ticket 0918): its own button at the row's right, 28 square and 44 to hit on touch, the 20 box
+ * of ticket 0902 inside it. */
+.bead-color-list__tick {
+  display: grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--filter-chip-height);
+  height: var(--filter-chip-height);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .bead-color-list__tick {
+    width: var(--touch-target);
+    height: var(--touch-target);
+  }
+}
+
+.bead-color-list__tick:hover {
+  background: var(--hover-fill);
+}
+
+.bead-color-list__tick:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.bead-color-list__box {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--my-beads-tick);
+  height: var(--my-beads-tick);
+  color: var(--canvas);
+  background: var(--canvas);
+  border: 1px solid var(--field-line);
+  border-radius: var(--radius-xs);
+}
+
+.bead-color-list__tick[aria-pressed='true'] .bead-color-list__box {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
 .bead-color-list__row {
   display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: var(--space-10);
   box-sizing: border-box;
-  width: 100%;
   padding: var(--space-4) var(--space-6);
   font: var(--type-control);
   color: inherit;

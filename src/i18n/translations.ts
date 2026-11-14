@@ -615,6 +615,8 @@ export interface Translations {
       /** The count line: `{count}` codes matched, and how many are shown past the cap. */
       codeCount: string
       firstShown: string
+      inMyBeads: string
+      measuredCount: string
       /** The narrow layout's disclosure, and its name while `{count}` values are on. */
       filters: string
       filtersOn: string

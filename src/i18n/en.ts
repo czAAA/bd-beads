@@ -491,6 +491,8 @@ export const en: Translations = {
       info: 'About these colors',
       codeCount: 'codes: {count}',
       firstShown: 'first {count} shown',
+      inMyBeads: '{code} in My beads',
+      measuredCount: '{count} measured',
       filters: 'Filters',
       filtersOn: 'Filters, {count} on',
       label: 'Colors of this Bead',
