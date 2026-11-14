@@ -4,11 +4,11 @@ import { pluralForm, plural } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
 import { catalogCounts, starterCount } from './appCounts'
-import { coffeePromises, type CoffeePromise } from './coffeeCopy'
+import type { IconName } from '../components/ui/icons'
 import { DEMO_PIECE_SIZE, DEMO_TECHNIQUE } from './inside/demoProjects'
 
 // The Welcome section's words (Homepage card, ticket 0830): its counts, read from the app as the free list's are, the
-// piece's caption, and the three promises it keeps of the coffee screen's six.
+// piece's caption, and its three promises: free and local as one, then what the app does (ticket 0946).
 
 /** "3 817 TOHO and Miyuki colors · 15 Starters": the Color catalogs' codes and brands, and the Starters. */
 export function welcomeCounts(t: Translations, locale: Locale): string {
@@ -22,11 +22,22 @@ export function welcomeCaption(t: Translations): string {
   return fillBlanks(t.homepage.welcome.caption, { technique: techniqueName(t, DEMO_TECHNIQUE), size: `${DEMO_PIECE_SIZE.long}×${DEMO_PIECE_SIZE.wide}` })
 }
 
-/** The promises the Welcome tile shows, in its order. */
-const WELCOME_PROMISES: readonly CoffeePromise['id'][] = ['device', 'offline', 'free']
+/** One Welcome promise as shown: its icon, its name, and its line. */
+export interface WelcomePromise {
+  id: keyof Translations['homepage']['welcome']['promises']
+  icon: IconName
+  name: string
+  text: string
+}
 
-/** The coffee screen's own three, with its icons and the lines it keeps for screen readers. */
-export function welcomePromises(t: Translations): CoffeePromise[] {
-  const all = coffeePromises(t)
-  return WELCOME_PROMISES.map((id) => all.find((promise) => promise.id === id)!)
+/** The promises in the tile's order, each with its icon: Start from a picture and Count and weave take their chapters'. */
+const WELCOME_PROMISES = [
+  { id: 'free', icon: 'check' },
+  { id: 'picture', icon: 'image' },
+  { id: 'weave', icon: 'turn-row-direction' },
+] as const satisfies readonly { id: WelcomePromise['id']; icon: IconName }[]
+
+/** The three promises in a language, in the tile's order. */
+export function welcomePromises(t: Translations): WelcomePromise[] {
+  return WELCOME_PROMISES.map(({ id, icon }) => ({ id, icon, ...t.homepage.welcome.promises[id] }))
 }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
-import { coffeeChips, coffeePromises } from './coffeeCopy'
+import { coffeeChips } from './coffeeCopy'
+
+/** The promises: the chips but Open source and Say hello, the two that act. */
+const coffeePromises = (t: typeof en) => coffeeChips(t).filter((chip) => chip.id !== 'openSource' && chip.id !== 'sayHello')
 
 describe("The coffee screen's copy (ticket 0823)", () => {
   it('has the six promises in order, each with its icon', () => {

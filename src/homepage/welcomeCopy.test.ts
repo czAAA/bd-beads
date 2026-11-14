@@ -24,13 +24,18 @@ describe("the Welcome section's words (ticket 0830)", () => {
     expect(welcomeCaption(ru)).toBe('Мозаичное плетение · 48×23')
   })
 
-  it("keeps three of the coffee screen's promises, with its icons and lines", () => {
+  it('promises free and local as one, then what the app does, in its chapter words (ticket 0946)', () => {
     const promises = welcomePromises(en)
     expect(promises.map(({ icon, name }) => [icon, name])).toEqual([
-      ['device', 'Yours, on this device'],
-      ['cloud-off', 'Works offline'],
-      ['check', 'Free forever'],
+      ['check', 'Everything here is free'],
+      ['image', 'Start from a picture'],
+      ['turn-row-direction', 'Count and weave'],
     ])
-    expect(promises[1]!.text).toBe('Once open, it keeps working without a connection.')
+    expect(promises[0]!.text).toBe('No account, no trial. Your work stays on this device.')
+  })
+
+  it('never qualifies free with "for now" or "later"', () => {
+    const words = welcomePromises(en).map(({ name, text }) => `${name} ${text}`).join(' ')
+    expect(words).not.toMatch(/for now|later/i)
   })
 })

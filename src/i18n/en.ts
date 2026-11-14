@@ -356,6 +356,11 @@ export const en: Translations = {
       starters: { one: '{count} Starter', other: '{count} Starters' },
       caption: '{technique} · {size}',
       piece: 'Peacock feather eyes, in peyote',
+      promises: {
+        free: { name: 'Everything here is free', text: 'No account, no trial. Your work stays on this device.' },
+        picture: { name: 'Start from a picture', text: 'Turn a photo into a bead pattern.' },
+        weave: { name: 'Count and weave', text: 'Every color counted; mark rows done as you weave.' },
+      },
     },
     inside: {
       rows: {
@@ -431,7 +436,7 @@ export const en: Translations = {
         more: 'More on the way',
         showAll: 'Show all {count}',
       },
-      alone: { heading: 'Free to use', why: 'Accounts and Pro come later; everything works without them.' },
+      alone: { heading: 'Free to use', why: 'Accounts and Pro come later; everything works without them.', info: 'About accounts and Pro' },
     },
     library: '{library}, {count}',
   },

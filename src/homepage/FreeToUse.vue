@@ -2,13 +2,14 @@
 import { computed } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import InfoButton from '../components/ui/InfoButton.vue'
 import { useI18n } from '../i18n/useI18n'
 import FreeList from './FreeList.vue'
 import { freeListGroups } from './freeList'
 
 // Free to use for a new visitor (ticket 0947; Homepage card): with one plan there is no plan tile. The heading and the
 // way in on the left, the whole free list on the right in What's inside's four chapters, every row in view at once, so
-// nothing grows and the section never scrolls its heading or button away.
+// nothing grows and the section never scrolls its heading or button away. Accounts and Pro wait in the Info button (0946).
 const emit = defineEmits<{ makeFirstProject: [] }>()
 const { t, locale } = useI18n()
 const plans = computed(() => t.value.homepage.plans)
@@ -22,8 +23,10 @@ const lastId = computed(() => groups.value.at(-1)?.id)
 <template>
   <div class="free-to-use" data-testid="free-to-use">
     <div class="free-to-use__lead">
-      <h2 id="homepage-plans" class="free-to-use__heading">{{ plans.alone.heading }}</h2>
-      <p class="free-to-use__why" data-testid="plans-why"><AppIcon name="info" :size="16" />{{ plans.alone.why }}</p>
+      <div class="free-to-use__head">
+        <h2 id="homepage-plans" class="free-to-use__heading">{{ plans.alone.heading }}</h2>
+        <InfoButton :label="plans.alone.info" :body="plans.alone.why" data-testid="plans-info" />
+      </div>
       <p class="free-to-use__price">
         <b>{{ plans.tiles[0].price }}</b><span>{{ plans.tiles[0].meta }}</span>
       </p>
@@ -81,20 +84,18 @@ const lastId = computed(() => groups.value.at(-1)?.id)
   gap: var(--space-10);
 }
 
+.free-to-use__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-12);
+}
+
 .free-to-use__heading {
   margin: 0;
   font: var(--type-serif-heading);
   letter-spacing: var(--tracking-serif-heading);
   color: var(--ink);
-}
-
-.free-to-use__why {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  margin: 0 0 var(--space-12);
-  font: var(--type-inside-line);
-  color: var(--muted);
 }
 
 .free-to-use__price {
