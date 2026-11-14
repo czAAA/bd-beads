@@ -1,4 +1,4 @@
-import { BLACK_WHITE_BALANCE, channelsOf, fromCielab, relativeLuminance, toCielab, toHex } from '../domain/color'
+import { BLACK_WHITE_BALANCE, channelsOf, fromCielab, mix, relativeLuminance, toCielab, toHex } from '../domain/color'
 import type { DrawingContext, ProjectTheme } from './beadLook'
 import { drawsDraft } from './draftRenderer'
 import { cachedSprite } from './sprites'
@@ -19,7 +19,12 @@ export const TILE_INSET_PX = 0.75
 /** The least a tile's corner is rounded, in grid px, a square Technique's included. */
 const TILE_LEAST_CORNER_PX = 1.5
 
+/** How far toward the tile's color the gap goes: about 3.8 L* left of the tile's 6.5, 1.11:1, so the grid is calm
+ * everywhere on the Canvas. */
+const GAP_TOWARD_TILE = 0.42
+
 const tileColors = new Map<string, string>()
+const gapColors = new Map<string, string>()
 
 /** The tile on a Background: the color moved TILE_STEP_L toward ink with its hue kept, lighter on a dark Background
  * and darker on a light one, by the rule that picks the look a Custom color is drawn in (canvasBackgrounds.ts).
@@ -34,6 +39,17 @@ export function tileColorOf(background: string): string {
     tileColors.set(background, tile)
   }
   return tile
+}
+
+/** The gap between tiles on a Background: the Background moved GAP_TOWARD_TILE of the way to its tile (Night `#202020`
+ * gives `#262626`, Studio `#fafafa` gives `#f2f2f2`). Never the tile, so the grid shows everywhere. */
+export function gapColorOf(background: string): string {
+  let gap = gapColors.get(background)
+  if (gap === undefined) {
+    gap = toHex(mix(channelsOf(background), channelsOf(tileColorOf(background)), GAP_TOWARD_TILE))
+    gapColors.set(background, gap)
+  }
+  return gap
 }
 
 /** How a layer's empty positions are marked: tonal tiles in `color`, or the Position mark outline. */

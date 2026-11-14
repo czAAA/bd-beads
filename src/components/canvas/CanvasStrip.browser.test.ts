@@ -40,7 +40,6 @@ describe('CanvasStrip on a phone (ticket 0843)', () => {
     expect(rectOf(root, '[data-testid="strip-export"]')).toEqual(exportButton)
   })
 
-  // From 800px: at 768 the Grid focus button (ticket 1002) makes the cluster 11px too wide, so it scrolls there.
   it('is unchanged on tablets and laptops: nothing cut, nothing faded, Export last in the right corner', async () => {
     const { root } = await mountAt(InShell, {}, { locale: 'en', width: 800 })
     for (const width of [800, 1024, 1280]) {

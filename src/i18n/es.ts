@@ -320,7 +320,6 @@ export const es: Translations = {
       storage: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
       paintMouse: 'Haz clic o arrastra para poner cuentas del color elegido.',
     },
-    gridFocusLabel: 'Foco de cuadrícula',
   },
   shell: {
     canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto.',
@@ -1265,8 +1264,6 @@ export const es: Translations = {
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
     noBeadsToNumber: 'No hay cuentas que numerar.',
-    gridFocus: 'Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto.',
-    noWorkToFocus: 'Todavía no hay trabajo en el que centrarse.',
     framePanelBeads: 'Abre Cuentas necesarias ({total}), el tamaño del marco, girar y quitar.',
   },
   layerSettings: {

@@ -435,8 +435,6 @@ export interface Translations {
       storage: string
       paintMouse: string
     }
-    /** The Grid focus toggle's name (CanvasStrip card, ticket 1002). */
-    gridFocusLabel: string
   }
   shell: {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
@@ -1525,9 +1523,6 @@ export interface Translations {
     pasteToolTouch: string
     /** Why the Rulers toggle is held while the Canvas is empty (ticket 0921). */
     noBeadsToNumber: string
-    /** Grid focus's second Tooltip line, and why it is held with no bead and no Frame (ticket 1002). */
-    gridFocus: string
-    noWorkToFocus: string
     /** The Frame button's Tooltip with Beads needed's total, while there is one (ticket 0932). */
     framePanelBeads: string
   }
