@@ -1528,6 +1528,8 @@ export interface Translations {
     /** Grid focus's second Tooltip line, and why it is held with no bead and no Frame (ticket 1002). */
     gridFocus: string
     noWorkToFocus: string
+    /** The Frame button's Tooltip with Beads needed's total, while there is one (ticket 0932). */
+    framePanelBeads: string
   }
   /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
    * in every layer's. */

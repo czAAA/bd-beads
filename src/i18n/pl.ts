@@ -755,7 +755,7 @@ export const pl: Translations = {
     fromStarter: 'Ramka ze startera',
     fitAFrame: 'Dopasuj ramkę do rysunku',
     fitNothing: 'Nic jeszcze nie narysowano, więc nie ma do czego dopasować ramki.',
-    noFrameLine: 'Ramka ustala rozmiar, eksporty i liczbę koralików.',
+    noFrameLine: 'Ramka ustala rozmiar, eksporty i „Potrzebne koraliki”.',
     selectAFrame: 'Zaznacz ramkę',
     selectFrameHint: 'Przeciągnij po płótnie, by zaznaczyć ramkę. Esc anuluje.',
     exportNeedsFrame: 'Ustaw ramkę wokół rysunku, który chcesz wyeksportować.',
@@ -1270,6 +1270,7 @@ export const pl: Translations = {
     noBeadsToNumber: 'Nie ma koralików do ponumerowania.',
     gridFocus: 'Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej.',
     noWorkToFocus: 'Nie ma jeszcze pracy, na której można się skupić.',
+    framePanelBeads: 'Otwórz „Potrzebne koraliki” ({total}), rozmiar ramki, obrót i usuwanie.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',
