@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-14",
+  "line": {
+    "en": "A Project open in another tab can no longer be drawn on there, no longer says it is saved, and Work here instead moves it to this tab",
+    "ru": "Проект, открытый в другой вкладке, больше нельзя рисовать здесь, он не пишет, что сохранён, а «Работать здесь» переносит его в эту вкладку",
+    "uk": "Проєкт, відкритий в іншій вкладці, більше не можна малювати тут, він не каже, що збережений, а «Працювати тут» переносить його в цю вкладку",
+    "be": "Праект, адкрыты ў іншай укладцы, больш нельга маляваць тут, ён не кажа, што захаваны, а «Працаваць тут» пераносіць яго ў гэту ўкладку",
+    "zh": "在另一个标签页中打开的项目不能再在这里绘制，也不再显示已保存；“改在这里工作”会把它移到这个标签页",
+    "es": "Un proyecto abierto en otra pestaña ya no se puede dibujar aquí ni dice que está guardado, y «Trabajar aquí» lo trae a esta pestaña",
+    "pl": "Projektu otwartego w innej karcie nie da się już tu rysować, nie pokazuje, że jest zapisany, a „Pracuj tutaj” przenosi go do tej karty"
+  }
+}

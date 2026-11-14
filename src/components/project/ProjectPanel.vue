@@ -23,6 +23,8 @@ const props = defineProps<{
   project: Project
   saveFailed: boolean
   unsaved: boolean
+  /** The Project is open in another tab (ticket 0937): its save state says nothing here is saved. */
+  openElsewhere?: boolean
   /** The reference image's picture as the app holds it (ticket 0790): its thumbnail, whether one is being made ready,
    * why the last file was refused, and whether the device keeps it. */
   reference?: { thumbnail?: string; preparing: boolean; refusal?: ImageRejection; notSaved: boolean }
@@ -75,6 +77,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       :save-failed="saveFailed"
       :unsaved="unsaved"
       :reference-not-saved="reference?.notSaved"
+      :open-elsewhere="openElsewhere"
       @rename="emit('rename', $event)"
       @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"
