@@ -195,6 +195,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
   const toggleRulers = () => void (showRulers.value = !showRulers.value)
+  /** Grid focus (G, the canvas strip's button, ticket 1002): on by default and kept on the device; a view, no Undo step. */
+  const gridFocus = services.devicePreferences.get('gridFocus')
+  const toggleGridFocus = () => void (gridFocus.value = !gridFocus.value)
   const rowHighlight = services.devicePreferences.get('rowHighlight')
   const toggleRowHighlight = () => void (rowHighlight.value = !rowHighlight.value)
 
@@ -935,6 +938,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
+    onToggleGridFocus: toggleGridFocus,
     onToggleReferenceImage: referenceImage.toggleShown,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
@@ -1045,6 +1049,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
       stroking: computed(() => strokeMode.value !== null),
       toggleRulers,
+      gridFocus,
+      toggleGridFocus,
       /** The reference image (ticket 0790): what the surface draws, the strip button, Adjust and its bar. */
       referenceImage,
       /** The reference image's picture bar (ticket 0883): its size, Set Frame around the picture and Convert to beads. */

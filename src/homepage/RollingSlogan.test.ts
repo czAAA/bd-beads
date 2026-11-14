@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 import RollingSlogan from './RollingSlogan.vue'
 import { SLOGAN_HOLD_MS, SLOGAN_ROLL_MS, SLOGAN_WORDS } from './slogan'
 
-const STEP_MS = SLOGAN_HOLD_MS + SLOGAN_ROLL_MS
-
 function slogan() {
   return mount(RollingSlogan, { attachTo: document.body })
 }
-const word = (w: ReturnType<typeof slogan>) => w.attributes('data-word')
+const rolling = (w: ReturnType<typeof slogan>) =>
+  w.get('[data-testid="slogan-column"]').classes().includes('slogan__column--rolling')
 
 function setHidden(hidden: boolean) {
   Object.defineProperty(document, 'hidden', {
@@ -37,57 +37,63 @@ describe('RollingSlogan', () => {
     expect(wrapper.get('.slogan__open').text()).toBe('open')
   })
 
-  it('starts on "beads", holds it, then moves through the words in order and back to "beads"', async () => {
-    const wrapper = slogan()
-    const seen = [word(wrapper)]
-    for (let i = 0; i < SLOGAN_WORDS.length; i++) {
-      await vi.advanceTimersByTimeAsync(STEP_MS)
-      seen.push(word(wrapper))
-    }
-    expect(seen).toEqual([...SLOGAN_WORDS, SLOGAN_WORDS[0]])
-    await vi.advanceTimersByTimeAsync(STEP_MS)
-    expect(word(wrapper)).toBe('draw')
-  })
-
-  it('rolls the column down one line a step and returns to the first word with the transition off', async () => {
+  it('holds "openbeads" on arrival, rolls once back to "beads" and never moves again (ticket 0925)', async () => {
     const wrapper = slogan()
     const column = wrapper.get('[data-testid="slogan-column"]')
-    const first = column.attributes('style')
-    await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS)
-    expect(column.attributes('style')).not.toBe(first)
-    expect(column.classes()).not.toContain('slogan__column--still')
+    expect(column.attributes('style')).toContain(`* ${-SLOGAN_WORDS.length})`)
+    await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS - 1)
+    expect(rolling(wrapper)).toBe(false)
 
-    await vi.advanceTimersByTimeAsync(STEP_MS * (SLOGAN_WORDS.length - 1) + SLOGAN_ROLL_MS)
-    expect(column.attributes('style')).toBe(first)
-    expect(column.classes()).toContain('slogan__column--still')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(rolling(wrapper)).toBe(true)
+    expect(column.attributes('style')).toContain('* 0)')
+
+    await vi.advanceTimersByTimeAsync(SLOGAN_ROLL_MS)
+    expect(rolling(wrapper)).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(column.attributes('style')).toContain('* 0)')
   })
 
   it('stays "openbeads" under reduced motion', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }).matchMedia)
     const wrapper = slogan()
-    await vi.advanceTimersByTimeAsync(STEP_MS * 3)
-    expect(word(wrapper)).toBe('beads')
+    await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS + SLOGAN_ROLL_MS)
+    expect(rolling(wrapper)).toBe(false)
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('pauses while the page is hidden and goes on when it is shown', async () => {
+  it('rests at once when reduced motion is turned on during its pass', async () => {
+    const media = fakeMatchMedia({ '(prefers-reduced-motion: reduce)': false })
+    vi.stubGlobal('matchMedia', media.matchMedia)
     const wrapper = slogan()
-    setHidden(true)
-    await vi.advanceTimersByTimeAsync(STEP_MS * 3)
-    expect(word(wrapper)).toBe('beads')
-    setHidden(false)
     await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS)
-    expect(word(wrapper)).toBe('draw')
+    media.set('(prefers-reduced-motion: reduce)', true)
+    await nextTick()
+    expect(rolling(wrapper)).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('goes on from "beads" when hidden while rolling onto the closing "beads"', async () => {
+  it('waits while the page is hidden and plays its pass when first shown', async () => {
     const wrapper = slogan()
-    await vi.advanceTimersByTimeAsync(STEP_MS * (SLOGAN_WORDS.length - 1) + SLOGAN_HOLD_MS)
-    expect(word(wrapper)).toBe('beads')
     setHidden(true)
+    await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS * 3)
+    expect(rolling(wrapper)).toBe(false)
     setHidden(false)
     await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS)
-    expect(word(wrapper)).toBe('draw')
+    expect(rolling(wrapper)).toBe(true)
+  })
+
+  it('rests at once when hidden during its pass, and does not play again', async () => {
+    const wrapper = slogan()
+    await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS + SLOGAN_ROLL_MS / 2)
+    setHidden(true)
+    await nextTick()
+    expect(rolling(wrapper)).toBe(false)
+    setHidden(false)
+    await vi.advanceTimersByTimeAsync(SLOGAN_HOLD_MS + SLOGAN_ROLL_MS)
+    expect(rolling(wrapper)).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('leaves no timer running once unmounted', () => {
