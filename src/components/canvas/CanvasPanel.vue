@@ -22,7 +22,6 @@ import { rowProgressStarted } from '../../domain/rowProgress'
 import ProgressBar from './ProgressBar.vue'
 import SchemaTags from './SchemaTags.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
-import SaveReminder from './SaveReminder.vue'
 import { useCanvasContext } from '../../composables/shell/useAppShell'
 import { useColorPick, usePalette } from '../../composables/tools/usePalette'
 import { colorName } from '../../i18n/colorName'
@@ -376,7 +375,7 @@ const selectionLayerStyle = computed(() => {
  * (FirstRunHints card, tickets 0725, 0798). A Frame is already a start on the Pattern. The Homepage's demo has none:
  * nothing shows there that the tour didn't make (ticket 0797). */
 const emptyProject = computed(() => !demo && !!activeProject.value && !frameOf(activeProject.value) && !hasProjectBeads(activeProject.value))
-/** The save ring shows over the editor's drawing area only (SaveReminder card), and the toasts start under it; never in
+/** The save ring shows on the editor's strip only, beside the Project button (SaveReminder card, ticket 0922); never in
  * the Homepage's demo, which saves nothing (ticket 0797). */
 const ringShown = computed(() => !demo && onEditor.value && !!activeProject.value && saveRing.value.shown)
 const drawingStyle = computed(() => {
@@ -414,6 +413,7 @@ const drawingStyle = computed(() => {
         :can-redo="canRedo"
         :open-panel="openPanel === 'export' && exportOpener !== 'strip-export' ? null : openPanel"
         :zoom-percent="onEditor ? stripZoomPercent : undefined"
+        :save-ring="ringShown ? saveRing : undefined"
         @select-panel="onSelectPanel"
         @toggle-expand="onToggleDemoExpand"
         @close="onCloseConvertImage"
@@ -427,6 +427,8 @@ const drawingStyle = computed(() => {
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @reset="resetZoom"
+        @save-project-file="onSaveProjectFile"
+        @hold-save-ring="onHoldSaveRing"
       />
 
       <!-- The page's one main landmark (ticket 0856, ScreenReaders card): the box under the strip, the strip being the
@@ -441,16 +443,6 @@ const drawingStyle = computed(() => {
           :inert="!onEditor || undefined"
           data-testid="app-drawing-area"
         >
-          <!-- The save ring (ticket 0796, SaveReminder card): top-right, after the strip and before the drawing in Tab order. -->
-          <SaveReminder
-            v-if="ringShown"
-            :beads="saveRing.beads"
-            :last-file-at="saveRing.lastFileAt"
-            :label-open="saveRing.labelOpen"
-            @save="onSaveProjectFile"
-            @hold="onHoldSaveRing"
-          />
-
           <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
             not on a phone (CanvasHint card). -->
           <CanvasHint v-if="emptyProject" />
@@ -650,7 +642,6 @@ const drawingStyle = computed(() => {
         <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
         <ToastRegion
           :toasts="toasts"
-          :under-ring="ringShown"
           :clear-of-panel="openPanel !== null"
           @dismiss="dismissToast"
         />
