@@ -17,15 +17,15 @@ interface InsideItem<Id extends string = string> {
   text: string
 }
 
-/** The rows in the order the tour plays them. */
+/** The rows in the order the tour plays them: picture into pattern first in its chapter (ticket 0949). */
 export const INSIDE_ROWS = [
   { id: 'canvas', icon: 'select' },
   { id: 'techniques', icon: 'grid' },
   { id: 'editing', icon: 'paint' },
   { id: 'mirror', icon: 'mirror' },
+  { id: 'convert', icon: 'image' },
   { id: 'starters', icon: 'frame' },
   { id: 'reference', icon: 'reference-image' },
-  { id: 'convert', icon: 'image' },
   { id: 'colors', icon: 'palette' },
   { id: 'letters', icon: 'pattern' },
   { id: 'rowProgress', icon: 'turn-row-direction' },
@@ -37,7 +37,7 @@ export const INSIDE_ROWS = [
 /** The four chapters in order, each a run of the tour's rows from `first` to the next chapter's (ticket 0830). */
 const INSIDE_CHAPTERS = [
   { id: 'draw', icon: 'paint', first: 'canvas' },
-  { id: 'startFrom', icon: 'image', first: 'starters' },
+  { id: 'startFrom', icon: 'image', first: 'convert' },
   { id: 'beadColors', icon: 'palette', first: 'colors' },
   { id: 'weaveKeep', icon: 'turn-row-direction', first: 'rowProgress' },
 ] as const satisfies readonly { id: InsideChapterId; icon: IconName; first: InsideRowId }[]

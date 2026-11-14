@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { InsideRowId } from '../../i18n/translations'
 import type { Hand, Target } from './hand'
-import { HOLD, TOUR_SCRIPTS } from './tourScripts'
+import { PEACOCK_CUFF } from './peacock'
+import { HOLD, TOUR_SCRIPTS, TRACED_BY_HAND } from './tourScripts'
 
 // The pictures are drawn on a canvas this DOM doesn't have; any picture does here.
 vi.mock('./peacockPicture', () => ({ peacockFile: async () => new File([], 'peacock.png', { type: 'image/png' }) }))
@@ -15,11 +16,14 @@ function fakeHand(controls: string = '') {
   root.innerHTML = controls
   const presses: string[] = []
   const times: number[] = []
+  /** The beads stroked by hand, and those laid at once. */
+  const stroked: unknown[] = []
+  const laid: unknown[] = []
   const name = (target: Target) => (typeof target === 'string' ? target : 'control')
   const hand = {
     instant: false,
     root,
-    canvas: { activeProject: ref(undefined), referenceImage: { image: ref(undefined) }, convertSession: ref(undefined) },
+    canvas: { activeProject: ref(undefined), referenceImage: { image: ref(undefined) }, convertSession: ref(undefined), onSelectColor: () => {}, onSelectTool: () => {} },
     press: async (target: Target) => (presses.push(name(target)), document.createElement('button')),
     pressWith: async (target: Target) => void presses.push(name(target)),
     find: async () => document.createElement('div'),
@@ -29,11 +33,12 @@ function fakeHand(controls: string = '') {
     frame: async () => {},
     moveTo: async () => {},
     middleOf: () => ({ x: 0, y: 0 }),
-    stroke: async () => {},
+    stroke: async (cells: unknown[]) => void stroked.push(...cells),
+    lay: (cells: unknown[]) => void laid.push(...cells),
     drag: async () => {},
     dragFrame: async () => {},
   }
-  return { hand: hand as unknown as Hand, presses, times }
+  return { hand: hand as unknown as Hand, presses, times, stroked, laid }
 }
 
 describe("What's inside's Mirror row (ticket 0802)", () => {
@@ -53,7 +58,7 @@ describe("What's inside's Mirror row (ticket 0802)", () => {
 })
 
 describe("What's inside's rows in the order they play (ticket 0830)", () => {
-  it('closes the Mirror before the Starter gallery, which comes right after the Mirror row', async () => {
+  it('closes the Mirror before the Starter gallery, the Mirror row left it on (Convert image plays between them since 0949)', async () => {
     const { hand, presses } = fakeHand()
     await TOUR_SCRIPTS.starters(hand)
     expect(presses.slice(0, 4)).toEqual(['pill-tool-mirror', 'mirror-bar-close', 'strip-frame', 'frame-replace-from-starter'])
@@ -65,6 +70,16 @@ describe("What's inside's rows in the order they play (ticket 0830)", () => {
     expect(presses.slice(0, 2)).toEqual(['pill-tool-select', 'context-bar-clear'])
     expect(presses).toContain('context-bar-frame')
     expect(presses).not.toContain('frame-chrome-remove')
+  })
+})
+
+describe("What's inside's Reference image row is short (ticket 0949)", () => {
+  it('traces the start of the eye by hand and lays the rest of the feather at once, the Mirror left closed', async () => {
+    const { hand, presses, stroked, laid } = fakeHand()
+    await TOUR_SCRIPTS.reference(hand)
+    expect(stroked).toHaveLength(TRACED_BY_HAND)
+    expect(laid).toHaveLength(PEACOCK_CUFF.lines * PEACOCK_CUFF.length)
+    expect(presses.filter((id) => id.startsWith('margin-') || id.startsWith('mirror-bar'))).toEqual([])
   })
 })
 
