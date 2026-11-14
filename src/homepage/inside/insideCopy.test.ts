@@ -15,9 +15,9 @@ describe("What's inside's copy (ticket 0797)", () => {
       ['techniques', 'grid'],
       ['editing', 'paint'],
       ['mirror', 'mirror'],
+      ['convert', 'image'],
       ['starters', 'frame'],
       ['reference', 'reference-image'],
-      ['convert', 'image'],
       ['colors', 'palette'],
       ['letters', 'pattern'],
       ['rowProgress', 'turn-row-direction'],
@@ -37,7 +37,7 @@ describe("What's inside's copy (ticket 0797)", () => {
   it('groups the rows into four chapters in tour order, each with its icon and name (ticket 0830)', () => {
     expect(insideChapters(en, 'en').map(({ id, icon, name, rows }) => [id, icon, name, rows.map((row) => row.id)])).toEqual([
       ['draw', 'paint', 'Draw', ['canvas', 'techniques', 'editing', 'mirror']],
-      ['startFrom', 'image', 'Start from something', ['starters', 'reference', 'convert']],
+      ['startFrom', 'image', 'Start from something', ['convert', 'starters', 'reference']],
       ['beadColors', 'palette', 'Real bead colors', ['colors', 'letters']],
       ['weaveKeep', 'turn-row-direction', 'Weave and keep', ['rowProgress', 'beadsNeeded', 'exports', 'savedProjects']],
     ])
@@ -46,7 +46,7 @@ describe("What's inside's copy (ticket 0797)", () => {
   })
 
   it("describes a chapter by its rows' names, joined as the language joins a list (ticket 0830)", () => {
-    expect(insideChapters(en, 'en')[1]!.describes).toBe('Starters, Reference image, and Convert image')
+    expect(insideChapters(en, 'en')[1]!.describes).toBe('Convert image, Starters, and Reference image')
     expect(insideChapters(ru, 'ru')[2]!.describes).toBe('Цвета внутри и Буквы')
   })
 })

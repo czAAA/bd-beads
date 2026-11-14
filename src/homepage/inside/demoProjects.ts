@@ -120,7 +120,7 @@ export function onCanvas(frame: DemoFrame, line: number, along: number): GridPos
 /** The Mirror row's Repeat on the ring: 3 Axes cut the band into 4 strips an eye long. */
 export const DEMO_RING_AXES = PEACOCK_RING.length / PEACOCK_RING.period - 1
 
-/** The Reference image row's Repeat on the cuff: 2 Axes, 3 strips an eye long. */
+/** The cuff's 2 Axes between its 3 eyes, a strip an eye long each: Colors built in paints a pupil in each. */
 export const DEMO_CUFF_AXES = PEACOCK_CUFF.length / PEACOCK_CUFF.period - 1
 
 /** The strip of the ring the first row draws its eye in, and the one the Mirror row draws it in again: the first two

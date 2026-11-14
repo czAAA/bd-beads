@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PEACOCK_CUFF, PEACOCK_RING, type PeacockDrawing, type PeacockPart } from './peacock'
-import { beadsRound, eyeByHand, eyeTrace, pupilMiddle, ringGroundFills, strokesThrough, type TraceBead, type TraceStep } from './peacockTrace'
+import { beadsRound, eyeByHand, eyeTrace, pupilMiddle, ringGroundFills, strokesThrough, traceStart, wholeDrawing, type TraceBead, type TraceStep } from './peacockTrace'
 
 /** A piece of beads the size of a drawing, painted and filled as the editor does it, every press laid in each strip as
  * the Mirror's Repeat lays it. */
@@ -83,5 +83,18 @@ describe("how the ghost draws the peacock's eye (ticket 0831)", () => {
   it("names the middle line of each of the cuff's pupils, three beads an eye", () => {
     expect(pupilMiddle(0)).toEqual([[13, 6], [13, 7], [13, 8]])
     expect(pupilMiddle(2)).toEqual([[13, 38], [13, 39], [13, 40]])
+  })
+})
+
+describe("Reference image's short trace (ticket 0949)", () => {
+  it('keeps the first strokes of the first color up to its beads, the last one cut, and no Fill', () => {
+    const step: TraceStep = { part: 'G', strokes: [[[0, 0], [0, 1], [0, 2]], [[1, 0], [1, 1]], [[2, 0]]], fills: [[3, 3]] }
+    expect(traceStart(step, 4)).toEqual({ part: 'G', strokes: [[[0, 0], [0, 1], [0, 2]], [[1, 0]]], fills: [] })
+  })
+
+  it('lays the whole cuff, every bead once in its own part', () => {
+    const laid = wholeDrawing(PEACOCK_CUFF).flatMap(({ part, strokes }) => strokes.flat().map(([line, along]) => [line, along, part] as const))
+    expect(laid).toHaveLength(PEACOCK_CUFF.lines * PEACOCK_CUFF.length)
+    expect(laid.every(([line, along, part]) => PEACOCK_CUFF.rows[line]![along] === part)).toBe(true)
   })
 })
