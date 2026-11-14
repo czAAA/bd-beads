@@ -146,9 +146,12 @@ export const uk: Translations = {
       deleteAllConfirm: 'Видалити всі проєкти',
       sendFeedback: 'Надіслати відгук',
       reportTranslation: 'Повідомити про помилку перекладу',
-      keepProjects: 'Зберігати проєкти на пристрої',
-      keepProjectsOn: 'Увімк.',
-      keepProjectsOff: 'Вимк.',
+      keepProjects: 'Браузер зберігає проєкти',
+      keepProjectsOn: 'Так',
+      keepProjectsOff: 'Ні',
+      keepProjectsInfoLabel: 'Про зберігання проєктів',
+      keepProjectsInfo:
+        'Коли на пристрої мало місця, браузер може видалити дані цього застосунку, якщо він не зберігає ваші проєкти. Браузер вирішує це сам, тож збережіть файл проєкту для кожного, який вам дорогий.',
     },
     project: {
       rename: 'Перейменувати «{name}»',
@@ -332,16 +335,8 @@ export const uk: Translations = {
   storage: {
     saveFailedMessage:
       'Не вдалося зберегти на цьому пристрої. Останні зміни є лише на екрані. Звільніть місце в браузері або збережіть файл проєкту, щоб не втратити зміни.',
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: 'Попросити браузер зберігати ваші проєкти?',
-      message: 'Коли на пристрої бракує місця, браузер може видалити дані цього застосунку. Якщо браузер запитає, виберіть «Дозволити».',
-      confirmButton: 'Зберігати проєкти',
-      cancelButton: 'Не зараз',
-    },
     openElsewhere: 'Цей проєкт відкрито в іншій вкладці. Зміни тут не зберігаються, поки він відкритий там.',
     keptToast: 'Цей браузер зберігатиме ваші проєкти.',
-    notKeptMessage: 'Браузер не погодився зберігати проєкти. Збережіть файл проєкту для кожного, який вам дорогий.',
   },
   header: {
     menuButton: 'Меню',

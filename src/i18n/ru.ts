@@ -146,9 +146,12 @@ export const ru: Translations = {
       deleteAllConfirm: 'Удалить все проекты',
       sendFeedback: 'Отправить отзыв',
       reportTranslation: 'Сообщить об ошибке перевода',
-      keepProjects: 'Хранить проекты на устройстве',
-      keepProjectsOn: 'Вкл',
-      keepProjectsOff: 'Выкл',
+      keepProjects: 'Браузер хранит проекты',
+      keepProjectsOn: 'Да',
+      keepProjectsOff: 'Нет',
+      keepProjectsInfoLabel: 'О хранении проектов',
+      keepProjectsInfo:
+        'Когда на устройстве мало места, браузер может удалить данные этого приложения, если он не хранит ваши проекты. Браузер решает это сам, поэтому сохраните файл проекта для каждого, который вам дорог.',
     },
     project: {
       rename: 'Переименовать «{name}»',
@@ -332,16 +335,8 @@ export const ru: Translations = {
   storage: {
     saveFailedMessage:
       'Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или сохраните файл проекта, чтобы не потерять изменения.',
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: 'Попросить браузер хранить ваши проекты?',
-      message: 'Когда на устройстве мало места, браузер может удалить данные этого приложения. Если браузер спросит, выберите «Разрешить».',
-      confirmButton: 'Хранить проекты',
-      cancelButton: 'Не сейчас',
-    },
     openElsewhere: 'Этот проект открыт в другой вкладке. Изменения здесь не сохраняются, пока он открыт там.',
     keptToast: 'Этот браузер будет хранить ваши проекты.',
-    notKeptMessage: 'Браузер не согласился хранить проекты. Сохраните файл проекта для каждого, который вам дорог.',
   },
   header: {
     menuButton: 'Меню',

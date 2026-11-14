@@ -36,23 +36,23 @@ describe('useDialogs', () => {
   it('keeps a dialog asked while another shows waiting behind it, still pending for its flow, until that one closes', () => {
     const dialogs = useDialogs()
     const deleteAll = dialogs.flag('delete-all')
-    const keepNote = dialogs.flag('keep-note')
+    const resetProgress = dialogs.flag('reset-progress')
     deleteAll.value = true
-    keepNote.value = true
+    resetProgress.value = true
     expect(dialogs.open.value).toBe('delete-all')
-    expect(keepNote.value).toBe(true)
+    expect(resetProgress.value).toBe(true)
 
     deleteAll.value = false
-    expect(dialogs.open.value).toBe('keep-note')
+    expect(dialogs.open.value).toBe('reset-progress')
   })
 
   it('drops a waiting dialog that is closed before its turn, leaving the one showing', () => {
     const dialogs = useDialogs()
     const deleteAll = dialogs.flag('delete-all')
-    const keepNote = dialogs.flag('keep-note')
+    const resetProgress = dialogs.flag('reset-progress')
     deleteAll.value = true
-    keepNote.value = true
-    keepNote.value = false
+    resetProgress.value = true
+    resetProgress.value = false
     expect(dialogs.open.value).toBe('delete-all')
 
     deleteAll.value = false

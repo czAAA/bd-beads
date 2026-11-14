@@ -19,7 +19,7 @@ Centred on the drawing area, under the CanvasHint line. What to do comes first; 
 - No path to the Project file and no chips (ticket 0920): the welcome says no more about keeping a file than where the work lives; the Save reminder asks for the file once there is work to keep.
 - No buttons: opening a file, Convert image and Keyboard shortcuts stay in Menu.
 - It sits on the canvas overlay layer (`z-canvas-overlay`), under the Tool pill, the strip and every popover, and does not move with the canvas.
-- Nothing covers it when a Project is created (ticket 0839): the question "Ask the browser to keep your Projects?" waits for the first Project file or export (the Keep note, `docs/glossary/`).
+- Nothing covers it when a Project is created (ticket 0839): the browser is asked to keep the Projects only at the first Project file or export, with no question of the app's (ticket 0936).
 
 ## Phone (30rem and under)
 

@@ -236,14 +236,15 @@ describe("MenuPanel in What's inside's demo editor (ticket 0797)", () => {
   })
 })
 
-describe('MenuPanel Keep Projects on this device (ticket 0839)', () => {
-  it('shows whether the browser keeps the Projects, and a press asks it again', async () => {
+describe('MenuPanel Kept by this browser (tickets 0839, 0936)', () => {
+  it('shows whether the browser keeps the Projects as a fact, not a button, with the reason behind an Info button', () => {
     const off = mountIn({ kept: false })
     const row = off.get('[data-testid="menu-keep-projects"]')
-    expect(row.text()).toBe(`${en.panels.menu.keepProjects}${en.panels.menu.keepProjectsOff}`)
+    expect(row.element.tagName).toBe('DIV')
+    expect(row.text().startsWith(en.panels.menu.keepProjects)).toBe(true)
+    expect(row.get('.panel-fact-row__value').text()).toBe(en.panels.menu.keepProjectsOff)
     expect(row.get('svg').attributes('data-icon')).toBe('device')
-    await row.trigger('click')
-    expect(off.getComponent(MenuPanel).emitted('keep-projects')).toHaveLength(1)
+    expect(row.get('[data-testid="menu-keep-projects-info"]').attributes('aria-label')).toBe(en.panels.menu.keepProjectsInfoLabel)
 
     expect(mountIn({ kept: true }).get('[data-testid="menu-keep-projects"]').text()).toContain(en.panels.menu.keepProjectsOn)
   })
