@@ -20,7 +20,7 @@ describe('SaveReminder (ticket 0796)', () => {
   })
 
   it('shows its label only when open: Save Project file and what the count counts (ticket 0858)', async () => {
-    const wrapper = mountRing()
+    const wrapper = mountRing({ lastFileAt: Date.now() })
     expect(wrapper.classes()).not.toContain('save-ring--open')
 
     await wrapper.setProps({ labelOpen: true })
@@ -35,6 +35,14 @@ describe('SaveReminder (ticket 0796)', () => {
     expect(button.text().replace(/\s+/g, ' ')).toBe('Save Project file 64 beads since the last file')
     await wrapper.setProps({ beads: 1 })
     expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('1 bead since the last file')
+  })
+
+  it('says why to save in place of the count while the Project has never had a file (ticket 0987)', async () => {
+    const wrapper = mountRing({ beads: 170, labelOpen: true })
+
+    expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('the browser can clear your work, a file stays')
+    await wrapper.setProps({ lastFileAt: Date.now() })
+    expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('170 beads since the last file')
   })
 
   it('has a Tooltip with the Save key, the body, the count and when the last file was', async () => {

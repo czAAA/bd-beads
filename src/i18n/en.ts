@@ -312,8 +312,8 @@ export const en: Translations = {
       pinchToZoom: 'pinch to zoom',
     },
     firstRun: {
-      storageLead: 'Your Projects are saved only in this browser, on this device.',
-      storage: "If the browser's data is cleared, they go with it.\nSave a Project file of each one you don't want to lose:",
+      storage: 'Your Projects are saved only in this browser, on this device.',
+      paintMouse: 'Click or drag to place beads in the chosen color.',
     },
     gridFocusLabel: 'Grid focus',
   },
@@ -717,6 +717,7 @@ export const en: Translations = {
     noFile: 'No Project file yet',
     announce: 'Beads since last file: {count}. Save a Project file to keep them.',
     since: { one: '{count} bead since the last file', other: '{count} beads since the last file' },
+    noFileWhy: 'the browser can clear your work, a file stays',
   },
   transfer: {
     exportLibraryButton: 'Save all Projects to a Project file',

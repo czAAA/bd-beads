@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-14",
+  "line": {
+    "en": "Before a Project has its first file, the save reminder says why to save in place of a count since a file it never had",
+    "ru": "Пока у проекта нет первого файла, напоминание о сохранении говорит, зачем сохранять, а не считает бисер с файла, которого не было",
+    "uk": "Поки в проєкту немає першого файлу, нагадування про збереження каже, навіщо зберігати, а не рахує бісер від файлу, якого не було",
+    "be": "Пакуль у праекта няма першага файла, напамін пра захаванне кажа, навошта захоўваць, а не лічыць бісер ад файла, якога не было",
+    "zh": "项目还没有第一个文件时，保存提醒会说明为什么要保存，而不是计算从未有过的文件以来的珠子",
+    "es": "Antes del primer archivo de un proyecto, el aviso de guardar dice por qué guardar en lugar de contar desde un archivo que nunca hubo",
+    "pl": "Zanim projekt ma pierwszy plik, przypomnienie o zapisie mówi, po co zapisać, zamiast liczyć od pliku, którego nie było"
+  }
+}

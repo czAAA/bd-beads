@@ -426,11 +426,11 @@ export interface Translations {
       twoFingersToMove: string
       pinchToZoom: string
     }
-    /** The welcome over an empty Project (FirstRunHints card, tickets 0795 and 0798): its lead line and its storage line,
-     * which the Project file's path follows. */
+    /** The welcome over an empty Project (FirstRunHints card, tickets 0795, 0798 and 0920): its quiet line on where
+     * Projects are kept, and its lead line off touch, the Paint tool's Tooltip (`tooltips.paint`) in mouse words. */
     firstRun: {
-      storageLead: string
       storage: string
+      paintMouse: string
     }
     /** The Grid focus toggle's name (CanvasStrip card, ticket 1002). */
     gridFocusLabel: string
@@ -894,6 +894,8 @@ export interface Translations {
     announce: string
     /** The label's count beside "Save Project file" (ticket 0858): "89 beads since the last file". */
     since: PluralForms
+    /** In place of the count while the Project has never had a file (ticket 0987): why to save. */
+    noFileWhy: string
   }
   /** Open Project file and Save all Projects to a Project file, in the Projects library (ticket 0859: the file's one name). */
   transfer: {

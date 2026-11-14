@@ -314,8 +314,8 @@ export const zh: Translations = {
       pinchToZoom: '双指捏合缩放',
     },
     firstRun: {
-      storageLead: '你的项目只保存在这台设备的浏览器里。',
-      storage: '浏览器数据一旦被清除，项目也会随之消失。\n请为每个不想丢失的项目保存项目文件：',
+      storage: '你的项目只保存在这台设备的浏览器里。',
+      paintMouse: '点击或拖动，放上所选颜色的珠子。',
     },
     gridFocusLabel: '网格聚焦',
   },
@@ -713,6 +713,7 @@ export const zh: Translations = {
     noFile: '还没有项目文件',
     announce: '自上次保存文件后的珠子：{count}。保存项目文件以留住它们。',
     since: { other: '自上次文件后 {count} 颗珠子' },
+    noFileWhy: '浏览器可能清除作品，文件会一直保留',
   },
   transfer: {
     exportLibraryButton: '将所有项目保存到项目文件',
