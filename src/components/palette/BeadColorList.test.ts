@@ -273,3 +273,46 @@ describe('the foot row (ticket 0700)', () => {
     wrapper.unmount()
   })
 })
+
+describe('My beads in the list (ticket 0918)', () => {
+  /** The list with a My beads list behind it, as the app shell hands it out. */
+  function withMine(owned: string[]) {
+    const { colors, wrapper } = (() => {
+      const bead = ref(findBead('miyuki/delica/11-0'))
+      const codesRef = ref<readonly string[]>(owned)
+      const myBeads = { codes: codesRef, toggle: vi.fn((code: string) => (codesRef.value = codesRef.value.includes(code) ? codesRef.value.filter((c) => c !== code) : [...codesRef.value, code])) }
+      const colors = { available: ref(true), state: ref('ready'), swatches: ref(four), bead, catalog: ref(), load: vi.fn(), add: vi.fn(() => 'added' as const), myBeads } as unknown as BeadColors
+      return { colors, wrapper: mount(BeadColorList, { props: { colors } }) }
+    })()
+    return { colors, wrapper }
+  }
+
+  it('opens on My beads with its rows, counts on both halves and the measured count', () => {
+    const { wrapper } = withMine(['DB1', 'DB3'])
+    expect(codes(wrapper)).toEqual(['DB1', 'DB3'])
+    expect(wrapper.get('[data-testid="bead-colors-switch"]').text()).toContain(en.convertImage.wizard.myBeads.allCodes)
+    expect(wrapper.get('[data-testid="bead-colors-count"]').text()).toContain('codes: 2')
+    expect(wrapper.get('[data-testid="bead-colors-count"]').text()).toContain('0 measured')
+  })
+
+  it('has no switch and lists all codes while the list is empty, ticks still offered', () => {
+    const { wrapper } = withMine([])
+    expect(wrapper.find('[data-testid="bead-colors-switch"]').exists()).toBe(false)
+    expect(codes(wrapper)).toHaveLength(4)
+    expect(wrapper.findAll('[data-testid="bead-color-tick"]')).toHaveLength(4)
+  })
+
+  it('a row press adds the color and leaves the tick; the tick toggles only My beads', async () => {
+    const { wrapper, colors } = withMine(['DB1'])
+    await wrapper.get('[data-testid="bead-color"][data-code="DB1"]').trigger('click')
+    expect(colors.add).toHaveBeenCalledWith('#123456', 'DB1')
+    expect(colors.myBeads!.codes.value).toEqual(['DB1'])
+    const tick = wrapper.get('[data-testid="bead-color-tick"][data-code="DB1"]')
+    expect(tick.attributes('aria-label')).toBe('DB1 in My beads')
+    expect(tick.attributes('aria-pressed')).toBe('true')
+    vi.mocked(colors.add).mockClear()
+    await tick.trigger('click')
+    expect(colors.myBeads!.codes.value).toEqual([])
+    expect(colors.add).not.toHaveBeenCalled()
+  })
+})

@@ -313,7 +313,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** The Feedback sheet (ADR 0081, ticket 0700): the Menu's two entries and the Bead colors list's foot row open it. */
   const feedback = useFeedbackFlow({ feedback: services.feedback, locale: currentLocale, messages, showToast, dialogs })
   provideBeadColors(
-    useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback }),
+    useBeadColors({ currentProject, palette, addUsed, selectedColorId: () => selectedColorId.value, report: feedback.onOpenFeedback, myBeads: services.devicePreferences.get('myBeads') }),
   )
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */

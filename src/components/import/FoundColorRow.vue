@@ -110,13 +110,14 @@ const customColor = computed(() => props.row.result?.hex)
 const beadColors: BeadColors = {
   available: computed(() => wizard.hasCatalog.value),
   state: wizard.catalogState,
-  swatches: wizard.remapSwatches,
+  swatches: wizard.catalogRemapSwatches,
+  myBeads: { codes: wizard.myBeadsCodes, toggle: wizard.toggleMyBeadsCode },
   bead: wizard.bead,
   catalog: computed(() => wizard.catalog.value),
   finishes: wizard.finishesApplied,
   load: async () => {},
   add: (hex: string, code?: string) => {
-    const swatch = wizard.remapSwatches.value.find((entry) => entry.code === code)
+    const swatch = wizard.catalogRemapSwatches.value.find((entry) => entry.code === code)
     choose({ hex, ...(code ? { code } : {}), ...(swatch ? { family: swatch.family, finish: swatch.finish } : {}) })
     return 'added'
   },

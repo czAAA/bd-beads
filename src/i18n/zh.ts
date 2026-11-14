@@ -491,6 +491,8 @@ export const zh: Translations = {
       info: '关于这些颜色',
       codeCount: '色号：{count}',
       firstShown: '显示前 {count} 个',
+      inMyBeads: '{code} 在“我的珠子”中',
+      measuredCount: '已测 {count} 个',
       filters: '筛选',
       filtersOn: '筛选，已开启 {count} 个',
       label: '这种珠子的颜色',

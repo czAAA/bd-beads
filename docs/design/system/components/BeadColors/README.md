@@ -33,6 +33,7 @@ The Color catalog of the Project's Bead, to add a maker's color to the Palette (
   - In the Palette popover (ticket 0918):
     - once the list holds a code, a small SegmentedControl "All codes | My beads" with counts stands over the search, opening on My beads;
     - each row keeps its press (add to the Palette) and gains its own 28 tick button at its right, named "{code} in My beads", `aria-pressed`.
+  - As built (ticket 0918): the switch opens on My beads when the list has a code and keeps the rows it opened with, so an unticked code stays to be ticked again; the count line on My beads reads "codes: 40 · 17 measured"; the converter's Change picker lists every code of the catalog, with the same switch and ticks, even while My beads is the source.
   - A tick in either place is in the other at once. There is no Menu entry: the list is reached through its Bead.
 
 Hand-written from tickets 537, 0713 and 0745; the Vue component `BeadColorList.vue` is the real thing.
