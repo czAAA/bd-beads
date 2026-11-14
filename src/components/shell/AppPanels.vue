@@ -84,7 +84,6 @@ const {
   onOpenShortcutsHelp,
   onOpenFeedback,
   projectsKept,
-  onAskToKeep,
   onSelectPanel,
   exportChoice,
 } = usePanelsContext()
@@ -191,7 +190,6 @@ const chosenStarter = ref<StarterId>()
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
       @feedback="onOpenFeedback"
-      @keep-projects="onAskToKeep"
     />
     <ProjectPanel
       v-else-if="activeProject"

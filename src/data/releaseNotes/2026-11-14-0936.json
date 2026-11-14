@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-14",
+  "line": {
+    "en": "Saving your first Project file no longer asks about the browser or answers with a warning, and the Menu shows whether this browser keeps your Projects",
+    "ru": "Первый файл проекта больше не вызывает вопрос о браузере и предупреждение, а меню показывает, хранит ли этот браузер ваши проекты",
+    "uk": "Перший файл проєкту більше не викликає питання про браузер і попередження, а меню показує, чи зберігає цей браузер ваші проєкти",
+    "be": "Першы файл праекта больш не выклікае пытанне пра браўзер і папярэджанне, а меню паказвае, ці захоўвае гэты браўзер вашы праекты",
+    "zh": "保存第一个项目文件时不再询问浏览器或显示警告，菜单会显示此浏览器是否保留你的项目",
+    "es": "Guardar tu primer archivo de proyecto ya no pregunta por el navegador ni responde con un aviso, y el menú muestra si este navegador conserva tus proyectos",
+    "pl": "Zapis pierwszego pliku projektu nie pyta już o przeglądarkę ani nie kończy się ostrzeżeniem, a menu pokazuje, czy ta przeglądarka zachowuje Twoje projekty"
+  }
+}

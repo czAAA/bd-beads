@@ -166,7 +166,7 @@ describe('Menu', () => {
   })
 })
 
-describe('Keep Projects (ticket 0839)', () => {
+describe('Keep Projects (tickets 0839, 0936)', () => {
   const persist = vi.fn(async () => false)
   beforeEach(() => {
     persist.mockClear()
@@ -174,27 +174,15 @@ describe('Keep Projects (ticket 0839)', () => {
   })
   afterEach(() => void delete (navigator as { storage?: unknown }).storage)
 
-  it('asks at the first Project file, and its Keep Projects wires the browser\'s no to Save Project file', async () => {
+  it('wires Save Project file to the browser\'s ask, and the Menu row shows its no', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
     await click(mounted, 'save-project-file')
-    await vi.waitFor(() => expect(mounted.wrapper.find('[data-testid="keep-note-modal"]').exists()).toBe(true))
+    await vi.waitFor(() => expect(persist).toHaveBeenCalledOnce())
 
-    await click(mounted, 'confirm-modal-confirm')
-    expect(persist).toHaveBeenCalledOnce()
-    const said = mounted.canvas.toasts.value.find((toast) => toast.id === 'storage-kept')
-    vi.mocked(downloadFile).mockClear()
-    said!.action!.run()
-    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileNameOf('Moth'), expect.any(Uint8Array), 'application/json'))
-  })
-
-  it('asks the browser again from the Menu row', async () => {
-    const mounted = mountPanels()
     await mounted.openPanel('menu')
     await flushPromises()
     expect(text(mounted, 'menu-keep-projects')).toContain(en.panels.menu.keepProjectsOff)
-    await click(mounted, 'menu-keep-projects')
-    expect(persist).toHaveBeenCalledOnce()
   })
 })
 

@@ -798,11 +798,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const storageAsk = useStorageAskFlow({
     persistentStorage: services.persistentStorage,
     devicePreferences: services.devicePreferences,
-    dialogs,
     messages,
     showToast,
-    openProjectId: () => currentProject()?.id,
-    saveFileOf: (id) => exportFlow.onSaveFileOf(id),
   })
 
   /** Exporting as a file, PNG or PDF, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
@@ -1254,9 +1251,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onExportPng: exportFlow.onExportPng,
       onExportPdf: exportFlow.onExportPdf,
       onSetLetters: exportFlow.onSetLetters,
-      // Menu: whether the browser keeps the Projects, and asking it again (ticket 0839)
+      // Menu: whether the browser keeps the Projects, shown as a fact (tickets 0839, 0936)
       projectsKept: storageAsk.kept,
-      onAskToKeep: storageAsk.onAskToKeep,
       // Project's Picture and Printable chart open Export as the strip's button does, on their row (ticket 0843)
       onSelectPanel: overlays.onSelectPanel,
       exportChoice: overlays.exportChoice,
@@ -1302,8 +1298,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       pendingLargeOpen: savedProjectConfirms.pendingLargeOpen,
       onConfirmLargeOpen: savedProjectConfirms.onConfirmLargeOpen,
       onCancelLargeOpen: savedProjectConfirms.onCancelLargeOpen,
-      onConfirmStorageNote: storageAsk.onConfirmStorageNote,
-      onCancelStorageNote: storageAsk.onCancelStorageNote,
       onCloseShortcutsHelp,
       feedbackRequest: feedback.feedbackRequest,
       onCloseFeedback: feedback.onCloseFeedback,
