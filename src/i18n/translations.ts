@@ -426,11 +426,11 @@ export interface Translations {
       twoFingersToMove: string
       pinchToZoom: string
     }
-    /** The welcome over an empty Project (FirstRunHints card, tickets 0795 and 0798): its lead line and its storage line,
-     * which the Project file's path follows. */
+    /** The welcome over an empty Project (FirstRunHints card, tickets 0795, 0798 and 0920): its quiet line on where
+     * Projects are kept, and its lead line off touch, the Paint tool's Tooltip (`tooltips.paint`) in mouse words. */
     firstRun: {
-      storageLead: string
       storage: string
+      paintMouse: string
     }
   }
   shell: {
