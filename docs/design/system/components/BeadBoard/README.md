@@ -22,3 +22,44 @@ Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mock
 
 - **Glint:** the canvas's overlay draws the finished pass's beads again at full color until `--row-dim-delay` and the white wash on each, one after another; the bead layer below already has the finished look. With Row highlight off there is no glint.
 - **Every pass done:** the finished passes are drawn at full color whenever every pass is done, a finished Project opened included (Motion section, Row progress, As built).
+
+## Canvas look (approved 2026-11-14; tickets 1001 to 1004)
+
+Approved in the Canvas look study and **not yet in the app**. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
+
+### Tonal tiles (ticket 1001)
+
+- **A Position mark is a tile, not a line.** Every empty position is a filled tile, and the grid is the gap between two tiles, where the Background shows. No line is drawn.
+- **Shape:** the position's cell, 0.75px in on every side, so the gap is 1.5px; corners the Technique's bead corner and never under 1.5px; the half-bead shift of peyote and brick stitch as before.
+- **Color, one rule on every Background:** the Background moved 6.5 steps of CIELAB lightness (L*) toward ink with its hue kept (a* and b* unchanged): lighter in the dark look, darker in the light look. Night `#202020` gives `#2e2e2e`, Ink `#0e0e0e` gives `#1c1c1c`, Slate `#3b3e43` gives `#4a4d52`; Studio `#fafafa` gives `#e7e7e7`, Stone `#e6e3de` gives `#d4d1cc`, Pebble `#cdcac4` gives `#bbb8b2`. A Custom color takes the same rule, in the look it is drawn in. The per-background empty-bead colors (CanvasBackground card) no longer color the screen.
+- **Why one step:** the step between the Background and its grid sets how loud the grid is, and nothing else does. Measured as the spread of lightness over an empty patch (RMS of L*), today's ten backgrounds run from 2.1 to 4.1 because each has a hand-picked grid color; with the rule every one is 2.2 to 2.3. 6.5 is about 1.2:1. It is one constant, so it can be tuned on a real screen.
+- **Inside the Frame, the same tiles.** An empty position of the Frame is a tile by the same rule from the Frame's own Background, in place of the full `bead-empty` bead. The keep-out margin still has none; a Custom frame's Off-shape and Seams are as before.
+- **Under the drawing and on the Homepage:** the empty canvas laid under the editor's drawing (ticket 0717) and the Homepage's ground are the same tiles, since they are the same Position marks.
+- Never saved, never in exports.
+
+### Grid focus (ticket 1002; CanvasStrip card)
+
+- With Grid focus on, the gap between tiles has its full step near the work and is calmer far from it. The tiles never change, so the Canvas keeps one tone from edge to edge: only the gap moves toward the tile's color.
+- **Near:** within about 3 beads of the work, the full gap. **Far:** from about 7 beads out, the gap is 42% of the way to the tile's color, which leaves about 3.8 L* (1.11:1): Night `#262626`, Studio `#f2f2f2`. Between the two it eases smoothly. It never reaches the tile's color, so the grid shows everywhere. In px at 100% zoom: the work's box grown by 96px, its edge softened over 36px either way; both follow the zoom.
+- **The work** is the Frame's margin sheet, and each Piece area on the Canvas, corners rounded. It follows what is painted: a new bead far from the rest brings its own near area at the next draw.
+- With no bead and no Frame there is no work, and the grid is full everywhere. Off, the grid is full everywhere.
+- The empty canvas laid under the drawing uses the far gap while Grid focus is on.
+
+### Beads: own-color rim and satin light (ticket 1003)
+
+- **The rim is the bead's own color.** The 1px gap between two beads no longer shows the Canvas: each bead's cell is filled to its edge in its rim color, and the body stands 0.5px in, as today. Two beads of one color are parted by 1px of their own rim, two of different colors by 0.5px of each.
+- **Rim color:** the bead's color 18% toward black. Where that stands under 1.3:1 off the bead's color (near-black and very deep colors), 11% toward white instead. Yellow `#f2c94c` gives `#c6a43e`; Black `#1a1a1a` gives `#343434`. Measured between two beads: 1.6:1 for yellow and 1.4:1 for black, the same in light and dark. Today it is 7.2:1 for yellow in dark and 11.9:1 for black in light, because the gap shows the Canvas: that gap, not the Canvas's grid, was the loudest grid on screen.
+- **Body:** the bead's color, flat; corners the Technique's bead corner less the inset, never under 1.25px. The `bead-rim` tint is not drawn on screen.
+- **Satin light:** one soft light in the body's middle, gone before any edge. An ellipse centred 50% across and 46% down, its radius 40% of the body's width and 44% of its height, in the bead's color 50% toward white: 38% opacity at the centre, 21% at 45% of the radius, 0 at the edge. It is held to the bead's own lightness, so a dark bead gets a faint one: the lift at the centre (the light's `luma` less the bead's, times the centre opacity) is at most 3 plus 7.5% of the bead's `luma`, in levels of 255, and the light is scaled down to fit. Measured: 4.5% of a yellow bead's lightness, brightest 51% across.
+- **The rule any finish keeps:** no light or dark line beside a bead's edge, and light only in the middle. A light beside an edge repeats at the bead's pitch and reads as a second grid (the first Satin: 21% of the bead's lightness, brightest 31% across).
+- Finished rows, the current row's lift, beads in progress and their rings, the glint, Letters and the hover outline are as above. The rim and the light are made from the color the bead is drawn in at that moment (dimmed, lifted). A bead is still drawn once per color and reused.
+
+### Lifted piece (ticket 1004)
+
+- **Every Piece carries a contour and a soft shadow**, on the open Canvas and inside the Frame, so a piece reads as one object lying on the grid.
+- **Contour:** a 1.25px line following the piece's outline 4px outside its beads, corners rounded 5px, round holes too; a gap between beads narrower than about 8px is closed. Its color is the Background 48% toward white in the dark look and 38% toward black in the light look: Night `#8c8c8c`, Studio `#9a9a9a`.
+- **Piece ground:** inside the line, between it and the beads, the Background 5% toward white in the dark look (Night `#2b2b2b`) and 80% toward white in the light look. No tile shows there, so no mark touches the piece.
+- **Shadow:** under the piece ground, the piece's shape in black, drawn twice: blurred 9px and 6px down, at 60% in the dark look and 20% in the light look; and blurred 2px and 1.5px down, at 50% and 16%. Sizes are at 100% zoom and follow the zoom. In light it reads as a shadow; in dark as a step down in the surface round the piece.
+- **It replaces the Piece area's rectangle.** The 1px rectangle (Pieces, above) is not drawn. The Piece area still decides whose rulers show and where they sit (Rulers card).
+- **Only with the own-color rim.** Under today's bead the piece ground shows in the gap between beads and makes it stronger (7.2:1 to 8.9:1 for yellow in dark), so ticket 1004 follows ticket 1003.
+- **How it is drawn:** without the canvas `filter` property, which iPad Safari lacks; the shadow is made another way to the same look. It is part of the drawing, so a pan or pinch moves it with the picture, and the draft look has none.
