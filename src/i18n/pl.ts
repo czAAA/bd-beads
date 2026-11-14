@@ -314,8 +314,8 @@ export const pl: Translations = {
       pinchToZoom: 'uszczypnij, aby powiększyć',
     },
     firstRun: {
-      storageLead: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
-      storage: 'Jeśli dane przeglądarki zostaną wyczyszczone, znikną razem z nimi.\nZapisz plik projektu każdego, którego nie chcesz stracić:',
+      storage: 'Twoje projekty są zapisane tylko w tej przeglądarce, na tym urządzeniu.',
+      paintMouse: 'Kliknij lub przeciągnij, aby kłaść koraliki wybranego koloru.',
     },
   },
   shell: {

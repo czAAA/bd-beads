@@ -314,8 +314,8 @@ export const zh: Translations = {
       pinchToZoom: '双指捏合缩放',
     },
     firstRun: {
-      storageLead: '你的项目只保存在这台设备的浏览器里。',
-      storage: '浏览器数据一旦被清除，项目也会随之消失。\n请为每个不想丢失的项目保存项目文件：',
+      storage: '你的项目只保存在这台设备的浏览器里。',
+      paintMouse: '点击或拖动，放上所选颜色的珠子。',
     },
   },
   shell: {
