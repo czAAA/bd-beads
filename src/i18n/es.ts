@@ -195,6 +195,7 @@ export const es: Translations = {
       beadType: 'Tipo',
       beadSize: 'Tamaño',
       duplicatedToast: 'Ahora estás en “{copy}”. “{original}” se queda como estaba.',
+      openedToast: 'Ahora estás en “{name}”.',
     },
   },
   theme: {

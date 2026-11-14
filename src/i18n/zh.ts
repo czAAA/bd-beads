@@ -195,6 +195,7 @@ export const zh: Translations = {
       beadType: '类型',
       beadSize: '尺寸',
       duplicatedToast: '现在打开的是“{copy}”。“{original}”保持原样。',
+      openedToast: '现在打开的是“{name}”。',
     },
   },
   theme: {
