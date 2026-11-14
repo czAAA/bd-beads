@@ -42,7 +42,6 @@ describe('markLookOf', () => {
   it('gives a page laid beside the drawing the marks the renderer draws at its scale', () => {
     const look = PROJECT_THEMES.dark
     expect(markLookAt(look, 2).tiles).toBe(true)
-    expect(markLookAt(look, 2, true).tiles).toBe(false)
     // Under 5 device px a bead, the draft look.
     expect(markLookAt(look, 0.2).tiles).toBe(false)
   })

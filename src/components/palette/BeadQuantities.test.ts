@@ -92,7 +92,7 @@ describe('BeadQuantities', () => {
     })
   })
 
-  it('shows no bead pickers or bead names', () => {
+  it('shows no bead pickers', () => {
     const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
 
     expect(wrapper.find('select').exists()).toBe(false)
@@ -123,9 +123,9 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   }
 
   it.each([
-    ['toho-cube-1.5mm', '1.08 g', 'Cube'],
-    ['toho-round-11-0', '0.95 g', 'Round'],
-    ['miyuki-delica-11-0', '0.50 g', 'Delica'],
+    ['toho-cube-1.5mm', '1.1 g', 'Cube'],
+    ['toho-round-11-0', '1.0 g', 'Round'],
+    ['miyuki-delica-11-0', '0.5 g', 'Delica'],
   ])('shows a weight for 100 %s beads: %s (%s)', (beadId, weight) => {
     const wrapper = mountQuantities(wide(beadId, 100))
 
@@ -137,31 +137,22 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     const two = paintAt(wide('toho-cube-1.5mm', 100), cells(50).map((cell) => ({ ...cell, row: 1 })), '#2f6fed')
     const wrapper = mountQuantities(two)
 
-    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('1.08 g')
-    expect(wrapper.find('[data-testid="quantity-weight-blue"]').text()).toBe('0.54 g')
-    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('150 · ≈ 1.62 g')
+    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('1.1 g')
+    expect(wrapper.find('[data-testid="quantity-weight-blue"]').text()).toBe('0.6 g')
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('150 · ≈ 1.7 g')
   })
 
   it('puts the total and its weight in the header, the same folded or open (ticket 555)', () => {
     const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
 
-    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1.08 g')
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1.1 g')
   })
 
   it('writes the total with the Russian decimal comma too', () => {
     localStorage.setItem('openbeads:locale', 'ru')
     const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
 
-    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1,08 г')
-  })
-
-  it('rounds to one decimal from 10 g up and says "< 0.01 g" for a color too small to weigh', () => {
-    // 1000 beads x 0.0108 g = 10.8 g
-    const heavy = mountQuantities(wide('toho-cube-1.5mm', 1000))
-    expect(heavy.find('[data-testid="quantity-weight-red"]').text()).toBe('10.8 g')
-
-    const tiny = mountQuantities(wide('miyuki-delica-11-0', 1))
-    expect(tiny.find('[data-testid="quantity-weight-red"]').text()).toBe('< 0.01 g')
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1,1 г')
   })
 
   it('hides the weights, not shows zeros, when the Project\'s Bead has no weight', () => {
@@ -171,21 +162,21 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('10')
     expect(wrapper.find('[data-testid="quantity-weight-red"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total-weight"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+    expect(wrapper.get('[role="tooltip"]').text()).not.toContain('per bead')
   })
 
   it('shows no weight for a Project with no colors painted', () => {
     const wrapper = mountQuantities(project())
 
-    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-info"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total"]').exists()).toBe(false)
   })
 
   it('explains the estimate behind an Info button in the header, with the Bead\'s average weight and no advice (ticket 0852)', () => {
     const wrapper = mountQuantities(wide('toho-round-11-0', 10))
-    const info = wrapper.get('[data-testid="bead-quantities"] .panel-section__heading [data-testid="quantities-weight-info"]')
+    const info = wrapper.get('[data-testid="bead-quantities"] .panel-section__heading [data-testid="quantities-info"]')
 
-    expect(info.attributes('aria-label')).toBe('How the weight is worked out')
+    expect(info.attributes('aria-label')).toBe('About these counts')
     expect(wrapper.get('[role="tooltip"]').text()).toContain(
       "This is bead count × about 0.0095 g per bead. The average is from the maker's beads per kilogram, or from seller listings where the maker gives none. Real beads vary by color and finish.",
     )
@@ -204,8 +195,8 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     const header = wrapper.get('[data-testid="bead-quantities"] button[aria-expanded]')
 
     expect(header.attributes('aria-expanded')).toBe('true')
-    expect(header.attributes('aria-label')).toBe('Beads needed, 100 · ≈ 1.08 g')
-    expect(wrapper.get('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1.08 g')
+    expect(header.attributes('aria-label')).toBe('Beads needed, 100 · ≈ 1.1 g')
+    expect(wrapper.get('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1.1 g')
   })
 
   describe('Show all (ticket 555)', () => {
@@ -295,5 +286,38 @@ describe('BeadQuantities on a Star (ticket 0875)', () => {
 
   it('says nothing of front and back on any other Frame', () => {
     expect(mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746')).find('[data-testid="quantities-front-back"]').exists()).toBe(false)
+  })
+})
+
+describe('BeadQuantities names what to buy (ticket 0974)', () => {
+  const added = addedColorId('#123456')
+  const coded = () => paintAt({ ...project(), palette: [...defaultPaletteIds(), added], paletteCodes: { '#123456': '49' } }, [{ row: 0, column: 0 }], '#123456')
+
+  it('names the Frame\'s Bead under the heading', () => {
+    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
+
+    expect(wrapper.get('[data-testid="quantities-bead"]').text()).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('names no Bead with no Frame', () => {
+    const wrapper = mountQuantities(withFrameSheet(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'), undefined))
+
+    expect(wrapper.find('[data-testid="quantities-bead"]').exists()).toBe(false)
+  })
+
+  it('says under the rows that Palette colors are not bead codes, and why behind the header\'s Info button', () => {
+    const wrapper = mountQuantities(paintAt(project(), [{ row: 0, column: 0 }], '#e63746'))
+
+    expect(wrapper.get('[data-testid="quantities-palette"]').text()).toBe('Palette colors, not bead codes')
+    expect(wrapper.get('[data-testid="quantities-info"]').attributes('aria-label')).toBe('About these counts')
+    expect(wrapper.get('[role="tooltip"]').text()).toContain("Colors without a code are the Palette's own")
+  })
+
+  it('says nothing of Palette colors when every color has its catalog code, and the Info button explains the weight only', () => {
+    const wrapper = mountQuantities(coded())
+
+    expect(wrapper.find('[data-testid="quantities-palette"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="quantities-info"]').attributes('aria-label')).toBe('How the weight is worked out')
+    expect(wrapper.get('[role="tooltip"]').text()).not.toContain('Palette')
   })
 })

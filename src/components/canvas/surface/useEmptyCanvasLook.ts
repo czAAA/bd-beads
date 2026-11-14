@@ -14,14 +14,12 @@ export interface EmptyCanvasDeps {
   /** The drawing area's box, which the pattern reaches half past on every side. */
   size: Ref<Size>
   theme: Ref<ProjectTheme>
-  /** Whether a reference image shows (ticket 0790): the drawing keeps the outline over it (ticket 1001). */
-  overPicture: Ref<boolean>
 }
 
 /** The empty Canvas under the drawing as CSS variables on the drawing area (ticket 0717): its Position marks at the zoom,
  * scroll and quarter turn the beads are drawn at, so a pan, a pinch or a Project opening never shows a bare patch. The
  * tile's image waits for the zoom to settle; until then the last one is scaled. */
-export function useEmptyCanvasLook({ props, surface, size, theme, overPicture }: EmptyCanvasDeps): ComputedRef<Record<string, string> | undefined> {
+export function useEmptyCanvasLook({ props, surface, size, theme }: EmptyCanvasDeps): ComputedRef<Record<string, string> | undefined> {
   const tileZoom = ref(props.zoom)
   let settle: ReturnType<typeof setTimeout> | undefined
   watch(() => props.zoom, (zoom) => {
@@ -34,7 +32,6 @@ export function useEmptyCanvasLook({ props, surface, size, theme, overPicture }:
     return emptyCanvasLook({
       weave: { technique, techniqueSettings, cell },
       theme: theme.value,
-      overPicture: overPicture.value,
       surface: surface.value,
       zoom: props.zoom,
       tileZoom: tileZoom.value,

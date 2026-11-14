@@ -19,6 +19,8 @@ defineProps<{
 const emit = defineEmits<{
   /** Expand or Collapse pressed in its Canvas strip. */
   toggleExpand: []
+  /** The beader pressed in the demo, anywhere but Expand (ticket 0950): it does nothing in it, so the page answers. */
+  pressed: []
 }>()
 
 const { t } = useI18n()
@@ -39,6 +41,12 @@ const ghost = ghostState()
 let stopWatchOnly: (() => void) | undefined
 onMounted(() => (stopWatchOnly = rootEl.value && watchOnly(rootEl.value, EXPAND)))
 onBeforeUnmount(() => stopWatchOnly?.())
+
+/** A beader's press in the box (ticket 0950), which works nothing in it: the ghost's presses are the controls' own clicks,
+ * never trusted ones, and Expand is the page's own control. */
+function onClick(event: MouseEvent) {
+  if (event.isTrusted && !(event.target instanceof Element && event.target.closest(EXPAND))) emit('pressed')
+}
 
 /** Where the focus was when something the ghost opened took it. */
 let focusBefore: HTMLElement | undefined
@@ -184,6 +192,7 @@ defineExpose({ fresh, refit, snapshot, hand, hideGhost: () => void (ghost.shown 
     :aria-label="t.homepage.inside.editor"
     data-testid="inside-editor"
     @focusin="onFocusIn"
+    @click="onClick"
   >
     <InsideShell :key="session" ref="shell" :projects="library" :expand="expand" @start-afresh="fresh" @toggle-expand="emit('toggleExpand')" />
     <GhostPointer :ghost="ghost" />

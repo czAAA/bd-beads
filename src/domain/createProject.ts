@@ -31,8 +31,8 @@ export interface CreateProjectInput {
   makerName?: string
 }
 
-/** What New Project starts on (ticket 0866): the form's presets, and the whole of the first Project, which is made
- * without the form. */
+/** What New Project starts on (ticket 0866): the form's presets. The Homepage's first Project starts on the Starters'
+ * own instead (FIRST_PROJECT_START, ticket 0945). */
 export const NEW_PROJECT_DEFAULTS: Readonly<CreateProjectInput> = { technique: DEFAULT_TECHNIQUE, beadId: DEFAULT_BEAD.id }
 
 export function createProject(input: CreateProjectInput): Project {

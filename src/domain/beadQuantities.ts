@@ -53,17 +53,13 @@ export function estimatedGrams(count: number, bead: Pick<Bead, 'beadsPerKg'> | u
   return grams === undefined ? undefined : count * grams
 }
 
-/** Grams below this are too small to weigh and read "< 0.01 g" instead. */
-const MIN_WEIGHABLE_GRAMS = 0.01
-/** From here up (once rounded to two decimals it would read 10.00) the weight has one decimal. */
-const ONE_DECIMAL_FROM_GRAMS = 9.995
+/** Keeps a float like 0.30000000000000004 g from rounding up a whole tenth. */
+const FLOAT_NOISE_TENTHS = 1e-9
 
-/** "12.3 g" / "12,3 г" from 10 g up, "1.25 g" below it, and "< 0.01 g" for a color too small to weigh. The unit and
- * decimal sign follow the app language (writing.md). */
+/** "0.5 g" / "12,3 г": one decimal, rounded up to 0.1 g (BeadsNeeded card), so a color never reads lighter than it
+ * weighs and the grams look no more exact than an average weight is. The unit and decimal sign follow the app language
+ * (writing.md). */
 export function formatGrams(grams: number, unit: string, locale: Locale = 'en'): string {
-  const decimal = decimalSign(locale)
-  if (grams < MIN_WEIGHABLE_GRAMS) {
-    return `< ${String(MIN_WEIGHABLE_GRAMS).replace('.', decimal)} ${unit}`
-  }
-  return `${grams.toFixed(grams >= ONE_DECIMAL_FROM_GRAMS ? 1 : 2).replace('.', decimal)} ${unit}`
+  const tenths = Math.ceil(grams * 10 - FLOAT_NOISE_TENTHS) / 10
+  return `${tenths.toFixed(1).replace('.', decimalSign(locale))} ${unit}`
 }

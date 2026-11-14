@@ -644,6 +644,10 @@ export const es: Translations = {
     pieceTotal: 'Estas cifras son de una cara de {faces}. Pieza entera: {count} · 15/0: {small}',
     pieceLines: { triangles: 'Triángulos', edgeBeads: 'Cuentas del borde', hingeBeads: 'Cuentas de bisagra', tips: 'Puntas de triángulo', hingePins: 'Pasadores de bisagra' },
     frontBackNote: 'Estas cifras son de la estrella entera, anverso y reverso.',
+    paletteNote: 'Colores de la paleta, no códigos de cuentas',
+    paletteInfo:
+      'Los colores sin código son de la paleta, elegidos en pantalla y no del catálogo de colores de la cuenta, así que no nombran ninguna cuenta. Un color elegido del catálogo de colores muestra aquí su código.',
+    infoLabel: 'Sobre estas cifras',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

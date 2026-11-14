@@ -882,8 +882,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   // A Project the address names opens as a pick from Saved Projects does (a gated one asks first); a load that opened
   // none of a library that has some lands on Saved Projects (ticket 0716).
   if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
-  // Make your first Project (ticket 0866): with none in the library it is made on New Project's presets and opens on the
-  // Canvas, no panel open; with some, the editor opens as usual.
+  // Make your first Project (tickets 0866, 0945): with none in the library it is made in peyote on Delica 11/0 and opens
+  // on the Canvas, no panel open; with some, the editor opens as usual.
   if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) onCreateFirstProject()
   if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 

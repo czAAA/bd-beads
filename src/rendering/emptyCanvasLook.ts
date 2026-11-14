@@ -43,8 +43,6 @@ export function emptyCanvasPlacement(weave: MarkWeave, surface: Pick<SurfaceView
 export interface EmptyCanvasInput {
   weave: MarkWeave
   theme: ProjectTheme
-  /** Whether a reference image shows, under which the renderer keeps the outline (ticket 1001). */
-  overPicture?: boolean
   surface: Pick<SurfaceView, 'gridToPoint'>
   zoom: number
   /** The zoom the tile's image is made at: the last settled one, so a pinch scales one image instead of making many. */
@@ -56,11 +54,11 @@ export interface EmptyCanvasInput {
 
 /** The empty Canvas look as the CSS variables the drawing area's pattern reads (ticket 0717), or undefined where there
  * is no canvas to make the tile on. */
-export function emptyCanvasLook({ weave, theme, overPicture, surface, zoom, tileZoom, pixelRatio, reach }: EmptyCanvasInput): Record<string, string> | undefined {
+export function emptyCanvasLook({ weave, theme, surface, zoom, tileZoom, pixelRatio, reach }: EmptyCanvasInput): Record<string, string> | undefined {
   if (zoom <= 0 || tileZoom <= 0) return undefined
   const { turn, at, size } = emptyCanvasPlacement(weave, surface, zoom)
   const deviceScale = tileZoom * pixelRatio
-  const mark = markLookAt(theme, deviceScale, overPicture)
+  const mark = markLookAt(theme, deviceScale)
   const url = positionMarkImage({ ...weave, deviceScale, pixelRatio, ...mark }, turn)
   if (!url) return undefined
   return {

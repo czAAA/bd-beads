@@ -97,32 +97,29 @@ describe('estimatedGrams', () => {
 })
 
 describe('formatGrams', () => {
-  it('uses two decimals below 10 g and one from 10 g up', () => {
-    expect(formatGrams(1.2345, 'g')).toBe('1.23 g')
-    expect(formatGrams(9.99, 'g')).toBe('9.99 g')
+  it('shows one decimal, rounded up to 0.1 g (BeadsNeeded card)', () => {
+    expect(formatGrams(0.41, 'g')).toBe('0.5 g')
+    expect(formatGrams(3.23, 'g')).toBe('3.3 g')
+    expect(formatGrams(9.99, 'g')).toBe('10.0 g')
+    expect(formatGrams(12.34, 'g')).toBe('12.4 g')
+  })
+
+  it('keeps a weight already on a tenth as it is, float noise and all', () => {
+    expect(formatGrams(0.1 + 0.2, 'g')).toBe('0.3 g')
     expect(formatGrams(10, 'g')).toBe('10.0 g')
-    expect(formatGrams(12.34, 'g')).toBe('12.3 g')
   })
 
-  it('never shows 10.00 for a value that rounds up to ten', () => {
-    expect(formatGrams(9.996, 'g')).toBe('10.0 g')
-  })
-
-  it('says "< 0.01 g" for a color too small to weigh, and shows 0.01 g from there', () => {
-    expect(formatGrams(0.0099, 'g')).toBe('< 0.01 g')
-    expect(formatGrams(0.005, 'g')).toBe('< 0.01 g')
-    expect(formatGrams(0.01, 'g')).toBe('0.01 g')
+  it('shows a color too small to weigh as 0.1 g, never as nothing', () => {
+    expect(formatGrams(0.0049, 'g')).toBe('0.1 g')
   })
 
   it('takes the unit label from the caller', () => {
-    expect(formatGrams(2, 'г')).toBe('2.00 г')
-    expect(formatGrams(0.001, 'г')).toBe('< 0.01 г')
+    expect(formatGrams(2, 'г')).toBe('2.0 г')
   })
 
   it('uses the Russian decimal comma (writing.md, Numbers) when locale is ru', () => {
-    expect(formatGrams(2, 'г', 'ru')).toBe('2,00 г')
-    expect(formatGrams(12.34, 'г', 'ru')).toBe('12,3 г')
-    expect(formatGrams(0.001, 'г', 'ru')).toBe('< 0,01 г')
+    expect(formatGrams(2, 'г', 'ru')).toBe('2,0 г')
+    expect(formatGrams(12.34, 'г', 'ru')).toBe('12,4 г')
   })
 })
 
