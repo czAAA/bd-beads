@@ -18,13 +18,15 @@ import { workBoxesOf } from './workBoxes'
 const PIXEL_RATIO = 4
 const REGION = { x: -100, y: -100, width: 800, height: 240 }
 
-/** The color at a grid px of the open Canvas, drawn on Night round one bead at the origin. */
-function drawn(gridFocus: boolean, region = REGION, theme = canvasTheme('dark', 1)): (x: number, y: number) => string {
+/** The color at a grid px of the open Canvas, drawn on Night round one bead at the origin. The Lifted piece (ticket
+ * 1004) is off: its shadow darkens the gap beside the bead, and only Grid focus is measured here. */
+function drawn(gridFocus: boolean, region = REGION): (x: number, y: number) => string {
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
   const canvas = document.createElement('canvas')
   canvas.width = REGION.width * PIXEL_RATIO
   canvas.height = REGION.height * PIXEL_RATIO
   const context = canvas.getContext('2d')! as unknown as DrawingContext
+  const theme = { ...canvasTheme('dark', 1), liftedPiece: false }
   renderProject(context, {
     project, space: spaceOf(project, true), region, zoom: 1, pixelRatio: PIXEL_RATIO, theme, opaque: true, rowMarks: false,
     drawBead: () => undefined, ...(gridFocus ? { gridFocus: workBoxesOf(project) } : {}),
@@ -64,8 +66,7 @@ describe('Grid focus on the open Canvas', () => {
   })
 
   it('eases with no seam: along a gap the far gap only grows away from the work', () => {
-    // The Lifted piece's shadow (ticket 1004) darkens the gap next to the bead; only the easing is measured here.
-    const at = drawn(true, REGION, { ...canvasTheme('dark', 1), liftedPiece: false })
+    const at = drawn(true)
     const along = Array.from({ length: (600 - 20) * PIXEL_RATIO }, (_, x) => Number(at(20 + x / PIXEL_RATIO, cell.height).split(',')[0]))
     // A faint far gap is stored premultiplied, so it may come back a level under the Background.
     for (let x = 1; x < along.length; x += 1) expect(along[x]!, `${x / PIXEL_RATIO} px`).toBeGreaterThanOrEqual(along[x - 1]! - 1)
