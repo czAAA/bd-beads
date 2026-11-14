@@ -1687,6 +1687,8 @@ export interface Translations {
       moveBody: string
       more: string
       close: string
+      /** Picture over the beads (ticket 1009): its name and Tooltip body. */
+      over: { name: string; body: string }
       replace: string
       remove: string
       sizeBeads: string

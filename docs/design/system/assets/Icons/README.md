@@ -1,6 +1,6 @@
 # Icons
 
-Icons v2: 87 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
+Icons v2: 88 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
 
 v15 added `menu` (three lines, the same 1.75 stroke, round caps and 4–20 span as `row-progress`): the HeaderMenu button next to the logo.
 v15 also added `pattern` (a 12×17 board, radius 3.5, with two columns of three beads at stroke 2.6): the Dock's Pattern button, so it no longer reads as Save.
@@ -42,3 +42,5 @@ Ticket 0883 added `convert-to-beads`: a small picture (a 9 × 9 frame, radius 2,
 Ticket 0900 added `clean-up`: two beads side by side (7 × 9 rounded rectangles, radius 2.5, at the bottom) and a small plus-shaped sparkle over the right one, which is the bead that was tidied. The Convert image page's Clean up button under Colors (DS-3): "stray beads were tidied into their neighbours' color". Drawn on the ticket 0900 design canvas.
 
 Ticket 0948 added `eye-off`: an eye (one closed 1.75 stroke, pointed at both ends, 17 wide), a ring for its pupil and the set's slash from corner to corner, as `cloud-off` and `pen-mode-off` draw theirs. The coffee screen's **No ads or tracking**: nothing watches what you do. It replaces `close` there, which read as Close.
+
+Ticket 1009 added `picture-over-beads`: a picture (a 13.5 × 13 frame, radius 2.5, with a hill and the bead sun at 2.6) laid over a square of four beads at its lower left (stroke 3.2, as `grid` draws them) in the same ink at `stroke-opacity` .35, the faint part being what lies under, as the Mirror's axis icons draw theirs; one bead sits inside the picture's corner. The picture bar's Picture over the beads toggle (ReferenceImage card).

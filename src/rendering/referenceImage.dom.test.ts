@@ -90,6 +90,25 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
   })
 })
 
+describe('the reference image over the beads (ticket 1009)', () => {
+  const over: DrawnReference = { ...reference, over: true }
+
+  it('is drawn once, after every bead and the Frame, at its opacity and turn', () => {
+    const { calls } = render(framedProject(), { reference: over, frameTheme: PROJECT_THEMES.dark })
+    expect(calls.filter(isPicture)).toHaveLength(1)
+    const at = calls.findIndex(isPicture)
+    const last = (found: (call: (typeof calls)[number]) => boolean) => calls.map(found).lastIndexOf(true)
+    expect(at).toBeGreaterThan(last((call) => call.name === 'bead'))
+    expect(at).toBeGreaterThan(last((call) => call.name === 'drawImage' && call.args[0] !== picture))
+    expect(calls[at]!.globalAlpha).toBe(0.5)
+    expect(calls[at]!.args.slice(1)).toEqual([-50, -25, 100, 50])
+  })
+
+  it('keeps the beads under it as they look under the picture', () => {
+    expect(render(framedProject(), { reference: over }).beads).toEqual(render(framedProject(), { reference }).beads)
+  })
+})
+
 describe('the Canvas\'s box a new picture is fitted inside', () => {
   it('takes in the Canvas\'s beads and the Frame', () => {
     // A cube bead is 20 grid px: the Canvas bead at row 0, column 0 and the Frame to row 3, column 4.

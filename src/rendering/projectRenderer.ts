@@ -705,6 +705,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const drawn = space.open ? reference : undefined
+  const under = drawn?.over ? undefined : drawn
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]
   const tiles = space.open && !draft && !drawn
   const lift = space.open && !draft
@@ -712,7 +713,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
 
   if (space.open) {
     // The reference image over the Canvas's Background and under its Position marks and every bead (ticket 0790).
-    if (drawn) drawReference(context, drawn)
+    if (under) drawReference(context, under)
     if (positionMarks && tiles && input.gridFocus && theme.tonalTiles) {
       drawGapEasing(context, { boxes: input.gridFocus, toRegion: gridToRegion(extent, region, zoom, rotation), pixelRatio, width: region.width, height: region.height, background: theme.canvas })
     }
@@ -721,7 +722,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     drawCanvasLayer(context, draw, space)
     if (frame) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
-      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: drawn, tiles })
+      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: under, tiles })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
       // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's
@@ -741,6 +742,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   } else if (space.hasFrame) {
     drawFrameLayer(context, { ...draw, look: frameLook }, space, { x: 0, y: 0 })
   }
+  // Laid over the beads it is drawn last, over the Frame too, the beads under it looking as they do under it (ticket 1009).
+  if (drawn?.over) drawReference(context, drawn)
 
   if (band) {
     context.restore()

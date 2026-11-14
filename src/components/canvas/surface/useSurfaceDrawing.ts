@@ -89,12 +89,13 @@ export interface BeadLayerDeps {
   workBoxes?: Ref<readonly Region[] | undefined>
 }
 
-/** Whether two reference images draw the same: the same picture in the same place at the same opacity. A new object
+/** Whether two reference images draw the same: the same picture in the same place at the same opacity, over the beads
+ * or under them (ticket 1009). A new object
  * comes with every edit of the Project, so a stroke still redraws only its rows. */
 function sameReference(a: DrawnReference | undefined, b: DrawnReference | undefined): boolean {
   if (a === b) return true
   if (!a || !b) return false
-  return a.image === b.image && a.opacity === b.opacity && a.height === b.height && sameFields(a.place, b.place)
+  return a.image === b.image && a.opacity === b.opacity && a.height === b.height && a.over === b.over && sameFields(a.place, b.place)
 }
 
 /** Whether two Projects differ only in the colors of their beads (`updatedAt` and `savedAt`, which every stroke step
