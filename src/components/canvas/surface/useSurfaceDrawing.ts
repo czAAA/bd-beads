@@ -90,8 +90,8 @@ export interface BeadLayerDeps {
 }
 
 /** Whether two reference images draw the same: the same picture in the same place at the same opacity, over the beads
- * or under them (ticket 1009). A new object
- * comes with every edit of the Project, so a stroke still redraws only its rows. */
+ * or under them (ticket 1009). A new object comes with every edit of the Project, so a stroke still redraws only its
+ * rows. */
 function sameReference(a: DrawnReference | undefined, b: DrawnReference | undefined): boolean {
   if (a === b) return true
   if (!a || !b) return false
