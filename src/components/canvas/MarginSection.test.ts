@@ -40,18 +40,16 @@ afterEach(() => {
 })
 
 describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
-  it('offers Auto, then the theme\'s five Canvas colors, then Custom color, with Auto chosen and the Canvas color dotted', () => {
+  it('offers Auto, then the theme\'s three Canvas colors, then Custom color, with Auto chosen and the Canvas color dotted', () => {
     const wrapper = render()
     expect(wrapper.get('[role="radiogroup"]').attributes('aria-label')).toBe('Margin color')
     expect(radios(wrapper).map((r) => r.attributes('aria-label'))).toEqual([
       'Auto, one step off the Canvas color',
       'Studio, the Canvas color',
-      'Linen, 2 of 5',
-      'Stone, 3 of 5',
-      'Fog, 4 of 5',
-      'Pebble, 5 of 5',
+      'Stone, 2 of 3',
+      'Pebble, 3 of 3',
     ])
-    expect(radios(wrapper).map((r) => r.attributes('aria-checked'))).toEqual(['true', 'false', 'false', 'false', 'false', 'false'])
+    expect(radios(wrapper).map((r) => r.attributes('aria-checked'))).toEqual(['true', 'false', 'false', 'false'])
     expect(wrapper.find('[data-testid="custom-color-button"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="background-color-studio"]').find('[data-testid="background-color-dot"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Auto #eeeeee')
@@ -60,23 +58,23 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
 
   it('follows the Canvas\'s Background with Auto, on the swatch and on the sheet (ticket 0666)', async () => {
     const wrapper = render()
-    const linen = withBackground(project, 'canvas', 2)
-    await wrapper.setProps({ project: linen })
-    expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Auto #ebe7e0')
-    expect(radios(wrapper)[2].attributes('aria-label')).toBe('Linen, the Canvas color')
-    expect(useCanvasBackground(() => linen).projectTheme.value.margin.fill).toBe('#ebe7e0')
+    const stone = withBackground(project, 'canvas', 2)
+    await wrapper.setProps({ project: stone })
+    expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Auto #dbd8d3')
+    expect(radios(wrapper)[2].attributes('aria-label')).toBe('Stone, the Canvas color')
+    expect(useCanvasBackground(() => stone).projectTheme.value.margin.fill).toBe('#dbd8d3')
   })
 
   it('stores the position of a Canvas color picked, and keeps it when the theme changes', async () => {
     const wrapper = render()
-    await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
+    await wrapper.get('[data-testid="background-color-pebble"]').trigger('click')
     expect(localStorage.getItem(PREFERENCES.marginColor.key)).toBe('3')
-    expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#e6e3de')
+    expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#cdcac4')
 
     setTheme('dark')
     await flush()
     expect(radios(wrapper)[3].attributes('aria-checked')).toBe('true')
-    expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#12161c')
+    expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#3b3e43')
   })
 
   it('stores a Custom color taken, and goes back to Auto', async () => {
@@ -103,9 +101,9 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
 
   it('sums itself up as "Auto" or the color\'s name while folded', async () => {
     const wrapper = render()
-    await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
+    await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
     await wrapper.get('button[aria-expanded="true"]').trigger('click')
-    expect(wrapper.text()).toContain('Linen')
+    expect(wrapper.text()).toContain('Stone')
 
     useCanvasBackground().margin.setChoice('auto')
     await flush()

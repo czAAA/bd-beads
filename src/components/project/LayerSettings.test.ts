@@ -37,7 +37,7 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     await wrapper.get('[data-testid="x-brick-drop-more"]').trigger('click')
     await wrapper.get('[data-testid="bead-size"] button').trigger('click')
     await wrapper.get('[data-testid="bead-size"] [data-value="miyuki/delica/15-0"]').trigger('click')
-    await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
+    await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
     expect(wrapper.emitted('set-technique')).toEqual([['peyote']])
     expect(wrapper.emitted('set-setting')).toEqual([['brickDrop', 4]])
     expect(wrapper.emitted('pick-bead')).toEqual([['miyuki/delica/15-0']])

@@ -5,7 +5,7 @@ import { useI18n } from '../../i18n/useI18n'
 import BackgroundColorPicker from '../palette/BackgroundColorPicker.vue'
 
 // The margin color's picker (tickets 0656, 0657; MarginSheet card): the background color picker with Auto, the theme's
-// five Canvas colors and Custom color. The same one in the Frame panel's margin section and the sheet's popover.
+// three Canvas colors and Custom color. The same one in the Frame panel's margin section and the sheet's popover.
 const props = defineProps<{
   /** The Project whose Canvas's Background Auto follows (ticket 0666). */
   project: Project
