@@ -36,7 +36,7 @@ for (const technique of ['loom', 'peyote', 'brick'] as const) {
 
     const corner = await projectBox(page, (await page.getByTestId('project-surface').boundingBox())!)
     const shot = await page.screenshot()
-    expect(wrongBeads(shot, project, ZOOM / 100, corner, { x: 0, y: 0 })).toEqual([])
+    expect(wrongBeads(shot, project, ZOOM / 100, corner, { x: 0, y: 0 }, new Set(), false)).toEqual([])
     const png = PNG.sync.read(shot)
     // The beads near the margin are left out: a shifted row's reaches half a bead under it, and the Move bar stands over
     // the rows above it zoomed out (ticket 0682).

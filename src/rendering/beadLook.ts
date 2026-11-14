@@ -1,4 +1,4 @@
-import { fromHex, luma, mix, toHex, WHITE, type Rgb } from '../domain/color'
+import { BLACK, contrastRatio, fromHex, luma, mix, toHex, WHITE, type Rgb } from '../domain/color'
 import { autoMarginColor, marginLookOn, type MarginLook } from './marginLook'
 import { cachedSprite, type Sprite } from './sprites'
 
@@ -25,6 +25,7 @@ export type DrawingContext = Pick<
   | 'roundRect'
   | 'drawImage'
   | 'createPattern'
+  | 'createRadialGradient'
   | 'imageSmoothingEnabled'
   | 'closePath'
   | 'fill'
@@ -72,8 +73,11 @@ export interface ProjectTheme {
   rulerStrong: string
   /** The board: behind everything, what shows through the gaps and what a finished row fades toward (`board`). */
   background: string
-  /** The faint rim round every bead (`bead-rim`). */
+  /** The faint rim round every bead (`bead-rim`), where `ownColorRim` is off. */
   rim: string
+  /** Whether a bead sits in a rim of its own color with a satin light (ticket 1003, BeadBoard card, Canvas look): the
+   * screen in light and dark. High contrast and exports keep the flat bead in `rim`. */
+  ownColorRim: boolean
   /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim`
    * in high contrast. */
   rimOnBlack: string
@@ -114,6 +118,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rulerStrong: '#4a4a4a',
   background: '#e8e3df',
   rim: 'rgba(20,20,19,.12)',
+  ownColorRim: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
@@ -134,6 +139,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rulerStrong: '#cccccc',
   background: '#202020',
   rim: WHITE_RIM,
+  ownColorRim: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
@@ -153,6 +159,7 @@ const CONTRAST_THEME: ProjectTheme = {
   rulerStrong: '#1f1f1f',
   background: '#e8e3df',
   rim: 'rgba(0,0,0,.35)',
+  ownColorRim: false,
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
@@ -164,8 +171,22 @@ const CONTRAST_THEME: ProjectTheme = {
   margin: { fill: '#ffffff', line: '#595959', edge: '#000000', edgeWidth: 2, ruler: '#3d3d3d', rulerStrong: '#1f1f1f' },
 }
 
-/** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */
-export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec' }
+/** PNG and PDF exports: always light, whatever the app's theme, on the `print-board`, in the flat bead. */
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false }
+
+const flatLooks = new WeakMap<ProjectTheme, ProjectTheme>()
+
+/** A theme in the flat bead, one object per theme so its colors stay kept: what the beads the overlay lifts are drawn
+ * in where the Canvas is in the draft look, so they stay as they were (ticket 1003). */
+export function flatLook(theme: ProjectTheme): ProjectTheme {
+  if (!theme.ownColorRim) return theme
+  let look = flatLooks.get(theme)
+  if (!look) {
+    look = { ...theme, ownColorRim: false }
+    flatLooks.set(theme, look)
+  }
+  return look
+}
 
 /** The theme a renderer uses when it isn't told one. */
 export const DEFAULT_THEME = LIGHT_THEME
@@ -326,12 +347,70 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
   return fadeOver(theme.finished.grey ? greyscale(color) : color, backdrop, theme.finished.opacity)
 }
 
-/** A bead's two colors, its rim and its fill, and the last bitmap made of it: worked out once per color and theme, not
- * for each of the thousands of beads a draw lays down (ticket 0676). */
+/** A bead's two colors, its rim and its fill, its satin light where it has one, and the last bitmap made of it: worked
+ * out once per color and theme, not for each of the thousands of beads a draw lays down (ticket 0676). */
 interface BeadInk {
   rim: string
   fill: string
-  sprite?: { pixels: number; size: number; radius: number; image: Sprite | undefined }
+  /** With the own-color rim (ticket 1003): the light's color and its opacity at the centre and at 45% of its radius. */
+  satin?: { color: Rgb; centre: number; middle: number }
+  sprite?: { pixels: number; size: number; width: number; height: number; radius: number; image: Sprite | undefined }
+}
+
+/** How far the own-color rim moves the bead's color toward black, or toward white where that stays too close to it
+ * (BeadBoard card, Canvas look, ticket 1003). */
+const RIM_TOWARD_BLACK = 0.18
+const RIM_TOWARD_WHITE = 0.11
+/** The least contrast the darker rim keeps off the bead's color before the lighter one is taken. */
+const RIM_LEAST_CONTRAST = 1.3
+
+/** The own-color rim of a bead (ticket 1003): its color 18% toward black, or 11% toward white where the darker one stands
+ * under 1.3:1 off it (near-black and very deep colors).
+ * @internal Tests check the rule on the card's colors. */
+export function ownRim(color: string): string {
+  const rgb = parseColor(color)
+  if (!rgb) return color
+  const darker = rounded(mix(rgb, BLACK, RIM_TOWARD_BLACK))
+  return rgbText(contrastRatio(rgb, darker) < RIM_LEAST_CONTRAST ? mix(rgb, WHITE, RIM_TOWARD_WHITE) : darker)
+}
+
+function rounded({ r, g, b }: Rgb): Rgb {
+  return { r: Math.round(r), g: Math.round(g), b: Math.round(b) }
+}
+
+/** The satin light (ticket 1003): the bead's color halfway to white, 38% opaque at its centre and 21% at 45% of its
+ * radius, scaled down so its lift at the centre is at most 3 plus 7.5% of the bead's luma (levels of 255). */
+const SATIN_TOWARD_WHITE = 0.5
+const SATIN_CENTRE = 0.38
+const SATIN_MIDDLE = 0.21
+const SATIN_MIDDLE_AT = 0.45
+const SATIN_LIFT_BASE = 3
+const SATIN_LIFT_SHARE = 0.075
+
+/** Where the light sits in the body and how big it is, as shares of the body's width and height. */
+const SATIN_CENTRE_X = 0.5
+const SATIN_CENTRE_Y = 0.46
+const SATIN_RADIUS_X = 0.4
+const SATIN_RADIUS_Y = 0.44
+
+/** A bead's color where its satin light is brightest (ticket 1003): the light at its centre opacity over the body.
+ * @internal The visual check reads a bead's centre pixel against it. */
+export function satinCentre(color: Rgb): Rgb {
+  const satin = satinOf(rgbText(color))
+  return satin ? mix(color, satin.color, satin.centre) : color
+}
+
+/** The least corner a body in an own-color rim keeps, in the Project's own px. */
+const OWN_BODY_LEAST_RADIUS = 1.25
+
+function satinOf(color: string): BeadInk['satin'] {
+  const rgb = parseColor(color)
+  if (!rgb) return undefined
+  const light = rounded(mix(rgb, WHITE, SATIN_TOWARD_WHITE))
+  const lift = (luma(light) - luma(rgb)) * SATIN_CENTRE
+  const allowed = SATIN_LIFT_BASE + SATIN_LIFT_SHARE * luma(rgb)
+  const scale = lift > allowed ? allowed / lift : 1
+  return { color: light, centre: SATIN_CENTRE * scale, middle: SATIN_MIDDLE * scale }
 }
 
 const inks = new WeakMap<ProjectTheme, { plain: Map<string, BeadInk>; dimmed: Map<string, BeadInk> }>()
@@ -356,7 +435,38 @@ function inkOf({ color, dimmed, backdrop, theme }: Pick<BeadShape, 'color' | 'di
 function mixInk(color: string | null, dimmed: boolean, backdrop: string | undefined, theme: ProjectTheme): BeadInk {
   const own = color ?? theme.emptyBead
   const fill = dimmed ? finishedColor(own, theme, backdrop) : own
+  // An empty position keeps the flat bead: the rim and the light are a painted bead's (ticket 1003).
+  if (theme.ownColorRim && color !== null) return { fill, rim: ownRim(fill), satin: satinOf(fill) }
   return { fill, rim: blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill) }
+}
+
+function rgbaText({ r, g, b }: Rgb, alpha: number): string {
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+// A bead in its own-color rim (ticket 1003): the whole cell in the rim, so no Canvas shows between two beads; the body a
+// gap in, flat, with the Technique's corner; and one soft light in the body's middle, gone before any edge.
+function drawOwnColorBead(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius }: BeadShape, { rim, fill, satin }: BeadInk): void {
+  const bodyWidth = width - GAP_PX * 2
+  const bodyHeight = height - GAP_PX * 2
+  const radius = Math.min(Math.max(OWN_BODY_LEAST_RADIUS, cornerRadius - GAP_PX), bodyWidth / 2, bodyHeight / 2)
+  context.fillStyle = rim
+  context.fillRect(x, y, width, height)
+  context.fillStyle = fill
+  fillShape(context, x + GAP_PX, y + GAP_PX, bodyWidth, bodyHeight, radius)
+  if (!satin) return
+  const light = context.createRadialGradient(0, 0, 0, 0, 0, 1)
+  light.addColorStop(0, rgbaText(satin.color, satin.centre))
+  light.addColorStop(SATIN_MIDDLE_AT, rgbaText(satin.color, satin.middle))
+  light.addColorStop(1, rgbaText(satin.color, 0))
+  context.save()
+  context.translate(x + GAP_PX + bodyWidth * SATIN_CENTRE_X, y + GAP_PX + bodyHeight * SATIN_CENTRE_Y)
+  context.scale(bodyWidth * SATIN_RADIUS_X, bodyHeight * SATIN_RADIUS_Y)
+  context.fillStyle = light
+  context.beginPath()
+  context.arc(0, 0, 1, 0, Math.PI * 2)
+  context.fill()
+  context.restore()
 }
 
 // The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell and a faint rim
@@ -376,15 +486,17 @@ function drawBeadShapes(context: DrawingContext, { x, y, size, width = size, hei
 
 /** The bitmap of a bead at its size on the screen: the ink's own last one while the size holds, as it does through a
  * draw. */
-function spriteFor(bead: BeadShape, ink: BeadInk): Sprite | undefined {
-  const pixels = Math.max(1, Math.round(bead.size * bead.deviceScale))
+function spriteFor(bead: BeadShape, ink: BeadInk, draw: (context: DrawingContext, bead: BeadShape, ink: BeadInk) => void): Sprite | undefined {
+  const { size, width = size, height = size, cornerRadius } = bead
+  const pixels = Math.max(1, Math.round(size * bead.deviceScale))
   const made = ink.sprite
-  if (made && made.pixels === pixels && made.size === bead.size && made.radius === bead.cornerRadius) {
+  if (made && made.pixels === pixels && made.size === size && made.width === width && made.height === height && made.radius === cornerRadius) {
     return made.image
   }
-  const key = `bead|${pixels}|${bead.size}|${bead.cornerRadius}|${ink.rim}|${ink.fill}`
-  const image = cachedSprite(key, pixels, bead.size, (context) => drawBeadShapes(context, { ...bead, x: 0, y: 0 }, ink))
-  ink.sprite = { pixels, size: bead.size, radius: bead.cornerRadius, image }
+  const [across, down] = [Math.max(1, Math.round(width * bead.deviceScale)), Math.max(1, Math.round(height * bead.deviceScale))]
+  const key = `bead|${pixels}|${size}|${width}x${height}|${cornerRadius}|${ink.rim}|${ink.fill}|${ink.satin ? 'satin' : 'flat'}`
+  const image = cachedSprite(key, across, width, (context) => draw(context, { ...bead, x: 0, y: 0 }, ink), down)
+  ink.sprite = { pixels, size, width, height, radius: cornerRadius, image }
   return image
 }
 
@@ -394,17 +506,20 @@ export function beadFill(color: string | null, dimmed: boolean, theme: ProjectTh
   return inkOf({ color, dimmed, theme }).fill
 }
 
-// The design system's bead (BeadBoard card): a square (rounded for peyote) bead with a faint rim; finished rows faded.
-// Redrawn thousands of times per drag/scroll, so a square is two rectangles and rounded or faded is a cached bitmap;
-// batching a row into one path was slower (many subpaths cost more than their sum).
+/** The design system's bead (BeadBoard card): in its own-color rim with a satin light on screen (ticket 1003), flat with
+ * a faint rim in exports and high contrast; finished rows faded. Redrawn thousands of times per drag or scroll, so a flat
+ * square is two rectangles and every other bead a cached bitmap (a gradient per bead is too slow; so was one path a row). */
 export const drawFlatBead: BeadDrawer = (context, bead) => {
   const ink = inkOf(bead)
-  const sprite = (bead.cornerRadius > 0 || bead.dimmed) && bead.width === undefined ? spriteFor(bead, ink) : undefined
+  const ownColor = ink.satin !== undefined
+  const draw = ownColor ? drawOwnColorBead : drawBeadShapes
+  const asBitmap = ownColor || ((bead.cornerRadius > 0 || bead.dimmed) && bead.width === undefined)
+  const sprite = asBitmap ? spriteFor(bead, ink, draw) : undefined
   if (sprite) {
-    context.drawImage(sprite, bead.x, bead.y, bead.size, bead.size)
+    context.drawImage(sprite, bead.x, bead.y, bead.width ?? bead.size, bead.height ?? bead.size)
     return
   }
-  drawBeadShapes(context, bead, ink)
+  draw(context, bead, ink)
 }
 
 /** An empty bead over a reference image (ReferenceImage card, ticket 0790): its rim kept opaque so the grid stays

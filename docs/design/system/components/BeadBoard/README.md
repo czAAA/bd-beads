@@ -25,7 +25,7 @@ Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mock
 
 ## Canvas look (approved 2026-11-14; tickets 1001 to 1004)
 
-Approved in the Canvas look study and **not yet in the app**. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
+Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), which is. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
 
 ### Tonal tiles (ticket 1001)
 
@@ -48,7 +48,7 @@ Approved in the Canvas look study and **not yet in the app**. Each part names th
 ### Beads: own-color rim and satin light (ticket 1003)
 
 - **The rim is the bead's own color.** The 1px gap between two beads no longer shows the Canvas: each bead's cell is filled to its edge in its rim color, and the body stands 0.5px in, as today. Two beads of one color are parted by 1px of their own rim, two of different colors by 0.5px of each.
-- **Rim color:** the bead's color 18% toward black. Where that stands under 1.3:1 off the bead's color (near-black and very deep colors), 11% toward white instead. Yellow `#f2c94c` gives `#c6a43e`; Black `#1a1a1a` gives `#343434`. Measured between two beads: 1.6:1 for yellow and 1.4:1 for black, the same in light and dark. Today it is 7.2:1 for yellow in dark and 11.9:1 for black in light, because the gap shows the Canvas: that gap, not the Canvas's grid, was the loudest grid on screen.
+- **Rim color:** the bead's color 18% toward black. Where that stands under 1.3:1 off the bead's color (near-black and very deep colors), 11% toward white instead. Yellow `#f2c94c` gives `#c6a53e`; Black `#1a1a1a` gives `#333333`; Navy `#1f3a7a` takes the lighter, `#385089`. Measured between two beads: 1.6:1 for yellow and 1.4:1 for black, the same in light and dark. Today it is 7.2:1 for yellow in dark and 11.9:1 for black in light, because the gap shows the Canvas: that gap, not the Canvas's grid, was the loudest grid on screen.
 - **Body:** the bead's color, flat; corners the Technique's bead corner less the inset, never under 1.25px. The `bead-rim` tint is not drawn on screen.
 - **Satin light:** one soft light in the body's middle, gone before any edge. An ellipse centred 50% across and 46% down, its radius 40% of the body's width and 44% of its height, in the bead's color 50% toward white: 38% opacity at the centre, 21% at 45% of the radius, 0 at the edge. It is held to the bead's own lightness, so a dark bead gets a faint one: the lift at the centre (the light's `luma` less the bead's, times the centre opacity) is at most 3 plus 7.5% of the bead's `luma`, in levels of 255, and the light is scaled down to fit. Measured: 4.5% of a yellow bead's lightness, brightest 51% across.
 - **The rule any finish keeps:** no light or dark line beside a bead's edge, and light only in the middle. A light beside an edge repeats at the bead's pitch and reads as a second grid (the first Satin: 21% of the bead's lightness, brightest 31% across).

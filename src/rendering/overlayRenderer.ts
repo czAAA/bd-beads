@@ -11,7 +11,7 @@ import { currentPass, rowProgressOf, rowProgressOn } from '../domain/rowProgress
 import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type PastedCell, type PasteStamp, type Selection } from '../domain/selection'
 import type { VisiblePositions } from '../domain/weaveGeometry'
 import { GLINT_COLOR, ROW_MOTION, glintMs, glintWash } from './rowMotion'
-import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
+import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, flatLook, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawAreaCorners, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { outsetBox, type HandleId, type Outset } from './frameHandles'
@@ -20,7 +20,7 @@ import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
-import { drawDraftBeads } from './draftRenderer'
+import { drawDraftBeads, drawsDraft } from './draftRenderer'
 import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
 import { isMirrorOn, mirrorLines, shapeOwnAxes, type MirrorSetting } from '../domain/mirror'
 import type { LayoutPoint, LayoutSymmetry } from '../domain/frameLayout'
@@ -242,12 +242,13 @@ function sizedLike(box: { width: number; height: number }): { width?: number; he
 // A pass just finished is drawn the same way, unbrightened, while its glint shows it at full color (ticket 0730).
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>, lift = CURRENT_ROW_BRIGHTNESS): void {
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
+  const look = drawsDraft(zoom * pixelRatio) ? flatLook(theme) : theme
   for (const bead of beads) {
     const size = bead.turned ? { size: bead.width, width: bead.width, height: bead.height } : { size: CELL_SIZE_PX, ...sizedLike(bead) }
     const radius = bead.turned?.radius ?? cornerRadius
     const color = lift ? brighten(bead.color, lift) : bead.color
     inPlace(context, bead, () => {
-      drawFlatBead(context, { x: bead.x, y: bead.y, ...size, cornerRadius: radius, color, dimmed: false, deviceScale: zoom * pixelRatio, theme })
+      drawFlatBead(context, { x: bead.x, y: bead.y, ...size, cornerRadius: radius, color, dimmed: false, deviceScale: zoom * pixelRatio, theme: look })
       const letter = letters?.[bead.color]
       if (letter) {
         drawBeadLetter(context, { x: bead.x, y: bead.y, ...size, color, letter, dimmed: false, theme })

@@ -14,7 +14,7 @@ function recordingContext() {
   const noop = () => undefined
   const context: Record<string, unknown> & { fillStyle: unknown } = {
     save: noop, restore: noop, setTransform: noop, clearRect: noop, fillRect: noop, beginPath: noop, rect: noop, clip: noop, moveTo: noop,
-    lineTo: noop, arcTo: noop, arc: noop, roundRect: noop, drawImage: noop, createPattern: () => null, closePath: noop, fill: noop, stroke: noop,
+    lineTo: noop, arcTo: noop, arc: noop, roundRect: noop, drawImage: noop, createPattern: () => null, createRadialGradient: () => ({ addColorStop: noop }), scale: noop, closePath: noop, fill: noop, stroke: noop,
     setLineDash: noop, translate: noop, rotate: noop, transform: noop, getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
     imageSmoothingEnabled: true, fillStyle: '#000', globalAlpha: 1, globalCompositeOperation: 'source-over', strokeStyle: '#000', lineWidth: 1,
     lineCap: 'butt', lineJoin: 'miter', font: '', textAlign: 'start', textBaseline: 'alphabetic',

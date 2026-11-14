@@ -47,6 +47,12 @@ export function recordingContext() {
       record('createPattern')(...args)
       return pattern
     },
+    // The satin light's gradient (ticket 1003): its stops written down with it.
+    createRadialGradient: (...args: unknown[]) => {
+      const stops: [number, string][] = []
+      record('createRadialGradient')(...args, stops)
+      return { stops, addColorStop: (at: number, color: string) => stops.push([at, color]) }
+    },
     imageSmoothingEnabled: true,
     closePath: record('closePath'),
     fill: record('fill'),

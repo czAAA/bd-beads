@@ -11,7 +11,7 @@ import { frameLayoutOf } from '../domain/frameShape'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import type { Project, RowProgress } from '../domain/project'
-import { DEFAULT_THEME } from './beadLook'
+import { DEFAULT_THEME, flatLook } from './beadLook'
 import { GLINT_COLOR, ROW_MOTION } from './rowMotion'
 import { beadRoundness, type Technique } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
@@ -1046,7 +1046,9 @@ describe('the overlay of a Frame in a Bead of its own (ticket 0665)', () => {
     const project = replaceBead(withLayers(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } }), findBead('toho/round/15-0')!)
     const draw = (open: boolean) => {
       const { context, named } = recordingContext()
-      renderOverlay(context, { project, space: spaceOf(project, open), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
+      // The flat bead, whose lifted beads draw no satin light of their own to move to and scale (ticket 1003).
+      const theme = flatLook(DEFAULT_THEME)
+      renderOverlay(context, { project, space: spaceOf(project, open), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, theme })
       return named
     }
     const scale = 1 / findBead('toho/cube/1.5mm')!.widthMm

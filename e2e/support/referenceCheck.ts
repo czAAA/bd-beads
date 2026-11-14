@@ -7,7 +7,7 @@ import { isInCurrentRow, isInFinishedRow } from '../../src/domain/rowProgress'
 import { projectFrame } from '../../src/domain/projectExtent'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
-import { LIGHT_THEME } from '../../src/rendering/beadLook'
+import { LIGHT_THEME, satinCentre } from '../../src/rendering/beadLook'
 import { differingBlocks } from './imageDiff'
 import { beadCentre } from './projects'
 import { type Region } from '../../src/rendering/surfaceView'
@@ -41,10 +41,16 @@ const FINISHED_SHARE = 0.5
 const CURRENT_ROW_LIFT = 0.1
 
 /** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at
- * 50% over the Canvas; the current row's are 10% brighter. */
-function expectedCentre(project: Project, row: number, column: number): [number, number, number] {
+ * 50% over the Canvas; the current row's are 10% brighter; a painted one carries its satin light there (ticket 1003). */
+function expectedCentre(project: Project, row: number, column: number, satin: boolean): [number, number, number] {
   const color = beadColorAt(project, row, column)
-  const own = rgb(color ?? LIGHT_THEME.emptyBead)
+  const flat = flatCentre(project, row, column, rgb(color ?? LIGHT_THEME.emptyBead))
+  if (color === null || !satin) return flat
+  const { r, g, b } = satinCentre({ r: Math.round(flat[0]), g: Math.round(flat[1]), b: Math.round(flat[2]) })
+  return [r, g, b]
+}
+
+function flatCentre(project: Project, row: number, column: number, own: [number, number, number]): [number, number, number] {
   if (isInCurrentRow(project, { row, column })) {
     return own.map((channel) => channel + (255 - channel) * CURRENT_ROW_LIFT) as [number, number, number]
   }
@@ -66,6 +72,8 @@ export function wrongBeads(
   origin: { x: number; y: number },
   /** Beads not to check: ones a hover preview is drawn on, whose centre is meant to differ from the bead's color. */
   ignore: ReadonlySet<string> = new Set(),
+  /** Whether the beads are drawn with their satin light: not in the draft look, one flat pixel a bead. */
+  satin = true,
 ): string[] {
   const png = PNG.sync.read(image)
   const wrong: string[] = []
@@ -77,7 +85,7 @@ export function wrongBeads(
       const centre = beadCentre(project, box, zoom, { row, column })
       const x = Math.floor(centre.x - origin.x)
       const y = Math.floor(centre.y - origin.y)
-      const expected = expectedCentre(project, row, column)
+      const expected = expectedCentre(project, row, column, satin)
       const found = [-1, 0, 1].some((dy) =>
         [-1, 0, 1].some((dx) => {
           const at = ((y + dy) * png.width + (x + dx)) * 4
