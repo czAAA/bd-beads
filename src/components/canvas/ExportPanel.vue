@@ -5,7 +5,7 @@ import PanelItem from '../shell/PanelItem.vue'
 import { fitToDrawing } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, projectNameOf } from '../../domain/layerRecord'
 import type { ExportChoice } from '../../composables/shell/openPanel'
 
 // The Export panel (ticket 0652; ExportPanel card): opened by the strip's Export button. With a Frame, the Frame panel's
@@ -33,7 +33,11 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 <template>
   <div class="export-panel" role="group" :aria-label="t.panels.project.exportHeading" data-testid="export-panel">
     <div class="export-panel__title">
-      <span class="export-panel__label">{{ t.panels.project.exportHeading }}</span>
+      <span class="export-panel__label">
+        <span>{{ t.panels.project.exportHeading }}</span>
+        <!-- The open Project's name, where the strip shows none (under 1024px, ticket 0986). -->
+        <span class="export-panel__project" data-user-text data-testid="export-panel-project">· {{ projectNameOf(project) }}</span>
+      </span>
     </div>
     <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" :opens-on="opensOn" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
     <template v-else>
@@ -59,9 +63,28 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 }
 
 .export-panel__label {
+  display: flex;
+  gap: var(--space-4);
+  min-width: 0;
   font: var(--type-label);
   color: var(--muted);
   text-transform: lowercase;
+}
+
+/* The Project's name after the title where the strip hides it (ticket 0986): as typed, one line, cut by an ellipsis. */
+.export-panel__project {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+}
+
+@container shell (max-width: 1023px) {
+  .export-panel__project {
+    display: block;
+  }
 }
 
 .export-panel__line {

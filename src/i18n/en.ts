@@ -193,6 +193,7 @@ export const en: Translations = {
       beadType: 'Type',
       beadSize: 'Size',
       duplicatedToast: 'Now in “{copy}”. “{original}” stays as it was.',
+      openedToast: 'Now in “{name}”.',
     },
   },
   theme: {
@@ -1380,6 +1381,7 @@ export const en: Translations = {
       moveBody: 'Drag to move the reference image.',
       more: 'More for the picture',
       close: 'Close',
+      over: { name: 'Picture over the beads', body: 'Lays the picture over your beads at its opacity, to compare them. Press again to put it back under.' },
       replace: 'Replace',
       remove: 'Remove',
       sizeBeads: '{size} beads',

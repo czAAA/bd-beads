@@ -26,7 +26,7 @@ import { seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { frameOf, layerOf, lettersOn } from '../../domain/layerRecord'
+import { frameOf, layerOf, lettersOn, projectNameOf } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -172,7 +172,11 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
 <template>
   <div class="frame-panel" role="group" :aria-label="t.frame.title" data-testid="frame-panel" @keydown="emit('key', $event)">
     <div class="frame-panel__title">
-      <span class="frame-panel__label">{{ t.frame.titleLabel }}</span>
+      <span class="frame-panel__label">
+        <span>{{ t.frame.titleLabel }}</span>
+        <!-- The open Project's name, where the strip shows none (under 1024px, ticket 0986). -->
+        <span class="frame-panel__project" data-user-text data-testid="frame-panel-project">· {{ projectNameOf(project) }}</span>
+      </span>
       <span v-if="frame && beadsTotal" class="frame-panel__total" data-testid="frame-panel-total">{{ beadsTotal }}</span>
       <span v-if="frame" class="frame-panel__tools">
         <IconButton
@@ -390,15 +394,33 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
 }
 
 .frame-panel__label {
+  display: flex;
+  gap: var(--space-4);
+  min-width: 0;
   font: var(--type-label);
   color: var(--muted);
   text-transform: lowercase;
 }
 
-/* Beads needed's total beside the title (ticket 0932), the tools pushed to the end. */
-.frame-panel__total {
-  flex: 1 1 auto;
+/* The Project's name after the title where the strip hides it (ticket 0986): as typed, one line, cut by an ellipsis. */
+.frame-panel__project {
+  display: none;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+}
+
+@container shell (max-width: 1023px) {
+  .frame-panel__project {
+    display: block;
+  }
+}
+
+/* Beads needed's total beside the title (ticket 0932), the tools pushed to the end; the Project's name gives way first. */
+.frame-panel__total {
+  flex: 1 0 auto;
   font: var(--type-meta);
   color: var(--muted);
   white-space: nowrap;

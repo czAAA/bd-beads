@@ -33,7 +33,8 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
-import { useShellScope } from '../ui/shellScope'
+import { scopeRoom, useShellScope } from '../ui/shellScope'
+import { useDocumentTitle } from './useDocumentTitle'
 import { provideTitleBlockFold } from '../canvas/useTitleBlockFold'
 import { provideIdlePieces } from '../canvas/idlePieces'
 import { useBackgroundFlow } from '../project/useBackgroundFlow'
@@ -84,6 +85,8 @@ import { usePictureBarFlow } from '../project/usePictureBarFlow'
 /** The panel whose Select a frame armed the framing drag (ticket 0847): Export comes back once the Frame is set. */
 type FramingFrom = 'frame' | 'export'
 
+/** The shell width from which the strip shows the Project's name, as its CSS asks (CanvasStrip card, ticket 0986). */
+const STRIP_NAME_FROM = 1024
 /** The rows and columns an arrow moves an area by (ticket 0808). */
 const ARROW_STEPS: Readonly<Record<string, readonly [number, number]>> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
 
@@ -147,6 +150,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
+
+  /** The tab names the open Project at every width (ticket 0986); the demo's box leaves the page's title alone. */
+  if (!demo) useDocumentTitle({ projectName: () => activeProject.value && projectNameOf(activeProject.value), appTitle: () => t.value.app.title })
 
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
   if (!demo) useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
@@ -843,6 +849,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
     openProject: onSelectProject,
     saveFailed: () => saveFailed.value,
     saveNow,
+    nameHidden: () => {
+      const room = scopeRoom(scope)
+      return room.right - room.left < STRIP_NAME_FROM
+    },
+    showToast,
+    messages,
     dialogs,
   })
 

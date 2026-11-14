@@ -195,6 +195,7 @@ export const zh: Translations = {
       beadType: '类型',
       beadSize: '尺寸',
       duplicatedToast: '现在打开的是“{copy}”。“{original}”保持原样。',
+      openedToast: '现在打开的是“{name}”。',
     },
   },
   theme: {
@@ -1371,6 +1372,7 @@ export const zh: Translations = {
       moveBody: '拖动以移动参考图。',
       more: '图片的更多操作',
       close: '关闭',
+      over: { name: '图片置于珠子上方', body: '按其不透明度把图片放在珠子上方，便于对照。再按一次放回下方。' },
       replace: '替换',
       remove: '移除',
       sizeBeads: '{size} 颗珠子',

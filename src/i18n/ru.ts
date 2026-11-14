@@ -195,6 +195,7 @@ export const ru: Translations = {
       beadType: 'Тип',
       beadSize: 'Размер',
       duplicatedToast: 'Теперь открыт «{copy}». «{original}» остался как был.',
+      openedToast: 'Теперь открыт «{name}».',
     },
   },
   theme: {
@@ -1396,6 +1397,7 @@ export const ru: Translations = {
       moveBody: 'Перетащите, чтобы сдвинуть подложку.',
       more: 'Ещё для картинки',
       close: 'Закрыть',
+      over: { name: 'Картинка поверх бисера', body: 'Кладёт картинку поверх бисера с её непрозрачностью, чтобы сравнить. Нажмите снова, чтобы вернуть её под бисер.' },
       replace: 'Заменить',
       remove: 'Убрать',
       sizeBeads: '{size} бисеринок',

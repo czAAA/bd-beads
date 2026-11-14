@@ -195,6 +195,7 @@ export const uk: Translations = {
       beadType: 'Тип',
       beadSize: 'Розмір',
       duplicatedToast: 'Тепер відкрито «{copy}». «{original}» залишився як був.',
+      openedToast: 'Тепер відкрито «{name}».',
     },
   },
   theme: {
@@ -1396,6 +1397,7 @@ export const uk: Translations = {
       moveBody: 'Перетягніть, щоб зсунути підкладку.',
       more: 'Ще для зображення',
       close: 'Закрити',
+      over: { name: 'Зображення над бісером', body: 'Кладе зображення над бісером з його непрозорістю, щоб порівняти. Натисніть знову, щоб повернути його під бісер.' },
       replace: 'Замінити',
       remove: 'Прибрати',
       sizeBeads: '{size} бісеринок',

@@ -14,7 +14,7 @@ const place = { x: 50, y: 50, width: 40, angle: 0 }
 
 function mountBar(props: Record<string, unknown> = {}) {
   return mount(ReferencePictureBar, {
-    props: { place, picture: { left: 70, top: 100, width: 80, height: 40 }, barHeight: 40, view, bead: 20, opacity: 50, frameBody: 'A 4×2 Frame where the picture lies.', convertBody: 'Turns the picture into 4×2 beads.', converting: false, ...props },
+    props: { place, picture: { left: 70, top: 100, width: 80, height: 40 }, barHeight: 40, view, bead: 20, opacity: 50, frameBody: 'A 4×2 Frame where the picture lies.', convertBody: 'Turns the picture into 4×2 beads.', converting: false, over: false, ...props },
     attachTo: document.body,
   })
 }
@@ -46,16 +46,28 @@ describe('ReferencePictureBar (ReferenceImage card, ticket 0883)', () => {
     wrapper.unmount()
   })
 
-  it('opens Opacity, Replace and Remove in place from ···, which turns into Close', async () => {
+  it('shows Opacity, Replace and Remove on the bar itself, with no ···', async () => {
     const wrapper = mountBar()
-    expect(wrapper.find('[data-testid="picture-bar-opacity"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="picture-bar-more"]').trigger('click')
-    expect(wrapper.get('[data-testid="picture-bar-more"]').attributes('aria-label')).toBe('Close')
+    expect(wrapper.find('[data-testid="picture-bar-more"]').exists()).toBe(false)
     await wrapper.get('[data-testid="picture-bar-opacity"] [role="radio"]:last-child').trigger('click')
     expect(wrapper.emitted('opacity')).toEqual([[100]])
     await wrapper.get('[data-testid="picture-bar-remove"]').trigger('click')
     expect(wrapper.emitted('remove')).toHaveLength(1)
-    expect(wrapper.find('[data-testid="picture-bar-opacity"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="picture-bar-replace"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('lays the picture over the beads from its toggle, pressed while it does (ticket 1009)', async () => {
+    const wrapper = mountBar()
+    const over = wrapper.get('[data-testid="picture-bar-over"]')
+    expect(over.attributes('aria-label')).toBe('Picture over the beads')
+    expect(over.attributes('aria-pressed')).toBe('false')
+    await over.trigger('click')
+    expect(wrapper.emitted('over')).toEqual([[true]])
+    await wrapper.setProps({ over: true })
+    expect(wrapper.get('[data-testid="picture-bar-over"]').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('[data-testid="picture-bar-over"]').trigger('click')
+    expect(wrapper.emitted('over')).toEqual([[true], [false]])
     wrapper.unmount()
   })
 

@@ -195,6 +195,7 @@ export const es: Translations = {
       beadType: 'Tipo',
       beadSize: 'Tamaño',
       duplicatedToast: 'Ahora estás en “{copy}”. “{original}” se queda como estaba.',
+      openedToast: 'Ahora estás en “{name}”.',
     },
   },
   theme: {
@@ -1393,6 +1394,7 @@ export const es: Translations = {
       moveBody: 'Arrastra para mover la imagen de referencia.',
       more: 'Más opciones de la imagen',
       close: 'Cerrar',
+      over: { name: 'Imagen sobre las cuentas', body: 'Pone la imagen sobre tus cuentas con su opacidad, para compararlas. Pulsa de nuevo para volver a ponerla debajo.' },
       replace: 'Reemplazar',
       remove: 'Quitar',
       sizeBeads: '{size} cuentas',
