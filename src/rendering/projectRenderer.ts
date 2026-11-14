@@ -27,9 +27,8 @@ import { marginForm, marginScale } from './marginForm'
 import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
-import { drawTile, markLookOf } from './tonalTiles'
+import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
 import { canvasLiftCells, drawLift, liftCollector, liftRows, paintedOnly } from './liftedPiece'
-import { drawGapEasing } from './gridFocus'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -133,9 +132,6 @@ export interface RenderInput {
    * (ticket 1008); where outlines are drawn instead (high contrast, the draft look) they lie over it and the Frame's
    * empty beads are see-through. Only the editor's surface hands one in, so no export, thumbnail or example prints it. */
   reference?: DrawnReference
-  /** Grid focus (ticket 1002): the work's boxes in grid px, which the gap between tonal tiles stays full round and is
-   * calmer far from. Only the editor's surface hands them in, so no export, thumbnail or example eases its grid. */
-  gridFocus?: readonly Region[]
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -735,8 +731,10 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     const overTiles = positionMarks && markLookOf(theme, tiles).tiles
     const frameBox = frame ? frameGroundBox(project) : undefined
     if (under && !overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-    if (positionMarks && tiles && input.gridFocus && theme.tonalTiles) {
-      drawGapEasing(context, { boxes: input.gridFocus, toRegion: gridToRegion(extent, region, zoom, rotation), pixelRatio, width: region.width, height: region.height, background: theme.canvas })
+    if (positionMarks && tiles && theme.tonalTiles) {
+      // The calm gap between tonal tiles, laid flat under them over the whole surface (ticket 1001).
+      context.fillStyle = gapColorOf(theme.canvas)
+      context.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top)
     }
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
