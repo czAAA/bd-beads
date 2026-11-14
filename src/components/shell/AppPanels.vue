@@ -25,6 +25,7 @@ const {
   activeProject,
   saveFailed,
   unsaved,
+  openElsewhere,
   settledProject,
   onNewProjectDraft,
   unnamedProjectName,
@@ -196,6 +197,7 @@ const chosenStarter = ref<StarterId>()
       :project="activeProject"
       :save-failed="saveFailed"
       :unsaved="unsaved"
+      :open-elsewhere="openElsewhere"
       :reference="referencePanel"
       :last-file-name="lastFileName"
       :can-save-as="canSaveAs"

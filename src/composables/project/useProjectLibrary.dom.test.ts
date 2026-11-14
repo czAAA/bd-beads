@@ -627,11 +627,40 @@ describe('two tabs over one library (ticket 0834)', () => {
 
     it('keeps to the stored copy of the open Project until the locks answer', () => {
       useProjectLibrary().addProject(makeProject())
-      const unanswered = openTab({ claim: () => () => undefined })
+      const unanswered = openTab({ claim: () => ({ letGo: () => undefined, takeOver: () => undefined }) })
 
       unanswered.replaceProject(withPaintedCell(unanswered.activeProject.value!, 0, 0))
 
       expect(painted(loadProjects()[0], 0)).toBeNull()
+    })
+
+    it('lets the second tab work here instead: it draws and saves from what the first stored, and the first is told (ticket 0937)', () => {
+      useProjectLibrary().addProject(makeProject())
+      const locks = sharedProjectLocks()
+      const first = openTab(locks)
+      const second = openTab(locks)
+      first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0))
+
+      second.workHere()
+
+      expect([first.openElsewhere.value, second.openElsewhere.value]).toEqual([true, false])
+      expect(painted(second.activeProject.value, 0)).toBe('#e63746')
+      second.replaceProject(withPaintedCell(second.activeProject.value!, 0, 1))
+      first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 2))
+      const stored = loadProjects()[0]
+      expect([painted(stored, 0), painted(stored, 1), painted(stored, 2)]).toEqual(['#e63746', '#e63746', null])
+    })
+
+    it('puts a stroke the first tab had not written yet back to the stored copy once the second takes over', () => {
+      useProjectLibrary().addProject(makeProject())
+      const locks = sharedProjectLocks()
+      const first = openTab(locks)
+      const second = openTab(locks)
+      first.replaceProject(withPaintedCell(first.activeProject.value!, 0, 0), { deferSave: true })
+
+      second.workHere()
+
+      expect(painted(first.activeProject.value, 0)).toBeNull()
     })
 
     it('says nothing while the two tabs have different Projects open', () => {

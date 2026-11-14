@@ -460,6 +460,12 @@ export interface Translations {
     openElsewhere: string
     /** The browser's yes, said back once at the first Project file (tickets 0839, 0936); a no says nothing. */
     keptToast: string
+    /** The notice's action while the open Project is open in another tab (ticket 0937): takes it over here. */
+    workHere: string
+    /** The Project panel's save state there (ticket 0937): nothing drawn here is saved. */
+    notSavedHere: string
+    /** Why the Tool pill's tools are off there (ticket 0937). */
+    toolsOff: string
   }
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
