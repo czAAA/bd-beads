@@ -1196,20 +1196,6 @@ Under a converter control stand only a result or an error (ConvertImage card). W
 
 Gone strings are removed from every language. "To fix what was found, pick Background …" stays until ticket 0896 removes it with the step pane.
 
-## Grid focus copy (ticket 1002)
+## Grid focus copy (ticket 1002): gone
 
-The Canvas strip's Grid focus toggle (CanvasStrip card; BeadBoard card, Grid focus). Approved 2026-11-14, in the app since ticket 1002. "Grid" is the glossary's Grid; in Russian «сетка», a word the app's copy has not used before, so the Russian is a draft for the owner to check. The other languages were written with the build, as draft words to be checked by a speaker of each (below).
-
-| English | Русский |
-|---|---|
-| Grid focus (strip button name, shortcuts row) | Фокус сетки |
-| Keeps the grid clear around your work and calmer everywhere else. (Tooltip) | Сетка чёткая вокруг вашей работы и спокойнее на остальном холсте. |
-| There is no work to focus on yet. (disabled reason) | Пока нет работы, вокруг которой держать фокус. |
-
-Draft words (ticket 1002), to be checked by a speaker of each:
-
-| English | Українська | Беларуская | 中文 | Español | Polski |
-|---|---|---|---|---|---|
-| Grid focus | Фокус сітки | Фокус сеткі | 网格聚焦 | Foco de cuadrícula | Fokus siatki |
-| Keeps the grid clear around your work and calmer everywhere else. | Сітка чітка навколо вашої роботи й спокійніша на решті полотна. | Сетка выразная вакол вашай працы і спакайнейшая на астатнім палатне. | 让作品周围的网格保持清晰，其他地方更安静。 | Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto. | Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej. |
-| There is no work to focus on yet. | Поки немає роботи, навколо якої тримати фокус. | Пакуль няма працы, вакол якой трымаць фокус. | 还没有可以聚焦的作品。 | Todavía no hay trabajo en el que centrarse. | Nie ma jeszcze pracy, na której można się skupić. |
+Ticket 1007 removed Grid focus: its name, Tooltip line and disabled reason are gone from every language.

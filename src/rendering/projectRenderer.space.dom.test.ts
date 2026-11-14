@@ -16,7 +16,7 @@ import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { changeFrame } from '../domain/changeFrame'
-import { TILE_INSET_PX, tileColorOf } from './tonalTiles'
+import { gapColorOf, TILE_INSET_PX, tileColorOf } from './tonalTiles'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 /** Where the Frame starts: peyote's must be an even column, as its columns alternate (ticket 0734). */
@@ -188,7 +188,7 @@ describe('the Frame on its own background (ticket 0666)', () => {
   it('fills nothing more where the Frame is on the Canvas\'s background, and on its own fills its board', () => {
     const project = framedProject('loom')
     const alike = render(project, true, { region: whole, theme: canvasLook, frameTheme: { ...canvasLook } })
-    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string')).toHaveLength(0)
+    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string' && call.fillStyle !== gapColorOf(canvasLook.canvas))).toHaveLength(0)
 
     const alone = render(project, false, { theme: canvasLook, frameTheme: frameLook })
     expect(alone.named('fillRect').some((call) => call.fillStyle === frameLook.background && call.args[2] === view.width)).toBe(true)

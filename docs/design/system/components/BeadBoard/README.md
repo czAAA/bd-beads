@@ -25,7 +25,7 @@ Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mock
 
 ## Canvas look (approved 2026-11-14; tickets 1001 to 1004)
 
-Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), the tonal tiles (ticket 1001), Grid focus (ticket 1002) and the Lifted piece (ticket 1004), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
+Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), the tonal tiles (ticket 1001), the calm gap (ticket 1007) and the Lifted piece (ticket 1004), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
 
 ### Tonal tiles (ticket 1001)
 
@@ -37,14 +37,11 @@ Approved in the Canvas look study and **not yet in the app**, save the own-color
 - **Under the drawing and on the Homepage:** the empty canvas laid under the editor's drawing (ticket 0717) and the Homepage's ground are the same tiles, since they are the same Position marks.
 - Never saved, never in exports. The draft look keeps the outline and each Background's own empty bead (CanvasBackground card). A shown reference image lies over the tiles, on the Canvas and in the Frame, and leaves them as they are (ReferenceImage card, ticket 1008): the grid's look and color never change with it.
 
-### Grid focus (ticket 1002; CanvasStrip card)
+### The calm gap (ticket 1007; replaces Grid focus, ticket 1002)
 
-- With Grid focus on, the gap between tiles has its full step near the work and is calmer far from it. The tiles never change, so the Canvas keeps one tone from edge to edge: only the gap moves toward the tile's color.
-- **Near:** within about 3 beads of the work, the full gap. **Far:** from about 7 beads out, the gap is 42% of the way to the tile's color, which leaves about 3.8 L* (1.11:1): Night `#262626`, Studio `#f2f2f2`. Between the two it eases smoothly. It never reaches the tile's color, so the grid shows everywhere. In px at 100% zoom: the work's box grown by 96px, its edge softened over 36px either way; both follow the zoom.
-- **The work** is the Frame's margin sheet, and each Piece area on the Canvas, corners rounded. It follows what is painted: a new bead far from the rest brings its own near area at the next draw.
-- With no bead and no Frame there is no work, and the grid is full everywhere. Off, the grid is full everywhere.
-- The empty canvas laid under the drawing uses the far gap while Grid focus is on.
-- **As built:** the easing is a field of the far gap, sampled coarsely and drawn up to the screen smoothly under the tiles, never a canvas `filter` (iPad Safari has none); made once a view, so a band redrawn after an edit reuses it. Through a stroke the work is held, and its end draws the view again with the new bead's own near area. Only the editor's drawing has it: no export, thumbnail or example.
+- The gap between tiles is one calm color everywhere on the Canvas: the Background moved 42% of the way to the tile's color, which leaves about 3.8 L* (1.11:1) between gap and tile: Night `#262626`, Studio `#f2f2f2`. It never reaches the tile's color, so the grid shows everywhere. The tiles never change, so the Canvas keeps one tone from edge to edge.
+- It does not depend on the work, a toggle or a key: Grid focus (a button, `G`, and a gap eased by distance from the work) was removed.
+- The empty canvas laid under the drawing uses the same gap. Only the editor's drawing and the Homepage's ground have it: no export, thumbnail or example, and not high contrast, the draft look or a reference image.
 
 ### Beads: own-color rim and satin light (ticket 1003)
 

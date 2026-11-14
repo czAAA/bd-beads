@@ -22,8 +22,7 @@ import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { SchemaAnchors } from '../../composables/canvas/schemaTagPlacement'
 import { unframedSchemas } from '../../domain/schemaTags'
-import { surfaceView, type Region, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
-import { sameWorkBoxes, workBoxesOf } from '../../rendering/workBoxes'
+import { surfaceView, type Scroll, type SurfaceView } from '../../rendering/surfaceView'
 import { tiltedView, type TiltedView } from '../../rendering/tiltedView'
 import type { TwistPhase } from '../../composables/canvas/useCanvasView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -98,8 +97,6 @@ const props = withDefaults(defineProps<{
   rowPress?: RowPress
   /** The reference image to draw under the beads (ticket 0790), none while it is hidden. */
   reference?: DrawnReference
-  /** Whether Grid focus is on (ticket 1002): the grid's gap stays full round the work and is calmer elsewhere. */
-  gridFocus?: boolean
 }>(), { rowMarks: true, tools: () => toolCapabilities(undefined) })
 
 const emit = defineEmits<SurfacePointerEvents & {
@@ -363,15 +360,7 @@ const { oncePerFrame } = useFrameScheduler()
 const rowMotion = useRowMotion({ props, beads: baseEl, fade: fadeEl, view: () => [props.zoom, props.scroll, layerSize.value, props.twist] })
 /** Finished passes show at full color while hovered or pressed, and once every pass is done (ticket 0730). */
 const showFinished = computed(() => pointer.showFinished.value || rowMotion.finishedRestored.value)
-/** Grid focus's work (ticket 1002): counted once per edit and held through a stroke, so a stroke redraws only its rows
- * and its end brings what it painted its own near area. None while Grid focus is off or the theme has no tiles. */
-const workBoxes = computed<readonly Region[] | undefined>((previous) => {
-  if (!props.gridFocus || !theme.value.tonalTiles) return undefined
-  if (props.stroking && previous) return previous
-  const boxes = workBoxesOf(layerProps.project)
-  return previous && sameWorkBoxes(previous, boxes) ? previous : boxes
-})
-useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference), workBoxes })
+useBeadLayer({ props: layerProps, canvas: baseEl, standIn: standInEl, size: layerSize, space, theme, frameTheme, showFinished, marksShown, oncePerFrame, onDrawn: () => emit('drawn'), reference: toRef(() => props.reference) })
 watch(layerSurface, (view) => emit('surface-view', view), { immediate: true, flush: 'post' })
 useSurfaceOverlay({
   props: layerProps, canvas: overlayEl, size: layerSize, space, surface: layerSurface, rulers: layerRulers, theme, marksShown, oncePerFrame,
@@ -394,7 +383,7 @@ const patternDoneAt = computed(() => {
 })
 
 /** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
-const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme, farGap: toRef(() => !!workBoxes.value?.length) })
+const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
 
 // Tests read what was drawn from the layout the surface built.
 /** Where a bead's middle is on screen, in client pixels: the Homepage's tour points its ghost there (ticket 0797). */
