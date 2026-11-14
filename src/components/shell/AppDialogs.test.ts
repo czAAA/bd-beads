@@ -14,14 +14,14 @@ describe('AppDialogs', () => {
   it('shows one dialog at a time: one asked while another shows waits, and shows once that one is answered', async () => {
     const { wrapper, dialogRegistry } = mountShellParts(AppDialogs)
     dialogRegistry.flag('delete-all').value = true
-    dialogRegistry.flag('keep-note').value = true
+    dialogRegistry.flag('reset-progress').value = true
     await flushPromises()
     expect(wrapper.findAll('.app-modal')).toHaveLength(1)
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="keep-note-modal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="reset-progress-modal"]').exists()).toBe(true)
   })
 
   it('holds the keyboard shortcuts from the moment any dialog is asked, before it has drawn', async () => {

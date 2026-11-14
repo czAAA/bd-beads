@@ -12,7 +12,6 @@ type DialogId =
   | 'replace-bead'
   | 'import-switch'
   | 'switch-project'
-  | 'keep-note'
   | 'shortcuts'
   | 'duplicate-project'
   | 'delete-project'
@@ -39,8 +38,8 @@ export interface Dialogs {
 }
 
 /** Opens and closes the app's dialogs (ticket 0618): one shows at a time, and one asked while another shows waits
- * behind it, still pending for its flow, so a question that lands at the same moment (the keep note after a save) is
- * neither drawn over the other nor lost. */
+ * behind it, still pending for its flow, so a question that lands while another shows is neither drawn over it nor
+ * lost. */
 export function useDialogs(): Dialogs {
   const asked = shallowRef<readonly Asked[]>([])
 

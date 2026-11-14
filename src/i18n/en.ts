@@ -144,9 +144,12 @@ export const en: Translations = {
       deleteAllConfirm: 'Delete all Projects',
       sendFeedback: 'Send feedback',
       reportTranslation: 'Report a translation problem',
-      keepProjects: 'Keep Projects on this device',
-      keepProjectsOn: 'On',
-      keepProjectsOff: 'Off',
+      keepProjects: 'Kept by this browser',
+      keepProjectsOn: 'Yes',
+      keepProjectsOff: 'No',
+      keepProjectsInfoLabel: 'About keeping Projects',
+      keepProjectsInfo:
+        "When the device runs short on space, the browser can clear this app's data, unless it keeps your Projects. The browser decides this by itself, so save a Project file of each one you care about.",
     },
     project: {
       rename: 'Rename {name}',
@@ -329,16 +332,8 @@ export const en: Translations = {
   storage: {
     saveFailedMessage:
       "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it.",
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: 'Ask the browser to keep your Projects?',
-      message: "When the device runs short on space, the browser can clear this app's data. If the browser asks, choose Allow.",
-      confirmButton: 'Keep Projects',
-      cancelButton: 'Not now',
-    },
     openElsewhere: "This Project is open in another tab. Changes made here aren't saved while it is open there.",
     keptToast: 'This browser will keep your Projects.',
-    notKeptMessage: "The browser didn't agree to keep Projects. Save a Project file of each one you care about.",
   },
   header: {
     menuButton: 'Menu',

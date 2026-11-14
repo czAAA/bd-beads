@@ -125,8 +125,8 @@ export const PREFERENCES = {
     parse: (raw) => raw === 'yes',
     write: (seen) => (seen ? 'yes' : null),
   }),
-  // Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never
-  // again.
+  // Whether the browser has been asked to keep the library on this device (tickets 399, 0936): once, then never again.
+  // The key still names the note that used to ask first, so a device that saw it isn't asked again.
   storageNoteSeen: preference<boolean>({
     key: 'openbeads:storage-note-seen',
     fallback: false,

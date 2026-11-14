@@ -146,9 +146,12 @@ export const pl: Translations = {
       deleteAllConfirm: 'Usuń wszystkie projekty',
       sendFeedback: 'Wyślij opinię',
       reportTranslation: 'Zgłoś błąd tłumaczenia',
-      keepProjects: 'Zachowaj projekty na urządzeniu',
-      keepProjectsOn: 'Wł.',
-      keepProjectsOff: 'Wył.',
+      keepProjects: 'Przeglądarka zachowuje projekty',
+      keepProjectsOn: 'Tak',
+      keepProjectsOff: 'Nie',
+      keepProjectsInfoLabel: 'O zachowywaniu projektów',
+      keepProjectsInfo:
+        'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji, chyba że zachowuje Twoje projekty. Przeglądarka decyduje o tym sama, więc zapisz plik projektu każdego, na którym Ci zależy.',
     },
     project: {
       rename: 'Zmień nazwę „{name}”',
@@ -331,16 +334,8 @@ export const pl: Translations = {
   storage: {
     saveFailedMessage:
       'Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo zapisz plik projektu, żeby jej nie stracić.',
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: 'Poprosić przeglądarkę o zachowanie projektów?',
-      message: 'Gdy na urządzeniu brakuje miejsca, przeglądarka może usunąć dane tej aplikacji. Jeśli przeglądarka zapyta, wybierz Zezwól.',
-      confirmButton: 'Zachowaj projekty',
-      cancelButton: 'Nie teraz',
-    },
     openElsewhere: 'Ten projekt jest otwarty w innej karcie. Zmiany wprowadzone tutaj nie są zapisywane, dopóki jest tam otwarty.',
     keptToast: 'Ta przeglądarka zachowa Twoje projekty.',
-    notKeptMessage: 'Przeglądarka nie zgodziła się zachować projektów. Zapisz plik projektu każdego, na którym Ci zależy.',
   },
   header: {
     menuButton: 'Menu',

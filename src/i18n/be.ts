@@ -147,9 +147,12 @@ export const be: Translations = {
       deleteAllConfirm: 'Выдаліць усе праекты',
       sendFeedback: 'Адправіць водгук',
       reportTranslation: 'Паведаміць пра памылку перакладу',
-      keepProjects: 'Захоўваць праекты на прыладзе',
-      keepProjectsOn: 'Укл.',
-      keepProjectsOff: 'Выкл.',
+      keepProjects: 'Браўзер захоўвае праекты',
+      keepProjectsOn: 'Так',
+      keepProjectsOff: 'Не',
+      keepProjectsInfoLabel: 'Пра захоўванне праектаў',
+      keepProjectsInfo:
+        'Калі на прыладзе мала месца, браўзер можа выдаліць даныя гэтай праграмы, калі ён не захоўвае вашы праекты. Браўзер вырашае гэта сам, таму захавайце файл праекта для кожнага, які вам дарагі.',
     },
     project: {
       rename: 'Перайменаваць «{name}»',
@@ -332,16 +335,8 @@ export const be: Translations = {
   storage: {
     saveFailedMessage:
       'Не атрымалася захаваць на гэтай прыладзе. Апошнія змены ёсць толькі на экране. Вызваліце месца ў браўзеры або захавайце файл праекта, каб не страціць змены.',
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: 'Папрасіць браўзер захоўваць вашы праекты?',
-      message: 'Калі на прыладзе мала месца, браўзер можа выдаліць даныя гэтай праграмы. Калі браўзер спытае, абярыце «Дазволіць».',
-      confirmButton: 'Захоўваць праекты',
-      cancelButton: 'Не зараз',
-    },
     openElsewhere: 'Гэты праект адкрыты ў іншай укладцы. Змены тут не захоўваюцца, пакуль ён адкрыты там.',
     keptToast: 'Гэты браўзер будзе захоўваць вашы праекты.',
-    notKeptMessage: 'Браўзер не пагадзіўся захоўваць праекты. Захавайце файл праекта для кожнага, які вам дарагі.',
   },
   header: {
     menuButton: 'Меню',
