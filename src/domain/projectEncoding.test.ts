@@ -157,7 +157,8 @@ describe('encodeProject / decodeProject', () => {
 
     const decoded = decodeProject(JSON.parse(JSON.stringify(encodeProject(project))))
 
-    expect(decoded).toEqual(project)
+    // Beside it, the mark of the list its Background positions are in (ticket 1000), which normalizeProject reads.
+    expect(decoded).toEqual({ ...project, backgroundPositions: 3 })
   })
 
   it('does not fold the grid colors into a field of their own on the Project', () => {

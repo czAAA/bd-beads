@@ -27,7 +27,7 @@ export function provideMarginLeastScale(scale: number): void {
 
 /** The Frame's margin color (ticket 0656, MarginSheet card): stored on the device. */
 export interface MarginColor {
-  /** The stored choice: `auto`, 1 to 5, or `custom`. */
+  /** The stored choice: `auto`, 1 to 3, or `custom`. */
   choice: Readonly<Ref<MarginChoice>>
   /** The last Custom color taken for the margin, if any. */
   customColor: Readonly<Ref<string | undefined>>

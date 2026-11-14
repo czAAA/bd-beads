@@ -302,7 +302,7 @@ export const be: Translations = {
       label: 'Колер палатна',
       pickerLabel: 'колер палатна',
       swatchLabel: '{name}, {n} з {count}',
-      names: { studio: 'Студыя', linen: 'Лён', stone: 'Камень', fog: 'Туман', pebble: 'Галька', night: 'Ноч', ink: 'Туш', midnight: 'Поўнач', ash: 'Попел', slate: 'Сланец' },
+      names: { studio: 'Студыя', stone: 'Камень', pebble: 'Галька', night: 'Ноч', ink: 'Туш', slate: 'Сланец' },
     },
     hint: {
       scrollOr: 'пракрутка або',

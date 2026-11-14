@@ -22,11 +22,11 @@ const blocked: PreferenceStorage = {
 const CASES = [
   { name: 'rulers', key: 'openbeads:rulers', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
   { name: 'rowHighlight', key: 'openbeads:row-highlight', saved: 'off', read: false, other: true, stored: 'on', invalid: null, fallback: true },
-  { name: 'canvasBackground', key: 'openbeads:canvas-background-2', saved: '5', read: 5, other: 3, stored: '3', invalid: '6', fallback: 1 },
-  { name: 'canvasBackground', key: 'openbeads:canvas-background-2', saved: 'custom', read: 'custom', other: 'custom', stored: 'custom', invalid: 'mine', fallback: 1 },
+  { name: 'canvasBackground', key: 'openbeads:canvas-background-3', saved: '3', read: 3, other: 2, stored: '2', invalid: '4', fallback: 1 },
+  { name: 'canvasBackground', key: 'openbeads:canvas-background-3', saved: 'custom', read: 'custom', other: 'custom', stored: 'custom', invalid: 'mine', fallback: 1 },
   { name: 'canvasCustomColor', key: 'openbeads:canvas-custom-color', saved: '#7A2E8C', read: '#7a2e8c', other: '#14213d', stored: '#14213d', invalid: 'purple', fallback: undefined },
-  { name: 'marginColor', key: 'openbeads:margin-color', saved: '2', read: 2, other: 'auto', stored: 'auto', invalid: '0', fallback: 'auto' },
-  { name: 'marginColor', key: 'openbeads:margin-color', saved: 'custom', read: 'custom', other: 5, stored: '5', invalid: 'mine', fallback: 'auto' },
+  { name: 'marginColor', key: 'openbeads:margin-color-2', saved: '2', read: 2, other: 'auto', stored: 'auto', invalid: '4', fallback: 'auto' },
+  { name: 'marginColor', key: 'openbeads:margin-color-2', saved: 'custom', read: 'custom', other: 3, stored: '3', invalid: 'mine', fallback: 'auto' },
   { name: 'marginCustomColor', key: 'openbeads:margin-custom-color', saved: '#7A2E8C', read: '#7a2e8c', other: '#14213d', stored: '#14213d', invalid: 'purple', fallback: undefined },
   { name: 'marginTitleBlock', key: 'openbeads:margin-title-block', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'inputMode', key: 'openbeads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
@@ -145,20 +145,52 @@ describe('the canvas background preference, from the first list (ticket 554)', (
   const earlier = 'openbeads:canvas-background'
 
   it.each([
-    ['dark', '6', 4],
+    ['dark', '6', 1],
     ['dark', '4', 1],
-    ['dark', '3', 3],
-    ['light', '4', 4],
+    ['dark', '3', 2],
+    ['light', '2', 2],
+    ['light', '4', 1],
     ['light', '3', 1],
-  ] as const)('reads a %s choice %s as %i, moved by name, and keeps it under the new key', (theme, saved, moved) => {
+  ] as const)('reads a %s choice %s as %i, moved by name and then to its nearest kept one, and keeps it under the new key', (theme, saved, moved) => {
     const storage = memory({ 'openbeads:theme': theme, [earlier]: saved })
     expect(createDevicePreferences(storage).get('canvasBackground').value).toBe(moved)
-    expect(storage.data.get('openbeads:canvas-background-2')).toBe(String(moved))
+    expect(storage.data.get('openbeads:canvas-background-3')).toBe(String(moved))
     expect(storage.data.get(earlier)).toBe(saved)
   })
 
-  it('prefers the new key once there is one', () => {
-    const storage = memory({ [earlier]: '6', 'openbeads:canvas-background-2': '2', 'openbeads:theme': 'dark' })
-    expect(createDevicePreferences(storage).get('canvasBackground').value).toBe(2)
+  it('prefers the newer keys once there are any', () => {
+    const storage = memory({ [earlier]: '6', 'openbeads:canvas-background-2': '5', 'openbeads:theme': 'dark' })
+    expect(createDevicePreferences(storage).get('canvasBackground').value).toBe(3)
+  })
+})
+
+describe.each([
+  { name: 'canvasBackground', earlier: 'openbeads:canvas-background-2', key: 'openbeads:canvas-background-3', kept: 'custom' },
+  { name: 'marginColor', earlier: 'openbeads:margin-color', key: 'openbeads:margin-color-2', kept: 'auto' },
+] as const)('the $name preference, from the list of five (ticket 1000)', ({ name, earlier, key, kept }) => {
+  it.each([
+    ['1', 1],
+    ['2', 2],
+    ['3', 2],
+    ['4', 1],
+    ['5', 3],
+  ] as const)('reads a stored %s as %i, in either theme, and keeps it under the new key', (saved, moved) => {
+    for (const theme of ['light', 'dark']) {
+      const storage = memory({ 'openbeads:theme': theme, [earlier]: saved })
+      expect(createDevicePreferences(storage).get(name).value).toBe(moved)
+      expect(storage.data.get(key)).toBe(String(moved))
+      expect(storage.data.get(earlier)).toBe(saved)
+    }
+  })
+
+  it('moves a choice once: opened again, the moved one is read as it is, not moved again', () => {
+    const storage = memory({ [earlier]: '5' })
+    expect(createDevicePreferences(storage).get(name).value).toBe(3)
+    storage.data.delete(earlier)
+    expect(createDevicePreferences(storage).get(name).value).toBe(3)
+  })
+
+  it.each(['custom', kept])('keeps a stored %s as it is', (saved) => {
+    expect(createDevicePreferences(memory({ [earlier]: saved })).get(name).value).toBe(saved)
   })
 })
