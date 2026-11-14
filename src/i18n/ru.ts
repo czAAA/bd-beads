@@ -301,7 +301,7 @@ export const ru: Translations = {
       label: 'Цвет холста',
       pickerLabel: 'цвет холста',
       swatchLabel: '{name}, {n} из {count}',
-      names: { studio: 'Студия', linen: 'Лён', stone: 'Камень', fog: 'Туман', pebble: 'Галька', night: 'Ночь', ink: 'Тушь', midnight: 'Полночь', ash: 'Пепел', slate: 'Сланец' },
+      names: { studio: 'Студия', stone: 'Камень', pebble: 'Галька', night: 'Ночь', ink: 'Тушь', slate: 'Сланец' },
     },
     hint: {
       scrollOr: 'прокрутка или',

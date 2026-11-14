@@ -301,7 +301,7 @@ export const es: Translations = {
       label: 'Color del lienzo',
       pickerLabel: 'color del lienzo',
       swatchLabel: '{name}, {n} de {count}',
-      names: { studio: 'Estudio', linen: 'Lino', stone: 'Piedra', fog: 'Niebla', pebble: 'Guijarro', night: 'Noche', ink: 'Tinta', midnight: 'Medianoche', ash: 'Ceniza', slate: 'Pizarra' },
+      names: { studio: 'Estudio', stone: 'Piedra', pebble: 'Guijarro', night: 'Noche', ink: 'Tinta', slate: 'Pizarra' },
     },
     hint: {
       scrollOr: 'desplaza o',

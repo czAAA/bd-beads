@@ -301,7 +301,7 @@ export const uk: Translations = {
       label: 'Колір полотна',
       pickerLabel: 'колір полотна',
       swatchLabel: '{name}, {n} з {count}',
-      names: { studio: 'Студія', linen: 'Льон', stone: 'Камінь', fog: 'Туман', pebble: 'Галька', night: 'Ніч', ink: 'Туш', midnight: 'Північ', ash: 'Попіл', slate: 'Сланець' },
+      names: { studio: 'Студія', stone: 'Камінь', pebble: 'Галька', night: 'Ніч', ink: 'Туш', slate: 'Сланець' },
     },
     hint: {
       scrollOr: 'прокручування або',

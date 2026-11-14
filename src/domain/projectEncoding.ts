@@ -1,3 +1,4 @@
+import { BACKGROUND_POSITIONS } from './background'
 import { hasBeads, knownBounds, sortedKeys, type BeadMap, type FrameSheet } from './canvas'
 import { knownRowColors } from './layerBeads'
 import { knownBeadCount } from './openingLimits'
@@ -35,8 +36,8 @@ export type EncodedFlatProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeav
 export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as a file (version 13) and the library (version 6) store it (ticket 0664): what is one per file, and its
- * layers in order, the Canvas first. */
-export type EncodedProject = Omit<Project, 'layers'> & { layers: EncodedLayer[] }
+ * layers in order, the Canvas first; how many backgrounds the list their positions are in held (ticket 1000). */
+export type EncodedProject = Omit<Project, 'layers'> & Pick<LayeredProject, 'backgroundPositions'> & { layers: EncodedLayer[] }
 
 /** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
  * rectangle, the beads it covered beside them. */
@@ -241,9 +242,10 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
 }
 
 /** A Project as a file and the library store it (ticket 0664): each layer with its settings at their defaults left out
- * and its beads compact, a Frame's quarter turns as its orientation in degrees. */
+ * and its beads compact, a Frame's quarter turns as its orientation in degrees, its Background positions marked as in
+ * the list of three (ticket 1000), so they are never moved again. */
 export function encodeProject(project: Project): EncodedProject {
-  return { ...project, layers: project.layers.map(encodeLayer) }
+  return { ...project, backgroundPositions: BACKGROUND_POSITIONS, layers: project.layers.map(encodeLayer) }
 }
 
 function encodeLayer(layer: Project['layers'][number]): EncodedLayer {

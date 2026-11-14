@@ -116,7 +116,7 @@ describe('the Starter setup', () => {
     expect(text(wrapper, 'starter-count')).toBe('≈ 252 beads · 36 rows round')
     await chooseBeadInSection(wrapper, 'toho/cube/1.5mm')
     expect(text(wrapper, 'starter-estimate')).toBe('ø 17.2 mm inside · 10.5 mm wide')
-    await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
+    await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
     await wrapper.get('form').trigger('submit')
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm', background: 2 })
   })

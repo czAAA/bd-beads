@@ -18,9 +18,9 @@ The Frame's keep-out margin drawn as a sheet of drafting paper: its own backgrou
 ## Margin color
 
 - **Auto** (the default): the Canvas color one step off, toward white by 5% in dark and toward black by 5% in light, its hue kept: Slate `#3b3e43` gives `#45484c`, Night `#202020` gives `#2b2b2b`, Linen `#f7f3ec` gives `#ebe7e0`, Studio `#fafafa` gives `#eeeeee`. On a Custom Canvas color the step goes toward white when the Project is drawn in the dark look and toward black in the light look (CanvasBackground card). It follows the Canvas color as it changes: the Canvas layer's own Background since ticket 0666, whatever the Frame's.
-- **Picked:** the standalone `BackgroundColorPicker` (CanvasBackground card, ticket 0653) with an **Auto** swatch first, then the theme's five Canvas colors, then the Palette's Custom color tile. Auto is drawn split corner to corner, the Canvas color and the margin color, so it shows what it does. The swatch equal to the current Canvas color carries a 6px dot (`ink` at 70%) and the name "{color}, the Canvas color", and its Tooltip says so: "Canvas color" («Цвет холста») over the hex, chosen or not, where every other swatch's reads "Color" (ticket 0684); picking it leaves no margin visible. The chosen one is ringed with a check as in every BackgroundColorPicker.
-- **Remembered on the device**, as the Canvas color is: the position for the five, one Custom color for both themes. Not an Undo step.
-- **Three Canvas colors (ticket 1000; approved 2026-11-14, not yet in the app):** the picker offers Auto, the theme's three Canvas colors and Custom color, and a stored position moves by the CanvasBackground card's map (1, 2, 3, 4, 5 become 1, 2, 2, 1, 3).
+- **Picked:** the standalone `BackgroundColorPicker` (CanvasBackground card, ticket 0653) with an **Auto** swatch first, then the theme's three Canvas colors (ticket 1000), then the Palette's Custom color tile. Auto is drawn split corner to corner, the Canvas color and the margin color, so it shows what it does. The swatch equal to the current Canvas color carries a 6px dot (`ink` at 70%) and the name "{color}, the Canvas color", and its Tooltip says so: "Canvas color" («Цвет холста») over the hex, chosen or not, where every other swatch's reads "Color" (ticket 0684); picking it leaves no margin visible. The chosen one is ringed with a check as in every BackgroundColorPicker.
+- **Remembered on the device**, as the Canvas color is: the position for the three, one Custom color for both themes. Not an Undo step.
+- **Three Canvas colors (ticket 1000; approved 2026-11-14, in the app since that ticket):** the picker offers Auto, the theme's three Canvas colors and Custom color, and a stored position moves by the CanvasBackground card's map (1, 2, 3, 4, 5 become 1, 2, 2, 1, 3).
 - **Where:** the Frame panel's new last section, **margin** (PanelSection, after settings, ticket 0852; summary "auto" or the color's name), and the **Margin color** button on the sheet, which opens the same picker in a popover under it (the shared popover look, 12px padding, `label` "margin color", the swatches, the name and hex line).
 - **What sits on it:** text and icons are `ink` and `body`; the rulers take the nearest grey to the look's own `ruler` at 4.5:1 or more against the margin color, the 5th numbers at 7:1, the rule the Custom Canvas color uses.
 
@@ -139,7 +139,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 ## Acceptance
 
 - [ ] The margin is 4 positions wide, filled with its color, with the inner border, in light, dark, high contrast and on a Custom Canvas color.
-- [ ] Auto follows the Canvas color; the picker in the Frame panel and on the sheet offers Auto, the five Canvas colors and Custom color, remembered on the device.
+- [ ] Auto follows the Canvas color; the picker in the Frame panel and on the sheet offers Auto, the three Canvas colors and Custom color, remembered on the device.
 - [ ] The top band holds Row progress, the Move bar and the tools; Row done there and in the Progress bar move the same pointer.
 - [ ] The title block edits the name, the Technique and the maker's name, shows the sizes and the lettered legend, and toggles Letters.
 - [ ] Rulers top, left and right; the current pass marked on its number, or by a tick on the Frame's line where it has none.

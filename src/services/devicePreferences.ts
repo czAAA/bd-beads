@@ -2,7 +2,7 @@ import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } f
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
 import { type Handedness, type InputMode } from '../domain/inputMode'
-import { BACKGROUND_POSITIONS } from '../domain/background'
+import { readPosition } from '../domain/background'
 import { migratedChoice, type CanvasChoice, type MarginChoice } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
@@ -20,9 +20,10 @@ interface Preference<T> {
   parse: (raw: string) => T | undefined
   /** The string to keep, or null to forget the saved one (the fallback applies again). */
   write: (value: T) => string | null
-  /** An earlier build's key and how its saved string reads now, for a preference whose values changed meaning. The
-   * old key is left as it was: older builds read it. */
-  earlier?: { key: string; parse: (raw: string, storage: PreferenceStorage) => T | undefined }
+  /** Earlier builds' keys, newest first, and how a string saved under each reads now, for a preference whose values
+   * changed meaning: the first found is read once and saved under `key`. The old keys are left as they were: older
+   * builds read them. */
+  earlier?: readonly { key: string; parse: (raw: string, storage: PreferenceStorage) => T | undefined }[]
 }
 
 function preference<T>(spec: Preference<T>): Preference<T> {
@@ -45,30 +46,36 @@ function offUntilOn(key: string): Preference<boolean> {
 /** How many backgrounds the first Canvas color list held, the highest number an earlier build stored. */
 const FIRST_LIST_SIZE = 6
 
+/** A stored Canvas or margin color position, from today's list of three or, `earlier`, from the list of five, moved to
+ * its nearest kept one (ticket 1000). */
+function storedPosition(raw: string, earlier = false): number | undefined {
+  return readPosition(Number(raw), earlier)
+}
+
 /** Every preference by its name: its storage key, its default and how it reads and writes. */
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: off until switched on, ticket 0921; an earlier "on" stays on). */
   rulers: offUntilOn('openbeads:rulers'),
   /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0055): on by default; a view setting only. */
   rowHighlight: onUntilOff('openbeads:row-highlight'),
-  /** The Canvas color (tickets 252, 554, 0653): a number, 1 to 5, so it survives a change of theme, or `custom`. The
-   * first list's number (1 to 6) is read once from its own key and moved by name. */
+  /** The device's last Canvas color pick (tickets 252, 554, 0653, 1000): a number, 1 to 3, so it survives a change of
+   * theme, or `custom`. The list of five's number (1 to 5) and the first list's (1 to 6) are each read once from their
+   * own keys and moved to their nearest kept one. */
   canvasBackground: preference<CanvasChoice>({
-    key: 'openbeads:canvas-background-2',
+    key: 'openbeads:canvas-background-3',
     fallback: 1,
-    parse: (raw) => {
-      if (raw === 'custom') return raw
-      const choice = Number(raw)
-      return Number.isInteger(choice) && choice >= 1 && choice <= BACKGROUND_POSITIONS ? choice : undefined
-    },
+    parse: (raw) => (raw === 'custom' ? raw : storedPosition(raw)),
     write: String,
-    earlier: {
-      key: 'openbeads:canvas-background',
-      parse: (raw, storage) => {
-        const choice = Number(raw)
-        return Number.isInteger(choice) && choice >= 1 && choice <= FIRST_LIST_SIZE ? migratedChoice(themeShown(storage), choice) : undefined
+    earlier: [
+      { key: 'openbeads:canvas-background-2', parse: (raw) => (raw === 'custom' ? raw : storedPosition(raw, true)) },
+      {
+        key: 'openbeads:canvas-background',
+        parse: (raw, storage) => {
+          const choice = Number(raw)
+          return Number.isInteger(choice) && choice >= 1 && choice <= FIRST_LIST_SIZE ? migratedChoice(themeShown(storage), choice) : undefined
+        },
       },
-    },
+    ],
   }),
   /** The last Custom color taken for the Canvas (ticket 0653), as `#rrggbb`: kept while a numbered one shows. */
   canvasCustomColor: preference<string | undefined>({
@@ -77,17 +84,15 @@ export const PREFERENCES = {
     parse: normalizeHex,
     write: (hex) => hex ?? null,
   }),
-  /** The Frame's margin color (ticket 0656, MarginSheet card): `auto` until one is picked, then a position in the theme's
-   * list, 1 to 5, as the Canvas color is, or `custom`. */
+  /** The Frame's margin color (tickets 0656, 1000, MarginSheet card): `auto` until one is picked, then a position in the
+   * theme's list, 1 to 3, as the Canvas color is, or `custom`. The list of five's number is read once from its own key
+   * and moved to its nearest kept one. */
   marginColor: preference<MarginChoice>({
-    key: 'openbeads:margin-color',
+    key: 'openbeads:margin-color-2',
     fallback: 'auto',
-    parse: (raw) => {
-      if (raw === 'auto' || raw === 'custom') return raw
-      const choice = Number(raw)
-      return Number.isInteger(choice) && choice >= 1 && choice <= BACKGROUND_POSITIONS ? choice : undefined
-    },
+    parse: (raw) => (raw === 'auto' || raw === 'custom' ? raw : storedPosition(raw)),
     write: String,
+    earlier: [{ key: 'openbeads:margin-color', parse: (raw) => (raw === 'auto' || raw === 'custom' ? raw : storedPosition(raw, true)) }],
   }),
   /** The last Custom color taken for the margin (ticket 0656), as `#rrggbb`, one for both themes. */
   marginCustomColor: preference<string | undefined>({
@@ -219,6 +224,15 @@ export interface DevicePreferences {
   forget: () => void
 }
 
+/** The value an earlier build saved for a preference, read from the newest of its earlier keys that holds one. */
+function movedFromEarlier<T>(spec: Preference<T>, storage: PreferenceStorage): T | undefined {
+  for (const earlier of spec.earlier ?? []) {
+    const raw = storage.getItem(earlier.key)
+    if (raw !== null) return earlier.parse(raw, storage)
+  }
+  return undefined
+}
+
 /** Preferences over a storage of their own: the Homepage's demo keeps its in memory (ticket 0797). */
 export function createDevicePreferences(storage: PreferenceStorage): DevicePreferences {
   const refs = new Map<PreferenceName, Ref<unknown>>()
@@ -228,9 +242,8 @@ export function createDevicePreferences(storage: PreferenceStorage): DevicePrefe
     try {
       const saved = readKey(storage, spec.key)
       if (saved !== null) value = spec.parse(saved) ?? spec.fallback
-      else if (spec.earlier) {
-        const earlier = storage.getItem(spec.earlier.key)
-        const moved = earlier === null ? undefined : spec.earlier.parse(earlier, storage)
+      else {
+        const moved = movedFromEarlier(spec, storage)
         if (moved !== undefined) {
           value = moved
           storage.setItem(spec.key, spec.write(moved) ?? '')

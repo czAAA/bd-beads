@@ -2,16 +2,16 @@ import { expect, test } from '@playwright/test'
 import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Canvas section open on a non-default background (tickets 252, 443): Linen in light, Ash (lightest dark, own
- * ruler/bead/rim colors) in dark. */
+/** The Canvas section open on a non-default background (tickets 252, 443, 1000): Stone in light, Slate (lightest dark)
+ * in dark, each with its own ruler and empty-bead colors. */
 for (const [scheme, choice, name] of [
-  ['light', 2, 'linen'],
-  ['dark', 4, 'ash'],
+  ['light', 2, 'stone'],
+  ['dark', 3, 'slate'],
 ] as const) {
   test(`canvas color picker open on ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: scheme, viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await page.addInitScript((value) => localStorage.setItem('openbeads:canvas-background-2', value), String(choice))
+    await page.addInitScript((value) => localStorage.setItem('openbeads:canvas-background-3', value), String(choice))
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await openStripPanel(page, 'strip-project')

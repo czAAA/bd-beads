@@ -41,35 +41,35 @@ async function flush() {
 }
 
 describe('BackgroundSection (ticket 0666)', () => {
-  it('is a radio group of five light swatches named "{name}, {n} of {count}", with the chosen one named under them', () => {
+  it('is a radio group of three light swatches named "{name}, {n} of {count}", with the chosen one named under them (ticket 1000)', () => {
     const wrapper = render()
     const swatches = wrapper.findAll('[role="radio"]')
-    expect(swatches.map((s) => s.attributes('aria-label'))).toEqual(['Studio, 1 of 5', 'Linen, 2 of 5', 'Stone, 3 of 5', 'Fog, 4 of 5', 'Pebble, 5 of 5'])
-    expect(swatches.map((s) => s.attributes('aria-checked'))).toEqual(['true', 'false', 'false', 'false', 'false'])
+    expect(swatches.map((s) => s.attributes('aria-label'))).toEqual(['Studio, 1 of 3', 'Stone, 2 of 3', 'Pebble, 3 of 3'])
+    expect(swatches.map((s) => s.attributes('aria-checked'))).toEqual(['true', 'false', 'false'])
     expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Studio #fafafa')
     expect(wrapper.find('[role="radiogroup"][aria-label="Canvas color"]').exists()).toBe(true)
   })
 
   it('shows the layer\'s own Background, each layer\'s apart, and keeps its position when the theme changes', async () => {
-    const project = withBackground(withBackground(framed(), 'canvas', 3), 'frame', 5)
+    const project = withBackground(withBackground(framed(), 'canvas', 3), 'frame', 2)
     setTheme('dark')
     await flush()
     const canvas = render(project).findAll('[role="radio"]')
-    expect(canvas[2].attributes('aria-label')).toBe('Midnight, 3 of 5')
+    expect(canvas[2].attributes('aria-label')).toBe('Slate, 3 of 3')
     expect(canvas[2].attributes('aria-checked')).toBe('true')
     const frame = render(project, 'frame')
     expect(frame.find('[role="radiogroup"][aria-label="Frame background"]').exists()).toBe(true)
-    expect(frame.findAll('[role="radio"]')[4].attributes('aria-checked')).toBe('true')
+    expect(frame.findAll('[role="radio"]')[1].attributes('aria-checked')).toBe('true')
   })
 
   it('shows the device\'s last pick on a layer saved without one', () => {
-    useCanvasBackground().remember(4)
-    expect(render().findAll('[role="radio"]')[3].attributes('aria-checked')).toBe('true')
+    useCanvasBackground().remember(2)
+    expect(render().findAll('[role="radio"]')[1].attributes('aria-checked')).toBe('true')
   })
 
   it('asks for the position of the swatch picked', async () => {
     const wrapper = render(framed(), 'frame')
-    await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
+    await wrapper.get('[data-testid="background-color-pebble"]').trigger('click')
     expect(wrapper.emitted('pick')).toEqual([[3]])
   })
 

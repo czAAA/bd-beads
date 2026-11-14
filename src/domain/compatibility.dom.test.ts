@@ -37,6 +37,7 @@ import projectFileV11 from './fixtures/project-file-v11-weave-settings.json?raw'
 import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?raw'
 import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
 import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.json?raw'
+import projectFileV14ThreeBackgrounds from './fixtures/project-file-v14-three-backgrounds.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import projectFileV13Drops from './fixtures/project-file-v13-drops.json?raw'
 import projectFileV13Mirror from './fixtures/project-file-v13-mirror.json?raw'
@@ -99,12 +100,14 @@ const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => co
  * (its rotation the Canvas's orientation) and its Frame with its Row progress, both with its Bead and
  * Letters, each layer named by the Project's id. */
 /** A stored value as this build writes it back: without the Bead shape every layer is now drawn without (ticket 0724),
- * and a Delica 11/0 copy with its sizes the right way round (ticket 0722). */
+ * a Delica 11/0 copy with its sizes the right way round (ticket 0722), and each Project marked as holding its
+ * Background positions in the list of three (ticket 1000). */
 function writtenBack(stored: string): unknown {
   return JSON.parse(stored, (key, value) => {
     // Written back as this build writes: file version 14 (ticket 0790).
     if (key === '' && typeof value?.version === 'number' && value.version >= 13) return { ...value, version: 14 }
     if (key === 'beadShape') return undefined
+    if (Array.isArray(value?.layers)) return { ...value, backgroundPositions: 3 }
     const oldDelica = value?.id === 'miyuki/delica/11-0' && value.widthMm === 1.6 && value.heightMm === 1.3
     return oldDelica ? { ...value, widthMm: 1.3, heightMm: 1.6 } : value
   })
@@ -592,11 +595,20 @@ describe('stored-data compatibility', () => {
       expect(JSON.parse(serializeProject(opened!, pictures))).toEqual(writtenBack(projectFileV14Reference))
     })
 
-    it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {
+    it('opens a version 12 file with each layer\'s own Background, its position moved to the nearest of the three, and writes it back so (tickets 0666, 1000)', () => {
       const [opened] = parseProjectsFile(projectFileV12Backgrounds).projects
+      // Stored as 3 in the list of five (Stone or Midnight), it shows as 2 (Stone or Ink); the Custom color is untouched.
+      expect(backgroundOf(opened!, 'canvas')).toBe(2)
+      expect(backgroundOf(opened!, 'frame')).toBe('#336699')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds.replace('"background":3', '"background":2'), 14))
+    })
+
+    it('opens a version 14 file that marks its Background positions as in the list of three as they are, and writes it back the same (ticket 1000)', () => {
+      const [opened] = parseProjectsFile(projectFileV14ThreeBackgrounds).projects
       expect(backgroundOf(opened!, 'canvas')).toBe(3)
       expect(backgroundOf(opened!, 'frame')).toBe('#336699')
-      expect(JSON.parse(serializeProject(opened!))).toEqual(withDrops(projectFileV12Backgrounds, 14))
+      expect(opened).not.toHaveProperty('backgroundPositions')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV14ThreeBackgrounds))
     })
 
     it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {

@@ -1,13 +1,14 @@
 import type { Background } from '../domain/project'
+import { nearestKept } from '../domain/background'
 import { BLACK, BLACK_WHITE_BALANCE, channelsOf, contrastRatio, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
 import type { ResolvedTheme } from '../theme/theme'
 import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
 import { autoMarginColor, marginLookOn, readableGrey, RULER_CONTRAST, STRONG_RULER_CONTRAST } from './marginLook'
 
-// The drawing area's background, picked by the person (tickets 252, 554; CanvasBackground card): five in light, five in
-// dark. The app stores the choice's number, not its color, so switching theme keeps the position. Colors are tokens
-// `canvas-bg-1`..`5` copied (a canvas can't read CSS); canvasBackgrounds.test.ts checks them.
-type ListedBackgroundId = 'studio' | 'linen' | 'stone' | 'fog' | 'pebble' | 'night' | 'ink' | 'midnight' | 'ash' | 'slate'
+// The drawing area's background, picked by the person (tickets 252, 554, 1000; CanvasBackground card): three in light,
+// three in dark. The app stores the choice's number, not its color, so switching theme keeps the position. Colors are
+// tokens `canvas-bg-1`..`3` copied (a canvas can't read CSS); canvasBackgrounds.test.ts checks them.
+type ListedBackgroundId = 'studio' | 'stone' | 'pebble' | 'night' | 'ink' | 'slate'
 
 /** What is stored: a position in the theme's list, or `custom` for the person's own Custom color (ticket 0653). */
 export type CanvasChoice = number | 'custom'
@@ -27,17 +28,13 @@ type ListedBackground = CanvasBackground & { id: ListedBackgroundId }
 
 const LIGHT: readonly ListedBackground[] = [
   { id: 'studio', color: '#fafafa' },
-  { id: 'linen', color: '#f7f3ec' },
   { id: 'stone', color: '#e6e3de', look: { emptyBead: '#cbc6bf', ruler: '#5c5c5c' } },
-  { id: 'fog', color: '#e3e7ec', look: { emptyBead: '#c9ced5', ruler: '#5c5c5c' } },
   { id: 'pebble', color: '#cdcac4', look: { emptyBead: '#b3afa8', ruler: '#444444', rulerStrong: '#262626' } },
 ]
 
 const DARK: readonly ListedBackground[] = [
   { id: 'night', color: '#202020' },
   { id: 'ink', color: '#0e0e0e', look: { emptyBead: '#2c2c2c', ruler: '#8c8c8c' } },
-  { id: 'midnight', color: '#12161c', look: { emptyBead: '#262c35', ruler: '#8c8c8c' } },
-  { id: 'ash', color: '#2c2b29', look: { emptyBead: '#3d3b38', ruler: '#a0a0a0' } },
   { id: 'slate', color: '#3b3e43', look: { emptyBead: '#50545a', ruler: '#b4b4b4' } },
 ]
 
@@ -143,16 +140,20 @@ export function canvasTheme(theme: ResolvedTheme, choice: CanvasChoice, customCo
   return look
 }
 
-// The first list had these names in this order (tickets 252, 284); the stored number meant one of them.
+// The first list had these names in this order (tickets 252, 284); the stored number meant one of them. The second
+// list (ticket 554) had five in each theme, before ticket 1000 kept three.
 const FIRST_LIGHT = ['studio', 'linen', 'sage', 'mist', 'blush']
 const FIRST_DARK = ['night', 'ink', 'midnight', 'olive', 'umber', 'ash']
+const FIVE_LIGHT = ['studio', 'linen', 'stone', 'fog', 'pebble']
+const FIVE_DARK = ['night', 'ink', 'midnight', 'ash', 'slate']
 
-/** The stored number in today's list for a number stored under the first one (ticket 554), moved by name: a dropped
- * background falls back to the theme's default, Mist becomes Fog, and Ash moves up from 6 to 4. */
+/** The stored number in today's list for a number stored under the first one, moved by name into the list of five
+ * (ticket 554: a dropped background falls back to the theme's default, Mist becomes Fog, Ash moves up from 6 to 4) and
+ * from there to its nearest kept one (ticket 1000). */
 export function migratedChoice(theme: ResolvedTheme, stored: number): number {
   const dark = theme === 'dark'
   const first = (dark ? FIRST_DARK : FIRST_LIGHT)[stored - 1]
   const renamed = first === 'mist' ? 'fog' : first
-  const index = canvasBackgrounds(dark ? 'dark' : 'light').findIndex((background) => background.id === renamed)
-  return index + 1 || 1
+  const index = (dark ? FIVE_DARK : FIVE_LIGHT).findIndex((name) => name === renamed)
+  return nearestKept(index + 1 || 1)
 }

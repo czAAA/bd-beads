@@ -8,7 +8,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import BackgroundColorPicker from '../palette/BackgroundColorPicker.vue'
 
 // A layer's Background picker (ADR 0079, tickets 0666, 0670; CanvasBackground and LayerSettings cards), in its Layer
-// settings. Five swatches in each theme and a Custom color, on the Background given; high contrast has one white canvas,
+// settings. Three swatches in each theme and a Custom color, on the Background given; high contrast has one white canvas,
 // so only a line saying so remains. It only asks.
 const props = defineProps<{
   /** The layer's Background as it shows: its own, or the device's last pick where it has none. */

@@ -299,7 +299,7 @@ export const en: Translations = {
       label: 'Canvas color',
       pickerLabel: 'Canvas color',
       swatchLabel: '{name}, {n} of {count}',
-      names: { studio: 'Studio', linen: 'Linen', stone: 'Stone', fog: 'Fog', pebble: 'Pebble', night: 'Night', ink: 'Ink', midnight: 'Midnight', ash: 'Ash', slate: 'Slate' },
+      names: { studio: 'Studio', stone: 'Stone', pebble: 'Pebble', night: 'Night', ink: 'Ink', slate: 'Slate' },
     },
     hint: {
       scrollOr: 'scroll or',

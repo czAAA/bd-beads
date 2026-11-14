@@ -13,7 +13,7 @@ interface BackgroundSwatch {
   id: string
   color: string
   name: string
-  /** Its accessible name, e.g. "Linen, 2 of 5". */
+  /** Its accessible name, e.g. "Stone, 2 of 3". */
   label: string
   /** Drawn split corner to corner, this color top left and `color` bottom right: Auto shows what it does. */
   split?: string

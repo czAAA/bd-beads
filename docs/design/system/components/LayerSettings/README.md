@@ -12,7 +12,7 @@ The one section that sets a layer (ADR 0079, ticket 0670): the Canvas or a Frame
 1. **Technique:** a PanelPicker (the `pattern` icon) offering every Technique, or on a Custom frame only those its Frame shape supports. Then one row per setting the Technique describes, a SettingStepper (Drop for peyote and for brick stitch, each Technique's its own, ticket 0691; none in a Starter's setup for a shape no Drop changes, ticket 0872), its label above a small Stepper, lined up with the picker (10px in). Where the setting's words carry help, an Info button follows its label (ticket 0844): Drop's is "How many beads each stitch carries: 1 for plain peyote, 2 for two-drop." (brick stitch's says "plain brick stitch"), from the setting's words, never from code for one Technique.
 2. **Shape settings** (a Custom frame only): one `panel-row` per setting, its name (`control`) at the left and a Stepper at the right (Rounds, Part size or Rows; a Fringe earring's Width, Top rows and Fringe length), then the Fringe style as a SegmentedControl of the setup's names under its label. Shrinking keeps what is given up as Folded beads, without asking; the steppers commit once, as one Undo step, when the panel closes.
 3. **Bead:** the heading "Bead" (`label` style, `muted`), then the three PanelPicker buttons Brand, Type and Size on one row (BeadPicker card). A pick only asks: the Project panel and the Frame panel open Replace bead? for that layer (ConfirmDialogs card), and the pickers keep showing the layer's Bead until it is confirmed.
-4. **Background:** the heading "Background" (`label` style, `muted`), then the BackgroundColorPicker (CanvasBackground card): the five colors of the theme and the Custom color tile, the chosen one's name and hex; in high contrast the one `body` line "The Canvas stays white in high contrast.". Its radio group is named "Canvas color" for the Canvas and "Frame background" for a Frame.
+4. **Background:** the heading "Background" (`label` style, `muted`), then the BackgroundColorPicker (CanvasBackground card): the three colors of the theme and the Custom color tile, the chosen one's name and hex; in high contrast the one `body` line "The Canvas stays white in high contrast.". Its radio group is named "Canvas color" for the Canvas and "Frame background" for a Frame.
 
 The groups are 8px apart. The Bead and Background groups are named groups for screen readers, named by their headings.
 
@@ -28,7 +28,7 @@ Where the section is a PanelSection, its folded summary is the layer's Technique
 
 ## Copy
 
-**Three colors (ticket 1000; approved 2026-11-14, not yet in the app):** the Background picker shows the theme's three colors and the Custom color tile (CanvasBackground card).
+**Three colors (ticket 1000; approved 2026-11-14, in the app since that ticket):** the Background picker shows the theme's three colors and the Custom color tile (CanvasBackground card).
 
 English: Technique, Drop, Bead, Brand, Type, Size, Background, Canvas color, Frame background, Settings (the Frame panel's section). Every language: `writing.md` (Layer settings copy, ticket 0670).
 

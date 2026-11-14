@@ -76,10 +76,10 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     await wrapper.get('[data-testid="canvas-technique"] [data-value="peyote"]').trigger('click')
     await wrapper.get('[data-testid="bead-brand"] button').trigger('click')
     await wrapper.get('[data-testid="bead-brand"] [data-value="miyuki"]').trigger('click')
-    await wrapper.get('[data-testid="canvas-section"] [data-testid="background-color-fog"]').trigger('click')
+    await wrapper.get('[data-testid="canvas-section"] [data-testid="background-color-pebble"]').trigger('click')
     expect(wrapper.emitted('set-technique')).toEqual([['canvas', 'peyote']])
     expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe('canvas')
-    expect(wrapper.emitted('set-background')).toEqual([['canvas', 4]])
+    expect(wrapper.emitted('set-background')).toEqual([['canvas', 3]])
   })
 
   it('shows the Canvas\'s own Weave under a Frame woven otherwise (ticket 0670)', () => {

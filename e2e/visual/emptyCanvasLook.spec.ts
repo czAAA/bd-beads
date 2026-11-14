@@ -46,13 +46,13 @@ const DRAFT_PAN_ACROSS = 0.4
 
 type Rotation = 0 | 90 | 180 | 270
 
-/** Each Technique, every quarter turn, the three themes and Backgrounds other than the default (5 is Pebble in light,
+/** Each Technique, every quarter turn, the three themes and Backgrounds other than the default (3 is Pebble in light,
  * Slate in dark; a Custom color draws in the look it reads best in). */
 const CASES: { technique: Technique; rotation: Rotation; scheme: 'light' | 'dark' | 'contrast'; background?: Background }[] = [
   { technique: 'loom', rotation: 0, scheme: 'dark' },
-  { technique: 'peyote', rotation: 0, scheme: 'light', background: 5 },
+  { technique: 'peyote', rotation: 0, scheme: 'light', background: 3 },
   { technique: 'peyote', rotation: 90, scheme: 'dark' },
-  { technique: 'brick', rotation: 0, scheme: 'dark', background: 5 },
+  { technique: 'brick', rotation: 0, scheme: 'dark', background: 3 },
   { technique: 'loom', rotation: 270, scheme: 'contrast' },
   { technique: 'brick', rotation: 180, scheme: 'light', background: '#7a4b8c' },
 ]

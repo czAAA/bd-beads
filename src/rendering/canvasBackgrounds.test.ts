@@ -13,9 +13,9 @@ const token = (n: number, theme: 'light' | 'dark') => tokens.color.tokens.find((
 const contrast = (a: string, b: string) => contrastRatio(channelsOf(a), channelsOf(b))
 
 describe('Canvas color backgrounds', () => {
-  it('offers five in light, five in dark and none in high contrast', () => {
-    expect(canvasBackgrounds('light').map((b) => b.id)).toEqual(['studio', 'linen', 'stone', 'fog', 'pebble'])
-    expect(canvasBackgrounds('dark').map((b) => b.id)).toEqual(['night', 'ink', 'midnight', 'ash', 'slate'])
+  it('offers three in light, three in dark and none in high contrast (ticket 1000)', () => {
+    expect(canvasBackgrounds('light').map((b) => b.id)).toEqual(['studio', 'stone', 'pebble'])
+    expect(canvasBackgrounds('dark').map((b) => b.id)).toEqual(['night', 'ink', 'slate'])
     expect(canvasBackgrounds('contrast')).toEqual([])
   })
 
@@ -24,19 +24,19 @@ describe('Canvas color backgrounds', () => {
     expect(canvasTheme('dark', 1)).toEqual({ ...PROJECT_THEMES.dark, background: PROJECT_THEMES.dark.canvas })
   })
 
-  it.each(['light', 'dark'] as const)('copies canvas-bg-1 to canvas-bg-5 of tokens.json in %s', (theme) => {
+  it.each(['light', 'dark'] as const)('copies canvas-bg-1 to canvas-bg-3 of tokens.json in %s', (theme) => {
     canvasBackgrounds(theme).forEach((background, index) => expect(background.color, background.id).toBe(token(index + 1, theme)))
-    expect(canvasBackgrounds(theme)).toHaveLength(5)
+    expect(canvasBackgrounds(theme)).toHaveLength(3)
   })
 
-  it('has no sixth token any more', () => {
-    expect(tokens.color.tokens.some((entry) => entry.name === 'canvas-bg-6')).toBe(false)
+  it.each([4, 5, 6])('has no token canvas-bg-%i any more', (n) => {
+    expect(tokens.color.tokens.some((entry) => entry.name === `canvas-bg-${n}`)).toBe(false)
   })
 
   it('keeps the position when the theme changes', () => {
-    expect(canvasBackgroundOf('light', 3)?.id).toBe('stone')
-    expect(canvasBackgroundOf('dark', 3)?.id).toBe('midnight')
-    expect(shownChoice('light', 6)).toBe(1)
+    expect(canvasBackgroundOf('light', 3)?.id).toBe('pebble')
+    expect(canvasBackgroundOf('dark', 3)?.id).toBe('slate')
+    expect(shownChoice('light', 4)).toBe(1)
   })
 
   it('draws high contrast white whatever is stored', () => {
@@ -51,15 +51,11 @@ describe('Canvas color backgrounds', () => {
 
   it.each([
     ['light', 1, '#d8d2cc', '#6a6a6a'],
-    ['light', 2, '#d8d2cc', '#6a6a6a'],
-    ['light', 3, '#cbc6bf', '#5c5c5c'],
-    ['light', 4, '#c9ced5', '#5c5c5c'],
-    ['light', 5, '#b3afa8', '#444444'],
+    ['light', 2, '#cbc6bf', '#5c5c5c'],
+    ['light', 3, '#b3afa8', '#444444'],
     ['dark', 1, '#3c3c3c', '#8c8c8c'],
     ['dark', 2, '#2c2c2c', '#8c8c8c'],
-    ['dark', 3, '#262c35', '#8c8c8c'],
-    ['dark', 4, '#3d3b38', '#a0a0a0'],
-    ['dark', 5, '#50545a', '#b4b4b4'],
+    ['dark', 3, '#50545a', '#b4b4b4'],
   ] as const)('gives %s background %i its own empty bead %s and ruler %s', (theme, choice, emptyBead, ruler) => {
     expect(canvasTheme(theme, choice)).toMatchObject({ emptyBead, positionMark: emptyBead, ruler })
   })
@@ -68,7 +64,7 @@ describe('Canvas color backgrounds', () => {
     ['light', 4],
     ['dark', 10],
   ] as const)('keeps rulers at 4.5:1 and the row marker at 4:1 (light, royal blue, ticket 369) or 10:1 (dark) on all %s backgrounds (Pebble and Slate are the darkest ones, ticket 554)', (theme, marker) => {
-    for (let choice = 1; choice <= 5; choice += 1) {
+    for (let choice = 1; choice <= canvasBackgrounds(theme).length; choice += 1) {
       const look = canvasTheme(theme, choice)
       const id = canvasBackgroundOf(theme, choice)?.id
       expect(contrast(look.ruler, look.canvas), `ruler on ${id}`).toBeGreaterThanOrEqual(4.5)
@@ -111,24 +107,25 @@ describe('Canvas color backgrounds', () => {
     ['light', 1, 1],
     ['light', 2, 2],
     ['light', 3, 1],
-    ['light', 4, 4],
+    ['light', 4, 1],
     ['light', 5, 1],
     ['light', 6, 1],
     ['dark', 1, 1],
-    ['dark', 3, 3],
+    ['dark', 2, 2],
+    ['dark', 3, 2],
     ['dark', 4, 1],
     ['dark', 5, 1],
-    ['dark', 6, 4],
-  ] as const)('moves a first-list %s choice %i to %i by name', (theme, stored, moved) => {
+    ['dark', 6, 1],
+  ] as const)('moves a first-list %s choice %i to %i, by name into the list of five and then to its nearest kept one', (theme, stored, moved) => {
     expect(migratedChoice(theme, stored)).toBe(moved)
   })
 })
 
 describe('the margin color (ticket 0656, MarginSheet card)', () => {
   it.each([
-    ['dark', 5, '#45484c'],
+    ['dark', 3, '#45484c'],
     ['dark', 1, '#2b2b2b'],
-    ['light', 2, '#ebe7e0'],
+    ['light', 2, '#dbd8d3'],
     ['light', 1, '#eeeeee'],
   ] as const)('is Auto by default: %s background %i one step off, %s', (theme, choice, margin) => {
     expect(marginColorOf(theme, choice)).toBe(margin)
@@ -141,9 +138,9 @@ describe('the margin color (ticket 0656, MarginSheet card)', () => {
     expect(marginColorOf('dark', 'custom', '#fde68a')).toBe('#f0db83')
   })
 
-  it('takes a picked one of the theme\'s five, by position, or the person\'s Custom color', () => {
-    expect(marginColorOf('light', 1, undefined, { choice: 3 })).toBe('#e6e3de')
-    expect(marginColorOf('dark', 1, undefined, { choice: 3 })).toBe('#12161c')
+  it('takes a picked one of the theme\'s three, by position, or the person\'s Custom color', () => {
+    expect(marginColorOf('light', 1, undefined, { choice: 3 })).toBe('#cdcac4')
+    expect(marginColorOf('dark', 1, undefined, { choice: 3 })).toBe('#3b3e43')
     expect(marginColorOf('dark', 1, undefined, { choice: 'custom', customColor: '#7a2e8c' })).toBe('#7a2e8c')
     expect(marginColorOf('dark', 1, undefined, { choice: 'custom' })).toBe('#2b2b2b')
   })

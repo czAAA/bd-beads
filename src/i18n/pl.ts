@@ -301,7 +301,7 @@ export const pl: Translations = {
       label: 'Kolor płótna',
       pickerLabel: 'kolor płótna',
       swatchLabel: '{name}, {n} z {count}',
-      names: { studio: 'Pracownia', linen: 'Len', stone: 'Kamień', fog: 'Mgła', pebble: 'Otoczak', night: 'Noc', ink: 'Atrament', midnight: 'Północ', ash: 'Popiół', slate: 'Łupek' },
+      names: { studio: 'Pracownia', stone: 'Kamień', pebble: 'Otoczak', night: 'Noc', ink: 'Atrament', slate: 'Łupek' },
     },
     hint: {
       scrollOr: 'przewiń lub',

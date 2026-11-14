@@ -7,7 +7,7 @@ import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf } from '../domain/layerRecord'
+import { backgroundOf, canvasOf, frameOf, withBackground } from '../domain/layerRecord'
 import { layersView } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { encodeProject } from '../domain/projectEncoding'
@@ -415,6 +415,51 @@ describe('a library opened with some Projects kept sealed (ticket 0716)', () => 
     expect(storedProjectCount()).toBe(2)
     localStorage.setItem(STORAGE_KEY, 'not json')
     expect(storedProjectCount()).toBe(0)
+  })
+})
+
+describe('a layer Background a library stored before ticket 1000', () => {
+  /** A Project as an earlier build stored it: its layers' positions in the list of five, with no mark of the list. */
+  function storedEarlier(canvas: number | string, frame: number | string) {
+    const { backgroundPositions: _list, ...stored } = encodeProject(withBackground(withBackground(makeProject(), 'canvas', 1), 'frame', 1))
+    return { ...stored, layers: [{ ...stored.layers[0]!, background: canvas }, { ...stored.layers[1]!, background: frame }] }
+  }
+
+  it.each([
+    [1, 1],
+    [2, 2],
+    [3, 2],
+    [4, 1],
+    [5, 3],
+  ])('opens a position stored as %i as %i, a Custom color untouched', (stored, moved) => {
+    storeLibrary([], [storedEarlier(stored, '#336699')])
+
+    const [project] = loadProjects()
+
+    expect(backgroundOf(project!, 'canvas')).toBe(moved)
+    expect(backgroundOf(project!, 'frame')).toBe('#336699')
+  })
+
+  it('never moves it twice: opened, saved and opened again, it stays where the first open put it', () => {
+    storeLibrary([], [storedEarlier(5, 3)])
+
+    saveProjects(loadProjects())
+    const [project] = loadProjects()
+
+    expect(backgroundOf(project!, 'canvas')).toBe(3)
+    expect(backgroundOf(project!, 'frame')).toBe(2)
+  })
+
+  it('moves one kept sealed when it opens, and writes it back as it was stored', () => {
+    const earlier = storedEarlier(4, 5)
+    storeLibrary([], [earlier])
+    const { sealed } = browserLibraryStore.open(() => true)
+
+    const project = browserLibraryStore.unseal(sealed[0]!)
+    browserLibraryStore.save([], sealed)
+
+    expect([backgroundOf(project, 'canvas'), backgroundOf(project, 'frame')]).toEqual([1, 3])
+    expect((JSON.parse(localStorage.getItem(STORAGE_KEY)!) as { patterns: unknown[] }).patterns).toEqual([earlier])
   })
 })
 
