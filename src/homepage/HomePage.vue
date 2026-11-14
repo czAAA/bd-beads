@@ -281,7 +281,7 @@ onMounted(() => {
   remeasureFree()
   void document.fonts?.ready.then(remeasureFree)
 })
-watch([locale, zoomPercent, bodySize.width, bodySize.height, () => section.value === plansIndex.value], remeasureFree)
+watch([locale, zoomPercent, bodySize.width, bodySize.height, () => section.value === plansIndex.value, isNew], remeasureFree)
 
 // More below (tickets 0826, 0870): only while the section shown scrolls further; a press scrolls it on.
 const moreBelow = useMoreBelow({ shown: shownSection })

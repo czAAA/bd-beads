@@ -5,11 +5,12 @@ import AppIcon from '../components/ui/AppIcon.vue'
 import { fillBlanks } from '../domain/fillBlanks'
 import { useI18n } from '../i18n/useI18n'
 import FreeList from './FreeList.vue'
+import FreeToUse from './FreeToUse.vue'
 import { freeListRows } from './freeList'
 
-// The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account's button is the strip's way in, Make
-// your first Project with none saved and Open the editor once there are (ticket 0923); it lists everything free, grown
-// as the page scrolls (0742). Free account and Pro are greyed out, a Coming soon stamp for a list; stacked on a phone.
+// The plan tiles (ticket 220; Homepage card): "Three ways to use it". No account opens the editor and lists everything
+// free, grown as the page scrolls (0742); Free account and Pro greyed out, a Coming soon stamp each; stacked on a phone.
+// A new visitor off a phone has one plan, so no tiles: Free to use, the whole list beside its way in (ticket 0947).
 const props = defineProps<{
   /** The free list's height, in the tile's own px, as far as the page has grown it; unset, the whole list. */
   freeHeight?: number
@@ -47,84 +48,81 @@ defineExpose({ freeWindow, freeTile })
 
 <template>
   <section class="plans" :class="{ 'plans--phone': phone }" aria-labelledby="homepage-plans" data-testid="homepage-plans">
-    <header class="plans__head">
-      <h2 id="homepage-plans" class="plans__heading">{{ headingCopy.heading }}</h2>
-      <p class="plans__why" data-testid="plans-why"><AppIcon name="info" :size="16" />{{ headingCopy.why }}</p>
-    </header>
-    <div class="plans__grid">
-      <article ref="freeTile" class="plan plan--current" aria-current="true" data-testid="plan-no-account">
-        <span class="plan__here" aria-hidden="true" data-testid="plan-you-are-here">
-          <span class="plan__note">{{ t.homepage.plans.youAreHere }}</span>
-          <svg class="plan__arrow" width="36" height="30" viewBox="0 0 36 30"><path d="M4 4 C 10 14, 18 20, 30 22 M20 24 L31 22 L24 13" /></svg>
-        </span>
-        <span class="plan__strand" aria-hidden="true"><span class="plan__bead" /></span>
-        <h3 class="plan__name">
-          {{ t.homepage.plans.tiles[0].name
-          }}<span v-if="phone" class="plan__here-chip" aria-hidden="true" data-testid="plan-here-chip">{{ t.homepage.plans.youAreHere }}</span>
-        </h3>
-        <p class="plan__price">
-          <b>{{ t.homepage.plans.tiles[0].price }}</b
-          ><span>{{ t.homepage.plans.tiles[0].meta }}</span>
-        </p>
-        <p class="plan__text">{{ t.homepage.plans.tiles[0].text }}</p>
-        <template v-if="!phone">
-          <!-- The longer label may take two lines in the tile's third of a tablet's width: `data-wrap-ok` tells the fit check so. -->
-          <AppButton v-if="isNew" class="plan__button" variant="primary" data-wrap-ok @click="emit('makeFirstProject')">
-            {{ t.homepage.makeFirstProject }}
-          </AppButton>
-          <AppButton v-else class="plan__button" variant="primary" @click="emit('openEditor')">
+    <FreeToUse v-if="isNew && !phone" @make-first-project="emit('makeFirstProject')" />
+    <template v-else>
+      <header class="plans__head">
+        <h2 id="homepage-plans" class="plans__heading">{{ headingCopy.heading }}</h2>
+        <p class="plans__why" data-testid="plans-why"><AppIcon name="info" :size="16" />{{ headingCopy.why }}</p>
+      </header>
+      <div class="plans__grid">
+        <article ref="freeTile" class="plan plan--current" aria-current="true" data-testid="plan-no-account">
+          <span class="plan__here" aria-hidden="true" data-testid="plan-you-are-here">
+            <span class="plan__note">{{ t.homepage.plans.youAreHere }}</span>
+            <svg class="plan__arrow" width="36" height="30" viewBox="0 0 36 30"><path d="M4 4 C 10 14, 18 20, 30 22 M20 24 L31 22 L24 13" /></svg>
+          </span>
+          <span class="plan__strand" aria-hidden="true"><span class="plan__bead" /></span>
+          <h3 class="plan__name">
+            {{ t.homepage.plans.tiles[0].name
+            }}<span v-if="phone" class="plan__here-chip" aria-hidden="true" data-testid="plan-here-chip">{{ t.homepage.plans.youAreHere }}</span>
+          </h3>
+          <p class="plan__price">
+            <b>{{ t.homepage.plans.tiles[0].price }}</b
+            ><span>{{ t.homepage.plans.tiles[0].meta }}</span>
+          </p>
+          <p class="plan__text">{{ t.homepage.plans.tiles[0].text }}</p>
+          <AppButton v-if="!phone" class="plan__button" variant="primary" @click="emit('openEditor')">
             {{ t.homepage.plans.tiles[0].button }}
           </AppButton>
-        </template>
-        <p id="homepage-free" class="plan__free-head">{{ t.homepage.plans.free.heading }}</p>
-        <div
-          ref="freeWindow"
-          class="plan__free"
-          :class="{ 'plan__free--fading': !freeOpen }"
-          :style="freeHeight === undefined ? undefined : { height: `${freeHeight}px` }"
-          data-testid="free-window"
-        >
-          <FreeList :rows="shownRows" :more="cut ? undefined : t.homepage.plans.free.more" labelled-by="homepage-free" />
-        </div>
-        <AppButton
-          v-if="cut"
-          class="plan__show-all"
-          variant="text"
-          trailing-icon="chevron-down"
-          data-testid="free-show-all"
-          @click="allShown = true"
-        >
-          {{ fillBlanks(t.homepage.plans.free.showAll, { count: rows.length }) }}
-        </AppButton>
-      </article>
-      <article v-for="(off, i) in offShown" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
-        <span class="plan__strand" aria-hidden="true">
-          <template v-for="bead in i + 2" :key="bead">
-            <span v-if="bead > 1" class="plan__thread" />
-            <span class="plan__bead" />
-          </template>
-        </span>
-        <h3 class="plan__name">{{ t.homepage.plans.tiles[i + 1]!.name }}</h3>
-        <p class="plan__price"><b>{{ t.homepage.plans.tiles[i + 1]!.price }}</b></p>
-        <p class="plan__text">{{ t.homepage.plans.tiles[i + 1]!.text }}</p>
-        <AppButton v-if="!phone" class="plan__button" disabled>{{ t.homepage.plans.tiles[i + 1]!.button }}</AppButton>
-        <!-- The stamp: a rubber stamp's two borders and its word, the ink worn by noise where the paper didn't take it; on
-             a phone a chip in its place. -->
-        <span v-if="phone" class="plan__soon" data-testid="plan-coming-soon">{{ t.homepage.plans.comingSoon }}</span>
-        <svg v-else class="plan__stamp" role="img" :aria-label="t.homepage.plans.comingSoon" viewBox="0 0 236 96">
-          <filter :id="`coming-soon-ink-${off.id}`" x="-4%" y="-8%" width="108%" height="116%">
-            <feTurbulence type="fractalNoise" :baseFrequency="off.frequency" numOctaves="2" :seed="off.seed" result="noise" />
-            <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -3 0 0 0 2.15" result="ink" />
-            <feComposite in="SourceGraphic" in2="ink" operator="in" />
-          </filter>
-          <g :filter="`url(#coming-soon-ink-${off.id})`">
-            <rect x="4" y="14" width="228" height="68" rx="8" stroke-width="5" />
-            <rect x="12" y="22" width="212" height="52" rx="4" stroke-width="1.5" />
-            <text x="118" y="58" text-anchor="middle">{{ t.homepage.plans.comingSoon.toLocaleUpperCase(locale) }}</text>
-          </g>
-        </svg>
-      </article>
-    </div>
+          <p id="homepage-free" class="plan__free-head">{{ t.homepage.plans.free.heading }}</p>
+          <div
+            ref="freeWindow"
+            class="plan__free"
+            :class="{ 'plan__free--fading': !freeOpen }"
+            :style="freeHeight === undefined ? undefined : { height: `${freeHeight}px` }"
+            data-testid="free-window"
+          >
+            <FreeList :rows="shownRows" :more="cut ? undefined : t.homepage.plans.free.more" labelled-by="homepage-free" />
+          </div>
+          <AppButton
+            v-if="cut"
+            class="plan__show-all"
+            variant="text"
+            trailing-icon="chevron-down"
+            data-testid="free-show-all"
+            @click="allShown = true"
+          >
+            {{ fillBlanks(t.homepage.plans.free.showAll, { count: rows.length }) }}
+          </AppButton>
+        </article>
+        <article v-for="(off, i) in offShown" :key="off.id" class="plan plan--off" aria-disabled="true" :data-testid="`plan-${off.id}`">
+          <span class="plan__strand" aria-hidden="true">
+            <template v-for="bead in i + 2" :key="bead">
+              <span v-if="bead > 1" class="plan__thread" />
+              <span class="plan__bead" />
+            </template>
+          </span>
+          <h3 class="plan__name">{{ t.homepage.plans.tiles[i + 1]!.name }}</h3>
+          <p class="plan__price"><b>{{ t.homepage.plans.tiles[i + 1]!.price }}</b></p>
+          <p class="plan__text">{{ t.homepage.plans.tiles[i + 1]!.text }}</p>
+          <AppButton v-if="!phone" class="plan__button" disabled>{{ t.homepage.plans.tiles[i + 1]!.button }}</AppButton>
+          <!-- The stamp: a rubber stamp's two borders and its word, the ink worn by noise where the paper didn't take it; on
+               a phone a chip in its place. -->
+          <span v-if="phone" class="plan__soon" data-testid="plan-coming-soon">{{ t.homepage.plans.comingSoon }}</span>
+          <svg v-else class="plan__stamp" role="img" :aria-label="t.homepage.plans.comingSoon" viewBox="0 0 236 96">
+            <filter :id="`coming-soon-ink-${off.id}`" x="-4%" y="-8%" width="108%" height="116%">
+              <feTurbulence type="fractalNoise" :baseFrequency="off.frequency" numOctaves="2" :seed="off.seed" result="noise" />
+              <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -3 0 0 0 2.15" result="ink" />
+              <feComposite in="SourceGraphic" in2="ink" operator="in" />
+            </filter>
+            <g :filter="`url(#coming-soon-ink-${off.id})`">
+              <rect x="4" y="14" width="228" height="68" rx="8" stroke-width="5" />
+              <rect x="12" y="22" width="212" height="52" rx="4" stroke-width="1.5" />
+              <text x="118" y="58" text-anchor="middle">{{ t.homepage.plans.comingSoon.toLocaleUpperCase(locale) }}</text>
+            </g>
+          </svg>
+        </article>
+      </div>
+    </template>
   </section>
 </template>
 
