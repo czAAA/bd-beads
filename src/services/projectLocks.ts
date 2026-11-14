@@ -1,9 +1,19 @@
 /** Which tab has a Project open first (ticket 0834): the browser's Web Locks, held by a tab while it has the Project
- * open and let go when it opens another one or closes. A tab that finds the lock taken waits in line for it. */
+ * open and let go when it opens another one or closes. A tab that finds the lock taken waits in line for it, or takes
+ * it over (ticket 0937), and the tab it was taken from then waits in line for it back. */
 export interface ProjectLocks {
-  /** Asks for `id` for this tab. `onHeld` hears whether this tab has it, false while another tab does, and true once
-   * that one lets it go. Gives back the way to let it go, or stop waiting; `onHeld` hears nothing after. */
-  claim: (id: string, onHeld: (held: boolean) => void) => () => void
+  /** Asks for `id` for this tab. `onHeld` hears whether this tab has it: false while another tab does, true once that
+   * one lets it go or this tab takes it over, false again if another tab takes it over. `onHeld` hears nothing after
+   * `letGo`, which lets the Project go or stops waiting for it. */
+  claim: (id: string, onHeld: (held: boolean) => void) => ProjectClaim
+}
+
+/** One tab's claim of one Project. */
+export interface ProjectClaim {
+  /** Lets the Project go, or stops waiting for it. */
+  letGo: () => void
+  /** Takes the Project from the tab that has it (Work here instead, ticket 0937). A no-op once let go. */
+  takeOver: () => void
 }
 
 /** Locks for a page that is the only one with its Projects (the Homepage's demo) or a browser without Web Locks: every
@@ -11,7 +21,7 @@ export interface ProjectLocks {
 export const soleProjectLocks: ProjectLocks = {
   claim: (_id, onHeld) => {
     onHeld(true)
-    return () => undefined
+    return { letGo: () => undefined, takeOver: () => undefined }
   },
 }
 
@@ -23,9 +33,11 @@ export function webProjectLocks(locks: LockManager): ProjectLocks {
   return {
     claim(id, onHeld) {
       const name = `openbeads:project:${id}`
-      const waiting = new AbortController()
+      let waiting: AbortController | undefined
       let released = false
       let letGo: () => void = () => undefined
+      /** Every request this claim made, settled once the browser has let go of all they held. */
+      const requests: Promise<unknown>[] = []
       // The lock is held for as long as the promise its callback returns is pending.
       const hold = () => {
         onHeld(true)
@@ -33,21 +45,50 @@ export function webProjectLocks(locks: LockManager): ProjectLocks {
           letGo = resolve
         })
       }
-      const ask = () =>
-        locks.request(name, { ifAvailable: true }, (lock) => {
+      /** Asks for the lock and holds it once given. A lock another tab takes over (its request then fails) is waited
+       * for again, so it comes back here once that tab lets it go. */
+      const request = (options: LockOptions): Promise<unknown> => {
+        let given = false
+        return locks
+          .request(name, options, (lock) => {
+            if (released) return
+            if (!lock) {
+              onHeld(false)
+              // Returned, so this request settles only once the wait and any hold after it are over.
+              return wait()
+            }
+            given = true
+            return hold()
+          })
+          // A request fails only by an abort: this claim's own (let go, or giving way to a take-over), or, once given,
+          // another tab's take-over.
+          .catch(() => {
+            if (!given || released) return
+            onHeld(false)
+            return wait()
+          })
+      }
+      const wait = () => {
+        waiting = new AbortController()
+        return request({ signal: waiting.signal })
+      }
+      requests.push((lettingGo.get(name) ?? Promise.resolve()).then(() => request({ ifAvailable: true })))
+      return {
+        letGo() {
+          released = true
+          waiting?.abort()
+          letGo()
+          const settled = Promise.all(requests)
+          lettingGo.set(name, settled)
+          void settled.then(() => lettingGo.get(name) === settled && lettingGo.delete(name))
+        },
+        takeOver() {
           if (released) return
-          if (lock) return hold()
-          onHeld(false)
-          // Returned, so this request settles only once the wait and any hold after it are over.
-          return locks.request(name, { signal: waiting.signal }, () => (released ? undefined : hold())).catch(() => undefined)
-        })
-      const asked = (lettingGo.get(name) ?? Promise.resolve()).then(ask).catch(() => undefined)
-      return () => {
-        released = true
-        waiting.abort()
-        letGo()
-        lettingGo.set(name, asked)
-        void asked.then(() => lettingGo.get(name) === asked && lettingGo.delete(name))
+          // The wait in line gives way to the request that takes the lock from the other tab.
+          waiting?.abort()
+          waiting = undefined
+          requests.push(request({ steal: true }))
+        },
       }
     },
   }

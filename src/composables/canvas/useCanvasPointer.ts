@@ -33,6 +33,10 @@ export interface CanvasPointerDeps {
   pickColorAt: (row: number, column: number, layer?: Layer) => boolean
   /** The Mirror setting (ticket 0703): the hover preview shows every counterpart of the hovered bead. */
   mirror: () => MirrorSetting
+  /** Whether the Canvas takes no press (open in another tab, ticket 0937): no tool acts, and no preview shows. */
+  readOnly?: () => boolean
+  /** Hears a press the read-only Canvas took no notice of, to say why. */
+  onReadOnlyPress?: () => void
 }
 
 /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0020): hover preview and
@@ -60,7 +64,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   // The hover preview: the block Paste would stamp (ticket 31), or the cell Paint/Fill would touch (tickets 22/23). Beads in rows already woven are left out (ticket 33).
   const previewCells = computed<PreviewCell[]>(() => {
     const project = deps.currentProject()
-    if (!project || !hoveredCell.value) {
+    if (!project || !hoveredCell.value || deps.readOnly?.()) {
       return []
     }
     const finished = finishedRowsOf(project)
@@ -71,7 +75,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   // out those in rows already woven as the cells above do.
   const previewStamp = computed<PasteStamp | undefined>(() => {
     const project = deps.currentProject()
-    if (!project || !hoveredCell.value || deps.activeTool() !== 'select') {
+    if (!project || !hoveredCell.value || deps.activeTool() !== 'select' || deps.readOnly?.()) {
       return undefined
     }
     const stamp = deps.pastePreviewStamp(project, hoveredCell.value)
@@ -93,6 +97,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   // Ctrl/Cmd+V (ticket 92): pastes at the hovered cell under any tool. Claims the chord from the browser only when
   // something was pasted, so a no-op leaves the browser's own handling alone.
   function pasteAtPointer(event: KeyboardEvent) {
+    if (deps.readOnly?.()) return
     const hovered = hoveredCell.value
     const project = deps.currentProject()
     // Select hovers cells; every other tool hovers beads, which a Custom frame names by round and place (ticket 0594).
@@ -109,6 +114,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     }
 
     if (!deps.currentProject()) {
+      return
+    }
+
+    if (deps.readOnly?.()) {
+      deps.onReadOnlyPress?.()
       return
     }
 
@@ -153,7 +163,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
    * them all in one step. */
   function onCellsPrimaryMove(cells: GridPosition[]) {
     const last = cells.at(-1)
-    if (deps.spaceHeld() || !last) {
+    if (deps.spaceHeld() || !last || deps.readOnly?.()) {
       return
     }
 

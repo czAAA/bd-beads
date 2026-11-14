@@ -45,6 +45,8 @@ const props = withDefaults(defineProps<{
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
+  /** Why every tile is off, while the Canvas is read-only (open in another tab, ticket 0937); none while it draws. */
+  offBody?: string
 }>(), { mirrorOn: false, mirrorMarking: false })
 
 const emit = defineEmits<{
@@ -86,8 +88,11 @@ const mirrorLit = computed(() => props.mirrorOn || props.mirrorMarking)
 /** Paste mode and Mirror mode run under Select, but their own tile is the one lit then (tickets 447, 0750); none while
  * the eyedropper waits (ticket 0845). */
 const isActive = (tool: Tool) => !props.picking && props.activeTool === tool && !(tool === 'select' && ((props.pasteArmed && props.hasClipboard) || props.mirrorMarking))
+/** Every tile off, saying why, while the Canvas is read-only (ticket 0937). */
+const off = computed(() => (props.offBody === undefined ? {} : { disabled: true, disabledBody: props.offBody }))
 /** A Tool tile's button, pinned or scrolling alike. */
 const toolTile = (tile: (typeof tiles)[number]) => ({
+  ...off.value,
   class: 'tool-pill__stop',
   variant: 'pill' as const,
   action: tile.action,
@@ -238,6 +243,7 @@ watch(
           :accent="mirrorLit"
           :pressed="mirrorLit"
           :tabindex="-1"
+          v-bind="off"
           data-testid="pill-tool-mirror"
           @click="emit('mirror-tile')"
         />
@@ -253,6 +259,7 @@ watch(
           :selected="!!pasteArmed"
           :accent="!!pasteArmed"
           :tabindex="roving.tabIndexFor(!!pasteArmed)"
+          v-bind="off"
           data-testid="pill-tool-paste"
           @click="emit('paste-mode')"
         />
@@ -272,6 +279,7 @@ watch(
         :aria-pressed="undefined"
         :aria-expanded="popoverOpen"
         :tabindex="-1"
+        v-bind="off"
         data-testid="pill-color"
         @click="toggleColor"
       >

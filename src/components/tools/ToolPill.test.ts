@@ -62,6 +62,17 @@ describe('ToolPill (ticket 439)', () => {
     for (const id of TOOL_IDS) expect(wrapper.get(`[data-testid="pill-tool-${id}"]`).attributes('aria-pressed'), id).toBe('false')
   })
 
+  it('turns every tile off while the Canvas is read-only, saying why, and takes no press (ticket 0937)', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true, offBody: 'Off here' } })
+    for (const id of [...TOOL_IDS.map((tool) => `tool-${tool}`), 'tool-mirror', 'tool-paste', 'color']) {
+      expect(wrapper.get(`[data-testid="pill-${id}"]`).attributes('aria-disabled'), id).toBe('true')
+    }
+    await wrapper.get('[data-testid="pill-tool-fill"]').trigger('click')
+    await wrapper.get('[data-testid="pill-color"]').trigger('click')
+    expect(wrapper.emitted('select-tool')).toBeUndefined()
+    expect(wrapper.emitted('update:popoverOpen')).toBeUndefined()
+  })
+
   it('shows a Paste tile right after the Mirror tile only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
     expect(mount(ToolPill, { props: base }).find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
 

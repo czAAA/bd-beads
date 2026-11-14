@@ -21,7 +21,7 @@ vi.mock('./services/projectLocks', async (importOriginal) => ({
   browserProjectLocks: {
     claim: (id: string, onHeld: (held: boolean) => void) => {
       onHeld(id !== OPEN_ELSEWHERE)
-      return () => undefined
+      return { letGo: () => undefined, takeOver: () => onHeld(true) }
     },
   },
 }))
@@ -152,5 +152,19 @@ describe('opening the editor (ticket 0716)', () => {
     expect(wrapper.get('[data-testid="open-elsewhere-message"]').text()).toBe(
       "This Project is open in another tab. Changes made here aren't saved while it is open there.",
     )
+  })
+
+  it('turns the tools off while the Project is open in another tab, and gives them back once Work here instead takes it (ticket 0937)', async () => {
+    storeLibrary([withLayers(project('Shared', 2000), { id: OPEN_ELSEWHERE })])
+
+    const wrapper = mount(App)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="pill-tool-paint"]').attributes('aria-disabled')).toBe('true')
+
+    await wrapper.get('[data-testid="open-elsewhere-work-here"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="open-elsewhere"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="pill-tool-paint"]').attributes('aria-disabled')).toBeUndefined()
   })
 })
