@@ -20,6 +20,7 @@ import TextField from '../ui/form/TextField.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { useLabelsThatFit } from '../../composables/ui/useLabelsThatFit'
+import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { seenSize } from '../../domain/frameOrientation'
 import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
@@ -35,8 +36,8 @@ import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
-// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export, the name, size, Beads
-// needed (ticket 0852), its Layer settings (ticket 0670) and the margin; with no Frame, Frame from starter, Select a Frame and Fit.
+// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with the total, Rotate and Remove, the name, Export
+// folded, Beads needed (0932), size, Layer settings (0670), the margin folded; with no Frame, Frame from starter, Select, Fit.
 // A panel like Menu and Project (AppPanels, PanelHost), opened from the strip's Frame button; outside or Escape closes.
 const props = defineProps<{
   project: Project
@@ -76,6 +77,8 @@ const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => frameOf(props.project))
+/** Beads needed's total on the title line (ticket 0932), counted as the section counts it. */
+const beadsTotal = useBeadsNeeded(() => props.settledProject ?? props.project).total
 const backgrounds = useCanvasBackground(() => props.project)
 /** The Frame's Layer settings (ticket 0670) and its folded summary: its Technique and Bead. */
 const frameSettings = computed(() => (frame.value ? layerSettingsOf(props.project, 'frame') : undefined))
@@ -170,6 +173,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   <div class="frame-panel" role="group" :aria-label="t.frame.title" data-testid="frame-panel" @keydown="emit('key', $event)">
     <div class="frame-panel__title">
       <span class="frame-panel__label">{{ t.frame.titleLabel }}</span>
+      <span v-if="frame && beadsTotal" class="frame-panel__total" data-testid="frame-panel-total">{{ beadsTotal }}</span>
       <span v-if="frame" class="frame-panel__tools">
         <IconButton
           v-if="rotatable"
@@ -192,7 +196,7 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
       </span>
     </div>
 
-    <!-- With no Frame, the ways to get one come first (ticket 0650), above Export. -->
+    <!-- With no Frame, the ways to get one come first (ticket 0650). -->
     <div v-if="!frame" class="frame-panel__none">
       <p class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.starters.title, { opener: 'frame-from-starter' })">{{ t.frame.fromStarter }}</PanelItem>
@@ -200,21 +204,6 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
       <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
       <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
     </div>
-
-    <!-- Export (ticket 568), with a Frame only (ticket 0847): with none, the Export panel's way, no export rows. -->
-    <PanelSection v-if="frame" id="frame:export" :label="t.panels.project.exportHeading">
-      <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
-        <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads; saved with the Project. Printed charts are always lettered (ticket 0914). -->
-        <PanelSwitchRow
-          :model-value="lettersOn(project)"
-          :label="t.frame.lettersLabel"
-          :info-label="t.frame.lettersInfoLabel"
-          :body="t.frame.lettersLine"
-          testid="frame-letters"
-          @update:model-value="emit('set-letters', $event)"
-        />
-      </ExportSection>
-    </PanelSection>
 
     <template v-if="frame">
       <div class="frame-panel__name">
@@ -231,6 +220,23 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
           @save="emit('rename', $event)"
         />
       </div>
+
+      <!-- Export (ticket 568), with a Frame only (ticket 0847), one closed row (ticket 0932): the strip's Export button shows these rows open. -->
+      <PanelSection id="frame:export" :label="t.panels.project.exportHeading" closed-first data-testid="frame-export">
+        <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
+          <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads; saved with the Project. Printed charts are always lettered (ticket 0914). -->
+          <PanelSwitchRow
+            :model-value="lettersOn(project)"
+            :label="t.frame.lettersLabel"
+            :info-label="t.frame.lettersInfoLabel"
+            :body="t.frame.lettersLine"
+            testid="frame-letters"
+            @update:model-value="emit('set-letters', $event)"
+          />
+        </ExportSection>
+      </PanelSection>
+      <!-- Beads needed under Export (tickets 0852, 0932): its total and first rows in view as the panel opens. -->
+      <BeadQuantities :project="settledProject ?? project" />
 
       <PanelSection id="frame:size" :label="t.frame.sizeHeading" :summary="sizeSummary">
         <!-- A Custom frame is sized by its settings, in its Layer settings below (ticket 0670). -->
@@ -348,8 +354,6 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
           >{{ t.frame.replaceFrame }}</PanelItem>
         </div>
       </PanelSection>
-      <!-- Beads needed right after the size (ticket 0852), in view as the panel opens. -->
-      <BeadQuantities :project="settledProject ?? project" />
     </template>
 
     <PanelSection v-if="frameSettings" id="frame:settings" :label="t.layerSettings.frameHeading" :summary="settingsSummary">
@@ -389,6 +393,15 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   font: var(--type-label);
   color: var(--muted);
   text-transform: lowercase;
+}
+
+/* Beads needed's total beside the title (ticket 0932), the tools pushed to the end. */
+.frame-panel__total {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: var(--type-meta);
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .frame-panel__tools {

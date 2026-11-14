@@ -747,7 +747,7 @@ export const en: Translations = {
     fromStarter: 'Frame from starter',
     fitAFrame: 'Fit a Frame to the drawing',
     fitNothing: 'Nothing is drawn yet to fit a Frame to.',
-    noFrameLine: 'A Frame sets the size, the exports and the bead count.',
+    noFrameLine: 'A Frame sets the size, the exports and Beads needed.',
     selectAFrame: 'Select a Frame',
     selectFrameHint: 'Drag over the Canvas to select the Frame. Escape cancels.',
     exportNeedsFrame: 'Set a Frame around the drawing you want to export.',
@@ -1254,6 +1254,7 @@ export const en: Translations = {
     noBeadsToNumber: 'There are no beads to number.',
     gridFocus: 'Keeps the grid clear around your work and calmer everywhere else.',
     noWorkToFocus: 'There is no work to focus on yet.',
+    framePanelBeads: 'Open Beads needed ({total}), the Frame’s size, Rotate and Remove.',
   },
   layerSettings: {
     frameHeading: 'Settings',

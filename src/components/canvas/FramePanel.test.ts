@@ -48,6 +48,13 @@ function mountPanel(project = framed()) {
 }
 const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
 
+/** The bar with its Export row unfolded, as it opens closed (ticket 0932). */
+async function mountWithExport(project = framed()) {
+  const wrapper = mountBar(project)
+  await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
+  return wrapper
+}
+
 
 describe('FramePanel (ticket 473)', () => {
   it('shows the size as the two fields\' values, then the unit, Rotate and Remove Frame (ticket 0854)', () => {
@@ -225,7 +232,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-estimate"]').text()).toContain('≈')
     expect(wrapper.get('[data-testid="frame-estimate-info"]').attributes('aria-label')).toBe(en.size.estimateLabel)
     expect(wrapper.text()).toContain(en.frame.estimateInfo)
-    await wrapper.findAll('.panel-section__header')[1]!.trigger('click')
+    await wrapper.findAll('.panel-section__header')[2]!.trigger('click')
     expect(wrapper.findAll('[data-testid="frame-estimate"]')).toHaveLength(0)
     expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
   })
@@ -236,7 +243,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {
-    const wrapper = mountBar()
+    const wrapper = await mountWithExport()
     await wrapper.get('[data-testid="export-png"]').trigger('click')
     await wrapper.get('[data-testid="export-pdf"]').trigger('click')
     expect(wrapper.emitted('export-png')).toHaveLength(1)
@@ -246,7 +253,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('shows what each export gives in its value slot: the size and its count (ticket 0588)', async () => {
-    const wrapper = mountBar()
+    const wrapper = await mountWithExport()
     expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
     expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 1 page$/)
     // The PNG line follows the chosen stop; the PDF's does not.
@@ -258,7 +265,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('offers Export quality with Medium chosen, remembers a pick on the device and waits while exporting (ticket 576)', async () => {
-    const wrapper = mountBar()
+    const wrapper = await mountWithExport()
     const range = wrapper.get<HTMLInputElement>('[data-testid="quality-range"]')
     expect(range.attributes('aria-label')).toBe(en.frame.exportQuality)
     expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
@@ -272,11 +279,11 @@ describe('FramePanel (ticket 473)', () => {
     expect(range.element.disabled).toBe(true)
     expect(wrapper.get('[data-testid="quality-stop-high"]').attributes('disabled')).toBeDefined()
     wrapper.unmount()
-    expect(mountBar().get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+    expect((await mountWithExport()).get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
   })
 
-  it('shows each stop’s dpi, with no size under it (tickets 571, 0583)', () => {
-    const small = mountBar()
+  it('shows each stop’s dpi, with no size under it (tickets 571, 0583)', async () => {
+    const small = await mountWithExport()
     expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('150 DPI')
     expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
     expect(small.get('[data-testid="quality-stop-medium"]').text()).toBe('Medium300 DPI')
@@ -285,16 +292,16 @@ describe('FramePanel (ticket 473)', () => {
     expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toBe('Medium, 300 DPI')
 
     // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
-    const large = mountBar(withLayers(framed(), { frame: { ...frameOf(framed())!, columns: 200, rows: 200 } }))
+    const large = await mountWithExport(withLayers(framed(), { frame: { ...frameOf(framed())!, columns: 200, rows: 200 } }))
     expect(large.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
     expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
   })
 
-  it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', () => {
-    expect(mountBar().find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
+  it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', async () => {
+    expect((await mountWithExport()).find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
     vi.mocked(pngDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
     try {
-      const wrapper = mountBar()
+      const wrapper = await mountWithExport()
       expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(fillBlanks(en.frame.qualityPdfCapped, { n: 300 }))
       expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('300 DPI')
     } finally {
@@ -306,19 +313,39 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
-  it('leads with Export, then the size, Beads needed right after it, its Layer settings, and ends with the margin (tickets 555, 568, 0656, 0670, 0852)', () => {
+  it('runs the name, Export, Beads needed, the size, its Layer settings, then the margin (tickets 0656, 0670, 0932)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
     expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([
       en.panels.project.exportHeading,
-      en.frame.sizeHeading,
       en.quantities.heading,
+      en.frame.sizeHeading,
       en.layerSettings.frameHeading,
       en.frame.margin.heading,
     ])
+    const order = ['frame-name-row', 'frame-export', 'bead-quantities']
+    expect(wrapper.findAll('[data-testid]').map((node) => node.attributes('data-testid')).filter((id) => order.includes(id!))).toEqual(order)
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-    expect(sections.at(2)!.attributes('data-testid')).toBe('bead-quantities')
     expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
+  })
+
+  it('opens Export closed every time, and a press unfolds it (ticket 0932)', async () => {
+    const wrapper = mountBar()
+    const header = (id: string) => wrapper.get(`[data-testid="${id}"] .panel-section__header`)
+    expect(header('frame-export').attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+    await header('frame-export').trigger('click')
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
+    wrapper.unmount()
+    const again = mountBar()
+    expect(again.get('[data-testid="frame-export"] .panel-section__header').attributes('aria-expanded')).toBe('false')
+  })
+
+  it('shows Beads needed\'s total on the title line once a bead is painted, as the section counts it (ticket 0932)', () => {
+    expect(mountBar().find('[data-testid="frame-panel-total"]').exists()).toBe(false)
+    const painted = mountBar(framed({ row: 2, column: 3, rows: 6, columns: 5, beads: { 2: { 3: '#ff0000', 4: '#ff0000' } } }))
+    expect(painted.get('[data-testid="frame-panel-total"]').text()).toBe(painted.get('[data-testid="quantity-total"]').text())
+    expect(painted.get('[data-testid="frame-panel-total"]').text()).toMatch(/^2 · ≈ /)
   })
 
   it('sets the Frame in its Layer settings: each ask names the Frame, and its summary is its Technique and Bead (ticket 0670)', async () => {
@@ -410,7 +437,7 @@ describe('FramePanel (ticket 473)', () => {
 
 describe('FramePanel Letters (ticket 0573)', () => {
   it('has a Letters switch, off by default, explained in an info button (ticket 0651), and asks to turn it on', async () => {
-    const panel = mountBar()
+    const panel = await mountWithExport()
     const letters = panel.get('[data-testid="frame-letters"]')
     expect(letters.attributes('aria-checked')).toBe('false')
     expect(panel.find('[data-testid="frame-letters-line"]').exists()).toBe(false)
@@ -420,7 +447,7 @@ describe('FramePanel Letters (ticket 0573)', () => {
   })
 
   it('shows it on when the Project has Letters on, and has no switch without a Frame', async () => {
-    expect(mountBar(withLayers(framed(), { letters: true })).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
+    expect((await mountWithExport(withLayers(framed(), { letters: true }))).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
     const bare = withFrameSheet(framed(), undefined)
     expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
   })

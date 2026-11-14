@@ -80,6 +80,7 @@ describe("What's inside's demo editor (ticket 0797)", () => {
     await nextTick()
     wired.canvas.onToggleFramePanel()
     await flushPromises()
+    await wrapper.get('[data-testid="frame-export"] .panel-section__header').trigger('click')
     await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="strip-frame"]').trigger('click')

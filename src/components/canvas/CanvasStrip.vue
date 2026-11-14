@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { useBeadsNeeded } from '../../composables/palette/useBeadsNeeded'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import type { Project } from '../../domain/project'
@@ -28,6 +29,8 @@ const props = defineProps<{
    * Convert image's is plain, so leaving never happens by a link that asks nothing. */
   page?: 'editor' | 'homepage' | 'convert-image'
   project?: Project
+  /** The Project as summaries see it (useSettledProject), for Beads needed's total in the Frame button's Tooltip (0932). */
+  settledProject?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openPanel?: OpenPanel | null
   rulers?: boolean
@@ -101,6 +104,9 @@ const actions = {
 /** The Project button shows the open Project's name (ticket 0858), and is named and Tooltipped "Project: {name}" whole. */
 const projectName = computed(() => (props.project ? projectNameOf(props.project) : ''))
 const projectNamed = computed(() => fillBlanks(t.value.header.projectButtonNamed, { name: projectName.value }))
+/** The Frame button's Tooltip says Beads needed's total once there is one (ticket 0932). */
+const beadsTotal = useBeadsNeeded(() => props.settledProject ?? props.project).total
+const frameTooltip = computed(() => ({ body: beadsTotal.value ? fillBlanks(t.value.tooltips.framePanelBeads, { total: beadsTotal.value }) : t.value.tooltips.framePanel }))
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 /** Rulers is lit only while it can be pressed: on an empty Canvas it is held and plain, whatever the device keeps (ticket 0921). */
 const rulersLit = computed(() => !!props.rulers && !!actions.rulers.enabled?.(deps.value))
@@ -200,6 +206,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
           variant="text"
           :action="actions.frame"
           :deps="deps"
+          :tooltip="frameTooltip"
           :selected="frameOpen"
           data-testid="strip-frame"
           @click="emit('toggle-frame')"
