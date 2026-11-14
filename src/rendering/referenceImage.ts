@@ -17,6 +17,8 @@ export interface DrawnReference {
   /** Its drawn height in grid px, its width in its own shape. */
   height: number
   opacity: OpacityStep
+  /** Drawn over every bead and the Frame, to compare them against it (ticket 1009), not under them. */
+  over?: boolean
 }
 
 /** How opaque an empty bead's fill is drawn over the picture at each opacity step (ReferenceImage card): less as the

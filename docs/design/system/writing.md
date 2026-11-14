@@ -960,7 +960,8 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 | English | Русский | Українська | Polski |
 |---|---|---|---|
 | Move the picture · Drag to move the reference image. (the Move grip's name and Tooltip) | Сдвинуть картинку · Перетащите, чтобы сдвинуть подложку. | Зсунути зображення · Перетягніть, щоб зсунути підкладку. | Przesuń obraz · Przeciągnij, aby przesunąć obraz pomocniczy. |
-| More for the picture · Close (··· and its pressed face) | Ещё для картинки · Закрыть | Ще для зображення · Закрити | Więcej dla obrazu · Zamknij |
+| More for the picture · Close (Convert image's ··· and the Convert to beads popover's ×; the picture bar's ··· was retired by ticket 1009) | Ещё для картинки · Закрыть | Ще для зображення · Закрити | Więcej dla obrazu · Zamknij |
+| Picture over the beads · Lays the picture over your beads at its opacity, to compare them. Press again to put it back under. (the bar's toggle, name and Tooltip, ticket 1009) | Картинка поверх бисера · Кладёт картинку поверх бисера с её непрозрачностью, чтобы сравнить. Нажмите снова, чтобы вернуть её под бисер. | Зображення над бісером · Кладе зображення над бісером з його непрозорістю, щоб порівняти. Натисніть знову, щоб повернути його під бісер. | Obraz nad koralikami · Kładzie obraz nad koralikami z jego kryciem, by je porównać. Naciśnij ponownie, by wrócił pod spód. |
 | Replace · Remove (the bar's short labels) | Заменить · Убрать | Замінити · Прибрати | Zamień · Usuń |
 | Set Frame around the picture (name and Tooltip) | Рамка вокруг картинки | Рамка навколо зображення | Ramka wokół obrazu |
 | A {size} Frame where the picture lies. Replaces the Frame you have. · A {size} Frame where the picture lies. | Рамка {size} там, где лежит картинка. Заменит вашу рамку. · Рамка {size} там, где лежит картинка. | Рамка {size} там, де лежить зображення. Замінить вашу рамку. · Рамка {size} там, де лежить зображення. | Ramka {size} tam, gdzie leży obraz. Zastąpi Twoją ramkę. · Ramka {size} tam, gdzie leży obraz. |
@@ -983,6 +984,7 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 |---|---|---|---|
 | Move the picture · Drag to move the reference image. | Зрушыць выяву · Перацягніце, каб зрушыць падкладку. | Mover la imagen · Arrastra para mover la imagen de referencia. | 移动图片 · 拖动以移动参考图。 |
 | More for the picture · Close | Яшчэ для выявы · Закрыць | Más opciones de la imagen · Cerrar | 图片的更多操作 · 关闭 |
+| Picture over the beads · Lays the picture over your beads at its opacity, to compare them. Press again to put it back under. | Выява над бісерам · Кладзе выяву над бісерам з яе непразрыстасцю, каб параўнаць. Націсніце зноў, каб вярнуць яе пад бісер. | Imagen sobre las cuentas · Pone la imagen sobre tus cuentas con su opacidad, para compararlas. Pulsa de nuevo para volver a ponerla debajo. | 图片置于珠子上方 · 按其不透明度把图片放在珠子上方，便于对照。再按一次放回下方。 |
 | Replace · Remove | Замяніць · Прыбраць | Reemplazar · Quitar | 替换 · 移除 |
 | Set Frame around the picture | Рамка вакол выявы | Marco alrededor de la imagen | 给图片加画框 |
 | A {size} Frame where the picture lies. Replaces the Frame you have. · A {size} Frame where the picture lies. | Рамка {size} там, дзе ляжыць выява. Заменіць вашу рамку. · Рамка {size} там, дзе ляжыць выява. | Un marco de {size} donde está la imagen. Sustituye tu marco actual. · Un marco de {size} donde está la imagen. | 在图片所在处放一个 {size} 的画框。会替换你现有的画框。 · 在图片所在处放一个 {size} 的画框。 |
@@ -1194,23 +1196,9 @@ Under a converter control stand only a result or an error (ConvertImage card). W
 
 Gone strings are removed from every language. "To fix what was found, pick Background …" stays until ticket 0896 removes it with the step pane.
 
-## Grid focus copy (ticket 1002)
+## Grid focus copy (ticket 1002): gone
 
-The Canvas strip's Grid focus toggle (CanvasStrip card; BeadBoard card, Grid focus). Approved 2026-11-14, in the app since ticket 1002. "Grid" is the glossary's Grid; in Russian «сетка», a word the app's copy has not used before, so the Russian is a draft for the owner to check. The other languages were written with the build, as draft words to be checked by a speaker of each (below).
-
-| English | Русский |
-|---|---|
-| Grid focus (strip button name, shortcuts row) | Фокус сетки |
-| Keeps the grid clear around your work and calmer everywhere else. (Tooltip) | Сетка чёткая вокруг вашей работы и спокойнее на остальном холсте. |
-| There is no work to focus on yet. (disabled reason) | Пока нет работы, вокруг которой держать фокус. |
-
-Draft words (ticket 1002), to be checked by a speaker of each:
-
-| English | Українська | Беларуская | 中文 | Español | Polski |
-|---|---|---|---|---|---|
-| Grid focus | Фокус сітки | Фокус сеткі | 网格聚焦 | Foco de cuadrícula | Fokus siatki |
-| Keeps the grid clear around your work and calmer everywhere else. | Сітка чітка навколо вашої роботи й спокійніша на решті полотна. | Сетка выразная вакол вашай працы і спакайнейшая на астатнім палатне. | 让作品周围的网格保持清晰，其他地方更安静。 | Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto. | Siatka jest wyraźna wokół twojej pracy i spokojniejsza wszędzie indziej. |
-| There is no work to focus on yet. | Поки немає роботи, навколо якої тримати фокус. | Пакуль няма працы, вакол якой трымаць фокус. | 还没有可以聚焦的作品。 | Todavía no hay trabajo en el que centrarse. | Nie ma jeszcze pracy, na której można się skupić. |
+Ticket 1007 removed Grid focus: its name, Tooltip line and disabled reason are gone from every language.
 
 ## Frame stays copy (ticket 0935)
 

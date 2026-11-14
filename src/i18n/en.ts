@@ -319,7 +319,6 @@ export const en: Translations = {
       storage: 'Your Projects are saved only in this browser, on this device.',
       paintMouse: 'Click or drag to place beads in the chosen color.',
     },
-    gridFocusLabel: 'Grid focus',
   },
   shell: {
     canvasPlaceholderHint: 'Make one with New Project, open one from the Projects library, or open a Project file.',
@@ -1257,8 +1256,6 @@ export const en: Translations = {
     fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
     noBeadsToNumber: 'There are no beads to number.',
-    gridFocus: 'Keeps the grid clear around your work and calmer everywhere else.',
-    noWorkToFocus: 'There is no work to focus on yet.',
     framePanelBeads: 'Open Beads needed ({total}), the Frame’s size, Rotate and Remove.',
   },
   layerSettings: {
@@ -1388,6 +1385,7 @@ export const en: Translations = {
       moveBody: 'Drag to move the reference image.',
       more: 'More for the picture',
       close: 'Close',
+      over: { name: 'Picture over the beads', body: 'Lays the picture over your beads at its opacity, to compare them. Press again to put it back under.' },
       replace: 'Replace',
       remove: 'Remove',
       sizeBeads: '{size} beads',
