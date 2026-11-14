@@ -648,6 +648,10 @@ export const pl: Translations = {
     pieceTotal: 'To liczby dla jednej ściany z {faces}. Cała praca: {count} · 15/0: {small}',
     pieceLines: { triangles: 'Trójkąty', edgeBeads: 'Koraliki brzegu', hingeBeads: 'Koraliki zawiasów', tips: 'Czubki trójkątów', hingePins: 'Sworznie zawiasów' },
     frontBackNote: 'To liczby dla całej gwiazdy, przód i tył.',
+    paletteNote: 'Kolory palety, nie kody koralików',
+    paletteInfo:
+      'Kolory bez kodu pochodzą z palety, nie z katalogu kolorów koralików, więc nie ma dla nich nazwy koralika. Kolor wybrany z katalogu kolorów ma tu swój kod.',
+    infoLabel: 'O tych liczbach',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',

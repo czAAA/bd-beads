@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-14",
+  "line": {
+    "en": "Beads needed names the Bead to buy, rounds every weight up to 0.1 g, and says when its colors are Palette colors, not bead codes",
+    "ru": "«Нужно бисера» называет бисер для покупки, округляет вес вверх до 0,1 г и говорит, когда цвета взяты из палитры, а не по кодам бисера",
+    "uk": "«Потрібно бісеру» називає бісер для покупки, округлює вагу вгору до 0,1 г і каже, коли кольори взято з палітри, а не за кодами бісеру",
+    "be": "«Патрэбна бісеру» называе бісер для пакупкі, акругляе вагу ўверх да 0,1 г і кажа, калі колеры ўзятыя з палітры, а не па кодах бісеру",
+    "zh": "所需珠子会写出要买的珠子，每个重量向上取整到 0.1 克，并在颜色来自调色板而非珠子色号时说明",
+    "es": "Cuentas necesarias nombra la cuenta que comprar, redondea cada peso hacia arriba a 0,1 g y avisa cuando los colores son de la paleta, no códigos de cuentas",
+    "pl": "„Potrzebne koraliki” podają, jakie koraliki kupić, zaokrąglają każdą wagę w górę do 0,1 g i mówią, gdy kolory pochodzą z palety, a nie z kodów koralików"
+  }
+}

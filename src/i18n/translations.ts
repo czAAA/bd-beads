@@ -794,6 +794,12 @@ export interface Translations {
     pieceLines: Record<'triangles' | 'edgeBeads' | 'hingeBeads' | 'tips' | 'hingePins', string>
     /** Under the table on a Star (ticket 0875): the counts are the whole star, front and back. */
     frontBackNote: string
+    /** Under the rows when a color has no catalog code (ticket 0974): they are Palette colors, not beads to buy. */
+    paletteNote: string
+    /** Why, behind the header's Info button (ticket 0974), after the weight's line when there is one. */
+    paletteInfo: string
+    /** The header Info button's name once it says why too (ticket 0974); `weightInfoLabel` while it explains the weight only. */
+    infoLabel: string
   }
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
