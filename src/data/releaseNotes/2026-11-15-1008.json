@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Showing a reference image no longer changes the grid or its color: the picture lies over the grid as it is",
+    "ru": "Подложка больше не меняет сетку и её цвет: картинка ложится поверх сетки, не меняя её",
+    "uk": "Підкладка більше не змінює сітку та її колір: картинка лягає поверх сітки, не змінюючи її",
+    "be": "Падкладка больш не мяняе сетку і яе колер: малюнак кладзецца паверх сеткі, не мяняючы яе",
+    "zh": "显示参考图不再改变网格及其颜色：图片直接叠放在原样的网格上",
+    "es": "Mostrar una imagen de referencia ya no cambia la cuadrícula ni su color: la imagen se coloca sobre la cuadrícula tal como está",
+    "pl": "Pokazanie obrazu pomocniczego nie zmienia już siatki ani jej koloru: obraz leży na siatce takiej, jaka jest"
+  }
+}
