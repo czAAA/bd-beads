@@ -40,9 +40,9 @@ type Panel = Awaited<ReturnType<typeof mountPanel>>
 const has = (wrapper: Panel, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
 
 describe('ExportPanel (ticket 0652)', () => {
-  it('names the open Project on the title line, with or without a Frame (ticket 0986)', () => {
+  it('names the open Project on the title line, with or without a Frame (ticket 0986)', async () => {
     for (const project of [framed(), empty()]) {
-      const wrapper = mountPanel(withProjectName(project, 'Loom cuff'))
+      const wrapper = await mountPanel(withProjectName(project, 'Loom cuff'))
       expect(wrapper.get('.export-panel__title [data-testid="export-panel-project"]').text()).toBe('· Loom cuff')
     }
   })
