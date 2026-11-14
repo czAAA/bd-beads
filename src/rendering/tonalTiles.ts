@@ -43,7 +43,7 @@ export interface MarkLook {
 }
 
 /** The marks a theme draws its empty positions in: tiles from its own Background where it draws them and `shown`
- * allows (the editor's Canvas in the full look, with no reference image a filled tile would hide), else the outline in
+ * allows (the editor's Canvas in the full look, a reference image or none: it lies over them, ticket 1008), else the outline in
  * `positionMark`, as high contrast, the draft look and every export keep. */
 export function markLookOf(theme: ProjectTheme, shown = true): MarkLook {
   const tiles = theme.tonalTiles && shown
@@ -51,9 +51,9 @@ export function markLookOf(theme: ProjectTheme, shown = true): MarkLook {
 }
 
 /** The marks a page laid under or beside the drawing repeats (the empty Canvas under it, the Homepage's ground): the
- * ones the renderer draws at `deviceScale`, the outline in the draft look and over a reference image. */
-export function markLookAt(theme: ProjectTheme, deviceScale: number, overPicture = false): MarkLook {
-  return markLookOf(theme, !drawsDraft(deviceScale) && !overPicture)
+ * ones the renderer draws at `deviceScale`, the outline in the draft look. */
+export function markLookAt(theme: ProjectTheme, deviceScale: number): MarkLook {
+  return markLookOf(theme, !drawsDraft(deviceScale))
 }
 
 /** One position's cell and the corner its Technique rounds a bead by, in grid px. */
