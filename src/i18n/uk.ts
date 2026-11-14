@@ -195,6 +195,7 @@ export const uk: Translations = {
       beadType: 'Тип',
       beadSize: 'Розмір',
       duplicatedToast: 'Тепер відкрито «{copy}». «{original}» залишився як був.',
+      openedToast: 'Тепер відкрито «{name}».',
     },
   },
   theme: {

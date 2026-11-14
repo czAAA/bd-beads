@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
+import { en } from '../../i18n/en'
 import { useSavedProjectConfirms } from './useSavedProjectConfirms'
 
 function make(id: string): Project {
@@ -9,13 +10,16 @@ function make(id: string): Project {
 
 const open = make('open')
 
-function setup(options: { open?: boolean; saved?: boolean; saveFailed?: boolean } = {}) {
+function setup(options: { open?: boolean; saved?: boolean; saveFailed?: boolean; nameHidden?: boolean } = {}) {
   const deps = {
     currentProject: () => (options.open === false ? undefined : open),
     findProject: (id: string) => [{ id: 'open', name: 'Open' }, { id: 'other', name: 'Other' }, { id: 'huge', name: 'Huge', gatedBeads: 31_000_000 }].find((entry) => entry.id === id),
     openProject: vi.fn(),
     saveFailed: () => options.saveFailed ?? false,
     saveNow: vi.fn(() => options.saved ?? true),
+    nameHidden: () => options.nameHidden ?? false,
+    showToast: vi.fn(),
+    messages: () => en,
   }
   return { deps, ...useSavedProjectConfirms(deps) }
 }
@@ -94,5 +98,30 @@ describe('useSavedProjectConfirms', () => {
       expect(deps.openProject).toHaveBeenCalledWith('huge')
       expect(opened).toHaveBeenCalledOnce()
     }
+  })
+
+  it('says which Project is open now where the strip shows no name, after a pick, a Switch Project? or an Open anyway (ticket 0986)', () => {
+    const picked = setup({ nameHidden: true })
+    picked.onRequestSwitch('other')
+    expect(picked.deps.showToast).toHaveBeenCalledWith('opened', 'Now in “Other”.', 'info')
+    const confirmed = setup({ nameHidden: true, saveFailed: true })
+    confirmed.onRequestSwitch('other')
+    expect(confirmed.deps.showToast).not.toHaveBeenCalled()
+    confirmed.onConfirmSwitch()
+    expect(confirmed.deps.showToast).toHaveBeenCalledWith('opened', 'Now in “Other”.', 'info')
+    const large = setup({ nameHidden: true })
+    large.onRequestSwitch('huge')
+    large.onConfirmLargeOpen()
+    expect(large.deps.showToast).toHaveBeenCalledWith('opened', 'Now in “Huge”.', 'info')
+  })
+
+  it('says nothing where the strip shows the name, or when the picked Project was open already', () => {
+    const wide = setup()
+    wide.onRequestSwitch('other')
+    expect(wide.deps.openProject).toHaveBeenCalledWith('other')
+    expect(wide.deps.showToast).not.toHaveBeenCalled()
+    const same = setup({ nameHidden: true })
+    same.onRequestSwitch('open')
+    expect(same.deps.showToast).not.toHaveBeenCalled()
   })
 })

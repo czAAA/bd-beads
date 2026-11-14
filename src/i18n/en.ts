@@ -193,6 +193,7 @@ export const en: Translations = {
       beadType: 'Type',
       beadSize: 'Size',
       duplicatedToast: 'Now in “{copy}”. “{original}” stays as it was.',
+      openedToast: 'Now in “{name}”.',
     },
   },
   theme: {

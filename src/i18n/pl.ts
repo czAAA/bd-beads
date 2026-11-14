@@ -195,6 +195,7 @@ export const pl: Translations = {
       beadType: 'Typ',
       beadSize: 'Rozmiar',
       duplicatedToast: 'Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian.',
+      openedToast: 'Teraz otwarty jest „{name}”.',
     },
   },
   theme: {

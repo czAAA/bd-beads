@@ -1,6 +1,9 @@
 import { ref } from 'vue'
 import type { Project } from '../../domain/project'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
+import { fillBlanks } from '../../domain/fillBlanks'
+import type { Translations } from '../../i18n/translations'
+import type { MessageTone } from '../ui/useToasts'
 
 /** A Project of the library as the confirmations name it: decoded or sealed (ticket 0716). */
 export interface LibraryEntry {
@@ -19,6 +22,10 @@ export interface SavedProjectConfirmsDeps {
   saveFailed: () => boolean
   /** Writes the library now; false when the device refused it. */
   saveNow: () => boolean
+  /** Whether the strip shows no Project name (under 1024px): then an open says the name in a toast (ticket 0986). */
+  nameHidden: () => boolean
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
@@ -38,6 +45,12 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
   /** What to do once a confirmed switch has opened its Project (the phone drawer puts its sheets away). */
   let afterSwitch: (() => void) | undefined
 
+  /** Opens the picked Project and, where the strip shows no name, says which one is open now (ticket 0986). */
+  function open(entry: LibraryEntry) {
+    deps.openProject(entry.id)
+    if (deps.nameHidden()) deps.showToast('opened', fillBlanks(deps.messages().panels.project.openedToast, { name: entry.name }), 'info')
+  }
+
   /** Whether Save first was tried and the device refused it too. */
   const switchSaveRefused = ref(false)
 
@@ -56,12 +69,17 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
       pendingLargeOpen.value = entry
       return
     }
-    if (!current || (entry && !deps.saveFailed())) {
+    if (!entry) {
+      if (current) return
       deps.openProject(id)
       opened?.()
       return
     }
-    if (!entry) return
+    if (!current || !deps.saveFailed()) {
+      open(entry)
+      opened?.()
+      return
+    }
     switchSaveRefused.value = false
     afterSwitch = opened
     pendingSwitch.value = entry
@@ -78,7 +96,7 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
     pendingSwitch.value = undefined
     afterSwitch = undefined
     if (picked) {
-      deps.openProject(picked.id)
+      open(picked)
       opened?.()
     }
   }
@@ -95,7 +113,7 @@ export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
     pendingLargeOpen.value = undefined
     afterSwitch = undefined
     if (picked) {
-      deps.openProject(picked.id)
+      open(picked)
       opened?.()
     }
   }
