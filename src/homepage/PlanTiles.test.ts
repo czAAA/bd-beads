@@ -111,6 +111,15 @@ describe('PlanTiles', () => {
         expect(wrapper.text()).not.toMatch(/coming soon/i)
       }
     })
+
+    it('makes the first Project from No account, its button the strip\'s way in (ticket 0923)', async () => {
+      const wrapper = tiles('en', { isNew: true })
+      const button = wrapper.get('[data-testid="plan-no-account"] button')
+      expect(button.text()).toBe('Make your first Project')
+      await button.trigger('click')
+      expect(wrapper.emitted('makeFirstProject')).toHaveLength(1)
+      expect(wrapper.emitted('openEditor')).toBeUndefined()
+    })
   })
 
   describe('on a phone (ticket 0827)', () => {
