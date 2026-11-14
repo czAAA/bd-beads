@@ -336,6 +336,9 @@ export const zh: Translations = {
     saveFailedMessage: '无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。',
     openElsewhere: '此项目已在另一个标签页中打开。在那里打开期间，这里的更改不会保存。',
     keptToast: '此浏览器会保留你的项目。',
+    workHere: '改在这里工作',
+    notSavedHere: '已在另一个标签页中打开：此处不保存',
+    toolsOff: '此项目在另一个标签页中打开时不可用。要绘制，请选择“改在这里工作”。',
   },
   header: {
     menuButton: '菜单',

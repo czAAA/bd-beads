@@ -56,6 +56,7 @@ const {
   deletedProjectName,
   openMenuOnSavedProjects,
   activeProject,
+  openElsewhere,
   projectLabel,
   toasts,
   dismissToast,
@@ -624,6 +625,7 @@ const drawingStyle = computed(() => {
             :recents-in-pill="recentsInPill"
             :selected-color-id="selectedColorId"
             :custom-color="customColor"
+            :off-body="openElsewhere ? t.storage.toolsOff : undefined"
             @select-tool="onSelectTool"
             @paste-mode="onPasteMode"
             @mirror-tile="onMirrorTile"

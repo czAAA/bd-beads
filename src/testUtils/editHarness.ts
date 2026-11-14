@@ -8,7 +8,7 @@ import type { Layered } from '../domain/layerRecord'
 
 /** A real Edit and Undo history over one in-memory Project, so a flow's test asserts what a person would see.
  * Only the app's own seams are spies. */
-export function editHarness(initial: Project | undefined) {
+export function editHarness(initial: Project | undefined, { readOnly }: { readOnly?: () => boolean } = {}) {
   // A ref, so the computeds of the flow under test follow each Edit like the app's reactive Project.
   const project = shallowRef(initial)
   const replaceProject = vi.fn((next: Project) => {
@@ -38,6 +38,7 @@ export function editHarness(initial: Project | undefined) {
     flushPendingSave,
     countChange,
     onRowsHeld,
+    readOnly,
   })
 
   return {

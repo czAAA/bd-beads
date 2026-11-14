@@ -132,6 +132,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     flushPendingSave,
     saveNow,
     openElsewhere,
+    workHere,
   } = useProjectLibrary(services.libraryStore, { held: safeStart.held, locks: services.projectLocks })
   const openingAddress = services.openingAddress()
   // `?open=saved-projects` lands with no Project open; `?project=<id>` is opened below, through the Saved Projects pick.
@@ -251,6 +252,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     flushPendingSave,
     countChange: sinceFile.count,
     onRowsHeld: (project) => rowOps.tellMarkedDone(project),
+    // Open in another tab (ticket 0937): nothing changes here, so no Undo step and no bead counted since the last file.
+    readOnly: () => openElsewhere.value,
   })
   const { edit } = editing
 
@@ -661,6 +664,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     mirror: () => mirror.setting.value,
     pasteAt: pasteAtCell,
     pickColorAt,
+    // Open in another tab (ticket 0937): the Canvas is read-only, and a press says why again.
+    readOnly: () => openElsewhere.value,
+    onReadOnlyPress: () => announce(t.value.storage.openElsewhere),
   })
 
   const { announcement, announce } = useA11yAnnouncer()
@@ -964,6 +970,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onSaveProjectFileAs: exportFlow.onSaveAs,
   })
 
+  // Another tab has the open Project now (ticket 0937): this tab's Undo steps and Selection were made on beads it no
+  // longer saves.
+  watch(openElsewhere, (elsewhere) => {
+    if (!elsewhere) return
+    resetHistory()
+    resetSelection()
+  })
+
   watch(activeProjectId, () => {
     resetHistory()
     // Selection resets here through the module's reset(); the clipboard deliberately survives a Project switch
@@ -1003,8 +1017,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onPictureForConvert: convertImage.onPicture,
       dialogOpen: dialogs.open,
       page: appPage.page,
-      /** The open Project is open in another tab first (ticket 0834): the notice row says its changes here aren't saved. */
+      /** The open Project is open in another tab first (ticket 0834): the notice row says its changes here aren't saved,
+       * and Work here instead takes it over (ticket 0937). */
       openElsewhere,
+      onWorkHere: workHere,
     },
     /** The canvas box (CanvasPanel): its strip, the drawing surface, the Tool pill, the Context and Progress bars, the
      * toasts. */
@@ -1020,6 +1036,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The library and the panels the strip opens
       projects,
       activeProject,
+      /** Open in another tab (ticket 0937): the Tool pill's tools are off. */
+      openElsewhere,
       projectLabel,
       openPanel,
       onSelectPanel: overlays.onSelectPanel,
@@ -1215,6 +1233,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       activeProject,
       saveFailed,
       unsaved,
+      openElsewhere,
       saveNow,
       onRenameProject: manageProject.onRenameProject,
       onRequestDuplicate: manageProject.onRequestDuplicate,

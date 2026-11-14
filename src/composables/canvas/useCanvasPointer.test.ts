@@ -17,6 +17,7 @@ interface Options {
   strokeMode?: 'paint' | 'erase' | null
   color?: string | null
   mirror?: MirrorSetting
+  readOnly?: boolean
 }
 
 function setup(options: Options = {}) {
@@ -44,11 +45,37 @@ function setup(options: Options = {}) {
     pasteAt: vi.fn(() => true),
     pickColorAt: vi.fn(() => false),
     mirror: () => options.mirror ?? MIRROR_OFF,
+    readOnly: () => options.readOnly ?? false,
+    onReadOnlyPress: vi.fn(),
   }
   return { deps, ...useCanvasPointer(deps) }
 }
 
 describe('useCanvasPointer', () => {
+  describe('read-only, open in another tab (ticket 0937)', () => {
+    it('places no bead, selects nothing and says why at each press', () => {
+      for (const tool of ['paint', 'erase', 'select', 'piece', 'hand'] as const) {
+        const { deps, onCellPrimaryDown } = setup({ tool, readOnly: true })
+        onCellPrimaryDown(1, 2)
+        expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
+        expect(deps.beginSelectPress).not.toHaveBeenCalled()
+        expect(deps.tapPiece).not.toHaveBeenCalled()
+        expect(deps.pickColorAt).not.toHaveBeenCalled()
+        expect(deps.onReadOnlyPress).toHaveBeenCalledOnce()
+      }
+    })
+
+    it('paints nothing a drag crosses, pastes nothing and shows no preview', () => {
+      const { deps, onCellsPrimaryMove, onCellHover, previewCells, pasteAtPointer } = setup({ readOnly: true, strokeMode: 'paint' })
+      onCellsPrimaryMove([{ row: 1, column: 2 }])
+      onCellHover(1, 2)
+      pasteAtPointer({ preventDefault: vi.fn() } as unknown as KeyboardEvent)
+      expect(deps.paintStrokeCells).not.toHaveBeenCalled()
+      expect(deps.pasteAt).not.toHaveBeenCalled()
+      expect(previewCells.value).toEqual([])
+    })
+  })
+
   describe('hover preview', () => {
     it('is empty until the pointer is over a cell, and again once it leaves', () => {
       const { previewCells, onCellHover, onHoverEnd } = setup()

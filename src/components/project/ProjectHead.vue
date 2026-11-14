@@ -16,6 +16,8 @@ const props = defineProps<{
   unsaved: boolean
   /** The Project is saved but its reference image's picture is not kept on this device (ticket 0790). */
   referenceNotSaved?: boolean
+  /** The Project is open in another tab (ticket 0937): nothing drawn here is saved. */
+  openElsewhere?: boolean
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -25,14 +27,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved || props.referenceNotSaved ? 'unsaved' : 'saved'))
+const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved || props.referenceNotSaved || props.openElsewhere ? 'unsaved' : 'saved'))
 const stateText = computed(() =>
   state.value === 'saved'
     ? t.value.panels.project.savedLocal
     : state.value === 'unsaved'
-      ? props.unsaved
-        ? t.value.panels.project.notSavedYet
-        : t.value.referenceImage.notSaved
+      ? props.openElsewhere
+        ? t.value.storage.notSavedHere
+        : props.unsaved
+          ? t.value.panels.project.notSavedYet
+          : t.value.referenceImage.notSaved
       : fillBlanks(t.value.panels.project.notSaved, { reason: t.value.panels.project.saveRefused }),
 )
 

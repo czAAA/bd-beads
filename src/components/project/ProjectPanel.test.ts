@@ -125,6 +125,12 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')
   })
 
+  it('says nothing is saved here while the Project is open in another tab, never Saved in local browser (ticket 0937)', () => {
+    const wrapper = mountPanel({ openElsewhere: true })
+    expect(wrapper.get('[data-testid="save-state"]').text()).toBe(en.storage.notSavedHere)
+    expect(wrapper.get('[data-testid="save-state"]').classes()).toContain('project-head__state--unsaved')
+  })
+
   it('passes the reference image section\'s asks on (ticket 0790)', async () => {
     const wrapper = mountPanel()
     const input = wrapper.get<HTMLInputElement>('[data-testid="reference-image-input"]')

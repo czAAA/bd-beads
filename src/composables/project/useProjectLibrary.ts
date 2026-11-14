@@ -6,7 +6,7 @@ import { projectNameOf } from '../../domain/layerRecord'
 import { withFreeNames } from '../../domain/projectName'
 import type { LibraryEntry } from './useSavedProjectConfirms'
 import { browserLibraryStore, type HeldProject, type LibraryStore } from '../../services/libraryStore'
-import type { ProjectLocks } from '../../services/projectLocks'
+import type { ProjectClaim, ProjectLocks } from '../../services/projectLocks'
 
 /** How a change to a Project should reach storage (see replaceProject). */
 export interface ReplaceOptions {
@@ -52,6 +52,9 @@ export interface ProjectLibrary {
   /** Whether the open Project is open in another tab, which had it first (ticket 0834): this tab then shows that tab's
    * beads as it stores them and writes none of its own changes to it. Never, for a library given no locks. */
   openElsewhere: ComputedRef<boolean>
+  /** Takes the open Project over from the tab that has it (Work here instead, ticket 0937): this tab then draws and saves
+   * it, from what that tab stored, and that tab is told it is open elsewhere. A no-op while it is not open elsewhere. */
+  workHere: () => void
 }
 
 const isSealed = (project: HeldProject): project is SealedProject => 'stored' in project
@@ -184,27 +187,32 @@ export function useProjectLibrary(
   const stopHearing = store.onOutsideChange(() => quietly(takeIn))
   if (getCurrentScope()) onScopeDispose(stopHearing)
 
+  /** This tab's claim of the open Project, while it has one open. */
+  let claimed: ProjectClaim | undefined
   if (locks) {
-    let letGo: (() => void) | undefined
     const claim = (id: string | undefined) => {
       // Leaving a Project another tab has: what this tab drew on it goes back to that tab's copy, never to be written.
       if (heldElsewhere.value !== undefined) quietly(takeIn)
       // Leaving one this tab has: a stroke still waiting to be saved is written before the next tab may take it.
       else if (savePending.value) save()
-      letGo?.()
-      letGo = undefined
+      claimed?.letGo()
+      claimed = undefined
       heldElsewhere.value = undefined
       if (id === undefined) return
       asking = id
-      letGo = locks.claim(id, (heldHere) => {
+      claimed = locks.claim(id, (heldHere) => {
         asking = undefined
-        // The other tab let go: start from what it stored, before this tab's changes count.
-        if (heldHere && heldElsewhere.value === id) quietly(takeIn)
+        const wasElsewhere = heldElsewhere.value === id
+        // The other tab let go, or this one took it over: start from what it stored, before this tab's changes count.
+        if (heldHere && wasElsewhere) quietly(takeIn)
         heldElsewhere.value = heldHere ? undefined : id
+        // Another tab has it, or took it over from this one (ticket 0937): a stroke not yet written goes back to its
+        // stored copy.
+        if (!heldHere && !wasElsewhere) quietly(takeIn)
       })
     }
     watch(activeProjectId, claim, { immediate: true, flush: 'sync' })
-    if (getCurrentScope()) onScopeDispose(() => letGo?.())
+    if (getCurrentScope()) onScopeDispose(() => claimed?.letGo())
   }
 
   const names = () => [...projects.value.map(projectNameOf), ...sealed.value.map((kept) => kept.name)]
@@ -215,6 +223,9 @@ export function useProjectLibrary(
     sealed,
     openSealed,
     openElsewhere: computed(() => heldElsewhere.value !== undefined && heldElsewhere.value === activeProjectId.value),
+    workHere: () => {
+      if (heldElsewhere.value !== undefined) claimed?.takeOver()
+    },
     activeProjectId,
     activeProject,
     saveFailed,
