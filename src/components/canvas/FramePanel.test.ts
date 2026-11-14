@@ -328,7 +328,7 @@ describe('FramePanel (ticket 473)', () => {
     await settings.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
     await settings.get('[data-testid="bead-brand"] button').trigger('click')
     await settings.get('[data-testid="bead-brand"] [data-value="miyuki"]').trigger('click')
-    await settings.get('[data-testid="frame-background-section"] [data-testid="background-color-linen"]').trigger('click')
+    await settings.get('[data-testid="frame-background-section"] [data-testid="background-color-stone"]').trigger('click')
     expect(wrapper.emitted('set-technique')).toEqual([['frame', 'peyote']])
     expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe('frame')
     expect(wrapper.emitted('set-background')).toEqual([['frame', 2]])

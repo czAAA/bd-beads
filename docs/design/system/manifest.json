@@ -400,7 +400,7 @@
     {
       "name": "SaveReminder",
       "group": "Canvas",
-      "summary": "The save ring at the drawing area's top-right: appears once 50 beads are drawn since the last Project file, opens to \"Save Project file\", and runs Save (into the Linked file where the browser allows) in one press."
+      "summary": "The save ring on the Canvas strip, beside the Project button: appears once 50 beads are drawn since the last Project file, opens to \"Save Project file\", and runs Save (into the Linked file where the browser allows) in one press."
     },
     {
       "name": "SaveStates",

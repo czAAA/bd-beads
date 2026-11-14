@@ -329,10 +329,8 @@
   /* FirstRunHints card (tickets 0795, 0798): the welcome over an empty Project. */
   --hint-storage-lead: 500 1rem/1.5 var(--font-sans); /* FirstRunHints card: the welcome's lead line, 16px, body (ticket 0795). */
   --hint-storage: 400 0.875rem/1.6 var(--font-sans); /* FirstRunHints card: the welcome's storage line and the Project file's path, 14px. */
-  --save-ring-size: 40px; /* SaveReminder card: the round button at the drawing area's top-right (44px to hit on touch). */
-  --save-ring-halo: 30px; /* SaveReminder card: the ring's box inside the button, inside its 1px edge and 4px padding. */
+  --save-ring-halo: 26px; /* SaveReminder card: the ring's box, centred in the strip-tall button (34px, 44px on touch). */
   --save-ring-stroke: 2px; /* SaveReminder card: the ring's track and arc. */
-  --save-ring-inset: 16px; /* SaveReminder card: in from the drawing area's right edge and under the Canvas strip. */
   --save-ring-label-time: 4s; /* SaveReminder card: how long the label stays open at the threshold. */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
@@ -404,6 +402,7 @@
   --free-start-rows: 4; /* The free list's rows shown before the page is scrolled. */
   --free-growth: 2.5; /* The tile grows this many times as fast as the page scrolls, until it reaches the screen's foot. */
   --free-fade: 1.75rem; /* The free list's faded foot while rows are still hidden, 28px. */
+  --free-lead-width: 20rem; /* A new visitor's Free to use: the heading and the way in beside the free list, 320px (ticket 0947). */
   --coming-soon-width: 14.75rem; /* The Coming soon stamp on Free account and Pro, 236px. */
   --coming-soon-tilt: -8deg; /* The stamp's tilt; Pro's is -5deg, so the two don't look pasted. */
   /* Homepage card, the Progress bar's steps (ticket 0743) */

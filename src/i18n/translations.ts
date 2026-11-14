@@ -412,7 +412,7 @@ export interface Translations {
       label: string
       pickerLabel: string
       swatchLabel: string
-      names: Record<'studio' | 'linen' | 'stone' | 'fog' | 'pebble' | 'night' | 'ink' | 'midnight' | 'ash' | 'slate', string>
+      names: Record<'studio' | 'stone' | 'pebble' | 'night' | 'ink' | 'slate', string>
     }
     /** The hint in the drawing area's bottom-left corner (CanvasHint card), in pieces around its key chips. */
     hint: {
