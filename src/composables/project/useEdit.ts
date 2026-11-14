@@ -52,6 +52,8 @@ export interface EditDeps {
   countChange?: (before: Layered, after: Layered, sign: 1) => void
   /** Hears a drawing command that rows marked done took beads back from, once an edit or a stroke (ticket 0848). */
   onRowsHeld?: (project: Project) => void
+  /** Whether the open Project takes no change here (open in another tab, ticket 0937): every Edit is then unchanged. */
+  readOnly?: () => boolean
 }
 
 // Edit (ADR 0036): every undoable change to the open Project goes through here, which applies the rules (row lock,
@@ -78,9 +80,12 @@ export function useEdit(deps: EditDeps) {
     deps.countChange?.(before, after, 1)
   }
 
+  /** The open Project, unless it takes no change here. */
+  const editable = () => (deps.readOnly?.() ? undefined : deps.currentProject())
+
   const edit: EditFn = (kind, command) => {
     settle()
-    const project = deps.currentProject()
+    const project = editable()
     if (!project) {
       return { kind: 'unchanged' }
     }
@@ -109,7 +114,7 @@ export function useEdit(deps: EditDeps) {
    * but its Undo step waits for `settle`, so however many held changes follow make one step. How a Custom frame's
    * steppers commit once, when the Frame panel closes. */
   function hold(command: EditCommands['frame']): EditOutcome {
-    const project = deps.currentProject()
+    const project = editable()
     if (!project) {
       return { kind: 'unchanged' }
     }
@@ -148,7 +153,7 @@ export function useEdit(deps: EditDeps) {
   /** Starts a Paint/Eraser stroke: the baseline its one Undo step will go back to (ticket 55). */
   function beginStroke() {
     settle()
-    const project = deps.currentProject()
+    const project = editable()
     strokeBaseline = project && snapshotOf(project)
     toldRowsHeld = false
   }
@@ -157,7 +162,7 @@ export function useEdit(deps: EditDeps) {
    * endStroke. Several commands (the beads one pointer move crossed, ticket 0674) are each kept or refused by the rules
    * in turn and land together, once. */
   function strokeStep(...commands: EditCommands['drawing'][]) {
-    const project = deps.currentProject()
+    const project = editable()
     if (!project) {
       return
     }

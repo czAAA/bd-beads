@@ -219,11 +219,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Beads since last file (ticket 0796): Edit, Undo and Redo count, any Project file save puts it back to 0. */
   const sinceFile = useBeadsSinceFile({ currentProject, libraryIds, store: services.sinceFiles })
-  /** What Beads since last file counts: nothing while the Project is open in another tab, where nothing is saved (ticket
-   * 0937). */
-  const countChange: typeof sinceFile.count = (before, after, sign) => {
-    if (!openElsewhere.value) sinceFile.count(before, after, sign)
-  }
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
    * state declared below, through lazy arrows only called at runtime. */
@@ -242,7 +237,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       editing.restore(snapshot)
     },
     settle: () => editing.settle(),
-    countChange,
+    countChange: sinceFile.count,
   })
 
   /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Selection
@@ -255,8 +250,10 @@ function wireAppShell(services: Services, options: ShellOptions) {
       clearSelectionAndHover()
     },
     flushPendingSave,
-    countChange,
+    countChange: sinceFile.count,
     onRowsHeld: (project) => rowOps.tellMarkedDone(project),
+    // Open in another tab (ticket 0937): nothing changes here, so no Undo step and no bead counted since the last file.
+    readOnly: () => openElsewhere.value,
   })
   const { edit } = editing
 

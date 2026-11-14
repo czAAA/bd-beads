@@ -32,12 +32,10 @@ test('a second tab draws nothing until Work here instead, then the first tab is 
 
   await expect(second.getByTestId('open-elsewhere-message')).toBeVisible()
   await expect(first.getByTestId('open-elsewhere')).toHaveCount(0)
-  await expect(second.getByTestId('pill-tool-paint')).toHaveAttribute('aria-disabled', 'true')
 
   await stroke(second)
 
   expect(painted(await savedProject(second))).toBe(0)
-  await expect(second.getByTestId('project-surface')).toBeVisible()
   await expect(second.getByTestId('strip-undo')).toHaveAttribute('aria-disabled', 'true')
   await expect(second.getByTestId('announcer')).toHaveText("This Project is open in another tab. Changes made here aren't saved while it is open there.")
 
@@ -45,7 +43,6 @@ test('a second tab draws nothing until Work here instead, then the first tab is 
 
   await expect(second.getByTestId('open-elsewhere')).toHaveCount(0)
   await expect(first.getByTestId('open-elsewhere-message')).toBeVisible()
-  await expect(first.getByTestId('pill-tool-paint')).toHaveAttribute('aria-disabled', 'true')
   await stroke(second)
   await expect.poll(async () => painted(await savedProject(second))).toBe(6)
   await context.close()

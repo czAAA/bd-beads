@@ -60,6 +60,8 @@ export function webProjectLocks(locks: LockManager): ProjectLocks {
             given = true
             return hold()
           })
+          // A request fails only by an abort: this claim's own (let go, or giving way to a take-over), or, once given,
+          // another tab's take-over.
           .catch(() => {
             if (!given || released) return
             onHeld(false)
