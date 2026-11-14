@@ -146,9 +146,12 @@ export const zh: Translations = {
       deleteAllConfirm: '删除所有项目',
       sendFeedback: '发送反馈',
       reportTranslation: '报告翻译问题',
-      keepProjects: '在此设备上保留项目',
-      keepProjectsOn: '开',
-      keepProjectsOff: '关',
+      keepProjects: '此浏览器保留项目',
+      keepProjectsOn: '是',
+      keepProjectsOff: '否',
+      keepProjectsInfoLabel: '关于保留项目',
+      keepProjectsInfo:
+        '设备空间不足时，浏览器可能会清除此应用的数据，除非它保留你的项目。这由浏览器自行决定，所以请为每个你在意的项目保存项目文件。',
     },
     project: {
       rename: '重命名“{name}”',
@@ -317,6 +320,7 @@ export const zh: Translations = {
       storage: '你的项目只保存在这台设备的浏览器里。',
       paintMouse: '点击或拖动，放上所选颜色的珠子。',
     },
+    gridFocusLabel: '网格聚焦',
   },
   shell: {
     canvasPlaceholderHint: '用“新建项目”创建一个，从项目库打开一个，或打开项目文件。',
@@ -330,16 +334,8 @@ export const zh: Translations = {
   },
   storage: {
     saveFailedMessage: '无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或保存项目文件以保留修改。',
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: '请浏览器保留你的项目？',
-      message: '设备空间不足时，浏览器可能会清除此应用的数据。如果浏览器询问，请选择允许。',
-      confirmButton: '保留项目',
-      cancelButton: '以后再说',
-    },
     openElsewhere: '此项目已在另一个标签页中打开。在那里打开期间，这里的更改不会保存。',
     keptToast: '此浏览器会保留你的项目。',
-    notKeptMessage: '浏览器未同意保留项目。请为每个你在意的项目保存项目文件。',
   },
   header: {
     menuButton: '菜单',
@@ -1244,6 +1240,8 @@ export const zh: Translations = {
     fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
     noBeadsToNumber: '没有可编号的珠子。',
+    gridFocus: '让作品周围的网格保持清晰，其他地方更安静。',
+    noWorkToFocus: '还没有可以聚焦的作品。',
   },
   layerSettings: {
     frameHeading: '设置',

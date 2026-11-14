@@ -146,9 +146,12 @@ export const es: Translations = {
       deleteAllConfirm: 'Eliminar todos los proyectos',
       sendFeedback: 'Enviar comentarios',
       reportTranslation: 'Informar de un problema de traducción',
-      keepProjects: 'Conservar proyectos en el dispositivo',
+      keepProjects: 'Este navegador conserva los proyectos',
       keepProjectsOn: 'Sí',
       keepProjectsOff: 'No',
+      keepProjectsInfoLabel: 'Sobre conservar proyectos',
+      keepProjectsInfo:
+        'Cuando el dispositivo se queda sin espacio, el navegador puede borrar los datos de esta app, salvo que conserve tus proyectos. El navegador lo decide por su cuenta, así que guarda un archivo de proyecto de cada uno que te importe.',
     },
     project: {
       rename: 'Renombrar «{name}»',
@@ -317,6 +320,7 @@ export const es: Translations = {
       storage: 'Tus proyectos se guardan solo en este navegador, en este dispositivo.',
       paintMouse: 'Haz clic o arrastra para poner cuentas del color elegido.',
     },
+    gridFocusLabel: 'Foco de cuadrícula',
   },
   shell: {
     canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre uno de la biblioteca de proyectos o abre un archivo de proyecto.',
@@ -331,16 +335,8 @@ export const es: Translations = {
   storage: {
     saveFailedMessage:
       'No se pudo guardar en este dispositivo. Tu último cambio solo está en pantalla. Libera espacio en el navegador o guarda un archivo de proyecto para conservarlo.',
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: '¿Pedir al navegador que conserve tus proyectos?',
-      message: 'Cuando el dispositivo se queda sin espacio, el navegador puede borrar los datos de esta app. Si el navegador pregunta, elige Permitir.',
-      confirmButton: 'Conservar proyectos',
-      cancelButton: 'Ahora no',
-    },
     openElsewhere: 'Este proyecto está abierto en otra pestaña. Los cambios hechos aquí no se guardan mientras siga abierto allí.',
     keptToast: 'Este navegador conservará tus proyectos.',
-    notKeptMessage: 'El navegador no aceptó conservar los proyectos. Guarda un archivo de proyecto de cada uno que te importe.',
   },
   header: {
     menuButton: 'Menú',
@@ -1266,6 +1262,8 @@ export const es: Translations = {
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
     pasteToolTouch: 'Toca donde va la copia.',
     noBeadsToNumber: 'No hay cuentas que numerar.',
+    gridFocus: 'Mantiene la cuadrícula nítida alrededor de tu trabajo y más tranquila en el resto.',
+    noWorkToFocus: 'Todavía no hay trabajo en el que centrarse.',
   },
   layerSettings: {
     frameHeading: 'Ajustes',

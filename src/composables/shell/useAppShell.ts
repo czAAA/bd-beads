@@ -195,6 +195,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
   const toggleRulers = () => void (showRulers.value = !showRulers.value)
+  /** Grid focus (G, the canvas strip's button, ticket 1002): on by default and kept on the device; a view, no Undo step. */
+  const gridFocus = services.devicePreferences.get('gridFocus')
+  const toggleGridFocus = () => void (gridFocus.value = !gridFocus.value)
   const rowHighlight = services.devicePreferences.get('rowHighlight')
   const toggleRowHighlight = () => void (rowHighlight.value = !rowHighlight.value)
 
@@ -795,11 +798,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const storageAsk = useStorageAskFlow({
     persistentStorage: services.persistentStorage,
     devicePreferences: services.devicePreferences,
-    dialogs,
     messages,
     showToast,
-    openProjectId: () => currentProject()?.id,
-    saveFileOf: (id) => exportFlow.onSaveFileOf(id),
   })
 
   /** Exporting as a file, PNG or PDF, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
@@ -938,6 +938,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
+    onToggleGridFocus: toggleGridFocus,
     onToggleReferenceImage: referenceImage.toggleShown,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
@@ -1048,6 +1049,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
       stroking: computed(() => strokeMode.value !== null),
       toggleRulers,
+      gridFocus,
+      toggleGridFocus,
       /** The reference image (ticket 0790): what the surface draws, the strip button, Adjust and its bar. */
       referenceImage,
       /** The reference image's picture bar (ticket 0883): its size, Set Frame around the picture and Convert to beads. */
@@ -1248,9 +1251,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onExportPng: exportFlow.onExportPng,
       onExportPdf: exportFlow.onExportPdf,
       onSetLetters: exportFlow.onSetLetters,
-      // Menu: whether the browser keeps the Projects, and asking it again (ticket 0839)
+      // Menu: whether the browser keeps the Projects, shown as a fact (tickets 0839, 0936)
       projectsKept: storageAsk.kept,
-      onAskToKeep: storageAsk.onAskToKeep,
       // Project's Picture and Printable chart open Export as the strip's button does, on their row (ticket 0843)
       onSelectPanel: overlays.onSelectPanel,
       exportChoice: overlays.exportChoice,
@@ -1296,8 +1298,6 @@ function wireAppShell(services: Services, options: ShellOptions) {
       pendingLargeOpen: savedProjectConfirms.pendingLargeOpen,
       onConfirmLargeOpen: savedProjectConfirms.onConfirmLargeOpen,
       onCancelLargeOpen: savedProjectConfirms.onCancelLargeOpen,
-      onConfirmStorageNote: storageAsk.onConfirmStorageNote,
-      onCancelStorageNote: storageAsk.onCancelStorageNote,
       onCloseShortcutsHelp,
       feedbackRequest: feedback.feedbackRequest,
       onCloseFeedback: feedback.onCloseFeedback,

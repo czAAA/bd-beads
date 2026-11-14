@@ -125,8 +125,8 @@ export const PREFERENCES = {
     parse: (raw) => raw === 'yes',
     write: (seen) => (seen ? 'yes' : null),
   }),
-  // Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never
-  // again.
+  // Whether the browser has been asked to keep the library on this device (tickets 399, 0936): once, then never again.
+  // The key still names the note that used to ask first, so a device that saw it isn't asked again.
   storageNoteSeen: preference<boolean>({
     key: 'openbeads:storage-note-seen',
     fallback: false,
@@ -199,6 +199,8 @@ export const PREFERENCES = {
   }),
   /** My beads (ticket 0902, ADR 0010 D-3): the codes owned, one list per Color catalog; none until one is ticked. */
   myBeads: preference<MyBeads>({ key: 'openbeads:my-beads', fallback: {}, parse: parseMyBeads, write: writeMyBeads }),
+  /** Whether Grid focus is on (ticket 1002, CanvasStrip card): on until switched off; a view setting only. */
+  gridFocus: onUntilOff('openbeads:grid-focus'),
 }
 
 /** The theme the person was seeing: their pick, or the device's when they never picked (high contrast counts as light,

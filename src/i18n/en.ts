@@ -144,9 +144,12 @@ export const en: Translations = {
       deleteAllConfirm: 'Delete all Projects',
       sendFeedback: 'Send feedback',
       reportTranslation: 'Report a translation problem',
-      keepProjects: 'Keep Projects on this device',
-      keepProjectsOn: 'On',
-      keepProjectsOff: 'Off',
+      keepProjects: 'Kept by this browser',
+      keepProjectsOn: 'Yes',
+      keepProjectsOff: 'No',
+      keepProjectsInfoLabel: 'About keeping Projects',
+      keepProjectsInfo:
+        "When the device runs short on space, the browser can clear this app's data, unless it keeps your Projects. The browser decides this by itself, so save a Project file of each one you care about.",
     },
     project: {
       rename: 'Rename {name}',
@@ -315,6 +318,7 @@ export const en: Translations = {
       storage: 'Your Projects are saved only in this browser, on this device.',
       paintMouse: 'Click or drag to place beads in the chosen color.',
     },
+    gridFocusLabel: 'Grid focus',
   },
   shell: {
     canvasPlaceholderHint: 'Make one with New Project, open one from the Projects library, or open a Project file.',
@@ -329,16 +333,8 @@ export const en: Translations = {
   storage: {
     saveFailedMessage:
       "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or save a Project file to keep it.",
-    /** The note before the browser's storage prompt, shown once at a device's first Project file or export (ticket 0839). */
-    keepNote: {
-      title: 'Ask the browser to keep your Projects?',
-      message: "When the device runs short on space, the browser can clear this app's data. If the browser asks, choose Allow.",
-      confirmButton: 'Keep Projects',
-      cancelButton: 'Not now',
-    },
     openElsewhere: "This Project is open in another tab. Changes made here aren't saved while it is open there.",
     keptToast: 'This browser will keep your Projects.',
-    notKeptMessage: "The browser didn't agree to keep Projects. Save a Project file of each one you care about.",
   },
   header: {
     menuButton: 'Menu',
@@ -1253,6 +1249,8 @@ export const en: Translations = {
     fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
     noBeadsToNumber: 'There are no beads to number.',
+    gridFocus: 'Keeps the grid clear around your work and calmer everywhere else.',
+    noWorkToFocus: 'There is no work to focus on yet.',
   },
   layerSettings: {
     frameHeading: 'Settings',

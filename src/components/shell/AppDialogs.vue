@@ -74,8 +74,6 @@ const {
   sendReport,
   verifyFeedback,
   copyReport,
-  onConfirmStorageNote,
-  onCancelStorageNote,
   onConfirmLeaveConverter,
   onCancelLeaveConverter,
 } = useDialogsContext()
@@ -267,19 +265,6 @@ const importMessage = computed(() => {
     :confirm-danger="false"
     @confirm="onConfirmLargeOpen"
     @cancel="onCancelLargeOpen"
-  />
-
-  <!-- The note before the browser's storage prompt, once per device at its first save (ticket 399). -->
-  <ConfirmModal
-    v-if="open === 'keep-note'"
-    data-testid="keep-note-modal"
-    :title="t.storage.keepNote.title"
-    :message="t.storage.keepNote.message"
-    :confirm-label="t.storage.keepNote.confirmButton"
-    :cancel-label="t.storage.keepNote.cancelButton"
-    :confirm-danger="false"
-    @confirm="onConfirmStorageNote"
-    @cancel="onCancelStorageNote"
   />
 
   <ShortcutsHelp v-if="open === 'shortcuts'" @close="onCloseShortcutsHelp" />
