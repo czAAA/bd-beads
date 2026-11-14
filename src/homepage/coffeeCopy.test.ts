@@ -1,17 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
-import { coffeeChips } from './coffeeCopy'
-
-/** The promises: the chips but Open source and Say hello, the two that act. */
-const coffeePromises = (t: typeof en) => coffeeChips(t).filter((chip) => chip.id !== 'openSource' && chip.id !== 'sayHello')
+import { coffeeActs, coffeePromises, coffeeRows } from './coffeeCopy'
 
 describe("The coffee screen's copy (ticket 0823)", () => {
   it('has the six promises in order, each with its icon', () => {
     expect(coffeePromises(en).map(({ icon, name }) => [icon, name])).toEqual([
       ['device', 'Yours, on this device'],
       ['cloud-off', 'Works offline'],
-      ['close', 'No ads or tracking'],
+      ['eye-off', 'No ads or tracking'],
       ['pen-mode', 'For iPad and Pencil'],
       ['check', 'Free forever'],
       ['keyboard', 'Keyboard shortcuts'],
@@ -27,16 +24,16 @@ describe("The coffee screen's copy (ticket 0823)", () => {
     expect(coffeePromises(ru)[5].text).toContain(`${ru.panels.menu.help} → ${ru.shortcutsHelp.title}`)
   })
 
-  it('has the chips: the six promises, then Open source and Say hello (ticket 0880)', () => {
-    expect(coffeeChips(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'pencil', 'free', 'shortcuts', 'openSource', 'sayHello'])
-    expect(coffeeChips(en).slice(6).map(({ icon, name }) => [icon, name])).toEqual([
+  it('has the rows: the six promises, then Open source and Say hello (tickets 0880, 0948)', () => {
+    expect(coffeeRows(en).map(({ id }) => id)).toEqual(['device', 'offline', 'noAds', 'pencil', 'free', 'shortcuts', 'openSource', 'sayHello'])
+    expect(coffeeActs(en).map(({ icon, name }) => [icon, name])).toEqual([
       ['code', 'Open source'],
       ['message', 'Say hello'],
     ])
   })
 
   it("points Say hello at the Menu's own Send feedback row", () => {
-    const sayHello = (t: typeof en) => coffeeChips(t).find((chip) => chip.id === 'sayHello')!.text
+    const sayHello = (t: typeof en) => coffeeActs(t).find((act) => act.id === 'sayHello')!.text
     expect(sayHello(en)).toBe("A bug, an idea, a pattern you made: send it to the family. It's also in Menu → Send feedback.")
     expect(sayHello(ru)).toContain(`→ ${ru.panels.menu.sendFeedback}.`)
   })
