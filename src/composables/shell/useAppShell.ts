@@ -1036,6 +1036,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The library and the panels the strip opens
       projects,
       activeProject,
+      /** The Project as summaries see it (useSettledProject): the Frame button's Tooltip counts Beads needed on it (0932). */
+      settledProject,
       /** Open in another tab (ticket 0937): the Tool pill's tools are off. */
       openElsewhere,
       projectLabel,

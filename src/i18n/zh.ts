@@ -743,7 +743,7 @@ export const zh: Translations = {
     fromStarter: '用起始方案创建边框',
     fitAFrame: '让边框贴合图形',
     fitNothing: '还没有画任何内容，无法贴合边框。',
-    noFrameLine: '边框决定尺寸、导出内容和珠子数量。',
+    noFrameLine: '边框决定尺寸、导出内容和所需珠子。',
     selectAFrame: '框选边框',
     selectFrameHint: '在画布上拖动以框选边框，按 Esc 取消。',
     exportNeedsFrame: '为想导出的图案设置边框。',
@@ -1245,6 +1245,7 @@ export const zh: Translations = {
     noBeadsToNumber: '没有可编号的珠子。',
     gridFocus: '让作品周围的网格保持清晰，其他地方更安静。',
     noWorkToFocus: '还没有可以聚焦的作品。',
+    framePanelBeads: '打开所需珠子（{total}）、边框的大小、旋转和移除。',
   },
   layerSettings: {
     frameHeading: '设置',
