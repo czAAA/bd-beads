@@ -51,6 +51,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - Landmarks: one `banner` (the Canvas strip) and one `main` (the rest of the canvas box) per page, nothing outside a landmark; panels are `dialog`s named by their title, the Menu a plain `region` (ScreenReaders card).
 - The Pattern is `role="img"` named "Logo panel, 40 by 30 beads, 2 colors, row 12 of 30 done"; Beads needed is its text equivalent.
 - Every icon-only button has a name in the app's own words (the ScreenReaders card lists them). Toggles use `aria-pressed`, the Switch `role="switch"`, disclosure rows `aria-expanded`.
+- A control with words on it is called by those words, first (WCAG 2.5.3, ticket 0940): a Palette row is "1, Crystal, Transparent, add to the Palette". Anything more goes after them, as visually hidden text or a description, never in an `aria-label` that drops what is shown.
 - Results are `role="status"` (polite), errors `role="alert"`; one announcement per action, none for painting single beads.
 
 ## Stacking order

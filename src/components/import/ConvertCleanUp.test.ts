@@ -33,12 +33,13 @@ async function opened(picture: PixelData) {
 }
 
 describe('Clean up on the converter page (ticket 0906, DS-3)', () => {
-  it('says what it cleaned on its button under Colors, named for screen readers', async () => {
+  it('says what it cleaned on its button under Colors, named by those words and then Clean up (ticket 0940)', async () => {
     const { wrapper, wizard } = await opened(photoPicture())
     const button = wrapper.get('[data-testid="convert-clean-up-button"]')
     const cleaned = wizard.cleanUp.cleaned.value
     expect(button.get('[data-testid="convert-clean-up-first"]').text()).toBe(`${cleaned} stray beads cleaned`)
-    expect(button.attributes('aria-label')).toBe(`Clean up: ${cleaned} stray beads cleaned`)
+    expect(button.attributes('aria-label')).toBeUndefined()
+    expect(button.text().replace(/\s+/g, ' ')).toBe(`${cleaned} stray beads cleaned ${button.get('[data-testid="convert-clean-up-second"]').text()} Clean up`)
     expect(button.attributes('aria-expanded')).toBe('false')
   })
 

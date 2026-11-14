@@ -5,6 +5,9 @@ import { PANEL_CONTEXT } from '../shell/panelContext'
 import type { StarterCategoryId } from '../../domain/starters'
 import { en } from '../../i18n/en'
 
+/** The words a control shows, as read: one space between its parts (ticket 0940). */
+const shown = (element: { text: () => string }) => element.text().replace(/\s+/g, ' ')
+
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
@@ -42,17 +45,17 @@ describe('the Starter gallery, step 1', () => {
 describe('the Starter gallery\'s four categories (ticket 0597)', () => {
   it('shows Shapes, Earrings, Rings and Bands, each with its count of options', () => {
     const { wrapper } = mountGallery()
-    expect(wrapper.findAll('.starter-card').map((card) => card.text())).toEqual(['Shapes5 shapes', 'Earrings2 fringe styles', 'Rings4 motifs', 'Bands4 motifs'])
+    expect(wrapper.findAll('.starter-card').map(shown)).toEqual(['Shapes 5 shapes', 'Earrings 2 fringe styles', 'Rings 4 motifs', 'Bands 4 motifs'])
   })
 
   it('names each Earring, Ring and Band, the sizes its design is made for and its bead count', () => {
     const earrings = mountGallery({ category: 'earrings' }).wrapper
     expect(earrings.get('[data-testid="starter-lead"]').text()).toBe(en.starters.categories.earrings.lead)
-    expect(earrings.get('[data-testid="starter-card-vFringe"]').text()).toBe('V fringe7 wide · fringe 1287 beads each')
+    expect(shown(earrings.get('[data-testid="starter-card-vFringe"]'))).toBe('V fringe 7 wide · fringe 12 87 beads each')
     const rings = mountGallery({ category: 'rings' }).wrapper
     expect(rings.findAll('.starter-card').map((card) => card.attributes('data-testid'))).toEqual(['starter-card-ringStripes', 'starter-card-ringChevrons', 'starter-card-ringDiamonds', 'starter-card-ringPlaid'])
-    expect(rings.get('[data-testid="starter-card-ringPlaid"]').text()).toBe('Plaid7 wide · eu 54≈ 252 beads')
-    expect(mountGallery({ category: 'bands' }).wrapper.get('[data-testid="starter-card-bandStripes"]').text()).toMatch(/^Stripes11 wide · wrist 16 cm≈ .+ beads$/)
+    expect(shown(rings.get('[data-testid="starter-card-ringPlaid"]'))).toBe('Plaid 7 wide · eu 54 ≈ 252 beads')
+    expect(shown(mountGallery({ category: 'bands' }).wrapper.get('[data-testid="starter-card-bandStripes"]'))).toMatch(/^Stripes 11 wide · wrist 16 cm ≈ .+ beads$/)
   })
 })
 
@@ -83,11 +86,11 @@ describe('the Starter gallery, step 2', () => {
     expect(wrapper.get('[data-testid="starter-card-triangle"]').findAll('.starter-card__meta')).toHaveLength(2)
   })
 
-  it('names each card by its option, and describes it by its caption', () => {
+  it('names each card by the words it shows, its option then its caption (ticket 0940)', () => {
     const { wrapper } = mountGallery({ category: 'shapes' })
     const card = wrapper.get('[data-testid="starter-card-triangle"]')
-    const description = document.getElementById(card.attributes('aria-describedby')!)
-    expect(description?.textContent).toContain('165 beads')
+    expect(card.attributes('aria-labelledby')).toBeUndefined()
+    expect(shown(card)).toMatch(/^Triangle .*165 beads/)
   })
 
   it('opens an option\'s setup under its name, the crumb naming its category', async () => {

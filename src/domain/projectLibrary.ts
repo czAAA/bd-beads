@@ -9,13 +9,16 @@ import { frameOf, quarterTurnOf, projectNameOf } from './layerRecord'
  * and, once it has a Frame, the Frame's size; reflects the rotated view's swapped dimensions, since that's how the
  * Project currently looks. */
 export function summarizeProject(project: Project): string {
-  // The size is the Frame's: a canvas with none has no size to state (ADR 0026).
-  if (!frameOf(project)) {
-    return projectNameOf(project)
-  }
+  const size = projectFrameSize(project)
+  return size ? `${projectNameOf(project)} · ${size}` : projectNameOf(project)
+}
+
+/** The Frame's size as the Project looks, "24×14"; none without a Frame: a canvas with none has no size to state (ADR 0026). */
+export function projectFrameSize(project: Project): string | undefined {
+  if (!frameOf(project)) return undefined
   const { columns, rows } = shownDimensions(project)
   const [width, height] = rotationSwapsAxes(quarterTurnOf(project)) ? [rows, columns] : [columns, rows]
-  return `${projectNameOf(project)} · ${width}×${height}`
+  return `${width}×${height}`
 }
 
 /** When a Project was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */

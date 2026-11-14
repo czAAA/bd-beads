@@ -964,13 +964,14 @@ describe('ConvertImageWizard My beads (ticket 0902)', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="convert-my-beads-back"]').element)
   })
 
-  it('ticks a code with a press on its row, which then names it as in My beads, and offers My beads with its count', async () => {
+  it('ticks a code with a press on its row, named by the words it shows and pressed once in My beads, and offers My beads with its count', async () => {
     const { wrapper } = await opened()
     await editMyBeads(wrapper)
     await row(wrapper, 'DB723').trigger('click')
 
     expect(row(wrapper, 'DB723').attributes('aria-pressed')).toBe('true')
-    expect(row(wrapper, 'DB723').attributes('aria-label')).toBe('DB723 red opaque, in My beads')
+    expect(row(wrapper, 'DB723').attributes('aria-label')).toBeUndefined()
+    expect(row(wrapper, 'DB723').text().replace(/\s+/g, ' ')).toBe('DB723 red opaque')
     expect(row(wrapper, 'DB200').attributes('aria-pressed')).toBe('false')
     expect(wrapper.get('[data-testid="convert-my-beads-count"]').text()).toBe('1 code')
 

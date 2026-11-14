@@ -38,6 +38,18 @@ describe('BeadColorList', () => {
     expect(colors.load).toHaveBeenCalled()
   })
 
+  it('names a row by the words it shows, then what a press does (ticket 0940)', () => {
+    const { wrapper } = setup([entry({}), entry({ code: 'DB2', family: 'Gray', finish: 'matte', discontinued: true }), entry({ code: 'DB3', taken: true })])
+
+    expect(names(wrapper, 'bead-color')).toEqual([
+      'DB1, Blue, Metallic, add to the Palette',
+      'DB2, Gray, Matte, Discontinued, add to the Palette',
+      'DB3, Blue, Metallic, in the Palette as the same color',
+    ])
+    // The words shown, spaced as read: each name starts with them.
+    expect(wrapper.findAll('[data-testid="bead-color"]').map((row) => row.text().replace(/\s+/g, ' '))).toEqual(['DB1 Blue · Metallic', 'DB2 Gray · Matte · Discontinued', 'DB3 Blue · Metallic In the Palette'])
+  })
+
   it('adds a code’s color when pressed', async () => {
     const { wrapper, colors } = setup([entry({})])
 

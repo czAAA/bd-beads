@@ -2,7 +2,7 @@
 // A two-line row of a panel list (MenuPanel card): a thumbnail, the name (one line, ellipsis) over a second line in
 // `muted`, then facts at the right, and an `actions` slot shown on hover or keyboard focus (the library's × Remove).
 // The row is one button, `active` ringing the thumbnail (the open project); a `still` one only shows (ticket 0790).
-defineProps<{ name: string; sub?: string; active?: boolean; label?: string; selectTestid?: string; still?: boolean }>()
+defineProps<{ name: string; sub?: string; heard?: string; active?: boolean; selectTestid?: string; still?: boolean }>()
 const emit = defineEmits<{ select: [] }>()
 </script>
 
@@ -13,7 +13,6 @@ const emit = defineEmits<{ select: [] }>()
       class="panel-list-row__select"
       :class="{ 'ui-control': !still }"
       :type="still ? undefined : 'button'"
-      :aria-label="label"
       :aria-pressed="still ? undefined : active"
       :data-testid="selectTestid"
       @click="still || emit('select')"
@@ -21,8 +20,12 @@ const emit = defineEmits<{ select: [] }>()
       <span class="panel-list-row__thumb"><slot name="thumb" /></span>
       <span class="panel-list-row__text">
         <span class="panel-list-row__name" data-user-text>{{ name }}</span>
+        {{ ' ' }}
         <span v-if="sub" class="panel-list-row__sub">{{ sub }}</span>
       </span>
+      {{ ' ' }}
+      <!-- The row's name is the words it shows, then `heard`, said only to a screen reader (ticket 0940). -->
+      <span v-if="heard" class="panel-list-row__heard">{{ heard }}</span>
     </component>
     <span class="panel-list-row__facts"><slot name="facts" /></span>
     <span class="panel-list-row__actions"><slot name="actions" /></span>
@@ -107,6 +110,16 @@ const emit = defineEmits<{ select: [] }>()
 .panel-list-row__sub {
   font: var(--type-small);
   color: var(--muted);
+}
+
+/* Heard, not seen. */
+.panel-list-row__heard {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .panel-list-row__facts {

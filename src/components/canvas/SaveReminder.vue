@@ -86,12 +86,13 @@ const lastLine = computed(() => {
     :meta="[countLine, lastLine]"
     :announce="false"
   >
+    <!-- Open, the label's words are the ring's name (ticket 0940); closed, it is Save Project file, the count its description. -->
     <button
       ref="buttonEl"
       type="button"
       class="ui-control save-ring__button"
-      :aria-label="t.saveReminder.label"
-      :aria-describedby="countId"
+      :aria-label="labelOpen ? undefined : t.saveReminder.label"
+      :aria-describedby="labelOpen && !countLeftOut ? undefined : countId"
       data-testid="save-ring"
       @click="emit('save')"
       @pointerenter="emit('hold', true)"
@@ -100,9 +101,10 @@ const lastLine = computed(() => {
       @blur="emit('hold', false)"
     >
       <span class="save-ring__halo"><AppIcon name="save" :size="16" /></span>
-      <span class="save-ring__label" :style="labelRoom ? { '--label-room': labelRoom } : undefined" aria-hidden="true" data-testid="save-ring-label">
+      <span class="save-ring__label" :style="labelRoom ? { '--label-room': labelRoom } : undefined" :aria-hidden="labelOpen ? undefined : 'true'" data-testid="save-ring-label">
         <span class="save-ring__line">
           <span ref="textEl" class="save-ring__text">{{ t.saveReminder.label }}</span>
+          {{ ' ' }}
           <span ref="countEl" class="save-ring__count" :class="{ 'save-ring__count--left-out': countLeftOut }" data-testid="save-ring-count">{{ since }}</span>
         </span>
       </span>

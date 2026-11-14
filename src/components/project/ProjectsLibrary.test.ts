@@ -4,7 +4,6 @@ import { defineComponent, h, nextTick } from 'vue'
 import ProjectsLibrary from './ProjectsLibrary.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import { createProject } from '../../domain/createProject'
-import { summarizeProject } from '../../domain/projectLibrary'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { withLayers } from '../../testUtils/layerFields'
@@ -49,7 +48,9 @@ describe('ProjectsLibrary (ticket 0553)', () => {
   it('opens a project on a press and asks to remove it from its ×', async () => {
     const wrapper = mountLibrary()
     const button = wrapper.get(`[data-testid="select-project-${first.id}"]`)
-    expect(button.attributes('aria-label')).toBe(summarizeProject(first))
+    // Named by the words it shows, then the Frame's size (ticket 0940).
+    expect(button.attributes('aria-label')).toBeUndefined()
+    expect(button.text().replace(/\s+/g, ' ')).toBe('Moth Ada 4×4')
     await button.trigger('click')
     await wrapper.get(`[data-testid="remove-project-${first.id}"]`).trigger('click')
     expect(wrapper.emitted('select')).toEqual([[first.id]])
