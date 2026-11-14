@@ -28,6 +28,8 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['ProgressBar with every row done', ProgressBar, { project: moveToRow(project, rowProgressPosition(project).total) }],
   // The save ring with its label open (ticket 0796): on a phone a count with no room drops out, leaving the words.
   ['SaveReminder', SaveReminder, { beads: 12345, lastFileAt: Date.now() - 3 * 24 * 60 * 60 * 1000, labelOpen: true }],
+  // Before a first file the label says why to save in place of the count (ticket 0987).
+  ['SaveReminder with no file yet', SaveReminder, { beads: 170, labelOpen: true }],
 ]
 
 describeFits(CASES)

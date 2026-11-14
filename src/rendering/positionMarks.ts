@@ -2,10 +2,11 @@ import { beadRoundness, describeWeave, type BeadCell, type Technique, type Techn
 import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
 import { cellSizePx, CELL_SIZE_PX } from './cellSize'
 import type { Region } from './surfaceView'
+import { fillTiles } from './tonalTiles'
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
 // rows down: 2N for peyote and brick stitch with a Drop of N) filled over the view, not a shape per position. A screen-size bitmap
-// kept like the bead sprites (sprites.ts). Each mark is a square with one shared outline.
+// kept like the bead sprites (sprites.ts). Each mark is a tonal tile (tonalTiles.ts), or a square with one shared outline.
 
 const MAX_TILES = 64
 const tiles = new Map<string, CanvasImageSource | null>()
@@ -21,6 +22,8 @@ export interface MarkTileInput {
   deviceScale: number
   pixelRatio: number
   color: string
+  /** Tonal tiles in `color` (ticket 1001) rather than outlines. */
+  tiles?: boolean
 }
 
 interface Tile {
@@ -47,9 +50,9 @@ function squarePath(context: DrawingContext, x: number, y: number, width: number
   context.closePath()
 }
 
-// Draws a square for each tile position and the copies spilling over its edges, top row down as beads are: each first
-// clears the bead's own area (so no outline shows through a bead), then outlines the cell's
-// edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
+// Draws a mark for each tile position and the copies spilling over its edges: a tonal tile, or an outline, top row down
+// as beads are, each first clearing the bead's own area (so no outline shows through a bead), then outlining the
+// cell's edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
 function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile): void {
   const { size } = tile
   const radius = beadRoundness(input.technique, input.cell) * CELL_SIZE_PX
@@ -61,6 +64,10 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile):
         squares.push({ ...bead, x: bead.x + dx, y: bead.y + dy })
       }
     }
+  }
+  if (input.tiles) {
+    fillTiles(context, squares.map((square) => ({ ...square, cornerRadius: radius })), input.color)
+    return
   }
   squares.sort((a, b) => a.y - b.y)
   context.strokeStyle = input.color
@@ -89,7 +96,7 @@ function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; key
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
   // The tile's size is in the key too; the roundness is the only part of the cell it doesn't show.
-  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color].join('|')
+  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color, !!input.tiles].join('|')
 
   let tile = tiles.get(key)
   if (tile === undefined) {

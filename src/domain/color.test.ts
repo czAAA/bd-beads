@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BUILT_IN_COLORS } from './palette'
-import { channelsOf, colorDistance, contrastRatio, fromHex, luma, mix, normalizeHex, relativeLuminance, toHex, toOklab } from './color'
+import { channelsOf, colorDistance, contrastRatio, fromCielab, fromHex, luma, mix, normalizeHex, relativeLuminance, toCielab, toHex, toOklab } from './color'
 
 describe('fromHex', () => {
   it('reads #rrggbb in either case', () => {
@@ -118,5 +118,27 @@ describe('colorDistance (ticket 0634)', () => {
 
   it('is the straight-line distance in OKLab, so black to white is 1', () => {
     expect(colorDistance(toOklab(fromHex('#000000')!), toOklab(fromHex('#ffffff')!))).toBeCloseTo(1, 4)
+  })
+})
+
+describe('toCielab', () => {
+  it('puts black at L* 0 and white at L* 100, both with no hue', () => {
+    const black = toCielab(channelsOf('#000000'))
+    const white = toCielab(channelsOf('#ffffff'))
+    expect([black.l, white.l]).toEqual([expect.closeTo(0, 3), expect.closeTo(100, 3)])
+    expect([white.a, white.b]).toEqual([expect.closeTo(0, 2), expect.closeTo(0, 2)])
+  })
+
+  it('reads a mid grey at its known L* (#777777 is about 50)', () => {
+    expect(toCielab(channelsOf('#777777')).l).toBeCloseTo(50.03, 1)
+  })
+
+  it('comes back to the same hex through fromCielab', () => {
+    for (const hex of ['#202020', '#3b3e43', '#e6e3de', '#fa520f', '#0e0e0e']) expect(toHex(fromCielab(toCielab(channelsOf(hex))))).toBe(hex)
+  })
+
+  it('holds a color beyond sRGB inside 0 to 255', () => {
+    const { r, g, b } = fromCielab({ l: 100, a: 80, b: -80 })
+    expect([r, g, b].every((channel) => channel >= 0 && channel <= 255)).toBe(true)
   })
 })

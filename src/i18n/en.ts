@@ -716,6 +716,7 @@ export const en: Translations = {
     noFile: 'No Project file yet',
     announce: 'Beads since last file: {count}. Save a Project file to keep them.',
     since: { one: '{count} bead since the last file', other: '{count} beads since the last file' },
+    noFileWhy: 'the browser can clear your work, a file stays',
   },
   transfer: {
     exportLibraryButton: 'Save all Projects to a Project file',

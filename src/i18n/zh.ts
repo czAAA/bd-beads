@@ -712,6 +712,7 @@ export const zh: Translations = {
     noFile: '还没有项目文件',
     announce: '自上次保存文件后的珠子：{count}。保存项目文件以留住它们。',
     since: { other: '自上次文件后 {count} 颗珠子' },
+    noFileWhy: '浏览器可能清除作品，文件会一直保留',
   },
   transfer: {
     exportLibraryButton: '将所有项目保存到项目文件',
