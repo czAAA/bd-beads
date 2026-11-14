@@ -50,6 +50,8 @@ const props = defineProps<{
   mirrorOnFrame?: boolean
   /** The band has no Row not done: the Homepage demo's sheet, its one exception (MarginSheet card, ticket 0797). */
   withoutNotDone?: boolean
+  /** The canvas view is not yet set for its area (ticket 0991): the sheet's place is a stand-in until it is. */
+  placing?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -97,6 +99,19 @@ const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgre
 const canvas = useCanvasBackground(() => props.project)
 // The margin's popups follow their cells as the canvas is panned or zoomed (ticket 0736).
 const fold = useTitleBlockFold()
+/** Unseen until the canvas view is set and two frames after (ticket 0991): the sheet would show at the view's stand-in
+ * first, and the band's row and the title block then measure themselves and step down to the forms that fit, which can
+ * take a frame, so the sheet is first seen where it stays, in the forms it keeps. */
+const arriving = ref(true)
+watch(
+  () => props.placing,
+  (placing) => {
+    if (placing) return
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(() => (arriving.value = false)))
+    else arriving.value = false
+  },
+  { immediate: true },
+)
 /** The sheet's place, and its lines in the tint that reads on the margin color it is drawn in. */
 const sheetStyle = computed(() => {
   const { sheet, tilt, viewport } = props.anchor
@@ -306,7 +321,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 <template>
   <div
     class="margin-sheet"
-    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare' }]"
+    :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare', 'margin-sheet--arriving': arriving }]"
     :style="sheetStyle"
     data-testid="margin-sheet"
   >
@@ -468,6 +483,10 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   color: var(--ink);
   border-radius: var(--radius-lg);
   pointer-events: none;
+}
+
+.margin-sheet--arriving {
+  visibility: hidden;
 }
 
 .margin-sheet--editing {

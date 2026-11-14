@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSwitchRow from '../shell/PanelSwitchRow.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
@@ -9,10 +9,10 @@ import { usePrintChoices } from '../../composables/export/usePrintChoices'
 import type { Project } from '../../domain/project'
 import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, parseExportQuality, shownMegabytes } from '../../domain/exportQuality'
 import { decimalSign } from '../../domain/formatNumber'
-import { estimatePdf, estimatePng, exportFacts, type SizeEstimate } from '../../rendering/exportEstimate'
+import type { SizeEstimate } from '../../rendering/exportEstimate'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
+import { loadPrintCode, type PrintCode } from '../../rendering/loadPrintCode'
 import { plural } from '../../i18n/plural'
-import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, projectNameOf } from '../../domain/layerRecord'
@@ -41,8 +41,19 @@ const frame = computed(() => frameOf(props.project))
 const quality = useExportQuality()
 /** Large beads and Row by row on this device (ticket 0916): the PDF's pages and its count follow them at once. */
 const { largeBeads, rowByRow, choices } = usePrintChoices()
-/** What an export is made of, for its File size estimate (ticket 0588) and the PDF's page count: read once for the buttons. */
-const exportFactsNow = computed(() => exportFacts(props.project, printText(props.project, t.value, locale.value, new Date(), choices.value)))
+/** The print code the estimate is worked out with (ticket 0991): asked for as the rows first show, not with the page. */
+const printCode = shallowRef<PrintCode>()
+loadPrintCode().then(
+  (code) => (printCode.value = code),
+  // Not arrived (offline before the offline copy had it): the rows show their formats without an estimate.
+  () => undefined,
+)
+/** What an export is made of, for its File size estimate (ticket 0588) and the PDF's page count: read once for the
+ * buttons; none until the print code is here. */
+const exportFactsNow = computed(() => {
+  const code = printCode.value
+  return code?.exportFacts(props.project, code.printText(props.project, t.value, locale.value, new Date(), choices.value))
+})
 /** A size as the buttons show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
 function sizeText(bytes: number): string {
   const megabytes = shownMegabytes(bytes)
@@ -56,14 +67,13 @@ function exportValue(format: 'PNG' | 'PDF', estimate: SizeEstimate | undefined):
   const count = plural(locale.value, estimate.count, format === 'PNG' ? t.value.frame.exportFiles : t.value.frame.exportPages)
   return fillBlanks(t.value.frame.exportSizeValue, { format, size: sizeText(estimate.bytes), count })
 }
-const pngValue = computed(() => exportValue('PNG', exportFactsNow.value && estimatePng(exportFactsNow.value, pngDpiFor(quality.value))))
-const pdfValue = computed(() => exportValue('PDF', exportFactsNow.value && estimatePdf(exportFactsNow.value, pdfPageDpi())))
+const pngValue = computed(() => exportValue('PNG', exportFactsNow.value && printCode.value?.estimatePng(exportFactsNow.value, pngDpiFor(quality.value))))
+const pdfValue = computed(() => exportValue('PDF', exportFactsNow.value && printCode.value?.estimatePdf(exportFactsNow.value, pdfPageDpi())))
 /** Each stop's words and its dpi (tickets 571, 572, 0583). */
 const qualityStops = computed(() => {
-  const facts = exportFactsNow.value
   return EXPORT_QUALITIES.map((id) => {
     const word = t.value.frame[QUALITY_WORDS[id]]
-    if (!facts) return { id, word }
+    if (!frame.value) return { id, word }
     const dpi = pngDpiFor(id)
     const detail = fillBlanks(t.value.frame.qualityDpi, { n: dpi })
     return { id, word, detail, spoken: `${word}, ${detail}` }

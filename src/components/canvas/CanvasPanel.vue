@@ -69,6 +69,7 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
+  viewPlaced,
   canvasOrientation,
   twistPhase,
   selectionRefusals,
@@ -749,6 +750,7 @@ const drawingStyle = computed(() => {
             :selection="selectionAnchor?.box"
             :mirror-on-frame="mirrorOnFrame"
             :without-not-done="demo"
+            :placing="!viewPlaced"
             @mirror="onMirrorWholeFrame"
             @rotate="onRotateFrame"
             @toggle-edit="onEditFrame"
