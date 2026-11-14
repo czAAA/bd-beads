@@ -171,7 +171,8 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const project = withLayers(base, { frame: { ...frameOf(base)!, beads: withColors({}, [{ row: 0, column: 0, color: '#e63746' }]) } })
     const { calls, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
     expect(beads.map(({ color }) => color)).toEqual(['#e63746'])
-    expect(canvasBlits(calls)).toBe(11)
+    // Eleven tiles, and the Lifted piece's shadows (ticket 1004).
+    expect(canvasBlits(calls)).toBe(12)
   })
 
   it('draws the Frame\'s empty beads and marks in its look where tiles are not drawn (high contrast, exports)', () => {

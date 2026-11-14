@@ -11,6 +11,7 @@ import type { DrawnProject } from './projectRenderer'
 import { areaHandles, frameHandles, outsetBox, type Handle, type HandleId, type Outset } from './frameHandles'
 import { frameOf } from '../domain/layerRecord'
 import { ROW_MOTION, easeIn, easeStandard } from './rowMotion'
+import { drawsDraft } from './draftRenderer'
 
 /** The mono stack every number and label on the canvas is set in. */
 const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
@@ -25,7 +26,8 @@ export interface RulerDrawInput {
   project: DrawnProject
   /** The view the layout was made for, to place the boxes' lines. */
   surface: SurfaceView
-  /** What to draw; with its numbers off, the Pieces' rectangles go too, but the Frame's line is drawn either way. */
+  /** What to draw; with its numbers off, the Pieces' rectangles go too, but the Frame's line is drawn either way. A
+   * look that lifts pieces draws no Piece's rectangle at all (ticket 1004). */
   layout: RulerLayout
   pixelRatio: number
   theme: ProjectTheme
@@ -152,8 +154,11 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
+  // A Piece's rectangle gives way to its contour where the look lifts pieces (ticket 1004), save in the draft look,
+  // which draws none: the rulers stay put.
+  const lifted = theme.liftedPiece && !drawsDraft(surface.zoom * pixelRatio)
   for (const box of layout.boxes) {
-    if (box.outlined !== false) strokeBoxLine(context, box, surface, theme)
+    if (box.outlined !== false && !(box.kind === 'piece' && lifted)) strokeBoxLine(context, box, surface, theme)
   }
   for (const dot of layout.dots) {
     drawDot(context, dot, layout.scale, theme)
