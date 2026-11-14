@@ -640,6 +640,10 @@ export const en: Translations = {
     pieceTotal: 'These counts are one face of {faces}. Whole piece: {count} · 15/0: {small}',
     pieceLines: { triangles: 'Triangles', edgeBeads: 'Edge Beads', hingeBeads: 'Hinge Beads', tips: 'Triangle Tips', hingePins: 'Hinge Pins' },
     frontBackNote: 'These counts are the whole star, front and back.',
+    paletteNote: 'Palette colors, not bead codes',
+    paletteInfo:
+      "Colors without a code are the Palette's own, picked on screen rather than from the Bead's color catalog, so no bead is named for them. A color picked from the color catalog shows its code here.",
+    infoLabel: 'About these counts',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
