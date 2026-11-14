@@ -103,6 +103,19 @@ async function openFromHere() {
   emit('openFromHere', await taken)
 }
 
+/** Open editor from here, which a press in the demo lights and focuses (ticket 0950). */
+const openEl = shallowRef<InstanceType<typeof AppButton>>()
+/** Whether a press in the demo has lit Open editor from here: once a visit, and it stays lit. */
+const answered = ref(false)
+
+/** A press in the demo, which is only to watch (ticket 0950): the tour plays on and nothing is drawn, but the first one
+ * lights Open editor from here, the way to try it, and puts the focus on it. */
+function onPressed() {
+  if (answered.value) return
+  answered.value = true
+  ;(openEl.value?.$el as HTMLElement | undefined)?.focus()
+}
+
 /** Expand or Collapse: the demo's size changes at once. */
 function toggleExpand() {
   expanded.value = !expanded.value
@@ -153,7 +166,16 @@ watch(layout, async () => {
               tour.paused.value ? t.homepage.inside.play : t.homepage.inside.pause
             }}</span>
           </AppButton>
-          <AppButton class="inside__control" size="sm" data-testid="inside-open-from-here" @click="openFromHere">{{ t.homepage.inside.openFromHere }}</AppButton>
+          <AppButton
+            ref="openEl"
+            class="inside__control"
+            :class="{ 'inside__control--answer': answered }"
+            :variant="answered ? 'primary' : 'secondary'"
+            size="sm"
+            data-testid="inside-open-from-here"
+            @click="openFromHere"
+            >{{ t.homepage.inside.openFromHere }}</AppButton
+          >
         </div>
         <!-- Every row's caption in one cell, the one shown on top: it keeps the tallest's height, so nothing moves and
              the editor never changes size as the tour plays. Not a live region: it would speak every few seconds. -->
@@ -174,7 +196,7 @@ watch(layout, async () => {
           </p>
         </div>
       </div>
-      <InsideEditor ref="editor" class="inside__editor" :expand="expand" @toggle-expand="toggleExpand" />
+      <InsideEditor ref="editor" class="inside__editor" :expand="expand" @toggle-expand="toggleExpand" @pressed="onPressed" />
     </template>
 
     <template v-else>
@@ -260,6 +282,17 @@ watch(layout, async () => {
 /* `--control-height-small`, 28px, under AppButton's own small height. */
 .inside .inside__control {
   height: var(--control-height-small);
+}
+
+/* Lit by a press in the demo (ticket 0950): one calm fade to the accent look, none under reduced motion. */
+.inside .inside__control--answer {
+  transition-duration: var(--duration-base);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inside .inside__control--answer {
+    transition: none;
+  }
 }
 
 /* Pause and Play in one cell, the one not read hidden: the button keeps the wider word's width. */

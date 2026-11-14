@@ -21,7 +21,7 @@ export interface SectionInputDeps {
 
 /** How far a swipe goes before it turns, in px. */
 const SWIPE_LEAST = 48
-/** What's inside's demo editor, whose keys and touches are its own. */
+/** What's inside's demo editor, whose keys are its own. A swipe over it turns, as a wheel does: it is only to watch (ticket 0950). */
 const DEMO_EDITOR = '.inside-editor'
 /** Where the keys are a control's own: a text field, a list or slider the arrows move in, the demo editor. */
 const OWN_KEYS = `input, textarea, select, [role="slider"], [role="listbox"], [role="menu"], [role="radiogroup"], [role="tablist"], [role="spinbutton"], ${DEMO_EDITOR}`
@@ -105,7 +105,7 @@ export function useSectionInput({ section, count, page, shown, held, reducedMoti
   function onTouchStart(event: TouchEvent) {
     const target = event.target instanceof Element ? event.target : null
     const finger = event.touches[0]
-    if (event.touches.length !== 1 || !finger || held() || target?.closest(DEMO_EDITOR)) {
+    if (event.touches.length !== 1 || !finger || held()) {
       touch = undefined
       return
     }
