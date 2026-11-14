@@ -892,6 +892,8 @@ export interface Translations {
     announce: string
     /** The label's count beside "Save Project file" (ticket 0858): "89 beads since the last file". */
     since: PluralForms
+    /** In place of the count while the Project has never had a file (ticket 0987): why to save. */
+    noFileWhy: string
   }
   /** Open Project file and Save all Projects to a Project file, in the Projects library (ticket 0859: the file's one name). */
   transfer: {
