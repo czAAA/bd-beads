@@ -50,11 +50,11 @@ describe('useNewProjectFlow', () => {
     expect(deps.addProject.mock.calls.map(([created]) => layersView(created).name)).toEqual(['Project 2', 'Owl'])
   })
 
-  it('makes the first Project on the form\'s presets, through Create Project (ticket 0866)', () => {
+  it('makes the first Project in peyote on Delica 11/0, the piece the Homepage shows, through Create Project (tickets 0866, 0945)', () => {
     const { deps, flow } = setup()
     flow.onCreateFirstProject()
     const created = deps.addProject.mock.calls[0][0]
-    expect(layersView(created)).toMatchObject({ name: 'Project 1', technique: 'loom', beadId: 'toho/cube/1.5mm' })
+    expect(layersView(created)).toMatchObject({ name: 'Project 1', technique: 'peyote', beadId: 'miyuki/delica/11-0' })
     expect(frameOf(created)).toBeUndefined()
   })
 })
