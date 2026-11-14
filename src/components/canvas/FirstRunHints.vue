@@ -1,26 +1,21 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
+import { useHelpDevice } from '../../composables/ui/useKeyHints'
 
-// What an empty Project says (FirstRunHints card, tickets 0738 and 0798): only where Projects are kept and how to keep
-// a file of one, centred on the drawing area. Decoration only: hidden from screen readers and pointers, so the first
-// press on the canvas paints the first bead.
+// What an empty Project says (FirstRunHints card, tickets 0798, 0920): the next step in the Paint tool's Tooltip words
+// (mouse words off touch), then one quiet line on where Projects are kept. Decoration only: hidden from screen readers
+// and pointers, so the first press on the canvas paints the first bead.
 const { t } = useI18n()
-/** The welcome's last line: where in the Project panel a Project file is made. */
-const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.project.exportHeading, t.value.panels.project.saveFile])
+const { device } = useHelpDevice()
 </script>
 
 <template>
   <div class="first-run-hints" aria-hidden="true" data-testid="first-run-hints">
     <div class="first-run-hints__welcome" data-testid="first-run-welcome">
-      <p class="first-run-hints__lead" data-testid="first-run-storage-lead">{{ t.canvas.firstRun.storageLead }}</p>
-      <p class="first-run-hints__storage" data-testid="first-run-storage">{{ t.canvas.firstRun.storage }}</p>
-      <p class="first-run-hints__path" data-testid="first-run-path">
-        <template v-for="(step, index) in path" :key="step">
-          <span v-if="index">›</span>
-          <span class="hint-chip first-run-hints__chip">{{ step }}</span>
-        </template>
+      <p class="first-run-hints__lead" data-testid="first-run-next-step">
+        {{ device === 'touch' ? t.tooltips.paint : t.canvas.firstRun.paintMouse }}
       </p>
+      <p class="first-run-hints__storage" data-testid="first-run-storage">{{ t.canvas.firstRun.storage }}</p>
     </div>
   </div>
 </template>
@@ -46,8 +41,8 @@ const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.pr
   opacity: 0;
 }
 
-/* Centred on the drawing area, under the CanvasHint line: the lead line, the storage line 6px under it and the
- * Project file's path, nothing else (ticket 0795). */
+/* Centred on the drawing area, under the CanvasHint line: the next step and the storage line 6px under it, nothing
+ * else (tickets 0795, 0920). */
 .first-run-hints__welcome {
   position: absolute;
   top: 50%;
@@ -61,7 +56,7 @@ const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.pr
   transform: translate(-50%, -50%);
 }
 
-/* What a newcomer must not miss, a size up and in `body`, over the calmer `muted` line. */
+/* What to do first, a size up and in `body`, over the calmer `muted` line. */
 .first-run-hints__lead {
   max-width: 36rem;
   margin: 0;
@@ -69,27 +64,11 @@ const path = computed(() => [t.value.header.projectPanelLabel, t.value.panels.pr
   color: var(--body);
 }
 
-/* Two lines on purpose (ticket 0839): the string breaks after its first sentence, and a narrow screen balances each. */
+/* A narrow screen balances it. */
 .first-run-hints__storage {
   max-width: 36rem;
   margin: var(--space-6) 0 0;
   font: var(--hint-storage);
-  white-space: pre-line;
   text-wrap: balance;
-}
-
-.first-run-hints__path {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-6);
-  margin: var(--space-10) 0 0;
-  font: var(--hint-storage);
-}
-
-/* The CanvasHint's chip (controls.css), holding a label instead of a key. */
-.first-run-hints__chip {
-  font: var(--type-meta-small);
 }
 </style>

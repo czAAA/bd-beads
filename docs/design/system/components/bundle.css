@@ -1119,12 +1119,11 @@ body {
 .bb-schema-card-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 .bb-schema-card-actions .bb-schema-card-close { margin-left: auto; }
 
-/* Tickets 0725, 0798: the welcome over an empty Project (FirstRunHints card) */
+/* Tickets 0725, 0798, 0920: the welcome over an empty Project (FirstRunHints card): the next step, then where Projects are kept */
 .bb-hint-layer { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-canvas-overlay); }
 .bb-hint-welcome { display: flex; flex-direction: column; align-items: center; text-align: center; color: var(--muted); }
 .bb-hint-lead { margin: 0; font: var(--hint-storage-lead); color: var(--body); }
 .bb-hint-storage { margin: 6px 0 0; font: var(--hint-storage); }
-.bb-hint-path { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; font: var(--hint-storage); }
 @media (prefers-reduced-motion: no-preference) { .bb-hint-layer { transition: opacity var(--duration-fast) var(--ease-out); } }
 
 /* Homepage scroll story (tickets 0739, 0740, 0801; Homepage card): the page's ground, a section turning, the growing free list, the switched-off plans and their stamp. */
