@@ -27,6 +27,12 @@ describe('SaveReminder (ticket 0796)', () => {
     expect(wrapper.classes()).toContain('save-ring--open')
     expect(wrapper.get('[data-testid="save-ring-label"] .save-ring__text').text()).toBe('Save Project file')
     expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('64 beads since the last file')
+    // Open, its words are its name (ticket 0940): no label over them, and no second count line.
+    const button = wrapper.get('[data-testid="save-ring"]')
+    expect(button.attributes('aria-label')).toBeUndefined()
+    expect(button.attributes('aria-describedby')).toBeUndefined()
+    expect(wrapper.get('[data-testid="save-ring-label"]').attributes('aria-hidden')).toBeUndefined()
+    expect(button.text().replace(/\s+/g, ' ')).toBe('Save Project file 64 beads since the last file')
     await wrapper.setProps({ beads: 1 })
     expect(wrapper.get('[data-testid="save-ring-count"]').text()).toBe('1 bead since the last file')
   })

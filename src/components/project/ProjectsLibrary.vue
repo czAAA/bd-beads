@@ -4,7 +4,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { useIdlePieces } from '../../composables/canvas/idlePieces'
 import type { Project } from '../../domain/project'
 import { shownDimensions } from '../../domain/projectExtent'
-import { inSavedOrder, summarizeProject } from '../../domain/projectLibrary'
+import { inSavedOrder, projectFrameSize, summarizeProject } from '../../domain/projectLibrary'
 import { namedPieces, namedPiecesFrom } from '../../domain/pieceNames'
 import { piecesOf } from '../../domain/pieces'
 import { beadsOver, SIZE_GATE_BEADS, tooManyToWalk } from '../../domain/openingLimits'
@@ -138,7 +138,6 @@ function sealedDates(project: SealedProject): string {
           v-if="isSealed(entry)"
           :name="entry.name"
           :sub="plural(locale, entry.beads, t.projects.beads)"
-          :label="entry.name"
           :select-testid="`select-project-${entry.id}`"
           @select="emit('select', entry.id)"
         >
@@ -165,7 +164,7 @@ function sealedDates(project: SealedProject): string {
           :name="projectNameOf(entry)"
           :sub="entry.makerName"
           :active="entry.id === activeProjectId"
-          :label="summarizeProject(entry)"
+          :heard="projectFrameSize(entry)"
           :select-testid="`select-project-${entry.id}`"
           @select="emit('select', entry.id)"
         >

@@ -33,7 +33,7 @@ describe('ReferenceImageSection (ReferenceImage card, ticket 0790)', () => {
 
   it('with a picture shows its row, then Opacity, Adjust on canvas, Replace image and Remove image', async () => {
     const wrapper = mount(ReferenceImageSection, { props: { image, thumbnail: 'blob:rose' } })
-    expect(wrapper.get('[data-testid="reference-image-row"]').text()).toBe('rose.webp2048 × 1536 · 412 KB')
+    expect(wrapper.get('[data-testid="reference-image-row"]').text().replace(/\s+/g, ' ')).toBe('rose.webp 2048 × 1536 · 412 KB')
     expect(wrapper.get('[data-testid="reference-image-row"] img').attributes('src')).toBe('blob:rose')
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
     expect(order.filter((id) => ['reference-image-row', 'reference-image-opacity', 'reference-image-adjust', 'reference-image-replace', 'reference-image-remove'].includes(id!))).toEqual([

@@ -626,6 +626,9 @@ export interface Translations {
       inPalette: string
       takenNote: string
       discontinued: string
+      /** A row's name (ticket 0940): the words it shows first, `{name}` being rowName, with rowNote's Discontinued. */
+      rowName: string
+      rowNote: string
       add: string
       takenLabel: string
       noMatch: string
@@ -1267,7 +1270,6 @@ export interface Translations {
         empty: string
         allCodes: string
         shown: string
-        rowOwned: string
         pasteCodes: string
         pasteLabel: string
         pastePlaceholder: string
@@ -1296,7 +1298,6 @@ export interface Translations {
        * and result (`colorsJoined` then `joinedBeads`, joined by " · "). */
       cleanUp: {
         title: string
-        buttonName: string
         whatDoes: string
         whatDoesBody: string
         strayBeads: string

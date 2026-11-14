@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
-import { fillBlanks } from '../../domain/fillBlanks'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 
 // The Clean up button under Colors (ConvertImage card DS-3, ticket 0906): what the helper did, in a line or two, and
-// its popover in one press.
+// its popover in one press. Its name is the lines it shows, then "Clean up" for a screen reader (ticket 0940).
 defineEmits<{ toggle: [] }>()
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
@@ -34,7 +33,6 @@ const lines = computed(() => {
     :class="{ 'convert-clean-up-button--open': open, 'convert-clean-up-button--off': !cleanUp.on.value }"
     aria-haspopup="dialog"
     :aria-expanded="open"
-    :aria-label="fillBlanks(words.buttonName, { line: lines.first })"
     data-wrap-ok
     data-testid="convert-clean-up-button"
     @click="$emit('toggle')"
@@ -42,14 +40,18 @@ const lines = computed(() => {
     <AppIcon name="clean-up" :size="18" class="convert-clean-up-button__icon" />
     <span class="convert-clean-up-button__lines">
       <span class="convert-clean-up-button__first" data-testid="convert-clean-up-first">{{ lines.first }}</span>
+      {{ ' ' }}
       <span v-if="lines.second" class="convert-clean-up-button__second" data-testid="convert-clean-up-second">{{ lines.second }}</span>
     </span>
+    {{ ' ' }}
+    <span class="convert-clean-up-button__what">{{ words.title }}</span>
     <AppIcon name="chevron-down" :size="16" class="convert-clean-up-button__chevron" />
   </button>
 </template>
 
 <style scoped>
 .convert-clean-up-button {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-10);
@@ -114,5 +116,15 @@ const lines = computed(() => {
 .convert-clean-up-button__second {
   font: var(--type-meta-small);
   color: var(--muted);
+}
+
+/* Heard, not seen: what the button is, after the words it shows. */
+.convert-clean-up-button__what {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 </style>
