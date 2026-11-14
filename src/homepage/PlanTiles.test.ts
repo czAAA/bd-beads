@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PlanTiles from './PlanTiles.vue'
-import { freeListRows } from './freeList'
+import { freeListGroups, freeListRows } from './freeList'
 import { en } from '../i18n/en'
 
 function tiles(locale: 'en' | 'ru' = 'en', props: { freeHeight?: number; freeOpen?: boolean; phone?: boolean; isNew?: boolean } = {}) {
@@ -99,26 +99,55 @@ describe('PlanTiles', () => {
   })
 
   describe('for a new visitor (ticket 0871)', () => {
-    it('shows No account alone with its free list, under its own heading and one line, no Coming soon anywhere', () => {
+    it('shows no plan tiles and no Coming soon, under its own heading and one line', () => {
       for (const phone of [false, true]) {
         const wrapper = tiles('en', { isNew: true, phone })
         expect(wrapper.get('h2').text()).toBe('Free to use')
         expect(wrapper.get('[data-testid="plans-why"]').text()).toBe('Accounts and Pro come later; everything works without them.')
-        expect(wrapper.findAll('h3').map((h) => h.text().replace('you are here', ''))).toEqual(['No account'])
-        expect(wrapper.get('[data-testid="plan-no-account"] ul').findAll('li').map((item) => item.text())).toEqual(
-          phone ? freeListRows(en, 'en').slice(0, 6) : [...freeListRows(en, 'en'), 'More on the way'],
-        )
         expect(wrapper.text()).not.toMatch(/coming soon/i)
       }
     })
 
-    it('makes the first Project from No account, its button the strip\'s way in (ticket 0923)', async () => {
-      const wrapper = tiles('en', { isNew: true })
-      const button = wrapper.get('[data-testid="plan-no-account"] button')
-      expect(button.text()).toBe('Make your first Project')
-      await button.trigger('click')
-      expect(wrapper.emitted('makeFirstProject')).toHaveLength(1)
-      expect(wrapper.emitted('openEditor')).toBeUndefined()
+    it('keeps No account\'s tile on a phone, its first six rows shown', () => {
+      const wrapper = tiles('en', { isNew: true, phone: true })
+      expect(wrapper.findAll('h3').map((h) => h.text().replace('you are here', ''))).toEqual(['No account'])
+      expect(wrapper.get('[data-testid="plan-no-account"] ul').findAll('li').map((item) => item.text())).toEqual(freeListRows(en, 'en').slice(0, 6))
+    })
+
+    describe('off a phone, Free to use with no tile (ticket 0947)', () => {
+      const alone = () => tiles('en', { isNew: true })
+
+      it('has no plan tile, no "you are here" and nothing that grows', () => {
+        const wrapper = alone()
+        expect(wrapper.find('.plan').exists()).toBe(false)
+        expect(wrapper.find('[data-testid="plan-you-are-here"]').exists()).toBe(false)
+        expect(wrapper.find('[data-testid="free-window"]').exists()).toBe(false)
+      })
+
+      it('lists every row in the four chapters, each under its name, then "More on the way"', () => {
+        const wrapper = alone()
+        const groups = freeListGroups(en, 'en')
+        expect(wrapper.findAll('h3').map((h) => h.text())).toEqual(['Draw', 'Start from something', 'Real bead colors', 'Weave and keep'])
+        for (const group of groups) {
+          const section = wrapper.get(`[data-testid="free-group-${group.id}"]`)
+          const list = section.get('ul')
+          expect(section.get(`#${list.attributes('aria-labelledby')}`).text()).toBe(group.name)
+          expect(list.findAll('li:not([data-testid="free-more"])').map((item) => item.text())).toEqual(group.rows)
+        }
+        expect(wrapper.findAll('[data-testid="free-more"]').map((more) => more.text())).toEqual(['More on the way'])
+      })
+
+      it('says what it costs and makes the first Project, the strip\'s way in (ticket 0923)', async () => {
+        const wrapper = alone()
+        expect(wrapper.text()).toContain('Free')
+        expect(wrapper.text()).toContain('Draw, count and weave on this device.')
+        const button = wrapper.get('[data-testid="free-to-use-way-in"]')
+        expect(button.text()).toBe('Make your first Project')
+        expect(button.classes()).toContain('app-button--primary')
+        await button.trigger('click')
+        expect(wrapper.emitted('makeFirstProject')).toHaveLength(1)
+        expect(wrapper.emitted('openEditor')).toBeUndefined()
+      })
     })
   })
 

@@ -433,7 +433,7 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
       rect(wrapper.get('[data-testid="plan-no-account"]').element, 0, 420)
     }
     async function atThePlans() {
-      const wrapper = page()
+      const wrapper = page(3)
       laidOut(wrapper)
       await step(wrapper, 2)
       await flushPromises()
@@ -465,6 +465,14 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
       await scrollPlans(wrapper, 0)
       expect(list(wrapper).attributes('style')).toContain('height: 100px')
     })
+
+    it('has nothing to grow for a new visitor, so the section reaches no further than its room (ticket 0947)', async () => {
+      const wrapper = page(0)
+      await step(wrapper, 2)
+      await flushPromises()
+      expect(wrapper.find('[data-testid="free-window"]').exists()).toBe(false)
+      expect(wrapper.get('.homepage__free-room').attributes('style')).toContain('calc(100% + 0px)')
+    })
   })
 })
 
@@ -490,20 +498,20 @@ describe('HomePage plan tiles', () => {
       const wrapper = page(count)
       const html = wrapper.html()
       expect(html.indexOf('data-testid="homepage-plans"')).toBeGreaterThan(html.indexOf('data-testid="homepage-coffee"'))
-      await wrapper.get('[data-testid="plan-no-account"] button').trigger('click')
+      await wrapper.get(count ? '[data-testid="plan-no-account"] button' : '[data-testid="free-to-use-way-in"]').trigger('click')
       expect(wrapper.emitted(event)).toHaveLength(1)
     }
   })
-  // Ticket 0871: a first visit doesn't end on Coming soon; the step is named by the section's heading.
-  it('show a new visitor No account alone, the step named for it, and the three once Projects are saved', () => {
+  // Tickets 0871, 0947: a first visit doesn't end on Coming soon, nor on one tile; the step is named by the heading.
+  it('show a new visitor no tiles, the step named for Free to use, and the three once Projects are saved', () => {
     const plans = (count: number) => {
       const wrapper = page(count)
       return {
         step: wrapper.get('[data-testid="section-step"][data-step="plans"]').text(),
-        tiles: wrapper.findAll('[data-testid="homepage-plans"] h3').length,
+        tiles: wrapper.findAll('[data-testid="homepage-plans"] .plan').length,
       }
     }
-    expect(plans(0)).toEqual({ step: 'Free to use', tiles: 1 })
+    expect(plans(0)).toEqual({ step: 'Free to use', tiles: 0 })
     expect(plans(3)).toEqual({ step: 'Three ways to use it', tiles: 3 })
   })
 })
