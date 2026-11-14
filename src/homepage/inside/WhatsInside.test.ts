@@ -15,11 +15,11 @@ const demo = vi.hoisted(() => ({ fresh: vi.fn(async () => undefined), refit: vi.
 vi.mock('./InsideEditor.vue', () => ({
   default: defineComponent({
     props: { expand: String },
-    emits: ['toggleExpand'],
+    emits: ['toggleExpand', 'pressed'],
     setup(props, { expose, emit }) {
       expose({ ...demo, hand: () => ({}), hideGhost: () => undefined, giveFocusBack: () => undefined })
       return () =>
-        h('div', { 'data-testid': 'inside-editor' }, [
+        h('div', { 'data-testid': 'inside-editor', onClick: () => emit('pressed') }, [
           props.expand ? h('button', { 'data-testid': 'strip-expand', onClick: () => emit('toggleExpand') }, props.expand) : undefined,
         ])
     },
@@ -153,6 +153,23 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     const before = demo.fresh.mock.calls.length
     await vi.advanceTimersByTimeAsync(ROW_MS * 13)
     expect(demo.fresh).toHaveBeenCalledTimes(before)
+  })
+
+  it('answers a press in the demo by lighting Open editor from here once and focusing it, the tour playing on (ticket 0950)', async () => {
+    const wrapper = section({ withEditor: true, shown: true })
+    await flushPromises()
+    const open = () => find(wrapper, 'inside-open-from-here')
+    expect(open().classes()).toContain('app-button--secondary')
+    const playing = caption(wrapper)
+    await press(wrapper, 'inside-editor')
+    expect(open().classes()).toEqual(expect.arrayContaining(['app-button--primary', 'inside__control--answer']))
+    expect(document.activeElement).toBe(open().element)
+    expect(caption(wrapper)).toBe(playing)
+    expect(find(wrapper, 'inside-pause').text()).toBe('Pause')
+    ;(document.activeElement as HTMLElement).blur()
+    await press(wrapper, 'inside-editor')
+    expect(document.activeElement, 'only the first press takes the focus').toBe(document.body)
+    expect(open().classes()).toContain('app-button--primary')
   })
 
   it('stands beside the demo where the box is wide, which offers Expand; Expand puts it in a band and reads Collapse', async () => {
