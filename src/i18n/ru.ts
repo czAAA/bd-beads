@@ -1277,6 +1277,10 @@ export const ru: Translations = {
   layerSettings: {
     frameHeading: 'Настройки',
     background: 'Фон',
+    canvasOutsideFrame: 'Холст вне рамки',
+    frameStays: 'Холст теперь: {canvas}. Рамка остаётся: {frame}.',
+    changeFrameToo: 'Изменить и рамку',
+    openFrame: 'Открыть рамку',
   },
   schemaTag: {
     group: 'Названия схем',

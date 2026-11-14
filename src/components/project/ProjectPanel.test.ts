@@ -9,6 +9,7 @@ import { en } from '../../i18n/en'
 import { frameOf } from '../../domain/layerRecord'
 import { TECHNIQUES } from '../../domain/weave'
 import { withLayers } from '../../testUtils/layerFields'
+import { withFrame } from '../../domain/frame'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -35,7 +36,7 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'reference image', 'Export', 'This Project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas, outside the Frame', 'reference image', 'Export', 'This Project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="save-project-file"]').text()).toBe(`${en.panels.project.saveFile}.openbeads`)
@@ -82,10 +83,17 @@ describe('ProjectPanel (tickets 443, 554, 0670)', () => {
     expect(wrapper.emitted('set-background')).toEqual([['canvas', 3]])
   })
 
-  it('shows the Canvas\'s own Weave under a Frame woven otherwise (ticket 0670)', () => {
+  it('shows the Canvas\'s own Weave under a Frame woven otherwise, and none of the Frame\'s (tickets 0670, 0935)', () => {
     const framed = withLayers(project, { frame: { ...frameOf(project)!, technique: 'peyote' as const } })
     const wrapper = mountPanel({ project: framed })
     expect(wrapper.get('[data-testid="canvas-technique"] button').attributes('aria-label')).toBe('Technique: Loom')
+    expect(wrapper.get('[data-testid="canvas-section"]').text()).not.toContain('Peyote')
+  })
+
+  it('heads the Canvas section Canvas, outside the Frame with a Frame on the Canvas, and Canvas with none (ticket 0935)', () => {
+    const label = (wrapper: ReturnType<typeof mountPanel>) => wrapper.get('.panel-section__label').text()
+    expect(label(mountPanel())).toBe(en.layerSettings.canvasOutsideFrame)
+    expect(label(mountPanel({ project: withFrame(project, undefined) }))).toBe(en.panels.project.canvas)
   })
 
   it('changes the Canvas\'s Technique while a Frame exists, every one offered, even once a Row progress pass is done', async () => {

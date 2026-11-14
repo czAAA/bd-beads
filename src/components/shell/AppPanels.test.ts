@@ -201,6 +201,23 @@ describe('Project', () => {
     expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' } })
   })
 
+  it('says the Frame stays after the Canvas takes another Technique; its actions reach the Frame panel\'s change and open it on its settings (ticket 0935)', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await choose(mounted, 'canvas-technique', 'brick')
+    const toast = () => mounted.canvas.toasts.value.find((each) => each.id === 'frame-stays')
+    expect(toast()).toBeDefined()
+    toast()!.action!.run()
+    await flushPromises()
+    expect(layerOf(loadProjects()[0]!, 'frame')).toMatchObject({ weave: { technique: 'brick' } })
+
+    await choose(mounted, 'canvas-technique', 'peyote')
+    toast()!.secondAction!.run()
+    await flushPromises()
+    expect(mounted.panels.framePanelShown.value).toBe(true)
+    expect(mounted.wrapper.find('[data-panel-entry] [data-testid="frame-layer-settings"]').exists()).toBe(true)
+  })
+
   it('removes the reference image after a confirmation, saved with no Undo step (ticket 0790)', async () => {
     saveProjects([withReferenceImage(moth(), newReferenceImage({ name: 'rose.webp', type: 'image/webp', width: 40, height: 20, bytes: 9 }, { x: 0, y: 0, width: 100, height: 100 }))])
     const mounted = mountPanels()

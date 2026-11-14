@@ -1277,6 +1277,10 @@ export const pl: Translations = {
   layerSettings: {
     frameHeading: 'Ustawienia',
     background: 'Tło',
+    canvasOutsideFrame: 'Płótno poza ramką',
+    frameStays: 'Płótno to teraz: {canvas}. Ramka zostaje: {frame}.',
+    changeFrameToo: 'Zmień też ramkę',
+    openFrame: 'Otwórz ramkę',
   },
   schemaTag: {
     group: 'Nazwy schematów',

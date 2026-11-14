@@ -1274,6 +1274,10 @@ export const es: Translations = {
   layerSettings: {
     frameHeading: 'Ajustes',
     background: 'Fondo',
+    canvasOutsideFrame: 'Lienzo, fuera del marco',
+    frameStays: 'El lienzo ahora es {canvas}. El marco sigue en {frame}.',
+    changeFrameToo: 'Cambiar también el marco',
+    openFrame: 'Abrir marco',
   },
   schemaTag: {
     group: 'Nombres de esquemas',

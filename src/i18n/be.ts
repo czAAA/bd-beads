@@ -1278,6 +1278,10 @@ export const be: Translations = {
   layerSettings: {
     frameHeading: 'Налады',
     background: 'Фон',
+    canvasOutsideFrame: 'Палатно па-за рамкай',
+    frameStays: 'Палатно цяпер: {canvas}. Рамка застаецца: {frame}.',
+    changeFrameToo: 'Змяніць і рамку',
+    openFrame: 'Адкрыць рамку',
   },
   schemaTag: {
     group: 'Назвы схем',
