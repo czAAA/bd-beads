@@ -1252,6 +1252,10 @@ export const zh: Translations = {
   layerSettings: {
     frameHeading: '设置',
     background: '背景',
+    canvasOutsideFrame: '画布（边框之外）',
+    frameStays: '画布现在是{canvas}，边框仍是{frame}。',
+    changeFrameToo: '边框也一起改',
+    openFrame: '打开边框',
   },
   schemaTag: {
     group: '图样名称',

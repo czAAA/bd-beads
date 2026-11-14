@@ -71,6 +71,7 @@ const {
   openPanel,
   exportOpener,
   framePanelShown,
+  frameOpensOnSettings,
   onStepFrameEdge,
   onResizeFrame,
   onRenameFrame,
@@ -109,6 +110,7 @@ const chosenStarter = ref<StarterId>()
       :project="activeProject"
       :settled-project="settledProject"
       :exporting="exporting"
+      :opens-on-settings="frameOpensOnSettings"
       @step="onStepFrameEdge"
       @resize="onResizeFrame"
       @rotate="onRotateFrame"

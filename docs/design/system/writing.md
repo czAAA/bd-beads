@@ -1199,3 +1199,16 @@ Gone strings are removed from every language. "To fix what was found, pick Backg
 ## Grid focus copy (ticket 1002): gone
 
 Ticket 1007 removed Grid focus: its name, Tooltip line and disabled reason are gone from every language.
+
+## Frame stays copy (ticket 0935)
+
+The Project panel's canvas section says which layer it sets while a Frame is on the Canvas, and the toast after a change there that leaves the Frame on another Technique or Bead (Message card). `{canvas}` and `{frame}` are a Technique's name or a Bead's label.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Canvas, outside the Frame (section header) | Холст вне рамки | Полотно поза рамкою | Палатно па-за рамкай | 画布（边框之外） | Lienzo, fuera del marco | Płótno poza ramką |
+| The Canvas is {canvas} now. The Frame stays {frame}. (toast) | Холст теперь: {canvas}. Рамка остаётся: {frame}. | Полотно тепер: {canvas}. Рамка лишається: {frame}. | Палатно цяпер: {canvas}. Рамка застаецца: {frame}. | 画布现在是{canvas}，边框仍是{frame}。 | El lienzo ahora es {canvas}. El marco sigue en {frame}. | Płótno to teraz: {canvas}. Ramka zostaje: {frame}. |
+| Change the Frame too (its first action) | Изменить и рамку | Змінити й рамку | Змяніць і рамку | 边框也一起改 | Cambiar también el marco | Zmień też ramkę |
+| Open Frame (its second action) | Открыть рамку | Відкрити рамку | Адкрыць рамку | 打开边框 | Abrir marco | Otwórz ramkę |
+
+English follows the audit's proposal (UX-018); the other languages are proposals for review with the build.

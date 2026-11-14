@@ -80,15 +80,27 @@ const PictureDragged = defineComponent({
   },
 })
 
-/** Toasts of each tone, with an action, as the stack shows them. */
+/** Toasts of each tone, with an action, and the Frame stays toast's two (ticket 0935), as the stack shows them. */
 const Toasts = defineComponent({
-  setup: () => () =>
-    h(ToastRegion, {
-      toasts: [
-        { id: 'import-error', text: 'That file is not a Project or a library of Projects.', tone: 'danger', stamp: 1 },
-        { id: 'undo', text: 'The frame was removed.', tone: 'success', stamp: 2, action: { label: 'Undo', run: () => {} } },
-      ],
-    }),
+  setup() {
+    const { t } = useI18n()
+    const stays = () => t.value.layerSettings
+    return () =>
+      h(ToastRegion, {
+        toasts: [
+          { id: 'import-error', text: 'That file is not a Project or a library of Projects.', tone: 'danger', stamp: 1 },
+          { id: 'undo', text: 'The frame was removed.', tone: 'success', stamp: 2, action: { label: 'Undo', run: () => {} } },
+          {
+            id: 'frame-stays',
+            text: fillBlanks(stays().frameStays, { canvas: 'Miyuki Delica 11/0', frame: 'TOHO Cube 1.5mm' }),
+            tone: 'info',
+            stamp: 3,
+            action: { label: stays().changeFrameToo, run: () => {} },
+            secondAction: { label: stays().openFrame, run: () => {} },
+          },
+        ],
+      })
+  },
 })
 
 /** The library-wide notice for a failed write to this device's storage (ticket 55, ADR 0012). */

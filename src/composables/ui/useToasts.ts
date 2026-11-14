@@ -2,13 +2,21 @@ import { ref } from 'vue'
 
 export type MessageTone = 'success' | 'info' | 'warning' | 'danger'
 
+/** A text button in a toast (Message card): pressing it runs `run` and closes the toast. */
+export interface ToastAction {
+  label: string
+  run: () => void
+}
+
 export interface Toast {
   /** Names the toast, so showing it again replaces it (and starts its clock over) rather than stacking a copy. */
   id: string
   text: string
   tone: MessageTone
   /** A text button after the message (Message card), such as Undo; pressing it runs `run` and closes the toast. */
-  action?: { label: string; run: () => void }
+  action?: ToastAction
+  /** A second text button after the first (ticket 0935): the two stand on their own line under the text. */
+  secondAction?: ToastAction
   /** Stays until closed or answered, instead of going after a few seconds (a prompt, not a result). */
   persistent?: boolean
   /** Bumped on every show, so a replaced toast is a new one to Vue and its clock starts over. */
@@ -25,8 +33,9 @@ export function useToasts() {
     toasts.value = toasts.value.filter((toast) => toast.id !== id)
   }
 
-  function show(id: string, text: string, tone: MessageTone = 'success', action?: Toast['action'], options: { persistent?: boolean } = {}) {
-    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, persistent: options.persistent, stamp: ++stamp }]
+  function show(id: string, text: string, tone: MessageTone = 'success', action?: Toast['action'], options: { persistent?: boolean; secondAction?: ToastAction } = {}) {
+    const { persistent, secondAction } = options
+    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, secondAction, persistent, stamp: ++stamp }]
   }
 
   return { toasts, show, dismiss }
