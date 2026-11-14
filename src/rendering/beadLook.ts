@@ -49,6 +49,7 @@ export type DrawingContext = Pick<
   | 'getTransform'
   | 'shadowColor'
   | 'shadowBlur'
+  | 'shadowOffsetX'
   | 'shadowOffsetY'
 >
 
@@ -81,6 +82,10 @@ export interface ProjectTheme {
   /** Whether empty positions are tonal tiles from the Background (ticket 1001, BeadBoard card, Tonal tiles): the screen
    * in light and dark. High contrast and exports keep the `positionMark` outline and the `emptyBead` bead. */
   tonalTiles: boolean
+  /** Whether every Piece lies on the Canvas with a contour and a soft shadow (ticket 1004, BeadBoard card, Lifted
+   * piece), in place of the Piece area's rectangle: the screen in light and dark. High contrast and exports keep the
+   * rectangle. */
+  liftedPiece: boolean
   /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim`
    * in high contrast. */
   rimOnBlack: string
@@ -123,6 +128,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rim: 'rgba(20,20,19,.12)',
   ownColorRim: true,
   tonalTiles: true,
+  liftedPiece: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
@@ -145,6 +151,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rim: WHITE_RIM,
   ownColorRim: true,
   tonalTiles: true,
+  liftedPiece: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
@@ -166,6 +173,7 @@ const CONTRAST_THEME: ProjectTheme = {
   rim: 'rgba(0,0,0,.35)',
   ownColorRim: false,
   tonalTiles: false,
+  liftedPiece: false,
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
@@ -178,7 +186,7 @@ const CONTRAST_THEME: ProjectTheme = {
 }
 
 /** PNG and PDF exports: always light, whatever the app's theme, on the `print-board`, in the flat bead. */
-export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false, tonalTiles: false }
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false, tonalTiles: false, liftedPiece: false }
 
 const flatLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 

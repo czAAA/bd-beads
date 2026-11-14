@@ -138,6 +138,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `rim` | `bead-rim` (exports and high contrast; light and dark draw a bead in a rim of its own color, `ownColorRim`, ticket 1003) |
 | `emptyBead` | `bead-empty` |
 | `positionMark` | `position-mark` (high contrast, the draft look and exports; light and dark draw empty positions as tonal tiles from the Background, `tonalTiles`, ticket 1001, `src/rendering/tonalTiles.ts`) |
+| `pieceLine` | `line-strong` (a Piece area's rectangle in high contrast and exports; light and dark draw each Piece's contour and shadow instead, the Lifted piece, `liftedPiece`, ticket 1004, `src/rendering/liftedPiece.ts`) |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
 | `mirror` | `mirror` (the Mirror's Area, its Axes, ring and hover outline, ticket 0806) |

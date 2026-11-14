@@ -4,7 +4,7 @@ import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
 import { moveToRow, toggleRowDirection } from '../domain/rowProgress'
 import { rotateFrame } from '../domain/rotate'
-import { LIGHT_THEME, type DrawingContext } from './beadLook'
+import { LIGHT_THEME, type DrawingContext, type ProjectTheme } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
 import { MARGIN_PX } from './marginSizes'
 import { ROW_MOTION } from './rowMotion'
@@ -74,20 +74,32 @@ const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size:
 const surfaceAt = (zoom: number) => surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom, viewport: { width: 800, height: 600 } })
 
 /** What the overlay hands drawRulers: the view's surface and the Ruler layout made for it. */
-function drawn(project: RulerDrawInput['project'], { zoom, numbers }: { zoom: number; numbers: boolean }): Pick<RulerDrawInput, 'project' | 'surface' | 'layout' | 'pixelRatio' | 'theme' | 'rowMarks'> {
+function drawn(project: RulerDrawInput['project'], { zoom, numbers, theme = LIGHT_THEME }: { zoom: number; numbers: boolean; theme?: ProjectTheme }): Pick<RulerDrawInput, 'project' | 'surface' | 'layout' | 'pixelRatio' | 'theme' | 'rowMarks'> {
   const surface = surfaceAt(zoom)
-  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }), pixelRatio: 1, theme: LIGHT_THEME, rowMarks: false }
+  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }), pixelRatio: 1, theme, rowMarks: false }
 }
 
 describe('drawRulers', () => {
   const open = withFrameSheet(base, undefined)
   const twoPieces = withLayers(open, { beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) })
 
+  /** A look that keeps the Piece area's rectangle: high contrast's and the exports'. */
+  const ruled = { ...LIGHT_THEME, liftedPiece: false }
+
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
+    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true, theme: ruled }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLine, LIGHT_THEME.pieceLine])
+  })
+
+  it('draws no Piece rectangle where pieces are lifted, light and dark, but the numbers where they sat (ticket 1004)', () => {
+    const { context, strokes, texts } = fakeContext()
+    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
+    expect(strokes).toHaveLength(0)
+    const kept = fakeContext()
+    drawRulers(kept.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true, theme: ruled }))
+    expect(texts).toEqual(kept.texts)
   })
 
   it('numbers the box round every bead of a layer whose Pieces are not counted yet, without its line (ticket 0716)', () => {
@@ -110,7 +122,7 @@ describe('drawRulers', () => {
     expect(off.texts).toHaveLength(0)
 
     const on = fakeContext()
-    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
+    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true, theme: ruled }))
     expect(on.strokes).toHaveLength(2)
     expect(on.texts.length).toBeGreaterThan(0)
   })

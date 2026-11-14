@@ -64,6 +64,13 @@ function flatCentre(project: Project, row: number, column: number, own: [number,
   return own.map((channel, index) => FINISHED_SHARE * channel + (1 - FINISHED_SHARE) * board[index]!) as [number, number, number]
 }
 
+/** An empty position beside a painted bead: its tile lies under the Lifted piece's ground and shadow (ticket 1004),
+ * so its centre is not the tile's color. Its neighbours' own centres are still checked. */
+function underPiece(project: Project, row: number, column: number): boolean {
+  if (beadColorAt(project, row, column) !== null) return false
+  return [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => (dx || dy) && beadColorAt(project, row + dy, column + dx) !== null))
+}
+
 // The beads whose centre is not the right color in a screenshot taken from `origin` (page position of its top-left
 // pixel). "Centre" is any pixel within one of it: at 50% a bead is 10 px, and the centre falls between pixels
 // differently in reference and canvas.
@@ -82,7 +89,7 @@ export function wrongBeads(
   const wrong: string[] = []
   for (let row = 0; row < frameOf(project)!.rows; row += 1) {
     for (let column = 0; column < frameOf(project)!.columns; column += 1) {
-      if (ignore.has(`(${row}, ${column})`)) {
+      if (ignore.has(`(${row}, ${column})`) || (satin && underPiece(project, row, column))) {
         continue
       }
       const centre = beadCentre(project, box, zoom, { row, column })

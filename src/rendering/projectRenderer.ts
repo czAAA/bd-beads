@@ -28,6 +28,7 @@ import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, markLookOf } from './tonalTiles'
+import { canvasLiftCells, drawLift, liftCollector, liftRows, paintedOnly } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -306,6 +307,9 @@ interface LayerDraw {
   /** Whether empty positions may be tonal tiles (ticket 1001): on the open Canvas in the full look, with no reference
    * image shown. Elsewhere they keep the outline and the empty bead. */
   tiles: boolean
+  /** Whether painted beads lie on a Lifted piece where the look has one (ticket 1004): on the open Canvas in the full
+   * look. */
+  lift: boolean
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -314,6 +318,16 @@ interface LayerDraw {
 function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }): void {
   const { project, area, rows: band } = draw
   const geometry = geometryDrawnAlone(project)
+  if (draw.lift && draw.look.liftedPiece) {
+    // The Lifted piece (ticket 1004): the empty positions first, noting the painted beads' cells (with the rows whose
+    // pieces reach a band), then the pieces under the painted beads, then those beads.
+    const collect = liftCollector(draw.drawBead, !geometry.grid)
+    const weave = frameWeave(project)
+    drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: liftRows(band, cellSizePx(weave.technique, weave.cell).height) }, space, origin)
+    drawLift(context, collect.cells, draw.look.canvas, draw.zoom * draw.pixelRatio)
+    drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
+    return
+  }
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, into which a shifted column's beads hang; beads that keep no rows are all drawn.
   const inView = () => geometry.positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
@@ -689,12 +703,14 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const drawn = space.open ? reference : undefined
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]
   const tiles = space.open && !draft && !drawn
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles }
+  const lift = space.open && !draft
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles, lift }
 
   if (space.open) {
     // The reference image over the Canvas's Background and under its Position marks and every bead (ticket 0790).
     if (drawn) drawReference(context, drawn)
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
+    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio)
     drawCanvasLayer(context, draw, space)
     if (frame) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)

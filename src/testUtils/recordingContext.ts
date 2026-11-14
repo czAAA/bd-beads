@@ -16,6 +16,8 @@ export function recordingContext() {
     save: () => stack.push({ ...state }),
     restore: () => Object.assign(state, stack.pop()),
     setTransform: record('setTransform'),
+    // Where a turned bead is drawn (ticket 1004): the stand-in keeps no transform, so every one is the identity.
+    getTransform: () => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
     clearRect: record('clearRect'),
     fillRect: record('fillRect'),
     beginPath: record('beginPath'),
