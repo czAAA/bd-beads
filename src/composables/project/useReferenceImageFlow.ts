@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, watch } from 'vue'
 import type { Rect } from '../../domain/canvas'
 import { ImageConversionError, type ImageRejection } from '../../domain/imageConversion'
 import { touch, type Project } from '../../domain/project'
@@ -74,6 +74,13 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
   /** Pictures the device refused to keep, by Project id: shown for the session from here. */
   const session = new Map<string, Blob>()
   const unsaved = ref(new Set<string>())
+  /** The picture lies over the beads, to compare them against it (ticket 1009): a view for the session, not saved, put
+   * back under as another Project opens. */
+  const over = ref(false)
+  watch(
+    () => deps.currentProject()?.id,
+    () => (over.value = false),
+  )
 
   /** The Canvas's box, or the part in view on an empty Canvas without a Frame. */
   function box(project: Project): ReferenceBox {
@@ -91,7 +98,7 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     const picture = loaded.value
     if (!project || !shown?.shown || picture?.projectId !== project.id || !picture.drawable) return undefined
     const place = draft.value ?? shown.place
-    return { image: picture.drawable.image, place, height: referenceHeight({ picture: shown.picture, place }), opacity: shown.opacity }
+    return { image: picture.drawable.image, place, height: referenceHeight({ picture: shown.picture, place }), opacity: shown.opacity, over: over.value }
   })
 
   /** Where the picture lies now: a drag's place as it goes, else the saved one (the picture bar's size, ticket 0883). */
@@ -194,6 +201,10 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     if (!project?.referenceImage || project.referenceImage.shown === shown) return
     if (!shown) adjusting.value = false
     save(project, { ...project.referenceImage, shown })
+  }
+
+  function setOver(on: boolean): void {
+    over.value = on
   }
 
   function setOpacity(opacity: OpacityStep): void {
@@ -323,6 +334,8 @@ export function useReferenceImageFlow(deps: ReferenceImageFlowDeps) {
     toggleShown,
     setShown,
     setOpacity,
+    over: readonly(over),
+    setOver,
     place,
     blob,
     requestRemove,

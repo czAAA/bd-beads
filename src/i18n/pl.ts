@@ -1400,6 +1400,7 @@ export const pl: Translations = {
       moveBody: 'Przeciągnij, aby przesunąć obraz pomocniczy.',
       more: 'Więcej dla obrazu',
       close: 'Zamknij',
+      over: { name: 'Obraz nad koralikami', body: 'Kładzie obraz nad koralikami z jego kryciem, by je porównać. Naciśnij ponownie, by wrócił pod spód.' },
       replace: 'Zamień',
       remove: 'Usuń',
       sizeBeads: '{size} koralików',
