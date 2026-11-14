@@ -54,3 +54,38 @@ describe("What's inside's hand: a Selection's drag (ticket 0820)", () => {
     expect(performance.now() - ended[0]).toBeGreaterThanOrEqual(115)
   })
 })
+
+describe("What's inside's hand: a press applied at once (ticket 0924)", () => {
+  afterEach(() => vi.useRealTimers())
+
+  it("presses only once the clock has passed the millisecond it found the control in, waiting on a timer the build can't drop", async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
+    const root = document.createElement('div')
+    const button = document.createElement('button')
+    button.dataset.testid = 'confirm'
+    const clicked = vi.fn()
+    button.addEventListener('click', clicked)
+    root.append(button)
+    const hand = createHand({
+      root,
+      shell: {} as ShellFrameContext,
+      canvas: {} as CanvasContext,
+      ghost: ghostState(),
+      instant: true,
+      signal: new AbortController().signal,
+      moveMs: 0,
+      rippleMs: 0,
+      pauseMs: 0,
+      dragMs: 0,
+      dragHoldMs: 0,
+      roomPx: 24,
+    })
+    const pressed = hand.press('confirm')
+    // The clock stands still: a press now would be stamped in the millisecond a dialog's button was attached in.
+    await vi.advanceTimersByTimeAsync(0)
+    expect(clicked).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    await pressed
+    expect(clicked).toHaveBeenCalledOnce()
+  })
+})
