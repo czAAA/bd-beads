@@ -1509,6 +1509,8 @@ export interface Translations {
     fitAndExport: string
     /** The Paste tile's line on touch, which has no hover or click (ticket 0845). */
     pasteToolTouch: string
+    /** Why the Rulers toggle is held while the Canvas is empty (ticket 0921). */
+    noBeadsToNumber: string
   }
   /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
    * in every layer's. */

@@ -112,10 +112,14 @@ describe('App keyboard shortcuts', () => {
     expect(previewedBeads(wrapper)).toHaveLength(1)
   })
 
-  it('R shows and hides the rulers', async () => {
+  it('R shows and hides the rulers, which start off (ticket 0921)', async () => {
     const wrapper = await mountApp(15, 30)
+    const pressed = () => wrapper.find('[data-testid="strip-rulers"]').attributes('aria-pressed')
+    expect(pressed()).toBe('false')
     await pressKey({ key: 'r' })
-    expect(wrapper.find('[data-testid="strip-rulers"]').attributes('aria-pressed')).toBe('false')
+    expect(pressed()).toBe('true')
+    await pressKey({ key: 'r' })
+    expect(pressed()).toBe('false')
   })
 
   it('Enter moves to the next row and D turns the row direction, saved with the Project', async () => {

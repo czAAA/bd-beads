@@ -1262,6 +1262,7 @@ export const pl: Translations = {
     rowHighlight: 'Pokazuje lub ukrywa oznaczenia na bieżącym rzędzie i na rzędach oznaczonych jako gotowe.',
     fitAndExport: 'Dopasuj ramkę do wszystkich koralików i otwórz eksport obrazu.',
     pasteToolTouch: 'Dotknij miejsca, gdzie ma trafić kopia.',
+    noBeadsToNumber: 'Nie ma koralików do ponumerowania.',
   },
   layerSettings: {
     frameHeading: 'Ustawienia',

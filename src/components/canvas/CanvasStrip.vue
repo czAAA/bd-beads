@@ -90,6 +90,8 @@ const actions = {
 const projectName = computed(() => (props.project ? projectNameOf(props.project) : ''))
 const projectNamed = computed(() => fillBlanks(t.value.header.projectButtonNamed, { name: projectName.value }))
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
+/** Rulers is lit only while it can be pressed: on an empty Canvas it is held and plain, whatever the device keeps (ticket 0921). */
+const rulersLit = computed(() => !!props.rulers && !!actions.rulers.enabled?.(deps.value))
 const onHomepage = computed(() => props.page === 'homepage')
 /** The Brand is a link only on the editor. */
 const brandLinks = computed(() => !props.demo && (props.page === undefined || props.page === 'editor'))
@@ -226,7 +228,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <div v-if="project" class="canvas-strip__tools">
           <template v-if="!demo">
             <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
-            <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+            <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulersLit" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
           </template>
           <template v-if="referenceImage">
             <IconButton

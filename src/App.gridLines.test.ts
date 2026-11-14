@@ -53,6 +53,7 @@ async function selectRow(wrapper: ReturnType<typeof mount>, row: number, columns
 
 describe('Ruler numbers are display-only (ticket 447)', () => {
   it('selects nothing and keeps the active tool when a ruler number is pressed', async () => {
+    localStorage.setItem('openbeads:rulers', 'on') // off until switched on (ticket 0921)
     const wrapper = await mountSized(4, 5)
 
     await pressRulerNumber(wrapper, 'row', 1) // row 2 (index 1)

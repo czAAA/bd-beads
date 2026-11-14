@@ -38,7 +38,7 @@ describe("memoryServices: the Homepage demo's own (ticket 0797)", () => {
 
     const before = new Map(kept)
     services.devicePreferences.get('exportQuality').value = 'high'
-    services.devicePreferences.get('rulers').value = false
+    services.devicePreferences.get('rulers').value = true
     services.devicePreferences.get('recentColors').value = ['#ffffff']
     expect(kept).toEqual(before)
     expect(preferences.get('exportQuality').value).not.toBe('high')

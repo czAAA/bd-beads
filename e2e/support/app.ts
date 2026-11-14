@@ -26,6 +26,10 @@ export async function openApp(
     const key = 'openbeads:convert-choices'
     if (localStorage.getItem(key) === null) localStorage.setItem(key, JSON.stringify({ beadId: 'toho/cube/1.5mm', technique: 'loom' }))
   })
+  // Rulers are off on a new device (ticket 0921); these checks were drawn with them on, so the device switched them on.
+  await page.addInitScript(() => {
+    if (localStorage.getItem('openbeads:rulers') === null) localStorage.setItem('openbeads:rulers', 'on')
+  })
   if (projects.length > 0) {
     const stored = storedLibrary(projects)
     await page.addInitScript(

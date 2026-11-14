@@ -20,7 +20,7 @@ const blocked: PreferenceStorage = {
 
 /** Each preference: its long-standing key, a saved value that must still read, one that is not valid, and what it is by default. */
 const CASES = [
-  { name: 'rulers', key: 'openbeads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
+  { name: 'rulers', key: 'openbeads:rulers', saved: 'on', read: true, other: true, stored: 'on', invalid: 'yes', fallback: false },
   { name: 'rowHighlight', key: 'openbeads:row-highlight', saved: 'off', read: false, other: true, stored: 'on', invalid: null, fallback: true },
   { name: 'canvasBackground', key: 'openbeads:canvas-background-2', saved: '5', read: 5, other: 3, stored: '3', invalid: '6', fallback: 1 },
   { name: 'canvasBackground', key: 'openbeads:canvas-background-2', saved: 'custom', read: 'custom', other: 'custom', stored: 'custom', invalid: 'mine', fallback: 1 },
@@ -120,8 +120,12 @@ describe('My beads (ticket 0902)', () => {
 describe('the device preferences', () => {
   it('hands every reader of a preference the same value', () => {
     const preferences = createDevicePreferences(memory())
-    preferences.get('rulers').value = false
-    expect(preferences.get('rulers').value).toBe(false)
+    preferences.get('rulers').value = true
+    expect(preferences.get('rulers').value).toBe(true)
+  })
+
+  it('keeps Rulers off on a device that switched them off while they were on by default (ticket 0921)', () => {
+    expect(createDevicePreferences(memory({ 'openbeads:rulers': 'off' })).get('rulers').value).toBe(false)
   })
 
   it('forgets the saved theme for Match device', () => {

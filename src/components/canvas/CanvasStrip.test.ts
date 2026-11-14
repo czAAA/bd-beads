@@ -173,6 +173,37 @@ describe('CanvasStrip Rotate canvas (ticket 471)', () => {
   })
 })
 
+describe('CanvasStrip Rulers (ticket 0921)', () => {
+  const empty = bareProject({ beads: {}, technique: 'loom' })
+  const rulersButton = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="strip-rulers"]')
+
+  it('is held and plain while the Canvas is empty, even on a device that keeps rulers on, with the reason in its Tooltip', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project: empty, rulers: true } })
+    const button = rulersButton(wrapper)
+
+    expect(button.attributes('aria-disabled')).toBe('true')
+    expect(button.attributes('aria-pressed')).toBe('false')
+    expect(button.classes()).not.toContain('icon-btn--selected')
+    expect(wrapper.text()).toContain(en.tooltips.noBeadsToNumber)
+    await button.trigger('click')
+    expect(wrapper.emitted('toggle-rulers')).toBeUndefined()
+  })
+
+  it.each([
+    ['a bead', bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })],
+    ['a Frame', bareProject({ beads: {}, technique: 'loom', frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })],
+  ])('can be pressed once the Canvas holds %s, and is lit only while rulers are on', async (_what, held) => {
+    const wrapper = mount(CanvasStrip, { props: { project: held, rulers: false } })
+    expect(rulersButton(wrapper).attributes('aria-disabled')).toBeUndefined()
+    expect(rulersButton(wrapper).attributes('aria-pressed')).toBe('false')
+    await rulersButton(wrapper).trigger('click')
+    expect(wrapper.emitted('toggle-rulers')).toHaveLength(1)
+
+    await wrapper.setProps({ rulers: true })
+    expect(rulersButton(wrapper).attributes('aria-pressed')).toBe('true')
+  })
+})
+
 describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
   const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
   const props = { project, canUndo: true, canRedo: true, zoomPercent: 125 }

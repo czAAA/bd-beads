@@ -212,13 +212,24 @@ describe('useAppShortcutTable', () => {
   })
 
   it('Shift+R rotates and plain R still toggles the rulers', () => {
-    const { deps, wrapper } = mountTable()
+    const { deps, wrapper } = mountTable({ activeProject: () => framedProject })
     press({ key: 'R', shiftKey: true })
     expect(deps.onRotate).toHaveBeenCalledTimes(1)
     expect(deps.onToggleRulers).not.toHaveBeenCalled()
     press({ key: 'r' })
     expect(deps.onToggleRulers).toHaveBeenCalledTimes(1)
     expect(deps.onRotate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('R does nothing while the Canvas is empty, and toggles the rulers once it holds a bead (ticket 0921)', () => {
+    let project = bareProject({ beads: {} })
+    const { deps, wrapper } = mountTable({ activeProject: () => project })
+    press({ key: 'r' })
+    expect(deps.onToggleRulers).not.toHaveBeenCalled()
+    project = bareProject({ beads: { 0: { 0: '#ff0000' } } })
+    press({ key: 'r' })
+    expect(deps.onToggleRulers).toHaveBeenCalledTimes(1)
     wrapper.unmount()
   })
 

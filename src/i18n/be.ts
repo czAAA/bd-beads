@@ -1263,6 +1263,7 @@ export const be: Translations = {
     rowHighlight: 'Паказвае або хавае адзнакі на бягучым радзе і на радах, пазначаных як гатовыя.',
     fitAndExport: 'Падагнаць рамку пад усе бісерыны і адкрыць экспарт карцінкі.',
     pasteToolTouch: 'Націсніце там, куды паставіць копію.',
+    noBeadsToNumber: 'Няма бісерын, якія можна пранумараваць.',
   },
   layerSettings: {
     frameHeading: 'Налады',

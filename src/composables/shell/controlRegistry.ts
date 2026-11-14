@@ -163,6 +163,8 @@ const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
 }
+/** Whether the rulers have anything to number: a bead or a Frame (ticket 0921). */
+const hasRuled = (deps: ControlDeps) => hasBeads(deps) || hasFrame(deps)
 /** When Fit to drawing can frame the beads, and why not: its own and the Progress bar's way to a picture (ticket 0847). */
 const fitsDrawing: Disableable = {
   enabled: (deps: ControlDeps) => !frameLocked(deps) && hasBeads(deps),
@@ -288,7 +290,12 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.rulers,
     group: 'canvas',
     chords: [{ key: 'r', label: 'R' }],
-    run: (deps) => deps.onToggleRulers(),
+    // Held, R too, while the Canvas is empty: there is nothing to number yet (ticket 0921, CanvasStrip card).
+    enabled: hasRuled,
+    disabledBody: (t: Translations) => t.tooltips.noBeadsToNumber,
+    run: (deps) => {
+      if (hasRuled(deps)) deps.onToggleRulers()
+    },
   },
   {
     // The Reference image (ticket 0790): with no picture its button opens the file picker; the key only shows and hides.

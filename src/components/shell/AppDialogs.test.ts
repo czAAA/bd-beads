@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import AppDialogs from './AppDialogs.vue'
 import { mountShellParts } from '../../testUtils/shellHost'
+import { seedProject } from '../../testUtils/seedProject'
 
 /** The dialogs as the registry shows them, under the real wiring (ticket 0618). Each dialog's text is in ConfirmModal
  * and its fit in dialogsFit; which question a flow asks, and what its answers do, in that flow's test; a panel control
@@ -24,6 +25,7 @@ describe('AppDialogs', () => {
   })
 
   it('holds the keyboard shortcuts from the moment any dialog is asked, before it has drawn', async () => {
+    seedProject(15, 30) // a Frame, so R has something to number (ticket 0921)
     const { canvas, dialogRegistry } = mountShellParts(AppDialogs)
     const rulers = canvas.showRulers.value
     dialogRegistry.flag('reset-progress').value = true
