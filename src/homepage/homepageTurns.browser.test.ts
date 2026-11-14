@@ -55,6 +55,9 @@ describe('The Homepage turns both ways (ticket 0801)', () => {
   })
 
   it('by the wheel, one section a scroll, down through the plans\' free list and back up', async () => {
+    // The free list grows only on the three plans, shown once Projects are saved (ticket 0947).
+    mounted.unmount()
+    mounted = await mountAt(HomePage, { projectCount: 3, feedback: fakeFeedback() }, { locale: 'en', width: 1440 })
     const strip = testid('canvas-strip')
     for (const to of ['inside', 'coffee', 'plans']) {
       await userEvent.wheel(strip, { delta: { y: 100 } })

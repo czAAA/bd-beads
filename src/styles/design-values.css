@@ -402,6 +402,7 @@
   --free-start-rows: 4; /* The free list's rows shown before the page is scrolled. */
   --free-growth: 2.5; /* The tile grows this many times as fast as the page scrolls, until it reaches the screen's foot. */
   --free-fade: 1.75rem; /* The free list's faded foot while rows are still hidden, 28px. */
+  --free-lead-width: 20rem; /* A new visitor's Free to use: the heading and the way in beside the free list, 320px (ticket 0947). */
   --coming-soon-width: 14.75rem; /* The Coming soon stamp on Free account and Pro, 236px. */
   --coming-soon-tilt: -8deg; /* The stamp's tilt; Pro's is -5deg, so the two don't look pasted. */
   /* Homepage card, the Progress bar's steps (ticket 0743) */

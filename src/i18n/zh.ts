@@ -301,7 +301,7 @@ export const zh: Translations = {
       label: '画布颜色',
       pickerLabel: '画布颜色',
       swatchLabel: '{name}，第 {n} 个，共 {count} 个',
-      names: { studio: '工作室', linen: '亚麻', stone: '石灰', fog: '雾灰', pebble: '卵石', night: '夜色', ink: '墨色', midnight: '午夜', ash: '灰烬', slate: '板岩' },
+      names: { studio: '工作室', stone: '石灰', pebble: '卵石', night: '夜色', ink: '墨色', slate: '板岩' },
     },
     hint: {
       scrollOr: '滚动或',
