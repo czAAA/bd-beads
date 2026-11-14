@@ -47,8 +47,8 @@ const FIRST_LIST_SIZE = 6
 
 /** Every preference by its name: its storage key, its default and how it reads and writes. */
 export const PREFERENCES = {
-  /** Whether the Rulers toggle is on (Rulers card: on by default). */
-  rulers: onUntilOff('openbeads:rulers'),
+  /** Whether the Rulers toggle is on (Rulers card: off until switched on, ticket 0921; an earlier "on" stays on). */
+  rulers: offUntilOn('openbeads:rulers'),
   /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0055): on by default; a view setting only. */
   rowHighlight: onUntilOff('openbeads:row-highlight'),
   /** The Canvas color (tickets 252, 554, 0653): a number, 1 to 5, so it survives a change of theme, or `custom`. The
