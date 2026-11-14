@@ -8,6 +8,7 @@ import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 import { withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { withProjectName } from '../../domain/projectName'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -32,6 +33,13 @@ const mountPanel = (project: Project) => mount(ExportPanel, { props: { project }
 const has = (wrapper: ReturnType<typeof mountPanel>, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
 
 describe('ExportPanel (ticket 0652)', () => {
+  it('names the open Project on the title line, with or without a Frame (ticket 0986)', () => {
+    for (const project of [framed(), empty()]) {
+      const wrapper = mountPanel(withProjectName(project, 'Loom cuff'))
+      expect(wrapper.get('.export-panel__title [data-testid="export-panel-project"]').text()).toBe('· Loom cuff')
+    }
+  })
+
   it('holds Picture, Printable chart and Export quality with a Frame, and passes each export on', async () => {
     const wrapper = mountPanel(framed())
 

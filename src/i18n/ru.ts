@@ -195,6 +195,7 @@ export const ru: Translations = {
       beadType: 'Тип',
       beadSize: 'Размер',
       duplicatedToast: 'Теперь открыт «{copy}». «{original}» остался как был.',
+      openedToast: 'Теперь открыт «{name}».',
     },
   },
   theme: {
