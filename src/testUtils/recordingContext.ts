@@ -78,3 +78,9 @@ export function recordingContext() {
 
   return { context, calls, named: (name: string) => calls.filter((call) => call.name === name) }
 }
+
+/** How many recorded blits lay down a bitmap made on a canvas: the Frame's tonal tiles (ticket 1001) where the beads
+ * themselves are recorded by a stand-in drawer. */
+export function canvasBlits(calls: readonly { name: string; args: unknown[] }[]): number {
+  return calls.filter(({ name, args: [image] }) => name === 'drawImage' && image instanceof HTMLCanvasElement).length
+}

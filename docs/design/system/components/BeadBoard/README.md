@@ -25,7 +25,7 @@ Hand-written from DESIGN.md §4.4 and §7 and the v16 sign-off (open canvas mock
 
 ## Canvas look (approved 2026-11-14; tickets 1001 to 1004)
 
-Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003), which is. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
+Approved in the Canvas look study and **not yet in the app**, save the own-color rim and satin light (ticket 1003) and the tonal tiles (ticket 1001), which are. Each part names the ticket that builds it; until that ticket lands the app draws what is written above, and once it lands this section wins where the two differ. It changes the screen in light and dark only: high contrast, the draft look (zoomed out) and every export (PNG, PDF, printable chart, picture) keep the drawing described above.
 
 ### Tonal tiles (ticket 1001)
 
@@ -35,7 +35,7 @@ Approved in the Canvas look study and **not yet in the app**, save the own-color
 - **Why one step:** the step between the Background and its grid sets how loud the grid is, and nothing else does. Measured as the spread of lightness over an empty patch (RMS of L*), today's ten backgrounds run from 2.1 to 4.1 because each has a hand-picked grid color; with the rule every one is 2.2 to 2.3. 6.5 is about 1.2:1. It is one constant, so it can be tuned on a real screen.
 - **Inside the Frame, the same tiles.** An empty position of the Frame is a tile by the same rule from the Frame's own Background, in place of the full `bead-empty` bead. The keep-out margin still has none; a Custom frame's Off-shape and Seams are as before.
 - **Under the drawing and on the Homepage:** the empty canvas laid under the editor's drawing (ticket 0717) and the Homepage's ground are the same tiles, since they are the same Position marks.
-- Never saved, never in exports.
+- Never saved, never in exports. The draft look keeps the outline and each Background's own empty bead (CanvasBackground card), and so does the Canvas while a reference image shows (ReferenceImage card), which a filled tile would hide.
 
 ### Grid focus (ticket 1002; CanvasStrip card)
 

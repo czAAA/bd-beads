@@ -22,7 +22,7 @@ for (const [scheme, choice, name] of [
   })
 }
 
-/** Position marks (ticket 348): the Canvas with an outline round each empty position, per Technique. */
+/** Position marks (tickets 348, 1001): the Canvas with a tonal tile at each empty position, per Technique. */
 for (const technique of ['loom', 'peyote', 'brick'] as const) {
   test(`position marks as squares, ${technique}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })

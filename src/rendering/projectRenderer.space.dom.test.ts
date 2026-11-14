@@ -7,7 +7,7 @@ import { findBead } from '../domain/beads'
 import { replaceBead } from '../domain/projectBead'
 import { canvasWeave, weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import { recordingContext } from '../testUtils/recordingContext'
+import { canvasBlits, recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
@@ -16,6 +16,7 @@ import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { changeFrame } from '../domain/changeFrame'
+import { TILE_INSET_PX, tileColorOf } from './tonalTiles'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 /** Where the Frame starts: peyote's must be an even column, as its columns alternate (ticket 0734). */
@@ -160,6 +161,24 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const corner = positionBoxPx({ technique: 'loom' }, 6, 5)
     expect([x, y]).toEqual([corner.x - BEAD_GAP_PX / 2, corner.y - BEAD_GAP_PX / 2])
     expect([width, height]).toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
+    expect(beads.every(({ theme }) => theme.background === frameLook.canvas)).toBe(true)
+    // Four strips round the margin's box in the Canvas's tiles; the Frame draws its own (ticket 1001).
+    expect(markFills(named)).toHaveLength(4)
+  })
+
+  it('draws the Frame\'s empty positions as tiles from its own Background (ticket 1001)', () => {
+    const base = framedProject('loom')
+    const project = withLayers(base, { frame: { ...frameOf(base)!, beads: withColors({}, [{ row: 0, column: 0, color: '#e63746' }]) } })
+    const { calls, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+    expect(beads.map(({ color }) => color)).toEqual(['#e63746'])
+    expect(canvasBlits(calls)).toBe(11)
+  })
+
+  it('draws the Frame\'s empty beads and marks in its look where tiles are not drawn (high contrast, exports)', () => {
+    const project = withLayers(framedProject('loom'), { beads: {} })
+    const outlined = { ...frameLook, tonalTiles: false }
+    const { named, beads } = render(project, true, { region: whole, theme: { ...canvasLook, tonalTiles: false }, frameTheme: outlined })
+    expect(beads).toHaveLength(12)
     expect(beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead && theme.background === frameLook.canvas)).toBe(true)
     // Four strips round the margin's box in the Canvas's marks, and a fifth over the Frame in its own.
     expect(markFills(named)).toHaveLength(5)
@@ -335,9 +354,27 @@ describe('Position marks tile', () => {
     // A Bead this device does not know draws the Technique's own cell, the one these marks are about.
     const project = withLayers(framedProject(technique), { frame: undefined, bead: undefined })
     const { context } = recordingContext()
-    renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51 })
+    renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51, theme: look })
     return tile
   }
+  // High contrast keeps the outlines (ticket 1001); light and dark draw tonal tiles.
+  let look: ProjectTheme = PROJECT_THEMES.contrast
+  beforeEach(() => {
+    look = PROJECT_THEMES.contrast
+  })
+
+  it('draws tonal tiles in light and dark: filled, never stroked, a gap in from the cell, corners never under 1.5px', () => {
+    look = PROJECT_THEMES.dark
+    const loom = tileCalls('loom')
+    expect(loom.named('stroke')).toHaveLength(0)
+    expect(loom.named('fill').every((call) => call.fillStyle === tileColorOf(PROJECT_THEMES.dark.canvas))).toBe(true)
+    expect(loom.named('fill').length).toBeGreaterThan(0)
+    expect(loom.named('arcTo').every((call) => call.args[4] === 1.5)).toBe(true)
+    const rights = loom.named('arcTo').map((call) => call.args[0] as number)
+    expect(rights).toContain(CELL_SIZE_PX - TILE_INSET_PX)
+    look = PROJECT_THEMES.light
+    expect(tileCalls('peyote').named('arcTo').some((call) => (call.args[4] as number) > 1.5)).toBe(true)
+  })
 
   it('draws squares as outlines with the Technique\'s corner radius and no arcs', () => {
     const loom = tileCalls('loom')
@@ -361,7 +398,7 @@ describe('Position marks tile', () => {
 
   it('fills the marks over the Frame\'s own positions too', () => {
     const project = framedProject('loom')
-    const { named } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
+    const { named } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 }, theme: PROJECT_THEMES.contrast })
     // Four strips round the margin's box, and a fifth over the Frame itself.
     expect(markFills(named)).toHaveLength(5)
   })
