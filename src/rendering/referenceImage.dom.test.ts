@@ -4,7 +4,7 @@ import { createProject } from '../domain/createProject'
 import { canvasOf } from '../domain/layerRecord'
 import { weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import { recordingContext } from '../testUtils/recordingContext'
+import { canvasBlits, recordingContext } from '../testUtils/recordingContext'
 import { withLayers } from '../testUtils/layerFields'
 import { PROJECT_THEMES, type BeadShape } from './beadLook'
 import { renderProject } from './projectRenderer'
@@ -74,8 +74,13 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
     const { beads } = render(framedProject(), { reference })
     expect(beads).toHaveLength(3)
     expect(beads.every((bead) => bead.color !== null)).toBe(true)
+  })
+
+  it('keeps the Frame\'s empty beads and the outlines under it, where with none shown they are tonal tiles (ticket 1001)', () => {
+    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(0)
     const without = render(framedProject())
-    expect(without.beads.filter((bead) => bead.color === null)).toHaveLength(3)
+    expect(without.beads.filter((bead) => bead.color === null)).toHaveLength(0)
+    expect(canvasBlits(without.calls)).toBe(3)
   })
 
   it('is never drawn where none is handed in, nor in the Frame on its own', () => {

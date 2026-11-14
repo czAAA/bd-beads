@@ -27,6 +27,7 @@ import { marginForm, marginScale } from './marginForm'
 import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
+import { drawTile, markLookOf } from './tonalTiles'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -160,10 +161,10 @@ function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined
 // position is tested. The Frame's box has its own (drawFrameGround).
 function drawPositionMarks(
   context: DrawingContext,
-  { project, area, zoom, pixelRatio, theme, margin }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
+  { project, area, zoom, pixelRatio, theme, margin, tiles }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme; tiles: boolean },
 ): void {
   const canvas = canvasWeave(project)
-  const pattern = positionMarkPattern(context, { ...canvas, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
+  const pattern = positionMarkPattern(context, { ...canvas, deviceScale: zoom * pixelRatio, pixelRatio, ...markLookOf(theme, tiles) })
   if (!pattern) {
     return
   }
@@ -202,10 +203,11 @@ function stripIn(context: DrawingContext, area: { left: number; right: number; t
 }
 
 /** The Frame's box on the Canvas (tickets 458, 0666): filled in the Frame's own Background where it differs from the
- * Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458), in the Frame's look. */
+ * Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458), in the Frame's look.
+ * Tonal tiles are the Frame's own, drawn with its beads (ticket 1001). */
 function drawFrameGround(
   context: DrawingContext,
-  { project, area, zoom, pixelRatio, canvasLook, frameLook, reference }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme; reference?: DrawnReference },
+  { project, area, zoom, pixelRatio, canvasLook, frameLook, reference, tiles }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme; reference?: DrawnReference; tiles: boolean },
 ): void {
   const footprint = frameFootprintPx(project)!
   const edge = BEAD_GAP_PX / 2
@@ -225,7 +227,8 @@ function drawFrameGround(
     }
   }
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
-  const pattern = geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, color: frameLook.positionMark })
+  const mark = markLookOf(frameLook, tiles)
+  const pattern = !mark.tiles && geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, ...mark })
   if (!pattern) {
     return
   }
@@ -300,6 +303,9 @@ interface LayerDraw {
   lit: (color: string) => string
   /** How opaque an empty Frame bead's fill is over the reference image (ticket 0790); undefined with none shown. */
   seeThrough: number | undefined
+  /** Whether empty positions may be tonal tiles (ticket 1001): on the open Canvas in the full look, with no reference
+   * image shown. Elsewhere they keep the outline and the empty bead. */
+  tiles: boolean
 }
 
 /** The Frame's cells, bead or empty bead, where its Layer geometry places them, from the context's origin (ticket 492).
@@ -412,13 +418,16 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
+  // An empty position is a tonal tile where they are drawn (ticket 1001).
+  const mark = markLookOf(look, draw.tiles)
   for (const { position: own, place } of beads) {
     const box = inGridPx(place.box)
     const painted = colorOf(own)
     const { shown, dimmed } = progressLook(draw, space, own, painted)
     const sized = box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}
     const bead = { x: origin.x + box.x, y: origin.y + box.y, size: CELL_SIZE_PX, ...sized, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
-    if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
+    if (painted === null && mark.tiles) drawTile(context, { x: bead.x, y: bead.y, width: box.width, height: box.height, cornerRadius }, mark.color, bead.deviceScale)
+    else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
     else drawBead(context, bead)
     const letter = painted === null ? undefined : letters?.[painted]
     if (painted !== null && letter) {
@@ -433,6 +442,7 @@ function drawUprightBeads(context: DrawingContext, draw: LayerDraw, space: Space
 function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }, beads: readonly PlacedBead[], colorOf: (position: GridPosition) => string | null, geometry: LayerGeometry): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw
   const weave = frameWeave(project)
+  const mark = markLookOf(look, draw.tiles)
   context.save()
   context.translate(origin.x, origin.y)
   // The beads are turned, so their bitmaps are smoothed as they are laid down.
@@ -447,7 +457,8 @@ function drawTurnedBeads(context: DrawingContext, draw: LayerDraw, space: Space,
     context.translate(box.x + box.width / 2, box.y + box.height / 2)
     context.rotate(place.angle)
     const bead = { ...centred, size: box.width, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look }
-    if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
+    if (painted === null && mark.tiles) drawTile(context, { ...centred, cornerRadius }, mark.color, bead.deviceScale)
+    else if (painted === null && draw.seeThrough !== undefined) drawSeeThroughBead(context, bead, draw.seeThrough)
     else drawBead(context, bead)
     const letter = painted === null ? undefined : letters?.[painted]
     if (painted !== null && letter) {
@@ -677,16 +688,17 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const draft = draftWhenSmall && drawsDraft(zoom * pixelRatio)
   const drawn = space.open ? reference : undefined
   const seeThrough = drawn && EMPTY_BEAD_OPACITY[drawn.opacity]
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough }
+  const tiles = space.open && !draft && !drawn
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters, draft, passes: rowPassesOf(project), lit, seeThrough, tiles }
 
   if (space.open) {
     // The reference image over the Canvas's Background and under its Position marks and every bead (ticket 0790).
     if (drawn) drawReference(context, drawn)
-    if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })
+    if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
     drawCanvasLayer(context, draw, space)
     if (frame) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
-      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: drawn })
+      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme, reference: drawn, tiles })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
       // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's

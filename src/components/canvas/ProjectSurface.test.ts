@@ -14,6 +14,7 @@ import { SETTLE_MS } from '../../rendering/gestureView'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
+import { tileColorOf } from '../../rendering/tonalTiles'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 import { paintAt } from '../../testUtils/layers'
 import { rulerNumbers } from '../../testUtils/beads'
@@ -258,8 +259,8 @@ describe('ProjectSurface', () => {
       await nextTick()
 
       expect(draws()).toBe(1)
-      // The empty positions outside the Frame are outlined in the dark theme's own color.
-      expect(context.named('stroke').some((call) => call.strokeStyle === DARK_THEME.positionMark)).toBe(true)
+      // The empty positions outside the Frame are tonal tiles from the dark theme's own Background (ticket 1001).
+      expect(context.named('fill').some((call) => call.fillStyle === tileColorOf(DARK_THEME.canvas))).toBe(true)
       expect([canvas.width, canvas.height]).toEqual(size)
     } finally {
       document.documentElement.dataset.theme = 'light'

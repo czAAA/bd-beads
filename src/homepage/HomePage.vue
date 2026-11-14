@@ -15,6 +15,7 @@ import { useElementSize } from '../composables/ui/useElementSize'
 import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import AppLogo from '../components/ui/AppLogo.vue'
 import { positionMarkBackground } from '../rendering/positionMarks'
+import { markLookAt } from '../rendering/tonalTiles'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import CoffeeScreen from './CoffeeScreen.vue'
 import { wheelPixels } from './wheelTurn'
@@ -103,7 +104,7 @@ const BACKGROUND: { technique: Technique } = { technique: 'peyote' }
 /** The Delica 11/0's real cell, the one an editor Project in that Bead draws (ticket 0724). */
 const DELICA_CELL = beadCell(findBead('miyuki/delica/11-0'), BACKGROUND.technique)
 // The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project worked in peyote, in the
-// Bead's real cell, outlined in the theme's Position mark color, sized by the zoom.
+// Bead's real cell, as the theme marks them (tonal tiles in light and dark, ticket 1001), sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   const zoomScale = zoomPercent.value / 100
@@ -113,7 +114,7 @@ const boxStyle = computed(() => {
     cell: DELICA_CELL,
     deviceScale: zoomScale * pixelRatio,
     pixelRatio,
-    color: canvasBackground.projectTheme.value.positionMark,
+    ...markLookAt(canvasBackground.projectTheme.value, zoomScale * pixelRatio),
   })
   return {
     ...(color ? { '--canvas-bg': color } : undefined),

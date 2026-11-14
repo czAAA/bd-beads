@@ -1,7 +1,9 @@
 import { describeWeave } from '../domain/weave'
+import type { ProjectTheme } from './beadLook'
 import { cellSizePx } from './cellSize'
 import { positionMarkImage, type MarkTileInput, type QuarterTurn } from './positionMarks'
 import type { Scroll, SurfaceView } from './surfaceView'
+import { markLookAt } from './tonalTiles'
 
 // The empty Canvas under the editor's drawing (ticket 0717): the Position marks' tile as a repeating CSS background on
 // the drawing area, so whatever a moved bitmap uncovers during a pan or pinch, or before the first draw, already looks
@@ -37,10 +39,12 @@ export function emptyCanvasPlacement(weave: MarkWeave, surface: Pick<SurfaceView
   }
 }
 
-/** What the empty Canvas look is drawn from: the Canvas's Weave, its Position mark color and the view. */
+/** What the empty Canvas look is drawn from: the Canvas's Weave, the theme its Position marks are drawn in and the view. */
 export interface EmptyCanvasInput {
   weave: MarkWeave
-  color: string
+  theme: ProjectTheme
+  /** Whether a reference image shows, under which the renderer keeps the outline (ticket 1001). */
+  overPicture?: boolean
   surface: Pick<SurfaceView, 'gridToPoint'>
   zoom: number
   /** The zoom the tile's image is made at: the last settled one, so a pinch scales one image instead of making many. */
@@ -52,10 +56,11 @@ export interface EmptyCanvasInput {
 
 /** The empty Canvas look as the CSS variables the drawing area's pattern reads (ticket 0717), or undefined where there
  * is no canvas to make the tile on. */
-export function emptyCanvasLook({ weave, color, surface, zoom, tileZoom, pixelRatio, reach }: EmptyCanvasInput): Record<string, string> | undefined {
+export function emptyCanvasLook({ weave, theme, overPicture, surface, zoom, tileZoom, pixelRatio, reach }: EmptyCanvasInput): Record<string, string> | undefined {
   if (zoom <= 0 || tileZoom <= 0) return undefined
   const { turn, at, size } = emptyCanvasPlacement(weave, surface, zoom)
-  const url = positionMarkImage({ ...weave, deviceScale: tileZoom * pixelRatio, pixelRatio, color }, turn)
+  const deviceScale = tileZoom * pixelRatio
+  const url = positionMarkImage({ ...weave, deviceScale, pixelRatio, ...markLookAt(theme, deviceScale, overPicture) }, turn)
   if (!url) return undefined
   return {
     '--empty-marks': `url(${url})`,

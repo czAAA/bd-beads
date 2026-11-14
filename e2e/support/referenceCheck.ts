@@ -8,6 +8,7 @@ import { projectFrame } from '../../src/domain/projectExtent'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
 import { LIGHT_THEME, satinCentre } from '../../src/rendering/beadLook'
+import { tileColorOf } from '../../src/rendering/tonalTiles'
 import { differingBlocks } from './imageDiff'
 import { beadCentre } from './projects'
 import { type Region } from '../../src/rendering/surfaceView'
@@ -41,9 +42,11 @@ const FINISHED_SHARE = 0.5
 const CURRENT_ROW_LIFT = 0.1
 
 /** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at
- * 50% over the Canvas; the current row's are 10% brighter; a painted one carries its satin light there (ticket 1003). */
+ * 50% over the Canvas; the current row's are 10% brighter; a painted one carries its satin light there (ticket 1003).
+ * Out of the draft look an empty one is a tonal tile, which Row progress leaves as it is (ticket 1001). */
 function expectedCentre(project: Project, row: number, column: number, satin: boolean): [number, number, number] {
   const color = beadColorAt(project, row, column)
+  if (color === null && satin) return rgb(tileColorOf(LIGHT_THEME.canvas))
   const flat = flatCentre(project, row, column, rgb(color ?? LIGHT_THEME.emptyBead))
   if (color === null || !satin) return flat
   const { r, g, b } = satinCentre({ r: Math.round(flat[0]), g: Math.round(flat[1]), b: Math.round(flat[2]) })

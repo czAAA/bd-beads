@@ -110,3 +110,40 @@ export function toOklab({ r, g, b }: Rgb): Oklab {
 export function colorDistance(a: Oklab, b: Oklab): number {
   return Math.sqrt((a.l - b.l) ** 2 + (a.a - b.a) ** 2 + (a.b - b.b) ** 2)
 }
+
+/** A color in CIELAB (D65 white): `l` is lightness L*, 0 for black to 100 for white; `a` and `b` its hue and chroma.
+ * The Canvas's tiles step their lightness in it (ticket 1001, BeadBoard card, Tonal tiles). */
+export interface Cielab {
+  l: number
+  a: number
+  b: number
+}
+
+/** D65's white in XYZ, which CIELAB is measured from. */
+const D65 = { x: 0.95047, y: 1, z: 1.08883 }
+/** CIELAB's two constants: where its cube root gives way to a straight line near black. */
+const LAB_EPSILON = 216 / 24389
+const LAB_KAPPA = 24389 / 27
+
+/** A color's place in CIELAB. */
+export function toCielab({ r, g, b }: Rgb): Cielab {
+  const [red, green, blue] = [linear(r), linear(g), linear(b)]
+  const f = (t: number) => (t > LAB_EPSILON ? Math.cbrt(t) : (LAB_KAPPA * t + 16) / 116)
+  const fx = f((0.4124564 * red + 0.3575761 * green + 0.1804375 * blue) / D65.x)
+  const fy = f((0.2126729 * red + 0.7151522 * green + 0.072175 * blue) / D65.y)
+  const fz = f((0.0193339 * red + 0.119192 * green + 0.9503041 * blue) / D65.z)
+  return { l: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) }
+}
+
+/** A CIELAB color back as channels, unrounded and held inside 0 to 255 (what toHex writes). */
+export function fromCielab({ l, a, b }: Cielab): Rgb {
+  const fy = (l + 16) / 116
+  const inverse = (t: number) => (t ** 3 > LAB_EPSILON ? t ** 3 : (116 * t - 16) / LAB_KAPPA)
+  const [x, y, z] = [inverse(fy + a / 500) * D65.x, inverse(fy) * D65.y, inverse(fy - b / 200) * D65.z]
+  const encoded = (value: number) => clamp((value <= 0.0031308 ? 12.92 * value : 1.055 * value ** (1 / 2.4) - 0.055) * 255, 0, 255)
+  return {
+    r: encoded(3.2404542 * x - 1.5371385 * y - 0.4985314 * z),
+    g: encoded(-0.969266 * x + 1.8760108 * y + 0.041556 * z),
+    b: encoded(0.0556434 * x - 0.2040259 * y + 1.0572252 * z),
+  }
+}

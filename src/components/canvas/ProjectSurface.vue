@@ -383,7 +383,7 @@ const patternDoneAt = computed(() => {
 })
 
 /** The empty Canvas laid under the drawing, at the view the beads are drawn at (ticket 0717). */
-const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme })
+const emptyCanvasStyle = useEmptyCanvasLook({ props: layerProps, surface: layerSurface, size: layerSize, theme, overPicture: toRef(() => !!props.reference) })
 
 // Tests read what was drawn from the layout the surface built.
 /** Where a bead's middle is on screen, in client pixels: the Homepage's tour points its ghost there (ticket 0797). */

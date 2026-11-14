@@ -78,6 +78,9 @@ export interface ProjectTheme {
   /** Whether a bead sits in a rim of its own color with a satin light (ticket 1003, BeadBoard card, Canvas look): the
    * screen in light and dark. High contrast and exports keep the flat bead in `rim`. */
   ownColorRim: boolean
+  /** Whether empty positions are tonal tiles from the Background (ticket 1001, BeadBoard card, Tonal tiles): the screen
+   * in light and dark. High contrast and exports keep the `positionMark` outline and the `emptyBead` bead. */
+  tonalTiles: boolean
   /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim`
    * in high contrast. */
   rimOnBlack: string
@@ -119,6 +122,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   background: '#e8e3df',
   rim: 'rgba(20,20,19,.12)',
   ownColorRim: true,
+  tonalTiles: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
@@ -140,6 +144,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   background: '#202020',
   rim: WHITE_RIM,
   ownColorRim: true,
+  tonalTiles: true,
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
@@ -160,6 +165,7 @@ const CONTRAST_THEME: ProjectTheme = {
   background: '#e8e3df',
   rim: 'rgba(0,0,0,.35)',
   ownColorRim: false,
+  tonalTiles: false,
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
@@ -172,7 +178,7 @@ const CONTRAST_THEME: ProjectTheme = {
 }
 
 /** PNG and PDF exports: always light, whatever the app's theme, on the `print-board`, in the flat bead. */
-export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false }
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec', ownColorRim: false, tonalTiles: false }
 
 const flatLooks = new WeakMap<ProjectTheme, ProjectTheme>()
 

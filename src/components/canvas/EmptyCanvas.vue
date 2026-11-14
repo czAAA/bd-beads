@@ -8,6 +8,7 @@ import { beadCell, DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { useHelpDevice } from '../../composables/ui/useKeyHints'
 import { positionMarkBackground } from '../../rendering/positionMarks'
+import { markLookOf } from '../../rendering/tonalTiles'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /** The canvas box with no Project open (tickets 158, 0748, 0840; EmptyCanvas card): the empty positions of New Project's
@@ -44,7 +45,7 @@ const boardStyle = computed(() => {
     cell: DEFAULT_CELL,
     deviceScale: pixelRatio,
     pixelRatio,
-    color: canvasBackground.projectTheme.value.positionMark,
+    ...markLookOf(canvasBackground.projectTheme.value),
   })
   return marks ? { '--empty-marks': `url(${marks.url})`, '--empty-marks-size': `${marks.width}px ${marks.height}px` } : undefined
 })

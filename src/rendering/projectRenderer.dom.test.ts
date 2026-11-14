@@ -890,7 +890,8 @@ frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, b
   const drawnOnCanvas = (project: Project): BeadShape[] => {
     const beads: BeadShape[] = []
     const drawBead: BeadDrawer = (_context, bead) => beads.push(bead)
-    renderProject(recordingContext().context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead })
+    // In the outlined look, where an empty Frame position is a bead: light and dark draw it a tonal tile (ticket 1001).
+    renderProject(recordingContext().context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead, theme: PROJECT_THEMES.contrast })
     return beads
   }
   const colorsAt = (beads: BeadShape[], row: number, column: number) => beads.filter((bead) => bead.x === column * 20 && bead.y === row * 20).map((bead) => bead.color)
