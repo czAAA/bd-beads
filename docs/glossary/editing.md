@@ -19,7 +19,7 @@ Turns the Selection a quarter turn clockwise about its centre, on its layer (in 
 _Avoid_: flip, spin, orientation
 
 **Beads needed**:
-The count (and Estimated weight) of beads per color inside the Frame only; with no Frame it says "Set Frame to count beads." Beads outside the Frame are never counted. A color whose swatch has a catalog code (see Palette) is listed with it, "Red · DB0723", on screen, in the print and in the exports, so it can be bought (ticket 0538).
+The count (and Estimated weight) of beads per color inside the Frame only; with no Frame it says "Set Frame to count beads." Beads outside the Frame are never counted. A color whose swatch has a catalog code (see Palette) is listed with it, "Red · DB0723", on screen, in the print and in the exports, so it can be bought (ticket 0538). The section names the Frame's Bead under its heading, and when a color has no code it says they are Palette colors, not bead codes (ticket 0974).
 _Avoid_: shopping list, bead count
 
 **Estimated size**:
@@ -27,7 +27,7 @@ A Schema's width and height in mm/cm, worked out from its Schema size and Bead a
 _Avoid_: real size, actual size, physical size
 
 **Estimated weight**:
-The grams of beads a Schema needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Frame's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are the makers' published beads per kg (TOHO's Beads Per Kg Chart, Miyuki's Size and Bead Count Data, checked in ticket 0852); TOHO Cube 1.5mm, which TOHO doesn't list, is still seller listings' figure (ticket 155).
+The grams of beads a Schema needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Frame's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Rounded up to 0.1 g, so it reads with one decimal (ticket 0974). Hidden for a Bead with no weight. The per-bead weights are the makers' published beads per kg (TOHO's Beads Per Kg Chart, Miyuki's Size and Bead Count Data, checked in ticket 0852); TOHO Cube 1.5mm, which TOHO doesn't list, is still seller listings' figure (ticket 155).
 _Avoid_: real weight, exact weight
 
 **Remove row/column**:

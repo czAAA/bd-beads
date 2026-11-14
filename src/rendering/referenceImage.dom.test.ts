@@ -29,7 +29,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function render(project: Project, extra: { open?: boolean; reference?: DrawnReference; frameTheme?: typeof PROJECT_THEMES.light } = {}) {
+function render(project: Project, extra: { open?: boolean; reference?: DrawnReference; theme?: typeof PROJECT_THEMES.light; frameTheme?: typeof PROJECT_THEMES.light } = {}) {
   const { context, calls } = recordingContext()
   const beads: BeadShape[] = []
   renderProject(context, {
@@ -38,6 +38,7 @@ function render(project: Project, extra: { open?: boolean; reference?: DrawnRefe
     region: { x: 0, y: 0, width: 400, height: 400 },
     zoom: 1,
     opaque: true,
+    theme: extra.theme,
     frameTheme: extra.frameTheme,
     reference: extra.reference,
     drawBead: (_context, bead) => {
@@ -51,18 +52,24 @@ function render(project: Project, extra: { open?: boolean; reference?: DrawnRefe
 const isPicture = (call: { name: string; args: unknown[] }) => call.name === 'drawImage' && call.args[0] === picture
 
 describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)', () => {
-  it('is drawn over the Canvas\'s Background, before its Position marks and every bead, at its opacity and turn', () => {
+  it('is drawn over the Canvas\'s Background and its tonal tiles, before every bead, at its opacity and turn (ticket 1008)', () => {
     const { calls } = render(framedProject(), { reference })
     const at = calls.findIndex(isPicture)
     const background = calls.findIndex((call) => call.name === 'fillRect' && call.fillStyle === PROJECT_THEMES.light.canvas)
     const marks = calls.findIndex((call) => call.name === 'fillRect' && typeof call.fillStyle === 'object')
     const firstBead = calls.findIndex((call) => call.name === 'bead')
-    expect(background).toBeLessThan(at)
-    expect(at).toBeLessThan(marks)
+    expect(background).toBeLessThan(marks)
+    expect(marks).toBeLessThan(at)
     expect(at).toBeLessThan(firstBead)
     expect(calls[at]!.globalAlpha).toBe(0.5)
     expect(calls[at]!.args.slice(1)).toEqual([-50, -25, 100, 50])
     expect(calls.slice(0, at).filter((call) => call.name === 'rotate').at(-1)!.args).toEqual([Math.PI / 2])
+  })
+
+  it('is drawn under high contrast\'s outlines, which stay over it', () => {
+    const { calls } = render(framedProject(), { reference, theme: PROJECT_THEMES.contrast, frameTheme: PROJECT_THEMES.contrast })
+    const marks = calls.findIndex((call) => call.name === 'fillRect' && typeof call.fillStyle === 'object')
+    expect(calls.findIndex(isPicture)).toBeLessThan(marks)
   })
 
   it('is drawn again over the Frame\'s own Background, cut to the Frame\'s box', () => {
@@ -76,12 +83,12 @@ describe('the reference image on the Canvas (ReferenceImage card, ticket 0790)',
     expect(beads.every((bead) => bead.color !== null)).toBe(true)
   })
 
-  it('keeps the Frame\'s empty beads and the outlines under it, where with none shown they are tonal tiles (ticket 1001)', () => {
-    // The Lifted piece's shadows are one picture laid down either way (ticket 1004).
-    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(1)
+  it('leaves the tonal tiles as they are with none shown (ticket 1008)', () => {
+    // The Canvas's tiles and the Lifted piece's shadows (ticket 1004), as with no picture.
     const without = render(framedProject())
     expect(without.beads.filter((bead) => bead.color === null)).toHaveLength(0)
     expect(canvasBlits(without.calls)).toBe(4)
+    expect(canvasBlits(render(framedProject(), { reference }).calls)).toBe(4)
   })
 
   it('is never drawn where none is handed in, nor in the Frame on its own', () => {
