@@ -107,6 +107,25 @@ export function eyeTrace(drawing: PeacockDrawing, strip: number): TraceStep[] {
   return steps
 }
 
+/** The start of a trace's first color, `beads` beads of its strokes: what the ghost draws by hand before the rest of
+ * the piece appears at once (ticket 0949). */
+export function traceStart({ part, strokes }: TraceStep, beads: number): TraceStep {
+  let left = beads
+  const kept = strokes.flatMap((stroke) => {
+    const start = stroke.slice(0, left)
+    left -= start.length
+    return start.length > 0 ? [start] : []
+  })
+  return { part, strokes: kept, fills: [] }
+}
+
+/** The whole of a drawing color by color, each color's beads as strokes: what appears at once after the ghost traced
+ * the start of it (ticket 0949). */
+export function wholeDrawing(drawing: PeacockDrawing): TraceStep[] {
+  const parts = [...new Set(drawing.rows.join(''))] as PeacockPart[]
+  return parts.map((part) => ({ part, strokes: strokesThrough([...beadsWhere(drawing, (each) => each === part).values()]), fills: [] }))
+}
+
 /** The ring's eye drawn by hand in `strip`: each color's own beads, from the green ring in to the pupil. */
 export function eyeByHand(strip: number): TraceStep[] {
   const beads = (part: PeacockPart) => [...beadsWhere(PEACOCK_RING, (each) => each === part).values()].filter(([, along]) => Math.floor(along / PEACOCK_RING.period) === strip)

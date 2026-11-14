@@ -373,6 +373,17 @@ export function createHand(deps: HandDeps) {
     await settle()
   }
 
+  /** One stroke of the active tool through `cells` with no ghost move and no wait, the ghost resting where it is: what a
+   * row lets appear at once rather than draws (ticket 0949). */
+  function lay(cells: readonly GridPosition[]): void {
+    alive()
+    const [first, ...rest] = cells
+    if (!first) return
+    deps.canvas.onCellPrimaryDown(first.row, first.column, first.layer)
+    for (const cell of rest) deps.canvas.onCellPrimaryMove(cell.row, cell.column, cell.layer)
+    deps.shell.endStroke()
+  }
+
   /** A drag from one bead to another, as the Select tool's: a Selection, or the Mirror's Area. The ghost rests on the
    * first bead, then the Selection grows bead by bead behind it, and rests whole a moment, so the beader sees what is
    * selected. */
@@ -417,7 +428,7 @@ export function createHand(deps: HandDeps) {
     ghost.shown = false
   }
 
-  return { instant, wait, frame, find, moveTo, middleOf, press, pressWith, scroll, hover, beadAt, stroke, drag, dragFrame, hide, canvas: deps.canvas, root }
+  return { instant, wait, frame, find, moveTo, middleOf, press, pressWith, scroll, hover, beadAt, stroke, lay, drag, dragFrame, hide, canvas: deps.canvas, root }
 }
 
 /** The ghost's hand in a run of the tour. */
