@@ -137,6 +137,8 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | 4 | Fog / Туман | Ash / Пепел |
 | 5 | Pebble / Галька | Slate / Сланец |
 
+**Three per theme (ticket 1000; approved 2026-11-14, not yet in the app):** 1 Studio / Night, 2 Stone / Ink, 3 Pebble / Slate, named "{name}, {n} of 3". Linen, Fog, Midnight and Ash leave every language with that ticket.
+
 ## Numbers, units and dates
 
 | What | English | Russian | Rule |
@@ -1189,3 +1191,13 @@ Under a converter control stand only a result or an error (ConvertImage card). W
 | "Every part of the picture becomes beads." · "Crop the picture with Select …" (in the convert cards) | gone: the preview and its band show it |
 
 Gone strings are removed from every language. "To fix what was found, pick Background …" stays until ticket 0896 removes it with the step pane.
+
+## Grid focus copy (ticket 1002)
+
+The Canvas strip's Grid focus toggle (CanvasStrip card; BeadBoard card, Grid focus). Approved 2026-11-14, not yet in the app. "Grid" is the glossary's Grid; in Russian «сетка», a word the app's copy has not used before, so the Russian is a draft for the owner to check. The other languages are written with the build, as draft words to be checked by a speaker of each.
+
+| English | Русский |
+|---|---|
+| Grid focus (strip button name, shortcuts row) | Фокус сетки |
+| Keeps the grid clear around your work and calmer everywhere else. (Tooltip) | Сетка чёткая вокруг вашей работы и спокойнее на остальном холсте. |
+| There is no work to focus on yet. (disabled reason) | Пока нет работы, вокруг которой держать фокус. |

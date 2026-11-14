@@ -1246,6 +1246,7 @@ export const en: Translations = {
     rowHighlight: 'Show or hide the marks on the current row and the rows marked done.',
     fitAndExport: 'Fit the Frame around every bead, then open Export on Picture.',
     pasteToolTouch: 'Tap where the copy goes.',
+    noBeadsToNumber: 'There are no beads to number.',
   },
   layerSettings: {
     frameHeading: 'Settings',

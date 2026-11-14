@@ -39,6 +39,7 @@ export const ICON_NAMES = [
   'frame',
   'globe',
   'grid',
+  'grid-focus',
   'hand',
   'image',
   'import',
