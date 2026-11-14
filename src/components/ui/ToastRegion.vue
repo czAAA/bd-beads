@@ -10,8 +10,6 @@ import AppMessage from './AppMessage.vue'
  * results go after 5s unless hovered or focused, errors stay. */
 const props = defineProps<{
   toasts: Toast[]
-  /** The save ring shows (SaveReminder card, ticket 0796): toasts start 8px under it, so none covers it. */
-  underRing?: boolean
   /** A strip panel is open (ticket 0859): one over the toasts' corner, the Export panel above all, puts them 8px
    * under it, so the saved-file toast never covers the row just pressed. */
   clearOfPanel?: boolean
@@ -50,7 +48,7 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
     tag="div"
     name="toast"
     class="toast-region"
-    :class="{ 'toast-region--under-ring': underRing, 'toast-region--below-panel': below !== undefined }"
+    :class="{ 'toast-region--below-panel': below !== undefined }"
     :style="belowStyle"
     data-testid="toast-region"
   >
@@ -93,22 +91,6 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
 
 .toast-region > * {
   pointer-events: auto;
-}
-
-.toast-region--under-ring {
-  top: calc(var(--strip-height) + var(--save-ring-inset) + var(--save-ring-size) + var(--space-8));
-}
-
-@media (pointer: coarse) {
-  .toast-region--under-ring {
-    top: calc(var(--strip-height) + var(--save-ring-inset) + var(--save-ring-size-touch) + var(--space-8));
-  }
-}
-
-@media (max-width: 743px) {
-  .toast-region--under-ring {
-    top: calc(var(--strip-height) + var(--save-ring-inset-phone) + var(--save-ring-size-touch) + var(--space-8));
-  }
 }
 
 /* Under an open panel over the toasts' corner (ticket 0859), on every screen size. */

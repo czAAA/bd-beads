@@ -20,13 +20,15 @@ export interface TextMisfit {
 const ONE_LINE = 'button, a, label, th, h1, h2, h3, h4, h5, h6, summary, legend, [role="tab"], [role="menuitem"], [role="button"], .ui-pill, [data-one-line]'
 
 /** One-line controls that are designed to take more lines than one, with how many: the coffee screen's balanced title
- * (ticket 0823), the segmented control's two-line options, a dialog's title. */
+ * (ticket 0823), the segmented control's two-line options, a dialog's title, and the save ring's count, which with no
+ * room breaks on its label's hidden lines (SaveReminder card, ticket 0922). */
 const MORE_LINES: [string, number][] = [
   ['.coffee__title', 2],
   ['.segmented__option', 2],
   ['.app-modal__title', 2],
   ['.bead-quantities__tooltip', 99],
   ['[role="tooltip"]', 99],
+  ['.save-ring__count', 99],
 ]
 
 /** Boxes that hold artwork or the scrolling drawing, whose content is meant to be wider than the box. */

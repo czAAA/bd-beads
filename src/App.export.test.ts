@@ -120,6 +120,9 @@ describe('App save ring (ticket 0796)', () => {
     const wrapper = mountApp()
     await flushPromises()
 
+    // Beside the Project button on the strip (ticket 0922), not in the drawing area.
+    expect(wrapper.find('[data-testid="canvas-strip"] [data-testid="save-ring"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="app-drawing-area"] [data-testid="save-ring"]').exists()).toBe(false)
     await wrapper.get('[data-testid="save-ring"]').trigger('click')
 
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))

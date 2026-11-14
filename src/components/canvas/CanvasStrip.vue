@@ -15,11 +15,12 @@ import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
 import FileButton from '../ui/form/FileButton.vue'
+import SaveReminder from './SaveReminder.vue'
 import { imageInputAccept } from '../../domain/imageConversion'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on every App page (tickets 143, 540, 0756, ADRs 0046, 0073, 0085; CanvasStrip card): Menu ·
-// Project · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Undo · Redo, zoom
+// Project (the save ring beside it while due, ticket 0922) · Frame on the left (Menu · Close on Convert image), the Brand in the middle, Rotate · Rulers · Undo · Redo, zoom
 // and Export, never scrolled away, on the right (tickets 543, 0652, 0843); the Homepage's way in, its slogan as the wordmark.
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page, and
@@ -46,6 +47,8 @@ const props = defineProps<{
   wayInAway?: boolean
   /** The demo beside What's inside's list (ticket 0830): the word its button reads, Expand or Collapse; none without. */
   expand?: 'expand' | 'collapse'
+  /** The save ring while it is due (SaveReminder card, ticket 0922): beside the Project button; none hides it. */
+  saveRing?: { beads: number; lastFileAt?: number; labelOpen: boolean }
 }>()
 const emit = defineEmits<{
   'select-panel': [sheet: 'menu' | 'project' | 'export']
@@ -65,6 +68,10 @@ const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   reset: []
+  /** The save ring was pressed: Save, the action Save Project file and Ctrl/Cmd+S run. */
+  'save-project-file': []
+  /** The pointer or focus came onto the save ring (true) or left it (false). */
+  'hold-save-ring': [on: boolean]
 }>()
 
 const { t } = useI18n()
@@ -132,7 +139,8 @@ const cut = useScrollCut(scrollerEl)
 
 function onPanelsKeydown(event: KeyboardEvent) {
   const button = event.target as HTMLElement
-  if (event.key === 'ArrowDown' && button.getAttribute('aria-pressed') !== 'true') {
+  // ↓ opens a panel; the save ring has none, so it is not pressed by it.
+  if (event.key === 'ArrowDown' && button.getAttribute('aria-pressed') !== 'true' && !button.closest('.save-ring')) {
     event.preventDefault()
     event.stopPropagation()
     button.click()
@@ -170,6 +178,15 @@ function onPanelsKeydown(event: KeyboardEvent) {
         >
           <span class="canvas-strip__label canvas-strip__project-name" data-user-text>{{ projectName }}</span>
         </AppButton>
+        <!-- The save ring (tickets 0796, 0922; SaveReminder card): beside the Project button, after it in Tab order. -->
+        <SaveReminder
+          v-if="project && saveRing"
+          :beads="saveRing.beads"
+          :last-file-at="saveRing.lastFileAt"
+          :label-open="saveRing.labelOpen"
+          @save="emit('save-project-file')"
+          @hold="emit('hold-save-ring', $event)"
+        />
         <AppButton
           v-if="project"
           variant="text"

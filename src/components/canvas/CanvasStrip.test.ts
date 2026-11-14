@@ -345,3 +345,41 @@ describe("CanvasStrip in What's inside's demo editor (ticket 0797)", () => {
     expect(narrow.find('[data-testid="strip-expand"]').exists()).toBe(false)
   })
 })
+
+describe('CanvasStrip save ring (ticket 0922, SaveReminder card)', () => {
+  const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
+  const saveRing = { beads: 64, labelOpen: false }
+  const panelOrder = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findAll('.canvas-strip__panel-buttons button').map((el) => el.attributes('data-testid'))
+
+  it('stands right after the Project button while it is due, and is absent otherwise', () => {
+    expect(panelOrder(mount(CanvasStrip, { props: { project, saveRing } }))).toEqual(['strip-menu', 'strip-project', 'save-ring', 'strip-frame'])
+    expect(mount(CanvasStrip, { props: { project } }).find('[data-testid="save-ring"]').exists()).toBe(false)
+    expect(mount(CanvasStrip, { props: { saveRing } }).find('[data-testid="save-ring"]').exists()).toBe(false)
+  })
+
+  it('passes a press on as Save and says when the pointer or focus is on it', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, saveRing } })
+    const ring = wrapper.get('[data-testid="save-ring"]')
+    await ring.trigger('click')
+    await ring.trigger('pointerenter')
+    await ring.trigger('pointerleave')
+
+    expect(wrapper.emitted('save-project-file')).toHaveLength(1)
+    expect(wrapper.emitted('hold-save-ring')).toEqual([[true], [false]])
+  })
+
+  it('is reached by → from the Project button, and ↓ on it saves nothing', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, saveRing }, attachTo: document.body })
+    const projectButton = wrapper.get('[data-testid="strip-project"]')
+    ;(projectButton.element as HTMLElement).focus()
+    await projectButton.trigger('keydown', { key: 'ArrowRight' })
+    const ring = wrapper.get('[data-testid="save-ring"]')
+    expect(document.activeElement).toBe(ring.element)
+
+    await ring.trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.emitted('save-project-file')).toBeUndefined()
+    expect(wrapper.emitted('select-panel')).toBeUndefined()
+    wrapper.unmount()
+  })
+})

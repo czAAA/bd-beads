@@ -1002,7 +1002,7 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 
 ## Save reminder copy (ticket 0796)
 
-The ring at the drawing area's top-right that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
+The ring on the Canvas strip, beside the Project button, that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
