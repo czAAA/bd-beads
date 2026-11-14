@@ -3,6 +3,7 @@ import { catalogSwatches } from '../../domain/beadSwatch'
 import { colorCatalogOf, findBead } from '../../domain/beads'
 import type { ColorCatalog, Finish } from '../../domain/colorCatalog'
 import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
+import { myBeadsCodes, withCodeToggled, type MyBeads } from '../../domain/myBeads'
 import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
@@ -18,11 +19,13 @@ export interface BeadColorsDeps {
   selectedColorId?: () => string | undefined
   /** Opens the Feedback sheet; without it the list offers no Report (the Convert image wizard's remap picker). */
   report?: (kind: 'bead-color', prefill: FeedbackPrefill) => void
+  /** The device's My beads list (ticket 0902), which the list ticks into (ticket 0918); without it the list has no ticks. */
+  myBeads?: Ref<MyBeads>
 }
 
 /** The Color catalog of the open Project's Bead as a list of swatches to add to its Palette (ticket 0537, ADR 0072).
  * The catalog is fetched on the first `load`, not when the Project opens. */
-export function useBeadColors({ currentProject, palette, addUsed, selectedColorId, report }: BeadColorsDeps) {
+export function useBeadColors({ currentProject, palette, addUsed, selectedColorId, report, myBeads: myBeadsList }: BeadColorsDeps) {
   const loaded = shallowRef<ColorCatalog>()
   const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
 
@@ -76,14 +79,24 @@ export function useBeadColors({ currentProject, palette, addUsed, selectedColorI
     })
   }
 
+  /** My beads for the Bead's Color catalog: the one list the converter reads too (ticket 0918). */
+  const myBeads = myBeadsList && {
+    codes: computed(() => myBeadsCodes(myBeadsList.value, catalogId.value)),
+    toggle(code: string) {
+      if (catalogId.value) myBeadsList.value = withCodeToggled(myBeadsList.value, catalogId.value, code)
+    },
+  }
+
   // `bead` is handed out so the list reads a typed shop code as the Bead's own (ticket 0696); `catalog` so its empty
   // state can say which sizes a code exists in (ticket 0713).
-  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog, ...(report ? { report: reportColor } : {}) }
+  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome, bead, catalog, ...(report ? { report: reportColor } : {}), ...(myBeads ? { myBeads } : {}) }
 }
 
 export type BeadColors = ReturnType<typeof useBeadColors> & {
   /** The Finishes the list's filter opens with: the converter's, in Color by color's Change picker (ticket 0901). */
   finishes?: Readonly<Ref<readonly Finish[]>>
+  /** The list's My beads codes and the tick that toggles one (ticket 0918); absent, the list has no switch or ticks. */
+  myBeads?: { codes: Readonly<Ref<readonly string[]>>; toggle: (code: string) => void }
 }
 
 const beadColorsKey: InjectionKey<BeadColors> = Symbol('beadColors')

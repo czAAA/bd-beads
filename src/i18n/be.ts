@@ -496,6 +496,8 @@ export const be: Translations = {
       info: 'Пра гэтыя колеры',
       codeCount: 'кодаў: {count}',
       firstShown: 'паказаны першыя {count}',
+      inMyBeads: '{code} у «Маім бісеры»',
+      measuredCount: 'вымерана: {count}',
       filters: 'Фільтры',
       filtersOn: 'Фільтры, уключана: {count}',
       label: 'Колеры гэтага бісеру',

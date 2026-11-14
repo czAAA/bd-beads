@@ -495,6 +495,8 @@ export const ru: Translations = {
       info: 'Об этих цветах',
       codeCount: 'кодов: {count}',
       firstShown: 'показаны первые {count}',
+      inMyBeads: '{code} в «Моём бисере»',
+      measuredCount: 'измерено: {count}',
       filters: 'Фильтры',
       filtersOn: 'Фильтры, включено: {count}',
       label: 'Цвета этой бисеринки',

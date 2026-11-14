@@ -495,6 +495,8 @@ export const pl: Translations = {
       info: 'O tych kolorach',
       codeCount: 'kodów: {count}',
       firstShown: 'pokazano pierwsze {count}',
+      inMyBeads: '{code} w Moich koralikach',
+      measuredCount: 'zmierzone: {count}',
       filters: 'Filtry',
       filtersOn: 'Filtry, włączone: {count}',
       label: 'Kolory tego koralika',

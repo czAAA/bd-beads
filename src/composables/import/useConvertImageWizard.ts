@@ -665,14 +665,18 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
 
   /** The Palette the remap picker shows (FoundColorRow card): the new Project's, as a Palette. */
   const remapPalette = computed(() => createPalette(palette.value.ids, builtIns.value, palette.value.codes))
+  /** Every Bead color of the catalog in the Bead's size: the Change picker's All codes (ticket 0918). */
+  const catalogRemapSwatches = computed(() => {
+    if (!catalog.value || catalog.value.id !== catalogId.value) return []
+    return catalogSwatches(catalog.value, bead.value.size, remapPalette.value.colors.map((color) => color.hex), brandColors(bead.value.brand.id))
+  })
+
   /** The Bead colors the remap picker lists, those the new Palette holds marked taken; only My beads' while it is the
    * source (ticket 0902). */
   const remapSwatches = computed(() => {
-    if (!catalog.value || catalog.value.id !== catalogId.value) return []
-    const swatches = catalogSwatches(catalog.value, bead.value.size, remapPalette.value.colors.map((color) => color.hex), brandColors(bead.value.brand.id))
-    if (source.value !== 'my-beads') return swatches
+    if (source.value !== 'my-beads') return catalogRemapSwatches.value
     const owned = new Set(myBeads.codes.value)
-    return swatches.filter((swatch) => owned.has(swatch.code))
+    return catalogRemapSwatches.value.filter((swatch) => owned.has(swatch.code))
   })
 
   /** A row of the My beads view pressed (ticket 0902): its code ticked or unticked. Unticking the last code while My
@@ -879,6 +883,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     palette,
     remapPalette,
     remapSwatches,
+    catalogRemapSwatches,
     /** Clean up (ticket 0906): Clean up stray beads, its strength and Small colors join, with what each did. */
     cleanUp,
     /** Auto-fix lighting (ticket 0907): its switch, and the picture the beads are sampled from (what Compare shows). */
