@@ -2,6 +2,7 @@
 import { computed, ref, shallowRef } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import InfoButton from '../components/ui/InfoButton.vue'
 import { fillBlanks } from '../domain/fillBlanks'
 import { useI18n } from '../i18n/useI18n'
 import FreeList from './FreeList.vue'
@@ -24,8 +25,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ makeFirstProject: []; openEditor: [] }>()
 const { t, locale } = useI18n()
-/** The heading and its line: the three plans' and their reason, or No account's alone. */
-const headingCopy = computed(() => (props.isNew ? t.value.homepage.plans.alone : t.value.homepage.plans))
+/** The heading: the three plans', or No account's alone. */
+const heading = computed(() => (props.isNew ? t.value.homepage.plans.alone : t.value.homepage.plans).heading)
 const rows = computed(() => freeListRows(t.value, locale.value))
 /** The free list's rows a phone shows before Show all opens the rest in place. */
 const PHONE_ROWS = 6
@@ -50,9 +51,11 @@ defineExpose({ freeWindow, freeTile })
   <section class="plans" :class="{ 'plans--phone': phone }" aria-labelledby="homepage-plans" data-testid="homepage-plans">
     <FreeToUse v-if="isNew && !phone" @make-first-project="emit('makeFirstProject')" />
     <template v-else>
-      <header class="plans__head">
-        <h2 id="homepage-plans" class="plans__heading">{{ headingCopy.heading }}</h2>
-        <p class="plans__why" data-testid="plans-why"><AppIcon name="info" :size="16" />{{ headingCopy.why }}</p>
+      <!-- A new visitor's Accounts and Pro line waits in an Info button beside the heading (ticket 0946). -->
+      <header class="plans__head" :class="{ 'plans__head--alone': isNew }">
+        <h2 id="homepage-plans" class="plans__heading">{{ heading }}</h2>
+        <InfoButton v-if="isNew" :label="t.homepage.plans.alone.info" :body="t.homepage.plans.alone.why" data-testid="plans-info" />
+        <p v-else class="plans__why" data-testid="plans-why"><AppIcon name="info" :size="16" />{{ t.homepage.plans.why }}</p>
       </header>
       <div class="plans__grid">
         <article ref="freeTile" class="plan plan--current" aria-current="true" data-testid="plan-no-account">
@@ -140,6 +143,13 @@ defineExpose({ freeWindow, freeTile })
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-4) var(--space-16);
+}
+
+/* A new visitor's heading with its Info button right after it. */
+.plans__head--alone {
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-4);
 }
 
 .plans__heading {

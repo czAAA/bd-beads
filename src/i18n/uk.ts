@@ -362,6 +362,11 @@ export const uk: Translations = {
       starters: { one: '{count} стартер', few: '{count} стартери', many: '{count} стартерів', other: '{count} стартера' },
       caption: '{technique} · {size}',
       piece: 'Вічка павиного пера, мозаїчне плетіння',
+      promises: {
+        free: { name: 'Тут усе безкоштовно', text: 'Без акаунта й пробного періоду. Робота лишається на вашому пристрої.' },
+        picture: { name: 'Почніть із картинки', text: 'Перетворіть фото на схему для бісеру.' },
+        weave: { name: 'Рахуйте й плетіть', text: 'Кожен колір пораховано; позначайте готові ряди, поки плетете.' },
+      },
     },
     inside: {
       rows: {
@@ -437,7 +442,7 @@ export const uk: Translations = {
         more: 'Далі буде більше',
         showAll: 'Показати всі {count}',
       },
-      alone: { heading: 'Безкоштовно', why: 'Акаунти та Pro з’являться пізніше; усе працює й без них.' },
+      alone: { heading: 'Безкоштовно', why: 'Акаунти та Pro з’являться пізніше; усе працює й без них.', info: 'Про акаунти та Pro' },
     },
     library: '{library}, {count}',
   },

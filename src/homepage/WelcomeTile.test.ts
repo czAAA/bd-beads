@@ -63,8 +63,8 @@ describe('WelcomeTile (ticket 0830)', () => {
 
   it('makes three promises, each a name over its line', () => {
     const promises = tile().findAll('[data-testid^="welcome-promise-"]')
-    expect(promises.map((promise) => promise.find('.welcome__promise-name').text())).toEqual(['Yours, on this device', 'Works offline', 'Free forever'])
-    expect(promises[1]!.find('.welcome__promise-line').text()).toBe('Once open, it keeps working without a connection.')
+    expect(promises.map((promise) => promise.find('.welcome__promise-name').text())).toEqual(['Everything here is free', 'Start from a picture', 'Count and weave'])
+    expect(promises[1]!.find('.welcome__promise-line').text()).toBe('Turn a photo into a bead pattern.')
   })
 
   it('on a phone has no button: the bar carries the way in, and the promises are one grouped list', () => {

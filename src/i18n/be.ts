@@ -363,6 +363,11 @@ export const be: Translations = {
       starters: { one: '{count} стартар', few: '{count} стартары', many: '{count} стартараў', other: '{count} стартара' },
       caption: '{technique} · {size}',
       piece: 'Вочкі паўлінавага пяра, мазаічнае пляценне',
+      promises: {
+        free: { name: 'Тут усё бясплатна', text: 'Без акаўнта і пробнага перыяду. Праца застаецца на вашай прыладзе.' },
+        picture: { name: 'Пачніце з малюнка', text: 'Ператварыце фота ў схему для бісеру.' },
+        weave: { name: 'Лічыце і пляціце', text: 'Кожны колер палічаны; адзначайце гатовыя рады, пакуль пляцеце.' },
+      },
     },
     inside: {
       rows: {
@@ -438,7 +443,7 @@ export const be: Translations = {
         more: 'Хутка будзе больш',
         showAll: 'Паказаць усе {count}',
       },
-      alone: { heading: 'Бясплатна', why: 'Акаўнты і Pro з’явяцца пазней; усё працуе і без іх.' },
+      alone: { heading: 'Бясплатна', why: 'Акаўнты і Pro з’явяцца пазней; усё працуе і без іх.', info: 'Пра акаўнты і Pro' },
     },
     library: '{library}, {count}',
   },

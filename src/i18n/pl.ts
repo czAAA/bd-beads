@@ -362,6 +362,11 @@ export const pl: Translations = {
       starters: { one: '{count} starter', few: '{count} startery', many: '{count} starterów', other: '{count} startera' },
       caption: '{technique} · {size}',
       piece: 'Oczka pawiego pióra, w peyote',
+      promises: {
+        free: { name: 'Wszystko tutaj jest darmowe', text: 'Bez konta i bez okresu próbnego. Twoja praca zostaje na tym urządzeniu.' },
+        picture: { name: 'Zacznij od obrazu', text: 'Zamień zdjęcie we wzór z koralików.' },
+        weave: { name: 'Licz i pleć', text: 'Każdy kolor policzony; zaznaczaj gotowe rzędy w trakcie plecenia.' },
+      },
     },
     inside: {
       rows: {
@@ -437,7 +442,7 @@ export const pl: Translations = {
         more: 'Więcej w drodze',
         showAll: 'Pokaż wszystkie {count}',
       },
-      alone: { heading: 'Za darmo', why: 'Konta i Pro pojawią się później; wszystko działa bez nich.' },
+      alone: { heading: 'Za darmo', why: 'Konta i Pro pojawią się później; wszystko działa bez nich.', info: 'O kontach i Pro' },
     },
     library: '{library}, {count}',
   },

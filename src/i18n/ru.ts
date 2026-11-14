@@ -362,6 +362,11 @@ export const ru: Translations = {
       starters: { one: '{count} стартер', few: '{count} стартера', many: '{count} стартеров', other: '{count} стартера' },
       caption: '{technique} · {size}',
       piece: 'Глазки павлиньего пера, мозаичное плетение',
+      promises: {
+        free: { name: 'Здесь всё бесплатно', text: 'Без аккаунта и пробного периода. Работа остаётся на вашем устройстве.' },
+        picture: { name: 'Начните с картинки', text: 'Превратите фото в схему для бисера.' },
+        weave: { name: 'Считайте и плетите', text: 'Каждый цвет посчитан; отмечайте готовые ряды, пока плетёте.' },
+      },
     },
     inside: {
       rows: {
@@ -437,7 +442,7 @@ export const ru: Translations = {
         more: 'Скоро будет больше',
         showAll: 'Показать все {count}',
       },
-      alone: { heading: 'Бесплатно', why: 'Аккаунты и Pro появятся позже; всё работает и без них.' },
+      alone: { heading: 'Бесплатно', why: 'Аккаунты и Pro появятся позже; всё работает и без них.', info: 'Об аккаунтах и Pro' },
     },
     library: '{library}, {count}',
   },

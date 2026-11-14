@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import InfoButton from '../components/ui/InfoButton.vue'
 import PlanTiles from './PlanTiles.vue'
 import { freeListGroups, freeListRows } from './freeList'
 import { en } from '../i18n/en'
@@ -99,12 +100,23 @@ describe('PlanTiles', () => {
   })
 
   describe('for a new visitor (ticket 0871)', () => {
-    it('shows no plan tiles and no Coming soon, under its own heading and one line', () => {
+    it('shows no plan tiles and no Coming soon, under its own heading', () => {
       for (const phone of [false, true]) {
         const wrapper = tiles('en', { isNew: true, phone })
         expect(wrapper.get('h2').text()).toBe('Free to use')
-        expect(wrapper.get('[data-testid="plans-why"]').text()).toBe('Accounts and Pro come later; everything works without them.')
         expect(wrapper.text()).not.toMatch(/coming soon/i)
+      }
+    })
+
+    it("keeps Accounts and Pro in the heading's Info button only, never a line beside free (ticket 0946)", () => {
+      for (const phone of [false, true]) {
+        const wrapper = tiles('en', { isNew: true, phone })
+        expect(wrapper.find('[data-testid="plans-why"]').exists()).toBe(false)
+        const shown = wrapper.findAll('h2, p, li').filter((part) => part.find('[role="tooltip"]').exists() === false)
+        expect(shown.map((part) => part.text()).join(' ')).not.toMatch(/later/i)
+        const info = wrapper.get('[data-testid="plans-info"]')
+        expect(info.attributes('aria-label')).toBe('About accounts and Pro')
+        expect(wrapper.getComponent(InfoButton).props('body')).toBe('Accounts and Pro come later; everything works without them.')
       }
     })
 

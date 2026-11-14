@@ -479,7 +479,8 @@ export interface Translations {
     openEditor: string
     whatsInside: string
     /** The Welcome section (ticket 0830; Homepage card): its heading and line, See how it works, the counts line's two
-     * counted parts ({codes} and {brands} from the app), the piece's caption and its name as an image. */
+     * counted parts ({codes} and {brands} from the app), the piece's caption and its name as an image; its three promises
+     * (ticket 0946): free and local as one, then what the app does, in the page's chapter words. */
     welcome: {
       heading: string
       line: string
@@ -488,6 +489,7 @@ export interface Translations {
       starters: PluralForms
       caption: string
       piece: string
+      promises: Record<'free' | 'picture' | 'weave', InsideCopy>
     }
     /** What's inside (ticket 0797; Homepage card): the 13 rows the tour plays, the editor's region, and the demo's
      * Projects. The colors row's {brands} and Convert image's {max} come from the app. */
@@ -535,8 +537,9 @@ export interface Translations {
       /** No account's list (ticket 0742): the app's real features, in the order `homepage/freeList.ts` gives them; a
        * phone's Show all opens the rows past its first (ticket 0827). */
       free: { heading: string; rows: FreeRows; more: string; showAll: string }
-      /** A new visitor's plans (ticket 0871): No account alone, its heading and the one line in place of the reason. */
-      alone: { heading: string; why: string }
+      /** A new visitor's plans (ticket 0871): No account alone, its heading and the one line in place of the reason, which
+       * shows in an Info button's Tooltip named by `info` (ticket 0946). */
+      alone: { heading: string; why: string; info: string }
     }
     /** The phone strip's library button's name (ticket 0827): {library} is the Menu row's, "Projects library, 28". */
     library: string
