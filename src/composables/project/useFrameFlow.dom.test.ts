@@ -213,6 +213,19 @@ describe('useFrameFlow', () => {
     expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual({})
   })
 
+  it('opens the panel on its Starter gallery this once: closed, it opens on its own list again (ticket 0953)', () => {
+    const flow = setup()
+    flow.openOnStarters()
+    expect([flow.barShown.value, flow.opensOnStarters.value]).toEqual([true, true])
+    flow.closeBar()
+    flow.toggleBar()
+    expect([flow.barShown.value, flow.opensOnStarters.value]).toEqual([true, false])
+
+    const none = setup(null)
+    none.openOnStarters()
+    expect([none.barOpen.value, none.opensOnStarters.value]).toEqual([false, false])
+  })
+
   it('sets the Frame to a Selection\'s rectangle as one undo step, and leaves the bar closed (tickets 415, 473)', () => {
     const { deps, settingFrame, setTo } = setup(open)
     setTo({ row: 2, column: 3, rows: 4, columns: 5 })

@@ -8,8 +8,8 @@ import GroupedList from './GroupedList.vue'
 import WelcomePiece from './WelcomePiece.vue'
 import { welcomeCaption, welcomeCounts, welcomePromises } from './welcomeCopy'
 
-// The Welcome section (Homepage card, ticket 0830): one calm tile before the demo. The heading and its line, the way
-// into the editor (the page's one primary button) with See how it works beside it, the app's counts, a finished piece
+// The Welcome section (Homepage card, ticket 0830): the heading and its line, the way into the editor (the one primary
+// button) with See how it works and, for a new visitor, Start from a ready design (0953) beside it, the counts, a piece
 // and three promises. On a phone the bar carries the way in, and the promises are a grouped list under the tile.
 defineProps<{
   /** Drawn for a phone: no button, the promises apart from the tile. */
@@ -19,7 +19,7 @@ defineProps<{
   /** The Projects saved, which Projects library shows. */
   count: number
 }>()
-const emit = defineEmits<{ makeFirstProject: []; openEditor: []; openSavedProjects: []; seeHow: [] }>()
+const emit = defineEmits<{ makeFirstProject: []; openEditor: []; openSavedProjects: []; seeHow: []; startFromStarter: [] }>()
 
 const { t, locale } = useI18n()
 const counts = computed(() => welcomeCounts(t.value, locale.value))
@@ -50,6 +50,10 @@ const savedProjects = controlAction('saved-projects')
             </AppButton>
           </template>
         </span>
+        <!-- The first Project, made at once, open on the Frame panel's Starter gallery (ticket 0953). -->
+        <AppButton v-if="isNew" variant="text" size="lg" icon="frame" data-testid="welcome-start-from-starter" @click="emit('startFromStarter')">
+          {{ t.homepage.welcome.startFromStarter }}
+        </AppButton>
         <AppButton variant="text" size="lg" trailing-icon="arrow-down" data-testid="welcome-see-how" @click="emit('seeHow')">
           {{ t.homepage.welcome.seeHow }}
         </AppButton>

@@ -355,7 +355,7 @@ export const pl: Translations = {
       line: 'Na krosno, peyote i ścieg ceglasty.',
       seeHow: 'Zobacz, jak to działa',
       colors: { one: '{codes} kolor {brands}', few: '{codes} kolory {brands}', many: '{codes} kolorów {brands}', other: '{codes} koloru {brands}' },
-      starters: { one: '{count} starter', few: '{count} startery', many: '{count} starterów', other: '{count} startera' },
+      startFromStarter: 'Zacznij od gotowego wzoru',
       caption: '{technique} · {size}',
       piece: 'Oczka pawiego pióra, w peyote',
       promises: {

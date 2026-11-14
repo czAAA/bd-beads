@@ -70,6 +70,7 @@ const {
   openPanel,
   exportOpener,
   framePanelShown,
+  frameOpensOnStarters,
   onStepFrameEdge,
   onResizeFrame,
   onRenameFrame,
@@ -102,8 +103,16 @@ const chosenStarter = ref<StarterId>()
 </script>
 
 <template>
-  <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
-  <PanelHost v-if="activeProject && framePanelShown" open="frame" :only="['frame']" :sub-title="t.frame.fromStarter" @close="onCloseFramePanel">
+  <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. Start from
+    a ready design opens it already on the Starter gallery, titled Starter as that row's gallery is (ticket 0953). -->
+  <PanelHost
+    v-if="activeProject && framePanelShown"
+    open="frame"
+    :only="['frame']"
+    :sub-title="t.starters.title"
+    :start-in-sub="frameOpensOnStarters"
+    @close="onCloseFramePanel"
+  >
     <FramePanel
       :project="activeProject"
       :settled-project="settledProject"

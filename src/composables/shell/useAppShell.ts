@@ -881,7 +881,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
   if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
   // Make your first Project (ticket 0866): with none in the library it is made on New Project's presets and opens on the
   // Canvas, no panel open; with some, the editor opens as usual.
-  if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) onCreateFirstProject()
+  // Start from a ready design (ticket 0953) makes it the same way and opens the Frame panel on its Starter gallery.
+  if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) {
+    onCreateFirstProject()
+    if (openingAddress.starterGallery) frameFlow.openOnStarters()
+  }
   if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
@@ -1235,6 +1239,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The Frame panel
       settledProject,
       framePanelShown: frameFlow.barShown,
+      frameOpensOnStarters: frameFlow.opensOnStarters,
       onCloseFramePanel: frameFlow.closeBar,
       onStepFrameEdge: frameFlow.stepEdge,
       onResizeFrame: frameFlow.resizeTo,

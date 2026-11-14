@@ -384,6 +384,13 @@ describe('HomePage sections (tickets 0739, 0801)', () => {
       expect(returning.emitted('openSavedProjects')).toHaveLength(1)
     })
 
+    it('starts the first Project from a ready design from its tile (ticket 0953)', async () => {
+      const fresh = page()
+      await fresh.get('[data-testid="welcome-start-from-starter"]').trigger('click')
+      expect(fresh.emitted('startFromStarter')).toHaveLength(1)
+      expect(fresh.emitted('makeFirstProject')).toBeUndefined()
+    })
+
     it("keeps the strip's way in away on Welcome, out of the Tab order and unread, and brings it back from the second section", async () => {
       const wrapper = page()
       expect(wayIn(wrapper).classes()).toContain('canvas-strip__way-in--away')

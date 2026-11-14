@@ -353,7 +353,7 @@ export const en: Translations = {
       line: 'For loom, peyote and brick stitch.',
       seeHow: 'See how it works',
       colors: { one: '{codes} {brands} color', other: '{codes} {brands} colors' },
-      starters: { one: '{count} Starter', other: '{count} Starters' },
+      startFromStarter: 'Start from a ready design',
       caption: '{technique} · {size}',
       piece: 'Peacock feather eyes, in peyote',
       promises: {

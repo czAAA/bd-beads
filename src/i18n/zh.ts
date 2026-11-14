@@ -354,7 +354,7 @@ export const zh: Translations = {
       line: '适用于织机、佩奥特编织和砖形。',
       seeHow: '看看怎么用',
       colors: { other: '{codes} 种 {brands} 颜色' },
-      starters: { other: '{count} 个起始方案' },
+      startFromStarter: '从现成的设计开始',
       caption: '{technique} · {size}',
       piece: '孔雀羽眼，佩奥特编织',
       promises: {

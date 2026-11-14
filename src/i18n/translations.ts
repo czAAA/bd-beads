@@ -488,7 +488,8 @@ export interface Translations {
       line: string
       seeHow: string
       colors: PluralForms
-      starters: PluralForms
+      /** The text button beside See how it works (ticket 0953). */
+      startFromStarter: string
       caption: string
       piece: string
       promises: Record<'free' | 'picture' | 'weave', InsideCopy>
