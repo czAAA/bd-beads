@@ -12,23 +12,21 @@ function screen(props: { phone?: boolean; shown?: boolean } = {}) {
 beforeEach(() => localStorage.clear())
 afterEach(() => mounted?.unmount())
 
-describe('CoffeeScreen (tickets 0823, 0880)', () => {
-  it("has the band with its row of chips, then What's new", () => {
+describe('CoffeeScreen (tickets 0823, 0880, 0948)', () => {
+  it("has the band with its promises, then What's new", () => {
     const wrapper = screen()
     const order = [...wrapper.get('[data-testid="homepage-coffee"]').element.children].map((el) => el.getAttribute('data-testid'))
     expect(order).toEqual(['homepage-coffee-band', 'homepage-whats-new'])
-    expect(wrapper.find('[data-testid="homepage-coffee-band"] [data-testid="homepage-chips"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="homepage-coffee-band"] [data-testid="homepage-coffee-promises"]').exists()).toBe(true)
   })
 
-  // What a chip and What's new do is in CoffeeChips.test.ts and WhatsNewFold.test.ts; the screen closes them again.
-  const opened = (wrapper: VueWrapper) =>
-    [...wrapper.findAll('[aria-expanded="true"]')].map((button) => button.attributes('data-testid') ?? button.element.closest('li')!.getAttribute('data-chip'))
+  // What What's new does is in WhatsNewFold.test.ts; the screen closes it again.
+  const opened = (wrapper: VueWrapper) => [...wrapper.findAll('[aria-expanded="true"]')].map((button) => button.attributes('data-testid'))
 
-  it("closes a chip and What's new once it is turned away, so they start closed each time it is shown", async () => {
+  it("closes What's new once it is turned away, so it starts closed each time it is shown", async () => {
     const wrapper = screen({ shown: true })
-    await wrapper.get('[data-testid="homepage-chip-device"] button').trigger('click')
     await wrapper.get('[data-testid="homepage-whats-new-toggle"]').trigger('click')
-    expect(opened(wrapper)).toEqual(['device', 'homepage-whats-new-toggle'])
+    expect(opened(wrapper)).toEqual(['homepage-whats-new-toggle'])
     await wrapper.setProps({ shown: false })
     await wrapper.setProps({ shown: true })
     expect(opened(wrapper)).toEqual([])
@@ -38,7 +36,7 @@ describe('CoffeeScreen (tickets 0823, 0880)', () => {
 describe('CoffeeScreen on a phone (tickets 0827, 0880)', () => {
   it("lists the promises but Keyboard shortcuts under the band, then Open source and Say hello with their actions, then What's new", async () => {
     const wrapper = screen({ phone: true })
-    expect(wrapper.find('[data-testid="homepage-chips"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="homepage-coffee-promises"]').exists()).toBe(false)
     const list = wrapper.get('[data-testid="homepage-promises"]')
     expect(list.classes()).toContain('grouped-list')
     const rows = list.findAll('[data-testid^="homepage-promise-"]')

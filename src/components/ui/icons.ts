@@ -31,6 +31,7 @@ export const ICON_NAMES = [
   'erase',
   'export',
   'external',
+  'eye-off',
   'eyedropper',
   'fill',
   'fill-selection',
