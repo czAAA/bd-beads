@@ -41,7 +41,11 @@ export function useFreeGrowth({ section, freeWindow, freeTile, zoom }: FreeGrowt
     const windowEl = freeWindow()
     const tileEl = freeTile()
     const listEl = windowEl?.firstElementChild
-    if (!plansEl || !windowEl || !tileEl || !listEl?.children.length) return
+    if (!plansEl || !windowEl || !tileEl || !listEl?.children.length) {
+      // No tile to grow, as a new visitor's Free to use has none (ticket 0947): the section reaches no further.
+      measure.value = undefined
+      return
+    }
     growth = designNumber('--free-growth', FREE_GROWTH)
     const shown = Math.min(listEl.children.length, Math.round(designNumber('--free-start-rows', FREE_START_ROWS)))
     const scale = zoom() * turnScale(plansEl)

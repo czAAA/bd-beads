@@ -12,8 +12,9 @@ import HomePage from './HomePage.vue'
 let mounted: Mounted
 afterEach(() => mounted.unmount())
 
-async function homepageAt(width: number, height: number) {
-  mounted = await mountAt(HomePage, { projectCount: 0, feedback: fakeFeedback() }, { locale: 'en', width })
+/** The Homepage at a size; with Projects saved the plans are the three, whose free list grows (ticket 0947). */
+async function homepageAt(width: number, height: number, projectCount = 0) {
+  mounted = await mountAt(HomePage, { projectCount, feedback: fakeFeedback() }, { locale: 'en', width })
   await page.viewport(width, height)
   await settleForMeasuring()
 }
@@ -35,7 +36,7 @@ async function pressNext() {
 
 describe('More below (ticket 0826)', () => {
   it('rides on the section bar\'s top edge, a third of it below the edge, taking no room of the section\'s', async () => {
-    await homepageAt(1440, 900)
+    await homepageAt(1440, 900, 3)
     await turnToSection(mounted.root, 'plans')
     const button = pill()!.getBoundingClientRect()
     const bar = el('[data-testid="section-bar"]')!.getBoundingClientRect()
@@ -51,7 +52,7 @@ describe('More below (ticket 0826)', () => {
   })
 
   it('where a section fits whole, is hidden and Next turns; on the plans, which scroll on, scrolls them, gone at their end', async () => {
-    await homepageAt(1440, 900)
+    await homepageAt(1440, 900, 3)
     for (const id of ['welcome', 'inside', 'coffee']) {
       expect(shown()).toBe(id)
       expect(shownSection().scrollHeight, `${id} fits whole here`).toBeLessThanOrEqual(shownSection().clientHeight + 1)
