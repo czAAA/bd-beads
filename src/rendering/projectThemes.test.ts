@@ -10,7 +10,7 @@ const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/sys
 const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) => entry.name === name)!.value[theme]
 
 /** DESIGN.md §4.2: which token each ProjectTheme field copies. */
-const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'ownColorRim' | 'finished' | 'margin' | 'chip'>, string> = {
+const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'ownColorRim' | 'tonalTiles' | 'finished' | 'margin' | 'chip'>, string> = {
   background: 'board',
   canvas: 'box',
   positionMark: 'position-mark',
@@ -51,10 +51,14 @@ describe('ProjectTheme', () => {
   })
 
   it('prints in light on the print board, whatever the app theme, in the flat bead with its rim', () => {
-    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: token('print-board', 'light'), ownColorRim: false })
+    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: token('print-board', 'light'), ownColorRim: false, tonalTiles: false })
   })
 
   it('draws beads in their own-color rim on screen in light and dark, the flat bead in high contrast (ticket 1003)', () => {
     expect([PROJECT_THEMES.light.ownColorRim, PROJECT_THEMES.dark.ownColorRim, PROJECT_THEMES.contrast.ownColorRim]).toEqual([true, true, false])
+  })
+
+  it('marks empty positions as tonal tiles on screen in light and dark, the outline in high contrast and exports (ticket 1001)', () => {
+    expect([PROJECT_THEMES.light.tonalTiles, PROJECT_THEMES.dark.tonalTiles, PROJECT_THEMES.contrast.tonalTiles, PRINT_THEME.tonalTiles]).toEqual([true, true, false, false])
   })
 })
