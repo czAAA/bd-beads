@@ -3,48 +3,36 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import { SLOGAN_HOLD_MS, SLOGAN_ROLL_MS, SLOGAN_WORDS } from './slogan'
 
-// The Homepage's rolling slogan (tickets 550, 0822; Homepage card), its brand in the Canvas strip: "open" stays still,
-// the word after it rolls; screen readers hear "openbeads". The column holds the words reversed, "beads" on top, so each
-// step moves it down and the next word drops in from above; on the closing "beads" it jumps back to the first unseen.
+// The Homepage's slogan (tickets 550, 0822, 0925; Homepage card), its brand in the Canvas strip: "open" stays still and
+// the word after it rolls once on arrival, through every word and back to "beads", where it stays. The column holds the
+// words reversed, "beads" on both ends, so one move down shows them all; screen readers hear "openbeads".
 const column = [...SLOGAN_WORDS, SLOGAN_WORDS[0]!].reverse()
-const lastStep = column.length - 1
 
-const step = ref(0)
-const animated = ref(true)
+const played = ref(false)
+const shift = computed(() => (played.value ? 0 : 1 - column.length))
+const rolling = ref(false)
 const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-const word = computed(() => column[lastStep - step.value]!)
 
 let timer: ReturnType<typeof setTimeout> | undefined
 function stop() {
   clearTimeout(timer)
   timer = undefined
 }
-function hold() {
-  timer = setTimeout(roll, SLOGAN_HOLD_MS)
+function rest() {
+  stop()
+  played.value = true
+  rolling.value = false
 }
 function roll() {
-  animated.value = true
-  step.value += 1
-  timer = setTimeout(() => {
-    if (step.value === lastStep) {
-      animated.value = false
-      step.value = 0
-    }
-    hold()
-  }, SLOGAN_ROLL_MS)
+  rolling.value = true
+  played.value = true
+  timer = setTimeout(rest, SLOGAN_ROLL_MS)
 }
 function sync() {
+  if (reduceMotion.value || rolling.value) return rest()
+  if (played.value) return
   stop()
-  if (step.value === lastStep) {
-    animated.value = false
-    step.value = 0
-  }
-  if (reduceMotion.value) {
-    animated.value = false
-    step.value = 0
-  } else if (!document.hidden) {
-    hold()
-  }
+  if (!document.hidden) timer = setTimeout(roll, SLOGAN_HOLD_MS)
 }
 
 watch(reduceMotion, sync)
@@ -59,14 +47,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <span class="slogan" role="img" aria-label="openbeads" :data-word="word" data-testid="homepage-slogan">
+  <span class="slogan" role="img" aria-label="openbeads" data-testid="homepage-slogan">
     <span class="slogan__open" aria-hidden="true">open</span>
     <span class="slogan__slot" aria-hidden="true">
       <span
         class="slogan__column"
-        :class="{ 'slogan__column--still': !animated }"
+        :class="{ 'slogan__column--rolling': rolling }"
         :style="{
-          transform: `translateY(calc(var(--slogan-line) * ${step - lastStep}))`,
+          transform: `translateY(calc(var(--slogan-line) * ${shift}))`,
         }"
         data-testid="slogan-column"
       >
@@ -119,11 +107,11 @@ onBeforeUnmount(() => {
 .slogan__column {
   grid-area: 1 / 1;
   display: block;
-  transition: transform var(--slogan-roll) var(--ease-standard);
 }
 
-.slogan__column--still {
-  transition: none;
+/* One pass, easing off "beads" and gliding to rest on it again. */
+.slogan__column--rolling {
+  transition: transform var(--slogan-roll) var(--ease-standard);
 }
 
 .slogan__word {
@@ -146,7 +134,7 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slogan__column {
+  .slogan__column--rolling {
     transition: none;
   }
 }

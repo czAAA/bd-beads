@@ -342,9 +342,9 @@
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
   /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
   --framing-dim: rgba(0, 0, 0, .45);
-  /* Homepage card: the rolling slogan holds each word, then rolls to the next */
-  --slogan-hold: 2200ms;
-  --slogan-roll: 650ms;
+  /* Homepage card: the slogan holds "openbeads" on arrival, then rolls once through its words back to it (ticket 0925) */
+  --slogan-hold: 1200ms;
+  --slogan-roll: 3600ms;
   /* Homepage card, scroll story (ticket 0739) */
   --homepage-box-width: 70rem; /* The canvas box's widest, 1120px. */
   --homepage-box-height: 55rem; /* The canvas box's tallest, 880px. */
