@@ -35,7 +35,7 @@ Approved in the Canvas look study and **not yet in the app**, save the own-color
 - **Why one step:** the step between the Background and its grid sets how loud the grid is, and nothing else does. Measured as the spread of lightness over an empty patch (RMS of L*), today's ten backgrounds run from 2.1 to 4.1 because each has a hand-picked grid color; with the rule every one is 2.2 to 2.3. 6.5 is about 1.2:1. It is one constant, so it can be tuned on a real screen.
 - **Inside the Frame, the same tiles.** An empty position of the Frame is a tile by the same rule from the Frame's own Background, in place of the full `bead-empty` bead. The keep-out margin still has none; a Custom frame's Off-shape and Seams are as before.
 - **Under the drawing and on the Homepage:** the empty canvas laid under the editor's drawing (ticket 0717) and the Homepage's ground are the same tiles, since they are the same Position marks.
-- Never saved, never in exports. The draft look keeps the outline and each Background's own empty bead (CanvasBackground card), and so does the Canvas while a reference image shows (ReferenceImage card), which a filled tile would hide.
+- Never saved, never in exports. The draft look keeps the outline and each Background's own empty bead (CanvasBackground card). A shown reference image lies over the tiles, on the Canvas and in the Frame, and leaves them as they are (ReferenceImage card, ticket 1008): the grid's look and color never change with it.
 
 ### Grid focus (ticket 1002; CanvasStrip card)
 
