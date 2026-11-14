@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Implement a batch of tickets end to end: plan, run, merge. You are the **orchestrator**: you never implement a ticket yourself. Each ticket is implemented by a sub-agent following `bd-implement`, in its own worktree, and you merge the pull requests in the order the plan fixes. Every rule of `CLAUDE.md` (Implementing tickets) holds for each ticket. Don't ask between steps; the exceptions are named below.
 
-Flags: `-plan` prints the plan (step 2) and stops. `-max N` caps the sub-agents running at once (default 3: each one runs typecheck, lint and vitest, and the full suite peaks near 2 GB).
+Flags: `-plan` prints the plan (step 2) and stops. `-max N` caps the sub-agents running at once (default 3: each one runs typecheck, lint and vitest, and the full suite peaks near 2 GB). `-budget P` is the share of the plan's 5-hour usage window a run may project up to before it holds new sub-agents back (default 85, step 3.1); `-cost P` sets the points of that window one ticket is assumed to take until the run has measured its own (default 10); `-no-budget` turns the usage gate off, leaving only `-max`.
 
 ## 1. Read the batch
 
@@ -37,7 +37,7 @@ Print the plan as a table: ticket, title, wave, runs after (edges and sequencing
 
 ## 3. Run the tickets
 
-Launch each runnable ticket as a **sub-agent** (`general-purpose`, run in the background), one per ticket, at most `-max` at a time. The sub-agent cannot invoke `bd-implement` itself (it is user-only), so the brief points it at the skill's file to read; don't copy the skill's text into the brief, where it could be shortened or reworded. The brief holds, in this order:
+Launch each runnable ticket as a **sub-agent** (`general-purpose`, run in the background), one per ticket, at most `-max` at a time, and only when the usage gate (3.1) says `start`. The sub-agent cannot invoke `bd-implement` itself (it is user-only), so the brief points it at the skill's file to read; don't copy the skill's text into the brief, where it could be shortened or reworded. The brief holds, in this order:
 
 1. The ticket path, its full text, and the batch context: "Ticket NNNN of a bulk run; tickets X, Y are being implemented at the same time in other worktrees. Don't touch their areas."
 2. The standing orders of `CLAUDE.md` (Implementing tickets), spelled out, with one change for a shared repo: don't touch the main checkout (the orchestrator keeps local `main` current; several sub-agents pulling it at once would collide on its index). Instead `git fetch origin main`, then the worktree at `../bd-beads-worktrees/bd-beads-NNNN/` from `origin/main` (`git worktree add -b type/NNNN-slug ../bd-beads-worktrees/bd-beads-NNNN origin/main`), `bash scripts/link-docs.sh` there, work only there. Then as usual: `/bd-review` when done; `npm run check`, `npm run test:related`, `npm run test:full`; commit, push, open the PR titled `type:[NNNN] Description` (`docs/agents/pull-requests.md`); then, unlike a single `bd-implement` run, watch CI with `gh pr checks <n> --watch --fail-fast`, fix failures (`bash scripts/ci-failures.sh <n>`) and push again until it is green, because the orchestrator merges only green PRs, in order; don't serve on the tailnet. All worktrees share one `.git`: a git command that fails on a `.lock` file is another sub-agent's fetch or push, so wait a few seconds and retry it.
@@ -46,7 +46,20 @@ Launch each runnable ticket as a **sub-agent** (`general-purpose`, run in the ba
 5. The docs-repo rule for a shared clone: every worktree's `.scratch/` is the **same** docs repo, and other sub-agents edit their tickets in it at the same time. When archiving, `git -C ../bd-beads-docs pull --rebase` first, stage only your own ticket file(s) by path (never `git add -A`), commit, push; if the push is rejected, pull with rebase and push again. Never stash or reset the docs repo.
 6. What to report back, as the last message: PR number and URL, CI result (green, or the failing check and why it couldn't be fixed), the files changed, what was left for a human, whether the ticket is archived, and the `Skills used:` line. Nothing else: the report is read by the orchestrator, not the user.
 
-Launch the whole first wave in one turn. Then wait: a finished sub-agent wakes you; don't poll. On each completion, record its report, then run step 4 for its PR, then start the next runnable ticket (a slot freed, or a ticket whose edges are all merged). A sub-agent that reports a failure it could not fix (CI red, tests it couldn't make pass, a ticket that turned out to need a human decision) is listed under the final report's "needs a human"; its PR stays open, is not merged, and the tickets it blocks don't start.
+Launch the first wave in one turn, as far as `-max` and the gate allow: ask the gate once per launch, counting the ones already launched in that turn as running. Then wait: a finished sub-agent wakes you; don't poll. On each completion, record its report, then run step 4 for its PR, then start the next runnable ticket (a slot freed, or a ticket whose edges are all merged) if the gate allows. A sub-agent that reports a failure it could not fix (CI red, tests it couldn't make pass, a ticket that turned out to need a human decision) is listed under the final report's "needs a human"; its PR stays open, is not merged, and the tickets it blocks don't start.
+
+### 3.1 The usage gate
+
+Every sub-agent this run starts, and the orchestrator itself, draws on the same 5-hour usage window of the plan, and a sub-agent cut off by the limit loses everything it hadn't pushed. So before each launch, ask `scripts/usage-budget.sh` whether one more fits (skip this with `-no-budget`):
+
+1. At the start of the run, make a ledger file once (`mktemp`) and keep its path; it adds up what the run has used across resets.
+2. Before each launch: `bash scripts/usage-budget.sh --running <sub-agents running now> --budget <-budget> --ledger <file> --finished <tickets whose sub-agent has reported>`, plus `--cost <-cost>` only when the user gave `-cost`. Until a ticket has finished it assumes 10 points a ticket; after that it divides what the run has used by the tickets finished. It prints one line:
+   - `start ...`: launch.
+   - `wait ... resets=HH:MM resets_at=<epoch>`: don't launch. Running sub-agents carry on, and merging (step 4) carries on. Add `paused: 5h usage at N%, next start after HH:MM` to Progress. When the next sub-agent finishes, ask again. If none is running, wait for the reset with a background command (`run_in_background`) that sleeps until `resets_at` plus two minutes; it wakes you when it exits. Then ask again.
+   - `wait ... window=seven_day`: the weekly limit is nearly used up and its reset is days away. Don't wait for it: start nothing more, let the running sub-agents and the merges finish, then end the run (step 5) with the tickets not started listed as "not started: weekly usage limit". A later run picks them up again.
+   - `unknown reason=...`: there is no usable snapshot (the status line doesn't write it, it is older than 15 minutes, or the account has no plan limits). Launch on `-max` alone and say once in Progress that the gate is off and why.
+3. The snapshot comes from the status line: it writes `rate_limits` from its stdin JSON to `~/.claude/usage-snapshot.json` (the script's header has the line), and `statusLine.refreshInterval` (60 seconds) keeps it fresh while you wait.
+4. Never stop a running sub-agent to save usage: one stopped halfway wastes what it has already spent. A conflict sub-agent (step 4.3) asks the gate the same way and goes before any ticket waiting to start, because it is what lets finished work land.
 
 ## 4. Merge one by one
 
@@ -54,18 +67,19 @@ Merge each PR as it becomes ready, never two at once, in the merge order of step
 
 1. **Check it.** `gh pr view <n> --json state,isDraft,mergeable,mergeStateStatus,title,files` and `gh pr checks <n>`. The title must be `type:[NNNN] Description`; a draft or a failing check is not ready.
 2. **Bring main in, if main moved.** If any merge happened in this run since the branch last synced with `origin/main` (or `mergeStateStatus` is `BEHIND` or `DIRTY`), merge `origin/main` into the branch in its worktree (`git -C ../bd-beads-worktrees/bd-beads-NNNN fetch origin main && git -C ... merge origin/main`), push, and watch CI again (`gh pr checks <n> --watch --fail-fast`). Merge, never rebase: no force-push. This is what keeps "one by one" safe: the PR's CI runs on the main it will land on.
-3. **Conflicts.** If the merge in 4.2 conflicts, or `mergeable` is `CONFLICTING`: run `bd-conflicts` for that worktree: yourself if only `.md` files conflict (its fast path), otherwise in a sub-agent (`general-purpose`) briefed with the worktree path, the ticket, the PR number, the merged ticket(s) that caused the conflict with their PR numbers, and the instruction to invoke the `bd-conflicts` skill from inside that worktree and report the dropped-or-reshaped hunk list. Wait for it, then watch CI, then go on. If it reports it could not resolve without losing functionality: leave the PR open, list it under "needs a human", and go on to the next PR.
+3. **Conflicts.** If the merge in 4.2 conflicts, or `mergeable` is `CONFLICTING`: run `bd-conflicts` for that worktree: yourself if only `.md` files conflict (its fast path), otherwise in a sub-agent (`general-purpose`, started when the usage gate of 3.1 says `start`) briefed with the worktree path, the ticket, the PR number, the merged ticket(s) that caused the conflict with their PR numbers, and the instruction to invoke the `bd-conflicts` skill from inside that worktree and report the dropped-or-reshaped hunk list. Wait for it, then watch CI, then go on. If it reports it could not resolve without losing functionality: leave the PR open, list it under "needs a human", and go on to the next PR.
 4. **Merge.** `gh pr merge <n> --squash` (the repo's method; it keeps the title as the commit subject). Branches are not deleted on merge and worktrees stay in place: that is for the user to prune, not this skill. Then `git -C <main checkout> pull --ff-only origin main` so local `main` is current for the next worktree.
 5. A PR whose required checks never start (it changes only `.md` files, so CI skips it) needs `--admin`: this is the second question the skill asks. Ask, once per such PR; while waiting, keep running and merging the others.
 6. After the merge, release the tickets it blocked (step 3).
 
-Keep a running `## Progress` note in your own messages whenever something lands (wave started, PR merged, conflict resolved), one line each, so the user can follow from another device.
+Keep a running `## Progress` note in your own messages whenever something lands (wave started, PR merged, conflict resolved, paused for usage and resumed), one line each, so the user can follow from another device.
 
 ## 5. Finish
 
-The run is over when every ticket in the batch is merged, dropped, or waiting on a human. Final message:
+The run is over when every ticket in the batch is merged, dropped, waiting on a human, or not started because the weekly usage limit is nearly reached (3.1). Final message:
 
-- A table: ticket, PR, result (merged / open, needs a human / dropped), one line of why for anything not merged.
+- A table: ticket, PR, result (merged / open, needs a human / dropped / not started: weekly usage limit), one line of why for anything not merged.
+- Usage: the 5-hour percentage at the start and at the end, the measured points per ticket, and every pause with its length.
 - Conflicts met and how each was resolved (the dropped-or-reshaped lists from `bd-conflicts`).
 - What is left for a human, per ticket, collected from the sub-agents' reports (plus the open PRs and the worktrees left behind).
 - `Skills used:` listing every skill you and the sub-agents invoked.
