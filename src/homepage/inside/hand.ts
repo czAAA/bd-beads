@@ -129,14 +129,14 @@ export function createHand(deps: HandDeps) {
     }
   }
 
-  /** Lets the clock pass the millisecond the control was found in. Vue drops an event stamped no later than its
-   * listener was attached (in whole ms), so the press that opened a dialog doesn't also press its button; applied at
-   * once, the hand would press a dialog's button in the very millisecond it appeared, and the press would be lost. */
-  function pastTheMillisecond(): void {
+  /** Lets the clock pass the millisecond the control was found in: Vue drops an event stamped no later than its
+   * listener was attached, so a press on a dialog's button the moment it appeared was lost (ticket 0924). It waits on a
+   * timer: the build drops an empty busy loop, and with it the wait. */
+  async function pastTheMillisecond(): Promise<void> {
     const found = Date.now()
-    while (Date.now() <= found) {
-      // At most a millisecond.
-    }
+    do await new Promise<void>((resolve) => setTimeout(resolve, 1))
+    while (Date.now() <= found)
+    alive()
   }
 
   /** Moves the ghost to a point on screen: over `--ghost-move`, or a short hop quicker, as a hand would. */
@@ -290,7 +290,7 @@ export function createHand(deps: HandDeps) {
     const element = await find(target)
     await aimAt(element)
     ripple()
-    if (instant) pastTheMillisecond()
+    if (instant) await pastTheMillisecond()
     ghost.pressing = true
     try {
       element.click()
