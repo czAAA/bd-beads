@@ -167,8 +167,9 @@ function drawShadows(context: DrawingContext, cells: readonly LiftCell[], look: 
   const [width, height] = [Math.ceil((box.right - box.left) / step), Math.ceil((box.bottom - box.top) / step)]
   if (width <= 0 || height <= 0) return
   const { canvas, sheet } = own
-  if (canvas.width !== width || canvas.height !== height) [canvas.width, canvas.height] = [width, height]
-  else sheet.clearRect(0, 0, width, height)
+  // Sizing the sheet clears it, the same size too.
+  canvas.width = width
+  canvas.height = height
   const onSheet = ({ a = 1, b = 0, c = 0, d = 1, e = 0, f = 0 }: DOMMatrix2DInit): DOMMatrix2DInit => ({ a: a / step, b: b / step, c: c / step, d: d / step, e: (e - box.left) / step - width, f: (f - box.top) / step })
   sheet.fillStyle = '#000'
   castShadows(sheet, cells, look.shadows, deviceScale, { base: transform, place: onSheet, step, aside: width })
