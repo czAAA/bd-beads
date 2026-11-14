@@ -11,8 +11,8 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import { actionKey } from '../ui/controlAction'
 
 // The save ring (SaveReminder card, tickets 0796, 0922): on the Canvas strip beside the Project button once the open
-// Project's Project file is well behind. A press runs Save, the Project panel's row; its label "Save Project file · n beads
-// since the last file" hangs under it for a moment, over the drawing area, so it covers no strip control.
+// Project's Project file is well behind. A press runs Save; its label "Save Project file · n beads since the last file"
+// (before a first file, why to save, ticket 0987) hangs under it a moment, over the drawing area, covering no control.
 const props = defineProps<{
   /** The open Project's Beads since last file. */
   beads: number
@@ -32,8 +32,12 @@ const save = controlAction('save-project-file')
 const countId = useId()
 
 const count = computed(() => groupThousands(props.beads, locale.value))
-/** What the count counts, said in the label itself (ticket 0858), not a bare "+n" read as "n beads not saved". */
-const since = computed(() => plural(locale.value, props.beads, t.value.saveReminder.since))
+/** What the count counts, said in the label itself (ticket 0858), not a bare "+n" read as "n beads not saved". While the
+ * Project has never had a file, "since the last file" means nothing: the label says why to save instead (ticket 0987),
+ * since on a coarse pointer the Tooltip that says it is a long-press away. */
+const countOrWhy = computed(() =>
+  props.lastFileAt === undefined ? t.value.saveReminder.noFileWhy : plural(locale.value, props.beads, t.value.saveReminder.since),
+)
 const countLine = computed(() => fillBlanks(t.value.saveReminder.count, { count: count.value }))
 /** How wide the label may be: from the ring's left edge to 8px short of the screen's right edge, so it is never cut;
  * measured while it is open, again whenever the window is resized. A count with no room left on the line is left out,
@@ -105,7 +109,7 @@ const lastLine = computed(() => {
         <span class="save-ring__line">
           <span ref="textEl" class="save-ring__text">{{ t.saveReminder.label }}</span>
           {{ ' ' }}
-          <span ref="countEl" class="save-ring__count" :class="{ 'save-ring__count--left-out': countLeftOut }" data-testid="save-ring-count">{{ since }}</span>
+          <span ref="countEl" class="save-ring__count" :class="{ 'save-ring__count--left-out': countLeftOut }" data-testid="save-ring-count">{{ countOrWhy }}</span>
         </span>
       </span>
     </button>
