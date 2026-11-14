@@ -106,7 +106,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(caption(wrapper)).toContain('4 / 13')
     await vi.advanceTimersByTimeAsync(ROW_MS)
     expect(lit(wrapper)).toEqual(['inside-chapter-startFrom'])
-    expect(caption(wrapper)).toContain('Starters')
+    expect(caption(wrapper)).toContain('Convert image')
     expect(caption(wrapper)).toContain('5 / 13')
   })
 
@@ -247,7 +247,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(rows.every((row) => row.element.tagName === 'LI')).toBe(true)
     expect(wrapper.findAll('button')).toHaveLength(0)
     expect(rows[0].text()).toBe(`Canvas and Frame. ${en.homepage.inside.rows.canvas.text}`)
-    expect(rows[4].text()).toContain('Starters')
+    expect(rows[4].text()).toContain('Convert image')
     expect(rows[12].text()).toContain('Saved Projects')
     expect(rows.every((row) => row.find('.grouped-list__tile [data-icon]').exists())).toBe(true)
     expect(find(wrapper, 'inside-list').classes()).toContain('grouped-list')

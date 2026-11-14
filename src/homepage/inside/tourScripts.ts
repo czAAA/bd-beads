@@ -9,7 +9,7 @@ import { DEMO_COLORS, DEMO_CUFF, DEMO_CUFF_AXES, DEMO_EDIT_BEADS, DEMO_FIRST_STR
 import { balloonFile } from './balloon'
 import { PEACOCK_CUFF } from './peacock'
 import { peacockFile } from './peacockPicture'
-import { eyeByHand, eyeTrace, pupilMiddle, ringGroundFills, type TraceBead, type TraceStep } from './peacockTrace'
+import { eyeByHand, eyeTrace, pupilMiddle, ringGroundFills, traceStart, wholeDrawing, type TraceBead, type TraceStep } from './peacockTrace'
 
 // What the ghost does for each row of What's inside (Homepage card, ticket 0797), in the demo editor, each row picking
 // up where the one before it left the editor.
@@ -80,8 +80,13 @@ function cornersOf(frame: DemoFrame): [GridPosition, GridPosition] {
 }
 
 /** A bead to the next along a line traced over the picture, in ms: half a bead drawn by hand, as the line is there to
- * follow (a Selection's drag is quicker still). It takes 13s off Reference image, the longest row (about 72s). */
+ * follow (a Selection's drag is quicker still). */
 const TRACE_MS = 70
+
+/** How many beads of the cuff's eye the ghost traces by hand, the start of its green ring's edge, before the rest of
+ * the feather appears at once: Reference image shows the tracing, not all of it (ticket 0949, about 15 s a row).
+ * @internal Its test counts the beads stroked by hand. */
+export const TRACED_BY_HAND = 16
 
 /** Draws `steps` in `frame`: each color picked, its strokes painted (`ms` a bead; the hand's own pace unless given),
  * then Fill pressed where it fills. The tool is pressed only when it changes. */
@@ -98,6 +103,18 @@ async function draw(hand: Hand, frame: DemoFrame, steps: readonly TraceStep[], m
     if (fills.length > 0) await take('fill')
     for (const press of fills) await hand.stroke(beadsOn(frame, [press]))
   }
+}
+
+/** Paints `steps` in `frame` at once: each color chosen and its strokes laid with no ghost move and no wait (ticket
+ * 0949). */
+async function paintAtOnce(hand: Hand, frame: DemoFrame, steps: readonly TraceStep[]): Promise<void> {
+  // Through the handlers a press reaches, not the controls: nothing is pressed, as the ghost doesn't move.
+  hand.canvas.onSelectTool('paint')
+  for (const { part, strokes } of steps) {
+    hand.canvas.onSelectColor(SWATCH_IDS[PEACOCK_COLORS[part]])
+    for (const stroke of strokes) hand.lay(beadsOn(frame, stroke))
+  }
+  await hand.frame()
 }
 
 /** The cuff's strip the ghost traces its eye in: the middle one. */
@@ -120,16 +137,17 @@ export const HOLD = {
   letters: 1440,
   /** Scrolling through the Starter's setup. */
   starterScroll: 1680,
-  /** Row done's passes: the first three slower, then quicker; then a rest, the ring's other rounds left undone. */
+  /** Row done's passes: the first five slower, then quicker; then a rest, the cuff's other rows left undone. Longer
+   * since Reference image is shorter (ticket 0949), as is Beads needed. */
   rowDoneSlow: 840,
   rowDoneQuick: 288,
-  rowProgressRest: 1440,
-  beadsNeeded: 3600,
+  rowProgressRest: 2880,
+  beadsNeeded: 7200,
   exports: 4560,
   savedProjects: 3840,
 } as const
 /** How many of Row done's passes are slower. */
-const ROW_DONE_SLOW = 3
+const ROW_DONE_SLOW = 5
 
 /** How many of Row done's passes the tour shows of the cuff's rows, before it rests.
  * @internal Its browser test checks the tour ends there. */
@@ -195,37 +213,9 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await repeatAlong(hand, DEMO_RING_AXES)
     await draw(hand, DEMO_FRAME, eyeByHand(DEMO_MIRROR_STRIP))
   },
-  /** The Mirror closed, then Replace Frame from the Starter gallery: Rings, Chevrons, its setup looked through (the
-   * ring's size inside), Replace. A ring the same size as the band, it lands where the band was (fifth since 0830). */
-  async starters(hand) {
-    await closeMirror(hand)
-    await hand.press('strip-frame')
-    await hand.press('frame-replace-from-starter')
-    await hand.press('starter-category-rings')
-    await hand.press(`starter-card-${DEMO_STARTER}`)
-    await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, HOLD.starterScroll)
-    await hand.press('create-starter-project')
-    if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
-  },
-  /** The Starter's ring deleted, a cuff's Frame set from a new Selection in place of the ring's (nothing is asked: it
-   * holds nothing now), a picture of the feather landed smaller than the Frame and grown to fit it, then one eye traced
-   * in Repeat: each ring's edge painted and its inside filled, the ground filled, the barbs painted over it. */
-  async reference(hand) {
-    await hand.press('pill-tool-select')
-    await hand.drag(...cornersOf(DEMO_FRAME))
-    await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
-    // The Starter's ring is all there is on the Canvas, so Delete asks first.
-    if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
-    await hand.drag(...cornersOf(DEMO_CUFF))
-    await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
-    await growReference(hand, await peacockFile())
-    await hand.press('reference-adjust-done')
-    await repeatAlong(hand, DEMO_CUFF_AXES)
-    await draw(hand, DEMO_CUFF, eyeTrace(PEACOCK_CUFF, CUFF_TRACE_STRIP), TRACE_MS)
-    await closeMirror(hand)
-  },
   /** Convert image from the Menu: a balloon chosen as its file picker would hand it over (another picture than the
-   * Reference image's feather), the picture converted, its found colors, then left, nothing made. */
+   * Reference image's feather), the picture converted, its found colors, then left, nothing made. First of its chapter,
+   * right after the Mirror row (ticket 0949). */
   async convert(hand) {
     await hand.press('strip-menu')
     await hand.press('menu-convert-image')
@@ -239,6 +229,37 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
     await hand.press('convert-colors-more')
     await hand.press('convert-close')
     if (await present(hand, 'leave-converter-modal')) await hand.press('confirm-modal-confirm')
+  },
+  /** The Mirror closed, then Replace Frame from the Starter gallery: Rings, Chevrons, its setup looked through (the
+   * ring's size inside), Replace. A ring the same size as the band, it lands where the band was (after Convert image
+   * since 0949). */
+  async starters(hand) {
+    await closeMirror(hand)
+    await hand.press('strip-frame')
+    await hand.press('frame-replace-from-starter')
+    await hand.press('starter-category-rings')
+    await hand.press(`starter-card-${DEMO_STARTER}`)
+    await hand.scroll(() => hand.root.querySelector('[data-testid="panel-body"]'), 240, HOLD.starterScroll)
+    await hand.press('create-starter-project')
+    if (await present(hand, 'replace-frame-modal')) await hand.press('confirm-modal-confirm')
+  },
+  /** A cuff's Selection round the Starter's ring: the ring deleted, the cuff's Frame set from it (nothing is asked: it
+   * holds nothing now), a picture of the feather landed smaller than the Frame and grown to fit it, then the start of an
+   * eye's green ring traced by hand and the rest of the feather at once (ticket 0949). */
+  async reference(hand) {
+    await hand.press('pill-tool-select')
+    await hand.drag(...cornersOf(DEMO_CUFF))
+    await pressSelectionBar(hand, 'clear', () => hand.canvas.onClearSelection())
+    // The Starter's ring is all there is on the Canvas, so Delete asks first.
+    if (await present(hand, 'delete-all-modal')) await hand.press('confirm-modal-confirm')
+    await pressSelectionBar(hand, 'frame', () => hand.canvas.onFrameFromSelection())
+    await growReference(hand, await peacockFile())
+    await hand.press('reference-adjust-done')
+    // Picking the color takes Paint from Select, as it does in the editor, so Paint needs no press of its own.
+    const start = traceStart(eyeTrace(PEACOCK_CUFF, CUFF_TRACE_STRIP)[0]!, TRACED_BY_HAND)
+    await pickColor(hand, PEACOCK_COLORS[start.part])
+    for (const stroke of start.strokes) await hand.stroke(beadsOn(DEMO_CUFF, stroke), TRACE_MS)
+    await paintAtOnce(hand, DEMO_CUFF, wholeDrawing(PEACOCK_CUFF))
   },
   /** The color popover's Miyuki Delica palette, a catalog purple found among its purples and picked, the middle line of each eye's pupil painted
    * in it, from the left as the cuff lies. */
@@ -257,7 +278,7 @@ export const TOUR_SCRIPTS: Record<InsideRowId, (hand: Hand) => Promise<void>> = 
       await hand.wait(HOLD.letters)
     })
   },
-  /** Row done for the traced cuff's first rows, the first three slower, then a rest: too many to show them all. */
+  /** Row done for the traced cuff's first rows, the first five slower, then a rest: too many to show them all. */
   async rowProgress(hand) {
     for (let step = 0; step < ROW_DONE_PASSES; step++) {
       const next = hand.root.querySelector('[data-testid="progress-bar-next"]')
