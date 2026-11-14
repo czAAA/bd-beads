@@ -3,7 +3,7 @@ import AppButton from '../components/ui/AppButton.vue'
 import { SOURCE_URL } from '../data/sourceLink'
 import { useI18n } from '../i18n/useI18n'
 
-/** What Open source and Say hello do on the coffee screen (ticket 0880), in an open chip or a phone's row: View the
+/** What Open source and Say hello do on the coffee screen (tickets 0880, 0948), beside its name or in a phone's row: View the
  * source opens the source in a new tab; Send feedback only asks for the Feedback sheet, which the page opens. */
 defineProps<{ of: 'openSource' | 'sayHello' }>()
 const emit = defineEmits<{ feedback: [] }>()

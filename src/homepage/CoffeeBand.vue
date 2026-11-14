@@ -4,7 +4,7 @@ import { COFFEE_URL } from '../data/coffeeLink'
 import { useI18n } from '../i18n/useI18n'
 
 // The coffee screen's band (tickets 219, 0823, 0880; Homepage card): a decorative beaded cup, who made the app, a few
-// lines and Buy me a coffee (a new tab, ticket 560; inert while empty), then past a hairline the slot's chips. Only the
+// lines and Buy me a coffee (a new tab, ticket 560; inert while empty), then past a hairline the slot's promises. Only the
 // cup and the button take a click (ticket 0813). No donation-service name, logo or colours.
 const { t } = useI18n()
 
@@ -75,7 +75,7 @@ const steam = [
 
 <style scoped>
 /* The band (ticket 0823): from 1000px the cup and title on the left, the text and its button on the right; one column,
- * centred, below. The chips run under a hairline across both. */
+ * centred, below. The promises run under a hairline across both. */
 .coffee {
   /* The cup, 64px (ticket 0819). */
   --coffee-cup-width: 4rem;
