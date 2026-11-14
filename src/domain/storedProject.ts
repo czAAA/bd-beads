@@ -1,5 +1,5 @@
 import { beadCopy, beadLabel, findBead, readBeadCopy, type Bead } from './beads'
-import { readBackground } from './background'
+import { BACKGROUND_POSITIONS, readBackground } from './background'
 import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
@@ -42,6 +42,9 @@ export type StoredLayer = Omit<LayerFields, 'id'> &
 /** A Project as it is stored since it holds its layers (file version 12, library version 5, ticket 0664). */
 export interface LayeredProject extends Omit<Project, 'layers'> {
   layers: StoredLayer[]
+  /** How many backgrounds the list its layers' Background positions are in held (ticket 1000): 3 since that ticket;
+   * absent on one stored before it, whose positions are in the list of five and move to their nearest kept one. */
+  backgroundPositions?: number
 }
 
 /** A Project in any shape a store or file has held it in, for normalizeProject to read. */
@@ -86,11 +89,13 @@ function legacyRotation(project: ProjectWithLegacyFields): Rotation {
  * wrote it, and never re-saves them. One saved before its layers opens looking as it did (`layeredOf`). */
 export function normalizeProject(stored: StoredProject): Project {
   const layered = isLayered(stored) ? stored : layeredOf(stored)
-  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, ...rest } = layered
+  const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, mirror: storedMirror, referenceImage: storedReference, backgroundPositions, ...rest } = layered
   const [storedCanvas, ...storedFrames] = storedLayers as [StoredLayer, ...StoredLayer[]]
-  const canvas = readCanvas(storedCanvas, layered.id)
+  // Positions stored before ticket 1000 are in the list of five: read once, moved to their nearest kept one.
+  const earlierBackgrounds = backgroundPositions !== BACKGROUND_POSITIONS
+  const canvas = readCanvas(storedCanvas, layered.id, earlierBackgrounds)
   // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
-  const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`))
+  const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`, earlierBackgrounds))
 
   // The Palette's built-in colors are the woven layer's Bead's (ticket 0665), read with its id as stored, before an
   // alias names it anew (ticket 534).
@@ -159,16 +164,16 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
 
 /** The Canvas a store or file holds, each field read as an older app may have left it. Its name falls back on its
  * Bead's label, for a Project saved before it had one. */
-function readCanvas(stored: StoredLayer, projectId: string): CanvasLayer {
-  const layer = readLayer(stored, `${projectId}:canvas`, readWeave(stored.technique, stored))
+function readCanvas(stored: StoredLayer, projectId: string, earlierBackground: boolean): CanvasLayer {
+  const layer = readLayer(stored, `${projectId}:canvas`, readWeave(stored.technique, stored), earlierBackground)
   const name = typeof stored.name === 'string' && stored.name ? stored.name : layer.bead ? beadLabel(layer.bead) : layer.beadId
   return { ...layer, name, orientation: readOrientation(stored.orientation) }
 }
 
 /** The Frame a store or file holds, its Row progress read inside it. One stored before it had a Weave of its own
  * (ticket 492), or with one this build does not know, takes the Canvas's. */
-function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string): FrameLayer {
-  const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas))
+function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string, earlierBackground: boolean): FrameLayer {
+  const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas), earlierBackground)
   const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
   const laid = readFrameShape(stored, weaveOf(layer))
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.technique)), ...laid, rows, columns }
@@ -186,9 +191,9 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string)
 }
 
 /** What every stored layer holds, read: its id (or `fallbackId` for one saved without), Weave, Bead copy (its own when
- * readable, else the catalog's of that id through the alias map, ticket 534), Background, beads, Letters,
- * Piece names. */
-function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): LayerFields {
+ * readable, else the catalog's of that id through the alias map, ticket 534), Background (a position from the list of
+ * five where `earlierBackground`, moved, ticket 1000), beads, Letters, Piece names. */
+function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave, earlierBackground: boolean): LayerFields {
   const bead = readBeadCopy(stored.bead) ?? catalogCopy(stored.beadId)
   const pieceNames = readPieceNames(stored.pieceNames)
   return {
@@ -196,7 +201,7 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
     ...weave,
     beadId: bead?.id ?? stored.beadId,
     ...(bead ? { bead } : {}),
-    ...withBackgroundRead(stored.background),
+    ...withBackgroundRead(stored.background, earlierBackground),
     beads: stored.beads ?? {},
     ...(stored.letters === true ? { letters: true } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
@@ -204,8 +209,8 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
 }
 
 /** A stored layer's Background (ticket 0666), left out where unreadable or missing: such a layer shows the device's. */
-function withBackgroundRead(stored: unknown): Pick<LayerFields, 'background'> {
-  const background = readBackground(stored)
+function withBackgroundRead(stored: unknown, earlier: boolean): Pick<LayerFields, 'background'> {
+  const background = readBackground(stored, earlier)
   return background === undefined ? {} : { background }
 }
 

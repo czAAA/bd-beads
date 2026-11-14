@@ -354,13 +354,13 @@ describe('Backgrounds (ticket 0666)', () => {
   it('saves the Canvas\'s from the Project panel and the Frame\'s from the Frame panel, each on its own', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
-    await click(mounted, 'background-color-fog')
-    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(4)
+    await click(mounted, 'background-color-stone')
+    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(2)
 
     await mounted.openPanel('frame')
     await click(mounted, 'background-color-pebble')
-    expect(backgroundOf(loadProjects()[0], 'frame')).toBe(5)
-    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(4)
+    expect(backgroundOf(loadProjects()[0], 'frame')).toBe(3)
+    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(2)
   })
 
   it('starts a new Project\'s layers on the last one picked', async () => {
@@ -375,7 +375,7 @@ describe('Backgrounds (ticket 0666)', () => {
     await click(mounted, 'create-starter-project')
 
     const star = loadProjects().find((project) => canvasOf(project).name === en.frame.shapes.star)!
-    expect([backgroundOf(star, 'canvas'), backgroundOf(star, 'frame')]).toEqual([3, 3])
+    expect([backgroundOf(star, 'canvas'), backgroundOf(star, 'frame')]).toEqual([2, 2])
   })
 })
 

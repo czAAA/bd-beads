@@ -40,7 +40,7 @@ export interface RowProgress {
   currentColumnBack?: number
 }
 
-/** A layer's Background (ADR 0079, ticket 0666): a numbered position in the theme's list, 1 to 5, kept across light
+/** A layer's Background (ADR 0079, ticket 0666): a numbered position in the theme's list, 1 to 3, kept across light
  * and dark, or a Custom color as `#rrggbb`, one for both themes. */
 export type Background = number | string
 

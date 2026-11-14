@@ -92,6 +92,38 @@ describe('single-Project roundtrip', () => {
     expect(backgroundOf(restored, 'frame')).toBeUndefined()
   })
 
+  it.each([
+    [1, 1],
+    [2, 2],
+    [3, 2],
+    [4, 1],
+    [5, 3],
+  ])('opens a layer background an earlier build stored as %i, of the list of five, as %i (ticket 1000)', (stored, moved) => {
+    const saved = JSON.parse(serializeProject(decoratedProject()))
+    delete saved.projects[0].backgroundPositions
+    saved.projects[0].layers[0].background = stored
+    saved.projects[0].layers[1].background = '#336699'
+
+    const [restored] = parseProjectsFile(JSON.stringify(saved)).projects
+
+    expect(backgroundOf(restored, 'canvas')).toBe(moved)
+    expect(backgroundOf(restored, 'frame')).toBe('#336699')
+    expect(restored).not.toHaveProperty('backgroundPositions')
+  })
+
+  it('never moves a layer background twice: opened, saved and opened again, it stays where the first open put it (ticket 1000)', () => {
+    const saved = JSON.parse(serializeProject(decoratedProject()))
+    delete saved.projects[0].backgroundPositions
+    saved.projects[0].layers[0].background = 5
+    saved.projects[0].layers[1].background = 3
+
+    const [opened] = parseProjectsFile(JSON.stringify(saved)).projects
+    const [reopened] = parseProjectsFile(serializeProject(opened!)).projects
+
+    expect(backgroundOf(reopened, 'canvas')).toBe(3)
+    expect(backgroundOf(reopened, 'frame')).toBe(2)
+  })
+
   it('carries brick stitch\'s Drop through the file, and reads a file without one as 1 (tickets 477, 0691)', () => {
     const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
 
@@ -194,13 +226,14 @@ describe('single-Project roundtrip', () => {
     expect(rowProgressOf(restored)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 14 with the layer list, each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
+  it('writes version 14 with the layer list, the Background list it is in (ticket 1000), each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
     expect(file.version).toBe(14)
     expect(file.patterns).toBeUndefined()
-    expect(Object.keys(file.projects[0]).sort()).toEqual(['createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
+    expect(Object.keys(file.projects[0]).sort()).toEqual(['backgroundPositions', 'createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
+    expect(file.projects[0].backgroundPositions).toBe(3)
     expect(file.projects[0].layers[0].beads).toBeUndefined()
     expect(file.projects[0].layers[0]).toMatchObject({ name: 'Fox', technique: 'peyote', orientation: 90, encodedBeads: { colors: [], rows: {} } })
     expect(file.projects[0].layers[1].encodedBeads.rows).toEqual({ 2: '3:1' })

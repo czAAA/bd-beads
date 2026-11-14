@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { lastFileAgo } from '../../domain/beadsSinceFile'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
@@ -10,9 +10,9 @@ import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import { actionKey } from '../ui/controlAction'
 
-// The save ring (SaveReminder card, ticket 0796): at the drawing area's top-right once the open Project's Project file is
-// well behind. A press runs Save, the Project panel's row; its label "Save Project file · n beads since the last file"
-// opens leftwards for a moment.
+// The save ring (SaveReminder card, tickets 0796, 0922): on the Canvas strip beside the Project button once the open
+// Project's Project file is well behind. A press runs Save, the Project panel's row; its label "Save Project file · n beads
+// since the last file" hangs under it for a moment, over the drawing area, so it covers no strip control.
 const props = defineProps<{
   /** The open Project's Beads since last file. */
   beads: number
@@ -35,6 +35,40 @@ const count = computed(() => groupThousands(props.beads, locale.value))
 /** What the count counts, said in the label itself (ticket 0858), not a bare "+n" read as "n beads not saved". */
 const since = computed(() => plural(locale.value, props.beads, t.value.saveReminder.since))
 const countLine = computed(() => fillBlanks(t.value.saveReminder.count, { count: count.value }))
+/** How wide the label may be: from the ring's left edge to 8px short of the screen's right edge, so it is never cut;
+ * measured while it is open, again whenever the window is resized. A count with no room left on the line is left out,
+ * so the label is as wide as the words it shows. */
+const buttonEl = ref<HTMLElement>()
+const textEl = ref<HTMLElement>()
+const countEl = ref<HTMLElement>()
+const labelRoom = ref<string>()
+const countLeftOut = ref(false)
+const LABEL_MARGIN_PX = 8
+async function measureRoom() {
+  const left = buttonEl.value?.getBoundingClientRect().left
+  if (left === undefined) return
+  labelRoom.value = `${Math.max(0, document.documentElement.clientWidth - left - LABEL_MARGIN_PX)}px`
+  countLeftOut.value = false
+  await nextTick()
+  // On the hidden second line: below the words.
+  countLeftOut.value = !!countEl.value && !!textEl.value && countEl.value.offsetTop >= textEl.value.offsetTop + textEl.value.offsetHeight
+}
+function onResize() {
+  void measureRoom()
+}
+watch(
+  () => props.labelOpen,
+  async (open) => {
+    window.removeEventListener('resize', onResize)
+    if (!open) return
+    await nextTick()
+    await measureRoom()
+    // Closed again while it was measured: nothing to follow.
+    if (props.labelOpen) window.addEventListener('resize', onResize)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => window.removeEventListener('resize', onResize))
 const lastLine = computed(() => {
   if (props.lastFileAt === undefined) return t.value.saveReminder.noFile
   const { value, unit } = lastFileAgo(props.lastFileAt, Date.now())
@@ -50,10 +84,10 @@ const lastLine = computed(() => {
     :hotkey="actionKey(save)"
     :body="t.saveReminder.body"
     :meta="[countLine, lastLine]"
-    align="end"
     :announce="false"
   >
     <button
+      ref="buttonEl"
       type="button"
       class="ui-control save-ring__button"
       :aria-label="t.saveReminder.label"
@@ -65,45 +99,41 @@ const lastLine = computed(() => {
       @focus="emit('hold', true)"
       @blur="emit('hold', false)"
     >
-      <span class="save-ring__label" aria-hidden="true" data-testid="save-ring-label">
-        <span class="save-ring__text">{{ t.saveReminder.label }}</span>
-        <span class="save-ring__count" data-testid="save-ring-count">{{ since }}</span>
-      </span>
       <span class="save-ring__halo"><AppIcon name="save" :size="16" /></span>
+      <span class="save-ring__label" :style="labelRoom ? { '--label-room': labelRoom } : undefined" aria-hidden="true" data-testid="save-ring-label">
+        <span class="save-ring__line">
+          <span ref="textEl" class="save-ring__text">{{ t.saveReminder.label }}</span>
+          <span ref="countEl" class="save-ring__count" :class="{ 'save-ring__count--left-out': countLeftOut }" data-testid="save-ring-count">{{ since }}</span>
+        </span>
+      </span>
     </button>
     <span :id="countId" class="save-ring__described">{{ countLine }}</span>
   </AppTooltip>
 </template>
 
 <style scoped>
-/* Under the Canvas strip at the drawing area's top-right, still while the canvas pans, zooms or turns. */
+/* In the Canvas strip's left slot, right after the Project button (ticket 0922): as tall as the strip's buttons, so the
+ * strip keeps its height and nothing beside it moves when it comes, goes or opens its label. */
 .save-ring {
-  --ring-size: var(--save-ring-size);
-  --ring-pad: var(--space-4);
+  --ring-size: var(--strip-item-height);
 
-  position: absolute;
-  top: var(--save-ring-inset);
-  right: var(--save-ring-inset);
-  z-index: var(--z-chrome);
-  max-width: calc(100% - 2 * var(--save-ring-inset));
+  flex: none;
   animation: save-ring-in var(--duration-slow) var(--ease-standard);
 }
 
-/* The Tool pill's material; the button widens leftwards, its right edge staying put. */
+/* The Tool pill's material, without its shadow: it sits in the strip like the buttons beside it. */
 .save-ring__button {
-  display: inline-flex;
-  flex-direction: row-reverse;
-  align-items: center;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
   box-sizing: border-box;
-  min-width: var(--ring-size);
-  max-width: 100%;
+  width: var(--ring-size);
   height: var(--ring-size);
-  padding: var(--ring-pad);
+  padding: 0;
   color: var(--accent-strong);
   background: var(--elevated);
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
-  box-shadow: var(--elevation-2);
   cursor: pointer;
   transition: scale var(--duration-fast) var(--ease-standard);
 }
@@ -124,7 +154,6 @@ const lastLine = computed(() => {
 
 .save-ring__halo {
   display: grid;
-  flex: none;
   place-items: center;
   box-sizing: border-box;
   width: var(--save-ring-halo);
@@ -133,29 +162,53 @@ const lastLine = computed(() => {
   border-radius: var(--radius-full);
 }
 
-/* "Save Project file" then "n beads since the last file"; a count with no room wraps onto the hidden second line, leaving the words. */
+/* The label hangs 6px under the ring, left edges aligned, over the drawing area: "Save Project file" then "n beads since
+ * the last file". Part of the button, so a press on it saves too. At most as wide as the screen leaves it; a count with
+ * no room wraps onto the hidden second line, leaving the words. */
 .save-ring__label {
+  position: absolute;
+  top: calc(100% + var(--space-6));
+  left: -1px;
+  z-index: var(--z-chrome);
+  display: flex;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(32rem, var(--label-room, 32rem));
+  padding: var(--space-6) var(--space-12);
+  font: var(--type-tab);
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  box-shadow: var(--elevation-2);
+  opacity: 0;
+  visibility: hidden;
+  translate: 0 calc(-1 * var(--space-4));
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    translate var(--duration-slow) var(--ease-standard),
+    visibility 0s linear var(--duration-base);
+}
+
+.save-ring--open .save-ring__label {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+  translate: 0 0;
+  transition:
+    opacity var(--duration-base) var(--ease-standard),
+    translate var(--duration-slow) var(--ease-standard);
+}
+
+.save-ring__line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   column-gap: var(--space-6);
   min-width: 0;
-  max-width: 0;
   height: 1lh;
   overflow: hidden;
-  font: var(--type-tab);
-  opacity: 0;
-  white-space: nowrap;
-  transition:
-    max-width var(--duration-slow) var(--ease-standard),
-    opacity var(--duration-base) var(--ease-standard),
-    padding var(--duration-slow) var(--ease-standard);
-}
-
-.save-ring--open .save-ring__label {
-  max-width: 32rem;
-  padding: 0 var(--space-12) 0 var(--space-4);
-  opacity: 1;
 }
 
 .save-ring__text {
@@ -170,6 +223,10 @@ const lastLine = computed(() => {
   white-space: normal;
 }
 
+.save-ring__count--left-out {
+  display: none;
+}
+
 .save-ring__described {
   position: absolute;
   width: 1px;
@@ -179,27 +236,13 @@ const lastLine = computed(() => {
   white-space: nowrap;
 }
 
-@media (pointer: coarse) {
-  .save-ring {
-    --ring-size: var(--save-ring-size-touch);
-    --ring-pad: var(--space-6);
-  }
-}
-
-@media (max-width: 743px) {
-  .save-ring {
-    --ring-size: var(--save-ring-size-touch);
-    --ring-pad: var(--space-6);
-
-    top: var(--save-ring-inset-phone);
-    right: var(--save-ring-inset-phone);
-    max-width: calc(100% - 2 * var(--save-ring-inset-phone));
-  }
+:root[data-theme='contrast'] .save-ring__button,
+:root[data-theme='contrast'] .save-ring__label {
+  border: 2px solid var(--line-strong);
 }
 
 :root[data-theme='contrast'] .save-ring__button {
   color: var(--ink);
-  border: 2px solid var(--line-strong);
 }
 
 @keyframes save-ring-in {
@@ -220,8 +263,9 @@ const lastLine = computed(() => {
     animation-name: save-ring-fade-in;
   }
 
-  .save-ring__label {
-    transition: opacity var(--duration-base) linear;
+  .save-ring__label,
+  .save-ring--open .save-ring__label {
+    translate: none;
   }
 }
 </style>

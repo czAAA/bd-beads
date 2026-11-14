@@ -135,7 +135,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `ProjectTheme` field | Token |
 |---|---|
 | `background` | `board` (on screen) / `print-board` (PDF and PNG) |
-| `rim` | `bead-rim` |
+| `rim` | `bead-rim` (exports and high contrast; light and dark draw a bead in a rim of its own color, `ownColorRim`, ticket 1003) |
 | `emptyBead` | `bead-empty` |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
@@ -147,7 +147,7 @@ Ticket 140 adds a test that keeps each theme's `ProjectTheme` equal to `tokens.j
 the canvas behind.
 The board, bead shape, finished rows and current row are drawn as the `BeadBoard` card describes.
 
-On screen the drawing area's `canvas` (and `background`) is the Canvas layer's own Background (`src/rendering/canvasBackgrounds.ts`, tickets 252, 0666), not always `box`; the Frame is drawn in a second `ProjectTheme` on its own Background (`frameTheme`), which an export never passes. Its ten colors are the `canvas-bg-1` to `canvas-bg-5` tokens (light, dark; tickets 284, 554), copied into that file, and `canvasBackgrounds.test.ts` keeps the copy equal to `tokens.json`. Each background but the two defaults carries its own empty-bead and ruler colors there, as the CanvasBackground card says.
+On screen the drawing area's `canvas` (and `background`) is the Canvas layer's own Background (`src/rendering/canvasBackgrounds.ts`, tickets 252, 0666), not always `box`; the Frame is drawn in a second `ProjectTheme` on its own Background (`frameTheme`), which an export never passes. Its six colors are the `canvas-bg-1` to `canvas-bg-3` tokens (three in light, three in dark; tickets 284, 554, 1000), copied into that file, and `canvasBackgrounds.test.ts` keeps the copy equal to `tokens.json`. Each background but the two defaults carries its own empty-bead and ruler colors there, as the CanvasBackground card says.
 
 ### 4.3 Exports are always light
 

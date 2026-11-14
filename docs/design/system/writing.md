@@ -137,7 +137,7 @@ The Canvas color control (Russian "Цвет холста") offers five backgroun
 | 4 | Fog / Туман | Ash / Пепел |
 | 5 | Pebble / Галька | Slate / Сланец |
 
-**Three per theme (ticket 1000; approved 2026-11-14, not yet in the app):** 1 Studio / Night, 2 Stone / Ink, 3 Pebble / Slate, named "{name}, {n} of 3". Linen, Fog, Midnight and Ash leave every language with that ticket.
+**Three per theme (ticket 1000; wins over the table above):** 1 Studio / Студия and Night / Ночь, 2 Stone / Камень and Ink / Тушь, 3 Pebble / Галька and Slate / Сланец, named "{name}, {n} of 3". Linen, Fog, Midnight and Ash have left every language.
 
 ## Numbers, units and dates
 
@@ -474,7 +474,7 @@ Russian here is a proposal for review, like the section below.
 | Project file · Picture · Printable chart · Clear all beads · Delete Project | Файл проекта · Картинка · Схема для печати · Очистить все бисеринки · Удалить проект |
 | Frame · Name this Frame · Rename Frame · Frame from template · Fit a Frame to the drawing · A Frame sets the size, the exports and the bead count. | рамка · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бисеринок. |
 | Estimated size · An estimate. · Rows are marked done. Reset progress to change the size. · Show all colors ({n}) | Примерный размер · Это оценка. · Ряды отмечены как готовые. Сбросьте прогресс, чтобы изменить размер. · Показать все цвета ({n}) |
-| Stone · Fog · Pebble · Slate | Камень · Туман · Галька · Сланец |
+| Stone · Pebble · Slate | Камень · Галька · Сланец |
 
 Russian here is a proposal for review; the other five languages follow it in the app change.
 
@@ -1002,7 +1002,7 @@ The picture bar on the reference image and its two actions (ReferenceImage card)
 
 ## Save reminder copy (ticket 0796)
 
-The ring at the drawing area's top-right that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
+The ring on the Canvas strip, beside the Project button, that offers to save a Project file (SaveReminder card). The words stay calm: they say where the work is and what keeps it, never "lost" or "deleted". "Beads since last file: {count}" is a Label: number, so no plural is needed; the button's accessible name is "Save Project file" (ticket 0859; it was "Save a copy") with the count line as its description for the same reason. `{when}` is `Intl.RelativeTimeFormat` with `numeric: "auto"` in the app's language. Every language but English and Russian is a draft, to be checked by a speaker.
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
