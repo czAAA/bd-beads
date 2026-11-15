@@ -177,6 +177,7 @@
 
 :root[data-theme="contrast"] {
   --track-fill: var(--accent);
+  --pill-tile-outline: 2px;
   --scrim: rgba(0, 0, 0, .6);
   --overlay-fill: var(--canvas);
   --overlay-line: var(--line-strong);
@@ -243,6 +244,9 @@
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
   --pill-fade: 1.5rem; /* ToolPill card: the fade on the end where the pill's scrolling tools are cut on a phone, 24px (ticket 0837). */
+  --pill-tile-outline: 1.5px; /* ToolPill card (ticket 0926): the inset `ink` outline round a pressed tile; 2px in high contrast. */
+  --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink); /* ToolPill card (ticket 0926): that outline, drawn inside the tile's edge. */
+  --pill-tile-focus-offset: 1px; /* ToolPill card (ticket 0926): a pressed tile's focus ring, just outside its outline. */
   --mirror-bar-control: 24px; /* ContextBar card, Mirror bar: the Mode switch, an Axis chip and a count button, on mouse and pen. */
   --mirror-bar-control-touch: 30px; /* ContextBar card, Mirror bar: the same on touch, in the 36px bar. */
   --mirror-axis-width: 1.25px; /* ContextBar card, Mirror bar: an Axis line on the overlay. */
