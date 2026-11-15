@@ -1,4 +1,5 @@
-import { ImageConversionError, validateImagePixelCount, type DecodeImage } from '../domain/imageConversion'
+import { ImageConversionError, readSize, type DecodeImage } from '../domain/imageConversion'
+import type { ImageSize } from '../domain/imageFraming'
 
 // The browser's part of Convert image: decoding PNG/JPEG/GIF/WebP bytes to pixels. Apart from
 // domain/imageConversion.ts, whose pure functions are unit-tested, because jsdom decodes no images; callers take a
@@ -47,9 +48,26 @@ export async function decodeSource(file: Blob): Promise<DecodedSource> {
   return decodeViaImageElement(file)
 }
 
-// Reads a chosen picture's pixels, throwing an ImageConversionError if undecodable or past the resolution limit. Format
-// and size are checked earlier (validateImageFile); the real dimensions first become known here, so the resolution
-// limit is enforced here.
+/** The pixels of a canvas `size` with the picture drawn over it. A browser without a 2D context can't read pictures at
+ * all; one that can't draw or read this canvas is out of memory for it. */
+function drawnPixels(drawable: CanvasImageSource, { width, height }: ImageSize): ImageData {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d')
+  if (!context) throw new ImageConversionError('decodeFailed')
+  try {
+    context.imageSmoothingQuality = 'high'
+    context.drawImage(drawable, 0, 0, width, height)
+    return context.getImageData(0, 0, width, height)
+  } catch {
+    throw new ImageConversionError('tooManyPixels')
+  }
+}
+
+// Reads a chosen picture's pixels, read smaller past the limit (readSize, ticket 0931) and its own size said then. Format
+// and bytes are checked earlier (validateImageFile). Throws only for a picture the browser can't open ('decodeFailed')
+// or the device has no memory to draw even smaller ('tooManyPixels').
 export const decodeImageFile: DecodeImage = async (file) => {
   let source: DecodedSource
   try {
@@ -64,21 +82,10 @@ export const decodeImageFile: DecodeImage = async (file) => {
       throw new ImageConversionError('decodeFailed')
     }
 
-    const rejection = validateImagePixelCount({ width, height })
-    if (rejection) {
-      throw new ImageConversionError(rejection)
-    }
-
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const context = canvas.getContext('2d')
-    if (!context) {
-      throw new ImageConversionError('decodeFailed')
-    }
-
-    context.drawImage(source.drawable, 0, 0)
-    return { width, height, data: context.getImageData(0, 0, width, height).data }
+    const read = readSize({ width, height })
+    const pixels = drawnPixels(source.drawable, read)
+    const smaller = read.width !== width || read.height !== height
+    return { width: read.width, height: read.height, data: pixels.data, ...(smaller && { ownSize: { width, height } }) }
   } finally {
     source.release()
   }

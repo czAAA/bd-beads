@@ -71,13 +71,16 @@ export const ACCEPTED_IMAGE_FORMATS: readonly ImageFormat[] = [
   { mimeType: 'image/webp', label: 'WebP', extensions: ['.webp'] },
 ]
 
-/** @internal Tests try a file just over the cap. */
-export const IMAGE_MAX_MEGABYTES = 10
+/** @internal Tests try a file just over the cap. 50, up from 10 (ticket 0931): a picture's pixels, not its bytes, are what
+ * reading it costs, and a picture with too many is read smaller (readSize), so the cap only keeps out a file no phone
+ * or camera writes as PNG, JPEG, GIF or WebP. */
+export const IMAGE_MAX_MEGABYTES = 50
 /** @internal Tests try a file just over the cap. */
 export const IMAGE_MAX_BYTES = IMAGE_MAX_MEGABYTES * 1024 * 1024
-/** @internal Tests try a picture just over the cap. */
-export const IMAGE_MAX_MEGAPIXELS = 16
-/** @internal Tests try a picture just over the cap. */
+/** The most pixels a picture is read at (readSize): a canvas any browser draws, an iPad's included, and far more than
+ * the 300 beads a side the converter uses. */
+const IMAGE_MAX_MEGAPIXELS = 16
+/** @internal Tests read a picture just over the cap. */
 export const IMAGE_MAX_PIXELS = IMAGE_MAX_MEGAPIXELS * 1_000_000
 
 /** HEIC/HEIF (iPhone photos) gets its own rejection message: browsers can't decode it. Matched on extension too,
@@ -130,20 +133,19 @@ export function imageInputAccept(): string {
   return ACCEPTED_IMAGE_FORMATS.flatMap((format) => [format.mimeType, ...format.extensions]).join(',')
 }
 
-/** Fills `{formats}`, `{maxSizeMb}` and `{maxMegapixels}` into a localised sentence, so the numbers the UI promises
+/** Fills `{formats}` and `{maxSizeMb}` into a localised sentence, so the numbers the UI promises
  * are the constants the validation enforces (ticket 58's "cannot drift apart"). A sentence holds the ones it needs;
  * `more` gives the other blanks a sentence may hold, such as the device's paste key (ticket 0846). */
 export function formatImageLimits(template: string, more: Readonly<Record<string, string>> = {}): string {
   return fillBlanks(template, {}, {
     formats: ACCEPTED_IMAGE_FORMATS.map((format) => format.label).join(', '),
     maxSizeMb: IMAGE_MAX_MEGABYTES,
-    maxMegapixels: IMAGE_MAX_MEGAPIXELS,
     ...more,
   })
 }
 
-/** Whether a chosen file can be converted, judged before decoding: format and size. The resolution limit needs
- * decoded dimensions instead (validateImagePixelCount). */
+/** Whether a chosen file can be converted, judged before decoding: format and size. A picture with too many pixels is
+ * read smaller instead (readSize). */
 export function validateImageFile(file: ImageFileFacts): ImageRejection | undefined {
   if (isFormat(file, HEIC_FORMAT, HEIC_MIME_TYPES)) {
     return 'heic'
@@ -160,9 +162,12 @@ export function validateImageFile(file: ImageFileFacts): ImageRejection | undefi
   return undefined
 }
 
-/** Whether a decoded picture is within the resolution limit (see IMAGE_MAX_PIXELS). */
-export function validateImagePixelCount({ width, height }: ImageSize): ImageRejection | undefined {
-  return width * height > IMAGE_MAX_PIXELS ? 'tooManyPixels' : undefined
+/** The size a picture is read at (ticket 0931): its own, or, past IMAGE_MAX_PIXELS, made smaller to fit, its shape kept,
+ * never refused. */
+export function readSize({ width, height }: ImageSize): ImageSize {
+  if (width * height <= IMAGE_MAX_PIXELS) return { width, height }
+  const scale = Math.sqrt(IMAGE_MAX_PIXELS / (width * height))
+  return { width: Math.max(1, Math.floor(width * scale)), height: Math.max(1, Math.floor(height * scale)) }
 }
 
 /** How many colors a conversion keeps when the wizard opens (the Colors slider's start, ticket 0747), or every color
@@ -248,9 +253,15 @@ export function frameColors(
   return { raw, counts }
 }
 
+/** A picture as read: its pixels, and its own size where it was read smaller (readSize), for the size line.
+ * @internal Named outside only by tests that hand one to the wizard. */
+export interface ReadPicture extends PixelData {
+  ownSize?: ImageSize
+}
+
 /** How a picture is turned into pixels. The real one is services/imageDecode's decodeImageFile; a test supplies its
  * own. */
-export type DecodeImage = (file: Blob) => Promise<PixelData>
+export type DecodeImage = (file: Blob) => Promise<ReadPicture>
 
 /** A file that can't be converted, carrying which of the localised reasons to show (see ImageRejection). */
 export class ImageConversionError extends Error {

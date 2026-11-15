@@ -91,7 +91,7 @@ Where the build differs from the sections above, and why:
 
 A PanelSection **reference image** between canvas and export (ProjectPanel card), built from the MenuPanel card's shared parts.
 
-- **Header:** the `label` "reference image", an Info button (`info`, 16px, ButtonCard's Info button) and the chevron. Folded summary in `meta`: "50% · shown", "50% · hidden", or nothing with no picture. The Info Tooltip: "PNG, JPEG, GIF or WebP, up to 10 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit." (the numbers filled from the Convert image limits).
+- **Header:** the `label` "reference image", an Info button (`info`, 16px, ButtonCard's Info button) and the chevron. Folded summary in `meta`: "50% · shown", "50% · hidden", or nothing with no picture. The Info Tooltip: "PNG, JPEG, GIF or WebP, up to 50 MB. Kept with this Project and in its .openbeads file, never printed. Large pictures are made smaller to fit." (the numbers filled from the Convert image limits).
 - **No picture:** one PanelItem, `image` icon, "Add reference image"; it opens the file picker and, on a pick, puts the panel away and opens Adjust.
 - **With a picture**, in this order:
   1. A PanelListRow (no trailing facts): the 28px thumbnail (the picture cropped square, on `board`), the file name (one line, ellipsis) over "2048 × 1536 · 412 KB" (the stored picture, its size in whole KB) in `small` / `muted`. Not a button: the row's `still` form, with no hover.
@@ -100,7 +100,7 @@ A PanelSection **reference image** between canvas and export (ProjectPanel card)
   4. **Replace image** (`image`): the file picker; the new picture keeps the place, the turn and the width, its height following its own shape.
   5. **Remove image** (`delete`, `danger`): asks "Remove the reference image?", "The picture is taken off this Project. Your beads stay as they are.", Cancel and a `danger`-filled "Remove" (ConfirmDialogs card). Not an Undo step.
 - Show and hide is not repeated here: it is the strip button (MenuPanel card: nothing repeats a tool).
-- A refused file keeps the panel open and shows a `danger` line under the section's first row, in `small`: "This file can't be used: {reason}", one short reason per refusal Convert image makes: "not a picture", "over 10 MB", "over 16 megapixels", "it couldn't be read", "browsers can't read HEIC pictures", "SVG pictures can't be used".
+- A refused file keeps the panel open and shows a `danger` line under the section's first row, in `small`: "This file can't be used: {reason}", one short reason per refusal Convert image makes: "not a picture", "over 50 MB", "too big for this device to open", "it couldn't be read", "browsers can't read HEIC pictures", "SVG pictures can't be used".
 - While the picture is read and made smaller, the section's first row shows the Loading card's inline spinner and "Preparing the picture…".
 
 ## Adjust
@@ -121,7 +121,7 @@ A state of the canvas, not a mode of a tool: the tools rest, pinch, two-finger p
 
 ## Limits and saving
 
-- **Picked:** the Convert image formats and caps (PNG, JPEG, GIF's first frame, WebP; at most 10 MB and 16 megapixels). A file of a library of pictures is read up to 100 MB (ADR 0089).
+- **Picked:** the Convert image formats and caps (PNG, JPEG, GIF's first frame, WebP; at most 50 MB, any number of pixels, read smaller; ticket 0931). A file of a library of pictures is read up to 100 MB (ADR 0089).
 - **Stored made smaller:** at most 2048 px on its longest side, WebP where the browser encodes it, else JPEG (PNG when it has transparency), stepped down until it is at most 1 MB. The row's size line shows what is stored.
 - **Where:** the picture's bytes beside the Project library on the device, the settings with the Project, and both inside the `.openbeads` file (ADR 0089, ticket 0790). Duplicate copies it; Delete and Delete all remove it.
 - **Not saved:** a device that refuses to keep it (a private window can) shows the picture for the session, and the Project panel's local save icon says "Reference image not saved in this browser".

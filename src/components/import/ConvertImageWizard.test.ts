@@ -6,7 +6,7 @@ import InfoButton from '../ui/InfoButton.vue'
 import { useConvertImageWizard, type ConvertImageWizard as Wizard } from '../../composables/import/useConvertImageWizard'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
-import { ImageConversionError, type PixelData } from '../../domain/imageConversion'
+import { ImageConversionError, type PixelData, type ReadPicture } from '../../domain/imageConversion'
 import { imageLimitsText } from '../../i18n/imageLimits'
 import type { Project } from '../../domain/project'
 import { frameGrid } from '../../testUtils/frameGrid'
@@ -143,6 +143,18 @@ describe('ConvertImageWizard before a picture is set', () => {
     expect(wrapper.get('[data-testid="convert-picture-size"]').text()).toBe('4×2 px')
     vi.restoreAllMocks()
   })
+
+  it('says the picture’s own size when a large one was read smaller, and turns it with the picture (ticket 0931)', async () => {
+    const readSmaller: ReadPicture = { ...redAndWhite(), ownSize: { width: 5472, height: 2736 } }
+    const { wrapper } = open({ decodeImage: async () => readSmaller })
+    await chooseFile(wrapper, picture('IMG_2041.jpeg', 'image/jpeg'))
+
+    expect(wrapper.find('[data-testid="convert-image-error"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="convert-picture-size"]').text()).toBe('5472×2736 px')
+    await wrapper.get('[data-testid="convert-picture-more"]').trigger('click')
+    await wrapper.get('[data-testid="convert-turn"]').trigger('click')
+    expect(wrapper.get('[data-testid="convert-picture-size"]').text()).toBe('2736×5472 px')
+  })
 })
 
 describe('ConvertImageWizard help lines by device (ticket 0846)', () => {
@@ -234,7 +246,7 @@ describe('ConvertImageWizard ways in', () => {
 
 describe('ConvertImageWizard rejections', () => {
   it.each([
-    ['an oversize resolution', new ImageConversionError('tooManyPixels'), imageLimitsText('en', en.convertImage.errors.tooManyPixels)],
+    ['a picture the device has no memory to draw', new ImageConversionError('tooManyPixels'), imageLimitsText('en', en.convertImage.errors.tooManyPixels)],
     ['a corrupt file', new ImageConversionError('decodeFailed'), en.convertImage.errors.decodeFailed],
     ['an unexpected failure', new Error('something else'), en.convertImage.errors.decodeFailed],
   ])('reports %s, which only the decode can see', async (_kind, error, message) => {
