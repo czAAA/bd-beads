@@ -2,7 +2,7 @@
 
 The one line at the top-centre of the drawing area, under the strip, that says how to move the open canvas and names its shortcuts.
 
-- **Text:** "scroll or `space` drag to move · `⌘` scroll to zoom · `5` Hand · `R` Rulers". Inter 12/16 in `muted`; each key is a Kbd chip, 20px here, with 10px before every chip after the first. `5` is the Hand tile's key on the Tool pill; there is no Set Frame key, as the bar's "Select to set a Frame" covers it (ticket 0846).
+- **Text:** "scroll or `space` drag to move · `⌘` scroll to zoom · `5` Hand · `R` Rulers". Inter 12/16 in `muted`; each key is a Kbd chip, 20px here, with 10px before every chip after the first. `5` is the Hand tile's key on the Tool pill; there is no Set Frame key, as the bar's no-Frame line, which picks Select, covers it (tickets 0846, 0944).
 - **On touch** (writing.md, A help line fits the device in hand): "two fingers to move · pinch to zoom", the same type with no chips. A real key pressed, or the Keyboard shortcuts switch turned on, brings the key line back.
 - **Place:** centred on the drawing area, 12px under the strip, under any overlay. It does not move with the canvas.
 - **Shown only while the Project has no beads and no Frame (an empty Frame hides it, ticket 0774)**, at every size except a phone (30rem and under, with no room for it). It goes with the first bead and returns if the Project is emptied (ticket 429).
