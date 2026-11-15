@@ -5,6 +5,7 @@ import { deflateRgb, deflateText, encodePng } from '../domain/pngEncoder'
 import { pageOneLayout } from './pageOneLayout'
 import { PRINT_DPI, type PrintPart, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
+import { drawWordChartPages, pdfPageCount } from './wordChartPages'
 
 // Project exports (tickets 73, 74, 0583, 0914, 0915): drawn onto page canvases made here, one page at a time and compressed strip by
 // strip, so memory is bounded by the page, not the Project (ADR 0018, 250 × 250).
@@ -71,7 +72,6 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const { blankPage, loadPrintFonts } = await import('./printPages')
   const { drawChartPage } = await import('./chartPage')
   const { drawNeededListPage, drawPageOne } = await import('./pageOnePage')
-  const { drawWordChartPages, pdfPageCount } = await import('./wordChartPages')
   await loadPrintFonts()
   // The Word chart (ticket 0574) follows the chart pages and counts in every page's "of N".
   const plan = { ...layout.plan, pageCount: pdfPageCount(layout.plan, words) }

@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, ref, watch, type Ref } from 'vue'
+import { computed, onScopeDispose, readonly, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
@@ -89,6 +89,9 @@ export function useCanvasView(
   const scroll = ref<Scroll>({ x: 0, y: 0 })
   /** Whether the view still tracks the fit rather than a place the person chose. */
   const isAtFit = ref(true)
+  /** Whether the view has been set for its measured area (ticket 0991): before it, zoom and scroll are stand-ins that
+   * nothing laid over the drawing should be put at. */
+  const placed = ref(false)
   /** The view the first measured fit opens at, until it has. */
   let opening = options.opening
   /** The Canvas's orientation while two fingers twist it, before the Project keeps where it settles. */
@@ -306,11 +309,13 @@ export function useCanvasView(
     } else {
       zoom.value = clampZoom(zoom.value)
     }
+    placed.value = true
   })
 
   return {
     zoom,
     scroll,
+    placed: readonly(placed),
     zoomPercent: computed(() => Math.round(zoom.value * 100)),
     zoomIn: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, 1), anchor),
     zoomOut: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, -1), anchor),

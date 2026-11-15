@@ -27,14 +27,28 @@ vi.mock('./InsideEditor.vue', () => ({
 }))
 vi.mock('./tourScripts', () => ({ TOUR_SCRIPTS: new Proxy({}, { get: () => async () => undefined }) }))
 
-function section(props: { withEditor: boolean; shown?: boolean; wide?: boolean }, locale: 'en' | 'ru' = 'en') {
+function mountSection(props: { withEditor: boolean; shown?: boolean; wide?: boolean }, locale: 'en' | 'ru' = 'en') {
   localStorage.setItem('openbeads:locale', locale)
   // The language is read once per test (testSetup); a second language in one test reads it afresh.
   browserDevicePreferences.forget()
   return mount(WhatsInside, { props: { shown: false, wide: true, ...props }, attachTo: document.body })
 }
 
-type Section = ReturnType<typeof section>
+/** Lets the demo editor arrive: it is asked for once the page has painted (here, at once) or What's inside shows. */
+async function demoArrives() {
+  await vi.advanceTimersByTimeAsync(0)
+  await vi.dynamicImportSettled()
+  await flushPromises()
+}
+
+/** What's inside with its demo editor there. */
+async function section(props: { withEditor: boolean; shown?: boolean; wide?: boolean }, locale: 'en' | 'ru' = 'en') {
+  const wrapper = mountSection(props, locale)
+  await demoArrives()
+  return wrapper
+}
+
+type Section = ReturnType<typeof mountSection>
 const find = (wrapper: Section, id: string) => wrapper.find(`[data-testid="${id}"]`)
 const lit = (wrapper: Section) => wrapper.findAll('[aria-current="step"]').map((chapter) => chapter.attributes('data-testid'))
 const layout = (wrapper: Section) => find(wrapper, 'whats-inside').attributes('data-layout')
@@ -60,8 +74,22 @@ afterEach(() => {
 })
 
 describe("What's inside (tickets 0797, 0825, 0830)", () => {
-  it('holds its heading and four chapters as a list of buttons, none lit before the tour, with the editor', () => {
-    const wrapper = section({ withEditor: true })
+  it('holds a frame for the demo editor until it has come, after the page has painted, and never asks for one on a phone (ticket 0991)', async () => {
+    const wrapper = mountSection({ withEditor: true })
+    expect(find(wrapper, 'inside-editor').exists()).toBe(false)
+    expect(find(wrapper, 'inside-editor-waiting').exists()).toBe(true)
+    await demoArrives()
+    expect(find(wrapper, 'inside-editor').exists()).toBe(true)
+    expect(find(wrapper, 'inside-editor-waiting').exists()).toBe(false)
+
+    const phone = mountSection({ withEditor: false, shown: true, wide: false })
+    await demoArrives()
+    expect(find(phone, 'inside-editor').exists()).toBe(false)
+    expect(find(phone, 'inside-editor-waiting').exists()).toBe(false)
+  })
+
+  it('holds its heading and four chapters as a list of buttons, none lit before the tour, with the editor', async () => {
+    const wrapper = await section({ withEditor: true })
     expect(wrapper.get('h2#homepage-inside').text()).toBe("What's inside")
     const chapters = wrapper.findAll('ul[data-testid="inside-chapters"] > li > button')
     expect(chapters.map((chapter) => chapter.text())).toEqual(['Draw', 'Start from something', 'Real bead colors', 'Weave and keep'])
@@ -69,15 +97,15 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(find(wrapper, 'inside-editor').exists()).toBe(true)
   })
 
-  it("describes each chapter by its rows' names", () => {
-    const wrapper = section({ withEditor: true })
+  it("describes each chapter by its rows' names", async () => {
+    const wrapper = await section({ withEditor: true })
     const described = (id: string) => wrapper.get(`#${find(wrapper, id).attributes('aria-describedby')}`).text()
     expect(described('inside-chapter-draw')).toBe('Canvas and Frame, Techniques, Project editing, and Mirror')
     expect(described('inside-chapter-beadColors')).toBe('Colors built in and Letters')
   })
 
-  it('captions the first row before the tour starts, and is no live region', () => {
-    const wrapper = section({ withEditor: true })
+  it('captions the first row before the tour starts, and is no live region', async () => {
+    const wrapper = await section({ withEditor: true })
     expect(caption(wrapper)).toContain('Canvas and Frame')
     expect(caption(wrapper)).toContain(en.homepage.inside.rows.canvas.text)
     expect(caption(wrapper)).toContain('1 / 13')
@@ -85,7 +113,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('plays a chapter pressed from its first row, the chapter lit and the caption naming the row, its line and its place', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-weaveKeep')
     expect(lit(wrapper)).toEqual(['inside-chapter-weaveKeep'])
     expect(caption(wrapper)).toContain('Row progress')
@@ -94,7 +122,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('starts the tour by itself a moment after it first shows, the lit chapter following the row that plays', async () => {
-    const wrapper = section({ withEditor: true, shown: true })
+    const wrapper = await section({ withEditor: true, shown: true })
     await vi.advanceTimersByTimeAsync(TOUR_TIMING.start - 1)
     expect(lit(wrapper)).toEqual([])
     await vi.advanceTimersByTimeAsync(1)
@@ -111,7 +139,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('Pause stops the tour at its row, the chapter still lit, and reads Play, which plays on from that row', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-startFrom')
     await vi.advanceTimersByTimeAsync(ROW_MS)
     expect(caption(wrapper)).toContain('6 / 13')
@@ -132,7 +160,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('a chapter pressed while paused plays, and Play reads Pause again', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-draw')
     await press(wrapper, 'inside-pause')
     await press(wrapper, 'inside-chapter-beadColors')
@@ -141,7 +169,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('Open editor from here takes what the demo shows at the press, then stops the tour, and hands it to the page (ticket 0879)', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-draw')
     expect(find(wrapper, 'inside-open-from-here').text()).toBe('Open editor from here')
     await press(wrapper, 'inside-open-from-here')
@@ -156,7 +184,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('answers a press in the demo by lighting Open editor from here once and focusing it, the tour playing on (ticket 0950)', async () => {
-    const wrapper = section({ withEditor: true, shown: true })
+    const wrapper = await section({ withEditor: true, shown: true })
     await flushPromises()
     const open = () => find(wrapper, 'inside-open-from-here')
     expect(open().classes()).toContain('app-button--secondary')
@@ -173,7 +201,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('stands beside the demo where the box is wide, which offers Expand; Expand puts it in a band and reads Collapse', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     expect(layout(wrapper)).toBe('beside')
     expect(find(wrapper, 'strip-expand').text()).toBe('expand')
     await press(wrapper, 'strip-expand')
@@ -183,14 +211,14 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(layout(wrapper)).toBe('beside')
   })
 
-  it('is a band over the demo with no Expand under 1000px', () => {
-    const wrapper = section({ withEditor: true, wide: false })
+  it('is a band over the demo with no Expand under 1000px', async () => {
+    const wrapper = await section({ withEditor: true, wide: false })
     expect(layout(wrapper)).toBe('band')
     expect(find(wrapper, 'strip-expand').exists()).toBe(false)
   })
 
   it('Expand starts the playing row again in the new size', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-startFrom')
     await vi.advanceTimersByTimeAsync(ROW_MS)
     demo.fresh.mockClear()
@@ -202,7 +230,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('Expand keeps a paused tour paused, only setting its view again', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-startFrom')
     await press(wrapper, 'inside-pause')
     demo.fresh.mockClear()
@@ -214,7 +242,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('a page that crosses 1000px resizes the demo as Expand does: the playing row starts again, a paused tour has its view set again', async () => {
-    const wrapper = section({ withEditor: true })
+    const wrapper = await section({ withEditor: true })
     await press(wrapper, 'inside-chapter-startFrom')
     await vi.advanceTimersByTimeAsync(ROW_MS)
     demo.fresh.mockClear()
@@ -234,7 +262,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
 
   it('under reduced motion has no Pause, shows the end of a pressed chapter\'s first row, and of the lit chapter\'s next row, round to its first', async () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }).matchMedia)
-    const wrapper = section({ withEditor: true, shown: true })
+    const wrapper = await section({ withEditor: true, shown: true })
     await vi.advanceTimersByTimeAsync(0)
     await flushPromises()
     expect(find(wrapper, 'inside-pause').exists()).toBe(false)
@@ -255,7 +283,7 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
   })
 
   it('on a phone has no editor, no chapters and no tour: the heading over one grouped list of the 13 rows in the tour\'s order, nothing to press (ticket 0827)', async () => {
-    const wrapper = section({ withEditor: false, shown: true, wide: false })
+    const wrapper = await section({ withEditor: false, shown: true, wide: false })
     await vi.advanceTimersByTimeAsync(5000)
     expect(find(wrapper, 'inside-editor').exists()).toBe(false)
     expect(wrapper.get('h2#homepage-inside').text()).toBe("What's inside")
@@ -271,8 +299,8 @@ describe("What's inside (tickets 0797, 0825, 0830)", () => {
     expect(lit(wrapper)).toEqual([])
   })
 
-  it('speaks Russian', () => {
-    const wrapper = section({ withEditor: true }, 'ru')
+  it('speaks Russian', async () => {
+    const wrapper = await section({ withEditor: true }, 'ru')
     expect(wrapper.findAll('ul[data-testid="inside-chapters"] > li > button')).toHaveLength(4)
     expect(find(wrapper, 'inside-open-from-here').text()).not.toBe('Open editor from here')
   })

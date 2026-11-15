@@ -6,8 +6,7 @@ import { libraryFileName, projectExportFileName, projectFileName, projectFileNam
 import type { SealedProject } from '../../domain/sealedProject'
 import type { Locale, Translations } from '../../i18n/translations'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
-import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
-import { printText } from '../../rendering/printText'
+import { loadPrintCode, type PrintCode } from '../../rendering/loadPrintCode'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import type { FileWriter, PickedFile } from '../../services/fileWriter'
 import type { LinkedFileStore } from '../../services/linkedFileStore'
@@ -114,7 +113,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** `more` are the files made, in order, after the first is handed over (the PNG's list pages after page 1, tickets 0583, 0915, and the
    * Word chart's PNG, ticket 0574): none when there is nothing more to make. */
-  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => { fileName: string; make: () => Promise<Blob> }[]) {
+  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => Promise<{ fileName: string; make: () => Promise<Blob> }[]>) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
     if (!project || !frameOf(project) || exporting.value) {
@@ -124,7 +123,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     try {
       const handed = await makeAndHandOver(projectExportFileName(project, extension), () => make(project), type)
       // Each further page stacks a toast of its own, so every name is read; the first is page 1.
-      const further = handed ? (more?.(project) ?? []) : []
+      const further = handed ? ((await more?.(project)) ?? []) : []
       for (const [index, next] of further.entries()) {
         const page = index + 2
         if (!(await makeAndHandOver(next.fileName, next.make, type, undefined, savedPageToast(page)))) break
@@ -230,21 +229,28 @@ export function useExportFlow(deps: ExportFlowDeps) {
     return handOverFile(projectFileNameOf(project.name, project.makerName), async () => packStoredProjectFile(project.stored, await picturesOf([project.id])), [project.id])
   }
 
+  /** The words a printed page carries (tickets 162, 164, 0583), in the app's language, with the Project's maker's name
+   * (ADR 0060). */
+  const wordsOf = (code: PrintCode, project: Project) => code.printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value)
+
   function onExportPng() {
     // The words the pictures print (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
     // Page 1 is the first (ticket 0915); Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
     // 0586).
-    const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value)
     const dpi = pngDpiFor(quality.value)
     return runExport(
-      (project) => exportProjectPng(project, wordsOf(project), dpi),
+      async (project) => {
+        const code = await loadPrintCode()
+        return code.exportProjectPng(project, wordsOf(code, project), dpi)
+      },
       'png',
       'image/png',
-      (project) => {
-        const words = wordsOf(project)
-        return Array.from({ length: projectPageCount(project, words) - 1 }, (_, index) => ({
+      async (project) => {
+        const code = await loadPrintCode()
+        const words = wordsOf(code, project)
+        return Array.from({ length: code.projectPageCount(project, words) - 1 }, (_, index) => ({
           fileName: projectListFileName(project, index + 2),
-          make: () => exportProjectPng(project, words, dpi, index + 1),
+          make: () => code.exportProjectPng(project, words, dpi, index + 1),
         }))
       },
     )
@@ -253,7 +259,10 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPdf() {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
-      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date(), printChoices.value), pdfPageDpi()),
+      async (project) => {
+        const code = await loadPrintCode()
+        return code.exportProjectPdf(project, wordsOf(code, project), pdfPageDpi())
+      },
       'pdf',
       'application/pdf',
     )
