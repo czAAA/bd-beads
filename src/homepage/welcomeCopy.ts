@@ -1,20 +1,20 @@
 import { fillBlanks } from '../domain/fillBlanks'
 import { groupThousands } from '../domain/formatNumber'
-import { pluralForm, plural } from '../i18n/plural'
+import { pluralForm } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
-import { catalogCounts, starterCount } from './appCounts'
+import { catalogCounts } from './appCounts'
 import type { IconName } from '../components/ui/icons'
 import { DEMO_PIECE_SIZE, DEMO_TECHNIQUE } from './inside/demoProjects'
 
 // The Welcome section's words (Homepage card, ticket 0830): its counts, read from the app as the free list's are, the
 // piece's caption, and its three promises: free and local as one, then what the app does (ticket 0946).
 
-/** "3 817 TOHO and Miyuki colors · 15 Starters": the Color catalogs' codes and brands, and the Starters. */
+/** "3 817 TOHO and Miyuki colors": the Color catalogs' codes and brands. The Starters are Start from a ready design's
+ * button now, so the page says "ready design" before it names a Starter (ticket 0953). */
 export function welcomeCounts(t: Translations, locale: Locale): string {
-  const { colors, starters } = t.homepage.welcome
   const { brands, codes } = catalogCounts(locale)
-  return [fillBlanks(pluralForm(locale, codes, colors), { codes: groupThousands(codes, locale), brands }), plural(locale, starterCount(), starters)].join(' · ')
+  return fillBlanks(pluralForm(locale, codes, t.homepage.welcome.colors), { codes: groupThousands(codes, locale), brands })
 }
 
 /** The piece's caption: its Technique and its grid's size, "Peyote · 48×23". */

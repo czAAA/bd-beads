@@ -359,7 +359,7 @@ export const be: Translations = {
       line: 'Для ткацтва, мазаічнага і цаглянага пляцення.',
       seeHow: 'Як гэта працуе',
       colors: { one: '{codes} колер {brands}', few: '{codes} колеры {brands}', many: '{codes} колераў {brands}', other: '{codes} колеру {brands}' },
-      starters: { one: '{count} стартар', few: '{count} стартары', many: '{count} стартараў', other: '{count} стартара' },
+      startFromStarter: 'Пачаць з гатовага дызайну',
       caption: '{technique} · {size}',
       piece: 'Вочкі паўлінавага пяра, мазаічнае пляценне',
       promises: {

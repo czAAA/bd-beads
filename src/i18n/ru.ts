@@ -358,7 +358,7 @@ export const ru: Translations = {
       line: 'Для ткачества, мозаичного и кирпичного плетения.',
       seeHow: 'Как это работает',
       colors: { one: '{codes} цвет {brands}', few: '{codes} цвета {brands}', many: '{codes} цветов {brands}', other: '{codes} цвета {brands}' },
-      starters: { one: '{count} стартер', few: '{count} стартера', many: '{count} стартеров', other: '{count} стартера' },
+      startFromStarter: 'Начать с готового дизайна',
       caption: '{technique} · {size}',
       piece: 'Глазки павлиньего пера, мозаичное плетение',
       promises: {

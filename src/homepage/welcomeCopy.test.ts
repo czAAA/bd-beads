@@ -11,12 +11,12 @@ import { welcomeCaption, welcomeCounts, welcomePromises } from './welcomeCopy'
 const CODES = [toho, delica, round].reduce((sum, catalog) => sum + catalog.codes.length, 0)
 
 describe("the Welcome section's words (ticket 0830)", () => {
-  it('counts the bead colors, their brands and the Starters from the app', () => {
-    expect(welcomeCounts(en, 'en')).toBe(`${groupThousands(CODES, 'en')} TOHO and Miyuki colors · 15 Starters`)
+  it('counts the bead colors and their brands from the app, and leaves the Starters to their button (ticket 0953)', () => {
+    expect(welcomeCounts(en, 'en')).toBe(`${groupThousands(CODES, 'en')} TOHO and Miyuki colors`)
   })
 
-  it("picks each count's form in Russian", () => {
-    expect(welcomeCounts(ru, 'ru')).toBe(`${groupThousands(CODES, 'ru')} цветов TOHO и Miyuki · 15 стартеров`)
+  it("picks the count's form in Russian", () => {
+    expect(welcomeCounts(ru, 'ru')).toBe(`${groupThousands(CODES, 'ru')} цветов TOHO и Miyuki`)
   })
 
   it("names the piece by its Technique and its grid's size", () => {

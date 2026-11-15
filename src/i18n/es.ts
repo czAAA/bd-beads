@@ -358,7 +358,7 @@ export const es: Translations = {
       line: 'Para telar, peyote y punto ladrillo.',
       seeHow: 'Mira cómo funciona',
       colors: { one: '{codes} color de {brands}', many: '{codes} colores de {brands}', other: '{codes} colores de {brands}' },
-      starters: { one: '{count} punto de partida', many: '{count} puntos de partida', other: '{count} puntos de partida' },
+      startFromStarter: 'Empieza con un diseño terminado',
       caption: '{technique} · {size}',
       piece: 'Ojos de pluma de pavo real, en peyote',
       promises: {

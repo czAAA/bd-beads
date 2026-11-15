@@ -1,8 +1,8 @@
 import type { GridPosition } from './grid'
 
 // The editor's own addresses (ticket 0716): `?open=saved-projects` lands on Saved Projects; `?project=<id>` opens that
-// Project, at `&zoom=<zoom>&at=<row>,<column>` this once if given (ticket 0879); `?open=first-project` (ticket 0866)
-// makes a Project on New Project's presets while the library has none.
+// Project, at `&zoom=<zoom>&at=<row>,<column>` if given (0879); `?open=first-project` makes one on New Project's presets
+// while the library has none (0866), and `?open=first-project-starter` opens it on the Starter gallery too (0953).
 
 /** The view a Project opens at, this once: its zoom and the Canvas position in the middle of the drawing area. */
 export interface OpeningView {
@@ -14,6 +14,8 @@ export interface OpeningView {
 export interface OpeningAddress {
   savedProjects: boolean
   firstProject: boolean
+  /** The first Project opens on the Frame panel's Starter gallery (ticket 0953). */
+  starterGallery?: true
   project?: string
   /** The view the Project opens at, in place of its fit. */
   view?: OpeningView
@@ -22,6 +24,7 @@ export interface OpeningAddress {
 const OPEN_PARAM = 'open'
 const SAVED_PROJECTS = 'saved-projects'
 const FIRST_PROJECT = 'first-project'
+const FIRST_PROJECT_STARTER = 'first-project-starter'
 const PROJECT_PARAM = 'project'
 const ZOOM_PARAM = 'zoom'
 const AT_PARAM = 'at'
@@ -40,7 +43,14 @@ export function parseOpeningAddress(search: string): OpeningAddress {
   const project = params.get(PROJECT_PARAM)
   const open = params.get(OPEN_PARAM)
   const view = project ? viewOf(params) : undefined
-  return { savedProjects: open === SAVED_PROJECTS, firstProject: open === FIRST_PROJECT, ...(project ? { project } : {}), ...(view ? { view } : {}) }
+  const starterGallery = open === FIRST_PROJECT_STARTER
+  return {
+    savedProjects: open === SAVED_PROJECTS,
+    firstProject: open === FIRST_PROJECT || starterGallery,
+    ...(starterGallery ? { starterGallery } : {}),
+    ...(project ? { project } : {}),
+    ...(view ? { view } : {}),
+  }
 }
 
 /** The editor with no Project open and the Menu on Saved Projects, under the app's base path. */
@@ -51,6 +61,11 @@ export function savedProjectsAddress(base: string): string {
 /** The editor making the first Project at once, with no form (ticket 0866). */
 export function firstProjectAddress(base: string): string {
   return `${base}?${OPEN_PARAM}=${FIRST_PROJECT}`
+}
+
+/** The editor making the first Project at once and opening the Frame panel on its Starter gallery (ticket 0953). */
+export function firstStarterAddress(base: string): string {
+  return `${base}?${OPEN_PARAM}=${FIRST_PROJECT_STARTER}`
 }
 
 /** The editor on one Project, at `view` when one is given. */
