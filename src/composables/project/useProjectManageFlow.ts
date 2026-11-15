@@ -1,4 +1,5 @@
 import type { Project } from '../../domain/project'
+import type { SealedProject } from '../../domain/sealedProject'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from '../../domain/projectName'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 import { projectNameOf } from '../../domain/layerRecord'
@@ -10,6 +11,8 @@ import type { MessageTone } from '../ui/useToasts'
 export interface ProjectManageDeps {
   currentProject: () => Project | undefined
   projects: () => Project[]
+  /** The Projects kept in their stored form (ticket 0716): Delete all removes them too. */
+  sealed?: () => SealedProject[]
   /** Saves the renamed Project at once; none of this is an undo step (spec 0440). */
   replaceProject: (project: Project) => void
   /** Adds the copy and opens it. */
@@ -61,7 +64,7 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
   }
 
   function onRequestDeleteAllProjects() {
-    if (deps.projects().length > 0) deletingAll.value = true
+    if (deps.projects().length + (deps.sealed?.().length ?? 0) > 0) deletingAll.value = true
   }
 
   function onCancelDeleteAllProjects() {
