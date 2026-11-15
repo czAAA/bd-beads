@@ -144,7 +144,7 @@ onMounted(() => rootEl.value?.querySelector<HTMLElement>('button, [tabindex="0"]
 <style scoped>
 .convert-popover {
   position: absolute;
-  z-index: 3;
+  z-index: var(--convert-popover-layer);
   display: flex;
   flex-direction: column;
   gap: var(--space-14);
