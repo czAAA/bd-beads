@@ -3,11 +3,15 @@ import { DEFAULT_BEAD } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { converterStart, type ConvertChoices } from '../../domain/convertChoices'
 import type { CreateProjectInput } from '../../domain/createProject'
+import { fillBlanks } from '../../domain/fillBlanks'
 import type { DecodeImage } from '../../domain/imageConversion'
 import type { MyBeads } from '../../domain/myBeads'
 import type { Grid, Project } from '../../domain/project'
 import type { AllSettingsRequest } from '../project/usePictureBarFlow'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
+import { projectNameOf } from '../../domain/layerRecord'
+import type { Translations } from '../../i18n/translations'
+import type { MessageTone } from '../ui/useToasts'
 import type { AppPage } from '../shell/useAppPage'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 import { useConvertImageWizard, type ConvertImageWizard } from './useConvertImageWizard'
@@ -28,6 +32,9 @@ export interface ConvertImageFlowDeps {
   convertChoices: Ref<ConvertChoices>
   /** My beads, kept on the device (ticket 0902): the converter matches to it and ticks codes into it. */
   myBeads: Ref<MyBeads>
+  /** Create Project says what it made and where it is kept, in a toast (ticket 0968). */
+  showToast: (id: string, text: string, tone?: MessageTone) => void
+  messages: () => Translations
 }
 
 /** Convert image (spec 0645, ADR 0010, ADR 0086): an App page that makes a new Project, its setup its own. Open it from
@@ -137,7 +144,8 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     return true
   }
 
-  /** Create Project: the Project the wizard made joins the library and opens, and the page goes. */
+  /** Create Project: the Project the wizard made joins the library and opens, the page goes, and a toast names it
+   * (ticket 0968). */
   function onCreate() {
     const request = fromReference
     if (request && session.value) {
@@ -158,6 +166,8 @@ export function useConvertImageFlow(deps: ConvertImageFlowDeps) {
     }
     appPage.open('editor')
     deps.addProject(project)
+    const made = fillBlanks(deps.messages().convertImage.createdToast, { name: projectNameOf(project) })
+    deps.showToast('project-created', made, 'success')
   }
 
   return {

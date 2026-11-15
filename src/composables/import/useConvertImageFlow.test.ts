@@ -5,6 +5,7 @@ import { NEW_PROJECT_DEFAULTS, type CreateProjectInput } from '../../domain/crea
 import type { PixelData } from '../../domain/imageConversion'
 import type { MyBeads } from '../../domain/myBeads'
 import type { Project } from '../../domain/project'
+import { en } from '../../i18n/en'
 import { layersView } from '../../testUtils/layerFields'
 import { useAppPage } from '../shell/useAppPage'
 import { useDialogs } from '../shell/useDialogs'
@@ -22,8 +23,9 @@ function setup(decoded = pixels(), remembered: ConvertChoices = FIRST_CONVERT_CH
   const addProject = vi.fn<(project: Project) => void>()
   const onClosed = vi.fn()
   const addToCanvas = vi.fn()
-  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas, convertChoices, myBeads })
-  return { dialogs, appPage, addProject, onClosed, addToCanvas, convertChoices, myBeads, flow }
+  const showToast = vi.fn()
+  const flow = useConvertImageFlow({ dialogs, appPage, addProject, decodeImage: async () => decoded, loadCatalog: () => Promise.reject(new Error('none')), onClosed, addToCanvas, convertChoices, myBeads, showToast, messages: () => en })
+  return { dialogs, appPage, addProject, onClosed, addToCanvas, convertChoices, myBeads, showToast, flow }
 }
 
 /** Opens the converter and sets a picture, as the person does. */
@@ -36,6 +38,21 @@ async function openWithPicture() {
 }
 
 describe('useConvertImageFlow', () => {
+  it('says the Project Create Project made, by its name, and where it is kept, in one success toast (ticket 0968)', async () => {
+    const { showToast, flow } = await openWithPicture()
+    flow.onCreate()
+    expect(showToast).toHaveBeenCalledOnce()
+    expect(showToast).toHaveBeenCalledWith('project-created', 'Project “Fox” made from your picture. It is kept in this browser.', 'success')
+  })
+
+  it('says nothing of a new Project when Add to Canvas puts the beads on the open one (ticket 0968)', async () => {
+    const { showToast, flow } = setup(pixels(120, 80))
+    const request = { picture: new Blob(['x'], { type: 'image/png' }), name: 'fox.png', box: { row: 2, column: 3, rows: 20, columns: 30 }, source: 'exact' as const, colors: 1, hideAfter: true }
+    await flow.openFromReference(request, formValues)
+    flow.onCreate()
+    expect(showToast).not.toHaveBeenCalled()
+  })
+
   it('opens from the reference image\'s All settings with its size, match and colors set, and adds the beads to the Canvas (ticket 0883)', async () => {
     const remembered: ConvertChoices = { beadId: 'toho/round/11-0', technique: 'loom', techniqueSettings: {} }
     const { appPage, addProject, addToCanvas, convertChoices, flow } = setup(pixels(120, 80), remembered)

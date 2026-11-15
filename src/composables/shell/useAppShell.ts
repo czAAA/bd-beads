@@ -184,6 +184,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     addToCanvas: (grid, request) => pictureBar.addGrid(grid, request),
     convertChoices: services.devicePreferences.get('convertChoices'),
     myBeads: services.devicePreferences.get('myBeads'),
+    showToast,
+    messages,
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
