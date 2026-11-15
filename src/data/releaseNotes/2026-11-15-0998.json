@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The browser's bar and an installed app's frame follow the theme you choose in Preferences, not only your device's light or dark",
+    "ru": "Панель браузера и рамка установленного приложения следуют теме, выбранной в Настройках, а не только светлой или тёмной теме устройства",
+    "uk": "Панель браузера й рамка встановленого застосунку дотримуються теми, вибраної в Налаштуваннях, а не лише світлої чи темної теми пристрою",
+    "be": "Панэль браўзера і рамка ўсталяванай праграмы ідуць за тэмай, выбранай у Наладах, а не толькі за светлай ці цёмнай тэмай прылады",
+    "zh": "浏览器的顶栏和已安装应用的边框会跟随你在偏好设置中选择的主题，而不只是设备的浅色或深色",
+    "es": "La barra del navegador y el marco de la app instalada siguen el tema que eliges en Preferencias, no solo el modo claro u oscuro del dispositivo",
+    "pl": "Pasek przeglądarki i ramka zainstalowanej aplikacji podążają za motywem wybranym w Preferencjach, a nie tylko za jasnym lub ciemnym trybem urządzenia"
+  }
+}
