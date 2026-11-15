@@ -29,7 +29,7 @@ describe("What's inside's copy (ticket 0797)", () => {
 
   it("takes Convert image's most colors and the catalogs' brands from the app", () => {
     const rows = rowsOf(en, 'en')
-    expect(rows.find((row) => row.id === 'convert')!.text).toBe(`A picture into a Schema, in up to ${MAX_IMAGE_COLORS} colors.`)
+    expect(rows.find((row) => row.id === 'convert')!.text).toBe(`A picture into a bead pattern, in up to ${MAX_IMAGE_COLORS} colors.`)
     expect(rows.find((row) => row.id === 'colors')!.text).toBe('TOHO and Miyuki, and a Palette of your own.')
     expect(rowsOf(ru, 'ru').find((row) => row.id === 'colors')!.text).toBe('TOHO и Miyuki и ваша собственная палитра.')
   })
