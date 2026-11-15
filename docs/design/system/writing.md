@@ -619,7 +619,7 @@ The quiet converter of DS-1 (ConvertImage card's first section; tickets 0896, 08
 
 ## Colors that are real beads copy (ticket 0899)
 
-DS-2's Colors part (ConvertImage card, "Colors that are real beads"; tickets 0901 to 0905 and 0918). Strings the table does not list keep their words from the tables above: Finish and the nine Finish names, Clear filters, Filters, Find a code or color, Discontinued, match to, Default Palette, Exact, Keep exact, Change, Empty, Palette {bead}, Cancel. The neighbours' captions are the app's `colorsCount` plural ("13 цветов"), and "40+" has no words. Counts take the "Label: number" form, as above. English is from the design; the other languages are proposals for review with the build.
+DS-2's Colors part (ConvertImage card, "Colors that are real beads"; tickets 0901 to 0905 and 0918). Strings the table does not list keep their words from the tables above: Finish and the nine Finish names, Clear filters, Filters, Find a code or color, Discontinued, match to, Default Palette, Exact, Keep exact, Change, Empty, Add {bead} colors, Cancel. The neighbours' captions are the app's `colorsCount` plural ("13 цветов"), and "40+" has no words. Counts take the "Label: number" form, as above. English is from the design; the other languages are proposals for review with the build.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
@@ -786,11 +786,11 @@ The two filter rows of the Bead colors list (BeadColors card) and its empty stat
 
 ## The Bead's palette (ticket 0745)
 
-The BeadColors list made wider and quieter. The entry button is named for the Bead whose colors it lists: "Palette {bead}", where `{bead}` is the Bead's label (Brand, Form factor and size, a literal in every language: "Miyuki Delica 11/0"). It stays "Palette" with the Bead's name after it, so it reads as that Bead's own palette and not the Project's Palette; the Project's Palette keeps its words ("In the Palette", "Add {code} to the Palette"). The counts take the "Label: number" form in every language, so they need no plural. The two notes now in the Info button's Tooltip keep their existing words ("Approximate colors: …", "A color that comes out the same …"), and so do Clear filters and the empty-state sentences above. The entry's old name "Bead colors" (Convert image's match-to choice keeps it) and "Showing the first {count}. Search to narrow the list." are gone. Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.
+The BeadColors list made wider and quieter. The entry button is named for what it does with the Bead whose colors it lists: "Add {bead} colors", where `{bead}` is the Bead's label (Brand, Form factor and size, a literal in every language: "Miyuki Delica 11/0"). "Palette" means the Project's own swatches only, so the color popover says it once, as the label over the Project's grid (ticket 0960, UX-047: "Palette {bead}" under that label read as a second Palette); the Project's Palette keeps its words ("In the Palette", "Add {code} to the Palette"). The counts take the "Label: number" form in every language, so they need no plural. The two notes now in the Info button's Tooltip keep their existing words ("Approximate colors: …", "A color that comes out the same …"), and so do Clear filters and the empty-state sentences above. The entry's old name "Bead colors" (Convert image's match-to choice keeps it) and "Showing the first {count}. Search to narrow the list." are gone. Russian, Ukrainian, Belarusian, Chinese, Spanish and Polish are proposals for review with the build.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|
-| Palette {bead} (the entry button) | Палитра {bead} | Палітра {bead} | Палітра {bead} | {bead} 调色板 | Paleta {bead} | Paleta {bead} |
+| Add {bead} colors (the entry button; "Palette {bead}" before ticket 0960) | Добавить цвета {bead} | Додати кольори {bead} | Дадаць колеры {bead} | 添加 {bead} 颜色 | Añadir colores de {bead} | Dodaj kolory {bead} |
 | About these colors (the Info button's name) | Об этих цветах | Про ці кольори | Пра гэтыя колеры | 关于这些颜色 | Sobre estos colores | O tych kolorach |
 | codes: {count} (the count line) | кодов: {count} | кодів: {count} | кодаў: {count} | 色号：{count} | códigos: {count} | kodów: {count} |
 | first {count} shown | показаны первые {count} | показано перші {count} | паказаны першыя {count} | 显示前 {count} 个 | se muestran los primeros {count} | pokazano pierwsze {count} |
@@ -879,7 +879,7 @@ The two toasts (Message card, info tone) after a Fill tool press on the Canvas t
 
 ## First-run welcome copy (tickets 0725, 0738, 0795, 0798, 0920)
 
-The welcome over an empty Project (FirstRunHints card): the next step, and one quiet line under it on where Projects are kept. On touch the next step is the Paint tool's own Tooltip (`tooltips.paint`), so it is not new copy; with a mouse it is the same sentence in mouse words (Voice, A help line fits the device in hand). The path to a Project file is no longer on the welcome (ticket 0920): the Project panel and the Save reminder carry it. The bar's "Select to set a Frame" and the CanvasHint keep their existing strings. Ticket 0798 took the captions beside the controls away, so nothing else is written over an empty Project.
+The welcome over an empty Project (FirstRunHints card): the next step, and one quiet line under it on where Projects are kept. On touch the next step is the Paint tool's own Tooltip (`tooltips.paint`), so it is not new copy; with a mouse it is the same sentence in mouse words (Voice, A help line fits the device in hand). The path to a Project file is no longer on the welcome (ticket 0920): the Project panel and the Save reminder carry it. The bar's no-Frame line (ProgressBar card, ticket 0944) and the CanvasHint keep their own strings. Ticket 0798 took the captions beside the controls away, so nothing else is written over an empty Project.
 
 | English | Русский | Українська | Беларуская | 中文 | Español | Polski |
 |---|---|---|---|---|---|---|

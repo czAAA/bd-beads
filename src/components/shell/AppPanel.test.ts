@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, inject, nextTick } from 'vue'
 import AppPanel from './AppPanel.vue'
 import PanelItem from './PanelItem.vue'
@@ -295,5 +295,22 @@ describe('AppPanel opened on a section (ticket 0935)', () => {
     await nextTick()
     expect((wrapper.get('[data-testid="panel-body"]').element as HTMLElement).scrollTop).toBe(600)
     expect(document.activeElement).toBe(wrapper.get('[data-testid="section-header"]').element)
+  })
+})
+
+describe('AppPanel placed (ticket 0971)', () => {
+  it('tells its box on the screen once, as it first has its place under its button', async () => {
+    const button = document.createElement('button')
+    button.dataset.testid = 'strip-frame'
+    document.body.append(button)
+    const wrapper = mountShell({ anchor: 'strip-frame' })
+    expect(wrapper.emitted('placed')).toBeUndefined()
+    await flushPromises()
+    await nextTick()
+    expect(wrapper.emitted('placed')).toEqual([[{ x: expect.any(Number), y: expect.any(Number), width: expect.any(Number), height: expect.any(Number) }]])
+    ;(wrapper.vm as unknown as { place: () => void }).place()
+    await flushPromises()
+    await nextTick()
+    expect(wrapper.emitted('placed')).toHaveLength(1)
   })
 })

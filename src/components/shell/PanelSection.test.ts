@@ -26,6 +26,18 @@ describe('PanelSection (ticket 0553)', () => {
     expect(localStorage.getItem('openbeads:panel-sections-closed')).toBeNull()
   })
 
+  it('starts folded when it is `folded`, and once opened stays open on this device (ticket 0971)', async () => {
+    const wrapper = mountSection({ folded: true })
+    expect(wrapper.get('button').attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="row"]').exists()).toBe(false)
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.find('[data-testid="row"]').exists()).toBe(true)
+    expect(localStorage.getItem('openbeads:panel-sections-opened')).toBe('project:bead')
+    expect(mountSection({ folded: true }).find('[data-testid="row"]').exists()).toBe(true)
+    await wrapper.get('button').trigger('click')
+    expect(localStorage.getItem('openbeads:panel-sections-opened')).toBeNull()
+  })
+
   it('shows its summary beside the chevron once folded', async () => {
     const wrapper = mountSection({ summary: 'Delica 11/0' })
     expect(wrapper.text()).not.toContain('Delica 11/0')
