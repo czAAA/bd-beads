@@ -3,7 +3,7 @@ import type { IconName } from '../../components/ui/icons'
 import { CROP_HANDLES } from '../../domain/convertSize'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
-import { hasProjectBeads } from '../../domain/layerBeads'
+import { hasCanvasBeads, hasProjectBeads } from '../../domain/layerBeads'
 import { rowProgressOn, rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -163,8 +163,12 @@ const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
 }
-/** Whether the rulers have anything to number: a bead or a Frame (ticket 0921). */
-const hasRuled = (deps: ControlDeps) => hasBeads(deps) || hasFrame(deps)
+/** Whether the Rulers toggle has anything to switch: a bead on the Canvas, whether or not a Frame is set, as the
+ * Frame's own rulers are always on (tickets 0921, 1012). */
+const hasRuled = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project !== undefined && hasCanvasBeads(project)
+}
 /** When Fit to drawing can frame the beads, and why not: its own and the Progress bar's way to a picture (ticket 0847). */
 const fitsDrawing: Disableable = {
   enabled: (deps: ControlDeps) => !frameLocked(deps) && hasBeads(deps),

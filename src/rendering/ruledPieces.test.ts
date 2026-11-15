@@ -54,15 +54,52 @@ describe('the Pieces the rulers hang from', () => {
     expect(ended.areas).toEqual(pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas')))
   })
 
-  it('are not counted at all while the rulers are hidden, nor while a Frame carries them; the names still are', () => {
+  it('are not counted at all while the rulers are hidden; the names still are', () => {
     const { project, reads } = start()
     const hidden = ruledPieces(undefined, withLayers(project, { pieceNames: undefined }), { numbers: false, stroking: false })
-    const framed = ruledPieces(undefined, withLayers(project, { pieceNames: undefined, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom', beads: {} } }), { numbers: true, stroking: false })
 
     expect(reads.beads).toBe(0)
     expect(hidden.areas).toBeUndefined()
-    expect(framed.areas).toBeUndefined()
     expect(ruledPieces(undefined, project, { numbers: false, stroking: false }).named).toHaveLength(1)
+  })
+})
+
+// A Frame no longer takes the Piece areas' rulers from the Canvas around it (ticket 1012).
+describe('the Pieces the rulers hang from with a Frame set', () => {
+  const frame = { row: 20, column: 10, rows: 4, columns: 4, technique: 'loom' as const, beads: {} }
+  const around = (...changes: BeadChange[]) => withLayers(open, { frame, beads: withColors({}, changes) })
+
+  it('are the Canvas\'s Piece areas, counted as with no Frame', () => {
+    const project = around(...square(0, 0, 5), ...square(0, 30, 5))
+
+    expect(ruledPieces(undefined, project, { numbers: true, stroking: false }).areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 5 }, { row: 0, column: 30, rows: 5, columns: 5 }])
+    expect(ruledPieces(undefined, project, { numbers: false, stroking: false }).areas).toBeUndefined()
+  })
+
+  it('leave out the beads the Frame and its margin cover, which join no area and grow none', () => {
+    // The Frame lies on rows 20-23, columns 10-13 and its margin 4 more all round: rows 16-27, columns 6-17.
+    const project = around(...square(16, 6, 3), ...square(0, 6, 5), { row: 15, column: 6, color: R })
+
+    // The bead on row 15 stands alone: the covered square below it neither joins it nor makes an area of its own.
+    expect(ruledPieces(undefined, project, { numbers: true, stroking: false }).areas).toEqual([{ row: 0, column: 6, rows: 5, columns: 5 }, { row: 15, column: 6, rows: 1, columns: 1 }])
+  })
+
+  it('grow with a stroke beside the Frame and ignore a bead the margin covers', () => {
+    const project = around(...square(0, 0, 5))
+    const before = ruledPieces(undefined, project, { numbers: true, stroking: false })
+
+    const step = ruledPieces(before, paint(project, [{ row: 2, column: 5, color: R }, { row: 18, column: 8, color: R }]), { numbers: true, stroking: true })
+
+    expect(step.areas).toEqual([{ row: 0, column: 0, rows: 5, columns: 6 }])
+  })
+
+  it('walk a layer too big to walk without the covered beads, the box round the rest', () => {
+    const huge = Array.from({ length: 260_000 }, (_, i) => ({ row: Math.floor(i / 1000), column: 100 + (i % 1000), color: R }))
+    const project = withLayers(open, { frame: { ...frame, row: 0, column: 0 }, beads: withColors({}, [...huge, { row: 1, column: 1, color: R }]) })
+
+    const pieces = ruledPieces(undefined, project, { numbers: true, stroking: false })
+
+    expect(pieces).toMatchObject({ areas: [{ row: 0, column: 100, rows: 260, columns: 1000 }], uncounted: true })
   })
 })
 

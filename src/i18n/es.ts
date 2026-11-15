@@ -1288,7 +1288,7 @@ export const es: Translations = {
     list: (names) => `${names.join(', ')}.`,
     paint: 'Toca o arrastra para poner cuentas del color elegido.',
     fill: 'Toca una zona para rellenarla con el color elegido.',
-    rulers: 'Las reglas numeran tus cuentas y el marco.',
+    rulers: 'Las reglas numeran tus cuentas.',
     rowDirection: 'Cambia el sentido de las filas: de arriba abajo, de izquierda a derecha, de abajo arriba o de derecha a izquierda.',
     rowHighlight: 'Muestra u oculta las marcas en la fila actual y en las filas marcadas como terminadas.',
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',
