@@ -61,6 +61,14 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('export-pdf')).toHaveLength(1)
   })
 
+  it('puts each option under the file it changes: Export quality under Picture, the two switches under Printable chart (ticket 0957)', async () => {
+    const wrapper = await mountPanel(framed())
+    const ids = ['export-png', 'quality-slider', 'export-pdf', 'export-large-beads', 'export-row-by-row']
+    const order = wrapper.findAll('[data-testid]').map((part) => part.attributes('data-testid')).filter((id) => ids.includes(id!))
+
+    expect(order).toEqual(ids)
+  })
+
   it('says to set a frame with none, offers Select a Frame and Fit, and shows no export rows', async () => {
     const wrapper = await mountPanel(drawn())
 
