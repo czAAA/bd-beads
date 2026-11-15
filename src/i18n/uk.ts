@@ -142,7 +142,7 @@ export const uk: Translations = {
       themeLight: 'Світла',
       themeDark: 'Темна',
       tooltipDeleteAll: 'Видалити всі проєкти з цього браузера.',
-      deleteAllTitle: 'Видалити всі проєкти?',
+      deleteAllTitle: { one: 'Видалити {count} проєкт?', few: 'Видалити всі {count} проєкти?', many: 'Видалити всі {count} проєктів?', other: 'Видалити всі {count} проєкту?' },
       deleteAllMessage: 'Усі проєкти буде видалено з цього браузера. Це не можна скасувати. Спершу натисніть «Зберегти все у файл проєкту», якщо хочете зберегти копії.',
       deleteAllConfirm: 'Видалити всі проєкти',
       sendFeedback: 'Надіслати відгук',

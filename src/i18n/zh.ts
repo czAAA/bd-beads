@@ -142,7 +142,7 @@ export const zh: Translations = {
       themeLight: '浅色',
       themeDark: '深色',
       tooltipDeleteAll: '从此浏览器中移除所有项目。',
-      deleteAllTitle: '删除所有项目？',
+      deleteAllTitle: { other: '删除全部 {count} 个项目？' },
       deleteAllMessage: '所有项目都将从此浏览器中移除，且无法撤销。如需保留副本，请先点击“将所有项目保存到项目文件”。',
       deleteAllConfirm: '删除所有项目',
       sendFeedback: '发送反馈',

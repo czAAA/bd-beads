@@ -143,7 +143,7 @@ export const be: Translations = {
       themeLight: 'Светлая',
       themeDark: 'Цёмная',
       tooltipDeleteAll: 'Выдаліць усе праекты з гэтага браўзера.',
-      deleteAllTitle: 'Выдаліць усе праекты?',
+      deleteAllTitle: { one: 'Выдаліць {count} праект?', few: 'Выдаліць усе {count} праекты?', many: 'Выдаліць усе {count} праектаў?', other: 'Выдаліць усе {count} праекта?' },
       deleteAllMessage: 'Усе праекты будуць выдалены з гэтага браўзера. Гэта нельга адмяніць. Спачатку націсніце «Захаваць усё ў файл праекта», калі хочаце захаваць копіі.',
       deleteAllConfirm: 'Выдаліць усе праекты',
       sendFeedback: 'Адправіць водгук',
