@@ -918,7 +918,8 @@ body {
 @media (forced-colors: active){
   :where(button,select,[role="switch"],a):focus-visible,.ix:focus-visible{outline:2px solid Highlight}
   :is(.bb-btn,.f-btn,.ix,.m-b,.f-in,.f-step,.bb-switch){border:1px solid ButtonText}
-  .bb-switch[aria-checked="true"]{background:Highlight}
+  .bb-switch{forced-color-adjust:none;background:Canvas}.bb-switch::after{top:2px;left:2px;background:CanvasText}
+  .bb-switch[aria-checked="true"]{background:Highlight}.bb-switch[aria-checked="true"]::after{left:14px;background:HighlightText}
   .ix-tab.is-on{border-bottom:3px solid Highlight}
   .bb-tool[aria-selected="true"]::after{background:Highlight}
   .bb-thumb.is-open .bb-thumb-circle{outline:2px solid Highlight;outline-offset:2px}
