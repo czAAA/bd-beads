@@ -22,13 +22,13 @@ beforeEach(() => {
 describe('CoffeeBand', () => {
   it('says who made it, in one line, in English', () => {
     const wrapper = band()
-    expect(wrapper.find('h3').text()).toBe('Made by one family')
+    expect(wrapper.find('h2').text()).toBe('Made by one family')
     expect(wrapper.get('.coffee__text').text()).toContain('stays free and fully local')
   })
 
   it('says it in Russian too', () => {
     const wrapper = band('ru')
-    expect(wrapper.find('h3').text()).toBe('Делает одна семья')
+    expect(wrapper.find('h2').text()).toBe('Делает одна семья')
     expect(wrapper.get('.coffee__text').text()).toContain('остаётся бесплатным и полностью локальным')
     expect(wrapper.get('[data-testid="homepage-coffee-button"]').text()).toBe('Угостить кофе')
   })

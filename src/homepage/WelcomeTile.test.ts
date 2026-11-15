@@ -11,7 +11,7 @@ const find = (wrapper: ReturnType<typeof tile>, id: string) => wrapper.find(`[da
 describe('WelcomeTile (ticket 0830)', () => {
   it('is a section named by its heading, with its line under it', () => {
     const wrapper = tile()
-    const heading = wrapper.get('h2')
+    const heading = wrapper.get('h1')
     expect(heading.text()).toBe('Bead patterns, drawn the way the beads sit.')
     expect(wrapper.get('section').attributes('aria-labelledby')).toBe(heading.attributes('id'))
     expect(wrapper.text()).toContain('For loom, peyote and brick stitch.')
@@ -81,7 +81,7 @@ describe('WelcomeTile (ticket 0830)', () => {
   it('on a phone has no button: the bar carries the way in, and the promises are one grouped list', () => {
     const wrapper = tile({ phone: true })
     expect(wrapper.findAll('button')).toHaveLength(0)
-    expect(wrapper.get('h2').text()).toBe('Bead patterns, drawn the way the beads sit.')
+    expect(wrapper.get('h1').text()).toBe('Bead patterns, drawn the way the beads sit.')
     expect(find(wrapper, 'welcome-piece').exists()).toBe(true)
     expect(wrapper.findAll('.grouped-list__row')).toHaveLength(3)
   })
