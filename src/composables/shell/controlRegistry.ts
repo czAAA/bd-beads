@@ -708,3 +708,8 @@ export function controlAction(id: string): ControlAction {
   if (!action) throw new Error(`No control "${id}" in the registry`)
   return action
 }
+
+/** A Tool pill tile's action (ADR 0084): a tool's own, the Mirror's or Paste's. */
+export function pillTileAction(tile: PillTile): ControlAction {
+  return controlAction(tile === 'mirror' ? 'mirror' : `tool-${tile}`)
+}

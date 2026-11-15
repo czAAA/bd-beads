@@ -51,6 +51,17 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.get('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--accent')
   })
 
+  it('tells of a tile tapped or clicked, Mirror and Paste too, and not of one keyed (ticket 0927)', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
+
+    const press = (tile: string, detail: number) => wrapper.get(`[data-testid="pill-tool-${tile}"]`).element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail }))
+    for (const tile of ['fill', 'mirror', 'paste']) press(tile, 1)
+    press('hand', 0)
+
+    expect(wrapper.emitted('tile-tap')).toEqual([['fill'], ['mirror'], ['paste']])
+    expect(wrapper.emitted('select-tool')).toEqual([['fill'], ['hand']])
+  })
+
   it('lights the Mirror tile in Mirror mode, and not the Select tile it runs under (ADR 0082)', () => {
     const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'select', mirrorMarking: true } })
     expect(wrapper.get('[data-testid="pill-tool-mirror"]').classes()).toContain('icon-btn--accent')
