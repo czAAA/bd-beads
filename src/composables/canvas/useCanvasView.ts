@@ -11,10 +11,12 @@ import { placedFrame } from '../../domain/layerWeave'
 import type { OpeningView } from '../../domain/openingAddress'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
-import { SNAP_MS } from '../../rendering/gestureView'
+import { INTO_VIEW_MS, SNAP_MS } from '../../rendering/gestureView'
+import { easeStandard } from '../../rendering/rowMotion'
+import { shortestPan } from '../../rendering/shortestPan'
 import { visibleBeadsInSpace } from '../../rendering/projectRenderer'
 import { OPEN_SPACE } from '../../rendering/space'
-import { surfaceView, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
+import { surfaceView, type Region, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 import type { Size } from '../../rendering/cellSize'
 import { scrollAfterTurn, tiltedView } from '../../rendering/tiltedView'
 
@@ -100,6 +102,8 @@ export function useCanvasView(
   let snapTimer: ReturnType<typeof setTimeout> | undefined
   /** The orientation this view just handed the Project, which it already shows: no refit for it. */
   let settledAt: number | undefined
+  /** The frame of the glide `bringIntoView` plays, until it lands or the view is moved some other way. */
+  let glide: number | undefined
 
   /** The Canvas's orientation as shown: the twist's while one runs, else the Project's. */
   const orientation = computed(() => twisting.value ?? orientationOf(currentProject()) ?? 0)
@@ -128,6 +132,7 @@ export function useCanvasView(
   /** Puts the view at the fit: the Frame's sheet or the drawing whole, or the origin in the middle for an empty canvas,
    * in the room the Tool pill leaves. */
   function fit(): void {
+    stopGlide()
     const project = currentProject()
     if (!project) {
       return
@@ -157,6 +162,7 @@ export function useCanvasView(
   /** Moves the canvas under the viewport by a distance on screen (a drag, a wheel): the content follows the pointer,
    * so the scroll goes the other way. */
   function panBy(dx: number, dy: number): void {
+    stopGlide()
     const across = leaning.value.unturned({ x: dx, y: dy })
     scroll.value = { x: scroll.value.x - across.x, y: scroll.value.y - across.y }
     isAtFit.value = false
@@ -169,12 +175,50 @@ export function useCanvasView(
 
   /** Brings a block of beads into the middle of the view without changing the zoom. */
   function centreOn(box: Rect): void {
+    stopGlide()
     const project = currentProject()
     if (!project) {
       return
     }
     scroll.value = surfaceOf(project).scrollToCentre(box, layerOfBox(project, box))
     isAtFit.value = false
+  }
+
+  function stopGlide(): void {
+    if (glide !== undefined) cancelAnimationFrame(glide)
+    glide = undefined
+  }
+
+  /** Pans the shortest way that brings a part of the drawing into the room the Tool pill leaves, the zoom untouched
+   * (ticket 0934): eased over the base duration, a jump under reduced motion or when `jump` asks. `locate` finds it in
+   * the view as it stands; one already in the room, or none, moves nothing, and the view keeps following the fit. */
+  function bringIntoView(locate: (surface: SurfaceView) => Region | undefined, { jump = false } = {}): void {
+    const project = currentProject()
+    const found = project && measured() ? locate(surfaceOf(project)) : undefined
+    if (!found) return
+    const { area, corner } = fitRoom()
+    const { offset, screenBox, unturned } = leaning.value
+    const move = shortestPan(screenBox({ ...found, x: found.x + offset.x, y: found.y + offset.y }), { ...corner, ...area })
+    if (move.x === 0 && move.y === 0) return
+    stopGlide()
+    const across = unturned(move)
+    const from = scroll.value
+    const to = { x: from.x - across.x, y: from.y - across.y }
+    isAtFit.value = false
+    const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (jump || still || typeof requestAnimationFrame !== 'function') {
+      scroll.value = to
+      return
+    }
+    // The first frame's own time starts it: rAF's clock is not always performance.now()'s.
+    let start: number | undefined
+    const step = (time: number) => {
+      start ??= time
+      const eased = easeStandard(Math.min(1, (time - start) / INTO_VIEW_MS))
+      scroll.value = { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased }
+      glide = eased < 1 ? requestAnimationFrame(step) : undefined
+    }
+    glide = requestAnimationFrame(step)
   }
 
   /** The Canvas position nearest a point of the screen, or nothing until the area is measured. */
@@ -211,6 +255,7 @@ export function useCanvasView(
   /** Two fingers moved (tickets 0672, 0709): the bead under them follows them, their spread zooms about it and, once
    * the twist has engaged, the Canvas turns about it, in one move of the view. */
   function pinchStep({ zoom: toZoom, pan, turn, anchor }: PinchStep): void {
+    stopGlide()
     let at = scroll.value
     const next = toZoom === undefined ? zoom.value : clampZoom(toZoom)
     if (next !== zoom.value) {
@@ -267,6 +312,7 @@ export function useCanvasView(
     if (next === zoom.value) {
       return
     }
+    stopGlide()
     const at = anchor ? leaning.value.toView(anchor) : { x: viewport.value.width / 2, y: viewport.value.height / 2 }
     // Keeping a point still under a zoom does not depend on what is drawn, so a Project is not needed.
     scroll.value = surfaceOf(currentProject()).scrollAfterZoom(at, next)
@@ -285,7 +331,10 @@ export function useCanvasView(
 
   // Two watches, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on
   // every bead drawn.
-  onScopeDispose(() => clearTimeout(snapTimer))
+  onScopeDispose(() => {
+    clearTimeout(snapTimer)
+    stopGlide()
+  })
   watch(() => currentProject()?.id, () => {
     clearTimeout(snapTimer)
     twisting.value = undefined
@@ -327,6 +376,7 @@ export function useCanvasView(
     panBy,
     scrollBy,
     centreOn,
+    bringIntoView,
     visibleCentre,
     canvasOnScreen,
     cellAt,

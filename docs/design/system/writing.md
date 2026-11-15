@@ -1225,3 +1225,17 @@ The Project panel's canvas section says which layer it sets while a Frame is on 
 | Open Frame (its second action) | Открыть рамку | Відкрити рамку | Адкрыць рамку | 打开边框 | Abrir marco | Otwórz ramkę |
 
 English follows the audit's proposal (UX-018); the other languages are proposals for review with the build.
+
+## Row in view copy (ticket 0934)
+
+After Row done, Row not done and Go to row the announcer says where the weaving is, in the counter's own words, once per move (ScreenReaders card): `{unit}` is Row or Column, a Custom frame says its pass as the counter does ("Round 3 of 9"), and the last pass done says Pattern done. Show row sits beside Go to row's name (ProgressBar card).
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| {unit} {current} of {total} (announced) | {unit} {current} из {total} | {unit} {current} з {total} | {unit} {current} з {total} | 第 {current} {unit}，共 {total} {unit} | {unit} {current} de {total} | {unit} {current} z {total} |
+| Pass {current} of {total}, row {line} (announced, peyote) | Проход {current} из {total}, ряд {line} | Прохід {current} з {total}, ряд {line} | Праход {current} з {total}, рад {line} | 第 {current} 趟，共 {total} 趟，第 {line} 行 | Pasada {current} de {total}, fila {line} | Przejście {current} z {total}, rząd {line} |
+| Pass {current} of {total}, column {line} | Проход {current} из {total}, столбец {line} | Прохід {current} з {total}, стовпець {line} | Праход {current} з {total}, слупок {line} | 第 {current} 趟，共 {total} 趟，第 {line} 列 | Pasada {current} de {total}, columna {line} | Przejście {current} z {total}, kolumna {line} |
+| Show row (Go to row's button) | Показать ряд | Показати ряд | Паказаць рад | 显示当前行 | Mostrar fila | Pokaż rząd |
+| Show column | Показать столбец | Показати стовпець | Паказаць слупок | 显示当前列 | Mostrar columna | Pokaż kolumnę |
+
+English follows the audit's proposal (UX-015, UX-017); the other languages are proposals for review with the build.

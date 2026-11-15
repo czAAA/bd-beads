@@ -630,6 +630,11 @@ export const ru: Translations = {
     goButton: 'Перейти',
     directionKeptToast: '{toast} {kept}',
     faceBody: 'Каждый треугольник здесь плетётся для этой грани: {parts} из {total} в изделии. {then}',
+    announcePosition: '{unit} {current} из {total}',
+    announcePass: 'Проход {current} из {total}, ряд {line}',
+    announceColumnPass: 'Проход {current} из {total}, столбец {line}',
+    showRow: 'Показать ряд',
+    showColumn: 'Показать столбец',
   },
   quantities: {
     heading: 'Нужно бисера',
