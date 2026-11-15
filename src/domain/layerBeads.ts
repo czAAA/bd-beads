@@ -17,6 +17,11 @@ export function beadColorAt(project: Layered, row: number, column: number, layer
     : colorAt(beadsOfLayer(project, 'canvas'), row, column)
 }
 
+/** Whether the Canvas holds a bead (a Frame's own do not count). */
+export function hasCanvasBeads(project: Layered): boolean {
+  return hasBeads(beadsOfLayer(project, 'canvas'))
+}
+
 /** Whether the Project has a bead on either layer. */
 export function hasProjectBeads(project: Layered): boolean {
   const frame = beadsOfLayer(project, 'frame')

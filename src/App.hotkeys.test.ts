@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { pickColor, pickTool } from './testUtils/pill'
 import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount } from './testUtils/beads'
-import { loadProjects } from './services/libraryStore'
-import { mountWithProject } from './testUtils/seedProject'
+import { loadProjects, saveProjects } from './services/libraryStore'
+import { mountWithProject, seedProject } from './testUtils/seedProject'
+import { withLayers } from './testUtils/layerFields'
+import App from './App.vue'
 import { frameGrid } from './testUtils/frameGrid'
 import { rowProgressOf } from './domain/rowProgress'
 
@@ -112,8 +114,11 @@ describe('App keyboard shortcuts', () => {
     expect(previewedBeads(wrapper)).toHaveLength(1)
   })
 
-  it('R shows and hides the rulers, which start off (ticket 0921)', async () => {
-    const wrapper = await mountApp(15, 30)
+  it('R shows and hides the Piece areas\' rulers, which start off, once a bead lies on the Canvas beside the Frame (tickets 0921, 1012)', async () => {
+    saveProjects([withLayers(seedProject(15, 30), { beads: { 90: { 90: '#ff0000' } } })])
+    const wrapper = mount(App)
+    mounted.push(wrapper)
+    await flushPromises()
     const pressed = () => wrapper.find('[data-testid="strip-rulers"]').attributes('aria-pressed')
     expect(pressed()).toBe('false')
     await pressKey({ key: 'r' })
@@ -121,6 +126,7 @@ describe('App keyboard shortcuts', () => {
     await pressKey({ key: 'r' })
     expect(pressed()).toBe('false')
   })
+
 
   it('Enter moves to the next row and D turns the row direction, saved with the Project', async () => {
     await mountApp(15, 30)
