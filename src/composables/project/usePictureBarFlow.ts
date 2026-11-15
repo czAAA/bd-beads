@@ -6,7 +6,7 @@ import { beadColorTargets, sourceTargets, type ColorSource } from '../../domain/
 import { fillBlanks } from '../../domain/fillBlanks'
 import { groupThousands } from '../../domain/formatNumber'
 import { LARGE_SCHEMA_BEADS } from '../../domain/convertSize'
-import { MAX_IMAGE_COLORS, type PixelData } from '../../domain/imageConversion'
+import { DEFAULT_MAX_IMAGE_COLORS, MAX_IMAGE_COLORS, type PixelData } from '../../domain/imageConversion'
 import { snappedFrame } from '../../domain/frame'
 import { beadOfLayer, canvasOf, heldWeave } from '../../domain/layerRecord'
 import { canvasWeave } from '../../domain/layerWeave'
@@ -67,8 +67,9 @@ export interface PictureBarFlowDeps {
 export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   /** The Convert to beads popover is open: the picture is drawn as the beads it will make. */
   const converting = ref(false)
-  const chosenSource = ref<ColorSource>('exact')
-  /** The Colors stepper's choice; none starts at every color the picture samples. */
+  /** The match the person chose, kept from one opening to the next; none is the Bead's palette (ticket 0969). */
+  const chosenSource = ref<ColorSource>()
+  /** The Colors stepper's choice, kept from one opening to the next; none is 12, or every color where that is fewer. */
   const chosenColors = ref<number>()
   const hideAfter = ref(true)
   const catalog = shallowRef<ColorCatalog>()
@@ -112,8 +113,12 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   })
 
   const hasCatalog = computed(() => !!colorCatalogOf(bead.value.id))
-  /** The match: Exact by default; the Bead's palette only with a Color catalog. */
-  const source = computed<ColorSource>(() => (chosenSource.value === 'bead-colors' && !hasCatalog.value ? 'exact' : chosenSource.value))
+  /** The match: the Bead's palette by default, as Convert image opens; the Default Palette for a Bead with no Color
+   * catalog (ticket 0969). */
+  const source = computed<ColorSource>(() => {
+    const wanted = chosenSource.value ?? 'bead-colors'
+    return wanted === 'bead-colors' && !hasCatalog.value ? 'default' : wanted
+  })
   const targets = computed(() => {
     const builtIns = defaultPalette(bead.value.id)
     const loaded = catalog.value
@@ -130,7 +135,7 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
   })
   /** Every color the picture's beads sample, at most 256: the Colors stepper's most. */
   const colorsMax = computed(() => Math.max(1, Math.min(MAX_IMAGE_COLORS, sampled.value ? convertSampled(sampled.value, MAX_IMAGE_COLORS, undefined).colorsFound : 1)))
-  const colors = computed(() => Math.min(colorsMax.value, chosenColors.value ?? colorsMax.value))
+  const colors = computed(() => Math.min(colorsMax.value, chosenColors.value ?? DEFAULT_MAX_IMAGE_COLORS))
   const conversion = computed<ReferenceConversion | undefined>(() => sampled.value && convertSampled(sampled.value, colors.value, targets.value))
 
   /** The open Project as Convert would leave it, beads the rows marked done or the margin hold left out: the preview. */
@@ -162,14 +167,14 @@ export function usePictureBarFlow(deps: PictureBarFlowDeps) {
     }
   }
 
-  /** Convert to beads pressed: the popover opens at Exact and every color; off while the picture is too small or big. */
+  /** Convert to beads pressed: the popover opens on the match and colors chosen last, at first the Bead's palette and 12
+   * colors (ticket 0969); off while the picture is too small or big. */
   function open(): void {
     if (convertOff.value || converting.value) return
-    chosenSource.value = 'exact'
-    chosenColors.value = undefined
     hideAfter.value = true
     converting.value = true
     void readPixels()
+    if (source.value === 'bead-colors') void readCatalog()
   }
 
   function close(): void {

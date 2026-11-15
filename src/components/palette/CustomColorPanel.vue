@@ -37,6 +37,8 @@ const MID_RED = '#e03c3c'
 const PALETTE_SWATCH = '[data-testid="palette-swatch"]'
 const HUE_STOPS = [0, 60, 120, 180, 240, 300, 360].map((h) => `${hsvToHex({ h, s: 1, v: 1 })} ${h}deg`).join(', ')
 const WHITE = hsvToHex({ h: 0, s: 0, v: 1 })
+/** Under this brightness a hue can't be seen, so a pick on the wheel lifts it to full (ticket 0959). */
+const DARK_BELOW = 0.2
 
 const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
@@ -65,6 +67,11 @@ function onHexInput(text: string | number | undefined) {
   if (parsed === undefined) return
   hsv.value = hexToHsv(parsed)!
   touched = true
+}
+
+/** A pick on the wheel sets hue and saturation; on a near-black it gives the color as the wheel shows it (ticket 0959). */
+function setHs(h: number, s: number) {
+  setHsv({ h, s, v: hsv.value.v < DARK_BELOW ? 1 : hsv.value.v })
 }
 
 function onHexBlur() {
@@ -118,7 +125,7 @@ function dragOn(el: () => HTMLElement | undefined, apply: (event: PointerEvent, 
 const wheelDrag = dragOn(() => wheelEl.value, (event, rect) => {
   const radius = rect.width / 2
   const { h, s } = wheelPointToHs(event.clientX - (rect.left + radius), event.clientY - (rect.top + rect.height / 2), radius)
-  setHsv({ ...hsv.value, h, s })
+  setHs(h, s)
 })
 
 const sliderDrag = dragOn(() => sliderEl.value, (event, rect) => {
@@ -129,10 +136,11 @@ function step(event: KeyboardEvent) {
   return event.shiftKey ? 10 : 1
 }
 
+/** Enter takes the color, unless the hex field holds a mistyped entry: then its Note stays and nothing is taken. */
 function takeOnEnter(event: KeyboardEvent) {
   if (event.key !== 'Enter') return false
   event.preventDefault()
-  take()
+  if (!invalid.value) take()
   return true
 }
 
@@ -140,16 +148,16 @@ function onWheelKey(event: KeyboardEvent) {
   if (takeOnEnter(event)) return
   const by = step(event)
   const { h, s } = hsv.value
-  const moves: Record<string, Hsv> = {
-    ArrowLeft: { ...hsv.value, h: h - by },
-    ArrowRight: { ...hsv.value, h: h + by },
-    ArrowUp: { ...hsv.value, s: s + by / 100 },
-    ArrowDown: { ...hsv.value, s: s - by / 100 },
+  const moves: Record<string, Pick<Hsv, 'h' | 's'>> = {
+    ArrowLeft: { h: h - by, s },
+    ArrowRight: { h: h + by, s },
+    ArrowUp: { h, s: s + by / 100 },
+    ArrowDown: { h, s: s - by / 100 },
   }
   const next = moves[event.key]
   if (!next) return
   event.preventDefault()
-  setHsv(next)
+  setHs(next.h, next.s)
 }
 
 function onSliderKey(event: KeyboardEvent) {
@@ -164,7 +172,6 @@ function onSliderKey(event: KeyboardEvent) {
 const wheelStyle = computed(() => ({
   background: `radial-gradient(circle closest-side, ${WHITE}, transparent), conic-gradient(from 0deg, ${HUE_STOPS})`,
 }))
-const dimStyle = computed(() => ({ background: `rgb(0 0 0 / ${1 - hsv.value.v})` }))
 const wheelThumb = computed(() => {
   const { dx, dy } = hsToWheelPoint(hsv.value.h, hsv.value.s, 50)
   return { left: `${50 + dx}%`, top: `${50 + dy}%`, background: hex.value }
@@ -205,7 +212,6 @@ onMounted(async () => {
       @pointercancel="wheelDrag.up"
       @keydown="onWheelKey"
     >
-      <span class="custom-color-panel__dim" :style="dimStyle" />
       <span class="custom-color-panel__thumb" :style="wheelThumb" />
     </div>
     <div
@@ -268,8 +274,8 @@ onMounted(async () => {
   margin-top: var(--space-12);
 }
 
-/* Hue is the angle and saturation the distance; the dim layer is the brightness. Its colors are the color model's,
- * not the theme's. */
+/* Hue is the angle and saturation the distance, always at full brightness (ticket 0959): brightness lives in the
+ * slider and the preview. Its colors are the color model's, not the theme's. */
 .custom-color-panel__wheel {
   position: relative;
   align-self: center;
@@ -280,13 +286,6 @@ onMounted(async () => {
   border-radius: 50%;
   cursor: crosshair;
   touch-action: none;
-}
-
-.custom-color-panel__dim {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  pointer-events: none;
 }
 
 .custom-color-panel__slider {
