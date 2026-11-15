@@ -156,7 +156,7 @@ New values: `--convert-tablet-min`, `--convert-settings-height`, `--convert-shee
 
 ## From the reference image (ticket 0883)
 
-- **All settings** in the reference image's Convert to beads popover (ReferenceImage card) opens this page with that picture set, Width and Height at the size the picture covers on the Canvas, the Canvas's Bead and Technique, match to Exact and the popover's color count. Everything can be changed as usual.
+- **All settings** in the reference image's Convert to beads popover (ReferenceImage card) opens this page with that picture set, Width and Height at the size the picture covers on the Canvas, the Canvas's Bead and Technique, the popover's match and color count. Everything can be changed as usual.
 - Opened so, the page adds beads to the open Project rather than making one: Review's Next reads **Add to Canvas**, and it puts the beads where the picture lies, replacing what is there, as one Undo step "Convert to beads", then closes the page and, with the popover's Hide the picture after on, hides the picture. Leaving asks as always; nothing is added.
 
 ## Leaving
