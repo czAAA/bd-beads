@@ -119,6 +119,20 @@ describe('Menu', () => {
     expect(mounted.panels.activeProject.value).toBeUndefined()
   })
 
+  it('asks Delete all naming how many, whose Save all Projects to a Project file saves them and leaves the question open (ticket 0984)', async () => {
+    saveProjects([moth(), other()])
+    const mounted = mountPanels()
+    await openSavedProjects(mounted)
+    await click(mounted, 'menu-delete-all')
+
+    expect(text(mounted, 'delete-all-projects-modal')).toContain('Delete all 2 Projects?')
+    expect(text(mounted, 'confirm-modal-extra')).toBe(en.transfer.exportLibraryButton)
+    await click(mounted, 'confirm-modal-extra')
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
+    expect(mounted.wrapper.find('[data-testid="delete-all-projects-modal"]').exists()).toBe(true)
+    expect(names()).toEqual(['Moth', 'Other'])
+  })
+
   it('starts a Project from a Starter: a category, an option, and Create puts it in place and closes the panel (ticket 0596)', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('menu')
