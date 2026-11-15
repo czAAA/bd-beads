@@ -62,7 +62,7 @@ export interface WordChart {
   rows: WordRow[]
   /** The last row number, so the header can say "1–24". */
   lastNumber: number
-  /** Whether any cell is empty, so the legend explains `*`. */
+  /** Whether any cell is empty, so the key names the cross a run writes for it (`×`, ticket 0963). */
   hasEmpty: boolean
   /** A Custom frame's start in place of the edge Row 1 is at (ticket 0594): rounds from the centre, rows from a Kite's
    * point, a Fringe earring's top from its base and then its strands (ticket 0597), or parts in making order and then

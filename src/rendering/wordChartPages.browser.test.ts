@@ -61,6 +61,25 @@ describe('Word chart pages', () => {
     expect(pages.every((page) => page.width === A4_PORTRAIT.width && page.height === A4_PORTRAIT.height)).toBe(true)
   })
 
+  it('writes and keys an empty position with the cross the chart draws, not a star (ticket 0963)', async () => {
+    await loadPrintFonts()
+    const words = wordsOf('loom', 10, 8)
+    expect(words.wordChart!.rows.some((row) => /\d×/.test(row.runs))).toBe(true)
+    const texts: string[] = []
+    const makePage = () => {
+      const made = blankPage(A4_PORTRAIT, 1)
+      const fill = made.context.fillText.bind(made.context)
+      made.context.fillText = (value, x, y, maxWidth) => {
+        texts.push(value)
+        fill(value, x, y, maxWidth)
+      }
+      return made
+    }
+    expect([...drawWordChartPages(words, A4_PORTRAIT, makePage, 1, 1)]).toHaveLength(1)
+    expect(texts).toContain(en.print.wordChart.empty)
+    expect(texts.some((value) => value.includes('*'))).toBe(false)
+  })
+
   // PrintWordChart card, Acceptance: a bracelet runs in two columns of 41 rows, a wide Schema in one.
   it('runs a 35 × 120 loom in two columns and titles each page with its own rows', async () => {
     await loadPrintFonts()

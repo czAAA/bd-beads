@@ -102,6 +102,7 @@
   --feedback-message-height: 7.5rem; /* FeedbackSheet card: the Message field's starting height, about five lines. */
   --feedback-note-height: 4.5rem; /* FeedbackSheet card: the Note field's starting height, about three lines. */
   --panel-item-secondary-height: 22px; /* MenuPanel card: a secondary link under a row (Report a translation problem). */
+  --library-thumbnail-size: 44px; /* MenuPanel card (ticket 0982): a Projects library row's thumbnail, the SavedProjects card's circle size. */
   --convert-thumb-width: 44px; /* ConvertImage card (ticket 0896): the picture row's thumbnail, the picture cover-fitted. */
   --convert-thumb-height: 54px; /* ConvertImage card: the thumbnail's height. */
   /* ConvertImage card (ticket 0997): the converter page's own layers, named once, lowest first. They stack inside the page, under the app's --z-* layers. */
@@ -184,6 +185,9 @@
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
   --pill-fade: 1.5rem;
+  --pill-tile-outline: 1.5px;
+  --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink);
+  --pill-tile-focus-offset: 1px;
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
   --mirror-bar-control-touch: 30px;
@@ -267,7 +271,7 @@
   --save-ring-label-time: 4s;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
-[data-theme="contrast"] { --underline-width: 3px; }
+[data-theme="contrast"] { --underline-width: 3px; --pill-tile-outline: 2px; }
 
 body {
   margin: 0;

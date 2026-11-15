@@ -182,6 +182,14 @@ export const PREFERENCES = {
     parse: (raw) => raw.split(',').filter((id) => id.length > 0),
     write: (ids) => (ids.length ? ids.join(',') : null),
   }),
+  /** The panel sections that start folded, opened on this device, as `panel:section` ids (ticket 0971): each stays
+   * folded until it is opened. */
+  panelSectionsOpened: preference<readonly string[]>({
+    key: 'openbeads:panel-sections-opened',
+    fallback: [],
+    parse: (raw) => raw.split(',').filter((id) => id.length > 0),
+    write: (ids) => (ids.length ? ids.join(',') : null),
+  }),
   /** The app's language. */
   locale: preference<Locale>({
     key: 'openbeads:locale',

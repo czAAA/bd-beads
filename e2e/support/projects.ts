@@ -80,3 +80,18 @@ export function beadCentre(
   const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })
   return { x: box.x + at.x, y: box.y + at.y }
 }
+
+/** A small piece in a Bead, laid out in rows of `#` (heart, red), `o` (white) and `y` (yellow), for the round Bead's
+ * checks (ticket 1010): on the Canvas, or in a Frame over an empty one. */
+export function pieceProject({ technique, beadId, picture, inFrame = false }: { technique: Technique; beadId: string; picture: readonly string[]; inFrame?: boolean }): Project {
+  const colors: Record<string, string> = { '#': '#e63746', o: '#ffffff', y: '#f2c94c' }
+  const grid: Cell[][] = picture.map((line) => [...line].map((mark) => ({ color: colors[mark] ?? null })))
+  const [canvas, frame] = framedGrid(grid, { technique, beadId }).layers
+  return {
+    id: `piece-${technique}`,
+    layers: inFrame ? [{ ...canvas!, id: 'piece-canvas', name: 'Piece' }, { ...frame!, id: 'piece-frame' }] : [{ ...canvas!, id: 'piece-canvas', name: 'Piece', beads: frame!.beads }],
+    palette: defaultPaletteIds(),
+    createdAt: 1_700_000_000_000,
+    updatedAt: 1_700_000_000_000,
+  }
+}

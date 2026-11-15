@@ -4,11 +4,12 @@ import { listedColorName } from '../i18n/colorName'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
-import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuantities'
+import { computeColorQuantities, estimatedGrams, formatGrams, hasEmptyPositions } from './beadQuantities'
 import { createProject } from './createProject'
 import type { Project } from './project'
 import { paintAt } from '../testUtils/layers'
 import { frameOf } from './layerRecord'
+import { frameGeometryOf } from './layers'
 import { withLayers } from '../testUtils/layerFields'
 
 const palette = createPalette(defaultPaletteIds())
@@ -78,6 +79,18 @@ describe('computeColorQuantities', () => {
     const quantities = computeColorQuantities(painted([[0, 0, '#123456']]), palette)
 
     expect(quantities).toEqual([{ colorId: null, hex: '#123456', count: 1 }])
+  })
+})
+
+describe('hasEmptyPositions (ticket 0963)', () => {
+  it('finds an empty position in a Frame painted only in part', () => {
+    expect(hasEmptyPositions(blankProject())).toBe(true)
+    expect(hasEmptyPositions(painted([[0, 0, RED]]))).toBe(true)
+  })
+
+  it('finds none once every position of the Frame holds a bead', () => {
+    const project = blankProject()
+    expect(hasEmptyPositions(paintAt(project, [...frameGeometryOf(project).positions()], RED))).toBe(false)
   })
 })
 
