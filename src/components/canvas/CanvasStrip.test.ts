@@ -277,11 +277,14 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     wrapper.unmount()
   })
 
-  it('opens a panel on ↓ like Enter, but not one that is already open', async () => {
+  it('opens a panel on ↓ like Enter, Export\'s too, but not one that is already open (ticket 0939)', async () => {
     const wrapper = mount(CanvasStrip, { props: { ...props, openPanel: 'project' }, attachTo: document.body })
     await wrapper.get('[data-testid="strip-menu"]').trigger('keydown', { key: 'ArrowDown' })
     await wrapper.get('[data-testid="strip-project"]').trigger('keydown', { key: 'ArrowDown' })
-    expect(wrapper.emitted('select-panel')).toEqual([['menu']])
+    await wrapper.get('[data-testid="strip-export"]').trigger('keydown', { key: 'ArrowDown' })
+    await wrapper.get('[data-testid="zoom-reset"]').trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.emitted('select-panel')).toEqual([['menu'], ['export']])
+    expect(wrapper.emitted('reset')).toBeUndefined()
     wrapper.unmount()
   })
 

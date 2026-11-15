@@ -215,6 +215,15 @@ describe('ConvertImageWizard ways in', () => {
     expect(wrapper.get('[data-testid="convert-file-name"]').text()).toBe('dropped.png')
   })
 
+  it('gives focus to Replace, the column\'s first control, once the first picture is read from Paste (ticket 0939)', async () => {
+    const { wrapper } = open({ clipboard: picture('clipboard.png') })
+    const paste = wrapper.get('[data-testid="convert-paste"]')
+    ;(paste.element as HTMLElement).focus()
+    await paste.trigger('click')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="convert-picture"] .convert-picture__menus button').element)
+  })
+
   it('takes a picture from Paste, and says nothing when the clipboard holds none', async () => {
     const empty = open()
     await empty.wrapper.get('[data-testid="convert-paste"]').trigger('click')
