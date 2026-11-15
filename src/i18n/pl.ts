@@ -176,7 +176,7 @@ export const pl: Translations = {
       duplicateHint: 'Propozycja: obecna nazwa i następny wolny numer.',
       deleteThis: 'Usuń projekt',
       deleteTitle: 'Usunąć „{name}”?',
-      deleteMessage: '„{name}” i jego postęp rzędów zostaną usunięte z tej przeglądarki. Nie można tego cofnąć. Jeśli chcesz go zachować, najpierw zapisz plik projektu.',
+      deleteMessage: '„{name}” i jego postęp rzędów zostaną usunięte z tej przeglądarki. Jeśli chcesz go zachować, najpierw zapisz plik projektu.',
       deleteConfirm: 'Usuń projekt',
       cancel: 'Anuluj',
       save: 'Zapisz',
@@ -196,6 +196,7 @@ export const pl: Translations = {
       beadSize: 'Rozmiar',
       duplicatedToast: 'Teraz otwarty jest „{copy}”. „{original}” zostaje bez zmian.',
       openedToast: 'Teraz otwarty jest „{name}”.',
+      deletedToast: 'Projekt „{name}” został usunięty. Teraz otwarty jest „{open}”.',
     },
   },
   theme: {

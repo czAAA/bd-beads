@@ -176,7 +176,7 @@ export const zh: Translations = {
       duplicateHint: '建议：当前名称加上下一个可用编号。',
       deleteThis: '删除项目',
       deleteTitle: '删除“{name}”？',
-      deleteMessage: '“{name}”及其行进度将从此浏览器中移除，且无法撤销。如需保留，请先保存项目文件。',
+      deleteMessage: '“{name}”及其行进度将从此浏览器中移除。如需保留，请先保存项目文件。',
       deleteConfirm: '删除项目',
       cancel: '取消',
       save: '保存',
@@ -196,6 +196,7 @@ export const zh: Translations = {
       beadSize: '尺寸',
       duplicatedToast: '现在打开的是“{copy}”。“{original}”保持原样。',
       openedToast: '现在打开的是“{name}”。',
+      deletedToast: '“{name}”已删除。现在打开的是“{open}”。',
     },
   },
   theme: {

@@ -174,7 +174,7 @@ export const en: Translations = {
       duplicateHint: 'Suggested: the current name and the next free number.',
       deleteThis: 'Delete Project',
       deleteTitle: 'Delete “{name}”?',
-      deleteMessage: "“{name}” and its Row progress are removed from this browser. This can't be undone. Save its Project file first if you want to keep it.",
+      deleteMessage: '“{name}” and its Row progress are removed from this browser. Save its Project file first if you want to keep it.',
       deleteConfirm: 'Delete Project',
       cancel: 'Cancel',
       save: 'Save',
@@ -194,6 +194,7 @@ export const en: Translations = {
       beadSize: 'Size',
       duplicatedToast: 'Now in “{copy}”. “{original}” stays as it was.',
       openedToast: 'Now in “{name}”.',
+      deletedToast: '“{name}” was deleted. Now in “{open}”.',
     },
   },
   theme: {
