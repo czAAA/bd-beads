@@ -637,6 +637,7 @@ export const pl: Translations = {
     showColumn: 'Pokaż kolumnę',
     goToPass: 'Przejdź do przejścia',
     passesInfoName: 'Czym jest przejście',
+    showRowMarks: 'Pokazuj oznaczenia rzędów',
   },
   quantities: {
     heading: 'Potrzebne koraliki',

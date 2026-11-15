@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWay } from '../../domain/rowProgress'
+import { frameRowOrder, passLine, rowProgressOf, rowProgressPosition, shownWay, type ShownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { customPassWords, rowProgressCount } from '../../i18n/rowProgressWords'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -10,6 +10,7 @@ import AppButton from '../ui/AppButton.vue'
 import GoToRowPopover from './GoToRowPopover.vue'
 import ProgressMoves from './ProgressMoves.vue'
 import ProgressTrack from './ProgressTrack.vue'
+import RowDirectionPopover from './RowDirectionPopover.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -40,7 +41,8 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
-  'toggle-row-direction': []
+  /** A way chosen from Turn row direction's list (ticket 0973, UX-060): its press only opens the list. */
+  'set-row-direction': [way: ShownWay]
   'toggle-row-highlight': []
   /** Go to row, from the bar's counter (ticket 0849): the pass to point at, from 0. */
   'go-to-row': [pass: number]
@@ -147,6 +149,18 @@ const directionLabel = computed(() => {
   return labels[arrowTurn.value]
 })
 
+/** Turn row direction's list (ticket 0973, UX-060): its press opens it and turns nothing; Row highlight is in it too. */
+const directionOpen = ref(false)
+const directionButton = ref<HTMLElement>()
+function toggleDirection(event: MouseEvent) {
+  directionButton.value = event.currentTarget as HTMLElement
+  directionOpen.value = !directionOpen.value
+}
+const turns = computed(() => frameRowOrder(props.project).turns)
+/** In the bar Row highlight is Show row marks in that list, so it stands alone only where the rows run one way (a
+ * Custom frame). */
+const highlightShown = computed(() => props.form !== 'bar' || !turns.value)
+
 type Item = 'direction' | 'highlight' | 'reset' | 'position' | 'counter' | 'track' | 'divider' | 'steps'
 /** The bar's order (ProgressBar card), and the margin's, which puts Reset beside Turn row direction and sets the
  * counter off with dividers, then its smaller forms, which keep Row highlight beside Row done (MarginSheet card, Zoom
@@ -172,17 +186,19 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
   <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--margin': margin, 'row-progress--small': small }]" :data-testid="margin ? testid : undefined">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
     <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
+    <!-- Its press opens the list of the four ways and turns nothing (ticket 0973). -->
     <IconButton
-      v-if="item === 'direction' && frameRowOrder(project).turns"
+      v-if="item === 'direction' && turns"
       :variant="margin ? 'plain' : 'box'"
       :action="actions.direction"
-      :selected="columnWise"
+      aria-haspopup="dialog"
+      :aria-expanded="directionOpen"
       :data-testid="`${testid}-direction`"
-      @click="emit('toggle-row-direction')"
+      @click="toggleDirection"
     />
     <!-- Row highlight is a view switch, not an action on the Project: an on/off Switch (ticket 474); the parent owns the value and flips it. -->
     <AppSwitch
-      v-else-if="item === 'highlight'"
+      v-else-if="item === 'highlight' && highlightShown"
       :model-value="rowHighlight"
       :action="actions.rowHighlight"
       :data-testid="`${testid}-highlight`"
@@ -280,6 +296,17 @@ const small = computed(() => props.form === 'compact' || props.form === 'folded'
       />
     </div>
   </template>
+  <RowDirectionPopover
+    v-if="directionOpen && directionButton"
+    :anchor="directionButton"
+    :current="arrowTurn"
+    :row-highlight="rowHighlight"
+    :side="margin ? 'below' : 'above'"
+    :testid="testid"
+    @close="directionOpen = false"
+    @choose="emit('set-row-direction', $event)"
+    @toggle-row-highlight="emit('toggle-row-highlight')"
+  />
   <GoToRowPopover
     v-if="goToOpen && counterButton"
     :anchor="counterButton"

@@ -637,6 +637,7 @@ export const uk: Translations = {
     showColumn: 'Показати стовпець',
     goToPass: 'Перейти до проходу',
     passesInfoName: 'Що таке прохід',
+    showRowMarks: 'Показувати позначки рядів',
   },
   quantities: {
     heading: 'Потрібно бісеру',

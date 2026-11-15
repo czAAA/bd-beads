@@ -60,6 +60,19 @@ describe('useRowOps', () => {
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
 
+  it('turns the rows the way chosen from Turn row direction\'s list, with its toast, and the way they run already turns nothing (ticket 0973)', () => {
+    const showToast = vi.fn()
+    const replaceProject = vi.fn()
+    const deps = { currentProject: () => tracking, replaceProject, showToast, messages: () => en }
+    useRowOps(deps).onSetRowDirection('up')
+    expect(rowProgressOf(replaceProject.mock.calls[0]![0] as Project)).toMatchObject({ direction: 'rows', reversed: true })
+    expect(showToast).toHaveBeenCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
+
+    useRowOps(deps).onSetRowDirection('down')
+    expect(replaceProject).toHaveBeenCalledTimes(1)
+    expect(showToast).toHaveBeenCalledTimes(1)
+  })
+
   it('says the rows marked done the way it left are kept, so they do not look lost (ticket 0849, F-04-04)', () => {
     const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 3, beads: {} } })
     const showToast = vi.fn()
