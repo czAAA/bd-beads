@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "When a picture gives fewer colors than asked, Colors says both numbers, \"12 asked · 7 found\", and the result says the picture has no more to give",
+    "ru": "Когда изображение даёт меньше цветов, чем запрошено, «Цвета» показывает оба числа, «запрошено 12 · найдено 7», а результат говорит, что больше изображение не даёт",
+    "uk": "Коли зображення дає менше кольорів, ніж запитано, «Кольори» показує обидва числа, «запитано 12 · знайдено 7», а результат каже, що більше зображення не дає",
+    "be": "Калі выява дае менш колераў, чым прасілі, «Колеры» паказвае абодва лікі, «просілі 12 · знойдзена 7», а вынік кажа, што больш выява не дае",
+    "zh": "当图片给出的颜色少于所要的数量时，“颜色”同时显示两个数字“要 12 · 得 7”，结果也会说明这张图片只有这么多",
+    "es": "Cuando una imagen da menos colores de los pedidos, Colores muestra los dos números, «12 pedidos · 7 encontrados», y el resultado dice que la imagen no da más",
+    "pl": "Gdy obraz daje mniej kolorów, niż zadano, Kolory pokazują obie liczby, „zadano 12 · znaleziono 7”, a wynik mówi, że obraz nie daje więcej"
+  }
+}

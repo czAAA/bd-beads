@@ -705,6 +705,14 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     return kept.value ? keptGrid(beads, kept.value) : beads
   }
 
+  /** How many bead colors the beads use, counted after the match (ticket 0863): the rows not set to empty. */
+  const usedColorCount = computed(() => {
+    const part = kept.value
+    if (!part) return rows.value.filter((row) => row.result).length
+    return new Set(keptGrid(grid.value, part).flatMap((cells) => cells.map((cell) => cell.color)).filter((color) => color !== null)).size
+  })
+  const emptyColorCount = computed(() => rows.value.filter((row) => !row.result).length)
+
   /** The Project the converted grid at rest makes: the page's own setup, the grid and its Palette (spec 0645). */
   function projectAtRest() {
     if (!image.value || !rest.value) return undefined
@@ -868,14 +876,12 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     setMaxColors: (next: number) => (chosenColors.value = clamp(Math.round(next), MIN_IMAGE_COLORS, colorsMax.value)),
     found,
     rows,
-    /** How many bead colors the beads use, counted after the match (ticket 0863): the rows not set to empty. */
-    usedColorCount: computed(() => {
-      const part = kept.value
-      if (!part) return rows.value.filter((row) => row.result).length
-      return new Set(keptGrid(grid.value, part).flatMap((cells) => cells.map((cell) => cell.color)).filter((color) => color !== null)).size
-    }),
+    usedColorCount,
     /** How many rows are set to empty (the Color by color summary). */
-    emptyColorCount: computed(() => rows.value.filter((row) => !row.result).length),
+    emptyColorCount,
+    /** The colors found over the whole picture, set to empty or not (ticket 0928): fewer than asked where the picture has
+     * no more to give, not where some are set to empty or a kept part leaves some out. */
+    foundColorCount: computed(() => rows.value.length),
     choices,
     setChoice,
     toggleEmpty,

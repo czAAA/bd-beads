@@ -153,3 +153,20 @@ describe('ValueSlider from a middle (ValueSlider card, ticket 0908)', () => {
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 })
+
+describe('ValueSlider with a reach (ValueSlider card, ticket 0928)', () => {
+  const reached = (modelValue: number, reach: number | undefined) =>
+    slider({ modelValue, min: 1, max: 41, reach, marks: [], value: String(modelValue), valuetext: String(modelValue), secondary: undefined }).get('.vs')
+
+  it('fills in accent only up to the reach where the thumb stands past it', () => {
+    const track = reached(31, 11)
+    expect(track.classes()).toContain('vs--reach')
+    expect(track.attributes('style')).toContain('--vs-reach: 0.25')
+  })
+
+  it('fills to the thumb as ever where the reach is at or past it, or none is given', () => {
+    expect(reached(11, 11).classes()).not.toContain('vs--reach')
+    expect(reached(11, 31).classes()).not.toContain('vs--reach')
+    expect(reached(31, undefined).classes()).not.toContain('vs--reach')
+  })
+})
