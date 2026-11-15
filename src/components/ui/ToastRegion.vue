@@ -62,7 +62,20 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
       @close="emit('dismiss', toast.id)"
     >
       {{ toast.text }}
-      <template v-if="toast.action" #actions>
+      <!-- Two actions stand on their own line under the text (ticket 0935): beside it they would leave it no room. -->
+      <span v-if="toast.action && toast.secondAction" class="toast-region__actions">
+        <button
+          v-for="(action, index) in [toast.action, toast.secondAction]"
+          :key="index"
+          type="button"
+          class="ui-control toast-region__action"
+          :data-testid="index ? 'toast-second-action' : 'toast-action'"
+          @click="action.run(); emit('dismiss', toast.id)"
+        >
+          {{ action.label }}
+        </button>
+      </span>
+      <template v-if="toast.action && !toast.secondAction" #actions>
         <button
           type="button"
           class="ui-control toast-region__action"
@@ -96,6 +109,14 @@ const belowStyle = computed(() => (below.value === undefined ? undefined : { '--
 /* Under an open panel over the toasts' corner (ticket 0859), on every screen size. */
 .toast-region.toast-region--below-panel {
   top: calc(var(--toasts-below) + var(--space-8));
+}
+
+/* Two actions, on their own line under the text (ticket 0935), as a notice's in-box ones are. */
+.toast-region__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8) var(--space-16);
+  margin-top: var(--space-8);
 }
 
 /* The text-button action (Message card, `bb-link`): underlined link text. */

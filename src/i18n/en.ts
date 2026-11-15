@@ -1261,6 +1261,10 @@ export const en: Translations = {
   layerSettings: {
     frameHeading: 'Settings',
     background: 'Background',
+    canvasOutsideFrame: 'Canvas, outside the Frame',
+    frameStays: 'The Canvas is {canvas} now. The Frame stays {frame}.',
+    changeFrameToo: 'Change the Frame too',
+    openFrame: 'Open Frame',
   },
   schemaTag: {
     group: 'Schema names',

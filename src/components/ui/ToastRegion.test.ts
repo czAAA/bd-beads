@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { h, nextTick, ref } from 'vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Toast } from '../../composables/ui/useToasts'
 import ToastRegion from './ToastRegion.vue'
 
@@ -45,6 +45,21 @@ describe('ToastRegion (ticket 0859)', () => {
     await show()
 
     expect(region.classList).not.toContain('toast-region--below-panel')
+    wrapper.unmount()
+  })
+
+  it('puts two actions on their own line under the text, each running its own and closing the toast (ticket 0935)', async () => {
+    const first = vi.fn()
+    const second = vi.fn()
+    const toast: Toast = { id: 'frame-stays', text: 'The Canvas is Loom now.', tone: 'info', stamp: 2, action: { label: 'Change the Frame too', run: first }, secondAction: { label: 'Open Frame', run: second } }
+    const wrapper = mount(ToastRegion, { props: { toasts: [toast] }, attachTo: document.body })
+    const line = wrapper.get('.app-message__text .toast-region__actions')
+    expect(line.findAll('button').map((button) => button.text())).toEqual(['Change the Frame too', 'Open Frame'])
+    expect(wrapper.find('.app-message__actions').exists()).toBe(false)
+    await wrapper.get('[data-testid="toast-second-action"]').trigger('click')
+    expect(second).toHaveBeenCalledOnce()
+    expect(first).not.toHaveBeenCalled()
+    expect(wrapper.emitted('dismiss')).toEqual([['frame-stays']])
     wrapper.unmount()
   })
 })

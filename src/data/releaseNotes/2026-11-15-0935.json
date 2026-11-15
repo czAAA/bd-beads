@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "With a Frame on the Canvas, the Project panel says its settings are the Canvas's, outside the Frame, and a change there that leaves the Frame on another Technique or Bead says so, with Change the Frame too and Open Frame",
+    "ru": "Когда на холсте есть рамка, панель проекта говорит, что её настройки относятся к холсту вне рамки, а изменение, после которого у рамки другая техника или бисер, сообщает об этом и предлагает «Изменить и рамку» и «Открыть рамку»",
+    "uk": "Коли на полотні є рамка, панель проєкту каже, що її налаштування стосуються полотна поза рамкою, а зміна, після якої в рамки інша техніка чи бісер, повідомляє про це й пропонує «Змінити й рамку» та «Відкрити рамку»",
+    "be": "Калі на палатне ёсць рамка, панэль праекта кажа, што яе налады датычацца палатна па-за рамкай, а змена, пасля якой у рамкі іншая тэхніка ці бісер, паведамляе пра гэта і прапануе «Змяніць і рамку» і «Адкрыць рамку»",
+    "zh": "画布上有边框时，项目面板会说明这些设置属于边框之外的画布；若更改后边框的技法或珠子与画布不同，会提示并提供“边框也一起改”和“打开边框”",
+    "es": "Con un marco en el lienzo, el panel del proyecto dice que sus ajustes son los del lienzo, fuera del marco, y un cambio que deja el marco con otra técnica o cuenta lo avisa, con Cambiar también el marco y Abrir marco",
+    "pl": "Gdy na płótnie jest ramka, panel projektu mówi, że jego ustawienia dotyczą płótna poza ramką, a zmiana, po której ramka ma inną technikę lub koralik, mówi o tym i proponuje „Zmień też ramkę” i „Otwórz ramkę”"
+  }
+}

@@ -27,6 +27,7 @@ import { loadColorCatalog } from '../../services/colorCatalogs'
 import { useEdit } from '../project/useEdit'
 import { useDeleteAllFlow } from '../project/useDeleteAllFlow'
 import { useFrameFlow } from '../project/useFrameFlow'
+import { useFrameStaysToast } from '../project/useFrameStaysToast'
 import { useNamePieceFlow } from '../project/useNamePieceFlow'
 import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
 import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
@@ -47,6 +48,7 @@ import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import type { OpenPanel } from './openPanel'
 import type { Project } from '../../domain/project'
+import type { Technique } from '../../domain/weave'
 import { useOverlayVisibility } from './useOverlayVisibility'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
@@ -790,6 +792,18 @@ function wireAppShell(services: Services, options: ShellOptions) {
 
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
   const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale, dialogs })
+  /** A change of the Canvas's Technique or Bead that leaves the Frame on another says so (ticket 0935), offering the
+   * Frame panel's own change and its settings. Both layers' Layer settings run through it; only the Canvas's toasts. */
+  const frameStays = useFrameStaysToast({
+    currentProject,
+    messages,
+    showToast,
+    setFrameTechnique: (technique) => onSetTechnique('frame', technique),
+    requestFrameBead: (beadId) => replaceBead.onRequestReplaceBead('frame', beadId),
+    openFrameSettings: frameFlow.openOnSettings,
+  })
+  const onSetTechnique = (layer: Layer, technique: Technique) => frameStays.afterChange('technique', () => frameFlow.setLayerTechnique(layer, technique))
+  const onConfirmReplaceBead = () => frameStays.afterChange('bead', replaceBead.onConfirmReplaceBead)
 
   /** Project import, under free names, and whether to open what came in (tickets 154, 168, 200, 0860). */
   const importSwitch = useImportSwitchFlow({
@@ -1250,7 +1264,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onRequestDelete: onRequestDeleteOpen,
       onRequestDeleteAll: deleteAll.onRequestDeleteAll,
       // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
-      onSetTechnique: frameFlow.setLayerTechnique,
+      onSetTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
       onSetBackground: backgroundFlow.setBackground,
       referenceImage,
@@ -1264,6 +1278,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The Frame panel
       settledProject,
       framePanelShown: frameFlow.barShown,
+      /** The Frame panel opens on its settings (ticket 0935): the Frame stays toast's Open Frame. */
+      frameOpensOnSettings: frameFlow.opensOnSettings,
       onCloseFramePanel: frameFlow.closeBar,
       onStepFrameEdge: frameFlow.stepEdge,
       onResizeFrame: frameFlow.resizeTo,
@@ -1311,7 +1327,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
       replaceBeadPendingBead: replaceBead.replaceBeadPendingBead,
       replaceBeadConfirmMessage: replaceBead.replaceBeadConfirmMessage,
-      onConfirmReplaceBead: replaceBead.onConfirmReplaceBead,
+      onConfirmReplaceBead,
       onCancelReplaceBead: replaceBead.onCancelReplaceBead,
       pendingImport: importSwitch.pendingImport,
       pendingImportOpens: importSwitch.pendingImportOpens,

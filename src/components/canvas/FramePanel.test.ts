@@ -18,6 +18,7 @@ import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 import { withProjectName } from '../../domain/projectName'
+import { usePanelSection } from '../../composables/shell/usePanelSection'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -508,5 +509,39 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     expect(wrapper.get('[data-testid="frame-setting-rounds-value"]').text()).toBe('4')
     await wrapper.get('[data-testid="frame-setting-rounds-more"]').trigger('click')
     expect(wrapper.emitted('set-settings')).toEqual([[{ rounds: 5 }]])
+  })
+})
+
+describe('FramePanel opened on its settings (ticket 0935)', () => {
+  function mountOnSettings(opensOnSettings: boolean) {
+    return mount(
+      { render: () => h(PanelHost, { open: 'frame', only: ['frame'] }, { default: () => h(FramePanel, { project: framed(), opensOnSettings }) }) },
+      { attachTo: document.body },
+    )
+  }
+  const settingsHeader = () => document.querySelector<HTMLElement>('[data-panel-entry] .panel-section__header')
+
+  /** The settings section folded on this device, as a weaver may leave it. */
+  function foldSettings() {
+    const section = usePanelSection(() => 'frame:settings')
+    if (section.open.value) section.toggle()
+    expect(section.open.value).toBe(false)
+  }
+
+  it('unfolds its settings, folded on this device, and focuses their header, as Open Frame asks', async () => {
+    foldSettings()
+    const wrapper = mountOnSettings(true)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-layer-settings"]').exists()).toBe(true)
+    expect(document.activeElement).toBe(settingsHeader())
+    expect(settingsHeader()?.textContent).toContain(en.layerSettings.frameHeading)
+  })
+
+  it('opens at its top from the strip, its settings left as this device keeps them', async () => {
+    foldSettings()
+    const wrapper = mountOnSettings(false)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-layer-settings"]').exists()).toBe(false)
+    expect(settingsHeader()).toBeNull()
   })
 })

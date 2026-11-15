@@ -1539,6 +1539,13 @@ export interface Translations {
   layerSettings: {
     frameHeading: string
     background: string
+    /** The Project panel's Canvas section header while a Frame is on the Canvas (ticket 0935), as label style writes it. */
+    canvasOutsideFrame: string
+    /** The toast after a change of the Canvas's Technique or Bead leaves the Frame on another (ticket 0935); its two
+     * text actions, the Frame panel's own change and the Frame panel on its settings. */
+    frameStays: string
+    changeFrameToo: string
+    openFrame: string
   }
   /** An unframed Schema's name as a tag, opening into a paper tag (SchemaTag card, ticket 0721; `writing.md`,
    * Schema tag copy). */
