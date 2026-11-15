@@ -6,6 +6,7 @@ import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
 import { frameOf, projectNameOf } from './layerRecord'
 import { looksLikePicture } from './imageConversion'
+import { normalizeProjectName, withProjectName } from './projectName'
 
 // The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
 // version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
@@ -206,15 +207,18 @@ export function importedPictures<T>(incoming: readonly Project[], added: readonl
 }
 
 /** Picks which imported Projects to add. Importing never overwrites: a taken id comes in under a fresh id (ticket
- * 15). */
+ * 15). A name of only spaces leaves nothing to show, so that Project comes in under `unnamed`, the name a Project left
+ * unnamed takes (ticket 0988); the library then gives it its free number. */
 export function importProjects(
   incoming: Project[],
   existing: readonly Pick<Project, 'id'>[],
+  unnamed: string,
   newId: () => string = () => crypto.randomUUID(),
 ): Project[] {
   const taken = new Set(existing.map((project) => project.id))
 
-  return incoming.map((project) => {
+  return incoming.map((incomingProject) => {
+    const project = normalizeProjectName(projectNameOf(incomingProject)) ? incomingProject : withProjectName(incomingProject, unnamed)
     const added = taken.has(project.id) ? { ...project, id: newId() } : project
     taken.add(added.id)
     return added

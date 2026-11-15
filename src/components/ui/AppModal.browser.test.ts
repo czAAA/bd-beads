@@ -40,3 +40,17 @@ describe('AppModal on a short screen', () => {
     })
   }
 })
+
+// A name with no spaces breaks inside the dialog instead of running out of it (Modal card, ticket 0988).
+const LONG_NAME = 'MOTHWINGSWOVEN'.repeat(3).slice(0, 40)
+
+describe('AppModal with a long name', () => {
+  it('keeps a 40-character name with no space inside the dialog, title and body alike', async () => {
+    const question = defineComponent({
+      setup: () => () => h(AppModal, { title: `Delete “${LONG_NAME}”?` }, { default: () => h('p', `“${LONG_NAME}” and its Row progress go.`) }),
+    })
+    const mounted = await mountAt(question, {}, { locale: 'en', width: 1280 })
+    const dialog = mounted.root.querySelector<HTMLElement>('.app-modal')!
+    expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth)
+  })
+})

@@ -86,7 +86,8 @@ export interface Translations {
   form: {
     nameLabel: string
     beadLabel: string
-    /** The Bead picker (ticket 535): `hint` is its one line while collapsed; Brand, Form factor and Bead size are its steps. */
+    /** The Bead picker (ticket 535): `hint` is what a Bead sets, the help behind New Project's Bead Info button (ticket 0951);
+     * Brand, Form factor and Bead size are its steps. */
     beadPicker: {
       hint: string
       change: string
@@ -120,8 +121,7 @@ export interface Translations {
     enterWholeBeads: string
     /** Between Create Project and Convert image. */
     or: string
-    /** New Project's heading and what an open canvas is for (ticket 568). */
-    openCanvasTitle: string
+    /** What New Project's open canvas is for, under the panel's title (tickets 568, 0951). */
     openCanvasSubtitle: string
     /** The button that unfolds the Starter gallery. */
     pickStarter: string
@@ -130,6 +130,11 @@ export interface Translations {
     /** What a new Project left unnamed is called, and the Name's placeholder (ticket 0866): "Project 1", then the next
      * free number. It ends in its number, as Duplicate's suggestions do. */
     unnamedProject: string
+    /** New Project's Info buttons (ticket 0951): what Technique decides, and each button's name; Bead's help is
+     * `beadPicker.hint`. */
+    techniqueInfo: string
+    techniqueInfoLabel: string
+    beadInfoLabel: string
   }
   /** Screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
@@ -1478,7 +1483,7 @@ export interface Translations {
     cancelButton: string
   }
   /** The `?` shortcuts help overlay (ticket 96): every keyboard shortcut, grouped by Tool group. Key labels
-   * themselves (digits, letters, "Ctrl/Cmd+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
+   * themselves (digits, letters, "⌘C" or "Ctrl+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
    * translated here — only the description of what each one does needs a translation. */
   shortcutsHelp: {
     title: string
@@ -1495,6 +1500,9 @@ export interface Translations {
     keyHints: string
     keyHintsOn: string
     keyHintsOff: string
+    /** The two Pastes named apart in the list (ticket 0993): the pill's tool and the clipboard's key. */
+    pasteTool: string
+    pasteClipboard: string
   }
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One
    * imperative sentence ending in a full stop; keys never appear (they are the key chip). */

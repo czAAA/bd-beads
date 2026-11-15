@@ -1,5 +1,6 @@
 import { computed, ref, type ComputedRef } from 'vue'
 import { useDevicePreferences } from '../../services/devicePreferences'
+import { chordLine, keyParts, MOD_KEY, type Keyboard } from '../../domain/chord'
 
 /** A device with a mouse or trackpad that can hover is likely to have a keyboard too. */
 const KEYBOARD_LIKELY_QUERY = '(any-pointer: fine) and (any-hover: hover)'
@@ -70,13 +71,14 @@ export function useKeyHints(): { shown: ComputedRef<boolean>; setShown: (on: boo
   }
 }
 
-/** Whether this is an Apple device, where the modifier key is ⌘. */
-function isApple(): boolean {
-  return typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent || navigator.platform || '')
+/** The device's keyboard: an Apple device's, where the modifier key is ⌘, or any other (ticket 0993). */
+export function deviceKeyboard(): Keyboard {
+  const apple = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent || navigator.platform || '')
+  return apple ? 'apple' : 'other'
 }
 
 /** The device a help line speaks to (ticket 0846): touch words, ⌘ keys or Ctrl keys. */
-export type HelpDevice = 'touch' | 'apple' | 'other'
+export type HelpDevice = 'touch' | Keyboard
 
 /** The one rule by device for every help line (ticket 0846; writing.md, A help line fits the device in hand): touch
  * while the main pointer is a finger and the key chips are hidden, so a line names keys exactly when the chips show
@@ -87,7 +89,7 @@ export function useHelpDevice(): {
   modKey: (key?: string) => string
 } {
   const { shown } = useKeyHints()
-  const apple = isApple()
-  const device = computed<HelpDevice>(() => (touchFirst.value && !shown.value ? 'touch' : apple ? 'apple' : 'other'))
-  return { device, modKey: (key = '') => (apple ? `⌘${key}` : key ? `Ctrl+${key}` : 'Ctrl') }
+  const keyboard = deviceKeyboard()
+  const device = computed<HelpDevice>(() => (touchFirst.value && !shown.value ? 'touch' : keyboard))
+  return { device, modKey: (key = '') => chordLine(keyParts([MOD_KEY, key].filter(Boolean), keyboard)) }
 }

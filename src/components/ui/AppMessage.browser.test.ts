@@ -1,3 +1,4 @@
+import { defineComponent, h } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import { mountAt } from '../../testUtils/browserFit'
 import AppMessage from './AppMessage.vue'
@@ -29,5 +30,19 @@ describe.each(THEMES)('a Message in %s', (theme) => {
 
   it('draws the danger tone in its theme’s color', async () => {
     expect((await toneColors(theme, 'danger')).edge).toBe(DANGER[theme])
+  })
+})
+
+// A name with no spaces breaks inside the toast instead of running out of it (Message card, ticket 0988).
+describe('a toast with a long name', () => {
+  it('keeps a 40-character name with no space inside the toast', async () => {
+    const name = 'MOTHWINGSWOVEN'.repeat(3).slice(0, 40)
+    const toast = defineComponent({
+      setup: () => () =>
+        h(AppMessage, { tone: 'success' }, { default: () => `“${name}” was duplicated.`, actions: () => h('button', { type: 'button' }, 'Undo') }),
+    })
+    const mounted = await mountAt(toast, {}, { locale: 'en', width: 1280 })
+    const message = mounted.root.querySelector<HTMLElement>('.app-message')!
+    expect(message.scrollWidth).toBeLessThanOrEqual(message.clientWidth)
   })
 })

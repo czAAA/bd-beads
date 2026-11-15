@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "A long Project name with no spaces wraps inside questions and messages, a Project file with a blank name comes in as Project 1, and Duplicate's suggested name is selected so you can type over it",
+    "ru": "Длинное название Проекта без пробелов переносится внутри вопросов и сообщений, файл Проекта с пустым названием добавляется как «Проект 1», а предложенное название в «Дублировать» выделено, чтобы его можно было сразу заменить",
+    "uk": "Довга назва Проєкту без пробілів переноситься всередині запитань і повідомлень, файл Проєкту з порожньою назвою додається як «Проєкт 1», а запропонована назва в «Дублювати» виділена, щоб її можна було одразу замінити",
+    "be": "Доўгая назва Праекта без прабелаў пераносіцца ўнутры пытанняў і паведамленняў, файл Праекта з пустой назвай дадаецца як «Праект 1», а прапанаваная назва ў «Дубліраваць» вылучана, каб яе можна было адразу замяніць",
+    "zh": "没有空格的长项目名称会在提问和消息里自动换行，名称为空的项目文件会以“项目 1”加入，“复制”建议的名称已选中，可直接改写",
+    "es": "Un nombre de Proyecto largo y sin espacios se ajusta dentro de las preguntas y los mensajes, un archivo de Proyecto con el nombre en blanco entra como Proyecto 1, y el nombre que propone Duplicar aparece seleccionado para escribir encima",
+    "pl": "Długa nazwa Projektu bez spacji zawija się w pytaniach i komunikatach, plik Projektu z pustą nazwą trafia jako Projekt 1, a nazwa proponowana przez Duplikuj jest zaznaczona, więc można od razu wpisać nową"
+  }
+}
