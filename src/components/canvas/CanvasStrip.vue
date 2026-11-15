@@ -132,7 +132,7 @@ function onReferenceFile(event: Event) {
 }
 
 // One Tab stop per section (ADR 0075): the panels, the Brand with the coffee link and the right-hand tools. ←/→ step inside
-// a section and stop at its ends; ↓ on a panel button opens its panel, like Enter.
+// a section and stop at its ends; ↓ on a panel button (Export's too, ticket 0939) opens its panel, like Enter.
 const panelsEl = ref<HTMLElement>()
 const centerEl = ref<HTMLElement>()
 const controlsEl = ref<HTMLElement>()
@@ -143,16 +143,20 @@ const controlsRoving = useRovingFocus(controlsEl, { selector: 'button, a[href]',
 const scrollerEl = ref<HTMLElement>()
 const cut = useScrollCut(scrollerEl)
 
-function onPanelsKeydown(event: KeyboardEvent) {
+/** ↓ on a closed panel's button opens it, as Enter does; true when it did. */
+function openOnArrowDown(event: KeyboardEvent): boolean {
   const button = event.target as HTMLElement
-  // ↓ opens a panel; the save ring has none, so it is not pressed by it.
-  if (event.key === 'ArrowDown' && button.getAttribute('aria-expanded') !== 'true' && !button.closest('.save-ring')) {
-    event.preventDefault()
-    event.stopPropagation()
-    button.click()
-    return
-  }
-  panelsRoving.onKeydown(event)
+  if (event.key !== 'ArrowDown' || button.getAttribute('aria-expanded') !== 'false') return false
+  event.preventDefault()
+  event.stopPropagation()
+  button.click()
+  return true
+}
+function onPanelsKeydown(event: KeyboardEvent) {
+  if (!openOnArrowDown(event)) panelsRoving.onKeydown(event)
+}
+function onControlsKeydown(event: KeyboardEvent) {
+  if (!openOnArrowDown(event)) controlsRoving.onKeydown(event)
 }
 </script>
 
@@ -242,7 +246,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <IconButton variant="plain" :icon-size="18" :action="actions.coffee" :href="COFFEE_URL" data-testid="strip-coffee" />
       </span>
     </div>
-    <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
+    <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="onControlsKeydown" @focusin="controlsRoving.onFocusin">
       <!-- Everything before Export, in a row that scrolls sideways where the strip is too narrow (ticket 0843). -->
       <div ref="scrollerEl" class="canvas-strip__scroller" :data-cut="cut" data-testid="canvas-strip-scroller">
         <!-- Expand (ticket 0830): words only, the icon set has none for it; it keeps the width of the wider word. -->

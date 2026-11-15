@@ -47,7 +47,7 @@ Nothing repeats a tool: Rulers, Undo, Redo and zoom live on the Canvas strip, Mi
 
 ## Keyboard and screen readers
 
-- The strip button is "Menu" / «Меню», `aria-expanded`. Enter, Space or Down opens on the first item, Up on the last. Arrows, Home and End move; Enter chooses; Escape or Tab closes.
+- The strip button is "Menu" / «Меню», `aria-expanded`. Enter, Space or Down opens on the first item, Up on the last. Arrows, Home and End move; Enter chooses; Tab and Shift+Tab wrap (ADR 0075); Escape closes.
 - The dropdown is a plain `region` named "Menu", its rows buttons, not menu items: it holds headings and pickers, which a `menu` may not (ticket 0856; Project and Frame hold fields, so they are plain `dialog`s, as is every subpanel); rules are `separator`; a section header is a button with `aria-expanded` and the section a `group` named by it. A PanelPicker is a button with `aria-haspopup="menu"`, named "{label}: {value}"; its menu items are `menuitemradio`. Escape in an open picker closes the picker only.
 - A Version row is read as text.
 

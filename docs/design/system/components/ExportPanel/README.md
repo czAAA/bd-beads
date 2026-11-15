@@ -10,7 +10,7 @@ The Export panel: a small panel from the **Export** button in the Canvas strip's
 
 ## Panel
 
-- The shell, density and parts of Menu, Project and Frame (MenuPanel card): one of the four open at a time, Escape or a press outside closes it, focus returns to the button. It opens without focusing a field, like the Frame panel.
+- The shell, density and parts of Menu, Project and Frame (MenuPanel card): one of the four open at a time, Escape or a press outside closes it, focus returns to the button. It opens on its first row, Picture, and ↓ on the Export button opens it as Enter does (ticket 0939); Tab and Shift+Tab wrap inside it.
 - `panel-width-small` (360px) wide, never wider than the screen less its 8px gutters. It hangs 4px under the button with its **right** edge on the button's, since the button is in the strip's right corner.
 - A `dialog` named "Export". Its title line is `export` in the `label` style, `muted`, lowercased by style, as the Frame panel's `frame` (a section header takes no colon, `writing.md`). Under 1024px, where the strip shows no name, the open Project's name follows it as typed ("export · Loom cuff", one line, ellipsis), as on the Frame panel's title line (ticket 0986). No section header and no collapse: it holds one section.
 

@@ -64,26 +64,26 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
+/** Where focus starts: the dialog, or the `data-autofocus` control, else the first one. On a touch device a start on
+ * a text entry starts on the dialog, so the keyboard waits for a tap (ticket 516). */
+function startControl(): HTMLElement | undefined {
+  const start =
+    props.initialFocus === 'dialog'
+      ? dialogEl.value
+      : (dialogEl.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0] ?? dialogEl.value)
+  return wouldRaiseKeyboard(start) ? dialogEl.value : start
+}
+
 /** Focus that leaves the dialog some other way (a click on the page behind, the panel that opened it giving focus back
- * to its button) is brought back: to the first control, or the dialog itself where that would raise a touch keyboard
- * (ticket 0688). */
+ * to its button) is brought back to where it started (tickets 0688, 0939). */
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
-  if (dialogEl.value && target && !dialogEl.value.contains(target)) {
-    const first = focusables()[0]
-    ;(first && !wouldRaiseKeyboard(first) ? first : dialogEl.value).focus({ preventScroll: true })
-  }
+  if (dialogEl.value && target && !dialogEl.value.contains(target)) startControl()?.focus({ preventScroll: true })
 }
 
 onMounted(() => {
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-  let start =
-    props.initialFocus === 'dialog'
-      ? dialogEl.value
-      : (dialogEl.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0] ?? dialogEl.value)
-  // On a touch device a start on a text entry starts on the dialog, so the keyboard waits for a tap (ticket 516).
-  if (wouldRaiseKeyboard(start)) start = dialogEl.value
-  start?.focus({ preventScroll: true })
+  startControl()?.focus({ preventScroll: true })
   document.addEventListener('focusin', onFocusIn)
 })
 

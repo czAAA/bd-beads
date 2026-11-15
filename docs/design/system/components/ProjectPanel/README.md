@@ -29,7 +29,7 @@ Not here any more: the export section with its Picture and Printable chart rows 
 
 ## Keyboard and screen readers
 
-- Arrows move through the items and buttons; Tab leaves the panel; focus returns to the Project button, which shows the open Project's name (CanvasStrip card, ticket 0858). Escape first closes an open picker, then ends a rename or a maker's name edit, and only then closes the panel.
+- Arrows move through the items and buttons; Tab and Shift+Tab wrap inside the panel, as in the Menu (ticket 0939); focus returns to the Project button, which shows the open Project's name (CanvasStrip card, ticket 0858). Escape first closes an open picker, then ends a rename or a maker's name edit (focus back on its pencil), and only then closes the panel. A question asked from a row (Duplicate, Clear all beads, Delete) starts on Cancel and gives focus back to the Project button.
 - The pencils are named for what they edit ("Rename Moth", "Change the maker's name"); each section is a named group; the save state is a polite live region, so "Not saved" is announced.
 
 ## Copy
