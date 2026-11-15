@@ -476,11 +476,6 @@ function onSubmit() {
     height: max(100%, var(--touch-target));
     transform: translate(-50%, -50%);
   }
-
-  /* The Background swatches grow to the touch target for real here, as touch swatches do (controls.css, ticket 166). */
-  .starter-setup :deep(.background-color-picker) {
-    --swatch-size: var(--touch-target);
-  }
 }
 
 /* The design's own size: a dot at the chip's top right. */
