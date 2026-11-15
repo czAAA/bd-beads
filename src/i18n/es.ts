@@ -1431,7 +1431,7 @@ export const es: Translations = {
     },
     convert: {
       name: 'Convertir en cuentas',
-      body: 'Convierte la imagen en {size} cuentas, al tamaño que tiene en el lienzo, con sus propios colores.',
+      body: 'Convierte la imagen en {size} cuentas, al tamaño que tiene en el lienzo.',
       size: 'tamaño',
       sizeInfoName: 'De dónde sale el tamaño',
       sizeInfo: 'El tamaño de la imagen en el lienzo. Arrastra una esquina de la imagen para cambiarlo.',
