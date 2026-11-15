@@ -110,6 +110,38 @@ function toggle() {
   opacity: 0.5;
 }
 
+/* Windows high contrast (ticket 0990): the system would paint track and knob both Canvas. The track keeps a ButtonText
+   edge, the knob is the text color, and on is Highlight with HighlightText (accessibility card, forced-colors). The knob
+   moves in by the edge so it stays centered; `:root` outranks the dark theme's knob. */
+@media (forced-colors: active) {
+  .app-switch {
+    --switch-edge: 1px;
+
+    forced-color-adjust: none;
+    background: Canvas;
+    border: var(--switch-edge) solid ButtonText;
+  }
+
+  :root .app-switch .app-switch__knob {
+    top: calc((var(--switch-height) - var(--switch-knob)) / 2 - var(--switch-edge));
+    left: calc((var(--switch-height) - var(--switch-knob)) / 2 - var(--switch-edge));
+    background: CanvasText;
+  }
+
+  .app-switch[aria-checked='true'] {
+    background: Highlight;
+  }
+
+  :root .app-switch[aria-checked='true'] .app-switch__knob {
+    background: HighlightText;
+  }
+
+  .app-switch:focus-visible,
+  .app-switch[aria-checked='true']:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-switch__knob {
     transition: none;

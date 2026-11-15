@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 import { ru } from '../../i18n/ru'
@@ -14,6 +14,7 @@ function mountHelp() {
 describe('ShortcutsHelp', () => {
   afterEach(() => {
     document.body.innerHTML = ''
+    vi.restoreAllMocks()
   })
 
   it('lists shortcuts grouped under the Tool group names, with the Canvas group (v16) after Tools', () => {
@@ -35,7 +36,7 @@ describe('ShortcutsHelp', () => {
     const wrapper = mountHelp()
     const text = wrapper.text()
 
-    for (const key of ['1', '2', '3', '4', 'Del', 'Space+drag', '5', '6', 'R', 'Ctrl/Cmd+wheel', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'D']) {
+    for (const key of ['1', '2', '3', '4', 'Del', 'Space+drag', '5', '6', 'R', 'Ctrl+wheel', 'Ctrl+C', 'Ctrl+V', 'Ctrl+S', 'D']) {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)
@@ -45,17 +46,33 @@ describe('ShortcutsHelp', () => {
     expect(text).toContain(ru.canvas.rulersLabel)
     expect(text).toContain(ru.shortcutsHelp.zoomCanvas)
     expect(text).toContain(ru.shortcutsHelp.paletteColors)
-    expect(text).toContain(ru.tools.pasteLabel)
   })
 
   it('lists the keys the registry lists, one row per action', () => {
     const wrapper = mountHelp()
     const rows = wrapper.findAll('.shortcuts-help__row').map((row) => row.find('.shortcuts-help__spoken').text())
 
-    for (const keys of ['Shift+Del', 'Shift+R', 'Ctrl/Cmd+Z', 'Ctrl/Cmd+Shift+Z, Ctrl+Y', 'Enter', 'Shift+Enter', 'Esc', '?']) {
+    for (const keys of ['Shift+Del', 'Shift+R', 'Ctrl+Z', 'Ctrl+Shift+Z, Ctrl+Y', 'Enter', 'Shift+Enter', 'Esc', '?']) {
       expect(rows).toContain(keys)
     }
     expect(wrapper.text()).toContain(ru.palette.rotateButton)
+  })
+
+  it('writes ⌘ and ⌫ on an Apple device, with no plus after ⌘ (ticket 0993)', () => {
+    vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)')
+    const rows = mountHelp().findAll('.shortcuts-help__row').map((row) => row.find('.shortcuts-help__spoken').text())
+    for (const keys of ['⌘Z', '⌫', '⌘+wheel']) expect(rows).toContain(keys)
+  })
+
+  it('lists the pill\'s tools 1 to 8 in one group, in the pill\'s order, and no two rows both named Paste (ticket 0993)', () => {
+    const wrapper = mountHelp()
+    const [tools] = wrapper.findAll('[data-testid="shortcuts-help-group"]')
+    const keys = tools.findAll('.shortcuts-help__spoken').map((key) => key.text())
+    expect(keys.slice(0, 8)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
+
+    const labels = wrapper.findAll('.shortcuts-help__row dt').map((label) => label.text())
+    expect(labels).not.toContain(ru.tools.pasteLabel)
+    expect(labels).toEqual(expect.arrayContaining([ru.shortcutsHelp.pasteTool, ru.shortcutsHelp.pasteClipboard]))
   })
 
   it('emits close when the close button is clicked', async () => {

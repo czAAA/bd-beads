@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The on/off switches show in Windows high contrast: an edge round the track, and the system's highlight when on",
+    "ru": "Переключатели видны в режиме высокой контрастности Windows: у дорожки есть рамка, а включённый подсвечен системным цветом",
+    "uk": "Перемикачі видно в режимі високої контрастності Windows: доріжка має рамку, а увімкнений підсвічено системним кольором",
+    "be": "Пераключальнікі бачныя ў рэжыме высокай кантраснасці Windows: дарожка мае рамку, а ўключаны падсвечаны сістэмным колерам",
+    "zh": "开关在 Windows 高对比度模式下可见：轨道带边框，打开时显示系统的高亮色",
+    "es": "Los interruptores se ven en el contraste alto de Windows: la pista tiene borde y, encendidos, el color de resaltado del sistema",
+    "pl": "Przełączniki są widoczne w trybie dużego kontrastu Windows: tor ma obramowanie, a włączony ma systemowy kolor wyróżnienia"
+  }
+}

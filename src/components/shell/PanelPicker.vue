@@ -4,6 +4,7 @@ import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import type { IconName } from '../ui/icons'
 import { useShellScope } from '../../composables/ui/shellScope'
 
@@ -25,6 +26,8 @@ const props = defineProps<{
   /** The list sits in the app shell, not beside its button: inside the margin sheet's scale, Safari keeps a top-layer
    * list where it first showed (the top-left corner). */
   inShell?: boolean
+  /** An Info button beside the label, holding what the setting decides (New Project's Technique, ticket 0951). */
+  info?: { label: string; body: string; testid: string }
   options: readonly { value: T; label: string; icon?: IconName; lang?: string; /** What the button shows when the name is long (a language's code). */ shortLabel?: string }[]
 }>()
 const value = defineModel<T>({ required: true })
@@ -136,7 +139,10 @@ function onListKeydown(event: KeyboardEvent) {
 
 <template>
   <div ref="rootEl" class="panel-picker" :class="{ 'panel-picker--bare': bare }">
-    <span v-if="!bare" class="panel-picker__label"><AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}</span>
+    <span v-if="!bare" class="panel-picker__label">
+      <AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}
+      <InfoButton v-if="info" class="panel-picker__info" :label="info.label" :body="info.body" :data-testid="info.testid" />
+    </span>
     <component
       :is="tooltip ? AppTooltip : 'span'"
       v-bind="tooltip ?? {}"
@@ -203,6 +209,10 @@ function onListKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: var(--space-8);
+}
+
+.panel-picker__label:has(.panel-picker__info) {
+  gap: var(--space-4);
 }
 
 .panel-picker--bare {

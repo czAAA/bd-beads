@@ -19,7 +19,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import ProjectThumbnail from './ProjectThumbnail.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import, Export all, then every saved
+// The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import, Export all, Delete all, then every saved
 // Project newest first (145), its second line "24 × 14 beads · saved Nov 12" (0982), its Pieces in that line's Tooltip.
 // A sealed Project (0716) is never decoded: its bead count stands in for the size, its Tooltip has both dates.
 const props = withDefaults(
@@ -28,8 +28,10 @@ const props = withDefaults(
     /** The Projects kept in their stored form (ticket 0716), listed among the rest by last save. */
     sealed?: SealedProject[]
     activeProjectId?: string
+    /** Whether it offers Delete all Projects (the editor's library; ticket 0984), under Save all, away from the list. */
+    deletesAll?: boolean
   }>(),
-  { sealed: () => [], activeProjectId: undefined },
+  { sealed: () => [], activeProjectId: undefined, deletesAll: false },
 )
 
 const emit = defineEmits<{
@@ -38,12 +40,14 @@ const emit = defineEmits<{
   /** The Projects a file held, ready to be saved. */
   import: [projects: Project[], pictures: ReadonlyMap<string, Blob>]
   exportAll: []
+  deleteAll: []
 }>()
 
 const { t, locale } = useI18n()
 /** This shell's idle Piece walks (ticket 0797). */
 const piecesWhenIdle = useIdlePieces()
 const exportAll = controlAction('export-all')
+const deleteAll = controlAction('delete-all-projects')
 
 /** Every row: the Projects in the order they arrive, each sealed one put in by last save. */
 const rows = computed(() => {
@@ -128,6 +132,18 @@ function sealedDates(project: SealedProject): string {
       @select="emit('exportAll')"
     >
       {{ exportAll.name(t) }}
+    </PanelItem>
+    <PanelItem
+      v-if="deletesAll"
+      icon="delete"
+      danger
+      :disabled="count === 0"
+      :name="deleteAll.name(t)"
+      :disabled-body="t.projects.emptyTitle"
+      data-testid="menu-delete-all"
+      @select="emit('deleteAll')"
+    >
+      {{ deleteAll.name(t) }}
     </PanelItem>
     <hr class="projects-library__rule" />
 

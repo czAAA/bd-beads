@@ -10,7 +10,34 @@ export interface Chord {
   label: string
 }
 
-/** A chord's parts as the dialog and the key chips show them: "Ctrl/Cmd", "Shift", then the key. */
-export function chordParts(chord: Chord): string[] {
-  return [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean)
+/** The keyboard a key is written for (ticket 0993, writing.md): an Apple one names ⌘ and ⌫, any other Ctrl and Del. */
+export type Keyboard = 'apple' | 'other'
+
+/** The platform's modifier in a help row written by hand (`[MOD_KEY, 'wheel']`), named for the keyboard by `keyParts`. */
+export const MOD_KEY = 'Mod'
+
+/** Keys named for the keyboard (ticket 0993): `MOD_KEY` as ⌘ or Ctrl, Del as ⌫ on an Apple keyboard, where Shift
+ * also comes before ⌘ as macOS writes it (Shift, ⌘, Z). */
+export function keyParts(parts: readonly string[], keyboard: Keyboard): string[] {
+  if (keyboard === 'other') return parts.map((part) => (part === MOD_KEY ? 'Ctrl' : part))
+  const named = parts.map((part) => (part === MOD_KEY ? '⌘' : part === 'Del' ? '⌫' : part))
+  return named.includes('⌘') && named.includes('Shift') ? ['Shift', ...named.filter((part) => part !== 'Shift')] : named
+}
+
+/** A chord's parts as the dialog and the key chips show them for the keyboard: the modifiers, then the key. */
+export function chordParts(chord: Chord, keyboard: Keyboard): string[] {
+  const modifier = chord.mod ? MOD_KEY : chord.ctrl ? 'Ctrl' : ''
+  return keyParts([modifier, chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean), keyboard)
+}
+
+/** Whether a "+" stands before part `index` of a chord: not between ⌘ and a one-character key (writing.md: "⌘V", no
+ * plus; "⌘+wheel" keeps it), and not before a key that is itself a sign (`Ctrl+`, `Ctrl−`, not `Ctrl++`). */
+export function plusBefore(parts: readonly string[], index: number): boolean {
+  if (index === 0 || (parts[index - 1] === '⌘' && parts[index].length === 1)) return false
+  return !(index === parts.length - 1 && (parts[index] === '+' || parts[index] === '−'))
+}
+
+/** A chord's parts on one line: "⌘V", "Shift+⌘Z", "Ctrl+Shift+Z", "Ctrl+", "⌘+wheel". */
+export function chordLine(parts: readonly string[]): string {
+  return parts.map((part, index) => (plusBefore(parts, index) ? `+${part}` : part)).join('')
 }
