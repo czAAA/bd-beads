@@ -141,5 +141,6 @@ const shown = computed(() => result.value?.kept ?? result.value)
   margin: 0;
   font: var(--type-small);
   color: var(--muted);
+  text-wrap: balance;
 }
 </style>
