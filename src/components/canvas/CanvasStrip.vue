@@ -157,7 +157,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <header class="canvas-strip no-page-pan" :class="{ 'canvas-strip--homepage': onHomepage }" data-testid="canvas-strip">
+  <header class="canvas-strip no-page-pan" :class="{ 'canvas-strip--homepage': onHomepage }" data-testid="canvas-strip" data-button-names>
     <!-- A header: the page's banner, outside main (ticket 0856, ScreenReaders card); inside the Homepage's demo, plain. -->
     <div class="canvas-strip__panels">
       <div ref="panelsEl" class="canvas-strip__panel-buttons" @keydown="onPanelsKeydown" @focusin="panelsRoving.onFocusin">
