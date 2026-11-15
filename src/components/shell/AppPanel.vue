@@ -7,6 +7,7 @@ import { PANEL_CONTEXT } from './panelContext'
 import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
 import { useI18n } from '../../i18n/useI18n'
+import type { Region } from '../../rendering/surfaceView'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 import { wouldRaiseKeyboard } from '../../composables/ui/touchKeyboard'
 
@@ -33,7 +34,7 @@ const props = defineProps<{
   /** Opens already on the subpanel; Escape then closes the panel instead of going back. */
   startInSub?: boolean
 }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; placed: [box: Region] }>()
 
 const { t } = useI18n()
 /** One entry per subpanel pushed over the root, with the title it was opened with and the row that opened it (found
@@ -96,6 +97,17 @@ const dropdownStyle = computed(() => ({
       : `${anchored.roomBelow.value}px`,
   ...(props.width ? { width: props.width } : {}),
 }))
+
+// Its box on the screen, told once as it first has its place (ticket 0971: the Frame panel moves the Canvas clear of it).
+let told = false
+watch(placed, (style) => {
+  if (told || style.opacity === '0') return
+  told = true
+  void nextTick(() => {
+    const box = panelEl.value?.getBoundingClientRect()
+    if (box) emit('placed', { x: box.left, y: box.top, width: box.width, height: box.height })
+  })
+})
 
 function place() {
   anchorEl.value = findInShell(`[data-testid="${props.anchor}"]`) ?? undefined

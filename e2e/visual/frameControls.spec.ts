@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
+import { currentZoomPercent, gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { frameOf } from '../../src/domain/layerRecord'
 import { frameGrid } from '../../src/testUtils/frameGrid'
@@ -45,18 +45,52 @@ for (const [zoom, scale] of [[100, 80 / 72], [400, 1.5]] as const) {
   })
 }
 
-test('opening the bar does not push the canvas or move the pencil', async ({ browser }) => {
-  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+for (const [name, viewport, hasTouch] of [['iPad', { width: 1366, height: 1024 }, true], ['laptop', { width: 1470, height: 956 }, false]] as const) {
+  test(`opening the Frame panel pans the Frame beside it, not under it, and closing puts it back, on the ${name} (ticket 0971)`, async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: 'light', viewport, hasTouch, reducedMotion: 'reduce' })
+    const page = await context.newPage()
+    // The Summer bracelet's size: 24 columns, which the panel covered 21 of.
+    await openApp(page, [fixtureProject({ technique: 'loom', columns: 24, rows: 10 })])
+    await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+    await settle(page)
+    const surface = await box(page, 'project-surface')
+    const closed = await box(page, 'frame-edit-toggle')
+    await page.getByTestId('strip-frame').click()
+    await settle(page)
+    const panel = await box(page, 'panel-dropdown')
+    // The canvas is not pushed; the view moves under it, so the Frame's columns, the first one too, lie right of the panel.
+    expect(await box(page, 'project-surface')).toEqual(surface)
+    const zoom = (await currentZoomPercent(page)) / 100
+    const grid = await gridBox(page)
+    const frame = frameOf(await savedProject(page))!
+    const first = beadCentre({ technique: 'loom', rotation: 0 }, grid, zoom, { row: frame.row, column: frame.column })
+    const last = beadCentre({ technique: 'loom', rotation: 0 }, grid, zoom, { row: frame.row, column: frame.column + frame.columns - 1 })
+    expect(first.x).toBeGreaterThan(panel.x + panel.width)
+    expect(last.x).toBeLessThan(viewport.width)
+
+    await page.keyboard.press('Escape')
+    await settle(page)
+    expect(await box(page, 'frame-edit-toggle')).toEqual(closed)
+    await context.close()
+  })
+}
+
+test('closing the Frame panel leaves a view the person moved where they left it (ticket 0971)', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1366, height: 1024 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
-  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 24, rows: 10 })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
   await settle(page)
-  const closed = await box(page, 'project-surface')
-  const pencil = await box(page, 'frame-edit-toggle')
   await page.getByTestId('strip-frame').click()
   await settle(page)
-  expect(await box(page, 'project-surface')).toEqual(closed)
-  expect(await box(page, 'frame-edit-toggle')).toEqual(pencil)
+  // A wheel over the Canvas beside the panel pans it, as a person's own move.
+  await page.mouse.move(1200, 500)
+  await page.mouse.wheel(40, 0)
+  await settle(page)
+  const moved = await box(page, 'frame-edit-toggle')
+  await page.keyboard.press('Escape')
+  await settle(page)
+  expect(await box(page, 'frame-edit-toggle')).toEqual(moved)
   await context.close()
 })
 

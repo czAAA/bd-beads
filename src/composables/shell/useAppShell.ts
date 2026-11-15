@@ -63,6 +63,7 @@ import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
 import { useRowInView } from '../canvas/useRowInView'
+import { useFrameBesidePanel } from '../canvas/useFrameBesidePanel'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
@@ -214,7 +215,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, visibleCentre, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
+  const { bindCanvasArea, zoom, scroll, viewPlaced, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, bringIntoView, putBack, areaOnScreen, visibleCentre, canvasOnScreen, isAtFit, stripZoomPercent, orientation: canvasOrientation, twistPhase, pinchStep, endTwist, onToolPillPlaced } =
     useCanvasFraming({
       currentProject,
       keepTwist: (turned) => rotateCanvasFlow.onTwistCanvas(turned),
@@ -700,6 +701,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     visibleCentre,
     dialogs,
   })
+  /** The Frame kept clear of the Frame panel while it is open (ticket 0971). */
+  const frameBesidePanel = useFrameBesidePanel({ currentProject, bringIntoView, putBack, panelOpen: () => frameFlow.barShown.value, area: areaOnScreen })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0054). */
   const editFrame = frameFlow.toggleHandles
 
@@ -1292,6 +1295,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       /** The Frame panel opens on its settings (ticket 0935): the Frame stays toast's Open Frame. */
       frameOpensOnSettings: frameFlow.opensOnSettings,
       onCloseFramePanel: frameFlow.closeBar,
+      onFramePanelPlaced: frameBesidePanel.panelPlaced,
       onStepFrameEdge: frameFlow.stepEdge,
       onResizeFrame: frameFlow.resizeTo,
       onRotateFrame: rotateFrameFlow.onRotateFrame,
