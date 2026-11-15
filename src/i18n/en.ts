@@ -1178,6 +1178,7 @@ export const en: Translations = {
       tooManyPixels: 'That picture is too big for this device to open. Make it smaller in a photo app and try again.',
       decodeFailed: 'That picture couldn\'t be read. Open it in a photo app, save it as PNG or JPEG and try again.',
     },
+    createdToast: 'Project “{name}” made from your picture. It is kept in this browser.',
   },
   replaceBead: {
     selectLabel: 'Replace bead',

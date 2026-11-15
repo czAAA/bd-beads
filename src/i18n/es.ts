@@ -1191,6 +1191,7 @@ export const es: Translations = {
       tooManyPixels: 'Esa imagen es demasiado grande para abrirla en este dispositivo. Hazla más pequeña en una app de fotos e inténtalo de nuevo.',
       decodeFailed: 'No se pudo leer esa imagen. Ábrela en una app de fotos, guárdala como PNG o JPEG e inténtalo de nuevo.',
     },
+    createdToast: 'Proyecto “{name}” creado a partir de tu imagen. Se guarda en este navegador.',
   },
   replaceBead: {
     selectLabel: 'Reemplazar cuenta',

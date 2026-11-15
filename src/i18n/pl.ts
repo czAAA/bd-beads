@@ -1194,6 +1194,7 @@ export const pl: Translations = {
       tooManyPixels: 'Ten obraz jest za duży, by otworzyć go na tym urządzeniu. Zmniejsz go w aplikacji do zdjęć i spróbuj ponownie.',
       decodeFailed: 'Nie udało się odczytać tego obrazu. Otwórz go w aplikacji do zdjęć, zapisz jako PNG lub JPEG i spróbuj ponownie.',
     },
+    createdToast: 'Projekt „{name}” utworzony z Twojego obrazu. Jest przechowywany w tej przeglądarce.',
   },
   replaceBead: {
     selectLabel: 'Zamień koralik',

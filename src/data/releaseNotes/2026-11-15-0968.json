@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Create Project in Convert image says the Project was made, by its name, and that it is kept in this browser",
+    "ru": "«Создать проект» в преобразовании изображения сообщает, что проект создан, называет его и говорит, что он хранится в этом браузере",
+    "uk": "«Створити проєкт» у перетворенні зображення повідомляє, що проєкт створено, називає його і каже, що він зберігається в цьому браузері",
+    "be": "«Стварыць праект» у пераўтварэнні выявы паведамляе, што праект створаны, называе яго і кажа, што ён захоўваецца ў гэтым браўзеры",
+    "zh": "在图片转换中点击“创建项目”后会提示项目已创建，写出它的名称，并说明它保存在此浏览器中",
+    "es": "Crear proyecto en Convertir imagen avisa de que el proyecto se ha creado, lo nombra y dice que se guarda en este navegador",
+    "pl": "Utwórz projekt w konwersji obrazu mówi, że projekt powstał, podaje jego nazwę i że jest przechowywany w tej przeglądarce"
+  }
+}
