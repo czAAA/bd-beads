@@ -860,6 +860,12 @@ onBeforeUnmount(() => {
   background: var(--box);
 }
 
+/* With no picture yet, the drop zone scrolls when the browser's text makes it taller than the preview, rather than cut
+ * its buttons off (ticket 0941). */
+.convert-preview:has(> .convert-drop) {
+  overflow-y: auto;
+}
+
 .convert-preview__room {
   position: relative;
   display: flex;

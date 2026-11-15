@@ -77,7 +77,9 @@ onBeforeUnmount(() => {
   justify-content: center;
   white-space: nowrap;
   font: var(--type-tagline);
-  font-size: var(--slogan-size);
+  /* At most 8% of the screen's width, so a large browser text size grows it only as far as the strip has room on a
+     phone (ticket 0941): its own size on every screen from 310px wide up. */
+  font-size: min(var(--slogan-size), 8vw);
   line-height: var(--slogan-line);
   letter-spacing: var(--tracking-tagline);
   color: var(--ink);
