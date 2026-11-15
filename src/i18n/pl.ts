@@ -1182,6 +1182,8 @@ export const pl: Translations = {
         asked: 'zadano {asked} · znaleziono {found}',
         allGiven: '{colors} (wszystko, co daje ten obraz w {bead})',
       },
+      backgroundChip: 'Znaleziono tło · {n}% obrazu',
+      backgroundTurnOff: 'Wyłącz',
     },
     errors: {
       heic: 'Przeglądarki nie odczytują obrazów HEIC. Zapisz go jako PNG lub JPEG i spróbuj ponownie.',

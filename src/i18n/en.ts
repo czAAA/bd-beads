@@ -1166,6 +1166,8 @@ export const en: Translations = {
         asked: '{asked} asked · {found} found',
         allGiven: '{colors} (all this picture gives in {bead})',
       },
+      backgroundChip: 'Background found · {n}% of the picture',
+      backgroundTurnOff: 'Turn off',
     },
     errors: {
       heic: 'Browsers can\'t read HEIC pictures. Save it as PNG or JPEG and try again.',

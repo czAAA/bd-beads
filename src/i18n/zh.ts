@@ -1157,6 +1157,8 @@ export const zh: Translations = {
         asked: '要 {asked} · 得 {found}',
         allGiven: '{colors}（这张图片在 {bead} 中只有这么多）',
       },
+      backgroundChip: '已找到背景 · 图片的 {n}%',
+      backgroundTurnOff: '关闭',
     },
     errors: {
       heic: '浏览器无法读取 HEIC 图片。请另存为 PNG 或 JPEG 后重试。',

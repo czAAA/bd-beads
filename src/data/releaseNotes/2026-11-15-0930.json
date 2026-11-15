@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "In Convert image, a background found and not yet removed stays in view once its popover closes: the Background button stays pressed, and a chip over the beads says how much was found, with Remove what was found and Turn off",
+    "ru": "В «Конвертировать изображение» найденный, но ещё не убранный фон виден и после закрытия его окна: кнопка «Фон» остаётся нажатой, а плашка над бисером говорит, сколько найдено, с кнопками «Убрать найденное» и «Выключить»",
+    "uk": "У «Конвертувати зображення» знайдене, але ще не прибране тло видно й після закриття його вікна: кнопка «Тло» лишається натиснутою, а плашка над бісером каже, скільки знайдено, з кнопками «Прибрати знайдене» і «Вимкнути»",
+    "be": "У «Канвертаваць выяву» знойдзены, але яшчэ не прыбраны фон бачны і пасля закрыцця яго акна: кнопка «Фон» застаецца націснутай, а плашка над бісерам кажа, колькі знойдзена, з кнопкамі «Прыбраць знойдзенае» і «Выключыць»",
+    "zh": "在“转换图片”中，找到但尚未去除的背景在其弹出框关闭后仍然可见：“背景”按钮保持按下，珠子上方的标签显示找到了多少，并带有“去除找到的部分”和“关闭”",
+    "es": "En Convertir imagen, un fondo encontrado y aún no quitado sigue a la vista al cerrar su ventana: el botón Fondo sigue pulsado y una etiqueta sobre las cuentas dice cuánto se encontró, con Quitar lo encontrado y Desactivar",
+    "pl": "W Konwertuj obraz znalezione, a jeszcze nieusunięte tło widać także po zamknięciu jego okna: przycisk Tło zostaje wciśnięty, a etykieta nad koralikami mówi, ile znaleziono, z przyciskami Usuń znalezione i Wyłącz"
+  }
+}

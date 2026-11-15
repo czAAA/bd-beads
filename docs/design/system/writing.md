@@ -1240,6 +1240,17 @@ After Row done, Back a row and Go to row the announcer says where the weaving is
 
 English follows the audit's proposal (UX-015, UX-017); the other languages are proposals for review with the build.
 
+## Background still found copy (ticket 0930)
+
+The chip over the beads while the background is found and not yet removed, with the Background popover closed (ConvertImage card). Its middle button is the popover's own "Remove what was found"; `{n}` is the share of the picture found.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Background found · {n}% of the picture (chip) | Фон найден · {n}% изображения | Тло знайдено · {n}% зображення | Фон знойдзены · {n}% выявы | 已找到背景 · 图片的 {n}% | Fondo encontrado · {n} % de la imagen | Znaleziono tło · {n}% obrazu |
+| Turn off (its last button) | Выключить | Вимкнути | Выключыць | 关闭 | Desactivar | Wyłącz |
+
+English follows the audit's proposal (UX-012); the other languages are proposals for review with the build.
+
 ## The Progress bar's words (ticket 0972)
 
 The counter names its step in the announcer's words: `{unit} {current} of {total}` above ("Row 7 of 10", "Pass 3 of 27" on peyote, with "· row 2" after it); the announcer reads the same step with the rulers' row, `{step}, row {line}`. Where the number counts passes, Go to row is Go to pass, the noun of its field, and an Info button beside its name holds the passes sentence. The back step says where it goes.

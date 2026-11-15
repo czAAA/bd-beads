@@ -1423,6 +1423,10 @@ export interface Translations {
         asked: string
         allGiven: string
       }
+      /** The chip over the beads while the background is found and the Background popover is closed (ticket 0930): what
+       * was found, then Remove what was found and Turn off. */
+      backgroundChip: string
+      backgroundTurnOff: string
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
