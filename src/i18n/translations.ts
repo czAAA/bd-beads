@@ -1399,6 +1399,12 @@ export interface Translations {
         atZero: string
         moved: string
       }
+      /** Fewer colors found than asked (ticket 0928): the Colors slider's value with both numbers, and the result's
+       * colors where the picture has no more to give in the colors matched to. */
+      fewerFound: {
+        asked: string
+        allGiven: string
+      }
     }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useConvertImageWizardState, type ConvertPopover as PopoverName } from '../../composables/import/useConvertImageWizard'
+import { useConvertColorsReach } from '../../composables/import/useConvertColorsReach'
 import { useConvertNeighbours } from '../../composables/import/useConvertNeighbours'
 import { useConvertSizeReadings } from '../../composables/import/useConvertSizeReadings'
 import { beadLabel, offeredBeads } from '../../domain/beads'
@@ -83,7 +84,15 @@ const matchedLine = computed(() => {
   }
   return fillBlanks(words.value.matchedBead, { bead })
 })
-const colorsValue = computed(() => plural(locale.value, wizard.maxColors.value, words.value.colorsCount))
+/** The Colors value: the count, or with fewer found than asked both numbers ("12 asked · 7 found", ticket 0928). */
+const colorsValue = computed(() => {
+  const asked = wizard.maxColors.value
+  const found = wizard.foundColorCount.value
+  if (found >= asked) return plural(locale.value, asked, words.value.colorsCount)
+  return fillBlanks(words.value.fewerFound.asked, { asked: groupThousands(asked, locale.value), found: groupThousands(found, locale.value) })
+})
+/** The last count that changes the beads (ticket 0928): the track is accent only up to it. */
+const colorsReach = useConvertColorsReach({ count: wizard.maxColors, found: wizard.foundColorCount, beadsAt: wizard.beadsAtColors, beadsShown: wizard.beadsShown })
 /** "40+" where the picture has more colors than the slider reaches, else "max 9" (DS-2). */
 const colorsMaxLabel = computed(() =>
   wizard.colorsMax.value > colorsEnd.value
@@ -260,6 +269,7 @@ function closeNeighbours(refocus: boolean) {
         :min-label="has ? String(MIN_IMAGE_COLORS) : ''"
         :max-label="has ? colorsMaxLabel : ''"
         :marks="has ? colorsMarks : undefined"
+        :reach="has ? colorsReach : undefined"
         :off-body="offBody"
         doubling
         :page-step="5"

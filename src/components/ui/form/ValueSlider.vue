@@ -36,6 +36,9 @@ const props = defineProps<{
   /** The value the filled part runs from to the thumb, either way (ticket 0908: the Lighting sliders' 0, a middle that
    * changes nothing); left out, it runs from the min. */
   origin?: number
+  /** The last value that changes anything (the Colors slider's last count that changes the beads, ticket 0928): with the
+   * thumb past it, the filled part is accent up to it and `line-strong` from it to the thumb. Not with an origin. */
+  reach?: number
   /** Shift and an arrow step by this much (ticket 0908); left out, Shift changes nothing. */
   shiftStep?: number
   /** What Page Up and Page Down move by, where not a tenth of the range (the Colors slider's 5, ticket 0904). */
@@ -64,6 +67,8 @@ const fill = computed(() => {
   const from = fraction(props.origin)
   return { '--vs-fill-from': Math.min(from, at.value), '--vs-fill-to': Math.max(from, at.value) }
 })
+/** With the thumb past the reach: where the accent stops, from 0 to 1. */
+const reachStyle = computed(() => (props.reach !== undefined && props.reach < props.modelValue ? { '--vs-reach': fraction(props.reach) } : undefined))
 /** On the doubling scale the native range runs in these steps of the track, and each step is read back as a value. */
 const TRACK_STEPS = 1000
 const rangeValue = computed(() => (logScale.value ? Math.round(at.value * TRACK_STEPS) : props.modelValue))
@@ -153,7 +158,7 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
 </script>
 
 <template>
-  <div class="vs" :class="{ 'vs--off': offBody !== undefined, 'vs--origin': fill }" :style="{ '--vs-at': at, ...fill }" :data-testid="testid">
+  <div class="vs" :class="{ 'vs--off': offBody !== undefined, 'vs--origin': fill, 'vs--reach': reachStyle }" :style="{ '--vs-at': at, ...fill, ...reachStyle }" :data-testid="testid">
     <div class="vs-head">
       <p class="vs-head-line">
         <span class="vs-label">
@@ -258,5 +263,10 @@ const markStyle = (value: number) => ({ left: `calc(var(--slider-thumb) / 2 + (1
   .vs--origin .vs-range::-webkit-slider-runnable-track { background: linear-gradient(to right, transparent var(--vs-fill-a), var(--accent) var(--vs-fill-a), var(--accent) var(--vs-fill-b), transparent var(--vs-fill-b)), var(--track); }
   .vs--origin .vs-range::-moz-range-track { background: linear-gradient(to right, transparent var(--vs-fill-a), var(--accent) var(--vs-fill-a), var(--accent) var(--vs-fill-b), transparent var(--vs-fill-b)), var(--track); }
   .vs--origin .vs-range::-moz-range-progress { background: none; }
+  /* Past the reach (ticket 0928): accent up to it, line-strong from it to the thumb, the track after. */
+  .vs--reach .vs-range { --vs-reach-at: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--vs-reach)); }
+  .vs--reach .vs-range::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--accent) var(--vs-reach-at), var(--line-strong) var(--vs-reach-at), var(--line-strong) var(--vs-line), transparent var(--vs-line)), var(--track); }
+  .vs--reach .vs-range::-moz-range-track { background: linear-gradient(to right, var(--accent) var(--vs-reach-at), var(--line-strong) var(--vs-reach-at), var(--line-strong) var(--vs-line), transparent var(--vs-line)), var(--track); }
+  .vs--reach .vs-range::-moz-range-progress { background: none; }
   [data-theme="contrast"] .vs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 </style>
