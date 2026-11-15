@@ -54,7 +54,7 @@ const { width, height } = useElementSize(rootEl, { box: 'border-box' })
 const at = computed(() => convertPopoverPlace(props.picture, props.barTop, { width: width.value, height: height.value }, props.viewport))
 
 const sourceOptions = computed(() => [
-  { value: 'exact' as const, label: wizard.value.exact },
+  { value: 'exact' as const, label: wizard.value.exactShort },
   ...(props.beadName ? [{ value: 'bead-colors' as const, label: fillBlanks(wizard.value.beadPalette, { bead: props.beadName }) }] : []),
   { value: 'default' as const, label: wizard.value.defaultPalette },
 ])
