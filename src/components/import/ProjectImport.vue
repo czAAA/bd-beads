@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import type { Project } from '../../domain/project'
+import { fillBlanks } from '../../domain/fillBlanks'
 import { importedPictures, importProjects, whyNotOpened, type UnopenedFile } from '../../domain/projectFile'
 import { projectFileAccept, readImportedFile } from '../../composables/import/readImportedFile'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -61,7 +62,7 @@ async function onImportFile(event: Event): Promise<void> {
   let read: { added: Project[]; pictures: ReadonlyMap<string, Blob> }
   try {
     const contents = await readImportedFile(file)
-    const added = importProjects(contents.projects, props.projects)
+    const added = importProjects(contents.projects, props.projects, fillBlanks(t.value.form.unnamedProject, { number: 1 }))
     read = { added, pictures: importedPictures(contents.projects, added, contents.pictures) }
   } catch {
     // Only a file that didn't read is blamed: what the app does with the Projects is no fault of the file.

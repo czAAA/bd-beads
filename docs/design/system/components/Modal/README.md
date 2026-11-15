@@ -4,7 +4,7 @@ A centered dialog for confirmations (Delete all?, Replace bead?) and the keyboar
 
 - Width 420 (confirm) to 560 (panels), `canvas` fill in light / `panel` in dark (plus a 1px `line-strong` border), radius-lg, `elevation-3`, padding 24.
 - **Scrim:** `rgba(0,0,0,.32)` light, `rgba(0,0,0,.6)` dark.
-- **Title:** `title` role (16/24 600). **Body:** `body` role.
+- **Title:** `title` role (16/24 600), its lines balanced. **Body:** `body` role. In both, a word longer than the line, such as a Project name with no spaces in Delete “{name}”? or Open “{name}”?, breaks where it has to (`overflow-wrap: anywhere` in the title, `break-word` in the body, which leaves its controls' widths as they are), so nothing runs out of the dialog sideways (ticket 0988).
 - **Actions:** right-aligned, 8 apart. Confirm is primary, or danger-filled (`danger`, white text) for destructive actions; cancel is secondary.
 - Escape and the scrim cancel. Focus is trapped inside and returns to the opener on close.
 
