@@ -1452,4 +1452,12 @@ export const zh: Translations = {
     feedbackEmail: '你的电子邮件',
     tooLong: '最多 {max} 个字符。',
   },
+  beadCursor: {
+    place: '第 {row} 行，第 {column} 列，{color}',
+    painted: '已涂上{color}',
+    filled: '已填充{color}',
+    erased: '已擦除',
+    selected: '已选择 {columns} × {rows}',
+    empty: '空',
+  },
 }

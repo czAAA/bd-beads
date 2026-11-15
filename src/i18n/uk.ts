@@ -1477,4 +1477,12 @@ export const uk: Translations = {
     feedbackEmail: 'Ваша ел. пошта',
     tooLong: 'Не більше {max} символів.',
   },
+  beadCursor: {
+    place: 'Ряд {row}, стовпець {column}, {color}',
+    painted: 'Пофарбовано: {color}',
+    filled: 'Залито: {color}',
+    erased: 'Стерто',
+    selected: 'Виділено {columns} на {rows}',
+    empty: 'порожньо',
+  },
 }
