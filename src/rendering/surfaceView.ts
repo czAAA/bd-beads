@@ -194,9 +194,9 @@ export interface SurfaceView {
   // The scroll after the zoom changes to `to`, keeping the displayed point under `anchor` (a position in the viewport)
   // where it was.
   scrollAfterZoom(anchor: Scroll, to: number): Scroll
-  // The largest zoom, never past 100%, at which a block of beads leaves `margin` px clear on every side of the
-  // viewport; whole percent, rounded down.
-  zoomToFit(box: Rect, margin: Size, layer?: ViewLayer): number
+  // The largest zoom, never past `most` (100% unless said), at which a block of beads leaves `margin` px clear on
+  // every side of the viewport; whole percent, rounded down.
+  zoomToFit(box: Rect, margin: Size, layer?: ViewLayer, most?: number): number
   /** How far one step along a row (`column`) and one step down (`row`) go on screen, in a layer's Weave. */
   beadStep(layer?: ViewLayer): { column: Scroll; row: Scroll }
   /** A point in grid space, in the viewport. For the layouts that hang things off a bead's edge (the rulers). */
@@ -358,11 +358,11 @@ export function surfaceView({ space, technique, techniqueSettings, cell: canvasC
       const ratio = to / zoom
       return { x: (scroll.x + anchor.x) * ratio - anchor.x, y: (scroll.y + anchor.y) * ratio - anchor.y }
     },
-    zoomToFit: (box, margin, layer) => {
+    zoomToFit: (box, margin, layer, most = 1) => {
       const shown = displayedBox(box, 1, layerNamed(layer))
       const across = shown.width > 0 ? (viewport.width - margin.width * 2) / shown.width : Infinity
       const down = shown.height > 0 ? (viewport.height - margin.height * 2) / shown.height : Infinity
-      return Math.floor(Math.min(1, across, down) * 100) / 100
+      return Math.floor(Math.min(most, across, down) * 100) / 100
     },
     beadStep: (name) => {
       const origin = displayed(0, 0, zoom)

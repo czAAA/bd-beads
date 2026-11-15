@@ -35,7 +35,7 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     expect(locate(surface)).toEqual(surface.beadBox(fitBox(small)!.box, 'canvas'))
   })
 
-  it('brings the Frame and its rulers into the side where its sheet is too wide for it, so its first columns show', () => {
+  it('brings the Frame and its rulers into the side where its sheet is too wide for it, so its first columns show, as many as the side holds (ticket 0964)', () => {
     const { bringIntoView, panelPlaced } = setup()
     panelPlaced(panel)
     expect(bringIntoView).toHaveBeenCalledTimes(1)
@@ -44,7 +44,10 @@ describe('useFrameBesidePanel (ticket 0971)', () => {
     const frame = placedFrame(framed)!
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 1366, height: 930 }, frame })
     const line = surface.frameBox(frame)
-    expect(locate(surface)).toEqual({ x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: line.width + 2 * RULER_GUTTER_PX, height: line.height + 2 * RULER_GUTTER_PX })
+    // The Frame and its rulers, 550px wide, are cut to the 497px the side holds, from the first column.
+    const room = area.width - how.clear.left - how.clear.right
+    expect(line.width + 2 * RULER_GUTTER_PX).toBeGreaterThan(room)
+    expect(locate(surface)).toEqual({ x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: room, height: line.height + 2 * RULER_GUTTER_PX })
   })
 
   it('takes the move back as the panel closes, once', () => {

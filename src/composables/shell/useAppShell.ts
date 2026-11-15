@@ -416,11 +416,12 @@ function wireAppShell(services: Services, options: ShellOptions) {
   }
 
   /** Select a frame (ticket 568): Select is the tool, and the Selection the next drag makes is framed on release. From
-   * the Export panel, the panel comes back once the Frame is set (ticket 0847). */
+   * the Export panel, the panel comes back once the Frame is set (ticket 0847). On touch the notice names no Escape key:
+   * picking a tool cancels there (ticket 0954). */
   function onSelectFrame(from: FramingFrom = 'frame') {
     onSelectTool('select')
     selectingFrame.value = from
-    showToast('select-frame', t.value.frame.selectFrameHint, 'info')
+    showToast('select-frame', touch.value ? t.value.frame.selectFrameTouchHint : t.value.frame.selectFrameHint, 'info')
   }
 
   /** The Progress bar's Fit a Frame and export a picture (ticket 0847, O-03): Fit to drawing, then Export on Picture. */
@@ -917,6 +918,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const manageProject = useProjectManageFlow({
     currentProject,
     projects: () => projects.value,
+    sealed: () => sealed.value,
     replaceProject,
     // Duplicate copies the reference image's picture with the settings (ticket 0790).
     addProject: (copy) => {
@@ -1395,6 +1397,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onSaveFileBeforeDelete: deleteProject.onSaveFileBeforeDelete,
       onConfirmDeleteAllProjects: manageProject.onConfirmDeleteAllProjects,
       onCancelDeleteAllProjects: manageProject.onCancelDeleteAllProjects,
+      // Delete all Projects? names how many go, sealed ones too, and saves them all first as the library's row does (ticket 0984)
+      deleteAllCount: computed(() => projects.value.length + sealed.value.length),
+      onSaveAllBeforeDeleteAll: exportFlow.onExportLibraryFile,
       naming: namePiece.naming,
       onSavePieceName: namePiece.onSavePieceName,
       onCancelPieceName: namePiece.onCancelPieceName,

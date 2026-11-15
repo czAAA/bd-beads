@@ -293,7 +293,7 @@ const CASES: FitCase[] = [
   ['Convert image page (no picture)', ConvertPageHost, wizardProps(false)],
   ['PictureDropOverlay', PictureDragged, {}],
   [
-    'Convert image page (Make empty)',
+    'Convert image page (Leave a color out)',
     ConvertPageHost,
     wizardProps(true),
     async (root) => {
@@ -407,7 +407,7 @@ const CASES: FitCase[] = [
   [
     'Convert image Finish list',
     ConvertSectionHost,
-    popoverBody(defineComponent(() => () => h(ConvertFinishFilter, { codes: 'codes in 11/0: 1 191' }))),
+    popoverBody(defineComponent(() => () => h(ConvertFinishFilter, { codes: '1 191 bead colors in size 11/0' }))),
     async (root) => {
       await bodyShown(root)
       press(root, 'convert-finish')

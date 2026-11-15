@@ -328,7 +328,7 @@ describe('ConvertImageWizard setup', () => {
       `Miyuki Delica 11/0 palette: The codes are real Miyuki Delica 11/0 beads. Their colors are approximate, made from the color family and the finish. ${words.defaultPalette}: ${words.defaultPaletteNote} ${words.exact}: ${words.exactNote} ${words.finish.note}`,
     )
     expect(hint()).toBe(fillBlanks(words.colorsHint, { n: '2' }))
-    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('real beads · miyuki delica 11/0 · approximate colors')
     await matchTo(wrapper, 'default')
     expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe(words.matchedDefault)
     await matchTo(wrapper, 'exact')
@@ -343,7 +343,8 @@ describe('ConvertImageWizard setup', () => {
     await openColorByColor(wrapper)
     const words = en.convertImage.wizard
 
-    expect(wrapper.get('[data-picture-hex~="#e63746"] [data-testid="found-color-source"]').text()).toBe(words.beadColors)
+    // A Bead color has no source line: its code says it is a bead (ticket 0966).
+    expect(wrapper.find('[data-picture-hex~="#e63746"] [data-testid="found-color-source"]').exists()).toBe(false)
     expect(wrapper.findAll('[data-testid="found-colors-header"] span').map((cell) => cell.text())).toEqual([
       words.fromPicture,
       words.becomes,
@@ -563,7 +564,7 @@ describe('ConvertImageWizard the floating bar (tickets 0780, 0896)', () => {
   const chip = (wrapper: VueWrapper) => wrapper.find('[data-testid="convert-chip"]')
   afterEach(() => vi.useRealTimers())
 
-  it('holds Background, Make empty and Compare, named from the registry, once a picture is set: no Select, Undo or Redo', async () => {
+  it('holds Background, Leave a color out and Compare, named from the registry, once a picture is set: no Select, Undo or Redo', async () => {
     const { wrapper } = open()
     expect(wrapper.find('[data-testid="convert-preview-tools"]').exists()).toBe(false)
     await chooseFile(wrapper, picture())
@@ -584,7 +585,7 @@ describe('ConvertImageWizard the floating bar (tickets 0780, 0896)', () => {
     expect(wrapper.get('[data-testid="convert-flip"]').text()).toBe(en.convertImage.wizard.flipLeftRight)
   })
 
-  it('makes a color empty with Make empty’s tap, and brings it back with a tap on its empty place, in step with Color by color', async () => {
+  it('makes a color empty with Leave a color out’s tap, and brings it back with a tap on its empty place, in step with Color by color', async () => {
     const { wrapper, wizard } = open()
     await chooseFile(wrapper, picture())
     expect(box(wrapper).attributes('style')).not.toContain('cursor')
@@ -780,7 +781,7 @@ describe('ConvertImageWizard Compare, the picture beside the beads (ticket 0909)
     expect(compare.attributes('aria-pressed')).toBe('true')
   })
 
-  it('under 1024 px holds Background and Make empty as icons and Beads | Picture, a tap on Picture staying', async () => {
+  it('under 1024 px holds Background and Leave a color out as icons and Beads | Picture, a tap on Picture staying', async () => {
     const media = fakeMatchMedia({ [NARROW_CONVERTER]: true })
     window.matchMedia = media.matchMedia
     const { wrapper } = open()
@@ -880,7 +881,7 @@ describe('ConvertImageWizard the crop on the picture (ticket 0898)', () => {
     expect(wrapper.find('[data-testid="convert-kept"]').exists()).toBe(false)
   })
 
-  it('hides the handles while Make empty is on', async () => {
+  it('hides the handles while Leave a color out is on', async () => {
     const { wrapper } = open({ decodeImage: eightyWide })
     await chooseFile(wrapper, picture())
     await wrapper.get('[data-testid="convert-tool-make-empty"]').trigger('click')
@@ -1067,7 +1068,7 @@ describe('ConvertImageWizard My beads (ticket 0902)', () => {
 
     expect(row(wrapper, 'DB723').attributes('aria-pressed')).toBe('true')
     expect(row(wrapper, 'DB723').attributes('aria-label')).toBeUndefined()
-    expect(row(wrapper, 'DB723').text().replace(/\s+/g, ' ')).toBe('DB723 red opaque')
+    expect(row(wrapper, 'DB723').text().replace(/\s+/g, ' ')).toBe('DB723 Opaque Red')
     expect(row(wrapper, 'DB200').attributes('aria-pressed')).toBe('false')
     expect(wrapper.get('[data-testid="convert-my-beads-count"]').text()).toBe('1 code')
 
@@ -1098,7 +1099,7 @@ describe('ConvertImageWizard My beads (ticket 0902)', () => {
     await matchTo(wrapper, 'my-beads')
 
     expect(wrapper.get('[data-testid="convert-color-source"]').text()).toBe(words.name)
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in my beads: 1')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('1 bead color in my beads')
     expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('my beads · 1 code')
     expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toBe('1 color (your list has 1)')
     expect(wrapper.findAll('[data-testid="found-color"]')).toHaveLength(1)
@@ -1153,24 +1154,24 @@ describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', (
     const list = wrapper.get('[data-testid="convert-finish-list"]')
     expect(list.findAll('[data-testid="bead-colors-finish"]').map((line) => line.attributes('aria-label'))).toEqual(['Opaque, 2', 'Matte, 2', 'Plated, 1'])
     expect(list.find('[data-testid="bead-colors-family"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in 11/0: 5')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('5 bead colors in size 11/0')
 
     await finishLine(wrapper, 'matte').trigger('click')
     await flushPromises()
     expect(finishLine(wrapper, 'matte').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in 11/0: 2')
-    expect(wrapper.get('[data-testid="convert-finish-codes"]').text()).toBe('codes in 11/0: 2')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('2 bead colors in size 11/0')
+    expect(wrapper.get('[data-testid="convert-finish-codes"]').text()).toBe('2 bead colors in size 11/0')
     expect(codesUsed(wrapper).every((name) => name.startsWith('DB378') || name.startsWith('DB351'))).toBe(true)
     expect(wrapper.get('[data-testid="convert-finish"]').attributes('aria-label')).toBe('Finish, 1 on')
     expect(wrapper.get('[data-testid="convert-finish-badge"]').text()).toBe('1')
 
     await finishLine(wrapper, 'opaque').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0 · opaque, matte')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('real beads · miyuki delica 11/0 · opaque, matte · approximate colors')
 
     await wrapper.get('[data-testid="convert-finish-list"] [data-testid="bead-colors-filters-clear"]').trigger('click')
     await flushPromises()
-    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('codes in 11/0: 5')
+    expect(wrapper.get('[data-testid="convert-codes"]').text()).toBe('5 bead colors in size 11/0')
     expect(wrapper.find('[data-testid="convert-finish-badge"]').exists()).toBe(false)
   })
 
@@ -1182,7 +1183,7 @@ describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', (
 
     expect(wrapper.get('[data-testid="convert-too-few"]').text()).toBe('Only 1 code left: 1 color, not 2.')
     expect(wrapper.get('[data-testid="convert-result-colors"]').text()).toBe('1 color (only 1 code left)')
-    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0 · plated')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('real beads · miyuki delica 11/0 · plated · approximate colors')
   })
 
   it('is off under Default Palette and Exact, saying why, and brings its Finishes back with the Bead’s palette', async () => {
@@ -1202,7 +1203,7 @@ describe('ConvertImageWizard the match kept to chosen Finishes (ticket 0901)', (
     await matchTo(wrapper, 'bead-colors')
     await flushPromises()
     expect(isOff(wrapper, 'convert-finish')).toBe(false)
-    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('miyuki delica 11/0 · matte')
+    expect(wrapper.get('[data-testid="convert-matched"]').text()).toBe('real beads · miyuki delica 11/0 · matte · approximate colors')
   })
 
   it('opens Color by color’s Change picker on the converter’s Finishes, its Filters counting them', async () => {

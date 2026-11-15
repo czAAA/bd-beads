@@ -131,15 +131,19 @@ export async function currentZoomPercent(page: Page): Promise<number> {
   return Number.parseInt((await page.getByTestId('canvas-strip-zoom').getAttribute('data-zoom-percent')) ?? '', 10)
 }
 
-/** Clicks the zoom buttons until the level reads `percent`, and waits for the picture to catch up. */
+/** Clicks the zoom buttons until the level reads `percent`, and waits for the picture to catch up. The last button
+ * clicked gives its focus up, so a Space pressed next pans the Canvas rather than pressing the button again. */
 export async function setZoom(page: Page, percent: number): Promise<void> {
+  let clicked = false
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const current = await currentZoomPercent(page)
     if (current === percent) {
       break
     }
     await zoomControl(page, current < percent ? 'in' : 'out').click()
+    clicked = true
   }
+  if (clicked) await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
   await settle(page)
 }
 

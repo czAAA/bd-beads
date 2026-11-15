@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { en } from '../../i18n/en'
 import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 import ConvertToBeadsPopover from './ConvertToBeadsPopover.vue'
 
@@ -41,10 +42,10 @@ describe('ConvertToBeadsPopover (ReferenceImage card, ticket 0883)', () => {
 
   it('offers Exact first, the Bead\'s palette only with a Color catalog, and the Default Palette', () => {
     const without = mountPopover()
-    expect(without.findAll('[data-testid="convert-to-beads-source"] [role="radio"]').map((option) => option.text())).toEqual(['Exact', 'Default Palette'])
+    expect(without.findAll('[data-testid="convert-to-beads-source"] [role="radio"]').map((option) => option.text())).toEqual([en.convertImage.wizard.exactShort, 'Default Palette'])
     without.unmount()
     const withCatalog = mountPopover({ beadName: 'TOHO Cube 1.5mm' })
-    expect(withCatalog.findAll('[data-testid="convert-to-beads-source"] [role="radio"]').map((option) => option.text())).toEqual(['Exact', 'TOHO Cube 1.5mm palette', 'Default Palette'])
+    expect(withCatalog.findAll('[data-testid="convert-to-beads-source"] [role="radio"]').map((option) => option.text())).toEqual([en.convertImage.wizard.exactShort, 'TOHO Cube 1.5mm palette', 'Default Palette'])
     withCatalog.unmount()
   })
 
