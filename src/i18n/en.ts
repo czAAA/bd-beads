@@ -464,6 +464,8 @@ export const en: Translations = {
     moreLabel: 'More',
     moveSelection: 'Move selection',
     moveSelectionBody: 'Drag to move the selection, or press an arrow key to move it by a bead.',
+    movePiece: 'Move piece',
+    movePieceBody: 'Drag to move the piece with its beads, or press an arrow key to move it by a bead.',
   },
   palette: {
     pickerLabel: 'Palette colors',

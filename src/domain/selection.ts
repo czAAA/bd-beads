@@ -76,7 +76,7 @@ export function selectionMask(selection: Selection): ((row: number, column: numb
 }
 
 /** Whether the Selection has the Frame's eight handles: a rectangle big enough for guides. A shape has none and can't
- * be resized or moved (ticket 547). */
+ * be resized (ticket 547); its bar's move grip moves it with its beads (ticket 1013). */
 export function selectionHasHandles(selection: Selection): boolean {
   return !selection.cells && hasGuides(selection)
 }
@@ -302,7 +302,7 @@ function landedOnCustom(sheet: LayerSheet, block: CopiedBlock, at: GridPosition)
 
 /** Every position in a Selection on its layer: the Selection's rectangle (a shape's own cells), cut to what the layer
  * shows (`selectableOn`); on a Custom frame every bead whose centre lies in it (ticket 0594). */
-function selectionCells(sheet: LayerSheet, selection: Selection, selectable: (row: number, column: number) => boolean): GridPosition[] {
+export function selectionCells(sheet: LayerSheet, selection: Selection, selectable: (row: number, column: number) => boolean): GridPosition[] {
   if (!sheet.geometry.grid) return positionsInRectangle(sheet, selection).map(({ row, column }) => ({ row, column }))
   const mask = selectionMask(selection)
   const cells: GridPosition[] = []

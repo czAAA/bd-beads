@@ -20,6 +20,7 @@ import {
   type PasteStamp,
   type Selection,
 } from '../../domain/selection'
+import { moveLayerSelection, stepMove, wholeMove } from '../../domain/moveSelection'
 import { frameAllows } from '../../domain/frameShape'
 import { laidFrame } from '../../domain/frameOrientation'
 import { frameOf, layerOf } from '../../domain/layerRecord'
@@ -65,11 +66,16 @@ export function useSelectionGesture(
 
   // A press on the Selection's handles or inside it (ticket 414): a handle resizes, the inside moves the outline,
   // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do; the area's bar's
-  // move grip (ticket 0808) names no tool, so it never taps.
+  // move grip (ticket 0808) names no tool, so it never taps. On a Piece's shape it carries the beads (ticket 1013).
   let adjust:
     | { kind: 'resize'; edges: FrameEdge[]; start: Selection }
     | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool?: 'select' | 'piece' }
+    | { kind: 'carry'; origin: GridPosition; start: Selection }
     | undefined
+
+  /** A Piece held by its move grip (ticket 1013): how far it has come from where it was, and the Project as the release
+   * will leave it, which the canvas shows meanwhile. The open Project is untouched until the release. */
+  const carried = shallowRef<{ rows: number; columns: number; project: Project } | undefined>()
 
   // Where a Select press started and whether it has left that cell. Dragging marks a new Selection; a click in place
   // stamps the copy, or with none drops the Selection, so the press only records its anchor here and endPress decides
@@ -209,8 +215,38 @@ export function useSelectionGesture(
     if (target.kind === 'handle') {
       adjust = { kind: 'resize', edges: target.edges, start }
     } else if (target.kind === 'inside') {
-      adjust = { kind: 'move', origin: cell, start, moved: false, tool }
+      adjust = start.cells ? { kind: 'carry', origin: cell, start } : { kind: 'move', origin: cell, start, moved: false, tool }
     }
+  }
+
+  /** Carries the held Piece to where the drag has reached, by whole beads of its Weave; a place it can't lie whole
+   * (`moveLayerSelection`) is passed over, the Piece waiting at the last one it could. */
+  function carryTo(held: Extract<NonNullable<typeof adjust>, { kind: 'carry' }>, cell: GridPosition) {
+    const project = currentProject()
+    if (!project) return
+    const by = wholeMove(project, held.start, cell.row - held.origin.row, cell.column - held.origin.column)
+    if (by.rows === (carried.value?.rows ?? 0) && by.columns === (carried.value?.columns ?? 0)) return
+    if (by.rows === 0 && by.columns === 0) {
+      carried.value = undefined
+      selection.value = held.start
+      return
+    }
+    const moved = moveLayerSelection(project, held.start, by.rows, by.columns)
+    if (!moved) return
+    carried.value = { ...by, project: moved.project }
+    selection.value = moved.selection
+  }
+
+  /** Lands a Piece's move as one Edit; the Selection goes with the beads, or stays where the move was not made. */
+  function landMove(start: Selection, rows: number, columns: number): boolean {
+    let landed: Selection | undefined
+    const outcome = edit('drawing', (current) => {
+      const moved = moveLayerSelection(current, start, rows, columns)
+      landed = moved?.selection
+      return moved?.project ?? current
+    })
+    selection.value = outcome.kind === 'applied' && landed ? landed : start
+    return outcome.kind === 'applied'
   }
 
   /** Carries the adjust on to the bead position the drag has reached. */
@@ -221,6 +257,10 @@ export function useSelectionGesture(
     // Neither stops at the Frame or its margin (ticket 0659): the Selection keeps its layer wherever it goes.
     if (adjust.kind === 'resize') {
       selection.value = selectionWithEdges(adjust.start, adjust.edges, cell)
+      return
+    }
+    if (adjust.kind === 'carry') {
+      carryTo(adjust, cell)
       return
     }
     const rows = cell.row - adjust.origin.row
@@ -236,6 +276,12 @@ export function useSelectionGesture(
     const done = adjust
     adjust = undefined
     if (done) lastDrag = done.kind === 'resize' && selection.value ? { kind: 'resize', adjust: done, made: selection.value } : undefined
+    if (done?.kind === 'carry') {
+      const held = carried.value
+      carried.value = undefined
+      if (held) landMove(done.start, held.rows, held.columns)
+      return
+    }
     if (done?.kind !== 'move' || done.moved || !done.tool) {
       return
     }
@@ -397,12 +443,21 @@ export function useSelectionGesture(
   // one), after which a Selection may no longer fit.
   function clearSelection() {
     selection.value = undefined
+    carried.value = undefined
   }
 
-  /** An arrow on the move grip (ticket 0808): the rectangle moves by that many beads, as a drag of its inside does. */
+  /** An arrow on the move grip (ticket 0808): the rectangle moves by that many beads, as a drag of its inside does. A
+   * Piece's shape moves with its beads, one Undo step an arrow (ticket 1013); a step it can't make shows the cue. */
   function moveSelectionBy(rows: number, columns: number) {
     const current = selection.value
-    if (current && !current.cells) selection.value = movedSelection(current, rows, columns)
+    const project = currentProject()
+    if (!current || !project) return
+    if (!current.cells) {
+      selection.value = movedSelection(current, rows, columns)
+      return
+    }
+    const step = stepMove(project, current, rows, columns)
+    if (!landMove(current, step.rows, step.columns)) refusals.value += 1
   }
 
   return {
@@ -433,6 +488,8 @@ export function useSelectionGesture(
     pastePreviewStamp,
     clearSelection,
     moveSelectionBy,
+    /** The Project as a Piece held by its move grip will leave it (ticket 1013), for the canvas to show; none otherwise. */
+    carriedProject: computed(() => carried.value?.project),
     /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the
      * Selection's own controls once this is true). */
     pasteProjectionActive,

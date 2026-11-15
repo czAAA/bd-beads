@@ -587,6 +587,9 @@ export interface Translations {
     /** The Selection bar's move grip (ticket 0808): its name and its Tooltip. */
     moveSelection: string
     moveSelectionBody: string
+    /** The same grip on a Piece's shape (ticket 1013): its name and what it does. */
+    movePiece: string
+    movePieceBody: string
   }
   palette: {
     pickerLabel: string

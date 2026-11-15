@@ -567,10 +567,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, le
   }
 
   /** A press on the move grip of an area's bar (ticket 0808): the drag a press inside the area starts, whatever
-   * the tool, with no tap at its end. */
+   * the tool, with no tap at its end. A Piece's shape has the grip too, and its beads go with it (ticket 1013). */
   function pressAreaGrip(event: PointerEvent, area: SheetArea): void {
     const place = props.mirror?.place
-    const layer = area === 'selection' ? props.selection && !props.selection.cells && selectionLayer(props.project, props.selection) : place?.layer === 'canvas' && 'canvas'
+    const layer = area === 'selection' ? props.selection && selectionLayer(props.project, props.selection) : place?.layer === 'canvas' && 'canvas'
     if (!layer || event.button !== 0) return
     touchInput.value = event.pointerType === 'touch'
     onPress(event)

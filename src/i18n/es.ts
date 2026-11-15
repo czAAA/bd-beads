@@ -466,6 +466,8 @@ export const es: Translations = {
     moreLabel: 'Más',
     moveSelection: 'Mover selección',
     moveSelectionBody: 'Arrastra para mover la selección, o pulsa una flecha para moverla una cuenta.',
+    movePiece: 'Mover trozo',
+    movePieceBody: 'Arrastra para mover el trozo con sus cuentas, o pulsa una flecha para moverlo una cuenta.',
   },
   palette: {
     pickerLabel: 'Colores de la paleta',
