@@ -385,16 +385,16 @@ describe('Backgrounds (ticket 0666)', () => {
 })
 
 describe('The Export panel', () => {
-  it('opens from the Project panel\'s Picture and Printable chart, focused on the row chosen (ticket 0843)', async () => {
+  it('opens from the Project panel\'s Export row, which closes Project and saves nothing (ticket 0956)', async () => {
+    vi.mocked(downloadFile).mockClear()
     const mounted = mountPanels()
-    for (const [row, chosen] of [['project-export-png', 'export-png'], ['project-export-pdf', 'export-pdf']]) {
-      await mounted.openPanel('project')
-      await click(mounted, row)
-      await nextTick()
+    await mounted.openPanel('project')
+    await click(mounted, 'project-export')
+    await nextTick()
 
-      expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
-      expect(document.activeElement?.getAttribute('data-testid')).toBe(chosen)
-    }
+    expect(mounted.wrapper.find('[data-testid="project-panel"]').exists()).toBe(false)
+    expect(mounted.wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
+    expect(downloadFile).not.toHaveBeenCalled()
   })
 
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {

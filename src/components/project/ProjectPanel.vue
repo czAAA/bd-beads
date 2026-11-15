@@ -6,7 +6,6 @@ import type { Background, Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
 import type { ImageRejection } from '../../domain/imageConversion'
 import type { OpacityStep } from '../../domain/referenceImage'
-import type { ExportChoice } from '../../composables/shell/openPanel'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -18,8 +17,8 @@ import ReferenceImageSection from './ReferenceImageSection.vue'
 import { layerSettingsOf, layerSummary } from './layerSettingsOf'
 
 // The body of Project (spec 0440, tickets 443, 554, 0670; ProjectPanel card): everything about the open Project that no
-// tool already does. A head (title, name, maker), then four sections that fold shut: the Canvas's Layer settings, the
-// reference image (0790), export (its Picture and Printable chart open Export, 0843) and this project. It only asks.
+// tool already does. A head (title, name, maker), then three sections that fold shut: the Canvas's Layer settings, the
+// reference image (0790) and this project (the Project file first, one row to Export, 0956). It only asks.
 const props = defineProps<{
   project: Project
   saveFailed: boolean
@@ -50,8 +49,8 @@ const emit = defineEmits<{
   /** Save and Save as (ADR 0090, ticket 0796), the actions the save ring and the keys also run. */
   'save-project-file': []
   'save-project-file-as': []
-  /** Picture or Printable chart (ticket 0843): open Export on that choice, as the Canvas strip's Export button opens it. */
-  export: [choice: ExportChoice]
+  /** The one Export row (ticket 0956): open the Export panel, as the Canvas strip's Export button opens it. */
+  export: []
   'save-maker-name': [name: string]
   duplicate: []
   clear: []
@@ -65,6 +64,7 @@ const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const save = controlAction('save-project-file')
 const saveAs = controlAction('save-project-file-as')
+const exportPanel = controlAction('strip-export')
 
 const canvas = computed(() => layerSettingsOf(props.project, 'canvas'))
 /** The Canvas section's header (ticket 0935): with a Frame on the Canvas it says it sets the Canvas outside it. */
@@ -109,15 +109,11 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       @remove="emit('remove-reference-image')"
     />
 
-    <PanelSection id="project:export" :label="t.panels.project.exportHeading">
-      <PanelItem icon="image" value=".png" data-testid="project-export-png" @select="emit('export', 'png')">{{ t.frame.exportPicture }}</PanelItem>
-      <PanelItem icon="pdf" value=".pdf" data-testid="project-export-pdf" @select="emit('export', 'pdf')">{{ t.frame.exportChart }}</PanelItem>
+    <PanelSection id="project:this" :label="t.panels.project.thisProject">
       <PanelItem :icon="save.icon" :value="lastFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
-    </PanelSection>
-
-    <PanelSection id="project:this" :label="t.panels.project.thisProject">
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
+      <PanelItem :icon="exportPanel.icon" sub data-testid="project-export" @select="emit('export')">{{ exportPanel.name(t) }}</PanelItem>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>
     </PanelSection>
