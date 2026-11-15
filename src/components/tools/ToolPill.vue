@@ -494,7 +494,7 @@ watch(
 .tool-pill__grip-bar {
   width: var(--space-4);
   height: var(--pill-icon);
-  background: var(--line-strong);
+  background: var(--muted);
   border-radius: var(--radius-full);
 }
 

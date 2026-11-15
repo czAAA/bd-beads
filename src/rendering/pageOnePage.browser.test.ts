@@ -105,6 +105,27 @@ describe('page 1 of the PDF', () => {
     expect(unknown.texts.some((value) => / g\b/.test(value))).toBe(false)
   })
 
+  it('ends its key with the cross and "empty" when the Schema has empty positions, in the PDF and the PNG (ticket 0963)', () => {
+    const texts = (project: ReturnType<typeof fixtureProject>, as: 'pdf' | 'png') => {
+      const words = wordsOf(project)
+      const fillText = vi.spyOn(CanvasRenderingContext2D.prototype, 'fillText')
+      const layout = pageOneLayout(project, words)
+      drawPageOne(project, words, layout, layout.plan, 1, as)
+      const drawn = fillText.mock.calls.map(([value]) => value)
+      fillText.mockRestore()
+      return drawn
+    }
+    const holed = fixtureProject({ technique: 'loom', columns: 20, rows: 20 })
+    const overview = fixtureProject({ technique: 'loom', columns: 200, rows: 200 })
+    const everyCell = Array.from({ length: 400 }, (_, index) => ({ row: Math.floor(index / 20), column: index % 20, color: '#e63746' }))
+    const full = fixtureProject({ technique: 'loom', columns: 20, rows: 20, override: everyCell })
+    for (const as of ['pdf', 'png'] as const) {
+      expect(texts(holed, as), as).toContain(en.print.wordChart.empty)
+      expect(texts(overview, as), as).toContain(en.print.wordChart.empty)
+      expect(texts(full, as), as).not.toContain(en.print.wordChart.empty)
+    }
+  })
+
   it.each<[Locale, Translations]>([['en', en], ['ru', ru], ['uk', uk], ['be', be], ['zh', zh], ['es', es], ['pl', pl]])('fits the tech line and the maker across the page in %s', (locale, messages) => {
     const project = { ...fixtureProject({ technique: 'loom', columns: 130, rows: 60 }), makerName: 'Anna Kowalska' }
     const words = printText(project, messages, locale, new Date())

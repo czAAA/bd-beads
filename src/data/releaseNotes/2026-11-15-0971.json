@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "The Frame panel no longer sits on the Frame you are changing: the Canvas moves the Frame beside it and back when it closes, and This Project in the Project panel starts folded, so on an iPad the panel leaves the tools free",
+    "ru": "Панель «Рамка» больше не закрывает рамку, которую вы меняете: холст сдвигает рамку в сторону от панели и возвращает её, когда панель закрывается, а раздел «Этот проект» в панели проекта теперь свёрнут, и на iPad панель не закрывает панель инструментов",
+    "uk": "Панель «Рамка» більше не закриває рамку, яку ви змінюєте: полотно зсуває рамку вбік від панелі й повертає її, коли панель закривається, а розділ «Цей проєкт» у панелі проєкту тепер згорнутий, і на iPad панель не закриває панель інструментів",
+    "be": "Панэль «Рамка» больш не закрывае рамку, якую вы змяняеце: палатно зрушвае рамку ўбок ад панэлі і вяртае яе, калі панэль закрываецца, а раздзел «Гэты праект» у панэлі праекта цяпер згорнуты, і на iPad панэль не закрывае панэль інструментаў",
+    "zh": "“边框”面板不再挡住你正在修改的边框：画布会把边框移到面板旁边，面板关闭时再移回来；项目面板中的“此项目”默认折叠，因此在 iPad 上面板不会挡住工具栏",
+    "es": "El panel Marco ya no tapa el marco que estás cambiando: el lienzo lleva el marco a su lado y lo devuelve al cerrarse, y Este proyecto en el panel del proyecto empieza plegado, así que en un iPad el panel deja libre la barra de herramientas",
+    "pl": "Panel Ramka nie zasłania już ramki, którą zmieniasz: płótno przesuwa ramkę obok panelu i z powrotem, gdy panel się zamyka, a sekcja Ten projekt w panelu projektu jest na początku zwinięta, więc na iPadzie panel nie zasłania paska narzędzi"
+  }
+}

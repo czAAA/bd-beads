@@ -1,5 +1,5 @@
 import { beadLabel, formFactorName } from '../domain/beads'
-import { computeColorQuantities } from '../domain/beadQuantities'
+import { computeColorQuantities, hasEmptyPositions } from '../domain/beadQuantities'
 import { projectPalette } from '../domain/palette'
 import { listedColorName } from '../i18n/colorName'
 import { rotationSwapsAxes } from '../domain/grid'
@@ -33,7 +33,7 @@ interface PrintedColor {
   letter?: string
 }
 
-/** One line of the Word chart: its number (`3`, `1&2`) and the rows it holds, the end it starts from and its runs (`2C, 1A, 3*`). */
+/** One line of the Word chart: its number (`3`, `1&2`) and the rows it holds, the end it starts from and its runs (`2C, 1A, 3×`). */
 export interface PrintedWordRow {
   label: string
   first: number
@@ -47,7 +47,7 @@ interface PrintedWordChart {
   title: string
   /** The key's last item, "empty", when the Schema has empty positions. */
   empty?: string
-  /** The lines on reading the rows: which row is first, even or odd count, (L) and (R), a run, `*`. */
+  /** The lines on reading the rows: which row is first, even or odd count, (L) and (R), a run. */
   notes: string[]
   rows: PrintedWordRow[]
 }
@@ -79,6 +79,8 @@ export interface PrintText {
   /** The Total row's tubes: the colors' tubes added up. */
   totalTubes?: string
   gramsNote?: string
+  /** Page 1's key's last item, "empty", when the Schema has empty positions (ticket 0963): the chart's cross named. */
+  empty?: string
   wordChart?: PrintedWordChart
   /** Large beads (ticket 0916): page 1's layout plans no bead under 3 mm. */
   largeBeads?: boolean
@@ -95,9 +97,12 @@ const FIRST_ROW_KEY = { top: 'firstTop', right: 'firstRight', bottom: 'firstBott
 /** Where a Custom frame's Word chart starts, as its note (ticket 0594). */
 const START_KEY = { centre: 'firstCentre', point: 'firstPoint', base: 'firstBase', parts: 'partsThenJoins' } as const
 
-/** Runs in the 0574 notation: `2C, 1A, 3*`. */
+/** An empty position in a run: the cross the chart draws there (ticket 0963), so both pages use one sign for it. */
+const EMPTY_SIGN = '×'
+
+/** Runs in the 0574 notation: `2C, 1A, 3×`. */
 function runsText(runs: readonly WordRun[]): string {
-  return runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(', ')
+  return runs.map((run) => `${run.count}${run.letter ?? EMPTY_SIGN}`).join(', ')
 }
 
 // Kept together when a row wraps at its spaces: a corner pair's two colors, and a side's mark with the side it ends.
@@ -209,6 +214,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
+    ...(hasEmptyPositions(project) ? { empty: t.print.wordChart.empty } : {}),
     wordChart: wordChart && withFaceNote(wordChartText(wordChart, t.print.wordChart, t.rowProgress), project, t.print.wordChart),
     ...(choices.largeBeads ? { largeBeads: true } : {}),
     labels: t.print,
