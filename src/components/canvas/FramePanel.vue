@@ -617,9 +617,17 @@ const edgeNameCut = useLabelsThatFit(edgesEl, () => t.value.frame.edgeName)
   background: var(--surface);
 }
 
+/* Touch (ticket 0933): each half is `touch-target` wide and its hit area is its own box, as tall as the row, so neither
+ * half's pad lies over the other's drawing (the 44px pad of controls.css, centred, made + take the middle of −). */
 @media (pointer: coarse) {
   .frame-panel__cell :deep(.frame-panel__step) {
+    width: var(--touch-target);
     height: var(--picker-height-touch);
+  }
+
+  .frame-panel__cell :deep(.frame-panel__step::before) {
+    width: 100%;
+    height: var(--panel-item-height, 100%);
   }
 }
 

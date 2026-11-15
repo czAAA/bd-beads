@@ -22,7 +22,7 @@ describe('PanelPicker', () => {
   for (const [name, host, picker, locale] of CASES) {
     it(`opens the list of ${name} against its button the first time`, async () => {
       const { root } = await mountAt(host, {}, { locale, width: 1280 })
-      const button = root.querySelector<HTMLElement>(`[data-testid="${picker}"] button`)!
+      const button = root.querySelector<HTMLElement>(`[data-testid="${picker}"] button[aria-haspopup]`)!
       const before = button.getBoundingClientRect()
       button.click()
       await settleForMeasuring()

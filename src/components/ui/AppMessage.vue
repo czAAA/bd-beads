@@ -129,9 +129,11 @@ onBeforeUnmount(() => clearTimeout(timer))
   --message-tone: var(--message-danger);
 }
 
+/* A name with no spaces breaks where it has to, so it never runs out of the toast (Message card, ticket 0988). */
 .app-message__text {
   flex: 1 1 auto;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .app-message__actions {

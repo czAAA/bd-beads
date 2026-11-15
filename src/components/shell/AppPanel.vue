@@ -85,6 +85,10 @@ function barTop(): number | undefined {
   return bar && bar.height > 0 ? bar.top : undefined
 }
 const onOwnBar = (target: EventTarget | null) => target instanceof Node && !!ownBar()?.contains(target)
+/** The shell's notice row (a Project that didn't open, a failed save): a press on its buttons acts at once and the panel
+ * stays, since the Menu may open on its own while a notice shows (ticket 0985). */
+const NOTICE_ROW = '[data-notice-row]'
+const onNoticeRow = (target: EventTarget | null) => target instanceof Element && target.closest(NOTICE_ROW) !== null
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start', () => 'below', barTop)
 /** The dropdown is as tall as the room allows below its button (above the bottom bar, else 16px clear of the window's
  * bottom edge) and scrolls inside past that. */
@@ -132,7 +136,7 @@ useOverlayLayer({
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
   isOpener: (target) => target.closest(OPENERS) !== null,
-  keepsPress: (event) => onOwnBar(event.target),
+  keepsPress: (event) => onOwnBar(event.target) || onNoticeRow(event.target),
   onOutsidePress: () => {
     pressClosed.markPressClosed()
     emit('close')
