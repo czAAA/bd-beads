@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Convert image takes a large photo: one over 16 megapixels is read smaller instead of refused, and files up to 50 MB are taken",
+    "ru": "Конвертация изображения берёт большие фото: снимок больше 16 мегапикселей уменьшается, а не отклоняется, и подходят файлы до 50 МБ",
+    "uk": "Конвертація зображення бере великі фото: знімок понад 16 мегапікселів зменшується, а не відхиляється, і підходять файли до 50 МБ",
+    "be": "Канвертацыя выявы бярэ вялікія фота: здымак больш за 16 мегапікселяў памяншаецца, а не адхіляецца, і падыходзяць файлы да 50 МБ",
+    "zh": "转换图片可以使用大照片：超过 1600 万像素的照片会被缩小读取，而不是被拒绝；文件最大可达 50 MB",
+    "es": "Convertir imagen acepta fotos grandes: una de más de 16 megapíxeles se lee más pequeña en lugar de rechazarse, y se aceptan archivos de hasta 50 MB",
+    "pl": "Konwersja obrazu przyjmuje duże zdjęcia: zdjęcie ponad 16 megapikseli jest odczytywane w mniejszym rozmiarze zamiast odrzucane, a pliki do 50 MB są przyjmowane"
+  }
+}

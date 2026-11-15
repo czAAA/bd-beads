@@ -43,7 +43,7 @@ import {
   type ImageRejection,
   type PixelData,
 } from '../../domain/imageConversion'
-import { partLattice } from '../../domain/imageFraming'
+import { partLattice, type ImageSize } from '../../domain/imageFraming'
 import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { MyBeads } from '../../domain/myBeads'
@@ -116,6 +116,8 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
 
   // The picture. shallowRef: megabytes of pixels never changed in place; Turn and Flip make a new one.
   const image = shallowRef<PixelData>()
+  /** The picture's own size, for the size line: a large one is read smaller (readSize, ticket 0931). Turn swaps it. */
+  const pictureSize = shallowRef<ImageSize>()
   const fileName = ref('')
   const rejection = ref<ImageRejection>()
   const reading = ref(false)
@@ -311,6 +313,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
       const decoded = await decodeImage(file)
       const first = !image.value
       image.value = decoded
+      pictureSize.value = decoded.ownSize ?? { width: decoded.width, height: decoded.height }
       fileName.value = file.name
       if (first) {
         const opening = startingSize(decoded, kind.value)
@@ -334,6 +337,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     if (!picture) return
     crop.moveWith(picture, 'turn')
     image.value = turnPicture(picture)
+    if (pictureSize.value) pictureSize.value = { width: pictureSize.value.height, height: pictureSize.value.width }
     forgetMarks()
   }
 
@@ -769,6 +773,7 @@ export function useConvertImageWizard({ start, startSource, startFinishes, decod
     closePopover,
     // Picture
     image,
+    pictureSize,
     hasPicture: computed(() => !!image.value),
     fileName,
     fileStem,
