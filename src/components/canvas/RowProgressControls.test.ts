@@ -4,6 +4,7 @@ import RowProgressControls from './RowProgressControls.vue'
 import { createProject } from '../../domain/createProject'
 import { withLayers } from '../../testUtils/layerFields'
 import { moveToRow } from '../../domain/rowProgress'
+import { changeFrame } from '../../domain/changeFrame'
 import type { RowPress } from '../../composables/project/useRowOps'
 
 beforeEach(() => {
@@ -26,10 +27,10 @@ function shown(form: 'margin' | 'compact' | 'folded', drop: 0 | 1 | 2 = 0): stri
 }
 
 describe('Row progress on the margin as its row runs out of room (MarginSheet card, ticket 0698)', () => {
-  it('gives up its track, then its counter, keeping Row highlight with Row done to the last', () => {
-    expect(shown('margin')).toEqual(['direction', 'reset', 'highlight', '|', 'compact-position', 'track', '|', 'previous'])
-    expect(shown('margin', 1)).toEqual(['direction', 'reset', 'highlight', '|', 'compact-position', '|', 'previous'])
-    expect(shown('margin', 2)).toEqual(['direction', 'reset', 'highlight', '|', 'previous'])
+  it('gives up its track, then its counter, keeping Row done to the last', () => {
+    expect(shown('margin')).toEqual(['direction', 'reset', '|', 'compact-position', 'track', '|', 'previous'])
+    expect(shown('margin', 1)).toEqual(['direction', 'reset', '|', 'compact-position', '|', 'previous'])
+    expect(shown('margin', 2)).toEqual(['direction', 'reset', '|', 'previous'])
   })
 
   it('keeps Row highlight beside Row done in the compact and folded forms', () => {
@@ -78,5 +79,35 @@ describe("the band of What's inside's demo Frame (ticket 0797, MarginSheet card)
     const wrapper = mount(RowProgressControls, { props: { project: moveToRow(project, 1), form: 'margin', testid: 'margin-progress', withoutNotDone: true } })
     expect(wrapper.find('[data-testid="margin-progress-previous"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="margin-progress-next"]').exists()).toBe(true)
+  })
+})
+
+describe('one lit Row done and one Row highlight Switch on screen (ticket 0981, UX-092)', () => {
+  const mounted = (form: 'bar' | 'margin' | 'compact' | 'folded', on = project) =>
+    mount(RowProgressControls, { props: { project: on, form, testid: form === 'bar' ? 'progress-bar' : 'margin-progress' } })
+  const highlight = (wrapper: ReturnType<typeof mounted>) => wrapper.find('[data-testid$="-highlight"]').exists()
+
+  it('fills the Progress bar\'s Row done and draws the margin\'s in a box, with the same press', async () => {
+    expect(mounted('bar').get('[data-testid="progress-bar-next"]').classes()).toContain('app-button--primary')
+    for (const form of ['margin', 'compact', 'folded'] as const) {
+      const margin = mounted(form)
+      const done = margin.get('[data-testid="margin-progress-next"]')
+      expect(done.classes()).toContain('app-button--in-box')
+      await done.trigger('click')
+      expect(margin.emitted('move-row')).toEqual([[1]])
+    }
+  })
+
+  it('has one Switch in the margin\'s open Turn row direction list, none beside it', async () => {
+    const margin = mounted('margin')
+    await margin.get('[data-testid="margin-progress-direction"]').trigger('click')
+    expect(margin.findAll('[role="switch"]').map((on) => on.attributes('data-testid'))).toEqual(['margin-progress-row-marks'])
+  })
+
+  it('leaves a Custom frame\'s Switch to the bar, as its rows run one way', () => {
+    const placed = changeFrame(project, { custom: { shape: 'triangle', size: 4, centre: { row: 5, column: 5 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+    expect(highlight(mounted('bar', placed.project))).toBe(true)
+    for (const form of ['margin', 'compact', 'folded'] as const) expect(highlight(mounted(form, placed.project))).toBe(false)
   })
 })
