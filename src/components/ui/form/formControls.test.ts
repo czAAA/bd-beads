@@ -483,4 +483,14 @@ describe('FileButton', () => {
 
     expect(wrapper.emitted('drop-file')).toEqual([[file]])
   })
+
+  it('as a secondary button is no drop target: a dropped file is not taken (ticket 0970)', async () => {
+    const wrapper = mount(FileButton, { props: { label: 'Take photo', secondary: true } })
+    const drop = new Event('drop', { bubbles: true, cancelable: true }) as DragEvent
+    Object.defineProperty(drop, 'dataTransfer', { value: { files: [new File(['x'], 'fox.png', { type: 'image/png' })] } })
+
+    wrapper.find('label').element.dispatchEvent(drop)
+
+    expect(wrapper.emitted('drop-file')).toBeUndefined()
+  })
 })
