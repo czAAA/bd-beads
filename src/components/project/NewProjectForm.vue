@@ -153,6 +153,7 @@ const limitsHint = computed(() => imageLimitsText(locale.value, t.value.convertI
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
+  text-wrap: balance;
 }
 
 .new-project-form__starters {

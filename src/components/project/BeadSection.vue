@@ -83,10 +83,18 @@ function pickSize(beadId: string) {
   flex-direction: column;
   gap: var(--space-6);
   padding: var(--space-4) var(--space-10);
+  container-type: inline-size;
 }
 
 .bead-section__pickers {
   display: flex;
   gap: var(--space-6);
+}
+
+/* Under 14rem the three pickers stack, so each shows its whole value at a large browser text size (ticket 0941). */
+@container (max-width: 14rem) {
+  .bead-section__pickers {
+    flex-direction: column;
+  }
 }
 </style>

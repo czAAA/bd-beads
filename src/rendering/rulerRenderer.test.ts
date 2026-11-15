@@ -133,12 +133,27 @@ describe('drawRulers', () => {
     expect(on.texts.length).toBeGreaterThan(0)
   })
 
-  it('still draws the Frame\'s line with Rulers off', () => {
+  it('still draws the Frame\'s line and numbers with Rulers off (ticket 1012)', () => {
     const { context, strokes, texts } = fakeContext()
     drawRulers(context, drawn(base, { zoom: 1, numbers: false }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
-    expect(texts).toHaveLength(0)
+    expect(texts.length).toBeGreaterThan(0)
+  })
+
+  it('draws a Frame\'s numbers in the margin\'s greys and the Pieces around it in the Canvas\'s, the Pieces\' hidden with Rulers off (ticket 1012)', () => {
+    const theme = { ...ruled, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
+    const beside = withLayers(twoPieces, { frame: { technique: 'loom' as const, row: 30, column: 30, rows: 3, columns: 3, beads: {} } })
+    const on = fakeContext()
+    drawRulers(on.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: true }), theme })
+    expect(on.strokes.map((stroke) => stroke.style)).toEqual([theme.frameLine, theme.pieceLine, theme.pieceLine])
+    expect(on.textStyles).toContain('#111111')
+    expect(on.textStyles).toContain(theme.ruler)
+
+    const off = fakeContext()
+    drawRulers(off.context, { ...drawn(beside as typeof base, { zoom: 1, numbers: false }), theme })
+    expect(off.strokes.map((stroke) => stroke.style)).toEqual([theme.frameLine])
+    expect(new Set(off.textStyles)).toEqual(new Set(['#111111']))
   })
 
   it('sets the Frame\'s numbers in the greys that read on its margin, and a Piece\'s in the Canvas\'s (ticket 0656)', () => {
@@ -193,11 +208,11 @@ describe('the Ruler dots', () => {
     expect(new Set(radii(fills))).toEqual(new Set([1.75]))
   })
 
-  it('draw none with Rulers off', () => {
+  it('draw on a Frame with Rulers off (ticket 1012)', () => {
     const { context, fills } = fakeContext()
     drawRulers(context, drawn(framed, { zoom: 0.7, numbers: false }))
 
-    expect(radii(fills)).toEqual([])
+    expect(radii(fills).length).toBeGreaterThan(0)
   })
 })
 
@@ -280,12 +295,14 @@ describe('the current pass\'s mark (MarginSheet and Rulers cards, ticket 0685)',
     expect(tick!.rect[1]).toBeGreaterThanOrEqual(lineOf(input).top - 1)
   })
 
-  it('ticks the line where the full form shows no number of the pass: Rulers off, a Frame turned a quarter (ticket 0667), a Ruler step past it', () => {
+  it('keeps the pass on its numbers with Rulers off, as the Frame\'s rulers stay (ticket 1012)', () => {
     const off = fakeContext()
     drawRulers(off.context, at(moveToRow(base, 1), 'full', { numbers: false }))
+    expect(off.texts).toContain('2')
     expect(marks(off.fills)).toHaveLength(2)
-    expect(off.texts).not.toContain('2')
+  })
 
+  it('ticks the line where the full form shows no number of the pass: a Frame turned a quarter (ticket 0667), a Ruler step past it', () => {
     const turned = fakeContext()
     drawRulers(turned.context, at(rotateFrame(moveToRow(base, 1))!, 'full'))
     expect(marks(turned.fills).map((fill) => fill.rect[2])).toEqual([MARGIN_PX.pass.tick])

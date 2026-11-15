@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue'
+import { computed, inject, ref, useAttrs, useId } from 'vue'
 import { coarsePointer } from '../../../composables/ui/touchKeyboard'
+import { FORM_FIELD } from './formFieldContext'
 
 // A text field (ticket 149), attributes on the <input>: `unit` labels the top border (ticket 224), `compact` is the Frame
 // panel's (ticket 517), `selectOnFocus` selects on focus, `bare` has no frame (Stepper, ticket 518), `multiline` is a
@@ -11,6 +12,13 @@ const props = withDefaults(defineProps<{ unit?: string; invalid?: boolean; disab
 })
 const value = defineModel<string | number>()
 const unitId = useId()
+// The FormField labelling this field names its hint and error to read with it (ticket 0995).
+const field = inject(FORM_FIELD, undefined)
+const attrs = useAttrs()
+const describedBy = computed(() => {
+  const fromField = field && attrs.id !== undefined && attrs.id === field.controlId() ? field.describedBy() : undefined
+  return [props.unit && !props.multiline ? unitId : undefined, fromField].filter(Boolean).join(' ') || undefined
+})
 const input = ref<HTMLInputElement | HTMLTextAreaElement>()
 // Set by a press on the field, cleared when it loses focus: a focus after it is the person's own (ticket 515).
 const tapped = ref(false)
@@ -50,6 +58,7 @@ defineExpose({ focus })
       rows="2"
       :disabled="disabled"
       :aria-invalid="invalid || undefined"
+      :aria-describedby="describedBy"
       v-bind="$attrs"
       @pointerdown="tapped = true"
       @blur="tapped = false"
@@ -61,7 +70,7 @@ defineExpose({ focus })
       class="ui-control text-field__input"
       :disabled="disabled"
       :aria-invalid="invalid || undefined"
-      :aria-describedby="unit ? unitId : undefined"
+      :aria-describedby="describedBy"
       v-bind="$attrs"
       @pointerdown="tapped = true"
       @focus="onFocus"

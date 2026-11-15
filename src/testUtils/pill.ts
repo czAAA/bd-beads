@@ -12,7 +12,7 @@ type Sheet = 'strip-project' | 'strip-menu' | 'strip-frame'
 export async function openPanel(wrapper: Wrapper, dock: Sheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
   const panelOpen = wrapper.find('[data-testid="panel-body"]').exists()
-  if (!panelOpen || button.attributes('aria-pressed') !== 'true') {
+  if (!panelOpen || button.attributes('aria-expanded') !== 'true') {
     await button.trigger('click')
   }
   // With an empty library Menu opens on New Project (spec 0478); callers of this want its list.
@@ -22,7 +22,7 @@ export async function openPanel(wrapper: Wrapper, dock: Sheet): Promise<void> {
 
 /** Puts the open Menu or Project away with the strip button that lit it. */
 export async function closePanel(wrapper: Wrapper): Promise<void> {
-  const lit = wrapper.find('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"]')
+  const lit = wrapper.find('[data-testid="strip-menu"][aria-expanded="true"], [data-testid="strip-project"][aria-expanded="true"]')
   if (lit.exists()) await lit.trigger('click')
 }
 

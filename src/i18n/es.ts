@@ -585,7 +585,7 @@ export const es: Translations = {
     highlightButton: 'Resaltar fila',
     resetButton: 'Reiniciar progreso',
     resetConfirmTitle: '¿Reiniciar el progreso?',
-    resetConfirmMessage: 'Se borran todas las filas marcadas como terminadas y empiezas de nuevo desde la primera. Las cuentas se quedan.',
+    resetConfirmMessage: 'Se borran todas las filas marcadas como terminadas y empiezas de nuevo desde la primera. Las cuentas se quedan. «Deshacer» no recupera las marcas; «Ir a la fila» sí.',
     resetConfirmCancel: 'Cancelar',
     positionLabel: 'Fila',
     previousButton: 'Atrás una fila',
@@ -925,9 +925,9 @@ export const es: Translations = {
   },
   deleteAll: {
     button: 'Vaciar',
-    confirmTitle: '¿Vaciar?',
-    confirmMessage: 'Se vaciarán todas las celdas y se desactivará el progreso por filas. Se puede deshacer.',
-    confirmButton: 'Vaciar',
+    confirmTitle: '¿Vaciar todas las cuentas?',
+    confirmMessage: 'Se quitan todas las cuentas de este proyecto y se desactiva el progreso por filas. «Deshacer» las recupera.',
+    confirmButton: 'Vaciar todas las cuentas',
     cancelButton: 'Cancelar',
   },
   removeLine: {
@@ -1191,6 +1191,7 @@ export const es: Translations = {
       backgroundChip: 'Fondo encontrado · {n} % de la imagen',
       backgroundTurnOff: 'Desactivar',
       exactShort: 'Colores propios',
+      resultLabel: 'resultado',
     },
     errors: {
       heic: 'Los navegadores no pueden leer imágenes HEIC. Guárdala como PNG o JPEG e inténtalo de nuevo.',
@@ -1292,7 +1293,7 @@ export const es: Translations = {
     list: (names) => `${names.join(', ')}.`,
     paint: 'Toca o arrastra para poner cuentas del color elegido.',
     fill: 'Toca una zona para rellenarla con el color elegido.',
-    rulers: 'Las reglas numeran tus cuentas y el marco.',
+    rulers: 'Las reglas numeran tus cuentas.',
     rowDirection: 'Cambia el sentido de las filas: de arriba abajo, de izquierda a derecha, de abajo arriba o de derecha a izquierda.',
     rowHighlight: 'Muestra u oculta las marcas en la fila actual y en las filas marcadas como terminadas.',
     fitAndExport: 'Ajusta el marco a todas las cuentas y abre Exportar en Imagen.',

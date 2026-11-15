@@ -82,6 +82,7 @@ const current = computed(() => (props.sections[props.section] ? stepName(props.s
   padding: var(--space-10) var(--space-12) calc(var(--space-12) + env(safe-area-inset-bottom, 0px));
   background: var(--box);
   border-top: 1px solid var(--line);
+  container-type: inline-size;
 }
 
 .phone-bar__where {
@@ -131,6 +132,24 @@ const current = computed(() => (props.sections[props.section] ? stepName(props.s
   display: grid;
   grid-template-columns: var(--phone-bar-button) minmax(0, 1fr) var(--phone-bar-button);
   gap: var(--space-8);
+}
+
+/* With the browser's text so large that the bar is under 14rem wide (a phone at 200%, ticket 0941), the way in takes
+ * the whole first row and ↑ and ↓ share the second. */
+@container (max-width: 14rem) {
+  .phone-bar__moves {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* The way in comes from the Homepage's slot, so it carries the Homepage's scope, not this bar's. */
+  .phone-bar__moves > :deep(:not(.icon-btn-wrap)) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .phone-bar__moves :deep(.icon-btn) {
+    width: 100%;
+  }
 }
 
 .phone-bar__moves :deep(.icon-btn) {

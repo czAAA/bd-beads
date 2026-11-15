@@ -51,7 +51,7 @@ describe('useDeleteAllFlow', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('ignores the Row progress lock: progress resets along with the grid, and Undo restores both', () => {
+  it('ignores the Row progress lock: progress resets along with the grid, and one Undo brings both back, as its question says (ticket 0979)', () => {
     const inProgress = moveToRow(painted, 2)
     const { harness, onConfirmDeleteAll } = setup(inProgress)
     onConfirmDeleteAll()
@@ -59,6 +59,7 @@ describe('useDeleteAllFlow', () => {
     expect(rowProgressOf(harness.project)).not.toEqual(rowProgressOf(inProgress))
 
     harness.history.onUndo()
+    expect(frameGrid(harness.project)).toEqual(frameGrid(inProgress))
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(inProgress))
   })
 
