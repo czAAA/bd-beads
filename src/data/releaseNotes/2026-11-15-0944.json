@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "With no Frame, the line at the bottom says what a Frame is for and picks Select when pressed; Export lists Fit a Frame to the drawing first",
+    "ru": "Без рамки строка внизу говорит, зачем нужна рамка, и по нажатию выбирает Выделение; в Экспорте первой стоит «Подогнать рамку под рисунок»",
+    "uk": "Без рамки рядок унизу каже, навіщо потрібна рамка, і за натисканням вибирає Виділення; в Експорті першим стоїть «Підігнати рамку під малюнок»",
+    "be": "Без рамкі радок унізе кажа, навошта патрэбна рамка, і па націсканні выбірае Вылучэнне; у Экспарце першым стаіць «Падагнаць рамку пад малюнак»",
+    "zh": "没有边框时，底部那行会说明边框的用途，点按即选中“选择”工具；导出面板把“让边框贴合图形”放在第一位",
+    "es": "Sin marco, la línea de abajo dice para qué sirve un marco y al pulsarla elige Seleccionar; Exportar muestra primero Ajustar un marco al dibujo",
+    "pl": "Bez ramki wiersz na dole mówi, do czego służy ramka, a po naciśnięciu wybiera Zaznacz; Eksport pokazuje najpierw Dopasuj ramkę do rysunku"
+  }
+}

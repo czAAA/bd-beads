@@ -86,6 +86,7 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   onOpenShortcutsHelp,
+  onShowButtonNames,
   onOpenFeedback,
   projectsKept,
   onSelectPanel,
@@ -203,6 +204,7 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
+      @button-names="onShowButtonNames"
       @feedback="onOpenFeedback"
     />
     <ProjectPanel

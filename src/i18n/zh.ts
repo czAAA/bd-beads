@@ -65,6 +65,7 @@ export const zh: Translations = {
     palette: '调色板',
     close: '关闭',
     useColor: '用 {color} 绘制',
+    tileNamed: '{name}：{line}',
   },
   mirror: {
     title: '镜像',
@@ -152,6 +153,7 @@ export const zh: Translations = {
       keepProjectsInfoLabel: '关于保留项目',
       keepProjectsInfo:
         '设备空间不足时，浏览器可能会清除此应用的数据，除非它保留你的项目。这由浏览器自行决定，所以请为每个你在意的项目保存项目文件。',
+      buttonNames: '按钮的作用',
     },
     project: {
       rename: '重命名“{name}”',
@@ -176,7 +178,7 @@ export const zh: Translations = {
       duplicateHint: '建议：当前名称加上下一个可用编号。',
       deleteThis: '删除项目',
       deleteTitle: '删除“{name}”？',
-      deleteMessage: '“{name}”及其行进度将从此浏览器中移除，且无法撤销。如需保留，请先保存项目文件。',
+      deleteMessage: '“{name}”及其行进度将从此浏览器中移除。如需保留，请先保存项目文件。',
       deleteConfirm: '删除项目',
       cancel: '取消',
       save: '保存',
@@ -196,6 +198,7 @@ export const zh: Translations = {
       beadSize: '尺寸',
       duplicatedToast: '现在打开的是“{copy}”。“{original}”保持原样。',
       openedToast: '现在打开的是“{name}”。',
+      deletedToast: '“{name}”已删除。现在打开的是“{open}”。',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const zh: Translations = {
       rulers: '标尺',
       twoFingersToMove: '双指移动',
       pinchToZoom: '双指捏合缩放',
+      holdForName: '长按按钮查看名称',
     },
     firstRun: {
       storage: '你的项目只保存在这台设备的浏览器里。',
@@ -492,7 +496,7 @@ export const zh: Translations = {
     },
     removeAllConfirmButton: '全部移除',
     beadColors: {
-      open: '{bead} 调色板',
+      open: '添加 {bead} 颜色',
       info: '关于这些颜色',
       codeCount: '色号：{count}',
       firstShown: '显示前 {count} 个',
@@ -758,7 +762,7 @@ export const zh: Translations = {
     fitAFrame: '让边框贴合图形',
     fitNothing: '还没有画任何内容，无法贴合边框。',
     noFrameLine: '边框决定尺寸、导出内容和所需珠子。',
-    selectAFrame: '框选边框',
+    selectAFrame: '拖出边框',
     selectFrameHint: '在画布上拖动以框选边框，按 Esc 取消。',
     exportNeedsFrame: '为想导出的图案设置边框。',
     sizeHeading: '尺寸',
@@ -871,14 +875,13 @@ export const zh: Translations = {
     rotateFrameLabel: '旋转边框',
     announceFrameRotated: '边框已旋转',
     countNeedsFrame: '设置边框后才能计数。',
-    progressSelectToSet: '选择以设置',
-    progressFrameWord: '边框',
     rotateCoveredMessage: '旋转后的片段落在了已有的珠子上方。',
     fitAndExport: '贴合边框并导出图片',
     qualityLowCaption: '文件小',
     qualityMediumCaption: '适合打印',
     qualityHighCaption: '最清晰',
     qualityNote: '用于图片。可打印图表由线条绘制，任意放大都清晰。',
+    progressMarkPiece: '标出要导出和计数的部分：用“选择”拖动。',
   },
   size: {
     estimateLabel: '估算尺寸',
