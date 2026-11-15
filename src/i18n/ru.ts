@@ -1175,6 +1175,8 @@ export const ru: Translations = {
         asked: 'запрошено {asked} · найдено {found}',
         allGiven: '{colors} (всё, что даёт это изображение в {bead})',
       },
+      backgroundChip: 'Фон найден · {n}% изображения',
+      backgroundTurnOff: 'Выключить',
     },
     errors: {
       heic: 'Браузеры не умеют читать HEIC. Сохраните изображение в PNG или JPEG и попробуйте снова.',

@@ -28,6 +28,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppHandle from '../ui/AppHandle.vue'
 import IconButton from '../ui/IconButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import ConvertBackgroundChip from './ConvertBackgroundChip.vue'
 import ConvertDropZone from './ConvertDropZone.vue'
 
 // Convert image's preview (ConvertImage card DS-1, DS-3; tickets 0747, 0780, 0787, 0896, 0898, 0909): the beads with
@@ -641,6 +642,15 @@ function chipFor(half: Half) {
   return sideBySide.value ? words.value.compareChipBeads : undefined
 }
 
+/** The background found and not yet removed still marks the beads once its popover is closed (ticket 0930): the
+ * Background button stays drawn on, and a chip over the beads names the state with its ways on. */
+const backgroundOn = computed(() => wizard.popover.value === 'background' || wizard.background.value === 'find')
+const backgroundChip = computed(
+  () => wizard.background.value === 'find' && wizard.popover.value !== 'background' && !compare.held.value && !compare.pictureAlone.value,
+)
+/** The background's chip stands on the beads' half only. */
+const backgroundChipOn = (half: Half) => half === 'beads' && backgroundChip.value
+
 onBeforeUnmount(() => {
   endDrag()
   endMark()
@@ -723,11 +733,14 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-          <span
-            v-if="chipFor(half)"
-            class="convert-preview__chip"
-            :class="{ 'convert-preview__chip--compare': chipFor(half) !== words.bandMakeEmpty }"
-            :data-half="half" data-testid="convert-chip">{{ chipFor(half) }}</span>
+          <div v-if="chipFor(half) || backgroundChipOn(half)" class="convert-preview__chips">
+            <span
+              v-if="chipFor(half)"
+              class="convert-preview__chip"
+              :class="{ 'convert-preview__chip--compare': chipFor(half) !== words.bandMakeEmpty }"
+              :data-half="half" data-testid="convert-chip">{{ chipFor(half) }}</span>
+            <ConvertBackgroundChip v-if="backgroundChipOn(half)" />
+          </div>
         </div>
       </div>
 
@@ -739,7 +752,7 @@ onBeforeUnmount(() => {
             variant="plain"
             :icon-size="16"
             :action="actions.background"
-            :selected="wizard.popover.value === 'background'"
+            :selected="backgroundOn"
             aria-haspopup="dialog"
             :aria-expanded="wizard.popover.value === 'background'"
             data-testid="convert-tool-background"
@@ -751,7 +764,7 @@ onBeforeUnmount(() => {
           <AppButton
             variant="text"
             :action="actions.background"
-            :selected="wizard.popover.value === 'background'"
+            :selected="backgroundOn"
             aria-haspopup="dialog"
             :aria-expanded="wizard.popover.value === 'background'"
             data-testid="convert-tool-background"
@@ -1055,17 +1068,29 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* A chip while a tool or Compare shows something, centred 14 below its half's top (DS-1, DS-3); Compare's never wrap,
-   Make empty's line may on a phone. */
-.convert-preview__chip {
+/* The chips while a tool or Compare shows something, centred 14 below their half's top (DS-1, DS-3), one under the
+   other: the half's line, then the background still found (ticket 0930). Only the background's takes a press. */
+.convert-preview__chips {
   position: absolute;
   top: var(--space-14);
   left: 50%;
   z-index: var(--convert-layer-tools);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+  width: max-content;
+  max-width: calc(100% - var(--space-32));
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* Compare's never wrap, Make empty's line may on a phone. */
+.convert-preview__chip {
   display: inline-flex;
   align-items: center;
   box-sizing: border-box;
-  max-width: calc(100% - var(--space-32));
+  max-width: 100%;
   min-height: var(--convert-chip-height);
   padding: var(--space-4) var(--space-12);
   font: var(--type-meta);
@@ -1076,7 +1101,6 @@ onBeforeUnmount(() => {
   border: 1px solid var(--line);
   border-radius: var(--radius-full);
   box-shadow: var(--elevation-3);
-  transform: translateX(-50%);
 }
 
 :root[data-theme='dark'] .convert-preview__chip {

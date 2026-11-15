@@ -1175,6 +1175,8 @@ export const uk: Translations = {
         asked: 'запитано {asked} · знайдено {found}',
         allGiven: '{colors} (усе, що дає це зображення в {bead})',
       },
+      backgroundChip: 'Тло знайдено · {n}% зображення',
+      backgroundTurnOff: 'Вимкнути',
     },
     errors: {
       heic: 'Браузери не вміють читати HEIC. Збережіть зображення в PNG або JPEG і спробуйте знову.',

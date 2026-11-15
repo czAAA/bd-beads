@@ -1225,3 +1225,14 @@ The Project panel's canvas section says which layer it sets while a Frame is on 
 | Open Frame (its second action) | Открыть рамку | Відкрити рамку | Адкрыць рамку | 打开边框 | Abrir marco | Otwórz ramkę |
 
 English follows the audit's proposal (UX-018); the other languages are proposals for review with the build.
+
+## Background still found copy (ticket 0930)
+
+The chip over the beads while the background is found and not yet removed, with the Background popover closed (ConvertImage card). Its middle button is the popover's own "Remove what was found"; `{n}` is the share of the picture found.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Background found · {n}% of the picture (chip) | Фон найден · {n}% изображения | Тло знайдено · {n}% зображення | Фон знойдзены · {n}% выявы | 已找到背景 · 图片的 {n}% | Fondo encontrado · {n} % de la imagen | Znaleziono tło · {n}% obrazu |
+| Turn off (its last button) | Выключить | Вимкнути | Выключыць | 关闭 | Desactivar | Wyłącz |
+
+English follows the audit's proposal (UX-012); the other languages are proposals for review with the build.

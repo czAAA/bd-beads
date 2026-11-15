@@ -1176,6 +1176,8 @@ export const be: Translations = {
         asked: 'просілі {asked} · знойдзена {found}',
         allGiven: '{colors} (усё, што дае гэтая выява ў {bead})',
       },
+      backgroundChip: 'Фон знойдзены · {n}% выявы',
+      backgroundTurnOff: 'Выключыць',
     },
     errors: {
       heic: 'Браўзеры не ўмеюць чытаць HEIC. Захавайце выяву ў PNG або JPEG і паспрабуйце зноў.',

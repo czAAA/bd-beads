@@ -617,9 +617,82 @@ describe('ConvertImageWizard the floating bar (tickets 0780, 0896)', () => {
 
     // Closing the popover turns the tool off and keeps what was decided.
     await tool(wrapper, 'background').trigger('click')
-    expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('false')
     expect(wrapper.find('[data-testid="convert-background-popover"]').exists()).toBe(false)
     expect(wizard.background.value).toBe('find')
+  })
+
+  describe('the background still found once its popover is closed (ticket 0930)', () => {
+    const backgroundChip = (wrapper: VueWrapper) => wrapper.find('[data-testid="convert-background-chip"]')
+    async function foundThenClosed() {
+      const opened = open()
+      await chooseFile(opened.wrapper, picture())
+      await tool(opened.wrapper, 'background').trigger('click')
+      await flushPromises()
+      expect(backgroundChip(opened.wrapper).exists()).toBe(false)
+      await tool(opened.wrapper, 'background').trigger('click')
+      await flushPromises()
+      return opened
+    }
+
+    it('shows no chip while Background was never pressed', async () => {
+      const { wrapper } = open()
+      await chooseFile(wrapper, picture())
+      expect(backgroundChip(wrapper).exists()).toBe(false)
+      expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('false')
+    })
+
+    it('keeps a chip over the beads in the popover’s words and the Background button pressed', async () => {
+      const { wrapper } = await foundThenClosed()
+      const chip = backgroundChip(wrapper)
+      expect(wrapper.get('[data-testid="convert-half-beads"]').find('[data-testid="convert-background-chip"]').exists()).toBe(true)
+      const words = en.convertImage.wizard
+      expect(chip.text()).toContain(fillBlanks(words.backgroundChip, { n: 100 }))
+      expect(chip.get('[data-testid="convert-background-chip-remove"]').text()).toBe(words.removeFound)
+      expect(chip.get('[data-testid="convert-background-chip-off"]').text()).toBe(words.backgroundTurnOff)
+      expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('turns Remove background off from the chip: no hatch, no chip, the button not pressed', async () => {
+      const { wrapper, wizard } = await foundThenClosed()
+      await backgroundChip(wrapper).get('[data-testid="convert-background-chip-off"]').trigger('click')
+      expect(wizard.background.value).toBe('off')
+      expect(backgroundChip(wrapper).exists()).toBe(false)
+      expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('false')
+      // One decision, as the switch's: Undo takes it back.
+      wizard.undo()
+      expect(wizard.background.value).toBe('find')
+    })
+
+    it('removes what was found from the chip as the popover’s button does', async () => {
+      const { wrapper, wizard } = await foundThenClosed()
+      await backgroundChip(wrapper).get('[data-testid="convert-background-chip-remove"]').trigger('click')
+      expect(wizard.background.value).toBe('removed')
+      expect(backgroundChip(wrapper).exists()).toBe(false)
+      expect(tool(wrapper, 'background').attributes('aria-pressed')).toBe('false')
+      await tool(wrapper, 'background').trigger('click')
+      expect(wrapper.find('[data-testid="convert-background-removed"]').exists()).toBe(true)
+    })
+
+    it('stands under the half’s own chip while Compare puts the picture beside the beads', async () => {
+      const { wrapper } = await foundThenClosed()
+      await wrapper.get('[data-testid="convert-compare"]').trigger('click')
+      const beads = wrapper.get('[data-testid="convert-half-beads"] .convert-preview__chips').element
+      expect([...beads.children].map((chip) => chip.getAttribute('data-testid'))).toEqual(['convert-chip', 'convert-background-chip'])
+      expect(wrapper.get('[data-testid="convert-half-picture"]').find('[data-testid="convert-background-chip"]').exists()).toBe(false)
+    })
+
+    it('goes while Compare is held, as the picture stands in the beads’ place', async () => {
+      const { wrapper } = await foundThenClosed()
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const compare = wrapper.get('[data-testid="convert-compare"]')
+      await compare.trigger('pointerdown', { button: 0 })
+      vi.advanceTimersByTime(300)
+      await flushPromises()
+      expect(backgroundChip(wrapper).exists()).toBe(false)
+      await compare.trigger('pointerup')
+      await compare.trigger('click')
+      expect(backgroundChip(wrapper).exists()).toBe(true)
+    })
   })
 
   it('shows the picture in the beads’ place while Compare is held past 300 ms, with its chip, and leaves Compare as it was', async () => {
