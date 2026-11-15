@@ -20,6 +20,7 @@ import { AREA_SHEET_OUTSET } from './frameHandles'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
+import { rulerLayout } from './rulers'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
@@ -517,6 +518,16 @@ describe('renderOverlay', () => {
       expect(named('arc')).toHaveLength(1)
       expect(named('fill').map((call) => [call.fillStyle, call.globalAlpha])).toContainEqual([DEFAULT_THEME.marker, 0.18])
       expect(named('fillText').map((call) => call.args[0])).toEqual(['4 × 3'])
+    })
+
+    it('shows the Frame\'s size Tooltip while it is dragged or stepped with the Rulers off too (ticket 1012)', () => {
+      const project = projectOf('loom', 6, 5, noProgress)
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), rulers: { layout: rulerLayout(project, surface, { fontPx: 11, numbers: false }), surface }, frameEditing: { touch: false, tooltip: '6 × 5', hot: 'bottom-right' } })
+
+      expect(named('fillText').map((call) => call.args[0])).toContain('6 × 5')
     })
 
     it('shows no handles on a Selection of fewer than five beads, the same size rulers need (ticket 435)', () => {

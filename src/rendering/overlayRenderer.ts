@@ -909,12 +909,12 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       theme,
       touch: frameEditing.touch,
       hot: frameEditing.hot,
-      // A size is a number too: the Rulers toggle hides it with the rest.
-      tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
+      // The Frame's size shows with the Rulers off too: its rulers are always on (ticket 1012).
+      tooltip: frameEditing.tooltip,
     })
   }
   // The Area's corners first, so a Selection's lie over them where the two meet (ContextBar card, Mirror bar placement).
-  // A size is a number too: the Rulers toggle hides its Tooltip with the rest.
+  // An Area's or a Selection's size is a number too: the Rulers toggle hides its Tooltip with the rest.
   const sized = (handles: AreaHandles) => (rulers?.layout.numbers === false ? '' : (handles.tooltip ?? ''))
   if (mirrorArea && space.open && canvasArea) {
     drawAreaCorners(context, { ...mirrorArea, box: mirrorArea.surface.beadBox(canvasArea, 'canvas'), outset, pixelRatio, theme, color: theme.mirror, tooltip: sized(mirrorArea) })

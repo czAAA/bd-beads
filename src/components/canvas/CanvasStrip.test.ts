@@ -189,8 +189,9 @@ describe('CanvasStrip Rotate canvas (ticket 471)', () => {
   })
 })
 
-describe('CanvasStrip Rulers (ticket 0921)', () => {
+describe('CanvasStrip Rulers (tickets 0921, 1012)', () => {
   const empty = bareProject({ beads: {}, technique: 'loom' })
+  const frame = { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 4, beads: {} }
   const rulersButton = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="strip-rulers"]')
 
   it('is held and plain while the Canvas is empty, even on a device that keeps rulers on, with the reason in its Tooltip', async () => {
@@ -205,9 +206,19 @@ describe('CanvasStrip Rulers (ticket 0921)', () => {
     expect(wrapper.emitted('toggle-rulers')).toBeUndefined()
   })
 
+  it('is held and plain with only a Frame, whose own rulers it does not switch, and with only Frame beads', async () => {
+    for (const project of [bareProject({ beads: {}, technique: 'loom', frame }), bareProject({ beads: {}, technique: 'loom', frame: { ...frame, beads: { 0: { 0: '#ff0000' } } } })]) {
+      const wrapper = mount(CanvasStrip, { props: { project, rulers: true } })
+      expect(rulersButton(wrapper).attributes('aria-disabled')).toBe('true')
+      expect(rulersButton(wrapper).attributes('aria-pressed')).toBe('false')
+      await rulersButton(wrapper).trigger('click')
+      expect(wrapper.emitted('toggle-rulers')).toBeUndefined()
+    }
+  })
+
   it.each([
     ['a bead', bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })],
-    ['a Frame', bareProject({ beads: {}, technique: 'loom', frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } })],
+    ['a bead beside a Frame', bareProject({ beads: { 9: { 9: '#ff0000' } }, technique: 'loom', frame })],
   ])('can be pressed once the Canvas holds %s, and is lit only while rulers are on', async (_what, held) => {
     const wrapper = mount(CanvasStrip, { props: { project: held, rulers: false } })
     expect(rulersButton(wrapper).attributes('aria-disabled')).toBeUndefined()
