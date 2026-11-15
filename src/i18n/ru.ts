@@ -65,6 +65,7 @@ export const ru: Translations = {
     palette: 'Палитра',
     close: 'Закрыть',
     useColor: 'Рисовать цветом {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Отражение',
@@ -152,6 +153,7 @@ export const ru: Translations = {
       keepProjectsInfoLabel: 'О хранении проектов',
       keepProjectsInfo:
         'Когда на устройстве мало места, браузер может удалить данные этого приложения, если он не хранит ваши проекты. Браузер решает это сам, поэтому сохраните файл проекта для каждого, который вам дорог.',
+      buttonNames: 'Что делают кнопки',
     },
     project: {
       rename: 'Переименовать «{name}»',
@@ -176,7 +178,7 @@ export const ru: Translations = {
       duplicateHint: 'Предложено: текущее название и следующий свободный номер.',
       deleteThis: 'Удалить проект',
       deleteTitle: 'Удалить «{name}»?',
-      deleteMessage: '«{name}» и прогресс по рядам будут удалены из этого браузера. Это нельзя отменить. Если хотите оставить его себе, сначала сохраните файл проекта.',
+      deleteMessage: '«{name}» и прогресс по рядам будут удалены из этого браузера. Если хотите оставить его себе, сначала сохраните файл проекта.',
       deleteConfirm: 'Удалить проект',
       cancel: 'Отмена',
       save: 'Сохранить',
@@ -196,6 +198,7 @@ export const ru: Translations = {
       beadSize: 'Размер',
       duplicatedToast: 'Теперь открыт «{copy}». «{original}» остался как был.',
       openedToast: 'Теперь открыт «{name}».',
+      deletedToast: 'Проект «{name}» удалён. Теперь открыт «{open}».',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const ru: Translations = {
       rulers: 'Линейки',
       twoFingersToMove: 'два пальца: сдвиг',
       pinchToZoom: 'сведение пальцев: масштаб',
+      holdForName: 'удержание кнопки: её название',
     },
     firstRun: {
       storage: 'Ваши проекты сохранены только в этом браузере, на этом устройстве.',
@@ -496,7 +500,7 @@ export const ru: Translations = {
     },
     removeAllConfirmButton: 'Убрать все',
     beadColors: {
-      open: 'Палитра {bead}',
+      open: 'Добавить цвета {bead}',
       info: 'Об этих цветах',
       codeCount: 'кодов: {count}',
       firstShown: 'показаны первые {count}',
@@ -770,7 +774,7 @@ export const ru: Translations = {
     fitAFrame: 'Подогнать рамку под рисунок',
     fitNothing: 'Пока ничего не нарисовано, подгонять рамку не под что.',
     noFrameLine: 'Рамка задаёт размер, экспорт и «Нужно бисера».',
-    selectAFrame: 'Выделить рамку',
+    selectAFrame: 'Растянуть рамку',
     selectFrameHint: 'Проведите по холсту, чтобы выделить рамку. Esc отменяет.',
     exportNeedsFrame: 'Задайте рамку вокруг рисунка, который хотите экспортировать.',
     sizeHeading: 'Размер',
@@ -889,14 +893,13 @@ export const ru: Translations = {
     rotateFrameLabel: 'Повернуть рамку',
     announceFrameRotated: 'Рамка повёрнута',
     countNeedsFrame: 'Задайте рамку, чтобы посчитать бисер.',
-    progressSelectToSet: 'Выделите, чтобы задать',
-    progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Повёрнутый фрагмент оказался поверх существующих бисеринок.',
     fitAndExport: 'Рамка и экспорт картинки',
     qualityLowCaption: 'малый файл',
     qualityMediumCaption: 'для печати',
     qualityHighCaption: 'самое чёткое',
     qualityNote: 'Для картинки. Схема для печати нарисована линиями и остаётся чёткой при любом увеличении.',
+    progressMarkPiece: 'Отметьте часть для экспорта и подсчёта: проведите Выделением.',
   },
   size: {
     estimateLabel: 'Примерный размер',

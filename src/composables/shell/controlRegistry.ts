@@ -264,8 +264,9 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
-    enabled: hasFrame,
-    disabledBody: (t) => t.tooltips.setFrameFirst,
+    // A Frame with a row done holds still: the pencil stays, saying why (ticket 0975).
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.frameSizeLocked : t.tooltips.setFrameFirst),
     group: 'canvas',
     chords: [],
     needsProject: true,
@@ -706,4 +707,9 @@ export function controlAction(id: string): ControlAction {
   const action = CONTROLS.find((control) => control.id === id)
   if (!action) throw new Error(`No control "${id}" in the registry`)
   return action
+}
+
+/** A Tool pill tile's action (ADR 0084): a tool's own, the Mirror's or Paste's. */
+export function pillTileAction(tile: PillTile): ControlAction {
+  return controlAction(tile === 'mirror' ? 'mirror' : `tool-${tile}`)
 }

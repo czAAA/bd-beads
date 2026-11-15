@@ -65,6 +65,7 @@ export const uk: Translations = {
     palette: 'Палітра',
     close: 'Закрити',
     useColor: 'Малювати кольором {color}',
+    tileNamed: '{name}: {line}',
   },
   mirror: {
     title: 'Відображення',
@@ -152,6 +153,7 @@ export const uk: Translations = {
       keepProjectsInfoLabel: 'Про зберігання проєктів',
       keepProjectsInfo:
         'Коли на пристрої мало місця, браузер може видалити дані цього застосунку, якщо він не зберігає ваші проєкти. Браузер вирішує це сам, тож збережіть файл проєкту для кожного, який вам дорогий.',
+      buttonNames: 'Що роблять кнопки',
     },
     project: {
       rename: 'Перейменувати «{name}»',
@@ -176,7 +178,7 @@ export const uk: Translations = {
       duplicateHint: 'Запропоновано: поточна назва й наступний вільний номер.',
       deleteThis: 'Видалити проєкт',
       deleteTitle: 'Видалити «{name}»?',
-      deleteMessage: '«{name}» і прогрес за рядами буде видалено з цього браузера. Це не можна скасувати. Якщо хочете залишити його собі, спершу збережіть файл проєкту.',
+      deleteMessage: '«{name}» і прогрес за рядами буде видалено з цього браузера. Якщо хочете залишити його собі, спершу збережіть файл проєкту.',
       deleteConfirm: 'Видалити проєкт',
       cancel: 'Скасувати',
       save: 'Зберегти',
@@ -196,6 +198,7 @@ export const uk: Translations = {
       beadSize: 'Розмір',
       duplicatedToast: 'Тепер відкрито «{copy}». «{original}» залишився як був.',
       openedToast: 'Тепер відкрито «{name}».',
+      deletedToast: 'Проєкт «{name}» видалено. Тепер відкрито «{open}».',
     },
   },
   theme: {
@@ -317,6 +320,7 @@ export const uk: Translations = {
       rulers: 'Лінійки',
       twoFingersToMove: 'два пальці: зсув',
       pinchToZoom: 'зведення пальців: масштаб',
+      holdForName: 'утримання кнопки: її назва',
     },
     firstRun: {
       storage: 'Ваші проєкти збережено лише в цьому браузері, на цьому пристрої.',
@@ -496,7 +500,7 @@ export const uk: Translations = {
     },
     removeAllConfirmButton: 'Прибрати всі',
     beadColors: {
-      open: 'Палітра {bead}',
+      open: 'Додати кольори {bead}',
       info: 'Про ці кольори',
       codeCount: 'кодів: {count}',
       firstShown: 'показано перші {count}',
@@ -770,7 +774,7 @@ export const uk: Translations = {
     fitAFrame: 'Підігнати рамку під малюнок',
     fitNothing: 'Поки нічого не намальовано, підганяти рамку нема до чого.',
     noFrameLine: 'Рамка задає розмір, експорт і «Потрібно бісеру».',
-    selectAFrame: 'Виділити рамку',
+    selectAFrame: 'Розтягнути рамку',
     selectFrameHint: 'Проведіть по полотну, щоб виділити рамку. Esc скасовує.',
     exportNeedsFrame: 'Задайте рамку навколо малюнка, який хочете експортувати.',
     sizeHeading: 'Розмір',
@@ -889,14 +893,13 @@ export const uk: Translations = {
     rotateFrameLabel: 'Повернути рамку',
     announceFrameRotated: 'Рамку повернуто',
     countNeedsFrame: 'Задайте рамку, щоб порахувати бісер.',
-    progressSelectToSet: 'Виділіть, щоб задати',
-    progressFrameWord: 'рамку',
     rotateCoveredMessage: 'Повернутий фрагмент опинився поверх наявних намистин.',
     fitAndExport: 'Рамка й експорт картинки',
     qualityLowCaption: 'малий файл',
     qualityMediumCaption: 'для друку',
     qualityHighCaption: 'найчіткіша',
     qualityNote: 'Для картинки. Схему для друку намальовано лініями, і вона лишається чіткою за будь-якого збільшення.',
+    progressMarkPiece: 'Позначте частину для експорту й підрахунку: проведіть Виділенням.',
   },
   size: {
     estimateLabel: 'Приблизний розмір',

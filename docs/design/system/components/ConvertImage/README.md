@@ -71,7 +71,7 @@ When fewer colors come out than asked, the result's second line at the column's 
 - When fewer codes are left than the colors asked, a line follows: "Only 9 codes left: 9 colors, not 12."
 - Finish applies to the Bead's palette and to My beads. It is off for Default Palette and the picture's own colors, with the reason in its Tooltip.
 - The (i) "Where colors come from" gains paragraphs for My beads and Finish.
-- The Change picker's "Palette {bead}" opens with the same Finishes on, or on My beads.
+- The Change picker's "Add {bead} colors" opens with the same Finishes on, or on My beads.
 
 **My beads** (0902, 0903): one list of owned codes per Color catalog, yes or no, kept on the device (as Export quality is), never sent.
 - "Edit My beads" turns the Colors popover into its **My beads view**, with a back arrow ("Back to Colors"). It is not a popover or panel of its own.

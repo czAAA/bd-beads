@@ -49,12 +49,12 @@ describe('hotkey chips follow the device (ticket 438)', () => {
     expect(dock.find('.icon-btn__key').exists()).toBe(true)
   })
 
-  it('on touch the Canvas hint speaks of fingers and names no key, and the pill shows no digits (ticket 0846)', () => {
+  it('on touch the Canvas hint speaks of fingers and of holding for a name, names no key, and the pill shows no digits (tickets 0846, 0927)', () => {
     onDevice(true, true)
     const dock = mount(ToolPill, { props: PILL_PROPS })
     const hint = mount(CanvasHint)
     expect(dock.find('.icon-btn__key').exists()).toBe(false)
-    expect(hint.findAll('span').map((part) => part.text())).toEqual(['two fingers to move', '·', 'pinch to zoom'])
+    expect(hint.findAll('span').map((part) => part.text())).toEqual(['two fingers to move', '·', 'pinch to zoom', '·', 'hold a button for its name'])
     expect(hint.find('kbd').exists()).toBe(false)
   })
 })

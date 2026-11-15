@@ -6,7 +6,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useScrollCut } from '../../composables/ui/useScrollCut'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
-import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { PILL_POSITIONS, PILL_TOOLS, isVerticalPill, pillPositionForKey, pillTileKey, type PillPosition, type PillRect, type PillTile } from '../../domain/toolPill'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -57,6 +57,8 @@ const emit = defineEmits<{
   'update:popoverOpen': [open: boolean]
   /** The Mirror tile was pressed: Mirror mode on, or off as Escape does (ADR 0082). */
   'mirror-tile': []
+  /** A tile was tapped or clicked, not keyed, before its own event (ticket 0927): on touch its first tap says its name. */
+  'tile-tap': [tile: PillTile]
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
@@ -123,6 +125,11 @@ const drag = useToolPillDrag(pillEl, layerEl, gripEl, {
 const toolsCut = useScrollCut(toolsEl, () => (vertical.value ? 'vertical' : 'horizontal'))
 
 const pillStyle = computed(() => (drag.dragging.value ? { left: `${drag.corner.value.left}px`, top: `${drag.corner.value.top}px` } : undefined))
+
+/** A tile's press by a finger, pen or mouse: a key's click has no `detail`, and the keyboard has the Tooltip on focus. */
+function tapped(event: MouseEvent, tile: PillTile) {
+  if (event.detail !== 0) emit('tile-tap', tile)
+}
 
 /** The grip's arrow keys send the pill to that edge. */
 function onGripKeydown(event: KeyboardEvent) {
@@ -205,6 +212,7 @@ watch(
       :aria-label="t.a11y.toolsLandmark"
       :aria-orientation="vertical ? 'vertical' : 'horizontal'"
       data-tool-pill
+      data-button-names
       data-testid="tool-pill"
       :data-position="position"
       @pointerdown="drag.onPointerDown"
@@ -222,7 +230,7 @@ watch(
         <span class="tool-pill__grip-bar" />
       </button>
 
-      <IconButton v-bind="toolTile(pinnedTile)" @click="emit('select-tool', pinnedTile.tool)" />
+      <IconButton v-bind="toolTile(pinnedTile)" @click="tapped($event, pinnedTile.tool); emit('select-tool', pinnedTile.tool)" />
 
       <div
         ref="toolsEl"
@@ -230,7 +238,7 @@ watch(
         :class="{ 'tool-pill__tools--cut-start': toolsCut === 'start' || toolsCut === 'both', 'tool-pill__tools--cut-end': toolsCut === 'end' || toolsCut === 'both' }"
         data-testid="tool-pill-tools"
       >
-        <IconButton v-for="tile in scrollingTiles" :key="tile.tool" v-bind="toolTile(tile)" @click="emit('select-tool', tile.tool)" />
+        <IconButton v-for="tile in scrollingTiles" :key="tile.tool" v-bind="toolTile(tile)" @click="tapped($event, tile.tool); emit('select-tool', tile.tool)" />
 
         <IconButton
           class="tool-pill__stop"
@@ -245,7 +253,7 @@ watch(
           :tabindex="-1"
           v-bind="off"
           data-testid="pill-tool-mirror"
-          @click="emit('mirror-tile')"
+          @click="tapped($event, 'mirror'); emit('mirror-tile')"
         />
 
         <IconButton
@@ -261,7 +269,7 @@ watch(
           :tabindex="roving.tabIndexFor(!!pasteArmed)"
           v-bind="off"
           data-testid="pill-tool-paste"
-          @click="emit('paste-mode')"
+          @click="tapped($event, 'paste'); emit('paste-mode')"
         />
       </div>
 

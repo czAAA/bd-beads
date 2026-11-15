@@ -136,6 +136,7 @@ const {
   onMirrorChange,
   onCloseMirror,
   onMirrorTile,
+  onPillTileTap,
   onMirrorWholeFrame,
   onMirrorSelection,
   selectedColorHex,
@@ -630,6 +631,7 @@ const drawingStyle = computed(() => {
             @select-tool="onSelectTool"
             @paste-mode="onPasteMode"
             @mirror-tile="onMirrorTile"
+            @tile-tap="onPillTileTap"
             @pick-recent="pickRecent"
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
@@ -671,6 +673,7 @@ const drawingStyle = computed(() => {
           @set-row-direction="onSetRowDirection"
           @toggle-row-highlight="toggleRowHighlight"
           @fit-and-export="onFitAndExport"
+          @select-tool="onSelectTool"
           @go-to-row="onGoToRow"
           @show-row="onShowRow"
         />

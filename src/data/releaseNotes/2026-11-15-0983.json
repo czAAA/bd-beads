@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Deleting a Project now says which one was deleted and which one is open, and Undo brings it back for a few seconds",
+    "ru": "После удаления проекта появляется сообщение, какой проект удалён и какой открыт, а «Отменить» несколько секунд возвращает его",
+    "uk": "Після видалення проєкту з’являється повідомлення, який проєкт видалено і який відкрито, а «Скасувати» кілька секунд повертає його",
+    "be": "Пасля выдалення праекта з’яўляецца паведамленне, які праект выдалены і які адкрыты, а «Адмяніць» некалькі секунд вяртае яго",
+    "zh": "删除项目后会提示删除了哪个项目、现在打开的是哪个，几秒内点“撤销”即可恢复",
+    "es": "Al eliminar un proyecto se indica cuál se eliminó y cuál está abierto, y Deshacer lo recupera durante unos segundos",
+    "pl": "Po usunięciu projektu widać, który został usunięty i który jest otwarty, a Cofnij przywraca go przez kilka sekund"
+  }
+}

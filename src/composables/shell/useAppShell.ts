@@ -71,6 +71,8 @@ import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { useArmedToolToasts } from '../tools/useArmedToolToasts'
+import { usePillTileNames } from '../tools/usePillTileNames'
+import { provideButtonNames } from '../ui/useButtonNames'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
@@ -135,6 +137,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     names: projectNames,
     replaceProject,
     removeProject,
+    removed: removedProject,
+    restoreRemoved,
+    forgetRemoved,
     removeAllProjects,
     flushPendingSave,
     saveNow,
@@ -223,8 +228,13 @@ function wireAppShell(services: Services, options: ShellOptions) {
       opening: openingAddress.project && openingAddress.view ? { project: openingAddress.project, view: openingAddress.view } : undefined,
     })
 
-  /** Every Project in the library, sealed ones too: what a Project's records beside the library are kept for. */
-  const libraryIds = () => [...projects.value.map((project) => project.id), ...sealed.value.map((project) => project.id)]
+  /** Every Project in the library, sealed ones too, and the one Delete holds for Undo (ticket 0983): what a Project's
+   * records beside the library are kept for. */
+  const libraryIds = () => [
+    ...projects.value.map((project) => project.id),
+    ...sealed.value.map((project) => project.id),
+    ...(removedProject.value ? [removedProject.value.project.id] : []),
+  ]
 
   /** Beads since last file (ticket 0796): Edit, Undo and Redo count, any Project file save puts it back to 0. */
   const sinceFile = useBeadsSinceFile({ currentProject, libraryIds, store: services.sinceFiles })
@@ -606,6 +616,9 @@ function wireAppShell(services: Services, options: ShellOptions) {
     picking: () => pickingColor.value,
     pasteArmed: () => pasteProjectionActive.value,
   })
+  /** On touch a pill tile's first tap says its name (ticket 0927); Menu › Help shows every button's name at once. */
+  const pillTileNames = usePillTileNames({ touch, showToast, messages, preferences: services.devicePreferences })
+  const buttonNames = provideButtonNames()
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
@@ -884,8 +897,14 @@ function wireAppShell(services: Services, options: ShellOptions) {
   const deleteProject = useDeleteProjectFlow({
     findProject: entryOf,
     removeProject,
+    restoreRemoved,
+    forgetRemoved,
     saveProjectFile: exportFlow.onSaveFileOf,
     openProjectId: () => activeProjectId.value,
+    openProjectName: () => activeProject.value && projectNameOf(activeProject.value),
+    showToast,
+    toastShowing: (id) => toasts.value.some((toast) => toast.id === id),
+    messages,
     dialogs,
   })
   const onRequestDeleteOpen = () => {
@@ -1158,6 +1177,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       onMirrorTile,
       onMirrorWholeFrame,
       onMirrorSelection,
+      onPillTileTap: pillTileNames.onPillTileTap,
       previewCells,
       previewStamp,
       onCellPrimaryDown,
@@ -1244,6 +1264,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       demo: !!demo,
       onStartDemoAfresh: () => demo?.startAfresh(),
       onOpenShortcutsHelp,
+      onShowButtonNames: buttonNames.show,
       onOpenFeedback: feedback.onOpenFeedback,
       // Menu: the device and the library
       toolPillPosition: toolPill.toolPillPosition,
