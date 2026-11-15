@@ -1922,6 +1922,23 @@ describe('ProjectSurface with a Frame', () => {
     expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toBeUndefined()
   })
 
+  it('reads a resize drag from the middle of the bead it was pressed on, so a press on the corner\'s line that wobbles 3px reports the same bead (ticket 0977)', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
+    // Just past the corner of the Frame's last bead (8 × 6 beads of 20px), then 3px back over the line into that bead.
+    await gesture(wrapper, [161, 121], [158, 118])
+
+    const pressed = wrapper.emitted('frame-press')![0]![1]
+    expect(wrapper.emitted('frame-drag')!.map(([cell]) => cell)).toEqual([pressed])
+  })
+
+  it('moves a resize drag on by a bead once the pointer has gone a bead (ticket 0977)', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
+    await gesture(wrapper, [161, 121], [141, 101])
+
+    const pressed = wrapper.emitted('frame-press')![0]![1] as { row: number; column: number }
+    expect(wrapper.emitted('frame-drag')!.map(([cell]) => cell)).toEqual([{ row: pressed.row - 1, column: pressed.column - 1 }])
+  })
+
   it('reports a press on a resize handle, the drag and the release, and draws no bead', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
     // The bottom-right handle stands in the gutter, 7.5px out from the corner of the Frame's line, which is 7px outside its beads (8 × 6 beads of 20px).
