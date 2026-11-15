@@ -35,11 +35,12 @@ export function useFrameBesidePanel(deps: FrameBesidePanelDeps) {
       const sheet = fitBox(project)
       const frame = placedFrame(project)
       if (!sheet || !frame) return undefined
-      // The Frame's sheet whole where the side holds it, else the Frame and its rulers, so its first columns show.
+      // The Frame's sheet whole where the side holds it, else the Frame and its rulers, so its first columns show; as
+      // much of them as the side holds, from the first, where they are wider still (a fit zoomed in, ticket 0964).
       const whole = surface.beadBox(sheet.box, 'canvas')
       if (whole.width <= room) return whole
       const line = surface.frameBox(frame)
-      return { x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: line.width + 2 * RULER_GUTTER_PX, height: line.height + 2 * RULER_GUTTER_PX }
+      return { x: line.x - RULER_GUTTER_PX, y: line.y - RULER_GUTTER_PX, width: Math.min(room, line.width + 2 * RULER_GUTTER_PX), height: line.height + 2 * RULER_GUTTER_PX }
     }, { clear })
     made = move && { move, project: project.id }
   }
