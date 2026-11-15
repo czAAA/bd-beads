@@ -14,10 +14,12 @@ const props = defineProps<{
   keepSummary?: boolean
   /** Closed every time it mounts and kept nowhere (Convert image's Review, ticket 0759), instead of per device by `id`. */
   closedFirst?: boolean
+  /** Folded until it is opened, then kept per device by `id` (the Project panel's This Project, ticket 0971). */
+  folded?: boolean
 }>()
 const labelId = useId()
 const bodyId = useId()
-const kept = usePanelSection(() => props.id)
+const kept = usePanelSection(() => props.id, () => props.folded)
 const local = ref(false)
 const open = computed(() => (props.closedFirst ? local.value : kept.open.value))
 const toggle = () => (props.closedFirst ? (local.value = !local.value) : kept.toggle())
