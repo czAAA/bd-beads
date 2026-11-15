@@ -117,7 +117,7 @@ In `index.html`:
 - The Rulers card (ticket 222) and the `bead-min-*` tokens are hand-written in the repo (DESIGN.md §6).
 - Dark theme: Palette Black #1a1a1a matches the dark `board` closely, so black beads sit close to the board (the white `bead-rim` outlines them).
 - Plans, accounts and the support link on the Homepage are designs only, switched off, with no integration.
-- **The Canvas look** (approved 2026-11-14) is ahead of the app until tickets 1000 to 1004 land: three Canvas colors per theme, tonal tiles, the calm gap, the own-color rim with the satin light, and the Lifted piece. The BeadBoard card's Canvas look section holds the drawing; the CanvasBackground, CanvasStrip, Rulers, Frame, MarginSheet, LayerSettings and ShortcutsHelp cards each say which ticket builds their part.
+- **The Canvas look** (approved 2026-11-14) is ahead of the app until tickets 1000 to 1004 and 1010 land: three Canvas colors per theme, tonal tiles, the calm gap, the own-color rim with the satin light (Open weave, no rim, for round beads), and the Lifted piece. The BeadBoard card's Canvas look section holds the drawing; the CanvasBackground, CanvasStrip, Rulers, Frame, MarginSheet, LayerSettings and ShortcutsHelp cards each say which ticket builds their part.
 
 ## Version
 

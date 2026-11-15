@@ -28,7 +28,7 @@ import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawTile, gapColorOf, markLookOf } from './tonalTiles'
-import { canvasLiftCells, drawLift, liftCollector, liftRows, paintedOnly } from './liftedPiece'
+import { canvasLiftCells, drawLift, joinedRound, liftCollector, liftRows, liftsAcross, paintedOnly } from './liftedPiece'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -342,7 +342,8 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     const collect = liftCollector(draw.drawBead, !geometry.grid)
     const weave = frameWeave(project)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: collect.drawer, letters: undefined, rows: liftRows(band, cellSizePx(weave.technique, weave.cell).height) }, space, origin)
-    drawLift(context, collect.cells, draw.look.canvas, draw.zoom * draw.pixelRatio)
+    const across = liftsAcross(weave)
+    drawLift(context, joinedRound(collect.cells, across), draw.look.canvas, draw.zoom * draw.pixelRatio, across)
     drawFrameLayer(context, { ...draw, lift: false, drawBead: paintedOnly(draw.drawBead), tiles: false, seeThrough: undefined }, space, origin)
     return
   }
@@ -738,7 +739,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     }
     if (positionMarks) drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin, tiles })
     if (under && overTiles) drawReferenceCut(context, under, frameBox, 'outside')
-    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio)
+    if (lift && look.liftedPiece) drawLift(context, canvasLiftCells(project, { area, rows: band, margin }), theme.canvas, zoom * pixelRatio, liftsAcross(canvasWeave(project)))
     drawCanvasLayer(context, draw, space)
     if (frame && frameBox) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
