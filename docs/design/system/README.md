@@ -124,7 +124,7 @@ In `index.html`:
 
 Current: **v19**: v18 (Oct 4, 2026) plus the repo changes since. From v18 on the repo owns this design system (ADR 0030); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
-The claude.ai project was last brought up to the repo on 2026-10-13, through ticket 398 (commit `f496da58`). The changes since are in git, one squash commit per ticket: `git log --format='%cs %s' f496da58.. -- docs/design/system/`. When the claude.ai copy is next brought up, move that commit forward. The hand-written log of v14 to v19 that used to stand here is in git history and in the claude.ai README.
+The claude.ai project was last brought up to the repo on 2026-10-13, through ticket 398 (commit `ed391e0f`). The changes since are in git, one squash commit per ticket: `git log --format='%cs %s' ed391e0f.. -- docs/design/system/`. When the claude.ai copy is next brought up, move that commit forward. The hand-written log of v14 to v19 that used to stand here is in git history and in the claude.ai README.
 
 A card removed since v19, which the claude.ai copy still has: **PrintSpecification** (ticket 0914, 2026-11-12). Page 1 of the PDF is now the whole piece with one Beads needed table (PrintPage1, `printed-output.md`), and the PDF has no Specification page.
 
