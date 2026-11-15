@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
 import { provideBeadColors, type BeadColors } from '../../composables/palette/useBeadColors'
 import { findBead } from '../../domain/beads'
@@ -102,20 +103,23 @@ describe('ColorPopover, by keyboard (ticket 0857)', () => {
   afterEach(() => cleanups.splice(0).forEach((cleanup) => cleanup()))
 
   /** Opens the popover from a tile that holds focus, as the Tool pill's does. */
-  function openFromTile(focusSwatch: boolean) {
-    const tile = document.body.appendChild(document.createElement('button'))
+  async function openFromTile(focusSwatch: boolean) {
+    const pill = document.body.appendChild(document.createElement('div'))
+    const tile = pill.appendChild(document.createElement('button'))
     tile.focus()
-    const host = mountWithPalette(ColorPopover, defaultPaletteIds(), { tile, pill: undefined, position: 'bottom', selectedColorId: 'blue', focusSwatch }, { attachTo: document.body })
+    const host = mountWithPalette(ColorPopover, defaultPaletteIds(), { tile, pill, position: 'bottom', selectedColorId: 'blue', focusSwatch }, { attachTo: document.body })
     cleanups.push(() => {
       host.wrapper.unmount()
-      tile.remove()
+      pill.remove()
     })
+    // Focus goes in once the popover is placed beside the pill (ticket 0961).
+    await flushPromises()
     const swatches = () => host.wrapper.findAll<HTMLElement>('[data-testid="palette-swatch"]').map((swatch) => swatch.element)
     return { ...host, tile, swatches, popover: host.wrapper.findComponent(ColorPopover) }
   }
 
-  it('walks in on the chosen swatch, steps with the arrows, chooses with Enter and gives focus back to the tile', () => {
-    const { swatches, tile, popover } = openFromTile(true)
+  it('walks in on the chosen swatch, steps with the arrows, chooses with Enter and gives focus back to the tile', async () => {
+    const { swatches, tile, popover } = await openFromTile(true)
     const blue = swatches().findIndex((swatch) => swatch.dataset.colorId === 'blue')
     expect(document.activeElement).toBe(swatches()[blue])
 
@@ -129,15 +133,15 @@ describe('ColorPopover, by keyboard (ticket 0857)', () => {
     expect(document.activeElement).toBe(tile)
   })
 
-  it('gives focus back to the tile on Escape', () => {
-    const { tile, popover } = openFromTile(true)
+  it('gives focus back to the tile on Escape', async () => {
+    const { tile, popover } = await openFromTile(true)
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     expect(popover.emitted('close')).toHaveLength(1)
     expect(document.activeElement).toBe(tile)
   })
 
-  it('takes no focus when opened by a pointer, and moves none on closing from outside it', () => {
-    const { tile, popover } = openFromTile(false)
+  it('takes no focus when opened by a pointer, and moves none on closing from outside it', async () => {
+    const { tile, popover } = await openFromTile(false)
     expect(document.activeElement).toBe(tile)
     const elsewhere = document.body.appendChild(document.createElement('button'))
     cleanups.push(() => elsewhere.remove())

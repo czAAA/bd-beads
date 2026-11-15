@@ -180,7 +180,8 @@ describe('ToolPill (ticket 439)', () => {
     tile.element.click()
     expect(wrapper.emitted('update:popoverOpen')).toEqual([[true]])
     await wrapper.setProps({ popoverOpen: true })
-    await nextTick()
+    // Focus goes in once the popover is placed (ticket 0961).
+    await flushPromises()
     expect(tileTip().props('suppressed')).toBe(true)
     expect(document.activeElement?.getAttribute('data-testid')).toBe('palette-swatch')
     wrapper.unmount()
