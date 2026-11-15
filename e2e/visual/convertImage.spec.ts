@@ -178,3 +178,34 @@ test.describe('Convert image crop (ticket 0898)', () => {
     })
   })
 })
+
+test.describe('Convert image with no picture, on touch', () => {
+  test.use({ hasTouch: true, viewport: { width: 1180, height: 820 } })
+
+  // Ticket 0970 (UX-083): Choose file is the one primary; Paste and Take photo, equal choices, share the secondary look.
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`Paste and Take photo look alike and Choose file alone is primary, ${colorScheme}`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme })
+      await openApp(page, [])
+      await openNewProjectForm(page)
+      await page.getByTestId('convert-image').click()
+      await page.mouse.move(2, 2)
+      // A FileButton's test id is on its hidden input; what shows is the label round it.
+      const look = (testId: string) =>
+        page.getByTestId(testId).evaluate((element) => {
+          const face = element.closest('label') ?? element
+          const style = getComputedStyle(face)
+          return {
+            fill: style.backgroundColor,
+            edge: `${style.borderTopWidth} ${style.borderTopStyle} ${style.borderTopColor}`,
+            type: `${style.fontWeight} ${style.fontSize} ${style.fontFamily} ${style.color}`,
+            height: face.getBoundingClientRect().height,
+          }
+        })
+      const [choose, paste, photo] = await Promise.all(['convert-choose-file', 'convert-paste', 'convert-take-photo'].map(look))
+      expect(photo).toEqual(paste)
+      expect(choose.fill).not.toBe(paste.fill)
+      await expect(page.getByTestId('convert-drop-zone').locator('.app-button--primary, .file-button__target--accent')).toHaveCount(1)
+    })
+  }
+})

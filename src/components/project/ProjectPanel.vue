@@ -109,7 +109,7 @@ const canvasSummary = computed(() => layerSummary(t.value, canvas.value))
       @remove="emit('remove-reference-image')"
     />
 
-    <PanelSection id="project:this" :label="t.panels.project.thisProject">
+    <PanelSection id="project:this" :label="t.panels.project.thisProject" folded data-testid="project-this">
       <PanelItem :icon="save.icon" :value="lastFileName ?? '.openbeads'" stays data-testid="save-project-file" @select="emit('save-project-file')">{{ save.name(t) }}</PanelItem>
       <PanelItem v-if="canSaveAs" :icon="saveAs.icon" stays data-testid="save-project-file-as" @select="emit('save-project-file-as')">{{ saveAs.name(t) }}</PanelItem>
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>

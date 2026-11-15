@@ -70,7 +70,7 @@ When fewer colors come out than asked, the result's second line at the column's 
 - When fewer codes are left than the colors asked, a line follows: "Only 9 codes left: 9 colors, not 12."
 - Finish applies to the Bead's palette and to My beads. It is off for Default Palette and Exact, with the reason in its Tooltip.
 - The (i) "Where colors come from" gains paragraphs for My beads and Finish.
-- The Change picker's "Palette {bead}" opens with the same Finishes on, or on My beads.
+- The Change picker's "Add {bead} colors" opens with the same Finishes on, or on My beads.
 
 **My beads** (0902, 0903): one list of owned codes per Color catalog, yes or no, kept on the device (as Export quality is), never sent.
 - "Edit My beads" turns the Colors popover into its **My beads view**, with a back arrow ("Back to Colors"). It is not a popover or panel of its own.
@@ -202,7 +202,7 @@ New values: `--convert-tablet-min`, `--convert-settings-height`, `--convert-shee
 
 Picture and Bead & Technique are one step.
 
-- **No picture:** Choose file (primary, `import` icon, the FileButton's `accept`), Paste (`paste` icon; the async Clipboard API, and Ctrl/Cmd+V works anywhere on the page), and Take photo on a touch device (a file input with `capture`, the `camera` icon; ticket 0862), all `field-height` (Paste too), side by side in one row sharing it evenly (Choose file primary); a button is never narrower than its label, so a pane too narrow for the row (a phone) stacks them. A button never wraps sideways.
+- **No picture:** Choose file (primary, `import` icon, the FileButton's `accept`), Paste (`paste` icon; the async Clipboard API, and Ctrl/Cmd+V works anywhere on the page), and Take photo on a touch device (a file input with `capture`, the `camera` icon; ticket 0862), all `field-height` (Paste too); Paste and Take photo, equal choices, share the Secondary look (Take photo a `secondary` FileButton, no dashed edge; ticket 0970), so Choose file is the only primary; side by side in one row sharing it evenly; a button is never narrower than its label, so a pane too narrow for the row (a phone) stacks them. A button never wraps sideways.
 - **Paste with nothing to paste** says nothing: no line appears (ticket 0756).
 - **With a picture:** a row of the 64 × 48 thumbnail (`--convert-thumb-width`, `--convert-thumb-height`; the picture contained in it, 1px `line` edge), the file name in `control` and "289×630 px · jpg" in `meta`, and at the right a small (28) **Replace** button with a chevron, a menu of Choose file and Paste. Turn 90° and Flip are in the preview's floating bar, not here.
 - **bead** and **technique:** the New Project form's own pickers in panel rows (ProjectPanel card), the `label` at the left (88 wide) and the PanelPickers at the right: Brand, Type and Size; Technique, with the Drop row for peyote and brick stitch. They start from the form's values and are the page's own copy.

@@ -38,6 +38,8 @@ async function mountPanel(project: Project) {
 }
 type Panel = Awaited<ReturnType<typeof mountPanel>>
 const has = (wrapper: Panel, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()
+/** The ways to a Frame, in the panel's order. */
+const rows = (wrapper: Panel) => wrapper.findAll('[data-testid="export-fit"], [data-testid="export-select-frame"]').map((row) => row.attributes('data-testid'))
 
 describe('ExportPanel (ticket 0652)', () => {
   it('names the open Project on the title line, with or without a Frame (ticket 0986)', async () => {
@@ -69,11 +71,14 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(order).toEqual(ids)
   })
 
-  it('says to set a frame with none, offers Select a Frame and Fit, and shows no export rows', async () => {
+  it('says to set a frame with none, offers Fit first with the Frame icon, then Drag a Frame, and shows no export rows (ticket 0944)', async () => {
     const wrapper = await mountPanel(drawn())
 
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
     expect(['export-png', 'export-pdf', 'quality-range'].filter((id) => has(wrapper, id))).toEqual([])
+    expect(rows(wrapper)).toEqual(['export-fit', 'export-select-frame'])
+    expect(wrapper.get('[data-testid="export-fit"] [data-icon]').attributes('data-icon')).toBe('frame')
+    expect(wrapper.get('[data-testid="export-select-frame"]').text()).toBe(en.frame.selectAFrame)
 
     await wrapper.get('[data-testid="export-select-frame"]').trigger('click')
     await wrapper.get('[data-testid="export-fit"]').trigger('click')
@@ -81,9 +86,11 @@ describe('ExportPanel (ticket 0652)', () => {
     expect(wrapper.emitted('fit')).toHaveLength(1)
   })
 
-  it('has Fit off, with its reason, while nothing is drawn', async () => {
+  it('has Fit off, with its reason, and second while nothing is drawn', async () => {
     const wrapper = await mountPanel(empty())
     const fit = wrapper.get('[data-testid="export-fit"]')
+
+    expect(rows(wrapper)).toEqual(['export-select-frame', 'export-fit'])
 
     expect(fit.attributes('aria-disabled')).toBe('true')
     await fit.trigger('click')

@@ -80,11 +80,13 @@ const {
   onRemoveFrame,
   onFrameKey,
   onCloseFramePanel,
+  onFramePanelPlaced,
   toolPillPosition,
   menuOpensOnForm,
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
   onOpenShortcutsHelp,
+  onShowButtonNames,
   onOpenFeedback,
   projectsKept,
   onSelectPanel,
@@ -114,6 +116,7 @@ const chosenStarter = ref<StarterId>()
     :sub-title="t.starters.title"
     :start-in-sub="frameOpensOnStarters"
     @close="onCloseFramePanel"
+    @placed="onFramePanelPlaced"
   >
     <FramePanel
       :project="activeProject"
@@ -201,6 +204,7 @@ const chosenStarter = ref<StarterId>()
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="onOpenShortcutsHelp"
+      @button-names="onShowButtonNames"
       @feedback="onOpenFeedback"
     />
     <ProjectPanel

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import AppPanel from './AppPanel.vue'
 import { PANELS, type PanelId } from './panels'
 import { useI18n } from '../../i18n/useI18n'
+import type { Region } from '../../rendering/surfaceView'
 
 // The one place an AppPanel is mounted (ticket 510): shows the panel that is open, if it is one of `only`, set up from
 // its descriptor. The panel's content goes in the slots. Adding a panel is a descriptor in panels.ts and its content here or in AppPanels.
@@ -14,7 +15,7 @@ const props = defineProps<{
   /** The button it hangs from, by test id, when not its descriptor's: Export from the margin sheet (ticket 0657). */
   anchor?: string
 }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; placed: [box: Region] }>()
 
 const { t } = useI18n()
 const panel = computed(() => (props.open && props.only.includes(props.open) ? PANELS[props.open] : undefined))
@@ -30,6 +31,7 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
     :width="panel.width"
     :align="panel.align"
     @close="emit('close')"
+    @placed="emit('placed', $event)"
   >
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
