@@ -54,3 +54,48 @@ describe.each([
     expect(lum(pixel(70, 88))).toBeLessThan(far)
   })
 })
+
+// What the shadows cost (ticket 1006): a layer laid over the screen costs the screen, so the shadows are blurred on a
+// sheet smaller than it, kept from draw to draw.
+describe('the shadows\' sheet', () => {
+  /** The sheets laid on a surface by `drawLift` on `cells` at `scale`: each the source's size and where it lands. */
+  function laid(cells: Parameters<typeof drawLift>[1], scale: number): { source: HTMLCanvasElement; canvasWidth: number; sourceWidth: number; sourceHeight: number; width: number }[] {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = 2000
+    const context = canvas.getContext('2d')!
+    context.setTransform(scale, 0, 0, scale, 0, 0)
+    const sheets: ReturnType<typeof laid> = []
+    const watched = new Proxy(context, {
+      get: (target, key) => {
+        if (key === 'drawImage') return (source: HTMLCanvasElement, _x: number, _y: number, sw: number, sh: number, _dx: number, _dy: number, dw: number) => (sheets.push({ source, canvasWidth: source.width, sourceWidth: sw, sourceHeight: sh, width: dw }), target.drawImage(source, 0, 0, sw, sh, 0, 0, dw, sh))
+        const value = Reflect.get(target, key)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+      set: (target, key, value) => Reflect.set(target, key, value),
+    })
+    drawLift(watched as unknown as DrawingContext, cells, DARK_THEME.canvas, scale)
+    return sheets
+  }
+  const row = (columns: number) => [{ x: 40, y: 40, width: columns * CELL_SIZE_PX, height: CELL_SIZE_PX }]
+
+  it('blurs the soft shadow on a sheet smaller than the screen at 40% on pixel ratio 2, the close one apart on the screen', () => {
+    const [soft, ...others] = laid(row(20), 0.8)
+    expect(others).toEqual([])
+    expect(soft!.sourceWidth * 2).toBeLessThan(soft!.width)
+  })
+
+  it('lays one sheet for both shadows where the close one is blurred on a smaller sheet too', () => {
+    expect(laid(row(20), 2)).toHaveLength(1)
+  })
+
+  it('keeps the sheet when the next draw needs the same or a smaller one, and grows it when it needs more', () => {
+    const [large] = laid(row(20), 2)
+    const [same] = laid(row(20), 2)
+    const [smaller] = laid(row(4), 2)
+    expect(same!.source).toBe(large!.source)
+    expect(smaller!.canvasWidth).toBe(large!.canvasWidth)
+    expect(smaller!.sourceWidth).toBeLessThan(large!.sourceWidth)
+    const [larger] = laid(row(60), 2)
+    expect(larger!.canvasWidth).toBeGreaterThan(large!.canvasWidth)
+  })
+})

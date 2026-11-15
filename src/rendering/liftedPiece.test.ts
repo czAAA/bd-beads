@@ -50,7 +50,7 @@ describe('drawLift', () => {
     const { context, named } = recordingContext()
     const shadows: { color: string; blur: number; down: number }[] = []
     const watched = new Proxy(context, {
-      get: (target, key) => (key === 'fill' ? () => (shadows.push({ color: target.shadowColor, blur: target.shadowBlur, down: target.shadowOffsetY }), target.fill()) : Reflect.get(target, key)),
+      get: (target, key) => (key === 'fill' ? (...args: unknown[]) => (shadows.push({ color: target.shadowColor, blur: target.shadowBlur, down: target.shadowOffsetY }), (target.fill as (...args: unknown[]) => void)(...args)) : Reflect.get(target, key)),
       set: (target, key, value) => Reflect.set(target, key, value),
     })
     drawLift(watched, [cell], '#202020', 2)
@@ -63,13 +63,40 @@ describe('drawLift', () => {
     ])
   })
 
-  it('runs the contour 4px outside the bead\'s body, 1.25px wide, corners 5px', () => {
+  it('builds the shapes once, in one pass over the cells: the ground\'s 2.75px past each body, corners 3.75px, and the contour\'s 4px past it, corners 5px', () => {
+    const { context, named } = recordingContext()
+    drawLift(context, [cell, { ...cell, x: 100 }], '#fafafa', 1)
+    // The body stands half a px in from its cell.
+    expect(named('roundRect').map(({ args }) => args)).toEqual([
+      [-2.25, -2.25, CELL_SIZE_PX + 4.5, CELL_SIZE_PX + 4.5, 3.75],
+      [-3.5, -3.5, CELL_SIZE_PX + 7, CELL_SIZE_PX + 7, 5],
+      [97.75, -2.25, CELL_SIZE_PX + 4.5, CELL_SIZE_PX + 4.5, 3.75],
+      [96.5, -3.5, CELL_SIZE_PX + 7, CELL_SIZE_PX + 7, 5],
+    ])
+  })
+
+  it('fills the contour\'s shape, then the ground\'s over it, and strokes nothing', () => {
     const { context, named } = recordingContext()
     drawLift(context, [cell], '#fafafa', 1)
-    const [, outer, inner] = named('roundRect').map(({ args }) => args)
-    // The body stands half a px in from its cell.
-    expect(outer).toEqual([-3.5, -3.5, CELL_SIZE_PX + 7, CELL_SIZE_PX + 7, 5])
-    expect(inner).toEqual([-2.25, -2.25, CELL_SIZE_PX + 4.5, CELL_SIZE_PX + 4.5, 3.75])
+    const shapes = named('fill').map(({ args }) => args[0])
+    // The shadows are cast from the ground, then the contour, then the ground again.
+    expect(shapes[2]).not.toBe(shapes[1])
+    expect(shapes[3]).toBe(shapes[0])
+    expect(named('fill').map(({ fillStyle }) => fillStyle)).toEqual(['#9a9a9a', '#9a9a9a', '#9a9a9a', '#fefefe'])
+    expect(named('stroke')).toHaveLength(0)
+  })
+
+  it('puts a turned bead\'s cell into the shape by the turn it was drawn at, seen from the context\'s own transform', () => {
+    const { context, named } = recordingContext()
+    // The context draws at twice; the bead was drawn at twice and a quarter turn, its corner at (10, 0) on the surface.
+    const watched = new Proxy(context, { get: (target, key) => (key === 'getTransform' ? () => ({ a: 2, b: 0, c: 0, d: 2, e: 0, f: 0 }) : Reflect.get(target, key)) })
+    drawLift(watched, [{ ...cell, transform: { a: 0, b: 2, c: -2, d: 0, e: 10, f: 0 } }], '#fafafa', 2)
+    const matrices = named('addPath').map(({ args }) => args[1])
+    // base⁻¹ · own: half the scale gone, a quarter turn and the corner at (5, 0) left.
+    expect(matrices).toEqual([
+      { a: 0, b: 1, c: -1, d: 0, e: 5, f: 0 },
+      { a: 0, b: 1, c: -1, d: 0, e: 5, f: 0 },
+    ])
   })
 
   it('draws nothing with no bead', () => {
