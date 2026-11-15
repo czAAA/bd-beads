@@ -1199,6 +1199,8 @@ export const zh: Translations = {
     keyHints: '显示按键提示',
     keyHintsOn: '开',
     keyHintsOff: '关',
+    pasteTool: '粘贴工具',
+    pasteClipboard: '从剪贴板粘贴',
   },
   tooltips: {
     select: '然后复制和粘贴，或删除。',
@@ -1207,7 +1209,7 @@ export const zh: Translations = {
     selectAll: '一次选中所有珠子。',
     hand: '拖动以在画布上移动。',
     editFrame: '显示或隐藏边框的控点。',
-    framePanel: '打开边框的大小、旋转和移除。',
+    framePanel: '打开导出、所需珠子、边框的大小、旋转和移除。',
     frameEdgeOut: '在这一侧把边框扩大一颗珠子。',
     frameEdgeIn: '在这一侧把边框缩小一颗珠子。',
     frameEdgeInDisabled: '这一侧的边框已无法再缩小。',
@@ -1272,7 +1274,7 @@ export const zh: Translations = {
     fitAndExport: '让边框贴合所有珠子，然后打开图片导出。',
     pasteToolTouch: '点按要放置副本的位置。',
     noBeadsToNumber: '没有可编号的珠子。',
-    framePanelBeads: '打开所需珠子（{total}）、边框的大小、旋转和移除。',
+    framePanelBeads: '打开导出、所需珠子（{total}）、边框的大小、旋转和移除。',
   },
   layerSettings: {
     frameHeading: '设置',

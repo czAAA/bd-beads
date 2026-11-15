@@ -1476,7 +1476,7 @@ export interface Translations {
     cancelButton: string
   }
   /** The `?` shortcuts help overlay (ticket 96): every keyboard shortcut, grouped by Tool group. Key labels
-   * themselves (digits, letters, "Ctrl/Cmd+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
+   * themselves (digits, letters, "⌘C" or "Ctrl+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
    * translated here — only the description of what each one does needs a translation. */
   shortcutsHelp: {
     title: string
@@ -1493,6 +1493,9 @@ export interface Translations {
     keyHints: string
     keyHintsOn: string
     keyHintsOff: string
+    /** The two Pastes named apart in the list (ticket 0993): the pill's tool and the clipboard's key. */
+    pasteTool: string
+    pasteClipboard: string
   }
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One
    * imperative sentence ending in a full stop; keys never appear (they are the key chip). */

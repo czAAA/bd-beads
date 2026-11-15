@@ -1,22 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useKeyHints } from '../../composables/ui/useKeyHints'
+import { deviceKeyboard, useKeyHints } from '../../composables/ui/useKeyHints'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppModal from '../ui/AppModal.vue'
 import IconButton from '../ui/IconButton.vue'
 import KeyChip from '../ui/KeyChip.vue'
-import { chordParts } from '../../domain/chord'
+import { chordLine, chordParts, keyParts, plusBefore } from '../../domain/chord'
 import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, type ControlGroup } from '../../composables/shell/controlRegistry'
 
 // The `?` shortcuts help overlay (tickets 96, 151, 329; ADR 0035), generated from the control registry: every action
 // with a key, grouped under the Tool group names, plus the keyless pointer gestures. Key labels are locale-neutral,
-// not translated. Two columns in the Toolbox's order, rows as Kbd chips.
+// not translated, and written for the device's keyboard. Two columns in the Toolbox's order, rows as Kbd chips.
 const emit = defineEmits<{
   close: []
 }>()
 
 const { t } = useI18n()
+/** Keys are written for this device's keyboard: ⌘ and ⌫ on an Apple one, Ctrl and Del elsewhere (ticket 0993). */
+const keyboard = deviceKeyboard()
 const closeAction = controlAction('close')
 
 /** The switch for hotkey chips (ticket 438): reads the effective state, and its first flip keeps a choice on this
@@ -52,12 +54,12 @@ const groups = computed(() =>
       ...CONTROLS.filter((control) => control.group === group && control.chords.length > 0).map((control) => ({
         id: control.id,
         label: (control.help?.name ?? control.name)(t.value),
-        keys: control.help?.keys ?? control.chords.map(chordParts),
+        keys: control.help?.keys?.map((chord) => keyParts(chord, keyboard)) ?? control.chords.map((chord) => chordParts(chord, keyboard)),
       })),
       ...POINTER_HELP.filter((row) => row.group === group).map((row) => ({
         id: row.keys.flat().join('-'),
         label: row.name(t.value),
-        keys: row.keys,
+        keys: row.keys.map((chord) => keyParts(chord, keyboard)),
       })),
     ]
     return { group, title: groupTitles.value[group], shortcuts: rows }
@@ -66,7 +68,7 @@ const groups = computed(() =>
 
 /** A row's keys as one phrase for screen readers and for copying. */
 function spoken(keys: HelpRow['keys']): string {
-  return keys.map((chord) => chord.join('+')).join(', ')
+  return keys.map(chordLine).join(', ')
 }
 </script>
 
@@ -104,7 +106,7 @@ function spoken(keys: HelpRow['keys']): string {
               <template v-for="(chord, alternative) in shortcut.keys" :key="alternative">
                 <span v-if="alternative > 0" class="shortcuts-help__or" aria-hidden="true">,</span>
                 <template v-for="(key, index) in chord" :key="index">
-                  <span v-if="index > 0" class="shortcuts-help__plus" aria-hidden="true">+</span>
+                  <span v-if="plusBefore(chord, index)" class="shortcuts-help__plus" aria-hidden="true">+</span>
                   <KeyChip always class="shortcuts-help__kbd" aria-hidden="true">{{ key }}</KeyChip>
                 </template>
               </template>
