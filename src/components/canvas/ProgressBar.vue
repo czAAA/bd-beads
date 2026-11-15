@@ -118,7 +118,7 @@ const hasFrame = computed(() => props.project !== undefined && frameOf(props.pro
   border-radius: 0 0 var(--canvas-box-radius) var(--canvas-box-radius);
 }
 
-/* Phone widths (ticket 411): Row not done and Row done take a second row (RowProgressControls), so the bar wraps and is taller:
+/* Phone widths (ticket 411): Back a row and Row done take a second row (RowProgressControls), so the bar wraps and is taller:
  * --progress-height (controls.css), which things above follow. */
 @media (max-width: 30rem) {
   .progress-bar {

@@ -17,6 +17,7 @@ import CanvasHint from './canvas/CanvasHint.vue'
 import FirstRunHints from './canvas/FirstRunHints.vue'
 import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ProgressBar from './canvas/ProgressBar.vue'
+import GoToRowPopover from './canvas/GoToRowPopover.vue'
 import ContextBar from './tools/ContextBar.vue'
 import SchemaTags from './canvas/SchemaTags.vue'
 import { withPieceName } from '../domain/pieceNames'
@@ -193,6 +194,27 @@ const MarginColorPopoverHost = defineComponent({
   },
 })
 
+/** Go to pass on peyote, with the passes sentence behind its Info button (ticket 0972), hung from a counter at the
+ * bottom left as the Progress bar's is. Alone, as a long press on the bar's own controls would be a press outside it. */
+const GoToPassHost = defineComponent({
+  setup() {
+    const { t } = useI18n()
+    const button = ref<HTMLElement>()
+    const shown = ref(false)
+    onMounted(() => (shown.value = true))
+    return () => {
+      const words = t.value.rowProgress
+      const info = { label: words.passesInfoName, body: fillBlanks(words.passesBody, { passes: 27, lines: 14 }) }
+      return h('div', { style: { position: 'fixed', left: '8px', bottom: '8px' } }, [
+        h('button', { ref: button, type: 'button' }, '3/27'),
+        shown.value
+          ? h(GoToRowPopover, { anchor: button.value, title: words.goToPass, unit: words.passLabel, current: 3, total: 27, showLabel: words.showRow, info })
+          : null,
+      ])
+    }
+  },
+})
+
 /** Two unframed Schemas with their tags in a phone-sized canvas box (tickets 0721, 0733): "Owl" and "Butterfly", which
  * opens into the paper tag. */
 const schemaTagsHost = defineComponent({
@@ -230,6 +252,8 @@ const CASES: FitCase[] = [
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
   // Go to row, opened from the Progress bar's counter (ticket 0849).
   ['Go to row', ProgressBar, { project: framed }, (root: HTMLElement) => press(root, 'progress-bar-compact-position')],
+  // Go to pass on peyote, with its Info button beside the name (ticket 0972).
+  ['Go to pass', GoToPassHost as Component, {}],
   [
     'ContextBar',
     ContextBar,

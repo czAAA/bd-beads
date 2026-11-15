@@ -77,7 +77,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
       'Turn row direction',
       'Reset progress',
       'Row highlight',
-      'Row not done',
+      'Back a row',
       'Row done',
       'Move Frame',
       'Mirror the whole Frame',
@@ -87,7 +87,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
       'Margin color',
       'Remove Frame',
     ])
-    // Row not done is its arrow alone on the paper, named by the label it has in the Progress bar.
+    // Back a row is its arrow alone on the paper, named by the label it has in the Progress bar.
     expect(control(wrapper, 'margin-progress-previous').text()).toBe('')
   })
 
@@ -107,7 +107,7 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(stops().map((button) => button.attributes('data-testid'))).not.toContain('margin-mirror-frame')
   })
 
-  it('moves the row from its Row done and Row not done, as the Progress bar does', async () => {
+  it('moves the row from its Row done and Back a row, as the Progress bar does', async () => {
     const wrapper = mountSheet({ project: moveToRow(framed(), 2) })
     expect(control(wrapper, 'margin-progress-compact-position').text()).toBe('3/11')
     await control(wrapper, 'margin-progress-next').trigger('click')
