@@ -90,8 +90,9 @@ const TOUCH = { pointerType: 'touch', isPrimary: true }
 const PEN = { pointerType: 'pen', isPrimary: true }
 const MOUSE = { pointerType: 'mouse', isPrimary: true }
 
-/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
-const draws = () => context.named('clearRect').length / 2
+/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. The Lifted
+ * piece's shadow sheet clears itself too (ticket 1006), here on the same recorded context: a few px, not the surface. */
+const draws = () => context.named('clearRect').filter(({ args }) => (args[2] as number) > 100).length / 2
 
 describe('ProjectSurface', () => {
   it('redraws each layer once per animation frame, with the last zoom and scroll, however many changes come first', async () => {

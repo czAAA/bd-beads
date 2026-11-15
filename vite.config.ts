@@ -72,6 +72,7 @@ export default defineConfig(({ mode }) => ({
           isolate: false,
           include: ['**/*.test.ts'],
           exclude: [...configDefaults.exclude, ...PAGE_TESTS, BROWSER_TESTS, 'e2e/**', 'worker/**'],
+          setupFiles: ['./src/unitSetup.ts'],
         },
       },
       {
@@ -87,7 +88,7 @@ export default defineConfig(({ mode }) => ({
           // `npm run test:related` sets SKIP_APP_TESTS: the App imports everything, so `vitest related` would pull in
           // every App.*.test.ts (ticket 418, docs/testing.md).
           exclude: [...configDefaults.exclude, BROWSER_TESTS, ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
-          setupFiles: ['./src/testSetup.ts'],
+          setupFiles: ['./src/unitSetup.ts', './src/testSetup.ts'],
         },
       },
       ...(browserTestsOn()
