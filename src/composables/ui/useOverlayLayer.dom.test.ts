@@ -161,6 +161,37 @@ describe('a press outside', () => {
     expect(behind).toHaveBeenCalledTimes(1)
   })
 
+  it('hands the press on to the layer beneath once it has closed (an Info tip open in the Menu panel, ticket 0955)', () => {
+    const outside = page()
+    const closeMenu = vi.fn()
+    mount(panel({ close: closeMenu }), { attachTo: document.body })
+    const tipOpen = ref(true)
+    const tip = defineComponent({
+      setup() {
+        const el = ref<HTMLElement>()
+        useOverlayLayer({ isOpen: () => tipOpen.value, root: () => el.value, close: () => (tipOpen.value = false), outside: 'through' })
+        return () => h('span', { ref: el })
+      },
+    })
+    mount(tip, { attachTo: document.body })
+
+    const press = pressOn(outside)
+
+    expect(tipOpen.value).toBe(false)
+    expect(closeMenu).toHaveBeenCalledTimes(1)
+    expect(press.defaultPrevented).toBe(true)
+  })
+
+  it('keeps the press from the layer beneath while a layer that stands aside stays open', () => {
+    const closeBottom = vi.fn()
+    mount(panel({ close: closeBottom }), { attachTo: document.body })
+    mount(panel({ close: () => undefined, outside: 'through' }), { attachTo: document.body })
+
+    pressOn(page())
+
+    expect(closeBottom).not.toHaveBeenCalled()
+  })
+
   it("ignores a pinch's second finger", () => {
     const close = vi.fn()
     mount(panel({ close }), { attachTo: document.body })
