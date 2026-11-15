@@ -1,3 +1,4 @@
+import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { BEAD_CATALOG } from '../../domain/beads'
@@ -5,6 +6,8 @@ import { contrastRatio, mix, type Rgb } from '../../domain/color'
 import { createProject } from '../../domain/createProject'
 import { MIRROR_OFF, type MirrorSetting } from '../../domain/mirror'
 import { mountAt } from '../../testUtils/browserFit'
+import { byTestid, emulateTouch, hitAreaProblems } from '../../testUtils/hitAreas'
+import { tokenPx } from '../../testUtils/tokenPx'
 import { paintAt } from '../../testUtils/layers'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import ContextBar from './ContextBar.vue'
@@ -120,5 +123,40 @@ describe('ContextBar states', () => {
     expect(Number(getComputedStyle(bar).zIndex)).toBeLessThan(Number(getComputedStyle(selectionBar).zIndex))
     root.querySelector<HTMLElement>('[data-testid="mirror-bar-close"]')!.focus()
     expect(Number(getComputedStyle(bar).zIndex)).toBe(Number(getComputedStyle(selectionBar).zIndex))
+  })
+})
+
+// The bars' small controls take a finger (ticket 0962): on touch every control answers across `touch-target` and no pad
+// lies over another's drawing; with a mouse the Mirror bar's segments, chips and count buttons are at least `hit-min`.
+const allOn: MirrorSetting = { ...setting, axes: { leftRight: true, topBottom: true, radial: true } }
+const allOnProps = { ...mirrorProps, mirror: { ...mirrorProps.mirror, setting: allOn }, mirrorAnchor: { ...anchor, viewport: { width: 1280, height: 640 } } }
+const MIRROR_CONTROLS = ['mode-mirror', 'mode-repeat', ...(['leftRight', 'topBottom', 'radial'] as const).flatMap((axis) => [`axis-${axis}`, `${axis}-fewer`, `${axis}-more`]), 'close'].map((id) => `mirror-bar-${id}`)
+
+/** The Mirror bar in a box with room for it whole: where it must scroll sideways, its box clips the pads to its own
+ * height. */
+const roomyMirrorBar = defineComponent({ setup: () => () => h('div', { style: { position: 'relative', width: '1280px', height: '400px' } }, [h(ContextBar, allOnProps)]) })
+
+describe('ContextBar hit areas (ticket 0962)', () => {
+  it('on touch gives every Mirror bar control a touch-target hit area that lies over no other', async () => {
+    await emulateTouch()
+    const { root } = await mountAt(roomyMirrorBar, {}, { locale: 'en', width: 1280 })
+    expect(root.querySelector('.context-bar--scrolls')).toBeNull()
+    expect(hitAreaProblems(byTestid(root, MIRROR_CONTROLS), tokenPx(document.body, '--touch-target'))).toEqual([])
+  })
+
+  it('on touch gives every Selection bar button a touch-target hit area that lies over no other', async () => {
+    await emulateTouch()
+    const { root } = await mountBar({ ...selectionProps, anchor: { ...anchor, viewport: { width: 1280, height: 640 } } })
+    const buttons = [...root.querySelectorAll<HTMLElement>('.context-bar__button')].filter((button) => button.offsetWidth > 0)
+    expect(buttons.length).toBeGreaterThan(4)
+    const controls = Object.fromEntries(buttons.map((button, index) => [button.dataset.testid ?? `button ${index}`, button]))
+    expect(hitAreaProblems(controls, tokenPx(document.body, '--touch-target'))).toEqual([])
+  })
+
+  it('with a mouse gives every Mirror bar control at least the smallest hit size, none over another', async () => {
+    expect(matchMedia('(pointer: coarse)').matches).toBe(false)
+    const { root } = await mountAt(roomyMirrorBar, {}, { locale: 'en', width: 1280 })
+    expect(root.querySelector('.context-bar--scrolls')).toBeNull()
+    expect(hitAreaProblems(byTestid(root, MIRROR_CONTROLS), tokenPx(document.body, '--hit-min'))).toEqual([])
   })
 })

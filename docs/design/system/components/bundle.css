@@ -1061,11 +1061,20 @@ body {
 .bb-mirror-mode button:active:not([aria-checked="true"]), .bb-mirror-chip > button:active:not([aria-pressed="true"]), .bb-mirror-count button:active:not([aria-disabled="true"]) { background: color-mix(in srgb, var(--canvas) 20%, transparent); }
 .bb-mirror-mode button[aria-checked="true"]:active, .bb-mirror-chip > button[aria-pressed="true"]:active { background: color-mix(in srgb, var(--canvas) 72%, var(--ink)); }
 .bb-mirror-mode button:focus-visible, .bb-mirror-chip > button:focus-visible, .bb-mirror-count button:focus-visible { outline: var(--focus-width) solid var(--canvas); outline-offset: var(--focus-offset); }
+/* Hit areas (ticket 0962): with a mouse or pen at least --hit-min; on touch touch-target, each pad its own width, none over another. */
+@media not (pointer: coarse) {
+  .bb-mirror-mode button, .bb-mirror-chip > button, .bb-mirror-count button { position: relative; }
+  .bb-mirror-mode button::before, .bb-mirror-chip > button::before, .bb-mirror-count button::before { content: ""; position: absolute; top: 50%; inset-inline: 0; height: max(100%, var(--hit-min)); transform: translateY(-50%); }
+  .bb-mirror-chip > button { width: var(--mirror-bar-control); }
+}
 @media (pointer: coarse) {
   .bb-mirror-mode, .bb-mirror-chip { height: var(--mirror-bar-control-touch); }
-  .bb-mirror-chip > button { width: calc(var(--mirror-bar-control-touch) - 2px); height: calc(var(--mirror-bar-control-touch) - 2px); }
+  .bb-mirror-mode button { min-width: var(--touch-target); }
+  .bb-mirror-chip > button { width: var(--touch-target); height: calc(var(--mirror-bar-control-touch) - 2px); }
   .bb-mirror-chip > button svg { width: 18px; height: 18px; }
-  .bb-mirror-count button { width: var(--mirror-bar-control-touch); height: calc(var(--mirror-bar-control-touch) - 2px); }
+  .bb-mirror-count button { width: var(--touch-target); height: calc(var(--mirror-bar-control-touch) - 2px); }
+  .bb-mirror-mode button, .bb-mirror-chip > button, .bb-mirror-count button { position: relative; }
+  .bb-mirror-mode button::before, .bb-mirror-chip > button::before, .bb-mirror-count button::before { content: ""; position: absolute; top: 50%; inset-inline: 0; height: var(--touch-target); transform: translateY(-50%); }
 }
 .bb-mirror-axis { stroke: var(--marker); stroke-width: var(--mirror-axis-width); stroke-dasharray: var(--mirror-axis-dash); pointer-events: none; }
 .bb-mirror-axis.is-soft { opacity: var(--mirror-axis-soft); }
@@ -1168,6 +1177,8 @@ body {
 .bb-section-steps--tight .bb-section-step:not(.bb-section-step--current)>span{visibility:hidden}
 .bb-section-steps--tight .bb-section-step:is(:hover,:focus-visible){z-index:1}
 .bb-section-steps--tight .bb-section-step:is(:hover,:focus-visible)>span{visibility:visible;background:var(--box)}
+/* Touch (ticket 0962): a step answers across touch-target; a hidden name takes no room, so no step's hit area lies over the next one's. */
+@media (pointer:coarse){.bb-section-step{min-width:var(--touch-target);min-height:var(--touch-target)}.bb-section-steps--tight .bb-section-step:not(.bb-section-step--current)>span{position:absolute;top:calc(2 * var(--space-10));left:50%;margin:0;transform:translateX(-50%)}}
 .bb-section-step--passed{color:var(--body)}
 .bb-section-step--passed::before{background:var(--accent)}
 .bb-section-step--current{--d:var(--step-dot-current);color:var(--ink);font-weight:500}
