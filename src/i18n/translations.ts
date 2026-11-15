@@ -414,6 +414,8 @@ export interface Translations {
     faceInfo: string
     /** A Star's count is the whole star, its back beaded as the face's mirror (ticket 0875): "245 beads, front and back". */
     beadsFrontBack: PluralForms
+    /** The folded row over Name and the Layer settings in a Starter's setup (ticket 0952), its values beside it. */
+    beadsAndTechnique: string
   }
   canvas: {
     zoomInLabel: string

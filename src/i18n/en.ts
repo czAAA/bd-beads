@@ -296,6 +296,7 @@ export const en: Translations = {
     faceInfoLabel: 'What the counts cover',
     faceInfo: 'A Kaleidocycle is {total} triangles, {faces} faces of {parts}, and this Frame is one face. The whole piece counts every face beaded like this one. To give another face its own design, make a Frame for it. The whole piece also counts the beads that join the triangles: Edge Beads, Hinge Beads, and the 15/0 Triangle Tips and Hinge Pins.',
     beadsFrontBack: { one: '{count} bead, front and back', other: '{count} beads, front and back' },
+    beadsAndTechnique: 'Beads and technique',
   },
   canvas: {
     zoomInLabel: 'Zoom in',

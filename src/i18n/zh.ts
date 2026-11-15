@@ -298,6 +298,7 @@ export const zh: Translations = {
     faceInfoLabel: '计数包括哪些',
     faceInfo: '万花筒环由 {total} 个三角形组成，共 {faces} 面，每面 {parts} 个。此边框是其中一面。整件按每一面都像这一面来计算。若要给另一面单独的图案，请为它新建一个边框。整件还计入连接三角形的珠子：边缘珠、铰链珠，以及三角形尖端和铰链销用的 15/0。',
     beadsFrontBack: { other: '正反两面共 {count} 颗珠子' },
+    beadsAndTechnique: '珠子与技法',
   },
   canvas: {
     zoomInLabel: '放大',

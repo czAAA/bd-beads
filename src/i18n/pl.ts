@@ -298,6 +298,7 @@ export const pl: Translations = {
     faceInfoLabel: 'Co obejmuje liczenie',
     faceInfo: 'Kalejdocykl to {total} trójkątów: {faces} ściany po {parts}. Ta ramka to jedna ściana. Cała praca liczy każdą ścianę wyplecioną tak jak ta. Aby dać innej ścianie własny wzór, zrób dla niej osobną ramkę. Cała praca liczy też koraliki łączeń: koraliki brzegu, koraliki zawiasów oraz 15/0 na czubkach trójkątów i sworznie zawiasów.',
     beadsFrontBack: { one: '{count} koralik, przód i tył', few: '{count} koraliki, przód i tył', many: '{count} koralików, przód i tył', other: '{count} koralika, przód i tył' },
+    beadsAndTechnique: 'Koraliki i technika',
   },
   canvas: {
     zoomInLabel: 'Powiększ',

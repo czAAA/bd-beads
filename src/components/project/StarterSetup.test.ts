@@ -11,6 +11,8 @@ import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanel
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
+  // Beads and technique opened, as once on this device, so its Name and Layer settings can be set (ticket 0952).
+  localStorage.setItem('openbeads:panel-sections-opened', 'starter:beads')
 })
 
 const mountSetup = (id: StarterId, project?: Project) => mount(StarterSetup, { props: { starter: starterById(id), ...(project ? { project } : {}) }, attachTo: document.body })
@@ -34,6 +36,30 @@ describe('the Starter setup', () => {
     expect(text(wrapper, 'starter-estimate')).toMatch(/cm|mm/)
     expect(text(wrapper, 'starter-count')).toBe('165 beads')
     expect(wrapper.find('[data-testid="starter-design-note"]').exists()).toBe(false)
+  })
+
+  it('asks the sizes first, then Estimated size and Design, then Beads and technique (ticket 0952)', () => {
+    localStorage.removeItem('openbeads:panel-sections-opened')
+    const wrapper = mountSetup('bandStripes')
+    const order = ['starter-setup-picture', 'starter-size-width', 'starter-size-wrist', 'starter-pick-fit', 'starter-estimate', 'starter-design', 'starter-beads']
+    const shown = wrapper.findAll(order.map((id) => `[data-testid="${id}"]`).join(', ')).map((each) => each.attributes('data-testid'))
+    expect(shown).toEqual(order)
+  })
+
+  it('folds Name and the Layer settings under Beads and technique, its row showing the Name typed, the Technique and the Bead (ticket 0952)', async () => {
+    localStorage.removeItem('openbeads:panel-sections-opened')
+    const wrapper = mountSetup('bandStripes')
+    const header = wrapper.get('[data-testid="starter-beads"] .panel-section__header')
+    expect(header.attributes('aria-expanded')).toBe('false')
+    expect(header.text()).toBe(`${en.starters.beadsAndTechnique}Peyote · Miyuki Delica 11/0`)
+    expect(wrapper.find('[data-testid="starter-name-input"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="starter-layer-settings"]').exists()).toBe(false)
+    await header.trigger('click')
+    expect(header.attributes('aria-expanded')).toBe('true')
+    await wrapper.get('[data-testid="starter-name-input"]').setValue('Summer')
+    expect(wrapper.find('[data-testid="starter-layer-settings"]').exists()).toBe(true)
+    await header.trigger('click')
+    expect(header.text()).toBe(`${en.starters.beadsAndTechnique}Summer · Peyote · Miyuki Delica 11/0`)
   })
 
   it('turns Use design off when the size changes, naming the design\'s size, and on again when it is set back', async () => {
