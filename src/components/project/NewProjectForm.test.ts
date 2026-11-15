@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NewProjectForm from './NewProjectForm.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { chooseBeadInSection } from '../../testUtils/beadPicker'
@@ -26,17 +27,24 @@ describe('NewProjectForm', () => {
     expect(panelOptionShown(wrapper, 'bead-size')).toBe(BEAD_CATALOG[0]!.size)
   })
 
-  it('opens with the Open canvas title and its subtitle, then Create Project, the one primary, before Convert image and Pick a starter (tickets 568, 0866)', () => {
+  it('opens with its one sentence and no heading of its own, then Create Project, the one primary, before Convert image and Pick a starter (tickets 568, 0866, 0951)', () => {
     const wrapper = mount(NewProjectForm, { props })
 
-    expect(wrapper.get('[data-testid="open-canvas-title"]').text()).toBe(ru.form.openCanvasTitle)
-    expect(wrapper.text()).toContain(ru.form.openCanvasSubtitle)
+    expect(wrapper.find('h1, h2, h3').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="open-canvas-subtitle"]').text()).toBe(ru.form.openCanvasSubtitle)
     const buttons = [...wrapper.element.querySelectorAll('[data-testid="create-project"], [data-testid="convert-image"], [data-testid="pick-starter"]')]
     expect(buttons.map((button) => [button.getAttribute('data-testid'), button.classList.contains('app-button--primary')])).toEqual([
       ['create-project', true],
       ['convert-image', false],
       ['pick-starter', false],
     ])
+  })
+
+  it('says what Technique and Bead decide behind an Info button each, as Drop does (ticket 0951)', () => {
+    const wrapper = mount(NewProjectForm, { props })
+    const help = (testid: string) => wrapper.findAllComponents(InfoButton).find((info) => info.find(`[data-testid="${testid}"]`).exists())?.props()
+    expect(help('new-project-technique-info')).toEqual({ label: ru.form.techniqueInfoLabel, body: ru.form.techniqueInfo })
+    expect(help('new-project-bead-info')).toEqual({ label: ru.form.beadInfoLabel, body: ru.form.beadPicker.hint })
   })
 
   it('opens the Starter gallery one level deeper from Pick a starter, focus to come back to it (ticket 0596)', async () => {
