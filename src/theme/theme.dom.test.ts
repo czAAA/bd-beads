@@ -29,11 +29,40 @@ function fakeDevice(initial: { dark: boolean; moreContrast: boolean }) {
 
 const root = document.documentElement
 
+type Theme = 'light' | 'dark' | 'contrast'
+interface TokensJson {
+  color: { tokens: { name: string; value: Record<Theme, string> }[] }
+}
+const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as TokensJson
+const surface = (theme: Theme) => tokens.color.tokens.find((token) => token.name === 'surface')!.value[theme]
+
+/** The two theme-color metas of index.html (light and dark device setting), and tokens.css's `--surface` per theme, so
+ * applyTheme can read the page background the way the browser would. */
+function addHead(): () => void {
+  const added = [
+    Object.assign(document.createElement('meta'), { name: 'theme-color', content: surface('light') }),
+    Object.assign(document.createElement('meta'), { name: 'theme-color', content: surface('dark') }),
+    Object.assign(document.createElement('style'), {
+      textContent: (['light', 'dark', 'contrast'] as const)
+        .map((theme) => `:root[data-theme="${theme}"] { --surface: ${surface(theme)}; }`)
+        .join('\n'),
+    }),
+  ]
+  added[0].setAttribute('media', '(prefers-color-scheme: light)')
+  added[1].setAttribute('media', '(prefers-color-scheme: dark)')
+  document.head.append(...added)
+  return () => added.forEach((element) => element.remove())
+}
+const themeColors = () => [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].map((meta) => meta.content)
+
+let removeHead: () => void
 beforeEach(() => {
   localStorage.clear()
   delete root.dataset.theme
   root.style.colorScheme = ''
+  removeHead = addHead()
 })
+afterEach(() => removeHead())
 
 describe('resolveTheme', () => {
   it('follows the device while no theme is picked', () => {
@@ -60,6 +89,17 @@ describe('applyTheme', () => {
     applyTheme(root, 'contrast')
     expect(root.dataset.theme).toBe('contrast')
     expect(root.style.colorScheme).toBe('light')
+  })
+
+  it("sets the browser's bar to the theme's surface, whatever the device says (ticket 0998)", () => {
+    applyTheme(root, 'dark')
+    expect(themeColors()).toEqual([surface('dark'), surface('dark')])
+
+    applyTheme(root, 'contrast')
+    expect(themeColors()).toEqual([surface('contrast'), surface('contrast')])
+
+    applyTheme(root, 'light')
+    expect(themeColors()).toEqual([surface('light'), surface('light')])
   })
 })
 
@@ -100,8 +140,8 @@ describe('followDeviceTheme', () => {
   })
 })
 
-describe("index.html's pre-paint script", () => {
-  const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
+describe.each(['index.html', 'homepage/index.html'])("%s's pre-paint script", (page) => {
+  const html = readFileSync(resolve(__dirname, '../../', page), 'utf8')
   const script = /<script>([\s\S]*?)<\/script\s*>/i.exec(html)?.[1] ?? ''
 
   function runWith(device: { dark: boolean; moreContrast: boolean }) {
@@ -129,5 +169,19 @@ describe("index.html's pre-paint script", () => {
     runWith({ dark: true, moreContrast: true })
     expect(root.dataset.theme).toBe('light')
     expect(root.lang).toBe('en')
+  })
+  it("sets the browser's bar to the picked theme's surface, on a light device (ticket 0998)", () => {
+    localStorage.setItem('openbeads:theme', 'dark')
+    runWith({ dark: false, moreContrast: false })
+    expect(themeColors()).toEqual([surface('dark'), surface('dark')])
+
+    localStorage.setItem('openbeads:theme', 'contrast')
+    runWith({ dark: true, moreContrast: false })
+    expect(themeColors()).toEqual([surface('contrast'), surface('contrast')])
+  })
+
+  it("leaves the browser's bar on the device's surface with no pick", () => {
+    runWith({ dark: true, moreContrast: false })
+    expect(themeColors()).toEqual([surface('dark'), surface('dark')])
   })
 })
