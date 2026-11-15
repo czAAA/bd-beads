@@ -185,6 +185,9 @@
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
   --pill-fade: 1.5rem;
+  --pill-tile-outline: 1.5px;
+  --pill-tile-pressed-edge: inset 0 0 0 var(--pill-tile-outline) var(--ink);
+  --pill-tile-focus-offset: 1px;
   /* Mirror (ContextBar card, Mirror bar): the bar's controls, the Axis lines, the Radial ring, the Area and the hover preview; the Area sheet a Selection and a Canvas Area share */
   --mirror-bar-control: 24px;
   --mirror-bar-control-touch: 30px;
@@ -268,7 +271,7 @@
   --save-ring-label-time: 4s;
 }
 [data-theme="light"], [data-theme="dark"] { --underline-width: 2px; }
-[data-theme="contrast"] { --underline-width: 3px; }
+[data-theme="contrast"] { --underline-width: 3px; --pill-tile-outline: 2px; }
 
 body {
   margin: 0;

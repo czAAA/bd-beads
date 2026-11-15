@@ -1410,7 +1410,7 @@ export const zh: Translations = {
     },
     convert: {
       name: '转换为珠子',
-      body: '按图片在画布上的大小，用它自己的颜色，把它变成 {size} 的珠子。',
+      body: '按图片在画布上的大小，把它变成 {size} 的珠子。',
       size: '尺寸',
       sizeInfoName: '尺寸从哪里来',
       sizeInfo: '图片在画布上的大小。拖动图片的一角来更改。',

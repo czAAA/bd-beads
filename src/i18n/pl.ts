@@ -1435,7 +1435,7 @@ export const pl: Translations = {
     },
     convert: {
       name: 'Zamień na koraliki',
-      body: 'Zamienia obraz na koraliki {size}, w rozmiarze, jaki ma na płótnie, w jego własnych kolorach.',
+      body: 'Zamienia obraz na koraliki {size}, w rozmiarze, jaki ma na płótnie.',
       size: 'rozmiar',
       sizeInfoName: 'Skąd ten rozmiar',
       sizeInfo: 'Rozmiar obrazu na płótnie. Przeciągnij róg obrazu, aby go zmienić.',

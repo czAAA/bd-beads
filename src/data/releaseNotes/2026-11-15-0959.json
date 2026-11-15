@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-15",
+  "line": {
+    "en": "Custom color always shows its colors, so a tap on the wheel gives the color tapped even with Black chosen, and Enter on a mistyped hex keeps the picker open with its note",
+    "ru": "«Свой цвет» всегда показывает цвета, так что касание круга даёт выбранный цвет, даже если выбран чёрный, а Enter на неверном hex-коде оставляет окно открытым с подсказкой",
+    "uk": "«Власний колір» завжди показує кольори, тож дотик до кола дає вибраний колір, навіть коли вибрано чорний, а Enter на хибному hex-коді лишає вікно відкритим із підказкою",
+    "be": "«Свой колер» заўсёды паказвае колеры, таму дотык да круга дае абраны колер, нават калі абраны чорны, а Enter на памылковым hex-кодзе пакідае акно адкрытым з падказкай",
+    "zh": "自定义颜色总是显示各种颜色，即使选中了黑色，点按色轮也会得到所点的颜色；十六进制代码输错时按 Enter，选色器保持打开并显示提示",
+    "es": "Color personalizado siempre muestra sus colores, así que un toque en la rueda da el color tocado aunque esté elegido el negro, y Enter con un hex mal escrito deja el selector abierto con su aviso",
+    "pl": "„Własny kolor” zawsze pokazuje kolory, więc dotknięcie koła daje dotknięty kolor nawet przy wybranej czerni, a Enter przy błędnym kodzie hex zostawia okno otwarte z podpowiedzią"
+  }
+}

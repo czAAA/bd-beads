@@ -1419,7 +1419,7 @@ export const en: Translations = {
     },
     convert: {
       name: 'Convert to beads',
-      body: 'Turns the picture into {size} beads, the size it has on the Canvas, in its own colors.',
+      body: 'Turns the picture into {size} beads, the size it has on the Canvas.',
       size: 'size',
       sizeInfoName: 'Where the size comes from',
       sizeInfo: 'The picture\'s size on the Canvas. Drag a corner of the picture to change it.',
