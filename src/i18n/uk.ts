@@ -358,7 +358,7 @@ export const uk: Translations = {
       line: 'Для ткацтва, мозаїчного й цегляного плетіння.',
       seeHow: 'Як це працює',
       colors: { one: '{codes} колір {brands}', few: '{codes} кольори {brands}', many: '{codes} кольорів {brands}', other: '{codes} кольору {brands}' },
-      starters: { one: '{count} стартер', few: '{count} стартери', many: '{count} стартерів', other: '{count} стартера' },
+      startFromStarter: 'Почати з готового дизайну',
       caption: '{technique} · {size}',
       piece: 'Вічка павиного пера, мозаїчне плетіння',
       promises: {
