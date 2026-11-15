@@ -52,16 +52,20 @@ const messageId = useId()
       <AppButton v-if="extraLabel" variant="in-box" class="confirm-modal__extra" data-testid="confirm-modal-extra" @click="emit('extra')">
         {{ extraLabel }}
       </AppButton>
-      <AppButton variant="in-box" data-testid="confirm-modal-cancel" data-autofocus @click="emit('cancel')">
-        {{ cancelLabel }}
-      </AppButton>
-      <AppButton
-        :variant="confirmDanger ? 'danger' : 'primary'"
-        data-testid="confirm-modal-confirm"
-        @click="emit('confirm')"
-      >
-        {{ confirmLabel }}
-      </AppButton>
+      <!-- Cancel and the confirm wrap as one: when the row is too narrow for all three, the side action keeps the
+           first row and the pair moves down together (ticket 0994). -->
+      <span class="confirm-modal__pair">
+        <AppButton variant="in-box" data-testid="confirm-modal-cancel" data-autofocus @click="emit('cancel')">
+          {{ cancelLabel }}
+        </AppButton>
+        <AppButton
+          :variant="confirmDanger ? 'danger' : 'primary'"
+          data-testid="confirm-modal-confirm"
+          @click="emit('confirm')"
+        >
+          {{ confirmLabel }}
+        </AppButton>
+      </span>
     </template>
   </AppModal>
 </template>
@@ -75,5 +79,14 @@ const messageId = useId()
 /* A side action sits apart from the pair it doesn't belong to. */
 .confirm-modal__extra {
   margin-right: auto;
+}
+
+/* The pair lays out as the actions row does; it wraps inside itself only where one button alone fills the row. */
+.confirm-modal__pair {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-8);
+  margin-left: auto;
 }
 </style>

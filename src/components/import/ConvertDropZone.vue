@@ -4,6 +4,7 @@ import { useConvertFileInput } from '../../composables/import/useConvertFileInpu
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { useHelpDevice } from '../../composables/ui/useKeyHints'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { atMostOneDecimal } from '../../domain/formatNumber'
 import { imageLimitsText } from '../../i18n/imageLimits'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -37,7 +38,7 @@ const note = computed(() =>
 const readingDetail = computed(() => {
   const file = wizard.readingFile.value
   if (!file) return undefined
-  const mb = new Intl.NumberFormat(locale.value, { maximumFractionDigits: 1 }).format(file.bytes / 1024 / 1024)
+  const mb = atMostOneDecimal(file.bytes / 1024 / 1024, locale.value)
   return fillBlanks(words.value.readingDetail, { file: file.name, mb })
 })
 
