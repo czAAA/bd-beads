@@ -158,6 +158,13 @@ describe('the Surface view lays out a block of beads', () => {
     expect(wide.zoomToFit({ row: 0, column: 0, rows: 4, columns: 30 }, { width: 0, height: 0 })).toBe(0.69)
   })
 
+  it('zooms in past 100% up to the most it is given (ticket 0964)', () => {
+    const fit = (most: number) => open('loom', 0, 1, { viewport: { width: 1000, height: 1000 } }).zoomToFit(block, { width: 20, height: 20 }, undefined, most)
+    expect(fit(1.5)).toBe(1.5)
+    // 960px clear across 5 beads of 20px.
+    expect(fit(100)).toBe(9.6)
+  })
+
   it('counts an offset technique’s half bead in the width it fits', () => {
     const viewport = { width: 480, height: Infinity }
     const wide = { row: 0, column: 0, rows: 10, columns: 24 }

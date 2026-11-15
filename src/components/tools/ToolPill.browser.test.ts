@@ -74,3 +74,38 @@ describe('ToolPill on a phone (ticket 0837)', () => {
     expect(getComputedStyle(tools).maskImage).toMatch(/^linear-gradient\(rgba/)
   })
 })
+
+// On an iPad every tile carries an invisible 44px touch pad (controls.css, `pointer: coarse`), and the last tile's pad
+// reaches a few pixels past the tools' end (ticket 0958). The headless browser has a fine pointer, so the pad is drawn
+// here as the coarse rule draws it.
+describe('ToolPill on touch (ticket 0958)', () => {
+  function withTouchPads(): () => void {
+    const style = document.createElement('style')
+    style.textContent = `.ui-control { position: relative; }
+      .ui-control::before { content: ''; position: absolute; inset: 50%; width: max(100%, var(--touch-target)); height: max(100%, var(--touch-target)); transform: translate(-50%, -50%); }`
+    document.head.append(style)
+    return () => style.remove()
+  }
+
+  it('shows the recents beside the colour control where the pill has room, though the last pad scrolls the tools', async () => {
+    const remove = withTouchPads()
+    try {
+      const { root } = await mountAt(ToolPill, props, { locale: 'en', width: 1366 })
+      const tools = get(root, 'tool-pill-tools')
+      expect(tools.scrollWidth, 'the last pad reaches past the tools').toBeGreaterThan(tools.clientWidth + 1)
+      expect(root.querySelectorAll('[data-testid="pill-recent"]')).toHaveLength(3)
+    } finally {
+      remove()
+    }
+  })
+
+  it('still drops the recents where the pill has no room', async () => {
+    const remove = withTouchPads()
+    try {
+      const { root } = await mountAt(ToolPill, props, { locale: 'en', width: 390 })
+      expect(root.querySelector('[data-testid="pill-recent"]')).toBeNull()
+    } finally {
+      remove()
+    }
+  })
+})
