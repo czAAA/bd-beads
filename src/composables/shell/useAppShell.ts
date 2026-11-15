@@ -184,6 +184,8 @@ function wireAppShell(services: Services, options: ShellOptions) {
     addToCanvas: (grid, request) => pictureBar.addGrid(grid, request),
     convertChoices: services.devicePreferences.get('convertChoices'),
     myBeads: services.devicePreferences.get('myBeads'),
+    showToast,
+    messages,
   })
 
   /** A Menu action that leaves the page asks the page's guard first, and only goes on once it has been let go (ADR 0085). */
@@ -913,7 +915,11 @@ function wireAppShell(services: Services, options: ShellOptions) {
   if (openingAddress.project && !safeStart.held) savedProjectConfirms.onRequestSwitch(openingAddress.project)
   // Make your first Project (tickets 0866, 0945): with none in the library it is made in peyote on Delica 11/0 and opens
   // on the Canvas, no panel open; with some, the editor opens as usual.
-  if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) onCreateFirstProject()
+  // Start from a ready design (ticket 0953) makes it the same way and opens the Frame panel on its Starter gallery.
+  if (openingAddress.firstProject && projects.value.length === 0 && sealed.value.length === 0) {
+    onCreateFirstProject()
+    if (openingAddress.starterGallery) frameFlow.openOnStarters()
+  }
   if (!activeProject.value && (projects.value.length > 0 || sealed.value.length > 0)) overlays.openMenuOnSavedProjects()
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
@@ -1282,6 +1288,7 @@ function wireAppShell(services: Services, options: ShellOptions) {
       // The Frame panel
       settledProject,
       framePanelShown: frameFlow.barShown,
+      frameOpensOnStarters: frameFlow.opensOnStarters,
       /** The Frame panel opens on its settings (ticket 0935): the Frame stays toast's Open Frame. */
       frameOpensOnSettings: frameFlow.opensOnSettings,
       onCloseFramePanel: frameFlow.closeBar,

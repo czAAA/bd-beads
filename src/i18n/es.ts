@@ -358,7 +358,7 @@ export const es: Translations = {
       line: 'Para telar, peyote y punto ladrillo.',
       seeHow: 'Mira cómo funciona',
       colors: { one: '{codes} color de {brands}', many: '{codes} colores de {brands}', other: '{codes} colores de {brands}' },
-      starters: { one: '{count} punto de partida', many: '{count} puntos de partida', other: '{count} puntos de partida' },
+      startFromStarter: 'Empieza con un diseño terminado',
       caption: '{technique} · {size}',
       piece: 'Ojos de pluma de pavo real, en peyote',
       promises: {
@@ -635,6 +635,7 @@ export const es: Translations = {
     goToPass: 'Ir a la pasada',
     passesInfoName: 'Qué es una pasada',
     showRowMarks: 'Mostrar marcas de fila',
+    goToRange: 'de 1 a {total}',
   },
   quantities: {
     heading: 'Cuentas necesarias',
@@ -1191,6 +1192,7 @@ export const es: Translations = {
       tooManyPixels: 'Esa imagen es demasiado grande para abrirla en este dispositivo. Hazla más pequeña en una app de fotos e inténtalo de nuevo.',
       decodeFailed: 'No se pudo leer esa imagen. Ábrela en una app de fotos, guárdala como PNG o JPEG e inténtalo de nuevo.',
     },
+    createdToast: 'Proyecto “{name}” creado a partir de tu imagen. Se guarda en este navegador.',
   },
   replaceBead: {
     selectLabel: 'Reemplazar cuenta',
@@ -1429,7 +1431,7 @@ export const es: Translations = {
     },
     convert: {
       name: 'Convertir en cuentas',
-      body: 'Convierte la imagen en {size} cuentas, al tamaño que tiene en el lienzo, con sus propios colores.',
+      body: 'Convierte la imagen en {size} cuentas, al tamaño que tiene en el lienzo.',
       size: 'tamaño',
       sizeInfoName: 'De dónde sale el tamaño',
       sizeInfo: 'El tamaño de la imagen en el lienzo. Arrastra una esquina de la imagen para cambiarlo.',

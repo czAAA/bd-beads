@@ -358,7 +358,7 @@ export const ru: Translations = {
       line: 'Для ткачества, мозаичного и кирпичного плетения.',
       seeHow: 'Как это работает',
       colors: { one: '{codes} цвет {brands}', few: '{codes} цвета {brands}', many: '{codes} цветов {brands}', other: '{codes} цвета {brands}' },
-      starters: { one: '{count} стартер', few: '{count} стартера', many: '{count} стартеров', other: '{count} стартера' },
+      startFromStarter: 'Начать с готового дизайна',
       caption: '{technique} · {size}',
       piece: 'Глазки павлиньего пера, мозаичное плетение',
       promises: {
@@ -638,6 +638,7 @@ export const ru: Translations = {
     goToPass: 'Перейти к проходу',
     passesInfoName: 'Что такое проход',
     showRowMarks: 'Показывать отметки рядов',
+    goToRange: 'от 1 до {total}',
   },
   quantities: {
     heading: 'Нужно бисера',
@@ -1194,6 +1195,7 @@ export const ru: Translations = {
       tooManyPixels: 'Изображение слишком большое, чтобы открыть его на этом устройстве. Уменьшите его в приложении для фото и попробуйте снова.',
       decodeFailed: 'Не удалось прочитать это изображение. Откройте его в приложении для фото, сохраните в PNG или JPEG и попробуйте снова.',
     },
+    createdToast: 'Проект «{name}» создан из вашего изображения. Он хранится в этом браузере.',
   },
   replaceBead: {
     selectLabel: 'Заменить бисер',
@@ -1432,7 +1434,7 @@ export const ru: Translations = {
     },
     convert: {
       name: 'Перевести в бисер',
-      body: 'Делает из картинки бисер {size}, по её размеру на холсте, в её собственных цветах.',
+      body: 'Делает из картинки бисер {size}, по её размеру на холсте.',
       size: 'размер',
       sizeInfoName: 'Откуда размер',
       sizeInfo: 'Размер картинки на холсте. Потяните за угол картинки, чтобы его изменить.',

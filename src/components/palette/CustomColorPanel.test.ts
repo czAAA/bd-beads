@@ -54,6 +54,20 @@ describe('CustomColorPanel, the Custom color picker (ticket 449)', () => {
     expect(wrapper.find('[data-testid="custom-color-hex-note"]').exists()).toBe(false)
   })
 
+  it('keeps the picker open with its Note on Enter after a mistyped hex, and takes nothing (ticket 0959)', async () => {
+    const wrapper = mountPanel('#123456')
+    await hexField(wrapper).setValue('#GGGGGG')
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    hexField(wrapper).element.dispatchEvent(enter)
+    await wrapper.vm.$nextTick()
+
+    expect(enter.defaultPrevented).toBe(true)
+    expect(wrapper.emitted()).not.toHaveProperty('take')
+    expect(wrapper.emitted()).not.toHaveProperty('leave')
+    expect(hexField(wrapper).attributes('aria-invalid')).toBe('true')
+    expect(wrapper.find('[data-testid="custom-color-hex-note"]').exists()).toBe(true)
+  })
+
   it('moves hue and saturation by the arrows on the wheel, ten times as far with Shift', async () => {
     const wrapper = mountPanel('#ff0000')
     await wheel(wrapper).trigger('keydown', { key: 'ArrowRight' })
@@ -79,6 +93,32 @@ describe('CustomColorPanel, the Custom color picker (ticket 449)', () => {
     await wheel(wrapper).trigger('pointerdown', { clientX: 200, clientY: 100, pointerId: 1 })
 
     expect(wheel(wrapper).attributes('aria-valuetext')).toBe('hue 90°, saturation 100%')
+  })
+
+  it('gives the color tapped on the wheel with Black chosen, not another black (ticket 0959)', async () => {
+    const wrapper = mountPanel('#1a1a1a')
+    wheel(wrapper).element.getBoundingClientRect = () => new DOMRect(0, 0, 200, 200)
+
+    await wheel(wrapper).trigger('pointerdown', { clientX: 150, clientY: 60, pointerId: 1 })
+
+    expect(slider(wrapper).attributes('aria-valuenow')).toBe('100')
+    expect(wheel(wrapper).attributes('aria-valuetext')).toMatch(/^hue 5[0-9]°/)
+  })
+
+  it('lifts a near-black to full brightness when the wheel is moved by the arrows too (ticket 0959)', async () => {
+    const wrapper = mountPanel('#1a1a1a')
+    await wheel(wrapper).trigger('keydown', { key: 'ArrowUp' })
+
+    expect(slider(wrapper).attributes('aria-valuenow')).toBe('100')
+  })
+
+  it('keeps a brightness the person set when the wheel is tapped (ticket 0959)', async () => {
+    const wrapper = mountPanel('#808080')
+    wheel(wrapper).element.getBoundingClientRect = () => new DOMRect(0, 0, 200, 200)
+
+    await wheel(wrapper).trigger('pointerdown', { clientX: 200, clientY: 100, pointerId: 1 })
+
+    expect(slider(wrapper).attributes('aria-valuenow')).toBe('50')
   })
 
   it('takes the color once when left by a press outside, however many steps it moved', async () => {

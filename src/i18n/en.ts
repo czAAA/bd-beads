@@ -356,7 +356,7 @@ export const en: Translations = {
       line: 'For loom, peyote and brick stitch.',
       seeHow: 'See how it works',
       colors: { one: '{codes} {brands} color', other: '{codes} {brands} colors' },
-      starters: { one: '{count} Starter', other: '{count} Starters' },
+      startFromStarter: 'Start from a ready design',
       caption: '{technique} · {size}',
       piece: 'Peacock feather eyes, in peyote',
       promises: {
@@ -630,6 +630,7 @@ export const en: Translations = {
     goToPass: 'Go to pass',
     passesInfoName: 'What a pass is',
     showRowMarks: 'Show row marks',
+    goToRange: '1 to {total}',
   },
   quantities: {
     heading: 'Beads needed',
@@ -1178,6 +1179,7 @@ export const en: Translations = {
       tooManyPixels: 'That picture is too big for this device to open. Make it smaller in a photo app and try again.',
       decodeFailed: 'That picture couldn\'t be read. Open it in a photo app, save it as PNG or JPEG and try again.',
     },
+    createdToast: 'Project “{name}” made from your picture. It is kept in this browser.',
   },
   replaceBead: {
     selectLabel: 'Replace bead',
@@ -1416,7 +1418,7 @@ export const en: Translations = {
     },
     convert: {
       name: 'Convert to beads',
-      body: 'Turns the picture into {size} beads, the size it has on the Canvas, in its own colors.',
+      body: 'Turns the picture into {size} beads, the size it has on the Canvas.',
       size: 'size',
       sizeInfoName: 'Where the size comes from',
       sizeInfo: 'The picture\'s size on the Canvas. Drag a corner of the picture to change it.',

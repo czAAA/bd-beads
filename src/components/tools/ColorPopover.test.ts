@@ -83,6 +83,18 @@ describe('ColorPopover, picking (tickets 397, 398, 444)', () => {
     expect(popover.emitted('close')).toHaveLength(2)
     wrapper.unmount()
   })
+  it('stays open with the Custom color picker on Enter after a mistyped hex, and adds nothing (ticket 0959)', async () => {
+    const { wrapper, popover } = open(defaultPaletteIds())
+    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+    const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
+    await field.setValue('#GGGGGG')
+    await field.trigger('keydown', { key: 'Enter' })
+
+    expect(popover.emitted()).not.toHaveProperty('select-custom-color')
+    expect(popover.emitted()).not.toHaveProperty('close')
+    expect(wrapper.find('[data-testid="custom-color-panel"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
 })
 
 describe('ColorPopover, by keyboard (ticket 0857)', () => {

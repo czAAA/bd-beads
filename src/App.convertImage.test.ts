@@ -115,6 +115,8 @@ describe('App Convert image as an App page (ADR 0086)', () => {
     expect(beadColor(wrapper, 0)).toBeTruthy()
     expect(beadColor(wrapper, 7)).toBeTruthy()
     expect(beadColor(wrapper, 7)).not.toBe(beadColor(wrapper, 0))
+    // The editor shows Create Project's toast, read once as a status (ticket 0968); its words are the flow's test.
+    expect(wrapper.get('[data-testid="project-created"]').attributes('role')).toBe('status')
     wrapper.unmount()
   })
 

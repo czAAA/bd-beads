@@ -146,6 +146,18 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (deps.currentProject()) barOpen.value = !barOpen.value
   }
 
+  /** Whether the Frame panel opens already on its Starter gallery (ticket 0953): set by Start from a ready design's
+   * first Project, cleared as the panel closes. */
+  const opensOnStarters = ref(false)
+  watch(barOpen, (open) => open || (opensOnStarters.value = false), { flush: 'sync' })
+
+  /** The Frame panel opened on its Starter gallery, as its Frame from starter row opens it (ticket 0953). */
+  function openOnStarters(): void {
+    if (!deps.currentProject()) return
+    opensOnStarters.value = true
+    barOpen.value = true
+  }
+
   /** The bar closed by Escape or a press outside it. */
   function closeBar(): void {
     barOpen.value = false
@@ -453,6 +465,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setAround,
     settingFrame,
     barShown,
+    opensOnStarters,
+    openOnStarters,
     /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling
      * too, exactly as the release will leave them. */
     draftProject,

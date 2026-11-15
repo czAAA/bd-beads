@@ -57,6 +57,8 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   makeFirstProject: []
+  /** The first Project, made at once and opened on the Frame panel's Starter gallery (ticket 0953). */
+  startFromStarter: []
   openEditor: []
   /** The editor with no Project open and the Menu on Saved Projects (ticket 0716). */
   openSavedProjects: []
@@ -147,6 +149,7 @@ const sections = computed<HomepageSection[]>(() => [
       onMakeFirstProject: () => emit('makeFirstProject'),
       onOpenEditor: () => emit('openEditor'),
       onOpenSavedProjects: () => emit('openSavedProjects'),
+      onStartFromStarter: () => emit('startFromStarter'),
       onSeeHow: () => goTo(section.value + 1),
     }),
   },

@@ -358,7 +358,7 @@ export const uk: Translations = {
       line: 'Для ткацтва, мозаїчного й цегляного плетіння.',
       seeHow: 'Як це працює',
       colors: { one: '{codes} колір {brands}', few: '{codes} кольори {brands}', many: '{codes} кольорів {brands}', other: '{codes} кольору {brands}' },
-      starters: { one: '{count} стартер', few: '{count} стартери', many: '{count} стартерів', other: '{count} стартера' },
+      startFromStarter: 'Почати з готового дизайну',
       caption: '{technique} · {size}',
       piece: 'Вічка павиного пера, мозаїчне плетіння',
       promises: {
@@ -638,6 +638,7 @@ export const uk: Translations = {
     goToPass: 'Перейти до проходу',
     passesInfoName: 'Що таке прохід',
     showRowMarks: 'Показувати позначки рядів',
+    goToRange: 'від 1 до {total}',
   },
   quantities: {
     heading: 'Потрібно бісеру',
@@ -1194,6 +1195,7 @@ export const uk: Translations = {
       tooManyPixels: 'Зображення завелике, щоб відкрити його на цьому пристрої. Зменште його в застосунку для фото і спробуйте знову.',
       decodeFailed: 'Не вдалося прочитати це зображення. Відкрийте його в застосунку для фото, збережіть у PNG або JPEG і спробуйте знову.',
     },
+    createdToast: 'Проєкт «{name}» створено з вашого зображення. Він зберігається в цьому браузері.',
   },
   replaceBead: {
     selectLabel: 'Замінити бісер',
@@ -1432,7 +1434,7 @@ export const uk: Translations = {
     },
     convert: {
       name: 'Перетворити на бісер',
-      body: 'Робить із зображення бісер {size}, за його розміром на полотні, у його власних кольорах.',
+      body: 'Робить із зображення бісер {size}, за його розміром на полотні.',
       size: 'розмір',
       sizeInfoName: 'Звідки розмір',
       sizeInfo: 'Розмір зображення на полотні. Потягніть за кут зображення, щоб його змінити.',

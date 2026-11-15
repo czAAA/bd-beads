@@ -5,7 +5,7 @@ import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
 import { downloadFile } from './services/fileDownload'
 import { loadProjects } from './services/libraryStore'
-import { firstProjectAddress, projectAddress, savedProjectsAddress } from './domain/openingAddress'
+import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjectsAddress } from './domain/openingAddress'
 import { storedHugeProject, storeLibrary } from './testUtils/hugeProject'
 import { withLayers } from './testUtils/layerFields'
 import { closePanel, openPanel, openSavedProjects } from './testUtils/pill'
@@ -118,6 +118,26 @@ describe('opening the editor (ticket 0716)', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(loadProjects()).toHaveLength(1)
     expect(location.search).toBe('')
+  })
+
+  it('makes the first Project at Start from a ready design\'s address, open on the Frame panel\'s Starter gallery; Escape leaves it on the Canvas (ticket 0953)', async () => {
+    storeLibrary([])
+    history.replaceState(null, '', firstStarterAddress('/'))
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Project 1')
+    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe('Starter')
+    expect(wrapper.find('[data-testid="starter-category-shapes"]').exists()).toBe(true)
+    expect(location.search).toBe('')
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="project-surface"]').attributes('aria-label') ?? '').toContain('Project 1')
+    expect(loadProjects()).toHaveLength(1)
   })
 
   it('makes no Project at that address once the library has one, and opens as usual', async () => {

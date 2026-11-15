@@ -357,7 +357,7 @@ export const zh: Translations = {
       line: '适用于织机、佩奥特编织和砖形。',
       seeHow: '看看怎么用',
       colors: { other: '{codes} 种 {brands} 颜色' },
-      starters: { other: '{count} 个起始方案' },
+      startFromStarter: '从现成的设计开始',
       caption: '{technique} · {size}',
       piece: '孔雀羽眼，佩奥特编织',
       promises: {
@@ -626,6 +626,7 @@ export const zh: Translations = {
     goToPass: '跳到趟',
     passesInfoName: '什么是趟',
     showRowMarks: '显示行标记',
+    goToRange: '1 到 {total}',
   },
   quantities: {
     heading: '所需珠子',
@@ -1169,6 +1170,7 @@ export const zh: Translations = {
       tooManyPixels: '该图片太大，无法在此设备上打开。请在照片应用中缩小后重试。',
       decodeFailed: '无法读取该图片。请在照片应用中打开，另存为 PNG 或 JPEG 后重试。',
     },
+    createdToast: '已用你的图片创建项目“{name}”。它保存在此浏览器中。',
   },
   replaceBead: {
     selectLabel: '替换珠子',
@@ -1407,7 +1409,7 @@ export const zh: Translations = {
     },
     convert: {
       name: '转换为珠子',
-      body: '按图片在画布上的大小，用它自己的颜色，把它变成 {size} 的珠子。',
+      body: '按图片在画布上的大小，把它变成 {size} 的珠子。',
       size: '尺寸',
       sizeInfoName: '尺寸从哪里来',
       sizeInfo: '图片在画布上的大小。拖动图片的一角来更改。',

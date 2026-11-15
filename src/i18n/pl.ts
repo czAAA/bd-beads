@@ -358,7 +358,7 @@ export const pl: Translations = {
       line: 'Na krosno, peyote i ścieg ceglasty.',
       seeHow: 'Zobacz, jak to działa',
       colors: { one: '{codes} kolor {brands}', few: '{codes} kolory {brands}', many: '{codes} kolorów {brands}', other: '{codes} koloru {brands}' },
-      starters: { one: '{count} starter', few: '{count} startery', many: '{count} starterów', other: '{count} startera' },
+      startFromStarter: 'Zacznij od gotowego wzoru',
       caption: '{technique} · {size}',
       piece: 'Oczka pawiego pióra, w peyote',
       promises: {
@@ -638,6 +638,7 @@ export const pl: Translations = {
     goToPass: 'Przejdź do przejścia',
     passesInfoName: 'Czym jest przejście',
     showRowMarks: 'Pokazuj oznaczenia rzędów',
+    goToRange: 'od 1 do {total}',
   },
   quantities: {
     heading: 'Potrzebne koraliki',
@@ -1194,6 +1195,7 @@ export const pl: Translations = {
       tooManyPixels: 'Ten obraz jest za duży, by otworzyć go na tym urządzeniu. Zmniejsz go w aplikacji do zdjęć i spróbuj ponownie.',
       decodeFailed: 'Nie udało się odczytać tego obrazu. Otwórz go w aplikacji do zdjęć, zapisz jako PNG lub JPEG i spróbuj ponownie.',
     },
+    createdToast: 'Projekt „{name}” utworzony z Twojego obrazu. Jest przechowywany w tej przeglądarce.',
   },
   replaceBead: {
     selectLabel: 'Zamień koralik',
@@ -1432,7 +1434,7 @@ export const pl: Translations = {
     },
     convert: {
       name: 'Zamień na koraliki',
-      body: 'Zamienia obraz na koraliki {size}, w rozmiarze, jaki ma na płótnie, w jego własnych kolorach.',
+      body: 'Zamienia obraz na koraliki {size}, w rozmiarze, jaki ma na płótnie.',
       size: 'rozmiar',
       sizeInfoName: 'Skąd ten rozmiar',
       sizeInfo: 'Rozmiar obrazu na płótnie. Przeciągnij róg obrazu, aby go zmienić.',

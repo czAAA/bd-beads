@@ -359,7 +359,7 @@ export const be: Translations = {
       line: 'Для ткацтва, мазаічнага і цаглянага пляцення.',
       seeHow: 'Як гэта працуе',
       colors: { one: '{codes} колер {brands}', few: '{codes} колеры {brands}', many: '{codes} колераў {brands}', other: '{codes} колеру {brands}' },
-      starters: { one: '{count} стартар', few: '{count} стартары', many: '{count} стартараў', other: '{count} стартара' },
+      startFromStarter: 'Пачаць з гатовага дызайну',
       caption: '{technique} · {size}',
       piece: 'Вочкі паўлінавага пяра, мазаічнае пляценне',
       promises: {
@@ -639,6 +639,7 @@ export const be: Translations = {
     goToPass: 'Перайсці да прахода',
     passesInfoName: 'Што такое праход',
     showRowMarks: 'Паказваць адзнакі радоў',
+    goToRange: 'ад 1 да {total}',
   },
   quantities: {
     heading: 'Патрэбна бісеру',
@@ -1195,6 +1196,7 @@ export const be: Translations = {
       tooManyPixels: 'Выява занадта вялікая, каб адкрыць яе на гэтай прыладзе. Зменшыце яе ў праграме для фота і паспрабуйце зноў.',
       decodeFailed: 'Не атрымалася прачытаць гэтую выяву. Адкрыйце яе ў праграме для фота, захавайце ў PNG або JPEG і паспрабуйце зноў.',
     },
+    createdToast: 'Праект «{name}» створаны з вашай выявы. Ён захоўваецца ў гэтым браўзеры.',
   },
   replaceBead: {
     selectLabel: 'Замяніць бісер',
@@ -1433,7 +1435,7 @@ export const be: Translations = {
     },
     convert: {
       name: 'Перавесці ў бісер',
-      body: 'Робіць з выявы бісер {size}, па яе памеры на палатне, у яе ўласных колерах.',
+      body: 'Робіць з выявы бісер {size}, па яе памеры на палатне.',
       size: 'памер',
       sizeInfoName: 'Адкуль памер',
       sizeInfo: 'Памер выявы на палатне. Пацягніце за кут выявы, каб яго змяніць.',

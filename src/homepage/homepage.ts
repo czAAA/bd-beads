@@ -17,7 +17,7 @@ import { downloadFile } from '../services/fileDownload'
 import { packLibraryFile, packProjectFile, packStoredProjectFile } from '../services/projectFileCodec'
 import { useProjectLibrary } from '../composables/project/useProjectLibrary'
 import { libraryFileName, projectFileName, projectFileNameOf } from '../domain/projectFile'
-import { firstProjectAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
+import { firstProjectAddress, firstStarterAddress, projectAddress, savedProjectsAddress } from '../domain/openingAddress'
 import type { Project } from '../domain/project'
 import type { SealedProject } from '../domain/sealedProject'
 import { browserFeedback } from '../services/feedback'
@@ -78,6 +78,8 @@ void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
         openLibrary,
         // The first Project is made at once and opens on the Canvas, no form first (ticket 0866).
         onMakeFirstProject: () => goToEditor(firstProjectAddress(base)),
+        // Start from a ready design: the same, opened on the Frame panel's Starter gallery (ticket 0953).
+        onStartFromStarter: () => goToEditor(firstStarterAddress(base)),
         onOpenEditor: () => goToEditor(),
         onOpenSavedProjects: () => goToEditor(savedProjectsAddress(base)),
         onOpenProject: (id: string) => goToEditor(projectAddress(base, id)),

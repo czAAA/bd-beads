@@ -35,6 +35,17 @@ describe('WelcomeTile (ticket 0830)', () => {
     expect(wrapper.emitted('seeHow')).toHaveLength(1)
   })
 
+  it('offers a new visitor Start from a ready design, a text button beside See how it works (ticket 0953)', async () => {
+    const wrapper = tile()
+    const start = find(wrapper, 'welcome-start-from-starter')
+    expect(start.text()).toBe('Start from a ready design')
+    expect(start.classes()).toContain('app-button--text')
+    expect(start.element.parentElement).toBe(find(wrapper, 'welcome-see-how').element.parentElement)
+    await start.trigger('click')
+    expect(wrapper.emitted('startFromStarter')).toHaveLength(1)
+    expect(find(tile({ isNew: false, count: 3 }), 'welcome-start-from-starter').exists()).toBe(false)
+  })
+
   it('offers Open the editor and the Projects library with its count once Projects are saved', async () => {
     const wrapper = tile({ isNew: false, count: 3 })
     expect(find(wrapper, 'welcome-make-first').exists()).toBe(false)
@@ -51,9 +62,9 @@ describe('WelcomeTile (ticket 0830)', () => {
     expect(find(wrapper, 'welcome-see-how').exists()).toBe(true)
   })
 
-  it('counts the colors and Starters, and shows the piece as an image with its caption', () => {
+  it('counts the colors, and shows the piece as an image with its caption', () => {
     const wrapper = tile()
-    expect(find(wrapper, 'welcome-counts').text()).toMatch(/^[\d\s,.]+ TOHO and Miyuki colors · \d+ Starters$/)
+    expect(find(wrapper, 'welcome-counts').text()).toMatch(/^[\d\s,.]+ TOHO and Miyuki colors$/)
     const piece = find(wrapper, 'welcome-piece')
     expect(piece.element.tagName).toBe('CANVAS')
     expect(piece.attributes('role')).toBe('img')

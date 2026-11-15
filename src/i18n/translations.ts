@@ -494,7 +494,8 @@ export interface Translations {
       line: string
       seeHow: string
       colors: PluralForms
-      starters: PluralForms
+      /** The text button beside See how it works (ticket 0953). */
+      startFromStarter: string
       caption: string
       piece: string
       promises: Record<'free' | 'picture' | 'weave', InsideCopy>
@@ -785,6 +786,8 @@ export interface Translations {
     passesInfoName: string
     /** Turn row direction's list (ticket 0973): its Switch that shows and hides the ring and the number pill, Row highlight. */
     showRowMarks: string
+    /** Go to row's line under its field when the number typed doesn't exist, the field's description (ticket 0980). */
+    goToRange: string
   }
   quantities: {
     heading: string
@@ -1439,6 +1442,8 @@ export interface Translations {
       tooManyPixels: string
       decodeFailed: string
     }
+    /** Create Project's toast (ticket 0968, Message card): the Project it made, `{name}`, and where it is kept. */
+    createdToast: string
   }
   /** The Replace Bead control (CONTEXT.md, ADR 0007) in each layer's panel (ticket 0687), and its confirmation modal
    * (ticket 48). */
